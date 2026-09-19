@@ -1,32 +1,34 @@
 {
   "name": "@nabla/engine",
-  "version": "0.0.1",
-  "description": "Reusable 3D mini-engine for Nabla apps",
+  "version": "0.1.0",
+  "description": "Reusable 3D mini-engine for Nabla apps (extracted from Agency stage)",
   "type": "module",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
+    "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsup src/index.ts --format esm,cjs --dts --clean"
+    "lint": "tsc --noEmit"
   },
   "keywords": [
     "3d",
     "engine",
     "webgl",
-    "graphics"
+    "glb",
+    "vehicle",
+    "physics"
   ],
   "author": "Nabla",
   "license": "MIT",
@@ -35,8 +37,10 @@
     "url": "git+https://github.com/txemavs/nabla-engine.git"
   },
   "devDependencies": {
-    "tsup": "^8.0.0",
-    "typescript": "^5.3.0",
-    "vitest": "^1.0.0"
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
