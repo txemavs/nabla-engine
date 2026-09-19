@@ -100,6 +100,114 @@ Static obstacles for physics world:
 
 ---
 
+## Dual-World Rendering + Portals (Phase 2)
+
+The engine implements a **three-part model** for spatial rendering:
+
+### 1. Place (Dual Render)
+
+A **Place** is an entity that can be rendered in two modes:
+
+| Mode | Render Type | Description |
+|------|-------------|-------------|
+| `gl-hull` | WebGL 3D | Exterior world — walk or fly through meshes |
+| `css-office` | CSS 3D | Interior room box — sit or walk inside |
+
+The home ship, containers, and similar "enterable" places support both modes.
+
+```typescript
+import { interiorForHost, type InteriorRender } from '@nabla/engine'
+
+const render: InteriorRender = interiorForHost('world.home')
+// → 'css-office' (home has a CSS interior)
+
+const render2 = interiorForHost('world.car.a3')
+// → 'gl-hull' (cars are GL-only)
+```
+
+### 2. Portal (Transition)
+
+A **Portal** is a hole on an AABB face that connects the two render modes:
+
+- Walk through a portal **out** of CSS → appear in the normal GL 3D world
+- Walk through a portal **in** → enter the CSS office interior
+
+```typescript
+import { portalCrossing, type EntityPortal, type PortalPose } from '@nabla/engine'
+
+const portal: EntityPortal = {
+  face: '-z',
+  pairId: 'world.yard.avatars',
+  arrive: 'walk',
+  toward: 'out',
+}
+
+const crossed = portalCrossing(
+  { x: prevCam.x, z: prevCam.z },
+  { x: cam.x, z: cam.z },
+  portalPose,
+)
+```
+
+### 3. Crossing (Mode Flip)
+
+When you **cross** a portal:
+
+1. `InteriorRender` flips between `css-office` and `gl-hull`
+2. `StageMode` updates to match
+3. Camera/avatar lands at the arrival point
+
+### New Modules (Phase 2)
+
+#### Room Skin (`skin/roomSkin.ts`)
+Golden ratio (φ) layout for room textures:
+- `PHI`, `SKIN_H`, `SKIN_W`, `SKIN_D`
+- `roomSkinRects`, `roomSkinSize`, `roomSkinFaceCss`
+
+#### Room Paint (`office/roomPaint.ts`)
+Authored room scenery:
+- `RoomPaint`, `OfficeWorld`, `HELM_PAINT`
+- `parseRoomPaint`, `deriveOffice`, `clonePaint`
+
+#### Office Transforms (`office/officeTransforms.ts`)
+CSS 3D transforms for the room box:
+- `officeFloorTransform`, `officeSkyTransform`, etc.
+- `helmInside`, `clampRoomWalk`, `roomHalfPx`
+
+#### Helm Screen (`office/helmScreen.ts`)
+Monitor layout:
+- `HelmScreen` type (`'left' | 'center' | 'right'`)
+- `adjacentHelmScreen`, `hopHelmScreen`
+
+#### Interior (`interior/interior.ts`)
+Dual-render model:
+- `InteriorRender` type (`'css-office' | 'gl-hull'`)
+- `interiorForHost`, `interiorContainsCamera`
+
+#### Portal Graph (`portal/portalGraph.ts`)
+Portal definition and crossing:
+- `EntityPortal`, `LivePortal`, `PortalHost`
+- `portalCrossing`, `portalPoseOnFace`, `mapThroughPortals`
+- `approachCamera`, `enterNaveCamera`, `insideCamera`
+
+#### HomeCarrier (`portal/homeCarrier.ts`)
+Room ↔ lot transforms:
+- `HomeCarrier`, `IDENTITY_CARRIER`
+- `rideHomeCarrier`, `inverseRideHomeCarrier`
+- `rideCamera`, `rideMeshPose`
+
+#### Wormhole (`portal/wormhole.ts`)
+Free-standing stargate:
+- `WormholeMouth`, `WormholeHost`
+- `wormholeCrossing`, `wormholeTransit`, `wormholeArrive`
+
+#### Portal Projection (`portal/portalProj.ts`)
+CAVE-style frustum for looking through portals:
+- `portalEyeCss`, `portWindowCss`
+- `portalViewProj`, `portalViewProjParts`
+
+---
+
 ## Ported Files
 
 The following files from Agency (`txemavs/agency-ui` main) were ported:
