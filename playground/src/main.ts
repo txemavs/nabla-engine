@@ -1,12 +1,12 @@
 /**
- * Nabla Drive Playground — boxcar + ship5x10 demo.
+ * Nabla Drive Playground — avatar + boxcar + ship5x10 demo.
  *
  * Demonstrates:
- * - Cannon-es RaycastVehicle physics (correct Y-up, +Z forward axes)
- * - Two Nabla packs: boxcar (procedural car) and ship5x10 (hovercraft)
- * - Enter/exit between vehicles (E/F key)
- * - WASD/arrows drive, Space handbrake, R recover
- * - Chase/pilot/far/top cameras (C key)
+ * - Avatar walking with WASD
+ * - Rocket/jetpack flight (hold Shift)
+ * - Approach and mount vehicles (E key)
+ * - Drive with full Cannon-es physics
+ * - Exit back to walk/fly
  */
 import {
   VehicleWorld,
@@ -20,11 +20,25 @@ import {
   SHIP_SIZE,
   type DriveView,
   driveCamera,
+  driveExitPosition,
   nextDriveView,
   identityDriveLook,
+  driveLookDelta,
   type DriveLook,
   type DriveState,
   type CarPackMounts,
+  DRIVE_NEAR_M,
+  createAvatarState,
+  stepAvatar,
+  avatarCamera,
+  avatarBodyPose,
+  cycleAvatarView,
+  setAvatarDriving,
+  teleportAvatar,
+  type AvatarState,
+  type AvatarInput,
+  emptyAvatarInput,
+  WALK_EYE_HEIGHT_MM,
 } from '@nabla/engine'
 import { Renderer, type BoxMesh, type Camera } from './renderer.js'
 
@@ -32,12 +46,14 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement
 const hud = document.getElementById('hud') as HTMLDivElement
 const renderer = new Renderer(canvas)
 
-const CAR_START = { x: 0, y: 0, z: 0, yaw: 0 }
+const CAR_START = { x: 5, y: 0, z: 5, yaw: 0 }
 const SHIP_START = { x: 15, y: 0, z: 10, yaw: -45 }
+const AVATAR_START = { x: 0, y: WALK_EYE_HEIGHT_MM / 1000, z: -5, yaw: 0 }
 
 const CAR_COLOR: [number, number, number] = [0.9, 0.3, 0.2]
 const WHEEL_COLOR: [number, number, number] = [0.15, 0.15, 0.15]
 const SHIP_COLOR: [number, number, number] = [0.2, 0.5, 0.8]
+const AVATAR_COLOR: [number, number, number] = [0.3, 0.8, 0.4]
 
 interface Vehicle {
   id: string
@@ -77,55 +93,112 @@ const vehicles: Vehicle[] = [
   },
 ]
 
-let activeVehicle: Vehicle | null = vehicles[0]!
-let view: DriveView = 'chase'
-let look: DriveLook = identityDriveLook()
+let avatar: AvatarState = createAvatarState(AVATAR_START)
+let activeVehicle: Vehicle | null = null
+let driveView: DriveView = 'chase'
+let driveLook: DriveLook = identityDriveLook()
 
 const keys = new Set<string>()
+const input: AvatarInput = emptyAvatarInput()
+let mouseDx = 0, mouseDy = 0
+let pointerLocked = false
+
 window.addEventListener('keydown', (e) => {
   keys.add(e.code)
   if (e.code === 'KeyC') {
-    view = nextDriveView(view)
-    look = identityDriveLook()
+    if (activeVehicle) {
+      driveView = nextDriveView(driveView)
+      driveLook = identityDriveLook()
+    } else {
+      avatar = cycleAvatarView(avatar)
+    }
   }
-  if (e.code === 'KeyE' || e.code === 'KeyF') {
-    toggleVehicle()
+  if (e.code === 'KeyE') {
+    toggleMount()
+  }
+  if (e.code === 'Space' && activeVehicle) {
+    e.preventDefault()
   }
 })
 window.addEventListener('keyup', (e) => keys.delete(e.code))
 
-function toggleVehicle(): void {
-  if (!activeVehicle) {
-    const nearest = findNearestVehicle()
-    if (nearest) {
-      activeVehicle = nearest
-      look = identityDriveLook()
-    }
-    return
+canvas.addEventListener('click', () => {
+  if (!pointerLocked) {
+    canvas.requestPointerLock()
   }
-  const others = vehicles.filter(v => v !== activeVehicle)
-  const currentPose = activeVehicle.world.readPose()
+})
+
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === canvas
+})
+
+document.addEventListener('mousemove', (e) => {
+  if (pointerLocked) {
+    mouseDx += e.movementX
+    mouseDy += e.movementY
+  }
+})
+
+function findNearestVehicle(): Vehicle | null {
+  const pos = activeVehicle ? activeVehicle.world.readPose() : { x: avatar.x, z: avatar.z }
   let best: Vehicle | null = null
-  let bestDist = 15
-  for (const v of others) {
-    const pose = v.world.readPose()
-    const d = Math.hypot(pose.x - currentPose.x, pose.z - currentPose.z)
-    if (d < bestDist) {
+  let bestDist = activeVehicle ? 15 : DRIVE_NEAR_M
+  for (const v of vehicles) {
+    if (v === activeVehicle) continue
+    const vpos = v.world.readPose()
+    const reach = v.isHull ? 12 : DRIVE_NEAR_M
+    const d = Math.hypot(vpos.x - pos.x, vpos.z - pos.z)
+    if (d < Math.min(reach, bestDist)) {
       best = v
       bestDist = d
     }
   }
-  if (best) {
-    activeVehicle = best
-    look = identityDriveLook()
+  return best
+}
+
+function toggleMount(): void {
+  if (activeVehicle) {
+    const exitPos = driveExitPosition(
+      vehicleToState(activeVehicle),
+      activeVehicle.mounts,
+    )
+    avatar = teleportAvatar(avatar, {
+      x: exitPos.x,
+      y: WALK_EYE_HEIGHT_MM / 1000,
+      z: exitPos.z,
+      yaw: exitPos.yaw,
+    })
+    avatar = setAvatarDriving(avatar, false)
+    activeVehicle = null
+    driveView = 'chase'
+    driveLook = identityDriveLook()
+    return
+  }
+
+  const nearest = findNearestVehicle()
+  if (nearest) {
+    activeVehicle = nearest
+    avatar = setAvatarDriving(avatar, true)
+    driveLook = identityDriveLook()
   }
 }
 
-function findNearestVehicle(): Vehicle | null {
-  return vehicles[0] ?? null
+function updateInput(): void {
+  input.forward = keys.has('KeyW') || keys.has('ArrowUp')
+  input.backward = keys.has('KeyS') || keys.has('ArrowDown')
+  input.left = keys.has('KeyA') || keys.has('ArrowLeft')
+  input.right = keys.has('KeyD') || keys.has('ArrowRight')
+  input.jump = keys.has('Space')
+  input.sprint = keys.has('ShiftLeft') || keys.has('ShiftRight')
+  input.rocket = keys.has('ShiftLeft') || keys.has('ShiftRight')
+  input.mount = keys.has('KeyE')
+  input.lookDx = mouseDx
+  input.lookDy = mouseDy
+  mouseDx = 0
+  mouseDy = 0
 }
 
-function getInput() {
+function getDriveInput() {
   const up = keys.has('KeyW') || keys.has('ArrowUp')
   const down = keys.has('KeyS') || keys.has('ArrowDown')
   const left = keys.has('KeyA') || keys.has('ArrowLeft')
@@ -161,16 +234,16 @@ function vehicleToState(v: Vehicle): DriveState {
 }
 
 function getCamera(): Camera {
-  if (!activeVehicle) {
-    return { x: 0, y: 10, z: 20, rx: -20, ry: 0 }
+  if (activeVehicle) {
+    const state = vehicleToState(activeVehicle)
+    return driveCamera(state, activeVehicle.mounts, driveView, driveLook)
   }
-  const state = vehicleToState(activeVehicle)
-  const cam = driveCamera(state, activeVehicle.mounts, view, look)
-  return cam
+  return avatarCamera(avatar)
 }
 
 function buildBoxes(): BoxMesh[] {
   const boxes: BoxMesh[] = []
+
   for (const v of vehicles) {
     const pose = v.world.readPose()
     boxes.push({
@@ -185,6 +258,7 @@ function buildBoxes(): BoxMesh[] {
       roll: pose.roll,
       color: v.color,
     })
+
     if (v.wheels && v.wheelRadius) {
       const snap = v.world.snapshot
       const rad = (pose.yaw * Math.PI) / 180
@@ -212,7 +286,46 @@ function buildBoxes(): BoxMesh[] {
       }
     }
   }
+
+  if (!activeVehicle) {
+    const body = avatarBodyPose(avatar)
+    boxes.push({
+      x: body.x,
+      y: body.y,
+      z: body.z,
+      hx: 0.3,
+      hy: 0.9,
+      hz: 0.2,
+      yaw: body.yaw,
+      color: AVATAR_COLOR,
+    })
+  }
+
   return boxes
+}
+
+function updateHud(): void {
+  if (activeVehicle) {
+    const snap = activeVehicle.world.snapshot
+    const speed = Math.abs(snap.forwardSpeed * 3.6)
+    hud.innerHTML = `
+      <b>Driving: ${activeVehicle.id}</b><br>
+      Speed: ${speed.toFixed(1)} km/h<br>
+      Gear: ${snap.gear}<br>
+      View: ${driveView}<br>
+      <span style="color:#888">E: exit vehicle</span>
+    `
+  } else {
+    const nearest = findNearestVehicle()
+    const mode = avatar.mode === 'rocket' ? '🚀 Flying' : '🚶 Walking'
+    const alt = avatar.y - WALK_EYE_HEIGHT_MM / 1000
+    hud.innerHTML = `
+      <b>${mode}</b><br>
+      Alt: ${alt.toFixed(1)} m<br>
+      ${avatar.rocketBurn > 0 ? `Burn: ${(avatar.rocketBurn / 20 * 100).toFixed(0)}%<br>` : ''}
+      ${nearest ? `<span style="color:#0f0">E: enter ${nearest.id}</span>` : '<span style="color:#888">Walk to a vehicle</span>'}
+    `
+  }
 }
 
 let lastTime = performance.now()
@@ -221,10 +334,19 @@ function loop(time: number): void {
   const dt = Math.min((time - lastTime) / 1000, 0.05)
   lastTime = time
 
-  const input = getInput()
+  updateInput()
+
   if (activeVehicle) {
-    activeVehicle.world.step(input, dt)
+    const driveInput = getDriveInput()
+    activeVehicle.world.step(driveInput, dt)
+
+    if (input.lookDx || input.lookDy) {
+      driveLook = driveLookDelta(driveLook, input.lookDx, input.lookDy, driveView)
+    }
+  } else {
+    avatar = stepAvatar(avatar, input, dt, 0)
   }
+
   for (const v of vehicles) {
     if (v !== activeVehicle) {
       v.world.step({ throttle: 0, steer: 0 }, dt)
@@ -241,19 +363,7 @@ function loop(time: number): void {
   const boxes = buildBoxes()
   renderer.render(cam, boxes)
 
-  if (activeVehicle) {
-    const snap = activeVehicle.world.snapshot
-    const speed = Math.abs(snap.forwardSpeed * 3.6)
-    hud.innerHTML = `
-      <b>${activeVehicle.id}</b><br>
-      Speed: ${speed.toFixed(1)} km/h<br>
-      Gear: ${snap.gear}<br>
-      View: ${view}<br>
-      <span style="color:#888">E/F: switch vehicle</span>
-    `
-  } else {
-    hud.innerHTML = `<span style="color:#888">Press E/F to enter a vehicle</span>`
-  }
+  updateHud()
 
   requestAnimationFrame(loop)
 }
@@ -261,4 +371,11 @@ function loop(time: number): void {
 requestAnimationFrame(loop)
 
 console.log('Nabla Drive Playground loaded')
+console.log('Controls:')
+console.log('  WASD/Arrows - Walk/Drive')
+console.log('  Shift - Sprint/Rocket thrust')
+console.log('  Space - Jump (walk) / Handbrake (drive)')
+console.log('  E - Enter/Exit vehicle')
+console.log('  C - Cycle camera view')
+console.log('  R - Recover vehicle')
 console.log('Vehicles:', vehicles.map(v => v.id))

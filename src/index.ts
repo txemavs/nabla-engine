@@ -350,6 +350,59 @@ export {
   applyVehicleInput,
 } from './vehicle/vehicleControl.js'
 
+// Avatar / Walk body
+export {
+  WALK_GRAVITY,
+  WALK_JUMP_VY,
+  WALK_MAX_VY,
+  WALK_COYOTE_S,
+  WALK_JUMP_BUFFER_S,
+  WALK_GROUND_SLACK,
+  WALK_SPEED,
+  WALK_SPRINT_MULT,
+  WALK_ACCEL,
+  WALK_DECEL,
+  WALK_EYE_HEIGHT_MM,
+  WALK_BODY_HEIGHT_MM,
+  WALK_BODY_RADIUS_MM,
+  ROCKET_ESCAPE_S,
+  ROCKET_HOVER,
+  ROCKET_ESCAPE_THRUST,
+  ROCKET_COOL_S,
+  ROCKET_Y_MAX_M,
+  WALK_CHASE_BACK_MM,
+  WALK_CHASE_LIFT_MM,
+  type WalkView,
+  WALK_VIEWS,
+  nextWalkView,
+  rocketBurnStep,
+  rocketThrust,
+  rocketGravity,
+  rocketAccel,
+  walkGrounded,
+  type WalkCamera,
+  walkChaseCamera,
+  approachVelocity,
+} from './avatar/walkBody.js'
+
+// Avatar controller
+export {
+  type AvatarMode,
+  type AvatarInput,
+  type AvatarState,
+  createAvatarState,
+  emptyAvatarInput,
+  LOOK_SENS,
+  PITCH_MIN,
+  PITCH_MAX,
+  stepAvatar,
+  avatarCamera,
+  avatarBodyPose,
+  cycleAvatarView,
+  setAvatarDriving,
+  teleportAvatar,
+} from './avatar/avatarController.js'
+
 // Vehicle simulation
 export {
   COLLISION_GROUP_GROUND,

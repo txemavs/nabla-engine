@@ -31,6 +31,19 @@ Then open http://localhost:3000 in your browser.
 
 ### Controls
 
+**On Foot:**
+
+| Key | Action |
+|-----|--------|
+| `W` `A` `S` `D` | Walk |
+| `Shift` (hold) | Sprint / Rocket thrust (Iron Man jetpack) |
+| `Space` | Jump |
+| `E` | Enter nearest vehicle |
+| `C` | Cycle view (first-person ↔ chase) |
+| Mouse | Look around (click to lock) |
+
+**Driving:**
+
 | Key | Action |
 |-----|--------|
 | `W` / `↑` | Accelerate |
@@ -38,9 +51,10 @@ Then open http://localhost:3000 in your browser.
 | `A` / `←` | Steer left |
 | `D` / `→` | Steer right |
 | `Space` | Handbrake (drift) |
-| `E` / `F` | Enter/exit vehicle, switch to nearest |
+| `E` | Exit vehicle |
 | `C` | Cycle camera (chase → pilot → far → top) |
 | `R` | Recover (flip upright) |
+| Mouse | Look around |
 
 ### Physics
 
