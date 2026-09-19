@@ -331,3 +331,165 @@ export {
   obstacleQuads,
   parkedCarCollider,
 } from './vehicle/obstacleKit.js'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 2: Dual-world rendering + Portals
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Room skin (phi-net layout)
+export {
+  PHI,
+  SKIN_H,
+  SKIN_W,
+  SKIN_D,
+  type SkinFace,
+  type SkinRect,
+  roomSkinRects,
+  roomSkinSize,
+  roomSkinFaceCss,
+  ROOM_SKIN_TURN,
+  roomSkinTurn,
+  ROOM_SKIN_AXES,
+} from './skin/roomSkin.js'
+
+// Room paint / OfficeWorld
+export {
+  type RoomPaintRgb,
+  type RoomGround,
+  type RoomEntity,
+  type RoomPaint,
+  type OfficeWorld,
+  GROUND_AREA_M2,
+  GROUND_SIDE_MM,
+  GROUND_HEIGHT_MM,
+  GROUND_ART_CX,
+  GROUND_ART_CY,
+  GROUND_CENTER_X_MM,
+  GROUND_CENTER_Z_MM,
+  HELM_PAINT,
+  parseRoomPaint,
+  deriveOffice,
+  clonePaint,
+  groundWorldMm,
+} from './office/roomPaint.js'
+
+// Office CSS transforms
+export {
+  roomHalfPx,
+  officeFloorTransform,
+  officeCeilTransform,
+  officeLeftWallTransform,
+  officeRightWallTransform,
+  officeBackWallTransform,
+  officeSkyTransform,
+  officeDeckTransform,
+  HELM_WALL_MARGIN_MM,
+  HELM_FLOOR_MARGIN_MM,
+  HELM_CEIL_MARGIN_MM,
+  helmInside,
+  WALK_MARGIN_MM,
+  clampRoomWalk,
+  officeAabbMm,
+} from './office/officeTransforms.js'
+
+// Helm screen layout
+export {
+  type HelmScreen,
+  parseHelmScreen,
+  adjacentHelmScreen,
+  hopHelmScreen,
+  allHelmScreens,
+  helmScreenIndex,
+  helmScreenAt,
+} from './office/helmScreen.js'
+
+// Interior (dual-render model)
+export {
+  type InteriorRender,
+  type Interior,
+  HOME_INTERIOR_AABB,
+  homeInterior,
+  interiorForHost,
+  interiorContainsCamera,
+} from './interior/interior.js'
+
+// Portal: HomeCarrier
+export {
+  type HomeCarrier,
+  IDENTITY_CARRIER,
+  isIdentityCarrier,
+  composeAnchoredPose,
+  inverseRideHomeCarrier,
+  rideHomeCarrier,
+  ridesHomeCarrier,
+  meshRidesHomeCarrier,
+  rideMeshPose,
+  rideCssMm,
+  rideGlMm,
+  rideCamera,
+  inverseRideCamera,
+} from './portal/homeCarrier.js'
+
+// Portal: graph
+export {
+  type PortalArriveKind,
+  type PortalToward,
+  type EntityPortal,
+  type PortalPose,
+  type LivePortal,
+  type PortalHost,
+  type PortalLane,
+  type PortalSide,
+  type BoxFace as PortalBoxFace,
+  type PortalArrive,
+  SHIP_PORTAL_OPEN_W_M,
+  SHIP_PORTAL_OPEN_H_M,
+  CONTAINER_MESH_AABB,
+  SHIP_HULL_AABB,
+  portalLocal,
+  portalCrossing,
+  approachCamera,
+  enterNaveCamera,
+  enterHostCamera,
+  insideCamera,
+  portalPoseOnFace,
+  outsidePose,
+  parseEntityPortals,
+  portalIdOn,
+  portalBoxFaces,
+  portalShortName,
+  portalCaption,
+  mapThroughPortals,
+} from './portal/portalGraph.js'
+
+// Portal: wormhole
+export {
+  WORMHOLE_OPEN_W_M,
+  WORMHOLE_OPEN_H_M,
+  WORMHOLE_BAR_M,
+  WORMHOLE_EXIT_M,
+  WORMHOLE_KIND_NS,
+  type WormholePose,
+  type WormholeMouth,
+  type WormholeHost,
+  type WormholeTransit,
+  isWormholeId,
+  isWormholeHost,
+  wormholeShortName,
+  wormholeFaceCaption,
+  wormholeBackCaption,
+  wrapHeading,
+  wormholeCrossing,
+  wormholeTransit,
+  wormholeArrive,
+  listWormholes,
+} from './portal/wormhole.js'
+
+// Portal: projection (CAVE frustum)
+export {
+  type PortalViewProj,
+  portalEyeCss,
+  portWindowCss,
+  portalViewProjParts,
+  portalViewProj,
+} from './portal/portalProj.js'
