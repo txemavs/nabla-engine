@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nabla Drive Playground</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #hud {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 14px;
+      background: rgba(0,0,0,0.6);
+      padding: 10px;
+      border-radius: 6px;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #controls {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      color: #aaa;
+      font-family: sans-serif;
+      font-size: 12px;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 12px;
+      border-radius: 6px;
+      z-index: 100;
+    }
+    #controls kbd {
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin: 0 2px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="hud">Loading...</div>
+  <div id="controls">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Drive &nbsp;|&nbsp;
+    <kbd>Space</kbd> Handbrake &nbsp;|&nbsp;
+    <kbd>E</kbd> or <kbd>F</kbd> Enter/Exit &nbsp;|&nbsp;
+    <kbd>C</kbd> Camera &nbsp;|&nbsp;
+    <kbd>R</kbd> Recover
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -6,6 +6,56 @@ Reusable 3D mini-engine for Nabla apps, extracted from Agency stage.
 > ported from the Agency codebase (`txemavs/agency-ui` main branch) with
 > minimal changes to remove Vue/Agency-specific dependencies.
 
+---
+
+## Drive Demo
+
+The `playground/` directory contains a working demonstration of the vehicle
+physics system with two Nabla packs:
+
+- **boxcar** — minimal procedural car (1200 kg, 100 CV feel)
+- **ship5x10** — 20-ton container hovercraft with garage ramp
+
+### Running the Demo
+
+```bash
+npm install
+npm run playground
+```
+
+Then open http://localhost:3000 in your browser.
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| `W` / `↑` | Accelerate |
+| `S` / `↓` | Brake / Reverse |
+| `A` / `←` | Steer left |
+| `D` / `→` | Steer right |
+| `Space` | Handbrake (drift) |
+| `E` / `F` | Enter/exit vehicle, switch to nearest |
+| `C` | Cycle camera (chase → pilot → far → top) |
+| `R` | Recover (flip upright) |
+
+### Physics
+
+Full Cannon-es RaycastVehicle with Agency-compatible axes and signs:
+
+- **Y-up** coordinate system
+- **+Z forward** at yaw=0
+- Engine force: `applyEngineForce(-throttle * F)` → positive throttle moves +Z
+- Steering: `setSteeringValue(-steer * max)` → D key decreases yaw
+- Wheel order: FL[0], FR[1], RL[2], RR[3]
+
+### What's Next (Out of Scope This PR)
+
+- Portals/tunnels between worlds
+- Driving the boxcar into the ship's garage
+- Full GLB meshes for production visuals
+
+---
+
 ## Installation
 
 ```bash
@@ -286,6 +336,36 @@ npm run typecheck
 npm test
 npm run build
 ```
+
+---
+
+## Intentional Differences from Agency
+
+The engine preserves Agency's **physics math** (axes, signs, forces) but redesigns
+some wrappers for a cleaner API. Agency can adapt to these when consuming the engine.
+
+| Area | Agency | Engine | Rationale |
+|------|--------|--------|-----------|
+| `VehicleSim` class | Imports from `@/stage/vehicle/*` with Vue paths | Clean ES module, no path aliases | Standalone module |
+| `VehicleSpec` | Optional fields with runtime defaults | All fields required after `parseVehicleSpec()` | Type safety, explicit contracts |
+| `DriveInput` | Spread across `drive.ts` and composables | Single `DriveInput` interface | Simpler integration |
+| `DriveState` | Tied to `RoomEntity` | Pure data object | Decoupled from scene graph |
+| Pack structure | `stage/vehicle/a3cabrio/`, etc. | `src/packs/boxcar/`, `src/packs/ship5x10/` | Cleaner namespace for publishable packs |
+| Camera helpers | Mixed with Vue reactivity | Pure functions returning `DriveCamera` | Framework-agnostic |
+
+### Preserved (Do Not Change)
+
+These are the physics truth from Agency and must remain identical:
+
+- `RaycastVehicle` axis indices: `indexRightAxis=0`, `indexUpAxis=1`, `indexForwardAxis=2`
+- Engine force sign: negative force → forward motion
+- Steering sign: negative steer → right turn
+- Wheel order: FL[0], FR[1], RL[2], RR[3]
+- `specToDefinition()` / `specToTune()` formulas
+- Anti-roll bar and arcade damping math
+- Collision groups and masks
+
+---
 
 ## License
 

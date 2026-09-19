@@ -20,7 +20,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "playground": "npm run build && cd playground && npm run dev",
+    "playground:build": "npm run build && cd playground && npm run build"
   },
   "keywords": [
     "3d",
@@ -35,6 +37,12 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/txemavs/nabla-engine.git"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0"
+  },
+  "peerDependencies": {
+    "cannon-es": "^0.20.0"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

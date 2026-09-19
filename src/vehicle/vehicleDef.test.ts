@@ -19,15 +19,15 @@ describe('vehicleDef', () => {
       expect(def.mass).toBe(1400)
       expect(def.size.x).toBeCloseTo(1.8)
       expect(def.size.y).toBeCloseTo(1.4)
-      expect(def.size.z).toBeCloseTo(4.3)
-      expect(def.wheelbase).toBeCloseTo(2.56)
+      expect(def.size.z).toBeCloseTo(4.2)
+      expect(def.wheelbase).toBeCloseTo(2.6)
     })
 
     it('creates definition from empty spec (uses defaults)', () => {
       const def = specToDefinition({})
 
       expect(def.mass).toBe(1400)
-      expect(def.wheelbase).toBeCloseTo(2.56)
+      expect(def.wheelbase).toBeCloseTo(2.6)
     })
 
     it('creates definition with custom mass', () => {
@@ -42,8 +42,8 @@ describe('vehicleDef', () => {
       const tune = specToTune(DEFAULT_VEHICLE_SPEC)
 
       expect(tune.maxForce).toBe(3200)
-      expect(tune.maxSteer).toBeCloseTo(0.52)
-      expect(tune.brake).toBe(36)
+      expect(tune.maxSteer).toBeCloseTo(0.38)
+      expect(tune.brake).toBe(80)
     })
 
     it('creates tune with custom values', () => {
@@ -119,12 +119,12 @@ describe('vehicleDef', () => {
   describe('A3 presets', () => {
     it('has valid A3_DEFINITION', () => {
       expect(A3_DEFINITION.mass).toBe(1400)
-      expect(A3_DEFINITION.wheelbase).toBeCloseTo(2.56)
+      expect(A3_DEFINITION.wheelbase).toBeCloseTo(2.6)
     })
 
     it('has valid A3_TUNE', () => {
       expect(A3_TUNE.maxForce).toBe(3200)
-      expect(A3_TUNE.maxSteer).toBeCloseTo(0.52)
+      expect(A3_TUNE.maxSteer).toBeCloseTo(0.38)
     })
   })
 })

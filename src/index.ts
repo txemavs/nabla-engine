@@ -257,7 +257,10 @@ export {
 export {
   type VehicleSpec,
   DEFAULT_VEHICLE_SPEC,
+  FACTORY_VEHICLE_SPEC,
+  CONTAINER_SPEC,
   parseVehicleSpec,
+  vehicleSpecBounds,
 } from './vehicle/vehicleSpec.js'
 
 // Vehicle definition
@@ -321,7 +324,7 @@ export {
 export {
   type StaticBox,
   type StaticObstacle,
-  type DrivePose,
+  type DrivePose as ObstacleDrivePose,
   type ObstacleQuad,
   type ParkedCarBox,
   demoObstacles,
@@ -331,6 +334,127 @@ export {
   obstacleQuads,
   parkedCarCollider,
 } from './vehicle/obstacleKit.js'
+
+// Vehicle control
+export {
+  resolveGear,
+  brakesLit,
+  type ControlForces,
+  controlForces,
+  applyAntiRoll,
+  applyAntiRollBar,
+  chassisUpDot,
+  isInverted,
+  RolloverWatch,
+  type VehicleControls,
+  applyVehicleInput,
+} from './vehicle/vehicleControl.js'
+
+// Vehicle simulation
+export {
+  COLLISION_GROUP_GROUND,
+  COLLISION_GROUP_CHASSIS,
+  COLLISION_GROUP_STATIC,
+  COLLISION_MASK_CHASSIS,
+  COLLISION_MASK_STATIC,
+  COLLISION_MASK_GROUND,
+  type VehicleSimOptions,
+  VehicleSim,
+} from './vehicle/vehicleSim.js'
+
+// Vehicle world (facade)
+export {
+  type DriveInput,
+  type VehiclePose,
+  VehicleWorld,
+  createVehicleWorld,
+} from './vehicle/vehicleWorld.js'
+
+// Drive (enter/exit, camera)
+export {
+  DRIVE_NEAR_M,
+  DRIVE_CABIN_Y_M,
+  DRIVE_CHASE_BACK_M,
+  DRIVE_CHASE_UP_M,
+  DRIVE_FAR_BACK_M,
+  DRIVE_FAR_UP_M,
+  DRIVE_TOP_H_M,
+  DRIVE_TOP_H_MIN,
+  DRIVE_TOP_H_MAX,
+  DRIVE_TOP_WHEEL,
+  DRIVE_TOP_MOUSE_CLIMB,
+  DRIVE_TOP_TILT_MAX,
+  DRIVE_TOP_TILT_SENS,
+  DRIVE_TOP_NADIR_DEG,
+  DRIVE_LOOK_SENS,
+  DRIVE_PITCH_MIN,
+  DRIVE_PITCH_MAX,
+  type DriveView,
+  DRIVE_VIEWS,
+  type DriveInput as DriveInputContract,
+  type DriveState,
+  type DriveLook,
+  type DriveCamera,
+  identityDriveLook,
+  driveLookDelta,
+  driveLookDolly,
+  nextDriveView,
+  resetDriveLook,
+  driveForward,
+  driveRight,
+  driveLookYaw,
+  driveChaseFocus,
+  drivePilotEye,
+  driveCamera,
+  driveExitPosition,
+  driveMoving,
+  type DriveableEntity,
+  nearestDriveable,
+} from './vehicle/drive.js'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PACKS — publishable vehicle/entity modules
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Boxcar pack
+export {
+  BOXCAR_ENTITY_PREFIX,
+  BOXCAR_ID,
+  BOXCAR_SIZE,
+  BOXCAR_WHEELBASE,
+  BOXCAR_TRACK_FRONT,
+  BOXCAR_TRACK_REAR,
+  BOXCAR_WHEEL_RADIUS,
+  BOXCAR_HUB_Y,
+  BOXCAR_EYE_1P,
+  BOXCAR_AVATAR_MOUNT,
+  BOXCAR_FOCUS_HEIGHT,
+  BOXCAR_MOUNTS,
+  BOXCAR_HUBS,
+  BOXCAR_ASSETS,
+  boxcarWheelPositions,
+  BOXCAR_PACK,
+  BOXCAR_SPEC,
+  matchesBoxcarPack,
+} from './packs/boxcar/index.js'
+
+// Ship 5×10 pack
+export {
+  type ShipPackGarage,
+  type ShipPack,
+  SHIP_ENTITY_PREFIX,
+  SHIP_ID,
+  SHIP_SIZE,
+  SHIP_EYE_1P,
+  SHIP_AVATAR_MOUNT,
+  SHIP_FOCUS_HEIGHT,
+  SHIP_MOUNTS,
+  SHIP_GARAGE,
+  SHIP_5X10_PACK,
+  shipGarageBoxes,
+  SHIP_5X10_SPEC,
+  matchesShipPack,
+} from './packs/ship5x10/index.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHASE 2: Dual-world rendering + Portals
