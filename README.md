@@ -25,6 +25,10 @@ npm run playground
 
 Then open http://localhost:3000 in your browser.
 
+> **Note:** The playground uses a Vite alias to resolve `@nabla/engine` directly
+> from `src/`, so no separate build or pack step is needed. Just run the command
+> above and it works.
+
 ### Controls
 
 | Key | Action |

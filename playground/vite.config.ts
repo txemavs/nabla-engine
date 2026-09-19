@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import path from 'path'
 
 export default defineConfig({
   server: {
@@ -7,5 +8,10 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
+  },
+  resolve: {
+    alias: {
+      '@nabla/engine': path.resolve(__dirname, '../src/index.ts'),
+    },
   },
 })

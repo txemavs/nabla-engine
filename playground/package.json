@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@nabla/engine": "file:..",
     "cannon-es": "^0.20.0"
   },
   "devDependencies": {
