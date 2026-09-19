@@ -21,7 +21,10 @@ export const BOX_FACES = [...HULL_FACES, 'divider_fore', 'divider_aft'] as const
 
 export type BoxFace = (typeof BOX_FACES)[number]
 
-export type InteriorKind = 'css-office' | 'gl-hull'
+import type { InteriorRender } from '../interior/interior.js'
+
+/** @deprecated Use `InteriorRender` from `interior/interior.js` instead. */
+export type InteriorKind = InteriorRender
 
 export interface BoxSize {
   w: number
@@ -160,7 +163,7 @@ function boxFromLayout(
 
 /** Kind defaults: old nave atlas on the 5×10 cube. */
 export const CONTAINER_BOX_DEFAULTS: KindProps = {
-  interior: 'css-office',
+  interior: 'css3d',
   size: { ...CONTAINER_SIZE },
   skin: { ...ZERO_SKIN },
   box: boxFromLayout(CONTAINER_SIZE),
@@ -362,7 +365,7 @@ function completeFace(patch?: FacePatch, fallback?: BoxFaceSpec): BoxFaceSpec | 
 function parseKindProps(raw: unknown): KindProps {
   if (!isRecord(raw)) return {}
   const out: KindProps = {}
-  if (raw.interior === 'css-office' || raw.interior === 'gl-hull') out.interior = raw.interior
+  if (raw.interior === 'css3d' || raw.interior === 'rendered') out.interior = raw.interior
   if (typeof raw.destination === 'string' && raw.destination.trim()) out.destination = raw.destination.trim()
   const size = parseSize(raw.size)
   if (size) out.size = size

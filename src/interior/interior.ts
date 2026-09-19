@@ -1,12 +1,12 @@
 /**
- * Dual interior model — GL exterior vs CSS office.
+ * Dual interior model — rendered (GL) vs css3d (CSS 3D).
  *
  * Ported from Agency (txemavs/agency-ui main):
  *   stage/kind/interior.ts
  *
  * A Place can render two ways:
- *   `gl-hull`    — 3D WebGL exterior, walk or fly through the mesh
- *   `css-office` — CSS 3D room box, sit or walk inside
+ *   `rendered` — WebGL-rendered 3D world, walk or fly through the mesh
+ *   `css3d`    — CSS 3D room with DOM elements, sit or walk inside
  */
 import type { Aabb3 } from '../kind/entityAabb.js'
 import type { StageCamera } from '../pose.js'
@@ -14,7 +14,7 @@ import type { OfficeWorld } from '../office/roomPaint.js'
 import { helmInside } from '../office/officeTransforms.js'
 
 /** Render type for the interior. */
-export type InteriorRender = 'css-office' | 'gl-hull'
+export type InteriorRender = 'css3d' | 'rendered'
 
 /** Interior config for one place. */
 export interface Interior {
@@ -34,7 +34,7 @@ export const HOME_INTERIOR_AABB: Aabb3 = {
 export function homeInterior(hostId = 'world.home'): Interior {
   return {
     hostId,
-    render: 'css-office',
+    render: 'css3d',
     origin: { x: 0, y: 0, z: 0 },
     aabb: HOME_INTERIOR_AABB,
   }
@@ -43,8 +43,8 @@ export function homeInterior(hostId = 'world.home'): Interior {
 /**
  * Determine the interior type for a given host.
  *
- * - Home (`world.home`, containers, etc.) → css-office
- * - Everything else → gl-hull
+ * - Home (`world.home`, containers, etc.) → css3d
+ * - Everything else → rendered
  */
 export function interiorForHost(
   hostId: string,
@@ -56,15 +56,15 @@ export function interiorForHost(
     hostId.includes('.home.') ||
     hostId.includes('.container.')
   ) {
-    return 'css-office'
+    return 'css3d'
   }
-  return 'gl-hull'
+  return 'rendered'
 }
 
 /**
  * Is the camera inside the interior AABB?
  *
- * For css-office uses helmInside; for gl-hull checks AABB directly.
+ * For css3d uses helmInside; for rendered checks AABB directly.
  */
 export function interiorContainsCamera(
   interior: Interior,
@@ -72,7 +72,7 @@ export function interiorContainsCamera(
   office: OfficeWorld,
   viewportW: number,
 ): boolean {
-  if (interior.render === 'css-office') {
+  if (interior.render === 'css3d') {
     return helmInside(cam, office, viewportW)
   }
   const aabb = interior.aabb

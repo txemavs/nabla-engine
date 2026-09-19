@@ -102,7 +102,18 @@ Static obstacles for physics world:
 
 ## Dual-World Rendering + Portals (Phase 2)
 
-The engine implements a **three-part model** for spatial rendering:
+The engine implements a **four-interaction model** for spatial rendering:
+
+### Four World Interactions
+
+1. **Be in the rendered world** — Walk/fly in the WebGL exterior scene
+2. **Be in css3d world** — Seated in a CSS 3D room with HTML panels
+3. **Look through a portal/window** — From either world, see another place through a plane with head-tracked perspective (CAVE projection)
+4. **Cross through a portal** — Walk through to seamlessly arrive at the destination
+
+Key behaviors:
+- **Look through** — See the destination with correct perspective from your eye position
+- **Cross through** — Seamlessly arrive at the destination as if there was no portal
 
 ### 1. Place (Dual Render)
 
@@ -110,8 +121,8 @@ A **Place** is an entity that can be rendered in two modes:
 
 | Mode | Render Type | Description |
 |------|-------------|-------------|
-| `gl-hull` | WebGL 3D | Exterior world — walk or fly through meshes |
-| `css-office` | CSS 3D | Interior room box — sit or walk inside |
+| `rendered` | WebGL 3D | Exterior world — walk or fly through meshes |
+| `css3d` | CSS 3D | Interior room box — sit or walk inside |
 
 The home ship, containers, and similar "enterable" places support both modes.
 
@@ -119,18 +130,18 @@ The home ship, containers, and similar "enterable" places support both modes.
 import { interiorForHost, type InteriorRender } from '@nabla/engine'
 
 const render: InteriorRender = interiorForHost('world.home')
-// → 'css-office' (home has a CSS interior)
+// → 'css3d' (home has a CSS interior)
 
 const render2 = interiorForHost('world.car.a3')
-// → 'gl-hull' (cars are GL-only)
+// → 'rendered' (cars are GL-only)
 ```
 
 ### 2. Portal (Transition)
 
 A **Portal** is a hole on an AABB face that connects the two render modes:
 
-- Walk through a portal **out** of CSS → appear in the normal GL 3D world
-- Walk through a portal **in** → enter the CSS office interior
+- Walk through a portal **out** of css3d → appear in the rendered (GL 3D) world
+- Walk through a portal **in** → enter the css3d interior
 
 ```typescript
 import { portalCrossing, type EntityPortal, type PortalPose } from '@nabla/engine'
@@ -153,9 +164,9 @@ const crossed = portalCrossing(
 
 When you **cross** a portal:
 
-1. `InteriorRender` flips between `css-office` and `gl-hull`
+1. `InteriorRender` flips between `css3d` and `rendered`
 2. `StageMode` updates to match
-3. Camera/avatar lands at the arrival point
+3. Camera/avatar lands at the arrival point as if there was no portal — seamless continuation
 
 ### New Modules (Phase 2)
 
@@ -181,7 +192,7 @@ Monitor layout:
 
 #### Interior (`interior/interior.ts`)
 Dual-render model:
-- `InteriorRender` type (`'css-office' | 'gl-hull'`)
+- `InteriorRender` type (`'css3d' | 'rendered'`)
 - `interiorForHost`, `interiorContainsCamera`
 
 #### Portal Graph (`portal/portalGraph.ts`)
@@ -202,9 +213,21 @@ Free-standing stargate:
 - `wormholeCrossing`, `wormholeTransit`, `wormholeArrive`
 
 #### Portal Projection (`portal/portalProj.ts`)
-CAVE-style frustum for looking through portals:
+CAVE-style frustum for looking through portals/windows:
 - `portalEyeCss`, `portWindowCss`
 - `portalViewProj`, `portalViewProjParts`
+
+This is the head-tracked projection for see-through portals: a plane shows
+the destination with correct perspective from your eye. Works in **both**
+worlds (css3d and rendered). Looking through already shows the other place;
+crossing teleports you seamlessly.
+
+#### Aperture View API (`gl/portalView.ts`)
+Clearer naming for portal/window projection:
+- `apertureEyeCss`, `apertureViewProjParts`, `apertureViewProj`
+- `css3dWindowView` — render GL world through css3d room window
+- `portalApertureView` — see destination through portal mouth
+- `ApertureCorners`, `ApertureViewProj` — types
 
 ---
 

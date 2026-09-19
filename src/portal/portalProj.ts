@@ -1,11 +1,21 @@
 /**
- * Portal projection — CAVE-style frustum for looking through portals.
+ * Portal / window aperture projection (CAVE / Kooima).
  *
  * Ported from Agency (txemavs/agency-ui main):
  *   stage/portal/portalProj.ts
  *
- * The lookout canvas is a world quad; we build the frustum that the
- * seated eye sees through that quad (Kooima / CAVE style).
+ * When inside the **css3d** world, some planes can show the **rendered** world
+ * (WebGL scene) through head-tracked perspective — like looking through a
+ * physical window. The same math applies to **portal mouths**: a plane that
+ * shows the destination with correct perspective from the viewer's eye.
+ *
+ * This is first-class Engine behavior, not a side hack:
+ * - Look through portal/window → see destination with head-tracked projection
+ * - Walk through portal → seamless mode/place flip (css3d ↔ rendered)
+ *
+ * The projection works in **both** worlds (rendered and css3d). When you
+ * cross the portal, you arrive as if there was no portal — seamless
+ * continuation of place.
  */
 import type { OfficeWorld } from '../office/roomPaint.js'
 import type { Vec3 } from '../gl/glMath.js'
