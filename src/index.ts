@@ -75,6 +75,17 @@ export {
   orbitLookDelta,
 } from './gl/glCamera.js'
 
+// Portal / window aperture projection (clearer naming)
+export {
+  type ApertureCorners,
+  type ApertureViewProj,
+  apertureEyeCss,
+  apertureViewProjParts,
+  apertureViewProj,
+  css3dWindowView,
+  portalApertureView,
+} from './gl/portalView.js'
+
 // World units
 export {
   PX_PER_MM,

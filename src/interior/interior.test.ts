@@ -14,31 +14,31 @@ describe('interior', () => {
     expect(HOME_INTERIOR_AABB.max).toEqual([2.5, 3.2, 10])
   })
 
-  it('homeInterior returns css-office for world.home', () => {
+  it('homeInterior returns css3d for world.home', () => {
     const interior = homeInterior('world.home')
-    expect(interior.render).toBe('css-office')
+    expect(interior.render).toBe('css3d')
     expect(interior.hostId).toBe('world.home')
     expect(interior.aabb).toBe(HOME_INTERIOR_AABB)
   })
 
-  it('interiorForHost returns css-office for home and containers', () => {
-    expect(interiorForHost('world.home')).toBe('css-office')
-    expect(interiorForHost('world.home.container.1')).toBe('css-office')
-    expect(interiorForHost('entity.container.5x10')).toBe('css-office')
+  it('interiorForHost returns css3d for home and containers', () => {
+    expect(interiorForHost('world.home')).toBe('css3d')
+    expect(interiorForHost('world.home.container.1')).toBe('css3d')
+    expect(interiorForHost('entity.container.5x10')).toBe('css3d')
   })
 
-  it('interiorForHost returns gl-hull for other entities', () => {
-    expect(interiorForHost('world.car.a3')).toBe('gl-hull')
-    expect(interiorForHost('world.drone.1')).toBe('gl-hull')
-    expect(interiorForHost('world.wormhole.a')).toBe('gl-hull')
+  it('interiorForHost returns rendered for other entities', () => {
+    expect(interiorForHost('world.car.a3')).toBe('rendered')
+    expect(interiorForHost('world.drone.1')).toBe('rendered')
+    expect(interiorForHost('world.wormhole.a')).toBe('rendered')
   })
 
   it('interiorForHost respects explicit override', () => {
-    expect(interiorForHost('world.home', 'gl-hull')).toBe('gl-hull')
-    expect(interiorForHost('world.car.a3', 'css-office')).toBe('css-office')
+    expect(interiorForHost('world.home', 'rendered')).toBe('rendered')
+    expect(interiorForHost('world.car.a3', 'css3d')).toBe('css3d')
   })
 
-  it('interiorContainsCamera checks css-office with helmInside', () => {
+  it('interiorContainsCamera checks css3d with helmInside', () => {
     const interior = homeInterior()
     const office = deriveOffice(HELM_PAINT)
     const viewportW = 1920
@@ -50,10 +50,10 @@ describe('interior', () => {
     expect(interiorContainsCamera(interior, outsideCam, office, viewportW)).toBe(false)
   })
 
-  it('interiorContainsCamera checks gl-hull with AABB', () => {
+  it('interiorContainsCamera checks rendered with AABB', () => {
     const interior = {
       hostId: 'world.box',
-      render: 'gl-hull' as const,
+      render: 'rendered' as const,
       origin: { x: 0, y: 0, z: 0 },
       aabb: { min: [-5, 0, -5], max: [5, 3, 5] } as const,
     }
