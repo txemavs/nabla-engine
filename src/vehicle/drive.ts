@@ -7,7 +7,22 @@
  * - Enter/exit logic (nearest driveable, exit position)
  * - Chase/pilot/top cameras
  *
- * Pose: metres, Y up. Yaw degrees.
+ * ## Coordinate System (glTF/Blender standard)
+ *
+ * Right-handed, Y-up, metres:
+ * - +X right
+ * - +Y up
+ * - -Z forward (camera looks -Z at yaw=0, pitch=0)
+ *
+ * Camera angles (degrees):
+ * - yaw (ry): rotation around Y. yaw=0 → look -Z. Positive → turn left (CCW from above)
+ * - pitch (rx): rotation around X. Positive → look up
+ *
+ * Vehicle forward: -Z in local space (nose points -Z at yaw=0)
+ *
+ * FPS mouse (standard):
+ * - Mouse right (dx > 0) → yaw decreases → view turns right
+ * - Mouse up (dy < 0) → pitch increases → view looks up
  */
 import type { CarPackMounts } from './carPack.js'
 
@@ -85,6 +100,13 @@ function scaleTopH(h: number, dy: number, k: number): number {
   return clampTopH(h * Math.exp(dy * k))
 }
 
+/**
+ * Update DriveLook from mouse delta.
+ *
+ * Standard FPS mouse:
+ * - dx > 0 (mouse right) → yaw decreases → view turns right
+ * - dy > 0 (mouse down on screen, typical browser) → pitch decreases → view looks down
+ */
 export function driveLookDelta(
   look: DriveLook,
   dx: number,
@@ -92,7 +114,8 @@ export function driveLookDelta(
   view: DriveView = 'chase',
 ): DriveLook {
   if (view === 'top') {
-    let pitch = look.pitch + dy * DRIVE_TOP_TILT_SENS
+    // Top view: mouse controls tilt and zoom
+    let pitch = look.pitch - dy * DRIVE_TOP_TILT_SENS  // mouse up = more tilt
     let topH = look.topH
     if (pitch > DRIVE_TOP_TILT_MAX) {
       const extra = (pitch - DRIVE_TOP_TILT_MAX) / DRIVE_TOP_TILT_SENS
@@ -105,18 +128,13 @@ export function driveLookDelta(
     }
     return { yaw: 0, pitch, topH }
   }
+  // dx > 0 = mouse right = turn view right = yaw decreases
   let yaw = look.yaw - dx * DRIVE_LOOK_SENS
   if (yaw <= -180) yaw += 360
   if (yaw > 180) yaw -= 360
-  if (view === 'pilot') {
-    const pitch = Math.max(DRIVE_PITCH_MIN, Math.min(DRIVE_PITCH_MAX, look.pitch + dy * DRIVE_LOOK_SENS))
-    return { ...look, yaw, pitch }
-  }
-  return {
-    ...look,
-    yaw,
-    pitch: Math.max(DRIVE_PITCH_MIN, Math.min(DRIVE_PITCH_MAX, look.pitch + dy * DRIVE_LOOK_SENS)),
-  }
+  // dy > 0 = mouse down = look down = pitch decreases
+  const newPitch = Math.max(DRIVE_PITCH_MIN, Math.min(DRIVE_PITCH_MAX, look.pitch - dy * DRIVE_LOOK_SENS))
+  return { ...look, yaw, pitch: newPitch }
 }
 
 export function driveLookDolly(look: DriveLook, deltaY: number): DriveLook {
@@ -131,11 +149,20 @@ export function resetDriveLook(look: DriveLook = identityDriveLook()): DriveLook
   return { ...identityDriveLook(), topH: look.topH }
 }
 
+/**
+ * Vehicle forward direction on XZ plane.
+ * At yaw=0, forward is -Z: returns (0, -1).
+ * Positive yaw = turn left (CCW from above).
+ */
 export function driveForward(yawDeg: number): { x: number; z: number } {
   const t = (yawDeg * Math.PI) / 180
-  return { x: Math.sin(t), z: Math.cos(t) }
+  return { x: -Math.sin(t), z: -Math.cos(t) }
 }
 
+/**
+ * Vehicle right direction on XZ plane.
+ * At yaw=0, right is +X: returns (1, 0).
+ */
 export function driveRight(yawDeg: number): { x: number; z: number } {
   const t = (yawDeg * Math.PI) / 180
   return { x: Math.cos(t), z: -Math.sin(t) }
@@ -177,24 +204,30 @@ export function driveChaseFocus(state: DriveState): { x: number; y: number; z: n
   return { x: state.x, y: state.y + state.focusHeight, z: state.z }
 }
 
+/**
+ * Compute camera angles to look from eye (ex,ey,ez) toward look-at (lx,ly,lz).
+ *
+ * Returns yaw (ry) and pitch (rx) in our convention:
+ * - yaw=0 → looking -Z
+ * - positive pitch → looking up
+ */
 function lookCam(
   ex: number, ey: number, ez: number,
   lx: number, ly: number, lz: number,
 ): DriveCamera {
   const dx = lx - ex
-  const dyUp = ly - ey
+  const dy = ly - ey
   const dz = lz - ez
   const horiz = Math.hypot(dx, dz) || 1
+  // yaw: atan2 of forward vector. At yaw=0 we look toward -Z.
+  // Forward = (dx, dz). If dx=0, dz<0, we're looking -Z → yaw=0.
+  // atan2(-dx, -dz) gives 0 when looking toward -Z.
   let ry = (Math.atan2(-dx, -dz) * 180) / Math.PI
   if (ry <= -180) ry += 360
   if (ry > 180) ry -= 360
-  return {
-    x: ex,
-    y: ey,
-    z: ez,
-    rx: (Math.atan2(-dyUp, horiz) * 180) / Math.PI,
-    ry,
-  }
+  // pitch: positive = looking up. atan2(dy, horiz).
+  const rx = (Math.atan2(dy, horiz) * 180) / Math.PI
+  return { x: ex, y: ey, z: ez, rx, ry }
 }
 
 export function drivePilotEye(
@@ -233,16 +266,18 @@ export function driveCamera(
 
   if (view === 'pilot') {
     const eye = drivePilotEye(state, mounts)
+    // Look forward (local -Z) with additional look offset
     if (state.isHull) {
       const ahead = rotateYpr(
         state.yaw + look.yaw,
         state.pitch + look.pitch,
         state.roll,
-        { x: 0, y: 0, z: -8 },
+        { x: 0, y: 0, z: -8 },  // forward is -Z
       )
       return lookCam(eye.x, eye.y, eye.z, state.x + ahead.x, state.y + ahead.y, state.z + ahead.z)
     }
-    const lookDir = rotateYpr(heading + look.yaw, look.pitch, 0, { x: 0, y: 0, z: 8 })
+    // For non-hull vehicles, look along heading direction
+    const lookDir = rotateYpr(heading + look.yaw, look.pitch, 0, { x: 0, y: 0, z: -8 })
     return lookCam(eye.x, eye.y, eye.z, eye.x + lookDir.x, eye.y + lookDir.y, eye.z + lookDir.z)
   }
 

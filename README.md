@@ -56,14 +56,55 @@ Then open http://localhost:3000 in your browser.
 | `R` | Recover (flip upright) |
 | Mouse | Look around |
 
+### Coordinate System
+
+The engine uses a **single, industry-standard coordinate system** everywhere:
+
+```
+      +Y (up)
+       |
+       |
+       +---- +X (right)
+      /
+     /
+   -Z (forward)
+```
+
+**Right-handed, Y-up, metres (glTF/Blender standard):**
+
+| Axis | Direction | Note |
+|------|-----------|------|
+| +X | Right | |
+| +Y | Up | |
+| -Z | Forward | Camera looks -Z at yaw=0 |
+
+**Camera angles (degrees):**
+
+| Angle | Axis | Positive direction |
+|-------|------|-------------------|
+| yaw (ry) | Y | Turn left (CCW from above) |
+| pitch (rx) | X | Look up |
+
+**FPS mouse (standard):**
+
+| Mouse | Effect |
+|-------|--------|
+| Right | View turns right (yaw decreases) |
+| Up | View looks up (pitch increases) |
+
+**WASD:**
+
+| Key | Effect |
+|-----|--------|
+| W | Move in camera forward direction (-Z at yaw=0) |
+
 ### Physics
 
-Full Cannon-es RaycastVehicle with Agency-compatible axes and signs:
+Full Cannon-es RaycastVehicle with internal coordinate transform:
 
-- **Y-up** coordinate system
-- **+Z forward** at yaw=0
-- Engine force: `applyEngineForce(-throttle * F)` → positive throttle moves +Z
-- Steering: `setSteeringValue(-steer * max)` → D key decreases yaw
+- Cannon uses `indexRightAxis=0`, `indexUpAxis=1`, `indexForwardAxis=2`
+- Engine applies sign corrections at the boundary
+- Steering: D key → turn right (yaw decreases)
 - Wheel order: FL[0], FR[1], RL[2], RR[3]
 
 ### What's Next (Out of Scope This PR)

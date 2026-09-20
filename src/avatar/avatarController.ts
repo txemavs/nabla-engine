@@ -7,7 +7,23 @@
  * - Rocket thrust (hold F/Shift → Iron Man flight)
  * - Mount/dismount vehicles (E key)
  *
- * Coordinate system: metres, Y-up.
+ * ## Coordinate System (glTF/Blender standard)
+ *
+ * Right-handed, Y-up, metres:
+ * - +X right
+ * - +Y up
+ * - -Z forward (camera looks -Z at yaw=0, pitch=0)
+ *
+ * Camera angles (degrees):
+ * - yaw (ry): rotation around Y. yaw=0 → look -Z. Positive → turn left (CCW from above)
+ * - pitch (rx): rotation around X. Positive → look up
+ *
+ * FPS mouse (standard):
+ * - Mouse right (dx > 0) → yaw decreases → view turns right
+ * - Mouse up (dy < 0, typical browser) → pitch increases → view looks up
+ *
+ * WASD:
+ * - W = move in camera forward direction (-Z at yaw=0)
  */
 import {
   WALK_JUMP_VY,
@@ -41,7 +57,9 @@ export interface AvatarInput {
   sprint: boolean
   rocket: boolean
   mount: boolean
+  /** Mouse movement X (positive = rightward on screen) */
   lookDx: number
+  /** Mouse movement Y (positive = downward on screen, typical browser convention) */
   lookDy: number
 }
 
@@ -112,7 +130,9 @@ export function stepAvatar(
 
   let { x, y, z, yaw, pitch, vx, vy, vz, rocketBurn, coyoteS, jumpBufferS, grounded, mode, view } = state
 
-  pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, pitch + input.lookDy * LOOK_SENS))
+  // FPS mouse: mouse up (dy < 0) → look up → pitch increases
+  // mouse right (dx > 0) → look right → yaw decreases
+  pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, pitch - input.lookDy * LOOK_SENS))
   yaw = yaw - input.lookDx * LOOK_SENS
   if (yaw < -180) yaw += 360
   if (yaw > 180) yaw -= 360
@@ -133,7 +153,7 @@ export function stepAvatar(
   }
 
   if (jumpBufferS > 0 && coyoteS > 0 && !input.rocket) {
-    vy = -WALK_JUMP_VY / 1000
+    vy = -WALK_JUMP_VY / 1000  // WALK_JUMP_VY is negative (CSS convention), negate for Y-up
     coyoteS = 0
     jumpBufferS = 0
   }
@@ -146,42 +166,55 @@ export function stepAvatar(
 
   rocketBurn = rocketBurnStep(input.rocket, rocketBurn, dt)
 
+  // Apply gravity and rocket thrust
+  // rocketAccel returns positive value for gravity (downward force)
+  // In Y-up: positive accel should decrease vy (accelerate downward = vy becomes more negative)
   const altMm = Math.max(0, (y - eyeFloor) * 1000)
-  if (input.rocket || rocketBurn > 0 || !grounded || vy > 0) {
+  if (input.rocket || rocketBurn > 0 || !grounded || vy !== 0) {
     const accel = rocketAccel(input.rocket, altMm, rocketBurn)
-    vy += (accel / 1000) * dt
-    if (!input.rocket && rocketBurn <= 0 && vy < 0) {
-      vy = Math.max(-WALK_MAX_VY / 1000, vy)
+    // accel > 0 means gravity pulls down, so subtract from vy
+    vy -= (accel / 1000) * dt
+    // Terminal velocity clamp: vy can't go below -WALK_MAX_VY (falling too fast)
+    if (!input.rocket && rocketBurn <= 0 && vy < -WALK_MAX_VY / 1000) {
+      vy = -WALK_MAX_VY / 1000
     }
   }
 
-  let ax = 0, az = 0
-  if (input.forward) az += 1
-  if (input.backward) az -= 1
-  if (input.left) ax -= 1
-  if (input.right) ax += 1
-  const inputLen = Math.hypot(ax, az)
+  // Movement input in camera-local coordinates:
+  // forward (W) = -Z direction at yaw=0
+  // right (D) = +X direction at yaw=0
+  let inputForward = 0, inputRight = 0
+  if (input.forward) inputForward += 1
+  if (input.backward) inputForward -= 1
+  if (input.right) inputRight += 1
+  if (input.left) inputRight -= 1
+  const inputLen = Math.hypot(inputForward, inputRight)
   if (inputLen > 1) {
-    ax /= inputLen
-    az /= inputLen
+    inputForward /= inputLen
+    inputRight /= inputLen
   }
 
+  // Convert to world coordinates
+  // At yaw=0: forward=-Z, right=+X
+  // Yaw rotation around Y axis (positive = CCW from above = turn left)
   const yawRad = (yaw * Math.PI) / 180
   const cos = Math.cos(yawRad)
   const sin = Math.sin(yawRad)
-  const worldAx = ax * cos - az * sin
-  const worldAz = ax * sin + az * cos
+  // forward direction: (-sin(yaw), 0, -cos(yaw))
+  // right direction: (cos(yaw), 0, -sin(yaw))
+  const worldVx = inputRight * cos - inputForward * sin
+  const worldVz = -inputRight * sin - inputForward * cos
 
   const speed = (WALK_SPEED / 1000) * (input.sprint ? WALK_SPRINT_MULT : 1)
-  const targetVx = worldAx * speed
-  const targetVz = worldAz * speed
+  const targetVx = worldVx * speed
+  const targetVz = worldVz * speed
 
   vx = approachVelocity(vx, targetVx, WALK_ACCEL / 1000, WALK_DECEL / 1000, dt)
   vz = approachVelocity(vz, targetVz, WALK_ACCEL / 1000, WALK_DECEL / 1000, dt)
 
   x += vx * dt
   z += vz * dt
-  y -= vy * dt
+  y += vy * dt  // positive vy = upward = +Y
 
   if (y < eyeFloor) {
     y = eyeFloor

@@ -1,8 +1,16 @@
 /**
  * Walk body physics: jump, gravity, rocket thrust curve.
  *
- * Clean port from Agency walkBody.ts. CSS Y is down in Agency,
- * but we use Y-up metres here for consistency with vehicle physics.
+ * ## Coordinate System (glTF/Blender standard)
+ *
+ * Right-handed, Y-up, metres:
+ * - +X right
+ * - +Y up
+ * - -Z forward (camera looks -Z at yaw=0, pitch=0)
+ *
+ * Camera angles (degrees):
+ * - yaw (ry): rotation around Y. yaw=0 → look -Z. Positive → turn left (CCW from above)
+ * - pitch (rx): rotation around X. Positive → look up
  *
  * Rocket thrust: hold key → burn accumulates → thrust increases quadratically
  * until escape velocity. Release → burn decays → gravity returns.
@@ -74,17 +82,28 @@ export interface WalkCamera {
   ry: number
 }
 
+/**
+ * Chase camera: positioned behind and above the avatar.
+ *
+ * At yaw=0, pitch=0: avatar looks -Z, camera is at +Z relative to avatar.
+ * Forward direction = (-sin(yaw), 0, -cos(yaw)) at pitch=0
+ * Camera goes backward = opposite of forward = (+sin(yaw), 0, +cos(yaw))
+ */
 export function walkChaseCamera(eye: WalkCamera): WalkCamera {
-  const yaw = (-eye.ry * Math.PI) / 180
-  const pr = (eye.rx * Math.PI) / 180
-  const cp = Math.cos(pr)
-  const fwdX = Math.sin(yaw) * cp
-  const fwdZ = -Math.cos(yaw) * cp
+  const yawRad = (eye.ry * Math.PI) / 180
+  const pitchRad = (eye.rx * Math.PI) / 180
+  
+  // Forward direction at this yaw (ignoring pitch for horizontal back offset)
+  const fwdX = -Math.sin(yawRad)
+  const fwdZ = -Math.cos(yawRad)
+  
   const backM = WALK_CHASE_BACK_MM / 1000
   const liftM = WALK_CHASE_LIFT_MM / 1000
+  
+  // Camera positioned behind (opposite of forward) and lifted
   return {
-    x: eye.x - fwdX * backM,
-    y: eye.y + liftM + backM * Math.sin(pr),
+    x: eye.x - fwdX * backM,  // subtract forward = go backward
+    y: eye.y + liftM + backM * Math.sin(pitchRad),
     z: eye.z - fwdZ * backM,
     rx: eye.rx,
     ry: eye.ry,

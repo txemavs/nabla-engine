@@ -1,10 +1,20 @@
 /**
  * Minimal WebGL renderer for the drive playground.
  *
- * Renders:
- * - Textured ground plane
- * - Box meshes for vehicles (car body, wheels, ship hull)
- * - Simple debug lines
+ * ## Coordinate System (glTF/Blender standard)
+ *
+ * Right-handed, Y-up, metres:
+ * - +X right
+ * - +Y up  
+ * - -Z forward (camera looks -Z at yaw=0, pitch=0)
+ *
+ * Camera angles (degrees):
+ * - yaw (ry): rotation around Y. yaw=0 → look -Z. Positive → turn left (CCW from above)
+ * - pitch (rx): rotation around X. Positive → look up
+ *
+ * FPS mouse:
+ * - Mouse right → yaw decreases → view turns right
+ * - Mouse up → pitch increases → view looks up
  */
 
 export interface BoxMesh {
@@ -73,6 +83,26 @@ const FS_GROUND = `
   }
 `
 
+const VS_LINE = `
+  attribute vec3 aPos;
+  attribute vec3 aColor;
+  uniform mat4 uProj;
+  uniform mat4 uView;
+  varying vec3 vColor;
+  void main() {
+    vColor = aColor;
+    gl_Position = uProj * uView * vec4(aPos, 1.0);
+  }
+`
+
+const FS_LINE = `
+  precision mediump float;
+  varying vec3 vColor;
+  void main() {
+    gl_FragColor = vec4(vColor, 1.0);
+  }
+`
+
 function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader {
   const s = gl.createShader(type)!
   gl.shaderSource(s, source)
@@ -105,24 +135,38 @@ function perspective(fov: number, aspect: number, near: number, far: number): Fl
   ])
 }
 
-function lookAt(ex: number, ey: number, ez: number, rx: number, ry: number): Float32Array {
-  const radX = rx * Math.PI / 180
-  const radY = ry * Math.PI / 180
-  const cy = Math.cos(radY), sy = Math.sin(radY)
-  const cx = Math.cos(radX), sx = Math.sin(radX)
-  const fx = -sy * cx, fy = sx, fz = -cy * cx
-  const ux = 0, uy = cx, uz = 0
-  let rx2 = uy * fz - uz * fy, ry2 = uz * fx - ux * fz, rz2 = ux * fy - uy * fx
-  const rlen = Math.hypot(rx2, ry2, rz2) || 1
-  rx2 /= rlen; ry2 /= rlen; rz2 /= rlen
-  const ux2 = fy * rz2 - fz * ry2, uy2 = fz * rx2 - fx * rz2, uz2 = fx * ry2 - fy * rx2
+/**
+ * Build view matrix from camera position and Euler angles.
+ * 
+ * Convention:
+ * - yaw (ry): rotation around Y axis. yaw=0 looks toward -Z.
+ * - pitch (rx): rotation around X axis. Positive pitch looks up.
+ * - Forward direction: (-sin(yaw), sin(pitch), -cos(yaw)*cos(pitch)) normalized
+ */
+function viewMatrix(ex: number, ey: number, ez: number, pitchDeg: number, yawDeg: number): Float32Array {
+  const pitch = pitchDeg * Math.PI / 180
+  const yaw = yawDeg * Math.PI / 180
+  
+  const cp = Math.cos(pitch), sp = Math.sin(pitch)
+  const cy = Math.cos(yaw), sy = Math.sin(yaw)
+  
+  const fx = -sy * cp
+  const fy = sp
+  const fz = -cy * cp
+  
+  let rx = cy, ry = 0, rz = -sy
+  
+  const ux = -sy * sp
+  const uy = cp
+  const uz = -cy * sp
+  
   return new Float32Array([
-    rx2, ux2, -fx, 0,
-    ry2, uy2, -fy, 0,
-    rz2, uz2, -fz, 0,
-    -(rx2*ex + ry2*ey + rz2*ez),
-    -(ux2*ex + uy2*ey + uz2*ez),
-    -(-fx*ex + -fy*ey + -fz*ez),
+    rx, ux, -fx, 0,
+    ry, uy, -fy, 0,
+    rz, uz, -fz, 0,
+    -(rx*ex + ry*ey + rz*ez),
+    -(ux*ex + uy*ey + uz*ez),
+    (fx*ex + fy*ey + fz*ez),
     1,
   ])
 }
@@ -156,11 +200,14 @@ export class Renderer {
   private gl: WebGLRenderingContext
   private boxProg: WebGLProgram
   private groundProg: WebGLProgram
+  private lineProg: WebGLProgram
   private cubeVbo: WebGLBuffer
   private groundVbo: WebGLBuffer
+  private lineVbo: WebGLBuffer
   private groundTex: WebGLTexture
   private boxLocs: { aPos: number; aNorm: number; uProj: WebGLUniformLocation; uView: WebGLUniformLocation; uModel: WebGLUniformLocation; uColor: WebGLUniformLocation }
   private groundLocs: { aPos: number; aUv: number; uProj: WebGLUniformLocation; uView: WebGLUniformLocation; uTex: WebGLUniformLocation }
+  private lineLocs: { aPos: number; aColor: number; uProj: WebGLUniformLocation; uView: WebGLUniformLocation }
   private groundSize = 100
 
   constructor(canvas: HTMLCanvasElement) {
@@ -171,6 +218,7 @@ export class Renderer {
 
     this.boxProg = createProgram(gl, VS_BOX, FS_BOX)
     this.groundProg = createProgram(gl, VS_GROUND, FS_GROUND)
+    this.lineProg = createProgram(gl, VS_LINE, FS_LINE)
 
     this.boxLocs = {
       aPos: gl.getAttribLocation(this.boxProg, 'aPos'),
@@ -187,9 +235,16 @@ export class Renderer {
       uView: gl.getUniformLocation(this.groundProg, 'uView')!,
       uTex: gl.getUniformLocation(this.groundProg, 'uTex')!,
     }
+    this.lineLocs = {
+      aPos: gl.getAttribLocation(this.lineProg, 'aPos'),
+      aColor: gl.getAttribLocation(this.lineProg, 'aColor'),
+      uProj: gl.getUniformLocation(this.lineProg, 'uProj')!,
+      uView: gl.getUniformLocation(this.lineProg, 'uView')!,
+    }
 
     this.cubeVbo = this.createCubeVbo()
     this.groundVbo = this.createGroundVbo()
+    this.lineVbo = gl.createBuffer()!
     this.groundTex = this.createGroundTexture()
   }
 
@@ -243,6 +298,7 @@ export class Renderer {
     canvas.width = size
     canvas.height = size
     const ctx = canvas.getContext('2d')!
+    
     ctx.fillStyle = '#333842'
     ctx.fillRect(0, 0, size, size)
     ctx.fillStyle = '#2a2e36'
@@ -250,22 +306,36 @@ export class Renderer {
       ctx.fillRect(i, 0, 32, size)
       ctx.fillRect(0, i, size, 32)
     }
+    
     ctx.strokeStyle = '#ffcc00'
     ctx.lineWidth = 4
     ctx.beginPath()
     ctx.arc(size/2, size/2, 180, 0, Math.PI * 2)
     ctx.stroke()
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = 6
-    ctx.setLineDash([20, 20])
+    
+    ctx.font = 'bold 24px monospace'
+    ctx.textAlign = 'center'
+    ctx.fillStyle = '#ff4444'
+    ctx.fillText('+X', size - 30, size/2 + 8)
+    ctx.fillStyle = '#4444ff'
+    ctx.fillText('-Z (fwd)', size/2, 30)
+    ctx.fillStyle = '#666'
+    ctx.fillText('+Z', size/2, size - 15)
+    ctx.fillText('-X', 30, size/2 + 8)
+    
+    ctx.strokeStyle = '#4444ff'
+    ctx.lineWidth = 3
+    ctx.setLineDash([])
     ctx.beginPath()
-    ctx.moveTo(size/2, 0)
-    ctx.lineTo(size/2, size)
+    ctx.moveTo(size/2, size/2)
+    ctx.lineTo(size/2, 60)
     ctx.stroke()
     ctx.beginPath()
-    ctx.moveTo(0, size/2)
-    ctx.lineTo(size, size/2)
+    ctx.moveTo(size/2 - 10, 80)
+    ctx.lineTo(size/2, 60)
+    ctx.lineTo(size/2 + 10, 80)
     ctx.stroke()
+    
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
@@ -273,6 +343,18 @@ export class Renderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     gl.generateMipmap(gl.TEXTURE_2D)
     return tex
+  }
+
+  private buildAxisGizmo(): Float32Array {
+    const len = 2
+    return new Float32Array([
+      0, 0.01, 0, 1, 0, 0,
+      len, 0.01, 0, 1, 0, 0,
+      0, 0.01, 0, 0, 1, 0,
+      0, len, 0, 0, 1, 0,
+      0, 0.01, 0, 0, 0, 1,
+      0, 0.01, -len, 0, 0, 1,
+    ])
   }
 
   resize(w: number, h: number): void {
@@ -287,7 +369,7 @@ export class Renderer {
     const h = gl.canvas.height
     const aspect = w / h
     const proj = perspective(Math.PI / 3, aspect, 0.1, 500)
-    const view = lookAt(cam.x, cam.y, cam.z, cam.rx, cam.ry)
+    const view = viewMatrix(cam.x, cam.y, cam.z, cam.rx, cam.ry)
 
     gl.clearColor(0.12, 0.14, 0.18, 1)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -304,6 +386,19 @@ export class Renderer {
     gl.vertexAttribPointer(this.groundLocs.aPos, 3, gl.FLOAT, false, 20, 0)
     gl.vertexAttribPointer(this.groundLocs.aUv, 2, gl.FLOAT, false, 20, 12)
     gl.drawArrays(gl.TRIANGLES, 0, 6)
+
+    gl.useProgram(this.lineProg)
+    gl.uniformMatrix4fv(this.lineLocs.uProj, false, proj)
+    gl.uniformMatrix4fv(this.lineLocs.uView, false, view)
+    const axisData = this.buildAxisGizmo()
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.lineVbo)
+    gl.bufferData(gl.ARRAY_BUFFER, axisData, gl.DYNAMIC_DRAW)
+    gl.enableVertexAttribArray(this.lineLocs.aPos)
+    gl.enableVertexAttribArray(this.lineLocs.aColor)
+    gl.vertexAttribPointer(this.lineLocs.aPos, 3, gl.FLOAT, false, 24, 0)
+    gl.vertexAttribPointer(this.lineLocs.aColor, 3, gl.FLOAT, false, 24, 12)
+    gl.lineWidth(2)
+    gl.drawArrays(gl.LINES, 0, 6)
 
     gl.useProgram(this.boxProg)
     gl.uniformMatrix4fv(this.boxLocs.uProj, false, proj)

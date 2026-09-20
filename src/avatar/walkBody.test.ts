@@ -122,11 +122,21 @@ describe('walkBody', () => {
   })
 
   describe('walkChaseCamera', () => {
-    it('positions camera behind and above', () => {
+    it('positions camera behind and above at yaw=0', () => {
+      // At yaw=0, forward is -Z, so "behind" is +Z
       const eye = { x: 0, y: 1.7, z: 0, rx: 0, ry: 0 }
       const chase = walkChaseCamera(eye)
-      expect(chase.z).toBeGreaterThan(eye.z)
-      expect(chase.y).toBeGreaterThan(eye.y)
+      expect(chase.z).toBeGreaterThan(eye.z) // camera at +Z (behind)
+      expect(chase.y).toBeGreaterThan(eye.y) // camera lifted
+      expect(chase.x).toBeCloseTo(eye.x) // no X offset at yaw=0
+    })
+
+    it('positions camera behind at yaw=90 (looking left, -X)', () => {
+      // At yaw=90 (turned left), forward is -X, so "behind" is +X
+      const eye = { x: 0, y: 1.7, z: 0, rx: 0, ry: 90 }
+      const chase = walkChaseCamera(eye)
+      expect(chase.x).toBeGreaterThan(eye.x) // camera at +X (behind)
+      expect(chase.z).toBeCloseTo(eye.z) // no Z offset
     })
 
     it('maintains look direction', () => {
