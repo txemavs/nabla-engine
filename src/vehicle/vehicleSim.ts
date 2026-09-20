@@ -76,8 +76,9 @@ export const COLLISION_GROUP_GROUND = 1
 export const COLLISION_GROUP_CHASSIS = 2
 export const COLLISION_GROUP_STATIC = 4
 
+/** Chassis skips the ground plane; RaycastVehicle wheels carry the load. */
 export const COLLISION_MASK_CHASSIS =
-  COLLISION_GROUP_GROUND | COLLISION_GROUP_CHASSIS | COLLISION_GROUP_STATIC
+  COLLISION_GROUP_CHASSIS | COLLISION_GROUP_STATIC
 export const COLLISION_MASK_STATIC = COLLISION_GROUP_CHASSIS
 export const COLLISION_MASK_GROUND = COLLISION_GROUP_CHASSIS | COLLISION_GROUP_STATIC
 
@@ -91,19 +92,31 @@ function wheelConnY(def: VehicleDefinition): number {
   return def.radius + def.restLength - def.comHeight
 }
 
-function quatToYpr(q: Quaternion): { yaw: number; pitch: number; roll: number } {
-  const sinr_cosp = 2 * (q.w * q.x + q.y * q.z)
-  const cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y)
-  const roll = (Math.atan2(sinr_cosp, cosr_cosp) * 180) / Math.PI
+/** Degrees helper. */
+function radToDeg(rad: number): number {
+  return (rad * 180) / Math.PI
+}
 
-  const sinp = 2 * (q.w * q.y - q.z * q.x)
-  const pitch = (Math.abs(sinp) >= 1 ? Math.sign(sinp) * 90 : (Math.asin(sinp) * 180) / Math.PI)
+function wrapDeg(deg: number): number {
+  let d = deg % 360
+  if (d <= -180) d += 360
+  if (d > 180) d -= 360
+  return d
+}
 
-  const siny_cosp = 2 * (q.w * q.z + q.x * q.y)
-  const cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
-  const yaw = (Math.atan2(siny_cosp, cosy_cosp) * 180) / Math.PI
-
-  return { yaw, pitch, roll }
+/**
+ * Quaternion to yaw/pitch/roll for Y-up, +Z forward (Cannon vehicle frame).
+ * Matches Agency vehiclePresent.quatToYpr — NOT Z-up aerospace formulas.
+ * yaw: about +Y, pitch: about +X, roll: about +Z.
+ */
+export function quatToYpr(q: Quaternion): { yaw: number; pitch: number; roll: number } {
+  const fwd = rotateByQuat(q, { x: 0, y: 0, z: 1 })
+  const right = rotateByQuat(q, { x: 1, y: 0, z: 0 })
+  return {
+    yaw: wrapDeg(radToDeg(Math.atan2(fwd.x, fwd.z))),
+    pitch: radToDeg(Math.asin(Math.max(-1, Math.min(1, -fwd.y)))),
+    roll: radToDeg(Math.asin(Math.max(-1, Math.min(1, right.y)))),
+  }
 }
 
 function rotateByQuat(q: Quaternion, v: { x: number; y: number; z: number }): { x: number; y: number; z: number } {

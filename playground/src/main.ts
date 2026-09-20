@@ -11,6 +11,7 @@
 import {
   VehicleWorld,
   A3_SPEC,
+  A3_MESH_ALIGN,
   A3_MOUNTS,
   A3_ASSETS,
   a3WheelPositions,
@@ -56,16 +57,18 @@ const sceneRoot = new SceneNode('world')
 
 // A3 Cabrio scene nodes
 const a3Root = new SceneNode('a3-root')
-const a3Body = new SceneNode('a3-body')
+const a3Model = new SceneNode('a3-model') // Agency ground-origin frame
+const a3Body = new SceneNode('a3-body')   // body GLB center origin
 const a3WheelFL = new SceneNode('a3-wheel-fl')
 const a3WheelFR = new SceneNode('a3-wheel-fr')
 const a3WheelRL = new SceneNode('a3-wheel-rl')
 const a3WheelRR = new SceneNode('a3-wheel-rr')
-a3Root.attach(a3Body)
-a3Root.attach(a3WheelFL)
-a3Root.attach(a3WheelFR)
-a3Root.attach(a3WheelRL)
-a3Root.attach(a3WheelRR)
+a3Root.attach(a3Model)
+a3Model.attach(a3Body)
+a3Model.attach(a3WheelFL)
+a3Model.attach(a3WheelFR)
+a3Model.attach(a3WheelRL)
+a3Model.attach(a3WheelRR)
 sceneRoot.attach(a3Root)
 
 // Ship scene node
@@ -78,7 +81,7 @@ sceneRoot.attach(shipRoot)
 const avatarNode = new SceneNode('avatar')
 sceneRoot.attach(avatarNode)
 
-// Spawn positions — y = comY so vehicle rests on ground correctly
+// Spawn positions
 const CAR_START = { x: 5, y: A3_SPEC.comY, z: -5, yaw: 0 }
 const SHIP_START = { x: -10, y: SHIP_5X10_SPEC.comY, z: -15, yaw: 0 }
 const AVATAR_START = { x: 0, y: WALK_EYE_HEIGHT_MM / 1000, z: 8, yaw: 0 }
@@ -116,23 +119,31 @@ shipWorld.mount(SHIP_START, SHIP_5X10_SPEC)
 // Set initial scene node positions
 a3Root.setLocal({ x: CAR_START.x, y: CAR_START.y, z: CAR_START.z, yaw: CAR_START.yaw })
 shipRoot.setLocal({ x: SHIP_START.x, y: SHIP_START.y, z: SHIP_START.z, yaw: SHIP_START.yaw })
+shipBody.setLocal({
+  x: -(SHIP_5X10_SPEC.cabinX ?? 0),
+  y: (SHIP_5X10_SPEC.rideY ?? 0) - SHIP_5X10_SPEC.comY,
+  z: -(SHIP_5X10_SPEC.cabinZ ?? 0),
+})
 
-// Body GLB offset: GLB origin is at model origin, physics COM is at comY
-// Body node local Y = rideY - comY to align GLB with physics
-const a3BodyOffset = A3_SPEC.rideY - A3_SPEC.comY
-a3Body.setLocal({ y: a3BodyOffset })
-
-const shipBodyOffset = SHIP_5X10_SPEC.rideY - SHIP_5X10_SPEC.comY
-shipBody.setLocal({ y: shipBodyOffset })
-
-// Set wheel positions relative to root (not body)
-// Wheels are at hub positions in model space, adjusted for COM offset
+// Set wheel initial positions relative to body
 const wheelPos = a3WheelPositions()
-const wheelYOffset = -A3_SPEC.comY  // wheels are in model space, root is at COM
-a3WheelFL.setLocal({ x: wheelPos.FL.x, y: wheelPos.FL.y + wheelYOffset, z: wheelPos.FL.z })
-a3WheelFR.setLocal({ x: wheelPos.FR.x, y: wheelPos.FR.y + wheelYOffset, z: wheelPos.FR.z })
-a3WheelRL.setLocal({ x: wheelPos.RL.x, y: wheelPos.RL.y + wheelYOffset, z: wheelPos.RL.z })
-a3WheelRR.setLocal({ x: wheelPos.RR.x, y: wheelPos.RR.y + wheelYOffset, z: wheelPos.RR.z })
+a3WheelFL.setLocal({ x: wheelPos.FL.x, y: wheelPos.FL.y, z: wheelPos.FL.z })
+a3WheelFR.setLocal({ x: wheelPos.FR.x, y: wheelPos.FR.y, z: wheelPos.FR.z })
+a3WheelRL.setLocal({ x: wheelPos.RL.x, y: wheelPos.RL.y, z: wheelPos.RL.z })
+a3WheelRR.setLocal({ x: wheelPos.RR.x, y: wheelPos.RR.y, z: wheelPos.RR.z })
+
+const a3ModelFromBody = {
+  x: -A3_SPEC.cabinX,
+  y: A3_SPEC.rideY - A3_SPEC.comY,
+  z: -A3_SPEC.cabinZ,
+}
+a3Model.setLocal(a3ModelFromBody)
+a3Body.setLocal({
+  x: A3_MESH_ALIGN.x,
+  y: A3_MESH_ALIGN.y,
+  z: A3_MESH_ALIGN.z,
+  yaw: A3_MESH_ALIGN.yawDeg,
+})
 
 const vehicles: Vehicle[] = [
   {
@@ -165,6 +176,8 @@ let mouseDx = 0, mouseDy = 0
 let pointerLocked = false
 
 // Load GLBs
+
+
 async function loadGlbs(): Promise<void> {
   try {
     const [bodyData, wheelData, shipData] = await Promise.all([
@@ -399,11 +412,12 @@ function updateSceneNodes(): void {
       for (let i = 0; i < 4; i++) {
         const wid = ids[i]
         const wp = v.wheelPositions[wid]
-        const susp = snap.suspension[i] ?? 0
+        const suspLen = snap.suspension[i] ?? A3_SPEC.restLength
+        const compression = Math.max(0, A3_SPEC.restLength - suspLen)
         const steerAngle = i < 2 ? snap.steerRad * 180 / Math.PI : 0
         v.wheelNodes[i].setLocal({
           x: wp.x,
-          y: wp.y - susp * 0.3,  // suspension compression
+          y: wp.y + compression, // compress → hub rises in model space
           z: wp.z,
           yaw: steerAngle,
         })
@@ -572,52 +586,30 @@ function loop(time: number): void {
 
   const cam = getCamera()
 
-  // 1. Begin frame: clear, draw ground and origin gizmo
-  renderer.beginFrame(cam)
+  // One clear per frame: ground + boxes first, then GLBs (no second clear).
+  const boxes: BoxMesh[] = glbsLoaded ? [] : buildFallbackBoxes()
 
-  // 2. Render GLB meshes if loaded, otherwise fallback boxes
-  if (glbsLoaded) {
-    // A3 body
-    if (a3BodyMesh) {
-      renderer.renderGlbMesh(cam, a3BodyMesh, a3Body.worldMatrix)
-    }
-    // A3 wheels
-    if (a3WheelMesh) {
-      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelFL.worldMatrix)
-      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelFR.worldMatrix)
-      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelRL.worldMatrix)
-      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelRR.worldMatrix)
-    }
-    // Ship
-    if (shipBodyMesh) {
-      renderer.renderGlbMesh(cam, shipBodyMesh, shipBody.worldMatrix)
-    }
-  } else {
-    // Fallback: procedural boxes when GLBs not loaded
-    const fallbackBoxes = buildFallbackBoxes()
-    renderer.renderBoxes(cam, fallbackBoxes)
+  const shipPose = shipWorld.readPose()
+  if (showDebug) {
+  const garageBoxes = shipGarageBoxes(shipPose)
+  for (const gb of garageBoxes) {
+    boxes.push({
+      x: gb.x,
+      y: gb.y,
+      z: gb.z,
+      hx: gb.hx,
+      hy: gb.hy,
+      hz: gb.hz,
+      yaw: (gb.yaw ?? 0) * 180 / Math.PI,
+      pitch: (gb.pitch ?? 0) * 180 / Math.PI,
+      color: RAMP_COLOR,
+    })
+  }
   }
 
-  // 3. Always render garage ramp boxes (physics colliders)
-  const shipPose = shipWorld.readPose()
-  const garageBoxes = shipGarageBoxes(shipPose)
-  const rampBoxes: BoxMesh[] = garageBoxes.map(gb => ({
-    x: gb.x,
-    y: gb.y,
-    z: gb.z,
-    hx: gb.hx,
-    hy: gb.hy,
-    hz: gb.hz,
-    yaw: (gb.yaw ?? 0) * 180 / Math.PI,
-    pitch: (gb.pitch ?? 0) * 180 / Math.PI,
-    color: RAMP_COLOR,
-  }))
-  renderer.renderBoxes(cam, rampBoxes)
-
-  // 4. Avatar body (when in chase view and not driving)
   if (!activeVehicle && avatar.view === 'chase') {
     const body = avatarBodyPose(avatar)
-    renderer.renderBoxes(cam, [{
+    boxes.push({
       x: body.x,
       y: body.y,
       z: body.z,
@@ -626,10 +618,23 @@ function loop(time: number): void {
       hz: 0.2,
       yaw: body.yaw,
       color: AVATAR_COLOR,
-    }])
+    })
   }
 
-  // 5. Debug lines (scene node gizmos)
+  renderer.render(cam, boxes)
+
+  if (glbsLoaded) {
+    if (a3BodyMesh) renderer.renderGlbMesh(cam, a3BodyMesh, a3Body.worldMatrix)
+    if (a3WheelMesh) {
+      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelFL.worldMatrix)
+      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelFR.worldMatrix)
+      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelRL.worldMatrix)
+      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelRR.worldMatrix)
+    }
+    if (shipBodyMesh) renderer.renderGlbMesh(cam, shipBodyMesh, shipBody.worldMatrix)
+  }
+
+  // Render debug lines
   if (showDebug) {
     const debugLines = sceneDebugLines(sceneRoot, 0.5)
     renderer.renderDebugLines(cam, debugLines as DebugLine[])

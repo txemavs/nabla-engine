@@ -138,13 +138,9 @@ export function shipGarageBoxes(shipPose: {
   return [transform(SHIP_GARAGE.ramp), transform(SHIP_GARAGE.floor)]
 }
 
-/**
- * Ship 5×10 VehicleSpec for Cannon physics.
- * headingDeg: 0 — GLB forward matches physics forward (no flip needed).
- */
 export const SHIP_5X10_SPEC: VehicleSpec = {
   ...CONTAINER_SPEC,
-  headingDeg: 0,  // GLB proa is -Z, same as physics forward
+  headingDeg: 0,
 }
 
 export function matchesShipPack(entityId: string): boolean {

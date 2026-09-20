@@ -9,7 +9,7 @@
  * consumes these via the pack interface.
  *
  * To add a new car:
- * 1. Create a folder under `src/stage/vehicle/<car-id>/` (kebab-case).
+ * 1. Create a folder under `src/packs/<car-id>/` (kebab-case).
  * 2. Export a `CarPack` from `index.ts` with the car's specific values.
  * 3. Register it in `resolveCarPack()` below.
  *
@@ -63,6 +63,17 @@ export interface CarPackWheelPositions {
   RR: { x: number; y: number; z: number }
 }
 
+/** Authored GLB origin -> Engine model space (Y=0 = ground contact, +Z forward). */
+export interface MeshAlign {
+  x: number
+  y: number
+  z: number
+  /** Degrees about +Y. */
+  yawDeg: number
+}
+
+export const IDENTITY_MESH_ALIGN: MeshAlign = { x: 0, y: 0, z: 0, yawDeg: 0 }
+
 export interface CarPackAssets {
   /** Body GLB URL. */
   body: StageMeshRef
@@ -83,6 +94,12 @@ export interface CarPack {
   hubs: CarPackHubs
   /** Asset references for body/wheel/steering meshes. */
   assets: CarPackAssets
+  /**
+   * How this car GLB sits in model space.
+   * If the authored origin is already correct: IDENTITY_MESH_ALIGN.
+   * If not: set offset + yawDeg once -- that is the whole adaptation.
+   */
+  meshAlign: MeshAlign
   /** Compute wheel hub positions in model space from hub constants. */
   wheelPositions(): CarPackWheelPositions
 }

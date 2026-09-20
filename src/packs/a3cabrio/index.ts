@@ -1,16 +1,17 @@
 /**
- * Audi A3 Cabrio pack — GLB-based car with chassis, wheels, and steering.
+ * Audi A3 Cabrio pack.
  *
- * ## Coordinate System
- * Body frame: +X left (driver side), +Y up, +Z forward
- * This matches glTF/Blender convention for European left-hand drive.
+ * ## How to place a car (Engine)
+ * 1. Model space: Y=0 ground contact, +X driver, +Y up, +Z forward.
+ * 2. Physics COM at VehicleSpec.comY; modelFromBody = {-cabinX, rideY-comY, -cabinZ}.
+ * 3. Body GLB under the model node with pack.meshAlign only
+ *    (offset + yawDeg of the authored origin). No other Y hacks.
+ * 4. Wheel GLBs are hub-centered; hubs at y = hubY in model space.
  *
- * ## Assets
- * - car.audi.a3.cabrio.glb — chassis body
- * - car.audi.a3.wheel.glb — wheel (hub at origin)
- * - car.audi.a3.steering.glb — steering wheel
+ * A3: Agency FACTORY physics + identity meshAlign (GLB already matches).
  */
-import type { CarPack, CarPackMounts, CarPackWheelPositions } from '../../vehicle/carPack.js'
+import type { CarPack, CarPackMounts, CarPackWheelPositions, MeshAlign } from '../../vehicle/carPack.js'
+import { IDENTITY_MESH_ALIGN } from '../../vehicle/carPack.js'
 import type { VehicleSpec } from '../../vehicle/vehicleSpec.js'
 import { FACTORY_VEHICLE_SPEC } from '../../vehicle/vehicleSpec.js'
 
@@ -31,8 +32,12 @@ export const A3_STEERING_MOUNT = {
 /** Height for chase/far/top focus point (body Y offset). */
 export const A3_FOCUS_HEIGHT = 0.54
 
-/** Hub Y in the wheel GLB's local space. */
+/**
+ * Wheel radius = distance from hub (GLB origin) to tire sole = -minY of wheel mesh.
+ * Measured from car.audi.a3.wheel.glb (hub-centered).
+ */
 export const A3_WHEEL_HUB_Y = 0.315374
+
 
 /** A3 wheelbase (front to rear axle distance). */
 export const A3_WHEELBASE = 2.58363
@@ -50,7 +55,7 @@ export const A3_HALF_TRACK_REAR = A3_TRACK_REAR / 2
 /** Visual suspension travel limit (metres). */
 export const A3_VISUAL_TRAVEL = 0.14
 
-/** Wheel radius for physics. */
+/** Physics + hub height: same mesh radius (hub on axle, sole on model Y=0). */
 export const A3_WHEEL_RADIUS = A3_WHEEL_HUB_Y
 
 /** Compute wheel hub positions in model space. */
@@ -84,25 +89,19 @@ export const A3_ASSETS = {
   steering: { url: '/world/car.audi.a3.steering.glb' },
 }
 
-/**
- * A3 VehicleSpec for Cannon physics.
- *
- * Key tuning:
- * - radius: wheel hub Y (0.315m)
- * - restLength: ~0.22m so wheels sit on ground at rest
- * - comY: center of mass height above ground plane
- * - rideY: model offset (GLB origin to ground)
- */
+/** A3 VehicleSpec for Cannon physics. */
 export const A3_SPEC: VehicleSpec = {
   ...FACTORY_VEHICLE_SPEC,
   mass: 1400,
   wheelbase: A3_WHEELBASE,
-  radius: A3_WHEEL_RADIUS,
-  restLength: 0.22,  // tuned for A3 wheel radius
-  comY: A3_WHEEL_RADIUS + 0.22,  // hubY + restLength
-  rideY: 0.05,  // small lift for ground clearance
+  radius: A3_WHEEL_RADIUS, // from wheel GLB, not factory 0.34
+  rideY: 0.18, // a bit higher stance (FACTORY 0.12 was low for this mesh)
   headingDeg: 0,
 }
+
+
+/** Authored body GLB -> model space. A3 v6 already matches; change only this for a new car. */
+export const A3_MESH_ALIGN: MeshAlign = { ...IDENTITY_MESH_ALIGN }
 
 export const A3_CABRIO_PACK: CarPack = {
   id: 'a3cabrio',
@@ -110,6 +109,7 @@ export const A3_CABRIO_PACK: CarPack = {
   mounts: A3_MOUNTS,
   hubs: A3_HUBS,
   assets: A3_ASSETS,
+  meshAlign: A3_MESH_ALIGN,
   wheelPositions: a3WheelPositions,
 }
 

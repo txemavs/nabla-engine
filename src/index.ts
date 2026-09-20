@@ -312,6 +312,7 @@ export {
 
 // Car pack
 export {
+  IDENTITY_MESH_ALIGN,
   type CarPackMounts,
   type CarPackHubs,
   type CarPackWheelPositions,
@@ -530,6 +531,7 @@ export {
   A3_HUBS,
   A3_ASSETS,
   A3_SPEC,
+  A3_MESH_ALIGN,
   A3_CABRIO_PACK,
 } from './packs/a3cabrio/index.js'
 

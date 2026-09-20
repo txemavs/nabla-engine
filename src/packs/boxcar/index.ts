@@ -8,6 +8,7 @@
  * +X right, +Y up, +Z forward.
  */
 import type { CarPack, CarPackMounts, CarPackHubs, CarPackWheelPositions, CarPackAssets } from '../../vehicle/carPack.js'
+import { IDENTITY_MESH_ALIGN } from '../../vehicle/carPack.js'
 import type { VehicleSpec } from '../../vehicle/vehicleSpec.js'
 import { FACTORY_VEHICLE_SPEC } from '../../vehicle/vehicleSpec.js'
 
@@ -67,6 +68,7 @@ export const BOXCAR_PACK: CarPack = {
   mounts: BOXCAR_MOUNTS,
   hubs: BOXCAR_HUBS,
   assets: BOXCAR_ASSETS,
+  meshAlign: IDENTITY_MESH_ALIGN,
   wheelPositions: boxcarWheelPositions,
 }
 
