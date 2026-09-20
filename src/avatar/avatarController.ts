@@ -95,7 +95,7 @@ export function createAvatarState(spawn?: { x?: number; y?: number; z?: number; 
     coyoteS: 0,
     jumpBufferS: 0,
     grounded: true,
-    view: 'first',
+    view: 'chase',  // default to chase (3rd person) for clarity
   }
 }
 

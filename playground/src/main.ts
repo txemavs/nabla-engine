@@ -46,9 +46,10 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement
 const hud = document.getElementById('hud') as HTMLDivElement
 const renderer = new Renderer(canvas)
 
-const CAR_START = { x: 5, y: 0, z: 5, yaw: 0 }
-const SHIP_START = { x: 15, y: 0, z: 10, yaw: -45 }
-const AVATAR_START = { x: 0, y: WALK_EYE_HEIGHT_MM / 1000, z: -5, yaw: 0 }
+const CAR_START = { x: 5, y: 0, z: -5, yaw: 0 }
+const SHIP_START = { x: -10, y: 0, z: -15, yaw: 45 }
+// Avatar spawns behind origin, facing forward (-Z), sees ground circle + car + ship
+const AVATAR_START = { x: 0, y: WALK_EYE_HEIGHT_MM / 1000, z: 8, yaw: 0 }
 
 const CAR_COLOR: [number, number, number] = [0.9, 0.3, 0.2]
 const WHEEL_COLOR: [number, number, number] = [0.15, 0.15, 0.15]
@@ -287,7 +288,8 @@ function buildBoxes(): BoxMesh[] {
     }
   }
 
-  if (!activeVehicle) {
+  // Only draw avatar body in chase view (3rd person) - not in first person
+  if (!activeVehicle && avatar.view === 'chase') {
     const body = avatarBodyPose(avatar)
     boxes.push({
       x: body.x,
@@ -305,24 +307,27 @@ function buildBoxes(): BoxMesh[] {
 }
 
 function updateHud(): void {
+  const cam = getCamera()
+  const camInfo = `cam: (${cam.x.toFixed(1)}, ${cam.y.toFixed(1)}, ${cam.z.toFixed(1)}) yaw=${cam.ry.toFixed(0)}° pitch=${cam.rx.toFixed(0)}°`
+  
   if (activeVehicle) {
     const snap = activeVehicle.world.snapshot
     const speed = Math.abs(snap.forwardSpeed * 3.6)
     hud.innerHTML = `
       <b>Driving: ${activeVehicle.id}</b><br>
-      Speed: ${speed.toFixed(1)} km/h<br>
-      Gear: ${snap.gear}<br>
+      Speed: ${speed.toFixed(1)} km/h | Gear: ${snap.gear}<br>
       View: ${driveView}<br>
-      <span style="color:#888">E: exit vehicle</span>
+      <span style="font-size:11px;color:#aaa">${camInfo}</span><br>
+      <span style="color:#888">E: exit | C: view | R: recover</span>
     `
   } else {
     const nearest = findNearestVehicle()
     const mode = avatar.mode === 'rocket' ? '🚀 Flying' : '🚶 Walking'
     const alt = avatar.y - WALK_EYE_HEIGHT_MM / 1000
     hud.innerHTML = `
-      <b>${mode}</b><br>
-      Alt: ${alt.toFixed(1)} m<br>
-      ${avatar.rocketBurn > 0 ? `Burn: ${(avatar.rocketBurn / 20 * 100).toFixed(0)}%<br>` : ''}
+      <b>${mode}</b> | View: ${avatar.view}<br>
+      Alt: ${alt.toFixed(1)} m ${avatar.rocketBurn > 0 ? `| Burn: ${(avatar.rocketBurn / 20 * 100).toFixed(0)}%` : ''}<br>
+      <span style="font-size:11px;color:#aaa">${camInfo}</span><br>
       ${nearest ? `<span style="color:#0f0">E: enter ${nearest.id}</span>` : '<span style="color:#888">Walk to a vehicle</span>'}
     `
   }

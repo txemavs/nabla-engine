@@ -38,8 +38,8 @@ export const ROCKET_ESCAPE_THRUST = 96_000_000
 export const ROCKET_COOL_S = 0.55
 export const ROCKET_Y_MAX_M = 11_000_000
 
-export const WALK_CHASE_BACK_MM = 2400
-export const WALK_CHASE_LIFT_MM = 800
+export const WALK_CHASE_BACK_MM = 4000  // 4m back for clearer 3rd person view
+export const WALK_CHASE_LIFT_MM = 1200  // 1.2m lift
 
 export type WalkView = 'first' | 'chase'
 export const WALK_VIEWS: WalkView[] = ['first', 'chase']
