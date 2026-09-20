@@ -11,10 +11,48 @@ Reusable 3D mini-engine for Nabla apps, extracted from Agency stage.
 ## Drive Demo
 
 The `playground/` directory contains a working demonstration of the vehicle
-physics system with two Nabla packs:
+physics system with GLB meshes and SceneNode hierarchy:
 
-- **boxcar** — minimal procedural car (1200 kg, 100 CV feel)
-- **ship5x10** — 20-ton container hovercraft with garage ramp
+- **A3 Cabrio** — GLB body + 4 wheel child nodes, Cannon RaycastVehicle physics
+- **Ship 5×10** — GLB hull with garage ramp (StaticBoxes for car to climb)
+
+### GLB Assets
+
+Located in `playground/public/world/`:
+
+| File | Size | Description |
+|------|------|-------------|
+| `car.audi.a3.cabrio.glb` | 3.2 MB | A3 chassis body |
+| `car.audi.a3.wheel.glb` | 924 KB | A3 wheel (hub at origin) |
+| `car.audi.a3.steering.glb` | 103 KB | Steering wheel |
+| `ship.container.5x10.glb` | 87 KB | Container ship hull |
+
+### SceneNode Hierarchy
+
+```
+world (root)
+├── a3-root          ← physics pose from VehicleWorld
+│   ├── a3-body      ← GLB chassis
+│   ├── a3-wheel-fl  ← GLB wheel, local pose from suspension
+│   ├── a3-wheel-fr
+│   ├── a3-wheel-rl
+│   └── a3-wheel-rr
+├── ship-root        ← physics pose
+│   └── ship-body    ← GLB hull
+└── avatar           ← visible in chase view
+```
+
+Each frame:
+1. Physics step updates `VehicleWorld`
+2. Root nodes get world pose from physics
+3. Wheel nodes get local pose from suspension snapshot
+4. `sceneDebugLines()` generates RGB axes + cyan parent-child lines
+
+### Debug Gizmos
+
+Press `G` to toggle debug visualization:
+- **RGB axes** at each SceneNode origin (R=+X, G=+Y, B=-Z)
+- **Cyan lines** connecting parent→child nodes
 
 ### Running the Demo
 
@@ -36,10 +74,12 @@ Then open http://localhost:3000 in your browser.
 | Key | Action |
 |-----|--------|
 | `W` `A` `S` `D` | Walk |
-| `Shift` (hold) | Sprint / Rocket thrust (Iron Man jetpack) |
+| `Shift` | Sprint |
+| `F` | Rocket/Jetpack (hold) |
 | `Space` | Jump |
 | `E` | Enter nearest vehicle |
-| `C` | Cycle view (first-person ↔ chase) |
+| `C` | Cycle view (first ↔ chase) |
+| `G` | Toggle debug gizmos |
 | Mouse | Look around (click to lock) |
 
 **Driving:**
@@ -53,6 +93,7 @@ Then open http://localhost:3000 in your browser.
 | `Space` | Handbrake (drift) |
 | `E` | Exit vehicle |
 | `C` | Cycle camera (chase → pilot → far → top) |
+| `G` | Toggle debug gizmos |
 | `R` | Recover (flip upright) |
 | Mouse | Look around |
 

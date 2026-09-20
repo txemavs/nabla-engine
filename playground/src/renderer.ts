@@ -30,6 +30,22 @@ export interface BoxMesh {
   color: [number, number, number]
 }
 
+export interface GlbMesh {
+  positions: Float32Array
+  normals: Float32Array
+  indices: Uint16Array
+  color: [number, number, number]
+  vbo?: WebGLBuffer
+  ibo?: WebGLBuffer
+  indexCount?: number
+}
+
+export interface DebugLine {
+  x1: number; y1: number; z1: number
+  x2: number; y2: number; z2: number
+  r: number; g: number; b: number
+}
+
 export interface Camera {
   x: number
   y: number
@@ -462,5 +478,97 @@ export class Renderer {
       gl.uniform3fv(this.boxLocs.uColor, b.color)
       gl.drawArrays(gl.TRIANGLES, 0, 36)
     }
+  }
+
+  /**
+   * Render a GLB mesh with a model matrix.
+   */
+  renderGlbMesh(cam: Camera, mesh: GlbMesh, modelMat: Float32Array): void {
+    const gl = this.gl
+    const w = gl.canvas.width
+    const h = gl.canvas.height
+    const aspect = w / h
+    const proj = perspective(Math.PI / 3, aspect, 0.1, 500)
+    const view = viewMatrix(cam.x, cam.y, cam.z, cam.rx, cam.ry)
+
+    // Initialize buffers if needed
+    if (!mesh.vbo) {
+      mesh.vbo = gl.createBuffer()!
+      gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vbo)
+      // Interleave positions and normals
+      const interleaved = new Float32Array(mesh.positions.length * 2)
+      for (let i = 0; i < mesh.positions.length / 3; i++) {
+        interleaved[i * 6 + 0] = mesh.positions[i * 3 + 0]
+        interleaved[i * 6 + 1] = mesh.positions[i * 3 + 1]
+        interleaved[i * 6 + 2] = mesh.positions[i * 3 + 2]
+        interleaved[i * 6 + 3] = mesh.normals[i * 3 + 0]
+        interleaved[i * 6 + 4] = mesh.normals[i * 3 + 1]
+        interleaved[i * 6 + 5] = mesh.normals[i * 3 + 2]
+      }
+      gl.bufferData(gl.ARRAY_BUFFER, interleaved, gl.STATIC_DRAW)
+
+      mesh.ibo = gl.createBuffer()!
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.ibo)
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW)
+      mesh.indexCount = mesh.indices.length
+    }
+
+    gl.useProgram(this.boxProg)
+    gl.uniformMatrix4fv(this.boxLocs.uProj, false, proj)
+    gl.uniformMatrix4fv(this.boxLocs.uView, false, view)
+    gl.uniformMatrix4fv(this.boxLocs.uModel, false, modelMat)
+    gl.uniform3fv(this.boxLocs.uColor, mesh.color)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vbo!)
+    gl.enableVertexAttribArray(this.boxLocs.aPos)
+    gl.enableVertexAttribArray(this.boxLocs.aNorm)
+    gl.vertexAttribPointer(this.boxLocs.aPos, 3, gl.FLOAT, false, 24, 0)
+    gl.vertexAttribPointer(this.boxLocs.aNorm, 3, gl.FLOAT, false, 24, 12)
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.ibo!)
+    gl.drawElements(gl.TRIANGLES, mesh.indexCount!, gl.UNSIGNED_SHORT, 0)
+  }
+
+  /**
+   * Render debug lines (RGB axis gizmos + parent-child connections).
+   */
+  renderDebugLines(cam: Camera, lines: DebugLine[]): void {
+    if (lines.length === 0) return
+
+    const gl = this.gl
+    const w = gl.canvas.width
+    const h = gl.canvas.height
+    const aspect = w / h
+    const proj = perspective(Math.PI / 3, aspect, 0.1, 500)
+    const view = viewMatrix(cam.x, cam.y, cam.z, cam.rx, cam.ry)
+
+    // Build line data
+    const data = new Float32Array(lines.length * 12)  // 2 verts × 6 floats
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i]
+      data[i * 12 + 0] = l.x1
+      data[i * 12 + 1] = l.y1
+      data[i * 12 + 2] = l.z1
+      data[i * 12 + 3] = l.r
+      data[i * 12 + 4] = l.g
+      data[i * 12 + 5] = l.b
+      data[i * 12 + 6] = l.x2
+      data[i * 12 + 7] = l.y2
+      data[i * 12 + 8] = l.z2
+      data[i * 12 + 9] = l.r
+      data[i * 12 + 10] = l.g
+      data[i * 12 + 11] = l.b
+    }
+
+    gl.useProgram(this.lineProg)
+    gl.uniformMatrix4fv(this.lineLocs.uProj, false, proj)
+    gl.uniformMatrix4fv(this.lineLocs.uView, false, view)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.lineVbo)
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
+    gl.enableVertexAttribArray(this.lineLocs.aPos)
+    gl.enableVertexAttribArray(this.lineLocs.aColor)
+    gl.vertexAttribPointer(this.lineLocs.aPos, 3, gl.FLOAT, false, 24, 0)
+    gl.vertexAttribPointer(this.lineLocs.aColor, 3, gl.FLOAT, false, 24, 12)
+    gl.drawArrays(gl.LINES, 0, lines.length * 2)
   }
 }

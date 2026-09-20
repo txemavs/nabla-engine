@@ -1,23 +1,25 @@
 /**
- * Nabla Drive Playground — avatar + boxcar + ship5x10 demo.
+ * Nabla Drive Playground — GLB vehicles with SceneNode hierarchy.
  *
  * Demonstrates:
- * - Avatar walking with WASD
- * - Rocket/jetpack flight (hold Shift)
- * - Approach and mount vehicles (E key)
- * - Drive with full Cannon-es physics
- * - Exit back to walk/fly
+ * - A3 Cabrio with GLB body + wheels as child SceneNodes
+ * - Ship 5×10 with GLB hull
+ * - Cannon-es RaycastVehicle physics
+ * - SceneNode attach/detach API
+ * - Debug gizmos (RGB axes + parent-child lines)
  */
 import {
   VehicleWorld,
-  BOXCAR_SPEC,
-  BOXCAR_MOUNTS,
-  BOXCAR_SIZE,
-  BOXCAR_WHEEL_RADIUS,
-  boxcarWheelPositions,
+  A3_SPEC,
+  A3_MOUNTS,
+  A3_ASSETS,
+  a3WheelPositions,
+  A3_WHEEL_RADIUS,
   SHIP_5X10_SPEC,
   SHIP_MOUNTS,
   SHIP_SIZE,
+  SHIP_5X10_ASSETS,
+  shipGarageBoxes,
   type DriveView,
   driveCamera,
   driveExitPosition,
@@ -39,57 +41,104 @@ import {
   type AvatarInput,
   emptyAvatarInput,
   WALK_EYE_HEIGHT_MM,
+  SceneNode,
+  sceneDebugLines,
+  parseGlb,
 } from '@nabla/engine'
-import { Renderer, type BoxMesh, type Camera } from './renderer.js'
+import { Renderer, type BoxMesh, type Camera, type GlbMesh, type DebugLine } from './renderer.js'
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 const hud = document.getElementById('hud') as HTMLDivElement
 const renderer = new Renderer(canvas)
 
+// Scene graph root
+const sceneRoot = new SceneNode('world')
+
+// A3 Cabrio scene nodes
+const a3Root = new SceneNode('a3-root')
+const a3Body = new SceneNode('a3-body')
+const a3WheelFL = new SceneNode('a3-wheel-fl')
+const a3WheelFR = new SceneNode('a3-wheel-fr')
+const a3WheelRL = new SceneNode('a3-wheel-rl')
+const a3WheelRR = new SceneNode('a3-wheel-rr')
+a3Root.attach(a3Body)
+a3Root.attach(a3WheelFL)
+a3Root.attach(a3WheelFR)
+a3Root.attach(a3WheelRL)
+a3Root.attach(a3WheelRR)
+sceneRoot.attach(a3Root)
+
+// Ship scene node
+const shipRoot = new SceneNode('ship-root')
+const shipBody = new SceneNode('ship-body')
+shipRoot.attach(shipBody)
+sceneRoot.attach(shipRoot)
+
+// Avatar scene node (for visualization only)
+const avatarNode = new SceneNode('avatar')
+sceneRoot.attach(avatarNode)
+
+// Spawn positions
 const CAR_START = { x: 5, y: 0, z: -5, yaw: 0 }
 const SHIP_START = { x: -10, y: 0, z: -15, yaw: 45 }
-// Avatar spawns behind origin, facing forward (-Z), sees ground circle + car + ship
 const AVATAR_START = { x: 0, y: WALK_EYE_HEIGHT_MM / 1000, z: 8, yaw: 0 }
 
-const CAR_COLOR: [number, number, number] = [0.9, 0.3, 0.2]
+// Colors
+const CAR_COLOR: [number, number, number] = [0.85, 0.1, 0.1]
 const WHEEL_COLOR: [number, number, number] = [0.15, 0.15, 0.15]
-const SHIP_COLOR: [number, number, number] = [0.2, 0.5, 0.8]
+const SHIP_COLOR: [number, number, number] = [0.3, 0.5, 0.7]
 const AVATAR_COLOR: [number, number, number] = [0.3, 0.8, 0.4]
+const RAMP_COLOR: [number, number, number] = [0.4, 0.35, 0.3]
+
+// GLB meshes (loaded async)
+let a3BodyMesh: GlbMesh | null = null
+let a3WheelMesh: GlbMesh | null = null
+let shipBodyMesh: GlbMesh | null = null
+let glbsLoaded = false
 
 interface Vehicle {
   id: string
   world: VehicleWorld
   mounts: CarPackMounts
-  size: { x: number; y: number; z: number }
-  color: [number, number, number]
+  rootNode: SceneNode
   isHull: boolean
-  wheelRadius?: number
-  wheels?: ReturnType<typeof boxcarWheelPositions>
+  wheelNodes?: SceneNode[]
+  wheelPositions?: ReturnType<typeof a3WheelPositions>
 }
 
-const carWorld = new VehicleWorld(BOXCAR_SPEC)
-carWorld.mount(CAR_START, BOXCAR_SPEC)
+// Physics worlds
+const carWorld = new VehicleWorld(A3_SPEC)
+carWorld.mount(CAR_START, A3_SPEC)
 
 const shipWorld = new VehicleWorld(SHIP_5X10_SPEC)
 shipWorld.mount(SHIP_START, SHIP_5X10_SPEC)
 
+// Set initial scene node positions
+a3Root.setLocal({ x: CAR_START.x, y: CAR_START.y, z: CAR_START.z, yaw: CAR_START.yaw })
+shipRoot.setLocal({ x: SHIP_START.x, y: SHIP_START.y, z: SHIP_START.z, yaw: SHIP_START.yaw })
+
+// Set wheel initial positions relative to body
+const wheelPos = a3WheelPositions()
+a3WheelFL.setLocal({ x: wheelPos.FL.x, y: wheelPos.FL.y, z: wheelPos.FL.z })
+a3WheelFR.setLocal({ x: wheelPos.FR.x, y: wheelPos.FR.y, z: wheelPos.FR.z })
+a3WheelRL.setLocal({ x: wheelPos.RL.x, y: wheelPos.RL.y, z: wheelPos.RL.z })
+a3WheelRR.setLocal({ x: wheelPos.RR.x, y: wheelPos.RR.y, z: wheelPos.RR.z })
+
 const vehicles: Vehicle[] = [
   {
-    id: 'boxcar',
+    id: 'a3cabrio',
     world: carWorld,
-    mounts: BOXCAR_MOUNTS,
-    size: BOXCAR_SIZE,
-    color: CAR_COLOR,
+    mounts: A3_MOUNTS,
+    rootNode: a3Root,
     isHull: false,
-    wheelRadius: BOXCAR_WHEEL_RADIUS,
-    wheels: boxcarWheelPositions(),
+    wheelNodes: [a3WheelFL, a3WheelFR, a3WheelRL, a3WheelRR],
+    wheelPositions: wheelPos,
   },
   {
     id: 'ship5x10',
     world: shipWorld,
     mounts: SHIP_MOUNTS,
-    size: SHIP_SIZE,
-    color: SHIP_COLOR,
+    rootNode: shipRoot,
     isHull: true,
   },
 ]
@@ -98,11 +147,86 @@ let avatar: AvatarState = createAvatarState(AVATAR_START)
 let activeVehicle: Vehicle | null = null
 let driveView: DriveView = 'chase'
 let driveLook: DriveLook = identityDriveLook()
+let showDebug = true
 
 const keys = new Set<string>()
 const input: AvatarInput = emptyAvatarInput()
 let mouseDx = 0, mouseDy = 0
 let pointerLocked = false
+
+// Load GLBs
+async function loadGlbs(): Promise<void> {
+  try {
+    const [bodyData, wheelData, shipData] = await Promise.all([
+      fetch(A3_ASSETS.body.url).then(r => r.arrayBuffer()),
+      fetch(A3_ASSETS.wheel.url).then(r => r.arrayBuffer()),
+      fetch(SHIP_5X10_ASSETS.body.url).then(r => r.arrayBuffer()),
+    ])
+
+    const bodyPrims = parseGlb(bodyData)
+    const wheelPrims = parseGlb(wheelData)
+    const shipPrims = parseGlb(shipData)
+
+    // Merge all primitives into single meshes for simplicity
+    if (bodyPrims.length > 0) {
+      const merged = mergePrimitives(bodyPrims)
+      a3BodyMesh = { ...merged, color: CAR_COLOR }
+    }
+    if (wheelPrims.length > 0) {
+      const merged = mergePrimitives(wheelPrims)
+      a3WheelMesh = { ...merged, color: WHEEL_COLOR }
+    }
+    if (shipPrims.length > 0) {
+      const merged = mergePrimitives(shipPrims)
+      shipBodyMesh = { ...merged, color: SHIP_COLOR }
+    }
+
+    glbsLoaded = true
+    console.log('GLBs loaded:', {
+      body: bodyPrims.length + ' prims',
+      wheel: wheelPrims.length + ' prims',
+      ship: shipPrims.length + ' prims',
+    })
+  } catch (e) {
+    console.error('Failed to load GLBs:', e)
+  }
+}
+
+function mergePrimitives(prims: { positions: Float32Array; normals: Float32Array; indices: Uint16Array }[]): {
+  positions: Float32Array
+  normals: Float32Array
+  indices: Uint16Array
+} {
+  let totalVerts = 0
+  let totalIndices = 0
+  for (const p of prims) {
+    totalVerts += p.positions.length / 3
+    totalIndices += p.indices.length
+  }
+
+  const positions = new Float32Array(totalVerts * 3)
+  const normals = new Float32Array(totalVerts * 3)
+  const indices = new Uint16Array(totalIndices)
+
+  let vertOffset = 0
+  let indexOffset = 0
+  let baseVertex = 0
+
+  for (const p of prims) {
+    positions.set(p.positions, vertOffset * 3)
+    normals.set(p.normals, vertOffset * 3)
+    for (let i = 0; i < p.indices.length; i++) {
+      indices[indexOffset + i] = p.indices[i] + baseVertex
+    }
+    vertOffset += p.positions.length / 3
+    indexOffset += p.indices.length
+    baseVertex += p.positions.length / 3
+  }
+
+  return { positions, normals, indices }
+}
+
+loadGlbs()
 
 window.addEventListener('keydown', (e) => {
   keys.add(e.code)
@@ -116,6 +240,9 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyE') {
     toggleMount()
+  }
+  if (e.code === 'KeyG') {
+    showDebug = !showDebug
   }
   if (e.code === 'Space' && activeVehicle) {
     e.preventDefault()
@@ -190,8 +317,8 @@ function updateInput(): void {
   input.left = keys.has('KeyA') || keys.has('ArrowLeft')
   input.right = keys.has('KeyD') || keys.has('ArrowRight')
   input.jump = keys.has('Space')
-  input.sprint = keys.has('ShiftLeft') || keys.has('ShiftRight')  // Shift = sprint
-  input.rocket = keys.has('KeyF')  // F = rocket/jetpack (separate from sprint)
+  input.sprint = keys.has('ShiftLeft') || keys.has('ShiftRight')
+  input.rocket = keys.has('KeyF')
   input.mount = keys.has('KeyE')
   input.lookDx = mouseDx
   input.lookDy = mouseDy
@@ -242,53 +369,118 @@ function getCamera(): Camera {
   return avatarCamera(avatar)
 }
 
-function buildBoxes(): BoxMesh[] {
-  const boxes: BoxMesh[] = []
-
+function updateSceneNodes(): void {
+  // Update vehicle scene nodes from physics
   for (const v of vehicles) {
     const pose = v.world.readPose()
-    boxes.push({
+    v.rootNode.setLocal({
       x: pose.x,
-      y: pose.y + v.size.y / 2,
+      y: pose.y,
       z: pose.z,
-      hx: v.size.x / 2,
-      hy: v.size.y / 2,
-      hz: v.size.z / 2,
       yaw: pose.yaw,
       pitch: pose.pitch,
       roll: pose.roll,
-      color: v.color,
     })
 
-    if (v.wheels && v.wheelRadius) {
+    // Update wheel nodes from suspension
+    if (v.wheelNodes && v.wheelPositions) {
       const snap = v.world.snapshot
-      const rad = (pose.yaw * Math.PI) / 180
-      const cos = Math.cos(rad), sin = Math.sin(rad)
-      const wheelPos = v.wheels
-      const wheelIds: ('FL' | 'FR' | 'RL' | 'RR')[] = ['FL', 'FR', 'RL', 'RR']
+      const ids = ['FL', 'FR', 'RL', 'RR'] as const
       for (let i = 0; i < 4; i++) {
-        const wid = wheelIds[i]
-        const wp = wheelPos[wid]
+        const wid = ids[i]
+        const wp = v.wheelPositions[wid]
         const susp = snap.suspension[i] ?? 0
         const steerAngle = i < 2 ? snap.steerRad * 180 / Math.PI : 0
-        const wx = pose.x + wp.x * cos - wp.z * sin
-        const wz = pose.z + wp.x * sin + wp.z * cos
-        const wy = pose.y + v.wheelRadius - susp * 0.5
-        boxes.push({
-          x: wx,
-          y: wy,
-          z: wz,
-          hx: 0.12,
-          hy: v.wheelRadius,
-          hz: v.wheelRadius,
-          yaw: pose.yaw + steerAngle,
-          color: WHEEL_COLOR,
+        v.wheelNodes[i].setLocal({
+          x: wp.x,
+          y: wp.y - susp * 0.3,  // suspension compression
+          z: wp.z,
+          yaw: steerAngle,
         })
       }
     }
   }
 
-  // Only draw avatar body in chase view (3rd person) - not in first person
+  // Update avatar node
+  if (!activeVehicle) {
+    const body = avatarBodyPose(avatar)
+    avatarNode.setLocal({ x: body.x, y: body.y, z: body.z, yaw: body.yaw })
+    avatarNode.visible = avatar.view === 'chase'
+  } else {
+    avatarNode.visible = false
+  }
+}
+
+function buildFallbackBoxes(): BoxMesh[] {
+  // Fallback boxes when GLBs not loaded
+  const boxes: BoxMesh[] = []
+
+  for (const v of vehicles) {
+    const pose = v.world.readPose()
+    if (v.isHull) {
+      boxes.push({
+        x: pose.x,
+        y: pose.y + SHIP_SIZE.y / 2,
+        z: pose.z,
+        hx: SHIP_SIZE.x / 2,
+        hy: SHIP_SIZE.y / 2,
+        hz: SHIP_SIZE.z / 2,
+        yaw: pose.yaw,
+        pitch: pose.pitch,
+        roll: pose.roll,
+        color: SHIP_COLOR,
+      })
+    } else {
+      // Car body
+      boxes.push({
+        x: pose.x,
+        y: pose.y + 0.7,
+        z: pose.z,
+        hx: 0.9,
+        hy: 0.7,
+        hz: 2.1,
+        yaw: pose.yaw,
+        pitch: pose.pitch,
+        roll: pose.roll,
+        color: CAR_COLOR,
+      })
+      // Wheels
+      if (v.wheelNodes) {
+        for (const wn of v.wheelNodes) {
+          const wp = wn.worldPosition
+          boxes.push({
+            x: wp.x,
+            y: wp.y,
+            z: wp.z,
+            hx: 0.12,
+            hy: A3_WHEEL_RADIUS,
+            hz: A3_WHEEL_RADIUS,
+            yaw: wn.worldPose.yaw + pose.yaw,
+            color: WHEEL_COLOR,
+          })
+        }
+      }
+    }
+  }
+
+  // Ship garage ramp/floor boxes
+  const shipPose = shipWorld.readPose()
+  const garageBoxes = shipGarageBoxes(shipPose)
+  for (const gb of garageBoxes) {
+    boxes.push({
+      x: gb.x,
+      y: gb.y,
+      z: gb.z,
+      hx: gb.hx,
+      hy: gb.hy,
+      hz: gb.hz,
+      yaw: (gb.yaw ?? 0) * 180 / Math.PI,
+      pitch: (gb.pitch ?? 0) * 180 / Math.PI,
+      color: RAMP_COLOR,
+    })
+  }
+
+  // Avatar body
   if (!activeVehicle && avatar.view === 'chase') {
     const body = avatarBodyPose(avatar)
     boxes.push({
@@ -309,24 +501,25 @@ function buildBoxes(): BoxMesh[] {
 function updateHud(): void {
   const cam = getCamera()
   const camInfo = `cam: (${cam.x.toFixed(1)}, ${cam.y.toFixed(1)}, ${cam.z.toFixed(1)}) yaw=${cam.ry.toFixed(0)}° pitch=${cam.rx.toFixed(0)}°`
-  
+
   if (activeVehicle) {
     const snap = activeVehicle.world.snapshot
     const speed = Math.abs(snap.forwardSpeed * 3.6)
     hud.innerHTML = `
       <b>Driving: ${activeVehicle.id}</b><br>
       Speed: ${speed.toFixed(1)} km/h | Gear: ${snap.gear}<br>
-      View: ${driveView}<br>
+      View: ${driveView} | Debug: ${showDebug ? 'ON' : 'OFF'}<br>
       <span style="font-size:11px;color:#aaa">${camInfo}</span><br>
-      <span style="color:#888">E: exit | C: view | R: recover</span>
+      <span style="color:#888">E: exit | C: view | R: recover | G: debug</span>
     `
   } else {
     const nearest = findNearestVehicle()
     const mode = avatar.mode === 'rocket' ? '🚀 Flying' : '🚶 Walking'
     const alt = avatar.y - WALK_EYE_HEIGHT_MM / 1000
     hud.innerHTML = `
-      <b>${mode}</b> | View: ${avatar.view}<br>
+      <b>${mode}</b> | View: ${avatar.view} | Debug: ${showDebug ? 'ON' : 'OFF'}<br>
       Alt: ${alt.toFixed(1)} m ${avatar.rocketBurn > 0 ? `| Burn: ${(avatar.rocketBurn / 20 * 100).toFixed(0)}%` : ''}<br>
+      GLBs: ${glbsLoaded ? '✓ loaded' : 'loading...'}<br>
       <span style="font-size:11px;color:#aaa">${camInfo}</span><br>
       ${nearest ? `<span style="color:#0f0">E: enter ${nearest.id}</span>` : '<span style="color:#888">Walk to a vehicle</span>'}
     `
@@ -358,6 +551,9 @@ function loop(time: number): void {
     }
   }
 
+  // Update scene graph from physics
+  updateSceneNodes()
+
   const w = window.innerWidth
   const h = window.innerHeight
   if (canvas.width !== w || canvas.height !== h) {
@@ -365,8 +561,66 @@ function loop(time: number): void {
   }
 
   const cam = getCamera()
-  const boxes = buildBoxes()
-  renderer.render(cam, boxes)
+
+  // Render ground, axes, boxes
+  const boxes = buildFallbackBoxes()
+  renderer.render(cam, glbsLoaded ? [] : boxes)
+
+  // Render GLB meshes if loaded
+  if (glbsLoaded) {
+    // Render A3 body
+    if (a3BodyMesh) {
+      renderer.renderGlbMesh(cam, a3BodyMesh, a3Body.worldMatrix)
+    }
+    // Render A3 wheels
+    if (a3WheelMesh) {
+      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelFL.worldMatrix)
+      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelFR.worldMatrix)
+      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelRL.worldMatrix)
+      renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelRR.worldMatrix)
+    }
+    // Render ship
+    if (shipBodyMesh) {
+      renderer.renderGlbMesh(cam, shipBodyMesh, shipBody.worldMatrix)
+    }
+
+    // Render garage ramp boxes (always boxes, not GLB)
+    const shipPose = shipWorld.readPose()
+    const garageBoxes = shipGarageBoxes(shipPose)
+    const rampBoxes: BoxMesh[] = garageBoxes.map(gb => ({
+      x: gb.x,
+      y: gb.y,
+      z: gb.z,
+      hx: gb.hx,
+      hy: gb.hy,
+      hz: gb.hz,
+      yaw: (gb.yaw ?? 0) * 180 / Math.PI,
+      pitch: (gb.pitch ?? 0) * 180 / Math.PI,
+      color: RAMP_COLOR,
+    }))
+    renderer.render(cam, rampBoxes)
+
+    // Avatar body (when in chase view)
+    if (!activeVehicle && avatar.view === 'chase') {
+      const body = avatarBodyPose(avatar)
+      renderer.render(cam, [{
+        x: body.x,
+        y: body.y,
+        z: body.z,
+        hx: 0.3,
+        hy: 0.9,
+        hz: 0.2,
+        yaw: body.yaw,
+        color: AVATAR_COLOR,
+      }])
+    }
+  }
+
+  // Render debug lines
+  if (showDebug) {
+    const debugLines = sceneDebugLines(sceneRoot, 0.5)
+    renderer.renderDebugLines(cam, debugLines as DebugLine[])
+  }
 
   updateHud()
 
@@ -378,9 +632,10 @@ requestAnimationFrame(loop)
 console.log('Nabla Drive Playground loaded')
 console.log('Controls:')
 console.log('  WASD/Arrows - Walk/Drive')
-console.log('  Shift - Sprint/Rocket thrust')
+console.log('  Shift - Sprint')
+console.log('  F - Rocket/Jetpack')
 console.log('  Space - Jump (walk) / Handbrake (drive)')
 console.log('  E - Enter/Exit vehicle')
 console.log('  C - Cycle camera view')
+console.log('  G - Toggle debug gizmos')
 console.log('  R - Recover vehicle')
-console.log('Vehicles:', vehicles.map(v => v.id))
