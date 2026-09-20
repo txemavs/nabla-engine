@@ -137,36 +137,61 @@ function perspective(fov: number, aspect: number, near: number, far: number): Fl
 
 /**
  * Build view matrix from camera position and Euler angles.
- * 
+ * Standard FPS orthonormal basis.
+ *
  * Convention:
  * - yaw (ry): rotation around Y axis. yaw=0 looks toward -Z.
- * - pitch (rx): rotation around X axis. Positive pitch looks up.
- * - Forward direction: (-sin(yaw), sin(pitch), -cos(yaw)*cos(pitch)) normalized
+ * - pitch (rx): rotation around X axis. Positive pitch looks up. Clamped ±85°.
+ *
+ * Basis construction:
+ * 1. forward = direction camera looks (from yaw + pitch)
+ * 2. right = normalize(forward × worldUp), where worldUp = (0,1,0)
+ * 3. up = normalize(right × forward)
+ * 4. View matrix columns: right, up, -forward (GL looks down -Z in view space)
  */
 function viewMatrix(ex: number, ey: number, ez: number, pitchDeg: number, yawDeg: number): Float32Array {
-  const pitch = pitchDeg * Math.PI / 180
+  // Clamp pitch to avoid gimbal lock
+  const clampedPitch = Math.max(-85, Math.min(85, pitchDeg))
+  const pitch = clampedPitch * Math.PI / 180
   const yaw = yawDeg * Math.PI / 180
-  
+
   const cp = Math.cos(pitch), sp = Math.sin(pitch)
   const cy = Math.cos(yaw), sy = Math.sin(yaw)
-  
+
+  // Forward direction (where camera looks)
+  // At yaw=0, pitch=0: forward = (0, 0, -1)
+  // Yaw rotates around Y, pitch rotates around X (after yaw)
   const fx = -sy * cp
   const fy = sp
   const fz = -cy * cp
-  
-  let rx = cy, ry = 0, rz = -sy
-  
-  const ux = -sy * sp
-  const uy = cp
-  const uz = -cy * sp
-  
+
+  // Right = forward × worldUp = forward × (0,1,0)
+  // At yaw=0: forward=(-0,0,-1), right = (-0,0,-1)×(0,1,0) = (1,0,0)
+  let rx = -fz  // = cy * cp
+  let ry = 0
+  let rz = fx   // = -sy * cp
+  // Normalize right (should already be unit length when pitch != ±90)
+  const rLen = Math.hypot(rx, ry, rz)
+  if (rLen > 0.0001) {
+    rx /= rLen
+    ry /= rLen
+    rz /= rLen
+  }
+
+  // Up = right × forward
+  const ux = ry * fz - rz * fy
+  const uy = rz * fx - rx * fz
+  const uz = rx * fy - ry * fx
+
+  // View matrix: columns are right, up, -forward (GL convention: camera looks down -Z)
+  // Row-major for WebGL uniform: transpose of column vectors
   return new Float32Array([
     rx, ux, -fx, 0,
     ry, uy, -fy, 0,
     rz, uz, -fz, 0,
-    -(rx*ex + ry*ey + rz*ez),
-    -(ux*ex + uy*ey + uz*ez),
-    (fx*ex + fy*ey + fz*ez),
+    -(rx * ex + ry * ey + rz * ez),
+    -(ux * ex + uy * ey + uz * ez),
+    -(-fx * ex + -fy * ey + -fz * ez),
     1,
   ])
 }

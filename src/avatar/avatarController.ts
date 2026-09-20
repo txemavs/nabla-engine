@@ -115,8 +115,8 @@ export function emptyAvatarInput(): AvatarInput {
 }
 
 export const LOOK_SENS = 0.15
-export const PITCH_MIN = -89
-export const PITCH_MAX = 89
+export const PITCH_MIN = -85
+export const PITCH_MAX = 85
 
 export function stepAvatar(
   state: AvatarState,
