@@ -78,9 +78,9 @@ sceneRoot.attach(shipRoot)
 const avatarNode = new SceneNode('avatar')
 sceneRoot.attach(avatarNode)
 
-// Spawn positions
-const CAR_START = { x: 5, y: 0, z: -5, yaw: 0 }
-const SHIP_START = { x: -10, y: 0, z: -15, yaw: 45 }
+// Spawn positions — y = comY so vehicle rests on ground correctly
+const CAR_START = { x: 5, y: A3_SPEC.comY, z: -5, yaw: 0 }
+const SHIP_START = { x: -10, y: SHIP_5X10_SPEC.comY, z: -15, yaw: 0 }
 const AVATAR_START = { x: 0, y: WALK_EYE_HEIGHT_MM / 1000, z: 8, yaw: 0 }
 
 // Colors
@@ -117,12 +117,22 @@ shipWorld.mount(SHIP_START, SHIP_5X10_SPEC)
 a3Root.setLocal({ x: CAR_START.x, y: CAR_START.y, z: CAR_START.z, yaw: CAR_START.yaw })
 shipRoot.setLocal({ x: SHIP_START.x, y: SHIP_START.y, z: SHIP_START.z, yaw: SHIP_START.yaw })
 
-// Set wheel initial positions relative to body
+// Body GLB offset: GLB origin is at model origin, physics COM is at comY
+// Body node local Y = rideY - comY to align GLB with physics
+const a3BodyOffset = A3_SPEC.rideY - A3_SPEC.comY
+a3Body.setLocal({ y: a3BodyOffset })
+
+const shipBodyOffset = SHIP_5X10_SPEC.rideY - SHIP_5X10_SPEC.comY
+shipBody.setLocal({ y: shipBodyOffset })
+
+// Set wheel positions relative to root (not body)
+// Wheels are at hub positions in model space, adjusted for COM offset
 const wheelPos = a3WheelPositions()
-a3WheelFL.setLocal({ x: wheelPos.FL.x, y: wheelPos.FL.y, z: wheelPos.FL.z })
-a3WheelFR.setLocal({ x: wheelPos.FR.x, y: wheelPos.FR.y, z: wheelPos.FR.z })
-a3WheelRL.setLocal({ x: wheelPos.RL.x, y: wheelPos.RL.y, z: wheelPos.RL.z })
-a3WheelRR.setLocal({ x: wheelPos.RR.x, y: wheelPos.RR.y, z: wheelPos.RR.z })
+const wheelYOffset = -A3_SPEC.comY  // wheels are in model space, root is at COM
+a3WheelFL.setLocal({ x: wheelPos.FL.x, y: wheelPos.FL.y + wheelYOffset, z: wheelPos.FL.z })
+a3WheelFR.setLocal({ x: wheelPos.FR.x, y: wheelPos.FR.y + wheelYOffset, z: wheelPos.FR.z })
+a3WheelRL.setLocal({ x: wheelPos.RL.x, y: wheelPos.RL.y + wheelYOffset, z: wheelPos.RL.z })
+a3WheelRR.setLocal({ x: wheelPos.RR.x, y: wheelPos.RR.y + wheelYOffset, z: wheelPos.RR.z })
 
 const vehicles: Vehicle[] = [
   {

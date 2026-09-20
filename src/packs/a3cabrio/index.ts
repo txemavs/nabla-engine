@@ -84,12 +84,23 @@ export const A3_ASSETS = {
   steering: { url: '/world/car.audi.a3.steering.glb' },
 }
 
-/** A3 VehicleSpec for Cannon physics. */
+/**
+ * A3 VehicleSpec for Cannon physics.
+ *
+ * Key tuning:
+ * - radius: wheel hub Y (0.315m)
+ * - restLength: ~0.22m so wheels sit on ground at rest
+ * - comY: center of mass height above ground plane
+ * - rideY: model offset (GLB origin to ground)
+ */
 export const A3_SPEC: VehicleSpec = {
   ...FACTORY_VEHICLE_SPEC,
   mass: 1400,
   wheelbase: A3_WHEELBASE,
   radius: A3_WHEEL_RADIUS,
+  restLength: 0.22,  // tuned for A3 wheel radius
+  comY: A3_WHEEL_RADIUS + 0.22,  // hubY + restLength
+  rideY: 0.05,  // small lift for ground clearance
   headingDeg: 0,
 }
 
