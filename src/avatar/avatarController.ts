@@ -80,14 +80,14 @@ export interface AvatarState {
   view: WalkView
 }
 
-export function createAvatarState(spawn?: { x?: number; y?: number; z?: number; yaw?: number }): AvatarState {
+export function createAvatarState(spawn?: { x?: number; y?: number; z?: number; yaw?: number; pitch?: number }): AvatarState {
   return {
     mode: 'walk',
     x: spawn?.x ?? 0,
     y: spawn?.y ?? WALK_EYE_HEIGHT_MM / 1000,
     z: spawn?.z ?? 0,
     yaw: spawn?.yaw ?? 0,
-    pitch: 0,
+    pitch: spawn?.pitch ?? -10,  // slight downward look so ground/horizon visible
     vx: 0,
     vy: 0,
     vz: 0,

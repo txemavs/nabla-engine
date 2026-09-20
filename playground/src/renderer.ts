@@ -275,13 +275,16 @@ export class Renderer {
     const gl = this.gl
     const s = this.groundSize
     const rep = 20
+    // CCW winding when viewed from above (+Y looking down at ground)
+    // Triangle 1: (-s,0,-s) → (-s,0,+s) → (+s,0,-s)  
+    // Triangle 2: (+s,0,-s) → (-s,0,+s) → (+s,0,+s)
     const v = [
       -s, 0, -s, 0, 0,
-       s, 0, -s, rep, 0,
-       s, 0,  s, rep, rep,
-      -s, 0, -s, 0, 0,
-       s, 0,  s, rep, rep,
       -s, 0,  s, 0, rep,
+       s, 0, -s, rep, 0,
+       s, 0, -s, rep, 0,
+      -s, 0,  s, 0, rep,
+       s, 0,  s, rep, rep,
     ]
     const buf = gl.createBuffer()!
     gl.bindBuffer(gl.ARRAY_BUFFER, buf)
@@ -299,41 +302,50 @@ export class Renderer {
     canvas.height = size
     const ctx = canvas.getContext('2d')!
     
-    ctx.fillStyle = '#333842'
+    // Dark asphalt base - clearly darker than sky
+    ctx.fillStyle = '#1a1c20'
     ctx.fillRect(0, 0, size, size)
-    ctx.fillStyle = '#2a2e36'
+    // Grid lines for depth perception
+    ctx.fillStyle = '#252830'
     for (let i = 0; i < size; i += 64) {
-      ctx.fillRect(i, 0, 32, size)
-      ctx.fillRect(0, i, size, 32)
+      ctx.fillRect(i, 0, 2, size)
+      ctx.fillRect(0, i, size, 2)
     }
     
-    ctx.strokeStyle = '#ffcc00'
-    ctx.lineWidth = 4
+    // Bright yellow circle - very visible
+    ctx.strokeStyle = '#ffdd00'
+    ctx.lineWidth = 8
     ctx.beginPath()
     ctx.arc(size/2, size/2, 180, 0, Math.PI * 2)
     ctx.stroke()
+    // Fill center slightly
+    ctx.fillStyle = '#2a2a1a'
+    ctx.beginPath()
+    ctx.arc(size/2, size/2, 178, 0, Math.PI * 2)
+    ctx.fill()
     
-    ctx.font = 'bold 24px monospace'
+    // Axis labels - bright colors
+    ctx.font = 'bold 28px monospace'
     ctx.textAlign = 'center'
-    ctx.fillStyle = '#ff4444'
-    ctx.fillText('+X', size - 30, size/2 + 8)
-    ctx.fillStyle = '#4444ff'
-    ctx.fillText('-Z (fwd)', size/2, 30)
+    ctx.fillStyle = '#ff6666'
+    ctx.fillText('+X', size - 35, size/2 + 10)
+    ctx.fillStyle = '#6666ff'
+    ctx.fillText('-Z', size/2, 35)
     ctx.fillStyle = '#666'
-    ctx.fillText('+Z', size/2, size - 15)
-    ctx.fillText('-X', 30, size/2 + 8)
+    ctx.fillText('+Z', size/2, size - 20)
+    ctx.fillText('-X', 35, size/2 + 10)
     
-    ctx.strokeStyle = '#4444ff'
-    ctx.lineWidth = 3
-    ctx.setLineDash([])
+    // Forward arrow (toward -Z in texture = top)
+    ctx.strokeStyle = '#6666ff'
+    ctx.lineWidth = 4
     ctx.beginPath()
     ctx.moveTo(size/2, size/2)
-    ctx.lineTo(size/2, 60)
+    ctx.lineTo(size/2, 70)
     ctx.stroke()
     ctx.beginPath()
-    ctx.moveTo(size/2 - 10, 80)
-    ctx.lineTo(size/2, 60)
-    ctx.lineTo(size/2 + 10, 80)
+    ctx.moveTo(size/2 - 12, 90)
+    ctx.lineTo(size/2, 70)
+    ctx.lineTo(size/2 + 12, 90)
     ctx.stroke()
     
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas)
@@ -371,7 +383,8 @@ export class Renderer {
     const proj = perspective(Math.PI / 3, aspect, 0.1, 500)
     const view = viewMatrix(cam.x, cam.y, cam.z, cam.rx, cam.ry)
 
-    gl.clearColor(0.12, 0.14, 0.18, 1)
+    // Sky blue-gray - clearly different from dark ground
+    gl.clearColor(0.4, 0.5, 0.6, 1)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
     gl.useProgram(this.groundProg)
