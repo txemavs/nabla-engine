@@ -562,61 +562,64 @@ function loop(time: number): void {
 
   const cam = getCamera()
 
-  // Render ground, axes, boxes
-  const boxes = buildFallbackBoxes()
-  renderer.render(cam, glbsLoaded ? [] : boxes)
+  // 1. Begin frame: clear, draw ground and origin gizmo
+  renderer.beginFrame(cam)
 
-  // Render GLB meshes if loaded
+  // 2. Render GLB meshes if loaded, otherwise fallback boxes
   if (glbsLoaded) {
-    // Render A3 body
+    // A3 body
     if (a3BodyMesh) {
       renderer.renderGlbMesh(cam, a3BodyMesh, a3Body.worldMatrix)
     }
-    // Render A3 wheels
+    // A3 wheels
     if (a3WheelMesh) {
       renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelFL.worldMatrix)
       renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelFR.worldMatrix)
       renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelRL.worldMatrix)
       renderer.renderGlbMesh(cam, a3WheelMesh, a3WheelRR.worldMatrix)
     }
-    // Render ship
+    // Ship
     if (shipBodyMesh) {
       renderer.renderGlbMesh(cam, shipBodyMesh, shipBody.worldMatrix)
     }
-
-    // Render garage ramp boxes (always boxes, not GLB)
-    const shipPose = shipWorld.readPose()
-    const garageBoxes = shipGarageBoxes(shipPose)
-    const rampBoxes: BoxMesh[] = garageBoxes.map(gb => ({
-      x: gb.x,
-      y: gb.y,
-      z: gb.z,
-      hx: gb.hx,
-      hy: gb.hy,
-      hz: gb.hz,
-      yaw: (gb.yaw ?? 0) * 180 / Math.PI,
-      pitch: (gb.pitch ?? 0) * 180 / Math.PI,
-      color: RAMP_COLOR,
-    }))
-    renderer.render(cam, rampBoxes)
-
-    // Avatar body (when in chase view)
-    if (!activeVehicle && avatar.view === 'chase') {
-      const body = avatarBodyPose(avatar)
-      renderer.render(cam, [{
-        x: body.x,
-        y: body.y,
-        z: body.z,
-        hx: 0.3,
-        hy: 0.9,
-        hz: 0.2,
-        yaw: body.yaw,
-        color: AVATAR_COLOR,
-      }])
-    }
+  } else {
+    // Fallback: procedural boxes when GLBs not loaded
+    const fallbackBoxes = buildFallbackBoxes()
+    renderer.renderBoxes(cam, fallbackBoxes)
   }
 
-  // Render debug lines
+  // 3. Always render garage ramp boxes (physics colliders)
+  const shipPose = shipWorld.readPose()
+  const garageBoxes = shipGarageBoxes(shipPose)
+  const rampBoxes: BoxMesh[] = garageBoxes.map(gb => ({
+    x: gb.x,
+    y: gb.y,
+    z: gb.z,
+    hx: gb.hx,
+    hy: gb.hy,
+    hz: gb.hz,
+    yaw: (gb.yaw ?? 0) * 180 / Math.PI,
+    pitch: (gb.pitch ?? 0) * 180 / Math.PI,
+    color: RAMP_COLOR,
+  }))
+  renderer.renderBoxes(cam, rampBoxes)
+
+  // 4. Avatar body (when in chase view and not driving)
+  if (!activeVehicle && avatar.view === 'chase') {
+    const body = avatarBodyPose(avatar)
+    renderer.renderBoxes(cam, [{
+      x: body.x,
+      y: body.y,
+      z: body.z,
+      hx: 0.3,
+      hy: 0.9,
+      hz: 0.2,
+      yaw: body.yaw,
+      color: AVATAR_COLOR,
+    }])
+  }
+
+  // 5. Debug lines (scene node gizmos)
   if (showDebug) {
     const debugLines = sceneDebugLines(sceneRoot, 0.5)
     renderer.renderDebugLines(cam, debugLines as DebugLine[])

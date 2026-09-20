@@ -425,6 +425,83 @@ export class Renderer {
     this.gl.viewport(0, 0, w, h)
   }
 
+  /**
+   * Begin frame: clear framebuffer, draw ground and origin gizmo.
+   * Call once per frame before rendering meshes/boxes.
+   */
+  beginFrame(cam: Camera): void {
+    const gl = this.gl
+    const w = gl.canvas.width
+    const h = gl.canvas.height
+    const aspect = w / h
+    const proj = perspective(Math.PI / 3, aspect, 0.1, 500)
+    const view = viewMatrix(cam.x, cam.y, cam.z, cam.rx, cam.ry)
+
+    // Clear
+    gl.clearColor(0.4, 0.5, 0.6, 1)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    // Ground
+    gl.useProgram(this.groundProg)
+    gl.uniformMatrix4fv(this.groundLocs.uProj, false, proj)
+    gl.uniformMatrix4fv(this.groundLocs.uView, false, view)
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, this.groundTex)
+    gl.uniform1i(this.groundLocs.uTex, 0)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.groundVbo)
+    gl.enableVertexAttribArray(this.groundLocs.aPos)
+    gl.enableVertexAttribArray(this.groundLocs.aUv)
+    gl.vertexAttribPointer(this.groundLocs.aPos, 3, gl.FLOAT, false, 20, 0)
+    gl.vertexAttribPointer(this.groundLocs.aUv, 2, gl.FLOAT, false, 20, 12)
+    gl.drawArrays(gl.TRIANGLES, 0, 6)
+
+    // Origin gizmo
+    gl.useProgram(this.lineProg)
+    gl.uniformMatrix4fv(this.lineLocs.uProj, false, proj)
+    gl.uniformMatrix4fv(this.lineLocs.uView, false, view)
+    const axisData = this.buildAxisGizmo()
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.lineVbo)
+    gl.bufferData(gl.ARRAY_BUFFER, axisData, gl.DYNAMIC_DRAW)
+    gl.enableVertexAttribArray(this.lineLocs.aPos)
+    gl.enableVertexAttribArray(this.lineLocs.aColor)
+    gl.vertexAttribPointer(this.lineLocs.aPos, 3, gl.FLOAT, false, 24, 0)
+    gl.vertexAttribPointer(this.lineLocs.aColor, 3, gl.FLOAT, false, 24, 12)
+    gl.drawArrays(gl.LINES, 0, 6)
+  }
+
+  /**
+   * Render boxes. Does NOT clear framebuffer.
+   */
+  renderBoxes(cam: Camera, boxes: BoxMesh[]): void {
+    if (boxes.length === 0) return
+
+    const gl = this.gl
+    const w = gl.canvas.width
+    const h = gl.canvas.height
+    const aspect = w / h
+    const proj = perspective(Math.PI / 3, aspect, 0.1, 500)
+    const view = viewMatrix(cam.x, cam.y, cam.z, cam.rx, cam.ry)
+
+    gl.useProgram(this.boxProg)
+    gl.uniformMatrix4fv(this.boxLocs.uProj, false, proj)
+    gl.uniformMatrix4fv(this.boxLocs.uView, false, view)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVbo)
+    gl.enableVertexAttribArray(this.boxLocs.aPos)
+    gl.enableVertexAttribArray(this.boxLocs.aNorm)
+    gl.vertexAttribPointer(this.boxLocs.aPos, 3, gl.FLOAT, false, 24, 0)
+    gl.vertexAttribPointer(this.boxLocs.aNorm, 3, gl.FLOAT, false, 24, 12)
+
+    for (const b of boxes) {
+      const model = modelMatrix(b.x, b.y, b.z, b.hx, b.hy, b.hz, b.yaw, b.pitch ?? 0, b.roll ?? 0)
+      gl.uniformMatrix4fv(this.boxLocs.uModel, false, model)
+      gl.uniform3fv(this.boxLocs.uColor, b.color)
+      gl.drawArrays(gl.TRIANGLES, 0, 36)
+    }
+  }
+
+  /**
+   * Legacy render: clears and draws ground + boxes. Use beginFrame + renderBoxes for mixed rendering.
+   */
   render(cam: Camera, boxes: BoxMesh[]): void {
     const gl = this.gl
     const w = gl.canvas.width
