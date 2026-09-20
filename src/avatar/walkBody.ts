@@ -83,17 +83,16 @@ export interface WalkCamera {
 }
 
 /**
- * Chase camera: positioned behind and above the avatar.
+ * Chase camera: positioned behind and above the avatar, looking at them.
  *
- * At yaw=0, pitch=0: avatar looks -Z, camera is at +Z relative to avatar.
- * Forward direction = (-sin(yaw), 0, -cos(yaw)) at pitch=0
- * Camera goes backward = opposite of forward = (+sin(yaw), 0, +cos(yaw))
+ * Camera is always at a fixed offset behind/above the avatar (based on yaw only).
+ * The pitch returned makes the camera look down at the avatar.
+ * Mouse pitch is NOT applied to camera position - only to where avatar faces.
  */
 export function walkChaseCamera(eye: WalkCamera): WalkCamera {
   const yawRad = (eye.ry * Math.PI) / 180
-  const pitchRad = (eye.rx * Math.PI) / 180
   
-  // Forward direction at this yaw (ignoring pitch for horizontal back offset)
+  // Forward direction at this yaw (horizontal only)
   const fwdX = -Math.sin(yawRad)
   const fwdZ = -Math.cos(yawRad)
   
@@ -101,12 +100,23 @@ export function walkChaseCamera(eye: WalkCamera): WalkCamera {
   const liftM = WALK_CHASE_LIFT_MM / 1000
   
   // Camera positioned behind (opposite of forward) and lifted
+  const camX = eye.x - fwdX * backM
+  const camY = eye.y + liftM
+  const camZ = eye.z - fwdZ * backM
+  
+  // Compute pitch to look at avatar from this position
+  const dx = eye.x - camX
+  const dy = eye.y - camY
+  const dz = eye.z - camZ
+  const horizDist = Math.hypot(dx, dz)
+  const lookPitch = (Math.atan2(dy, horizDist) * 180) / Math.PI
+  
   return {
-    x: eye.x - fwdX * backM,  // subtract forward = go backward
-    y: eye.y + liftM + backM * Math.sin(pitchRad),
-    z: eye.z - fwdZ * backM,
-    rx: eye.rx,
-    ry: eye.ry,
+    x: camX,
+    y: camY,
+    z: camZ,
+    rx: lookPitch,  // look down at avatar
+    ry: eye.ry,     // same yaw as avatar
   }
 }
 

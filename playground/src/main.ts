@@ -190,8 +190,8 @@ function updateInput(): void {
   input.left = keys.has('KeyA') || keys.has('ArrowLeft')
   input.right = keys.has('KeyD') || keys.has('ArrowRight')
   input.jump = keys.has('Space')
-  input.sprint = keys.has('ShiftLeft') || keys.has('ShiftRight')
-  input.rocket = keys.has('ShiftLeft') || keys.has('ShiftRight')
+  input.sprint = keys.has('ShiftLeft') || keys.has('ShiftRight')  // Shift = sprint
+  input.rocket = keys.has('KeyF')  // F = rocket/jetpack (separate from sprint)
   input.mount = keys.has('KeyE')
   input.lookDx = mouseDx
   input.lookDy = mouseDy

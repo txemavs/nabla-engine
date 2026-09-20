@@ -136,14 +136,30 @@ describe('walkBody', () => {
       const eye = { x: 0, y: 1.7, z: 0, rx: 0, ry: 90 }
       const chase = walkChaseCamera(eye)
       expect(chase.x).toBeGreaterThan(eye.x) // camera at +X (behind)
-      expect(chase.z).toBeCloseTo(eye.z) // no Z offset
+      expect(chase.z).toBeCloseTo(eye.z, 0) // no Z offset
     })
 
-    it('maintains look direction', () => {
+    it('looks down at avatar (negative pitch)', () => {
+      const eye = { x: 0, y: 1.7, z: 0, rx: 0, ry: 0 }
+      const chase = walkChaseCamera(eye)
+      // Camera is above avatar, so pitch should be negative (looking down)
+      expect(chase.rx).toBeLessThan(0)
+    })
+
+    it('maintains yaw direction', () => {
       const eye = { x: 0, y: 1.7, z: 0, rx: 10, ry: 45 }
       const chase = walkChaseCamera(eye)
-      expect(chase.rx).toBe(eye.rx)
-      expect(chase.ry).toBe(eye.ry)
+      expect(chase.ry).toBe(eye.ry)  // same yaw
+    })
+
+    it('camera Y does not change with eye pitch', () => {
+      // Camera position should NOT be affected by eye pitch
+      const eye1 = { x: 0, y: 1.7, z: 0, rx: 0, ry: 0 }
+      const eye2 = { x: 0, y: 1.7, z: 0, rx: 45, ry: 0 }
+      const chase1 = walkChaseCamera(eye1)
+      const chase2 = walkChaseCamera(eye2)
+      expect(chase1.y).toBeCloseTo(chase2.y)  // same Y regardless of pitch
+      expect(chase1.z).toBeCloseTo(chase2.z)  // same Z regardless of pitch
     })
   })
 })

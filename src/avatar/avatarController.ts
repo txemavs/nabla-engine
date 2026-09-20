@@ -87,7 +87,7 @@ export function createAvatarState(spawn?: { x?: number; y?: number; z?: number; 
     y: spawn?.y ?? WALK_EYE_HEIGHT_MM / 1000,
     z: spawn?.z ?? 0,
     yaw: spawn?.yaw ?? 0,
-    pitch: spawn?.pitch ?? -10,  // slight downward look so ground/horizon visible
+    pitch: spawn?.pitch ?? 0,  // level horizon
     vx: 0,
     vy: 0,
     vz: 0,
@@ -95,7 +95,7 @@ export function createAvatarState(spawn?: { x?: number; y?: number; z?: number; 
     coyoteS: 0,
     jumpBufferS: 0,
     grounded: true,
-    view: 'chase',  // default to chase (3rd person) for clarity
+    view: 'first',  // default to first-person (simple FPS)
   }
 }
 

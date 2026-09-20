@@ -14,10 +14,10 @@ describe('avatarController coordinate system', () => {
       expect(state.y).toBeCloseTo(WALK_EYE_HEIGHT_MM / 1000)
     })
 
-    it('spawns with yaw=0, pitch=-10 (slight downward look)', () => {
+    it('spawns with yaw=0, pitch=0 (level horizon)', () => {
       const state = createAvatarState()
       expect(state.yaw).toBe(0)
-      expect(state.pitch).toBe(-10)
+      expect(state.pitch).toBe(0)
     })
   })
 

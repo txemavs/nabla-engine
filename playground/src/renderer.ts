@@ -251,15 +251,24 @@ export class Renderer {
   private createCubeVbo(): WebGLBuffer {
     const gl = this.gl
     const v: number[] = []
+    // Each face: 4 vertices in CCW order when viewed from outside, then normal
+    // Winding: 0→1→2, 0→2→3 (CCW triangles)
     const faces: [number[], [number, number, number]][] = [
-      [[1,1,1, 1,1,-1, 1,-1,-1, 1,-1,1], [1, 0, 0]],
-      [[-1,1,-1, -1,1,1, -1,-1,1, -1,-1,-1], [-1, 0, 0]],
-      [[1,1,1, -1,1,1, -1,1,-1, 1,1,-1], [0, 1, 0]],
-      [[1,-1,-1, -1,-1,-1, -1,-1,1, 1,-1,1], [0, -1, 0]],
-      [[1,1,-1, -1,1,-1, -1,-1,-1, 1,-1,-1], [0, 0, -1]],
-      [[-1,1,1, 1,1,1, 1,-1,1, -1,-1,1], [0, 0, 1]],
+      // +X face (right): looking from +X toward origin
+      [[1,-1,-1, 1,1,-1, 1,1,1, 1,-1,1], [1, 0, 0]],
+      // -X face (left): looking from -X toward origin  
+      [[-1,-1,1, -1,1,1, -1,1,-1, -1,-1,-1], [-1, 0, 0]],
+      // +Y face (top): looking from +Y down
+      [[-1,1,-1, -1,1,1, 1,1,1, 1,1,-1], [0, 1, 0]],
+      // -Y face (bottom): looking from -Y up
+      [[-1,-1,1, -1,-1,-1, 1,-1,-1, 1,-1,1], [0, -1, 0]],
+      // +Z face (back): looking from +Z toward origin
+      [[1,-1,1, 1,1,1, -1,1,1, -1,-1,1], [0, 0, 1]],
+      // -Z face (front): looking from -Z toward origin
+      [[-1,-1,-1, -1,1,-1, 1,1,-1, 1,-1,-1], [0, 0, -1]],
     ]
     for (const [pos, n] of faces) {
+      // CCW triangles: 0,1,2 and 0,2,3
       const idx = [0, 1, 2, 0, 2, 3]
       for (const i of idx) {
         v.push(pos[i*3], pos[i*3+1], pos[i*3+2], n[0], n[1], n[2])
