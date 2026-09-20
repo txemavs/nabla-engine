@@ -33,6 +33,7 @@ export interface ShipPack {
   powerNote: string
   garage: ShipPackGarage
   size: { x: number; y: number; z: number }
+  assets: { body: { url: string } }
 }
 
 export const SHIP_ENTITY_PREFIX = 'world.ship.container.5x10.'
@@ -90,6 +91,10 @@ export const SHIP_GARAGE: ShipPackGarage = {
   openingHeight: OPENING_HEIGHT,
 }
 
+export const SHIP_ASSETS = {
+  body: { url: '/world/ship.container.5x10.glb' },
+}
+
 export const SHIP_5X10_PACK: ShipPack = {
   id: SHIP_ID,
   entityPrefix: SHIP_ENTITY_PREFIX,
@@ -98,6 +103,7 @@ export const SHIP_5X10_PACK: ShipPack = {
   powerNote: '1000 CV hovercraft',
   garage: SHIP_GARAGE,
   size: SHIP_SIZE,
+  assets: SHIP_ASSETS,
 }
 
 export function shipGarageBoxes(shipPose: {

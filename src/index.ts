@@ -503,11 +503,53 @@ export {
   SHIP_FOCUS_HEIGHT,
   SHIP_MOUNTS,
   SHIP_GARAGE,
+  SHIP_ASSETS as SHIP_5X10_ASSETS,
   SHIP_5X10_PACK,
   shipGarageBoxes,
   SHIP_5X10_SPEC,
   matchesShipPack,
 } from './packs/ship5x10/index.js'
+
+// A3 Cabrio pack
+export {
+  A3_EYE_1P,
+  A3_AVATAR_MOUNT,
+  A3_STEERING_MOUNT,
+  A3_FOCUS_HEIGHT,
+  A3_WHEEL_HUB_Y,
+  A3_WHEELBASE,
+  A3_TRACK_FRONT,
+  A3_TRACK_REAR,
+  A3_HALF_WHEELBASE,
+  A3_HALF_TRACK_FRONT,
+  A3_HALF_TRACK_REAR,
+  A3_VISUAL_TRAVEL,
+  A3_WHEEL_RADIUS,
+  a3WheelPositions,
+  A3_MOUNTS,
+  A3_HUBS,
+  A3_ASSETS,
+  A3_SPEC,
+  A3_CABRIO_PACK,
+} from './packs/a3cabrio/index.js'
+
+// Scene node hierarchy
+export {
+  type Transform,
+  type WorldPose,
+  type Mat4,
+  identityTransform,
+  poseToTransform,
+  identityMat4,
+  transformToMat4,
+  mulMat4,
+  mat4Position,
+  mat4ToEuler,
+  invertMat4,
+  SceneNode,
+  type DebugLine as SceneDebugLine,
+  sceneDebugLines,
+} from './scene/sceneNode.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHASE 2: Dual-world rendering + Portals
