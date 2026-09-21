@@ -6,6 +6,7 @@ Spanish interface; UI labels are quoted where needed to locate a control.
 | Guide                                       | Read it to…                                                      |
 | ------------------------------------------- | ---------------------------------------------------------------- |
 | [Controls](controls.md)                     | Edit, drive, latch cargo, fly and select location/time           |
+| [Videotiro review](videotiro-review.md)     | Understand the original layered scenarios and proposed reuse     |
 | [Architecture](architecture.md)             | Understand ownership, units, scene validation and simulation     |
 | [Vehicle assets](vehicle-assets.md)         | Understand the original models, mounts and carrier physics       |
 | [Geography](geography.md)                   | Understand GPS, maps, planetary scale, horizon and the sky clock |

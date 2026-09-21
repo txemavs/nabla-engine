@@ -15,6 +15,7 @@ test('starts in first person, toggles monitor view and fires only in play with c
     reticle = page.getByLabel('Punto de mira')
   await expect(canvas).toHaveAttribute('data-camera-mode', 'first-person')
   await expect(reticle).toBeVisible()
+  await expect(reticle).toHaveAttribute('data-weapon', 'loaded')
   await canvas.click()
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(true)
   await expect(reticle).toHaveAttribute('data-shots', '0')

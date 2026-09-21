@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Integrate the supplied HK USP Compact body and slide GLBs, preserving materials
+  and alignment, with a first-person visual slide cycle and loading fallback.
+- Record the Videotiro layered-scene formats and the distinction between fixed
+  photographic planes and billboards before designing an importer.
+
 - Restore gravity after monitor drops, brake back to normal hover clearance and
   give Space a single jump impulse.
 - Align 18 building footprints with the Agency circuit JPEG and keep painted

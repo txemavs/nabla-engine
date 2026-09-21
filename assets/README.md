@@ -66,3 +66,22 @@ image editing. Final prompt:
 `sprites/target.png` is an original procedural bullseye icon with transparent
 background, blue/white rings, orange centre and a grey stand. It was generated
 from geometric shapes for the gallery, without an external image source.
+
+## User-supplied HK USP Compact
+
+`weapons/hk_usp_compact_9mm.glb` (body) and
+`weapons/hk_usp_compact_9mm_c.glb` (slide) were supplied by the user from
+`A:\Descargas\hk_usp_compact_9` on 2026-09-21 and copied without modification.
+Their shared authored coordinates are treated as millimetres, with a common
+0.001 presentation scale. Original node transforms, alignment and materials are
+preserved. A shared view offset places the barrel near the first-person anchor;
+the slide root receives a temporary local Z offset during the visual shot cycle.
+This animation does not change hit detection or simulate a real mechanism.
+
+SHA-256:
+
+- Body: `c271058012e43c69de7d827e391b6997b82310425a40b9ce3b1e1c95519e19fc`
+- Slide: `4cd2e44690f32c96bd22e5e025e4a9f5f1e998022b2c23025017cd73eeb8eae0`
+
+The existing procedural sidearm remains a loading/error fallback. Load failure is
+exposed by `data-weapon="fallback"` on the reticle and its explanatory tooltip.

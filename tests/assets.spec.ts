@@ -13,7 +13,14 @@ test('loads the original GLBs, shows the interior and keeps models after editing
   })
   await page.goto('/')
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
-  expect(models.size).toBe(4)
+  expect([...models]).toEqual(
+    expect.arrayContaining([
+      'car.audi.a3.cabrio.glb',
+      'car.audi.a3.wheel.glb',
+      'car.audi.a3.steering.glb',
+      'ship.container.5x10.glb',
+    ]),
+  )
   await page.locator('#welcome-close').click()
   await page.screenshot({ path: 'test-results/a3-editor.png' })
   await page.locator('#play').click()

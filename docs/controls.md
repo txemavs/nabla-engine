@@ -151,7 +151,7 @@ player share the same render time. The cockpit eye height remains 0.10 m below t
 authored driver anchor. The monitor screen faces forward (−Z), restoring Agency's
 original orientation.
 
-## Monitor flight and provisional sidearm
+## Monitor flight and sidearm
 
 Play starts in first person outside vehicles. **C** (gamepad **B**) toggles first
 and third person; vehicle camera modes keep their own cycle. The compact monitor
@@ -162,13 +162,13 @@ impulse followed by a fall; it does not select a permanent height. The library's
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
 Click the viewport once to capture the mouse, then left-click to fire. The centre
-reticle shows aim and briefly changes to a cross on impact. The provisional pistol
-has muzzle flash and recoil, with a 220 ms shot interval. Shots stop at the first
+reticle shows aim and briefly changes to a cross on impact. The supplied HK USP Compact body and separate slide
+have muzzle flash, recoil and a visual slide cycle, with a 220 ms shot interval. Shots stop at the first
 physical solid and push dynamic props. In third person, a second ray from the
 monitor prevents shooting through an obstruction between the monitor and the aim
 point. Firing is disabled while driving or editing. Shots can cross one open/window portal, with opaque PNG pixels participating in
-aim and hit detection. There is no damage, ammunition or multiplayer yet. `playground/sidearm.ts` isolates the model
-group for replacement with the user's GLB without changing aiming or physics.
+aim and hit detection. There is no damage, ammunition or multiplayer yet. `playground/sidearm.ts` assembles the two original GLBs without changing aiming
+or physics; the procedural model is retained as a loading/error fallback.
 
 ## Carrier Stargate controls
 
