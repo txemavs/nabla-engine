@@ -287,3 +287,13 @@ or additional map provider is used.
 Invalid imported building topology is omitted after rounding, and its count appears
 on the OSM building group. Other buildings, roads and terrain continue loading. Authored
 solid validation remains strict; this tolerance only applies to map generation.
+
+## Bullet impact marks
+
+Shots against physical surfaces leave a small black circular mark. The most recent
+64 marks are retained for the current play session, replacing the oldest when full.
+Marks follow moving hit entities and use the same portal-transformed ray as damage;
+aim probes and misses do not leave marks. They are removed when their map zone unloads,
+when play stops or when the scene changes, and are not saved in scene JSON.
+These are simple surface-aligned discs with shared geometry/material, not holes or
+geometry damage. Sprite targets retain their existing hit/respawn behavior.

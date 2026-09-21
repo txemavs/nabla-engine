@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep the latest 64 solid-surface bullet impact marks, aligned to hit normals and attached to moving objects, including shots through portals.
+
 - Add an Ir menu with city presets, coordinate travel, loading/cancellation, failure preservation and undo back to the previous scene.
 - Isolate malformed imported OSM buildings so one degenerate solid cannot reject an entire district; report omitted building counts.
 

@@ -247,7 +247,10 @@ describe('hover monitor and shooting', () => {
     prop.motion = 'dynamic'
     prop.mass = 2
     const sim = new Simulation(scene([wall, prop]))
-    expect(sim.shoot([0, 1, 4], [0, 0, -1])?.entityId).toBe('wall')
+    const hit = sim.shoot([0, 1, 4], [0, 0, -1])!
+    expect(hit.entityId).toBe('wall')
+    expect(hit.normal).toEqual([0, 0, 1])
+    expect(hit.point[2]).toBeCloseTo(0.25)
     expect(sim.shoot([0, 1, 4], [0, 0, -1], 1)).toBeNull()
     expect(sim.shoot([0, 1, 4], [0, 0, 0])).toBeNull()
     expect(sim.shoot([0, 1, -1], [0, 0, -1])?.entityId).toBe('prop')

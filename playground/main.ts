@@ -259,6 +259,7 @@ function rebuild(): void {
   }
   view.dispose()
   view = new SceneView(editor.document)
+  renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
   watchAssets(view)
   setupWorldStream()
@@ -1394,6 +1395,7 @@ function frame(now: number): void {
       }
       firing.updateMatrixWorld(true)
       sidearm.impact(gallery.shoot(sim, view, firing))
+      renderer.domElement.dataset.impacts = String(view.impacts.count)
     }
   }
   fireRequested = false

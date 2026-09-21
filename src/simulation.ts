@@ -965,7 +965,7 @@ export class Simulation {
     direction: Vec3Tuple,
     range = 150,
     impulse = 12,
-  ): { point: Vec3Tuple; entityId: string | null } | null {
+  ): { point: Vec3Tuple; normal: Vec3Tuple; entityId: string | null } | null {
     const ray = new Vec3(...direction)
     if (
       !Number.isFinite(range) ||
@@ -980,11 +980,13 @@ export class Simulation {
       to = from.vadd(ray.scale(Math.min(range, 1000)))
     let nearest = Infinity
     let point: Vec3 | null = null
+    let normal = new Vec3()
     let body: Body | null = null
     this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
       if (hit.body !== this.playerBody && hit.distance < nearest) {
         nearest = hit.distance
         point = hit.hitPointWorld.clone()
+        normal = hit.hitNormalWorld.clone()
         body = hit.body
       }
     })
@@ -997,6 +999,7 @@ export class Simulation {
     }
     return {
       point: vec(impact),
+      normal: vec(normal),
       entityId: [...this.bodies].find(([, value]) => value === target)?.[0] ?? null,
     }
   }

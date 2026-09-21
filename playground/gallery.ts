@@ -171,6 +171,11 @@ export class Gallery {
       }
       return true
     }
-    return !!sim.shoot(ray.ray.origin.toArray(), ray.ray.direction.toArray(), rayView.range)
+    const hit = sim.shoot(ray.ray.origin.toArray(), ray.ray.direction.toArray(), rayView.range)
+    if (hit?.entityId) {
+      const object = view.objects.get(hit.entityId)
+      if (object) view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)
+    }
+    return !!hit
   }
 }

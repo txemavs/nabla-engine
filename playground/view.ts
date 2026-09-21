@@ -1,3 +1,4 @@
+import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { terrainVertices, terrainIndices } from '../src/terrain.js'
 import { triangles } from '../src/solid.js'
@@ -32,6 +33,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
@@ -64,6 +66,7 @@ export class SceneView {
     for (const id of remove) {
       const object = this.objects.get(id)
       if (object) {
+        this.impacts.removeFor(object)
         object.removeFromParent()
         disposeObject(object)
       }
@@ -519,6 +522,7 @@ export class SceneView {
   }
   private readonly surfaceTextures: THREE.Texture[] = []
   dispose(): void {
+    this.impacts.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()
     this.surfaceTextures.forEach((texture) => texture.dispose())
