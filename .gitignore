@@ -1,4 +1,13 @@
 node_modules/
 dist/
+demo-dist/
+playwright-report/
+test-results/
 *.log
 .DS_Store
+*.tgz
+.env.local
+.env.*.local
+services/world-cache/data/
+
+__pycache__/

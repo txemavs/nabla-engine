@@ -1,315 +1,145 @@
-# @nabla/engine
+<p align="center"><img src="assets/brand/source.svg" width="100" height="100" alt="Nabla" /></p>
 
-Reusable 3D mini-engine for Nabla apps, extracted from Agency stage.
+# Nabla Engine
 
-> **This is a PORT, not a rewrite.** All code in this package was directly
-> ported from the Agency codebase (`txemavs/agency-ui` main branch) with
-> minimal changes to remove Vue/Agency-specific dependencies.
+An independent foundation for **editing a scene and playing in the same world**.
+The TypeScript engine owns scene data and physics. The browser playground connects
+it to rendering, input and persistence. Agency integration is a future consumer,
+not a dependency of the engine.
 
-## Installation
+## Run locally
+
+Requires **Node.js 22.12 or later** and npm.
 
 ```bash
-npm install @nabla/engine
+npm ci
+npm run dev
 ```
 
-## What's Included
-
-### GL Math (`gl/glMath.ts`)
-Matrix and vector math primitives for WebGL:
-- `Vec2`, `Vec3` types
-- `cssToGl` — CSS coordinates to GL (flip Y)
-- `lookAt`, `perspective`, `frustum` — camera/projection matrices
-- `mul4`, `invert4`, `transformPoint` — matrix operations
-- `rayQuadHit`, `hitTri` — ray-triangle intersection
-
-### GLB Parser (`gl/glbMesh.ts`)
-GLB 2.0 parser for walk/edit bodies. No Three.js:
-- `parseGlb` — ArrayBuffer → primitives (pos/color/normal/index/uv)
-- `decodeGlbAlbedo` — PNG/JPEG in GLB → ImageBitmap
-- `primPaint`, `primGlow` — body paint and lamp state
-- `metersYupModel` — entity pose → model matrix
-- `poseNormalMat` — 3×3 for lighting
-
-### GL Camera (`gl/glCamera.ts`)
-Orbit camera and ray-casting:
-- `orbitEye`, `orbitEyeAt` — compute eye position
-- `orbitRay` — unproject screen point to world ray
-- `clampStageOrbit`, `dollyOrbit`, `orbitLookDelta`
-
-### World Units (`world.ts`)
-Unit conversions and entity pose:
-- `MM_PER_M`, `PX_PER_MM` — 1 CSS px = 1 mm
-- `entityYawDeg` — rad/deg detection
-- `altitudeY`, `metresToCssMm`
-- `EntityPose`, `entityTransform`
-
-### Pose & Camera (`pose.ts`)
-3D camera and walk controls:
-- `Pose`, `StageOrbit`, `StageCamera`, `StageScreens`
-- `stageViewTransform`, `stageScreenTransform`
-- `stageWalkDelta`, `stageLookDelta`, `approachVel2`
-- Walk/look constants (speeds, sensitivities, limits)
-
-### Tune (`tune.ts`)
-World feel knobs:
-- `AgencyTune` — full config structure
-- `TUNE_DEFAULTS` — shipped defaults
-- `mergeTune`, `tune()`, `resetTuneCache()`
-
-### Kind Capability (`kind/kindCapability.ts`)
-Entity capability contracts:
-- `CAPABILITY_DRIVE`, `CAPABILITY_FLY`, `CAPABILITY_SIT`, etc.
-- `KindContract`, `hasCapability`, `kindPadWindow`
-- `isHullClass`, `kindMatchingMesh`
-
-### Entity AABB (`kind/entityAabb.ts`)
-Axis-aligned bounding boxes:
-- `Aabb3`, `EntityFace` types
-- `aabbFaceCorners`, `aabbFaceCenter`, `aabbFaceInYaw`
-- `rayHitsAabb`, `rayHitsPosedAabb`
-- `aabbWireLines`, `poseOriginLines`
-
-### Kind Props (`kind/kindProps.ts`)
-Container/hull properties:
-- `BoxSize`, `BoxSkin`, `BoxFace`, `KindProps`
-- `innerBoxSize`, `innerBoxAabb`, `layoutBoxFaces`
-- `mergeKindProps`, `parseImageRef`, `imageRefToWire`
-
-### Vehicle Definition (`vehicle/vehicleDef.ts`)
-Physics-ready vehicle contracts:
-- `VehicleDefinition`, `VehicleTune`, `VehicleInput`
-- `VehicleSnapshot`, `VehicleDebugFrame`
-- `specToDefinition`, `specToTune`, `chassisInertia`
-- `A3_DEFINITION`, `A3_TUNE` — Audi A3 Cabrio defaults
-
-### Vehicle Debug (`vehicle/vehicleDebug.ts`)
-Debug visualization:
-- `DebugLine` type
-- `cross`, `debugLinesFromFrame`
-
-### Car Pack (`vehicle/carPack.ts`)
-Car pack interface for body-specific data:
-- `CarPack`, `CarPackMounts`, `CarPackHubs`
-- `matchesCarPack`
-
-### Obstacle Kit (`vehicle/obstacleKit.ts`)
-Static obstacles for physics world:
-- `StaticBox`, `StaticObstacle`, `DrivePose`
-- `demoObstacles`, `obstacleDebugLines`, `obstacleQuads`
-- `parkedCarCollider`
-
----
-
-## Dual-World Rendering + Portals (Phase 2)
-
-The engine implements a **four-interaction model** for spatial rendering:
-
-### Four World Interactions
-
-1. **Be in the rendered world** — Walk/fly in the WebGL exterior scene
-2. **Be in css3d world** — Seated in a CSS 3D room with HTML panels
-3. **Look through a portal/window** — From either world, see another place through a plane with head-tracked perspective (CAVE projection)
-4. **Cross through a portal** — Walk through to seamlessly arrive at the destination
-
-Key behaviors:
-- **Look through** — See the destination with correct perspective from your eye position
-- **Cross through** — Seamlessly arrive at the destination as if there was no portal
-
-### 1. Place (Dual Render)
-
-A **Place** is an entity that can be rendered in two modes:
-
-| Mode | Render Type | Description |
-|------|-------------|-------------|
-| `rendered` | WebGL 3D | Exterior world — walk or fly through meshes |
-| `css3d` | CSS 3D | Interior room box — sit or walk inside |
-
-The home ship, containers, and similar "enterable" places support both modes.
-
-```typescript
-import { interiorForHost, type InteriorRender } from '@nabla/engine'
-
-const render: InteriorRender = interiorForHost('world.home')
-// → 'css3d' (home has a CSS interior)
-
-const render2 = interiorForHost('world.car.a3')
-// → 'rendered' (cars are GL-only)
-```
-
-### 2. Portal (Transition)
-
-A **Portal** is a hole on an AABB face that connects the two render modes:
-
-- Walk through a portal **out** of css3d → appear in the rendered (GL 3D) world
-- Walk through a portal **in** → enter the css3d interior
-
-```typescript
-import { portalCrossing, type EntityPortal, type PortalPose } from '@nabla/engine'
-
-const portal: EntityPortal = {
-  face: '-z',
-  pairId: 'world.yard.avatars',
-  arrive: 'walk',
-  toward: 'out',
-}
-
-const crossed = portalCrossing(
-  { x: prevCam.x, z: prevCam.z },
-  { x: cam.x, z: cam.z },
-  portalPose,
-)
-```
-
-### 3. Crossing (Mode Flip)
-
-When you **cross** a portal:
-
-1. `InteriorRender` flips between `css3d` and `rendered`
-2. `StageMode` updates to match
-3. Camera/avatar lands at the arrival point as if there was no portal — seamless continuation
-
-### New Modules (Phase 2)
-
-#### Room Skin (`skin/roomSkin.ts`)
-Golden ratio (φ) layout for room textures:
-- `PHI`, `SKIN_H`, `SKIN_W`, `SKIN_D`
-- `roomSkinRects`, `roomSkinSize`, `roomSkinFaceCss`
-
-#### Room Paint (`office/roomPaint.ts`)
-Authored room scenery:
-- `RoomPaint`, `OfficeWorld`, `HELM_PAINT`
-- `parseRoomPaint`, `deriveOffice`, `clonePaint`
-
-#### Office Transforms (`office/officeTransforms.ts`)
-CSS 3D transforms for the room box:
-- `officeFloorTransform`, `officeSkyTransform`, etc.
-- `helmInside`, `clampRoomWalk`, `roomHalfPx`
-
-#### Helm Screen (`office/helmScreen.ts`)
-Monitor layout:
-- `HelmScreen` type (`'left' | 'center' | 'right'`)
-- `adjacentHelmScreen`, `hopHelmScreen`
-
-#### Interior (`interior/interior.ts`)
-Dual-render model:
-- `InteriorRender` type (`'css3d' | 'rendered'`)
-- `interiorForHost`, `interiorContainsCamera`
-
-#### Portal Graph (`portal/portalGraph.ts`)
-Portal definition and crossing:
-- `EntityPortal`, `LivePortal`, `PortalHost`
-- `portalCrossing`, `portalPoseOnFace`, `mapThroughPortals`
-- `approachCamera`, `enterNaveCamera`, `insideCamera`
-
-#### HomeCarrier (`portal/homeCarrier.ts`)
-Room ↔ lot transforms:
-- `HomeCarrier`, `IDENTITY_CARRIER`
-- `rideHomeCarrier`, `inverseRideHomeCarrier`
-- `rideCamera`, `rideMeshPose`
-
-#### Wormhole (`portal/wormhole.ts`)
-Free-standing stargate:
-- `WormholeMouth`, `WormholeHost`
-- `wormholeCrossing`, `wormholeTransit`, `wormholeArrive`
-
-#### Portal Projection (`portal/portalProj.ts`)
-CAVE-style frustum for looking through portals/windows:
-- `portalEyeCss`, `portWindowCss`
-- `portalViewProj`, `portalViewProjParts`
-
-This is the head-tracked projection for see-through portals: a plane shows
-the destination with correct perspective from your eye. Works in **both**
-worlds (css3d and rendered). Looking through already shows the other place;
-crossing teleports you seamlessly.
-
-#### Aperture View API (`gl/portalView.ts`)
-Clearer naming for portal/window projection:
-- `apertureEyeCss`, `apertureViewProjParts`, `apertureViewProj`
-- `css3dWindowView` — render GL world through css3d room window
-- `portalApertureView` — see destination through portal mouth
-- `ApertureCorners`, `ApertureViewProj` — types
-
----
-
-## Ported Files
-
-The following files from Agency (`txemavs/agency-ui` main) were ported:
-
-| Agency Path | Engine Path | Status |
-|-------------|-------------|--------|
-| `stage/gl/glMath.ts` | `src/gl/glMath.ts` | ✅ Full port |
-| `stage/gl/glbMesh.ts` | `src/gl/glbMesh.ts` | ✅ Full port |
-| `stage/gl/glCamera.ts` | `src/gl/glCamera.ts` | ⚠️ Partial (orbit only) |
-| `stage/kind/entityAabb.ts` | `src/kind/entityAabb.ts` | ✅ Full port |
-| `stage/kind/kindCapability.ts` | `src/kind/kindCapability.ts` | ✅ Full port |
-| `stage/kind/kindProps.ts` | `src/kind/kindProps.ts` | ✅ Full port (sans CSS) |
-| `stage/vehicle/vehicleDef.ts` | `src/vehicle/vehicleDef.ts` | ✅ Full port |
-| `stage/vehicle/carPack.ts` | `src/vehicle/carPack.ts` | ✅ Full port |
-| `stage/vehicle/obstacleKit.ts` | `src/vehicle/obstacleKit.ts` | ✅ Full port |
-| `stage/vehicle/vehicleDebug.ts` | `src/vehicle/vehicleDebug.ts` | ⚠️ Partial |
-| `stage/world.ts` | `src/world.ts` | ✅ Full port |
-| `stage/tune.ts` | `src/tune.ts` | ✅ Full port |
-| `schema/pose.ts` | `src/pose.ts` | ⚠️ Partial (3D only) |
-
-### Omitted / Left Out
-
-The following were **not** ported because they depend on Agency-specific modules
-or are out of scope:
-
-| File | Reason |
-|------|--------|
-| `stage/kind/entityPick.ts` | Depends on `RoomEntity`, `fpsEyeGl`, `fpsForwardCss` |
-| `stage/gl/glCamera.ts` (FPS) | Depends on `spaceFlight`, `walkBody`, `roomPaint` |
-| `schema/pose.ts` (2D chrome) | Desktop/Vue-specific (carousel, shelf, window chrome) |
-| `stage/vehicle/vehicleSpec.ts` | Not attached — stubbed with defaults from `vehicleDef.ts` |
-| `stage/vehicle/drive.ts` | Not attached — omitted |
-| `stage/vehicle/vehiclePresent.ts` | Not attached — omitted |
-| A3 / Ship5x10 packs | Intentionally excluded per requirements |
-
-### Stubbed Types
-
-The following types were stubbed minimally to satisfy imports:
-
-- `StageMeshRef`, `StageImageRef` — in `src/kind/types.ts`
-- `VehicleSpec`, `parseVehicleSpec` — in `src/vehicle/vehicleSpec.ts`
-
----
-
-## Usage
-
-```typescript
-import {
-  parseGlb,
-  metersYupModel,
-  lookAt,
-  perspective,
-  mul4,
-  specToDefinition,
-  A3_TUNE,
-  TUNE_DEFAULTS,
-} from '@nabla/engine'
-
-// Parse a GLB file
-const prims = parseGlb(arrayBuffer)
-
-// Build view/projection matrices
-const view = lookAt([0, 2, 5], [0, 0, 0], [0, 1, 0])
-const proj = perspective(60, 16/9, 0.1, 1000)
-const vp = mul4(proj, view)
-
-// Create vehicle definition
-const def = specToDefinition({ mass: 1500, wheelbase: 2.7 })
-```
-
-## Development
+Open [localhost:5173](http://localhost:5173). Models, the authored ground image,
+Earth texture and branding are bundled. Connected maps use Esri or CARTO;
+**Sin conexión** selects local raster resources in the circuit scene. Real-world
+exploration separately fetches OSM features and Esri elevation as you travel.
+No account is required.
+
+The playground UI remains in Spanish. Documentation is in English; the
+[controls guide](docs/controls.md) includes the corresponding UI labels.
+
+## Current working tree: 0.2.0 baseline + Stargate prototype
+
+- Optional [private Docker cache](services/world-cache/README.md) for shared OSM/elevation data, with local-only installation settings.
+- Approximately 4 km visibility with coarse distant relief and nearby detailed terrain.
+- Anticipatory [real-world exploration](docs/real-world.md#implemented-neighborhood-streaming) around Irun Ventas, with cached OSM/Esri zones and incremental collisions.
+- [Editable building components](docs/solid-editor.md) with points, lines, faces, extrusion and independent clones.
+- Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
+- Fixed and carrier-mounted Stargates with linked views, runtime destination controls and actor/vehicle traversal.
+- A shared physics world for hover exploration, walking, driving, obstacles and movable objects.
+- Carrier-local walking at altitude, with ground-portal departure and return.
+- PNG billboards and an optional 2.5D window shooting gallery with viewpoint parallax.
+- First-person monitor exploration with a third-person toggle and provisional hitscan sidearm.
+- Original Audi A3 Cabrio body, wheels and steering wheel, with interior camera.
+- A 5 × 10 m carrier: drive into its garage, latch the car, travel and release it.
+- Ground and assisted drone flight modes, altitude hold and mode 2 gamepad input.
+- A real-data starting district in Irun Ventas/Katea, with OSM buildings/streets and Esri elevation.
+- The original Madrid circuit remains available with an editable GPS origin and connected imagery.
+- Agency's circuit JPEG with 18 aligned building footprints beneath editable geometry, satellite/street imagery and a planetary view.
+- Earth, Sun and Moon, a selectable date/time or live clock, day/night lighting and a shared horizon haze.
+
+Select **Escena A3** to load the current example if an older scene is saved in your
+browser. Loading the example is undoable and does not overwrite the saved copy.
+**ESCENA + → Stargates** adds a linked pair to the current scene without replacing it.
+**Jugar** creates a fresh simulation; **Detener** restores the edited scene.
+
+## Repository layout
+
+| Path                       | Responsibility                                                        |
+| -------------------------- | --------------------------------------------------------------------- |
+| `src/`                     | Scene contracts, editing, physics, geographic/sky helpers and presets |
+| `src/*.test.ts`            | Unit and physical interaction tests, alongside the implementation     |
+| `playground/`              | Reference browser host: rendering, UI, assets and input               |
+| `tests/`                   | Playwright browser journeys                                           |
+| `assets/`                  | Original vehicle models, ground/Earth images and official logo        |
+| `docs/`                    | Controls, architecture, asset conventions and integration guide       |
+| `.github/workflows/ci.yml` | Checks, production builds and browser tests                           |
+
+`dist/`, `demo-dist/`, `test-results/` and `node_modules/` are generated and ignored.
+
+## Documentation
+
+Start with the [documentation index](docs/README.md).
+
+- [Controls and walkthrough](docs/controls.md)
+- [Architecture and invariants](docs/architecture.md)
+- [Vehicles and mobile garage](docs/vehicle-assets.md)
+- [Geography, horizon and sky clock](docs/geography.md)
+- [Agency integration boundary](docs/agency-integration.md)
+- [Asset provenance](assets/README.md)
+- [Contributing and validation](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
+
+## Consume the engine
+
+Version **0.2 breaks the earlier extraction's API**. The package has not been
+published to npm or integrated into Agency as part of this baseline.
 
 ```bash
-npm install
-npm run typecheck
-npm test
 npm run build
+npm pack
+# From the consuming project:
+npm install /path/to/nabla-engine-0.2.0.tgz
 ```
+
+```ts
+import { SceneEditor, Simulation, createSampleScene, idleInput } from '@nabla/engine'
+
+const editor = new SceneEditor(createSampleScene())
+const game = new Simulation(editor.document)
+game.setInput({ ...idleInput(), forward: 1, yaw: 0 })
+game.step(1 / 60)
+
+const player = game.player
+const car = game.entityTransform('car-a')
+// Apply snapshots to the host's render objects.
+game.dispose()
+// editor.document still contains the authored scene.
+```
+
+The host owns input, rendering, persistence, location permissions and map requests.
+Serve the packaged `assets/` directory at the application root to preserve the
+example's `/world/`, `/geography/` and `/brand/` URLs, or explicitly adapt those URLs.
+
+## Validate
+
+```bash
+npm run check
+npx playwright install --with-deps chromium
+npm run test:e2e
+npm pack --dry-run
+```
+
+The physics tests do not require WebGL. CI runs the same checks. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
+
+## Boundaries
+
+This is a working foundation, not a finished open-world game. Map imagery does not
+supply terrain elevation, physical buildings or road geometry. Drone flight is
+assisted, with an explicit accelerated travel mode, not orbital mechanics. General
+high-speed collision safety is not guaranteed by the discrete solver.
+
+The [Stargate prototype](docs/portals.md) supports fixed upright and carrier-mounted mouths, with runtime address selection.
+CSS interiors, orbit-to-road streaming and seamless partial-body crossing remain future work.
+There is no NPC navigation, multiplayer, skeletal animation, inherited
+scale or interactive GLB import yet. Dynamic physics bodies and the player spawn
+must be roots; visual children are supported. The character uses a box collider
+with an optional ground-following hover controller; the walking controller has no automatic stair climbing. Standard gamepads are supported, but custom
+radio calibration and touch gameplay controls are not implemented.
+
+The previous implementation remains in Git history. The portal design and remaining
+acceptance stages are recorded in [the portal guide](docs/portals.md).
 
 ## License
 
-MIT
+Source code: [MIT](LICENSE). See [asset provenance](assets/README.md) for bundled
+artwork and external map attribution; the code license does not grant rights to
+third-party trademarks or map imagery.

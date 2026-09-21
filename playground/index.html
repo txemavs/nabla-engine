@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nabla · Distrito cero</title>
+    <link rel="icon" type="image/svg+xml" href="/brand/source.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <a class="brand" href="./"
+          ><img class="brand-mark" src="/brand/source.svg" width="42" height="42" alt="Nabla" />
+          nabla</a
+        >
+        <nav class="app-menus" aria-label="Menú principal">
+          <button id="file-menu-button" popovertarget="file-menu">Archivo</button>
+          <button id="travel-menu-button" popovertarget="travel-menu">Ir</button>
+          <button id="options-menu-button" popovertarget="options-menu">Opciones</button>
+          <button id="help-menu-button" popovertarget="help-menu">Ayuda</button>
+        </nav>
+        <div id="travel-menu" class="app-menu" popover aria-label="Viajar por el mundo">
+          <h3>Ir a un lugar</h3>
+          <label class="field-label" for="travel-city">Destinos</label>
+          <select id="travel-city">
+            <option value="">Coordenadas personalizadas</option>
+            <option value="40.4168,-3.7038">Madrid · Sol</option>
+            <option value="41.3870,2.1700">Barcelona · Plaça de Catalunya</option>
+            <option value="48.8584,2.2945">París · Torre Eiffel</option>
+            <option value="52.5163,13.3777">Berlín · Puerta de Brandeburgo</option>
+            <option value="40.7580,-73.9855">Nueva York · Times Square</option>
+            <option value="35.6595,139.7005">Tokio · Shibuya</option>
+            <option value="43.32969,-1.819606">Irún · Ventas</option>
+          </select>
+          <form id="travel-form">
+            <label class="field-label" for="travel-latitude">Latitud</label>
+            <input id="travel-latitude" type="number" min="-85" max="85" step="any" required />
+            <label class="field-label" for="travel-longitude">Longitud</label>
+            <input id="travel-longitude" type="number" min="-180" max="180" step="any" required />
+            <button id="travel-go" type="submit">Cargar destino</button>
+          </form>
+          <p>
+            Carga terreno y edificios reales alrededor del destino, con el coche y la nave. La
+            escena anterior se conserva en Deshacer. Guarda o exporta para conservarla en disco.
+          </p>
+          <p id="travel-status" role="status"></p>
+          <button id="travel-cancel" hidden>Cancelar carga</button>
+        </div>
+        <div id="file-menu" class="app-menu" popover aria-label="Archivo">
+          <button id="import">Abrir escena JSON…</button>
+          <button id="save">Guardar en este navegador <kbd>Ctrl S</kbd></button>
+          <button id="export">Exportar escena JSON…</button>
+          <hr />
+          <span class="eyebrow">ESCENAS DE INICIO</span>
+          <button id="world-irun">Irún · Ventas</button>
+          <button id="sample-assets">Circuito · A3</button>
+        </div>
+        <input id="file" type="file" accept=".json,application/json" hidden />
+        <div id="options-menu" class="app-menu" popover aria-label="Opciones">
+          <details id="performance-section" class="help">
+            <summary>RENDIMIENTO</summary>
+            <label class="field-label" for="map-buildings">Edificios del mapa</label>
+            <select id="map-buildings">
+              <option value="1">Mostrar edificios</option>
+              <option value="0">Sin edificios · terreno y carreteras</option>
+            </select>
+            <label class="field-label" for="draw-distance">Distancia de dibujado</label>
+            <select id="draw-distance">
+              <option value="1000">1 km</option>
+              <option value="2000">2 km</option>
+              <option value="4000">4 km</option>
+              <option value="6000">6 km</option>
+            </select>
+            <label class="field-label" for="collision-distance"
+              >Colisiones de edificios cercanos</label
+            >
+            <select id="collision-distance">
+              <option value="200">200 m</option>
+              <option value="400">400 m</option>
+              <option value="800">800 m</option>
+              <option value="2000">2 km</option>
+            </select>
+            <label class="field-label" for="render-resolution">Resolución</label>
+            <select id="render-resolution">
+              <option value="0.75">Ligera · 0,75×</option>
+              <option value="1">Normal · 1×</option>
+              <option value="1.25">Nítida · 1,25×</option>
+              <option value="2">Alta · 2×</option>
+            </select>
+            <label class="field-label" for="shadow-quality">Sombras</label>
+            <select id="shadow-quality">
+              <option value="0">Desactivadas</option>
+              <option value="512">Bajas</option>
+              <option value="1024">Medias</option>
+              <option value="2048">Altas</option>
+            </select>
+            <p>
+              En altura se retiran las colisiones lejanas. El suelo, los vehículos y los portales
+              conservan sus colisiones.
+            </p>
+            <p id="performance-status"></p>
+          </details>
+          <details id="sky-section" class="help sky-controls">
+            <summary>SOL Y LUNA</summary>
+            <label class="field-label" id="sky-zone" for="sky-time">Fecha y hora local</label>
+            <input id="sky-time" type="datetime-local" />
+            <div>
+              <button id="sky-apply">Aplicar hora</button><button id="sky-live">Tiempo real</button>
+            </div>
+            <p id="sky-status" role="status"></p>
+          </details>
+          <details id="geography-section" class="help geography-controls">
+            <summary>UBICACIÓN EN LA TIERRA</summary>
+            <label class="field-label" for="latitude">Latitud</label
+            ><input id="latitude" type="number" min="-90" max="90" step="0.00001" />
+            <label class="field-label" for="longitude">Longitud</label
+            ><input id="longitude" type="number" min="-180" max="180" step="0.00001" />
+            <label class="field-label" for="imagery">Mapa</label
+            ><select id="imagery">
+              <option value="satellite">Satélite · Esri</option>
+              <option value="streets">Calles · CARTO / OSM</option>
+              <option value="offline">Sin conexión</option>
+            </select>
+            <div>
+              <button id="apply-location">Aplicar GPS</button
+              ><button id="locate">Mi ubicación</button>
+            </div>
+            <p>
+              Shift / L3 al ascender o descender: viaje acelerado. Suelta para mantener altura.
+              Suelo y Tierra disponibles sin conexión.
+            </p>
+          </details>
+        </div>
+        <div id="help-menu" class="app-menu" popover aria-label="Ayuda">
+          <details id="controls-section" class="help">
+            <summary>CONTROLES</summary>
+            <div><kbd>C</kbd> Cámara exterior / asiento / cenital</div>
+            <div><kbd>F</kbd> Sujetar / soltar el coche</div>
+            <div><kbd>T</kbd> Mando del container / coche</div>
+            <div><kbd>V / Y</kbd> Nave: tierra / vuelo</div>
+            <span class="eyebrow">VUELO · MANDO MODO 2</span>
+            <p>
+              Stick izquierdo: altura y giro. Stick derecho: inclinación. Al soltar, mantiene
+              altura.
+            </p>
+            <div><kbd>W S / A D</kbd> Altura / giro</div>
+            <div><kbd>↑ ↓ ← →</kbd> Inclinar la nave</div>
+            <p>
+              Mando: A entrar · B cámara · X anclar · Y vuelo · LB cambiar vehículo · RB frenar. En
+              tierra: RT avanzar / LT retroceder.
+            </p>
+            <span class="eyebrow">UN MISMO MUNDO</span>
+            <p>Los objetos que editas son los que encontrarás al jugar.</p>
+            <div><kbd>W A S D</kbd> Volar sobre el suelo</div>
+            <div><kbd>C</kbd> Primera / tercera persona</div>
+            <div><kbd>Clic</kbd> Capturar ratón / disparar</div>
+            <div><kbd>E</kbd> Entrar / salir del coche</div>
+            <div><kbd>Espacio</kbd> Salto / freno de mano</div>
+            <div><kbd>Shift</kbd> Acelerar el monitor</div>
+            <div><kbd>R</kbd> Reiniciar la partida</div>
+            <div><kbd>Tab</kbd> Jugar / detener</div>
+          </details>
+        </div>
+        <div class="project">
+          <span class="dot"></span><span id="scene-name">Distrito cero</span
+          ><span class="badge">LOCAL</span>
+        </div>
+      </header>
+      <nav class="toolbar">
+        <div class="mode"><span class="mode-light"></span><b id="mode-label">Edición</b></div>
+        <div class="tools">
+          <button id="translate" class="active" title="Mover (G)">
+            ↔ <span>Mover</span><kbd>G</kbd></button
+          ><button id="rotate" title="Rotar (R)">⟳ <span>Rotar</span><kbd>R</kbd></button
+          ><button id="focus" title="Encuadrar selección (F)">Enfocar <kbd>F</kbd></button>
+          <span class="divider"></span><button id="undo" title="Deshacer (Ctrl Z)">↶</button
+          ><button id="redo" title="Rehacer (Ctrl Shift Z)">↷</button>
+        </div>
+        <button id="play" class="primary">▶ Jugar <kbd>Tab</kbd></button>
+      </nav>
+      <aside class="outliner">
+        <div class="panel-heading">
+          <span>ESCENA</span>
+          <div class="scene-actions">
+            <span id="entity-count"></span
+            ><button
+              id="add-entity"
+              aria-label="Añadir entidad"
+              aria-expanded="false"
+              aria-controls="add-menu"
+              title="Añadir entidad"
+            >
+              +
+            </button>
+          </div>
+          <div id="add-menu" role="group" aria-label="Crear en la escena" hidden>
+            <button id="add-solid">Edificio</button><button id="add-box">Bloque</button
+            ><button id="add-car">Coche</button> <button id="add-sprite">Sprite</button
+            ><button id="add-group">Grupo</button>
+            <hr />
+            <button id="sample-portals">Stargates</button
+            ><button id="sample-gallery">Galería 2.5D</button>
+          </div>
+        </div>
+        <div id="tree" role="tree" aria-label="Objetos de la escena"></div>
+        <div class="outliner-footer"><span class="dot"></span> Todo empieza en una escena.</div>
+      </aside>
+      <main id="viewport">
+        <div id="world-loading" hidden></div>
+        <div id="world-note" hidden>VENTAS / KATEA · OSM + ESRI · Exploración con precarga</div>
+        <div class="view-caption">
+          <span class="caption-tag">PERSPECTIVA</span
+          ><span id="view-subtitle">Distrito cero / zona de pruebas</span>
+        </div>
+        <div id="welcome">
+          <span class="eyebrow">TU MUNDO, DESDE LA BASE</span>
+          <h1>Distrito cero<span>.</span></h1>
+          <p>Construye la escena. Entra a jugar.</p>
+          <button id="welcome-close" aria-label="Cerrar bienvenida">×</button>
+        </div>
+        <div id="game-hud" hidden>
+          <span class="eyebrow" id="player-mode">MONITOR · VUELO</span
+          ><strong id="speed">Explora el distrito</strong
+          ><span id="interaction">WASD para volar</span><span id="flight-status"></span>
+        </div>
+        <div id="geo-overlay">
+          <span id="stream-status" role="status"></span><span id="gps-status"></span
+          ><span id="map-status"></span
+          ><span class="map-credits"
+            ><a
+              href="https://www.esri.com/en-us/legal/terms/data-attributions"
+              target="_blank"
+              rel="noreferrer"
+              >Esri · fuentes</a
+            >
+            /
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer"
+              >© OpenStreetMap</a
+            >
+            ·
+            <a href="https://carto.com/attributions" target="_blank" rel="noreferrer"
+              >CARTO</a
+            ></span
+          >
+        </div>
+        <div id="view-hint">Arrastra para orbitar · Rueda para acercar · Clic para seleccionar</div>
+        <div id="toast" role="status" aria-live="polite"></div>
+      </main>
+      <aside class="inspector">
+        <div class="panel-heading">PROPIEDADES <span>◈</span></div>
+        <div id="properties"></div>
+      </aside>
+      <footer>
+        <span><span class="dot"></span> <span id="status">Listo</span></span
+        ><span id="footer-mode">Edición · metros · Y arriba</span
+        ><span>NABLA ENGINE <b>0.2</b></span>
+      </footer>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
