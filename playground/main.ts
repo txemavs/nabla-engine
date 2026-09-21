@@ -841,6 +841,7 @@ function togglePlay(): void {
       orbitStartTarget = orbit.target.clone()
       portalControls.rebuild(editor.document)
       sim = new Simulation(editor.document, { playerMode: 'hover' })
+      sim.setMapBuildingsEnabled(!!performanceSettings.buildings)
       sim.setCollisionDistance(performanceSettings.collisions)
       firstPerson = true
       fireRequested = false
@@ -876,6 +877,7 @@ function togglePlay(): void {
   })
 }
 for (const [id, key] of [
+  ['map-buildings', 'buildings'],
   ['draw-distance', 'distance'],
   ['collision-distance', 'collisions'],
   ['render-resolution', 'resolution'],
@@ -893,6 +895,7 @@ for (const [id, key] of [
     if (distantTerrain?.status === 'ready')
       $('world-note').textContent =
         `${editor.document.name} · OSM + ESRI · Vista ≈ ${performanceSettings.distance / 1000} km`
+    sim?.setMapBuildingsEnabled(!!performanceSettings.buildings)
     sim?.setCollisionDistance(performanceSettings.collisions)
     renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
     renderer.setSize(viewport.clientWidth, viewport.clientHeight)
@@ -1454,6 +1457,7 @@ function frame(now: number): void {
         remote.position.clone().add(renderOrigin),
         performanceSettings.distance,
         !!sim,
+        !!performanceSettings.buildings,
       )
       if (geography.enabled) {
         geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
@@ -1461,7 +1465,12 @@ function frame(now: number): void {
       }
     })
     outline.visible = outlineVisible
-    view.limitDrawDistance(worldCamera, performanceSettings.distance, !!sim)
+    view.limitDrawDistance(
+      worldCamera,
+      performanceSettings.distance,
+      !!sim,
+      !!performanceSettings.buildings,
+    )
     renderer.autoClear = true
     if (geography.enabled) {
       geography.render(renderer, camera, worldCamera)

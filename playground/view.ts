@@ -409,10 +409,19 @@ export class SceneView {
     this.wheels.set(e.id, wheels)
   }
   /** Distance culling is repeated for portal cameras, never shared from the main frustum. */
-  limitDrawDistance(position: THREE.Vector3, distance: number, enabled: boolean): void {
+  limitDrawDistance(
+    position: THREE.Vector3,
+    distance: number,
+    enabled: boolean,
+    buildings = true,
+  ): void {
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)!
+      if (e.geometry && !buildings) {
+        object.visible = false
+        continue
+      }
       let bounds = this.mapBounds.get(e.id)
       if (!bounds) {
         object.updateWorldMatrix(true, true)

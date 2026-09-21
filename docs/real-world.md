@@ -300,3 +300,5 @@ Streaming updates undo snapshots only when their geographic origin matches the
 current scene, so travelling between cities does not mix their map entities.
 Building surfaces render without permanent edge overlays; topology lines remain
 available in the solid editor.
+
+Options → Performance → Map buildings can hide imported building surfaces and disable their collisions, including portal exit checks. Terrain, roads and authored objects remain available. The preference persists locally and applies to newly streamed zones; it does not delete buildings or reduce downloaded data or scene residency. Re-enable it in a clear location to avoid overlapping a restored building.

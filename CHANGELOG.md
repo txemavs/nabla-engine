@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a persistent map-building visibility option, disabling hidden building collisions while retaining terrain, roads and scene data.
+
 - Remove permanent solid edge overlays and retain topology lines in the solid editor.
 - Make room for dense map zones before installation, prioritizing nearby unedited detail within an 18,000-entity residency budget.
 - Keep streamed map updates out of undo snapshots belonging to other geographic destinations.

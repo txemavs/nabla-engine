@@ -92,6 +92,7 @@ export class Simulation {
   private readonly solidMaterial = new Material({ friction: 0.55, restitution: 0 })
   private readonly characterMaterial = new Material({ friction: 0, restitution: 0 })
   private readonly bodies = new Map<string, Body>()
+  private mapBuildingsEnabled = true
   private collisionDistance = 400
   private readonly mapBodies = new Map<string, Body>()
   private readonly vehicles = new Map<string, Vehicle>()
@@ -368,6 +369,10 @@ export class Simulation {
     else this.world.addBody(body)
   }
 
+  setMapBuildingsEnabled(enabled: boolean): void {
+    this.mapBuildingsEnabled = enabled
+    this.updateMapCollisions()
+  }
   setCollisionDistance(distance: number): void {
     if (!Number.isFinite(distance) || distance < 200 || distance > 2000)
       throw new Error('Collision distance must be 200–2000 m')
@@ -383,7 +388,11 @@ export class Simulation {
   /** Keep terrain, actors and portal colliders. Cull map solids conservatively around every actor. */
   private updateMapCollisions(): void {
     const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
-    for (const body of this.mapBodies.values()) {
+    for (const [id, body] of this.mapBodies) {
+      if (!this.mapBuildingsEnabled && this.entitiesById.get(id)?.geometry) {
+        if (body.world === this.world) this.world.removeBody(body)
+        continue
+      }
       if (body.aabbNeedsUpdate) body.updateAABB()
       const active = actors.some((actor) => {
         const p = actor.position,
@@ -848,7 +857,10 @@ export class Simulation {
         ]
       })
     // Exit safety must include map bodies suspended by distance culling.
-    const obstacles = [...new Set([...this.world.bodies, ...this.mapBodies.values()])]
+    const mapObstacles = [...this.mapBodies]
+      .filter(([id]) => this.mapBuildingsEnabled || !this.entitiesById.get(id)?.geometry)
+      .map(([, obstacle]) => obstacle)
+    const obstacles = [...new Set([...this.world.bodies, ...mapObstacles])]
       .filter((b) => b !== body)
       .flatMap(shapeBoxes)
     // Check a clear exit corridor at transfer time; cross-seam contacts are not simulated.

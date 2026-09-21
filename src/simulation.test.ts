@@ -1,3 +1,4 @@
+import { boxSolid } from './solid.js'
 import { describe, expect, it } from 'vitest'
 import { Simulation, idleInput } from './simulation.js'
 import { createEntity, type SceneDocument, type Entity, rotationDegrees } from './scene.js'
@@ -309,5 +310,25 @@ it('removes distant map collision bodies and restores them without removing auth
   sim.setCollisionDistance(200)
   expect(sim.collisionStats.active).toBe(1)
   expect(() => sim.setCollisionDistance(NaN)).toThrow()
+  sim.dispose()
+})
+
+it('disables imported building collisions while retaining authored ground and restores them', () => {
+  const building = createEntity('building', 'solid', [10, 2, 0])
+  building.geometry = boxSolid([4, 4, 4])
+  building.source = {
+    provider: 'openstreetmap',
+    id: 'way/1',
+    retrievedAt: '2026-09-21',
+    tags: { building: 'yes' },
+  }
+  const sim = new Simulation(scene([building]))
+  expect(sim.collisionStats.active).toBe(1)
+  sim.setMapBuildingsEnabled(false)
+  advance(sim, 1)
+  expect(sim.collisionStats.active).toBe(0)
+  expect(sim.player.grounded).toBe(true)
+  sim.setMapBuildingsEnabled(true)
+  expect(sim.collisionStats.active).toBe(1)
   sim.dispose()
 })
