@@ -12,6 +12,7 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
   await page.goto('/')
   await page.locator('#imagery').selectOption('offline')
   await page.locator('#apply-location').click()
+  await page.getByRole('button', { name: 'Añadir entidad', exact: true }).click()
   await page.locator('#sample-portals').click()
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
   await expect(page.locator('#portal-mode')).toHaveValue('open')

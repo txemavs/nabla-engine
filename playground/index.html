@@ -19,8 +19,6 @@
         </div>
         <div class="file-actions">
           <button id="sample-assets">Escena A3</button>
-          <button id="sample-portals">+ Stargates</button>
-          <button id="sample-gallery">+ Galería 2.5D</button>
           <button id="save">Guardar</button><button id="export">Exportar</button
           ><button id="import">Abrir JSON</button
           ><input id="file" type="file" accept=".json,application/json" hidden />
@@ -39,11 +37,27 @@
         <button id="play" class="primary">▶ Jugar <kbd>Tab</kbd></button>
       </nav>
       <aside class="outliner">
-        <div class="panel-heading"><span>ESCENA</span><span id="entity-count"></span></div>
-        <div class="add-row">
-          <button id="add-box">+ Bloque</button><button id="add-car">+ Coche</button
-          ><button id="add-sprite">+ Sprite</button
-          ><button id="add-group" title="Añadir grupo">+ Grupo</button>
+        <div class="panel-heading">
+          <span>ESCENA</span>
+          <div class="scene-actions">
+            <span id="entity-count"></span
+            ><button
+              id="add-entity"
+              aria-label="Añadir entidad"
+              aria-expanded="false"
+              aria-controls="add-menu"
+              title="Añadir entidad"
+            >
+              +
+            </button>
+          </div>
+          <div id="add-menu" role="group" aria-label="Crear en la escena" hidden>
+            <button id="add-box">Bloque</button><button id="add-car">Coche</button>
+            <button id="add-sprite">Sprite</button><button id="add-group">Grupo</button>
+            <hr />
+            <button id="sample-portals">Stargates</button
+            ><button id="sample-gallery">Galería 2.5D</button>
+          </div>
         </div>
         <div id="tree" role="tree" aria-label="Objetos de la escena"></div>
         <div class="outliner-footer"><span class="dot"></span> Todo empieza en una escena.</div>

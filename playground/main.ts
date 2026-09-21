@@ -242,6 +242,12 @@ function select(id: string): void {
 function refreshUi(): void {
   needsRender = true
   const doc = editor.document
+  let parentId = doc.entities.find((e) => e.id === selectedId)?.parentId
+  while (parentId) {
+    collapsed.delete(parentId)
+    parentId = doc.entities.find((e) => e.id === parentId)?.parentId
+  }
+  setAddMenu(false)
   $('scene-name').textContent = doc.name
   skyClock = doc.sky ?? { mode: 'live' }
   $<HTMLInputElement>('sky-time').value = localTimeInput(skyTime(skyClock))
@@ -263,7 +269,10 @@ function refreshUi(): void {
     for (const e of doc.entities.filter((item) => item.parentId === parent)) {
       const button = document.createElement('button')
       button.className = 'tree-item' + (e.id === selectedId ? ' selected' : '')
+      button.dataset.entityId = e.id
       button.setAttribute('role', 'treeitem')
+      if (doc.entities.some((child) => child.parentId === e.id))
+        button.setAttribute('aria-expanded', String(!collapsed.has(e.id)))
       button.setAttribute('aria-selected', String(e.id === selectedId))
       button.style.paddingLeft = `${10 + depth * 14}px`
       button.innerHTML = `<span class="kind-icon">${e.kind === 'group' ? (collapsed.has(e.id) ? '›' : '⌄') : icons[e.kind]}</span><span class="name">${escape(e.name)}</span>${e.motion === 'dynamic' ? '<span class="motion">●</span>' : ''}`
@@ -280,6 +289,10 @@ function refreshUi(): void {
     }
   }
   append(null, 0)
+  if (tree.dataset.selection !== selectedId) {
+    tree.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' })
+    tree.dataset.selection = selectedId
+  }
   const e = doc.entities.find((item) => item.id === selectedId)!
   const props = $('properties')
   const angles = toDegrees(e.transform.rotation)
@@ -423,6 +436,7 @@ function refreshUi(): void {
   $<HTMLButtonElement>('undo').disabled = !!sim || !editor.canUndo
   $<HTMLButtonElement>('redo').disabled = !!sim || !editor.canRedo
   for (const id of [
+    'add-entity',
     'add-box',
     'add-car',
     'add-group',
@@ -445,6 +459,21 @@ function setTool(mode: 'translate' | 'rotate'): void {
 }
 $('translate').onclick = () => setTool('translate')
 $('rotate').onclick = () => setTool('rotate')
+function setAddMenu(open: boolean): void {
+  $('add-menu').hidden = !open
+  $('add-entity').setAttribute('aria-expanded', String(open))
+}
+$('add-entity').onclick = () => setAddMenu(Boolean($('add-menu').hidden))
+document.addEventListener('click', (event) => {
+  const target = event.target as Node
+  if (!$('add-menu').contains(target) && !$('add-entity').contains(target)) setAddMenu(false)
+})
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !$('add-menu').hidden) {
+    setAddMenu(false)
+    $('add-entity').focus()
+  }
+})
 $('undo').onclick = () => {
   editor.undo()
   rebuild()

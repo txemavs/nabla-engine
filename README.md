@@ -40,7 +40,7 @@ The playground UI remains in Spanish. Documentation is in English; the
 
 Select **Escena A3** to load the current example if an older scene is saved in your
 browser. Loading the example is undoable and does not overwrite the saved copy.
-**+ Stargates** adds a linked pair to the current scene without replacing it.
+**ESCENA + → Stargates** adds a linked pair to the current scene without replacing it.
 **Jugar** creates a fresh simulation; **Detener** restores the edited scene.
 
 ## Repository layout

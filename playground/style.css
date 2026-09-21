@@ -212,15 +212,52 @@ header {
 .panel-heading span:last-child {
   color: #657f85;
 }
-.add-row {
-  display: flex;
-  gap: 5px;
-  padding: 0 12px 15px;
+.panel-heading {
+  position: relative;
 }
-.add-row button {
-  font-size: 10px;
-  padding: 5px 7px;
-  background: #28373d;
+.scene-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#add-entity {
+  padding: 0;
+  width: 26px;
+  height: 26px;
+  font-size: 20px;
+  line-height: 1;
+}
+#add-menu {
+  position: absolute;
+  right: 12px;
+  top: calc(100% - 8px);
+  z-index: 30;
+  min-width: 170px;
+  padding: 6px;
+  display: grid;
+  gap: 3px;
+  background: #17283e;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 8px 24px #0006;
+}
+#add-menu[hidden] {
+  display: none;
+}
+#add-menu button {
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+#add-menu button:hover,
+#add-menu button:focus-visible {
+  background: #304b68;
+}
+#add-menu hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  width: 100%;
+  margin: 4px 0;
 }
 #tree {
   overflow: auto;

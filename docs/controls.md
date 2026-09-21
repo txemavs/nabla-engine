@@ -11,7 +11,7 @@ and motion. Original GLB vehicles preserve their authored dimensions and materia
 | Orbit / zoom          | Drag the viewport / mouse wheel                  |
 | Move / rotate tool    | G / R                                            |
 | Frame selection       | F / Enfocar                                      |
-| Create objects        | + Bloque, + Coche, + Grupo                       |
+| Create objects        | ESCENA + → Bloque, Coche, Sprite, Grupo          |
 | Duplicate / delete    | Duplicar / Eliminar                              |
 | Undo / redo           | Toolbar buttons; Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z |
 | Save locally          | Guardar / Ctrl/Cmd+S                             |
@@ -108,7 +108,7 @@ physical destinations.
 
 ## Fixed Stargate prototype
 
-Click **+ Stargates** to add an undoable pair in front of the A3 and on the other
+Click **ESCENA + → Stargates** to add an undoable pair in front of the A3 and on the other
 lane. Select either frame to change its destination or its shared connection mode:
 **Cerrado** blocks and hides the destination, **Ventana** shows it but blocks
 traversal, **Paso abierto** permits traversal from the front. Stop play to edit a
@@ -176,7 +176,7 @@ The container's bow and stern frames now carry their own mouths. Walk/hover up t
 a frame: its nearby panel offers a destination selector and **Abrir / Cerrar**.
 Use **G** to release the captured mouse for the buttons. Destinations are the
 compatible Stargates already present in this scene; add road mouths with
-**+ Stargates** while stopped. Choose a destination, then open the connection.
+**ESCENA + → Stargates** while stopped. Choose a destination, then open the connection.
 Closing retains its address; switching destinations closes old links atomically.
 A frame occupied by an actor cannot be closed or relinked.
 
@@ -202,16 +202,22 @@ to unlatch cargo safely.
 
 ## PNG sprites and the window gallery
 
-**+ Sprite** adds a transparent tree. Set its local PNG URL and width/height in the
+**ESCENA + → Sprite** adds a transparent tree. Set its local PNG URL and width/height in the
 inspector; position its origin at the trunk's foot. Trees turn toward each rendering camera only around the vertical axis, including
 the remote portal camera. They remain standing when viewed from above. Tree PNGs
 use subdued foliage colours and fixed translucent ground silhouettes; these
 decorative shadows do not follow the Sun. Target sprites still face the camera
 fully. Neither has a physical collider.
 
-**+ Galería 2.5D** adds a separate target stage and a window near the starting area
+**ESCENA + → Galería 2.5D** adds a separate target stage and a window near the starting area
 (at X −1, Z −4). Approach its front from positive Z, capture the mouse, and shoot
 through it. Move sideways to see the perspective change between tree and target
 layers. Window mode blocks bodies but lets shots through. The first gallery shot
 starts a 60-second round; targets reappear after 1.5 seconds. **N** restarts it.
 This is a playable target-gallery prototype, not a complete Operation Wolf game.
+
+The **+** beside the **ESCENA** entity count holds all creation actions, including
+Stargates and the 2.5D gallery. Selecting an object in the viewport expands its
+ancestor groups and scrolls its selected tree row into view. The creation menu
+closes after choosing an item, clicking outside or pressing Escape; creation is
+disabled while playing.

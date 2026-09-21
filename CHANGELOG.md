@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reveal viewport selections in the entity tree by expanding ancestor groups and
+  scrolling to the selected row.
+- Consolidate creation actions in a + menu beside the scene entity count.
+
 - Repair the original Stargate frame's inward triangle winding and flat-face
   normals at load time, preserving the source GLB and portal behaviour.
 
