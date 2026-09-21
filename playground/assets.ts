@@ -1,3 +1,4 @@
+import { repairPortalFrame } from './portal-frame.js'
 import * as THREE from 'three'
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js'
 
@@ -8,7 +9,17 @@ export class AssetLibrary {
   async instantiate(url: string): Promise<THREE.Group> {
     let pending = this.cache.get(url)
     if (!pending) {
-      pending = this.loader.loadAsync(url)
+      pending = this.loader.loadAsync(url).then((gltf) => {
+        if (url === '/world/portal.frame.glb') {
+          gltf.scene.traverse((object) => {
+            if (!(object instanceof THREE.Mesh)) return
+            const source = object.geometry
+            object.geometry = repairPortalFrame(source)
+            source.dispose()
+          })
+        }
+        return gltf
+      })
       this.cache.set(url, pending)
       pending.catch(() => this.cache.delete(url))
     }

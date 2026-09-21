@@ -101,3 +101,8 @@ Videotiro foliage uses 0.35 saturation in the material shader; source PNG bytes
 remain unchanged. Optional flat black shadow copies reuse each tree's texture.
 The CRT monitor is rendered at half its previous scale: 0.825 while exploring
 and 0.5 at the driving seat. Physics and eye anchors are unchanged.
+
+The original `portal.frame.glb` has inward-facing triangles on all four bars.
+The asset loader repairs winding on an in-memory geometry copy and recomputes
+flat face normals once per cached model. The original GLB remains byte-identical;
+portal poses, apertures, collision geometry and traversal directions are unchanged.

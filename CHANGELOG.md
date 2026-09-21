@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Repair the original Stargate frame's inward triangle winding and flat-face
+  normals at load time, preserving the source GLB and portal behaviour.
+
 - Halve the monitor presentation size in exploration and at the wheel.
 - Keep tree billboards upright, mix the generated tree back into the scenery and
   soften the original Videotiro foliage with shader saturation.
