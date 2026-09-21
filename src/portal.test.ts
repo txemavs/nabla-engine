@@ -344,3 +344,19 @@ it('leaves the helm at orbital height, walks to Earth and returns to the same ca
   expect(sim.entityTransform('ship').position[1]).toBeCloseTo(orbitHeight, 1)
   sim.dispose()
 })
+
+it('checks a distant portal exit against suspended map colliders', () => {
+  const doc = scene()
+  doc.entities.find((e) => e.id === 'b')!.transform.position[0] = 1000
+  const block = createEntity('remote-block', 'box', [1000, 1, -1])
+  block.size = [5, 2, 1]
+  block.source = { provider: 'openstreetmap', id: 'way/123', retrievedAt: '2026-09-21', tags: {} }
+  doc.entities.push(block)
+  const sim = new Simulation(doc)
+  sim.setCollisionDistance(200)
+  expect(sim.collisionStats.active).toBe(0)
+  drive(sim)
+  expect(sim.portalEvent?.blocked).toBe(true)
+  expect(sim.player.position[0]).toBeLessThan(1)
+  sim.dispose()
+})

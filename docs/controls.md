@@ -236,3 +236,31 @@ mode, then the existing lift/flight controls. Buildings under **Edificios OSM** 
 the same color and geometry editor. Save preserves a local snapshot. GPS relocation
 is disabled for this geographically anchored extract. The viewport labels its
 1.2 km extent; ground movement is constrained at the available terrain boundary.
+
+## Performance and inspector sections
+
+Open **Rendimiento** in the right inspector to choose drawing distance (1, 2, 4 or
+6 km), map collision radius (200, 400, 800 or 2000 m), pixel ratio cap (0.75, 1,
+1.25 or 2) and shadow map resolution (off, 512, 1024 or 2048). Defaults are 4 km,
+400 m, 1.25 and 1024. Preferences and each inspector section's open/closed state
+are stored locally in the browser, separately from the scene document. Sun/Moon,
+Earth location and controls start collapsed; selected entity properties remain visible.
+
+Drawing distance limits loaded map objects and real-world fog; it does not download
+buildings out to that radius. Coarse terrain fills the surroundings. Mesh frustum
+culling already skips geometry outside each camera's view; portal cameras evaluate
+their own distance visibility. Lowering resolution or disabling shadows can reduce
+GPU work even when nearby buildings fill the screen.
+
+Map building collisions outside the selected radius are suspended, with two seconds
+of speed-based margin around the player and every vehicle. The check runs four times
+per simulated second. Altitude contributes to distance, so remote buildings below a
+flying carrier can be suspended. Terrain, authored solids, vehicles and portal
+colliders stay active, including surroundings of parked vehicles. Portal exit checks include suspended
+obstacles and reactivate nearby collisions immediately after traversal. This does not
+reduce scene storage or terrain physics; it is not a benchmarked frame-rate guarantee.
+
+Normal horizontal carrier flight targets 90 m/s (324 km/h), with up to 18 m/s² of
+acceleration. Releasing the right stick or applying the brake targets zero horizontal
+speed, with up to 30 m/s² braking. Diagonal input has the same speed limit. Vertical
+speed remains 3 m/s with altitude hold, and Shift retains accelerated geographic ascent.

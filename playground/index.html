@@ -107,17 +107,55 @@
       <aside class="inspector">
         <div class="panel-heading">PROPIEDADES <span>◈</span></div>
         <div id="properties"></div>
-        <section class="help sky-controls">
-          <span class="eyebrow">SOL Y LUNA</span>
+        <details id="performance-section" class="help">
+          <summary>RENDIMIENTO</summary>
+          <label class="field-label" for="draw-distance">Distancia de dibujado</label>
+          <select id="draw-distance">
+            <option value="1000">1 km</option>
+            <option value="2000">2 km</option>
+            <option value="4000">4 km</option>
+            <option value="6000">6 km</option>
+          </select>
+          <label class="field-label" for="collision-distance"
+            >Colisiones de edificios cercanos</label
+          >
+          <select id="collision-distance">
+            <option value="200">200 m</option>
+            <option value="400">400 m</option>
+            <option value="800">800 m</option>
+            <option value="2000">2 km</option>
+          </select>
+          <label class="field-label" for="render-resolution">Resolución</label>
+          <select id="render-resolution">
+            <option value="0.75">Ligera · 0,75×</option>
+            <option value="1">Normal · 1×</option>
+            <option value="1.25">Nítida · 1,25×</option>
+            <option value="2">Alta · 2×</option>
+          </select>
+          <label class="field-label" for="shadow-quality">Sombras</label>
+          <select id="shadow-quality">
+            <option value="0">Desactivadas</option>
+            <option value="512">Bajas</option>
+            <option value="1024">Medias</option>
+            <option value="2048">Altas</option>
+          </select>
+          <p>
+            En altura se retiran las colisiones lejanas. El suelo, los vehículos y los portales
+            conservan sus colisiones.
+          </p>
+          <p id="performance-status"></p>
+        </details>
+        <details id="sky-section" class="help sky-controls">
+          <summary>SOL Y LUNA</summary>
           <label class="field-label" id="sky-zone" for="sky-time">Fecha y hora local</label>
           <input id="sky-time" type="datetime-local" />
           <div>
             <button id="sky-apply">Aplicar hora</button><button id="sky-live">Tiempo real</button>
           </div>
           <p id="sky-status" role="status"></p>
-        </section>
-        <section class="help geography-controls">
-          <span class="eyebrow">UBICACIÓN EN LA TIERRA</span>
+        </details>
+        <details id="geography-section" class="help geography-controls">
+          <summary>UBICACIÓN EN LA TIERRA</summary>
           <label class="field-label" for="latitude">Latitud</label
           ><input id="latitude" type="number" min="-90" max="90" step="0.00001" />
           <label class="field-label" for="longitude">Longitud</label
@@ -136,8 +174,9 @@
             Shift / L3 al ascender o descender: viaje acelerado. Suelta para mantener altura. Suelo
             y Tierra disponibles sin conexión.
           </p>
-        </section>
-        <section class="help">
+        </details>
+        <details id="controls-section" class="help">
+          <summary>CONTROLES</summary>
           <div><kbd>C</kbd> Cámara exterior / asiento / cenital</div>
           <div><kbd>F</kbd> Sujetar / soltar el coche</div>
           <div><kbd>T</kbd> Mando del container / coche</div>
@@ -162,7 +201,7 @@
           <div><kbd>Shift</kbd> Acelerar el monitor</div>
           <div><kbd>R</kbd> Reiniciar la partida</div>
           <div><kbd>Tab</kbd> Jugar / detener</div>
-        </section>
+        </details>
       </aside>
       <footer>
         <span><span class="dot"></span> <span id="status">Listo</span></span

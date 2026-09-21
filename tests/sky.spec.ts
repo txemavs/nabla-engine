@@ -15,6 +15,7 @@ test('changes daylight, freezes time, restores real time and saves the selected 
     buffer: Buffer.from(JSON.stringify(doc)),
   })
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await page.locator('#sky-section > summary').click()
   await page.locator('#sky-time').fill('2026-09-21T12:00')
   await page.locator('#sky-apply').click()
   await expect(page.locator('canvas')).toHaveAttribute('data-sky-phase', 'day')

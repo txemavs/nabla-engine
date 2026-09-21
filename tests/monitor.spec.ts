@@ -6,6 +6,7 @@ test('starts in first person, toggles monitor view and fires only in play with c
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/?scene=circuit')
+  await page.locator('#geography-section > summary').click()
   await page.locator('#imagery').selectOption('offline')
   await page.locator('#apply-location').click()
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })

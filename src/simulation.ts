@@ -92,6 +92,8 @@ export class Simulation {
   private readonly solidMaterial = new Material({ friction: 0.55, restitution: 0 })
   private readonly characterMaterial = new Material({ friction: 0, restitution: 0 })
   private readonly bodies = new Map<string, Body>()
+  private collisionDistance = 400
+  private readonly mapBodies = new Map<string, Body>()
   private readonly vehicles = new Map<string, Vehicle>()
   private readonly hostedShapes = new Map<string, Box[]>()
   private readonly playerBody: Body
@@ -270,6 +272,7 @@ export class Simulation {
       const b = this.bodies.get(id)
       if (b) this.world.removeBody(b)
       this.bodies.delete(id)
+      this.mapBodies.delete(id)
     }
     for (const e of add) this.addEntityBody(e)
     this.minimumFlightAltitude = Math.min(
@@ -360,8 +363,45 @@ export class Simulation {
     body.linearDamping = 0.05
     body.angularDamping = 0.35
     this.bodies.set(e.id, body)
+    if (e.source && e.motion === 'static' && !e.terrain && !e.portal) this.mapBodies.set(e.id, body)
     if (e.kind === 'vehicle') this.createVehicle(e, body)
     else this.world.addBody(body)
+  }
+
+  setCollisionDistance(distance: number): void {
+    if (!Number.isFinite(distance) || distance < 200 || distance > 2000)
+      throw new Error('Collision distance must be 200–2000 m')
+    this.collisionDistance = distance
+    this.updateMapCollisions()
+  }
+  get collisionStats() {
+    return {
+      active: [...this.mapBodies.values()].filter((b) => b.world === this.world).length,
+      total: this.mapBodies.size,
+    }
+  }
+  /** Keep terrain, actors and portal colliders. Cull map solids conservatively around every actor. */
+  private updateMapCollisions(): void {
+    const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
+    for (const body of this.mapBodies.values()) {
+      if (body.aabbNeedsUpdate) body.updateAABB()
+      const active = actors.some((actor) => {
+        const p = actor.position,
+          lo = body.aabb.lowerBound,
+          hi = body.aabb.upperBound
+        const distance = Math.hypot(
+          p.x - clamp(p.x, lo.x, hi.x),
+          p.y - clamp(p.y, lo.y, hi.y),
+          p.z - clamp(p.z, lo.z, hi.z),
+        )
+        // Two seconds of look-ahead covers fast flight and the throttled update interval.
+        return (
+          distance < this.collisionDistance + actor.velocity.length() * 2 + actor.boundingRadius
+        )
+      })
+      if (active && body.world !== this.world) this.world.addBody(body)
+      else if (!active && body.world === this.world) this.world.removeBody(body)
+    }
   }
 
   private constrainTerrainBoundary(): void {
@@ -578,6 +618,7 @@ export class Simulation {
             }
           : null
       if (carry) host!.getVelocityAtWorldPoint(this.playerBody.position, carry.velocity)
+      if (this.ticks % 15 === 0) this.updateMapCollisions()
       this.beforeTick()
       this.world.step(FIXED_STEP)
       this.constrainTerrainBoundary()
@@ -704,6 +745,7 @@ export class Simulation {
           body.velocity.vadd(destinationVelocity, body.velocity)
           if (destinationHost)
             body.angularVelocity.vadd(destinationHost.angularVelocity, body.angularVelocity)
+          this.updateMapCollisions()
           this.portalLocks.set(body.id, destination.id)
           // A solved contact belongs to the old location; do not expose it at the exit.
           this.world.contacts = this.world.contacts.filter((c) => c.bi !== body && c.bj !== body)
@@ -805,7 +847,10 @@ export class Simulation {
           ),
         ]
       })
-    const obstacles = this.world.bodies.filter((b) => b !== body).flatMap(shapeBoxes)
+    // Exit safety must include map bodies suspended by distance culling.
+    const obstacles = [...new Set([...this.world.bodies, ...this.mapBodies.values()])]
+      .filter((b) => b !== body)
+      .flatMap(shapeBoxes)
     // Check a clear exit corridor at transfer time; cross-seam contacts are not simulated.
     const length = Math.max(...body.shapes.map((s) => s.boundingSphereRadius), 1) + 0.25
     for (let distance = 0; distance <= length; distance += 0.25) {
@@ -1109,7 +1154,7 @@ export class Simulation {
     const right = active && !this.input.brake ? this.input.right : 0
     const height = this.height(body),
       radial = this.radialUp(body)
-    // Assisted travel is explicitly accelerated with Shift, while ordinary drone speed stays 3 m/s.
+    // Assisted travel is explicitly accelerated with Shift, while ordinary vertical speed stays 3 m/s.
     const travelSpeed =
       active && this.input.sprint && this.document.geography
         ? Math.min(2000000, Math.max(30, height * 0.8))
@@ -1140,7 +1185,6 @@ export class Simulation {
       body.inertia.z * (error.z * sign * 24 - rate.z * 7),
     )
     body.torque.vadd(body.vectorToWorldFrame(torque), body.torque)
-    const up = body.quaternion.vmult(new Vec3(0, 1, 0))
     const verticalSpeed = body.velocity.dot(radial)
     const acceleration = clamp(
       (flight.altitude - height) * 5 - verticalSpeed * 4,
@@ -1149,13 +1193,19 @@ export class Simulation {
     )
     // Distribute assisted lift over the rigid assembly: same net force/moment at its
     // combined centre of mass, without forcing the solver to transmit cruise-scale impulses.
-    const accelerationVector = up.scale((9.81 + acceleration) / Math.max(up.dot(radial), 0.4))
-    const drag = body.velocity.vsub(radial.scale(verticalSpeed)).scale(-0.9)
+    const accelerationVector = radial.scale(9.81 + acceleration)
+    const direction = new Vec3(right, 0, -forward)
+    if (direction.length() > 1) direction.normalize()
+    const target = heading.vmult(direction).scale(90) // 324 km/h, including diagonal input.
+    const horizontal = body.velocity.vsub(radial.scale(verticalSpeed))
+    const drive = target.vsub(horizontal).scale(1.8)
+    const maximum = forward || right ? 18 : 30
+    if (drive.length() > maximum) drive.scale(maximum / drive.length(), drive)
     const assistedBodies = [body]
     for (const [id, dock] of this.docks)
       if (dock.carrierId === v.entity.id) assistedBodies.push(this.vehicles.get(id)!.body)
     for (const assisted of assistedBodies) {
-      assisted.applyForce(accelerationVector.vadd(drag).scale(assisted.mass))
+      assisted.applyForce(accelerationVector.vadd(drive).scale(assisted.mass))
     }
     body.wakeUp()
   }

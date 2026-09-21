@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Accelerate carrier drone flight to a 324 km/h target with altitude hold and automatic braking.
+- Add persistent draw distance, map collision radius, render resolution and shadow quality controls.
+- Collapse inspector environment and controls sections; remember each section's state.
+- Cull distant map rendering separately for main and portal cameras, and suspend distant map building physics around every actor.
+
 - Add a private Docker disk cache for OSM queries and Esri elevation, configured outside the repository.
 - Extend real-world visibility to approximately 4 km with coarse distant terrain and consistent atmospheric fog.
 

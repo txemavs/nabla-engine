@@ -10,6 +10,7 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
       errors.push(message.text())
   })
   await page.goto('/?scene=circuit')
+  await page.locator('#geography-section > summary').click()
   await page.locator('#imagery').selectOption('offline')
   await page.locator('#apply-location').click()
   await page.getByRole('button', { name: 'Añadir entidad', exact: true }).click()

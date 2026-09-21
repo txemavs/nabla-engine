@@ -285,3 +285,26 @@ it('jumps with one impulse and returns to its normal hover height', () => {
   expect(sim.player.position[1]).toBeCloseTo(1.25, 1)
   sim.dispose()
 })
+
+it('removes distant map collision bodies and restores them without removing authored ground', () => {
+  const near = createEntity('near', 'box', [30, 1, 0])
+  const far = createEntity('far', 'box', [600, 1, 0])
+  for (const [i, e] of [near, far].entries())
+    e.source = {
+      provider: 'openstreetmap',
+      id: `way/${i}`,
+      retrievedAt: '2026-09-21',
+      tags: {},
+    }
+  const sim = new Simulation(scene([near, far]))
+  sim.setCollisionDistance(200)
+  expect(sim.collisionStats).toEqual({ active: 1, total: 2 })
+  advance(sim, 2)
+  expect(sim.player.grounded).toBe(true)
+  sim.setCollisionDistance(800)
+  expect(sim.collisionStats).toEqual({ active: 2, total: 2 })
+  sim.setCollisionDistance(200)
+  expect(sim.collisionStats.active).toBe(1)
+  expect(() => sim.setCollisionDistance(NaN)).toThrow()
+  sim.dispose()
+})

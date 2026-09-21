@@ -22,6 +22,7 @@ interface Tile {
 }
 /** Planetary background in million-metre units; map tiles use camera-relative local metres. */
 export class GeographicView {
+  viewDistance = 4000
   readonly tiles = new THREE.Group()
   readonly space = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 1e-8, 200000)
@@ -162,9 +163,13 @@ export class GeographicView {
     this.atmosphere = atmosphere(
       height,
       this.sunDirection.dot(radial),
-      this.hasTerrain ? 5000 : 220,
+      this.hasTerrain ? this.viewDistance : 220,
     )
     const air = this.atmosphere
+    if (this.hasTerrain && height < 12000) {
+      air.near = this.viewDistance * 0.75
+      air.far = this.viewDistance
+    }
     this.backdrop.material.color.copy(air.color)
     this.space.background = null
     // Same fog in local metres and planetary units prevents the remote globe forming a second horizon.

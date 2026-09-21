@@ -762,3 +762,19 @@ body.playing #footer-mode {
   border-radius: 4px;
   pointer-events: none;
 }
+
+.inspector details > summary {
+  cursor: pointer;
+  color: #93bbdf;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  padding: 6px 0;
+}
+.inspector details[open] > summary {
+  margin-bottom: 12px;
+}
+.inspector details select {
+  width: 100%;
+  margin: 5px 0 12px;
+}

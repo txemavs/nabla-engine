@@ -33,6 +33,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
 }
 export class SceneView {
   readonly root = new THREE.Group()
+  private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
   readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
   private readonly spritePixels = new Map<string, ImageData>()
@@ -67,6 +68,7 @@ export class SceneView {
         disposeObject(object)
       }
       this.objects.delete(id)
+      this.mapBounds.delete(id)
       this.sprites.delete(id)
       this.spritePixels.delete(id)
     }
@@ -411,6 +413,22 @@ export class SceneView {
       wheels.push(wrapper)
     }
     this.wheels.set(e.id, wheels)
+  }
+  /** Distance culling is repeated for portal cameras, never shared from the main frustum. */
+  limitDrawDistance(position: THREE.Vector3, distance: number, enabled: boolean): void {
+    for (const e of this.document.entities) {
+      if (!e.source || e.motion === 'dynamic' || e.portal) continue
+      const object = this.objects.get(e.id)!
+      let bounds = this.mapBounds.get(e.id)
+      if (!bounds) {
+        object.updateWorldMatrix(true, true)
+        bounds = new THREE.Box3().setFromObject(object).getBoundingSphere(new THREE.Sphere())
+        // Store absolute coordinates even while the render origin is rebased.
+        bounds.center.sub(this.root.position)
+        this.mapBounds.set(e.id, bounds)
+      }
+      object.visible = !enabled || bounds.center.distanceTo(position) <= distance + bounds.radius
+    }
   }
   setPlaying(playing: boolean): void {
     this.avatar.visible = playing

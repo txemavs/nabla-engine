@@ -107,7 +107,10 @@ describe('A3 and mobile garage', () => {
 })
 
 it('flies the loaded garage, holds altitude, tilts and lands without releasing cargo in midair', () => {
-  const sim = new Simulation(document())
+  const doc = document()
+  // Cruise flight now travels beyond the old 100 m test platform.
+  doc.entities[0]!.size = [2000, 1, 2000]
+  const sim = new Simulation(doc)
   park(sim)
   sim.toggleDock()
   sim.transferControls()
@@ -197,5 +200,29 @@ it('keeps the A3 attached during accelerated geographic ascent and braking', () 
   relativePosition(sim).forEach((value, i) =>
     expect(Math.abs(value - relative[i])).toBeLessThan(0.1),
   )
+  sim.dispose()
+})
+
+it('reaches 300 km/h in drone flight, holds altitude and brakes on release', () => {
+  const doc = document()
+  doc.entities[0]!.size = [4000, 1, 4000]
+  doc.entities.find((e) => e.id === 'spawn')!.transform.position = [0, 0.1, -15]
+  const sim = new Simulation(doc)
+  step(sim, 120)
+  sim.interact()
+  sim.toggleFlight()
+  sim.setInput({ ...idleInput(), lift: 1 })
+  step(sim, 300)
+  sim.setInput(idleInput())
+  step(sim, 240)
+  const height = sim.entityTransform('carrier').position[1]
+  sim.setInput({ ...idleInput(), forward: 1 })
+  step(sim, 600)
+  expect(sim.player.speed).toBeGreaterThan(300 / 3.6)
+  expect(sim.player.speed).toBeLessThan(91)
+  expect(Math.abs(sim.entityTransform('carrier').position[1] - height)).toBeLessThan(0.3)
+  sim.setInput(idleInput())
+  step(sim, 420)
+  expect(sim.player.speed).toBeLessThan(0.1)
   sim.dispose()
 })

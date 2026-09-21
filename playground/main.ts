@@ -1,3 +1,4 @@
+import { readPerformance } from './performance.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { WorldStream } from '../src/world-stream.js'
@@ -46,6 +47,7 @@ const escape = (s: string): string =>
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   )
+const performanceSettings = readPerformance()
 const STORAGE_KEY = 'nabla.scene.v1'
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = false
@@ -120,8 +122,8 @@ function action(fn: () => void): void {
 }
 const viewport = $('viewport')
 const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true })
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
-renderer.shadowMap.enabled = true
+renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
+renderer.shadowMap.enabled = performanceSettings.shadows > 0
 renderer.shadowMap.type = THREE.PCFShadowMap
 renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.35
@@ -141,7 +143,7 @@ scene.add(hemisphere)
 const sun = new THREE.DirectionalLight('#ffe1b1', 3.2)
 sun.position.set(-25, 45, 25)
 sun.castShadow = true
-sun.shadow.mapSize.set(2048, 2048)
+sun.shadow.mapSize.set(performanceSettings.shadows || 512, performanceSettings.shadows || 512)
 sun.shadow.camera.left = -55
 sun.shadow.camera.right = 55
 sun.shadow.camera.top = 55
@@ -276,7 +278,7 @@ function setupWorldStream(): void {
     $('world-note').textContent =
       'VENTAS / KATEA · OSM + ESRI · ' +
       (status === 'ready'
-        ? 'Vista ≈ 4 km'
+        ? `Vista ≈ ${performanceSettings.distance / 1000} km`
         : status === 'unavailable'
           ? 'Relieve lejano pendiente'
           : 'Cargando horizonte…')
@@ -732,6 +734,7 @@ function togglePlay(): void {
       orbitStartTarget = orbit.target.clone()
       portalControls.rebuild(editor.document)
       sim = new Simulation(editor.document, { playerMode: 'hover' })
+      sim.setCollisionDistance(performanceSettings.collisions)
       firstPerson = true
       fireRequested = false
       sidearm.reset()
@@ -763,6 +766,51 @@ function togglePlay(): void {
       : 'Edición · metros · Y arriba'
     grid.visible = !sim && !editor.document.entities.some((e) => e.terrain)
     outline.visible = !sim
+  })
+}
+for (const [id, key] of [
+  ['draw-distance', 'distance'],
+  ['collision-distance', 'collisions'],
+  ['render-resolution', 'resolution'],
+  ['shadow-quality', 'shadows'],
+] as const) {
+  const control = $<HTMLSelectElement>(id)
+  control.value = String(performanceSettings[key])
+  control.onchange = () => {
+    performanceSettings[key] = Number(control.value)
+    try {
+      localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
+    } catch {
+      /* Current session remains usable. */
+    }
+    if (distantTerrain?.status === 'ready')
+      $('world-note').textContent =
+        `VENTAS / KATEA · OSM + ESRI · Vista ≈ ${performanceSettings.distance / 1000} km`
+    sim?.setCollisionDistance(performanceSettings.collisions)
+    renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
+    renderer.setSize(viewport.clientWidth, viewport.clientHeight)
+    renderer.shadowMap.enabled = performanceSettings.shadows > 0
+    const size = performanceSettings.shadows || 512
+    if (sun.shadow.mapSize.x !== size) {
+      sun.shadow.map?.dispose()
+      sun.shadow.map = null
+      sun.shadow.mapSize.set(size, size)
+    }
+    needsRender = true
+  }
+}
+for (const section of document.querySelectorAll<HTMLDetailsElement>('.inspector details')) {
+  try {
+    section.open = localStorage.getItem(`nabla.panel.${section.id}`) === 'open'
+  } catch {
+    /* Closed defaults. */
+  }
+  section.addEventListener('toggle', () => {
+    try {
+      localStorage.setItem(`nabla.panel.${section.id}`, section.open ? 'open' : 'closed')
+    } catch {
+      /* Optional preference. */
+    }
   })
 }
 $('play').onclick = togglePlay
@@ -1009,6 +1057,10 @@ function frame(now: number): void {
     }
     sim.setInput(currentInput(pad))
     sim.step(document.hidden ? 0 : dt)
+    if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
+      const c = sim.collisionStats
+      $('performance-status').textContent = `Edificios con colisión: ${c.active} / ${c.total}`
+    }
     if (worldStream && !document.hidden && (!streamSample || now - streamSample.at > 500)) {
       const position = sim.player.position
       const elapsed = streamSample ? (now - streamSample.at) / 1000 : 1
@@ -1231,6 +1283,7 @@ function frame(now: number): void {
   const position = sim?.player.position ?? camera.position.toArray()
   renderOrigin.set(0, 0, 0)
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
+  geography.viewDistance = performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
   distantTerrain?.update(position)
   distantTerrain?.root.position.copy(renderOrigin).negate()
@@ -1256,7 +1309,9 @@ function frame(now: number): void {
       air.day > 0.8 ? 'day' : air.day < 0.1 ? 'night' : 'twilight'
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
-    camera.far = Math.max(distantTerrain ? 6000 : 300, Math.min(100000000, height * 15))
+    camera.far = distantTerrain
+      ? performanceSettings.distance + 500
+      : Math.max(300, Math.min(100000000, height * 15))
     renderer.domElement.dataset.viewDistance = String(camera.far)
     camera.updateProjectionMatrix()
   } else {
@@ -1275,12 +1330,18 @@ function frame(now: number): void {
     const outlineVisible = outline.visible
     outline.visible = false
     renderPortals(view.portals, renderer, scene, camera, (remote) => {
+      view.limitDrawDistance(
+        remote.position.clone().add(renderOrigin),
+        performanceSettings.distance,
+        !!sim,
+      )
       if (geography.enabled) {
         geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
         renderer.autoClear = false
       }
     })
     outline.visible = outlineVisible
+    view.limitDrawDistance(worldCamera, performanceSettings.distance, !!sim)
     renderer.autoClear = true
     if (geography.enabled) {
       geography.render(renderer, camera, worldCamera)
