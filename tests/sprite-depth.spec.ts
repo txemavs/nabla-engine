@@ -4,7 +4,7 @@ import { createEntity } from '../src/scene.js'
 test('opaque PNG pixels occlude deeper sprites regardless of draw order and match shot hits', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   const entities = [
     createEntity('spawn', 'spawn', [0, 0, 0]),
     ...['near', 'far'].map((id, i) => ({

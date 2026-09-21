@@ -83,8 +83,9 @@ USB radios require an axis adapter; a calibration UI is not available yet.
 
 ## Location and maps
 
-The example starts at Madrid, 40.4166°, −3.70384°. On first opening, the browser
-requests location access. Denial or timeout preserves the current point.
+These imagery controls apply to the original circuit, located at Madrid,
+40.4166°, −3.70384°. Its explicit test route requests browser location once.
+The default Irun Ventas district uses anchored, bundled geography instead.
 
 In **Ubicación en la Tierra**, edit latitude/longitude or select **Mi ubicación**.
 Choose **Satélite**, **Calles** or **Sin conexión**, then **Aplicar GPS**. Use
@@ -225,3 +226,13 @@ disabled while playing.
 ## Building geometry
 
 Use **Scene + → Edificio**, then **Editar geometría** in the inspector. Points, Lines and Planes place snapped local geometry; the drawing plane and offset choose the construction surface. Select a face to extrude or delete it. Escape finishes geometry mode. See [Solid editor](solid-editor.md) for topology, cloning and current limits.
+
+## Irun Ventas
+
+New sessions start in the real-data district. **Irún · Ventas** restores its baseline;
+**Escena A3** opens the original test circuit. **Tab** starts play and **E** enters the
+nearby A3. The carrier is placed nearby; enter its helm and use **V** to switch flight
+mode, then the existing lift/flight controls. Buildings under **Edificios OSM** use
+the same color and geometry editor. Save preserves a local snapshot. GPS relocation
+is disabled for this geographically anchored extract. The viewport labels its
+1.2 km extent; ground movement is constrained at the available terrain boundary.

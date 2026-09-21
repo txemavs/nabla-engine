@@ -35,7 +35,8 @@ The playground UI remains in Spanish. Documentation is in English; the
 - Original Audi A3 Cabrio body, wheels and steering wheel, with interior camera.
 - A 5 × 10 m carrier: drive into its garage, latch the car, travel and release it.
 - Ground and assisted drone flight modes, altitude hold and mode 2 gamepad input.
-- A GPS origin, Madrid by default, with a browser location request and editable coordinates.
+- A real-data starting district in Irun Ventas/Katea, with OSM buildings/streets and Esri elevation.
+- The original Madrid circuit remains available with an editable GPS origin and connected imagery.
 - Agency's circuit JPEG with 18 aligned building footprints beneath editable geometry, satellite/street imagery and a planetary view.
 - Earth, Sun and Moon, a selectable date/time or live clock, day/night lighting and a shared horizon haze.
 

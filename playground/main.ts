@@ -1,3 +1,4 @@
+import { createRealWorld, type WorldExtract } from '../src/real-world.js'
 import { SolidEditor } from './solid-editor.js'
 import { treeSprite } from '../src/vegetation.js'
 import { createGallery, Gallery } from './gallery.js'
@@ -42,6 +43,8 @@ const escape = (s: string): string =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   )
 const STORAGE_KEY = 'nabla.scene.v1'
+const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
+let loadingWorld = false
 let editor = new SceneEditor(upgradeReferenceScene(createSampleScene()))
 let loadError = ''
 try {
@@ -259,6 +262,9 @@ function refreshUi(): void {
   }
   setAddMenu(false)
   $('scene-name').textContent = doc.name
+  $('view-subtitle').textContent = doc.name
+  grid.visible = !sim && !doc.entities.some((e) => e.terrain)
+  $('world-note').hidden = !doc.entities.some((e) => e.terrain)
   skyClock = doc.sky ?? { mode: 'live' }
   $<HTMLInputElement>('sky-time').value = localTimeInput(skyTime(skyClock))
   $('sky-live').classList.toggle('active', skyClock.mode === 'live')
@@ -268,13 +274,13 @@ function refreshUi(): void {
   $<HTMLInputElement>('longitude').value = String(geo.longitude)
   $<HTMLSelectElement>('imagery').value = doc.geography?.imagery ?? 'satellite'
   for (const id of ['latitude', 'longitude', 'imagery', 'apply-location', 'locate'])
-    $<HTMLInputElement>(id).disabled = Boolean(sim)
+    $<HTMLInputElement>(id).disabled = Boolean(sim) || doc.entities.some((e) => !!e.terrain)
   $('entity-count').textContent = String(doc.entities.length)
   $('status').textContent =
     editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
   const tree = $('tree')
   tree.replaceChildren()
-  const icons = { solid: '⬡', box: '◇', vehicle: '▰', spawn: '◎', group: '▱' }
+  const icons = { terrain: '▧', solid: '⬡', box: '◇', vehicle: '▰', spawn: '◎', group: '▱' }
   function append(parent: string | null, depth: number): void {
     for (const e of doc.entities.filter((item) => item.parentId === parent)) {
       const button = document.createElement('button')
@@ -309,7 +315,7 @@ function refreshUi(): void {
   function row(label: string, key: string, values: number[]): string {
     return `<label class="field-label">${label}</label><div class="axis-row">${values.map((n, i) => `<label><span>${'XYZ'[i]}</span><input aria-label="${label} ${'XYZ'[i]}" data-vector="${key}" data-axis="${i}" type="number" step="${key === 'rotation' ? '1' : '0.1'}" value="${Number(n.toFixed(3))}"></label>`).join('')}</div>`
   }
-  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${{ solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
+  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${{ terrain: 'Relieve · Esri Terrain 3D', solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
     <label class="field-label" for="name">Nombre</label><input id="name" value="${escape(e.name)}" maxlength="100">
     ${row('Posición local · m', 'position', e.transform.position)}${row('Rotación local · °', 'rotation', angles)}
     ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
@@ -434,7 +440,7 @@ function refreshUi(): void {
       'input,button,select',
     )
     .forEach((el) => {
-      if (sim) el.disabled = true
+      if (sim || loadingWorld) el.disabled = true
     })
   if (!sim) {
     $<HTMLInputElement>('color').disabled = !!e.visual
@@ -445,8 +451,8 @@ function refreshUi(): void {
     if (solidEditor.active) gizmo.detach()
     else gizmo.attach(view.objects.get(e.id)!)
   }
-  $<HTMLButtonElement>('undo').disabled = !!sim || !editor.canUndo
-  $<HTMLButtonElement>('redo').disabled = !!sim || !editor.canRedo
+  $<HTMLButtonElement>('undo').disabled = !!sim || loadingWorld || !editor.canUndo
+  $<HTMLButtonElement>('redo').disabled = !!sim || loadingWorld || !editor.canRedo
   for (const id of [
     'add-entity',
     'add-solid',
@@ -458,11 +464,12 @@ function refreshUi(): void {
     'translate',
     'rotate',
     'import',
+    'world-irun',
     'sample-assets',
     'sample-portals',
     'focus',
   ])
-    $<HTMLButtonElement>(id).disabled = !!sim
+    $<HTMLButtonElement>(id).disabled = !!sim || loadingWorld
 }
 function setTool(mode: 'translate' | 'rotate'): void {
   if (sim) return
@@ -568,6 +575,45 @@ $('sample-portals').onclick = () =>
     view.ready.then(focusSelection).catch(() => undefined)
     toast('Dos Stargates añadidos. El A3 tiene el primero delante; puedes moverlos o deshacer.')
   })
+async function loadIrun(): Promise<void> {
+  if (sim || loadingWorld) return
+  loadingWorld = true
+  refreshUi()
+  for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = true
+  $<HTMLButtonElement>('play').disabled = true
+  $('world-loading').hidden = false
+  $('world-loading').textContent = 'Cargando Ventas de Irún · OSM + relieve…'
+  try {
+    const response = await fetch('/geography/irun-ventas.json')
+    if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
+    const extract = (await response.json()) as WorldExtract
+    const next = upgradeReferenceScene(createRealWorld(extract))
+    editor.load(next)
+    for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
+    selectedId = 'car-a'
+    rebuild()
+    $('welcome').hidden = true
+    await view.ready
+    focusSelection()
+    // Start with a wider view of the street instead of a close-up of the bonnet.
+    orbit.target.set(0, 2, 0)
+    camera.position.set(35, 32, 40)
+    orbit.update()
+    renderer.domElement.dataset.world = 'irun'
+    localStorage.setItem('nabla.irun.introduced', '1')
+    toast('Ventas de Irún · distrito real de 1,2 km · Guardar para conservar cambios')
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'No se pudo abrir Ventas')
+  } finally {
+    loadingWorld = false
+    refreshUi()
+    for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = false
+    $<HTMLButtonElement>('play').disabled = false
+    $('world-loading').hidden = true
+  }
+}
+$('world-irun').onclick = () => void loadIrun()
+
 $('welcome-close').onclick = () => {
   $('welcome').hidden = true
 }
@@ -590,8 +636,8 @@ $('import').onclick = () => $<HTMLInputElement>('file').click()
 $('file').onchange = async () => {
   const file = $<HTMLInputElement>('file').files?.[0]
   if (!file) return
-  if (file.size > 2_000_000) {
-    toast('La escena supera el límite de 2 MB')
+  if (file.size > 8_000_000) {
+    toast('La escena supera el límite de 8 MB')
     return
   }
   try {
@@ -604,6 +650,7 @@ $('file').onchange = async () => {
   $<HTMLInputElement>('file').value = ''
 }
 function togglePlay(): void {
+  if (loadingWorld) return
   action(() => {
     keys.clear()
     if (sim) {
@@ -652,7 +699,7 @@ function togglePlay(): void {
     $('footer-mode').textContent = sim
       ? 'Simulación compartida · 60 Hz'
       : 'Edición · metros · Y arriba'
-    grid.visible = !sim
+    grid.visible = !sim && !editor.document.entities.some((e) => e.terrain)
     outline.visible = !sim
   })
 }
@@ -1171,6 +1218,10 @@ function frame(now: number): void {
   requestAnimationFrame(frame)
 }
 function applyLocation(latitude: number, longitude: number): void {
+  if (editor.document.entities.some((e) => e.terrain)) {
+    toast('Este extracto está anclado a Ventas de Irún')
+    return
+  }
   if (sim) {
     toast('Detén la partida para cambiar la ubicación')
     return
@@ -1223,9 +1274,15 @@ function locate(): void {
 }
 $('locate').onclick = locate
 refreshUi()
-if (!localStorage.getItem('nabla.location.requested')) {
+if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
   localStorage.setItem('nabla.location.requested', '1')
   locate()
 }
 if (loadError) toast(loadError)
 requestAnimationFrame(frame)
+
+if (
+  !circuitMode &&
+  (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
+)
+  void loadIrun()

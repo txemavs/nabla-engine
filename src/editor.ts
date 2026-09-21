@@ -71,6 +71,9 @@ export class SceneEditor {
           mode: pairId ? copy.portal.mode : 'closed',
         }
       }
+    for (const copy of copies)
+      if (copy.road && remap.has(copy.road.terrainId))
+        copy.road.terrainId = remap.get(copy.road.terrainId)!
     root.name += ' · copia'
     root.transform.position[0] += 3
     next.entities.push(...copies)
@@ -150,6 +153,6 @@ export class SceneEditor {
     this.commit(parseScene(raw))
   }
   serialize(): string {
-    return JSON.stringify(this.current, null, 2)
+    return JSON.stringify(this.current)
   }
 }

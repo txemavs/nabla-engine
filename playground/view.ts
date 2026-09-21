@@ -1,3 +1,5 @@
+import { roadGeometry } from '../src/draped-road.js'
+import { terrainVertices, terrainIndices } from '../src/terrain.js'
 import { triangles } from '../src/solid.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
@@ -170,6 +172,33 @@ export class SceneView {
             }
           }),
         )
+      }
+      if (e.road) {
+        const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!
+        const data = roadGeometry(t, e.road.paths, e.road.width)
+        const g = new THREE.BufferGeometry()
+        g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))
+        g.setIndex(data.faces.flat())
+        g.computeVertexNormals()
+        const surface = mesh(g, e.color)
+        ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
+        surface.position.y = ['footway', 'path', 'pedestrian', 'cycleway'].includes(
+          e.source?.tags.highway ?? '',
+        )
+          ? -0.01
+          : 0
+        surface.castShadow = false
+        group.add(surface)
+      }
+      if (e.terrain) {
+        const g = new THREE.BufferGeometry()
+        g.setAttribute(
+          'position',
+          new THREE.Float32BufferAttribute(terrainVertices(e.terrain).flat(), 3),
+        )
+        g.setIndex(terrainIndices(e.terrain))
+        g.computeVertexNormals()
+        group.add(mesh(g, e.color))
       }
       if (e.geometry) {
         const geometry = new THREE.BufferGeometry()
@@ -363,7 +392,7 @@ export class SceneView {
   setPlaying(playing: boolean): void {
     this.avatar.visible = playing
     for (const e of this.document.entities)
-      if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal && !e.sprite))
+      if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal && !e.sprite && !e.road))
         this.objects.get(e.id)!.visible = !playing
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {

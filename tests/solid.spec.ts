@@ -5,7 +5,7 @@ test('edits a building clone, extrudes and deletes faces, undoes and persists to
 }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#welcome-close').click()
   await page.locator('[data-entity-id="architecture"]').click()
@@ -43,7 +43,7 @@ test('edits a building clone, extrudes and deletes faces, undoes and persists to
 })
 
 test('draws points, an edge and a plane with viewport clicks', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#welcome-close').click()
   await page.locator('#add-entity').click()

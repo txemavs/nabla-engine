@@ -11,9 +11,9 @@ const rotation = z
   .tuple([finite, finite, finite, finite])
   .refine((q) => Math.abs(Math.hypot(...q) - 1) < 1e-5, 'Rotation must be a unit quaternion')
 const size = z.tuple([
-  finite.min(0.01).max(1000),
-  finite.min(0.01).max(1000),
-  finite.min(0.01).max(1000),
+  finite.min(0.01).max(10000),
+  finite.min(0.01).max(10000),
+  finite.min(0.01).max(10000),
 ])
 const transform = z.object({ position: vector, rotation }).strict()
 const boxCollider = z.object({ size, transform }).strict()
@@ -74,12 +74,38 @@ const entitySchema = z
     id: z.string().min(1).max(128),
     name: z.string().min(1).max(100),
     parentId: z.string().nullable(),
-    kind: z.enum(['group', 'box', 'vehicle', 'spawn', 'solid']),
+    kind: z.enum(['group', 'box', 'vehicle', 'spawn', 'solid', 'terrain']),
     transform,
     size,
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     motion: z.enum(['none', 'static', 'dynamic']),
     mass: finite.min(0.1).max(100000),
+    road: z
+      .object({
+        paths: z.array(z.array(vector).min(2).max(8192)).min(1).max(8192),
+        width: finite.min(0.5).max(30),
+        terrainId: z.string(),
+      })
+      .strict()
+      .optional(),
+    terrain: z
+      .object({
+        columns: z.number().int().min(2).max(129),
+        rows: z.number().int().min(2).max(129),
+        spacing: finite.min(0.25).max(100),
+        heights: z.array(coordinate).min(4).max(16641),
+      })
+      .strict()
+      .optional(),
+    source: z
+      .object({
+        provider: z.literal('openstreetmap'),
+        id: z.string().regex(/^(way|node|relation)\/\d+$/),
+        retrievedAt: z.string(),
+        tags: z.record(z.string(), z.string()),
+      })
+      .strict()
+      .optional(),
     geometry: z
       .object({
         vertices: z.array(vector).max(2048),
@@ -177,6 +203,13 @@ export function createEntity(
     color: kind === 'vehicle' ? '#e9a34e' : '#6c8492',
     motion: kind === 'vehicle' ? 'dynamic' : kind === 'box' ? 'static' : 'none',
     mass: kind === 'vehicle' ? 1200 : 40,
+    ...(kind === 'terrain'
+      ? {
+          name: 'Terreno',
+          motion: 'static' as const,
+          terrain: { columns: 2, rows: 2, spacing: 2, heights: [0, 0, 0, 0] },
+        }
+      : {}),
     ...(kind === 'solid'
       ? { name: 'Edificio', motion: 'static' as const, geometry: boxSolid([2, 2, 2]) }
       : {}),
@@ -191,6 +224,21 @@ export function parseScene(raw: unknown): SceneDocument {
   if (doc.entities.filter((e) => e.kind === 'spawn').length !== 1)
     throw new Error('Scene requires exactly one spawn')
   for (const e of doc.entities) {
+    if (
+      e.road &&
+      (e.kind !== 'group' || e.sprite || e.portal || byId.get(e.road.terrainId)?.kind !== 'terrain')
+    )
+      throw new Error('Roads require a group and terrain reference')
+    if (e.kind === 'terrain') {
+      if (
+        !e.terrain ||
+        e.terrain.heights.length !== e.terrain.columns * e.terrain.rows ||
+        e.motion === 'dynamic' ||
+        e.visual ||
+        e.surface
+      )
+        throw new Error('Invalid terrain grid')
+    } else if (e.terrain) throw new Error('Terrain requires a terrain entity')
     if (e.kind === 'solid') {
       if (!e.geometry || e.motion === 'dynamic' || e.visual || e.surface)
         throw new Error('Solids require static or visual topology')

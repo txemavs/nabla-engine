@@ -1,3 +1,4 @@
+import { terrainHeight } from './terrain.js'
 import { triangles } from './solid.js'
 import { SceneEditor } from './editor.js'
 import { portalColliders, portalLocal, portalMapping } from './portal.js'
@@ -6,6 +7,7 @@ import { OBB } from 'three/addons/math/OBB.js'
 import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition } from './vehicle.js'
 import {
+  Heightfield,
   ConvexPolyhedron,
   AABB,
   Body,
@@ -80,6 +82,8 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
  * The host supplies elapsed seconds and input, and reads snapshots after step(). */
 export class Simulation {
   private readonly document: SceneDocument
+  private readonly terrainEntity: Entity | undefined
+  private readonly minimumFlightAltitude: number
   private readonly graph: SceneGraph
   private readonly portalEntities: Entity[]
   private readonly world = new World({ gravity: new Vec3(0, -9.81, 0) })
@@ -121,6 +125,10 @@ export class Simulation {
     readonly options: { playerMode?: 'walk' | 'hover' } = {},
   ) {
     this.document = parseScene(raw)
+    this.terrainEntity = this.document.entities.find((e) => e.terrain)
+    this.minimumFlightAltitude = this.terrainEntity?.terrain
+      ? Math.min(...this.terrainEntity.terrain.heights) - 10
+      : 0
     this.graph = new SceneGraph(this.document)
     this.portalEntities = this.document.entities.filter((e) => e.portal)
     this.world.broadphase = new SAPBroadphase(this.world)
@@ -147,6 +155,17 @@ export class Simulation {
                 },
               },
             ]
+      if (e.terrain) {
+        const t = e.terrain
+        const data = Array.from({ length: t.columns }, (_, x) =>
+          Array.from({ length: t.rows }, (_, z) => t.heights[(t.rows - 1 - z) * t.columns + x]),
+        )
+        body.addShape(
+          new Heightfield(data, { elementSize: t.spacing }),
+          new Vec3((-(t.columns - 1) * t.spacing) / 2, 0, ((t.rows - 1) * t.spacing) / 2),
+          new Quaternion().setFromEuler(-Math.PI / 2, 0, 0),
+        )
+      }
       if (e.geometry) {
         // Thin convex triangle prisms support Cannon sphere, box and ray contacts.
         // Open faces remain openings; no hidden bounding-box collider.
@@ -183,7 +202,7 @@ export class Simulation {
           )
         }
       }
-      for (const collider of e.geometry ? [] : colliders)
+      for (const collider of e.geometry || e.terrain ? [] : colliders)
         body.addShape(
           new Box(new Vec3(...(collider.size.map((n) => n / 2) as Vec3Tuple))),
           new Vec3(...collider.transform.position),
@@ -204,7 +223,9 @@ export class Simulation {
     if (this.document.geography) {
       const terrain = new Body({ mass: 0, material: this.solidMaterial })
       const radius = EARTH_RADIUS + this.document.geography.altitude
-      terrain.addShape(new Sphere(radius))
+      terrain.addShape(
+        new Sphere(radius - (this.document.entities.some((e) => e.terrain) ? 200 : 0)),
+      )
       terrain.position.set(0, -radius, 0)
       this.world.addBody(terrain)
     }
@@ -304,6 +325,36 @@ export class Simulation {
     host.aabbNeedsUpdate = true
     host.wakeUp()
     this.world.broadphase.dirty = true
+  }
+
+  private constrainTerrainBoundary(): void {
+    const ground = this.terrainEntity
+    if (!ground?.terrain) return
+    const t = ground.terrain,
+      pose = this.graph.worldTransform(ground.id),
+      q = new Quaternion(...pose.rotation),
+      inv = q.inverse(),
+      origin = new Vec3(...pose.position)
+    const hx = ((t.columns - 1) * t.spacing) / 2 - 8,
+      hz = ((t.rows - 1) * t.spacing) / 2 - 8
+    for (const b of [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]) {
+      const p = inv.vmult(b.position.vsub(origin)),
+        x = clamp(p.x, -hx, hx),
+        z = clamp(p.z, -hz, hz)
+      if (p.y > terrainHeight(t, x, z) + 20 || (x === p.x && z === p.z)) continue
+      const v = inv.vmult(b.velocity)
+      if (x !== p.x) {
+        p.x = x
+        v.x = 0
+      }
+      if (z !== p.z) {
+        p.z = z
+        v.z = 0
+      }
+      b.position.copy(q.vmult(p).vadd(origin))
+      b.velocity.copy(q.vmult(v))
+      b.aabbNeedsUpdate = true
+    }
   }
 
   private createVehicle(entity: Entity, body: Body): void {
@@ -477,6 +528,7 @@ export class Simulation {
       if (carry) host!.getVelocityAtWorldPoint(this.playerBody.position, carry.velocity)
       this.beforeTick()
       this.world.step(FIXED_STEP)
+      this.constrainTerrainBoundary()
       if (carry && host) {
         const relative = this.playerBody.position
           .vsub(carry.start)
@@ -1013,7 +1065,7 @@ export class Simulation {
     const lead = Math.max(1.5, travelSpeed * 0.8)
     flight.altitude = clamp(
       flight.altitude + lift * travelSpeed * FIXED_STEP,
-      Math.max(0, height - lead),
+      Math.max(this.minimumFlightAltitude, height - lead),
       height + lead,
     )
     flight.yaw -= turn * 1.2 * FIXED_STEP
@@ -1165,9 +1217,23 @@ export class Simulation {
     const candidate = new OBB(new Vector3(...vec(center)), new Vector3(...vec(half)))
     return this.world.bodies.some((body) =>
       body.shapes.some((shape, i) => {
-        if (!(shape instanceof Box)) return false
+        if (!(shape instanceof Box) && !(shape instanceof ConvexPolyhedron)) return false
         const p = body.pointToWorldFrame(body.shapeOffsets[i])
         const q = body.quaternion.mult(body.shapeOrientations[i])
+        if (shape instanceof ConvexPolyhedron) {
+          const min = new Vec3(),
+            max = new Vec3()
+          shape.calculateWorldAABB(p, q, min, max)
+          if (!bounds.overlaps(new AABB({ lowerBound: min, upperBound: max }))) return false
+          return new Box(half).convexPolyhedronRepresentation.findSeparatingAxis(
+            shape,
+            center,
+            new Quaternion(),
+            p,
+            q,
+            new Vec3(),
+          )
+        }
         const rotation = new Matrix3().setFromMatrix4(
           new Matrix4().makeRotationFromQuaternion(new RenderQuaternion(q.x, q.y, q.z, q.w)),
         )

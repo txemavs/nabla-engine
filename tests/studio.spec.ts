@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await expect(page.getByRole('heading', { name: 'Distrito cero.' })).toBeVisible()
   await expect(page.locator('canvas')).toBeVisible()
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
@@ -50,7 +50,7 @@ test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) =
 })
 
 test('imports validated data and preserves the scene after invalid input', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   const before = await page.locator('#entity-count').textContent()
   await page.locator('#file').setInputFiles({
     name: 'broken.json',

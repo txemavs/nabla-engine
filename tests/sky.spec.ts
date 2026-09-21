@@ -8,7 +8,7 @@ test('changes daylight, freezes time, restores real time and saves the selected 
   await page.addInitScript(() => localStorage.setItem('nabla.location.requested', '1'))
   const doc = createSampleScene()
   doc.geography!.imagery = 'offline'
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await page.locator('#file').setInputFiles({
     name: 'sky.json',
     mimeType: 'application/json',

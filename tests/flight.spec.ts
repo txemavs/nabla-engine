@@ -19,7 +19,7 @@ test('flies with a mode 2 gamepad, releases sticks to hover and disconnects safe
   })
   const scene = createSampleScene()
   scene.entities.find((e) => e.kind === 'spawn')!.transform.position = [4, 0.1, -15]
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await page.locator('#file').setInputFiles({
     name: 'flight.json',
     mimeType: 'application/json',

@@ -20,7 +20,7 @@ test('operates the carrier stern console, changes address and traverses into the
       ...createPortalPair('road-a', 'road-b', [20, 1.455, 0], [35, 1.455, 0]),
     ],
   }
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await page.locator('#file').setInputFiles({
     name: 'carrier.json',
     mimeType: 'application/json',

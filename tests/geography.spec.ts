@@ -7,7 +7,7 @@ test('requests location, saves the GPS pin and preserves it on reload', async ({
 }) => {
   await context.grantPermissions(['geolocation'])
   await context.setGeolocation({ latitude: 41.38, longitude: 2.17 })
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await expect(page.locator('#latitude')).toHaveValue('41.38')
   await expect(page.locator('#longitude')).toHaveValue('2.17')
   await page.locator('#save').click()
@@ -29,7 +29,7 @@ test('flies from the Agency ground to space with local assets and returns to the
   const doc = createSampleScene()
   doc.geography!.imagery = 'offline'
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [4, 0.1, -15]
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await page.locator('#file').setInputFiles({
     name: 'planet.json',
     mimeType: 'application/json',
@@ -93,7 +93,7 @@ test('loads bounded map tiles, switches provider and stops external requests in 
       })
     },
   )
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await expect(page.locator('#map-status')).toHaveText('Esri · imágenes satélite', {
     timeout: 20000,
   })

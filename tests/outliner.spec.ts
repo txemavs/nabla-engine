@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test('reveals a viewport selection inside a collapsed group and creates from the scene menu', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#welcome-close').click()
   const group = page.locator('[data-entity-id="architecture"]')

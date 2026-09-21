@@ -9,7 +9,7 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
     if (message.type() === 'error' && /shader|WebGLProgram/i.test(message.text()))
       errors.push(message.text())
   })
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await page.locator('#imagery').selectOption('offline')
   await page.locator('#apply-location').click()
   await page.getByRole('button', { name: 'Añadir entidad', exact: true }).click()

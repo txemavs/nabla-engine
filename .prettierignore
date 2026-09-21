@@ -4,3 +4,5 @@ demo-dist
 package-lock.json
 test-results
 playwright-report
+
+assets/geography/irun-ventas.json

@@ -11,7 +11,7 @@ test('loads the original GLBs, shows the interior and keeps models after editing
     if (response.url().endsWith('.glb') && response.ok())
       models.add(response.url().split('/').pop()!)
   })
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
   expect([...models]).toEqual(
     expect.arrayContaining([
@@ -49,7 +49,7 @@ test('operates the garage latch and carrier controls in the browser', async ({ p
   const scene = createSampleScene()
   scene.entities.find((e) => e.id === 'car-a')!.transform.position = [4, 0.85, -9.4]
   scene.entities.find((e) => e.kind === 'spawn')!.transform.position = [2, 0.34, -9.4]
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await page.locator('#file').setInputFiles({
     name: 'garage.json',
     mimeType: 'application/json',

@@ -735,3 +735,30 @@ body.playing #footer-mode {
   margin-top: 8px;
   width: 100%;
 }
+
+#world-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: #132034e8;
+  color: #b5d7ff;
+  font-size: 18px;
+}
+#world-loading[hidden],
+#world-note[hidden] {
+  display: none;
+}
+#world-note {
+  position: absolute;
+  left: 20px;
+  top: 55px;
+  z-index: 3;
+  font-size: 11px;
+  color: #d4e8f9;
+  background: #17283abf;
+  padding: 8px;
+  border-radius: 4px;
+  pointer-events: none;
+}

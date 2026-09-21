@@ -15,3 +15,9 @@ export { createCarrierPortals, createPortalPair, portalMapping, portalCrossing }
 
 export { boxSolid, extrudeFace, removeVertex, validateSolid } from './solid.js'
 export type { SolidGeometry } from './solid.js'
+
+export { createRealWorld, IRUN_VENTAS } from './real-world.js'
+export type { WorldExtract, MapFeature } from './real-world.js'
+export { terrainHeight, terrainVertices, terrainIndices } from './terrain.js'
+export type { TerrainData } from './terrain.js'
+export { roadGeometry } from './draped-road.js'

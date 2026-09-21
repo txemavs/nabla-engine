@@ -106,3 +106,20 @@ The original `portal.frame.glb` has inward-facing triangles on all four bars.
 The asset loader repairs winding on an in-memory geometry copy and recomputes
 flat face normals once per cached model. The original GLB remains byte-identical;
 portal poses, apertures, collision geometry and traversal directions are unchanged.
+
+## Irun Ventas real-world fixture
+
+`geography/irun-ventas.json` contains a bounded OSM-derived feature database and a
+sampled elevation grid. Its `source` object records retrieval time and endpoints.
+OSM features are © OpenStreetMap contributors, available under
+[ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/), with
+[OSM attribution and licensing](https://www.openstreetmap.org/copyright).
+Elevations are derived from Esri WorldElevation3D/Terrain3D, level 12, column 2027,
+rows 1499 and 1500; © Esri and its data providers. Elevation licensing remains
+separate from OSM and the engine's MIT license. The on-screen Esri attribution link
+remains available. This fixture contains no Google imagery or Streets GL artwork.
+
+The preparation scripts and exact bounded requests are documented in
+[Real-world driving](../docs/real-world.md). Geometry generation in Nabla is an
+initial implementation of footprints, level/height estimates and terrain-draped
+roads; it is not a copied or complete Streets GL rendering pipeline.

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test('cycles chase, cockpit and north-up overhead map with adjustable height', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await page.locator('#imagery').selectOption('offline')
   await page.locator('#apply-location').click()
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })

@@ -1,6 +1,6 @@
 # Real-world driving: Streets GL integration review
 
-Status: source-reviewed design, not an implemented or tested map integration.
+Status: the streaming architecture below remains a design. A bounded Irun Ventas playable district is implemented; see the implementation section at the end.
 
 The product direction is to drive and fly through real geography, with selective
 local editing. The authored circuit remains a test scene. A whole city should not
@@ -116,7 +116,8 @@ entity, without hiding or modifying the source building.
 
 ## First playable milestone
 
-Start with a bounded Madrid district, selectable through the existing GPS controls.
+The first district is Irun Ventas, selected by the user. A future streaming version
+will allow selecting other districts through the GPS controls.
 Load actual road outlines, building footprints/heights and terrain. Place the A3 on
 a valid drivable surface after ground data arrives. Preserve the authored circuit
 as a separately selectable test scene; do not overlay it onto the real streets.
@@ -137,3 +138,63 @@ Only after this milestone should the scope expand to longer drives, richer roofs
 vegetation, furniture and remote portal destinations. Planetiler preprocessing and
 self-hosted tile service deployment are later infrastructure decisions, not work
 required on every user's machine.
+
+## Implemented first district: Irun Ventas / Katea
+
+The first playable slice now starts on **Irurzunzar in Ventas / Katea, Irun**:
+43.329690 N, 1.819606 W. The bundled elevation sample at the anchor is approximately
+28.253 m. Fresh sessions open this district; the **Irún · Ventas** button reloads
+its baseline. The previous circuit remains under **Escena A3** and the explicit
+`?scene=circuit` development/test route. Existing saved data is not overwritten
+until the user chooses Save; the first district introduction is tracked separately.
+
+The Streets GL public vector endpoint returned HTTP 403 from this development
+environment. This slice therefore uses one bounded extract from the official OSM
+map API and predecoded Esri Terrain3D samples. It does **not** claim live Streets GL
+tile streaming or full visual parity with its materials and roof generation.
+No map-service request is needed to play the bundled district.
+
+The physical terrain covers **1,200 × 1,200 metres**, sampled on a 121 × 121 grid.
+The visible mesh, road draping and Cannon heightfield share the same triangulation.
+Road outlines are clipped against terrain triangles before rendering, so asphalt
+does not cut through a differently tessellated slope. Near the ground, a boundary
+constraint stops vehicles and the monitor before the edge of available elevation.
+Flying above the boundary is possible, but no additional street geometry is loaded.
+The globe fallback collider sits below the local terrain, rather than filling its
+valleys with an invisible flat support surface.
+
+The current extract produces 376 building entities. Footprints come from OSM;
+`height`, `min_height`, level counts and hexadecimal building colors are interpreted.
+Missing heights use explicit defaults (3 m per level; three levels for ordinary
+buildings, two for industrial buildings). Roofs are currently flat. Closed-member
+multipolygons are supported; incomplete/split-member relations, detailed roof forms,
+bridge/tunnel surfaces, steps, water meshes and full landcover remain unsupported.
+Bridge/tunnel/construction/step road features are omitted rather than presented as
+correct drivable structures. The elevation source is terrain, not a surveyed road
+surface model. The remaining streets follow it, including unmodeled grade changes.
+
+Buildings retain their OSM type/ID, retrieval time and source tags. They use the
+solid editor and can be recolored, reshaped, cloned or removed. Saves store a full
+local scene snapshot; reload preserves modifications without regenerating the
+baseline. There is no automatic OSM refresh, conflict reconciliation or upload to
+OSM. Road entities store compact paths and a terrain reference; their visual mesh
+is regenerated, avoiding several megabytes of redundant road triangles per save.
+
+### Reproducing the data fixture
+
+Requires Python 3, Node and `npm ci`. The LERC decoder is a development dependency;
+the game loads the prepared JSON, not the decoder or raw elevation tiles.
+
+```bash
+curl --fail 'https://www.openstreetmap.org/api/0.6/map?bbox=-1.828,43.324,-1.811,43.336' -o /tmp/irun-osm.xml
+curl --fail 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/tile/12/1499/2027' -o /tmp/irun-terrain.lerc
+curl --fail 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/tile/12/1500/2027' -o /tmp/irun-terrain-south.lerc
+node scripts/prepare-irun.mjs
+python3 scripts/prepare-irun.py
+```
+
+This is a bounded development extract, not a bulk-download or world-streaming
+strategy. Re-running it retrieves newer source data; keep the resulting fixture's
+retrieval metadata. OSM feature data is distributed under ODbL 1.0 with contributor
+attribution; Esri elevation has separate provider terms and attribution. See
+[asset provenance](../assets/README.md).

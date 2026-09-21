@@ -19,7 +19,7 @@ test('renders PNG targets through a window and registers a shot from first perso
     name: 'Window gallery',
     entities: [...entities, floor, spawn],
   })
-  await page.goto('/')
+  await page.goto('/?scene=circuit')
   await page.locator('#file').setInputFiles({
     name: 'gallery.json',
     mimeType: 'application/json',

@@ -3,9 +3,10 @@
 ## Persistent location
 
 `SceneDocument.geography` stores latitude, longitude, reference altitude and
-`imagery` (`satellite`, `streets`, `offline`). The example starts at Madrid,
-40.4166°, −3.70384°. The browser requests location on first opening; denial,
-failure or timeout preserves the current point. **Mi ubicación** retries it.
+`imagery` (`satellite`, `streets`, `offline`). The original circuit example starts at Madrid,
+40.4166°, −3.70384°, and its explicit test route requests location on first opening.
+Fresh application sessions now start in the geographically anchored Irun Ventas
+district; its GPS controls are locked to the bundled extract. See [real-world driving](real-world.md).
 
 Location changes are validated, undoable edits and require editing mode.
 **Guardar** and JSON export preserve the selected origin. Moving or deleting the

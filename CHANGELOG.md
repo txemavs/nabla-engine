@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add the first real-data district in Irun Ventas/Katea, with 376 OSM building
+  footprints, named streets, local edits and Esri terrain heights.
+- Share triangulated terrain between visual roads and physics, protect the finite
+  ground boundary and preserve the original circuit as an explicit scene.
+
 - Introduce individual editable solid building entities with points, lines, convex
   faces, corner editing, face extrusion and deletion, independent cloning and undo.
 - Use authored face collision so openings remain traversable; migrate reference

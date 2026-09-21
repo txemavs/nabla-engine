@@ -30,6 +30,7 @@ export class GeographicView {
   private readonly sun: THREE.Mesh
   private readonly stars: THREE.Points
   private readonly cache = new Map<string, Tile>()
+  private readonly hasTerrain: boolean
   private origin: SceneDocument['geography']
   private disposed = false
   private active = 0
@@ -56,6 +57,8 @@ export class GeographicView {
     private readonly changed: () => void,
     online = false,
   ) {
+    this.hasTerrain = document.entities.some((e) => !!e.terrain)
+    if (this.hasTerrain) online = false
     this.origin = document.geography
       ? { ...document.geography, imagery: online ? document.geography.imagery : 'offline' }
       : undefined
@@ -128,6 +131,7 @@ export class GeographicView {
   }
   get status(): string {
     if (!this.origin) return 'Escena sin ubicación'
+    if (this.hasTerrain) return 'OSM + relieve Esri · extracto local'
     if (this.origin.imagery === 'offline') return 'Mapa sin conexión · Tierra local'
     if (this.active) return 'Cargando mapa…'
     if (this.failed) return 'Mapa parcial · algunas imágenes no disponibles'
