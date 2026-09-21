@@ -1,7 +1,7 @@
 import { createGallery, Gallery } from './gallery.js'
 import { alignCircuitPlan } from '../src/circuit-plan.js'
 import { PortalControls } from './portal-controls.js'
-import { installCarrierPortals } from './carrier-portals.js'
+import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
 import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
 import { createPortalPair } from '../src/portal.js'
@@ -40,11 +40,11 @@ const escape = (s: string): string =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   )
 const STORAGE_KEY = 'nabla.scene.v1'
-let editor = new SceneEditor(installCarrierPortals(createSampleScene()))
+let editor = new SceneEditor(upgradeReferenceScene(createSampleScene()))
 let loadError = ''
 try {
   const saved = localStorage.getItem(STORAGE_KEY)
-  if (saved) editor = new SceneEditor(installCarrierPortals(JSON.parse(saved)))
+  if (saved) editor = new SceneEditor(upgradeReferenceScene(JSON.parse(saved)))
   if (editor.document.entities.some((e) => e.id === 'road' && e.size[0] === 16 && e.size[2] === 85))
     editor.load(alignCircuitPlan(editor.document))
 } catch {
@@ -480,7 +480,7 @@ function focusSelection(): void {
 $('focus').onclick = focusSelection
 $('sample-assets').onclick = () =>
   action(() => {
-    editor.load(installCarrierPortals(createSampleScene()))
+    editor.load(upgradeReferenceScene(createSampleScene()))
     selectedId = 'car-a'
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
@@ -491,8 +491,8 @@ $('add-sprite').onclick = () =>
     const doc = editor.document
     const sprite = createEntity(crypto.randomUUID(), 'group')
     sprite.name = 'Sprite · árbol'
-    sprite.size = [9, 11, 0.1]
-    sprite.sprite = { url: '/sprites/tree.png' }
+    sprite.size = [7, 7, 0.1]
+    sprite.sprite = { url: '/sprites/tree-1.png' }
     doc.entities.push(sprite)
     editor.load(doc)
     selectedId = sprite.id
@@ -547,7 +547,7 @@ $('file').onchange = async () => {
     return
   }
   try {
-    editor.load(installCarrierPortals(JSON.parse(await file.text())))
+    editor.load(upgradeReferenceScene(JSON.parse(await file.text())))
     rebuild()
     toast('Escena abierta')
   } catch {

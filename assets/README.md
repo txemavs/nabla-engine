@@ -85,3 +85,13 @@ SHA-256:
 
 The existing procedural sidearm remains a loading/error fallback. Load failure is
 exposed by `data-weapon="fallback"` on the reticle and its explanatory tooltip.
+
+## Videotiro trees
+
+`sprites/tree-1.png` through `tree-5.png` are unchanged copies of the user's
+`D:\Virtual\dev\videotiro\Media\Fondos\Decorado\Vegetal\Arbol 1.png` through
+`Arbol 5.png`, supplied on 2026-09-21. All five are 256 × 256 PNGs. The reference
+circuit distributes twenty instances with varied heights and preserves each
+image's square canvas proportions. The gallery uses the same five variants.
+Sizing and placement are scene data; no artwork was regenerated or edited.
+The earlier generated `tree.png` remains available for existing custom content.

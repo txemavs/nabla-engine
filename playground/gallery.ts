@@ -27,16 +27,16 @@ export function createGallery(prefix: string): Entity[] {
       0,
       -7 - Math.floor(i / 4) * 13,
     ])
-    tree.size = [5, 8, 0.1]
+    tree.size = [7, 7, 0.1]
     tree.name = 'Árbol · capa lejana'
-    tree.sprite = { url: '/sprites/tree.png' }
+    tree.sprite = { url: `/sprites/tree-${(i % 5) + 1}.png` }
     entities.push(tree)
   }
   for (let i = 0; i < 5; i++) {
     const target = createEntity(`${prefix}-target-${i}`, 'group', [
       -144 + i * 2,
       0.4,
-      -7 - (i % 3) * 5,
+      -11 - (i % 3) * 3,
     ])
     target.size = [1.6, 2, 0.1]
     target.name = 'Diana móvil'

@@ -52,7 +52,7 @@ export function createA3(id: string, position: Vec3Tuple = [4, 0.62, 6]): Entity
       // Steering mount is already converted to the engine's -Z-forward body frame.
       steering: {
         url: '/world/car.audi.a3.steering.glb',
-        transform: transform([-0.356, 0.824 - com, -0.311], [25, 180, 0]),
+        transform: transform([-0.355606, 0.266521, -0.408524], [22.06, 180, 0]),
       },
     },
   }

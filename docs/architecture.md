@@ -172,3 +172,11 @@ one-hop shot transform. It does not put minigame state into scene JSON or physic
 Closed gates and intervening solids block shots; open/window gates transport them.
 Window collision still blocks the player. Recursive shots, damage and full game
 progression are deliberately absent from this first gallery.
+
+Billboard cutouts use alpha testing with opaque depth writes, rather than blended
+transparent sorting. Both visible cutouts and shot tests use the same 0.1 alpha
+threshold. Gallery target rows sit at Z −11/−14/−17, between the near tree row
+(Z −7) and the far row (Z −20); targets no longer share the near tree plane.
+`playground/scene-upgrades.ts` updates recognised old reference mounts, generated
+tree instances and untouched gallery target placements on load. It preserves
+custom steering transforms and target positions.

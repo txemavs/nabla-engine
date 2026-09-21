@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Align the A3 steering wheel to its measured column cap and centre its animated
+  rim axis; migrate recognised old mounts without changing the cockpit camera.
+- Prevent tree/target depth flicker with alpha-tested opaque cutouts and separated
+  gallery depth rows, including upgrades for the original target placements.
+- Add the user's five original Videotiro trees, distributed at varied sizes over
+  the circuit's grass and used in the gallery.
+
 - Integrate the supplied HK USP Compact body and slide GLBs, preserving materials
   and alignment, with a first-person visual slide cycle and loading fallback.
 - Record the Videotiro layered-scene formats and the distinction between fixed

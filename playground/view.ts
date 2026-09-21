@@ -96,7 +96,7 @@ export class SceneView {
         const material = new THREE.SpriteMaterial({
           color: '#ffffff',
           alphaTest: 0.1,
-          transparent: true,
+          transparent: false,
           depthWrite: true,
         })
         const sprite = new THREE.Sprite(material)
@@ -251,10 +251,20 @@ export class SceneView {
       applyPose(mount, visual.steering.transform)
       mount.add(spin)
       group.add(mount)
-      this.addAsset(spin, {
-        url: visual.steering.url,
-        transform: { position: [0, 0, 0], rotation: [0, 0, 0, 1] },
-      })
+      this.addAsset(
+        spin,
+        {
+          url: visual.steering.url,
+          transform: { position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+        },
+        undefined,
+        (model) => {
+          if (visual.steering!.url !== '/world/car.audi.a3.steering.glb') return
+          // Undo the baked 2.8° tilt and centre the rim on the Z spin axis.
+          model.rotation.x = THREE.MathUtils.degToRad(2.8)
+          model.position.y = -0.0275568
+        },
+      )
       this.steering.set(e.id, spin)
     }
   }

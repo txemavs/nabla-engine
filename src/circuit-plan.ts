@@ -69,16 +69,29 @@ export function circuitEntities(): Entity[] {
     [220, 430],
     [800, 160],
     [820, 490],
-    [300, 580],
+    [300, 545],
     [690, 565],
     [275, 245],
     [750, 410],
+    [200, 290],
+    [230, 510],
+    [280, 510],
+    [275, 175],
+    [330, 130],
+    [670, 140],
+    [760, 220],
+    [820, 280],
+    [850, 450],
+    [790, 525],
+    [585, 562],
+    [400, 565],
   ].entries()) {
     const tree = createEntity(`tree-${i}`, 'group', circuitPoint(u, v))
     tree.name = `Árbol ${i + 1}`
     tree.parentId = 'architecture'
-    tree.size = [9, 11, 0.1]
-    tree.sprite = { url: '/sprites/tree.png' }
+    const height = 5.5 + (i % 4) * 1.2
+    tree.size = [height, height, 0.1]
+    tree.sprite = { url: `/sprites/tree-${(i % 5) + 1}.png` }
     result.push(tree)
   }
   return result

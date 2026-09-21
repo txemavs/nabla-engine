@@ -9,20 +9,28 @@ The body is authored in metres with Y up and +Z forward. Its explicit import
 rotation is 180° around Y to match the engine's −Z forward. The physics origin is
 0.55 m above the model origin.
 
-| Property           | Value                                              |
-| ------------------ | -------------------------------------------------- |
-| Mass               | 1,400 kg                                           |
-| Wheel radius       | 0.315374 m                                         |
-| Wheelbase          | 2.58363 m                                          |
-| Front track        | 1.524439 m                                         |
-| Rear track         | 1.509439 m                                         |
-| Steering mount     | Lowered 0.06 m to meet the column; 25° inclination |
-| Steering animation | At most ±90° around its local axis                 |
+| Property           | Value                                          |
+| ------------------ | ---------------------------------------------- |
+| Mass               | 1,400 kg                                       |
+| Wheel radius       | 0.315374 m                                     |
+| Wheelbase          | 2.58363 m                                      |
+| Front track        | 1.524439 m                                     |
+| Rear track         | 1.509439 m                                     |
+| Steering mount     | Measured column cap anchor; 22.06° inclination |
+| Steering animation | At most ±90° around its local axis             |
 
 The wheel model is instanced four times and follows suspension, steering and
 rolling snapshots. The original body materials preserve paint, glass, interior
 and chrome. The generic entity color does not recolor them. Dimensions/materials
 are read-only for these authored models in the playground inspector.
+
+The A3 column's front cap was measured in body coordinates at approximately
+(−0.355606, 0.263516, −0.415939), with outward normal (0, 0.375582, 0.926789).
+The steering mount sits 8 mm along that normal. A view-only import correction
+removes the wheel file's baked 2.8° tilt and offsets its rim centre by −0.0275568 m
+in Y before the Z-axis spin. This keeps the wheel concentric throughout its ±90°
+travel. Original GLB bytes and the driver camera anchor remain unchanged.
+Recognised older preset mounts are updated on load; custom mounts are preserved.
 
 ## Carrier
 
