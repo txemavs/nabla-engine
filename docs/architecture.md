@@ -69,14 +69,15 @@ Jump requests are consumed once. Supporting-platform velocity is incorporated
 into walking; this is not a complete stair or slope controller. The playground
 opts into the hover controller: a compact 0.56 m tall body, a downward ground
 sensor and a damped vertical controller maintain 1.25 m centre clearance over
-curbs and ramps. With no nearby support, vertical velocity is damped and gravity
-is cancelled. Solid walls and ceilings still use normal physics contacts.
+curbs and ramps. Without nearby support, gravity remains active. A downward sensor and bounded
+braking acceleration recover clearance on descent; jump is a single upward impulse. Solid walls and ceilings still use normal physics contacts.
 
 `Simulation.shoot` queries the closest physical hit and optionally applies a
 bounded impulse to dynamic bodies (zero impulse makes an aim-only query). The
 host owns fire cadence, pointer capture, reticle and weapon rendering. Weapon
 geometry lives in a separate presentation scene so it does not intersect the
-camera or participate in portal render passes. Shots do not traverse portals.
+camera or participate in portal render passes. The playground can map a shot through one open/window portal before querying
+the destination. Transparent sprite pixels are excluded from hit detection.
 
 Entering removes the character body from the world. Exiting tests both sides,
 support rays and oriented-box overlap against each collider part. The camera uses
@@ -146,3 +147,28 @@ link transaction with the editor's scene contract, refuses occupied-mouth change
 then updates runtime collider shapes and ramp state. The authored document in the
 application is unchanged by play. Motion uses previous/current mouth poses and
 host-relative linear/angular velocities; there is no second physics world.
+
+## Hosted interiors and billboard content
+
+An optional `vehicle.interior` defines local `min`, `max` and `exit` vectors. The
+engine validates ordered bounds and an exit inside them. `PlayerSnapshot.interiorId`
+and `Simulation.playerFrame` expose the active host without creating another world.
+Exit places the monitor inside the carrier; local movement, up, hover support and
+camera orientation follow the host. Carrying correction accounts for host motion
+between physics ticks. Crossing a portal switches the interior frame and rotates
+gaze and relative velocity. Assisted flight keeps running when the pilot leaves.
+An automated physical journey covers ascent, unpiloted hold, ground transfer and
+return; this does not add orbital mechanics or independent physics cells.
+
+A nonphysical group can carry `sprite: { url, target? }`. The URL must be a local
+PNG path. Width and height use the entity's first two size components in metres;
+the origin is at the bottom centre. The reference host uses `THREE.Sprite`, so each
+main or remote render camera receives its own billboard orientation. Texture and
+alpha pixels are shared by URL within a scene view and disposed with it. Ray hits
+ignore pixels below the same alpha cutoff used for display.
+
+`playground/gallery.ts` owns optional target animation, timer, score and a bounded
+one-hop shot transform. It does not put minigame state into scene JSON or physics.
+Closed gates and intervening solids block shots; open/window gates transport them.
+Window collision still blocks the player. Recursive shots, damage and full game
+progression are deliberately absent from this first gallery.

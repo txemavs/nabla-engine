@@ -30,6 +30,12 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
 export class SceneView {
   readonly root = new THREE.Group()
   readonly objects = new Map<string, THREE.Group>()
+  readonly sprites = new Map<string, THREE.Sprite>()
+  private readonly spritePixels = new Map<string, ImageData>()
+  private readonly spriteImages = new Map<
+    string,
+    Promise<{ texture: THREE.Texture; pixels: ImageData }>
+  >()
   readonly portals = new Map<string, PortalSurface>()
   readonly wheels = new Map<string, THREE.Group[]>()
   readonly steering = new Map<string, THREE.Group>()
@@ -85,6 +91,55 @@ export class SceneView {
           button.position.set(w / 2 - 0.15, y, 0.25)
           group.add(button)
         }
+      }
+      if (e.sprite) {
+        const material = new THREE.SpriteMaterial({
+          color: '#ffffff',
+          alphaTest: 0.1,
+          transparent: true,
+          depthWrite: true,
+        })
+        const sprite = new THREE.Sprite(material)
+        sprite.center.set(0.5, 0)
+        // Keep overhead-facing billboards above the ground image overlay.
+        sprite.position.y = 0.02
+        sprite.scale.set(e.size[0], e.size[1], 1)
+        sprite.userData.entityId = e.id
+        group.add(sprite)
+        this.sprites.set(e.id, sprite)
+        const url = e.sprite.url
+        if (!this.spriteImages.has(url)) {
+          this.spriteImages.set(
+            url,
+            new Promise((resolve, reject) => {
+              new THREE.TextureLoader().load(
+                url,
+                (texture) => {
+                  texture.colorSpace = THREE.SRGBColorSpace
+                  const canvas = window.document.createElement('canvas')
+                  canvas.width = texture.image.width
+                  canvas.height = texture.image.height
+                  const context = canvas.getContext('2d')!
+                  context.drawImage(texture.image, 0, 0)
+                  const pixels = context.getImageData(0, 0, canvas.width, canvas.height)
+                  if (this.disposed) texture.dispose()
+                  else this.surfaceTextures.push(texture)
+                  resolve({ texture, pixels })
+                },
+                undefined,
+                reject,
+              )
+            }),
+          )
+        }
+        this.loading.push(
+          this.spriteImages.get(url)!.then(({ texture, pixels }) => {
+            if (this.disposed) return
+            material.map = texture
+            material.needsUpdate = true
+            this.spritePixels.set(e.id, pixels)
+          }),
+        )
       }
       if (e.kind === 'box') group.add(box(e.size, e.color))
       if (e.kind === 'vehicle') {
@@ -245,7 +300,7 @@ export class SceneView {
   setPlaying(playing: boolean): void {
     this.avatar.visible = playing
     for (const e of this.document.entities)
-      if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal))
+      if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal && !e.sprite))
         this.objects.get(e.id)!.visible = !playing
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
@@ -292,12 +347,41 @@ export class SceneView {
       this.avatar.visible = !cockpit
     } else {
       this.avatar.position.fromArray(sim.renderPlayerPosition)
-      this.avatar.rotation.set(0, sim.player.yaw, 0)
+      this.avatar.quaternion.fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
+      this.avatar.quaternion.multiply(
+        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sim.player.yaw),
+      )
       this.monitor.scale.setScalar(1.65)
-      this.monitorMotion.update(this.monitor, this.avatar.position, sim.player.yaw, elapsed)
+      this.monitorMotion.update(
+        this.monitor,
+        sim.playerFrame
+          ? this.avatar.position
+              .clone()
+              .sub(new THREE.Vector3(...sim.playerFrame.position))
+              .applyQuaternion(new THREE.Quaternion(...sim.playerFrame.rotation).invert())
+          : this.avatar.position,
+        sim.player.yaw,
+        elapsed,
+      )
       if (sim.options.playerMode === 'hover') this.monitor.position.y -= 0.35
       this.avatar.visible = !cockpit
     }
+  }
+  hitSprite(ray: THREE.Raycaster): THREE.Intersection | undefined {
+    const renderOffset = this.root.position.clone()
+    this.root.position.set(0, 0, 0)
+    this.root.updateMatrixWorld(true)
+    const hit = ray.intersectObjects([...this.sprites.values()], false).find((hit) => {
+      if (!hit.object.visible || !hit.uv) return false
+      const pixels = this.spritePixels.get(hit.object.userData.entityId as string)
+      if (!pixels) return false
+      const x = Math.min(pixels.width - 1, Math.max(0, Math.floor(hit.uv.x * pixels.width)))
+      const y = Math.min(pixels.height - 1, Math.max(0, Math.floor((1 - hit.uv.y) * pixels.height)))
+      return pixels.data[(y * pixels.width + x) * 4 + 3] >= 26
+    })
+    this.root.position.copy(renderOffset)
+    this.root.updateMatrixWorld(true)
+    return hit
   }
   private readonly surfaceTextures: THREE.Texture[] = []
   dispose(): void {

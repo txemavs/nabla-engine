@@ -34,6 +34,7 @@ const vehicleDefinition = z
     driver: vector,
     cameraDistance: finite.min(2).max(30),
     flight: z.boolean().optional(),
+    interior: z.object({ min: vector, max: vector, exit: vector }).strict().optional(),
     garage: z
       .object({
         min: vector,
@@ -85,6 +86,13 @@ const entitySchema = z
         pairId: z.string().min(1).max(128).nullable(),
         mode: z.enum(['closed', 'window', 'open']),
         clearsRamp: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    sprite: z
+      .object({
+        url: z.string().regex(/^\/(?!\/)[a-zA-Z0-9_./-]+\.png$/),
+        target: z.boolean().optional(),
       })
       .strict()
       .optional(),
@@ -166,6 +174,8 @@ export function parseScene(raw: unknown): SceneDocument {
   if (doc.entities.filter((e) => e.kind === 'spawn').length !== 1)
     throw new Error('Scene requires exactly one spawn')
   for (const e of doc.entities) {
+    if (e.sprite && (e.kind !== 'group' || e.motion !== 'none' || e.portal))
+      throw new Error('Sprites require nonphysical groups without portal surfaces')
     if (e.portal) {
       if (e.kind !== 'group' || e.motion !== 'none')
         throw new Error('Portals must be nonphysical groups')
@@ -195,6 +205,14 @@ export function parseScene(raw: unknown): SceneDocument {
       e.vehicle.garage.ramp.colliderIndex >= e.vehicle.colliders.length
     )
       throw new Error('Ramp collider does not exist')
+    if (
+      e.vehicle?.interior &&
+      (e.vehicle.interior.min.some((n, i) => n >= e.vehicle!.interior!.max[i]) ||
+        e.vehicle.interior.exit.some(
+          (n, i) => n < e.vehicle!.interior!.min[i] || n > e.vehicle!.interior!.max[i],
+        ))
+    )
+      throw new Error('Invalid interior bounds or exit')
     if (e.vehicle?.garage && e.vehicle.garage.min.some((v, i) => v >= e.vehicle!.garage!.max[i]))
       throw new Error('Garage bounds are invalid')
     if ((e.kind === 'group' || e.kind === 'spawn') && e.motion !== 'none')

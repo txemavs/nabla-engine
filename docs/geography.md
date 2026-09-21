@@ -94,3 +94,19 @@ JSON export and undo.
 The shared clock updates apparent celestial directions each second and drives
 scene shadows, ambient light, sky color, map brightness and star visibility.
 Changing it during play preserves physics and does not reload the models.
+
+## Circuit plan alignment
+
+The local Agency JPEG is a 1024 × 682 authored plan, not a georeferenced satellite
+survey. `src/circuit-plan.ts` records 18 measured grey building footprints in image
+pixels and converts them to the ground plane's 189.737 × 126.368 metres. Buildings
+retain the existing block/window style. The image's main street is aligned with
+the A3 and carrier spawn line; asphalt, curves, markings and sidewalks remain
+visible directly in the image instead of being covered by the previous straight
+road strip. Those painted sidewalks have no raised collision geometry.
+
+The current sample uses this plan. An older locally saved baseline with its known
+16 × 85 m road strip receives an undoable plan update when loaded. Only baseline
+plan IDs are replaced; vehicles, portals and unrelated additions are preserved.
+The saved document is not overwritten until **Guardar**. This is an authored
+placement pass, not automatic image recognition or a real-world building import.

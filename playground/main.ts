@@ -1,3 +1,5 @@
+import { createGallery, Gallery } from './gallery.js'
+import { alignCircuitPlan } from '../src/circuit-plan.js'
 import { PortalControls } from './portal-controls.js'
 import { installCarrierPortals } from './carrier-portals.js'
 import { Sidearm } from './sidearm.js'
@@ -17,6 +19,7 @@ import {
   SceneGraph,
   Simulation,
   createSampleScene,
+  createEntity,
   idleInput,
   rotationDegrees,
   toDegrees,
@@ -42,6 +45,8 @@ let loadError = ''
 try {
   const saved = localStorage.getItem(STORAGE_KEY)
   if (saved) editor = new SceneEditor(installCarrierPortals(JSON.parse(saved)))
+  if (editor.document.entities.some((e) => e.id === 'road' && e.size[0] === 16 && e.size[2] === 85))
+    editor.load(alignCircuitPlan(editor.document))
 } catch {
   loadError = 'La escena guardada no es válida. Se ha abierto el ejemplo.'
 }
@@ -283,7 +288,7 @@ function refreshUi(): void {
   props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${{ box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
     <label class="field-label" for="name">Nombre</label><input id="name" value="${escape(e.name)}" maxlength="100">
     ${row('Posición local · m', 'position', e.transform.position)}${row('Rotación local · °', 'rotation', angles)}
-    ${e.kind === 'box' || e.kind === 'vehicle' ? row('Dimensiones · m', 'size', e.size) : ''}
+    ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
     <label class="field-label" for="color">Color</label><input id="color" type="color" value="${e.color}">
     <label class="field-label" for="parent">Padre</label><select id="parent"><option value="">Mundo</option>${doc.entities
       .filter((item) => item.id !== e.id && item.kind !== 'spawn')
@@ -295,6 +300,18 @@ function refreshUi(): void {
     ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
+  if (e.sprite) {
+    const controls = document.createElement('div')
+    controls.innerHTML = `<label class="field-label" for="sprite-url">PNG transparente</label><input id="sprite-url" value="${escape(e.sprite.url)}">`
+    props.append(controls)
+    $('sprite-url').onchange = () =>
+      action(() => {
+        editor.update(e.id, {
+          sprite: { ...e.sprite!, url: $<HTMLInputElement>('sprite-url').value },
+        })
+        rebuild()
+      })
+  }
   if (e.portal) {
     const controls = document.createElement('div')
     controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>La conexión cambia en ambos extremos.</p>`
@@ -408,6 +425,8 @@ function refreshUi(): void {
     'add-box',
     'add-car',
     'add-group',
+    'add-sprite',
+    'sample-gallery',
     'translate',
     'rotate',
     'import',
@@ -466,6 +485,28 @@ $('sample-assets').onclick = () =>
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
     toast('A3 y container listos. Puedes deshacer para volver a tu escena.')
+  })
+$('add-sprite').onclick = () =>
+  action(() => {
+    const doc = editor.document
+    const sprite = createEntity(crypto.randomUUID(), 'group')
+    sprite.name = 'Sprite · árbol'
+    sprite.size = [9, 11, 0.1]
+    sprite.sprite = { url: '/sprites/tree.png' }
+    doc.entities.push(sprite)
+    editor.load(doc)
+    selectedId = sprite.id
+    rebuild()
+  })
+$('sample-gallery').onclick = () =>
+  action(() => {
+    const doc = editor.document
+    const entities = createGallery(crypto.randomUUID())
+    doc.entities.push(...entities)
+    editor.load(doc)
+    selectedId = entities[0].id
+    rebuild()
+    toast('Galería añadida · dispara por la ventana · N reinicia la ronda')
   })
 $('sample-portals').onclick = () =>
   action(() => {
@@ -537,6 +578,7 @@ function togglePlay(): void {
       firstPerson = true
       fireRequested = false
       sidearm.reset()
+      gallery.reset()
       portalSequence = 0
       drivingTelemetry.update(null, 0, 0, 0, true)
       delete renderer.domElement.dataset.portalCrossings
@@ -569,6 +611,7 @@ function togglePlay(): void {
 $('play').onclick = togglePlay
 const portalControls = new PortalControls(viewport, toast)
 portalControls.rebuild(editor.document)
+const gallery = new Gallery(viewport)
 const sidearm = new Sidearm(viewport)
 const raycaster = new THREE.Raycaster()
 let down = new THREE.Vector2()
@@ -669,6 +712,10 @@ window.addEventListener('keydown', (e) => {
     togglePlay()
     togglePlay()
     toast('Partida reiniciada')
+    return
+  }
+  if (e.code === 'KeyN' && !e.repeat) {
+    gallery.reset()
     return
   }
   if (e.code === 'KeyG' && !e.repeat) {
@@ -777,6 +824,7 @@ new ResizeObserver(() => {
   camera.updateProjectionMatrix()
   needsRender = true
 }).observe(viewport)
+let playerInterior: string | null = null
 let portalSequence = 0
 let previous = performance.now()
 function frame(now: number): void {
@@ -784,13 +832,18 @@ function frame(now: number): void {
   previous = now
   if (sim) {
     const pad = pollGamepad()
+    if (playerInterior !== sim.player.interiorId) {
+      playerInterior = sim.player.interiorId
+      yaw = sim.player.yaw
+    }
     sim.setInput(currentInput(pad))
     sim.step(document.hidden ? 0 : dt)
     const crossing = sim.portalEvent
     if (crossing && crossing.sequence !== portalSequence) {
       portalSequence = crossing.sequence
       if (crossing.actorId === sim.player.vehicleId || crossing.actorId === 'player') {
-        yaw += crossing.yawDelta
+        if (crossing.actorId === 'player') yaw = sim.player.yaw
+        else yaw += crossing.yawDelta
         drivingTelemetry.update(sim.player.vehicleId, sim.player.speed, 0, dt, true)
         renderer.domElement.dataset.portalCrossings = String(crossing.sequence)
         toast(
@@ -812,10 +865,17 @@ function frame(now: number): void {
       headYaw,
       headPitch,
     )
+    if (playerInterior !== sim.player.interiorId) {
+      playerInterior = sim.player.interiorId
+      yaw = sim.player.yaw
+    }
     const p = { ...sim.player, position: sim.renderPlayerPosition }
     const cockpit = cameraMode === 'cockpit'
     const overhead = cameraMode === 'map' && !!p.vehicleId
-    camera.up.set(0, 1, 0)
+    const playerFrame = sim.playerFrame
+    const playerFrameQ = new THREE.Quaternion(...(playerFrame?.rotation ?? ([0, 0, 0, 1] as const)))
+    camera.up.set(0, 1, 0).applyQuaternion(playerFrameQ)
+    renderer.domElement.dataset.interior = p.interiorId ?? ''
     renderer.domElement.dataset.cameraMode = p.vehicleId
       ? cameraMode
       : firstPerson
@@ -867,9 +927,17 @@ function frame(now: number): void {
       p.position[1] + (info?.isCarrier ? 1 : 0.55),
       p.position[2],
     ]
+    if (p.interiorId) {
+      const anchor = new THREE.Vector3(0, 0.55, 0)
+        .applyQuaternion(playerFrameQ)
+        .add(new THREE.Vector3(...p.position))
+      target.splice(0, 3, ...anchor.toArray())
+    }
     if (!p.vehicleId && firstPerson) {
       camera.position.fromArray(p.position)
-      camera.quaternion.setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ'))
+      camera.quaternion
+        .copy(playerFrameQ)
+        .multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ')))
     } else if (overhead) {
       camera.up.set(0, 0, -1)
       camera.position.set(p.position[0], p.position[1] + mapHeight, p.position[2])
@@ -907,6 +975,13 @@ function frame(now: number): void {
         target[1] + 0.8 + Math.sin(travelPitch) * distance,
         target[2] + Math.cos(yaw) * distance * Math.cos(travelPitch),
       ]
+      if (p.interiorId) {
+        const offset = new THREE.Vector3(...desired)
+          .sub(new THREE.Vector3(...target))
+          .applyQuaternion(playerFrameQ)
+          .add(new THREE.Vector3(...target))
+        desired.splice(0, 3, ...offset.toArray())
+      }
       camera.position.fromArray(sim.cameraPosition(target, desired))
       camera.lookAt(...target)
     }
@@ -914,7 +989,9 @@ function frame(now: number): void {
       ? view.document.entities.find((e) => e.id === p.vehicleId)!.name.toUpperCase() +
         (info?.dockedTo ? ' · SUJETO' : '') +
         (info?.flightMode ? ' · VUELO' : '')
-      : 'MONITOR · VUELO'
+      : p.interiorId
+        ? 'MONITOR · INTERIOR DE LA NAVE'
+        : 'MONITOR · VUELO'
     $('speed').textContent = p.vehicleId
       ? `${Math.round(p.speed * 3.6)} km/h`
       : 'Explora el distrito'
@@ -936,7 +1013,7 @@ function frame(now: number): void {
             : 'E salir · C cámara · F sujetar dentro del garaje'
       : near
         ? 'E para entrar en ' + view.document.entities.find((e) => e.id === near)!.name
-        : 'WASD volar · Shift acelerar · C cámara · Clic disparar'
+        : 'WASD volar · Espacio saltar · C cámara · Clic disparar'
   } else {
     orbit.update()
     const object = view.objects.get(selectedId)
@@ -945,19 +1022,25 @@ function frame(now: number): void {
       outline.visible = !outline.box.isEmpty()
     }
   }
+  gallery.update(view, !!sim, document.hidden ? 0 : dt)
   portalControls.update(sim, view.document, camera)
   sidearm.visible = !!sim && !sim.player.vehicleId
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
     if (sidearm.fire(now)) {
-      // Aim from the reticle, then check from the monitor to prevent shooting around walls.
+      // Preserve camera-to-monitor obstruction checks before transporting a shot through a window.
       const aimed = sim.shoot(camera.position.toArray(), direction.toArray(), 150, 0)
       const origin = new THREE.Vector3(...sim.renderPlayerPosition)
       const destination = aimed
         ? new THREE.Vector3(...aimed.point)
         : camera.position.clone().addScaledVector(direction, 150)
-      const hit = sim.shoot(origin.toArray(), destination.sub(origin).normalize().toArray(), 150)
-      sidearm.impact(!!hit)
+      const firing = camera.clone()
+      if (!firstPerson) {
+        firing.position.copy(origin)
+        firing.lookAt(destination)
+      }
+      firing.updateMatrixWorld(true)
+      sidearm.impact(gallery.shoot(sim, view, firing))
     }
   }
   fireRequested = false

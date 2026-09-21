@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Restore gravity after monitor drops, brake back to normal hover clearance and
+  give Space a single jump impulse.
+- Align 18 building footprints with the Agency circuit JPEG and keep painted
+  streets visible; migrate the previous saved baseline plan undoably.
+- Add local transparent PNG billboards with shared textures, alpha-aware hits and
+  an optional timed 2.5D window gallery with one-hop portal shots.
+- Allow leaving the carrier helm inside its cabin at altitude, moving in its local
+  frame, visiting a ground destination and returning while flight hold continues.
+
 - Activate the container's original bow/stern Stargates with nearby destination,
   open and close controls; preserve ordinary garage access while inactive.
 - Add atomic runtime relinking, occupied-frame protection and host-relative

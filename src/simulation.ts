@@ -54,6 +54,7 @@ export interface PlayerSnapshot {
   yaw: number
   grounded: boolean
   vehicleId: string | null
+  interiorId: string | null
   speed: number // metres per second
 }
 interface Vehicle {
@@ -91,6 +92,8 @@ export class Simulation {
   private accumulator = 0
   private readonly previousWheels = new Map<string, Transform[]>()
   private vehicleId: string | null = null
+  private interiorId: string | null = null
+  private hoverJumpTime = 0
   private disposed = false
   private grounded = false
   private support: Body | null = null
@@ -309,6 +312,7 @@ export class Simulation {
       yaw: this.input.yaw,
       grounded: this.grounded,
       vehicleId: this.vehicleId,
+      interiorId: this.interiorId,
       speed: (vehicle?.body ?? this.playerBody).velocity.length(),
     }
   }
@@ -421,9 +425,31 @@ export class Simulation {
       const mouthBefore = new Map(
         this.portalEntities.map((e) => [e.id, this.entityTransform(e.id)]),
       )
+      this.updateInterior()
+      const host = this.interiorBody()
+      const carry =
+        host && !this.vehicleId
+          ? {
+              local: host.pointToLocalFrame(this.playerBody.position),
+              start: this.playerBody.position.clone(),
+              rotation: host.quaternion.clone(),
+              velocity: new Vec3(),
+            }
+          : null
+      if (carry) host!.getVelocityAtWorldPoint(this.playerBody.position, carry.velocity)
       this.beforeTick()
       this.world.step(FIXED_STEP)
+      if (carry && host) {
+        const relative = this.playerBody.position
+          .vsub(carry.start)
+          .vsub(carry.velocity.scale(FIXED_STEP))
+        carry.local.vadd(carry.rotation.inverse().vmult(relative), carry.local)
+        this.playerBody.position.copy(host.pointToWorldFrame(carry.local))
+        this.playerBody.quaternion.copy(host.quaternion)
+        this.playerBody.aabbNeedsUpdate = true
+      }
       this.crossPortals(before, mouthBefore)
+      this.updateInterior()
       this.updateGrounded()
       this.accumulator -= FIXED_STEP
       this.ticks++
@@ -560,7 +586,17 @@ export class Simulation {
         this.world.broadphase.dirty = true
         const forward = new Vector3(0, 0, -1).applyQuaternion(rotation)
         const yawDelta = blocked ? 0 : Math.atan2(-forward.x, -forward.z)
-        if (actor === this.vehicleId || body === this.playerBody) this.input.yaw += yawDelta
+        if (body === this.playerBody && !blocked) {
+          const old = this.interiorBody()?.quaternion ?? new Quaternion()
+          const look = new Vector3(-Math.sin(this.input.yaw), 0, -Math.cos(this.input.yaw))
+            .applyQuaternion(new RenderQuaternion(old.x, old.y, old.z, old.w))
+            .applyQuaternion(rotation)
+          this.interiorId = destination.parentId
+          const next = this.interiorBody()?.quaternion ?? new Quaternion()
+          look.applyQuaternion(new RenderQuaternion(next.x, next.y, next.z, next.w).invert())
+          this.input.yaw = Math.atan2(-look.x, -look.z)
+          this.playerBody.quaternion.copy(next)
+        } else if (actor === this.vehicleId) this.input.yaw += yawDelta
         this.lastPortalEvent = {
           sequence: ++this.portalSequence,
           actorId: actor,
@@ -664,28 +700,75 @@ export class Simulation {
     return this.options.playerMode === 'hover' ? 0.28 : PLAYER_HALF_HEIGHT
   }
 
-  /** A compact flying body follows nearby ground; walls and ceilings remain solid. */
+  get playerFrame(): Transform | null {
+    return this.interiorId ? this.entityTransform(this.interiorId, true) : null
+  }
+  private interiorBody(): Body | null {
+    return this.interiorId ? (this.vehicles.get(this.interiorId)?.body ?? null) : null
+  }
+  private setInterior(id: string | null): void {
+    if (id === this.interiorId) return
+    const old = this.interiorBody()?.quaternion ?? new Quaternion()
+    const forward = old.vmult(new Vec3(-Math.sin(this.input.yaw), 0, -Math.cos(this.input.yaw)))
+    this.interiorId = id
+    const next = this.interiorBody()?.quaternion ?? new Quaternion()
+    const local = next.inverse().vmult(forward)
+    this.input.yaw = Math.atan2(-local.x, -local.z)
+    this.playerBody.quaternion.copy(next)
+    this.playerBody.previousQuaternion.copy(next)
+  }
+  private updateInterior(): void {
+    if (this.vehicleId) return
+    const inside = (v: Vehicle, margin = 0) => {
+      const bounds = v.definition.interior
+      if (!bounds) return false
+      const p = vec(v.body.pointToLocalFrame(this.playerBody.position))
+      return p.every((n, i) => n > bounds.min[i] - margin - 0.2 && n < bounds.max[i] + margin + 0.2)
+    }
+    const current = this.interiorId ? this.vehicles.get(this.interiorId) : null
+    if (current && inside(current, 0.2)) return
+    this.setInterior(
+      [...this.vehicles.values()].find((v) => v.definition.interior && inside(v))?.entity.id ??
+        null,
+    )
+  }
+
+  /** Gravity outside the cushion; predictive braking above the supporting surface. */
   private hover(): void {
-    const body = this.playerBody
-    let floor = -Infinity
+    const body = this.playerBody,
+      host = this.interiorBody()
+    const up = host ? host.quaternion.vmult(new Vec3(0, 1, 0)) : new Vec3(0, 1, 0)
+    const platformVelocity = new Vec3()
+    host?.getVelocityAtWorldPoint(body.position, platformVelocity)
+    const vertical = body.velocity.vsub(platformVelocity).dot(up)
+    let distance = Infinity
+    const sensor = Math.max(3, Math.min(300, (vertical * vertical) / 50 + 2))
     this.world.raycastAll(
       body.position,
-      body.position.vadd(new Vec3(0, -3, 0)),
+      body.position.vsub(up.scale(sensor)),
       { skipBackfaces: true },
       (hit) => {
-        if (hit.body !== body && hit.hitNormalWorld.y > 0.5)
-          floor = Math.max(floor, hit.hitPointWorld.y)
+        if (hit.body !== body && hit.hitNormalWorld.dot(up) > 0.5)
+          distance = Math.min(distance, hit.distance)
       },
     )
-    if (Number.isFinite(floor)) {
+    if (this.hoverJumpTime > 0) this.hoverJumpTime -= FIXED_STEP
+    if (this.jumpPending && this.hoverJumpTime <= 0 && distance < 1.65 && Math.abs(vertical) < 1) {
+      body.velocity.vadd(up.scale(5.5 - vertical), body.velocity)
+      this.hoverJumpTime = 0.45
+      return
+    }
+    if (this.hoverJumpTime > 0 || !Number.isFinite(distance)) return
+    // Normal gravity brings the monitor back down; the cushion brakes a fall before impact.
+    if (distance <= 1.7 || (vertical < -1 && distance < (vertical * vertical) / 50 + 1.4)) {
+      const braking =
+        vertical < -1 ? (vertical * vertical) / (2 * Math.max(0.1, distance - 1.25)) : -Infinity
       const acceleration = clamp(
-        (floor + 1.25 - body.position.y) * 45 - body.velocity.y * 12,
-        -20,
-        30,
+        Math.max((1.25 - distance) * 45 - vertical * 12, braking),
+        -9.81,
+        70,
       )
-      body.force.y += body.mass * (9.81 + acceleration)
-    } else {
-      body.force.y += body.mass * (9.81 - body.velocity.y * 8)
+      body.applyForce(up.scale(body.mass * (9.81 + acceleration)))
     }
   }
 
@@ -755,6 +838,13 @@ export class Simulation {
           ),
         )
       }
+    const interior = this.interiorBody()
+    if (interior && !this.vehicleId) {
+      const up = interior.quaternion.vmult(new Vec3(0, 1, 0))
+      const gravityUp = this.document.geography ? this.radialUp(this.playerBody) : new Vec3(0, 1, 0)
+      this.playerBody.applyForce(gravityUp.vsub(up).scale(9.81 * this.playerBody.mass))
+      this.playerBody.quaternion.copy(interior.quaternion)
+    }
     for (const [id, v] of this.vehicles) {
       if (this.docks.has(id)) continue
       const active = id === this.vehicleId
@@ -797,12 +887,16 @@ export class Simulation {
       const c = Math.cos(this.input.yaw),
         s = Math.sin(this.input.yaw)
       const platformVelocity = new Vec3()
-      this.support?.getVelocityAtWorldPoint(this.playerBody.position, platformVelocity)
-      const targetX = (x * c - z * s) * speed + platformVelocity.x,
-        targetZ = (-x * s - z * c) * speed + platformVelocity.z
+      const host = this.interiorBody()
+      ;(host ?? this.support)?.getVelocityAtWorldPoint(this.playerBody.position, platformVelocity)
+      const frame = host?.quaternion ?? new Quaternion()
+      const relative = frame.inverse().vmult(this.playerBody.velocity.vsub(platformVelocity))
+      const targetX = (x * c - z * s) * speed,
+        targetZ = (-x * s - z * c) * speed
       const accel = (this.grounded || this.options.playerMode === 'hover' ? 35 : 9) * FIXED_STEP
-      this.playerBody.velocity.x += clamp(targetX - this.playerBody.velocity.x, -accel, accel)
-      this.playerBody.velocity.z += clamp(targetZ - this.playerBody.velocity.z, -accel, accel)
+      relative.x += clamp(targetX - relative.x, -accel, accel)
+      relative.z += clamp(targetZ - relative.z, -accel, accel)
+      frame.vmult(relative).vadd(platformVelocity, this.playerBody.velocity)
       if (this.options.playerMode === 'hover') this.hover()
       if (this.options.playerMode !== 'hover' && this.jumpPending && this.grounded)
         this.playerBody.velocity.y = 5.5
@@ -951,6 +1045,7 @@ export class Simulation {
     if (this.vehicleId) return this.exitVehicle()
     const id = this.nearestVehicle()
     if (!id) return 'Acércate a un coche detenido'
+    this.setInterior(null)
     this.vehicleId = id
     this.world.removeBody(this.playerBody)
     this.playerBody.velocity.setZero()
@@ -959,7 +1054,31 @@ export class Simulation {
   }
   private exitVehicle(): string {
     const v = this.vehicles.get(this.vehicleId!)!
-    if (v.body.velocity.length() > 1.5) return 'Detén el coche para salir'
+    if (v.body.velocity.length() > 1.5) return 'Detén el vehículo antes de salir'
+    if (v.definition.interior) {
+      const exit = v.definition.interior.exit
+      for (const x of [exit[0], -exit[0]]) {
+        const candidate = v.body.pointToWorldFrame(new Vec3(x, exit[1], exit[2]))
+        const radius = this.playerHalfHeight
+        const bounds = new AABB({
+          lowerBound: candidate.vsub(new Vec3(PLAYER_RADIUS, radius, PLAYER_RADIUS)),
+          upperBound: candidate.vadd(new Vec3(PLAYER_RADIUS, radius, PLAYER_RADIUS)),
+        })
+        if (this.overlapsBody(bounds)) continue
+        this.playerBody.position.copy(candidate)
+        this.playerBody.previousPosition.copy(candidate)
+        v.body.getVelocityAtWorldPoint(candidate, this.playerBody.velocity)
+        this.playerBody.angularVelocity.setZero()
+        this.playerBody.aabbNeedsUpdate = true
+        this.vehicleId = null
+        this.setInterior(v.entity.id)
+        this.input.yaw = 0
+        this.world.addBody(this.playerBody)
+        this.playerBody.wakeUp()
+        return 'Dentro de la nave · E para volver al mando'
+      }
+      return 'El pasillo interior está ocupado'
+    }
     for (const side of [-1, 1]) {
       const offset = v.body.quaternion.vmult(new Vec3(side * (v.entity.size[0] / 2 + 0.8), 0, 0))
       const candidate = v.body.position.vadd(offset)

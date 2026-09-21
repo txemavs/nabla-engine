@@ -97,6 +97,11 @@ export function createCarrier(id: string, position: Vec3Tuple = [4, 1.2, -12]): 
       driver: [0, 2.25 - com, -2.8],
       cameraDistance: 15,
       flight: true,
+      interior: {
+        min: [-2.32, 0.295 - com, -4.95],
+        max: [2.32, 3.2 - com, 4.95],
+        exit: [1.85, 0.35, -2.8],
+      },
       garage: {
         min: [-2.32, 0.295 - com, 0.07],
         max: [2.32, 3.2 - com, 4.95],

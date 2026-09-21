@@ -52,6 +52,13 @@ test('flies from the Agency ground to space with local assets and returns to the
   await page.keyboard.up('ShiftLeft')
   await expect(page.locator('#speed')).toHaveText('0 km/h', { timeout: 20000 })
   await page.screenshot({ path: 'test-results/geography-space.png' })
+  await page.keyboard.press('KeyE')
+  await expect(page.locator('canvas')).toHaveAttribute('data-interior', 'carrier')
+  await expect(page.locator('#player-mode')).toContainText('INTERIOR')
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: 'test-results/carrier-orbital-interior.png' })
+  await page.keyboard.press('KeyE')
+  await expect(page.locator('#player-mode')).toContainText('CONTAINER')
   await page.keyboard.down('ShiftLeft')
   await page.keyboard.down('KeyW')
   await expect

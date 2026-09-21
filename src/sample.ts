@@ -1,3 +1,4 @@
+import { circuitEntities } from './circuit-plan.js'
 import { createA3, createCarrier } from './presets.js'
 import {
   createEntity,
@@ -23,45 +24,10 @@ export function createSampleScene(): SceneDocument {
     entities.push(e)
     return e
   }
-  box(
-    'ground',
-    'Suelo Agency · JPEG',
-    [0.093, -0.3, 2.13],
-    [189.737, 0.6, 126.368],
-    '#ffffff',
-  ).surface = { url: '/geography/agency-ground.jpg' }
-  box('road', 'Pista', [0, 0.015, 0], [16, 0.03, 85], '#303d43', 'none')
-  for (let z = -37; z <= 37; z += 6)
-    box('line-' + z, 'Marca vial', [0, 0.04, z], [0.14, 0.02, 2.7], '#d9cfa9', 'none')
-  box('west-path', 'Acera oeste', [-10, 0.12, 0], [3, 0.24, 85], '#9ca6a1')
-  box('east-path', 'Acera este', [10, 0.12, 0], [3, 0.24, 85], '#9ca6a1')
-  const colors = ['#66818a', '#83948d', '#b69c80', '#7c879b']
-  for (let i = 0; i < 8; i++) {
-    const x = i % 2 === 0 ? -19 : 19,
-      z = Math.floor(i / 2) * 19 - 29,
-      h = 6 + (i % 3) * 3
-    box(
-      'building-' + i,
-      'Edificio ' + (i + 1),
-      [x, h / 2, z],
-      [12, h, 13],
-      colors[i % colors.length],
-    )
-    for (let floor = 0; floor < Math.floor(h / 2.6); floor++) {
-      box(
-        'window-' + i + '-' + floor,
-        'Ventanal',
-        [x + (x < 0 ? 6.02 : -6.02), 1.8 + floor * 2.6, z],
-        [0.04, 1, 10],
-        '#bbd9d5',
-        'none',
-      )
-    }
-  }
-  box('barrier', 'Barrera de pruebas', [-4, 0.65, -25], [5, 1.3, 0.6], '#d19756')
-  box('crate-a', 'Caja móvil A', [-4, 0.6, -10], [1.2, 1.2, 1.2], '#c7a17b', 'dynamic')
-  box('crate-b', 'Caja móvil B', [-4, 1.9, -10], [1.2, 1.2, 1.2], '#b18561', 'dynamic')
-  const ramp = box('ramp', 'Rampa', [-4, 0.7, -34], [4.5, 0.4, 6], '#85948b')
+  box('barrier', 'Barrera de pruebas', [-45, 0.65, -25], [5, 1.3, 0.6], '#d19756')
+  box('crate-a', 'Caja móvil A', [-45, 0.6, -10], [1.2, 1.2, 1.2], '#c7a17b', 'dynamic')
+  box('crate-b', 'Caja móvil B', [-45, 1.9, -10], [1.2, 1.2, 1.2], '#b18561', 'dynamic')
+  const ramp = box('ramp', 'Rampa', [-45, 0.7, -34], [4.5, 0.4, 6], '#85948b')
   ramp.transform.rotation = rotationDegrees(12, 0, 0)
   entities.push(createA3('car-a'), createCarrier('carrier'))
   entities.push({
@@ -91,6 +57,11 @@ export function createSampleScene(): SceneDocument {
     version: 1,
     name: 'Distrito cero',
     geography: { latitude: 40.4166, longitude: -3.70384, altitude: 0, imagery: 'satellite' },
-    entities: [...roots, ...groups, ...entities.filter((e) => e.parentId !== null)],
+    entities: [
+      ...roots,
+      ...groups,
+      ...entities.filter((e) => e.parentId !== null),
+      ...circuitEntities(),
+    ],
   })
 }

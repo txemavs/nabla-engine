@@ -300,3 +300,47 @@ it('lets the hovering monitor use the bow gate beside the existing helm', () => 
   expect(sim.player.position[0]).toBeGreaterThan(17)
   sim.dispose()
 })
+
+it('leaves the helm at orbital height, walks to Earth and returns to the same carrier interior', () => {
+  const doc = scene()
+  doc.geography = { latitude: 40.4166, longitude: -3.70384, altitude: 0, imagery: 'offline' }
+  doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.85, 90000.35, -2.8]
+  doc.entities.find((e) => e.id === 'a')!.transform.position = [20, 1.455, 0]
+  doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
+  doc.entities.push(
+    createCarrier('ship', [0, 90000, 0]),
+    ...createCarrierPortals('ship', 'bow', 'stern'),
+  )
+  const sim = new Simulation(doc, { playerMode: 'hover' })
+  expect(sim.interact()).toContain('Conduciendo')
+  sim.toggleFlight()
+  sim.setInput({ ...idleInput(), lift: 1, sprint: true })
+  for (let i = 0; i < 180; i++) sim.step(1 / 60)
+  sim.setInput(idleInput())
+  for (let i = 0; i < 900; i++) sim.step(1 / 60)
+  const orbitHeight = sim.entityTransform('ship').position[1]
+  expect(orbitHeight).toBeGreaterThan(100000)
+  expect(sim.interact()).toContain('Dentro de la nave')
+  expect(sim.player.vehicleId).toBeNull()
+  expect(sim.player.interiorId).toBe('ship')
+  sim.configurePortal('bow', 'a', 'open')
+  for (let i = 0; i < 240 && !sim.portalEvent; i++) {
+    sim.setInput({ ...idleInput(), forward: 1, yaw: sim.player.yaw })
+    sim.step(1 / 60)
+  }
+  expect(sim.portalEvent).toMatchObject({ actorId: 'player', destinationId: 'a', blocked: false })
+  expect(sim.player.interiorId).toBeNull()
+  expect(sim.player.position[1]).toBeLessThan(3)
+  sim.setInput({ ...idleInput(), forward: 1, yaw: sim.player.yaw })
+  for (let i = 0; i < 25; i++) sim.step(1 / 60)
+  for (let i = 0; i < 180 && sim.portalEvent?.destinationId !== 'bow'; i++) {
+    sim.setInput({ ...idleInput(), forward: -1, yaw: sim.player.yaw })
+    sim.step(1 / 60)
+  }
+  expect(sim.portalEvent).toMatchObject({ destinationId: 'bow', blocked: false })
+  expect(sim.player.interiorId).toBe('ship')
+  expect(sim.player.position[1]).toBeGreaterThan(orbitHeight - 2)
+  expect(sim.vehicleInfo('ship').flightMode).toBe(true)
+  expect(sim.entityTransform('ship').position[1]).toBeCloseTo(orbitHeight, 1)
+  sim.dispose()
+})

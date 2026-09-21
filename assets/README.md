@@ -54,3 +54,15 @@ with Z −5.102…−5.002 m and +5.002…+5.102 m respectively. Apertures are
 4.71 × 2.91 m centred at Y 1.75 m (0.55 m above the carrier COM), Z ±5.05 m.
 Their normals point into the carrier. No duplicate frame mesh is loaded for a
 hosted mouth. Console housings and buttons are procedural host presentation.
+
+## Billboard sprites
+
+`sprites/tree.png` is original generated artwork created for this repository with
+OpenAI's built-in `image_gen.imagegen` tool on 2026-09-21, saved without subsequent
+image editing. Final prompt:
+
+> Use case: stylized-concept. Asset type: transparent PNG billboard sprite for a 3D driving game. Create a single complete leafy Mediterranean street tree, upright front view, straight brown trunk and rounded irregular green canopy, softly shaded readable realistic game art. Entire tree visible with small transparent margins, trunk foot near bottom centre, square canvas. Genuine transparent alpha background including gaps between leaves. No ground, no backdrop, no shadow on ground, no text, no checkerboard painted into the image. This is a reusable distant tree sprite.
+
+`sprites/target.png` is an original procedural bullseye icon with transparent
+background, blue/white rings, orange centre and a grey stand. It was generated
+from geometric shapes for the gallery, without an external image source.

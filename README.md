@@ -28,12 +28,14 @@ The playground UI remains in Spanish. Documentation is in English; the
 - Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
 - Fixed and carrier-mounted Stargates with linked views, runtime destination controls and actor/vehicle traversal.
 - A shared physics world for hover exploration, walking, driving, obstacles and movable objects.
+- Carrier-local walking at altitude, with ground-portal departure and return.
+- PNG billboards and an optional 2.5D window shooting gallery with viewpoint parallax.
 - First-person monitor exploration with a third-person toggle and provisional hitscan sidearm.
 - Original Audi A3 Cabrio body, wheels and steering wheel, with interior camera.
 - A 5 × 10 m carrier: drive into its garage, latch the car, travel and release it.
 - Ground and assisted drone flight modes, altitude hold and mode 2 gamepad input.
 - A GPS origin, Madrid by default, with a browser location request and editable coordinates.
-- Agency's road JPEG beneath editable geometry, satellite/street imagery and a planetary view.
+- Agency's circuit JPEG with 18 aligned building footprints beneath editable geometry, satellite/street imagery and a planetary view.
 - Earth, Sun and Moon, a selectable date/time or live clock, day/night lighting and a shared horizon haze.
 
 Select **Escena A3** to load the current example if an older scene is saved in your

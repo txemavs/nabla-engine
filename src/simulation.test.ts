@@ -256,3 +256,32 @@ describe('hover monitor and shooting', () => {
     sim.dispose()
   })
 })
+
+it('falls from a high ledge and brakes to hover height instead of hanging in the air', () => {
+  const sim = new Simulation(scene([], [0, 40, 0]), { playerMode: 'hover' })
+  advance(sim, 1)
+  expect(sim.player.position[1]).toBeLessThan(38)
+  let minimum = Infinity
+  for (let i = 0; i < 600; i++) {
+    sim.step(1 / 60)
+    minimum = Math.min(minimum, sim.player.position[1])
+  }
+  expect(minimum).toBeGreaterThan(0.7)
+  expect(sim.player.position[1]).toBeCloseTo(1.25, 1)
+  sim.dispose()
+})
+
+it('jumps with one impulse and returns to its normal hover height', () => {
+  const sim = new Simulation(scene(), { playerMode: 'hover' })
+  advance(sim, 1)
+  sim.setInput({ ...idleInput(), jump: true })
+  sim.step(1 / 60)
+  sim.setInput(idleInput())
+  advance(sim, 0.4)
+  expect(sim.player.position[1]).toBeGreaterThan(2)
+  advance(sim, 4)
+  expect(sim.player.position[1]).toBeCloseTo(1.25, 1)
+  advance(sim, 1)
+  expect(sim.player.position[1]).toBeCloseTo(1.25, 1)
+  sim.dispose()
+})

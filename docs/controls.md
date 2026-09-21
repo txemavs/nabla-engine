@@ -38,7 +38,8 @@ tree. Saving stores the authored document, not the runtime physics state.
 | Restart play                                      | R                                       |
 
 Entering requires proximity and a nearly stopped vehicle. Exiting requires low
-speed, supporting ground and a free volume beside the vehicle. Blocked exits
+speed and a free exit volume. Cars require supporting ground; a carrier with an
+interior places the monitor beside its helm, including while hovering at altitude. Blocked exits
 leave the player inside and display a status message.
 
 ## A3 and mobile garage
@@ -155,8 +156,9 @@ original orientation.
 Play starts in first person outside vehicles. **C** (gamepad **B**) toggles first
 and third person; vehicle camera modes keep their own cycle. The compact monitor
 body hovers 1.25 m above nearby ground, following curbs and ramps without jumping.
-Walls and ceilings remain solid. Over a drop beyond its ground sensor it holds
-height. The library's default walking controller remains available; the playground
+Walls and ceilings remain solid. Over a drop it falls under gravity, then brakes
+above the surface below to recover normal clearance. **Space** gives one upward
+impulse followed by a fall; it does not select a permanent height. The library's default walking controller remains available; the playground
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
 Click the viewport once to capture the mouse, then left-click to fire. The centre
@@ -164,8 +166,8 @@ reticle shows aim and briefly changes to a cross on impact. The provisional pist
 has muzzle flash and recoil, with a 220 ms shot interval. Shots stop at the first
 physical solid and push dynamic props. In third person, a second ray from the
 monitor prevents shooting through an obstruction between the monitor and the aim
-point. Firing is disabled while driving or editing. There is no damage, ammunition,
-portal ray transport or multiplayer yet. `playground/sidearm.ts` isolates the model
+point. Firing is disabled while driving or editing. Shots can cross one open/window portal, with opaque PNG pixels participating in
+aim and hit detection. There is no damage, ammunition or multiplayer yet. `playground/sidearm.ts` isolates the model
 group for replacement with the user's GLB without changing aiming or physics.
 
 ## Carrier Stargate controls
@@ -184,3 +186,29 @@ stern mouth levels the ramp to keep the car at aperture height. Release the A3
 from its garage latch before backing through this mouth. Bow access is for the
 monitor around the existing helm and partition. Gameplay connections are runtime
 state; author and save initial links from the inspector while stopped.
+
+## Walking inside a flying carrier
+
+Release the flight controls and wait for the carrier to stop. Press **E** to leave
+its helm: the monitor stays inside, with camera, movement and hover height relative
+to the cabin floor. The flight controller continues holding the carrier at altitude.
+Press **E** near the helm to take control again.
+
+Open a carrier Stargate to a ground gate using its nearby console. Walk through
+to the ground and return through the paired gate: the carrier remains aloft and
+you return to its interior. This uses the existing physical cabin, not a CSS room.
+Car release at altitude remains outside this prototype; landing is still required
+to unlatch cargo safely.
+
+## PNG sprites and the window gallery
+
+**+ Sprite** adds a transparent tree. Set its local PNG URL and width/height in the
+inspector; position its origin at the trunk's foot. Sprites face each rendering
+camera, including the remote portal camera. They have no physical collider.
+
+**+ Galería 2.5D** adds a separate target stage and a window near the starting area
+(at X −1, Z −4). Approach its front from positive Z, capture the mouse, and shoot
+through it. Move sideways to see the perspective change between tree and target
+layers. Window mode blocks bodies but lets shots through. The first gallery shot
+starts a 60-second round; targets reappear after 1.5 seconds. **N** restarts it.
+This is a playable target-gallery prototype, not a complete Operation Wolf game.

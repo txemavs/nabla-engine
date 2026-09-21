@@ -53,8 +53,8 @@ Deleting, copying and relinking mouths preserve valid reciprocal scene data.
 
 **Remaining limits:** transfer occurs at the actor centre; there are no clipped
 vehicle halves or general contacts across the seam. Arbitrarily fast translating
-or rotating mouths are not guaranteed by the discrete solver. Ground-based
-monitor controls still use world Y after a tilted transfer. The chase camera
+or rotating mouths are not guaranteed by the discrete solver. Monitor controls adopt a destination carrier
+interior frame; unsupported ground destinations still use world Y. The chase camera
 follows its actor instead of independently traversing. Views share the geographic
 detail loaded around the main camera; orbit-to-road streaming, separate worlds,
 CSS interiors and constrained-assembly transfers are not implemented. An A3 must
@@ -267,8 +267,10 @@ The first gates connect places in the same simulation, including a hosted interi
 and a ground destination. The global Earth is a rendering/geographic reference,
 not millions of metres of detailed collision geometry.
 
-Before validating the orbit-to-road scenario, exercise precision and broadphase
-behavior at altitude with both destinations active. If that requires bounded
+A monitor round-trip from a carrier above 100 km to a loaded ground gate now has
+a physical regression test, including continued unpiloted altitude hold. The full
+A3/CSS-office scenario still requires precision and broadphase validation at
+altitude with both destinations active. If that requires bounded
 physics cells, design them under one simulation coordinator with transactional
 actor migration and shared time. Do not silently add a Cannon world per renderer.
 An unrelated authored world or pocket dimension would use an explicit space ID
@@ -299,3 +301,18 @@ The end-to-end acceptance scene is a carrier at altitude, an office using CSS,
 a live ground view, and an A3 driven through the garage gate to the road and back.
 No reset of the car, duplicate simulation, hidden ramp traversal or forced seating
 is acceptable as completion of that scene.
+
+## Playable window gallery and carrier interior
+
+The reference host now includes **+ Galería 2.5D**: a linked window onto layered
+PNG billboards and moving targets. The existing remote camera provides viewpoint
+parallax. Shots cross one portal using the same rigid mapping, test destination
+solids and ignore transparent pixels; the window remains impassable to bodies.
+This is WebGL sprite content, not the planned CSS compositor.
+
+The carrier has an explicit local interior region. At rest in flight, **E** leaves
+the helm inside that region. The monitor follows cabin up and motion; flight hold
+continues without a pilot. A carrier-to-ground portal switches the player out of
+that frame, and returning switches it back. The carrier is neither reset nor
+teleported when its occupant travels. CSS office rendering, remote map streaming
+and airborne release of the latched A3 remain future work.
