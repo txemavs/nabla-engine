@@ -64,7 +64,17 @@ Vehicles use four suspension rays with rear-wheel drive and explicit chassis
 colliders. Wheels are not separate rigid bodies. The character is a dynamic box
 with fixed rotation, bounded horizontal acceleration and contact-based grounding.
 Jump requests are consumed once. Supporting-platform velocity is incorporated
-into walking; this is not a complete stair or slope controller.
+into walking; this is not a complete stair or slope controller. The playground
+opts into the hover controller: a compact 0.56 m tall body, a downward ground
+sensor and a damped vertical controller maintain 1.25 m centre clearance over
+curbs and ramps. With no nearby support, vertical velocity is damped and gravity
+is cancelled. Solid walls and ceilings still use normal physics contacts.
+
+`Simulation.shoot` queries the closest physical hit and optionally applies a
+bounded impulse to dynamic bodies (zero impulse makes an aim-only query). The
+host owns fire cadence, pointer capture, reticle and weapon rendering. Weapon
+geometry lives in a separate presentation scene so it does not intersect the
+camera or participate in portal render passes. Shots do not traverse portals.
 
 Entering removes the character body from the world. Exiting tests both sides,
 support rays and oriented-box overlap against each collider part. The camera uses

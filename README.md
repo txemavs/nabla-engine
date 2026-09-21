@@ -27,7 +27,8 @@ The playground UI remains in Spanish. Documentation is in English; the
 
 - Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
 - Optional fixed Stargates with linked live views, editable destinations and walker/vehicle traversal.
-- A shared physics world for walking, driving, obstacles and movable objects.
+- A shared physics world for hover exploration, walking, driving, obstacles and movable objects.
+- First-person monitor exploration with a third-person toggle and provisional hitscan sidearm.
 - Original Audi A3 Cabrio body, wheels and steering wheel, with interior camera.
 - A 5 × 10 m carrier: drive into its garage, latch the car, travel and release it.
 - Ground and assisted drone flight modes, altitude hold and mode 2 gamepad input.
@@ -122,7 +123,7 @@ carrier mouths, CSS interiors and seamless partial-body crossing are future work
 There is no NPC navigation, multiplayer, skeletal animation, inherited
 scale or interactive GLB import yet. Dynamic physics bodies and the player spawn
 must be roots; visual children are supported. The character uses a box collider
-and has no automatic stair climbing. Standard gamepads are supported, but custom
+with an optional ground-following hover controller; the walking controller has no automatic stair climbing. Standard gamepads are supported, but custom
 radio calibration and touch gameplay controls are not implemented.
 
 The previous implementation remains in Git history. The portal design and remaining

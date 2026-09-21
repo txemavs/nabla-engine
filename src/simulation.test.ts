@@ -209,3 +209,50 @@ describe('vehicle reach', () => {
     sim.dispose()
   })
 })
+
+describe('hover monitor and shooting', () => {
+  it('floats over a curb without jumping and still stops at a wall', () => {
+    const curb = createEntity('curb', 'box', [0, 0.2, 0])
+    curb.size = [4, 0.4, 4]
+    const wall = createEntity('wall', 'box', [0, 2, -5])
+    wall.size = [10, 4, 0.5]
+    const sim = new Simulation(scene([curb, wall]), { playerMode: 'hover' })
+    advance(sim, 1)
+    expect(sim.player.position[1]).toBeCloseTo(1.25, 1)
+    sim.setInput({ ...idleInput(), forward: 1 })
+    advance(sim, 1)
+    expect(sim.player.position[2]).toBeLessThan(1)
+    expect(sim.player.position[1]).toBeGreaterThan(1.5)
+    advance(sim, 3)
+    expect(sim.player.position[2]).toBeGreaterThan(-4.5)
+    expect(sim.player.position[2]).toBeLessThan(-4)
+    sim.dispose()
+  })
+  it('follows a rising ramp without a foot collider catching its edge', () => {
+    const ramp = createEntity('ramp', 'box', [0, 0.6, 0])
+    ramp.size = [4, 0.15, 6]
+    ramp.transform.rotation = rotationDegrees(12, 0, 0)
+    const sim = new Simulation(scene([ramp], [0, 0.05, 4]), { playerMode: 'hover' })
+    advance(sim, 1)
+    sim.setInput({ ...idleInput(), forward: 1 })
+    advance(sim, 1.6)
+    expect(sim.player.position[2]).toBeLessThan(-2)
+    expect(sim.player.position[1]).toBeGreaterThan(2)
+    sim.dispose()
+  })
+  it('hits the closest solid, misses outside range, and pushes dynamic props', () => {
+    const wall = createEntity('wall', 'box', [0, 1, 0])
+    wall.size = [4, 2, 0.5]
+    const prop = createEntity('prop', 'box', [0, 1, -3])
+    prop.motion = 'dynamic'
+    prop.mass = 2
+    const sim = new Simulation(scene([wall, prop]))
+    expect(sim.shoot([0, 1, 4], [0, 0, -1])?.entityId).toBe('wall')
+    expect(sim.shoot([0, 1, 4], [0, 0, -1], 1)).toBeNull()
+    expect(sim.shoot([0, 1, 4], [0, 0, 0])).toBeNull()
+    expect(sim.shoot([0, 1, -1], [0, 0, -1])?.entityId).toBe('prop')
+    advance(sim, 0.1)
+    expect(sim.entityTransform('prop').position[2]).toBeLessThan(-3.2)
+    sim.dispose()
+  })
+})

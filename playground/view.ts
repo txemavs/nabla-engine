@@ -274,7 +274,8 @@ export class SceneView {
       this.avatar.rotation.set(0, sim.player.yaw, 0)
       this.monitor.scale.setScalar(1.65)
       this.monitorMotion.update(this.monitor, this.avatar.position, sim.player.yaw, elapsed)
-      this.avatar.visible = true
+      if (sim.options.playerMode === 'hover') this.monitor.position.y -= 0.35
+      this.avatar.visible = !cockpit
     }
   }
   private readonly surfaceTextures: THREE.Texture[] = []

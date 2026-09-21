@@ -34,6 +34,7 @@ test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) =
   await page.keyboard.down('KeyD')
   await page.waitForTimeout(450)
   await page.keyboard.up('KeyD')
+  await expect(page.locator('#interaction')).toContainText('E para entrar', { timeout: 10000 })
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toHaveText('MI COCHE')
   await page.keyboard.down('KeyW')

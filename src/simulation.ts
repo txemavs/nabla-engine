@@ -108,7 +108,10 @@ export class Simulation {
     return this.lastPortalEvent ? { ...this.lastPortalEvent } : null
   }
 
-  constructor(raw: SceneDocument) {
+  constructor(
+    raw: SceneDocument,
+    readonly options: { playerMode?: 'walk' | 'hover' } = {},
+  ) {
     this.document = parseScene(raw)
     this.graph = new SceneGraph(this.document)
     this.portalEntities = this.document.entities.filter((e) => e.portal?.mode === 'open')
@@ -167,10 +170,10 @@ export class Simulation {
       linearDamping: 0,
       angularDamping: 1,
     })
-    this.playerBody.addShape(new Box(new Vec3(PLAYER_RADIUS, PLAYER_HALF_HEIGHT, PLAYER_RADIUS)))
+    this.playerBody.addShape(new Box(new Vec3(PLAYER_RADIUS, this.playerHalfHeight, PLAYER_RADIUS)))
     this.playerBody.updateMassProperties()
     this.playerBody.position.set(...spawn.transform.position)
-    this.playerBody.position.y += PLAYER_HALF_HEIGHT
+    this.playerBody.position.y += this.options.playerMode === 'hover' ? 1.25 : PLAYER_HALF_HEIGHT
     this.playerBody.previousPosition.copy(this.playerBody.position)
     this.world.addBody(this.playerBody)
   }
@@ -545,6 +548,77 @@ export class Simulation {
     }
     return false
   }
+  private get playerHalfHeight(): number {
+    return this.options.playerMode === 'hover' ? 0.28 : PLAYER_HALF_HEIGHT
+  }
+
+  /** A compact flying body follows nearby ground; walls and ceilings remain solid. */
+  private hover(): void {
+    const body = this.playerBody
+    let floor = -Infinity
+    this.world.raycastAll(
+      body.position,
+      body.position.vadd(new Vec3(0, -3, 0)),
+      { skipBackfaces: true },
+      (hit) => {
+        if (hit.body !== body && hit.hitNormalWorld.y > 0.5)
+          floor = Math.max(floor, hit.hitPointWorld.y)
+      },
+    )
+    if (Number.isFinite(floor)) {
+      const acceleration = clamp(
+        (floor + 1.25 - body.position.y) * 45 - body.velocity.y * 12,
+        -20,
+        30,
+      )
+      body.force.y += body.mass * (9.81 + acceleration)
+    } else {
+      body.force.y += body.mass * (9.81 - body.velocity.y * 8)
+    }
+  }
+
+  /** Hitscan against physical solids. Shots stop at the first obstruction. */
+  shoot(
+    origin: Vec3Tuple,
+    direction: Vec3Tuple,
+    range = 150,
+    impulse = 12,
+  ): { point: Vec3Tuple; entityId: string | null } | null {
+    const ray = new Vec3(...direction)
+    if (
+      !Number.isFinite(range) ||
+      range <= 0 ||
+      !origin.every(Number.isFinite) ||
+      !direction.every(Number.isFinite) ||
+      ray.length() < 0.001
+    )
+      return null
+    ray.normalize()
+    const from = new Vec3(...origin),
+      to = from.vadd(ray.scale(Math.min(range, 1000)))
+    let nearest = Infinity
+    let point: Vec3 | null = null
+    let body: Body | null = null
+    this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
+      if (hit.body !== this.playerBody && hit.distance < nearest) {
+        nearest = hit.distance
+        point = hit.hitPointWorld.clone()
+        body = hit.body
+      }
+    })
+    if (!point || !body) return null
+    const target = body as Body,
+      impact = point as Vec3
+    if (target.mass > 0 && Number.isFinite(impulse) && impulse > 0) {
+      target.wakeUp()
+      target.applyImpulse(ray.scale(Math.min(impulse, 50)), impact.vsub(target.position))
+    }
+    return {
+      point: vec(impact),
+      entityId: [...this.bodies].find(([, value]) => value === target)?.[0] ?? null,
+    }
+  }
+
   private updateGrounded(): void {
     const contact =
       !this.vehicleId &&
@@ -614,10 +688,12 @@ export class Simulation {
       this.support?.getVelocityAtWorldPoint(this.playerBody.position, platformVelocity)
       const targetX = (x * c - z * s) * speed + platformVelocity.x,
         targetZ = (-x * s - z * c) * speed + platformVelocity.z
-      const accel = (this.grounded ? 35 : 9) * FIXED_STEP
+      const accel = (this.grounded || this.options.playerMode === 'hover' ? 35 : 9) * FIXED_STEP
       this.playerBody.velocity.x += clamp(targetX - this.playerBody.velocity.x, -accel, accel)
       this.playerBody.velocity.z += clamp(targetZ - this.playerBody.velocity.z, -accel, accel)
-      if (this.jumpPending && this.grounded) this.playerBody.velocity.y = 5.5
+      if (this.options.playerMode === 'hover') this.hover()
+      if (this.options.playerMode !== 'hover' && this.jumpPending && this.grounded)
+        this.playerBody.velocity.y = 5.5
       this.playerBody.wakeUp()
     }
     this.jumpPending = false
@@ -786,16 +862,17 @@ export class Simulation {
         },
       )
       if (!Number.isFinite(support)) continue
-      candidate.y = support + PLAYER_HALF_HEIGHT + 0.04
+      candidate.y =
+        support + (this.options.playerMode === 'hover' ? 1.25 : PLAYER_HALF_HEIGHT) + 0.04
       const bounds = new AABB({
         lowerBound: new Vec3(
           candidate.x - PLAYER_RADIUS,
-          candidate.y - PLAYER_HALF_HEIGHT,
+          candidate.y - this.playerHalfHeight,
           candidate.z - PLAYER_RADIUS,
         ),
         upperBound: new Vec3(
           candidate.x + PLAYER_RADIUS,
-          candidate.y + PLAYER_HALF_HEIGHT,
+          candidate.y + this.playerHalfHeight,
           candidate.z + PLAYER_RADIUS,
         ),
       })

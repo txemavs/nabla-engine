@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Start monitor exploration in first person, with C/B toggling third person.
+- Add compact ground-following hover locomotion for curbs and ramps.
+- Add a provisional sidearm, reticle, hitscan impacts and impulses on dynamic props.
+
 - Attach cockpit gaze rigidly to the car with relative mouse look; share its
   unchanged eye anchor with a seated CRT avatar visible in exterior views.
 

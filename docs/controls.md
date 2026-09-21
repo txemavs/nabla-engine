@@ -22,17 +22,17 @@ and motion. Original GLB vehicles preserve their authored dimensions and materia
 Reparenting preserves the world transform. Groups can be expanded in the scene
 tree. Saving stores the authored document, not the runtime physics state.
 
-## Walking and driving
+## Hovering and driving
 
 | Action                                            | Keyboard                                |
 | ------------------------------------------------- | --------------------------------------- |
-| Walk / drive                                      | WASD or arrows                          |
+| Hover / drive                                     | WASD or arrows                          |
 | Look around                                       | Click the viewport, then move the mouse |
 | Release pointer                                   | Esc                                     |
-| Run                                               | Shift                                   |
-| Jump on foot / handbrake in vehicle               | Space                                   |
+| Accelerate                                        | Shift                                   |
+| Handbrake in vehicle                              | Space                                   |
 | Enter / exit                                      | E                                       |
-| Chase / driver camera                             | C                                       |
+| First / third person; vehicle camera cycle        | C                                       |
 | Latch / release cargo                             | F                                       |
 | Transfer controls between latched car and carrier | T                                       |
 | Restart play                                      | R                                       |
@@ -149,3 +149,21 @@ Rendering interpolates the physics snapshots: chassis, wheels, driver anchor and
 player share the same render time. The cockpit eye height remains 0.10 m below the
 authored driver anchor. The monitor screen faces forward (−Z), restoring Agency's
 original orientation.
+
+## Monitor flight and provisional sidearm
+
+Play starts in first person outside vehicles. **C** (gamepad **B**) toggles first
+and third person; vehicle camera modes keep their own cycle. The compact monitor
+body hovers 1.25 m above nearby ground, following curbs and ramps without jumping.
+Walls and ceilings remain solid. Over a drop beyond its ground sensor it holds
+height. The library's default walking controller remains available; the playground
+selects `new Simulation(scene, { playerMode: 'hover' })`.
+
+Click the viewport once to capture the mouse, then left-click to fire. The centre
+reticle shows aim and briefly changes to a cross on impact. The provisional pistol
+has muzzle flash and recoil, with a 220 ms shot interval. Shots stop at the first
+physical solid and push dynamic props. In third person, a second ray from the
+monitor prevents shooting through an obstruction between the monitor and the aim
+point. Firing is disabled while driving or editing. There is no damage, ammunition,
+portal ray transport or multiplayer yet. `playground/sidearm.ts` isolates the model
+group for replacement with the user's GLB without changing aiming or physics.

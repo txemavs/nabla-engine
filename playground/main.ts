@@ -1,3 +1,4 @@
+import { Sidearm } from './sidearm.js'
 import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
 import { createPortalPair } from '../src/portal.js'
 import { renderPortals } from './portals.js'
@@ -50,6 +51,8 @@ let selectedId =
   editor.document.entities.find((e) => e.kind === 'vehicle')?.id ?? editor.document.entities[0].id
 let sim: Simulation | null = null
 let needsRender = true
+let firstPerson = true
+let fireRequested = false
 let cameraMode: 'chase' | 'cockpit' | 'map' = 'chase'
 let headYaw = 0
 let headPitch = 0.05
@@ -57,7 +60,12 @@ let headVehicle: string | null = null
 let mapHeight = 350
 const drivingTelemetry = new DrivingTelemetry()
 function cycleCamera(): void {
-  if (!sim?.player.vehicleId) return
+  if (!sim) return
+  if (!sim.player.vehicleId) {
+    firstPerson = !firstPerson
+    toast(firstPerson ? 'Primera persona' : 'Tercera persona')
+    return
+  }
   cameraMode = cameraMode === 'chase' ? 'cockpit' : cameraMode === 'cockpit' ? 'map' : 'chase'
   pitch = cameraMode === 'cockpit' ? 0.05 : 0.24
   headYaw = 0
@@ -522,7 +530,10 @@ function togglePlay(): void {
     } else {
       orbitStartPosition = camera.position.clone()
       orbitStartTarget = orbit.target.clone()
-      sim = new Simulation(editor.document)
+      sim = new Simulation(editor.document, { playerMode: 'hover' })
+      firstPerson = true
+      fireRequested = false
+      sidearm.reset()
       portalSequence = 0
       drivingTelemetry.update(null, 0, 0, 0, true)
       delete renderer.domElement.dataset.portalCrossings
@@ -553,10 +564,18 @@ function togglePlay(): void {
   })
 }
 $('play').onclick = togglePlay
+const sidearm = new Sidearm(viewport)
 const raycaster = new THREE.Raycaster()
 let down = new THREE.Vector2()
 renderer.domElement.addEventListener('pointerdown', (e) => {
   down.set(e.clientX, e.clientY)
+  if (
+    e.button === 0 &&
+    sim &&
+    !sim.player.vehicleId &&
+    document.pointerLockElement === renderer.domElement
+  )
+    fireRequested = true
 })
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (sim) {
@@ -647,7 +666,7 @@ window.addEventListener('keydown', (e) => {
     toast('Partida reiniciada')
     return
   }
-  if (e.code === 'KeyC' && !e.repeat && sim.player.vehicleId) {
+  if (e.code === 'KeyC' && !e.repeat) {
     cycleCamera()
     return
   }
@@ -777,17 +796,29 @@ function frame(now: number): void {
       headYaw = 0
       headPitch = 0.05
     }
-    view.sync(sim, document.hidden ? 0 : dt, cameraMode === 'cockpit', headYaw, headPitch)
+    view.sync(
+      sim,
+      document.hidden ? 0 : dt,
+      sim.player.vehicleId ? cameraMode === 'cockpit' : firstPerson,
+      headYaw,
+      headPitch,
+    )
     const p = { ...sim.player, position: sim.renderPlayerPosition }
     const cockpit = cameraMode === 'cockpit'
     const overhead = cameraMode === 'map' && !!p.vehicleId
     camera.up.set(0, 1, 0)
-    renderer.domElement.dataset.cameraMode = p.vehicleId ? cameraMode : 'chase'
+    renderer.domElement.dataset.cameraMode = p.vehicleId
+      ? cameraMode
+      : firstPerson
+        ? 'first-person'
+        : 'chase'
     document.querySelector('.caption-tag')!.textContent = overhead
       ? 'CENITAL · N ↑'
       : cockpit && p.vehicleId
         ? 'CONDUCTOR'
-        : 'PERSPECTIVA'
+        : !p.vehicleId && firstPerson
+          ? 'PRIMERA PERSONA'
+          : 'PERSPECTIVA'
     const geoPoint = view.document.geography
       ? localToGeo(view.document.geography, p.position)
       : null
@@ -796,7 +827,7 @@ function frame(now: number): void {
       : p.position[1]
     const info = p.vehicleId ? sim.vehicleInfo(p.vehicleId, true) : null
     drivingTelemetry.update(p.vehicleId, p.speed, info?.turnRate ?? 0, dt)
-    const fov = cockpit && info ? 70 : 48
+    const fov = (cockpit && info) || (!p.vehicleId && firstPerson) ? 70 : 48
     if (camera.fov !== fov) {
       camera.fov = fov
       camera.updateProjectionMatrix()
@@ -827,7 +858,10 @@ function frame(now: number): void {
       p.position[1] + (info?.isCarrier ? 1 : 0.55),
       p.position[2],
     ]
-    if (overhead) {
+    if (!p.vehicleId && firstPerson) {
+      camera.position.fromArray(p.position)
+      camera.quaternion.setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ'))
+    } else if (overhead) {
       camera.up.set(0, 0, -1)
       camera.position.set(p.position[0], p.position[1] + mapHeight, p.position[2])
       camera.lookAt(...p.position)
@@ -871,7 +905,7 @@ function frame(now: number): void {
       ? view.document.entities.find((e) => e.id === p.vehicleId)!.name.toUpperCase() +
         (info?.dockedTo ? ' · SUJETO' : '') +
         (info?.flightMode ? ' · VUELO' : '')
-      : 'A PIE'
+      : 'MONITOR · VUELO'
     $('speed').textContent = p.vehicleId
       ? `${Math.round(p.speed * 3.6)} km/h`
       : 'Explora el distrito'
@@ -893,7 +927,7 @@ function frame(now: number): void {
             : 'E salir · C cámara · F sujetar dentro del garaje'
       : near
         ? 'E para entrar en ' + view.document.entities.find((e) => e.id === near)!.name
-        : 'WASD caminar · Shift correr · Espacio saltar'
+        : 'WASD volar · Shift acelerar · C cámara · Clic disparar'
   } else {
     orbit.update()
     const object = view.objects.get(selectedId)
@@ -902,6 +936,21 @@ function frame(now: number): void {
       outline.visible = !outline.box.isEmpty()
     }
   }
+  sidearm.visible = !!sim && !sim.player.vehicleId
+  if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
+    const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+    if (sidearm.fire(now)) {
+      // Aim from the reticle, then check from the monitor to prevent shooting around walls.
+      const aimed = sim.shoot(camera.position.toArray(), direction.toArray(), 150, 0)
+      const origin = new THREE.Vector3(...sim.renderPlayerPosition)
+      const destination = aimed
+        ? new THREE.Vector3(...aimed.point)
+        : camera.position.clone().addScaledVector(direction, 150)
+      const hit = sim.shoot(origin.toArray(), destination.sub(origin).normalize().toArray(), 150)
+      sidearm.impact(!!hit)
+    }
+  }
+  fireRequested = false
   const worldCamera = camera.position.clone()
   const position = sim?.player.position ?? camera.position.toArray()
   renderOrigin.set(0, 0, 0)
@@ -960,6 +1009,7 @@ function frame(now: number): void {
       renderer.clearDepth()
     }
     renderer.render(scene, camera)
+    sidearm.render(renderer, now, camera.aspect, firstPerson)
     needsRender = false
   }
   camera.position.copy(worldCamera)
