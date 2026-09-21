@@ -34,7 +34,12 @@ const number = (value: string | undefined, fallback: number) => {
   return Number.isFinite(n) && n >= 0 ? n : fallback
 }
 /** Bounded real-data district. No synthetic replacement for missing streets or heights. */
-export function createRealWorld(data: WorldExtract): SceneDocument {
+export function createRealWorld(
+  data: WorldExtract,
+  options: { offset?: [number, number]; tileId?: string } = {},
+): SceneDocument {
+  const [ox, oz] = options.offset ?? [0, 0]
+  const suffix = options.tileId ? `-${options.tileId}` : ''
   const entities: Entity[] = [],
     t = data.terrain,
     half = ((t.columns - 1) * t.spacing) / 2,
@@ -42,15 +47,23 @@ export function createRealWorld(data: WorldExtract): SceneDocument {
   const inside = (p: Vec3Tuple, margin = 5) =>
     Math.abs(p[0]) <= half - margin && Math.abs(p[2]) <= depth - margin
   const project = (p: [number, number]): Vec3Tuple =>
-    geoToLocal(data.origin, { latitude: p[1], longitude: p[0], altitude: data.origin.altitude })
-  const height = (x: number, z: number) => terrainHeight(t, x, z)
-  const groups = ['world-buildings', 'world-roads', 'world-trees']
+    (() => {
+      const local = geoToLocal(data.origin, {
+        latitude: p[1],
+        longitude: p[0],
+        altitude: data.origin.altitude,
+      })
+      return [local[0] - ox, local[1], local[2] - oz] as Vec3Tuple
+    })()
+  const height = (x: number, z: number) =>
+    terrainHeight(t, Math.max(-half, Math.min(half, x)), Math.max(-depth, Math.min(depth, z)))
+  const groups = ['world-buildings', 'world-roads', 'world-trees'].map((id) => id + suffix)
   for (const [i, id] of groups.entries())
     entities.push({
       ...createEntity(id, 'group'),
       name: ['Edificios OSM', 'Calles OSM', 'Árboles OSM'][i],
     })
-  const terrain = createEntity('world-terrain', 'terrain')
+  const terrain = createEntity('world-terrain' + suffix, 'terrain')
   terrain.name = 'Relieve real · Ventas'
   terrain.terrain = structuredClone(t)
   terrain.color = '#7c927b'
@@ -67,11 +80,12 @@ export function createRealWorld(data: WorldExtract): SceneDocument {
     if (tags.building === 'no' || tags['building:part'] === 'no') continue
     if (tags.building || tags['building:part']) {
       const rings = f.rings.map((r) => ({ ...r, points: r.coordinates.map(project) }))
-      if (rings.some((r) => r.points.some((p) => !inside(p))) || !rings.length) continue
+      if (!rings.length || rings.some((r) => r.points.length < 4)) continue
       const g: SolidGeometry = { vertices: [], edges: [], faces: [] }
       const all = rings.flatMap((r) => r.points),
         cx = all.reduce((s, p) => s + p[0], 0) / all.length,
         cz = all.reduce((s, p) => s + p[2], 0) / all.length
+      if (cx < -half || cx >= half || cz < -depth || cz >= depth) continue
       const base = Math.min(...all.map((p) => height(p[0], p[2])))
       const bottom = number(tags.min_height, number(tags['building:min_level'], 0) * 3)
       const top = Math.max(
@@ -145,12 +159,13 @@ export function createRealWorld(data: WorldExtract): SceneDocument {
       const paths: Vec3Tuple[][] = []
       for (const ring of f.rings) {
         const points = ring.coordinates.map(project)
-        for (let i = 1; i < points.length; i++)
-          if (inside(points[i - 1], width) && inside(points[i], width))
-            paths.push([points[i - 1], points[i]])
+        for (let i = 1; i < points.length; i++) {
+          const segment = clipRoadSegment(points[i - 1], points[i], half, depth)
+          if (segment) paths.push(segment)
+        }
       }
       if (paths.length) {
-        const e = createEntity('osm-' + f.id.replace('/', '-'), 'group')
+        const e = createEntity('osm-' + f.id.replace('/', '-') + suffix, 'group')
         e.name = tags.name ?? tags.highway
         e.road = { paths, width, terrainId: terrain.id }
         e.color = foot ? '#b2b0a0' : '#525c60'
@@ -172,6 +187,11 @@ export function createRealWorld(data: WorldExtract): SceneDocument {
     }
   }
   entities.find((e) => e.id === groups[1])!.parentId = terrain.id
+  for (const e of entities)
+    if (!e.parentId) {
+      e.transform.position[0] += ox
+      e.transform.position[2] += oz
+    }
   const car = createA3('car-a', [0, height(0, 0) + 0.85, 0])
   car.transform.rotation = rotationDegrees(0, -1, 0)
   const carrier = createCarrier('carrier', [20, height(20, 0) + 1.5, 0])
@@ -197,4 +217,31 @@ export function createRealWorld(data: WorldExtract): SceneDocument {
     sky: { mode: 'fixed', at: '2026-09-21T12:00:00.000Z' },
     entities,
   })
+}
+
+/** Clip centre lines at shared tile edges; the draper clips their full width. */
+export function clipRoadSegment(
+  a: Vec3Tuple,
+  b: Vec3Tuple,
+  hx: number,
+  hz: number,
+): Vec3Tuple[] | null {
+  let lo = 0,
+    hi = 1
+  for (const [axis, half] of [
+    [0, hx],
+    [2, hz],
+  ]) {
+    const delta = b[axis] - a[axis]
+    if (Math.abs(delta) < 1e-9) {
+      if (Math.abs(a[axis]) > half) return null
+      continue
+    }
+    const u = (-half - a[axis]) / delta,
+      v = (half - a[axis]) / delta
+    lo = Math.max(lo, Math.min(u, v))
+    hi = Math.min(hi, Math.max(u, v))
+    if (hi <= lo) return null
+  }
+  return [lo, hi].map((f) => a.map((v, i) => v + (b[i] - v) * f) as Vec3Tuple)
 }

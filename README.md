@@ -18,13 +18,16 @@ npm run dev
 
 Open [localhost:5173](http://localhost:5173). Models, the authored ground image,
 Earth texture and branding are bundled. Connected maps use Esri or CARTO;
-**Sin conexión** selects local resources instead. No account is required.
+**Sin conexión** selects local raster resources in the circuit scene. Real-world
+exploration separately fetches OSM features and Esri elevation as you travel.
+No account is required.
 
 The playground UI remains in Spanish. Documentation is in English; the
 [controls guide](docs/controls.md) includes the corresponding UI labels.
 
 ## Current working tree: 0.2.0 baseline + Stargate prototype
 
+- Anticipatory [real-world exploration](docs/real-world.md#implemented-neighborhood-streaming) around Irun Ventas, with cached OSM/Esri zones and incremental collisions.
 - [Editable building components](docs/solid-editor.md) with points, lines, faces, extrusion and independent clones.
 - Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
 - Fixed and carrier-mounted Stargates with linked views, runtime destination controls and actor/vehicle traversal.

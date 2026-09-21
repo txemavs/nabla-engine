@@ -1,3 +1,6 @@
+import { readScene, writeScene } from './scene-storage.js'
+import { WorldStream } from '../src/world-stream.js'
+import { WorldLoader } from './world-loader.js'
 import { createRealWorld, type WorldExtract } from '../src/real-world.js'
 import { SolidEditor } from './solid-editor.js'
 import { treeSprite } from '../src/vegetation.js'
@@ -45,10 +48,13 @@ const escape = (s: string): string =>
 const STORAGE_KEY = 'nabla.scene.v1'
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = false
+let worldStream: WorldStream | null = null
+let worldLoader: WorldLoader | null = null
+let streamSample: { at: number; position: Vec3Tuple } | null = null
 let editor = new SceneEditor(upgradeReferenceScene(createSampleScene()))
 let loadError = ''
 try {
-  const saved = localStorage.getItem(STORAGE_KEY)
+  const saved = await readScene(STORAGE_KEY)
   if (saved) editor = new SceneEditor(upgradeReferenceScene(JSON.parse(saved)))
   if (editor.document.entities.some((e) => e.id === 'road' && e.size[0] === 16 && e.size[2] === 85))
     editor.load(alignCircuitPlan(editor.document))
@@ -229,6 +235,10 @@ const solidEditor = new SolidEditor(
 )
 
 function rebuild(): void {
+  worldStream?.dispose()
+  worldLoader?.dispose()
+  worldStream = null
+  worldLoader = null
   gizmo.detach()
   if (JSON.stringify(view.document.geography) !== JSON.stringify(editor.document.geography)) {
     geography.dispose()
@@ -245,8 +255,37 @@ function rebuild(): void {
   view = new SceneView(editor.document)
   scene.add(view.root)
   watchAssets(view)
+  setupWorldStream()
   if (!view.objects.has(selectedId)) selectedId = editor.document.entities[0].id
   refreshUi()
+}
+function setupWorldStream(): void {
+  streamSample = null
+  const doc = editor.document
+  $('stream-status').textContent = ''
+  if (!doc.geography || !doc.entities.some((e) => e.id === 'world-terrain')) return
+  const origin = doc.geography
+  const loader = new WorldLoader()
+  worldLoader = loader
+  worldStream = new WorldStream({
+    document: () => editor.document,
+    load: (key, signal) => loader.load(origin, key, signal),
+    replace: (remove, add) => {
+      sim?.replaceMapEntities(remove, add)
+      editor.replaceMapEntities(remove, add)
+      view.replaceMapEntities(remove, add)
+      for (const e of add) if (e.kind === 'group') collapsed.add(e.id)
+      view.setPlaying(!!sim)
+      refreshUi()
+      renderer.domElement.dataset.worldZones = String(
+        view.document.entities.filter((e) => e.terrain).length,
+      )
+    },
+    status: (message) => {
+      $('stream-status').textContent = message
+    },
+  })
+  $('stream-status').textContent = 'Exploración conectada · precarga al jugar'
 }
 function select(id: string): void {
   selectedId = id
@@ -601,7 +640,7 @@ async function loadIrun(): Promise<void> {
     orbit.update()
     renderer.domElement.dataset.world = 'irun'
     localStorage.setItem('nabla.irun.introduced', '1')
-    toast('Ventas de Irún · distrito real de 1,2 km · Guardar para conservar cambios')
+    toast('Ventas de Irún · exploración conectada · las zonas se precargan al jugar')
   } catch (error) {
     toast(error instanceof Error ? error.message : 'No se pudo abrir Ventas')
   } finally {
@@ -617,13 +656,17 @@ $('world-irun').onclick = () => void loadIrun()
 $('welcome-close').onclick = () => {
   $('welcome').hidden = true
 }
-$('save').onclick = () =>
-  action(() => {
-    localStorage.setItem(STORAGE_KEY, editor.serialize())
-    savedDocument = editor.serialize()
+$('save').onclick = async () => {
+  const snapshot = editor.serialize()
+  try {
+    await writeScene(STORAGE_KEY, snapshot)
+    savedDocument = snapshot
     $('status').textContent = 'Guardado local'
     toast('Escena guardada en este navegador')
-  })
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'No se pudo guardar; puedes exportar la escena')
+  }
+}
 $('export').onclick = () => {
   const url = URL.createObjectURL(new Blob([editor.serialize()], { type: 'application/json' }))
   const a = document.createElement('a')
@@ -636,8 +679,8 @@ $('import').onclick = () => $<HTMLInputElement>('file').click()
 $('file').onchange = async () => {
   const file = $<HTMLInputElement>('file').files?.[0]
   if (!file) return
-  if (file.size > 8_000_000) {
-    toast('La escena supera el límite de 8 MB')
+  if (file.size > 40_000_000) {
+    toast('La escena supera el límite de 40 MB')
     return
   }
   try {
@@ -947,6 +990,18 @@ function frame(now: number): void {
     }
     sim.setInput(currentInput(pad))
     sim.step(document.hidden ? 0 : dt)
+    if (worldStream && !document.hidden && (!streamSample || now - streamSample.at > 500)) {
+      const position = sim.player.position
+      const elapsed = streamSample ? (now - streamSample.at) / 1000 : 1
+      const velocity = position.map((v, i) =>
+        streamSample ? (v - streamSample.position[i]) / elapsed : 0,
+      ) as Vec3Tuple
+      const protectedPositions = view.document.entities
+        .filter((e) => e.kind === 'vehicle' || e.portal)
+        .map((e) => sim!.entityTransform(e.id).position)
+      worldStream.update(position, velocity, protectedPositions)
+      streamSample = { at: now, position: [...position] }
+    }
     const crossing = sim.portalEvent
     if (crossing && crossing.sequence !== portalSequence) {
       portalSequence = crossing.sequence
@@ -1273,6 +1328,7 @@ function locate(): void {
   )
 }
 $('locate').onclick = locate
+setupWorldStream()
 refreshUi()
 if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
   localStorage.setItem('nabla.location.requested', '1')

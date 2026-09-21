@@ -25,6 +25,20 @@ export class SceneEditor {
     this.current = checked
     this.future = []
   }
+  /** Streaming is environmental data, not an authored undo step. */
+  replaceMapEntities(remove: Set<string>, add: Entity[]): void {
+    const apply = (doc: SceneDocument): SceneDocument => ({
+      ...doc,
+      entities: [...doc.entities.filter((e) => !remove.has(e.id)), ...structuredClone(add)],
+    })
+    this.current = parseScene(apply(this.current))
+    this.past = this.past.map((doc) =>
+      doc.entities.some((e) => e.id === 'world-terrain') ? apply(doc) : doc,
+    )
+    this.future = this.future.map((doc) =>
+      doc.entities.some((e) => e.id === 'world-terrain') ? apply(doc) : doc,
+    )
+  }
   update(id: string, patch: Partial<Omit<Entity, 'id' | 'parentId'>>): void {
     const next = this.document
     const entity = next.entities.find((e) => e.id === id)

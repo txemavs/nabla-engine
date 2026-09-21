@@ -50,10 +50,37 @@ export class SceneView {
   readonly avatar = new THREE.Group()
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
-  private readonly graph: SceneGraph
+  private graph: SceneGraph
   constructor(readonly document: SceneDocument) {
     this.graph = new SceneGraph(document)
-    for (const e of document.entities) {
+    this.addEntities(document.entities)
+    this.avatar.add(this.monitor)
+    this.avatar.visible = false
+    this.root.add(this.avatar)
+    this.ready = Promise.all(this.loading).then(() => undefined)
+  }
+  replaceMapEntities(remove: Set<string>, add: Entity[]): void {
+    for (const id of remove) {
+      const object = this.objects.get(id)
+      if (object) {
+        object.removeFromParent()
+        disposeObject(object)
+      }
+      this.objects.delete(id)
+      this.sprites.delete(id)
+      this.spritePixels.delete(id)
+    }
+    this.document.entities = [
+      ...this.document.entities.filter((e) => !remove.has(e.id)),
+      ...structuredClone(add),
+    ]
+    this.graph = new SceneGraph(this.document)
+    this.addEntities(add)
+    // Resource promises are consumed per batch rather than retained for the whole journey.
+    void Promise.all(this.loading.splice(0)).catch(() => undefined)
+  }
+  private addEntities(entities: Entity[]): void {
+    for (const e of entities) {
       const group = new THREE.Group()
       group.userData.entityId = e.id
       this.objects.set(e.id, group)
@@ -141,7 +168,7 @@ export class SceneView {
         }
         this.loading.push(
           this.spriteImages.get(url)!.then(({ texture, pixels }) => {
-            if (this.disposed) return
+            if (this.disposed || this.objects.get(e.id) !== group) return
             material.map = texture
             material.needsUpdate = true
             this.spritePixels.set(e.id, pixels)
@@ -237,7 +264,7 @@ export class SceneView {
         group.add(ring, marker)
       }
     }
-    for (const entity of this.document.entities) {
+    for (const entity of entities) {
       if (!entity.surface) continue
       const material = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 })
       const plane = new THREE.Mesh(
@@ -270,10 +297,6 @@ export class SceneView {
         }),
       )
     }
-    this.avatar.add(this.monitor)
-    this.avatar.visible = false
-    this.root.add(this.avatar)
-    this.ready = Promise.all(this.loading).then(() => undefined)
   }
   private addAsset(
     parent: THREE.Group,
@@ -397,6 +420,7 @@ export class SceneView {
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
     for (const e of this.document.entities) {
+      if (e.terrain || (e.source && e.motion === 'static')) continue
       applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
       if (e.portal) {
         e.portal = sim.portalState(e.id)

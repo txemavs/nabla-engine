@@ -1,6 +1,6 @@
 # Real-world driving: Streets GL integration review
 
-Status: the streaming architecture below remains a design. A bounded Irun Ventas playable district is implemented; see the implementation section at the end.
+Status: incremental OSM/Esri neighborhood streaming is implemented around the Irun Ventas start. The Streets GL adapter and planetary streaming architecture below remain future work; see the implementation sections at the end.
 
 The product direction is to drive and fly through real geography, with selective
 local editing. The authored circuit remains a test scene. A whole city should not
@@ -149,21 +149,24 @@ its baseline. The previous circuit remains under **Escena A3** and the explicit
 until the user chooses Save; the first district introduction is tracked separately.
 
 The Streets GL public vector endpoint returned HTTP 403 from this development
-environment. This slice therefore uses one bounded extract from the official OSM
-map API and predecoded Esri Terrain3D samples. It does **not** claim live Streets GL
+environment. The starting zone uses one bounded extract from the official OSM
+map API and predecoded Esri Terrain3D samples. Adjacent zones use Overpass and live
+Esri elevation requests, as described below. It does **not** claim live Streets GL
 tile streaming or full visual parity with its materials and roof generation.
 No map-service request is needed to play the bundled district.
 
-The physical terrain covers **1,200 × 1,200 metres**, sampled on a 121 × 121 grid.
+Each physical terrain zone covers **1,200 × 1,200 metres**, sampled on a 121 × 121 grid.
 The visible mesh, road draping and Cannon heightfield share the same triangulation.
 Road outlines are clipped against terrain triangles before rendering, so asphalt
 does not cut through a differently tessellated slope. Near the ground, a boundary
-constraint stops vehicles and the monitor before the edge of available elevation.
-Flying above the boundary is possible, but no additional street geometry is loaded.
+constraint stops vehicles and the monitor before an unloaded edge. Shared edges
+between resident zones are traversable. Flight anticipates new ground zones too;
+local ground fetching pauses above 12 km.
 The globe fallback collider sits below the local terrain, rather than filling its
 valleys with an invisible flat support surface.
 
-The current extract produces 376 building entities. Footprints come from OSM;
+The starting extract produces over 370 building entities; centroid ownership keeps
+buildings crossing a zone boundary whole and prevents duplicate buildings. Footprints come from OSM;
 `height`, `min_height`, level counts and hexadecimal building colors are interpreted.
 Missing heights use explicit defaults (3 m per level; three levels for ordinary
 buildings, two for industrial buildings). Approximately rectangular, single-ring
@@ -188,7 +191,8 @@ is regenerated, avoiding several megabytes of redundant road triangles per save.
 ### Reproducing the data fixture
 
 Requires Python 3, Node and `npm ci`. The LERC decoder is a development dependency;
-the game loads the prepared JSON, not the decoder or raw elevation tiles.
+the initial zone loads the prepared JSON. Streaming uses the LERC decoder inside
+a browser worker for newly requested elevation tiles.
 
 ```bash
 curl --fail 'https://www.openstreetmap.org/api/0.6/map?bbox=-1.828,43.324,-1.811,43.336' -o /tmp/irun-osm.xml
@@ -203,3 +207,46 @@ strategy. Re-running it retrieves newer source data; keep the resulting fixture'
 retrieval metadata. OSM feature data is distributed under ODbL 1.0 with contributor
 attribution; Esri elevation has separate provider terms and attribution. See
 [asset provenance](../assets/README.md).
+
+## Implemented neighborhood streaming
+
+`src/world-stream.ts` schedules 1.2 km zones on a shared local grid. It requests the
+near neighborhood and a corridor up to 15 seconds / 1.6 km ahead, prioritizing
+nearby ground. The worker in `playground/world-worker.ts` fetches OSM features,
+decodes Esri LERC elevation, and generates editable building topology. Physics
+and render entities are appended without recreating the simulation, resetting
+vehicles, or replacing the existing scene view.
+
+- One zone request runs at a time, with at least eight seconds between completed
+  requests and a 60-second backoff after failures. Uncached Overpass queries are
+  additionally paced to at least 30 seconds apart in the worker. Incomplete responses are never
+  installed as empty ground. Stopping or replacing the scene cancels outstanding work.
+- `VITE_WORLD_OVERPASS_URL` can select a self-hosted/contracted Overpass endpoint
+  at build time. By default the provider uses public Overpass via POST, not the OSM editing API
+  for traversal. It is a development provider, not a guaranteed production tile
+  service. A deployed multi-user world needs its own cache/service and request
+  budget; public Overpass cannot guarantee continuous high-speed travel. See the
+  [operator's usage guidance](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances).
+- Normalized extracts are cached in browser Cache Storage (32 zones, 30-day
+  freshness); decoded elevation has a separate 16-tile memory cache. Cache failure
+  does not prevent online loading. No Street GL tile service or generator is used.
+- Up to 12 nearby/ahead zones are desired. Distant clean zones are removed when
+  beyond 3 km or the resident set exceeds ten. The starting zone, zones already
+  present in a saved document, edited zones, and ground supporting parked vehicles
+  or portals are retained. These pins can exceed the normal working-set budget.
+- Edits are detected against the loaded baseline before eviction. They remain in
+  the authored scene, rather than being silently regenerated. **Guardar** persists
+  the complete resident snapshot; large saves fall back to IndexedDB when
+  localStorage is full. JSON import accepts up to 40 MB / 20,000 entities.
+- Roads are clipped at common zone boundaries. Terrain uses the same global sample
+  lattice and vertical reference as the initial extract; colliders and visible
+  terrain share the triangulation. No fake flat tile replaces unavailable height data.
+- The status line reports loading, available zones and failures. A missing region
+  retains a ground-level safety boundary until usable terrain is ready. This can
+  stop a fast vehicle when the provider is slow; prefetch is not a latency guarantee.
+
+This is local neighborhood exploration around a fixed geographic anchor, not yet
+planet-scale rebasing or Streets GL visual parity. Bridges, tunnels, water, complex
+multipolygon assembly, terrain grading and remote portal-view prefetch remain
+separate work. Geometry creation runs in a worker, but GPU upload and collider
+installation still run on the main thread and can cause a brief hitch in dense zones.

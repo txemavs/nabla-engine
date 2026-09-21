@@ -21,3 +21,6 @@ export type { WorldExtract, MapFeature } from './real-world.js'
 export { terrainHeight, terrainVertices, terrainIndices } from './terrain.js'
 export type { TerrainData } from './terrain.js'
 export { roadGeometry } from './draped-road.js'
+
+export { WorldStream, wantedWorldTiles, worldTileAt, WORLD_TILE_SIZE } from './world-stream.js'
+export type { WorldStreamHost } from './world-stream.js'

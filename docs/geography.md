@@ -6,7 +6,8 @@
 `imagery` (`satellite`, `streets`, `offline`). The original circuit example starts at Madrid,
 40.4166°, −3.70384°, and its explicit test route requests location on first opening.
 Fresh application sessions now start in the geographically anchored Irun Ventas
-district; its GPS controls are locked to the bundled extract. See [real-world driving](real-world.md).
+district; its GPS controls keep the starting anchor fixed while nearby terrain
+and OSM geometry stream around the player. See [real-world driving](real-world.md).
 
 Location changes are validated, undoable edits and require editing mode.
 **Guardar** and JSON export preserve the selected origin. Moving or deleting the

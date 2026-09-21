@@ -83,8 +83,10 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 export class Simulation {
   private readonly document: SceneDocument
   private readonly terrainEntity: Entity | undefined
-  private readonly minimumFlightAltitude: number
-  private readonly graph: SceneGraph
+  private minimumFlightAltitude: number
+  private graph: SceneGraph
+  private entitiesById = new Map<string, Entity>()
+  private terrainGrounds: { e: Entity; pose: Transform }[] = []
   private readonly portalEntities: Entity[]
   private readonly world = new World({ gravity: new Vec3(0, -9.81, 0) })
   private readonly solidMaterial = new Material({ friction: 0.55, restitution: 0 })
@@ -130,94 +132,16 @@ export class Simulation {
       ? Math.min(...this.terrainEntity.terrain.heights) - 10
       : 0
     this.graph = new SceneGraph(this.document)
+    this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
+    this.terrainGrounds = this.document.entities
+      .filter((e) => e.terrain)
+      .map((e) => ({ e, pose: this.graph.worldTransform(e.id) }))
     this.portalEntities = this.document.entities.filter((e) => e.portal)
     this.world.broadphase = new SAPBroadphase(this.world)
     ;(this.world.solver as GSSolver).iterations = 15
     this.world.defaultContactMaterial.friction = 0.55
     this.world.defaultContactMaterial.restitution = 0
-    for (const e of this.document.entities) {
-      if ((e.motion === 'none' && !e.portal) || (e.portal && e.parentId)) continue
-      const transform = this.graph.worldTransform(e.id)
-      const body = new Body({
-        mass: e.motion === 'dynamic' ? e.mass : 0,
-        material: this.solidMaterial,
-      })
-      const colliders = e.portal
-        ? portalColliders(e)
-        : e.kind === 'vehicle'
-          ? vehicleDefinition(e).colliders
-          : [
-              {
-                size: e.size,
-                transform: {
-                  position: [0, 0, 0] as Vec3Tuple,
-                  rotation: [0, 0, 0, 1] as [number, number, number, number],
-                },
-              },
-            ]
-      if (e.terrain) {
-        const t = e.terrain
-        const data = Array.from({ length: t.columns }, (_, x) =>
-          Array.from({ length: t.rows }, (_, z) => t.heights[(t.rows - 1 - z) * t.columns + x]),
-        )
-        body.addShape(
-          new Heightfield(data, { elementSize: t.spacing }),
-          new Vec3((-(t.columns - 1) * t.spacing) / 2, 0, ((t.rows - 1) * t.spacing) / 2),
-          new Quaternion().setFromEuler(-Math.PI / 2, 0, 0),
-        )
-      }
-      if (e.geometry) {
-        // Thin convex triangle prisms support Cannon sphere, box and ray contacts.
-        // Open faces remain openings; no hidden bounding-box collider.
-        for (const indices of triangles(e.geometry)) {
-          const points = indices.map((i) => new Vector3(...e.geometry!.vertices[i]))
-          const n = points[1]
-            .clone()
-            .sub(points[0])
-            .cross(points[2].clone().sub(points[0]))
-            .normalize()
-            .multiplyScalar(0.025)
-          const center = points
-            .reduce((a, p) => a.add(p), new Vector3())
-            .multiplyScalar(1 / 3)
-            .add(n)
-          const vertices = [
-            ...points.map((p) => p.clone().addScaledVector(n, 2)),
-            ...points.map((p) => p.clone()),
-          ]
-            .map((p) => p.sub(center))
-            .map((p) => new Vec3(p.x, p.y, p.z))
-          body.addShape(
-            new ConvexPolyhedron({
-              vertices,
-              faces: [
-                [0, 1, 2],
-                [5, 4, 3],
-                [0, 3, 4, 1],
-                [1, 4, 5, 2],
-                [2, 5, 3, 0],
-              ],
-            }),
-            new Vec3(center.x, center.y, center.z),
-          )
-        }
-      }
-      for (const collider of e.geometry || e.terrain ? [] : colliders)
-        body.addShape(
-          new Box(new Vec3(...(collider.size.map((n) => n / 2) as Vec3Tuple))),
-          new Vec3(...collider.transform.position),
-          new Quaternion(...collider.transform.rotation),
-        )
-      body.position.set(...transform.position)
-      body.quaternion.set(...transform.rotation)
-      body.previousPosition.copy(body.position)
-      body.previousQuaternion.copy(body.quaternion)
-      body.linearDamping = 0.05
-      body.angularDamping = 0.35
-      this.bodies.set(e.id, body)
-      if (e.kind === 'vehicle') this.createVehicle(e, body)
-      else this.world.addBody(body)
-    }
+    for (const e of this.document.entities) this.addEntityBody(e)
     for (const mouth of this.portalEntities) if (mouth.parentId) this.rebuildPortalCollider(mouth)
     for (const v of this.vehicles.values()) if (v.definition.garage) this.setRamp(v, false)
     if (this.document.geography) {
@@ -327,32 +251,160 @@ export class Simulation {
     this.world.broadphase.dirty = true
   }
 
+  /** Add/remove only static map entities without touching actor state or the physics clock. */
+  replaceMapEntities(remove: Set<string>, add: Entity[]): void {
+    for (const e of [...this.document.entities.filter((e) => remove.has(e.id)), ...add])
+      if (e.motion === 'dynamic' || e.kind === 'spawn' || e.portal || e.kind === 'vehicle')
+        throw new Error('Streaming only supports static map entities')
+    const next = parseScene({
+      ...this.document,
+      entities: [...this.document.entities.filter((e) => !remove.has(e.id)), ...add],
+    })
+    this.document.entities = next.entities
+    this.graph = new SceneGraph(this.document)
+    this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
+    this.terrainGrounds = this.document.entities
+      .filter((e) => e.terrain)
+      .map((e) => ({ e, pose: this.graph.worldTransform(e.id) }))
+    for (const id of remove) {
+      const b = this.bodies.get(id)
+      if (b) this.world.removeBody(b)
+      this.bodies.delete(id)
+    }
+    for (const e of add) this.addEntityBody(e)
+    this.minimumFlightAltitude = Math.min(
+      0,
+      ...this.document.entities.flatMap((e) =>
+        e.terrain ? [Math.min(...e.terrain.heights) - 10] : [],
+      ),
+    )
+    this.world.broadphase.dirty = true
+  }
+  private addEntityBody(e: Entity): void {
+    if ((e.motion === 'none' && !e.portal) || (e.portal && e.parentId)) return
+    const transform = this.graph.worldTransform(e.id)
+    const body = new Body({
+      mass: e.motion === 'dynamic' ? e.mass : 0,
+      material: this.solidMaterial,
+    })
+    const colliders = e.portal
+      ? portalColliders(e)
+      : e.kind === 'vehicle'
+        ? vehicleDefinition(e).colliders
+        : [
+            {
+              size: e.size,
+              transform: {
+                position: [0, 0, 0] as Vec3Tuple,
+                rotation: [0, 0, 0, 1] as [number, number, number, number],
+              },
+            },
+          ]
+    if (e.terrain) {
+      const t = e.terrain
+      const data = Array.from({ length: t.columns }, (_, x) =>
+        Array.from({ length: t.rows }, (_, z) => t.heights[(t.rows - 1 - z) * t.columns + x]),
+      )
+      body.addShape(
+        new Heightfield(data, { elementSize: t.spacing }),
+        new Vec3((-(t.columns - 1) * t.spacing) / 2, 0, ((t.rows - 1) * t.spacing) / 2),
+        new Quaternion().setFromEuler(-Math.PI / 2, 0, 0),
+      )
+    }
+    if (e.geometry) {
+      // Thin convex triangle prisms support Cannon sphere, box and ray contacts.
+      // Open faces remain openings; no hidden bounding-box collider.
+      for (const indices of triangles(e.geometry)) {
+        const points = indices.map((i) => new Vector3(...e.geometry!.vertices[i]))
+        const n = points[1]
+          .clone()
+          .sub(points[0])
+          .cross(points[2].clone().sub(points[0]))
+          .normalize()
+          .multiplyScalar(0.025)
+        const center = points
+          .reduce((a, p) => a.add(p), new Vector3())
+          .multiplyScalar(1 / 3)
+          .add(n)
+        const vertices = [
+          ...points.map((p) => p.clone().addScaledVector(n, 2)),
+          ...points.map((p) => p.clone()),
+        ]
+          .map((p) => p.sub(center))
+          .map((p) => new Vec3(p.x, p.y, p.z))
+        body.addShape(
+          new ConvexPolyhedron({
+            vertices,
+            faces: [
+              [0, 1, 2],
+              [5, 4, 3],
+              [0, 3, 4, 1],
+              [1, 4, 5, 2],
+              [2, 5, 3, 0],
+            ],
+          }),
+          new Vec3(center.x, center.y, center.z),
+        )
+      }
+    }
+    for (const collider of e.geometry || e.terrain ? [] : colliders)
+      body.addShape(
+        new Box(new Vec3(...(collider.size.map((n) => n / 2) as Vec3Tuple))),
+        new Vec3(...collider.transform.position),
+        new Quaternion(...collider.transform.rotation),
+      )
+    body.position.set(...transform.position)
+    body.quaternion.set(...transform.rotation)
+    body.previousPosition.copy(body.position)
+    body.previousQuaternion.copy(body.quaternion)
+    body.linearDamping = 0.05
+    body.angularDamping = 0.35
+    this.bodies.set(e.id, body)
+    if (e.kind === 'vehicle') this.createVehicle(e, body)
+    else this.world.addBody(body)
+  }
+
   private constrainTerrainBoundary(): void {
-    const ground = this.terrainEntity
-    if (!ground?.terrain) return
-    const t = ground.terrain,
-      pose = this.graph.worldTransform(ground.id),
-      q = new Quaternion(...pose.rotation),
-      inv = q.inverse(),
-      origin = new Vec3(...pose.position)
-    const hx = ((t.columns - 1) * t.spacing) / 2 - 8,
-      hz = ((t.rows - 1) * t.spacing) / 2 - 8
+    const grounds = this.terrainGrounds
+    if (!grounds.length) return
     for (const b of [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]) {
-      const p = inv.vmult(b.position.vsub(origin)),
-        x = clamp(p.x, -hx, hx),
-        z = clamp(p.z, -hz, hz)
-      if (p.y > terrainHeight(t, x, z) + 20 || (x === p.x && z === p.z)) continue
-      const v = inv.vmult(b.velocity)
-      if (x !== p.x) {
-        p.x = x
-        v.x = 0
+      let nearest: { point: Vec3; distance: number; height: number } | null = null
+      for (const { e, pose } of grounds) {
+        const t = e.terrain!,
+          hx = ((t.columns - 1) * t.spacing) / 2,
+          hz = ((t.rows - 1) * t.spacing) / 2
+        const q = new Quaternion(...pose.rotation),
+          origin = new Vec3(...pose.position)
+        const p = q.inverse().vmult(b.position.vsub(origin))
+        const neighbor = (dx: number, dz: number) =>
+          grounds.some(
+            (g) =>
+              g.e.id !== e.id &&
+              Math.abs(g.pose.position[0] - pose.position[0] - dx) < 0.01 &&
+              Math.abs(g.pose.position[2] - pose.position[2] - dz) < 0.01,
+          )
+        const x = clamp(
+          p.x,
+          -hx + (neighbor(-2 * hx, 0) ? 0 : 8),
+          hx - (neighbor(2 * hx, 0) ? 0 : 8),
+        )
+        const z = clamp(
+          p.z,
+          -hz + (neighbor(0, -2 * hz) ? 0 : 8),
+          hz - (neighbor(0, 2 * hz) ? 0 : 8),
+        )
+        const distance = Math.hypot(x - p.x, z - p.z)
+        if (!nearest || distance < nearest.distance)
+          nearest = {
+            point: q.vmult(new Vec3(x, p.y, z)).vadd(origin),
+            distance,
+            height: terrainHeight(t, x, z) + pose.position[1],
+          }
       }
-      if (z !== p.z) {
-        p.z = z
-        v.z = 0
-      }
-      b.position.copy(q.vmult(p).vadd(origin))
-      b.velocity.copy(q.vmult(v))
+      if (!nearest || nearest.distance < 1e-6 || b.position.y > nearest.height + 20) continue
+      if (Math.abs(b.position.x - nearest.point.x) > 1e-6) b.velocity.x = 0
+      if (Math.abs(b.position.z - nearest.point.z) > 1e-6) b.velocity.z = 0
+      b.position.copy(nearest.point)
       b.aabbNeedsUpdate = true
     }
   }
@@ -458,7 +510,7 @@ export class Simulation {
     const body = this.bodies.get(id)
     if (body) return interpolated ? this.displayedPose(body) : pose(body)
     // Visual descendants follow their physical root using the authored local transform chain.
-    const entity = this.document.entities.find((e) => e.id === id)
+    const entity = this.entitiesById.get(id)
     if (!entity) throw new Error('Unknown entity: ' + id)
     if (!entity.parentId) return this.graph.worldTransform(id)
     const parent = this.entityTransform(entity.parentId, interpolated)

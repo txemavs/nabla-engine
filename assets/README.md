@@ -123,3 +123,11 @@ The preparation scripts and exact bounded requests are documented in
 [Real-world driving](../docs/real-world.md). Geometry generation in Nabla is an
 initial implementation of footprints, level/height estimates and terrain-draped
 roads; it is not a copied or complete Streets GL rendering pipeline.
+
+### Live world elevation decoder
+
+The browser world worker bundles LERC 4.2.0 (Copyright 2015–2026 Esri), licensed
+under Apache-2.0. The bundled license is [Lerc-Apache-2.0.txt](licenses/Lerc-Apache-2.0.txt).
+See [Esri LERC](https://github.com/Esri/lerc) for source and notices. Network OSM and
+Esri data retain the provider attribution described above; LERC's code license
+does not relicense the elevation data.

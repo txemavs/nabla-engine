@@ -161,7 +161,7 @@ const documentSchema = z
         z.object({ mode: z.literal('fixed'), at: z.iso.datetime({ offset: true }) }).strict(),
       ])
       .optional(),
-    entities: z.array(entitySchema).min(1).max(2000),
+    entities: z.array(entitySchema).min(1).max(20000),
   })
   .strict()
 export type VehicleDefinition = z.infer<typeof vehicleDefinition>

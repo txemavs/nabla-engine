@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Stream neighboring OSM/Esri zones ahead of travel without resetting actors; cache extracts, release distant clean zones, retain edits and guard unloaded ground.
+- Save large streamed scenes through IndexedDB when localStorage is full.
+
 - Generate editable gabled, hipped and skillion roofs for compatible OSM building footprints, preserving tagged total height.
 
 - Add the first real-data district in Irun Ventas/Katea, with 376 OSM building
