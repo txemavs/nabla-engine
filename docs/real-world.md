@@ -250,3 +250,18 @@ planet-scale rebasing or Streets GL visual parity. Bridges, tunnels, water, comp
 multipolygon assembly, terrain grading and remote portal-view prefetch remain
 separate work. Geometry creation runs in a worker, but GPU upload and collider
 installation still run on the main thread and can cause a brief hitch in dense zones.
+
+## Shared cache and long-distance terrain
+
+The optional [Docker cache](../services/world-cache/README.md) shares exact OSM
+queries and elevation bytes across browser sessions. Private installation details
+are local configuration, never repository defaults. Cached hits do not incur the
+direct-public-provider request delay. This is demand caching, not an offline Spain archive.
+
+The real-world view uses a 6 km camera far plane and atmospheric fog from 3.5 to
+5 km at ground level. A separate visual-only 121 × 121 elevation grid at 100 m
+spacing covers 12 × 12 km around the viewer. It recenters in 2.4 km increments.
+A shader masks out resident detailed terrain footprints to avoid double surfaces.
+Distant terrain has no vehicle collider, buildings or trees; the existing near-zone
+streamer still supplies those. Ground safety boundaries remain until detailed terrain
+is ready. Loading elevation does not request additional OSM features.

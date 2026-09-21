@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a private Docker disk cache for OSM queries and Esri elevation, configured outside the repository.
+- Extend real-world visibility to approximately 4 km with coarse distant terrain and consistent atmospheric fog.
+
 - Stream neighboring OSM/Esri zones ahead of travel without resetting actors; cache extracts, release distant clean zones, retain edits and guard unloaded ground.
 - Save large streamed scenes through IndexedDB when localStorage is full.
 

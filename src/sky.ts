@@ -7,7 +7,7 @@ export function skyTime(clock: SkyClock | undefined, now = Date.now()): Date {
 export function localTimeInput(at: Date): string {
   return new Date(at.getTime() - at.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 }
-export function atmosphere(height: number, sunElevation: number) {
+export function atmosphere(height: number, sunElevation: number, visibility = 220) {
   const day = MathUtils.smoothstep(sunElevation, -0.12, 0.12)
   const space = MathUtils.smoothstep(height, 12000, 100000)
   const twilight = (1 - MathUtils.smoothstep(Math.abs(sunElevation), 0, 0.2)) * (1 - space)
@@ -19,8 +19,8 @@ export function atmosphere(height: number, sunElevation: number) {
     color,
     day,
     stars: Math.max(1 - day, space),
-    near: Math.max(80, height * 4),
-    far: Math.max(220, height * 12),
+    near: Math.max(visibility === 220 ? 80 : visibility * 0.7, height * 4),
+    far: Math.max(visibility, height * 12),
     space,
   }
 }

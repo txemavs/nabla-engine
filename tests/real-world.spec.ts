@@ -3,13 +3,14 @@ test('starts in Ventas, edits and saves an OSM building and drives the A3', asyn
   test.setTimeout(180000)
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.route('https://overpass-api.de/**', (route) =>
+  await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) =>
     route.fulfill({
       status: 503,
       body: 'Offline test',
       headers: { 'access-control-allow-origin': '*' },
     }),
   )
+  await page.route(/WorldElevation3D|\/world-cache\/elevation/, (route) => route.abort())
   await page.goto('/')
   await expect(page.locator('#scene-name')).toHaveText('Irún · Ventas / Katea', { timeout: 30000 })
   await expect(page.locator('#world-loading')).toBeHidden({ timeout: 30000 })

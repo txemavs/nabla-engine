@@ -4,6 +4,7 @@ import { IRUN_VENTAS } from '../src/real-world.js'
 test('loads cached neighboring terrain during driving and preserves it when saving', async ({
   page,
 }) => {
+  await page.route(/WorldElevation3D|\/world-cache\/elevation/, (route) => route.abort())
   await page.goto('/')
   await expect(page.locator('#world-loading')).toBeHidden({ timeout: 30000 })
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 30000 })
@@ -51,13 +52,14 @@ test('loads cached neighboring terrain during driving and preserves it when savi
 })
 
 test('reports a provider failure and stopping cancels the streaming session', async ({ page }) => {
-  await page.route('https://overpass-api.de/**', (route) =>
+  await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) =>
     route.fulfill({
       status: 503,
       body: 'Unavailable',
       headers: { 'access-control-allow-origin': '*' },
     }),
   )
+  await page.route(/WorldElevation3D|\/world-cache\/elevation/, (route) => route.abort())
   await page.goto('/')
   await expect(page.locator('#world-loading')).toBeHidden({ timeout: 30000 })
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 30000 })

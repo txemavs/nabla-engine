@@ -131,7 +131,7 @@ export class GeographicView {
   }
   get status(): string {
     if (!this.origin) return 'Escena sin ubicación'
-    if (this.hasTerrain) return 'OSM + relieve Esri · extracto local'
+    if (this.hasTerrain) return 'OSM + relieve Esri · mundo conectado'
     if (this.origin.imagery === 'offline') return 'Mapa sin conexión · Tierra local'
     if (this.active) return 'Cargando mapa…'
     if (this.failed) return 'Mapa parcial · algunas imágenes no disponibles'
@@ -159,7 +159,11 @@ export class GeographicView {
     const radial = new THREE.Vector3(...position)
       .add(new THREE.Vector3(0, EARTH_RADIUS + this.origin.altitude, 0))
       .normalize()
-    this.atmosphere = atmosphere(height, this.sunDirection.dot(radial))
+    this.atmosphere = atmosphere(
+      height,
+      this.sunDirection.dot(radial),
+      this.hasTerrain ? 5000 : 220,
+    )
     const air = this.atmosphere
     this.backdrop.material.color.copy(air.color)
     this.space.background = null

@@ -4,10 +4,13 @@ import { createRealWorld, type MapFeature, type WorldExtract } from '../src/real
 import { tileCoordinate, EARTH_RADIUS, type GeoPoint } from '../src/geography.js'
 import type { Entity } from '../src/scene.js'
 
-const ESRI =
-  'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/tile'
-const OVERPASS =
-  import.meta.env.VITE_WORLD_OVERPASS_URL || 'https://overpass-api.de/api/interpreter'
+const CACHE_BASE = import.meta.env.VITE_WORLD_CACHE_URL || ''
+const ESRI = CACHE_BASE
+  ? `${CACHE_BASE}/elevation`
+  : 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/tile'
+const OVERPASS = CACHE_BASE
+  ? `${CACHE_BASE}/osm`
+  : import.meta.env.VITE_WORLD_OVERPASS_URL || 'https://overpass-api.de/api/interpreter'
 let nextRemoteRequest = 0
 const CACHE = 'nabla-world-v1'
 const decoded = new Map<string, Promise<Lerc.LercData>>()
@@ -19,7 +22,10 @@ async function fetchChecked(
 ): Promise<Response> {
   const response = await fetch(url, {
     ...init,
-    signal: AbortSignal.any([signal, AbortSignal.timeout(40000)]),
+    signal: AbortSignal.any([
+      signal,
+      AbortSignal.timeout(CACHE_BASE && init.method === 'POST' ? 120000 : 40000),
+    ]),
   })
   if (!response.ok) throw new Error(`Proveedor HTTP ${response.status}`)
   return response
@@ -86,11 +92,21 @@ export function overpassFeatures(elements: OsmElement[]): MapFeature[] {
   }
   return result
 }
-async function elevation(origin: GeoPoint, ox: number, oz: number, signal: AbortSignal) {
+async function elevation(
+  origin: GeoPoint,
+  ox: number,
+  oz: number,
+  signal: AbortSignal,
+  spacing = 10,
+) {
   ready ??= Lerc.load({ locateFile: () => lercWasm })
   await ready
   const samples = Array.from({ length: 121 * 121 }, (_, i) => {
-    const p = sampleGeo(origin, ox + (i % 121) * 10 - 600, oz + Math.floor(i / 121) * 10 - 600)
+    const p = sampleGeo(
+      origin,
+      ox + (i % 121) * spacing - 60 * spacing,
+      oz + Math.floor(i / 121) * spacing - 60 * spacing,
+    )
     return tileCoordinate(p.latitude, p.longitude, 12)
   })
   const rasters = new Map<string, Lerc.LercData>()
@@ -182,7 +198,7 @@ export async function loadWorldTile(
         if (signal.aborted) abort()
       })
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
-    nextRemoteRequest = Date.now() + 30000
+    nextRemoteRequest = Date.now() + (CACHE_BASE ? 0 : 30000)
     const response = await fetchChecked(OVERPASS, signal, {
       method: 'POST',
       body: new URLSearchParams({ data: query }),
@@ -214,4 +230,18 @@ export async function loadWorldTile(
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
   const doc = createRealWorld(extract, { offset: [ox, oz], tileId: key })
   return doc.entities.filter((e) => e.kind !== 'spawn' && e.kind !== 'vehicle')
+}
+
+export async function loadDistantTerrain(
+  origin: GeoPoint,
+  x: number,
+  z: number,
+  signal: AbortSignal,
+) {
+  return {
+    columns: 121,
+    rows: 121,
+    spacing: 100,
+    heights: await elevation(origin, x, z, signal, 100),
+  }
 }

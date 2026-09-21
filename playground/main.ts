@@ -1,3 +1,4 @@
+import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { WorldStream } from '../src/world-stream.js'
 import { WorldLoader } from './world-loader.js'
@@ -48,6 +49,7 @@ const escape = (s: string): string =>
 const STORAGE_KEY = 'nabla.scene.v1'
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = false
+let distantTerrain: DistantTerrain | null = null
 let worldStream: WorldStream | null = null
 let worldLoader: WorldLoader | null = null
 let streamSample: { at: number; position: Vec3Tuple } | null = null
@@ -235,6 +237,8 @@ const solidEditor = new SolidEditor(
 )
 
 function rebuild(): void {
+  distantTerrain?.dispose()
+  distantTerrain = null
   worldStream?.dispose()
   worldLoader?.dispose()
   worldStream = null
@@ -265,6 +269,20 @@ function setupWorldStream(): void {
   $('stream-status').textContent = ''
   if (!doc.geography || !doc.entities.some((e) => e.id === 'world-terrain')) return
   const origin = doc.geography
+  distantTerrain = new DistantTerrain(origin, () => {
+    needsRender = true
+    const status = distantTerrain?.status ?? 'loading'
+    renderer.domElement.dataset.distantTerrain = status
+    $('world-note').textContent =
+      'VENTAS / KATEA · OSM + ESRI · ' +
+      (status === 'ready'
+        ? 'Vista ≈ 4 km'
+        : status === 'unavailable'
+          ? 'Relieve lejano pendiente'
+          : 'Cargando horizonte…')
+  })
+  distantTerrain.setDocument(doc)
+  scene.add(distantTerrain.root)
   const loader = new WorldLoader()
   worldLoader = loader
   worldStream = new WorldStream({
@@ -274,6 +292,7 @@ function setupWorldStream(): void {
       sim?.replaceMapEntities(remove, add)
       editor.replaceMapEntities(remove, add)
       view.replaceMapEntities(remove, add)
+      distantTerrain?.setDocument(view.document)
       for (const e of add) if (e.kind === 'group') collapsed.add(e.id)
       view.setPlaying(!!sim)
       refreshUi()
@@ -1213,6 +1232,8 @@ function frame(now: number): void {
   renderOrigin.set(0, 0, 0)
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
+  distantTerrain?.update(position)
+  distantTerrain?.root.position.copy(renderOrigin).negate()
   view.root.position.copy(renderOrigin).negate()
   camera.position.sub(renderOrigin)
   if (view.document.geography) {
@@ -1235,7 +1256,8 @@ function frame(now: number): void {
       air.day > 0.8 ? 'day' : air.day < 0.1 ? 'night' : 'twilight'
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
-    camera.far = Math.max(300, Math.min(100000000, height * 15))
+    camera.far = Math.max(distantTerrain ? 6000 : 300, Math.min(100000000, height * 15))
+    renderer.domElement.dataset.viewDistance = String(camera.far)
     camera.updateProjectionMatrix()
   } else {
     scene.background = new THREE.Color('#a6bbd5')

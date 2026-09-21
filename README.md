@@ -27,6 +27,8 @@ The playground UI remains in Spanish. Documentation is in English; the
 
 ## Current working tree: 0.2.0 baseline + Stargate prototype
 
+- Optional [private Docker cache](services/world-cache/README.md) for shared OSM/elevation data, with local-only installation settings.
+- Approximately 4 km visibility with coarse distant relief and nearby detailed terrain.
 - Anticipatory [real-world exploration](docs/real-world.md#implemented-neighborhood-streaming) around Irun Ventas, with cached OSM/Esri zones and incremental collisions.
 - [Editable building components](docs/solid-editor.md) with points, lines, faces, extrusion and independent clones.
 - Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
