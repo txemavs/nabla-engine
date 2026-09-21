@@ -1,3 +1,5 @@
+import { boxSolid } from '../src/solid.js'
+import { circuitEntities } from '../src/circuit-plan.js'
 import { treeSprite } from '../src/vegetation.js'
 import { rotationDegrees } from '../src/scene.js'
 import { createA3 } from '../src/presets.js'
@@ -6,6 +8,41 @@ import { installCarrierPortals } from './carrier-portals.js'
 /** Upgrade only recognised reference presets; preserve authored placements and custom mounts. */
 export function upgradeReferenceScene(raw: unknown) {
   const doc = installCarrierPortals(raw)
+  // Recognised baseline buildings become independent topology components.
+  // Preserve edited windows and anything with children.
+  const baseline = circuitEntities()
+  const removed = new Set<string>()
+  for (const e of doc.entities) {
+    const reference = baseline.find((b) => b.id === e.id && b.kind === 'solid')
+    if (!reference || e.kind !== 'box' || e.motion !== 'static' || e.visual || e.surface) continue
+    e.kind = 'solid'
+    e.geometry = boxSolid(e.size)
+    const i = e.id.slice('building-'.length)
+    for (let floor = 0; floor < Math.floor(reference.size[1] / 2.6); floor++) {
+      const w = doc.entities.find((n) => n.id === `window-${i}-${floor}`)
+      if (
+        w &&
+        w.kind === 'box' &&
+        w.name === 'Ventanal' &&
+        w.parentId === 'details' &&
+        w.motion === 'none' &&
+        w.color === '#bbd9d5' &&
+        JSON.stringify(w.size) === JSON.stringify([reference.size[0] * 0.78, 1, 0.04]) &&
+        JSON.stringify(w.transform.position) ===
+          JSON.stringify([
+            reference.transform.position[0],
+            1.8 + floor * 2.6,
+            reference.transform.position[2] + reference.size[2] / 2 + 0.02,
+          ]) &&
+        w.transform.rotation.every((v, j) => v === [0, 0, 0, 1][j]) &&
+        !w.visual &&
+        !w.surface &&
+        !doc.entities.some((n) => n.parentId === w.id)
+      )
+        removed.add(w.id)
+    }
+  }
+  doc.entities = doc.entities.filter((e) => !removed.has(e.id))
   for (const e of doc.entities) {
     const mount = e.visual?.steering
     if (

@@ -1,3 +1,4 @@
+import { SolidEditor } from './solid-editor.js'
 import { treeSprite } from '../src/vegetation.js'
 import { createGallery, Gallery } from './gallery.js'
 import { alignCircuitPlan } from '../src/circuit-plan.js'
@@ -215,6 +216,15 @@ gizmo.addEventListener('mouseUp', () => {
     rebuild()
   })
 })
+const solidEditor = new SolidEditor(
+  (geometry) => {
+    editor.update(selectedId, { geometry })
+    rebuild()
+  },
+  refreshUi,
+  toast,
+)
+
 function rebuild(): void {
   gizmo.detach()
   if (JSON.stringify(view.document.geography) !== JSON.stringify(editor.document.geography)) {
@@ -264,7 +274,7 @@ function refreshUi(): void {
     editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
   const tree = $('tree')
   tree.replaceChildren()
-  const icons = { box: '◇', vehicle: '▰', spawn: '◎', group: '▱' }
+  const icons = { solid: '⬡', box: '◇', vehicle: '▰', spawn: '◎', group: '▱' }
   function append(parent: string | null, depth: number): void {
     for (const e of doc.entities.filter((item) => item.parentId === parent)) {
       const button = document.createElement('button')
@@ -299,7 +309,7 @@ function refreshUi(): void {
   function row(label: string, key: string, values: number[]): string {
     return `<label class="field-label">${label}</label><div class="axis-row">${values.map((n, i) => `<label><span>${'XYZ'[i]}</span><input aria-label="${label} ${'XYZ'[i]}" data-vector="${key}" data-axis="${i}" type="number" step="${key === 'rotation' ? '1' : '0.1'}" value="${Number(n.toFixed(3))}"></label>`).join('')}</div>`
   }
-  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${{ box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
+  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${{ solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
     <label class="field-label" for="name">Nombre</label><input id="name" value="${escape(e.name)}" maxlength="100">
     ${row('Posición local · m', 'position', e.transform.position)}${row('Rotación local · °', 'rotation', angles)}
     ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
@@ -314,6 +324,7 @@ function refreshUi(): void {
     ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
+  solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
   if (e.sprite) {
     const controls = document.createElement('div')
     controls.innerHTML = `<label class="field-label" for="sprite-url">PNG transparente</label><input id="sprite-url" value="${escape(e.sprite.url)}">`
@@ -423,7 +434,7 @@ function refreshUi(): void {
       'input,button,select',
     )
     .forEach((el) => {
-      el.disabled = sim !== null
+      if (sim) el.disabled = true
     })
   if (!sim) {
     $<HTMLInputElement>('color').disabled = !!e.visual
@@ -431,12 +442,14 @@ function refreshUi(): void {
     $<HTMLButtonElement>('delete').disabled = e.kind === 'spawn'
     $<HTMLSelectElement>('parent').disabled =
       e.kind === 'spawn' || e.motion === 'dynamic' || !!e.portal
-    gizmo.attach(view.objects.get(e.id)!)
+    if (solidEditor.active) gizmo.detach()
+    else gizmo.attach(view.objects.get(e.id)!)
   }
   $<HTMLButtonElement>('undo').disabled = !!sim || !editor.canUndo
   $<HTMLButtonElement>('redo').disabled = !!sim || !editor.canRedo
   for (const id of [
     'add-entity',
+    'add-solid',
     'add-box',
     'add-car',
     'add-group',
@@ -453,6 +466,10 @@ function refreshUi(): void {
 }
 function setTool(mode: 'translate' | 'rotate'): void {
   if (sim) return
+  if (solidEditor.active) {
+    solidEditor.close()
+    refreshUi()
+  }
   gizmo.setMode(mode)
   $('translate').classList.toggle('active', mode === 'translate')
   $('rotate').classList.toggle('active', mode === 'rotate')
@@ -483,6 +500,7 @@ $('redo').onclick = () => {
   rebuild()
 }
 for (const [id, kind] of [
+  ['add-solid', 'solid'],
   ['add-box', 'box'],
   ['add-car', 'vehicle'],
   ['add-group', 'group'],
@@ -677,6 +695,15 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     ),
     camera,
   )
+  if (solidEditor.active) {
+    solidEditor.click(
+      raycaster,
+      editor.document.entities.find((e) => e.id === selectedId)!,
+      view.objects.get(selectedId)!,
+    )
+    needsRender = true
+    return
+  }
   const hits = raycaster.intersectObjects([...view.objects.values()], true)
   for (const hit of hits) {
     let object: THREE.Object3D | null = hit.object
@@ -725,6 +752,11 @@ window.addEventListener('keydown', (e) => {
     return
   }
   if (!sim) {
+    if (e.code === 'Escape' && solidEditor.active) {
+      solidEditor.close()
+      refreshUi()
+      return
+    }
     if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
       e.preventDefault()
       if (e.shiftKey) editor.redo()

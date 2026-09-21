@@ -25,6 +25,7 @@ The playground UI remains in Spanish. Documentation is in English; the
 
 ## Current working tree: 0.2.0 baseline + Stargate prototype
 
+- [Editable building components](docs/solid-editor.md) with points, lines, faces, extrusion and independent clones.
 - Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
 - Fixed and carrier-mounted Stargates with linked views, runtime destination controls and actor/vehicle traversal.
 - A shared physics world for hover exploration, walking, driving, obstacles and movable objects.

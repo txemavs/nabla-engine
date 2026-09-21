@@ -1,3 +1,4 @@
+import { boxSolid, validateSolid } from './solid.js'
 import { z } from 'zod'
 import { Euler, Matrix4, Object3D, Quaternion, Vector3 } from 'three'
 
@@ -73,12 +74,22 @@ const entitySchema = z
     id: z.string().min(1).max(128),
     name: z.string().min(1).max(100),
     parentId: z.string().nullable(),
-    kind: z.enum(['group', 'box', 'vehicle', 'spawn']),
+    kind: z.enum(['group', 'box', 'vehicle', 'spawn', 'solid']),
     transform,
     size,
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     motion: z.enum(['none', 'static', 'dynamic']),
     mass: finite.min(0.1).max(100000),
+    geometry: z
+      .object({
+        vertices: z.array(vector).max(2048),
+        edges: z
+          .array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]))
+          .max(8192),
+        faces: z.array(z.array(z.number().int().nonnegative()).min(3).max(64)).max(4096),
+      })
+      .strict()
+      .optional(),
     vehicle: vehicleDefinition.optional(),
     visual: visualDefinition.optional(),
     portal: z
@@ -166,6 +177,9 @@ export function createEntity(
     color: kind === 'vehicle' ? '#e9a34e' : '#6c8492',
     motion: kind === 'vehicle' ? 'dynamic' : kind === 'box' ? 'static' : 'none',
     mass: kind === 'vehicle' ? 1200 : 40,
+    ...(kind === 'solid'
+      ? { name: 'Edificio', motion: 'static' as const, geometry: boxSolid([2, 2, 2]) }
+      : {}),
   }
 }
 
@@ -177,6 +191,11 @@ export function parseScene(raw: unknown): SceneDocument {
   if (doc.entities.filter((e) => e.kind === 'spawn').length !== 1)
     throw new Error('Scene requires exactly one spawn')
   for (const e of doc.entities) {
+    if (e.kind === 'solid') {
+      if (!e.geometry || e.motion === 'dynamic' || e.visual || e.surface)
+        throw new Error('Solids require static or visual topology')
+      validateSolid(e.geometry)
+    } else if (e.geometry) throw new Error('Geometry requires a solid entity')
     if (e.sprite && (e.kind !== 'group' || e.motion !== 'none' || e.portal))
       throw new Error('Sprites require nonphysical groups without portal surfaces')
     if (e.portal) {

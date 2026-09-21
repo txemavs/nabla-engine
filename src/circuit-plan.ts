@@ -1,3 +1,4 @@
+import { boxSolid } from './solid.js'
 import { treeSprite } from './vegetation.js'
 import { createEntity, type Entity, type SceneDocument, type Vec3Tuple } from './scene.js'
 
@@ -42,27 +43,15 @@ export function circuitEntities(): Entity[] {
       d = ((y1 - y0) * 126.368) / 682
     const e = createEntity(
       `building-${i}`,
-      'box',
+      'solid',
       circuitPoint((x0 + x1) / 2, (y0 + y1) / 2, h / 2),
     )
     e.name = `Edificio ${i + 1}`
     e.size = [w, h, d]
+    e.geometry = boxSolid(e.size)
     e.color = palette[i % 4]
     e.parentId = 'architecture'
     result.push(e)
-    for (let floor = 0; floor < Math.floor(h / 2.6); floor++) {
-      const window = createEntity(`window-${i}-${floor}`, 'box', [
-        e.transform.position[0],
-        1.8 + floor * 2.6,
-        e.transform.position[2] + d / 2 + 0.02,
-      ])
-      window.name = 'Ventanal'
-      window.motion = 'none'
-      window.parentId = 'details'
-      window.size = [w * 0.78, 1, 0.04]
-      window.color = '#bbd9d5'
-      result.push(window)
-    }
   })
   // The JPEG supplies asphalt, curved roads, lane markings and sidewalks; keep them unobscured.
   for (const [i, [u, v]] of [

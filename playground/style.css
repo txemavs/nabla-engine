@@ -720,3 +720,18 @@ body.playing #footer-mode {
   pointer-events: none;
   z-index: 5;
 }
+
+.solid-tools {
+  border-top: 1px solid #35485d;
+  margin-top: 16px;
+  padding-top: 12px;
+}
+.solid-tools p {
+  color: #99b0c7;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.solid-tools > button {
+  margin-top: 8px;
+  width: 100%;
+}

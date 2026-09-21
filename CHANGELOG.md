@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Introduce individual editable solid building entities with points, lines, convex
+  faces, corner editing, face extrusion and deletion, independent cloning and undo.
+- Use authored face collision so openings remain traversable; migrate reference
+  buildings from separate blocks and window strips to topology components.
+- Document the solid format, current modeling limits and future catalog boundary.
+
 - Reveal viewport selections in the entity tree by expanding ancestor groups and
   scrolling to the selected row.
 - Consolidate creation actions in a + menu beside the scene entity count.

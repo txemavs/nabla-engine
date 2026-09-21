@@ -19,3 +19,5 @@ The [Stargates and CSS interiors proposal](portals.md) records the next design,
 including the Agency source review, the playable fixed-gate prototype and staged
 acceptance criteria for carrier integration and CSS interiors. The prototype
 preserves the edit/play contract and a single physics owner.
+
+- [Solid and building editor](solid-editor.md): points, lines, faces, extrusion and the future entity catalog boundary.

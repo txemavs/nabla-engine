@@ -1,3 +1,4 @@
+import { triangles } from './solid.js'
 import { SceneEditor } from './editor.js'
 import { portalColliders, portalLocal, portalMapping } from './portal.js'
 import { EARTH_RADIUS, localFrame, localToGeo } from './geography.js'
@@ -5,6 +6,7 @@ import { OBB } from 'three/addons/math/OBB.js'
 import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition } from './vehicle.js'
 import {
+  ConvexPolyhedron,
   AABB,
   Body,
   Box,
@@ -145,7 +147,43 @@ export class Simulation {
                 },
               },
             ]
-      for (const collider of colliders)
+      if (e.geometry) {
+        // Thin convex triangle prisms support Cannon sphere, box and ray contacts.
+        // Open faces remain openings; no hidden bounding-box collider.
+        for (const indices of triangles(e.geometry)) {
+          const points = indices.map((i) => new Vector3(...e.geometry!.vertices[i]))
+          const n = points[1]
+            .clone()
+            .sub(points[0])
+            .cross(points[2].clone().sub(points[0]))
+            .normalize()
+            .multiplyScalar(0.025)
+          const center = points
+            .reduce((a, p) => a.add(p), new Vector3())
+            .multiplyScalar(1 / 3)
+            .add(n)
+          const vertices = [
+            ...points.map((p) => p.clone().addScaledVector(n, 2)),
+            ...points.map((p) => p.clone()),
+          ]
+            .map((p) => p.sub(center))
+            .map((p) => new Vec3(p.x, p.y, p.z))
+          body.addShape(
+            new ConvexPolyhedron({
+              vertices,
+              faces: [
+                [0, 1, 2],
+                [5, 4, 3],
+                [0, 3, 4, 1],
+                [1, 4, 5, 2],
+                [2, 5, 3, 0],
+              ],
+            }),
+            new Vec3(center.x, center.y, center.z),
+          )
+        }
+      }
+      for (const collider of e.geometry ? [] : colliders)
         body.addShape(
           new Box(new Vec3(...(collider.size.map((n) => n / 2) as Vec3Tuple))),
           new Vec3(...collider.transform.position),

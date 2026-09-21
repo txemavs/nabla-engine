@@ -221,3 +221,7 @@ Stargates and the 2.5D gallery. Selecting an object in the viewport expands its
 ancestor groups and scrolls its selected tree row into view. The creation menu
 closes after choosing an item, clicking outside or pressing Escape; creation is
 disabled while playing.
+
+## Building geometry
+
+Use **Scene + → Edificio**, then **Editar geometría** in the inspector. Points, Lines and Planes place snapped local geometry; the drawing plane and offset choose the construction surface. Select a face to extrude or delete it. Escape finishes geometry mode. See [Solid editor](solid-editor.md) for topology, cloning and current limits.

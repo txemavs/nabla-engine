@@ -1,3 +1,4 @@
+import { triangles } from '../src/solid.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
@@ -169,6 +170,29 @@ export class SceneView {
             }
           }),
         )
+      }
+      if (e.geometry) {
+        const geometry = new THREE.BufferGeometry()
+        geometry.setAttribute(
+          'position',
+          new THREE.Float32BufferAttribute(
+            triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
+            3,
+          ),
+        )
+        geometry.computeVertexNormals()
+        const surface = mesh(geometry, e.color)
+        ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
+        group.add(surface)
+        const wire = new THREE.LineSegments(
+          new THREE.BufferGeometry().setFromPoints(
+            e.geometry.edges.flatMap((edge) =>
+              edge.map((i) => new THREE.Vector3(...e.geometry!.vertices[i])),
+            ),
+          ),
+          new THREE.LineBasicMaterial({ color: e.color }),
+        )
+        group.add(wire)
       }
       if (e.kind === 'box') group.add(box(e.size, e.color))
       if (e.kind === 'vehicle') {

@@ -192,3 +192,13 @@ Ground shadows are fixed, translucent black copies of the same texture on flat
 planes. They share the loaded tree texture, add one plane/draw per tree per view,
 receive no hit tests and require no shadow map. These decorative shadows are for
 flat authored ground: they do not track the Sun or conform to slopes.
+
+## Editable solids
+
+`solid` entities own local-space topology: vertices, explicit edges and convex planar
+faces. One building is one scene identity, regardless of its face count. Mesh
+triangulation and static collision derive from this data; there is no hidden box
+behind an edited opening. Collision uses outward 5 cm triangle prisms. The editor
+commits complete operations through the same scene history, and duplication copies
+topology independently. See [Solid and building editor](solid-editor.md) for the
+host tools, migration rules, modeler limits and catalog insertion boundary.
