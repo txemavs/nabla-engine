@@ -1,4 +1,4 @@
-import { followDrivingHeading } from './driving-camera.js'
+import { followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
 import { createPortalPair } from '../src/portal.js'
 import { renderPortals } from './portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
@@ -50,7 +50,21 @@ let selectedId =
   editor.document.entities.find((e) => e.kind === 'vehicle')?.id ?? editor.document.entities[0].id
 let sim: Simulation | null = null
 let needsRender = true
-let cockpit = false
+let cameraMode: 'chase' | 'cockpit' | 'map' = 'chase'
+let mapHeight = 350
+const drivingTelemetry = new DrivingTelemetry()
+function cycleCamera(): void {
+  if (!sim?.player.vehicleId) return
+  cameraMode = cameraMode === 'chase' ? 'cockpit' : cameraMode === 'cockpit' ? 'map' : 'chase'
+  pitch = cameraMode === 'cockpit' ? 0.05 : 0.24
+  toast(
+    cameraMode === 'map'
+      ? 'Cámara cenital · rueda para acercar o alejar'
+      : cameraMode === 'cockpit'
+        ? 'Cámara del conductor'
+        : 'Cámara exterior',
+  )
+}
 let lastLookTime = 0
 let yaw = 0,
   pitch = 0.24
@@ -492,6 +506,8 @@ function togglePlay(): void {
       sim.dispose()
       sim = null
       document.exitPointerLock()
+      camera.up.set(0, 1, 0)
+      document.querySelector('.caption-tag')!.textContent = 'PERSPECTIVA'
       camera.fov = 48
       camera.updateProjectionMatrix()
       camera.position.copy(orbitStartPosition)
@@ -503,8 +519,9 @@ function togglePlay(): void {
       orbitStartTarget = orbit.target.clone()
       sim = new Simulation(editor.document)
       portalSequence = 0
+      drivingTelemetry.update(null, 0, 0, 0, true)
       delete renderer.domElement.dataset.portalCrossings
-      cockpit = false
+      cameraMode = 'chase'
       const spawn = editor.document.entities.find((e) => e.kind === 'spawn')!
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
         new THREE.Quaternion(...spawn.transform.rotation),
@@ -568,8 +585,21 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     }
   }
 })
+renderer.domElement.addEventListener(
+  'wheel',
+  (e) => {
+    if (!sim?.player.vehicleId || cameraMode !== 'map') return
+    e.preventDefault()
+    mapHeight = THREE.MathUtils.clamp(mapHeight * Math.exp(e.deltaY * 0.001), 80, 2500)
+  },
+  { passive: false },
+)
 document.addEventListener('mousemove', (e) => {
-  if (sim && document.pointerLockElement === renderer.domElement) {
+  if (
+    sim &&
+    !(cameraMode === 'map' && sim.player.vehicleId) &&
+    document.pointerLockElement === renderer.domElement
+  ) {
     lastLookTime = performance.now()
     yaw -= e.movementX * 0.0025
     pitch = THREE.MathUtils.clamp(pitch + e.movementY * 0.002, -1.45, 1.45)
@@ -608,8 +638,7 @@ window.addEventListener('keydown', (e) => {
     return
   }
   if (e.code === 'KeyC' && !e.repeat && sim.player.vehicleId) {
-    cockpit = !cockpit
-    pitch = cockpit ? 0.05 : 0.24
+    cycleCamera()
     return
   }
   if (e.code === 'KeyV' && !e.repeat) {
@@ -622,7 +651,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyT' && !e.repeat) {
     toast(sim.transferControls())
-    cockpit = false
+    cameraMode = 'chase'
     return
   }
   keys.add(e.code)
@@ -664,14 +693,13 @@ function pollGamepad(): Gamepad | null {
   if (sim) {
     if (pressed(0)) toast(sim.interact())
     if (pressed(1)) {
-      cockpit = !cockpit
-      pitch = cockpit ? 0.05 : 0.24
+      cycleCamera()
     }
     if (pressed(2)) toast(sim.toggleDock())
     if (pressed(3)) toast(sim.toggleFlight())
     if (pressed(4)) {
       toast(sim.transferControls())
-      cockpit = false
+      cameraMode = 'chase'
     }
   }
   previousButtons = pad.buttons.map((b) => b.pressed)
@@ -725,6 +753,7 @@ function frame(now: number): void {
       portalSequence = crossing.sequence
       if (crossing.actorId === sim.player.vehicleId || crossing.actorId === 'player') {
         yaw += crossing.yawDelta
+        drivingTelemetry.update(sim.player.vehicleId, sim.player.speed, 0, dt, true)
         renderer.domElement.dataset.portalCrossings = String(crossing.sequence)
         toast(
           crossing.blocked
@@ -734,23 +763,32 @@ function frame(now: number): void {
       }
     }
     view.sync(sim, document.hidden ? 0 : dt)
-    const p = sim.player
+    const p = { ...sim.player, position: sim.renderPlayerPosition }
+    const cockpit = cameraMode === 'cockpit'
+    const overhead = cameraMode === 'map' && !!p.vehicleId
+    camera.up.set(0, 1, 0)
+    renderer.domElement.dataset.cameraMode = p.vehicleId ? cameraMode : 'chase'
+    document.querySelector('.caption-tag')!.textContent = overhead
+      ? 'CENITAL · N ↑'
+      : cockpit && p.vehicleId
+        ? 'CONDUCTOR'
+        : 'PERSPECTIVA'
     const geoPoint = view.document.geography
       ? localToGeo(view.document.geography, p.position)
       : null
     const altitude = geoPoint
       ? geoPoint.altitude - view.document.geography!.altitude
       : p.position[1]
-    const info = p.vehicleId ? sim.vehicleInfo(p.vehicleId) : null
-    const drivingFast = info && !info.isCarrier ? THREE.MathUtils.smoothstep(p.speed, 5, 30) : 0
-    const fov = cockpit && info ? 70 : 48 + drivingFast * 8
+    const info = p.vehicleId ? sim.vehicleInfo(p.vehicleId, true) : null
+    drivingTelemetry.update(p.vehicleId, p.speed, info?.turnRate ?? 0, dt)
+    const fov = cockpit && info ? 70 : 48
     if (camera.fov !== fov) {
       camera.fov = fov
       camera.updateProjectionMatrix()
     }
     const vehicleForward = info
       ? new THREE.Vector3(0, 0, -1).applyQuaternion(
-          new THREE.Quaternion(...sim.entityTransform(p.vehicleId!).rotation),
+          new THREE.Quaternion(...sim.entityTransform(p.vehicleId!, true).rotation),
         )
       : new THREE.Vector3(0, 0, -1)
     if (info && !info.flightMode) {
@@ -758,8 +796,8 @@ function frame(now: number): void {
       yaw = followDrivingHeading(
         yaw,
         wanted,
-        info.turnRate,
-        p.speed,
+        drivingTelemetry.turnRate,
+        drivingTelemetry.speed,
         dt,
         now - lastLookTime,
         cockpit,
@@ -775,12 +813,17 @@ function frame(now: number): void {
       p.position[1] + (info?.isCarrier ? 1 : 0.55),
       p.position[2],
     ]
-    if (cockpit && info) {
+    if (overhead) {
+      camera.up.set(0, 0, -1)
+      camera.position.set(p.position[0], p.position[1] + mapHeight, p.position[2])
+      camera.lookAt(...p.position)
+      renderer.domElement.dataset.mapHeight = String(Math.round(mapHeight))
+    } else if (cockpit && info) {
       const eyeOffset = new THREE.Vector3(
         0,
         info.isCarrier ? 0 : -0.1,
         info.isCarrier ? 0 : -0.26,
-      ).applyQuaternion(new THREE.Quaternion(...sim.entityTransform(p.vehicleId!).rotation))
+      ).applyQuaternion(new THREE.Quaternion(...sim.entityTransform(p.vehicleId!, true).rotation))
       camera.position.fromArray(info.driver).add(eyeOffset)
       camera.lookAt(
         camera.position.x - Math.sin(yaw) * Math.cos(pitch),
@@ -790,12 +833,13 @@ function frame(now: number): void {
     } else {
       if (info && !info.isCarrier) {
         const ahead =
-          Math.min(3.5, p.speed * 0.14) * THREE.MathUtils.smoothstep(now - lastLookTime, 900, 1400)
+          Math.min(3.5, drivingTelemetry.speed * 0.14) *
+          THREE.MathUtils.smoothstep(now - lastLookTime, 900, 1400)
         target[0] += vehicleForward.x * ahead
         target[2] += vehicleForward.z * ahead
       }
       const distance =
-        ((info?.cameraDistance ?? 5.5) + drivingFast * 2) *
+        (info?.cameraDistance ?? 5.5) *
         (1 + 2 * THREE.MathUtils.smoothstep(altitude, 50000, 2000000))
       const travelPitch =
         now - lastLookTime > 10000
@@ -875,6 +919,12 @@ function frame(now: number): void {
     camera.updateProjectionMatrix()
   } else {
     scene.background = new THREE.Color('#a6bbd5')
+    const mapView = sim?.player.vehicleId && cameraMode === 'map'
+    camera.far = mapView ? mapHeight * 4 : 300
+    camera.updateProjectionMatrix()
+    scene.fog = mapView
+      ? new THREE.Fog('#a6bbd5', mapHeight * 2, mapHeight * 4)
+      : new THREE.Fog('#a6bbd5', 70, 160)
     $('gps-status').textContent = 'Sin ubicación · configura el punto GPS'
     $('map-status').textContent = ''
   }

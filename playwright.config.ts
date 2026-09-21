@@ -6,6 +6,8 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   use: {
+    // Use the same full Chromium headless renderer locally and on GitHub runners.
+    channel: 'chromium',
     baseURL: 'http://127.0.0.1:5173',
     viewport: { width: 1440, height: 960 },
     trace: 'retain-on-failure',

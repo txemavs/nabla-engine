@@ -113,3 +113,14 @@ Playwright covers editing, saving, reload, invalid imports, original asset loadi
 gamepad mode 2, GPS, map switching, offline behavior, planetary views and clock
 changes. Mocked map responses make provider-specific tests repeatable; live map
 availability is a separate integration concern.
+
+## Render interpolation
+
+Authoritative physics snapshots remain available through the default API. The host
+uses `entityTransform(id, true)`, `wheelTransforms(id, true)`,
+`vehicleInfo(id, true).driver` and `renderPlayerPosition` for display. They interpolate
+the preceding and current fixed ticks with the accumulator fraction, introducing
+at most one physics tick of visual delay. Camera and visible chassis use the same
+pose, keeping the cockpit anchor rigid relative to the model. Portal transfers
+and player exits reset interpolation history so the view never blends across the
+teleport. Filtering camera telemetry does not change forces or simulation time.

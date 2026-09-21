@@ -126,8 +126,20 @@ in ordinary cars; the carrier cockpit is unchanged. This is a host camera offset
 so existing saved A3 scenes receive the improvement without rewriting their data.
 Both cockpit and chase views follow vehicle heading after a short manual-look
 grace period. Chase response increases with speed, anticipates measured yaw rate,
-and adds a bounded forward look, distance and field of view at speed.
+and adds a bounded forward look. Field of view and chase distance stay fixed;
+speed and turn telemetry are filtered to avoid projection/framing vibration.
 
 The on-foot avatar uses Agency's floating CRT monitor. It leans with movement and
 acceleration, levels after braking and hovers gently. It hides while driving;
 portal transfers reset visual motion history rather than producing a large tilt.
+
+Press **C** (gamepad **B**) to cycle **exterior → cockpit → overhead**. The overhead
+view stays north-up, follows the car from 350 m, and keeps the vehicle small on
+the surrounding map. Use the mouse wheel over the viewport to adjust its height
+from 80 to 2,500 m. Driving controls remain the same. Connected map tiles supply
+road imagery, not extra road collisions or terrain elevation.
+
+Rendering interpolates the physics snapshots: chassis, wheels, driver anchor and
+player share the same render time. The cockpit eye height remains 0.10 m below the
+authored driver anchor. The monitor screen faces forward (−Z), restoring Agency's
+original orientation.

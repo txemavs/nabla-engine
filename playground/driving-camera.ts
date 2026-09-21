@@ -24,3 +24,21 @@ export function followDrivingHeading(
       resume
   )
 }
+
+/** Filter suspension noise before it can change camera framing or anticipated yaw. */
+export class DrivingTelemetry {
+  speed = 0
+  turnRate = 0
+  private vehicleId: string | null = null
+  update(id: string | null, speed: number, turnRate: number, elapsed: number, reset = false): void {
+    if (id !== this.vehicleId || reset) {
+      this.vehicleId = id
+      this.speed = speed
+      this.turnRate = 0
+      return
+    }
+    const alpha = 1 - Math.exp(-5 * Math.min(Math.max(elapsed, 0), 0.1))
+    this.speed += (speed - this.speed) * alpha
+    this.turnRate += (turnRate - this.turnRate) * alpha
+  }
+}

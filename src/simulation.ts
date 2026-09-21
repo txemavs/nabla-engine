@@ -86,6 +86,7 @@ export class Simulation {
   private input = idleInput()
   private jumpPending = false
   private accumulator = 0
+  private readonly previousWheels = new Map<string, Transform[]>()
   private vehicleId: string | null = null
   private disposed = false
   private grounded = false
@@ -143,6 +144,8 @@ export class Simulation {
         )
       body.position.set(...transform.position)
       body.quaternion.set(...transform.rotation)
+      body.previousPosition.copy(body.position)
+      body.previousQuaternion.copy(body.quaternion)
       body.linearDamping = 0.05
       body.angularDamping = 0.35
       this.bodies.set(e.id, body)
@@ -168,6 +171,7 @@ export class Simulation {
     this.playerBody.updateMassProperties()
     this.playerBody.position.set(...spawn.transform.position)
     this.playerBody.position.y += PLAYER_HALF_HEIGHT
+    this.playerBody.previousPosition.copy(this.playerBody.position)
     this.world.addBody(this.playerBody)
   }
 
@@ -236,14 +240,44 @@ export class Simulation {
     }
     this.jumpPending ||= input.jump
   }
-  entityTransform(id: string): Transform {
+  private displayedPose(body: Body): Transform {
+    if (!body.mass) return pose(body)
+    const alpha = clamp(this.accumulator / FIXED_STEP, 0, 1)
+    return {
+      position: new Vector3(...vec(body.previousPosition))
+        .lerp(new Vector3(...vec(body.position)), alpha)
+        .toArray(),
+      rotation: new RenderQuaternion(
+        body.previousQuaternion.x,
+        body.previousQuaternion.y,
+        body.previousQuaternion.z,
+        body.previousQuaternion.w,
+      )
+        .slerp(
+          new RenderQuaternion(
+            body.quaternion.x,
+            body.quaternion.y,
+            body.quaternion.z,
+            body.quaternion.w,
+          ),
+          alpha,
+        )
+        .toArray(),
+    }
+  }
+  get renderPlayerPosition(): Vec3Tuple {
+    return this.displayedPose(
+      this.vehicleId ? this.vehicles.get(this.vehicleId)!.body : this.playerBody,
+    ).position
+  }
+  entityTransform(id: string, interpolated = false): Transform {
     const body = this.bodies.get(id)
-    if (body) return pose(body)
+    if (body) return interpolated ? this.displayedPose(body) : pose(body)
     // Visual descendants follow their physical root using the authored local transform chain.
     const entity = this.document.entities.find((e) => e.id === id)
     if (!entity) throw new Error('Unknown entity: ' + id)
     if (!entity.parentId) return this.graph.worldTransform(id)
-    const parent = this.entityTransform(entity.parentId)
+    const parent = this.entityTransform(entity.parentId, interpolated)
     const p = new Vec3(...entity.transform.position)
     const q = new Quaternion(...parent.rotation)
     const worldP = q.vmult(p).vadd(new Vec3(...parent.position))
@@ -252,17 +286,31 @@ export class Simulation {
     const worldQ = q.mult(localQ)
     return { position: vec(worldP), rotation: [worldQ.x, worldQ.y, worldQ.z, worldQ.w] }
   }
-  wheelTransforms(id: string): Transform[] {
+  wheelTransforms(id: string, interpolated = false): Transform[] {
     const v = this.vehicles.get(id)
     if (!v) return []
-    return v.raycast.wheelInfos.map((_, i) => {
+    const current: Transform[] = v.raycast.wheelInfos.map((_, i) => {
+      const inContact = v.raycast.wheelInfos[i].isInContact
       v.raycast.updateWheelTransform(i)
+      // Cannon updates render transforms by clearing this physics flag; a read must preserve it.
+      v.raycast.wheelInfos[i].isInContact = inContact
       const t = v.raycast.wheelInfos[i].worldTransform
       return {
         position: vec(t.position),
         rotation: [t.quaternion.x, t.quaternion.y, t.quaternion.z, t.quaternion.w],
       }
     })
+    const previous = this.previousWheels.get(id)
+    if (!interpolated || !previous) return current
+    const alpha = clamp(this.accumulator / FIXED_STEP, 0, 1)
+    return current.map((p, i) => ({
+      position: new Vector3(...previous[i].position)
+        .lerp(new Vector3(...p.position), alpha)
+        .toArray(),
+      rotation: new RenderQuaternion(...previous[i].rotation)
+        .slerp(new RenderQuaternion(...p.rotation), alpha)
+        .toArray(),
+    }))
   }
 
   step(elapsed: number): void {
@@ -278,6 +326,7 @@ export class Simulation {
             .filter((b) => b.mass > 0)
             .map((body) => ({ body, position: vec(body.position) }))
         : []
+      for (const id of this.vehicles.keys()) this.previousWheels.set(id, this.wheelTransforms(id))
       this.beforeTick()
       this.world.step(FIXED_STEP)
       this.crossPortals(before)
@@ -379,6 +428,7 @@ export class Simulation {
             (c) => c.bi !== body && c.bj !== body,
           )
           if (vehicle) {
+            this.previousWheels.delete(actor)
             vehicle.raycast.wheelInfos.forEach((w) => {
               w.isInContact = false
               w.raycastResult.reset()
@@ -752,6 +802,7 @@ export class Simulation {
       const blocked = this.overlapsBody(bounds)
       if (blocked) continue
       this.playerBody.position.copy(candidate)
+      this.playerBody.previousPosition.copy(candidate)
       this.playerBody.velocity.setZero()
       this.playerBody.angularVelocity.setZero()
       this.playerBody.aabbNeedsUpdate = true
@@ -781,7 +832,10 @@ export class Simulation {
     )
   }
 
-  vehicleInfo(id: string): {
+  vehicleInfo(
+    id: string,
+    interpolated = false,
+  ): {
     steer: number
     driver: Vec3Tuple
     cameraDistance: number
@@ -797,7 +851,10 @@ export class Simulation {
     if (!v) throw new Error('Unknown vehicle: ' + id)
     return {
       steer: v.steer,
-      driver: vec(v.body.pointToWorldFrame(new Vec3(...v.definition.driver))),
+      driver: new Vector3(...v.definition.driver)
+        .applyQuaternion(new RenderQuaternion(...this.entityTransform(id, interpolated).rotation))
+        .add(new Vector3(...this.entityTransform(id, interpolated).position))
+        .toArray(),
       cameraDistance: v.definition.cameraDistance,
       turnRate: v.body.angularVelocity.y,
       isCarrier: Boolean(v.definition.garage),
@@ -936,6 +993,7 @@ export class Simulation {
     if (this.disposed) return
     for (const dock of this.docks.values()) this.world.removeConstraint(dock.constraint)
     this.docks.clear()
+    this.previousWheels.clear()
     for (const v of this.vehicles.values()) v.raycast.removeFromWorld(this.world)
     for (const b of [...this.world.bodies]) this.world.removeBody(b)
     this.vehicles.clear()

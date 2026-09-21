@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Group, Vector3 } from 'three'
-import { followDrivingHeading } from '../playground/driving-camera.js'
+import { followDrivingHeading, DrivingTelemetry } from '../playground/driving-camera.js'
 import { MonitorMotion } from '../playground/avatar.js'
 
 describe('driving and monitor presentation', () => {
@@ -36,4 +36,18 @@ describe('driving and monitor presentation', () => {
     motion.update(model, position, 0, 1 / 60)
     expect(Math.abs(model.rotation.z)).toBeLessThan(0.01)
   })
+})
+
+it('filters alternating physics noise instead of pumping the camera framing', () => {
+  const filter = new DrivingTelemetry()
+  filter.update('car', 20, 0, 1 / 120)
+  const speeds: number[] = [],
+    turns: number[] = []
+  for (let i = 0; i < 120; i++) {
+    filter.update('car', 20 + (i % 2 ? 1 : -1), i % 2 ? 0.5 : -0.5, 1 / 120)
+    speeds.push(filter.speed)
+    turns.push(filter.turnRate)
+  }
+  expect(Math.max(...speeds) - Math.min(...speeds)).toBeLessThan(0.1)
+  expect(Math.max(...turns) - Math.min(...turns)).toBeLessThan(0.05)
 })

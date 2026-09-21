@@ -235,9 +235,9 @@ export class SceneView {
   }
   sync(sim: Simulation, elapsed = 1 / 60): void {
     for (const e of this.document.entities)
-      applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id))
+      applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
     for (const [id, wheels] of this.wheels) {
-      const poses = sim.wheelTransforms(id)
+      const poses = sim.wheelTransforms(id, true)
       poses.forEach((p, i) => {
         // Wheel snapshots are in world space; render beneath an identity root.
         this.root.add(wheels[i])
@@ -251,7 +251,7 @@ export class SceneView {
     for (const [id, wheel] of this.steering)
       wheel.rotation.z =
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
-    this.avatar.position.fromArray(sim.player.position)
+    this.avatar.position.fromArray(sim.renderPlayerPosition)
     this.avatar.rotation.y = sim.player.yaw
     this.monitorMotion.update(this.monitor, this.avatar.position, sim.player.yaw, elapsed)
     this.avatar.visible = sim.player.vehicleId === null

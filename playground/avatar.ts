@@ -3,9 +3,9 @@ import * as THREE from 'three'
 /** Agency UI crtMesh.ts (89b0907): original five-part CRT, in metres and -Z forward. */
 export function createMonitorAvatar(): THREE.Group {
   const root = new THREE.Group()
-  // Present the display to the chase camera; banking remains in the movement frame.
+  // Agency orientation: the screen faces -Z, the direction of travel.
   const shell = new THREE.Group()
-  shell.rotation.y = Math.PI
+  shell.rotation.y = 0
   root.add(shell)
   const parts = [
     { p: [0, 0, 0.02], s: [0.34, 0.34, 0.28], c: [0.16, 0.14, 0.1], name: 'Housing' },

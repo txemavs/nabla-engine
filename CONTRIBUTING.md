@@ -44,3 +44,7 @@ unchanged; adapt presentation through layout/CSS. Record provenance for new asse
 The next planned capability is portals. Specify their transform and interaction
 contracts before adding cross-boundary behavior; retain the current regression
 journeys for walking, transport, flight and geographic continuity.
+
+Browser checks use Playwright's `chromium` channel (full Chromium in headless
+mode), including on CI. Avoid silently switching to Headless Shell: the WebGL
+rendering path must match the locally validated browser.

@@ -40,7 +40,7 @@ The source artwork remains separate from generated collision boxes.
 `playground/avatar.ts` adapts the five procedural CRT parts from Agency UI's
 `src/stage/gl/crtMesh.ts`, revision `89b090785f77efdd825c8fab69055a2f9106888c`.
 Housing, bezel, screen and two knobs retain their original proportions and RGB
-colors. An explicit half-turn presents the screen to the chase camera.
+colors. The screen faces forward (−Z), matching Agency's original orientation.
 The reference host enlarges the monitor by 1.65 for readability and adds
 hover, travel banking and braking recovery. These are visual effects; the shared
 player collider and movement rules are unchanged.

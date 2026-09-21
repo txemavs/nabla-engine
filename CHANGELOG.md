@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Stabilize driving presentation with shared physics/render interpolation and
+  filtered camera telemetry; remove instantaneous speed-based FOV/distance changes.
+- Add a north-up overhead driving camera, with mouse-wheel height adjustment.
+- Restore the monitor avatar's forward-facing orientation; retain cockpit height.
+
 - Move the car cockpit eye forward/down and enable responsive automatic heading
   follow in both camera modes, with bounded speed/turn anticipation.
 - Replace the placeholder character with Agency's CRT monitor avatar, animated
