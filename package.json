@@ -1,7 +1,7 @@
 {
   "name": "@nabla/engine",
-  "version": "0.1.0",
-  "description": "Reusable 3D mini-engine for Nabla apps (extracted from Agency stage)",
+  "version": "0.2.0",
+  "description": "Independent scene, simulation and editing foundation for Nabla applications",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -13,20 +13,31 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "assets",
+    "docs",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -p tsconfig.build.json",
+    "build:demo": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "test:e2e": "playwright test",
+    "check": "npm run format:check && npm run typecheck && npm test && npm run build && npm run build:demo",
+    "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "3d",
     "engine",
     "webgl",
-    "glb",
+    "scene",
+    "editor",
     "vehicle",
     "physics"
   ],
@@ -36,11 +47,21 @@
     "type": "git",
     "url": "git+https://github.com/txemavs/nabla-engine.git"
   },
-  "devDependencies": {
-    "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
-  },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "three": "^0.186.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2",
+    "@types/three": "^0.186.0",
+    "prettier": "^3.9.8",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
   }
 }

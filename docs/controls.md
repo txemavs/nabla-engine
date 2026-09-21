@@ -1,0 +1,106 @@
+# Controls and walkthrough
+
+## Editing
+
+Select an object in the viewport or scene tree. Use the transform gizmo or the
+inspector to change position and rotation. Blocks also expose dimensions, color
+and motion. Original GLB vehicles preserve their authored dimensions and materials.
+
+| Action                | Control / UI label                               |
+| --------------------- | ------------------------------------------------ |
+| Orbit / zoom          | Drag the viewport / mouse wheel                  |
+| Move / rotate tool    | G / R                                            |
+| Frame selection       | F / Enfocar                                      |
+| Create objects        | + Bloque, + Coche, + Grupo                       |
+| Duplicate / delete    | Duplicar / Eliminar                              |
+| Undo / redo           | Toolbar buttons; Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z |
+| Save locally          | Guardar / Ctrl/Cmd+S                             |
+| Export / import scene | Exportar / Abrir JSON                            |
+| Load current example  | Escena A3                                        |
+| Play / stop           | Jugar / Detener / Tab                            |
+
+Reparenting preserves the world transform. Groups can be expanded in the scene
+tree. Saving stores the authored document, not the runtime physics state.
+
+## Walking and driving
+
+| Action                                            | Keyboard                                |
+| ------------------------------------------------- | --------------------------------------- |
+| Walk / drive                                      | WASD or arrows                          |
+| Look around                                       | Click the viewport, then move the mouse |
+| Release pointer                                   | Esc                                     |
+| Run                                               | Shift                                   |
+| Jump on foot / handbrake in vehicle               | Space                                   |
+| Enter / exit                                      | E                                       |
+| Chase / driver camera                             | C                                       |
+| Latch / release cargo                             | F                                       |
+| Transfer controls between latched car and carrier | T                                       |
+| Restart play                                      | R                                       |
+
+Entering requires proximity and a nearly stopped vehicle. Exiting requires low
+speed, supporting ground and a free volume beside the vehicle. Blocked exits
+leave the player inside and display a status message.
+
+## A3 and mobile garage
+
+1. Load **Escena A3**, press **Jugar**, then **E** beside the A3.
+2. Drive toward the carrier's rear ramp. Enter slowly and brake inside the garage.
+3. When prompted, press **F**. The car latches to the floor and the ramp closes.
+4. Press **T** to control the carrier. The attached car travels with it.
+5. Stop, press **T** to return to the A3, then **F** to release it.
+6. Reverse out with **S**. Use **C** to inspect the original interior.
+
+The car must fit completely inside the bay with all four suspension rays supported
+by that carrier. Control transfer is a prototype convenience, without a walking
+animation. The ramp changes pose immediately rather than animating gradually.
+
+## Flight: mode 2
+
+At the carrier controls, **V** switches between ground and flight modes. The ramp
+closes for flight. Centre the controls to level out, slow horizontal motion and
+hold the selected altitude. Land and stabilize before switching back to ground
+mode or releasing cargo.
+
+| Flight action                        | Keyboard            | Standard gamepad            |
+| ------------------------------------ | ------------------- | --------------------------- |
+| Climb / descend                      | W / S               | Left stick vertical         |
+| Yaw left / right                     | A / D               | Left stick horizontal       |
+| Pitch forward / back                 | Up / down arrows    | Right stick vertical        |
+| Roll left / right                    | Left / right arrows | Right stick horizontal      |
+| Accelerated geographic climb/descent | Hold Shift with W/S | Hold L3 with altitude stick |
+| Ground / flight                      | V                   | Y                           |
+| Enter / exit                         | E                   | A                           |
+| Camera                               | C                   | B                           |
+| Latch / release                      | F                   | X                           |
+| Transfer vehicle controls            | T                   | LB                          |
+| Brake                                | Space               | RB                          |
+
+On the ground, the gamepad's left stick steers; RT drives forward and LT reverses.
+Press a gamepad button to make it discoverable to the browser. Losing focus or
+connecting/disconnecting a controller leaves flight input neutral. Nonstandard
+USB radios require an axis adapter; a calibration UI is not available yet.
+
+## Location and maps
+
+The example starts at Madrid, 40.4166°, −3.70384°. On first opening, the browser
+requests location access. Denial or timeout preserves the current point.
+
+In **Ubicación en la Tierra**, edit latitude/longitude or select **Mi ubicación**.
+Choose **Satélite**, **Calles** or **Sin conexión**, then **Aplicar GPS**. Use
+**Guardar** to persist it. Location changes require editing mode and can be undone.
+Connected maps disclose the requested geographic area to Esri or CARTO.
+
+Zoom out in the editor or ascend in the carrier to move from the local scene to a
+map and planetary view. The altitude display is relative to the reference sphere,
+not to terrain relief in the photographs. Accelerated flight is a travel aid.
+
+## Sun, Moon and time
+
+In **Sol y Luna**, select a local date/time and press **Aplicar hora**, or select
+**Tiempo real**. The indicated timezone is the browser's timezone, not one inferred
+from GPS. Fixed instants are stored as UTC in the scene. A missing clock means live time.
+
+The clock controls the apparent Sun and Moon, shadows, ambient light, sky color,
+map brightness and stars. It can be changed during play without restarting physics.
+Celestial positions are approximate; the Moon and Sun are visual bodies, not
+physical destinations.

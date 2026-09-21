@@ -1,4 +1,8 @@
 node_modules/
 dist/
+demo-dist/
+playwright-report/
+test-results/
 *.log
 .DS_Store
+*.tgz

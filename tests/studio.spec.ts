@@ -1,0 +1,65 @@
+import { test, expect } from '@playwright/test'
+
+test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Distrito cero.' })).toBeVisible()
+  await expect(page.locator('canvas')).toBeVisible()
+  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
+  await expect(page.locator('#name')).toHaveValue('Audi A3 Cabrio')
+  await page.locator('#name').fill('Mi coche')
+  await page.locator('#name').press('Tab')
+  await expect(page.locator('.entity-title')).toHaveText('Mi coche')
+  await page.getByLabel('Posición local · m X', { exact: true }).fill('5')
+  await page.getByLabel('Posición local · m X', { exact: true }).press('Tab')
+  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('5')
+  await page.locator('#undo').click()
+  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('4')
+  await page.locator('#redo').click()
+  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('5')
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+  const saved = await page.evaluate(() => localStorage.getItem('nabla.scene.v1'))
+  expect(JSON.parse(saved!).entities.find((e: { id: string }) => e.id === 'car-a').name).toBe(
+    'Mi coche',
+  )
+  await page.reload()
+  await expect(page.locator('#name')).toHaveValue('Mi coche')
+  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('5')
+  await page.screenshot({ path: 'test-results/studio.png' })
+  await page.locator('#play').click()
+  await expect(page.locator('#mode-label')).toHaveText('Jugando')
+  await expect(page.locator('#name')).toBeDisabled()
+  await expect(page.locator('#game-hud')).toBeVisible()
+  await page.keyboard.down('KeyD')
+  await page.waitForTimeout(450)
+  await page.keyboard.up('KeyD')
+  await page.keyboard.press('KeyE')
+  await expect(page.locator('#player-mode')).toHaveText('MI COCHE')
+  await page.keyboard.down('KeyW')
+  await page.waitForTimeout(1700)
+  await page.keyboard.up('KeyW')
+  await expect(page.locator('#speed')).not.toHaveText('0 km/h')
+  await page.screenshot({ path: 'test-results/driving.png' })
+  await page.locator('#play').click()
+  await expect(page.locator('#mode-label')).toHaveText('Edición')
+  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('5')
+  expect(await page.evaluate(() => localStorage.getItem('nabla.scene.v1'))).toBe(saved)
+  expect(errors).toEqual([])
+})
+
+test('imports validated data and preserves the scene after invalid input', async ({ page }) => {
+  await page.goto('/')
+  const before = await page.locator('#entity-count').textContent()
+  await page.locator('#file').setInputFiles({
+    name: 'broken.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{"version":99}'),
+  })
+  await expect(page.locator('#toast')).toContainText('Archivo no válido')
+  await expect(page.locator('#entity-count')).toHaveText(before!)
+  await page.locator('#duplicate').click()
+  await expect(page.locator('#name')).toHaveValue('Audi A3 Cabrio · copia')
+  await page.locator('#delete').click()
+  await expect(page.locator('#entity-count')).toHaveText(before!)
+})

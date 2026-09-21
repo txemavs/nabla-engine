@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nabla · Distrito cero</title>
+    <link rel="icon" type="image/svg+xml" href="/brand/source.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <a class="brand" href="./"
+          ><img class="brand-mark" src="/brand/source.svg" width="42" height="42" alt="Nabla" />
+          nabla <span class="edition">STUDIO</span></a
+        >
+        <div class="project">
+          <span class="dot"></span><span id="scene-name">Distrito cero</span
+          ><span class="badge">LOCAL</span>
+        </div>
+        <div class="file-actions">
+          <button id="sample-assets">Escena A3</button>
+          <button id="save">Guardar</button><button id="export">Exportar</button
+          ><button id="import">Abrir JSON</button
+          ><input id="file" type="file" accept=".json,application/json" hidden />
+        </div>
+      </header>
+      <nav class="toolbar">
+        <div class="mode"><span class="mode-light"></span><b id="mode-label">Edición</b></div>
+        <div class="tools">
+          <button id="translate" class="active" title="Mover (G)">
+            ↔ <span>Mover</span><kbd>G</kbd></button
+          ><button id="rotate" title="Rotar (R)">⟳ <span>Rotar</span><kbd>R</kbd></button
+          ><button id="focus" title="Encuadrar selección (F)">Enfocar <kbd>F</kbd></button>
+          <span class="divider"></span><button id="undo" title="Deshacer (Ctrl Z)">↶</button
+          ><button id="redo" title="Rehacer (Ctrl Shift Z)">↷</button>
+        </div>
+        <button id="play" class="primary">▶ Jugar <kbd>Tab</kbd></button>
+      </nav>
+      <aside class="outliner">
+        <div class="panel-heading"><span>ESCENA</span><span id="entity-count"></span></div>
+        <div class="add-row">
+          <button id="add-box">+ Bloque</button><button id="add-car">+ Coche</button
+          ><button id="add-group" title="Añadir grupo">+ Grupo</button>
+        </div>
+        <div id="tree" role="tree" aria-label="Objetos de la escena"></div>
+        <div class="outliner-footer"><span class="dot"></span> Todo empieza en una escena.</div>
+      </aside>
+      <main id="viewport">
+        <div class="view-caption">
+          <span class="caption-tag">PERSPECTIVA</span
+          ><span id="view-subtitle">Distrito cero / zona de pruebas</span>
+        </div>
+        <div id="welcome">
+          <span class="eyebrow">TU MUNDO, DESDE LA BASE</span>
+          <h1>Distrito cero<span>.</span></h1>
+          <p>Construye la escena. Entra a jugar.</p>
+          <button id="welcome-close" aria-label="Cerrar bienvenida">×</button>
+        </div>
+        <div id="game-hud" hidden>
+          <span class="eyebrow" id="player-mode">A PIE</span
+          ><strong id="speed">Explora el distrito</strong
+          ><span id="interaction">WASD para caminar</span><span id="flight-status"></span>
+        </div>
+        <div id="geo-overlay">
+          <span id="gps-status"></span><span id="map-status"></span
+          ><span class="map-credits"
+            ><a
+              href="https://www.esri.com/en-us/legal/terms/data-attributions"
+              target="_blank"
+              rel="noreferrer"
+              >Esri · fuentes</a
+            >
+            /
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer"
+              >© OpenStreetMap</a
+            >
+            ·
+            <a href="https://carto.com/attributions" target="_blank" rel="noreferrer"
+              >CARTO</a
+            ></span
+          >
+        </div>
+        <div id="view-hint">Arrastra para orbitar · Rueda para acercar · Clic para seleccionar</div>
+        <div id="toast" role="status" aria-live="polite"></div>
+      </main>
+      <aside class="inspector">
+        <div class="panel-heading">PROPIEDADES <span>◈</span></div>
+        <div id="properties"></div>
+        <section class="help sky-controls">
+          <span class="eyebrow">SOL Y LUNA</span>
+          <label class="field-label" id="sky-zone" for="sky-time">Fecha y hora local</label>
+          <input id="sky-time" type="datetime-local" />
+          <div>
+            <button id="sky-apply">Aplicar hora</button><button id="sky-live">Tiempo real</button>
+          </div>
+          <p id="sky-status" role="status"></p>
+        </section>
+        <section class="help geography-controls">
+          <span class="eyebrow">UBICACIÓN EN LA TIERRA</span>
+          <label class="field-label" for="latitude">Latitud</label
+          ><input id="latitude" type="number" min="-90" max="90" step="0.00001" />
+          <label class="field-label" for="longitude">Longitud</label
+          ><input id="longitude" type="number" min="-180" max="180" step="0.00001" />
+          <label class="field-label" for="imagery">Mapa</label
+          ><select id="imagery">
+            <option value="satellite">Satélite · Esri</option>
+            <option value="streets">Calles · CARTO / OSM</option>
+            <option value="offline">Sin conexión</option>
+          </select>
+          <div>
+            <button id="apply-location">Aplicar GPS</button
+            ><button id="locate">Mi ubicación</button>
+          </div>
+          <p>
+            Shift / L3 al ascender o descender: viaje acelerado. Suelta para mantener altura. Suelo
+            y Tierra disponibles sin conexión.
+          </p>
+        </section>
+        <section class="help">
+          <div><kbd>C</kbd> Cámara exterior / asiento</div>
+          <div><kbd>F</kbd> Sujetar / soltar el coche</div>
+          <div><kbd>T</kbd> Mando del container / coche</div>
+          <div><kbd>V / Y</kbd> Nave: tierra / vuelo</div>
+          <span class="eyebrow">VUELO · MANDO MODO 2</span>
+          <p>
+            Stick izquierdo: altura y giro. Stick derecho: inclinación. Al soltar, mantiene altura.
+          </p>
+          <div><kbd>W S / A D</kbd> Altura / giro</div>
+          <div><kbd>↑ ↓ ← →</kbd> Inclinar la nave</div>
+          <p>
+            Mando: A entrar · B cámara · X anclar · Y vuelo · LB cambiar vehículo · RB frenar. En
+            tierra: RT avanzar / LT retroceder.
+          </p>
+          <span class="eyebrow">UN MISMO MUNDO</span>
+          <p>Los objetos que editas son los que encontrarás al jugar.</p>
+          <div><kbd>W A S D</kbd> Moverse</div>
+          <div><kbd>E</kbd> Entrar / salir del coche</div>
+          <div><kbd>Espacio</kbd> Saltar / freno de mano</div>
+          <div><kbd>Shift</kbd> Correr</div>
+          <div><kbd>R</kbd> Reiniciar la partida</div>
+          <div><kbd>Tab</kbd> Jugar / detener</div>
+        </section>
+      </aside>
+      <footer>
+        <span><span class="dot"></span> <span id="status">Listo</span></span
+        ><span id="footer-mode">Edición · metros · Y arriba</span
+        ><span>NABLA ENGINE <b>0.2</b></span>
+      </footer>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
