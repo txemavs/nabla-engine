@@ -854,3 +854,72 @@ body.playing #footer-mode {
 #travel-menu h3 {
   margin: 4px 0 16px;
 }
+
+.css-world-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+#viewport > canvas {
+  position: relative;
+  z-index: 1;
+}
+.carrier-css-screen {
+  width: 960px;
+  height: 520px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  background: #10283b;
+  color: #e2f0ff;
+  font-family: system-ui, sans-serif;
+}
+.carrier-css-screen header {
+  height: 68px;
+  padding: 12px 24px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  background: #183e59;
+  font-size: 24px;
+}
+.carrier-css-screen small {
+  font-size: 16px;
+  color: #91bfda;
+}
+.css-drawing {
+  position: relative;
+  height: 410px;
+  overflow: hidden;
+  background-image:
+    linear-gradient(#28506b 1px, transparent 1px),
+    linear-gradient(90deg, #28506b 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.css-demo-card {
+  position: absolute;
+  left: 90px;
+  top: 90px;
+  width: 230px;
+  padding: 32px;
+  border: 2px solid #64b8fc;
+  border-radius: 18px;
+  background: #204766;
+  font-size: 46px;
+  transform: rotate(-8deg);
+}
+.carrier-css-screen footer {
+  height: 42px;
+  padding: 10px 24px;
+  box-sizing: border-box;
+  font-size: 17px;
+}
+.css-ink {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #8fd8ff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px #60adf5;
+}

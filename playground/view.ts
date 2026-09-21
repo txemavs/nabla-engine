@@ -1,3 +1,4 @@
+import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { terrainVertices, terrainIndices } from '../src/terrain.js'
@@ -33,6 +34,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  readonly cabinScreens = new Map<string, THREE.Mesh>()
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
@@ -248,6 +250,11 @@ export class SceneView {
       }
       if (e.kind === 'box') group.add(box(e.size, e.color))
       if (e.kind === 'vehicle') {
+        if (e.vehicle?.interior && e.visual?.body.url.includes('ship.container')) {
+          const interior = carrierInterior()
+          group.add(interior.room)
+          this.cabinScreens.set(e.id, interior.screen)
+        }
         if (e.visual) this.assetVehicle(e, group)
         else this.car(e, group)
       }

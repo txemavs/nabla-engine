@@ -1,3 +1,4 @@
+import { CssScreens } from './css-screen.js'
 import { readPerformance } from './performance.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
@@ -121,7 +122,11 @@ function action(fn: () => void): void {
   }
 }
 const viewport = $('viewport')
-const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true })
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  logarithmicDepthBuffer: true,
+  alpha: true,
+})
 renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
 renderer.shadowMap.enabled = performanceSettings.shadows > 0
 renderer.shadowMap.type = THREE.PCFShadowMap
@@ -179,6 +184,8 @@ const outline = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color('#f2ce8a'
 scene.add(outline)
 let view = new SceneView(editor.document)
 scene.add(view.root)
+const cssScreens = new CssScreens(viewport)
+cssScreens.bind(view.cabinScreens)
 let geography = new GeographicView(
   editor.document,
   () => {
@@ -259,6 +266,7 @@ function rebuild(): void {
   }
   view.dispose()
   view = new SceneView(editor.document)
+  cssScreens.bind(view.cabinScreens)
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
   watchAssets(view)
@@ -1477,7 +1485,9 @@ function frame(now: number): void {
       renderer.autoClear = false
       renderer.clearDepth()
     }
+    cssScreens.prepare(camera, viewport.clientWidth, viewport.clientHeight)
     renderer.render(scene, camera)
+    cssScreens.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
     needsRender = false
   }
@@ -1554,3 +1564,54 @@ if (
   (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
 )
   void loadIrun()
+
+renderer.domElement.addEventListener(
+  'pointerdown',
+  (event) => {
+    if (sim || event.button !== 0) return
+    const rect = renderer.domElement.getBoundingClientRect()
+    const ray = new THREE.Raycaster()
+    const localCamera = camera.clone()
+    localCamera.position.sub(renderOrigin)
+    localCamera.updateMatrixWorld()
+    ray.setFromCamera(
+      new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        1 - ((event.clientY - rect.top) / rect.height) * 2,
+      ),
+      localCamera,
+    )
+    if (cssScreens.draw(ray, [...view.objects.values()], event.shiftKey)) {
+      event.stopImmediatePropagation()
+      event.preventDefault()
+      needsRender = true
+    }
+  },
+  true,
+)
+$('css-screen-demo').onclick = () => {
+  $('options-menu').hidePopover()
+  if (sim) {
+    toast('Detén la partida para encuadrar la pantalla CSS.')
+    return
+  }
+  const screen = view.cabinScreens.values().next().value
+  if (!screen) {
+    toast('Esta escena no tiene un container.')
+    return
+  }
+  screen.updateWorldMatrix(true, false)
+  const centre = screen.getWorldPosition(new THREE.Vector3()).add(renderOrigin)
+  const normal = new THREE.Vector3(0, 0, 1).transformDirection(screen.matrixWorld)
+  orbit.minDistance = 0.4
+  orbit.target.copy(centre)
+  camera.position
+    .copy(centre)
+    .addScaledVector(normal, 3)
+    .add(new THREE.Vector3(0, 0.15, 0.3))
+  orbit.update()
+  needsRender = true
+  toast(
+    'Pantalla CSS: clic para dibujar; Mayús + clic para borrar. Arrastra fuera para cambiar la perspectiva.',
+  )
+}

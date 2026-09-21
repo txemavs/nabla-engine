@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add visible carrier interior lining and an experimental camera-matched HTML/CSS wall display with temporary point drawing and WebGL occlusion.
+
 - Add a persistent map-building visibility option, disabling hidden building collisions while retaining terrain, roads and scene data.
 
 - Remove permanent solid edge overlays and retain topology lines in the solid editor.
