@@ -43,6 +43,7 @@ test('loads cached neighboring terrain during driving and preserves it when savi
   await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
   await expect(page.locator('canvas')).toHaveAttribute('data-world-zones', '3', { timeout: 20000 })
   await page.locator('#play').click()
+  await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   await expect(page.locator('#status')).toHaveText('Guardado local')
   await page.reload()

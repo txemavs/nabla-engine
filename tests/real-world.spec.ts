@@ -25,6 +25,7 @@ test('starts in Ventas, edits and saves an OSM building and drives the A3', asyn
     el.value = '#7199bc'
     el.dispatchEvent(new Event('change', { bubbles: true }))
   })
+  await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   await expect(page.locator('#status')).toHaveText('Guardado local')
   await page.reload()

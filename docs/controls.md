@@ -239,12 +239,15 @@ is disabled for this geographically anchored extract. The viewport labels its
 
 ## Performance and inspector sections
 
-Open **Rendimiento** in the right inspector to choose drawing distance (1, 2, 4 or
+Open **Opciones → Rendimiento** in the header to choose drawing distance (1, 2, 4 or
 6 km), map collision radius (200, 400, 800 or 2000 m), pixel ratio cap (0.75, 1,
 1.25 or 2) and shadow map resolution (off, 512, 1024 or 2048). Defaults are 4 km,
-400 m, 1.25 and 1024. Preferences and each inspector section's open/closed state
-are stored locally in the browser, separately from the scene document. Sun/Moon,
-Earth location and controls start collapsed; selected entity properties remain visible.
+400 m, 1.25 and 1024. Preferences and each settings section's open/closed state
+are stored locally in the browser, separately from the scene document. **Archivo** contains opening JSON, saving locally, exporting JSON and loading starter scenes.
+**Opciones** contains performance, Sun/Moon and Earth location. **Ayuda** contains controls.
+The right inspector contains only selected entity properties. Menus close on Escape or
+outside click; Tab navigates their controls without starting play. Opening a menu clears
+movement input; gamepad and keyboard flight commands stay neutral while it is open.
 
 Drawing distance limits loaded map objects and real-world fog; it does not download
 buildings out to that radius. Coarse terrain fills the surroundings. Mesh frustum
@@ -260,7 +263,7 @@ colliders stay active, including surroundings of parked vehicles. Portal exit ch
 obstacles and reactivate nearby collisions immediately after traversal. This does not
 reduce scene storage or terrain physics; it is not a benchmarked frame-rate guarantee.
 
-Normal horizontal carrier flight targets 90 m/s (324 km/h), with up to 18 m/s² of
+Normal horizontal carrier flight targets 277.78 m/s (1000 km/h), with up to 60 m/s² of
 acceleration. Releasing the right stick or applying the brake targets zero horizontal
-speed, with up to 30 m/s² braking. Diagonal input has the same speed limit. Vertical
+speed, with up to 90 m/s² braking. Diagonal input has the same speed limit. Vertical
 speed remains 3 m/s with altitude hold, and Shift retains accelerated geographic ascent.

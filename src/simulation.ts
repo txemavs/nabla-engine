@@ -1196,10 +1196,12 @@ export class Simulation {
     const accelerationVector = radial.scale(9.81 + acceleration)
     const direction = new Vec3(right, 0, -forward)
     if (direction.length() > 1) direction.normalize()
-    const target = heading.vmult(direction).scale(90) // 324 km/h, including diagonal input.
+    const target = heading.vmult(direction).scale(1000 / 3.6) // 1000 km/h, including diagonal input.
     const horizontal = body.velocity.vsub(radial.scale(verticalSpeed))
     const drive = target.vsub(horizontal).scale(1.8)
-    const maximum = forward || right ? 18 : 30
+    // Compensate body drag so cruise speed reaches the commanded speed.
+    if (forward || right) drive.vadd(horizontal.scale(-Math.log(1 - body.linearDamping)), drive)
+    const maximum = forward || right ? 60 : 90
     if (drive.length() > maximum) drive.scale(maximum / drive.length(), drive)
     const assistedBodies = [body]
     for (const [id, dock] of this.docks)

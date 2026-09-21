@@ -22,6 +22,7 @@ test('edits a building clone, extrudes and deletes faces, undoes and persists to
   await expect(page.locator('.solid-tools')).toContainText('9 caras')
   await page.locator('#undo').click()
   await expect(page.locator('.solid-tools')).toContainText('10 caras')
+  await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   const entities = await page.evaluate(
     () => JSON.parse(localStorage.getItem('nabla.scene.v1')!).entities,

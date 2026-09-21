@@ -10,9 +10,11 @@ test('requests location, saves the GPS pin and preserves it on reload', async ({
   await page.goto('/?scene=circuit')
   await expect(page.locator('#latitude')).toHaveValue('41.38')
   await expect(page.locator('#longitude')).toHaveValue('2.17')
+  await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   await page.reload()
   await expect(page.locator('#latitude')).toHaveValue('41.38')
+  await page.locator('#options-menu-button').click()
   await page.locator('#geography-section > summary').click()
   await page.locator('#latitude').fill('95')
   await page.locator('#apply-location').click()
@@ -53,6 +55,18 @@ test('flies from the Agency ground to space with local assets and returns to the
   await page.keyboard.up('ShiftLeft')
   await expect(page.locator('#speed')).toHaveText('0 km/h', { timeout: 20000 })
   await page.screenshot({ path: 'test-results/geography-space.png' })
+  // A zero reading during vertical deceleration can precede a small rebound.
+  let stoppedSince = 0
+  await expect
+    .poll(
+      async () => {
+        if ((await page.locator('#speed').textContent()) !== '0 km/h') stoppedSince = 0
+        else if (!stoppedSince) stoppedSince = Date.now()
+        return stoppedSince > 0 && Date.now() - stoppedSince > 1500
+      },
+      { timeout: 20000 },
+    )
+    .toBe(true)
   await page.keyboard.press('KeyE')
   await expect(page.locator('canvas')).toHaveAttribute('data-interior', 'carrier')
   await expect(page.locator('#player-mode')).toContainText('INTERIOR')
@@ -100,6 +114,7 @@ test('loads bounded map tiles, switches provider and stops external requests in 
   })
   expect(requested).toBeGreaterThan(0)
   expect(requested).toBeLessThanOrEqual(100)
+  await page.locator('#options-menu-button').click()
   await page.locator('#geography-section > summary').click()
   await page.locator('#imagery').selectOption('streets')
   await page.locator('#apply-location').click()

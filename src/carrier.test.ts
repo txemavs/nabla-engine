@@ -203,9 +203,9 @@ it('keeps the A3 attached during accelerated geographic ascent and braking', () 
   sim.dispose()
 })
 
-it('reaches 300 km/h in drone flight, holds altitude and brakes on release', () => {
+it('reaches 1000 km/h in drone flight, holds altitude and brakes on release', () => {
   const doc = document()
-  doc.entities[0]!.size = [4000, 1, 4000]
+  doc.entities[0]!.size = [10000, 1, 10000]
   doc.entities.find((e) => e.id === 'spawn')!.transform.position = [0, 0.1, -15]
   const sim = new Simulation(doc)
   step(sim, 120)
@@ -218,8 +218,8 @@ it('reaches 300 km/h in drone flight, holds altitude and brakes on release', () 
   const height = sim.entityTransform('carrier').position[1]
   sim.setInput({ ...idleInput(), forward: 1 })
   step(sim, 600)
-  expect(sim.player.speed).toBeGreaterThan(300 / 3.6)
-  expect(sim.player.speed).toBeLessThan(91)
+  expect(sim.player.speed).toBeGreaterThan(995 / 3.6)
+  expect(sim.player.speed).toBeLessThan(1001 / 3.6)
   expect(Math.abs(sim.entityTransform('carrier').position[1] - height)).toBeLessThan(0.3)
   sim.setInput(idleInput())
   step(sim, 420)

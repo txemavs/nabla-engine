@@ -799,7 +799,7 @@ for (const [id, key] of [
     needsRender = true
   }
 }
-for (const section of document.querySelectorAll<HTMLDetailsElement>('.inspector details')) {
+for (const section of document.querySelectorAll<HTMLDetailsElement>('.app-menu details')) {
   try {
     section.open = localStorage.getItem(`nabla.panel.${section.id}`) === 'open'
   } catch {
@@ -813,6 +813,16 @@ for (const section of document.querySelectorAll<HTMLDetailsElement>('.inspector 
     }
   })
 }
+for (const menu of document.querySelectorAll<HTMLElement>('.app-menu')) {
+  menu.addEventListener('beforetoggle', () => {
+    keys.clear()
+    sim?.setInput(idleInput())
+    if (document.pointerLockElement) document.exitPointerLock()
+  })
+}
+$('file-menu').addEventListener('click', (event) => {
+  if ((event.target as HTMLElement).closest('button')) $('file-menu').hidePopover()
+})
 $('play').onclick = togglePlay
 const portalControls = new PortalControls(viewport, toast)
 portalControls.rebuild(editor.document)
@@ -897,6 +907,7 @@ document.addEventListener('mousemove', (e) => {
   }
 })
 window.addEventListener('keydown', (e) => {
+  if (document.querySelector('.app-menu:popover-open')) return
   if ((e.target as HTMLElement)?.matches('input,select,textarea,[contenteditable]')) return
   if (e.code === 'Tab') {
     e.preventDefault()
@@ -984,7 +995,7 @@ document.addEventListener('pointerlockchange', () => {
 let previousButtons: boolean[] = []
 let previousPadIndex: number | null = null
 function pollGamepad(): Gamepad | null {
-  if (!document.hasFocus() || document.hidden) {
+  if (!document.hasFocus() || document.hidden || document.querySelector('.app-menu:popover-open')) {
     previousButtons = []
     return null
   }
@@ -1010,7 +1021,8 @@ function pollGamepad(): Gamepad | null {
   return pad
 }
 function currentInput(pad: Gamepad | null = null) {
-  if (!document.hasFocus() || document.hidden) return idleInput()
+  if (!document.hasFocus() || document.hidden || document.querySelector('.app-menu:popover-open'))
+    return idleInput()
   const id = sim?.player.vehicleId
   const flight = Boolean(id && sim?.vehicleInfo(id).flightMode)
   const axis = (positive: string, negative: string) =>
