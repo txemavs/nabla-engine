@@ -41,7 +41,7 @@ The source artwork remains separate from generated collision boxes.
 `src/stage/gl/crtMesh.ts`, revision `89b090785f77efdd825c8fab69055a2f9106888c`.
 Housing, bezel, screen and two knobs retain their original proportions and RGB
 colors. The screen faces forward (−Z), matching Agency's original orientation.
-The reference host enlarges the monitor by 1.65 for readability and adds
+The reference host uses a 0.825 exploration scale and adds
 hover, travel banking and braking recovery. These are visual effects; the shared
 walking collider remains available; the playground now selects the compact hover
 controller described in `docs/controls.md`.
@@ -95,3 +95,9 @@ circuit distributes twenty instances with varied heights and preserves each
 image's square canvas proportions. The gallery uses the same five variants.
 Sizing and placement are scene data; no artwork was regenerated or edited.
 The earlier generated `tree.png` remains available for existing custom content.
+
+The reference scene now mixes the generated tree with the five Videotiro trees.
+Videotiro foliage uses 0.35 saturation in the material shader; source PNG bytes
+remain unchanged. Optional flat black shadow copies reuse each tree's texture.
+The CRT monitor is rendered at half its previous scale: 0.825 while exploring
+and 0.5 at the driving seat. Physics and eye anchors are unchanged.

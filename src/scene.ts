@@ -93,6 +93,9 @@ const entitySchema = z
       .object({
         url: z.string().regex(/^\/(?!\/)[a-zA-Z0-9_./-]+\.png$/),
         target: z.boolean().optional(),
+        upright: z.boolean().optional(),
+        saturation: finite.min(0).max(1).optional(),
+        groundShadow: z.boolean().optional(),
       })
       .strict()
       .optional(),

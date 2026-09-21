@@ -1,3 +1,4 @@
+import { treeSprite } from '../src/vegetation.js'
 import * as THREE from 'three'
 import { createEntity, type Entity, type SceneDocument } from '../src/scene.js'
 import { createPortalPair, portalMapping, portalLocal } from '../src/portal.js'
@@ -29,7 +30,7 @@ export function createGallery(prefix: string): Entity[] {
     ])
     tree.size = [7, 7, 0.1]
     tree.name = 'Árbol · capa lejana'
-    tree.sprite = { url: `/sprites/tree-${(i % 5) + 1}.png` }
+    tree.sprite = treeSprite(i)
     entities.push(tree)
   }
   for (let i = 0; i < 5; i++) {

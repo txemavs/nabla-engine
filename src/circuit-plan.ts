@@ -1,3 +1,4 @@
+import { treeSprite } from './vegetation.js'
 import { createEntity, type Entity, type SceneDocument, type Vec3Tuple } from './scene.js'
 
 // Surveyed rectangles in the original 1024 × 682 Agency JPEG, not inferred at runtime.
@@ -91,7 +92,7 @@ export function circuitEntities(): Entity[] {
     tree.parentId = 'architecture'
     const height = 5.5 + (i % 4) * 1.2
     tree.size = [height, height, 0.1]
-    tree.sprite = { url: `/sprites/tree-${(i % 5) + 1}.png` }
+    tree.sprite = treeSprite(i)
     result.push(tree)
   }
   return result

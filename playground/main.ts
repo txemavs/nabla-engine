@@ -1,3 +1,4 @@
+import { treeSprite } from '../src/vegetation.js'
 import { createGallery, Gallery } from './gallery.js'
 import { alignCircuitPlan } from '../src/circuit-plan.js'
 import { PortalControls } from './portal-controls.js'
@@ -492,7 +493,7 @@ $('add-sprite').onclick = () =>
     const sprite = createEntity(crypto.randomUUID(), 'group')
     sprite.name = 'Sprite · árbol'
     sprite.size = [7, 7, 0.1]
-    sprite.sprite = { url: '/sprites/tree-1.png' }
+    sprite.sprite = treeSprite(0)
     doc.entities.push(sprite)
     editor.load(doc)
     selectedId = sprite.id

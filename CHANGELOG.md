@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Halve the monitor presentation size in exploration and at the wheel.
+- Keep tree billboards upright, mix the generated tree back into the scenery and
+  soften the original Videotiro foliage with shader saturation.
+- Add inexpensive fixed ground silhouettes sharing each tree texture, without
+  shadow maps or extra image assets.
+
 - Align the A3 steering wheel to its measured column cap and centre its animated
   rim axis; migrate recognised old mounts without changing the cockpit camera.
 - Prevent tree/target depth flicker with alpha-tested opaque cutouts and separated

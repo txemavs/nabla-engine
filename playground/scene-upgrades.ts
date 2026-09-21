@@ -1,3 +1,4 @@
+import { treeSprite } from '../src/vegetation.js'
 import { rotationDegrees } from '../src/scene.js'
 import { createA3 } from '../src/presets.js'
 import { installCarrierPortals } from './carrier-portals.js'
@@ -23,11 +24,14 @@ export function upgradeReferenceScene(raw: unknown) {
         mount.transform = createA3(e.id).visual!.steering!.transform
     }
     const tree = /^tree-(\d+)$/.exec(e.id)
-    if (e.sprite?.url === '/sprites/tree.png' && (tree || e.name === 'Árbol · capa lejana')) {
+    if (
+      e.sprite &&
+      /^\/sprites\/tree(?:-[1-5])?\.png$/.test(e.sprite.url) &&
+      e.sprite.upright === undefined &&
+      (tree || e.name === 'Árbol · capa lejana')
+    ) {
       const i = tree ? Number(tree[1]) : Number(e.id.match(/-(\d+)$/)?.[1] ?? 0)
-      e.sprite.url = `/sprites/tree-${(i % 5) + 1}.png`
-      const height = tree ? 5.5 + (i % 4) * 1.2 : 7
-      e.size = [height, height, 0.1]
+      e.sprite = { ...e.sprite, ...treeSprite(i) }
     }
     const target = /-target-(\d+)$/.exec(e.id)
     if (target && e.sprite?.target && e.name === 'Diana móvil') {

@@ -31,7 +31,7 @@ export function createMonitorAvatar(): THREE.Group {
     mesh.receiveShadow = true
     shell.add(mesh)
   }
-  root.scale.setScalar(1.65)
+  root.scale.setScalar(0.825)
   return root
 }
 

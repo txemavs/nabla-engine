@@ -180,3 +180,15 @@ threshold. Gallery target rows sit at Z −11/−14/−17, between the near tree
 `playground/scene-upgrades.ts` updates recognised old reference mounts, generated
 tree instances and untouched gallery target placements on load. It preserves
 custom steering transforms and target positions.
+
+Tree sprites opt into `upright`, `saturation` and `groundShadow`. Upright trees use
+vertical cutout meshes that turn only in yaw, separately for each main/portal
+camera and ray query. They retain world up even beneath a rotated parent; looking
+straight down reveals their edge rather than laying them flat. Ordinary target
+sprites retain their camera-facing behaviour.
+
+Foliage saturation is adjusted in the shader without changing source PNGs.
+Ground shadows are fixed, translucent black copies of the same texture on flat
+planes. They share the loaded tree texture, add one plane/draw per tree per view,
+receive no hit tests and require no shadow map. These decorative shadows are for
+flat authored ground: they do not track the Sun or conform to slopes.

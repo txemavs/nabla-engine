@@ -203,8 +203,11 @@ to unlatch cargo safely.
 ## PNG sprites and the window gallery
 
 **+ Sprite** adds a transparent tree. Set its local PNG URL and width/height in the
-inspector; position its origin at the trunk's foot. Sprites face each rendering
-camera, including the remote portal camera. They have no physical collider.
+inspector; position its origin at the trunk's foot. Trees turn toward each rendering camera only around the vertical axis, including
+the remote portal camera. They remain standing when viewed from above. Tree PNGs
+use subdued foliage colours and fixed translucent ground silhouettes; these
+decorative shadows do not follow the Sun. Target sprites still face the camera
+fully. Neither has a physical collider.
 
 **+ Galería 2.5D** adds a separate target stage and a window near the starting area
 (at X −1, Z −4). Approach its front from positive Z, capture the mouse, and shoot

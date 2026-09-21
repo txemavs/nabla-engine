@@ -23,7 +23,7 @@ it('validates transparent sprite data independently from physical entities', () 
   const doc = createSampleScene(),
     tree = doc.entities.find((e) => e.sprite)!
   expect(parseScene(doc).entities.find((e) => e.id === tree.id)!.sprite?.url).toBe(
-    '/sprites/tree-1.png',
+    '/sprites/tree.png',
   )
   tree.sprite!.url = 'https://example.com/tree.png'
   expect(() => parseScene(doc)).toThrow()

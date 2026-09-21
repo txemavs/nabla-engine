@@ -1,3 +1,4 @@
+import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
 import { createPortalSurface, type PortalSurface } from './portals.js'
@@ -30,7 +31,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
 export class SceneView {
   readonly root = new THREE.Group()
   readonly objects = new Map<string, THREE.Group>()
-  readonly sprites = new Map<string, THREE.Sprite>()
+  readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
   private readonly spritePixels = new Map<string, ImageData>()
   private readonly spriteImages = new Map<
     string,
@@ -93,14 +94,17 @@ export class SceneView {
         }
       }
       if (e.sprite) {
-        const material = new THREE.SpriteMaterial({
-          color: '#ffffff',
-          alphaTest: 0.1,
-          transparent: false,
-          depthWrite: true,
-        })
-        const sprite = new THREE.Sprite(material)
-        sprite.center.set(0.5, 0)
+        const options = { color: '#ffffff', alphaTest: 0.1, transparent: false, depthWrite: true }
+        const material = e.sprite.upright
+          ? new THREE.MeshBasicMaterial({ ...options, side: THREE.DoubleSide })
+          : new THREE.SpriteMaterial(options)
+        if (material instanceof THREE.MeshBasicMaterial)
+          softenFoliage(material, e.sprite.saturation ?? 1)
+        const sprite =
+          material instanceof THREE.MeshBasicMaterial
+            ? new UprightBillboard(material)
+            : new THREE.Sprite(material)
+        if (sprite instanceof THREE.Sprite) sprite.center.set(0.5, 0)
         // Keep overhead-facing billboards above the ground image overlay.
         sprite.position.y = 0.02
         sprite.scale.set(e.size[0], e.size[1], 1)
@@ -138,6 +142,31 @@ export class SceneView {
             material.map = texture
             material.needsUpdate = true
             this.spritePixels.set(e.id, pixels)
+            if (e.sprite!.groundShadow) {
+              const shadow = new THREE.Mesh(
+                new THREE.PlaneGeometry(e.size[0], e.size[1] * 0.7).translate(
+                  0,
+                  e.size[1] * 0.35,
+                  0,
+                ),
+                new THREE.MeshBasicMaterial({
+                  map: texture,
+                  color: '#000000',
+                  transparent: true,
+                  opacity: 0.22,
+                  depthWrite: false,
+                  alphaTest: 0.02,
+                  polygonOffset: true,
+                  polygonOffsetFactor: -1,
+                  polygonOffsetUnits: -1,
+                }),
+              )
+              shadow.rotation.set(-Math.PI / 2, 0, -0.65)
+              shadow.position.y = 0.012
+              shadow.userData.decorativeShadow = true
+              shadow.raycast = () => undefined
+              group.add(shadow)
+            }
           }),
         )
       }
@@ -352,7 +381,7 @@ export class SceneView {
       this.avatar.quaternion.copy(head.quaternion)
       this.monitor.position.set(0, 0, 0)
       this.monitor.quaternion.identity()
-      this.monitor.scale.setScalar(1)
+      this.monitor.scale.setScalar(0.5)
       this.monitorMotion.reset()
       this.avatar.visible = !cockpit
     } else {
@@ -361,7 +390,7 @@ export class SceneView {
       this.avatar.quaternion.multiply(
         new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sim.player.yaw),
       )
-      this.monitor.scale.setScalar(1.65)
+      this.monitor.scale.setScalar(0.825)
       this.monitorMotion.update(
         this.monitor,
         sim.playerFrame
