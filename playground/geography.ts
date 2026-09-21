@@ -19,6 +19,8 @@ interface Tile {
   controller?: AbortController
   loading?: boolean
   failed?: boolean
+  retryAt?: number
+  attempts?: number
 }
 /** Planetary background in million-metre units; map tiles use camera-relative local metres. */
 export class GeographicView {
@@ -194,7 +196,7 @@ export class GeographicView {
     if (key !== this.key && this.origin.imagery !== 'offline') {
       this.key = key
       const wanted = new Set<string>()
-      for (const z of [...new Set([zoom, Math.max(0, zoom - 3)])]) {
+      for (const z of [...new Set([Math.max(0, zoom - 3), zoom])]) {
         const c = tileCoordinate(point.latitude, point.longitude, z),
           n = 2 ** z
         for (let dx = -2; dx <= 2; dx++)
@@ -217,8 +219,8 @@ export class GeographicView {
           this.cache.delete(key)
         }
       this.failed = [...this.cache.values()].filter((t) => t.failed).length
-      this.loadNext()
     }
+    if (this.origin.imagery !== 'offline') this.loadNext()
     return height
   }
   private addTile(key: string, x: number, y: number, zoom: number) {
@@ -250,7 +252,11 @@ export class GeographicView {
     if (this.disposed) return
     for (const tile of this.cache.values()) {
       if (this.active >= 4) break
-      if (tile.texture || tile.loading || tile.failed) continue
+      if (tile.texture || tile.loading || Date.now() < (tile.retryAt ?? 0)) continue
+      if (tile.failed) {
+        tile.failed = false
+        this.failed = Math.max(0, this.failed - 1)
+      }
       tile.loading = true
       tile.controller = new AbortController()
       this.active++
@@ -276,11 +282,16 @@ export class GeographicView {
           tile.mesh.visible = true
         })
         .catch(() => {
-          tile.failed = true
-          if (tile.mesh.parent) this.failed++
+          if (tile.mesh.parent && !this.disposed) {
+            tile.failed = true
+            tile.attempts = (tile.attempts ?? 0) + 1
+            tile.retryAt = Date.now() + Math.min(60000, 5000 * 2 ** (tile.attempts - 1))
+            this.failed++
+          }
         })
         .finally(() => {
           clearTimeout(timeout)
+          tile.loading = false
           this.active--
           this.changed()
           this.loadNext()

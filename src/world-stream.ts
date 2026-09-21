@@ -16,7 +16,7 @@ export function tileDistance(key: string, position: Vec3Tuple): number {
 /** Near terrain first, then a velocity-dependent corridor before the actor arrives. */
 export function wantedWorldTiles(position: Vec3Tuple, velocity: Vec3Tuple): string[] {
   const speed = Math.hypot(velocity[0], velocity[2])
-  const lead = Math.min(1600, speed * 15),
+  const lead = Math.min(4800, speed * 15),
     scale = speed > 0 ? lead / speed : 0
   const ahead: Vec3Tuple = [
     position[0] + velocity[0] * scale,
@@ -25,10 +25,23 @@ export function wantedWorldTiles(position: Vec3Tuple, velocity: Vec3Tuple): stri
   ]
   const [cx, cz] = worldTileAt(position),
     wanted: string[] = []
-  for (let x = cx - 2; x <= cx + 2; x++)
-    for (let z = cz - 2; z <= cz + 2; z++) {
+  const radius = Math.ceil((lead + 700) / WORLD_TILE_SIZE)
+  const samples = Array.from({ length: Math.ceil(lead / 600) + 1 }, (_, i) => {
+    const fraction = i / Math.max(1, Math.ceil(lead / 600))
+    return [
+      position[0] + velocity[0] * scale * fraction,
+      position[1],
+      position[2] + velocity[2] * scale * fraction,
+    ] as Vec3Tuple
+  })
+  for (let x = cx - radius; x <= cx + radius; x++)
+    for (let z = cz - radius; z <= cz + radius; z++) {
       const key = worldTileKey(x, z)
-      if (tileDistance(key, position) < 700 || tileDistance(key, ahead) < 700) wanted.push(key)
+      if (
+        (Math.abs(x - cx) <= 1 && Math.abs(z - cz) <= 1) ||
+        samples.some((p) => tileDistance(key, p) < 700)
+      )
+        wanted.push(key)
     }
   return wanted
     .sort(
@@ -37,7 +50,7 @@ export function wantedWorldTiles(position: Vec3Tuple, velocity: Vec3Tuple): stri
         tileDistance(a, ahead) * 0.35 -
         (tileDistance(b, position) * 0.65 + tileDistance(b, ahead) * 0.35),
     )
-    .slice(0, 12)
+    .slice(0, 24)
 }
 export function mapTileEntities(doc: SceneDocument, key: string): Entity[] {
   const suffix = key === '0_0' ? '' : `-${key}`
@@ -68,7 +81,7 @@ export class WorldStream {
   private wanted: string[] = []
   private position: Vec3Tuple = [0, 0, 0]
   private protectedPositions: Vec3Tuple[] = []
-  private busy: AbortController | null = null
+  private busy: { key: string; controller: AbortController } | null = null
   private nextRequest = 0
   private disposed = false
   constructor(private readonly host: WorldStreamHost) {
@@ -97,11 +110,12 @@ export class WorldStream {
       return
     }
     this.wanted = wantedWorldTiles(position, velocity)
+    if (this.busy && !this.wanted.includes(this.busy.key)) this.busy.controller.abort()
     if (this.busy || now < this.nextRequest) return
     const key = this.wanted.find((k) => !this.resident.has(k) && now >= (this.failed.get(k) ?? 0))
     if (!key) return
     const controller = new AbortController()
-    this.busy = controller
+    this.busy = { key, controller }
     this.host.status(`Cargando zona ${key} · anticipando el recorrido…`)
     void this.host
       .load(key, controller.signal)
@@ -119,16 +133,15 @@ export class WorldStream {
         this.host.status(`Mapa conectado · ${this.resident.size} zonas disponibles`)
       })
       .catch((error: unknown) => {
-        if (this.disposed) return
+        if (this.disposed || controller.signal.aborted) return
         this.failed.set(key, Date.now() + 60000)
-        this.nextRequest = Date.now() + 60000
         this.host.status(
           `Zona ${key} pendiente · ${error instanceof Error ? error.message : 'sin conexión'} · reintento en 60 s`,
         )
       })
       .finally(() => {
-        if (this.busy === controller) this.busy = null
-        this.nextRequest = Math.max(this.nextRequest, Date.now() + 8000)
+        if (this.busy?.controller === controller) this.busy = null
+        this.nextRequest = Math.max(this.nextRequest, Date.now() + 250)
       })
   }
   private evict(): void {
@@ -155,6 +168,6 @@ export class WorldStream {
   }
   dispose(): void {
     this.disposed = true
-    this.busy?.abort()
+    this.busy?.controller.abort()
   }
 }

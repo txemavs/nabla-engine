@@ -38,10 +38,18 @@ test('loads cached neighboring terrain during driving and preserves it when savi
   await expect(page.locator('#interaction')).toContainText('E para entrar', { timeout: 15000 })
   await page.keyboard.press('KeyE')
   await page.keyboard.down('KeyW')
-  await expect(page.locator('canvas')).toHaveAttribute('data-world-zones', '2', { timeout: 15000 })
+  await expect
+    .poll(async () => Number(await page.locator('canvas').getAttribute('data-world-zones')), {
+      timeout: 15000,
+    })
+    .toBeGreaterThanOrEqual(2)
   await page.keyboard.up('KeyW')
   await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
-  await expect(page.locator('canvas')).toHaveAttribute('data-world-zones', '3', { timeout: 20000 })
+  await expect
+    .poll(async () => Number(await page.locator('canvas').getAttribute('data-world-zones')), {
+      timeout: 20000,
+    })
+    .toBeGreaterThanOrEqual(3)
   await page.locator('#play').click()
   await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
@@ -98,4 +106,47 @@ test('falls back to IndexedDB when a scene exceeds localStorage quota', async ({
     }
   })
   expect(saved).toEqual({ marker: '{"storage":"indexeddb"}', roundtrip: true })
+})
+
+test('loads terrain around a player twelve kilometres away from the starting district', async ({
+  page,
+}) => {
+  await page.route(/WorldElevation3D|\/world-cache\/elevation/, (route) =>
+    route.fulfill({
+      path: 'tests/fixtures/terrain.lerc',
+      contentType: 'application/octet-stream',
+      headers: { 'access-control-allow-origin': '*' },
+    }),
+  )
+  await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) =>
+    route.fulfill({
+      json: { elements: [] },
+      headers: { 'access-control-allow-origin': '*' },
+    }),
+  )
+  await page.goto('/')
+  await expect(page.locator('#world-loading')).toBeHidden({ timeout: 30000 })
+  const doc = await page.evaluate(async () => {
+    // Resolve through the same Vite module URL used by the playground.
+    const modules = performance.getEntriesByType('resource').map((r) => r.name)
+    const moduleUrl = modules.find((url) => url.includes('/src/real-world.ts'))!
+    const { createRealWorld } = await import(moduleUrl)
+    const d = createRealWorld(await (await fetch('/geography/irun-ventas.json')).json())
+    d.entities.find((e: { kind: string }) => e.kind === 'spawn').transform.position = [
+      12000, 500, 0,
+    ]
+    return d
+  })
+  await page.locator('#file').setInputFiles({
+    name: 'far.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(doc)),
+  })
+  await page.locator('#play').click()
+  await expect(page.locator('[data-entity-id="world-terrain-10_0"]')).toHaveCount(1, {
+    timeout: 30000,
+  })
+  await expect(page.locator('#stream-status')).toContainText('zonas disponibles', {
+    timeout: 30000,
+  })
 })

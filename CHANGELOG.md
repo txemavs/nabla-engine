@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Recover failed map imagery, fill neighborhood corners and extend the continuous flight prefetch corridor to 4.8 km.
+- Remove the eight-second delay for cached zones, isolate per-zone retry cooldowns and cancel obsolete loads after travel.
+
 - Accelerate carrier drone flight to a 1000 km/h target with altitude hold and automatic braking.
 - Add persistent draw distance, map collision radius, render resolution and shadow quality controls.
 - Organize file actions, environment/performance settings and controls in File, Options and Help header menus; reserve the inspector for selected entity properties.

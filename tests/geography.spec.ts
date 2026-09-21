@@ -126,3 +126,35 @@ test('loads bounded map tiles, switches provider and stops external requests in 
   await page.waitForTimeout(500)
   expect(requested).toBe(count)
 })
+
+test('retries failed map images without requiring movement or a reload', async ({ page }) => {
+  const requests = new Map<string, number>()
+  let first = ''
+  await page.route(
+    /https:\/\/(server\.arcgisonline\.com|a\.basemaps\.cartocdn\.com)\//,
+    async (route) => {
+      const url = route.request().url()
+      first ||= url
+      const count = (requests.get(url) ?? 0) + 1
+      requests.set(url, count)
+      if (url === first && count === 1) {
+        await route.fulfill({
+          status: 503,
+          body: 'Temporary failure',
+          headers: { 'access-control-allow-origin': '*' },
+        })
+      } else {
+        await route.fulfill({
+          path: 'assets/geography/agency-ground.jpg',
+          contentType: 'image/jpeg',
+          headers: { 'access-control-allow-origin': '*' },
+        })
+      }
+    },
+  )
+  await page.goto('/?scene=circuit')
+  await expect.poll(() => requests.get(first) ?? 0, { timeout: 30000 }).toBe(2)
+  await expect(page.locator('#map-status')).toHaveText('Esri · imágenes satélite', {
+    timeout: 30000,
+  })
+})

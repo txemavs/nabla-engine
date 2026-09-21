@@ -23,7 +23,9 @@ it('prefetches ahead before crossing the 600 m boundary, including negative coor
     fast = wantedWorldTiles([400, 0, 0], [90, 0, 0])
   expect(idle).toContain('1_0')
   expect(fast).toContain('2_0')
-  expect(fast).not.toContain('-1_0')
+  expect(idle).toContain('1_1')
+  expect(idle).toContain('-1_-1')
+  expect(fast.indexOf('2_0')).toBeLessThan(fast.indexOf('-1_0'))
 })
 it('clips road segments to identical neighboring edges instead of dropping crossing roads', () => {
   expect(clipRoadSegment([590, 0, 0], [620, 0, 0], 600, 600)).toEqual([
@@ -147,5 +149,69 @@ it('evicts clean distant zones but retains authored changes during a long journe
   expect(editor.document.entities.find((e) => e.id === `building-${first}`)!.color).toBe('#123456')
   expect(editor.document.entities.filter((e) => e.terrain).length).toBeLessThanOrEqual(12)
   expect(editor.document.entities.some((e) => e.id === 'world-terrain-1_0')).toBe(false)
+  stream.dispose()
+})
+
+it('prefetches a continuous corridor at 1000 km/h and follows travel far from the origin', () => {
+  const fast = wantedWorldTiles([0, 100, 0], [1000 / 3.6, 0, 0])
+  for (let x = 0; x <= 4; x++) expect(fast).toContain(`${x}_0`)
+  const far = wantedWorldTiles([12000, 100, -12000], [0, 0, 0])
+  expect(far[0]).toBe('10_-10')
+  expect(far).not.toContain('0_0')
+  expect(far).toHaveLength(9)
+})
+
+it('fills other holes after a failed tile without delaying cached arrivals for a minute', async () => {
+  const editor = new SceneEditor(document())
+  const calls: string[] = []
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load: async (key) => {
+      calls.push(key)
+      if (calls.length === 1) throw new Error('HTTP 503')
+      const [x, z] = key.split('_').map(Number)
+      const e = terrain(key, x * 1200)
+      e.transform.position[2] = z * 1200
+      return [e]
+    },
+    replace: (r, a) => editor.replaceMapEntities(r, a),
+    status: () => undefined,
+  })
+  stream.update([0, 0, 0], [0, 0, 0])
+  await new Promise((r) => setTimeout(r, 0))
+  stream.update([0, 0, 0], [0, 0, 0], [], Date.now() + 500)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(calls).toHaveLength(2)
+  expect(calls[1]).not.toBe(calls[0])
+  expect(editor.document.entities.filter((e) => e.terrain)).toHaveLength(2)
+  stream.update([0, 0, 0], [0, 0, 0], [], Date.now() + 1000)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(editor.document.entities.filter((e) => e.terrain)).toHaveLength(3)
+  stream.dispose()
+})
+
+it('cancels obsolete work and loads the current distant zone without a failure cooldown', async () => {
+  const editor = new SceneEditor(document())
+  const calls: string[] = []
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load: (key, signal) => {
+      calls.push(key)
+      if (calls.length === 1)
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(new Error('cancelled')), { once: true })
+        })
+      return Promise.resolve([terrain(key, 12000)])
+    },
+    replace: (r, a) => editor.replaceMapEntities(r, a),
+    status: () => undefined,
+  })
+  stream.update([0, 100, 0], [0, 0, 0])
+  stream.update([12000, 100, 0], [0, 0, 0])
+  await new Promise((r) => setTimeout(r, 0))
+  stream.update([12000, 100, 0], [0, 0, 0], [], Date.now() + 500)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(calls[1]).toBe('10_0')
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(true)
   stream.dispose()
 })

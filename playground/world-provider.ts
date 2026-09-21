@@ -27,7 +27,10 @@ async function fetchChecked(
       AbortSignal.timeout(CACHE_BASE && init.method === 'POST' ? 120000 : 40000),
     ]),
   })
-  if (!response.ok) throw new Error(`Proveedor HTTP ${response.status}`)
+  if (!response.ok) {
+    if (init.method === 'POST') nextRemoteRequest = Date.now() + 60000
+    throw new Error(`Proveedor HTTP ${response.status}`)
+  }
   return response
 }
 /** Same global sample lattice as the bundled terrain, including identical shared edges. */

@@ -211,16 +211,20 @@ attribution; Esri elevation has separate provider terms and attribution. See
 ## Implemented neighborhood streaming
 
 `src/world-stream.ts` schedules 1.2 km zones on a shared local grid. It requests the
-near neighborhood and a corridor up to 15 seconds / 1.6 km ahead, prioritizing
+complete 3×3 neighborhood and a continuous corridor up to 15 seconds / 4.8 km ahead, prioritizing
 nearby ground. The worker in `playground/world-worker.ts` fetches OSM features,
 decodes Esri LERC elevation, and generates editable building topology. Physics
 and render entities are appended without recreating the simulation, resetting
 vehicles, or replacing the existing scene view.
 
-- One zone request runs at a time, with at least eight seconds between completed
-  requests and a 60-second backoff after failures. Uncached Overpass queries are
-  additionally paced to at least 30 seconds apart in the worker. Incomplete responses are never
-  installed as empty ground. Stopping or replacing the scene cancels outstanding work.
+- One zone request runs at a time, with a 250 ms scheduling interval after completion,
+  so cached arrivals do not pay an artificial eight-second delay. A failed zone backs
+  off for 60 seconds without freezing the whole scheduler. The worker still paces
+  uncached public Overpass requests at 30 seconds and cools down failed OSM requests
+  for 60 seconds; local cache hits are checked before that wait. The private server
+  retains its upstream pacing. Obsolete requests are cancelled when the actor moves
+  beyond their desired neighborhood. Incomplete responses are never installed as
+  empty ground. Stopping or replacing the scene cancels outstanding work.
 - `VITE_WORLD_OVERPASS_URL` can select a self-hosted/contracted Overpass endpoint
   at build time. By default the provider uses public Overpass via POST, not the OSM editing API
   for traversal. It is a development provider, not a guaranteed production tile
@@ -230,7 +234,7 @@ vehicles, or replacing the existing scene view.
 - Normalized extracts are cached in browser Cache Storage (32 zones, 30-day
   freshness); decoded elevation has a separate 16-tile memory cache. Cache failure
   does not prevent online loading. No Street GL tile service or generator is used.
-- Up to 12 nearby/ahead zones are desired. Distant clean zones are removed when
+- Up to 24 nearby/ahead zones are desired. Distant clean zones are removed when
   beyond 3 km or the resident set exceeds ten. The starting zone, zones already
   present in a saved document, edited zones, and ground supporting parked vehicles
   or portals are retained. These pins can exceed the normal working-set budget.
@@ -265,3 +269,17 @@ A shader masks out resident detailed terrain footprints to avoid double surfaces
 Distant terrain has no vehicle collider, buildings or trees; the existing near-zone
 streamer still supplies those. Ground safety boundaries remain until detailed terrain
 is ready. Loading elevation does not request additional OSM features.
+
+### Missing imagery recovery
+
+Online raster imagery loads its coarse layer before fine detail. Failed images retry
+while the camera is stationary, after 5 seconds with exponential backoff capped at
+60 seconds. Evicted images are cancelled and disposed; failures no longer remain
+permanently blacklisted for the current view. This raster path is separate from the
+OSM building/elevation streaming path used by the real-world scene.
+
+Regression coverage includes cached arrivals, isolated zone failures, cancellation
+when travelling far away, the 1000 km/h prefetch corridor, a browser starting 12 km
+from the base district, and raster recovery without movement. Network responses in
+those browser tests are controlled fixtures, not a claim that public Overpass can
+sustain live uncached travel at 1000 km/h.
