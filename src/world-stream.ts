@@ -82,9 +82,13 @@ export class WorldStream {
   private position: Vec3Tuple = [0, 0, 0]
   private protectedPositions: Vec3Tuple[] = []
   private busy: { key: string; controller: AbortController } | null = null
+  private readonly limited = new Map<string, string>()
   private nextRequest = 0
   private disposed = false
-  constructor(private readonly host: WorldStreamHost) {
+  constructor(
+    private readonly host: WorldStreamHost,
+    private readonly entityBudget = 18000,
+  ) {
     const doc = host.document()
     for (const e of doc.entities)
       if (e.terrain && e.id.startsWith('world-terrain')) {
@@ -112,7 +116,11 @@ export class WorldStream {
     this.wanted = wantedWorldTiles(position, velocity)
     if (this.busy && !this.wanted.includes(this.busy.key)) this.busy.controller.abort()
     if (this.busy || now < this.nextRequest) return
-    const key = this.wanted.find((k) => !this.resident.has(k) && now >= (this.failed.get(k) ?? 0))
+    const area = this.budgetArea()
+    const key = this.wanted.find(
+      (k) =>
+        !this.resident.has(k) && now >= (this.failed.get(k) ?? 0) && this.limited.get(k) !== area,
+    )
     if (!key) return
     const controller = new AbortController()
     this.busy = { key, controller }
@@ -121,9 +129,29 @@ export class WorldStream {
       .load(key, controller.signal)
       .then((entities) => {
         if (this.disposed || controller.signal.aborted || !this.wanted.includes(key)) return
-        const existing = new Set(this.host.document().entities.map((e) => e.id))
+        const remove = this.makeRoom(key, entities)
+        if (!remove) {
+          this.limited.set(key, this.budgetArea())
+          this.host.status(
+            'Límite de detalle · se priorizarán las zonas cercanas al avanzar; las zonas editadas se conservan',
+          )
+          return
+        }
+        const existing = new Set(
+          this.host
+            .document()
+            .entities.filter((e) => !remove.has(e.id))
+            .map((e) => e.id),
+        )
         const add = entities.filter((e) => !existing.has(e.id))
-        this.host.replace(new Set(), add)
+        this.host.replace(remove, add)
+        for (const k of this.resident.keys()) {
+          const terrainId = k === '0_0' ? 'world-terrain' : `world-terrain-${k}`
+          if (remove.has(terrainId)) {
+            this.resident.delete(k)
+            this.limited.set(k, this.budgetArea())
+          }
+        }
         this.resident.set(key, {
           baseline: JSON.stringify(mapTileEntities(this.host.document(), key)),
           pinned: false,
@@ -143,6 +171,41 @@ export class WorldStream {
         if (this.busy?.controller === controller) this.busy = null
         this.nextRequest = Math.max(this.nextRequest, Date.now() + 250)
       })
+  }
+  private budgetArea(): string {
+    return `${Math.floor(this.position[0] / 200)}_${Math.floor(this.position[2] / 200)}`
+  }
+  /** Make space before parsing/adding a dense tile, including wanted but farther zones. */
+  private makeRoom(key: string, incoming: Entity[]): Set<string> | null {
+    const doc = this.host.document(),
+      remove = new Set<string>()
+    const fits = () => {
+      const ids = new Set(doc.entities.filter((e) => !remove.has(e.id)).map((e) => e.id))
+      for (const e of incoming) ids.add(e.id)
+      return ids.size <= this.entityBudget
+    }
+    if (fits()) return remove
+    const candidates = [...this.resident.keys()].sort(
+      (a, b) => tileDistance(b, this.position) - tileDistance(a, this.position),
+    )
+    for (const candidate of candidates) {
+      const state = this.resident.get(candidate)!
+      if (state.pinned || this.protectedPositions.some((p) => tileDistance(candidate, p) < 200))
+        continue
+      if (
+        this.wanted.includes(candidate) &&
+        tileDistance(candidate, this.position) <= tileDistance(key, this.position)
+      )
+        continue
+      const entities = mapTileEntities(doc, candidate)
+      if (JSON.stringify(entities) !== state.baseline) {
+        state.pinned = true
+        continue
+      }
+      for (const e of entities) remove.add(e.id)
+      if (fits()) return remove
+    }
+    return null
   }
   private evict(): void {
     const candidates = [...this.resident.keys()].sort(

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Remove permanent solid edge overlays and retain topology lines in the solid editor.
+- Make room for dense map zones before installation, prioritizing nearby unedited detail within an 18,000-entity residency budget.
+- Keep streamed map updates out of undo snapshots belonging to other geographic destinations.
+
 - Raise A3 chassis ground clearance by 5 cm through suspension extension; migrate recognized saved stock A3 presets without repeated lifts.
 
 - Keep the latest 64 solid-surface bullet impact marks, aligned to hit normals and attached to moving objects, including shots through portals.

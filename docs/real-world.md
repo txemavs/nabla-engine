@@ -283,3 +283,20 @@ when travelling far away, the 1000 km/h prefetch corridor, a browser starting 12
 from the base district, and raster recovery without movement. Network responses in
 those browser tests are controlled fixtures, not a claim that public Overpass can
 sustain live uncached travel at 1000 km/h.
+
+### Dense-city residency budget
+
+Streaming reserves a budget of 18,000 scene entities, below the 20,000-entity
+schema limit. Before installing an incoming zone, it releases farther unedited
+zones in the same replacement operation. Nearer detail takes priority, and zones
+around actors, edited zones and saved/base zones remain protected. If those
+protected entities leave insufficient room, the status reports the detail limit;
+rejected zones are reconsidered after travelling 200 m rather than repeatedly
+loading them while stationary. Dense cities can therefore show fewer complete
+zones at once. This is a residency budget, not a guarantee of an unlimited saved
+world or uninterrupted travel at flight speed.
+
+Streaming updates undo snapshots only when their geographic origin matches the
+current scene, so travelling between cities does not mix their map entities.
+Building surfaces render without permanent edge overlays; topology lines remain
+available in the solid editor.

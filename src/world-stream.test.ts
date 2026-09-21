@@ -215,3 +215,77 @@ it('cancels obsolete work and loads the current distant zone without a failure c
   expect(editor.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(true)
   stream.dispose()
 })
+
+it('replaces farther clean tiles before a dense arrival exceeds the entity budget', async () => {
+  const editor = new SceneEditor(document())
+  const sizes: number[] = []
+  const load = vi.fn(async (key: string) => {
+    const [x, z] = key.split('_').map(Number)
+    const ground = terrain(key, x * 1200)
+    ground.transform.position[2] = z * 1200
+    return [ground, createEntity(`world-buildings-${key}`, 'group')]
+  })
+  const stream = new WorldStream(
+    {
+      document: () => editor.document,
+      load,
+      replace: (r, a) => {
+        editor.replaceMapEntities(r, a)
+        sizes.push(editor.document.entities.length)
+      },
+      status: () => undefined,
+    },
+    4,
+  )
+  stream.update([0, 0, 0], [0, 0, 0])
+  await new Promise((r) => setTimeout(r, 0))
+  const first = load.mock.calls[0][0]
+  stream.update([1200, 0, 0], [0, 0, 0], [], Date.now() + 500)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain-1_0')).toBe(true)
+  expect(editor.document.entities.some((e) => e.id === `world-terrain-${first}`)).toBe(false)
+  expect(sizes).toEqual([4, 4])
+  stream.dispose()
+})
+
+it('preserves edited tiles and avoids repeating budget-rejected loads while stationary', async () => {
+  const editor = new SceneEditor(document())
+  const load = vi.fn(async (key: string) => [terrain(key, 1200)])
+  const status = vi.fn()
+  const stream = new WorldStream(
+    {
+      document: () => editor.document,
+      load,
+      replace: (r, a) => editor.replaceMapEntities(r, a),
+      status,
+    },
+    3,
+  )
+  stream.update([0, 0, 0], [0, 0, 0])
+  await new Promise((r) => setTimeout(r, 0))
+  const first = load.mock.calls[0][0]
+  editor.update(`world-terrain-${first}`, { color: '#123456' })
+  stream.update([1200, 0, 0], [0, 0, 0], [], Date.now() + 500)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(status).toHaveBeenLastCalledWith(expect.stringContaining('Límite de detalle'))
+  stream.update([1200, 0, 0], [0, 0, 0], [], Date.now() + 1000)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(load.mock.calls.filter(([key]) => key === '1_0')).toHaveLength(1)
+  expect(editor.document.entities.find((e) => e.id === `world-terrain-${first}`)!.color).toBe(
+    '#123456',
+  )
+  stream.dispose()
+})
+
+it('does not insert streamed city entities into a different destination in undo history', () => {
+  const previous = document()
+  previous.geography = { latitude: 40, longitude: 0, altitude: 0, imagery: 'offline' }
+  const editor = new SceneEditor(previous)
+  const next = document()
+  next.geography = { ...previous.geography, latitude: 43 }
+  editor.load(next)
+  editor.replaceMapEntities(new Set(), [terrain('1_0', 1200)])
+  editor.undo()
+  expect(editor.document.geography!.latitude).toBe(40)
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain-1_0')).toBe(false)
+})

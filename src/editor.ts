@@ -31,13 +31,15 @@ export class SceneEditor {
       ...doc,
       entities: [...doc.entities.filter((e) => !remove.has(e.id)), ...structuredClone(add)],
     })
+    const origin = this.current.geography
+    const sameWorld = (doc: SceneDocument) =>
+      doc.entities.some((e) => e.id === 'world-terrain') &&
+      doc.geography?.latitude === origin?.latitude &&
+      doc.geography?.longitude === origin?.longitude &&
+      doc.geography?.altitude === origin?.altitude
     this.current = parseScene(apply(this.current))
-    this.past = this.past.map((doc) =>
-      doc.entities.some((e) => e.id === 'world-terrain') ? apply(doc) : doc,
-    )
-    this.future = this.future.map((doc) =>
-      doc.entities.some((e) => e.id === 'world-terrain') ? apply(doc) : doc,
-    )
+    this.past = this.past.map((doc) => (sameWorld(doc) ? apply(doc) : doc))
+    this.future = this.future.map((doc) => (sameWorld(doc) ? apply(doc) : doc))
   }
   update(id: string, patch: Partial<Omit<Entity, 'id' | 'parentId'>>): void {
     const next = this.document

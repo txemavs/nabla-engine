@@ -245,15 +245,6 @@ export class SceneView {
         const surface = mesh(geometry, e.color)
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         group.add(surface)
-        const wire = new THREE.LineSegments(
-          new THREE.BufferGeometry().setFromPoints(
-            e.geometry.edges.flatMap((edge) =>
-              edge.map((i) => new THREE.Vector3(...e.geometry!.vertices[i])),
-            ),
-          ),
-          new THREE.LineBasicMaterial({ color: e.color }),
-        )
-        group.add(wire)
       }
       if (e.kind === 'box') group.add(box(e.size, e.color))
       if (e.kind === 'vehicle') {
