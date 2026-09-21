@@ -14,7 +14,8 @@ const transform = (position: Vec3Tuple = [0, 0, 0], angles: Vec3Tuple = [0, 0, 0
 export function createA3(id: string, position: Vec3Tuple = [4, 0.62, 6]): Entity {
   const radius = 0.315374,
     com = 0.55,
-    hubY = radius - com
+    // Extend the wheels 5 cm below the body; keep the upper spring mounts fixed.
+    hubY = radius - com - 0.05
   return {
     ...createEntity(id, 'vehicle', position),
     name: 'Audi A3 Cabrio',
@@ -30,7 +31,7 @@ export function createA3(id: string, position: Vec3Tuple = [4, 0.62, 6]): Entity
         [0.7547195, hubY, 1.291815],
       ],
       wheelRadius: radius,
-      suspensionRest: 0.16,
+      suspensionRest: 0.21,
       stiffness: 65,
       engineForce: 2600,
       brakeForce: 36,

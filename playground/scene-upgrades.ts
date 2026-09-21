@@ -44,6 +44,19 @@ export function upgradeReferenceScene(raw: unknown) {
   }
   doc.entities = doc.entities.filter((e) => !removed.has(e.id))
   for (const e of doc.entities) {
+    if (e.visual?.body.url === '/world/car.audi.a3.cabrio.glb' && e.vehicle) {
+      const current = createA3(e.id).vehicle!
+      if (
+        Math.abs(e.vehicle.suspensionRest - 0.16) < 1e-6 &&
+        Math.abs(e.vehicle.wheelRadius - current.wheelRadius) < 1e-6 &&
+        e.vehicle.hubs.every((hub, i) =>
+          hub.every((v, j) => Math.abs(v - (current.hubs[i][j] + (j === 1 ? 0.05 : 0))) < 1e-6),
+        )
+      ) {
+        e.vehicle.hubs = current.hubs
+        e.vehicle.suspensionRest = current.suspensionRest
+      }
+    }
     const mount = e.visual?.steering
     if (
       e.visual?.body.url === '/world/car.audi.a3.cabrio.glb' &&

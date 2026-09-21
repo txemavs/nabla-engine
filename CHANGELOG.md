@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Raise A3 chassis ground clearance by 5 cm through suspension extension; migrate recognized saved stock A3 presets without repeated lifts.
+
 - Keep the latest 64 solid-surface bullet impact marks, aligned to hit normals and attached to moving objects, including shots through portals.
 
 - Add an Ir menu with city presets, coordinate travel, loading/cancellation, failure preservation and undo back to the previous scene.

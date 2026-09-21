@@ -35,3 +35,17 @@ it('keeps gallery targets behind the near trees and upgrades the original coplan
     expect(z).toBeGreaterThan(-20)
   }
 })
+
+it('raises only the recognized old A3 suspension and does not accumulate lifts', () => {
+  const doc = createSampleScene()
+  const car = doc.entities.find((e) => e.visual?.body.url === '/world/car.audi.a3.cabrio.glb')!
+  car.vehicle!.suspensionRest = 0.16
+  for (const hub of car.vehicle!.hubs) hub[1] += 0.05
+  const upgraded = upgradeReferenceScene(doc)
+  expect(upgraded.entities.find((e) => e.id === car.id)!.vehicle!.suspensionRest).toBe(0.21)
+  expect(upgradeReferenceScene(upgraded)).toEqual(upgraded)
+  car.vehicle!.hubs[0][1] += 0.02
+  expect(upgradeReferenceScene(doc).entities.find((e) => e.id === car.id)!.vehicle).toEqual(
+    car.vehicle,
+  )
+})

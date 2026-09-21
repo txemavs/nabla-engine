@@ -226,3 +226,24 @@ it('reaches 1000 km/h in drone flight, holds altitude and brakes on release', ()
   expect(sim.player.speed).toBeLessThan(0.1)
   sim.dispose()
 })
+
+it('raises the settled A3 chassis by five centimetres while keeping tyres on the ground', () => {
+  const raisedDoc = document(),
+    oldDoc = document()
+  const old = oldDoc.entities.find((e) => e.id === 'car')!.vehicle!
+  old.suspensionRest -= 0.05
+  for (const hub of old.hubs) hub[1] += 0.05
+  const raised = new Simulation(raisedDoc),
+    previous = new Simulation(oldDoc)
+  step(raised, 300)
+  step(previous, 300)
+  expect(
+    raised.entityTransform('car').position[1] - previous.entityTransform('car').position[1],
+  ).toBeCloseTo(0.05, 3)
+  for (const wheel of raised.wheelTransforms('car'))
+    expect(wheel.position[1]).toBeCloseTo(0.315374, 2)
+  const up = new Quaternion(...raised.entityTransform('car').rotation).vmult(new Vec3(0, 1, 0))
+  expect(up.y).toBeGreaterThan(0.999)
+  raised.dispose()
+  previous.dispose()
+})

@@ -83,3 +83,17 @@ the authored scene; runtime flight/latch state is discarded.
 See [controls](controls.md) for keyboard and gamepad mappings. Automated browser
 tests use a simulated standard gamepad; physical controller validation remains
 separate. Nonstandard radio calibration, acrobatic mode and portals are not included.
+
+## A3 ground clearance
+
+The A3's suspension rest length is 0.21 m and its wheel hubs are 0.05 m lower
+relative to the chassis than the original preset. Both values change together:
+the upper spring mounting points remain fixed, while the settled chassis gains
+five centimetres of ground clearance. Changing rest length alone would not raise
+the body because the raycast vehicle derives its mounting points from that length.
+
+Recognized saved A3 presets with the original 0.16 m rest length and original wheel
+hubs receive the same upgrade once; custom suspension layouts are preserved.
+Physics tests compare settled heights and tyre contact and retain the existing
+loaded-carrier, driving and docking checks. More clearance does not eliminate all
+rollovers or compensate for incorrect source terrain geometry.
