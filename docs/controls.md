@@ -124,14 +124,20 @@ the carrier and CSS-interior experience.
 The cockpit eye sits 0.26 m forward and 0.10 m below the authored driver anchor
 in ordinary cars; the carrier cockpit is unchanged. This is a host camera offset,
 so existing saved A3 scenes receive the improvement without rewriting their data.
-Both cockpit and chase views follow vehicle heading after a short manual-look
-grace period. Chase response increases with speed, anticipates measured yaw rate,
+The cockpit position and orientation are rigidly attached to the interpolated
+vehicle pose, including pitch and roll. Mouse look rotates the head relative to
+the car; its offset stays fixed when the mouse stops. Entering cockpit view or
+changing vehicles resets the head to face forward. Chase view follows heading
+after a short manual-look grace period, increases response with speed, anticipates measured yaw rate,
 and adds a bounded forward look. Field of view and chase distance stay fixed;
 speed and turn telemetry are filtered to avoid projection/framing vibration.
 
 The on-foot avatar uses Agency's floating CRT monitor. It leans with movement and
-acceleration, levels after braking and hovers gently. It hides while driving;
-portal transfers reset visual motion history rather than producing a large tilt.
+acceleration, levels after braking and hovers gently. While driving, the monitor
+sits at the same eye anchor as the cockpit camera, at its native 0.34 m size,
+without hovering or banking independently. It is visible from exterior and overhead
+views and hidden in cockpit view to keep the view clear. Portal transfers reset
+visual motion history rather than producing a large tilt.
 
 Press **C** (gamepad **B**) to cycle **exterior → cockpit → overhead**. The overhead
 view stays north-up, follows the car from 350 m, and keeps the vehicle small on

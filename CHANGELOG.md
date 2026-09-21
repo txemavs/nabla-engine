@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Attach cockpit gaze rigidly to the car with relative mouse look; share its
+  unchanged eye anchor with a seated CRT avatar visible in exterior views.
+
 - Stabilize driving presentation with shared physics/render interpolation and
   filtered camera telemetry; remove instantaneous speed-based FOV/distance changes.
 - Add a north-up overhead driving camera, with mouse-wheel height adjustment.

@@ -1,4 +1,4 @@
-import { followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
+import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
 import { createPortalPair } from '../src/portal.js'
 import { renderPortals } from './portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
@@ -51,12 +51,17 @@ let selectedId =
 let sim: Simulation | null = null
 let needsRender = true
 let cameraMode: 'chase' | 'cockpit' | 'map' = 'chase'
+let headYaw = 0
+let headPitch = 0.05
+let headVehicle: string | null = null
 let mapHeight = 350
 const drivingTelemetry = new DrivingTelemetry()
 function cycleCamera(): void {
   if (!sim?.player.vehicleId) return
   cameraMode = cameraMode === 'chase' ? 'cockpit' : cameraMode === 'cockpit' ? 'map' : 'chase'
   pitch = cameraMode === 'cockpit' ? 0.05 : 0.24
+  headYaw = 0
+  headPitch = 0.05
   toast(
     cameraMode === 'map'
       ? 'Cámara cenital · rueda para acercar o alejar'
@@ -601,8 +606,13 @@ document.addEventListener('mousemove', (e) => {
     document.pointerLockElement === renderer.domElement
   ) {
     lastLookTime = performance.now()
-    yaw -= e.movementX * 0.0025
-    pitch = THREE.MathUtils.clamp(pitch + e.movementY * 0.002, -1.45, 1.45)
+    if (cameraMode === 'cockpit' && sim.player.vehicleId) {
+      headYaw -= e.movementX * 0.0025
+      headPitch = THREE.MathUtils.clamp(headPitch + e.movementY * 0.002, -1.45, 1.45)
+    } else {
+      yaw -= e.movementX * 0.0025
+      pitch = THREE.MathUtils.clamp(pitch + e.movementY * 0.002, -1.45, 1.45)
+    }
   }
 })
 window.addEventListener('keydown', (e) => {
@@ -762,7 +772,12 @@ function frame(now: number): void {
         )
       }
     }
-    view.sync(sim, document.hidden ? 0 : dt)
+    if (headVehicle !== sim.player.vehicleId) {
+      headVehicle = sim.player.vehicleId
+      headYaw = 0
+      headPitch = 0.05
+    }
+    view.sync(sim, document.hidden ? 0 : dt, cameraMode === 'cockpit', headYaw, headPitch)
     const p = { ...sim.player, position: sim.renderPlayerPosition }
     const cockpit = cameraMode === 'cockpit'
     const overhead = cameraMode === 'map' && !!p.vehicleId
@@ -791,7 +806,7 @@ function frame(now: number): void {
           new THREE.Quaternion(...sim.entityTransform(p.vehicleId!, true).rotation),
         )
       : new THREE.Vector3(0, 0, -1)
-    if (info && !info.flightMode) {
+    if (info && !info.flightMode && !cockpit) {
       const wanted = Math.atan2(-vehicleForward.x, -vehicleForward.z)
       yaw = followDrivingHeading(
         yaw,
@@ -800,7 +815,6 @@ function frame(now: number): void {
         drivingTelemetry.speed,
         dt,
         now - lastLookTime,
-        cockpit,
       )
     } else if (info && p.speed > 1 && now - lastLookTime > 1400 && !cockpit) {
       const wanted = Math.atan2(-vehicleForward.x, -vehicleForward.z)
@@ -819,17 +833,17 @@ function frame(now: number): void {
       camera.lookAt(...p.position)
       renderer.domElement.dataset.mapHeight = String(Math.round(mapHeight))
     } else if (cockpit && info) {
-      const eyeOffset = new THREE.Vector3(
-        0,
-        info.isCarrier ? 0 : -0.1,
-        info.isCarrier ? 0 : -0.26,
-      ).applyQuaternion(new THREE.Quaternion(...sim.entityTransform(p.vehicleId!, true).rotation))
-      camera.position.fromArray(info.driver).add(eyeOffset)
-      camera.lookAt(
-        camera.position.x - Math.sin(yaw) * Math.cos(pitch),
-        camera.position.y - Math.sin(pitch),
-        camera.position.z - Math.cos(yaw) * Math.cos(pitch),
+      const head = driverHeadPose(
+        info.driver,
+        sim.entityTransform(p.vehicleId!, true).rotation,
+        info.isCarrier,
+        headYaw,
+        headPitch,
       )
+      camera.position.copy(head.position)
+      camera.quaternion.copy(head.quaternion)
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(head.quaternion)
+      yaw = Math.atan2(-forward.x, -forward.z)
     } else {
       if (info && !info.isCarrier) {
         const ahead =

@@ -1,3 +1,4 @@
+import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
 import { createPortalSurface, type PortalSurface } from './portals.js'
 import { PORTAL_BAR } from '../src/portal.js'
@@ -233,7 +234,7 @@ export class SceneView {
       if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal))
         this.objects.get(e.id)!.visible = !playing
   }
-  sync(sim: Simulation, elapsed = 1 / 60): void {
+  sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
     for (const e of this.document.entities)
       applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
     for (const [id, wheels] of this.wheels) {
@@ -251,10 +252,30 @@ export class SceneView {
     for (const [id, wheel] of this.steering)
       wheel.rotation.z =
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
-    this.avatar.position.fromArray(sim.renderPlayerPosition)
-    this.avatar.rotation.y = sim.player.yaw
-    this.monitorMotion.update(this.monitor, this.avatar.position, sim.player.yaw, elapsed)
-    this.avatar.visible = sim.player.vehicleId === null
+    const vehicleId = sim.player.vehicleId
+    if (vehicleId) {
+      const info = sim.vehicleInfo(vehicleId, true)
+      const head = driverHeadPose(
+        info.driver,
+        sim.entityTransform(vehicleId, true).rotation,
+        info.isCarrier,
+        headYaw,
+        headPitch,
+      )
+      this.avatar.position.copy(head.position)
+      this.avatar.quaternion.copy(head.quaternion)
+      this.monitor.position.set(0, 0, 0)
+      this.monitor.quaternion.identity()
+      this.monitor.scale.setScalar(1)
+      this.monitorMotion.reset()
+      this.avatar.visible = !cockpit
+    } else {
+      this.avatar.position.fromArray(sim.renderPlayerPosition)
+      this.avatar.rotation.set(0, sim.player.yaw, 0)
+      this.monitor.scale.setScalar(1.65)
+      this.monitorMotion.update(this.monitor, this.avatar.position, sim.player.yaw, elapsed)
+      this.avatar.visible = true
+    }
   }
   private readonly surfaceTextures: THREE.Texture[] = []
   dispose(): void {

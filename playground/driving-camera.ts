@@ -1,4 +1,21 @@
-import { MathUtils } from 'three'
+import { Euler, MathUtils, Quaternion, Vector3 } from 'three'
+
+/** One rigid seat anchor for the driver's eyes and visible monitor. */
+export function driverHeadPose(
+  driver: readonly number[],
+  rotation: readonly number[],
+  isCarrier: boolean,
+  yaw = 0,
+  pitch = 0.05,
+): { position: Vector3; quaternion: Quaternion } {
+  const body = new Quaternion().fromArray(rotation)
+  return {
+    position: new Vector3(0, isCarrier ? 0 : -0.1, isCarrier ? 0 : -0.26)
+      .applyQuaternion(body)
+      .add(new Vector3().fromArray(driver)),
+    quaternion: body.multiply(new Quaternion().setFromEuler(new Euler(-pitch, yaw, 0, 'YXZ'))),
+  }
+}
 
 /** Brief manual-look grace, then speed-aware damping and bounded corner anticipation. */
 export function followDrivingHeading(
@@ -8,19 +25,15 @@ export function followDrivingHeading(
   speed: number,
   elapsed: number,
   sinceLookMs: number,
-  cockpit: boolean,
 ): number {
   const resume = MathUtils.smoothstep(sinceLookMs, 900, 1400)
-  const anticipation = MathUtils.clamp(turnRate * (cockpit ? 0.08 : 0.22), -0.3, 0.3)
+  const anticipation = MathUtils.clamp(turnRate * 0.22, -0.3, 0.3)
   const wanted = heading + anticipation * MathUtils.smoothstep(speed, 1, 8)
   const error = Math.atan2(Math.sin(wanted - yaw), Math.cos(wanted - yaw))
   return (
     yaw +
     error *
-      (1 -
-        Math.exp(
-          -(cockpit ? 12 : 7 + Math.min(speed / 5, 5)) * Math.min(Math.max(elapsed, 0), 0.1),
-        )) *
+      (1 - Math.exp(-(7 + Math.min(speed / 5, 5)) * Math.min(Math.max(elapsed, 0), 0.1))) *
       resume
   )
 }

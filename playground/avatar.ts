@@ -40,6 +40,10 @@ export class MonitorMotion {
   private previous: THREE.Vector3 | null = null
   private velocity = new THREE.Vector3()
   private time = 0
+  reset(): void {
+    this.previous = null
+    this.velocity.set(0, 0, 0)
+  }
   update(model: THREE.Group, position: THREE.Vector3, yaw: number, dt: number): void {
     const elapsed = Math.min(Math.max(dt, 0), 0.1)
     this.time += elapsed
