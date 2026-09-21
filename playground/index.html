@@ -15,9 +15,37 @@
         >
         <nav class="app-menus" aria-label="Menú principal">
           <button id="file-menu-button" popovertarget="file-menu">Archivo</button>
+          <button id="travel-menu-button" popovertarget="travel-menu">Ir</button>
           <button id="options-menu-button" popovertarget="options-menu">Opciones</button>
           <button id="help-menu-button" popovertarget="help-menu">Ayuda</button>
         </nav>
+        <div id="travel-menu" class="app-menu" popover aria-label="Viajar por el mundo">
+          <h3>Ir a un lugar</h3>
+          <label class="field-label" for="travel-city">Destinos</label>
+          <select id="travel-city">
+            <option value="">Coordenadas personalizadas</option>
+            <option value="40.4168,-3.7038">Madrid · Sol</option>
+            <option value="41.3870,2.1700">Barcelona · Plaça de Catalunya</option>
+            <option value="48.8584,2.2945">París · Torre Eiffel</option>
+            <option value="52.5163,13.3777">Berlín · Puerta de Brandeburgo</option>
+            <option value="40.7580,-73.9855">Nueva York · Times Square</option>
+            <option value="35.6595,139.7005">Tokio · Shibuya</option>
+            <option value="43.32969,-1.819606">Irún · Ventas</option>
+          </select>
+          <form id="travel-form">
+            <label class="field-label" for="travel-latitude">Latitud</label>
+            <input id="travel-latitude" type="number" min="-85" max="85" step="any" required />
+            <label class="field-label" for="travel-longitude">Longitud</label>
+            <input id="travel-longitude" type="number" min="-180" max="180" step="any" required />
+            <button id="travel-go" type="submit">Cargar destino</button>
+          </form>
+          <p>
+            Carga terreno y edificios reales alrededor del destino, con el coche y la nave. La
+            escena anterior se conserva en Deshacer. Guarda o exporta para conservarla en disco.
+          </p>
+          <p id="travel-status" role="status"></p>
+          <button id="travel-cancel" hidden>Cancelar carga</button>
+        </div>
         <div id="file-menu" class="app-menu" popover aria-label="Archivo">
           <button id="import">Abrir escena JSON…</button>
           <button id="save">Guardar en este navegador <kbd>Ctrl S</kbd></button>

@@ -93,3 +93,42 @@ it('uses the elevation collider in valleys instead of an invisible globe surface
   }
   s.dispose()
 })
+
+it('isolates a real degenerate Madrid building instead of rejecting its entire tile', () => {
+  const bad = JSON.parse(
+    readFileSync(
+      new URL('../tests/fixtures/madrid-degenerate-building.json', import.meta.url),
+      'utf8',
+    ),
+  )
+  const doc = createRealWorld({
+    name: 'Madrid regression',
+    origin: { latitude: 40.4168, longitude: -3.7038, altitude: 0 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      bad,
+      {
+        id: 'way/999999999',
+        tags: { building: 'yes' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-3.7038, 40.4168],
+              [-3.7036, 40.4168],
+              [-3.7036, 40.417],
+              [-3.7038, 40.417],
+              [-3.7038, 40.4168],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  expect(doc.entities.some((e) => e.terrain)).toBe(true)
+  expect(doc.entities.filter((e) => e.kind === 'solid')).toHaveLength(1)
+  expect(doc.entities.some((e) => e.source?.id === bad.id)).toBe(false)
+  expect(doc.entities.find((e) => e.id === 'world-buildings')!.name).toContain('1 omitidos')
+  expect(() => parseScene(doc)).not.toThrow()
+})

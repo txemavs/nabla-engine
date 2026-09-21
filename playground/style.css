@@ -841,3 +841,16 @@ body.playing #footer-mode {
     left: 12px;
   }
 }
+
+#travel-menu p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+#travel-go {
+  margin-top: 14px;
+  width: 100%;
+}
+#travel-menu h3 {
+  margin: 4px 0 16px;
+}

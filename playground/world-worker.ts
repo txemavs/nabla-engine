@@ -7,6 +7,7 @@ self.onmessage = async (
     key?: string
     origin?: GeoPoint
     cancel?: boolean
+    destination?: boolean
     far?: [number, number]
   }>,
 ) => {
@@ -23,7 +24,7 @@ self.onmessage = async (
       if (!controller.signal.aborted) self.postMessage({ id, terrain })
       return
     }
-    const entities = await loadWorldTile(origin!, key!, controller.signal)
+    const entities = await loadWorldTile(origin!, key!, controller.signal, event.data.destination)
     if (!controller.signal.aborted) self.postMessage({ id, entities })
   } catch (error) {
     self.postMessage({ id, error: error instanceof Error ? error.message : String(error) })

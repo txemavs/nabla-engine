@@ -276,7 +276,7 @@ function setupWorldStream(): void {
     const status = distantTerrain?.status ?? 'loading'
     renderer.domElement.dataset.distantTerrain = status
     $('world-note').textContent =
-      'VENTAS / KATEA · OSM + ESRI · ' +
+      `${doc.name} · OSM + ESRI · ` +
       (status === 'ready'
         ? `Vista ≈ ${performanceSettings.distance / 1000} km`
         : status === 'unavailable'
@@ -672,6 +672,112 @@ async function loadIrun(): Promise<void> {
     $('world-loading').hidden = true
   }
 }
+let travelController: AbortController | null = null
+$('travel-city').onchange = () => {
+  const city = $<HTMLSelectElement>('travel-city').value
+  if (!city) return
+  const [latitude, longitude] = city.split(',')
+  $<HTMLInputElement>('travel-latitude').value = latitude
+  $<HTMLInputElement>('travel-longitude').value = longitude
+}
+for (const id of ['travel-latitude', 'travel-longitude']) {
+  $<HTMLInputElement>(id).value = String(
+    id === 'travel-latitude'
+      ? (editor.document.geography?.latitude ?? 40.4168)
+      : (editor.document.geography?.longitude ?? -3.7038),
+  )
+  $(id).addEventListener('input', () => {
+    $<HTMLSelectElement>('travel-city').value = ''
+  })
+}
+$('travel-cancel').onclick = () => travelController?.abort()
+$('travel-form').onsubmit = (event) => {
+  event.preventDefault()
+  void travelTo()
+}
+async function travelTo(): Promise<void> {
+  if (loadingWorld) return
+  const latitude = $<HTMLInputElement>('travel-latitude').valueAsNumber
+  const longitude = $<HTMLInputElement>('travel-longitude').valueAsNumber
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    Math.abs(latitude) > 85 ||
+    Math.abs(longitude) > 180
+  ) {
+    $('travel-status').textContent = 'Introduce coordenadas válidas (latitud entre −85 y 85).'
+    return
+  }
+  const city = $<HTMLSelectElement>('travel-city')
+  const name = city.value
+    ? city.selectedOptions[0].textContent!
+    : `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+  if (sim) togglePlay()
+  loadingWorld = true
+  refreshUi()
+  const controller = new AbortController()
+  travelController = controller
+  const loader = new WorldLoader()
+  for (const id of ['save', 'export', 'play', 'travel-go']) $<HTMLButtonElement>(id).disabled = true
+  $('travel-cancel').hidden = false
+  $('world-loading').hidden = false
+  const message = `Cargando ${name} · terreno y edificios. Una zona nueva puede tardar hasta dos minutos…`
+  $('world-loading').textContent = message
+  $('travel-status').textContent = message
+  try {
+    const entities = await loader.load(
+      { latitude, longitude, altitude: 0 },
+      '0_0',
+      controller.signal,
+      true,
+    )
+    if (controller.signal.aborted) return
+    $('travel-cancel').hidden = true
+    for (const e of entities) {
+      if (e.terrain) e.name = `Relieve · ${name}`
+      if (e.id === 'carrier') e.name = 'Nave'
+    }
+    const next = upgradeReferenceScene({
+      version: 1,
+      name,
+      geography: { latitude, longitude, altitude: 0, imagery: 'offline' },
+      sky: editor.document.sky,
+      entities,
+    })
+    editor.load(next)
+    for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
+    selectedId = 'car-a'
+    rebuild()
+    $('welcome').hidden = true
+    await view.ready
+    focusSelection()
+    const car = next.entities.find((e) => e.id === 'car-a')!
+    const [x, y, z] = car.transform.position
+    orbit.target.set(x, y + 2, z)
+    camera.position.set(x + 35, y + 32, z + 40)
+    orbit.update()
+    renderer.domElement.dataset.world = 'destination'
+    $('travel-status').textContent =
+      `${name} cargado · pulsa Jugar para explorar. Deshacer vuelve a la escena anterior.`
+    toast(`${name} · destino cargado`)
+    $('travel-menu').hidePopover()
+  } catch (error) {
+    const message = controller.signal.aborted
+      ? 'Viaje cancelado. Se conserva la escena anterior.'
+      : `No se pudo cargar el destino: ${error instanceof Error ? error.message : String(error)}. Se conserva la escena anterior; puedes reintentar.`
+    $('travel-status').textContent = message
+    toast(message)
+  } finally {
+    loader.dispose()
+    travelController = null
+    loadingWorld = false
+    refreshUi()
+    for (const id of ['save', 'export', 'play', 'travel-go'])
+      $<HTMLButtonElement>(id).disabled = false
+    $('travel-cancel').hidden = true
+    $('world-loading').hidden = true
+  }
+}
 $('world-irun').onclick = () => void loadIrun()
 
 $('welcome-close').onclick = () => {
@@ -785,7 +891,7 @@ for (const [id, key] of [
     }
     if (distantTerrain?.status === 'ready')
       $('world-note').textContent =
-        `VENTAS / KATEA · OSM + ESRI · Vista ≈ ${performanceSettings.distance / 1000} km`
+        `${editor.document.name} · OSM + ESRI · Vista ≈ ${performanceSettings.distance / 1000} km`
     sim?.setCollisionDistance(performanceSettings.collisions)
     renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
     renderer.setSize(viewport.clientWidth, viewport.clientHeight)
@@ -1369,7 +1475,7 @@ function frame(now: number): void {
 }
 function applyLocation(latitude: number, longitude: number): void {
   if (editor.document.entities.some((e) => e.terrain)) {
-    toast('Este extracto está anclado a Ventas de Irún')
+    toast('Usa el menú Ir para cargar otra zona del mundo')
     return
   }
   if (sim) {

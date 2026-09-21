@@ -1,0 +1,57 @@
+{
+  "id": "way/118189863",
+  "tags": {
+    "addr:city": "Madrid",
+    "addr:housenumber": "2",
+    "addr:postcode": "28005",
+    "addr:street": "Plaza de la Cebada",
+    "amenity": "theatre",
+    "building": "commercial",
+    "building:colour": "white",
+    "building:levels": "4",
+    "contact:email": "jefesala@teatrolalatina.es",
+    "contact:facebook": "https://es-la.facebook.com/pages/Caf%C3%A9-La-Tourn%C3%A9e/302303556509174",
+    "contact:phone": "+34 913 65 28 35",
+    "name": "Teatro La Latina",
+    "roof:colour": "grey",
+    "source:geometry": "Imagen de Catastro de España",
+    "website": "https://www.teatrolalatina.es/",
+    "wheelchair": "no",
+    "wikidata": "Q3323525",
+    "wikimedia_commons": "Category:Teatro La Latina",
+    "wikipedia": "es:Teatro La Latina"
+  },
+  "rings": [
+    {
+      "role": "outer",
+      "coordinates": [
+        [-3.708944, 40.4115454],
+        [-3.7089436, 40.4115861],
+        [-3.7089428, 40.4116564],
+        [-3.7089198, 40.4116558],
+        [-3.7089194, 40.4117171],
+        [-3.7088353, 40.4116905],
+        [-3.7087935, 40.4116774],
+        [-3.7087554, 40.4117358],
+        [-3.7085555, 40.4116644],
+        [-3.7085902, 40.4116082],
+        [-3.708595, 40.4116003],
+        [-3.7086023, 40.4115724],
+        [-3.7086105, 40.4115407],
+        [-3.7086304, 40.4114645],
+        [-3.7086351, 40.4114456],
+        [-3.7086437, 40.4114127],
+        [-3.7086529, 40.4113774],
+        [-3.7088062, 40.411393],
+        [-3.7088831, 40.4114003],
+        [-3.7089674, 40.4114086],
+        [-3.7089642, 40.4114485],
+        [-3.7089439, 40.4114486],
+        [-3.708944, 40.4114811],
+        [-3.708944, 40.411502],
+        [-3.708944, 40.4115195],
+        [-3.708944, 40.4115454]
+      ]
+    }
+  ]
+}

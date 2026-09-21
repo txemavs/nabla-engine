@@ -163,6 +163,7 @@ export async function loadWorldTile(
   origin: GeoPoint,
   key: string,
   signal: AbortSignal,
+  destination = false,
 ): Promise<Entity[]> {
   const [x, z] = key.split('_').map(Number),
     ox = x * 1200,
@@ -231,7 +232,8 @@ export async function loadWorldTile(
       }
   }
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
-  const doc = createRealWorld(extract, { offset: [ox, oz], tileId: key })
+  const doc = createRealWorld(extract, destination ? {} : { offset: [ox, oz], tileId: key })
+  if (destination) return doc.entities
   return doc.entities.filter((e) => e.kind !== 'spawn' && e.kind !== 'vehicle')
 }
 

@@ -10,7 +10,7 @@ import {
 } from './scene.js'
 import { createA3, createCarrier } from './presets.js'
 import { terrainHeight, type TerrainData } from './terrain.js'
-import type { SolidGeometry } from './solid.js'
+import { validateSolid, type SolidGeometry } from './solid.js'
 import { treeSprite } from './vegetation.js'
 import { buildingRoof } from './building-roof.js'
 
@@ -210,12 +210,29 @@ export function createRealWorld(
         (p) => p.map((n) => Math.round(n * 1000) / 1000) as Vec3Tuple,
       )
   }
+  // Validate imported buildings after millimetre rounding. A malformed footprint
+  // must not prevent the terrain and all other OSM features from loading.
+  let omitted = 0
+  const usable = entities.filter((e) => {
+    e.name = e.name.slice(0, 100)
+    if (!e.geometry) return true
+    try {
+      validateSolid(e.geometry)
+      return true
+    } catch {
+      omitted++
+      return false
+    }
+  })
+  if (omitted)
+    usable.find((e) => e.id === groups[0])!.name =
+      `Edificios OSM · ${omitted} omitidos por geometría inválida`
   return parseScene({
     version: 1,
     name: data.name,
     geography: { ...data.origin, imagery: 'offline' },
     sky: { mode: 'fixed', at: '2026-09-21T12:00:00.000Z' },
-    entities,
+    entities: usable,
   })
 }
 

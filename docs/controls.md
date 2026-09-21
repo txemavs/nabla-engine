@@ -267,3 +267,23 @@ Normal horizontal carrier flight targets 277.78 m/s (1000 km/h), with up to 60 m
 acceleration. Releasing the right stick or applying the brake targets zero horizontal
 speed, with up to 90 m/s² braking. Diagonal input has the same speed limit. Vertical
 speed remains 3 m/s with altitude hold, and Shift retains accelerated geographic ascent.
+
+## Travel to another city
+
+Open **Ir** in the header. Choose a destination or enter latitude/longitude, then
+press **Cargar destino**. This downloads a new 1.2 km district with OSM buildings,
+roads and Esri terrain, the A3 and the carrier. Geographic coordinates describe the
+district centre; this is not a worldwide imagery-only repositioning of the old scene.
+Latitude is limited to ±85 degrees for the map projection.
+
+A trip stops play and replaces the editor scene only after data generation succeeds.
+Use **Deshacer** to return to the previous scene, or save/export it for durable storage.
+The loading status supports cancellation and retry; failures preserve the old document.
+New destinations may take up to two minutes depending on the upstream provider.
+The new district starts streaming its neighbors when play resumes. City presets are
+coordinate shortcuts and do not ship predownloaded city models. No geocoding service
+or additional map provider is used.
+
+Invalid imported building topology is omitted after rounding, and its count appears
+on the OSM building group. Other buildings, roads and terrain continue loading. Authored
+solid validation remains strict; this tolerance only applies to map generation.

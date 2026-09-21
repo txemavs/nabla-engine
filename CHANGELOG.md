@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add an Ir menu with city presets, coordinate travel, loading/cancellation, failure preservation and undo back to the previous scene.
+- Isolate malformed imported OSM buildings so one degenerate solid cannot reject an entire district; report omitted building counts.
+
 - Recover failed map imagery, fill neighborhood corners and extend the continuous flight prefetch corridor to 4.8 km.
 - Remove the eight-second delay for cached zones, isolate per-zone retry cooldowns and cancel obsolete loads after travel.
 

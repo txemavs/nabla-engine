@@ -25,7 +25,7 @@ export class WorldLoader {
       this.pending.clear()
     }
   }
-  load(origin: GeoPoint, key: string, signal: AbortSignal): Promise<Entity[]> {
+  load(origin: GeoPoint, key: string, signal: AbortSignal, destination = false): Promise<Entity[]> {
     return new Promise((resolve, reject) => {
       if (signal.aborted) {
         reject(new Error('Carga cancelada'))
@@ -48,7 +48,7 @@ export class WorldLoader {
           reject(error)
         },
       })
-      this.worker.postMessage({ id, key, origin })
+      this.worker.postMessage({ id, key, origin, destination })
     })
   }
   dispose(): void {
