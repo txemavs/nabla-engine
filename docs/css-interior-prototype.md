@@ -39,3 +39,15 @@ not yet provide a six-sided CSS world, nested CSS/WebGL portal views, persistent
 CSS documents, arbitrary embedded application interaction or adjustable physical
 wall thickness. Those can build on this experiment once the visual behavior is
 accepted.
+
+## Portal tablets
+
+Portal controls now use fixed black tablets on both faces of each gate. Their
+CSS displays activate only while the walking actor and camera are less than one
+metre from the tablet, with a clear view. G releases mouse capture for the native
+HTML destination selector and open/close buttons. Clicking outside the tablet
+recaptures the mouse. Leaving range disables interaction and closes the display.
+CSS transforms use pixel-space camera/world coordinates; the tablet keeps
+`transform-style: preserve-3d` without `overflow: hidden`, which otherwise breaks
+native hit testing of transformed controls in Chromium. Portal render targets
+retain the solid standby face.

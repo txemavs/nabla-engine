@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace floating portal controls with black, perspective-matched CSS tablets that activate within one metre and expose native destination/open/close controls.
+
 - Add visible carrier interior lining and an experimental camera-matched HTML/CSS wall display with temporary point drawing and WebGL occlusion.
 
 - Add a persistent map-building visibility option, disabling hidden building collisions while retaining terrain, roads and scene data.

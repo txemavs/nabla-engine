@@ -681,16 +681,35 @@ body.playing #footer-mode {
 }
 
 .portal-console {
-  position: absolute;
-  z-index: 6;
-  width: 205px;
-  padding: 9px;
-  border: 1px solid #5bacff;
-  border-radius: 6px;
-  background: #102035ee;
-  box-shadow: 0 4px 16px #0008;
-  font-size: 11px;
+  /* Clipping here flattens 3D descendants and breaks native button hit testing. */
+  transform-style: preserve-3d;
+  width: 380px;
+  height: 540px;
+  box-sizing: border-box;
+  padding: 28px;
+  overflow: visible;
+  border-radius: 14px;
+  background: #08121e;
+  color: #dceeff;
+  font-size: 25px;
+  backface-visibility: visible;
 }
+.portal-console[hidden] {
+  display: none !important;
+}
+.portal-console select,
+.portal-console button {
+  font-size: 22px;
+  padding: 14px 8px;
+}
+.portal-console strong {
+  min-height: 75px;
+}
+.portal-console small {
+  font-size: 20px;
+  line-height: 1.5;
+}
+
 .portal-console strong,
 .portal-console small {
   display: block;
@@ -856,6 +875,7 @@ body.playing #footer-mode {
 }
 
 .css-world-layer {
+  z-index: 0;
   position: absolute;
   inset: 0;
   pointer-events: none;

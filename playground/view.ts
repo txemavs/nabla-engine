@@ -34,6 +34,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  readonly portalTablets = new Map<string, THREE.Mesh[]>()
   readonly cabinScreens = new Map<string, THREE.Mesh>()
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
@@ -118,17 +119,21 @@ export class SceneView {
         light.position.set(0, h / 2 + PORTAL_BAR / 2, d / 2 + 0.015)
         light.name = 'Portal status'
         group.add(light)
-        const panel = box([0.24, 0.38, 0.08], '#17283e')
-        panel.position.set(w / 2 - 0.15, -0.15, 0.2)
-        group.add(panel)
-        for (const [y, color] of [
-          [-0.07, '#5bacff'],
-          [-0.23, '#ffb45e'],
-        ] as const) {
-          const button = box([0.16, 0.1, 0.02], color)
-          button.position.set(w / 2 - 0.15, y, 0.25)
-          group.add(button)
+        const screens: THREE.Mesh[] = []
+        for (const side of [1, -1]) {
+          const tablet = box([0.44, 0.62, 0.06], '#080b10')
+          tablet.position.set(w / 2 - 0.25, -0.15, side * 0.22)
+          group.add(tablet)
+          const screen = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.38, 0.54),
+            new THREE.MeshBasicMaterial({ color: '#05090e' }),
+          )
+          screen.position.set(w / 2 - 0.25, -0.15, side * 0.255)
+          screen.rotation.y = side === 1 ? 0 : Math.PI
+          group.add(screen)
+          screens.push(screen)
         }
+        this.portalTablets.set(e.id, screens)
       }
       if (e.sprite) {
         const options = { color: '#ffffff', alphaTest: 0.1, transparent: false, depthWrite: true }

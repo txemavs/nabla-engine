@@ -11,10 +11,14 @@ closed mouths into those frames when opening an older container scene; it does
 not duplicate their visible frames or overwrite authored entities. Save/export
 persists the added mouths and their authored links through the scene workflow.
 
-During play, approach either frame to see its destination selector and **Abrir /
-Cerrar** buttons. Press **G** (or release the pointer with Escape) to use the
-buttons. The console projects beside the frame, works from either side, follows
-the carrier, and hides behind physical obstructions. The address book lists all
+During play, approach the black tablet beside either frame to within one metre
+to activate its perspective-matched CSS display. Both the actor and camera must
+be nearby, with a clear view; driving does not activate tablets. Press **G**
+(or release the pointer with Escape) to use its native destination selector and
+**Abrir / Cerrar** buttons. Fixed tablets on both faces follow the carrier.
+Leaving range turns the display off and disables interaction. The main-view
+WebGL aperture provides visual depth occlusion; portal textures show the black
+standby screen. The address book lists all
 other mouths with matching aperture dimensions in the loaded scene. Labels use
 editable entity names; actual connections use stable entity IDs.
 

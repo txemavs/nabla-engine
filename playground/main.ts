@@ -1388,7 +1388,7 @@ function frame(now: number): void {
     }
   }
   gallery.update(view, !!sim, document.hidden ? 0 : dt)
-  portalControls.update(sim, view.document, camera)
+  portalControls.update(sim, view.document, camera, view.portalTablets)
   sidearm.visible = !!sim && !sim.player.vehicleId
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
@@ -1486,7 +1486,9 @@ function frame(now: number): void {
       renderer.clearDepth()
     }
     cssScreens.prepare(camera, viewport.clientWidth, viewport.clientHeight)
+    portalControls.prepare(camera)
     renderer.render(scene, camera)
+    portalControls.finish()
     cssScreens.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
     needsRender = false
