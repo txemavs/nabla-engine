@@ -1,3 +1,4 @@
+import { portalColliders, portalCrossing, portalLocal, portalMapping } from './portal.js'
 import { EARTH_RADIUS, localFrame, localToGeo } from './geography.js'
 import { OBB } from 'three/addons/math/OBB.js'
 import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
@@ -75,6 +76,7 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 export class Simulation {
   private readonly document: SceneDocument
   private readonly graph: SceneGraph
+  private readonly portalEntities: Entity[]
   private readonly world = new World({ gravity: new Vec3(0, -9.81, 0) })
   private readonly solidMaterial = new Material({ friction: 0.55, restitution: 0 })
   private readonly characterMaterial = new Material({ friction: 0, restitution: 0 })
@@ -91,23 +93,38 @@ export class Simulation {
   private readonly docks = new Map<string, { carrierId: string; constraint: LockConstraint }>()
   private ticks = 0
   private lostTime = 0
+  private portalSequence = 0
+  private lastPortalEvent: {
+    sequence: number
+    actorId: string
+    sourceId: string
+    destinationId: string
+    yawDelta: number
+    blocked: boolean
+  } | null = null
+  private readonly portalLocks = new Map<number, string>()
+  get portalEvent() {
+    return this.lastPortalEvent ? { ...this.lastPortalEvent } : null
+  }
 
   constructor(raw: SceneDocument) {
     this.document = parseScene(raw)
     this.graph = new SceneGraph(this.document)
+    this.portalEntities = this.document.entities.filter((e) => e.portal?.mode === 'open')
     this.world.broadphase = new SAPBroadphase(this.world)
     ;(this.world.solver as GSSolver).iterations = 15
     this.world.defaultContactMaterial.friction = 0.55
     this.world.defaultContactMaterial.restitution = 0
     for (const e of this.document.entities) {
-      if (e.motion === 'none') continue
+      if (e.motion === 'none' && !e.portal) continue
       const transform = this.graph.worldTransform(e.id)
       const body = new Body({
         mass: e.motion === 'dynamic' ? e.mass : 0,
         material: this.solidMaterial,
       })
-      const colliders =
-        e.kind === 'vehicle'
+      const colliders = e.portal
+        ? portalColliders(e)
+        : e.kind === 'vehicle'
           ? vehicleDefinition(e).colliders
           : [
               {
@@ -256,12 +273,227 @@ export class Simulation {
     this.lostTime += elapsed - accepted
     this.accumulator += accepted
     while (this.accumulator + 1e-10 >= FIXED_STEP) {
+      const before = this.portalEntities.length
+        ? this.world.bodies
+            .filter((b) => b.mass > 0)
+            .map((body) => ({ body, position: vec(body.position) }))
+        : []
       this.beforeTick()
       this.world.step(FIXED_STEP)
+      this.crossPortals(before)
       this.updateGrounded()
       this.accumulator -= FIXED_STEP
       this.ticks++
     }
+  }
+  private crossPortals(previous: { body: Body; position: Vec3Tuple }[]): void {
+    const mouths = this.portalEntities
+    if (!mouths.length) return
+    for (const { body, position } of previous) {
+      const actor = [...this.bodies].find(([, b]) => b === body)?.[0] ?? 'player'
+      const vehicle = this.vehicles.get(actor)
+      const corners = this.portalEnvelope(body, vehicle)
+      const lock = this.portalLocks.get(body.id)
+      if (lock) {
+        const mouth = mouths.find((e) => e.id === lock)
+        if (mouth && corners.some((c) => Math.abs(portalLocal(c, mouth.transform).z) < 0.25))
+          continue
+        // Keep the lock until the entire body has cleared the exit plane.
+        if (mouth) {
+          const zs = corners.map((c) => portalLocal(c, mouth.transform).z)
+          if (Math.min(...zs) <= 0.15 && Math.max(...zs) >= -0.15) continue
+        }
+        this.portalLocks.delete(body.id)
+      }
+      for (const source of mouths) {
+        if (source.id === lock) continue
+        const a = portalLocal(position, source.transform),
+          b = portalLocal(vec(body.position), source.transform)
+        const crossing = portalCrossing(position, vec(body.position), source.transform)
+        const backwards = a.z < 0 && b.z >= 0
+        if (crossing === null && !backwards) continue
+        const fraction = crossing ?? -a.z / (b.z - a.z)
+        const centre = new Vector3(...position).lerp(new Vector3(...vec(body.position)), fraction)
+        const local = portalLocal(centre.toArray(), source.transform)
+        if (
+          Math.abs(local.x) > source.size[0] / 2 + 5 ||
+          Math.abs(local.y) > source.size[1] / 2 + 5
+        )
+          continue
+        const shift = centre.sub(new Vector3(...vec(body.position)))
+        const fits = corners.every((c) => {
+          const p = portalLocal(new Vector3(...c).add(shift).toArray(), source.transform)
+          return (
+            Math.abs(p.x) < source.size[0] / 2 - 0.025 && Math.abs(p.y) < source.size[1] / 2 + 0.025
+          )
+        })
+        // A near miss outside the frame must remain ordinary movement.
+        const projected = corners.map((c) =>
+          portalLocal(new Vector3(...c).add(shift).toArray(), source.transform),
+        )
+        if (
+          Math.min(...projected.map((p) => p.x)) > source.size[0] / 2 ||
+          Math.max(...projected.map((p) => p.x)) < -source.size[0] / 2 ||
+          Math.min(...projected.map((p) => p.y)) > source.size[1] / 2 ||
+          Math.max(...projected.map((p) => p.y)) < -source.size[1] / 2
+        )
+          continue
+        const destination = mouths.find((e) => e.id === source.portal!.pairId)!
+        const mapping = portalMapping(source.transform, destination.transform)
+        const rotation = new RenderQuaternion().setFromRotationMatrix(mapping)
+        const mappedPosition = new Vector3(...vec(body.position)).applyMatrix4(mapping)
+        const mappedRotation = rotation
+          .clone()
+          .multiply(
+            new RenderQuaternion(
+              body.quaternion.x,
+              body.quaternion.y,
+              body.quaternion.z,
+              body.quaternion.w,
+            ),
+          )
+        const constrained =
+          this.docks.has(actor) || [...this.docks.values()].some((d) => d.carrierId === actor)
+        const blocked =
+          backwards ||
+          !fits ||
+          constrained ||
+          this.portalExitBlocked(body, mappedPosition, mappedRotation, destination)
+        if (blocked) {
+          body.position.set(...position)
+          body.velocity.setZero()
+          body.angularVelocity.setZero()
+        } else {
+          body.position.set(...mappedPosition.toArray())
+          body.quaternion.set(...mappedRotation.toArray())
+          body.velocity.set(
+            ...new Vector3(...vec(body.velocity)).applyQuaternion(rotation).toArray(),
+          )
+          body.angularVelocity.set(
+            ...new Vector3(...vec(body.angularVelocity)).applyQuaternion(rotation).toArray(),
+          )
+          this.portalLocks.set(body.id, destination.id)
+          // A solved contact belongs to the old location; do not expose it at the exit.
+          this.world.contacts = this.world.contacts.filter((c) => c.bi !== body && c.bj !== body)
+          this.world.frictionEquations = this.world.frictionEquations.filter(
+            (c) => c.bi !== body && c.bj !== body,
+          )
+          if (vehicle) {
+            vehicle.raycast.wheelInfos.forEach((w) => {
+              w.isInContact = false
+              w.raycastResult.reset()
+            })
+            if (vehicle.flight) vehicle.flight = null
+          }
+        }
+        body.previousPosition.copy(body.position)
+        body.interpolatedPosition.copy(body.position)
+        body.previousQuaternion.copy(body.quaternion)
+        body.interpolatedQuaternion.copy(body.quaternion)
+        body.aabbNeedsUpdate = true
+        body.wakeUp()
+        this.world.broadphase.dirty = true
+        const forward = new Vector3(0, 0, -1).applyQuaternion(rotation)
+        const yawDelta = blocked ? 0 : Math.atan2(-forward.x, -forward.z)
+        if (actor === this.vehicleId || body === this.playerBody) this.input.yaw += yawDelta
+        this.lastPortalEvent = {
+          sequence: ++this.portalSequence,
+          actorId: actor,
+          sourceId: source.id,
+          destinationId: destination.id,
+          yawDelta,
+          blocked,
+        }
+        break
+      }
+    }
+  }
+  private portalEnvelope(body: Body, vehicle?: Vehicle): Vec3Tuple[] {
+    const points: Vec3Tuple[] = []
+    const addBox = (half: Vec3, offset: Vec3, q: Quaternion) => {
+      for (const x of [-1, 1])
+        for (const y of [-1, 1])
+          for (const z of [-1, 1]) {
+            const point = q.vmult(new Vec3(x * half.x, y * half.y, z * half.z)).vadd(offset)
+            points.push(vec(body.pointToWorldFrame(point)))
+          }
+    }
+    body.shapes.forEach((shape, i) => {
+      if (shape instanceof Box)
+        addBox(shape.halfExtents, body.shapeOffsets[i], body.shapeOrientations[i])
+    })
+    if (vehicle) {
+      const [w, h, l] = vehicle.entity.size
+      // Include bodywork and the full suspension/wheel envelope, not just the chassis collider.
+      const floor = Math.min(
+        ...vehicle.definition.hubs.map(
+          (hub, i) =>
+            hub[1] +
+            vehicle.definition.suspensionRest -
+            vehicle.definition.wheelRadius -
+            vehicle.raycast.wheelInfos[i].suspensionLength,
+        ),
+      )
+      addBox(new Vec3(w / 2, h / 2, l / 2), new Vec3(0, floor + h / 2, 0), new Quaternion())
+    }
+    return points
+  }
+  private portalExitBlocked(
+    body: Body,
+    position: Vector3,
+    quaternion: RenderQuaternion,
+    destination: Entity,
+  ): boolean {
+    const normal = new Vector3(0, 0, 1).applyQuaternion(
+      new RenderQuaternion(...destination.transform.rotation),
+    )
+    const shapeBoxes = (other: Body): OBB[] =>
+      other.shapes.flatMap((shape, i) => {
+        if (!(shape instanceof Box)) return []
+        const p = other.pointToWorldFrame(other.shapeOffsets[i]),
+          q = other.quaternion.mult(other.shapeOrientations[i])
+        return [
+          new OBB(
+            new Vector3(...vec(p)),
+            new Vector3(...vec(shape.halfExtents)).multiplyScalar(0.995),
+            new Matrix3().setFromMatrix4(
+              new Matrix4().makeRotationFromQuaternion(new RenderQuaternion(q.x, q.y, q.z, q.w)),
+            ),
+          ),
+        ]
+      })
+    const obstacles = this.world.bodies.filter((b) => b !== body).flatMap(shapeBoxes)
+    // Check a clear exit corridor at transfer time; cross-seam contacts are not simulated.
+    const length = Math.max(...body.shapes.map((s) => s.boundingSphereRadius), 1) + 0.25
+    for (let distance = 0; distance <= length; distance += 0.25) {
+      for (let i = 0; i < body.shapes.length; i++) {
+        const shape = body.shapes[i]
+        if (!(shape instanceof Box)) continue
+        const centre = new Vector3(...vec(body.shapeOffsets[i]))
+          .applyQuaternion(quaternion)
+          .add(position)
+          .addScaledVector(normal, distance)
+        const q = quaternion
+          .clone()
+          .multiply(
+            new RenderQuaternion(
+              ...([
+                body.shapeOrientations[i].x,
+                body.shapeOrientations[i].y,
+                body.shapeOrientations[i].z,
+                body.shapeOrientations[i].w,
+              ] as [number, number, number, number]),
+            ),
+          )
+        const bounds = new OBB(
+          centre,
+          new Vector3(...vec(shape.halfExtents)).multiplyScalar(0.98),
+          new Matrix3().setFromMatrix4(new Matrix4().makeRotationFromQuaternion(q)),
+        )
+        if (obstacles.some((obstacle) => bounds.intersectsOBB(obstacle))) return true
+      }
+    }
+    return false
   }
   private updateGrounded(): void {
     const contact =

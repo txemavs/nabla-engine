@@ -1,3 +1,5 @@
+import { createPortalPair } from '../src/portal.js'
+import { renderPortals } from './portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
 import { GeographicView } from './geography.js'
 import { localToGeo, MADRID } from '../src/geography.js'
@@ -263,6 +265,33 @@ function refreshUi(): void {
     ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
+  if (e.portal) {
+    const controls = document.createElement('div')
+    controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>La conexión cambia en ambos extremos.</p>`
+    controls.insertAdjacentHTML(
+      'afterbegin',
+      `<label class="field-label" for="portal-destination">Destino del Stargate</label><select id="portal-destination"><option value="">Sin enlace</option>${doc.entities
+        .filter((item) => item.portal && item.id !== e.id)
+        .map((item) => `<option value="${escape(item.id)}">${escape(item.name)}</option>`)
+        .join('')}</select>`,
+    )
+    props.append(controls)
+    $<HTMLSelectElement>('portal-destination').value = e.portal.pairId ?? ''
+    $('portal-destination').onchange = () =>
+      action(() => {
+        editor.linkPortals(e.id, $<HTMLSelectElement>('portal-destination').value || null)
+        rebuild()
+      })
+    $<HTMLSelectElement>('portal-mode').value = e.portal.mode
+    $('portal-mode').onchange = () =>
+      action(() => {
+        editor.setPortalMode(
+          e.id,
+          $<HTMLSelectElement>('portal-mode').value as 'open' | 'closed' | 'window',
+        )
+        rebuild()
+      })
+  }
   props.querySelectorAll<HTMLInputElement>('[data-vector]').forEach((input) => {
     input.onchange = () =>
       action(() => {
@@ -339,7 +368,8 @@ function refreshUi(): void {
     $<HTMLInputElement>('color').disabled = !!e.visual
     $<HTMLButtonElement>('duplicate').disabled = e.kind === 'spawn'
     $<HTMLButtonElement>('delete').disabled = e.kind === 'spawn'
-    $<HTMLSelectElement>('parent').disabled = e.kind === 'spawn' || e.motion === 'dynamic'
+    $<HTMLSelectElement>('parent').disabled =
+      e.kind === 'spawn' || e.motion === 'dynamic' || !!e.portal
     gizmo.attach(view.objects.get(e.id)!)
   }
   $<HTMLButtonElement>('undo').disabled = !!sim || !editor.canUndo
@@ -352,6 +382,7 @@ function refreshUi(): void {
     'rotate',
     'import',
     'sample-assets',
+    'sample-portals',
     'focus',
   ])
     $<HTMLButtonElement>(id).disabled = !!sim
@@ -406,6 +437,18 @@ $('sample-assets').onclick = () =>
     view.ready.then(focusSelection).catch(() => undefined)
     toast('A3 y container listos. Puedes deshacer para volver a tu escena.')
   })
+$('sample-portals').onclick = () =>
+  action(() => {
+    const next = editor.document
+    const ids = [crypto.randomUUID(), crypto.randomUUID()]
+    next.entities.push(...createPortalPair(ids[0], ids[1]))
+    editor.load(next)
+    selectedId = ids[0]
+    collapsed.delete(ids[0])
+    rebuild()
+    view.ready.then(focusSelection).catch(() => undefined)
+    toast('Dos Stargates añadidos. El A3 tiene el primero delante; puedes moverlos o deshacer.')
+  })
 $('welcome-close').onclick = () => {
   $('welcome').hidden = true
 }
@@ -458,6 +501,8 @@ function togglePlay(): void {
       orbitStartPosition = camera.position.clone()
       orbitStartTarget = orbit.target.clone()
       sim = new Simulation(editor.document)
+      portalSequence = 0
+      delete renderer.domElement.dataset.portalCrossings
       cockpit = false
       const spawn = editor.document.entities.find((e) => e.kind === 'spawn')!
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
@@ -665,6 +710,7 @@ new ResizeObserver(() => {
   camera.updateProjectionMatrix()
   needsRender = true
 }).observe(viewport)
+let portalSequence = 0
 let previous = performance.now()
 function frame(now: number): void {
   const dt = (now - previous) / 1000
@@ -673,6 +719,19 @@ function frame(now: number): void {
     const pad = pollGamepad()
     sim.setInput(currentInput(pad))
     sim.step(document.hidden ? 0 : dt)
+    const crossing = sim.portalEvent
+    if (crossing && crossing.sequence !== portalSequence) {
+      portalSequence = crossing.sequence
+      if (crossing.actorId === sim.player.vehicleId || crossing.actorId === 'player') {
+        yaw += crossing.yawDelta
+        renderer.domElement.dataset.portalCrossings = String(crossing.sequence)
+        toast(
+          crossing.blocked
+            ? 'Paso bloqueado: comprueba el tamaño, el sentido y la salida'
+            : 'Stargate atravesado',
+        )
+      }
+    }
     view.sync(sim)
     const p = sim.player
     const geoPoint = view.document.geography
@@ -795,6 +854,15 @@ function frame(now: number): void {
   }
   sun.castShadow = height < 500
   if (sim || needsRender) {
+    const outlineVisible = outline.visible
+    outline.visible = false
+    renderPortals(view.portals, renderer, scene, camera, (remote) => {
+      if (geography.enabled) {
+        geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
+        renderer.autoClear = false
+      }
+    })
+    outline.visible = outlineVisible
     renderer.autoClear = true
     if (geography.enabled) {
       geography.render(renderer, camera, worldCamera)

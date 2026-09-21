@@ -23,9 +23,10 @@ Earth texture and branding are bundled. Connected maps use Esri or CARTO;
 The playground UI remains in Spanish. Documentation is in English; the
 [controls guide](docs/controls.md) includes the corresponding UI labels.
 
-## Current baseline: 0.2.0
+## Current working tree: 0.2.0 baseline + Stargate prototype
 
 - Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
+- Optional fixed Stargates with linked live views, editable destinations and walker/vehicle traversal.
 - A shared physics world for walking, driving, obstacles and movable objects.
 - Original Audi A3 Cabrio body, wheels and steering wheel, with interior camera.
 - A 5 × 10 m carrier: drive into its garage, latch the car, travel and release it.
@@ -36,6 +37,7 @@ The playground UI remains in Spanish. Documentation is in English; the
 
 Select **Escena A3** to load the current example if an older scene is saved in your
 browser. Loading the example is undoable and does not overwrite the saved copy.
+**+ Stargates** adds a linked pair to the current scene without replacing it.
 **Jugar** creates a fresh simulation; **Detener** restores the edited scene.
 
 ## Repository layout
@@ -115,14 +117,16 @@ supply terrain elevation, physical buildings or road geometry. Drone flight is
 assisted, with an explicit accelerated travel mode, not orbital mechanics. General
 high-speed collision safety is not guaranteed by the discrete solver.
 
-There are no portals, NPC navigation, multiplayer, skeletal animation, inherited
+The [Stargate prototype](docs/portals.md) supports fixed upright mouths; moving
+carrier mouths, CSS interiors and seamless partial-body crossing are future work.
+There is no NPC navigation, multiplayer, skeletal animation, inherited
 scale or interactive GLB import yet. Dynamic physics bodies and the player spawn
 must be roots; visual children are supported. The character uses a box collider
 and has no automatic stair climbing. Standard gamepads are supported, but custom
 radio calibration and touch gameplay controls are not implemented.
 
-The previous implementation remains in Git history. Future portal work should
-extend this baseline through explicit contracts and tests.
+The previous implementation remains in Git history. The portal design and remaining
+acceptance stages are recorded in [the portal guide](docs/portals.md).
 
 ## License
 

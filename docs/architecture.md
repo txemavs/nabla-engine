@@ -49,7 +49,9 @@ nor filenames select physics, and numbers are not inspected to guess their units
 Validation rejects duplicate IDs, missing parents, cycles, invalid dimensions,
 nonunit quaternions and unsupported physical hierarchies. Exactly one spawn is
 required. Dynamic bodies and the spawn are roots; visual descendants are supported.
-Optional fields preserve compatibility with earlier scene-v1 documents.
+The optional `portal` field on a root group declares a fixed upright mouth and a
+reciprocal link; IDs remain opaque. Portal frames and closed apertures generate
+static collision parts within the same world. Optional fields preserve compatibility with earlier scene-v1 documents.
 
 ## Physics and time
 

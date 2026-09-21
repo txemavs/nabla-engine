@@ -58,5 +58,7 @@ location permissions and sky rendering belong to the host.
 5. Verify original models, garage transport, loaded flight and GPS/time persistence.
 6. Add new capabilities through explicit contracts with interaction tests.
 
-Portals and HTML interiors are future work. They should extend this baseline
-without splitting physics ownership or silently changing scene coordinates.
+Fixed upright portals now have a prototype in the reference host. Agency can adapt
+its frame and link data to explicit `entity.portal` records and consume the shared
+transform helpers; it must not reintroduce a second traversal controller. Hosted
+moving gates and HTML interiors remain future work. See the [portal guide](portals.md).

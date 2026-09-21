@@ -104,3 +104,17 @@ The clock controls the apparent Sun and Moon, shadows, ambient light, sky color,
 map brightness and stars. It can be changed during play without restarting physics.
 Celestial positions are approximate; the Moon and Sun are visual bodies, not
 physical destinations.
+
+## Fixed Stargate prototype
+
+Click **+ Stargates** to add an undoable pair in front of the A3 and on the other
+lane. Select either frame to change its destination or its shared connection mode:
+**Cerrado** blocks and hides the destination, **Ventana** shows it but blocks
+traversal, **Paso abierto** permits traversal from the front. Stop play to edit a
+connection. Drive the A3 forward through the first frame or walk through it; the
+same actor appears at the linked mouth. Do not approach from the opaque back face.
+
+Frames can move and rotate around world Y. Tilt and mounting on a moving parent
+are deliberately rejected in this prototype. Occupied or undersized exits block
+transfer. See [portal status and design](portals.md) for the remaining work toward
+the carrier and CSS-interior experience.

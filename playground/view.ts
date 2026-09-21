@@ -1,3 +1,5 @@
+import { createPortalSurface, type PortalSurface } from './portals.js'
+import { PORTAL_BAR } from '../src/portal.js'
 import { assets, disposeObject } from './assets.js'
 import { vehicleDefinition, type VisualDefinition } from '../src/index.js'
 import * as THREE from 'three'
@@ -26,6 +28,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
 export class SceneView {
   readonly root = new THREE.Group()
   readonly objects = new Map<string, THREE.Group>()
+  readonly portals = new Map<string, PortalSurface>()
   readonly wheels = new Map<string, THREE.Group[]>()
   readonly steering = new Map<string, THREE.Group>()
   readonly ramps = new Map<string, THREE.Group>()
@@ -42,6 +45,29 @@ export class SceneView {
       this.objects.set(e.id, group)
       this.root.add(group)
       applyPose(group, this.graph.worldTransform(e.id))
+      if (e.portal) {
+        const portal = createPortalSurface(e)
+        this.portals.set(e.id, portal)
+        group.add(portal.mesh)
+        const [w, h, d] = e.size
+        this.addAsset(
+          group,
+          {
+            url: '/world/portal.frame.glb',
+            transform: { position: [0, -(h + 2 * PORTAL_BAR) / 2, 0], rotation: [0, 0, 0, 1] },
+          },
+          undefined,
+          (model) => {
+            model.scale.set((w + 2 * PORTAL_BAR) / 3.436068, (h + 2 * PORTAL_BAR) / 2.2, d / 0.08)
+          },
+        )
+        const light = mesh(
+          new THREE.BoxGeometry(w * 0.7, 0.035, 0.02),
+          e.portal.mode === 'open' ? '#5bacff' : e.portal.mode === 'window' ? '#accbff' : '#354254',
+        )
+        light.position.set(0, h / 2 + PORTAL_BAR / 2, d / 2 + 0.015)
+        group.add(light)
+      }
       if (e.kind === 'box') group.add(box(e.size, e.color))
       if (e.kind === 'vehicle') {
         if (e.visual) this.assetVehicle(e, group)
@@ -207,7 +233,8 @@ export class SceneView {
   setPlaying(playing: boolean): void {
     this.avatar.visible = playing
     for (const e of this.document.entities)
-      if (e.kind === 'spawn' || e.kind === 'group') this.objects.get(e.id)!.visible = !playing
+      if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal))
+        this.objects.get(e.id)!.visible = !playing
   }
   sync(sim: Simulation): void {
     for (const e of this.document.entities)
@@ -233,6 +260,8 @@ export class SceneView {
   }
   private readonly surfaceTextures: THREE.Texture[] = []
   dispose(): void {
+    for (const portal of this.portals.values()) portal.target.dispose()
+    this.portals.clear()
     this.surfaceTextures.forEach((texture) => texture.dispose())
     this.disposed = true
     this.root.removeFromParent()

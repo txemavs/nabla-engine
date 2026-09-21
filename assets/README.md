@@ -25,3 +25,12 @@ CARTO/© OpenStreetMap. They are downloaded at runtime, not bundled. Attribution
 links remain visible in the viewport. Refer to those providers for their data
 terms. The repository's MIT code license does not transfer third-party trademark
 or imagery rights.
+
+## Stargate frame
+
+`world/portal.frame.glb` is an unchanged copy of Agency UI's
+`src/assets/stage/marco-garaje.glb` at revision
+`89b090785f77efdd825c8fab69055a2f9106888c`. Its mesh accessor bounds are
+X ±1.718034029 m, Y 0–2.200000048 m, Z ±0.039999999 m. The view uses an explicit
+import scale to match the aperture and frame bars; this does not scale travellers.
+The source artwork remains separate from generated collision boxes.

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add an opt-in fixed Stargate pair with the original Agency frame, live remote
+  views, reciprocal destination editing and closed/window/open modes.
+- Transfer walkers and vehicles within the existing simulation, with aperture
+  checks, box-collider exit clearance, velocity rotation and retained driver state.
+- Document the prototype limits and the design for hosted gates and CSS interiors.
+
 ## 0.2.0 — Working foundation
 
 This baseline replaces the earlier Agency extraction with an independent engine

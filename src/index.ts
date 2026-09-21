@@ -10,3 +10,5 @@ export { createA3, createCarrier } from './presets.js'
 export type { VehicleDefinition, VisualDefinition } from './scene.js'
 
 export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './geography.js'
+
+export { createPortalPair, portalMapping, portalCrossing } from './portal.js'

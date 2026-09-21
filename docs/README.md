@@ -14,5 +14,7 @@ Spanish interface; UI labels are quoted where needed to locate a control.
 | [Contributing](../CONTRIBUTING.md)          | Run checks and make reviewable changes                           |
 | [Changelog](../CHANGELOG.md)                | Review the scope of this baseline                                |
 
-Portals are intentionally outside this snapshot. They should preserve the current
-edit/play contract, one physics-world owner and explicit coordinate conversions.
+The [Stargates and CSS interiors proposal](portals.md) records the next design,
+including the Agency source review, the playable fixed-gate prototype and staged
+acceptance criteria for carrier integration and CSS interiors. The prototype
+preserves the edit/play contract and a single physics owner.

@@ -62,6 +62,11 @@ export class SceneEditor {
         parentId: e.parentId && remap.has(e.parentId) ? remap.get(e.parentId)! : e.parentId,
       }))
     const root = copies.find((e) => e.id === remap.get(id))!
+    for (const copy of copies)
+      if (copy.portal) {
+        const pairId = copy.portal.pairId ? remap.get(copy.portal.pairId) : undefined
+        copy.portal = { pairId: pairId ?? null, mode: pairId ? copy.portal.mode : 'closed' }
+      }
     root.name += ' · copia'
     root.transform.position[0] += 3
     next.entities.push(...copies)
@@ -82,6 +87,36 @@ export class SceneEditor {
         }
     }
     next.entities = next.entities.filter((e) => !removed.has(e.id))
+    for (const entity of next.entities)
+      if (entity.portal?.pairId && removed.has(entity.portal.pairId))
+        entity.portal = { pairId: null, mode: 'closed' }
+    this.commit(next)
+  }
+  linkPortals(id: string, pairId: string | null): void {
+    const next = this.document
+    const mouth = next.entities.find((e) => e.id === id)
+    const pair = pairId === null ? null : next.entities.find((e) => e.id === pairId)
+    if (!mouth?.portal || (pairId !== null && (!pair?.portal || pair.id === id)))
+      throw new Error('Choose two distinct portals')
+    for (const end of [mouth, pair]) {
+      if (!end?.portal) continue
+      const old = next.entities.find((e) => e.id === end.portal!.pairId)
+      if (old?.portal) old.portal = { pairId: null, mode: 'closed' }
+      end.portal = { pairId: null, mode: 'closed' }
+    }
+    if (pair?.portal) {
+      mouth.portal = { pairId: pair.id, mode: 'closed' }
+      pair.portal = { pairId: mouth.id, mode: 'closed' }
+    }
+    this.commit(next)
+  }
+  setPortalMode(id: string, mode: 'closed' | 'window' | 'open'): void {
+    const next = this.document
+    const mouth = next.entities.find((e) => e.id === id)
+    if (!mouth?.portal) throw new Error('Select a portal')
+    mouth.portal.mode = mode
+    const pair = next.entities.find((e) => e.id === mouth.portal!.pairId)
+    if (pair?.portal) pair.portal.mode = mode
     this.commit(next)
   }
   reparent(id: string, parentId: string | null): void {

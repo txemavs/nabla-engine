@@ -80,6 +80,13 @@ const entitySchema = z
     mass: finite.min(0.1).max(100000),
     vehicle: vehicleDefinition.optional(),
     visual: visualDefinition.optional(),
+    portal: z
+      .object({
+        pairId: z.string().min(1).max(128).nullable(),
+        mode: z.enum(['closed', 'window', 'open']),
+      })
+      .strict()
+      .optional(),
     surface: z
       .object({ url: z.string().regex(/^\/(?!\/)[a-zA-Z0-9_./-]+\.(jpg|jpeg|png)$/) })
       .strict()
@@ -158,6 +165,25 @@ export function parseScene(raw: unknown): SceneDocument {
   if (doc.entities.filter((e) => e.kind === 'spawn').length !== 1)
     throw new Error('Scene requires exactly one spawn')
   for (const e of doc.entities) {
+    if (e.portal) {
+      if (e.kind !== 'group' || e.parentId !== null || e.motion !== 'none')
+        throw new Error('Portals must be nonphysical root groups')
+      const up = new Vector3(0, 1, 0).applyQuaternion(new Quaternion(...e.transform.rotation))
+      if (up.distanceTo(new Vector3(0, 1, 0)) > 1e-5)
+        throw new Error('This portal release requires upright fixed mouths')
+      if (e.portal.pairId === null) {
+        if (e.portal.mode !== 'closed') throw new Error('An unlinked portal must be closed')
+      } else {
+        const pair = byId.get(e.portal.pairId)
+        if (!pair?.portal || pair.id === e.id || pair.portal.pairId !== e.id)
+          throw new Error('Portal links must be reciprocal between distinct mouths')
+        if (
+          pair.portal.mode !== e.portal.mode ||
+          pair.size.some((n, i) => Math.abs(n - e.size[i]) > 1e-6)
+        )
+          throw new Error('Paired portals must have equal apertures and modes')
+      }
+    }
     if (e.vehicle && e.kind !== 'vehicle') throw new Error('Vehicle definition requires a vehicle')
     if (
       e.vehicle?.garage?.ramp &&
