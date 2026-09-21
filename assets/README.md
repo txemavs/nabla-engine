@@ -34,3 +34,13 @@ or imagery rights.
 X ±1.718034029 m, Y 0–2.200000048 m, Z ±0.039999999 m. The view uses an explicit
 import scale to match the aperture and frame bars; this does not scale travellers.
 The source artwork remains separate from generated collision boxes.
+
+## Monitor avatar
+
+`playground/avatar.ts` adapts the five procedural CRT parts from Agency UI's
+`src/stage/gl/crtMesh.ts`, revision `89b090785f77efdd825c8fab69055a2f9106888c`.
+Housing, bezel, screen and two knobs retain their original proportions and RGB
+colors. An explicit half-turn presents the screen to the chase camera.
+The reference host enlarges the monitor by 1.65 for readability and adds
+hover, travel banking and braking recovery. These are visual effects; the shared
+player collider and movement rules are unchanged.

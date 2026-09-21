@@ -1,3 +1,4 @@
+import { createMonitorAvatar, MonitorMotion } from './avatar.js'
 import { createPortalSurface, type PortalSurface } from './portals.js'
 import { PORTAL_BAR } from '../src/portal.js'
 import { assets, disposeObject } from './assets.js'
@@ -36,6 +37,8 @@ export class SceneView {
   private readonly loading: Promise<void>[] = []
   private disposed = false
   readonly avatar = new THREE.Group()
+  private readonly monitor = createMonitorAvatar()
+  private readonly monitorMotion = new MonitorMotion()
   private readonly graph: SceneGraph
   constructor(readonly document: SceneDocument) {
     this.graph = new SceneGraph(document)
@@ -115,13 +118,7 @@ export class SceneView {
         }),
       )
     }
-    const jacket = mesh(new THREE.CapsuleGeometry(0.28, 0.55, 4, 10), '#e8ae69')
-    jacket.position.y = 0.1
-    const head = mesh(new THREE.SphereGeometry(0.21, 14, 10), '#d2b294')
-    head.position.y = 0.7
-    const legs = box([0.43, 0.65, 0.3], '#263a44')
-    legs.position.y = -0.53
-    this.avatar.add(jacket, head, legs)
+    this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar)
     this.ready = Promise.all(this.loading).then(() => undefined)
@@ -236,7 +233,7 @@ export class SceneView {
       if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal))
         this.objects.get(e.id)!.visible = !playing
   }
-  sync(sim: Simulation): void {
+  sync(sim: Simulation, elapsed = 1 / 60): void {
     for (const e of this.document.entities)
       applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id))
     for (const [id, wheels] of this.wheels) {
@@ -256,6 +253,7 @@ export class SceneView {
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
     this.avatar.position.fromArray(sim.player.position)
     this.avatar.rotation.y = sim.player.yaw
+    this.monitorMotion.update(this.monitor, this.avatar.position, sim.player.yaw, elapsed)
     this.avatar.visible = sim.player.vehicleId === null
   }
   private readonly surfaceTextures: THREE.Texture[] = []

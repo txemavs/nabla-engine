@@ -1,3 +1,4 @@
+import { followDrivingHeading } from './driving-camera.js'
 import { createPortalPair } from '../src/portal.js'
 import { renderPortals } from './portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
@@ -732,7 +733,7 @@ function frame(now: number): void {
         )
       }
     }
-    view.sync(sim)
+    view.sync(sim, document.hidden ? 0 : dt)
     const p = sim.player
     const geoPoint = view.document.geography
       ? localToGeo(view.document.geography, p.position)
@@ -741,16 +742,30 @@ function frame(now: number): void {
       ? geoPoint.altitude - view.document.geography!.altitude
       : p.position[1]
     const info = p.vehicleId ? sim.vehicleInfo(p.vehicleId) : null
-    const fov = cockpit && info ? 70 : 48
+    const drivingFast = info && !info.isCarrier ? THREE.MathUtils.smoothstep(p.speed, 5, 30) : 0
+    const fov = cockpit && info ? 70 : 48 + drivingFast * 8
     if (camera.fov !== fov) {
       camera.fov = fov
       camera.updateProjectionMatrix()
     }
-    if (info && p.speed > 1 && now - lastLookTime > 1400 && !cockpit) {
-      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
-        new THREE.Quaternion(...sim.entityTransform(p.vehicleId!).rotation),
+    const vehicleForward = info
+      ? new THREE.Vector3(0, 0, -1).applyQuaternion(
+          new THREE.Quaternion(...sim.entityTransform(p.vehicleId!).rotation),
+        )
+      : new THREE.Vector3(0, 0, -1)
+    if (info && !info.flightMode) {
+      const wanted = Math.atan2(-vehicleForward.x, -vehicleForward.z)
+      yaw = followDrivingHeading(
+        yaw,
+        wanted,
+        info.turnRate,
+        p.speed,
+        dt,
+        now - lastLookTime,
+        cockpit,
       )
-      const wanted = Math.atan2(-forward.x, -forward.z)
+    } else if (info && p.speed > 1 && now - lastLookTime > 1400 && !cockpit) {
+      const wanted = Math.atan2(-vehicleForward.x, -vehicleForward.z)
       yaw +=
         Math.atan2(Math.sin(wanted - yaw), Math.cos(wanted - yaw)) *
         (1 - Math.exp(-2 * Math.min(dt, 0.1)))
@@ -761,15 +776,26 @@ function frame(now: number): void {
       p.position[2],
     ]
     if (cockpit && info) {
-      camera.position.fromArray(info.driver)
+      const eyeOffset = new THREE.Vector3(
+        0,
+        info.isCarrier ? 0 : -0.1,
+        info.isCarrier ? 0 : -0.26,
+      ).applyQuaternion(new THREE.Quaternion(...sim.entityTransform(p.vehicleId!).rotation))
+      camera.position.fromArray(info.driver).add(eyeOffset)
       camera.lookAt(
-        info.driver[0] - Math.sin(yaw) * Math.cos(pitch),
-        info.driver[1] - Math.sin(pitch),
-        info.driver[2] - Math.cos(yaw) * Math.cos(pitch),
+        camera.position.x - Math.sin(yaw) * Math.cos(pitch),
+        camera.position.y - Math.sin(pitch),
+        camera.position.z - Math.cos(yaw) * Math.cos(pitch),
       )
     } else {
+      if (info && !info.isCarrier) {
+        const ahead =
+          Math.min(3.5, p.speed * 0.14) * THREE.MathUtils.smoothstep(now - lastLookTime, 900, 1400)
+        target[0] += vehicleForward.x * ahead
+        target[2] += vehicleForward.z * ahead
+      }
       const distance =
-        (info?.cameraDistance ?? 5.5) *
+        ((info?.cameraDistance ?? 5.5) + drivingFast * 2) *
         (1 + 2 * THREE.MathUtils.smoothstep(altitude, 50000, 2000000))
       const travelPitch =
         now - lastLookTime > 10000

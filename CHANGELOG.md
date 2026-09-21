@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Move the car cockpit eye forward/down and enable responsive automatic heading
+  follow in both camera modes, with bounded speed/turn anticipation.
+- Replace the placeholder character with Agency's CRT monitor avatar, animated
+  with travel banking, braking recovery and a subtle hover.
+
 - Add an opt-in fixed Stargate pair with the original Agency frame, live remote
   views, reciprocal destination editing and closed/window/open modes.
 - Transfer walkers and vehicles within the existing simulation, with aperture

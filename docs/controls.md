@@ -118,3 +118,16 @@ Frames can move and rotate around world Y. Tilt and mounting on a moving parent
 are deliberately rejected in this prototype. Occupied or undersized exits block
 transfer. See [portal status and design](portals.md) for the remaining work toward
 the carrier and CSS-interior experience.
+
+## Driving camera and avatar
+
+The cockpit eye sits 0.26 m forward and 0.10 m below the authored driver anchor
+in ordinary cars; the carrier cockpit is unchanged. This is a host camera offset,
+so existing saved A3 scenes receive the improvement without rewriting their data.
+Both cockpit and chase views follow vehicle heading after a short manual-look
+grace period. Chase response increases with speed, anticipates measured yaw rate,
+and adds a bounded forward look, distance and field of view at speed.
+
+The on-foot avatar uses Agency's floating CRT monitor. It leans with movement and
+acceleration, levels after braking and hovers gently. It hides while driving;
+portal transfers reset visual motion history rather than producing a large tilt.

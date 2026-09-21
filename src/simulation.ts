@@ -785,6 +785,7 @@ export class Simulation {
     steer: number
     driver: Vec3Tuple
     cameraDistance: number
+    turnRate: number
     isCarrier: boolean
     dockedTo: string | null
     rampClosed: boolean
@@ -798,6 +799,7 @@ export class Simulation {
       steer: v.steer,
       driver: vec(v.body.pointToWorldFrame(new Vec3(...v.definition.driver))),
       cameraDistance: v.definition.cameraDistance,
+      turnRate: v.body.angularVelocity.y,
       isCarrier: Boolean(v.definition.garage),
       dockedTo: this.docks.get(id)?.carrierId ?? null,
       rampClosed: v.rampClosed,
