@@ -642,3 +642,31 @@ body.playing #footer-mode {
   padding: 6px;
   font-size: 10px;
 }
+
+.portal-console {
+  position: absolute;
+  z-index: 6;
+  width: 205px;
+  padding: 9px;
+  border: 1px solid #5bacff;
+  border-radius: 6px;
+  background: #102035ee;
+  box-shadow: 0 4px 16px #0008;
+  font-size: 11px;
+}
+.portal-console strong,
+.portal-console small {
+  display: block;
+  margin-bottom: 5px;
+}
+.portal-console select {
+  width: 100%;
+  margin-bottom: 6px;
+}
+.portal-console button {
+  margin-right: 5px;
+}
+.portal-console small {
+  margin-top: 6px;
+  color: #accbff;
+}

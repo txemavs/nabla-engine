@@ -1,4 +1,5 @@
-import { portalColliders, portalCrossing, portalLocal, portalMapping } from './portal.js'
+import { SceneEditor } from './editor.js'
+import { portalColliders, portalLocal, portalMapping } from './portal.js'
 import { EARTH_RADIUS, localFrame, localToGeo } from './geography.js'
 import { OBB } from 'three/addons/math/OBB.js'
 import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
@@ -63,6 +64,7 @@ interface Vehicle {
   definition: VehicleDefinition
   flight: { altitude: number; yaw: number } | null
   rampClosed: boolean
+  rampAngle: number
 }
 const vec = (v: Vec3): Vec3Tuple => [v.x, v.y, v.z]
 const pose = (b: Body): Transform => ({
@@ -82,6 +84,7 @@ export class Simulation {
   private readonly characterMaterial = new Material({ friction: 0, restitution: 0 })
   private readonly bodies = new Map<string, Body>()
   private readonly vehicles = new Map<string, Vehicle>()
+  private readonly hostedShapes = new Map<string, Box[]>()
   private readonly playerBody: Body
   private input = idleInput()
   private jumpPending = false
@@ -114,13 +117,13 @@ export class Simulation {
   ) {
     this.document = parseScene(raw)
     this.graph = new SceneGraph(this.document)
-    this.portalEntities = this.document.entities.filter((e) => e.portal?.mode === 'open')
+    this.portalEntities = this.document.entities.filter((e) => e.portal)
     this.world.broadphase = new SAPBroadphase(this.world)
     ;(this.world.solver as GSSolver).iterations = 15
     this.world.defaultContactMaterial.friction = 0.55
     this.world.defaultContactMaterial.restitution = 0
     for (const e of this.document.entities) {
-      if (e.motion === 'none' && !e.portal) continue
+      if ((e.motion === 'none' && !e.portal) || (e.portal && e.parentId)) continue
       const transform = this.graph.worldTransform(e.id)
       const body = new Body({
         mass: e.motion === 'dynamic' ? e.mass : 0,
@@ -155,6 +158,8 @@ export class Simulation {
       if (e.kind === 'vehicle') this.createVehicle(e, body)
       else this.world.addBody(body)
     }
+    for (const mouth of this.portalEntities) if (mouth.parentId) this.rebuildPortalCollider(mouth)
+    for (const v of this.vehicles.values()) if (v.definition.garage) this.setRamp(v, false)
     if (this.document.geography) {
       const terrain = new Body({ mass: 0, material: this.solidMaterial })
       const radius = EARTH_RADIUS + this.document.geography.altitude
@@ -176,6 +181,88 @@ export class Simulation {
     this.playerBody.position.y += this.options.playerMode === 'hover' ? 1.25 : PLAYER_HALF_HEIGHT
     this.playerBody.previousPosition.copy(this.playerBody.position)
     this.world.addBody(this.playerBody)
+  }
+
+  portalState(id: string): NonNullable<Entity['portal']> {
+    const mouth = this.portalEntities.find((e) => e.id === id)
+    if (!mouth?.portal) throw new Error('Unknown portal')
+    return { ...mouth.portal }
+  }
+
+  /** Runtime links are atomic and do not modify the authored document owned by the host. */
+  configurePortal(
+    id: string,
+    destinationId: string | null,
+    mode: 'closed' | 'window' | 'open',
+  ): string {
+    const editor = new SceneEditor(this.document)
+    const source = this.portalEntities.find((e) => e.id === id)
+    if (!source) throw new Error('Portal desconocido')
+    if (source.portal!.pairId !== destinationId) editor.linkPortals(id, destinationId)
+    editor.setPortalMode(id, mode)
+    const next = editor.document
+    const changed = this.portalEntities.filter(
+      (e) =>
+        JSON.stringify(e.portal) !==
+        JSON.stringify(next.entities.find((n) => n.id === e.id)!.portal),
+    )
+    for (const mouth of changed) {
+      const transform = this.entityTransform(mouth.id)
+      for (const body of this.world.bodies) {
+        if (!body.mass || body === this.bodies.get(mouth.parentId ?? '')) continue
+        const actor = [...this.vehicles.values()].find((v) => v.body === body)
+        const corners = this.portalEnvelope(body, actor).map((p) => portalLocal(p, transform))
+        if (
+          corners.length &&
+          Math.min(...corners.map((p) => p.z)) < 0.2 &&
+          Math.max(...corners.map((p) => p.z)) > -0.2 &&
+          Math.min(...corners.map((p) => p.x)) < mouth.size[0] / 2 &&
+          Math.max(...corners.map((p) => p.x)) > -mouth.size[0] / 2 &&
+          Math.min(...corners.map((p) => p.y)) < mouth.size[1] / 2 &&
+          Math.max(...corners.map((p) => p.y)) > -mouth.size[1] / 2
+        )
+          throw new Error('Paso ocupado: despeja el marco antes de cambiar la conexión')
+      }
+    }
+    for (const mouth of changed)
+      mouth.portal = { ...next.entities.find((e) => e.id === mouth.id)!.portal! }
+    for (const mouth of changed) this.rebuildPortalCollider(mouth)
+    for (const mouth of changed)
+      if (mouth.portal!.clearsRamp && mouth.parentId) {
+        const carrier = this.vehicles.get(mouth.parentId)!
+        this.setRamp(
+          carrier,
+          !!carrier.flight || [...this.docks.values()].some((d) => d.carrierId === mouth.parentId),
+        )
+      }
+    return mode === 'closed' ? 'Portal cerrado' : 'Portal conectado'
+  }
+
+  private rebuildPortalCollider(mouth: Entity): void {
+    const host = mouth.parentId ? this.bodies.get(mouth.parentId)! : this.bodies.get(mouth.id)!
+    if (mouth.parentId)
+      for (const shape of this.hostedShapes.get(mouth.id) ?? []) host.removeShape(shape)
+    else for (const shape of [...host.shapes]) host.removeShape(shape)
+    const shapes: Box[] = []
+    const q = new Quaternion(
+      ...(mouth.parentId ? mouth.transform.rotation : ([0, 0, 0, 1] as const)),
+    )
+    const origin = new Vec3(...(mouth.parentId ? mouth.transform.position : ([0, 0, 0] as const)))
+    for (const collider of portalColliders(mouth)) {
+      const shape = new Box(new Vec3(...(collider.size.map((n) => n / 2) as Vec3Tuple)))
+      host.addShape(
+        shape,
+        q.vmult(new Vec3(...collider.transform.position)).vadd(origin),
+        q.mult(new Quaternion(...collider.transform.rotation)),
+      )
+      shapes.push(shape)
+    }
+    if (mouth.parentId) this.hostedShapes.set(mouth.id, shapes)
+    host.updateBoundingRadius()
+    host.updateMassProperties()
+    host.aabbNeedsUpdate = true
+    host.wakeUp()
+    this.world.broadphase.dirty = true
   }
 
   private createVehicle(entity: Entity, body: Body): void {
@@ -212,6 +299,7 @@ export class Simulation {
       definition,
       flight: null,
       rampClosed: false,
+      rampAngle: 0,
     })
   }
   get player(): PlayerSnapshot {
@@ -330,16 +418,24 @@ export class Simulation {
             .map((body) => ({ body, position: vec(body.position) }))
         : []
       for (const id of this.vehicles.keys()) this.previousWheels.set(id, this.wheelTransforms(id))
+      const mouthBefore = new Map(
+        this.portalEntities.map((e) => [e.id, this.entityTransform(e.id)]),
+      )
       this.beforeTick()
       this.world.step(FIXED_STEP)
-      this.crossPortals(before)
+      this.crossPortals(before, mouthBefore)
       this.updateGrounded()
       this.accumulator -= FIXED_STEP
       this.ticks++
     }
   }
-  private crossPortals(previous: { body: Body; position: Vec3Tuple }[]): void {
+  private crossPortals(
+    previous: { body: Body; position: Vec3Tuple }[],
+    beforeMouths: Map<string, Transform>,
+  ): void {
     const mouths = this.portalEntities
+      .filter((e) => e.portal!.mode === 'open')
+      .map((e) => ({ ...e, transform: this.entityTransform(e.id) }))
     if (!mouths.length) return
     for (const { body, position } of previous) {
       const actor = [...this.bodies].find(([, b]) => b === body)?.[0] ?? 'player'
@@ -358,10 +454,10 @@ export class Simulation {
         this.portalLocks.delete(body.id)
       }
       for (const source of mouths) {
-        if (source.id === lock) continue
-        const a = portalLocal(position, source.transform),
+        if (source.id === lock || source.parentId === actor) continue
+        const a = portalLocal(position, beforeMouths.get(source.id)!),
           b = portalLocal(vec(body.position), source.transform)
-        const crossing = portalCrossing(position, vec(body.position), source.transform)
+        const crossing = a.z > 0 && b.z <= 0 ? a.z / (a.z - b.z) : null
         const backwards = a.z < 0 && b.z >= 0
         if (crossing === null && !backwards) continue
         const fraction = crossing ?? -a.z / (b.z - a.z)
@@ -410,12 +506,25 @@ export class Simulation {
           backwards ||
           !fits ||
           constrained ||
+          destination.parentId === actor ||
           this.portalExitBlocked(body, mappedPosition, mappedRotation, destination)
         if (blocked) {
           body.position.set(...position)
           body.velocity.setZero()
           body.angularVelocity.setZero()
         } else {
+          const sourceHost = this.bodies.get(source.parentId ?? '')
+          const destinationHost = this.bodies.get(destination.parentId ?? '')
+          const sourceVelocity = new Vec3(),
+            destinationVelocity = new Vec3()
+          sourceHost?.getVelocityAtWorldPoint(body.position, sourceVelocity)
+          destinationHost?.getVelocityAtWorldPoint(
+            new Vec3(...mappedPosition.toArray()),
+            destinationVelocity,
+          )
+          body.velocity.vsub(sourceVelocity, body.velocity)
+          if (sourceHost)
+            body.angularVelocity.vsub(sourceHost.angularVelocity, body.angularVelocity)
           body.position.set(...mappedPosition.toArray())
           body.quaternion.set(...mappedRotation.toArray())
           body.velocity.set(
@@ -424,6 +533,9 @@ export class Simulation {
           body.angularVelocity.set(
             ...new Vector3(...vec(body.angularVelocity)).applyQuaternion(rotation).toArray(),
           )
+          body.velocity.vadd(destinationVelocity, body.velocity)
+          if (destinationHost)
+            body.angularVelocity.vadd(destinationHost.angularVelocity, body.angularVelocity)
           this.portalLocks.set(body.id, destination.id)
           // A solved contact belongs to the old location; do not expose it at the exit.
           this.world.contacts = this.world.contacts.filter((c) => c.bi !== body && c.bj !== body)
@@ -920,6 +1032,7 @@ export class Simulation {
     isCarrier: boolean
     dockedTo: string | null
     rampClosed: boolean
+    rampAngle: number
     flightMode: boolean
     canFly: boolean
     targetAltitude: number | null
@@ -937,6 +1050,7 @@ export class Simulation {
       isCarrier: Boolean(v.definition.garage),
       dockedTo: this.docks.get(id)?.carrierId ?? null,
       rampClosed: v.rampClosed,
+      rampAngle: v.rampAngle,
       flightMode: Boolean(v.flight),
       canFly: Boolean(v.definition.flight),
       targetAltitude: v.flight?.altitude ?? null,
@@ -1019,15 +1133,22 @@ export class Simulation {
   }
 
   private setRamp(carrier: Vehicle, closed: boolean): void {
+    const portalActive = this.portalEntities.some(
+      (e) =>
+        e.parentId === carrier.entity.id && e.portal!.clearsRamp && e.portal!.mode !== 'closed',
+    )
+    if (portalActive) closed = false
     carrier.rampClosed = closed
     const ramp = carrier.definition.garage?.ramp
     if (!ramp) return
     const collider = carrier.definition.colliders[ramp.colliderIndex]
     const hinge = new Vec3(...ramp.hinge)
-    const rotation = new Quaternion().setFromAxisAngle(
-      new Vec3(1, 0, 0),
-      closed ? ramp.closeAngle : 0,
-    )
+    carrier.rampAngle = closed
+      ? ramp.closeAngle
+      : portalActive
+        ? -2 * Math.atan2(collider.transform.rotation[0], collider.transform.rotation[3])
+        : 0
+    const rotation = new Quaternion().setFromAxisAngle(new Vec3(1, 0, 0), carrier.rampAngle)
     const offset = rotation.vmult(new Vec3(...collider.transform.position).vsub(hinge)).vadd(hinge)
     carrier.body.shapeOffsets[ramp.colliderIndex].copy(offset)
     carrier.body.shapeOrientations[ramp.colliderIndex].copy(

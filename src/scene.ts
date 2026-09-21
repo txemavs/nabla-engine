@@ -84,6 +84,7 @@ const entitySchema = z
       .object({
         pairId: z.string().min(1).max(128).nullable(),
         mode: z.enum(['closed', 'window', 'open']),
+        clearsRamp: z.boolean().optional(),
       })
       .strict()
       .optional(),
@@ -166,10 +167,14 @@ export function parseScene(raw: unknown): SceneDocument {
     throw new Error('Scene requires exactly one spawn')
   for (const e of doc.entities) {
     if (e.portal) {
-      if (e.kind !== 'group' || e.parentId !== null || e.motion !== 'none')
-        throw new Error('Portals must be nonphysical root groups')
+      if (e.kind !== 'group' || e.motion !== 'none')
+        throw new Error('Portals must be nonphysical groups')
+      if (e.parentId && byId.get(e.parentId)?.kind !== 'vehicle')
+        throw new Error('Hosted portals require a vehicle parent')
+      if (e.portal.clearsRamp && (!e.parentId || !byId.get(e.parentId)?.vehicle?.garage?.ramp))
+        throw new Error('Ramp clearance requires a carrier ramp')
       const up = new Vector3(0, 1, 0).applyQuaternion(new Quaternion(...e.transform.rotation))
-      if (up.distanceTo(new Vector3(0, 1, 0)) > 1e-5)
+      if (!e.parentId && up.distanceTo(new Vector3(0, 1, 0)) > 1e-5)
         throw new Error('This portal release requires upright fixed mouths')
       if (e.portal.pairId === null) {
         if (e.portal.mode !== 'closed') throw new Error('An unlinked portal must be closed')

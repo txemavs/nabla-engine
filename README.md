@@ -26,7 +26,7 @@ The playground UI remains in Spanish. Documentation is in English; the
 ## Current working tree: 0.2.0 baseline + Stargate prototype
 
 - Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
-- Optional fixed Stargates with linked live views, editable destinations and walker/vehicle traversal.
+- Fixed and carrier-mounted Stargates with linked views, runtime destination controls and actor/vehicle traversal.
 - A shared physics world for hover exploration, walking, driving, obstacles and movable objects.
 - First-person monitor exploration with a third-person toggle and provisional hitscan sidearm.
 - Original Audi A3 Cabrio body, wheels and steering wheel, with interior camera.
@@ -118,8 +118,8 @@ supply terrain elevation, physical buildings or road geometry. Drone flight is
 assisted, with an explicit accelerated travel mode, not orbital mechanics. General
 high-speed collision safety is not guaranteed by the discrete solver.
 
-The [Stargate prototype](docs/portals.md) supports fixed upright mouths; moving
-carrier mouths, CSS interiors and seamless partial-body crossing are future work.
+The [Stargate prototype](docs/portals.md) supports fixed upright and carrier-mounted mouths, with runtime address selection.
+CSS interiors, orbit-to-road streaming and seamless partial-body crossing remain future work.
 There is no NPC navigation, multiplayer, skeletal animation, inherited
 scale or interactive GLB import yet. Dynamic physics bodies and the player spawn
 must be roots; visual children are supported. The character uses a box collider

@@ -167,3 +167,20 @@ monitor prevents shooting through an obstruction between the monitor and the aim
 point. Firing is disabled while driving or editing. There is no damage, ammunition,
 portal ray transport or multiplayer yet. `playground/sidearm.ts` isolates the model
 group for replacement with the user's GLB without changing aiming or physics.
+
+## Carrier Stargate controls
+
+The container's bow and stern frames now carry their own mouths. Walk/hover up to
+a frame: its nearby panel offers a destination selector and **Abrir / Cerrar**.
+Use **G** to release the captured mouse for the buttons. Destinations are the
+compatible Stargates already present in this scene; add road mouths with
+**+ Stargates** while stopped. Choose a destination, then open the connection.
+Closing retains its address; switching destinations closes old links atomically.
+A frame occupied by an actor cannot be closed or relinked.
+
+The two carrier mouths can have independent destinations. Closed carrier mouths
+leave the original opening available for normal garage access. Activating the
+stern mouth levels the ramp to keep the car at aperture height. Release the A3
+from its garage latch before backing through this mouth. Bow access is for the
+monitor around the existing helm and partition. Gameplay connections are runtime
+state; author and save initial links from the inspector while stopped.

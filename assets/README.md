@@ -43,4 +43,14 @@ Housing, bezel, screen and two knobs retain their original proportions and RGB
 colors. The screen faces forward (−Z), matching Agency's original orientation.
 The reference host enlarges the monitor by 1.65 for readability and adds
 hover, travel banking and braking recovery. These are visual effects; the shared
-player collider and movement rules are unchanged.
+walking collider remains available; the playground now selects the compact hover
+controller described in `docs/controls.md`.
+
+## Carrier-mounted frames
+
+The carrier mouths reuse `Frame_Proa` and `Frame_Popa` in the existing
+`ship.container.5x10.glb`. Accessor bounds are X ±2.5 m, Y 0.15–3.35 m,
+with Z −5.102…−5.002 m and +5.002…+5.102 m respectively. Apertures are
+4.71 × 2.91 m centred at Y 1.75 m (0.55 m above the carrier COM), Z ±5.05 m.
+Their normals point into the carrier. No duplicate frame mesh is loaded for a
+hosted mouth. Console housings and buttons are procedural host presentation.

@@ -65,7 +65,11 @@ export class SceneEditor {
     for (const copy of copies)
       if (copy.portal) {
         const pairId = copy.portal.pairId ? remap.get(copy.portal.pairId) : undefined
-        copy.portal = { pairId: pairId ?? null, mode: pairId ? copy.portal.mode : 'closed' }
+        copy.portal = {
+          ...copy.portal,
+          pairId: pairId ?? null,
+          mode: pairId ? copy.portal.mode : 'closed',
+        }
       }
     root.name += ' · copia'
     root.transform.position[0] += 3
@@ -89,7 +93,7 @@ export class SceneEditor {
     next.entities = next.entities.filter((e) => !removed.has(e.id))
     for (const entity of next.entities)
       if (entity.portal?.pairId && removed.has(entity.portal.pairId))
-        entity.portal = { pairId: null, mode: 'closed' }
+        entity.portal = { ...entity.portal, pairId: null, mode: 'closed' }
     this.commit(next)
   }
   linkPortals(id: string, pairId: string | null): void {
@@ -101,12 +105,12 @@ export class SceneEditor {
     for (const end of [mouth, pair]) {
       if (!end?.portal) continue
       const old = next.entities.find((e) => e.id === end.portal!.pairId)
-      if (old?.portal) old.portal = { pairId: null, mode: 'closed' }
-      end.portal = { pairId: null, mode: 'closed' }
+      if (old?.portal) old.portal = { ...old.portal, pairId: null, mode: 'closed' }
+      end.portal = { ...end.portal, pairId: null, mode: 'closed' }
     }
     if (pair?.portal) {
-      mouth.portal = { pairId: pair.id, mode: 'closed' }
-      pair.portal = { pairId: mouth.id, mode: 'closed' }
+      mouth.portal = { ...mouth.portal, pairId: pair.id, mode: 'closed' }
+      pair.portal = { ...pair.portal, pairId: mouth.id, mode: 'closed' }
     }
     this.commit(next)
   }

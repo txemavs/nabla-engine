@@ -11,4 +11,4 @@ export type { VehicleDefinition, VisualDefinition } from './scene.js'
 
 export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './geography.js'
 
-export { createPortalPair, portalMapping, portalCrossing } from './portal.js'
+export { createCarrierPortals, createPortalPair, portalMapping, portalCrossing } from './portal.js'

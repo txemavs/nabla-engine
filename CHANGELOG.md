@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Activate the container's original bow/stern Stargates with nearby destination,
+  open and close controls; preserve ordinary garage access while inactive.
+- Add atomic runtime relinking, occupied-frame protection and host-relative
+  moving-mouth transfers. Level the stern ramp during an active connection.
+- Install hosted mouths additively in older container scenes and preserve their
+  metadata through copy, delete, undo and scene persistence.
+
 - Start monitor exploration in first person, with C/B toggling third person.
 - Add compact ground-following hover locomotion for curbs and ramps.
 - Add a provisional sidearm, reticle, hitscan impacts and impulses on dynamic props.

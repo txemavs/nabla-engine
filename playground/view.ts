@@ -53,24 +53,38 @@ export class SceneView {
         const portal = createPortalSurface(e)
         this.portals.set(e.id, portal)
         group.add(portal.mesh)
+        portal.mesh.visible = !e.parentId || e.portal.mode !== 'closed'
         const [w, h, d] = e.size
-        this.addAsset(
-          group,
-          {
-            url: '/world/portal.frame.glb',
-            transform: { position: [0, -(h + 2 * PORTAL_BAR) / 2, 0], rotation: [0, 0, 0, 1] },
-          },
-          undefined,
-          (model) => {
-            model.scale.set((w + 2 * PORTAL_BAR) / 3.436068, (h + 2 * PORTAL_BAR) / 2.2, d / 0.08)
-          },
-        )
+        if (!e.parentId)
+          this.addAsset(
+            group,
+            {
+              url: '/world/portal.frame.glb',
+              transform: { position: [0, -(h + 2 * PORTAL_BAR) / 2, 0], rotation: [0, 0, 0, 1] },
+            },
+            undefined,
+            (model) => {
+              model.scale.set((w + 2 * PORTAL_BAR) / 3.436068, (h + 2 * PORTAL_BAR) / 2.2, d / 0.08)
+            },
+          )
         const light = mesh(
           new THREE.BoxGeometry(w * 0.7, 0.035, 0.02),
           e.portal.mode === 'open' ? '#5bacff' : e.portal.mode === 'window' ? '#accbff' : '#354254',
         )
         light.position.set(0, h / 2 + PORTAL_BAR / 2, d / 2 + 0.015)
+        light.name = 'Portal status'
         group.add(light)
+        const panel = box([0.24, 0.38, 0.08], '#17283e')
+        panel.position.set(w / 2 - 0.15, -0.15, 0.2)
+        group.add(panel)
+        for (const [y, color] of [
+          [-0.07, '#5bacff'],
+          [-0.23, '#ffb45e'],
+        ] as const) {
+          const button = box([0.16, 0.1, 0.02], color)
+          button.position.set(w / 2 - 0.15, y, 0.25)
+          group.add(button)
+        }
       }
       if (e.kind === 'box') group.add(box(e.size, e.color))
       if (e.kind === 'vehicle') {
@@ -235,8 +249,18 @@ export class SceneView {
         this.objects.get(e.id)!.visible = !playing
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
-    for (const e of this.document.entities)
+    for (const e of this.document.entities) {
       applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
+      if (e.portal) {
+        e.portal = sim.portalState(e.id)
+        this.portals.get(e.id)!.mesh.visible = !e.parentId || e.portal.mode !== 'closed'
+        const light = this.objects.get(e.id)!.getObjectByName('Portal status') as THREE.Mesh<
+          THREE.BoxGeometry,
+          THREE.MeshStandardMaterial
+        >
+        light.material.color.set(e.portal.mode === 'open' ? '#5bacff' : '#354254')
+      }
+    }
     for (const [id, wheels] of this.wheels) {
       const poses = sim.wheelTransforms(id, true)
       poses.forEach((p, i) => {
@@ -245,10 +269,7 @@ export class SceneView {
         applyPose(wheels[i], p)
       })
     }
-    for (const [id, ramp] of this.ramps)
-      ramp.rotation.x = sim.vehicleInfo(id).rampClosed
-        ? this.document.entities.find((e) => e.id === id)!.visual!.ramp!.closeAngle
-        : 0
+    for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
     for (const [id, wheel] of this.steering)
       wheel.rotation.z =
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)

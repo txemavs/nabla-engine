@@ -47,7 +47,8 @@ export function portalColliders(entity: Entity): { size: Vec3Tuple; transform: T
     part([w, b, depth], [0, (h + b) / 2, 0]),
     part([w, b, depth], [0, -(h + b) / 2, 0]),
   ]
-  if (entity.portal?.mode !== 'open') parts.push(part([w, h, depth], [0, 0, 0]))
+  if (entity.portal?.mode !== 'open' && !(entity.parentId && entity.portal?.mode === 'closed'))
+    parts.push(part([w, h, depth], [0, 0, 0]))
   return parts
 }
 export function createPortalPair(
@@ -63,5 +64,20 @@ export function createPortalPair(
     size: [4.71, 2.91, 0.145],
     color: '#11151a',
     portal: { pairId: i ? firstId : secondId, mode: 'open' as const },
+  }))
+}
+
+/** Reuse the two measured GLB end frames; normals point into the carrier. */
+export function createCarrierPortals(hostId: string, bowId: string, sternId: string): Entity[] {
+  return [false, true].map((stern) => ({
+    ...createEntity(stern ? sternId : bowId, 'group', [0, 0.55, stern ? 5.05 : -5.05]),
+    name: stern ? 'Nave · popa' : 'Nave · proa',
+    parentId: hostId,
+    transform: {
+      position: [0, 0.55, stern ? 5.05 : -5.05],
+      rotation: rotationDegrees(0, stern ? 180 : 0, 0),
+    },
+    size: [4.71, 2.91, 0.145],
+    portal: { pairId: null, mode: 'closed' as const, clearsRamp: stern },
   }))
 }

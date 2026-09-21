@@ -1,3 +1,5 @@
+import { PortalControls } from './portal-controls.js'
+import { installCarrierPortals } from './carrier-portals.js'
 import { Sidearm } from './sidearm.js'
 import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
 import { createPortalPair } from '../src/portal.js'
@@ -35,11 +37,11 @@ const escape = (s: string): string =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   )
 const STORAGE_KEY = 'nabla.scene.v1'
-let editor = new SceneEditor(createSampleScene())
+let editor = new SceneEditor(installCarrierPortals(createSampleScene()))
 let loadError = ''
 try {
   const saved = localStorage.getItem(STORAGE_KEY)
-  if (saved) editor = new SceneEditor(JSON.parse(saved))
+  if (saved) editor = new SceneEditor(installCarrierPortals(JSON.parse(saved)))
 } catch {
   loadError = 'La escena guardada no es válida. Se ha abierto el ejemplo.'
 }
@@ -459,7 +461,7 @@ function focusSelection(): void {
 $('focus').onclick = focusSelection
 $('sample-assets').onclick = () =>
   action(() => {
-    editor.load(createSampleScene())
+    editor.load(installCarrierPortals(createSampleScene()))
     selectedId = 'car-a'
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
@@ -504,7 +506,7 @@ $('file').onchange = async () => {
     return
   }
   try {
-    editor.load(JSON.parse(await file.text()))
+    editor.load(installCarrierPortals(JSON.parse(await file.text())))
     rebuild()
     toast('Escena abierta')
   } catch {
@@ -530,6 +532,7 @@ function togglePlay(): void {
     } else {
       orbitStartPosition = camera.position.clone()
       orbitStartTarget = orbit.target.clone()
+      portalControls.rebuild(editor.document)
       sim = new Simulation(editor.document, { playerMode: 'hover' })
       firstPerson = true
       fireRequested = false
@@ -564,6 +567,8 @@ function togglePlay(): void {
   })
 }
 $('play').onclick = togglePlay
+const portalControls = new PortalControls(viewport, toast)
+portalControls.rebuild(editor.document)
 const sidearm = new Sidearm(viewport)
 const raycaster = new THREE.Raycaster()
 let down = new THREE.Vector2()
@@ -664,6 +669,10 @@ window.addEventListener('keydown', (e) => {
     togglePlay()
     togglePlay()
     toast('Partida reiniciada')
+    return
+  }
+  if (e.code === 'KeyG' && !e.repeat) {
+    document.exitPointerLock()
     return
   }
   if (e.code === 'KeyC' && !e.repeat) {
@@ -936,6 +945,7 @@ function frame(now: number): void {
       outline.visible = !outline.box.isEmpty()
     }
   }
+  portalControls.update(sim, view.document, camera)
   sidearm.visible = !!sim && !sim.player.vehicleId
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)

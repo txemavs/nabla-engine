@@ -20,7 +20,7 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
   const saved = JSON.parse((await page.evaluate(() => localStorage.getItem('nabla.scene.v1')))!)
   expect(
     saved.entities
-      .filter((e: { portal?: unknown }) => e.portal)
+      .filter((e: { portal?: unknown; parentId: string | null }) => e.portal && !e.parentId)
       .every((e: { portal: { mode: string } }) => e.portal.mode === 'window'),
   ).toBe(true)
   await page.locator('#portal-mode').selectOption('open')

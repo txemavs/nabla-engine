@@ -49,9 +49,11 @@ nor filenames select physics, and numbers are not inspected to guess their units
 Validation rejects duplicate IDs, missing parents, cycles, invalid dimensions,
 nonunit quaternions and unsupported physical hierarchies. Exactly one spawn is
 required. Dynamic bodies and the spawn are roots; visual descendants are supported.
-The optional `portal` field on a root group declares a fixed upright mouth and a
-reciprocal link; IDs remain opaque. Portal frames and closed apertures generate
-static collision parts within the same world. Optional fields preserve compatibility with earlier scene-v1 documents.
+The optional `portal` field declares a fixed upright root mouth or a mouth hosted
+directly by a vehicle, with a reciprocal link; IDs remain opaque. Root frames use
+static collision bodies; hosted frames append shapes to the existing vehicle.
+`clearsRamp` explicitly requests the portal ramp state. Optional fields preserve
+compatibility with earlier scene-v1 documents.
 
 ## Physics and time
 
@@ -134,3 +136,13 @@ at most one physics tick of visual delay. Camera and visible chassis use the sam
 pose, keeping the cockpit anchor rigid relative to the model. Portal transfers
 and player exits reset interpolation history so the view never blends across the
 teleport. Filtering camera telemetry does not change forces or simulation time.
+
+### Hosted gates and runtime connections
+
+A portal group can be a root or a direct child of a vehicle. Hosted aperture
+colliders belong to that vehicle's existing body and visual poses resolve through
+`Simulation.entityTransform`. `configurePortal` validates the complete reciprocal
+link transaction with the editor's scene contract, refuses occupied-mouth changes,
+then updates runtime collider shapes and ramp state. The authored document in the
+application is unchanged by play. Motion uses previous/current mouth poses and
+host-relative linear/angular velocities; there is no second physics world.

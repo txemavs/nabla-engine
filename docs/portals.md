@@ -1,41 +1,65 @@
 # Proposal: Stargates and CSS interiors
 
-Status: the fixed, upright WebGL gate prototype is implemented. The hosted-carrier
-and CSS-interior portions below remain the design target. See the current slice
-and limits before interpreting the later sections as available behavior.
+Status: fixed WebGL gates and the carrier's two hosted gates are implemented.
+CSS interiors and general cross-seam contacts remain future work.
 
 ## Current playable slice
 
-Use **+ Stargates** in the playground to add a linked pair to the current scene.
-This is an undoable edit and does not replace saved work. The default entry is in
-front of the A3; the exit is farther along the other lane. Select a frame to move
-or rotate it around world Y, choose a destination, or choose **Cerrado**,
-**Ventana**, or **Paso abierto**. Both ends change atomically. Editing connections
-requires stopping play. Save/export uses the existing scene workflow.
+**+ Stargates** adds a linked pair of road gates without replacing the scene.
+The original container GLB already has bow and stern frames. Nabla installs two
+closed mouths into those frames when opening an older container scene; it does
+not duplicate their visible frames or overwrite authored entities. Save/export
+persists the added mouths and their authored links through the scene workflow.
 
-The original Agency GLB is rendered at the installed frame dimensions. Aperture
-size is explicit in metres. A single remote render level shows the linked view
-with camera-relative perspective and destination-plane clipping. Views share the
-same scene and asset caches. Render targets are bounded to 1024 pixels on their
-long edge and disposed with the scene view.
+During play, approach either frame to see its destination selector and **Abrir /
+Cerrar** buttons. Press **G** (or release the pointer with Escape) to use the
+buttons. The console projects beside the frame, works from either side, follows
+the carrier, and hides behind physical obstructions. The address book lists all
+other mouths with matching aperture dimensions in the loaded scene. Labels use
+editable entity names; actual connections use stable entity IDs.
 
-Walking, the original A3 and dynamic boxes use the same simulation-owned rigid
-transfer. Position, orientation and velocities transform together. A driver stays
-in the same vehicle. The simulator checks the complete vehicle envelope for
-aperture clearance and checks an empty exit corridor at transfer time; window/closed gates block
-movement. Back-face entry and constrained cargo transfers are refused. Duplicating
-one mouth creates a closed, unlinked copy; deleting or relinking it cleans up its
-previous partner. A yaw-rotated pair and return trip have physics tests.
+Selecting a destination does not change a live connection until **Abrir** is
+pressed. A connection is bidirectional and exclusive: switching partners closes
+and unlinks both previous partners in one simulation transaction. **Cerrar**
+closes both ends while retaining their selected address. Occupied frames reject
+closure or relinking without partially changing either end. Runtime changes last
+for the current play session; use the inspector while stopped to author initial
+links and modes, then save. There is no separate remote world loading protocol.
 
-**Prototype limits:** mouths must be fixed, upright root groups. They cannot yet
-be mounted on the carrier or tilted. The body transfers at its centre; clipped
-vehicle halves and general physical contacts across the seam are not implemented.
-The chase camera follows that transfer rather than having an independent crossing.
-Destination clearance is checked against box colliders; remote terrain streaming,
-altitude-to-ground transfer and arbitrary separate worlds are not supported by
-this slice. Views currently share the nearby geographic detail loaded for the
-main camera. No CSS interior is included yet. These limitations are explicit
-rather than treating the full acceptance scene below as complete.
+Closed road gates have an opaque physical barrier. Closed carrier gates turn off
+the remote surface and restore the normal physical opening, so an inactive rear
+portal does not prevent ordinary garage use. Window mode shows the destination
+but retains a barrier. Open mode enables front-to-front traversal. The active
+stern gate keeps the rear ramp level with the deck, with matching visual and
+physical transforms; deactivation restores the ramp state required by flight or
+cargo latching. The front console and centre partition remain real obstacles:
+the stern is the tested car route, and the bow is accessible to the monitor.
+
+Hosted frames and barriers are collision shapes of the existing carrier body,
+not duplicate kinematic bodies. Their world poses follow the simulated host,
+including pitch and roll. Crossing compares actor positions against the mouth's
+previous and current poses at fixed ticks. Position/orientation use the same
+rigid mapping as the remote view; velocities are transferred relative to the
+source and destination host velocities at the crossing points. The A3 keeps its
+driver. Latched assemblies cannot transfer. The carrier cannot cross its own
+mouth. Rigid attachment during flight, a prop crossing from a moving carrier,
+and the A3 backing out through the stern have physics tests.
+
+A single remote render level shows head-relative perspective and destination
+clipping. Frame dimensions are metres; destinations require equal apertures.
+The complete vehicle envelope must fit, and a box-collider corridor at the exit
+must be clear. A body crossing reserves its exit until it clears the plane.
+Deleting, copying and relinking mouths preserve valid reciprocal scene data.
+
+**Remaining limits:** transfer occurs at the actor centre; there are no clipped
+vehicle halves or general contacts across the seam. Arbitrarily fast translating
+or rotating mouths are not guaranteed by the discrete solver. Ground-based
+monitor controls still use world Y after a tilted transfer. The chase camera
+follows its actor instead of independently traversing. Views share the geographic
+detail loaded around the main camera; orbit-to-road streaming, separate worlds,
+CSS interiors and constrained-assembly transfers are not implemented. An A3 must
+be unlatched before crossing, and the existing dock controller still requires
+landing before release. This is not yet the complete orbit-to-Earth scenario below.
 
 ## Intended experience
 
