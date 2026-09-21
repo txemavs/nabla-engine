@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Generate editable gabled, hipped and skillion roofs for compatible OSM building footprints, preserving tagged total height.
+
 - Add the first real-data district in Irun Ventas/Katea, with 376 OSM building
   footprints, named streets, local edits and Esri terrain heights.
 - Share triangulated terrain between visual roads and physics, protect the finite

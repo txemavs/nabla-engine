@@ -12,6 +12,7 @@ import { createA3, createCarrier } from './presets.js'
 import { terrainHeight, type TerrainData } from './terrain.js'
 import type { SolidGeometry } from './solid.js'
 import { treeSprite } from './vegetation.js'
+import { buildingRoof } from './building-roof.js'
 
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 export interface MapFeature {
@@ -121,7 +122,7 @@ export function createRealWorld(data: WorldExtract): SceneDocument {
       }
       if (!g.faces.length || g.vertices.length > 2048) continue
       const e = createEntity('osm-' + f.id.replace('/', '-'), 'solid', [cx, base, cz])
-      e.geometry = g
+      e.geometry = buildingRoof(g, tags)
       e.name = tags.name ?? `Edificio · ${f.id}`
       e.color = color(tags['building:colour'], '#b9b5a8')
       e.parentId = groups[0]

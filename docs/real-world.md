@@ -166,8 +166,13 @@ valleys with an invisible flat support surface.
 The current extract produces 376 building entities. Footprints come from OSM;
 `height`, `min_height`, level counts and hexadecimal building colors are interpreted.
 Missing heights use explicit defaults (3 m per level; three levels for ordinary
-buildings, two for industrial buildings). Roofs are currently flat. Closed-member
-multipolygons are supported; incomplete/split-member relations, detailed roof forms,
+buildings, two for industrial buildings). Approximately rectangular, single-ring
+footprints support tagged gabled, hipped and skillion roofs as editable solid geometry.
+Total building height includes the roof; `roof:height` sets the rise, otherwise it is
+inferred from footprint width (capped at 3 m). Ridge orientation follows the longer
+footprint axis; explicit roof direction/orientation tags are not interpreted yet.
+Unsupported shapes and complex footprints retain flat roofs. Closed-member
+multipolygons are supported; incomplete/split-member relations, other roof forms,
 bridge/tunnel surfaces, steps, water meshes and full landcover remain unsupported.
 Bridge/tunnel/construction/step road features are omitted rather than presented as
 correct drivable structures. The elevation source is terrain, not a surveyed road
