@@ -47,6 +47,10 @@ export const assets = new AssetLibrary()
 
 export function disposeObject(root: THREE.Object3D): void {
   root.traverse((object) => {
+    if (object instanceof THREE.Sprite && object.userData.ownedLabelTexture) {
+      object.material.map?.dispose()
+      object.material.dispose()
+    }
     if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
       if (!object.userData.sharedAssetGeometry) object.geometry.dispose()
       const materials = Array.isArray(object.material) ? object.material : [object.material]

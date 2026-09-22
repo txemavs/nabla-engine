@@ -62,6 +62,8 @@ export function mapTileEntities(doc: SceneDocument, key: string): Entity[] {
       'world-trees',
       'world-landcover',
       'world-water',
+      'world-railways',
+      'world-places',
     ].map((id) => id + suffix),
   )
   let changed = true

@@ -7,9 +7,9 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 it('uses stable versioned paths and rejects incompatible origins', () => {
-  expect(preparedPath(origin, '0_0')).toBe('4/43.329690/-1.819606/28.253/0_0.json')
+  expect(preparedPath(origin, '0_0')).toBe('5/43.329690/-1.819606/28.253/0_0.json')
   const data = {
-    version: 4,
+    version: 5,
     origin,
     key: '0_0',
     entities: [createEntity('box', 'box')],
@@ -31,7 +31,7 @@ it('round trips typed geometry and rejects out-of-range indices', () => {
       color: encode(new Float32Array([1, 0.5, 0])),
     },
   }
-  const data = { version: 4, origin, key: '0_0', entities: [createEntity('box', 'box')], geometry }
+  const data = { version: 5, origin, key: '0_0', entities: [createEntity('box', 'box')], geometry }
   expect([...decodePrepared(data, origin, '0_0').geometry.box.position]).toEqual([1, 2, 3])
   expect([...decodePrepared(data, origin, '0_0').geometry.box.color!]).toEqual([1, 0.5, 0])
   geometry.box.index = encode(new Uint32Array([1]))

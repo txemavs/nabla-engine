@@ -171,6 +171,36 @@ export class SceneView {
           this.portalTablets.set(e.id, [screen])
         }
       }
+      if (e.placeLabel) {
+        const canvas = document.createElement('canvas')
+        canvas.width = 512
+        canvas.height = 64
+        const ctx = canvas.getContext('2d')!
+        ctx.font = '600 30px system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.lineWidth = 6
+        ctx.strokeStyle = '#17212a'
+        ctx.fillStyle = '#f5f3e9'
+        ctx.strokeText(e.placeLabel.text, 256, 32, 490)
+        ctx.fillText(e.placeLabel.text, 256, 32, 490)
+        const texture = new THREE.CanvasTexture(canvas)
+        texture.colorSpace = THREE.SRGBColorSpace
+        const label = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: texture,
+            sizeAttenuation: false,
+            depthTest: false,
+            depthWrite: false,
+            transparent: true,
+          }),
+        )
+        label.scale.set(0.32, 0.04, 1)
+        label.userData.ownedLabelTexture = true
+        label.raycast = () => undefined
+        label.renderOrder = 100
+        group.add(label)
+      }
       if (e.sprite) {
         const options = {
           color: /^\/sprites\/tree(?:-\d+)?\.png$/.test(e.sprite.url) ? '#c5d2b9' : '#ffffff',
@@ -342,7 +372,7 @@ export class SceneView {
           side: e.source ? THREE.FrontSide : THREE.DoubleSide,
         })
         const surface = new THREE.Mesh(geometry, material)
-        surface.castShadow = !e.landcover
+        surface.castShadow = !e.landcover && !e.railway
         surface.receiveShadow = true
         if (e.landcover) {
           const layer = SURFACE_LAYERS[e.landcover.surface]
@@ -571,7 +601,7 @@ export class SceneView {
           if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial)
             child.visible = !this.buildings.covers(e.id)
       }
-      if ((enabled && (e.road || e.landcover)) || (isMapBuilding(e) && !buildings)) {
+      if ((enabled && (e.road || e.railway || e.landcover)) || (isMapBuilding(e) && !buildings)) {
         object.visible = false
         continue
       }
@@ -591,7 +621,10 @@ export class SceneView {
     this.avatar.visible = playing
     if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
     for (const e of this.document.entities)
-      if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal && !e.sprite && !e.road))
+      if (
+        e.kind === 'spawn' ||
+        (e.kind === 'group' && !e.portal && !e.sprite && !e.road && !e.placeLabel)
+      )
         this.objects.get(e.id)!.visible = !playing
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {

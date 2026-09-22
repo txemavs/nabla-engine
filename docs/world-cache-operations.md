@@ -27,7 +27,7 @@ Ten GiB is a configured working budget, not a national coverage estimate.
 
 | Layer                  | Stored content                                                                              | What still happens                                            |
 | ---------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Browser Cache Storage  | Normalized extracts (`nabla-world-v2`) and up to eight prepared zones (`nabla-prepared-v4`) | Revalidation, decoding, GPU upload and physics installation   |
+| Browser Cache Storage  | Normalized extracts (`nabla-world-v3`) and up to eight prepared zones (`nabla-prepared-v5`) | Revalidation, decoding, GPU upload and physics installation   |
 | Private demand cache   | Exact OSM responses and Esri elevation tile bytes, hashed `.bin` files                      | Feature extraction and geometry unless prepared output exists |
 | Static bake            | OSM features, origin and tile identity; placeholder elevation                               | Real elevation sampling and geometry generation               |
 | Static prepared output | Scene entities, sampled terrain and base64 mesh buffers, including colors                   | Buffer decoding, renderer objects, GPU upload and physics     |
@@ -94,7 +94,7 @@ ready history includes old versions and may outlive evicted files.
   origins changes cache identities, even for overlapping geographical coverage.
 - Private baked path: `/data/baked/43.32969/-1.81961/0_0.json` (five decimals).
   Public URL: `/baked/43.32969/-1.81961/0_0` (no `.json`).
-- Prepared URL: `/prepared/4/43.329690/-1.819606/28.253/0_0.json`.
+- Prepared URL: `/prepared/5/43.329690/-1.819606/28.253/0_0.json`.
   Prepared identities include origin altitude and format version.
 - Upstream cache TTL is **30 days**. Failed refreshes can serve stale data;
   failed or incomplete new OSM responses are not saved.
@@ -134,7 +134,7 @@ Public artifact checks (a 404 simply means this particular zone is not published
 
 ```sh
 curl -I https://demo.example/baked/43.32969/-1.81961/0_0
-curl -I https://demo.example/prepared/4/43.329690/-1.819606/28.253/0_0.json
+curl -I https://demo.example/prepared/5/43.329690/-1.819606/28.253/0_0.json
 ```
 
 Expect JSON, an ETag, `Cache-Control: no-cache` and `X-Nabla-Cache: BAKED` or
@@ -326,3 +326,22 @@ CACHE_DIR=/tmp/nabla-cache-tests python3 -m unittest discover -s services/world-
 
 Also verify a real cold/warm zone and HTTP 200/304 behavior before publishing a
 worker change; unit checks do not measure browser frame pacing.
+
+## Water, railway and place-name migration
+
+The current normalizer writes bake version **3**, and prepared meshes use wire
+version **5**. These versions include inland-water relations, visual railways and
+OSM city/town/village labels. Older prepared meshes cannot contain these features.
+Browser extracts now use `nabla-world-v3`; prepared buffers use `nabla-prepared-v5`.
+
+Deploy the worker before the frontend. Re-run `bake.py` for the desired region;
+`--skip-existing` validates the bake version and replaces incompatible files.
+Publish baked JSON using the same extensionless copy procedure described above.
+Queue the desired zones through `/prepare/zones`: versioned job identities cause
+new meshes to be generated without deleting old public files. Keep old versions
+until older clients have stopped requesting them, then reclaim disk deliberately.
+This is an on-demand migration, not a bulk rebuild of every explored region.
+
+The first visit to a previously uncooked zone can still wait for upstream OSM.
+Preparing geometry removes that work from subsequent clients; it does not provide
+terrain excavation, surveyed water levels or underground railway rendering.

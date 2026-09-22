@@ -22,7 +22,8 @@ it('builds an actual Ventas district with original OSM identities and no circuit
     building = d.entities.find((e) => e.parentId === 'world-buildings')!
   editor.update(building.id, { color: '#123456' })
   const saved = editor.serialize()
-  expect(saved.length).toBeLessThan(2_500_000)
+  // The fixture now includes draped railway and inland-water geometry.
+  expect(saved.length).toBeLessThan(4_000_000)
   expect(parseScene(JSON.parse(saved)).entities.find((e) => e.id === building.id)!.color).toBe(
     '#123456',
   )

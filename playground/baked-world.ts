@@ -10,7 +10,7 @@ export function validBakedExtract(
   const d = value as WorldExtract
   return (
     d.source?.baked === true &&
-    d.source.bakeVersion === 2 &&
+    d.source.bakeVersion === 3 &&
     d.source.tileKey === key &&
     Math.abs(d.origin?.latitude - origin.latitude) < 0.00001 &&
     Math.abs(d.origin?.longitude - origin.longitude) < 0.00001 &&

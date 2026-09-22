@@ -7,7 +7,7 @@ const extract = (): WorldExtract => ({
   origin,
   terrain: { columns: 121, rows: 121, spacing: 10, heights: Array(14641).fill(0) },
   features: [],
-  source: { retrievedAt: '2026-09-22', baked: true, bakeVersion: 2, tileKey: '0_0' },
+  source: { retrievedAt: '2026-09-22', baked: true, bakeVersion: 3, tileKey: '0_0' },
 })
 afterEach(() => {
   vi.unstubAllGlobals()

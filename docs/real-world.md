@@ -205,6 +205,29 @@ Water surfaces use animated wave normals adapted from Streets GL (MIT licensed).
 The water normal texture is at `assets/geography/water-normal.png`. Landcover and
 water polygons are batched by 256m cell and surface type for efficient rendering.
 
+#### Inland water areas (rivers, lakes, reservoirs)
+
+Inland water bodies are rendered from OSM **area** geometries, not the OpenFreeMap
+ocean layer (which handles `class=ocean` only). This includes:
+
+- `natural=water` areas (lakes, ponds, rivers mapped as areas)
+- `water=river` / `water=lake` / etc. polygons
+- `waterway=riverbank` / `waterway=dock` area ways
+- `landuse=reservoir` / `landuse=basin` areas
+- Multipolygon relations with proper outer/inner ring assembly
+
+**Multipolygon assembly**: Large rivers are often mapped as multipolygon relations
+where member ways need to be joined at shared endpoints to form complete rings.
+The importer assembles these automatically, joining ways that share coordinates
+and handling reversed way directions. When some member ways are missing or
+cannot be joined, complete rings are still salvaged — incomplete chains are
+skipped without discarding the entire relation.
+
+**Centerline fallback**: Where no area polygon exists, `waterway=river` and
+`waterway=stream` centerlines are rendered as extruded ribbons using the OSM
+`width=*` tag or type-based defaults (15m for rivers, 3m for streams). These
+are explicitly labelled as centerline approximations in their entity names.
+
 Landcover is visual only; it does not affect collision or physics. The terrain
 heightfield remains the collider. This implementation does not use satellite/orthophoto
 imagery; it relies solely on OSM vector data for surface classification.
@@ -479,10 +502,13 @@ and shadow materials are registered through the existing CSM integration. Water
 uses the existing normal texture without another camera or reflection pass.
 
 Limitations: inland water follows the elevation grid; this is not a surveyed
-flat lake level or hydrology simulation. Incomplete/open relation rings are still
-skipped by the OSM normalizer. Nested equal-priority landuse polygons are not a
-full polygon-union/classification system. The procedural atlas prototype has
-been removed because it was unused; current land materials use solid colors.
+flat lake level or hydrology simulation. Multipolygon relations with ways that
+cannot be joined (no shared endpoints) produce partial results — complete rings
+are salvaged but incomplete chains are skipped. Nested equal-priority landuse
+polygons are not a full polygon-union/classification system. The procedural atlas
+prototype has been removed because it was unused; current land materials use solid
+colors. Centerline river fallback is an approximation using default or tagged
+widths; it does not match actual surveyed banks.
 
 ### Physical reflections with cascaded shadows
 
@@ -534,3 +560,27 @@ and roads exceeding 4096 sampling intervals fall back to the original surface.
 Bridge profiles retain their separate implementation; tunnels remain deferred until
 terrain excavation and collision cutouts exist. Turning buildings off does not
 remove road-deck collision.
+
+## Railways and settlement names
+
+The import includes `railway=rail|light_rail|tram|narrow_gauge`. Each track has a
+ballast ribbon and two narrow rail ribbons, draped on the same terrain triangles
+as roads. `gauge` is interpreted in millimetres (1,435 mm fallback), and bridge
+profiles respect `bridge` and `layer`. The **Vías OSM** group is independent of
+roads: its bounded solid chunks have `railway.part` and `motion: none`, never a
+road component. They are batched by cell and colour using the road renderer, but
+do not create road assist, vehicle support or rigid-body colliders. Road detail
+distance also controls railway draw distance. Tunnels/subways and inactive or
+proposed tracks are omitted; sleepers, trains and catenary are not included.
+
+Named OSM `place=city|town|village` nodes become nonphysical `placeLabel` entities
+in **Poblaciones OSM**. Each node has one tile owner, preserving its OSM identity
+and spelling. Labels use canvas text (not HTML), a fixed apparent text size, and
+are discarded with their streamed zone. Only loaded settlements can be named;
+this is not a worldwide geocoding database.
+
+Inland water is visual only. Centerline fallback is generated as water geometry,
+not as a road; mapped areas take precedence over covered centerline triangles.
+The shore transition remains approximate at terrain-triangle resolution. Missing
+inner relation rings are not filled, and incomplete building relations are not
+salvaged into invented footprints. Named streams in tunnels are omitted.

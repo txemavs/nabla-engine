@@ -6,7 +6,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '4'
+VERSION = '5'
 
 def normalize(origin, key):
     if not isinstance(origin, dict) or not isinstance(key, str):
@@ -35,6 +35,7 @@ class Queue:
         self.output = Path(output) if output else None
         with self.connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, path TEXT, origin TEXT, tile TEXT, state TEXT, priority INTEGER, attempts INTEGER DEFAULT 0, next REAL DEFAULT 0, updated REAL)')
+            db.execute("UPDATE jobs SET state='failed', updated=? WHERE state IN ('queued','running') AND path NOT LIKE ?", (time.time(), VERSION + '/%'))
             db.execute("UPDATE jobs SET state='queued' WHERE state='running'")
 
     def connect(self):

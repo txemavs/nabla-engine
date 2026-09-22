@@ -94,6 +94,14 @@ const entitySchema = z
       })
       .strict()
       .optional(),
+    railway: z
+      .object({ part: z.enum(['ballast', 'rail']) })
+      .strict()
+      .optional(),
+    placeLabel: z
+      .object({ text: z.string().min(1).max(100), category: z.enum(['city', 'town', 'village']) })
+      .strict()
+      .optional(),
     road: z
       .object({
         paths: z.array(z.array(vector).min(2).max(8192)).min(1).max(8192),
@@ -427,5 +435,11 @@ export class SceneGraph {
 
 /** Authored road solids retain OSM provenance but are not optional map buildings. */
 export function isMapBuilding(entity?: Entity): boolean {
-  return !!(entity?.source && entity.geometry && !entity.landcover && !entity.source.tags.highway)
+  return !!(
+    entity?.source &&
+    entity.geometry &&
+    !entity.landcover &&
+    !entity.railway &&
+    !entity.source.tags.highway
+  )
 }

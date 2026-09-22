@@ -29,7 +29,9 @@ export class RoadBatches {
     if (!this.root.visible) return
     if (entities !== this.source) {
       const dirty = new Set<string>()
-      const next = new Map(entities.filter((e) => e.road && e.source).map((e) => [e.id, e]))
+      const next = new Map(
+        entities.filter((e) => (e.road || e.railway) && e.source).map((e) => [e.id, e]),
+      )
       for (const [id, road] of this.roads) {
         if (next.get(id) === road.entity && objects.get(id) === road.group) continue
         for (const key of road.parts.keys()) {
@@ -51,7 +53,7 @@ export class RoadBatches {
           const matrix = new THREE.Matrix4().multiplyMatrices(group.matrix, child.matrix)
           if (!child.geometry.boundingSphere) child.geometry.computeBoundingSphere()
           const center = child.geometry.boundingSphere!.center.clone().applyMatrix4(matrix)
-          const key = `${Math.floor(center.x / 256)}:${Math.floor(center.z / 256)}:${entity.color}`
+          const key = `${entity.railway ? 'rail' : 'road'}:${Math.floor(center.x / 256)}:${Math.floor(center.z / 256)}:${entity.color}`
           const list = parts.get(key) ?? []
           list.push({ mesh: child, matrix })
           parts.set(key, list)

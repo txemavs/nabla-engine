@@ -4,6 +4,7 @@ import lercWasm from 'lerc/lerc-wasm.wasm?url'
 import { createRealWorld, type MapFeature, type WorldExtract } from '../src/real-world.js'
 import { tileCoordinate, EARTH_RADIUS, type GeoPoint } from '../src/geography.js'
 import type { Entity } from '../src/scene.js'
+import { assembleMultipolygonRings } from '../src/multipolygon.js'
 
 const CACHE_BASE = import.meta.env.VITE_WORLD_CACHE_URL || ''
 const BAKED_BASE = import.meta.env.VITE_WORLD_BAKED_URL || CACHE_BASE
@@ -14,7 +15,7 @@ const OVERPASS = CACHE_BASE
   ? `${CACHE_BASE}/osm`
   : import.meta.env.VITE_WORLD_OVERPASS_URL || 'https://overpass-api.de/api/interpreter'
 let nextRemoteRequest = 0
-const CACHE = 'nabla-world-v2'
+const CACHE = 'nabla-world-v3'
 const decoded = new Map<string, Promise<Lerc.LercData>>()
 let ready: Promise<void> | undefined
 async function waitForRetry(ms: number, signal: AbortSignal): Promise<void> {
@@ -80,6 +81,10 @@ interface OsmElement {
   geometry?: { lat: number; lon: number }[]
   members?: { type: string; ref: number; role: string; geometry?: { lat: number; lon: number }[] }[]
 }
+/**
+ * Convert Overpass elements to MapFeatures.
+ * Handles multipolygon assembly for relations where member ways need to be joined.
+ */
 export function overpassFeatures(elements: OsmElement[]): MapFeature[] {
   const result: MapFeature[] = [],
     members = new Set<number>()
@@ -87,20 +92,66 @@ export function overpassFeatures(elements: OsmElement[]): MapFeature[] {
     g.map((p) => [p.lon, p.lat] as [number, number])
   const closed = (g: { lat: number; lon: number }[]) =>
     g.length >= 4 && g[0].lat === g[g.length - 1].lat && g[0].lon === g[g.length - 1].lon
-  for (const e of elements)
+
+  for (const e of elements) {
     if (e.type === 'relation' && e.members?.length) {
-      const ways = e.members.filter((m) => m.type === 'way')
-      if (!ways.length || ways.some((m) => !m.geometry || !closed(m.geometry))) continue
-      result.push({
-        id: `relation/${e.id}`,
-        tags: e.tags ?? {},
-        rings: ways.map((m) => ({
-          role: m.role || 'outer',
-          coordinates: coordinates(m.geometry!),
-        })),
-      })
-      ways.forEach((m) => members.add(m.ref))
+      const ways = e.members.filter(
+        (m) => m.type === 'way' && (!m.role || m.role === 'outer' || m.role === 'inner'),
+      )
+      if (!ways.length) continue
+
+      const allClosed = ways.every((m) => m.geometry && closed(m.geometry))
+      if (allClosed) {
+        result.push({
+          id: `relation/${e.id}`,
+          tags: e.tags ?? {},
+          rings: ways.map((m) => ({
+            role: m.role || 'outer',
+            coordinates: coordinates(m.geometry!),
+          })),
+        })
+        ways.forEach((m) => members.add(m.ref))
+      } else {
+        const wayGeoms = ways
+          .filter((m) => m.geometry && m.geometry.length >= 2)
+          .map((m) => ({
+            role: m.role || 'outer',
+            ref: m.ref,
+            geometry: m.geometry!,
+          }))
+
+        if (!wayGeoms.length) continue
+
+        const assembled = assembleMultipolygonRings(wayGeoms)
+        const joinedPoints = new Set(
+          assembled.rings.flatMap((r) => r.coordinates.map((p) => p.join(','))),
+        )
+        const used = ways.filter(
+          (m) =>
+            m.geometry?.length &&
+            m.geometry.every((p) => joinedPoints.has([p.lon, p.lat].join(','))),
+        )
+        // Never fill a missing courtyard, or turn a partial building into a new footprint.
+        if (
+          ways.some((m) => m.role === 'inner' && !used.includes(m)) ||
+          ((e.tags?.building || e.tags?.['building:part']) && used.length !== ways.length)
+        )
+          continue
+        if (assembled.rings.length > 0) {
+          result.push({
+            id: `relation/${e.id}`,
+            tags: e.tags ?? {},
+            rings: assembled.rings.map((r) => ({
+              role: r.role,
+              coordinates: r.coordinates,
+            })),
+          })
+          used.forEach((m) => members.add(m.ref))
+        }
+      }
     }
+  }
+
   for (const e of elements) {
     if (e.type === 'way' && e.geometry?.length && !members.has(e.id)) {
       if ((e.tags?.building || e.tags?.['building:part']) && !closed(e.geometry)) continue
@@ -111,13 +162,13 @@ export function overpassFeatures(elements: OsmElement[]): MapFeature[] {
       })
     } else if (
       e.type === 'node' &&
-      e.tags?.natural === 'tree' &&
+      (e.tags?.natural === 'tree' || !!e.tags?.place) &&
       e.lat !== undefined &&
       e.lon !== undefined
     )
       result.push({
         id: `node/${e.id}`,
-        tags: e.tags,
+        tags: e.tags!,
         rings: [{ role: 'point', coordinates: [[e.lon, e.lat]] }],
       })
   }
@@ -225,7 +276,7 @@ export async function loadWorldTile(
     const nw = sampleGeo(origin, ox - 750, oz - 750),
       se = sampleGeo(origin, ox + 750, oz + 750)
     const box = `${se.latitude},${nw.longitude},${nw.latitude},${se.longitude}`
-    const query = `[out:json][timeout:25];(way[building](${box});way["building:part"](${box});way[highway](${box});relation[building](${box});node[natural=tree](${box});way[landuse](${box});way[leisure](${box});way["natural"~"water|wood|beach|sand|scrub|heath|wetland|marsh|grassland"](${box});way[water](${box});way[waterway~"riverbank|dock"](${box});relation[landuse](${box});relation[leisure](${box});relation["natural"~"water|wood"](${box}););out geom;`
+    const query = `[out:json][timeout:25];(way[building](${box});way["building:part"](${box});way[highway](${box});relation[building](${box});node[natural=tree](${box});node[place~"^(city|town|village)$"][name](${box});way[railway~"^(rail|light_rail|tram|narrow_gauge)$"](${box});way[landuse](${box});way[leisure](${box});way["natural"~"water|wood|beach|sand|scrub|heath|wetland|marsh|grassland"](${box});way[water](${box});way[waterway~"riverbank|dock|river|stream"](${box});relation[landuse](${box});relation[leisure](${box});relation["natural"~"water|wood"](${box});relation[water](${box});relation[waterway~"riverbank"](${box}););out geom;`
     // Cached visits are immediate; public OSM requests are deliberately paced.
     const delay = Math.max(0, nextRemoteRequest - Date.now())
     if (delay)

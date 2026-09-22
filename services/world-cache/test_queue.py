@@ -28,8 +28,15 @@ class QueueTests(unittest.TestCase):
         self.queue.finish(job['id'],True)
         self.queue.enqueue(ORIGIN,['0_0'])
         self.assertEqual(self.queue.stats(),{'queued':1})
+    def test_format_upgrade_never_writes_new_geometry_to_old_paths(self):
+        self.queue.enqueue(ORIGIN,['0_0'])
+        with self.queue.connect() as db:
+            db.execute("UPDATE jobs SET path='4/old.json', state='running'")
+        restarted=Queue(self.path)
+        self.assertIsNone(restarted.claim())
+        self.assertEqual(restarted.stats(),{'failed':1})
     def test_normalization_and_validation(self):
-        self.assertEqual(normalize(ORIGIN,'0_0')[1],'4/43.329690/-1.819606/28.253/0_0.json')
+        self.assertEqual(normalize(ORIGIN,'0_0')[1],'5/43.329690/-1.819606/28.253/0_0.json')
         for keys in [['../secret'],['99999_0'],['0_0']*25]:
             with self.assertRaises(ValueError):self.queue.enqueue(ORIGIN,keys)
         with self.assertRaises(ValueError):self.queue.enqueue({**ORIGIN,'altitude':float('nan')},['0_0'])

@@ -43,6 +43,17 @@ export {
   classifySurface,
   isLandcoverFeature,
   isWaterFeature,
+  isWaterwayCenterline,
+  getWaterwayWidth,
   SURFACE_COLORS,
   type SurfaceType,
 } from './landcover.js'
+
+export {
+  assembleMultipolygonRings,
+  pointInPolygon,
+  associateHoles,
+  type WayGeometry,
+  type AssembledRing,
+  type AssemblyResult,
+} from './multipolygon.js'

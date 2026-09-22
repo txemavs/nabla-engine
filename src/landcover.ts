@@ -140,6 +140,30 @@ export function isWaterFeature(tags: Record<string, string>): boolean {
   return classifySurface(tags) === 'water'
 }
 
+/**
+ * Check if a feature is a waterway centerline (river/stream) without area geometry.
+ * These may be rendered as extruded ribbons when no area polygon exists.
+ */
+export function isWaterwayCenterline(tags: Record<string, string>): boolean {
+  const waterway = tags.waterway
+  return waterway === 'river' || waterway === 'stream'
+}
+
+/**
+ * Get the default width for a waterway centerline based on its type.
+ * Uses OSM width tag if present, otherwise applies type-based defaults.
+ */
+export function getWaterwayWidth(tags: Record<string, string>): number {
+  const widthTag = tags.width
+  if (widthTag) {
+    const parsed = parseFloat(widthTag)
+    if (Number.isFinite(parsed) && parsed > 0) return Math.min(parsed, 100)
+  }
+  if (tags.waterway === 'river') return 15
+  if (tags.waterway === 'stream') return 3
+  return 5
+}
+
 /** Stable precedence for nested OSM surfaces, shared by editor and batches. */
 export const SURFACE_LAYERS: Record<SurfaceType, number> = {
   default: 1,

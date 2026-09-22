@@ -1,3 +1,4 @@
+import { pointInPolygon } from './multipolygon.js'
 import { mapFingerprint, mapTileEntities } from './world-stream.js'
 import { ShapeUtils, Vector2, Vector3 } from 'three'
 import { geoToLocal, type GeoPoint } from './geography.js'
@@ -12,13 +13,20 @@ import {
 import { createA3, createCarrier } from './presets.js'
 import { terrainHeight, type TerrainData } from './terrain.js'
 import { validateSolid, type SolidGeometry } from './solid.js'
-import { drapeRoad, roadHeightOffset } from './draped-road.js'
+import {
+  drapeRoad,
+  roadHeightOffset,
+  roadGeometry,
+  type RoadGeometryOptions,
+} from './draped-road.js'
 import { treeSprite } from './vegetation.js'
 import { buildingRoofWithFaces } from './building-roof.js'
 import {
   classifySurface,
   isLandcoverFeature,
   isWaterFeature,
+  isWaterwayCenterline,
+  getWaterwayWidth,
   SURFACE_COLORS,
   SURFACE_LAYERS,
 } from './landcover.js'
@@ -118,14 +126,24 @@ export function createRealWorld(
     'world-trees',
     'world-landcover',
     'world-water',
+    'world-railways',
+    'world-places',
   ].map((id) => id + suffix)
   for (const [i, id] of groups.entries())
     entities.push({
       ...createEntity(id, 'group'),
-      name: ['Edificios OSM', 'Calles OSM', 'Árboles OSM', 'Terreno OSM', 'Agua OSM'][i],
+      name: [
+        'Edificios OSM',
+        'Calles OSM',
+        'Árboles OSM',
+        'Terreno OSM',
+        'Agua OSM',
+        'Vías OSM',
+        'Poblaciones OSM',
+      ][i],
     })
   const terrain = createEntity('world-terrain' + suffix, 'terrain')
-  terrain.name = 'Relieve real · Ventas'
+  terrain.name = `Relieve real · ${data.name}`
   terrain.terrain = structuredClone(t)
   terrain.color = SURFACE_COLORS.default
   terrain.size = [half * 2, 100, depth * 2]
@@ -136,6 +154,61 @@ export function createRealWorld(
     retrievedAt: data.source.retrievedAt,
     tags: f.tags,
   })
+  const waterAreas = data.features
+    .filter((f) => isWaterFeature(f.tags))
+    .map((f) =>
+      f.rings.map((r) => ({
+        role: r.role,
+        points: r.coordinates.map((p) => {
+          const v = project(p)
+          return [v[0], v[2]] as [number, number]
+        }),
+      })),
+    )
+  const coveredByWater = (p: [number, number]) =>
+    waterAreas.some(
+      (rings) =>
+        rings.some((r) => r.role !== 'inner' && pointInPolygon(p, r.points)) &&
+        !rings.some((r) => r.role === 'inner' && pointInPolygon(p, r.points)),
+    )
+  const addSurface = (
+    f: MapFeature,
+    geometry: SolidGeometry,
+    part: string,
+    color: string,
+    parentId: string,
+  ) => {
+    for (let first = 0; first < geometry.faces.length; first += 600) {
+      const vertices: Vec3Tuple[] = []
+      const seen = new Map<string, number>()
+      const faces = geometry.faces.slice(first, first + 600).map((face) =>
+        face.map((index) => {
+          const point = geometry.vertices[index],
+            key = point.join(',')
+          let local = seen.get(key)
+          if (local === undefined) {
+            local = vertices.length
+            vertices.push(point)
+            seen.set(key, local)
+          }
+          return local
+        }),
+      )
+      const e = createEntity(
+        `osm-${f.id.replace('/', '-')}-${part}${suffix}-${first / 600}`,
+        'solid',
+      )
+      e.geometry = { vertices, edges: [], faces }
+      e.motion = 'none'
+      e.name = f.tags.name ?? `${part} · ${f.id}`
+      e.color = color
+      e.parentId = parentId
+      e.source = source(f)
+      if (part === 'waterway') e.landcover = { surface: 'water', isWater: true }
+      else e.railway = { part: part === 'ballast' ? 'ballast' : 'rail' }
+      entities.push(e)
+    }
+  }
   for (const f of data.features) {
     const tags = f.tags
     if (tags.building === 'no' || tags['building:part'] === 'no') continue
@@ -215,7 +288,11 @@ export function createRealWorld(
         Math.max(0.01, Math.max(...all.map((p) => p[2])) - Math.min(...all.map((p) => p[2]))),
       ]
       entities.push(e)
-    } else if (tags.highway) {
+    } else if (tags.highway || tags.railway) {
+      const rail =
+        ['rail', 'light_rail', 'tram', 'narrow_gauge'].includes(tags.railway) &&
+        (!tags.tunnel || tags.tunnel === 'no')
+      if (!tags.highway && !rail) continue
       if (['construction', 'proposed', 'steps'].includes(tags.highway)) continue
       const foot = ['footway', 'path', 'pedestrian', 'cycleway'].includes(tags.highway),
         width = Math.min(25, Math.max(1, number(tags.width, foot ? 2 : number(tags.lanes, 2) * 3)))
@@ -276,7 +353,36 @@ export function createRealWorld(
           if (segment) paths.push(segment)
         }
       }
-      if (paths.length) {
+      if (paths.length && rail) {
+        const gauge = Math.max(0.5, Math.min(2.5, number(tags.gauge, 1435) / 1000))
+        const options: RoadGeometryOptions = {
+          ...(elevation && { elevation }),
+          ...(elevation === 'bridge' && { profiled: true }),
+          ...(layer !== undefined && { layer }),
+        }
+        addSurface(f, roadGeometry(t, paths, gauge + 1.4, options), 'ballast', '#68655d', groups[5])
+        for (const [side, offset] of [
+          [0, -gauge / 2],
+          [1, gauge / 2],
+        ]) {
+          const shifted = paths.map((path) =>
+            path.map((p, i): Vec3Tuple => {
+              const a = path[Math.max(0, i - 1)],
+                b = path[Math.min(path.length - 1, i + 1)]
+              const length = Math.hypot(b[0] - a[0], b[2] - a[2]) || 1
+              return [
+                p[0] - ((b[2] - a[2]) / length) * offset,
+                p[1],
+                p[2] + ((b[0] - a[0]) / length) * offset,
+              ]
+            }),
+          )
+          const g = roadGeometry(t, shifted, 0.09, options)
+          for (const v of g.vertices) v[1] += 0.055
+          addSurface(f, g, `rail-${side}`, '#a4a7aa', groups[5])
+        }
+      }
+      if (paths.length && (!rail || tags.highway)) {
         const e = createEntity('osm-' + f.id.replace('/', '-') + suffix, 'group')
         e.name = tags.name ?? tags.highway
         e.road = {
@@ -292,6 +398,19 @@ export function createRealWorld(
         e.source = source(f)
         entities.push(e)
       }
+    } else if (tags.place && ['city', 'town', 'village'].includes(tags.place) && tags.name) {
+      const coordinate = f.rings[0]?.coordinates[0]
+      if (!coordinate) continue
+      const p = project(coordinate)
+      if (p[0] < -half || p[0] >= half || p[2] < -depth || p[2] >= depth) continue
+      p[1] = height(p[0], p[2]) + 20
+      const e = createEntity('osm-' + f.id.replace('/', '-'), 'group', p)
+      e.name = tags.name.slice(0, 100)
+      e.placeLabel = { text: e.name, category: tags.place as 'city' | 'town' | 'village' }
+      e.motion = 'none'
+      e.parentId = groups[6]
+      e.source = source(f)
+      entities.push(e)
     } else if (tags.natural === 'tree') {
       const p = project(f.rings[0].coordinates[0])
       if (!inside(p)) continue
@@ -342,6 +461,33 @@ export function createRealWorld(
         e.source = source(f)
         e.landcover = { surface, isWater }
         entities.push(e)
+      }
+    } else if (isWaterwayCenterline(tags)) {
+      if (tags.tunnel && tags.tunnel !== 'no') continue
+      // Fallback: render river/stream centerlines as extruded water ribbons
+      // when no area polygon exists. Width uses OSM width tag or type defaults.
+      const width = getWaterwayWidth(tags)
+      const paths: Vec3Tuple[][] = []
+      for (const ring of f.rings) {
+        const points = ring.coordinates.map(project)
+        for (let i = 1; i < points.length; i++) {
+          const segment = clipRoadSegment(points[i - 1], points[i], half, depth)
+          if (segment) paths.push(segment)
+        }
+      }
+      if (paths.length) {
+        // Visual-only surface: never a driveable road or a rigid-body collider.
+        const geometry = roadGeometry(t, paths, width)
+        geometry.faces = geometry.faces.filter((face) => {
+          const points = face.map((i) => geometry.vertices[i])
+          return !coveredByWater([
+            points.reduce((sum, p) => sum + p[0], 0) / points.length,
+            points.reduce((sum, p) => sum + p[2], 0) / points.length,
+          ])
+        })
+        // Area polygons take visual precedence at the remaining shore boundary.
+        for (const v of geometry.vertices) v[1] -= 0.025
+        addSurface(f, geometry, 'waterway', SURFACE_COLORS.water, groups[4])
       }
     }
   }

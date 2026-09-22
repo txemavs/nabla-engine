@@ -3,6 +3,8 @@ import {
   classifySurface,
   isLandcoverFeature,
   isWaterFeature,
+  isWaterwayCenterline,
+  getWaterwayWidth,
   SURFACE_COLORS,
   type SurfaceType,
 } from './landcover.js'
@@ -134,5 +136,36 @@ describe('SURFACE_COLORS', () => {
     for (const type of types) {
       expect(SURFACE_COLORS[type]).toMatch(/^#[0-9a-f]{6}$/i)
     }
+  })
+})
+
+describe('isWaterwayCenterline', () => {
+  it('identifies river and stream centerlines', () => {
+    expect(isWaterwayCenterline({ waterway: 'river' })).toBe(true)
+    expect(isWaterwayCenterline({ waterway: 'stream' })).toBe(true)
+  })
+
+  it('rejects non-centerline waterways', () => {
+    expect(isWaterwayCenterline({ waterway: 'riverbank' })).toBe(false)
+    expect(isWaterwayCenterline({ waterway: 'dock' })).toBe(false)
+    expect(isWaterwayCenterline({ natural: 'water' })).toBe(false)
+    expect(isWaterwayCenterline({})).toBe(false)
+  })
+})
+
+describe('getWaterwayWidth', () => {
+  it('uses explicit width tag when present', () => {
+    expect(getWaterwayWidth({ waterway: 'river', width: '25' })).toBe(25)
+    expect(getWaterwayWidth({ waterway: 'stream', width: '5 m' })).toBe(5)
+  })
+
+  it('returns type-based defaults without width tag', () => {
+    expect(getWaterwayWidth({ waterway: 'river' })).toBe(15)
+    expect(getWaterwayWidth({ waterway: 'stream' })).toBe(3)
+    expect(getWaterwayWidth({})).toBe(5)
+  })
+
+  it('caps width at 100m', () => {
+    expect(getWaterwayWidth({ waterway: 'river', width: '200' })).toBe(100)
   })
 })

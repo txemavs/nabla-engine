@@ -8,9 +8,16 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.dirname(__file__))
-from bake import overpass_features, geo_offset, zone_bounds, bake_zone
+from bake import overpass_features, geo_offset, zone_bounds, bake_zone, overpass_query
 
 class TestOverpassFeatures(unittest.TestCase):
+    def test_places_and_railways_are_requested_and_preserved(self):
+        query=overpass_query((1,2,3,4))
+        self.assertIn('way[railway~',query)
+        self.assertIn('node[place~',query)
+        result=overpass_features([{'type':'node','id':9,'lat':43.3,'lon':-1.8,'tags':{'place':'city','name':'Irún'}}])
+        self.assertEqual(result[0]['tags']['name'],'Irún')
+
     def test_converts_building_way(self):
         elements = [{
             'type': 'way',
@@ -69,6 +76,118 @@ class TestOverpassFeatures(unittest.TestCase):
         features = overpass_features(elements)
         self.assertEqual(len(features), 1)
         self.assertEqual(features[0]['id'], 'relation/99999')
+    
+    def test_assembles_multipolygon_from_split_ways(self):
+        """Assemble river multipolygon from ways that need joining at endpoints."""
+        elements = [{
+            'type': 'relation',
+            'id': 200,
+            'tags': {'type': 'multipolygon', 'natural': 'water', 'water': 'river'},
+            'members': [
+                {
+                    'type': 'way',
+                    'ref': 1,
+                    'role': 'outer',
+                    'geometry': [
+                        {'lat': 0, 'lon': 0},
+                        {'lat': 0, 'lon': 5},
+                        {'lat': 5, 'lon': 5},
+                    ]
+                },
+                {
+                    'type': 'way',
+                    'ref': 2,
+                    'role': 'outer',
+                    'geometry': [
+                        {'lat': 5, 'lon': 5},
+                        {'lat': 5, 'lon': 0},
+                        {'lat': 0, 'lon': 0},
+                    ]
+                }
+            ]
+        }]
+        features = overpass_features(elements)
+        self.assertEqual(len(features), 1)
+        self.assertEqual(features[0]['id'], 'relation/200')
+        self.assertEqual(len(features[0]['rings']), 1)
+        ring = features[0]['rings'][0]
+        self.assertEqual(ring['role'], 'outer')
+        self.assertGreaterEqual(len(ring['coordinates']), 4)
+        self.assertEqual(ring['coordinates'][0], ring['coordinates'][-1])
+    
+    def test_multipolygon_with_inner_ring(self):
+        """Handle multipolygon with inner ring (hole)."""
+        elements = [{
+            'type': 'relation',
+            'id': 300,
+            'tags': {'type': 'multipolygon', 'natural': 'water'},
+            'members': [
+                {
+                    'type': 'way',
+                    'ref': 1,
+                    'role': 'outer',
+                    'geometry': [
+                        {'lat': 0, 'lon': 0},
+                        {'lat': 0, 'lon': 10},
+                        {'lat': 10, 'lon': 10},
+                        {'lat': 10, 'lon': 0},
+                        {'lat': 0, 'lon': 0},
+                    ]
+                },
+                {
+                    'type': 'way',
+                    'ref': 2,
+                    'role': 'inner',
+                    'geometry': [
+                        {'lat': 2, 'lon': 2},
+                        {'lat': 2, 'lon': 4},
+                        {'lat': 4, 'lon': 4},
+                        {'lat': 4, 'lon': 2},
+                        {'lat': 2, 'lon': 2},
+                    ]
+                }
+            ]
+        }]
+        features = overpass_features(elements)
+        self.assertEqual(len(features), 1)
+        outers = [r for r in features[0]['rings'] if r['role'] == 'outer']
+        inners = [r for r in features[0]['rings'] if r['role'] == 'inner']
+        self.assertEqual(len(outers), 1)
+        self.assertEqual(len(inners), 1)
+    
+    def test_salvages_complete_rings_from_partial_multipolygon(self):
+        """When some ways can't be joined, still output complete rings."""
+        elements = [{
+            'type': 'relation',
+            'id': 400,
+            'tags': {'type': 'multipolygon', 'natural': 'water'},
+            'members': [
+                {
+                    'type': 'way',
+                    'ref': 1,
+                    'role': 'outer',
+                    'geometry': [
+                        {'lat': 0, 'lon': 0},
+                        {'lat': 0, 'lon': 5},
+                        {'lat': 5, 'lon': 5},
+                        {'lat': 5, 'lon': 0},
+                        {'lat': 0, 'lon': 0},
+                    ]
+                },
+                {
+                    'type': 'way',
+                    'ref': 2,
+                    'role': 'outer',
+                    'geometry': [
+                        {'lat': 100, 'lon': 100},
+                        {'lat': 100, 'lon': 101},
+                    ]
+                }
+            ]
+        }]
+        features = overpass_features(elements)
+        self.assertEqual(len(features), 1)
+        self.assertEqual(len(features[0]['rings']), 1)
     
     def test_skips_unclosed_building_ways(self):
         elements = [{
