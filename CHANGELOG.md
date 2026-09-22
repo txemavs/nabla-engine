@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Assign OSM courtyards to their containing building body and subtract detailed building parts from generic outlines to prevent overlapping roofs and walls.
+
 - Use sparse collision-contact history instead of resetting a quadratic dense matrix every physics tick.
 - Share cockpit road-chart projections and cull paths by cached bounds at the current zoom.
 - Document remaining performance work and measurement limits in docs/performance.md.
