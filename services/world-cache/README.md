@@ -89,6 +89,13 @@ The `bake.py` script creates pre-computed zone JSON that bypasses Overpass entir
 Baked zones are served with priority — the client checks baked data before falling
 back to live Overpass.
 
+**Important:** Baking pre-computes _OSM feature data_, not scene geometry. The browser
+still fetches live elevation from Esri and builds the full scene (terrain heightfields,
+building meshes, road geometry) at runtime. Baking eliminates Overpass network latency
+and rate-limit delays, but does not skip the client-side geometry generation work.
+For large/dense zones, there will still be a brief hitch as the browser constructs
+the scene from the baked JSON.
+
 ### Baking on chained.world
 
 ```sh

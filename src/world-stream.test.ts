@@ -417,3 +417,73 @@ it('prioritizes the immediate neighborhood when crossing into unloaded terrain',
   expect(editor.document.entities.some((e) => e.id === 'world-terrain-1_0')).toBe(true)
   stream.dispose()
 })
+
+it('fetches player zone before coordinate-ordered neighbors (regression: 10_0 before 9_*)', async () => {
+  const editor = new SceneEditor(document())
+  const calls: string[] = []
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load: async (key) => {
+      calls.push(key)
+      const [x, z] = key.split('_').map(Number)
+      const e = terrain(key, x * 1200)
+      e.transform.position[2] = z * 1200
+      return [e]
+    },
+    replace: (r, a) => editor.replaceMapEntities(r, a),
+    status: () => undefined,
+  })
+  stream.update([12000, 0, 0], [0, 0, 0])
+  await new Promise((r) => setTimeout(r, 0))
+  const firstThree = calls.slice(0, 3)
+  expect(firstThree).toContain('10_0')
+  const indexOf10_0 = firstThree.indexOf('10_0')
+  const indexOf9_m1 = firstThree.indexOf('9_-1')
+  const indexOf9_0 = firstThree.indexOf('9_0')
+  const indexOf9_1 = firstThree.indexOf('9_1')
+  if (indexOf9_m1 >= 0) expect(indexOf10_0).toBeLessThan(indexOf9_m1)
+  if (indexOf9_0 >= 0) expect(indexOf10_0).toBeLessThan(indexOf9_0)
+  if (indexOf9_1 >= 0) expect(indexOf10_0).toBeLessThan(indexOf9_1)
+  stream.dispose()
+})
+
+it('does not drop replacement request tracking when cancelled request finally runs', async () => {
+  const editor = new SceneEditor(document())
+  const pendingPromises: Array<{
+    key: string
+    signal: AbortSignal
+    resolve: (entities: Entity[]) => void
+    reject: (error: Error) => void
+  }> = []
+  const load = vi.fn((key: string, signal: AbortSignal) => {
+    return new Promise<Entity[]>((resolve, reject) => {
+      pendingPromises.push({ key, signal, resolve, reject })
+    })
+  })
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load,
+    replace: (r, a) => editor.replaceMapEntities(r, a),
+    status: () => undefined,
+  })
+  let time = Date.now()
+  stream.update([0, 0, 0], [0, 0, 0], [], time)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(pendingPromises.length).toBe(3)
+  time += 200
+  stream.update([12000, 0, 0], [0, 0, 0], [], time)
+  await new Promise((r) => setTimeout(r, 0))
+  const abortedRequest = pendingPromises.find((p) => p.signal.aborted)
+  expect(abortedRequest).toBeDefined()
+  const newRequests = pendingPromises.filter((p) => !p.signal.aborted)
+  expect(newRequests.length).toBeGreaterThanOrEqual(2)
+  const abortedKey = abortedRequest!.key
+  abortedRequest!.reject(new Error('Aborted'))
+  await new Promise((r) => setTimeout(r, 0))
+  time += 200
+  stream.update([12000, 0, 0], [0, 0, 0], [], time)
+  await new Promise((r) => setTimeout(r, 0))
+  const callsAfterAbort = load.mock.calls.filter(([k]) => k === abortedKey)
+  expect(callsAfterAbort.length).toBe(1)
+  stream.dispose()
+})

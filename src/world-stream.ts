@@ -106,6 +106,11 @@ export function immediateNeighborhood(position: Vec3Tuple): Set<string> {
   return keys
 }
 
+/** Sort keys by distance to position (nearest first). */
+function sortByDistance(keys: Iterable<string>, position: Vec3Tuple): string[] {
+  return [...keys].sort((a, b) => tileDistance(a, position) - tileDistance(b, position))
+}
+
 /**
  * Parallel zone streaming with player-zone prioritization.
  * Up to 3 concurrent requests; the player's current zone and immediate neighbors
@@ -171,7 +176,10 @@ export class WorldStream {
     }
     while (this.inFlight.size < this.maxConcurrent && now >= this.nextSlot) {
       const area = this.budgetArea()
-      const prioritized = [...neighborsMissing, ...this.wanted]
+      const prioritized = [
+        ...sortByDistance(neighborsMissing, position),
+        ...this.wanted.filter((k) => !neighborhood.has(k)),
+      ]
       const key = prioritized.find(
         (k) =>
           !this.resident.has(k) &&
@@ -284,7 +292,9 @@ export class WorldStream {
         )
       })
       .finally(() => {
-        this.inFlight.delete(key)
+        if (this.inFlight.get(key) === controller) {
+          this.inFlight.delete(key)
+        }
         this.nextSlot = Math.max(this.nextSlot, Date.now() + 100)
       })
   }

@@ -245,6 +245,13 @@ This JSON is cached in browser Cache Storage (`nabla-world-v1`) for 30 days.
 
 **Concept:** Generate the same `WorldExtract` JSON offline for a region, serve statically.
 
+**Important caveat:** Baking pre-computes _OSM feature data_, not scene geometry. The
+browser still fetches live elevation from Esri and builds the full scene (terrain
+heightfields, building meshes, road geometry) at runtime. Baking eliminates Overpass
+network latency and rate-limit delays, but does not skip the client-side geometry
+generation work. For large/dense zones, there will still be a brief hitch as the
+browser constructs meshes from the baked JSON.
+
 **Process:**
 
 1. Download OSM extract for region (e.g., spain-latest.osm.pbf from Geofabrik)
