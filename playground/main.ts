@@ -1628,6 +1628,9 @@ function frame(now: number): void {
           ? `Altura ${altitude.toFixed(1)} m · objetivo ${info.targetAltitude!.toFixed(1)} m`
           : 'Modo tierra · V / Y para vuelo') + (pad ? ' · Mando modo 2' : '')
       : ''
+    // The physical helm screens already show flight telemetry; the overlay leaks
+    // through CSS3D screen cutouts when viewed from the pilot's seat.
+    $('game-hud').hidden = Boolean(info?.isCarrier && cameraMode === 'cockpit')
     const near = sim.nearestVehicle()
     $('interaction').textContent = p.vehicleId
       ? info?.dockedTo
