@@ -170,3 +170,35 @@ CACHE_DIR=/tmp/nabla-cache-test python3 test_cache.py
 
 These tests mock upstream traffic and exercise persistent hits, incomplete data,
 stale fallback and rate coordination.
+
+### Safe publication and updates
+
+Start with `--radius 1` (nine zones) through the existing cache. The Docker image
+includes the tools: `docker compose exec world-cache python /app/bake.py --radius 1
+--output /data/baked --cache-url http://127.0.0.1:8080` (one command).
+Only OSM is warmed by prefill; neither tool precomputes mesh geometry or elevation.
+
+Bakes now carry `source.bakeVersion: 1` and `source.tileKey`. The writer validates
+and atomically replaces each file, preserving its predecessor on errors. Failed
+runs exit nonzero. `--skip-existing` skips only valid files and is for resuming,
+**not refreshing**. To refresh, rerun without it; cached upstream OSM still obeys
+the service's TTL. Direct upstream baking defaults to 30 seconds between zones.
+
+The private endpoint returns an ETag and supports `If-None-Match`/304. The browser
+revalidates before using a warm extract, downloads changed versions and replaces
+placeholder elevation with real samples. Offline fallback retains the previous
+extract. Revalidation does not extend its original browser-cache lifetime. This
+applies on a zone load; resident scene geometry is refreshed when reloaded, not
+replaced underneath an active player.
+
+For a public demo, do not expose the private `/osm` proxy. Publish only prepared
+bake files under a read-only static route preserving `<lat>/<lon>/<key>` (without
+`.json`), configure JSON MIME type, ETag and `Cache-Control: no-cache`, and set
+`VITE_WORLD_BAKED_URL` to that route. This separate optional base overrides the
+baked route only: elevation and live OSM continue using their configured providers.
+`VITE_WORLD_CACHE_URL` remains the full private cache adapter. Keep deployment
+addresses, credentials and private service configuration outside the repository.
+
+Validation: `CACHE_DIR=/tmp/nabla-cache-tests python3 -m unittest discover -s
+services/world-cache`. Browser/core tests additionally exercise fresh bake,
+304 reuse, changed version, schema mismatch, offline fallback and cancellation.

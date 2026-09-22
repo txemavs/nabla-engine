@@ -18,6 +18,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - name: Test cache and baked delivery
+        run: CACHE_DIR="$RUNNER_TEMP/nabla-cache-tests" python3 -m unittest discover -s services/world-cache
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e -- --reporter=list
       - name: Check distributable contents

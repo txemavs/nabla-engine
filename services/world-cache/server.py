@@ -1,6 +1,7 @@
 """Private, disk-backed OSM/Esri cache. Bind behind an authenticated/private transport."""
 import hashlib, json, os, re, threading, time, urllib.request, urllib.error
 from pathlib import Path
+from baked_format import valid_bake
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 ROOT = Path(os.environ.get('CACHE_DIR', '/data'))
 ROOT.mkdir(parents=True, exist_ok=True)
@@ -17,7 +18,12 @@ def get_baked(lat, lon, key):
     """Check for pre-baked zone file. Returns (data, True) or (None, False)."""
     path = BAKED / f"{lat:.5f}" / f"{lon:.5f}" / f"{key}.json"
     if path.exists():
-        return path.read_bytes(), True
+        try:
+            data = path.read_bytes()
+            if valid_bake(json.loads(data), lat, lon, key):
+                return data, True
+        except (OSError, ValueError):
+            pass
     return None, False
 
 def cached(key, url, body=None):
@@ -80,10 +86,11 @@ def prune():
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args): pass  # No location/query logging.
-    def respond(self, code, data, mime='application/json', state=None):
+    def respond(self, code, data, mime='application/json', state=None, etag=None):
         self.send_response(code)
         self.send_header('Content-Type', mime)
-        self.send_header('Content-Length', str(len(data)))
+        if code != 304: self.send_header('Content-Length', str(len(data)))
+        if etag: self.send_header('ETag', etag)
         self.send_header('Cache-Control', 'private, max-age=0')
         if state: self.send_header('X-Nabla-Cache', state)
         if code == 429: self.send_header('Retry-After', '60')
@@ -99,7 +106,11 @@ class Handler(BaseHTTPRequestHandler):
             lat, lon, key = baked_match.groups()
             data, found = get_baked(float(lat), float(lon), key)
             if found:
-                self.respond(200, data, 'application/json', 'BAKED')
+                etag = '"' + hashlib.sha256(data).hexdigest() + '"'
+                if self.headers.get('If-None-Match') == etag:
+                    self.respond(304, b'', state='BAKED', etag=etag)
+                else:
+                    self.respond(200, data, 'application/json', 'BAKED', etag)
             else:
                 self.respond(404, b'{"error":"Zone not baked"}')
             return

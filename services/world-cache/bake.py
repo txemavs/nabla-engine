@@ -19,7 +19,7 @@ Usage:
     python3 bake.py --cache-url http://127.0.0.1:8080
 
 The baked files are placed in:
-    <output>/zones/<lat>/<lon>/<x>_<z>.json
+    <output>/<lat>/<lon>/<x>_<z>.json
 
 The cache server serves these at:
     GET /baked/<lat>/<lon>/<x>_<z>
@@ -32,6 +32,8 @@ import sys
 import time
 import urllib.request
 import urllib.error
+import urllib.parse
+from baked_format import VERSION, atomic_write, valid_bake
 
 EARTH_RADIUS = 6371000
 ZONE_SIZE = 1200
@@ -129,23 +131,7 @@ def fetch_osm(origin, x, z, cache_url=None):
 
 def fetch_elevation(origin, x, z, cache_url=None):
     """Fetch elevation grid for a zone. Returns 121x121 heights."""
-    ox, oz = x * ZONE_SIZE, z * ZONE_SIZE
-    spacing = 10
-    
-    samples = []
-    for i in range(121 * 121):
-        sx = ox + (i % 121) * spacing - 60 * spacing
-        sz = oz + (i // 121) * spacing - 60 * spacing
-        lat, lon = geo_offset(origin, sx, sz)
-        
-        tile_x = int((lon + 180) / 360 * (1 << 12))
-        tile_y = int((1 - math.log(math.tan(lat * math.pi / 180) + 1 / math.cos(lat * math.pi / 180)) / math.pi) / 2 * (1 << 12))
-        
-        samples.append({'lat': lat, 'lon': lon, 'tile_x': tile_x, 'tile_y': tile_y, 'i': i})
-    
-    # For baking, we use a simplified elevation (the client will re-fetch from Esri anyway)
-    # This allows baking without Esri credentials. Set all heights to origin altitude offset.
-    # Real elevation comes from the terrain field when the client loads.
+    # Explicit placeholder; the browser replaces it with real elevation before use.
     return [0.0] * (121 * 121)
 
 def bake_zone(origin, x, z, name, cache_url=None):
@@ -177,7 +163,10 @@ def bake_zone(origin, x, z, name, cache_url=None):
         'source': {
             'retrievedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
             'baked': True,
-            'osm': 'overpass-api.de' if not cache_url else cache_url
+            'bakeVersion': VERSION,
+            'tileKey': f'{x}_{z}',
+            'osm': 'overpass-api.de',
+            'cacheUsed': bool(cache_url)
         }
     }
 
@@ -190,10 +179,12 @@ def main():
     parser.add_argument('--radius', type=int, default=5, help='Grid radius')
     parser.add_argument('--output', default='./data/baked', help='Output directory')
     parser.add_argument('--cache-url', help='Use cache service for faster bake')
-    parser.add_argument('--delay', type=float, default=1.0, help='Delay between zones (public Overpass)')
+    parser.add_argument('--delay', type=float, default=30.0, help='Delay between zones (public Overpass)')
     parser.add_argument('--skip-existing', action='store_true', help='Skip zones that already exist')
     args = parser.parse_args()
     
+    if not 0 <= args.radius <= 50 or not -85 <= args.lat <= 85 or not -180 <= args.lon <= 180 or not math.isfinite(args.alt):
+        parser.error('Invalid region, altitude or radius (0–50)')
     origin = {'latitude': args.lat, 'longitude': args.lon, 'altitude': args.alt}
     total = (2 * args.radius + 1) ** 2
     
@@ -219,15 +210,22 @@ def main():
             path = os.path.join(zone_dir, f"{key}.json")
             
             if args.skip_existing and os.path.exists(path):
-                print(f"[{done}/{total}] Zone {key}: SKIPPED (exists)")
-                skipped += 1
-                continue
+                try:
+                    with open(path) as existing:
+                        valid = valid_bake(json.load(existing), args.lat, args.lon, key)
+                except (OSError, ValueError):
+                    valid = False
+                if valid:
+                    print(f"[{done}/{total}] Zone {key}: SKIPPED (valid existing bake)")
+                    skipped += 1
+                    continue
             
             print(f"[{done}/{total}] Zone {key}:")
             try:
                 extract = bake_zone(origin, x, z, args.name, args.cache_url)
-                with open(path, 'w') as f:
-                    json.dump(extract, f, separators=(',', ':'))
+                if not valid_bake(extract, args.lat, args.lon, key):
+                    raise ValueError('Invalid generated bake')
+                atomic_write(path, extract)
                 size_kb = os.path.getsize(path) / 1024
                 print(f"  Wrote {path} ({size_kb:.1f} KB)")
             except Exception as e:
@@ -240,7 +238,8 @@ def main():
     print()
     print(f"Done! Baked={done - skipped - errors} Skipped={skipped} Errors={errors}")
     print(f"Files in: {zone_dir}")
+    return 1 if errors else 0
 
 if __name__ == '__main__':
     import urllib.parse
-    main()
+    sys.exit(main())

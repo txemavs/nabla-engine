@@ -1,3 +1,4 @@
+import { revalidateBaked } from './baked-world.js'
 import * as Lerc from 'lerc'
 import lercWasm from 'lerc/lerc-wasm.wasm?url'
 import { createRealWorld, type MapFeature, type WorldExtract } from '../src/real-world.js'
@@ -5,6 +6,7 @@ import { tileCoordinate, EARTH_RADIUS, type GeoPoint } from '../src/geography.js
 import type { Entity } from '../src/scene.js'
 
 const CACHE_BASE = import.meta.env.VITE_WORLD_CACHE_URL || ''
+const BAKED_BASE = import.meta.env.VITE_WORLD_BAKED_URL || CACHE_BASE
 const ESRI = CACHE_BASE
   ? `${CACHE_BASE}/elevation`
   : 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/tile'
@@ -199,30 +201,25 @@ export async function loadWorldTile(
     location.origin,
   ).href
   let cache: Cache | undefined, extract: WorldExtract | undefined
+  let bakedEtag: string | undefined,
+    changed = false
   try {
     cache = await caches.open(CACHE)
     const hit = await cache.match(cacheKey)
-    if (hit && Date.now() - Number(hit.headers.get('x-cached-at')) < 30 * 86400000)
+    if (hit && Date.now() - Number(hit.headers.get('x-cached-at')) < 30 * 86400000) {
       extract = (await hit.json()) as WorldExtract
+      bakedEtag = hit.headers.get('x-baked-etag') ?? undefined
+    }
   } catch {
     /* Storage is optional; exploration still works in private browsers. */
   }
-  if (!extract && CACHE_BASE) {
-    const bakedUrl = `${CACHE_BASE}/baked/${origin.latitude.toFixed(5)}/${origin.longitude.toFixed(5)}/${key}`
-    try {
-      const response = await fetch(bakedUrl, {
-        signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]),
-      })
-      if (response.ok) {
-        const baked = (await response.json()) as WorldExtract
-        if (baked.source?.baked) {
-          const heights = await elevation(origin, ox, oz, signal)
-          extract = { ...baked, terrain: { ...baked.terrain, heights } }
-        }
-      }
-    } catch {
-      /* Baked zone not available; fall through to live Overpass. */
-    }
+  if (BAKED_BASE) {
+    const result = await revalidateBaked(CACHE_BASE, origin, key, signal, extract, bakedEtag, () =>
+      elevation(origin, ox, oz, signal),
+    )
+    extract = result.extract
+    bakedEtag = result.etag
+    changed = result.changed
   }
   if (!extract) {
     const nw = sampleGeo(origin, ox - 750, oz - 750),
@@ -252,6 +249,7 @@ export async function loadWorldTile(
     const json = (await response.json()) as { elements: OsmElement[]; remark?: string }
     if (json.remark || !Array.isArray(json.elements)) throw new Error('Consulta OSM incompleta')
     const heights = await elevation(origin, ox, oz, signal)
+    changed = true
     extract = {
       name: 'Irún · exploración',
       origin,
@@ -260,12 +258,16 @@ export async function loadWorldTile(
       source: { retrievedAt: new Date().toISOString(), osm: OVERPASS, elevation: ESRI },
     }
   }
-  if (cache && extract)
+  if (cache && extract && changed)
     try {
       await cache.put(
         cacheKey,
         new Response(JSON.stringify(extract), {
-          headers: { 'content-type': 'application/json', 'x-cached-at': String(Date.now()) },
+          headers: {
+            'content-type': 'application/json',
+            'x-cached-at': String(Date.now()),
+            ...(bakedEtag ? { 'x-baked-etag': bakedEtag } : {}),
+          },
         }),
       )
       const keys = await cache.keys()

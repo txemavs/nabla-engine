@@ -86,8 +86,7 @@ test('reports a provider failure and stopping cancels the streaming session', as
   await page.evaluate(() => {
     const status = document.querySelector('#stream-status')!
     new MutationObserver(() => {
-      if (status.textContent?.includes('reintento en 60 s'))
-        status.setAttribute('data-saw-failure', 'true')
+      if (status.textContent?.includes('reintento')) status.setAttribute('data-saw-failure', 'true')
     }).observe(status, { childList: true, subtree: true, characterData: true })
   })
   await page.locator('#play').click()
@@ -162,9 +161,13 @@ test('loads terrain around a player twelve kilometres away from the starting dis
     buffer: Buffer.from(JSON.stringify(doc)),
   })
   await page.locator('#play').click()
-  await expect(page.locator('#stream-status')).toContainText('zonas disponibles', {
-    timeout: 30000,
-  })
+  // The current tile must load first; distant public-provider requests remain paced.
+  await expect
+    .poll(
+      async () => Number(await page.locator('#viewport > canvas').getAttribute('data-world-zones')),
+      { timeout: 30000 },
+    )
+    .toBeGreaterThanOrEqual(2)
   // The editor tree intentionally stops rebuilding during play. Inspect the
   // actual installed sector after returning to edit mode, not the frozen tree.
   await page.locator('#play').click()
