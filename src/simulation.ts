@@ -70,6 +70,9 @@ interface Vehicle {
   flight: { altitude: number; yaw: number } | null
   rampClosed: boolean
   rampAngle: number
+  rampTarget: number
+  rampPortalActive: boolean
+  cruiseSpeed: number
 }
 const vec = (v: Vec3): Vec3Tuple => [v.x, v.y, v.z]
 const pose = (b: Body): Transform => ({
@@ -146,7 +149,15 @@ export class Simulation {
     this.world.defaultContactMaterial.restitution = 0
     for (const e of this.document.entities) this.addEntityBody(e)
     for (const mouth of this.portalEntities) if (mouth.parentId) this.rebuildPortalCollider(mouth)
-    for (const v of this.vehicles.values()) if (v.definition.garage) this.setRamp(v, false)
+    for (const v of this.vehicles.values())
+      if (v.definition.garage) {
+        const active = this.portalEntities.some(
+          (e) => e.parentId === v.entity.id && e.portal!.clearsRamp && e.portal!.mode !== 'closed',
+        )
+        this.setRamp(v, active)
+        if (active) v.rampAngle = v.rampTarget
+        this.updateRamp(v, 0)
+      }
     if (this.document.geography) {
       const terrain = new Body({ mass: 0, material: this.solidMaterial })
       const radius = EARTH_RADIUS + this.document.geography.altitude
@@ -195,6 +206,13 @@ export class Simulation {
         JSON.stringify(e.portal) !==
         JSON.stringify(next.entities.find((n) => n.id === e.id)!.portal),
     )
+    for (const mouth of next.entities.filter(
+      (e) => e.portal?.clearsRamp && e.portal.mode !== 'closed',
+    )) {
+      const carrier = this.vehicles.get(mouth.parentId ?? '')
+      if (!carrier?.rampClosed)
+        throw new Error('Cierra por completo la puerta del garaje antes de activar el portal')
+    }
     for (const mouth of changed) {
       const transform = this.entityTransform(mouth.id)
       for (const body of this.world.bodies) {
@@ -216,14 +234,7 @@ export class Simulation {
     for (const mouth of changed)
       mouth.portal = { ...next.entities.find((e) => e.id === mouth.id)!.portal! }
     for (const mouth of changed) this.rebuildPortalCollider(mouth)
-    for (const mouth of changed)
-      if (mouth.portal!.clearsRamp && mouth.parentId) {
-        const carrier = this.vehicles.get(mouth.parentId)!
-        this.setRamp(
-          carrier,
-          !!carrier.flight || [...this.docks.values()].some((d) => d.carrierId === mouth.parentId),
-        )
-      }
+    for (const vehicle of this.vehicles.values()) this.updateRamp(vehicle, 0)
     return mode === 'closed' ? 'Portal cerrado' : 'Portal conectado'
   }
 
@@ -493,6 +504,9 @@ export class Simulation {
       flight: null,
       rampClosed: false,
       rampAngle: 0,
+      rampTarget: 0,
+      rampPortalActive: false,
+      cruiseSpeed: 1000,
     })
   }
   get player(): PlayerSnapshot {
@@ -628,6 +642,7 @@ export class Simulation {
           : null
       if (carry) host!.getVelocityAtWorldPoint(this.playerBody.position, carry.velocity)
       if (this.ticks % 15 === 0) this.updateMapCollisions()
+      for (const vehicle of this.vehicles.values()) this.updateRamp(vehicle, FIXED_STEP)
       this.beforeTick()
       this.world.step(FIXED_STEP)
       this.constrainTerrainBoundary()
@@ -843,7 +858,7 @@ export class Simulation {
     )
     const shapeBoxes = (other: Body): OBB[] =>
       other.shapes.flatMap((shape, i) => {
-        if (!(shape instanceof Box)) return []
+        if (!(shape instanceof Box) || !shape.collisionResponse) return []
         const p = other.pointToWorldFrame(other.shapeOffsets[i]),
           q = other.quaternion.mult(other.shapeOrientations[i])
         return [
@@ -1211,7 +1226,7 @@ export class Simulation {
     const accelerationVector = radial.scale(9.81 + acceleration)
     const direction = new Vec3(right, 0, -forward)
     if (direction.length() > 1) direction.normalize()
-    const target = heading.vmult(direction).scale(1000 / 3.6) // 1000 km/h, including diagonal input.
+    const target = heading.vmult(direction).scale(v.cruiseSpeed / 3.6) // Includes diagonal input.
     const horizontal = body.velocity.vsub(radial.scale(verticalSpeed))
     const drive = target.vsub(horizontal).scale(1.8)
     // Compensate body drag so cruise speed reaches the commanded speed.
@@ -1375,6 +1390,10 @@ export class Simulation {
     dockedTo: string | null
     rampClosed: boolean
     rampAngle: number
+    rampMoving: boolean
+    speedKmh: number
+    altitude: number
+    cruiseSpeed: number
     flightMode: boolean
     canFly: boolean
     targetAltitude: number | null
@@ -1393,6 +1412,10 @@ export class Simulation {
       dockedTo: this.docks.get(id)?.carrierId ?? null,
       rampClosed: v.rampClosed,
       rampAngle: v.rampAngle,
+      rampMoving: Math.abs(v.rampTarget - v.rampAngle) > 0.001,
+      speedKmh: v.body.velocity.length() * 3.6,
+      altitude: this.height(v.body),
+      cruiseSpeed: v.cruiseSpeed,
       flightMode: Boolean(v.flight),
       canFly: Boolean(v.definition.flight),
       targetAltitude: v.flight?.altitude ?? null,
@@ -1474,23 +1497,82 @@ export class Simulation {
     return 'A3 sujeto al suelo · T para conducir el container'
   }
 
+  setCruiseSpeed(id: string, speed: number): void {
+    const vehicle = this.vehicles.get(id)
+    if (!vehicle?.definition.flight || !Number.isFinite(speed) || speed < 0 || speed > 1000)
+      throw new Error('Velocidad: 0–1000 km/h')
+    vehicle.cruiseSpeed = speed
+  }
+
+  setGarageDoor(id: string, closed: boolean): string {
+    const carrier = this.vehicles.get(id)
+    if (!carrier?.definition.garage) throw new Error('Nave desconocida')
+    for (const body of this.world.bodies) {
+      if (!body.mass || body === carrier.body || (body === this.playerBody && this.vehicleId))
+        continue
+      const actor = [...this.vehicles.values()].find((v) => v.body === body)
+      const points = this.portalEnvelope(body, actor).map((point) =>
+        carrier.body.pointToLocalFrame(new Vec3(...point)),
+      )
+      const overlaps = (axis: 'x' | 'y' | 'z', low: number, high: number) =>
+        Math.min(...points.map((p) => p[axis])) < high &&
+        Math.max(...points.map((p) => p[axis])) > low
+      if (
+        points.length &&
+        overlaps('x', -2.7, 2.7) &&
+        overlaps('z', 4.9, 8.3) &&
+        overlaps('y', -1.6, 2.5)
+      )
+        throw new Error('Despeja la puerta del garaje antes de moverla')
+    }
+    if (!closed) {
+      for (const mouth of this.portalEntities.filter(
+        (e) => e.parentId === id && e.portal!.clearsRamp && e.portal!.mode !== 'closed',
+      ))
+        this.configurePortal(mouth.id, mouth.portal!.pairId, 'closed')
+    }
+    this.setRamp(carrier, closed)
+    return closed ? 'Cerrando puerta del garaje' : 'Abriendo puerta del garaje'
+  }
+
   private setRamp(carrier: Vehicle, closed: boolean): void {
+    const ramp = carrier.definition.garage?.ramp
+    if (!ramp) return
+    // Automatic landing/unlatching must also disconnect the gate before opening the door.
+    if (!closed) {
+      for (const mouth of this.portalEntities.filter(
+        (e) =>
+          e.parentId === carrier.entity.id && e.portal!.clearsRamp && e.portal!.mode !== 'closed',
+      ))
+        this.configurePortal(mouth.id, mouth.portal!.pairId, 'closed')
+    }
+    carrier.rampTarget = closed ? ramp.closeAngle : 0
+    carrier.rampClosed = closed && Math.abs(carrier.rampAngle - ramp.closeAngle) < 0.001
+  }
+
+  private updateRamp(carrier: Vehicle, dt: number): void {
+    const ramp = carrier.definition.garage?.ramp
+    if (!ramp) return
+    const previous = carrier.rampAngle
+    carrier.rampAngle += clamp(carrier.rampTarget - carrier.rampAngle, -dt * 0.9, dt * 0.9)
+    carrier.rampClosed =
+      carrier.rampTarget === ramp.closeAngle &&
+      Math.abs(carrier.rampAngle - ramp.closeAngle) < 0.001
     const portalActive = this.portalEntities.some(
       (e) =>
         e.parentId === carrier.entity.id && e.portal!.clearsRamp && e.portal!.mode !== 'closed',
     )
-    if (portalActive) closed = false
-    carrier.rampClosed = closed
-    const ramp = carrier.definition.garage?.ramp
-    if (!ramp) return
+    if (dt > 0 && previous === carrier.rampAngle && portalActive === carrier.rampPortalActive)
+      return
+    carrier.rampPortalActive = portalActive
     const collider = carrier.definition.colliders[ramp.colliderIndex]
     const hinge = new Vec3(...ramp.hinge)
-    carrier.rampAngle = closed
-      ? ramp.closeAngle
-      : portalActive
-        ? -2 * Math.atan2(collider.transform.rotation[0], collider.transform.rotation[3])
-        : 0
-    const rotation = new Quaternion().setFromAxisAngle(new Vec3(1, 0, 0), carrier.rampAngle)
+    // Connected mouths need floor support until the actor centre crosses the seam.
+    // The closed visual door becomes a portal; its collider becomes a level floor apron.
+    const collisionAngle = portalActive
+      ? -2 * Math.atan2(collider.transform.rotation[0], collider.transform.rotation[3])
+      : carrier.rampAngle
+    const rotation = new Quaternion().setFromAxisAngle(new Vec3(1, 0, 0), collisionAngle)
     const offset = rotation.vmult(new Vec3(...collider.transform.position).vsub(hinge)).vadd(hinge)
     carrier.body.shapeOffsets[ramp.colliderIndex].copy(offset)
     carrier.body.shapeOrientations[ramp.colliderIndex].copy(

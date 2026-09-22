@@ -1,4 +1,4 @@
-import { CssScreens } from './css-screen.js'
+import { NoseCamera } from './nose-camera.js'
 import { readPerformance } from './performance.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
@@ -184,8 +184,8 @@ const outline = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color('#f2ce8a'
 scene.add(outline)
 let view = new SceneView(editor.document)
 scene.add(view.root)
-const cssScreens = new CssScreens(viewport)
-cssScreens.bind(view.cabinScreens)
+const noseCamera = new NoseCamera()
+noseCamera.bind(view)
 let geography = new GeographicView(
   editor.document,
   () => {
@@ -266,7 +266,7 @@ function rebuild(): void {
   }
   view.dispose()
   view = new SceneView(editor.document)
-  cssScreens.bind(view.cabinScreens)
+  noseCamera.bind(view)
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
   watchAssets(view)
@@ -1388,7 +1388,15 @@ function frame(now: number): void {
     }
   }
   gallery.update(view, !!sim, document.hidden ? 0 : dt)
-  portalControls.update(sim, view.document, camera, view.portalTablets)
+  portalControls.update(
+    sim,
+    view.document,
+    camera,
+    view.portalTablets,
+    view.helmScreens,
+    renderOrigin,
+    cameraMode === 'cockpit',
+  )
   sidearm.visible = !!sim && !sim.player.vehicleId
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
@@ -1460,6 +1468,19 @@ function frame(now: number): void {
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false
+    noseCamera.render(now, view, renderer, scene, camera, (remote) => {
+      view.limitDrawDistance(
+        remote.position.clone().add(renderOrigin),
+        performanceSettings.distance,
+        !!sim,
+        !!performanceSettings.buildings,
+      )
+      if (geography.enabled) {
+        geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
+        renderer.autoClear = false
+        renderer.clearDepth()
+      }
+    })
     renderPortals(view.portals, renderer, scene, camera, (remote) => {
       view.limitDrawDistance(
         remote.position.clone().add(renderOrigin),
@@ -1485,11 +1506,9 @@ function frame(now: number): void {
       renderer.autoClear = false
       renderer.clearDepth()
     }
-    cssScreens.prepare(camera, viewport.clientWidth, viewport.clientHeight)
     portalControls.prepare(camera)
     renderer.render(scene, camera)
     portalControls.finish()
-    cssScreens.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
     needsRender = false
   }
@@ -1567,37 +1586,13 @@ if (
 )
   void loadIrun()
 
-renderer.domElement.addEventListener(
-  'pointerdown',
-  (event) => {
-    if (sim || event.button !== 0) return
-    const rect = renderer.domElement.getBoundingClientRect()
-    const ray = new THREE.Raycaster()
-    const localCamera = camera.clone()
-    localCamera.position.sub(renderOrigin)
-    localCamera.updateMatrixWorld()
-    ray.setFromCamera(
-      new THREE.Vector2(
-        ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        1 - ((event.clientY - rect.top) / rect.height) * 2,
-      ),
-      localCamera,
-    )
-    if (cssScreens.draw(ray, [...view.objects.values()], event.shiftKey)) {
-      event.stopImmediatePropagation()
-      event.preventDefault()
-      needsRender = true
-    }
-  },
-  true,
-)
 $('css-screen-demo').onclick = () => {
   $('options-menu').hidePopover()
   if (sim) {
     toast('Detén la partida para encuadrar la pantalla CSS.')
     return
   }
-  const screen = view.cabinScreens.values().next().value
+  const screen = view.helmScreens.values().next().value
   if (!screen) {
     toast('Esta escena no tiene un container.')
     return
@@ -1609,11 +1604,11 @@ $('css-screen-demo').onclick = () => {
   orbit.target.copy(centre)
   camera.position
     .copy(centre)
-    .addScaledVector(normal, 3)
-    .add(new THREE.Vector3(0, 0.15, 0.3))
+    .addScaledVector(normal, 1.4)
+    .add(new THREE.Vector3(0, 0.45, 0))
   orbit.update()
   needsRender = true
   toast(
-    'Pantalla CSS: clic para dibujar; Mayús + clic para borrar. Arrastra fuera para cambiar la perspectiva.',
+    'Consola de mando: juega y acércate para usar las pantallas, o entra en el puesto de conducción.',
   )
 }

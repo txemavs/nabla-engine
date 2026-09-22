@@ -2,9 +2,13 @@
 
 ## Unreleased
 
+- Centre one 8 mm landscape tablet on each independent portal rear; use black closed surfaces and dark rear panels.
+- Reuse the carrier helm for bow/stern portal controls, live speed/altitude and adjustable flight speed; add a bounded nose-camera feed.
+- Animate the garage door and require complete closure before connecting its portal; opening the garage disconnects it first.
+
 - Replace floating portal controls with black, perspective-matched CSS tablets that activate within one metre and expose native destination/open/close controls.
 
-- Add visible carrier interior lining and an experimental camera-matched HTML/CSS wall display with temporary point drawing and WebGL occlusion.
+- Add visible carrier interior lining and camera-matched HTML/CSS displays with WebGL occlusion.
 
 - Add a persistent map-building visibility option, disabling hidden building collisions while retaining terrain, roads and scene data.
 

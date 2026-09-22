@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
 /** Interior trim follows the existing carrier collision shell; dimensions are metres. */
-export function carrierInterior(): { room: THREE.Group; screen: THREE.Mesh } {
+export function carrierInterior(): { room: THREE.Group; screens: THREE.Mesh[]; nose: THREE.Mesh } {
   const room = new THREE.Group()
   room.name = 'Carrier interior lining'
   const panel = (
@@ -35,15 +35,22 @@ export function carrierInterior(): { room: THREE.Group; screen: THREE.Mesh } {
   // Keep the bow, stern, ramp and central doorway open.
   for (const x of [-1.5, 1.5]) panel([1.75, 2.82, 0.065], [x, 0.58, 0], '#768b9b')
   panel([1.2, 0.72, 0.065], [0, 1.65, 0], '#768b9b')
-  const frame = panel([0.08, 1.48, 2.58], [-2.3, 0.64, -2.45], '#101b28')
-  frame.name = 'CSS screen frame'
-  const screen = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.4, 1.3),
-    new THREE.MeshBasicMaterial({ color: '#102b40' }),
+  const screens = [-0.78, 0, 0.78].map((x) => {
+    panel([0.66, 0.38, 0.008], [x, 0.175, -3.711], '#050608')
+    const screen = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.62, 0.34),
+      new THREE.MeshBasicMaterial({ color: '#030405' }),
+    )
+    screen.position.set(x, 0.175, -3.706)
+    room.add(screen)
+    return screen
+  })
+  panel([2.55, 0.72, 0.018], [0, 0.78, -3.72], '#050608')
+  const nose = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.49, 0.66),
+    new THREE.MeshBasicMaterial({ color: '#111820' }),
   )
-  screen.name = 'Carrier CSS screen aperture'
-  screen.position.set(-2.25, 0.64, -2.45)
-  screen.rotation.y = Math.PI / 2
-  room.add(screen)
-  return { room, screen }
+  nose.position.set(0, 0.78, -3.709)
+  room.add(nose)
+  return { room, screens, nose }
 }

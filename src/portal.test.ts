@@ -200,9 +200,11 @@ it('backs the A3 from the carrier through its mounted stern gate without changin
   doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
   const sim = new Simulation(doc)
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
+  sim.setGarageDoor('ship', true)
+  for (let i = 0; i < 150; i++) sim.step(1 / 60)
   sim.configurePortal('stern', 'a', 'open')
   expect(sim.portalState('stern').clearsRamp).toBe(true)
-  expect(sim.vehicleInfo('ship').rampClosed).toBe(false)
+  expect(sim.vehicleInfo('ship').rampClosed).toBe(true)
   expect(sim.interact()).toContain('Conduciendo')
   expect(sim.player.vehicleId).toBe('car')
   for (let i = 0; i < 240 && !sim.portalEvent; i++) {
@@ -229,6 +231,8 @@ it('keeps hosted mouths rigidly attached during flight, including pitch and roll
   sim.interact()
   expect(sim.player.vehicleId).toBe('ship')
   sim.toggleFlight()
+  sim.setGarageDoor('ship', true)
+  for (let i = 0; i < 150; i++) sim.step(1 / 60)
   sim.configurePortal('stern', 'a', 'open')
   for (let i = 0; i < 120; i++) {
     sim.setInput({ ...idleInput(), lift: 1, forward: 0.4, right: 0.25, turn: 0.2 })
@@ -240,7 +244,7 @@ it('keeps hosted mouths rigidly attached during flight, including pitch and roll
   expect(local.distanceTo(new Vector3(0, 0.55, 5.05))).toBeLessThan(1e-8)
   expect(host.position[1]).toBeGreaterThan(3)
   expect(Math.abs(host.rotation[0]) + Math.abs(host.rotation[2])).toBeGreaterThan(0.01)
-  expect(sim.vehicleInfo('ship').rampClosed).toBe(false)
+  expect(sim.vehicleInfo('ship').rampClosed).toBe(true)
   sim.dispose()
 })
 
@@ -260,6 +264,8 @@ it('transfers a moving prop through the stern gate while its carrier is moving',
   )
   const sim = new Simulation(doc)
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
+  sim.setGarageDoor('ship', true)
+  for (let i = 0; i < 150; i++) sim.step(1 / 60)
   sim.configurePortal('stern', 'a', 'open')
   sim.interact()
   expect(sim.player.vehicleId).toBe('ship')

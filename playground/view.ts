@@ -34,8 +34,9 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  readonly helmScreens = new Map<string, THREE.Mesh>()
+  readonly noseScreens = new Map<string, THREE.Mesh>()
   readonly portalTablets = new Map<string, THREE.Mesh[]>()
-  readonly cabinScreens = new Map<string, THREE.Mesh>()
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
@@ -119,21 +120,26 @@ export class SceneView {
         light.position.set(0, h / 2 + PORTAL_BAR / 2, d / 2 + 0.015)
         light.name = 'Portal status'
         group.add(light)
-        const screens: THREE.Mesh[] = []
-        for (const side of [1, -1]) {
-          const tablet = box([0.44, 0.62, 0.06], '#080b10')
-          tablet.position.set(w / 2 - 0.25, -0.15, side * 0.22)
+        if (!e.parentId) {
+          const back = new THREE.Mesh(
+            new THREE.PlaneGeometry(w, h),
+            new THREE.MeshBasicMaterial({ color: '#08090b' }),
+          )
+          back.position.z = -d / 2
+          back.rotation.y = Math.PI
+          group.add(back)
+          const tablet = box([0.62, 0.44, 0.008], '#050608')
+          tablet.position.set(0, -0.24, -d / 2 - 0.004)
           group.add(tablet)
           const screen = new THREE.Mesh(
-            new THREE.PlaneGeometry(0.38, 0.54),
-            new THREE.MeshBasicMaterial({ color: '#05090e' }),
+            new THREE.PlaneGeometry(0.58, 0.4),
+            new THREE.MeshBasicMaterial({ color: '#030405' }),
           )
-          screen.position.set(w / 2 - 0.25, -0.15, side * 0.255)
-          screen.rotation.y = side === 1 ? 0 : Math.PI
+          screen.position.set(0, -0.24, -d / 2 - 0.0082)
+          screen.rotation.y = Math.PI
           group.add(screen)
-          screens.push(screen)
+          this.portalTablets.set(e.id, [screen])
         }
-        this.portalTablets.set(e.id, screens)
       }
       if (e.sprite) {
         const options = { color: '#ffffff', alphaTest: 0.1, transparent: false, depthWrite: true }
@@ -258,7 +264,10 @@ export class SceneView {
         if (e.vehicle?.interior && e.visual?.body.url.includes('ship.container')) {
           const interior = carrierInterior()
           group.add(interior.room)
-          this.cabinScreens.set(e.id, interior.screen)
+          this.helmScreens.set(e.id, interior.screens[1])
+          this.noseScreens.set(e.id, interior.nose)
+          for (const mouth of this.document.entities.filter((m) => m.parentId === e.id && m.portal))
+            this.portalTablets.set(mouth.id, [interior.screens[mouth.portal!.clearsRamp ? 2 : 0]])
         }
         if (e.visual) this.assetVehicle(e, group)
         else this.car(e, group)
@@ -334,6 +343,10 @@ export class SceneView {
     const fallback = box(e.size, e.color)
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
+      for (const name of ['Helm_Screen_1', 'Helm_Screen_2', 'Helm_Screen_3']) {
+        const original = model.getObjectByName(name)
+        if (original) original.visible = false
+      }
       if (!visual.ramp) return
       const hinge = new THREE.Group()
       hinge.position.fromArray(visual.ramp.hinge)
@@ -457,7 +470,10 @@ export class SceneView {
       applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
       if (e.portal) {
         e.portal = sim.portalState(e.id)
-        this.portals.get(e.id)!.mesh.visible = !e.parentId || e.portal.mode !== 'closed'
+        this.portals.get(e.id)!.mesh.visible =
+          !e.parentId ||
+          e.portal.mode !== 'closed' ||
+          (!!e.portal.clearsRamp && sim.vehicleInfo(e.parentId).rampClosed)
         const light = this.objects.get(e.id)!.getObjectByName('Portal status') as THREE.Mesh<
           THREE.BoxGeometry,
           THREE.MeshStandardMaterial

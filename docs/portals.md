@@ -11,14 +11,14 @@ closed mouths into those frames when opening an older container scene; it does
 not duplicate their visible frames or overwrite authored entities. Save/export
 persists the added mouths and their authored links through the scene workflow.
 
-During play, approach the black tablet beside either frame to within one metre
-to activate its perspective-matched CSS display. Both the actor and camera must
-be nearby, with a clear view; driving does not activate tablets. Press **G**
-(or release the pointer with Escape) to use its native destination selector and
-**Abrir / Cerrar** buttons. Fixed tablets on both faces follow the carrier.
-Leaving range turns the display off and disables interaction. The main-view
-WebGL aperture provides visual depth occlusion; portal textures show the black
-standby screen. The address book lists all
+Independent gates have one thin landscape tablet centred on their black rear
+panel. Approach within one metre and press G to release the mouse. Carrier gate
+controls live on the left/right screens of the existing helm, with speed,
+altitude and the animated garage-door control in the centre. A stern portal can
+open only after the garage door finishes closing; opening the door closes its
+connection first. See [helm and CSS controls](css-interior-prototype.md).
+
+The address book lists all
 other mouths with matching aperture dimensions in the loaded scene. Labels use
 editable entity names; actual connections use stable entity IDs.
 
@@ -33,10 +33,10 @@ links and modes, then save. There is no separate remote world loading protocol.
 Closed road gates have an opaque physical barrier. Closed carrier gates turn off
 the remote surface and restore the normal physical opening, so an inactive rear
 portal does not prevent ordinary garage use. Window mode shows the destination
-but retains a barrier. Open mode enables front-to-front traversal. The active
-stern gate keeps the rear ramp level with the deck, with matching visual and
-physical transforms; deactivation restores the ramp state required by flight or
-cargo latching. The front console and centre partition remain real obstacles:
+but retains a barrier. Open mode enables front-to-front traversal. The stern gate requires the garage door to finish closing first. While connected,
+the visible door remains closed and its collision shape supplies a level floor
+apron until an actor centre crosses. Disconnecting restores the closed door
+collider; the helm button opens it with an animation. The front console and centre partition remain real obstacles:
 the stern is the tested car route, and the bow is accessible to the monitor.
 
 Hosted frames and barriers are collision shapes of the existing carrier body,

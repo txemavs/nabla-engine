@@ -683,8 +683,8 @@ body.playing #footer-mode {
 .portal-console {
   /* Clipping here flattens 3D descendants and breaks native button hit testing. */
   transform-style: preserve-3d;
-  width: 380px;
-  height: 540px;
+  width: 580px;
+  height: 400px;
   box-sizing: border-box;
   padding: 28px;
   overflow: visible;
@@ -885,61 +885,36 @@ body.playing #footer-mode {
   position: relative;
   z-index: 1;
 }
-.carrier-css-screen {
-  width: 960px;
-  height: 520px;
-  overflow: hidden;
-  backface-visibility: hidden;
-  background: #10283b;
-  color: #e2f0ff;
-  font-family: system-ui, sans-serif;
-}
-.carrier-css-screen header {
-  height: 68px;
-  padding: 12px 24px;
+.helm-portal,
+.helm-console {
+  width: 620px;
+  height: 340px;
+  padding: 18px;
   box-sizing: border-box;
-  display: flex;
-  justify-content: space-between;
-  background: #183e59;
-  font-size: 24px;
+  background: #080c11;
+  color: #e0e7ef;
+  font-size: 23px;
+  transform-style: preserve-3d;
 }
-.carrier-css-screen small {
-  font-size: 16px;
-  color: #91bfda;
+.helm-portal strong {
+  min-height: 35px;
 }
-.css-drawing {
-  position: relative;
-  height: 410px;
-  overflow: hidden;
-  background-image:
-    linear-gradient(#28506b 1px, transparent 1px),
-    linear-gradient(90deg, #28506b 1px, transparent 1px);
-  background-size: 32px 32px;
+.helm-console[hidden] {
+  display: none !important;
 }
-.css-demo-card {
-  position: absolute;
-  left: 90px;
-  top: 90px;
-  width: 230px;
-  padding: 32px;
-  border: 2px solid #64b8fc;
-  border-radius: 18px;
-  background: #204766;
-  font-size: 46px;
-  transform: rotate(-8deg);
+.helm-console strong,
+.helm-console output,
+.helm-console label,
+.helm-console small {
+  display: block;
+  margin: 6px 0;
 }
-.carrier-css-screen footer {
-  height: 42px;
-  padding: 10px 24px;
-  box-sizing: border-box;
-  font-size: 17px;
+.helm-console output {
+  font-size: 30px;
+  color: #91cdfb;
 }
-.css-ink {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #8fd8ff;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 12px #60adf5;
+.helm-console select,
+.helm-console button {
+  font-size: 23px;
+  padding: 8px;
 }
