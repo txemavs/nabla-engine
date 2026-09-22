@@ -1,3 +1,10 @@
+import { takeMapGeometry } from './map-geometry.js'
+import { Streetlights } from './streetlights.js'
+import { CarLights } from './car-lights.js'
+import { CarMirrors } from './car-mirrors.js'
+import { CarInstruments } from './car-instruments.js'
+import { RoadBatches } from './road-batches.js'
+import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { terrainVertices, terrainIndices } from '../src/terrain.js'
@@ -33,8 +40,17 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  private readonly carLights = new Map<string, CarLights>()
+  private readonly carMirrors = new Map<string, CarMirrors>()
+  private readonly instruments = new Map<string, CarInstruments>()
+  readonly helmScreens = new Map<string, THREE.Mesh>()
+  readonly touchScreens = new Map<string, THREE.Mesh>()
+  readonly flightScreens = new Map<string, THREE.Mesh>()
+  readonly portalTablets = new Map<string, THREE.Mesh[]>()
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
+  readonly streetlights = new Streetlights(this.root)
+  private readonly roads = new RoadBatches()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
   readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
@@ -57,6 +73,7 @@ export class SceneView {
   constructor(readonly document: SceneDocument) {
     this.graph = new SceneGraph(document)
     this.addEntities(document.entities)
+    this.root.add(this.roads.root)
     this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar)
@@ -79,7 +96,7 @@ export class SceneView {
       ...this.document.entities.filter((e) => !remove.has(e.id)),
       ...structuredClone(add),
     ]
-    this.graph = new SceneGraph(this.document)
+    this.graph = SceneGraph.fromValidated(this.document)
     this.addEntities(add)
     // Resource promises are consumed per batch rather than retained for the whole journey.
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
@@ -116,16 +133,25 @@ export class SceneView {
         light.position.set(0, h / 2 + PORTAL_BAR / 2, d / 2 + 0.015)
         light.name = 'Portal status'
         group.add(light)
-        const panel = box([0.24, 0.38, 0.08], '#17283e')
-        panel.position.set(w / 2 - 0.15, -0.15, 0.2)
-        group.add(panel)
-        for (const [y, color] of [
-          [-0.07, '#5bacff'],
-          [-0.23, '#ffb45e'],
-        ] as const) {
-          const button = box([0.16, 0.1, 0.02], color)
-          button.position.set(w / 2 - 0.15, y, 0.25)
-          group.add(button)
+        if (!e.parentId) {
+          const back = new THREE.Mesh(
+            new THREE.PlaneGeometry(w, h),
+            new THREE.MeshBasicMaterial({ color: '#08090b' }),
+          )
+          back.position.z = -d / 2
+          back.rotation.y = Math.PI
+          group.add(back)
+          const tablet = box([0.62, 0.44, 0.008], '#050608')
+          tablet.position.set(0, -0.24, -d / 2 - 0.004)
+          group.add(tablet)
+          const screen = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.58, 0.4),
+            new THREE.MeshBasicMaterial({ color: '#030405' }),
+          )
+          screen.position.set(0, -0.24, -d / 2 - 0.0082)
+          screen.rotation.y = Math.PI
+          group.add(screen)
+          this.portalTablets.set(e.id, [screen])
         }
       }
       if (e.sprite) {
@@ -206,12 +232,15 @@ export class SceneView {
         )
       }
       if (e.road) {
-        const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!
-        const data = roadGeometry(t, e.road.paths, e.road.width)
-        const g = new THREE.BufferGeometry()
-        g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))
-        g.setIndex(data.faces.flat())
-        g.computeVertexNormals()
+        let g = takeMapGeometry(e)
+        if (!g) {
+          const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!
+          const data = roadGeometry(t, e.road.paths, e.road.width)
+          g = new THREE.BufferGeometry()
+          g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))
+          g.setIndex(data.faces.flat())
+          g.computeVertexNormals()
+        }
         const surface = mesh(g, e.color)
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         surface.position.y = ['footway', 'path', 'pedestrian', 'cycleway'].includes(
@@ -223,31 +252,47 @@ export class SceneView {
         group.add(surface)
       }
       if (e.terrain) {
-        const g = new THREE.BufferGeometry()
-        g.setAttribute(
-          'position',
-          new THREE.Float32BufferAttribute(terrainVertices(e.terrain).flat(), 3),
-        )
-        g.setIndex(terrainIndices(e.terrain))
-        g.computeVertexNormals()
+        let g = takeMapGeometry(e)
+        if (!g) {
+          g = new THREE.BufferGeometry()
+          g.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(terrainVertices(e.terrain).flat(), 3),
+          )
+          g.setIndex(terrainIndices(e.terrain))
+          g.computeVertexNormals()
+        }
         group.add(mesh(g, e.color))
       }
       if (e.geometry) {
-        const geometry = new THREE.BufferGeometry()
-        geometry.setAttribute(
-          'position',
-          new THREE.Float32BufferAttribute(
-            triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
-            3,
-          ),
-        )
-        geometry.computeVertexNormals()
+        let geometry = takeMapGeometry(e)
+        if (!geometry) {
+          geometry = new THREE.BufferGeometry()
+          geometry.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(
+              triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
+              3,
+            ),
+          )
+          geometry.computeVertexNormals()
+        }
         const surface = mesh(geometry, e.color)
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         group.add(surface)
       }
-      if (e.kind === 'box') group.add(box(e.size, e.color))
+      if (e.kind === 'box' && !e.light) group.add(box(e.size, e.color))
+      if (e.light) this.streetlights.add(e, group)
       if (e.kind === 'vehicle') {
+        if (e.vehicle?.interior && e.visual?.body.url.includes('ship.container')) {
+          const interior = carrierInterior()
+          group.add(interior.room)
+          this.helmScreens.set(e.id, interior.screens[1])
+          this.touchScreens.set(e.id, interior.touch)
+          this.flightScreens.set(e.id, interior.screens[0])
+          for (const mouth of this.document.entities.filter((m) => m.parentId === e.id && m.portal))
+            this.portalTablets.set(mouth.id, [interior.screens[mouth.portal!.clearsRamp ? 2 : 0]])
+        }
         if (e.visual) this.assetVehicle(e, group)
         else this.car(e, group)
       }
@@ -322,6 +367,20 @@ export class SceneView {
     const fallback = box(e.size, e.color)
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
+      if (visual.body.url === '/world/car.audi.a3.cabrio.glb') {
+        this.carLights.set(e.id, new CarLights(model))
+        this.carMirrors.set(e.id, new CarMirrors(model))
+        const interior = model.getObjectByName('Interior')
+        if (interior) {
+          const instruments = new CarInstruments(interior)
+          instruments.update(this.document, this.graph.worldTransform(e.id), 0, performance.now())
+          this.instruments.set(e.id, instruments)
+        }
+      }
+      for (const name of ['Helm_Screen_1', 'Helm_Screen_2', 'Helm_Screen_3']) {
+        const original = model.getObjectByName(name)
+        if (original) original.visible = false
+      }
       if (!visual.ramp) return
       const hinge = new THREE.Group()
       hinge.position.fromArray(visual.ramp.hinge)
@@ -414,11 +473,13 @@ export class SceneView {
     distance: number,
     enabled: boolean,
     buildings = true,
+    roadDistance = distance,
   ): void {
+    this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)!
-      if (e.geometry && !buildings) {
+      if ((enabled && e.road) || (e.geometry && !buildings)) {
         object.visible = false
         continue
       }
@@ -441,11 +502,14 @@ export class SceneView {
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
     for (const e of this.document.entities) {
-      if (e.terrain || (e.source && e.motion === 'static')) continue
+      if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue
       applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
       if (e.portal) {
         e.portal = sim.portalState(e.id)
-        this.portals.get(e.id)!.mesh.visible = !e.parentId || e.portal.mode !== 'closed'
+        this.portals.get(e.id)!.mesh.visible =
+          !e.parentId ||
+          e.portal.mode !== 'closed' ||
+          (!!e.portal.clearsRamp && sim.vehicleInfo(e.parentId).rampClosed)
         const light = this.objects.get(e.id)!.getObjectByName('Portal status') as THREE.Mesh<
           THREE.BoxGeometry,
           THREE.MeshStandardMaterial
@@ -465,6 +529,23 @@ export class SceneView {
     for (const [id, wheel] of this.steering)
       wheel.rotation.z =
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
+    for (const [id, lights] of this.carLights) {
+      const info = sim.vehicleInfo(id)
+      lights.update(
+        { powered: sim.player.vehicleId === id, braking: info.braking, reversing: info.reversing },
+        performance.now(),
+      )
+    }
+    for (const [id, instruments] of this.instruments) {
+      instruments.setPowered(sim.player.vehicleId === id)
+      if (sim.player.vehicleId === id)
+        instruments.update(
+          this.document,
+          sim.entityTransform(id, true),
+          sim.vehicleInfo(id, true).speedKmh,
+          performance.now(),
+        )
+    }
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
       const info = sim.vehicleInfo(vehicleId, true)
@@ -521,7 +602,32 @@ export class SceneView {
     return hit
   }
   private readonly surfaceTextures: THREE.Texture[] = []
+  signal(id: string, side: number): void {
+    this.carLights.get(id)?.toggle(side)
+  }
+  renderMirrors(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera,
+    vehicleId: string | null,
+    now: number,
+  ): void {
+    if (!this.carMirrors.size) {
+      renderer.domElement.dataset.mirrorActive = 'false'
+      return
+    }
+    // Inactive cars are processed first so diagnostics describe the occupied car.
+    for (const [id, mirrors] of [...this.carMirrors].sort(
+      ([a], [b]) => Number(a === vehicleId) - Number(b === vehicleId),
+    ))
+      mirrors.render(renderer, scene, camera, id === vehicleId, now)
+  }
   dispose(): void {
+    for (const mirrors of this.carMirrors.values()) mirrors.dispose()
+    this.carMirrors.clear()
+    for (const instruments of this.instruments.values()) instruments.dispose()
+    this.instruments.clear()
+    this.roads.dispose()
     this.impacts.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()

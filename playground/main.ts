@@ -1,3 +1,6 @@
+import { SeaWater } from './water.js'
+import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
+import { SelectionOutline } from './selection-outline.js'
 import { readPerformance } from './performance.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
@@ -75,6 +78,7 @@ let sim: Simulation | null = null
 let needsRender = true
 let firstPerson = true
 let fireRequested = false
+let weaponDrawn = false
 let cameraMode: 'chase' | 'cockpit' | 'map' = 'chase'
 let headYaw = 0
 let headPitch = 0.05
@@ -121,7 +125,11 @@ function action(fn: () => void): void {
   }
 }
 const viewport = $('viewport')
-const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true })
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  logarithmicDepthBuffer: true,
+  alpha: true,
+})
 renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
 renderer.shadowMap.enabled = performanceSettings.shadows > 0
 renderer.shadowMap.type = THREE.PCFShadowMap
@@ -175,8 +183,10 @@ scene.add(gizmo.getHelper())
 gizmo.addEventListener('change', () => {
   needsRender = true
 })
-const outline = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color('#f2ce8a'))
+const outline = new SelectionOutline()
 scene.add(outline)
+let lastWorldInstallMs = 0
+let water: SeaWater | undefined
 let view = new SceneView(editor.document)
 scene.add(view.root)
 let geography = new GeographicView(
@@ -269,6 +279,9 @@ function rebuild(): void {
 function setupWorldStream(): void {
   streamSample = null
   const doc = editor.document
+  water?.dispose()
+  water = doc.geography ? new SeaWater(doc.geography) : undefined
+  if (water) scene.add(water.root)
   $('stream-status').textContent = ''
   if (!doc.geography || !doc.entities.some((e) => e.id === 'world-terrain')) return
   const origin = doc.geography
@@ -289,16 +302,22 @@ function setupWorldStream(): void {
   const loader = new WorldLoader()
   worldLoader = loader
   worldStream = new WorldStream({
-    document: () => editor.document,
+    document: () => view.document,
     load: (key, signal) => loader.load(origin, key, signal),
     replace: (remove, add) => {
+      const started = performance.now()
       sim?.replaceMapEntities(remove, add)
       editor.replaceMapEntities(remove, add)
       view.replaceMapEntities(remove, add)
       distantTerrain?.setDocument(view.document)
+      lastWorldInstallMs = performance.now() - started
+      renderer.domElement.dataset.worldInstallMs = lastWorldInstallMs.toFixed(1)
       for (const e of add) if (e.kind === 'group') collapsed.add(e.id)
       view.setPlaying(!!sim)
-      refreshUi()
+      if (sim) {
+        $('entity-count').textContent = String(view.document.entities.length)
+        $('status').textContent = 'Mapa actualizado · cambios sin guardar'
+      } else refreshUi()
       renderer.domElement.dataset.worldZones = String(
         view.document.entities.filter((e) => e.terrain).length,
       )
@@ -376,7 +395,8 @@ function refreshUi(): void {
   function row(label: string, key: string, values: number[]): string {
     return `<label class="field-label">${label}</label><div class="axis-row">${values.map((n, i) => `<label><span>${'XYZ'[i]}</span><input aria-label="${label} ${'XYZ'[i]}" data-vector="${key}" data-axis="${i}" type="number" step="${key === 'rotation' ? '1' : '0.1'}" value="${Number(n.toFixed(3))}"></label>`).join('')}</div>`
   }
-  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${{ terrain: 'Relieve · Esri Terrain 3D', solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
+  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${e.light ? 'Farola · iluminación' : { terrain: 'Relieve · Esri Terrain 3D', solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
+    <label class="field-label">Capacidades</label><div class="entity-capabilities">${entityCapabilities(e).map(escape).join(' · ')}</div>
     <label class="field-label" for="name">Nombre</label><input id="name" value="${escape(e.name)}" maxlength="100">
     ${row('Posición local · m', 'position', e.transform.position)}${row('Rotación local · °', 'rotation', angles)}
     ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
@@ -392,6 +412,31 @@ function refreshUi(): void {
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
   solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
+  if (e.light) {
+    const controls = document.createElement('div')
+    controls.innerHTML = `<label class="field-label">Farola</label><label><input id="light-enabled" type="checkbox" ${e.light.enabled ? 'checked' : ''}> Encendida</label><label><input id="light-night" type="checkbox" ${e.light.nightOnly ? 'checked' : ''}> Solo de noche</label><label class="field-label" for="light-color">Color de luz</label><input id="light-color" type="color" value="${e.light.color}"><label class="field-label" for="light-intensity">Intensidad · cd</label><input id="light-intensity" type="number" min="0" max="10000" value="${e.light.intensity}"><label class="field-label" for="light-distance">Alcance · m</label><input id="light-distance" type="number" min="1" max="100" value="${e.light.distance}">`
+    props.append(controls)
+    for (const id of [
+      'light-enabled',
+      'light-night',
+      'light-color',
+      'light-intensity',
+      'light-distance',
+    ])
+      $(id).onchange = () =>
+        action(() => {
+          editor.update(e.id, {
+            light: {
+              enabled: $<HTMLInputElement>('light-enabled').checked,
+              nightOnly: $<HTMLInputElement>('light-night').checked,
+              color: $<HTMLInputElement>('light-color').value,
+              intensity: $<HTMLInputElement>('light-intensity').valueAsNumber,
+              distance: $<HTMLInputElement>('light-distance').valueAsNumber,
+            },
+          })
+          rebuild()
+        })
+  }
   if (e.sprite) {
     const controls = document.createElement('div')
     controls.innerHTML = `<label class="field-label" for="sprite-url">PNG transparente</label><input id="sprite-url" value="${escape(e.sprite.url)}">`
@@ -519,6 +564,8 @@ function refreshUi(): void {
     'add-solid',
     'add-box',
     'add-car',
+    'add-carrier',
+    'add-streetlight',
     'add-group',
     'add-sprite',
     'sample-gallery',
@@ -570,13 +617,40 @@ $('redo').onclick = () => {
 for (const [id, kind] of [
   ['add-solid', 'solid'],
   ['add-box', 'box'],
-  ['add-car', 'vehicle'],
   ['add-group', 'group'],
 ] as const) {
   $(id).onclick = () =>
     action(() => {
       selectedId = editor.add(kind)
       rebuild()
+    })
+}
+for (const entry of entityCatalog) {
+  $(`add-${entry.id}`).onclick = () =>
+    action(() => {
+      const ground = orbit.target.clone()
+      view.root.updateWorldMatrix(true, true)
+      const ray = new THREE.Raycaster(
+        new THREE.Vector3(ground.x, ground.y + 10000, ground.z),
+        new THREE.Vector3(0, -1, 0),
+      )
+      const surfaces = editor.document.entities
+        .filter(
+          (e) => e.kind === 'terrain' || (e.kind === 'box' && e.motion === 'static' && !e.light),
+        )
+        .map((e) => view.objects.get(e.id)!)
+        .filter(Boolean)
+      const hit = ray.intersectObjects(surfaces, true)[0]
+      ground.y = hit ? hit.point.y : 0
+      const entities = createCatalogEntities(entry.id, crypto.randomUUID(), ground.toArray())
+      const doc = editor.document
+      doc.entities.push(...entities)
+      editor.load(doc)
+      selectedId = entities[0].id
+      setAddMenu(false)
+      rebuild()
+      view.ready.then(focusSelection).catch(() => undefined)
+      toast(`${entry.label} añadido · G mover · R girar`)
     })
 }
 function focusSelection(): void {
@@ -722,7 +796,7 @@ async function travelTo(): Promise<void> {
   for (const id of ['save', 'export', 'play', 'travel-go']) $<HTMLButtonElement>(id).disabled = true
   $('travel-cancel').hidden = false
   $('world-loading').hidden = false
-  const message = `Cargando ${name} · terreno y edificios. Una zona nueva puede tardar hasta dos minutos…`
+  const message = `Cargando ${name} · terreno y edificios. Una zona nueva puede tardar varios minutos; los fallos temporales se reintentan…`
   $('world-loading').textContent = message
   $('travel-status').textContent = message
   try {
@@ -840,11 +914,15 @@ function togglePlay(): void {
       orbitStartPosition = camera.position.clone()
       orbitStartTarget = orbit.target.clone()
       portalControls.rebuild(editor.document)
-      sim = new Simulation(editor.document, { playerMode: 'hover' })
+      sim = new Simulation(editor.document, {
+        playerMode: 'hover',
+        mapBuildingsEnabled: !!performanceSettings.buildings,
+      })
       sim.setMapBuildingsEnabled(!!performanceSettings.buildings)
       sim.setCollisionDistance(performanceSettings.collisions)
       firstPerson = true
       fireRequested = false
+      weaponDrawn = false
       sidearm.reset()
       gallery.reset()
       portalSequence = 0
@@ -863,11 +941,11 @@ function togglePlay(): void {
       refreshUi()
     }
     document.body.classList.toggle('playing', !!sim)
-    $('play').innerHTML = sim ? '■ Detener <kbd>Tab</kbd>' : '▶ Jugar <kbd>Tab</kbd>'
+    $('play').innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
     $('mode-label').textContent = sim ? 'Jugando' : 'Edición'
     $('game-hud').hidden = !sim
     $('view-hint').textContent = sim
-      ? 'Clic para mirar con el ratón · E entrar / salir · Tab detener'
+      ? 'Clic para mirar con el ratón · E entrar / salir · Tab sacar / guardar arma · F8 detener'
       : 'Arrastra para orbitar · Rueda para acercar · Clic para seleccionar'
     $('footer-mode').textContent = sim
       ? 'Simulación compartida · 60 Hz'
@@ -879,6 +957,7 @@ function togglePlay(): void {
 for (const [id, key] of [
   ['map-buildings', 'buildings'],
   ['draw-distance', 'distance'],
+  ['road-distance', 'roads'],
   ['collision-distance', 'collisions'],
   ['render-resolution', 'resolution'],
   ['shadow-quality', 'shadows'],
@@ -946,6 +1025,7 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
     e.button === 0 &&
     sim &&
     !sim.player.vehicleId &&
+    weaponDrawn &&
     document.pointerLockElement === renderer.domElement
   )
     fireRequested = true
@@ -1019,7 +1099,16 @@ document.addEventListener('mousemove', (e) => {
 window.addEventListener('keydown', (e) => {
   if (document.querySelector('.app-menu:popover-open')) return
   if ((e.target as HTMLElement)?.matches('input,select,textarea,[contenteditable]')) return
-  if (e.code === 'Tab') {
+  if (e.code === 'Tab' && sim) {
+    e.preventDefault()
+    if (!e.repeat && !sim.player.vehicleId) {
+      weaponDrawn = !weaponDrawn
+      fireRequested = false
+      toast(weaponDrawn ? 'Arma desenfundada' : 'Arma guardada')
+    }
+    return
+  }
+  if (e.code === 'F8') {
     e.preventDefault()
     if (!e.repeat) togglePlay()
     return
@@ -1052,6 +1141,10 @@ window.addEventListener('keydown', (e) => {
     togglePlay()
     togglePlay()
     toast('Partida reiniciada')
+    return
+  }
+  if ((e.code === 'Comma' || e.code === 'Period') && !e.repeat && sim?.player.vehicleId) {
+    view.signal(sim.player.vehicleId, e.code === 'Comma' ? -1 : 1)
     return
   }
   if (e.code === 'KeyN' && !e.repeat) {
@@ -1140,21 +1233,26 @@ function currentInput(pad: Gamepad | null = null) {
   const analog = pad
     ? gamepadAxes(pad, flight)
     : { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
+  const touch = portalControls.flightInput()
   return {
     forward:
       (flight
         ? axis('ArrowUp', 'ArrowDown')
-        : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) + analog.forward,
+        : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) +
+      analog.forward +
+      touch.forward,
     right:
       (flight
         ? axis('ArrowRight', 'ArrowLeft')
-        : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')) + analog.right,
-    lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift,
-    turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn,
+        : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')) +
+      analog.right +
+      touch.right,
+    lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
+    turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
     yaw,
     sprint: keys.has('ShiftLeft') || keys.has('ShiftRight') || Boolean(pad?.buttons[10]?.pressed),
     jump: false,
-    brake: keys.has('Space') || analog.brake,
+    brake: keys.has('Space') || analog.brake || touch.brake,
   }
 }
 new ResizeObserver(() => {
@@ -1168,7 +1266,16 @@ new ResizeObserver(() => {
 let playerInterior: string | null = null
 let portalSequence = 0
 let previous = performance.now()
+const frameTimes: number[] = []
+let performanceText = ''
+let nextPerformanceReadout = 0
+renderer.info.autoReset = false
 function frame(now: number): void {
+  const frameStart = performance.now()
+  let physicsMs = 0
+  renderer.info.reset()
+  frameTimes.push(now - previous)
+  if (frameTimes.length > 120) frameTimes.shift()
   const dt = (now - previous) / 1000
   previous = now
   if (sim) {
@@ -1178,10 +1285,13 @@ function frame(now: number): void {
       yaw = sim.player.yaw
     }
     sim.setInput(currentInput(pad))
+    const physicsStart = performance.now()
     sim.step(document.hidden ? 0 : dt)
+    physicsMs = performance.now() - physicsStart
     if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       const c = sim.collisionStats
-      $('performance-status').textContent = `Edificios con colisión: ${c.active} / ${c.total}`
+      $('performance-status').textContent =
+        `${performanceText} · Colisiones: ${c.active} / ${c.total}`
     }
     if (worldStream && !document.hidden && (!streamSample || now - streamSample.at > 500)) {
       const position = sim.player.position
@@ -1374,14 +1484,21 @@ function frame(now: number): void {
   } else {
     orbit.update()
     const object = view.objects.get(selectedId)
-    if (object) {
-      outline.box.setFromObject(object)
-      outline.visible = !outline.box.isEmpty()
-    }
+    outline.update(object)
   }
   gallery.update(view, !!sim, document.hidden ? 0 : dt)
-  portalControls.update(sim, view.document, camera)
-  sidearm.visible = !!sim && !sim.player.vehicleId
+  portalControls.update(
+    sim,
+    view.document,
+    camera,
+    view.portalTablets,
+    view.helmScreens,
+    view.touchScreens,
+    view.flightScreens,
+    renderOrigin,
+    cameraMode === 'cockpit',
+  )
+  sidearm.visible = !!sim && !sim.player.vehicleId && weaponDrawn
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
     if (sidearm.fire(now)) {
@@ -1406,6 +1523,8 @@ function frame(now: number): void {
   const position = sim?.player.position ?? camera.position.toArray()
   renderOrigin.set(0, 0, 0)
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
+  water?.update(worldCamera, renderOrigin, performanceSettings.distance, now)
+  renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
   geography.viewDistance = performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
   distantTerrain?.update(position)
@@ -1448,16 +1567,40 @@ function frame(now: number): void {
     $('gps-status').textContent = 'Sin ubicación · configura el punto GPS'
     $('map-status').textContent = ''
   }
+  view.streetlights.update(
+    camera.position,
+    !!view.document.geography && geography.atmosphere.day < 0.15,
+  )
   sun.castShadow = height < 500
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false
+    const mirrorVehicle =
+      cameraMode === 'cockpit' && !document.hidden ? (sim?.player.vehicleId ?? null) : null
+    if (mirrorVehicle)
+      view.limitDrawDistance(
+        worldCamera,
+        performanceSettings.distance,
+        !!sim,
+        !!performanceSettings.buildings,
+        Math.min(performanceSettings.distance, performanceSettings.roads),
+      )
+    const portalLive = [...view.portals.values()].map((p) => p.mesh.material.uniforms.live.value)
+    try {
+      for (const p of view.portals.values()) p.mesh.material.uniforms.live.value = 0
+      view.renderMirrors(renderer, scene, camera, mirrorVehicle, now)
+    } finally {
+      ;[...view.portals.values()].forEach((p, i) => {
+        p.mesh.material.uniforms.live.value = portalLive[i]
+      })
+    }
     renderPortals(view.portals, renderer, scene, camera, (remote) => {
       view.limitDrawDistance(
         remote.position.clone().add(renderOrigin),
         performanceSettings.distance,
         !!sim,
         !!performanceSettings.buildings,
+        Math.min(performanceSettings.distance, performanceSettings.roads),
       )
       if (geography.enabled) {
         geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
@@ -1470,6 +1613,7 @@ function frame(now: number): void {
       performanceSettings.distance,
       !!sim,
       !!performanceSettings.buildings,
+      Math.min(performanceSettings.distance, performanceSettings.roads),
     )
     renderer.autoClear = true
     if (geography.enabled) {
@@ -1477,11 +1621,22 @@ function frame(now: number): void {
       renderer.autoClear = false
       renderer.clearDepth()
     }
+    portalControls.prepare(camera)
     renderer.render(scene, camera)
+    portalControls.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
     needsRender = false
   }
   camera.position.copy(worldCamera)
+  if (now >= nextPerformanceReadout) {
+    nextPerformanceReadout = now + 500
+    const sorted = [...frameTimes].sort((a, b) => a - b)
+    const p95 = sorted[Math.floor((sorted.length - 1) * 0.95)] || 0
+    const cpu = performance.now() - frameStart
+    performanceText = `${p95.toFixed(0)} ms P95 · CPU ${cpu.toFixed(1)} ms · Física ${physicsMs.toFixed(1)} ms · Última zona ${lastWorldInstallMs.toFixed(0)} ms · ${renderer.info.render.calls} dibujos · ${(renderer.info.render.triangles / 1000).toFixed(0)}k triángulos`
+    renderer.domElement.dataset.drawCalls = String(renderer.info.render.calls)
+    renderer.domElement.dataset.frameP95 = p95.toFixed(1)
+  }
   requestAnimationFrame(frame)
 }
 function applyLocation(latitude: number, longitude: number): void {
@@ -1554,3 +1709,30 @@ if (
   (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
 )
   void loadIrun()
+
+$('css-screen-demo').onclick = () => {
+  $('options-menu').hidePopover()
+  if (sim) {
+    toast('Detén la partida para encuadrar la pantalla CSS.')
+    return
+  }
+  const screen = view.helmScreens.values().next().value
+  if (!screen) {
+    toast('Esta escena no tiene un container.')
+    return
+  }
+  screen.updateWorldMatrix(true, false)
+  const centre = screen.getWorldPosition(new THREE.Vector3()).add(renderOrigin)
+  const normal = new THREE.Vector3(0, 0, 1).transformDirection(screen.matrixWorld)
+  orbit.minDistance = 0.4
+  orbit.target.copy(centre)
+  camera.position
+    .copy(centre)
+    .addScaledVector(normal, 1.4)
+    .add(new THREE.Vector3(0, 0.45, 0))
+  orbit.update()
+  needsRender = true
+  toast(
+    'Consola de mando: juega y acércate para usar las pantallas, o entra en el puesto de conducción.',
+  )
+}

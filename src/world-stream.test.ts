@@ -190,16 +190,19 @@ it('fills other holes after a failed tile without delaying cached arrivals for a
   stream.dispose()
 })
 
-it('cancels obsolete work and loads the current distant zone without a failure cooldown', async () => {
+it('finishes a cold request while moving, then loads the current distant zone', async () => {
   const editor = new SceneEditor(document())
   const calls: string[] = []
+  let finish!: (entities: Entity[]) => void
+  let active!: AbortSignal
   const stream = new WorldStream({
     document: () => editor.document,
     load: (key, signal) => {
       calls.push(key)
       if (calls.length === 1)
-        return new Promise((_resolve, reject) => {
-          signal.addEventListener('abort', () => reject(new Error('cancelled')), { once: true })
+        return new Promise((resolve) => {
+          finish = resolve
+          active = signal
         })
       return Promise.resolve([terrain(key, 12000)])
     },
@@ -208,6 +211,8 @@ it('cancels obsolete work and loads the current distant zone without a failure c
   })
   stream.update([0, 100, 0], [0, 0, 0])
   stream.update([12000, 100, 0], [0, 0, 0])
+  expect(active.aborted).toBe(false)
+  finish([terrain(calls[0], 1200)])
   await new Promise((r) => setTimeout(r, 0))
   stream.update([12000, 100, 0], [0, 0, 0], [], Date.now() + 500)
   await new Promise((r) => setTimeout(r, 0))
@@ -288,4 +293,63 @@ it('does not insert streamed city entities into a different destination in undo 
   editor.undo()
   expect(editor.document.geography!.latitude).toBe(40)
   expect(editor.document.entities.some((e) => e.id === 'world-terrain-1_0')).toBe(false)
+})
+
+it('can evict untouched generated zones after saving and reopening, but pins edited ones', async () => {
+  const { mapFingerprint } = await import('./world-stream.js')
+  const d = document()
+  d.entities[0].mapBaseline = mapFingerprint(mapTileEntities(d, '0_0'))
+  const editor = new SceneEditor(JSON.parse(JSON.stringify(d)))
+  const stream = new WorldStream(
+    {
+      document: () => editor.document,
+      load: async (key) => [terrain(key, 12000), createEntity(`world-buildings-${key}`, 'group')],
+      replace: (remove, add) => editor.replaceMapEntities(remove, add),
+      status: () => undefined,
+    },
+    3,
+  )
+  stream.update([12000, 100, 0], [0, 0, 0])
+  await new Promise((r) => setTimeout(r, 0))
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(true)
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain')).toBe(false)
+  stream.dispose()
+  d.entities[0].color = '#123456'
+  const edited = new SceneEditor(d)
+  const locked = new WorldStream(
+    {
+      document: () => edited.document,
+      load: async (key) => [terrain(key, 12000), createEntity(`world-buildings-${key}`, 'group')],
+      replace: (remove, add) => edited.replaceMapEntities(remove, add),
+      status: () => undefined,
+    },
+    3,
+  )
+  locked.update([12000, 100, 0], [0, 0, 0])
+  await new Promise((r) => setTimeout(r, 0))
+  expect(edited.document.entities.find((e) => e.id === 'world-terrain')!.color).toBe('#123456')
+  expect(edited.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(false)
+  locked.dispose()
+})
+
+it('verifies legacy saved zones against their source before freeing space', async () => {
+  const editor = new SceneEditor(document())
+  const original = structuredClone(mapTileEntities(editor.document, '0_0'))
+  const stream = new WorldStream(
+    {
+      document: () => editor.document,
+      load: async (key) =>
+        key === '0_0'
+          ? original
+          : [terrain(key, 12000), createEntity(`world-buildings-${key}`, 'group')],
+      replace: (remove, add) => editor.replaceMapEntities(remove, add),
+      status: () => undefined,
+    },
+    3,
+  )
+  stream.update([12000, 100, 0], [0, 0, 0])
+  await new Promise((r) => setTimeout(r, 0))
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(true)
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain')).toBe(false)
+  stream.dispose()
 })

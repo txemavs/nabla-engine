@@ -1,20 +1,25 @@
 # Proposal: Stargates and CSS interiors
 
-Status: fixed WebGL gates and the carrier's two hosted gates are implemented.
+Status: fixed WebGL gates and the carrier's hosted stern gate are implemented.
 CSS interiors and general cross-seam contacts remain future work.
 
 ## Current playable slice
 
 **+ Stargates** adds a linked pair of road gates without replacing the scene.
-The original container GLB already has bow and stern frames. Nabla installs two
-closed mouths into those frames when opening an older container scene; it does
-not duplicate their visible frames or overwrite authored entities. Save/export
+The original container GLB already has bow and stern frames. Nabla installs one closed stern mouth and a physical bow window. Older reference
+carrier scenes retire bow mouths and disconnect their partners. Existing stern
+links and placements are preserved. Save/export
 persists the added mouths and their authored links through the scene workflow.
 
-During play, approach either frame to see its destination selector and **Abrir /
-Cerrar** buttons. Press **G** (or release the pointer with Escape) to use the
-buttons. The console projects beside the frame, works from either side, follows
-the carrier, and hides behind physical obstructions. The address book lists all
+Independent gates have one thin landscape tablet centred on their black rear
+panel. Approach within one metre and press G to release the mouse. Carrier gate
+controls live on the right screen of the helm, with telemetry on the left and a
+local road chart in the centre. The horizontal desk holds two mode-2 D-pads,
+flight mode, speed limit and the animated garage-door controls. A stern portal can
+open only after the garage door finishes closing; opening the door closes its
+connection first. See [helm and CSS controls](css-interior-prototype.md).
+
+The address book lists all
 other mouths with matching aperture dimensions in the loaded scene. Labels use
 editable entity names; actual connections use stable entity IDs.
 
@@ -29,11 +34,11 @@ links and modes, then save. There is no separate remote world loading protocol.
 Closed road gates have an opaque physical barrier. Closed carrier gates turn off
 the remote surface and restore the normal physical opening, so an inactive rear
 portal does not prevent ordinary garage use. Window mode shows the destination
-but retains a barrier. Open mode enables front-to-front traversal. The active
-stern gate keeps the rear ramp level with the deck, with matching visual and
-physical transforms; deactivation restores the ramp state required by flight or
-cargo latching. The front console and centre partition remain real obstacles:
-the stern is the tested car route, and the bow is accessible to the monitor.
+but retains a barrier. Open mode enables front-to-front traversal. The stern gate requires the garage door to finish closing first. While connected,
+the visible door remains closed and its collision shape supplies a level floor
+apron until an actor centre crosses. Disconnecting restores the closed door
+collider; the helm button opens it with an animation. The front console and centre partition remain real obstacles:
+the stern is the car and monitor route; the bow glass blocks passage.
 
 Hosted frames and barriers are collision shapes of the existing carrier body,
 not duplicate kinematic bodies. Their world poses follow the simulated host,
@@ -63,8 +68,7 @@ landing before release. This is not yet the complete orbit-to-Earth scenario bel
 
 ## Intended experience
 
-The original black frame is a Stargate. The carrier has two independently linked
-mouths, at bow and stern, following Agency's current arrangement. Placement is
+The original black frame is a Stargate. The carrier has one stern mouth and an armoured bow window. Placement is
 editable data, so side-wall mouths can be authored too. An office inside the
 carrier can use live CSS 3D surfaces and HTML tools. Looking through an open gate
 shows the destination with correct head-relative perspective. Walking or driving

@@ -6,7 +6,7 @@ test('edits a building clone, extrudes and deletes faces, undoes and persists to
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/?scene=circuit')
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#welcome-close').click()
   await page.locator('[data-entity-id="architecture"]').click()
   await page.locator('[data-entity-id="building-0"]').click()
@@ -45,7 +45,7 @@ test('edits a building clone, extrudes and deletes faces, undoes and persists to
 
 test('draws points, an edge and a plane with viewport clicks', async ({ page }) => {
   await page.goto('/?scene=circuit')
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#welcome-close').click()
   await page.locator('#add-entity').click()
   await page.locator('#add-solid').click()
@@ -54,7 +54,7 @@ test('draws points, an edge and a plane with viewport clicks', async ({ page }) 
   await page.locator('#solid-clear').click()
   await expect(page.locator('#solid-delete-point')).toBeDisabled()
   await expect(page.locator('#solid-face')).toBeDisabled()
-  const canvas = page.locator('canvas'),
+  const canvas = page.locator('#viewport > canvas'),
     bounds = await canvas.boundingBox()
   const a = { x: bounds!.width * 0.44, y: bounds!.height * 0.5 }
   const b = { x: bounds!.width * 0.56, y: bounds!.height * 0.5 }

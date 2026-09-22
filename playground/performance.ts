@@ -1,4 +1,5 @@
 export interface PerformanceSettings {
+  roads: number
   buildings: number
   distance: number
   collisions: number
@@ -6,6 +7,7 @@ export interface PerformanceSettings {
   shadows: number
 }
 export const performanceDefaults: PerformanceSettings = {
+  roads: 1000,
   buildings: 1,
   distance: 4000,
   collisions: 400,
@@ -18,6 +20,7 @@ export function readPerformance(): PerformanceSettings {
     const choose = (value: number, allowed: number[], fallback: number) =>
       allowed.includes(value) ? value : fallback
     return {
+      roads: choose(s.roads, [0, 250, 500, 1000, 2000, 4000, 6000], 1000),
       buildings: choose(s.buildings, [0, 1], 1),
       distance: choose(s.distance, [1000, 2000, 4000, 6000], 4000),
       collisions: choose(s.collisions, [200, 400, 800, 2000], 400),

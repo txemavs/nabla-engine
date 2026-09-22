@@ -17,10 +17,14 @@ test('renders coarse surroundings with a 4.5 km far plane and no shader errors',
   )
   await page.goto('/')
   await expect(page.locator('#world-loading')).toBeHidden({ timeout: 30000 })
-  await expect(page.locator('canvas')).toHaveAttribute('data-distant-terrain', 'ready', {
-    timeout: 30000,
-  })
-  await expect(page.locator('canvas')).toHaveAttribute('data-view-distance', '4500')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute(
+    'data-distant-terrain',
+    'ready',
+    {
+      timeout: 30000,
+    },
+  )
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-view-distance', '4500')
   await expect(page.locator('#draw-distance')).toBeHidden()
   await page.locator('#options-menu-button').click()
   await page.locator('#performance-section > summary').click()
@@ -29,14 +33,14 @@ test('renders coarse surroundings with a 4.5 km far plane and no shader errors',
   await page.locator('#collision-distance').selectOption('200')
   await page.locator('#shadow-quality').selectOption('0')
   await page.locator('#render-resolution').selectOption('0.75')
-  await expect(page.locator('canvas')).toHaveAttribute('data-view-distance', '2500')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-view-distance', '2500')
   await page.reload()
   await page.locator('#options-menu-button').click()
   await expect(page.locator('#draw-distance')).toBeVisible()
   await expect(page.locator('#map-buildings')).toHaveValue('0')
   await expect(page.locator('#draw-distance')).toHaveValue('2000')
   await expect(page.locator('#shadow-quality')).toHaveValue('0')
-  await expect(page.locator('canvas')).toHaveAttribute('data-view-distance', '2500')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-view-distance', '2500')
   await page.mouse.move(700, 450)
   await page.mouse.wheel(0, 1200)
   await page.waitForTimeout(500)

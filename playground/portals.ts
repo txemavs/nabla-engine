@@ -28,7 +28,7 @@ export function createPortalSurface(entity: Entity): PortalSurface {
       void main() {
         #include <logdepthbuf_fragment>
         vec2 uv = screen.xy / screen.w * 0.5 + 0.5;
-        gl_FragColor = live > 0.5 ? texture2D(remote, uv) : vec4(0.025, 0.045, 0.075, 1.0);
+        gl_FragColor = live > 0.5 ? texture2D(remote, uv) : vec4(0.0, 0.0, 0.0, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -47,6 +47,13 @@ export function renderPortals(
   background: (camera: THREE.PerspectiveCamera) => void,
 ): void {
   if (!surfaces.size) return
+  const connected = [...surfaces.values()].some(
+    (s) => s.entity.portal!.mode !== 'closed' && surfaces.has(s.entity.portal!.pairId ?? ''),
+  )
+  if (!connected) {
+    for (const surface of surfaces.values()) surface.mesh.material.uniforms.live.value = 0
+    return
+  }
   scene.updateMatrixWorld(true)
   camera.updateMatrixWorld(true)
   const oldTarget = renderer.getRenderTarget(),

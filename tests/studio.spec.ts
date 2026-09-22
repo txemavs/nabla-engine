@@ -5,8 +5,10 @@ test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) =
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/?scene=circuit')
   await expect(page.getByRole('heading', { name: 'Distrito cero.' })).toBeVisible()
-  await expect(page.locator('canvas')).toBeVisible()
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
+  await expect(page.locator('#viewport > canvas')).toBeVisible()
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
+    timeout: 20000,
+  })
   await expect(page.locator('#name')).toHaveValue('Audi A3 Cabrio')
   await page.locator('#name').fill('Mi coche')
   await page.locator('#name').press('Tab')
@@ -77,7 +79,7 @@ test('organizes file actions and settings outside the selection inspector', asyn
   await page.locator('#options-menu-button').click()
   await page.locator('#performance-section > summary').click()
   await page.locator('#draw-distance').selectOption('2000')
-  await page.keyboard.press('Tab')
+  await page.keyboard.press('F8')
   await expect(page.locator('#mode-label')).toHaveText('Edición')
   await page.locator('#file-menu-button').click()
   await expect(page.locator('#options-menu')).toBeHidden()

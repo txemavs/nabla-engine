@@ -10,7 +10,7 @@ it('adds the measured carrier mouths once and preserves existing authored scene 
     before = JSON.stringify(original)
   const installed = installCarrierPortals(original)
   expect(JSON.stringify(original)).toBe(before)
-  expect(installed.entities.filter((e) => e.portal)).toHaveLength(2)
+  expect(installed.entities.filter((e) => e.portal)).toHaveLength(1)
   expect(installCarrierPortals(installed)).toEqual(installed)
   for (const e of original.entities)
     expect(installed.entities.find((n) => n.id === e.id)).toEqual(e)
@@ -43,4 +43,23 @@ it('duplicates and removes carrier mouths without leaving stale links or losing 
     pairId: 'a',
     mode: 'open',
   })
+})
+
+it('retires saved bow portals, disconnects partners and installs glass only once', () => {
+  const doc = createSampleScene()
+  const host = doc.entities.find((e) => e.vehicle?.interior)!
+  host.vehicle!.colliders.pop()
+  const [bow, road] = createPortalPair('legacy-bow', 'road')
+  bow.parentId = host.id
+  bow.transform.position = [0, 0.55, -5.05]
+  doc.entities.push(bow, road)
+  const result = installCarrierPortals(doc)
+  expect(result.entities.some((e) => e.id === bow.id)).toBe(false)
+  expect(result.entities.find((e) => e.id === road.id)!.portal).toMatchObject({
+    pairId: null,
+    mode: 'closed',
+  })
+  expect(result.entities.filter((e) => e.parentId === host.id && e.portal)).toHaveLength(1)
+  expect(result.entities.find((e) => e.id === host.id)!.vehicle!.colliders).toHaveLength(10)
+  expect(installCarrierPortals(result)).toEqual(result)
 })

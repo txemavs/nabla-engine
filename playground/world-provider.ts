@@ -15,23 +15,49 @@ let nextRemoteRequest = 0
 const CACHE = 'nabla-world-v1'
 const decoded = new Map<string, Promise<Lerc.LercData>>()
 let ready: Promise<void> | undefined
-async function fetchChecked(
+async function waitForRetry(ms: number, signal: AbortSignal): Promise<void> {
+  signal.throwIfAborted()
+  await new Promise<void>((resolve, reject) => {
+    const abort = () => {
+      clearTimeout(timer)
+      reject(signal.reason)
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', abort)
+      resolve()
+    }, ms)
+    signal.addEventListener('abort', abort, { once: true })
+  })
+}
+export async function fetchChecked(
   url: string,
   signal: AbortSignal,
   init: RequestInit = {},
 ): Promise<Response> {
-  const response = await fetch(url, {
-    ...init,
-    signal: AbortSignal.any([
-      signal,
-      AbortSignal.timeout(CACHE_BASE && init.method === 'POST' ? 120000 : 40000),
-    ]),
-  })
-  if (!response.ok) {
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(url, {
+      ...init,
+      signal: AbortSignal.any([
+        signal,
+        AbortSignal.timeout(CACHE_BASE && init.method === 'POST' ? 120000 : 40000),
+      ]),
+    })
+    if (response.ok) return response
     if (init.method === 'POST') nextRemoteRequest = Date.now() + 60000
+    if (attempt === 0 && init.method === 'POST' && [429, 502, 503, 504].includes(response.status)) {
+      // One bounded retry lets a cold destination recover from temporary upstream
+      // errors. Public Overpass keeps its existing one-minute failure cooldown.
+      const seconds = Number(response.headers.get('retry-after'))
+      const delay = Math.max(
+        CACHE_BASE ? 10000 : 60000,
+        Number.isFinite(seconds) ? seconds * 1000 : 0,
+      )
+      await response.body?.cancel()
+      await waitForRetry(Math.min(60000, delay), signal)
+      continue
+    }
     throw new Error(`Proveedor HTTP ${response.status}`)
   }
-  return response
 }
 /** Same global sample lattice as the bundled terrain, including identical shared edges. */
 export function sampleGeo(origin: GeoPoint, x: number, z: number): GeoPoint {

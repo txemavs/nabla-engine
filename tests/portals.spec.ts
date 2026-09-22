@@ -17,7 +17,9 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: 'Añadir entidad', exact: true }).click()
   await page.locator('#sample-portals').click()
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
+    timeout: 20000,
+  })
   await expect(page.locator('#portal-mode')).toHaveValue('open')
   await page.locator('#portal-mode').selectOption('window')
   await page.locator('#file-menu-button').click()
@@ -38,9 +40,13 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
   await page.keyboard.press('KeyC')
   await page.screenshot({ path: 'test-results/stargate-approach.png' })
   await page.keyboard.down('KeyW')
-  await expect(page.locator('canvas')).toHaveAttribute('data-portal-crossings', /[1-9]/, {
-    timeout: 15000,
-  })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute(
+    'data-portal-crossings',
+    /[1-9]/,
+    {
+      timeout: 15000,
+    },
+  )
   await page.keyboard.up('KeyW')
   await expect(page.locator('#toast')).toHaveText('Stargate atravesado')
   await expect(page.locator('#player-mode')).toContainText('AUDI')

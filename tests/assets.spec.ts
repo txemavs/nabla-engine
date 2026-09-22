@@ -12,7 +12,9 @@ test('loads the original GLBs, shows the interior and keeps models after editing
       models.add(response.url().split('/').pop()!)
   })
   await page.goto('/?scene=circuit')
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
+    timeout: 20000,
+  })
   expect([...models]).toEqual(
     expect.arrayContaining([
       'car.audi.a3.cabrio.glb',
@@ -29,14 +31,14 @@ test('loads the original GLBs, shows the interior and keeps models after editing
   await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
   await page.screenshot({ path: 'test-results/a3-seated-driver.png' })
   await page.keyboard.press('KeyC')
-  await expect(page.locator('canvas')).toHaveAttribute('data-camera-mode', 'cockpit')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-camera-mode', 'cockpit')
   await page.screenshot({ path: 'test-results/a3-cockpit.png' })
   await page.keyboard.down('KeyD')
   await page.waitForTimeout(400)
   await page.keyboard.up('KeyD')
   await page.screenshot({ path: 'test-results/a3-steering.png' })
   await page.locator('#play').click()
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.getByRole('treeitem', { name: /Container 5 × 10/ }).click()
   await page.locator('#focus').click()
   await page.screenshot({ path: 'test-results/container-editor.png' })
@@ -55,7 +57,9 @@ test('operates the garage latch and carrier controls in the browser', async ({ p
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(scene)),
   })
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
+    timeout: 20000,
+  })
   await page.locator('#play').click()
   await page.waitForTimeout(1200)
   await page.keyboard.press('KeyE')

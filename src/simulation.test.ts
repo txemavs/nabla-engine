@@ -121,8 +121,10 @@ describe('shared simulation', () => {
     expect(() => sim.step(NaN)).toThrow()
     expect(() => sim.step(-1)).toThrow()
     sim.step(1)
-    expect(sim.stats.ticks).toBe(15)
-    expect(sim.stats.droppedSeconds).toBeCloseTo(0.75)
+    expect(sim.stats.ticks).toBe(4)
+    expect(sim.stats.droppedSeconds).toBeCloseTo(1 - 4 / 60)
+    sim.step(1 / 60)
+    expect(sim.stats.ticks).toBe(5)
     sim.dispose()
   })
   it('moves the camera before a wall', () => {
@@ -330,5 +332,31 @@ it('disables imported building collisions while retaining authored ground and re
   expect(sim.player.grounded).toBe(true)
   sim.setMapBuildingsEnabled(true)
   expect(sim.collisionStats.active).toBe(1)
+  sim.dispose()
+})
+
+it('defers hidden building bodies at startup and during streaming until enabled', () => {
+  const building = createEntity('building', 'solid', [10, 2, 0])
+  building.geometry = boxSolid([4, 4, 4])
+  building.source = {
+    provider: 'openstreetmap',
+    id: 'way/1',
+    retrievedAt: '2026-09-22',
+    tags: { building: 'yes' },
+  }
+  const sim = new Simulation(scene([building]), { mapBuildingsEnabled: false })
+  expect(sim.collisionStats).toEqual({ active: 0, total: 1 })
+  const baseline = sim.stats.bodies
+  const next = structuredClone(building)
+  next.id = 'second'
+  next.transform.position[0] = 20
+  sim.replaceMapEntities(new Set(), [next])
+  expect(sim.stats.bodies).toBe(baseline)
+  expect(sim.collisionStats).toEqual({ active: 0, total: 2 })
+  sim.setMapBuildingsEnabled(true)
+  expect(sim.stats.bodies).toBe(baseline + 2)
+  expect(sim.collisionStats.active).toBe(2)
+  sim.setMapBuildingsEnabled(true)
+  expect(sim.stats.bodies).toBe(baseline + 2)
   sim.dispose()
 })

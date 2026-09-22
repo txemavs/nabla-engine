@@ -17,7 +17,7 @@ and motion. Original GLB vehicles preserve their authored dimensions and materia
 | Save locally          | Guardar / Ctrl/Cmd+S                             |
 | Export / import scene | Exportar / Abrir JSON                            |
 | Load current example  | Escena A3                                        |
-| Play / stop           | Jugar / Detener / Tab                            |
+| Play / stop           | Jugar / Detener / F8                             |
 
 Reparenting preserves the world transform. Groups can be expanded in the scene
 tree. Saving stores the authored document, not the runtime physics state.
@@ -123,8 +123,8 @@ the carrier and CSS-interior experience.
 
 ## Driving camera and avatar
 
-The cockpit eye sits 0.26 m forward and 0.10 m below the authored driver anchor
-in ordinary cars; the carrier cockpit is unchanged. This is a host camera offset,
+The cockpit eye sits 0.26 m forward and 0.15 m below the authored driver anchor
+in ordinary cars. The carrier eye sits 0.20 m back and 0.10 m below its pilot anchor. This is a host camera offset,
 so existing saved A3 scenes receive the improvement without rewriting their data.
 The cockpit position and orientation are rigidly attached to the interpolated
 vehicle pose, including pitch and roll. Mouse look rotates the head relative to
@@ -162,7 +162,7 @@ above the surface below to recover normal clearance. **Space** gives one upward
 impulse followed by a fall; it does not select a permanent height. The library's default walking controller remains available; the playground
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
-Click the viewport once to capture the mouse, then left-click to fire. The centre
+The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Click the viewport once to capture the mouse, then left-click to fire with the weapon drawn. The centre
 reticle shows aim and briefly changes to a cross on impact. The supplied HK USP Compact body and separate slide
 have muzzle flash, recoil and a visual slide cycle, with a 220 ms shot interval. Shots stop at the first
 physical solid and push dynamic props. In third person, a second ray from the
@@ -230,7 +230,7 @@ Use **Scene + → Edificio**, then **Editar geometría** in the inspector. Point
 ## Irun Ventas
 
 New sessions start in the real-data district. **Irún · Ventas** restores its baseline;
-**Escena A3** opens the original test circuit. **Tab** starts play and **E** enters the
+**Escena A3** opens the original test circuit. **F8** starts play and **E** enters the
 nearby A3. The carrier is placed nearby; enter its helm and use **V** to switch flight
 mode, then the existing lift/flight controls. Buildings under **Edificios OSM** use
 the same color and geometry editor. Save preserves a local snapshot. GPS relocation
@@ -279,7 +279,7 @@ Latitude is limited to ±85 degrees for the map projection.
 A trip stops play and replaces the editor scene only after data generation succeeds.
 Use **Deshacer** to return to the previous scene, or save/export it for durable storage.
 The loading status supports cancellation and retry; failures preserve the old document.
-New destinations may take up to two minutes depending on the upstream provider.
+Cold destinations can take several minutes depending on the upstream provider. A temporary HTTP 429/502/503/504 response is retried once; cancellation remains immediate.
 The new district starts streaming its neighbors when play resumes. City presets are
 coordinate shortcuts and do not ship predownloaded city models. No geocoding service
 or additional map provider is used.
@@ -297,3 +297,43 @@ aim probes and misses do not leave marks. They are removed when their map zone u
 when play stops or when the scene changes, and are not saved in scene JSON.
 These are simple surface-aligned discs with shared geometry/material, not holes or
 geometry damage. Sprite targets retain their existing hit/respawn behavior.
+
+### A3 dashboard
+
+The A3 driver's eye anchor is 15 cm below and 26 cm forward of the seat reference
+(5 cm lower than the previous cockpit). The instrument cluster has a white digital
+speed readout in km/h. The original navigation display carries a blue local road
+chart without labels, at 4× the carrier chart zoom (one quarter of the distance
+across each axis). Speed digits use a compact 50 px canvas font. It reuses the carrier chart at 4 Hz through a canvas texture,
+without an additional scene camera or network requests. No-road scenes retain the
+blue grid and vehicle marker.
+
+The car's position lamps, navigation chart and speed digits switch off when the
+player leaves the driving seat. Lower outer rear lenses light red while braking;
+lower inner lenses light white when reversing. The upper strips are amber turn
+signals: **comma** toggles left and **period** toggles right; press again to cancel.
+
+The two side mirrors reflect the scene only while driving that car in cockpit
+view. Visible mirrors update at most 8 Hz into 384 × 256 targets, without recursive
+portal/mirror captures or additional shadow-map updates. Exterior, overhead,
+on-foot and editor views do not render mirror passes. Hidden browser tabs skip them.
+
+Mirror captures aim from the eye position at the complete lens. Turning the head
+changes visibility, not the captured perspective; translating the eye or moving
+the vehicle still changes the reflected view.
+
+### Continuous map residency
+
+Generated terrain carries a fingerprint of its original map entities. Saving or
+reopening a scene no longer pins every downloaded sector: distant unchanged zones
+can be evicted to make room, while edited zones and sectors near vehicles/portals
+remain protected. Legacy saved zones without fingerprints are compared with their
+generated source before they can be evicted; failed comparisons keep them intact.
+
+Moving does not cancel an in-flight sector download. It finishes populating the
+cache, and is installed only if still wanted; the next request uses the latest
+position. Stopping/replacing the scene still cancels its loader. This prevents fast
+flight from repeatedly aborting cold sectors, but does not guarantee that public
+map providers can deliver unseen terrain ahead of a vehicle at 1000 km/h.
+
+Carrier screens stay active throughout the occupied interior, without a proximity requirement. Use **G** to release the mouse for native CSS clicks. Driving controls still require the pilot seat. The carrier eye and monitor anchor sit 10 cm lower and 20 cm behind the authored pilot reference.

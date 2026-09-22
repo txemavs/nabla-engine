@@ -57,6 +57,7 @@
         </div>
         <input id="file" type="file" accept=".json,application/json" hidden />
         <div id="options-menu" class="app-menu" popover aria-label="Opciones">
+          <button id="css-screen-demo">Consola de la nave</button>
           <details id="performance-section" class="help">
             <summary>RENDIMIENTO</summary>
             <label class="field-label" for="map-buildings">Edificios del mapa</label>
@@ -67,6 +68,16 @@
             <label class="field-label" for="draw-distance">Distancia de dibujado</label>
             <select id="draw-distance">
               <option value="1000">1 km</option>
+              <option value="2000">2 km</option>
+              <option value="4000">4 km</option>
+              <option value="6000">6 km</option>
+            </select>
+            <label class="field-label" for="road-distance">Detalle de carreteras</label>
+            <select id="road-distance">
+              <option value="0">Oculto · solo terreno</option>
+              <option value="250">250 m</option>
+              <option value="500">500 m</option>
+              <option value="1000" selected>1 km</option>
               <option value="2000">2 km</option>
               <option value="4000">4 km</option>
               <option value="6000">6 km</option>
@@ -158,7 +169,8 @@
             <div><kbd>Espacio</kbd> Salto / freno de mano</div>
             <div><kbd>Shift</kbd> Acelerar el monitor</div>
             <div><kbd>R</kbd> Reiniciar la partida</div>
-            <div><kbd>Tab</kbd> Jugar / detener</div>
+            <div><kbd>F8</kbd> Jugar / detener</div>
+            <div><kbd>Tab</kbd> Sacar / guardar arma</div>
           </details>
         </div>
         <div class="project">
@@ -176,7 +188,7 @@
           <span class="divider"></span><button id="undo" title="Deshacer (Ctrl Z)">↶</button
           ><button id="redo" title="Rehacer (Ctrl Shift Z)">↷</button>
         </div>
-        <button id="play" class="primary">▶ Jugar <kbd>Tab</kbd></button>
+        <button id="play" class="primary">▶ Jugar <kbd>F8</kbd></button>
       </nav>
       <aside class="outliner">
         <div class="panel-heading">
@@ -195,8 +207,10 @@
           </div>
           <div id="add-menu" role="group" aria-label="Crear en la escena" hidden>
             <button id="add-solid">Edificio</button><button id="add-box">Bloque</button
-            ><button id="add-car">Coche</button> <button id="add-sprite">Sprite</button
-            ><button id="add-group">Grupo</button>
+            ><button id="add-car">Audi A3 Cabrio</button
+            ><button id="add-carrier">Contenedor volador</button
+            ><button id="add-streetlight">Farola de autopista</button>
+            <button id="add-sprite">Sprite</button><button id="add-group">Grupo</button>
             <hr />
             <button id="sample-portals">Stargates</button
             ><button id="sample-gallery">Galería 2.5D</button>
@@ -237,6 +251,8 @@
             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer"
               >© OpenStreetMap</a
             >
+            · <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> ·
+            <a href="https://openmaptiles.org" target="_blank" rel="noreferrer">© OpenMapTiles</a>
             ·
             <a href="https://carto.com/attributions" target="_blank" rel="noreferrer"
               >CARTO</a

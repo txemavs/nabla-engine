@@ -74,12 +74,26 @@ const entitySchema = z
     id: z.string().min(1).max(128),
     name: z.string().min(1).max(100),
     parentId: z.string().nullable(),
+    mapBaseline: z
+      .string()
+      .regex(/^[0-9a-f]{16}$/)
+      .optional(),
     kind: z.enum(['group', 'box', 'vehicle', 'spawn', 'solid', 'terrain']),
     transform,
     size,
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     motion: z.enum(['none', 'static', 'dynamic']),
     mass: finite.min(0.1).max(100000),
+    light: z
+      .object({
+        color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+        intensity: finite.min(0).max(10000),
+        distance: finite.min(1).max(100),
+        enabled: z.boolean(),
+        nightOnly: z.boolean(),
+      })
+      .strict()
+      .optional(),
     road: z
       .object({
         paths: z.array(z.array(vector).min(2).max(8192)).min(1).max(8192),
@@ -218,7 +232,24 @@ export function createEntity(
 
 /** Validates external data before changing any state. Names never select behavior. */
 export function parseScene(raw: unknown): SceneDocument {
-  const doc = documentSchema.parse(raw)
+  return validateScene(documentSchema.parse(raw))
+}
+
+/** Internal streaming transaction over an already validated, privately owned document.
+ * Retained geometry must be immutable; edits use parseScene instead. References are
+ * rechecked globally, but only incoming topology is parsed and validated again. */
+export function replaceMapScene(
+  document: SceneDocument,
+  remove: Set<string>,
+  add: Entity[],
+): SceneDocument {
+  const additions = z.array(entitySchema).max(20000).parse(add)
+  const entities = [...document.entities.filter((e) => !remove.has(e.id)), ...additions]
+  if (!entities.length || entities.length > 20000) throw new Error('Scene entity limit exceeded')
+  return validateScene({ ...document, entities }, new Set(additions))
+}
+
+function validateScene(doc: SceneDocument, changed?: Set<Entity>): SceneDocument {
   const byId = new Map(doc.entities.map((e) => [e.id, e]))
   if (byId.size !== doc.entities.length) throw new Error('Duplicate entity ID')
   if (doc.entities.filter((e) => e.kind === 'spawn').length !== 1)
@@ -242,7 +273,7 @@ export function parseScene(raw: unknown): SceneDocument {
     if (e.kind === 'solid') {
       if (!e.geometry || e.motion === 'dynamic' || e.visual || e.surface)
         throw new Error('Solids require static or visual topology')
-      validateSolid(e.geometry)
+      if (!changed || changed.has(e)) validateSolid(e.geometry)
     } else if (e.geometry) throw new Error('Geometry requires a solid entity')
     if (e.sprite && (e.kind !== 'group' || e.motion !== 'none' || e.portal))
       throw new Error('Sprites require nonphysical groups without portal surfaces')
@@ -310,12 +341,18 @@ export function parseScene(raw: unknown): SceneDocument {
   return doc
 }
 
+const validatedGraph = Symbol('validated graph')
+
 /** Rigid transforms only. Object dimensions are geometry, never inherited scale. */
 export class SceneGraph {
   readonly root = new Object3D()
   private readonly nodes = new Map<string, Object3D>()
-  constructor(document: SceneDocument) {
-    const doc = parseScene(document)
+  /** Internal fast path: caller must have just validated this document with parseScene. */
+  static fromValidated(document: SceneDocument): SceneGraph {
+    return new SceneGraph(document, validatedGraph)
+  }
+  constructor(document: SceneDocument, token?: symbol) {
+    const doc = token === validatedGraph ? document : parseScene(document)
     for (const e of doc.entities) {
       const node = new Object3D()
       node.name = e.id

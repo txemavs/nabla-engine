@@ -68,6 +68,29 @@ export function mapTileEntities(doc: SceneDocument, key: string): Entity[] {
   }
   return doc.entities.filter((e) => ids.has(e.id))
 }
+/** Persist a compact fingerprint so saving does not turn generated map data into edits. */
+export function mapFingerprint(entities: Entity[]): string {
+  const text = JSON.stringify(
+    [...entities].sort((a, b) => a.id.localeCompare(b.id)),
+    (key, value) => {
+      if (key === 'mapBaseline') return undefined
+      if (value && typeof value === 'object' && !Array.isArray(value))
+        return Object.fromEntries(
+          Object.keys(value)
+            .sort()
+            .map((k) => [k, value[k]]),
+        )
+      return value
+    },
+  )
+  let a = 2166136261,
+    b = 5381
+  for (let i = 0; i < text.length; i++) {
+    a = Math.imul(a ^ text.charCodeAt(i), 16777619)
+    b = Math.imul(b, 33) ^ text.charCodeAt(i)
+  }
+  return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0')
+}
 export interface WorldStreamHost {
   document(): SceneDocument
   load(key: string, signal: AbortSignal): Promise<Entity[]>
@@ -76,7 +99,10 @@ export interface WorldStreamHost {
 }
 /** One request at a time. Edited/saved zones stay pinned; untouched far zones are evicted. */
 export class WorldStream {
-  private readonly resident = new Map<string, { baseline: string; pinned: boolean }>()
+  private readonly resident = new Map<
+    string,
+    { baseline: string; pinned: boolean; verify?: boolean }
+  >()
   private readonly failed = new Map<string, number>()
   private wanted: string[] = []
   private position: Vec3Tuple = [0, 0, 0]
@@ -95,7 +121,8 @@ export class WorldStream {
         const key = e.id === 'world-terrain' ? '0_0' : e.id.slice('world-terrain-'.length)
         this.resident.set(key, {
           baseline: JSON.stringify(mapTileEntities(doc, key)),
-          pinned: true,
+          pinned: !e.mapBaseline || mapFingerprint(mapTileEntities(doc, key)) !== e.mapBaseline,
+          verify: !e.mapBaseline,
         })
       }
   }
@@ -114,7 +141,9 @@ export class WorldStream {
       return
     }
     this.wanted = wantedWorldTiles(position, velocity)
-    if (this.busy && !this.wanted.includes(this.busy.key)) this.busy.controller.abort()
+    // Let an in-flight tile finish warming the cache. Repeated cancellation while
+    // flying can otherwise discard every cold request before any sector arrives.
+    // Disposing/changing destination still aborts the session immediately.
     if (this.busy || now < this.nextRequest) return
     const area = this.budgetArea()
     const key = this.wanted.find(
@@ -127,9 +156,35 @@ export class WorldStream {
     this.host.status(`Cargando zona ${key} · anticipando el recorrido…`)
     void this.host
       .load(key, controller.signal)
-      .then((entities) => {
+      .then(async (entities) => {
         if (this.disposed || controller.signal.aborted || !this.wanted.includes(key)) return
-        const remove = this.makeRoom(key, entities)
+        let remove = this.makeRoom(key, entities)
+        // Old saves have no fingerprint. Only release a saved zone after comparing
+        // it with its generated source; never infer that an edited zone is disposable.
+        if (!remove) {
+          for (const [candidate, state] of this.resident) {
+            if (
+              !state.verify ||
+              this.protectedPositions.some((p) => tileDistance(candidate, p) < 200)
+            )
+              continue
+            if (tileDistance(candidate, this.position) <= tileDistance(key, this.position)) continue
+            this.host.status(`Vaciando caché de escena · comprobando zona ${candidate}…`)
+            try {
+              const original = await this.host.load(candidate, controller.signal)
+              if (this.disposed || controller.signal.aborted || !this.wanted.includes(key)) return
+              state.pinned =
+                mapFingerprint(original) !==
+                mapFingerprint(mapTileEntities(this.host.document(), candidate))
+              state.verify = false
+            } catch {
+              if (this.disposed || controller.signal.aborted) return
+              continue
+            }
+            remove = this.makeRoom(key, entities)
+            if (remove) break
+          }
+        }
         if (!remove) {
           this.limited.set(key, this.budgetArea())
           this.host.status(

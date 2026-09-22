@@ -38,7 +38,7 @@ test('travels to another city with its own terrain, saves it and can undo the tr
   await page.locator('#travel-menu-button').click()
   await page.locator('#travel-city').selectOption('40.4168,-3.7038')
   await page.locator('#travel-go').click()
-  await expect(page.locator('canvas')).toHaveAttribute('data-world', 'destination', {
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-world', 'destination', {
     timeout: 30000,
   })
   await expect(page.locator('#scene-name')).toHaveText('Madrid · Sol')

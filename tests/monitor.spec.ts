@@ -11,12 +11,16 @@ test('starts in first person, toggles monitor view and fires only in play with c
   await page.locator('#imagery').selectOption('offline')
   await page.locator('#apply-location').click()
   await page.keyboard.press('Escape')
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
+    timeout: 20000,
+  })
   await page.locator('#welcome-close').click()
   await page.locator('#play').click()
-  const canvas = page.locator('canvas'),
+  const canvas = page.locator('#viewport > canvas'),
     reticle = page.getByLabel('Punto de mira')
   await expect(canvas).toHaveAttribute('data-camera-mode', 'first-person')
+  await expect(reticle).toBeHidden()
+  await page.keyboard.press('Tab')
   await expect(reticle).toBeVisible()
   await expect(reticle).toHaveAttribute('data-weapon', 'loaded')
   await canvas.click()
@@ -30,6 +34,10 @@ test('starts in first person, toggles monitor view and fires only in play with c
   await page.keyboard.press('KeyC')
   await expect(canvas).toHaveAttribute('data-camera-mode', 'first-person')
   await page.keyboard.press('Tab')
+  await expect(reticle).toBeHidden()
+  await page.mouse.click(700, 400)
+  await expect(reticle).toHaveAttribute('data-shots', '1')
+  await page.keyboard.press('F8')
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(false)
   await expect(reticle).toBeHidden()
   expect(errors).toEqual([])

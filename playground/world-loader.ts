@@ -1,3 +1,4 @@
+import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
 import type { GeoPoint } from '../src/geography.js'
 import type { Entity } from '../src/scene.js'
 /** Network, LERC decoding and building generation run away from the driving frame. */
@@ -12,13 +13,21 @@ export class WorldLoader {
   >()
   constructor() {
     this.worker.onmessage = (
-      event: MessageEvent<{ id: number; entities: Entity[]; error?: string }>,
+      event: MessageEvent<{
+        id: number
+        entities: Entity[]
+        geometry?: PreparedMapGeometry
+        error?: string
+      }>,
     ) => {
       const request = this.pending.get(event.data.id)
       if (!request) return
       this.pending.delete(event.data.id)
       if (event.data.error) request.reject(new Error(event.data.error))
-      else request.resolve(event.data.entities)
+      else {
+        if (event.data.geometry) receiveMapGeometry(event.data.entities, event.data.geometry)
+        request.resolve(event.data.entities)
+      }
     }
     this.worker.onerror = () => {
       for (const p of this.pending.values()) p.reject(new Error('No se pudo iniciar el cargador'))

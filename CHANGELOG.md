@@ -2,6 +2,51 @@
 
 ## Unreleased
 
+- Use sparse collision-contact history instead of resetting a quadratic dense matrix every physics tick.
+- Share cockpit road-chart projections and cull paths by cached bounds at the current zoom.
+- Document remaining performance work and measurement limits in docs/performance.md.
+
+- Add a cached, worker-decoded OpenFreeMap sea layer with coastline/island polygons and animated water normals.
+- Adapt the Streets GL angular sun disc/halo and retain its MIT notice and water texture attribution.
+- Bound physics catch-up to four steps, remove redundant validated graph parsing and share streamed additions across undo snapshots; expose physics and sector-install timings.
+
+- Preserve unchanged road cell buffers across map streaming and defer hidden road batch preparation.
+- Prepare streamed terrain, roads and building render buffers in the world worker and transfer them without copying.
+
+- Add a component-derived entity capability API and catalogue factories for the A3, flying container with stern portal, and highway streetlight.
+- Add editable night lighting with six nearby shadowless spotlights, scene placement and saved light settings.
+
+- Start with the weapon holstered; Tab draws/holsters it and F8 starts/stops play.
+- Keep carrier screens active throughout the occupied interior and lower/retract the pilot eye and monitor anchor by 10/20 cm.
+
+- Preserve generated map fingerprints across saves so unchanged sectors remain evictable; verify legacy saved zones against their source before reclaiming them.
+- Let moving-world downloads finish warming the cache instead of repeatedly cancelling them in fast flight; retain cancellation on scene changes.
+- Retry transient OSM HTTP failures once and use consistent origin-sector identifiers when reloading the starting zone.
+
+- Keep selection bounds in object-local axes so the outline rotates with the selected entity instead of changing size with its world orientation.
+
+- Stabilize side-mirror captures against head rotation by fitting the whole lens from the eye position, independently of the viewport crop.
+
+- Match the upper helm screen titles to the flight desk typography: telemetry, navigation and portal.
+- Add cockpit-only, visibility-culled A3 side-mirror reflections capped at 8 Hz.
+- Power down unoccupied A3 displays and lamps; add lower red brake lights, inner white reverse lights and upper amber turn signals.
+
+- Lower the A3 cockpit eye anchor 5 cm; add white dashboard speed digits and a label-free blue map on the original navigation display.
+
+- Reorganize the helm into left telemetry, central local road chart and right stern controls; add paired mode-2 circular D-pads and desk switches with clearance from the upright screens.
+- Batch static OSM roads by spatial cell/material while playing, skip their per-frame simulation pose updates, and add an independent road detail distance.
+- Avoid inactive CSS screen raycasts, redundant DOM/resize work and closed-portal preparation; expose frame P95, CPU frame time and render counters under Performance.
+
+- Centre one 8 mm landscape tablet on each independent portal rear; use black closed surfaces and dark rear panels.
+- Reuse the carrier helm for flight mode, stern portal controls, live speed/altitude and adjustable flight speed.
+- Replace the nose-camera feed with a horizontal CSS flight touchscreen; close the bow with armoured glass and physical collision.
+- Apply the original Agency room atlas to darker, non-emissive interior panels.
+- Animate the garage door and require complete closure before connecting its portal; opening the garage disconnects it first.
+
+- Replace floating portal controls with black, perspective-matched CSS tablets that activate within one metre and expose native destination/open/close controls.
+
+- Add visible carrier interior lining and camera-matched HTML/CSS displays with WebGL occlusion.
+
 - Add a persistent map-building visibility option, disabling hidden building collisions while retaining terrain, roads and scene data.
 
 - Remove permanent solid edge overlays and retain topology lines in the solid editor.

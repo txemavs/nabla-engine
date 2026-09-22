@@ -302,3 +302,95 @@ Building surfaces render without permanent edge overlays; topology lines remain
 available in the solid editor.
 
 Options → Performance → Map buildings can hide imported building surfaces and disable their collisions, including portal exit checks. Terrain, roads and authored objects remain available. The preference persists locally and applies to newly streamed zones; it does not delete buildings or reduce downloaded data or scene residency. Re-enable it in a clear location to avoid overlapping a restored building.
+
+### Driving frame cost
+
+Imported roads use render-only batches grouped by 256 m cell and colour while
+playing. Original entities and geometry remain available for selection/export in
+edit mode; streaming invalidates the batches. Authored roads without an OSM source
+are left unchanged. Batches preserve terrain-draped heights and pedestrian offsets.
+
+**Options → Performance → Road detail** controls a separate 250 m–6 km drawing
+radius, or hides road geometry entirely. It is capped by the overall drawing
+distance and uses conservative batch bounds, so a road crossing the boundary can
+remain visible. Terrain and its collisions remain in place. This option reduces
+drawing work; it does not reduce map downloads.
+
+With buildings disabled, the simulation defers constructing new imported building
+collision shapes, including streamed arrivals. Enabling buildings constructs those
+missing shapes and restores normal collision culling. Existing disabled bodies are
+retained for reuse. Play-mode streaming updates the count/status without rebuilding
+the disabled editor tree and inspector; stopping play refreshes the full editor.
+
+The performance panel reports frame interval P95 over the last 120 frames, main-thread
+frame submission time, draw calls and triangles across rendering passes. These are
+diagnostics, not GPU timer measurements. High P95 with low CPU time may reflect GPU,
+browser scheduling or other work outside the measured frame. Try road detail at
+250/500 m, shadows off and resolution 0.75× when comparing the same route. Terrain
+integration, scene validation and road mesh generation on tile arrival can still
+cause occasional stalls; these changes do not claim to eliminate every source of
+stutter or guarantee a hardware-independent frame rate.
+
+### Incremental render preparation
+
+Streamed sectors now prepare terrain, terrain-clipped road meshes, building triangles
+and vertex normals in the world worker. Typed position, normal and index buffers are
+transferred to the renderer rather than cloned. The scene view adopts these arrays
+directly. Render buffers are ephemeral, consumed once and never serialized into scene
+JSON, undo history or the persistent geographic cache. Initial saved scenes and travel
+destinations retain the synchronous fallback; this change targets arrivals during play.
+
+Road batches retain their 256 m spatial cells across streaming updates. Adding,
+removing or replacing a road rebuilds only cells containing that road. Unaffected GPU
+buffers remain resident. Disabling road detail defers batch reconciliation until it
+is enabled again; individual authored roads remain available in edit mode.
+
+Regression coverage verifies that adding/removing a separate cell preserves all 800
+resident cell meshes, including their buffers, and that transferred geometry matches
+the original draped surface. This is a work-elimination guarantee, not an FPS claim.
+The browser performance fixture still checks draw-call bounds and road-distance controls.
+GPU uploads, collision installation and whole-document validation remain synchronous;
+precomputed geographic tiles and progressive terrain LOD remain separate improvements.
+
+### Sea and sunlight
+
+The sea is a separate visual layer of OpenFreeMap/OpenMapTiles `water` polygons
+with `class=ocean`, including coastline cutouts and island holes. It loads zoom-12
+vector tiles through a dedicated worker, transfers triangles and renders at sea
+level relative to the geographic origin. It is not inferred from a terrain height
+threshold. Inland rivers/lakes are intentionally excluded until their elevations
+can be resolved; no swimming, buoyancy or water collision is added.
+
+OpenFreeMap requests disclose the explored tile coordinates to that provider.
+The provider was explicitly authorized for this installation. Set
+`VITE_WATER_TILEJSON_URL` to use another compatible TileJSON endpoint, including
+an operator's own mirror; no private URL or Mapbox key is committed. The browser
+cache holds up to 96 responses for seven days. Only one request is active at a
+time, failed tiles back off for a minute, and up to 25 nearby tile meshes are
+retained. Loading stops above 12 km. Existing OSM/Esri server cache is unchanged.
+Attribution remains visible with the geographic HUD.
+
+The angular sun disc and Gaussian halo, and three scrolling water-normal samples,
+are adapted from Streets GL. The normal texture and MIT notice are included in
+`assets/geography/water-normal.png` and `assets/licenses/streets-gl-MIT.txt`.
+These effects use no reflection camera, screen-space reflection or bloom pass.
+Existing geographic time, moon and directional lighting remain in control.
+
+### Long-frame recovery
+
+Simulation catch-up is capped at four fixed 1/60-second steps per display frame;
+excess elapsed time is reported as dropped time instead of creating a 15-step
+catch-up burst. Normal 30/60/120 Hz simulation timing is unchanged. Under sustained
+very low frame rates the simulation advances more slowly than wall time.
+Already-validated simulation documents and map-chart/view graph updates avoid
+redundant whole-scene validation. Streaming history shares one detached addition
+batch between immutable snapshots rather than copying it once per undo entry.
+Performance readouts distinguish physics time from the most recent sector install.
+GPU uploads and sector installation can still produce long frames; this is not a
+guarantee of a particular frame rate on the user's hardware.
+
+Streaming transactions additionally parse and validate only incoming topology,
+retaining existing validated entity/geometry references. Global identity, hierarchy,
+portal and terrain-reference checks still run on the combined document before it
+is committed. The internal `replaceMapScene` path requires privately owned validated
+data; authored edits and external scene imports continue to use full `parseScene`.

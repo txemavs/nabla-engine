@@ -83,6 +83,7 @@ export function createCarrier(id: string, position: Vec3Tuple = [4, 1.2, -12]): 
         collider([2.55, 0.92, 0.7], [0, 0.752, -3.45]),
         collider([1.796, 2.971, 0.04], [1.498, 1.7825, 0]),
         collider([1.2, 0.851, 0.04], [0, 2.8425, 0]),
+        collider([4.71, 2.91, 0.08], [0, 1.75, -5.05]),
       ],
       hubs: [
         [-2.02, -1.08, -4.52],

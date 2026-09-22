@@ -25,11 +25,12 @@ test('renders PNG targets through a window and registers a shot from first perso
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(doc)),
   })
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#welcome-close').click()
   await page.locator('#play').click()
+  await page.keyboard.press('Tab')
   await page.waitForTimeout(700)
-  const canvas = page.locator('canvas')
+  const canvas = page.locator('#viewport > canvas')
   await canvas.click()
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(true)
   // Pitch upward from the default downward gaze, leaving the target in the reticle.
@@ -40,6 +41,6 @@ test('renders PNG targets through a window and registers a shot from first perso
   await page.screenshot({ path: 'test-results/gallery-window.png' })
   await page.keyboard.press('KeyN')
   await expect(page.locator('.gallery-score')).toHaveAttribute('data-hits', '0')
-  await page.keyboard.press('Tab')
+  await page.keyboard.press('F8')
   expect(errors).toEqual([])
 })

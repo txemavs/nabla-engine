@@ -38,7 +38,7 @@ test('flies from the Agency ground to space with local assets and returns to the
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(doc)),
   })
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
   await page.waitForTimeout(1000)
   await page.keyboard.press('KeyE')
@@ -46,9 +46,11 @@ test('flies from the Agency ground to space with local assets and returns to the
   await page.keyboard.press('KeyV')
   await page.keyboard.down('ShiftLeft')
   await page.keyboard.down('KeyW')
-  await expect(page.locator('canvas')).toHaveAttribute('data-geo-level', 'map', { timeout: 60000 })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-geo-level', 'map', {
+    timeout: 60000,
+  })
   await page.screenshot({ path: 'test-results/geography-map.png' })
-  await expect(page.locator('canvas')).toHaveAttribute('data-geo-level', 'space', {
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-geo-level', 'space', {
     timeout: 90000,
   })
   await page.keyboard.up('KeyW')
@@ -68,7 +70,7 @@ test('flies from the Agency ground to space with local assets and returns to the
     )
     .toBe(true)
   await page.keyboard.press('KeyE')
-  await expect(page.locator('canvas')).toHaveAttribute('data-interior', 'carrier')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-interior', 'carrier')
   await expect(page.locator('#player-mode')).toContainText('INTERIOR')
   await page.waitForTimeout(1500)
   await page.screenshot({ path: 'test-results/carrier-orbital-interior.png' })
@@ -88,7 +90,7 @@ test('flies from the Agency ground to space with local assets and returns to the
   await expect(page.locator('#speed')).toHaveText('0 km/h', { timeout: 20000 })
   await page.screenshot({ path: 'test-results/geography-earth.png' })
   await page.locator('#play').click()
-  await expect(page.locator('canvas')).toHaveAttribute('data-geo-level', 'local')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-geo-level', 'local')
   await expect(page.locator('#latitude')).toHaveValue('40.4166')
   expect(errors).toEqual([])
 })

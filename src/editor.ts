@@ -1,4 +1,11 @@
-import { createEntity, parseScene, SceneGraph, type Entity, type SceneDocument } from './scene.js'
+import {
+  createEntity,
+  parseScene,
+  replaceMapScene,
+  SceneGraph,
+  type Entity,
+  type SceneDocument,
+} from './scene.js'
 
 /** Transactions store authored data only. Physics never writes into this history. */
 export class SceneEditor {
@@ -27,9 +34,10 @@ export class SceneEditor {
   }
   /** Streaming is environmental data, not an authored undo step. */
   replaceMapEntities(remove: Set<string>, add: Entity[]): void {
+    const additions = structuredClone(add)
     const apply = (doc: SceneDocument): SceneDocument => ({
       ...doc,
-      entities: [...doc.entities.filter((e) => !remove.has(e.id)), ...structuredClone(add)],
+      entities: [...doc.entities.filter((e) => !remove.has(e.id)), ...additions],
     })
     const origin = this.current.geography
     const sameWorld = (doc: SceneDocument) =>
@@ -37,7 +45,7 @@ export class SceneEditor {
       doc.geography?.latitude === origin?.latitude &&
       doc.geography?.longitude === origin?.longitude &&
       doc.geography?.altitude === origin?.altitude
-    this.current = parseScene(apply(this.current))
+    this.current = replaceMapScene(this.current, remove, additions)
     this.past = this.past.map((doc) => (sameWorld(doc) ? apply(doc) : doc))
     this.future = this.future.map((doc) => (sameWorld(doc) ? apply(doc) : doc))
   }

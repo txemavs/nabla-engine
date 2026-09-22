@@ -200,9 +200,11 @@ it('backs the A3 from the carrier through its mounted stern gate without changin
   doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
   const sim = new Simulation(doc)
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
+  sim.setGarageDoor('ship', true)
+  for (let i = 0; i < 150; i++) sim.step(1 / 60)
   sim.configurePortal('stern', 'a', 'open')
   expect(sim.portalState('stern').clearsRamp).toBe(true)
-  expect(sim.vehicleInfo('ship').rampClosed).toBe(false)
+  expect(sim.vehicleInfo('ship').rampClosed).toBe(true)
   expect(sim.interact()).toContain('Conduciendo')
   expect(sim.player.vehicleId).toBe('car')
   for (let i = 0; i < 240 && !sim.portalEvent; i++) {
@@ -229,6 +231,8 @@ it('keeps hosted mouths rigidly attached during flight, including pitch and roll
   sim.interact()
   expect(sim.player.vehicleId).toBe('ship')
   sim.toggleFlight()
+  sim.setGarageDoor('ship', true)
+  for (let i = 0; i < 150; i++) sim.step(1 / 60)
   sim.configurePortal('stern', 'a', 'open')
   for (let i = 0; i < 120; i++) {
     sim.setInput({ ...idleInput(), lift: 1, forward: 0.4, right: 0.25, turn: 0.2 })
@@ -240,7 +244,7 @@ it('keeps hosted mouths rigidly attached during flight, including pitch and roll
   expect(local.distanceTo(new Vector3(0, 0.55, 5.05))).toBeLessThan(1e-8)
   expect(host.position[1]).toBeGreaterThan(3)
   expect(Math.abs(host.rotation[0]) + Math.abs(host.rotation[2])).toBeGreaterThan(0.01)
-  expect(sim.vehicleInfo('ship').rampClosed).toBe(false)
+  expect(sim.vehicleInfo('ship').rampClosed).toBe(true)
   sim.dispose()
 })
 
@@ -260,6 +264,8 @@ it('transfers a moving prop through the stern gate while its carrier is moving',
   )
   const sim = new Simulation(doc)
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
+  sim.setGarageDoor('ship', true)
+  for (let i = 0; i < 150; i++) sim.step(1 / 60)
   sim.configurePortal('stern', 'a', 'open')
   sim.interact()
   expect(sim.player.vehicleId).toBe('ship')
@@ -275,29 +281,25 @@ it('transfers a moving prop through the stern gate while its carrier is moving',
   sim.dispose()
 })
 
-it('lets the hovering monitor use the bow gate beside the existing helm', () => {
+it('stops the hovering monitor at the armoured bow window', () => {
   const doc = scene()
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.9, 0.35, -2.6]
-  doc.entities.find((e) => e.id === 'a')!.transform.position = [20, 1.455, 0]
-  doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
   doc.entities.push(
     createCarrier('ship', [0, 1.2, 0]),
     ...createCarrierPortals('ship', 'bow', 'stern'),
   )
   const sim = new Simulation(doc, { playerMode: 'hover' })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
-  sim.configurePortal('bow', 'a', 'open')
-  for (let i = 0; i < 120 && !sim.portalEvent; i++) {
+  for (let i = 0; i < 240; i++) {
     sim.setInput({ ...idleInput(), forward: 1 })
     sim.step(1 / 60)
   }
-  expect(sim.portalEvent).toMatchObject({
-    actorId: 'player',
-    sourceId: 'bow',
-    destinationId: 'a',
-    blocked: false,
-  })
-  expect(sim.player.position[0]).toBeGreaterThan(17)
+  const local = new Vector3(...sim.player.position).applyMatrix4(
+    portalMatrix(sim.entityTransform('ship')).invert(),
+  )
+  expect(local.z).toBeGreaterThan(-5.01)
+  expect(local.z).toBeLessThan(-4)
+  expect(sim.portalEvent).toBeNull()
   sim.dispose()
 })
 
@@ -309,7 +311,7 @@ it('leaves the helm at orbital height, walks to Earth and returns to the same ca
   doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
   doc.entities.push(
     createCarrier('ship', [0, 90000, 0]),
-    ...createCarrierPortals('ship', 'bow', 'stern'),
+    ...createCarrierPortals('ship', 'stern', 'stern'),
   )
   const sim = new Simulation(doc, { playerMode: 'hover' })
   expect(sim.interact()).toContain('Conduciendo')
@@ -323,21 +325,31 @@ it('leaves the helm at orbital height, walks to Earth and returns to the same ca
   expect(sim.interact()).toContain('Dentro de la nave')
   expect(sim.player.vehicleId).toBeNull()
   expect(sim.player.interiorId).toBe('ship')
-  sim.configurePortal('bow', 'a', 'open')
+  sim.setGarageDoor('ship', true)
+  for (let i = 0; i < 150; i++) sim.step(1 / 60)
+  sim.configurePortal('stern', 'a', 'open')
+  for (let i = 0; i < 120; i++) {
+    const local = new Vector3(...sim.player.position).applyMatrix4(
+      portalMatrix(sim.entityTransform('ship')).invert(),
+    )
+    if (Math.abs(local.x) < 0.12) break
+    sim.setInput({ ...idleInput(), right: -Math.sign(local.x), yaw: sim.player.yaw })
+    sim.step(1 / 60)
+  }
   for (let i = 0; i < 240 && !sim.portalEvent; i++) {
-    sim.setInput({ ...idleInput(), forward: 1, yaw: sim.player.yaw })
+    sim.setInput({ ...idleInput(), forward: -1, yaw: sim.player.yaw })
     sim.step(1 / 60)
   }
   expect(sim.portalEvent).toMatchObject({ actorId: 'player', destinationId: 'a', blocked: false })
   expect(sim.player.interiorId).toBeNull()
   expect(sim.player.position[1]).toBeLessThan(3)
-  sim.setInput({ ...idleInput(), forward: 1, yaw: sim.player.yaw })
+  sim.setInput({ ...idleInput(), forward: -1, yaw: sim.player.yaw })
   for (let i = 0; i < 25; i++) sim.step(1 / 60)
-  for (let i = 0; i < 180 && sim.portalEvent?.destinationId !== 'bow'; i++) {
-    sim.setInput({ ...idleInput(), forward: -1, yaw: sim.player.yaw })
+  for (let i = 0; i < 180 && sim.portalEvent?.destinationId !== 'stern'; i++) {
+    sim.setInput({ ...idleInput(), forward: 1, yaw: sim.player.yaw })
     sim.step(1 / 60)
   }
-  expect(sim.portalEvent).toMatchObject({ destinationId: 'bow', blocked: false })
+  expect(sim.portalEvent).toMatchObject({ destinationId: 'stern', blocked: false })
   expect(sim.player.interiorId).toBe('ship')
   expect(sim.player.position[1]).toBeGreaterThan(orbitHeight - 2)
   expect(sim.vehicleInfo('ship').flightMode).toBe(true)

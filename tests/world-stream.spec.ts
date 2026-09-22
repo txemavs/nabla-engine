@@ -7,7 +7,9 @@ test('loads cached neighboring terrain during driving and preserves it when savi
   await page.route(/WorldElevation3D|\/world-cache\/elevation/, (route) => route.abort())
   await page.goto('/')
   await expect(page.locator('#world-loading')).toBeHidden({ timeout: 30000 })
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 30000 })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
+    timeout: 30000,
+  })
   await page.evaluate(async (origin) => {
     const cache = await caches.open('nabla-world-v1')
     for (let x = -2; x <= 2; x++)
@@ -39,16 +41,22 @@ test('loads cached neighboring terrain during driving and preserves it when savi
   await page.keyboard.press('KeyE')
   await page.keyboard.down('KeyW')
   await expect
-    .poll(async () => Number(await page.locator('canvas').getAttribute('data-world-zones')), {
-      timeout: 15000,
-    })
+    .poll(
+      async () => Number(await page.locator('#viewport > canvas').getAttribute('data-world-zones')),
+      {
+        timeout: 15000,
+      },
+    )
     .toBeGreaterThanOrEqual(2)
   await page.keyboard.up('KeyW')
   await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
   await expect
-    .poll(async () => Number(await page.locator('canvas').getAttribute('data-world-zones')), {
-      timeout: 20000,
-    })
+    .poll(
+      async () => Number(await page.locator('#viewport > canvas').getAttribute('data-world-zones')),
+      {
+        timeout: 20000,
+      },
+    )
     .toBeGreaterThanOrEqual(3)
   await page.locator('#play').click()
   await page.locator('#file-menu-button').click()
@@ -63,7 +71,8 @@ test('loads cached neighboring terrain during driving and preserves it when savi
 test('reports a provider failure and stopping cancels the streaming session', async ({ page }) => {
   await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) =>
     route.fulfill({
-      status: 503,
+      // A permanent failure isolates scheduler backoff; transient HTTP retries have unit coverage.
+      status: 400,
       body: 'Unavailable',
       headers: { 'access-control-allow-origin': '*' },
     }),
@@ -71,9 +80,19 @@ test('reports a provider failure and stopping cancels the streaming session', as
   await page.route(/WorldElevation3D|\/world-cache\/elevation/, (route) => route.abort())
   await page.goto('/')
   await expect(page.locator('#world-loading')).toBeHidden({ timeout: 30000 })
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 30000 })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
+    timeout: 30000,
+  })
+  await page.evaluate(() => {
+    const status = document.querySelector('#stream-status')!
+    new MutationObserver(() => {
+      if (status.textContent?.includes('reintento en 60 s'))
+        status.setAttribute('data-saw-failure', 'true')
+    }).observe(status, { childList: true, subtree: true, characterData: true })
+  })
   await page.locator('#play').click()
-  await expect(page.locator('#stream-status')).toContainText('reintento en 60 s', {
+  // Another wanted tile can immediately replace the transient status text.
+  await expect(page.locator('#stream-status')).toHaveAttribute('data-saw-failure', 'true', {
     timeout: 15000,
   })
   await page.locator('#play').click()
@@ -143,10 +162,11 @@ test('loads terrain around a player twelve kilometres away from the starting dis
     buffer: Buffer.from(JSON.stringify(doc)),
   })
   await page.locator('#play').click()
-  await expect(page.locator('[data-entity-id="world-terrain-10_0"]')).toHaveCount(1, {
-    timeout: 30000,
-  })
   await expect(page.locator('#stream-status')).toContainText('zonas disponibles', {
     timeout: 30000,
   })
+  // The editor tree intentionally stops rebuilding during play. Inspect the
+  // actual installed sector after returning to edit mode, not the frozen tree.
+  await page.locator('#play').click()
+  await expect(page.locator('[data-entity-id="world-terrain-10_0"]')).toHaveCount(1)
 })
