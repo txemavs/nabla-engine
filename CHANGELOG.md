@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adapt Studio chrome to Agency dark grays, larger editor typography and a conventional keyboard-navigable menu bar; add world-only and fullscreen views.
+
 - Restore close-range car shadow detail and smaller bias while driving; anchor shadows to the car instead of head movement.
 
 - Follow the viewer with stable, configurable sun shadows; reduce daytime fill and add lit crossed-tree cutouts without an extra draw call per tree.

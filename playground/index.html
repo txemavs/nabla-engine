@@ -11,14 +11,28 @@
       <header>
         <a class="brand" href="./"
           ><img class="brand-mark" src="/brand/source.svg" width="42" height="42" alt="Nabla" />
-          nabla</a
+          Nabla Studio</a
         >
         <nav class="app-menus" aria-label="Menú principal">
           <button id="file-menu-button" popovertarget="file-menu">Archivo</button>
-          <button id="travel-menu-button" popovertarget="travel-menu">Ir</button>
+          <button id="edit-menu-button" popovertarget="edit-menu">Edición</button>
+          <button id="view-menu-button" popovertarget="view-menu">Ver</button>
+          <button id="travel-menu-button" popovertarget="travel-menu">Mundo</button>
           <button id="options-menu-button" popovertarget="options-menu">Opciones</button>
           <button id="help-menu-button" popovertarget="help-menu">Ayuda</button>
         </nav>
+        <div id="edit-menu" class="app-menu command-menu" popover aria-label="Edición">
+          <button data-command="undo">Deshacer <kbd>Ctrl Z</kbd></button>
+          <button data-command="redo">Rehacer <kbd>Ctrl Shift Z</kbd></button>
+          <hr />
+          <button data-command="translate">Mover selección <kbd>G</kbd></button>
+          <button data-command="rotate">Rotar selección <kbd>R</kbd></button>
+          <button data-command="focus">Encuadrar selección <kbd>F</kbd></button>
+        </div>
+        <div id="view-menu" class="app-menu command-menu" popover aria-label="Ver">
+          <button id="studio-panels" aria-pressed="false">Solo mundo · ocultar paneles</button>
+          <button id="studio-fullscreen">Pantalla completa</button>
+        </div>
         <div id="travel-menu" class="app-menu" popover aria-label="Viajar por el mundo">
           <h3>Ir a un lugar</h3>
           <label class="field-label" for="travel-city">Destinos</label>
@@ -46,7 +60,7 @@
           <p id="travel-status" role="status"></p>
           <button id="travel-cancel" hidden>Cancelar carga</button>
         </div>
-        <div id="file-menu" class="app-menu" popover aria-label="Archivo">
+        <div id="file-menu" class="app-menu command-menu" popover aria-label="Archivo">
           <button id="import">Abrir escena JSON…</button>
           <button id="save">Guardar en este navegador <kbd>Ctrl S</kbd></button>
           <button id="export">Exportar escena JSON…</button>

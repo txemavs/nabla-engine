@@ -40,6 +40,9 @@ import {
 } from '../src/index.js'
 import { SceneView } from './view.js'
 import './style.css'
+import './studio-shell.css'
+import { setupStudioShell } from './studio-shell.js'
+setupStudioShell()
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
   const element = document.getElementById(id)

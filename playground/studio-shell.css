@@ -1,0 +1,243 @@
+/* Editor chrome only. In-world cockpit screens retain their own visual scale. */
+:root {
+  --studio-background: #121212;
+  --studio-surface: #1e1e1e;
+  --studio-raised: #292929;
+  --studio-text: #e0e0e0;
+  --line: #393939;
+  --panel: var(--studio-surface);
+  --muted: #b0b0b0;
+  --accent: #2196f3;
+  color: var(--studio-text);
+  background: var(--studio-background);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+}
+#app {
+  grid-template-columns: 260px minmax(280px, 1fr) 300px;
+  grid-template-rows: 48px 46px minmax(0, 1fr) 28px;
+}
+header {
+  padding: 0 14px;
+  gap: 18px;
+  background: var(--studio-surface);
+}
+.brand {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0;
+  gap: 8px;
+  white-space: nowrap;
+}
+.brand-mark {
+  width: 28px;
+  height: 28px;
+}
+.toolbar,
+footer {
+  background: var(--studio-surface);
+}
+.toolbar {
+  gap: 12px;
+}
+.mode {
+  width: 232px;
+  font-size: 14px;
+}
+.project {
+  font-size: 14px;
+  min-width: 0;
+}
+#scene-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-menus {
+  gap: 2px;
+  flex: 1;
+}
+.app-menus button {
+  font-size: 15px;
+  padding: 8px 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.app-menus button:hover,
+.app-menus button[aria-expanded='true'] {
+  background: #383838;
+  color: #fff;
+}
+.app-menu {
+  margin: 0;
+  background: var(--studio-surface);
+  border-color: #494949;
+  color: var(--studio-text);
+  border-radius: 5px;
+  padding: 7px;
+  box-shadow: 0 10px 30px #0008;
+  width: 340px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 60px);
+  font-size: 14px;
+}
+.command-menu > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+}
+.command-menu > button:hover {
+  background: #353535;
+}
+.app-menu .eyebrow {
+  display: block;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.app-menu .help {
+  background: transparent;
+  border-color: var(--line);
+}
+.app-menu summary {
+  font-size: 14px;
+  letter-spacing: 0;
+  padding: 10px 6px;
+}
+:is(header, .toolbar, .outliner, .inspector, .app-menu) button {
+  font-size: 14px;
+}
+:is(.toolbar, .outliner, .inspector, .app-menu) button:not(.tree-item):not(.primary):not(.active) {
+  background-color: var(--studio-raised);
+  border-color: #484848;
+}
+:is(.toolbar, .outliner, .inspector, .app-menu) button:hover {
+  background-color: #383838;
+}
+:is(.toolbar, .outliner, .inspector, .app-menu) button.active {
+  background: #183e59;
+  border-color: #34729e;
+  color: #b8ddff;
+}
+:is(.inspector, .app-menu) input,
+:is(.inspector, .app-menu) select {
+  background: #151515;
+  color: var(--studio-text);
+  border: 1px solid #4a4a4a;
+  font-size: 14px;
+  min-height: 34px;
+}
+:is(.inspector, .app-menu) .field-label {
+  font-size: 13px;
+  color: #bdbdbd;
+}
+.inspector p,
+.app-menu p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #bdbdbd;
+}
+.panel-heading {
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  color: #bdbdbd;
+  padding: 15px;
+}
+.tree-item {
+  font-size: 14px;
+  padding: 9px 10px;
+}
+.tree-item.selected {
+  background: #303e49;
+  color: #fff;
+  box-shadow: inset 3px 0 var(--accent);
+}
+.tree-item .kind-icon {
+  font-size: 15px;
+  color: #aaa;
+}
+.tree-item .motion {
+  font-size: 11px;
+  color: #aaa;
+}
+#add-menu {
+  background: var(--studio-surface);
+}
+.outliner-footer,
+footer {
+  font-size: 12px;
+  color: #aaa;
+}
+kbd {
+  font-size: 11px;
+  color: #bdbdbd;
+  border-color: #555;
+}
+body.playing .outliner,
+body.playing .inspector {
+  opacity: 1;
+}
+#app.studio-world {
+  grid-template-columns: minmax(0, 1fr);
+}
+#app.studio-world > .outliner,
+#app.studio-world > .inspector {
+  display: none;
+}
+@media (max-width: 1100px) {
+  #app {
+    grid-template-columns: 210px minmax(240px, 1fr) 255px;
+  }
+  #app.studio-world {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .project {
+    display: none;
+  }
+  .mode {
+    width: 180px;
+  }
+}
+@media (max-width: 760px) {
+  #app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 48px 46px minmax(0, 1fr) 28px;
+  }
+  #app > .outliner,
+  #app > .inspector {
+    display: none;
+  }
+  header {
+    gap: 6px;
+    padding: 0 6px;
+  }
+  .brand {
+    font-size: 0;
+    gap: 0;
+  }
+  .app-menus {
+    overflow-x: auto;
+  }
+  .app-menus button {
+    padding: 8px 7px;
+    font-size: 14px;
+  }
+  .mode {
+    display: none;
+  }
+}
+#app .app-menu.command-menu > button {
+  display: flex;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  margin: 0;
+}
+#app .app-menu.command-menu > button:hover {
+  background: #353535;
+}
