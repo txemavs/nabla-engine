@@ -69,3 +69,16 @@ sockets. It adds no shadow lights, particles or offscreen render passes. Exhaust
 fades with flight mode and varies with speed. A shared Web Audio turbine graph starts
 only after user interaction, attenuates with distance and inside the cabin, and mutes
 when the page is hidden or play stops. The footer sound toggle persists locally.
+
+## Stable local shadows
+
+The sun uses one fixed-size orthographic shadow map centered on the player. Its
+absolute light-space center is snapped to whole shadow texels before render-origin
+rebasing, preserving the grid during small movements and distant travel. Resolution
+settings change the texel size rather than the coverage. PCF radius is zero: hardware
+bilinear comparison remains, without the screen-pixel-dependent rotated sampling
+pattern used by the installed Three.js filter. Edges are simpler and less noisy.
+
+Only the main scene requests a shadow update. Mirrors and portal views reuse the
+last completed local map rather than rendering it repeatedly. This deliberately
+prioritizes local shadows; distant portal destinations do not get another shadow map.

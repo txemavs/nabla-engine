@@ -1,3 +1,4 @@
+import { stabilizeSunShadow } from './stable-shadows.js'
 import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
@@ -137,6 +138,8 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
 renderer.shadowMap.enabled = performanceSettings.shadows > 0
 renderer.shadowMap.type = THREE.PCFShadowMap
+// Refresh once for the main view; auxiliary cameras reuse that map.
+renderer.shadowMap.autoUpdate = false
 renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.35
 viewport.prepend(renderer.domElement)
@@ -160,9 +163,15 @@ sun.shadow.camera.left = -55
 sun.shadow.camera.right = 55
 sun.shadow.camera.top = 55
 sun.shadow.camera.bottom = -55
-sun.shadow.camera.far = 150
-sun.shadow.normalBias = 0.035
-scene.add(sun)
+sun.shadow.camera.far = 360
+sun.shadow.normalBias = 0.04
+sun.shadow.bias = -0.00015
+// Radius zero retains hardware bilinear PCF without screen-space rotated sampling.
+sun.shadow.radius = 0
+sun.shadow.intensity = 0.8
+const shadowDirection = new THREE.Vector3(-25, 45, 25).normalize()
+const shadowFocus = new THREE.Vector3()
+scene.add(sun, sun.target)
 const grid = new THREE.GridHelper(100, 100, '#9eb9ae', '#829b93')
 grid.position.y = 0.035
 ;(grid.material as THREE.Material).opacity = 0.18
@@ -1568,7 +1577,7 @@ function frame(now: number): void {
     hemisphere.intensity = 0.16 + 2.34 * air.day
     scene.environmentIntensity = 0.025 + 0.375 * air.day
     const lightDirection = air.day > 0.05 ? geography.sunDirection : geography.moonDirection
-    sun.position.copy(lightDirection).multiplyScalar(65)
+    shadowDirection.copy(lightDirection)
     sun.intensity = air.day > 0.05 ? 3.2 * air.day : 0.22
     sun.color.set(air.day > 0.05 ? '#fff0d8' : '#b8ccff')
     renderer.domElement.dataset.skyPhase =
@@ -1595,7 +1604,8 @@ function frame(now: number): void {
     camera.position,
     !!view.document.geography && geography.atmosphere.day < 0.15,
   )
-  sun.castShadow = height < 500
+  stabilizeSunShadow(sun, shadowFocus.fromArray(position), renderOrigin, shadowDirection)
+  sun.castShadow = performanceSettings.shadows > 0 && height < 500
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false
@@ -1646,6 +1656,7 @@ function frame(now: number): void {
       renderer.clearDepth()
     }
     portalControls.prepare(camera)
+    renderer.shadowMap.needsUpdate = sun.castShadow
     renderer.render(scene, camera)
     portalControls.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
