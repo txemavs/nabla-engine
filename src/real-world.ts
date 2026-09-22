@@ -15,7 +15,14 @@ import { validateSolid, type SolidGeometry } from './solid.js'
 import { drapeRoad } from './draped-road.js'
 import { treeSprite } from './vegetation.js'
 import { buildingRoofWithFaces } from './building-roof.js'
-import { classifySurface, isLandcoverFeature, isWaterFeature, SURFACE_COLORS } from './landcover.js'
+import {
+  classifySurface,
+  isLandcoverFeature,
+  isWaterFeature,
+  isWaterwayCenterline,
+  getWaterwayWidth,
+  SURFACE_COLORS,
+} from './landcover.js'
 
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 export interface MapFeature {
@@ -284,6 +291,28 @@ export function createRealWorld(
         e.parentId = isWater ? groups[4] : groups[3]
         e.source = source(f)
         e.landcover = { surface, isWater }
+        entities.push(e)
+      }
+    } else if (isWaterwayCenterline(tags)) {
+      // Fallback: render river/stream centerlines as extruded water ribbons
+      // when no area polygon exists. Width uses OSM width tag or type defaults.
+      const width = getWaterwayWidth(tags)
+      const paths: Vec3Tuple[][] = []
+      for (const ring of f.rings) {
+        const points = ring.coordinates.map(project)
+        for (let i = 1; i < points.length; i++) {
+          const segment = clipRoadSegment(points[i - 1], points[i], half, depth)
+          if (segment) paths.push(segment)
+        }
+      }
+      if (paths.length) {
+        const e = createEntity('osm-' + f.id.replace('/', '-') + '-waterway' + suffix, 'group')
+        e.name = tags.name ?? `${tags.waterway} · ${f.id} (centerline)`
+        e.road = { paths, width, terrainId: terrain.id }
+        e.color = SURFACE_COLORS.water
+        e.parentId = groups[4]
+        e.source = source(f)
+        e.landcover = { surface: 'water', isWater: true }
         entities.push(e)
       }
     }
