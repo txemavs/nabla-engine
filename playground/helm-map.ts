@@ -8,6 +8,7 @@ export class HelmMap {
   constructor(
     readonly canvas: HTMLCanvasElement,
     private readonly clean = false,
+    private readonly zoom = 1,
   ) {
     canvas.width = 580
     canvas.height = clean ? 384 : 230
@@ -34,7 +35,7 @@ export class HelmMap {
         })
     }
     const ctx = this.canvas.getContext('2d')!
-    const scale = 0.23,
+    const scale = 0.23 * this.zoom,
       cx = 290,
       cy = this.canvas.height / 2
     ctx.fillStyle = '#07172c'

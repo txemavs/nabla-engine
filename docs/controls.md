@@ -303,6 +303,7 @@ geometry damage. Sprite targets retain their existing hit/respawn behavior.
 The A3 driver's eye anchor is 15 cm below and 26 cm forward of the seat reference
 (5 cm lower than the previous cockpit). The instrument cluster has a white digital
 speed readout in km/h. The original navigation display carries a blue local road
-chart without labels. It reuses the carrier chart at 4 Hz through a canvas texture,
+chart without labels, at 4× the carrier chart zoom (one quarter of the distance
+across each axis). Speed digits use a compact 50 px canvas font. It reuses the carrier chart at 4 Hz through a canvas texture,
 without an additional scene camera or network requests. No-road scenes retain the
 blue grid and vehicle marker.

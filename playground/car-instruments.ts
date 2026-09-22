@@ -6,7 +6,7 @@ import { HelmMap } from './helm-map.js'
 export class CarInstruments {
   private readonly speedCanvas = document.createElement('canvas')
   private readonly mapCanvas = document.createElement('canvas')
-  private readonly chart = new HelmMap(this.mapCanvas, true)
+  private readonly chart = new HelmMap(this.mapCanvas, true, 4)
   private readonly speedTexture = new THREE.CanvasTexture(this.speedCanvas)
   private readonly mapTexture = new THREE.CanvasTexture(this.mapCanvas)
   private lastSpeed = -1
@@ -66,7 +66,7 @@ export class CarInstruments {
       ctx.fillStyle = '#ffffff'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.font = '600 100px sans-serif'
+      ctx.font = '600 50px sans-serif'
       ctx.fillText(String(speed), 128, 67)
       this.speedTexture.needsUpdate = true
     }
