@@ -71,7 +71,8 @@ test('loads cached neighboring terrain during driving and preserves it when savi
 test('reports a provider failure and stopping cancels the streaming session', async ({ page }) => {
   await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) =>
     route.fulfill({
-      status: 503,
+      // A permanent failure isolates scheduler backoff; transient HTTP retries have unit coverage.
+      status: 400,
       body: 'Unavailable',
       headers: { 'access-control-allow-origin': '*' },
     }),
@@ -82,8 +83,16 @@ test('reports a provider failure and stopping cancels the streaming session', as
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
     timeout: 30000,
   })
+  await page.evaluate(() => {
+    const status = document.querySelector('#stream-status')!
+    new MutationObserver(() => {
+      if (status.textContent?.includes('reintento en 60 s'))
+        status.setAttribute('data-saw-failure', 'true')
+    }).observe(status, { childList: true, subtree: true, characterData: true })
+  })
   await page.locator('#play').click()
-  await expect(page.locator('#stream-status')).toContainText('reintento en 60 s', {
+  // Another wanted tile can immediately replace the transient status text.
+  await expect(page.locator('#stream-status')).toHaveAttribute('data-saw-failure', 'true', {
     timeout: 15000,
   })
   await page.locator('#play').click()
