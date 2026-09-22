@@ -248,13 +248,13 @@ This JSON is cached in browser Cache Storage (`nabla-world-v1`) for 30 days.
    - Extracts buildings/roads/trees using osmium or similar
    - Fetches elevation from Esri (can be parallelized, no rate limit for bulk)
    - Outputs one JSON file per zone: `zones/43.3/-1.8/0_0.json`
-3. Serve via nginx/CDN
+3. Serve via nginx/CDN from chained.world
 4. Client checks static endpoint before falling back to live Overpass
 
 **Client changes:**
 ```typescript
 // playground/world-provider.ts
-const STATIC_ZONES = import.meta.env.VITE_STATIC_ZONES_URL  // e.g., https://chines.pol/nabla-zones
+const STATIC_ZONES = import.meta.env.VITE_STATIC_ZONES_URL  // e.g., https://chained.world/nabla-zones
 if (STATIC_ZONES) {
   const staticUrl = `${STATIC_ZONES}/${origin.latitude.toFixed(1)}/${origin.longitude.toFixed(1)}/${key}.json`
   const response = await fetch(staticUrl)
@@ -286,7 +286,7 @@ if (STATIC_ZONES) {
 - Outputs standard MVT tiles at web mercator zoom levels
 - Can embed derived fields: `height`, `minHeight`, `levels`, `roofShape`, `color`, `material`
 
-**Process for chines.pol:**
+**Process for chained.world:**
 ```bash
 # Download regional extract
 wget https://download.geofabrik.de/europe/spain-latest.osm.pbf
@@ -297,7 +297,7 @@ java -jar planetiler.jar \
   --output=spain-tiles.mbtiles \
   --profile=nabla-buildings
 
-# Serve via tileserver-gl or nginx with pmtiles
+# Serve via tileserver-gl or nginx with pmtiles on chained.world
 ```
 
 **Client changes:**
@@ -358,7 +358,7 @@ export async function loadVectorTile(z: number, x: number, y: number): Promise<M
 **Concept:** Use PMTiles (single-file tile archive) for buildings, pre-bake elevation grids.
 
 ```
-chines.pol/
+chained.world/
 ├── spain-buildings.pmtiles     # Planetiler output, served via range requests
 ├── elevation/
 │   ├── 12/1499/2027.lerc      # Pre-fetched Esri tiles
@@ -380,13 +380,13 @@ Client loads PMTiles directly in browser (no tile server needed), combines with 
 1. **Immediate (done):** Parallel loading + player prioritization
 2. **Short-term:** Option A for Irun region
    - Pre-bake zone JSON for 50×50 km around Irun
-   - Serve from chines.pol as static files
+   - Serve from chained.world as static files
    - Zero client changes beyond URL config
 3. **Medium-term:** Option C for Spain/Europe
-   - Run Planetiler for country extracts
+   - Run Planetiler for country extracts on chained.world
    - Serve PMTiles + pre-baked elevation
    - Refactor client to read MVT
-4. **Never:** Depend on tiles.streets.gl — always self-host
+4. **Never:** Depend on tiles.streets.gl — always self-host on chained.world
 
 ### Pre-Baking Script Sketch (Option A)
 
