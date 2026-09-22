@@ -97,10 +97,19 @@ export interface WorldStreamHost {
   replace(remove: Set<string>, add: Entity[]): void
   status(message: string): void
 }
+/** Keys for the 3×3 neighborhood around position — these should never be cancelled. */
+export function immediateNeighborhood(position: Vec3Tuple): Set<string> {
+  const [cx, cz] = worldTileAt(position)
+  const keys = new Set<string>()
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dz = -1; dz <= 1; dz++) keys.add(worldTileKey(cx + dx, cz + dz))
+  return keys
+}
+
 /**
  * Parallel zone streaming with player-zone prioritization.
- * Up to 3 concurrent requests; the player's current zone jumps to front of queue.
- * Edited/saved zones stay pinned; untouched far zones are evicted.
+ * Up to 3 concurrent requests; the player's current zone and immediate neighbors
+ * are never cancelled. Edited/saved zones stay pinned; untouched far zones are evicted.
  */
 export class WorldStream {
   private readonly resident = new Map<
@@ -108,6 +117,7 @@ export class WorldStream {
     { baseline: string; pinned: boolean; verify?: boolean }
   >()
   private readonly failed = new Map<string, number>()
+  private readonly retryCount = new Map<string, number>()
   private wanted: string[] = []
   private position: Vec3Tuple = [0, 0, 0]
   private protectedPositions: Vec3Tuple[] = []
@@ -145,20 +155,24 @@ export class WorldStream {
       return
     }
     this.wanted = wantedWorldTiles(position, velocity)
+    const neighborhood = immediateNeighborhood(position)
     const playerKey = worldTileKey(...worldTileAt(position))
-    const playerMissing = !this.resident.has(playerKey) && !this.inFlight.has(playerKey)
-    if (playerMissing && this.inFlight.size >= this.maxConcurrent) {
-      const farthest = [...this.inFlight.entries()].sort(
+    const neighborsMissing = [...neighborhood].filter(
+      (k) => !this.resident.has(k) && !this.inFlight.has(k),
+    )
+    if (neighborsMissing.length && this.inFlight.size >= this.maxConcurrent) {
+      const cancellable = [...this.inFlight.entries()].filter(([k]) => !neighborhood.has(k))
+      const farthest = cancellable.sort(
         (a, b) => tileDistance(b[0], position) - tileDistance(a[0], position),
       )[0]
-      if (farthest && tileDistance(farthest[0], position) > tileDistance(playerKey, position)) {
+      if (farthest) {
         farthest[1].abort()
         this.inFlight.delete(farthest[0])
       }
     }
     while (this.inFlight.size < this.maxConcurrent && now >= this.nextSlot) {
       const area = this.budgetArea()
-      const prioritized = playerMissing ? [playerKey, ...this.wanted] : this.wanted
+      const prioritized = [...neighborsMissing, ...this.wanted]
       const key = prioritized.find(
         (k) =>
           !this.resident.has(k) &&
@@ -167,18 +181,39 @@ export class WorldStream {
           this.limited.get(k) !== area,
       )
       if (!key) break
-      this.startLoad(key, now)
+      this.startLoad(key, now, neighborhood.has(key))
+    }
+    this.updateStatus(neighborhood)
+  }
+  private updateStatus(neighborhood: Set<string>): void {
+    const loading = this.inFlight.size
+    const pending = this.wanted.filter(
+      (k) => !this.resident.has(k) && !this.inFlight.has(k),
+    ).length
+    const neighborLoading = [...this.inFlight.keys()].filter((k) => neighborhood.has(k)).length
+    const neighborPending = [...neighborhood].filter(
+      (k) => !this.resident.has(k) && !this.inFlight.has(k),
+    ).length
+    if (loading === 0 && pending === 0) {
+      this.host.status(`Mapa conectado · ${this.resident.size} zonas disponibles`)
+    } else if (neighborLoading > 0 || neighborPending > 0) {
+      const failedNearby = [...neighborhood].filter((k) => this.failed.has(k)).length
+      if (failedNearby > 0) {
+        this.host.status(
+          `Cargando terreno cercano · ${failedNearby} zona(s) pendiente(s) de reintento`,
+        )
+      } else {
+        this.host.status(
+          `Cargando terreno cercano · ${neighborLoading + neighborPending} zona(s) inmediata(s)`,
+        )
+      }
+    } else if (loading > 0) {
+      this.host.status(`Anticipando recorrido · ${loading} zona(s) cargando, ${pending} pendientes`)
     }
   }
-  private startLoad(key: string, now: number): void {
+  private startLoad(key: string, now: number, isNeighbor = false): void {
     const controller = new AbortController()
     this.inFlight.set(key, controller)
-    const loading = this.inFlight.size
-    const status =
-      loading > 1
-        ? `Cargando ${loading} zonas · anticipando el recorrido…`
-        : `Cargando zona ${key} · anticipando el recorrido…`
-    this.host.status(status)
     void this.host
       .load(key, controller.signal)
       .then(async (entities) => {
@@ -235,14 +270,20 @@ export class WorldStream {
           pinned: false,
         })
         this.failed.delete(key)
+        this.retryCount.delete(key)
         this.evict()
-        this.host.status(`Mapa conectado · ${this.resident.size} zonas disponibles`)
       })
       .catch((error: unknown) => {
         if (this.disposed || controller.signal.aborted) return
-        this.failed.set(key, Date.now() + 60000)
+        const retries = (this.retryCount.get(key) ?? 0) + 1
+        this.retryCount.set(key, retries)
+        const backoff = isNeighbor
+          ? Math.min(5000, 1000 * retries)
+          : Math.min(60000, 10000 * retries)
+        this.failed.set(key, Date.now() + backoff)
+        const seconds = Math.round(backoff / 1000)
         this.host.status(
-          `Zona ${key} pendiente · ${error instanceof Error ? error.message : 'sin conexión'} · reintento en 60 s`,
+          `Zona ${key} pendiente · ${error instanceof Error ? error.message : 'sin conexión'} · reintento en ${seconds} s`,
         )
       })
       .finally(() => {

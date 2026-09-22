@@ -218,15 +218,19 @@ and render entities are appended without recreating the simulation, resetting
 vehicles, or replacing the existing scene view.
 
 - Up to three zone requests run in parallel, with a 100 ms scheduling interval
-  between request slots. The player's current zone is always prioritized: if the
-  player crosses into unloaded terrain, that zone jumps to the front of the queue
-  and may preempt a distant prefetch request. A failed zone backs off for 60 seconds
-  without freezing the whole scheduler. The worker still paces uncached public
-  Overpass requests at 30 seconds and cools down failed OSM requests for 60 seconds;
-  local cache hits are checked before that wait. The private server retains its
-  upstream pacing. Obsolete requests are cancelled when the actor moves beyond their
-  desired neighborhood. Incomplete responses are never installed as empty ground.
+  between request slots. The player's **immediate 3×3 neighborhood** is always
+  prioritized and never cancelled: if the player crosses into unloaded terrain,
+  those nine zones jump to the front of the queue and may preempt distant prefetch.
+  Failed zones use progressive backoff: 1-5 seconds for nearby zones (fast retry
+  when the player needs them), 10-60 seconds for distant prefetch. The worker still
+  paces uncached public Overpass requests at 30 seconds and cools down failed OSM
+  requests for 60 seconds; local cache hits are checked before that wait. The private
+  server retains its upstream pacing. Obsolete requests are cancelled when the actor
+  moves beyond their desired neighborhood, except for the immediate neighborhood which
+  is always protected. Incomplete responses are never installed as empty ground.
   Stopping or replacing the scene cancels outstanding work.
+- The status bar shows loading progress: how many zones are loading, how many are
+  pending, and whether any nearby zones are waiting for retry.
 - `VITE_WORLD_OVERPASS_URL` can select a self-hosted/contracted Overpass endpoint
   at build time. By default the provider uses public Overpass via POST, not the OSM editing API
   for traversal. It is a development provider, not a guaranteed production tile

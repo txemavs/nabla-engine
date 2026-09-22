@@ -58,6 +58,31 @@ the Vite proxy is development-only.
 - Public Overpass may still fail for a region that has never been cached. A prepared
   regional extract/tile archive is the next step for guaranteed regional coverage.
 
+## Pre-filling the cache
+
+The `prefill.py` script warms the cache for a region so users hit cache instead
+of live Overpass. Run this on chained.world where the cache service is deployed.
+
+```sh
+# Default: 11×11 grid around Irun Ventas (121 zones, ~40 km coverage)
+python3 prefill.py --cache-url http://127.0.0.1:8080
+
+# Larger region: 21×21 grid (441 zones, ~50 km coverage)
+python3 prefill.py --radius 10
+
+# Custom location (Madrid)
+python3 prefill.py --lat 40.4168 --lon -3.7038 --radius 5
+
+# Dry run to see what would be fetched
+python3 prefill.py --dry-run
+```
+
+The script respects the cache's 30-second Overpass pacing. A cold 11×11 grid takes
+about 60 minutes to fill; subsequent runs are instant cache hits. Run periodically
+(e.g., weekly cron) to keep the cache fresh.
+
+**Storage estimate:** ~50-200 KB per zone × 121 zones ≈ 6-24 MB for Irun.
+
 ## Tests
 
 ```sh
