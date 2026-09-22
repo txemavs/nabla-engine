@@ -130,7 +130,7 @@ it('evicts clean distant zones but retains authored changes during a long journe
   let first = ''
   const stream = new WorldStream({
     document: () => editor.document,
-    load: async (key) => {
+    load: (key) => {
       first ||= key
       const [x, z] = key.split('_').map(Number)
       const ground = terrain(key, x * 1200)
@@ -138,17 +138,20 @@ it('evicts clean distant zones but retains authored changes during a long journe
       const group = createEntity(`world-buildings-${key}`, 'group')
       const building = createEntity(`building-${key}`, 'box')
       building.parentId = group.id
-      return [ground, group, building]
+      return Promise.resolve([ground, group, building])
     },
     replace: (r, a) => editor.replaceMapEntities(r, a),
     status: () => undefined,
   })
-  stream.update([0, 0, 0], [0, 0, 0])
-  await new Promise((r) => setTimeout(r, 10))
+  const flush = () => new Promise((r) => setTimeout(r, 0))
+  let time = Date.now()
+  stream.update([0, 0, 0], [0, 0, 0], [], time)
+  await flush()
   editor.update(`building-${first}`, { color: '#123456' })
-  for (let i = 1; i < 16; i++) {
-    stream.update([i * 1200, 0, 0], [0, 0, 0], [], Date.now() + i * 10000)
-    await new Promise((r) => setTimeout(r, 10))
+  for (let i = 1; i <= 12; i++) {
+    time += 200
+    stream.update([i * 1200, 0, 0], [0, 0, 0], [], time)
+    await flush()
   }
   expect(editor.document.entities.find((e) => e.id === `building-${first}`)!.color).toBe('#123456')
   expect(editor.document.entities.filter((e) => e.terrain).length).toBeLessThanOrEqual(12)
