@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Preserve generated map fingerprints across saves so unchanged sectors remain evictable; verify legacy saved zones against their source before reclaiming them.
+- Let moving-world downloads finish warming the cache instead of repeatedly cancelling them in fast flight; retain cancellation on scene changes.
+- Retry transient OSM HTTP failures once and use consistent origin-sector identifiers when reloading the starting zone.
+
 - Keep selection bounds in object-local axes so the outline rotates with the selected entity instead of changing size with its world orientation.
 
 - Stabilize side-mirror captures against head rotation by fitting the whole lens from the eye position, independently of the viewport crop.

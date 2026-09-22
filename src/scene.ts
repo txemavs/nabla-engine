@@ -74,6 +74,10 @@ const entitySchema = z
     id: z.string().min(1).max(128),
     name: z.string().min(1).max(100),
     parentId: z.string().nullable(),
+    mapBaseline: z
+      .string()
+      .regex(/^[0-9a-f]{16}$/)
+      .optional(),
     kind: z.enum(['group', 'box', 'vehicle', 'spawn', 'solid', 'terrain']),
     transform,
     size,

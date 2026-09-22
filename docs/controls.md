@@ -279,7 +279,7 @@ Latitude is limited to ±85 degrees for the map projection.
 A trip stops play and replaces the editor scene only after data generation succeeds.
 Use **Deshacer** to return to the previous scene, or save/export it for durable storage.
 The loading status supports cancellation and retry; failures preserve the old document.
-New destinations may take up to two minutes depending on the upstream provider.
+Cold destinations can take several minutes depending on the upstream provider. A temporary HTTP 429/502/503/504 response is retried once; cancellation remains immediate.
 The new district starts streaming its neighbors when play resumes. City presets are
 coordinate shortcuts and do not ship predownloaded city models. No geocoding service
 or additional map provider is used.
@@ -321,3 +321,17 @@ on-foot and editor views do not render mirror passes. Hidden browser tabs skip t
 Mirror captures aim from the eye position at the complete lens. Turning the head
 changes visibility, not the captured perspective; translating the eye or moving
 the vehicle still changes the reflected view.
+
+### Continuous map residency
+
+Generated terrain carries a fingerprint of its original map entities. Saving or
+reopening a scene no longer pins every downloaded sector: distant unchanged zones
+can be evicted to make room, while edited zones and sectors near vehicles/portals
+remain protected. Legacy saved zones without fingerprints are compared with their
+generated source before they can be evicted; failed comparisons keep them intact.
+
+Moving does not cancel an in-flight sector download. It finishes populating the
+cache, and is installed only if still wanted; the next request uses the latest
+position. Stopping/replacing the scene still cancels its loader. This prevents fast
+flight from repeatedly aborting cold sectors, but does not guarantee that public
+map providers can deliver unseen terrain ahead of a vehicle at 1000 km/h.

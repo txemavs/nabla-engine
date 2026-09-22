@@ -132,3 +132,12 @@ it('isolates a real degenerate Madrid building instead of rejecting its entire t
   expect(doc.entities.find((e) => e.id === 'world-buildings')!.name).toContain('1 omitidos')
   expect(() => parseScene(doc)).not.toThrow()
 })
+
+it('uses the same origin tile ids and fingerprint when revisiting the initial zone', () => {
+  const first = createRealWorld(data)
+  const revisit = createRealWorld(data, { offset: [0, 0], tileId: '0_0' })
+  expect(revisit.entities.map((e) => e.id)).toEqual(first.entities.map((e) => e.id))
+  expect(revisit.entities.find((e) => e.terrain)!.mapBaseline).toBe(
+    first.entities.find((e) => e.terrain)!.mapBaseline,
+  )
+})

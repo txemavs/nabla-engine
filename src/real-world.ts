@@ -1,3 +1,4 @@
+import { mapFingerprint, mapTileEntities } from './world-stream.js'
 import { ShapeUtils, Vector2, Vector3 } from 'three'
 import { geoToLocal, type GeoPoint } from './geography.js'
 import {
@@ -39,7 +40,7 @@ export function createRealWorld(
   options: { offset?: [number, number]; tileId?: string } = {},
 ): SceneDocument {
   const [ox, oz] = options.offset ?? [0, 0]
-  const suffix = options.tileId ? `-${options.tileId}` : ''
+  const suffix = options.tileId && options.tileId !== '0_0' ? `-${options.tileId}` : ''
   const entities: Entity[] = [],
     t = data.terrain,
     half = ((t.columns - 1) * t.spacing) / 2,
@@ -227,13 +228,17 @@ export function createRealWorld(
   if (omitted)
     usable.find((e) => e.id === groups[0])!.name =
       `Edificios OSM · ${omitted} omitidos por geometría inválida`
-  return parseScene({
+  const doc = parseScene({
     version: 1,
     name: data.name,
     geography: { ...data.origin, imagery: 'offline' },
     sky: { mode: 'fixed', at: '2026-09-21T12:00:00.000Z' },
     entities: usable,
   })
+  doc.entities.find((e) => e.id === terrain.id)!.mapBaseline = mapFingerprint(
+    mapTileEntities(doc, options.tileId ?? '0_0'),
+  )
+  return doc
 }
 
 /** Clip centre lines at shared tile edges; the draper clips their full width. */

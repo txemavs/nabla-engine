@@ -730,7 +730,7 @@ async function travelTo(): Promise<void> {
   for (const id of ['save', 'export', 'play', 'travel-go']) $<HTMLButtonElement>(id).disabled = true
   $('travel-cancel').hidden = false
   $('world-loading').hidden = false
-  const message = `Cargando ${name} · terreno y edificios. Una zona nueva puede tardar hasta dos minutos…`
+  const message = `Cargando ${name} · terreno y edificios. Una zona nueva puede tardar varios minutos; los fallos temporales se reintentan…`
   $('world-loading').textContent = message
   $('travel-status').textContent = message
   try {

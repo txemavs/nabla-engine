@@ -153,10 +153,11 @@ test('loads terrain around a player twelve kilometres away from the starting dis
     buffer: Buffer.from(JSON.stringify(doc)),
   })
   await page.locator('#play').click()
-  await expect(page.locator('[data-entity-id="world-terrain-10_0"]')).toHaveCount(1, {
-    timeout: 30000,
-  })
   await expect(page.locator('#stream-status')).toContainText('zonas disponibles', {
     timeout: 30000,
   })
+  // The editor tree intentionally stops rebuilding during play. Inspect the
+  // actual installed sector after returning to edit mode, not the frozen tree.
+  await page.locator('#play').click()
+  await expect(page.locator('[data-entity-id="world-terrain-10_0"]')).toHaveCount(1)
 })
