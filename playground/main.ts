@@ -1,7 +1,8 @@
 import { SeaWater } from './water.js'
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
-import { readPerformance } from './performance.js'
+import { readPerformance, shadowTiers } from './performance.js'
+import { ShadowManager } from './csm.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { WorldStream } from '../src/world-stream.js'
@@ -132,7 +133,7 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
 renderer.shadowMap.enabled = performanceSettings.shadows > 0
-renderer.shadowMap.type = THREE.PCFShadowMap
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.35
 viewport.prepend(renderer.domElement)
@@ -150,15 +151,9 @@ const hemisphere = new THREE.HemisphereLight('#edf4ff', '#657a99', 2.5)
 scene.add(hemisphere)
 const sun = new THREE.DirectionalLight('#ffe1b1', 3.2)
 sun.position.set(-25, 45, 25)
-sun.castShadow = true
-sun.shadow.mapSize.set(performanceSettings.shadows || 512, performanceSettings.shadows || 512)
-sun.shadow.camera.left = -55
-sun.shadow.camera.right = 55
-sun.shadow.camera.top = 55
-sun.shadow.camera.bottom = -55
-sun.shadow.camera.far = 150
-sun.shadow.normalBias = 0.035
+sun.castShadow = false
 scene.add(sun)
+
 const grid = new THREE.GridHelper(100, 100, '#9eb9ae', '#829b93')
 grid.position.y = 0.035
 ;(grid.material as THREE.Material).opacity = 0.18
@@ -166,6 +161,20 @@ grid.position.y = 0.035
 scene.add(grid)
 const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 250)
 camera.position.set(10, 5, 12)
+
+const shadowManager = new ShadowManager()
+const sunDirection = new THREE.Vector3(-1, -1.8, -1).normalize()
+const shadowTier = shadowTiers[performanceSettings.shadows]
+if (shadowTier) {
+  shadowManager.init({
+    camera,
+    scene,
+    lightDirection: sunDirection,
+    lightIntensity: 3.2,
+    tier: shadowTier,
+  })
+}
+
 const orbit = new OrbitControls(camera, renderer.domElement)
 orbit.target.set(4, 0.6, 5)
 orbit.enableDamping = true
@@ -188,6 +197,7 @@ scene.add(outline)
 let lastWorldInstallMs = 0
 let water: SeaWater | undefined
 let view = new SceneView(editor.document)
+view.setupMaterials((material) => shadowManager.setupMaterial(material))
 scene.add(view.root)
 let geography = new GeographicView(
   editor.document,
@@ -206,6 +216,7 @@ function watchAssets(current: SceneView): void {
     .then(() => {
       if (view === current) {
         renderer.domElement.dataset.assets = 'loaded'
+        current.setupMaterials((material) => shadowManager.setupMaterial(material))
         needsRender = true
       }
     })
@@ -269,6 +280,7 @@ function rebuild(): void {
   }
   view.dispose()
   view = new SceneView(editor.document)
+  view.setupMaterials((material) => shadowManager.setupMaterial(material))
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
   watchAssets(view)
@@ -979,12 +991,13 @@ for (const [id, key] of [
     renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
     renderer.setSize(viewport.clientWidth, viewport.clientHeight)
     renderer.shadowMap.enabled = performanceSettings.shadows > 0
-    const size = performanceSettings.shadows || 512
-    if (sun.shadow.mapSize.x !== size) {
-      sun.shadow.map?.dispose()
-      sun.shadow.map = null
-      sun.shadow.mapSize.set(size, size)
-    }
+    shadowManager.reconfigure(
+      performanceSettings.shadows,
+      camera,
+      scene,
+      sunDirection,
+      sun.intensity,
+    )
     needsRender = true
   }
 }
@@ -1547,6 +1560,10 @@ function frame(now: number): void {
     sun.position.copy(lightDirection).multiplyScalar(65)
     sun.intensity = air.day > 0.05 ? 3.2 * air.day : 0.22
     sun.color.set(air.day > 0.05 ? '#fff0d8' : '#b8ccff')
+    sunDirection.copy(lightDirection).negate()
+    shadowManager.setLightDirection(sunDirection)
+    shadowManager.setLightIntensity(sun.intensity)
+    shadowManager.setLightColor(sun.color)
     renderer.domElement.dataset.skyPhase =
       air.day > 0.8 ? 'day' : air.day < 0.1 ? 'night' : 'twilight'
     $('sky-status').textContent =
@@ -1571,7 +1588,8 @@ function frame(now: number): void {
     camera.position,
     !!view.document.geography && geography.atmosphere.day < 0.15,
   )
-  sun.castShadow = height < 500
+  const shadowsActive = height < 500 && performanceSettings.shadows > 0
+  for (const light of shadowManager.lights) light.castShadow = shadowsActive
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false
@@ -1621,6 +1639,7 @@ function frame(now: number): void {
       renderer.autoClear = false
       renderer.clearDepth()
     }
+    shadowManager.update()
     portalControls.prepare(camera)
     renderer.render(scene, camera)
     portalControls.finish()

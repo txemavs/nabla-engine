@@ -622,6 +622,19 @@ export class SceneView {
     ))
       mirrors.render(renderer, scene, camera, id === vehicleId, now)
   }
+  /** Traverse all materials and call the callback for CSM setup. */
+  setupMaterials(callback: (material: THREE.Material) => void): void {
+    this.root.traverse((object) => {
+      if (object instanceof THREE.Mesh || object instanceof THREE.SkinnedMesh) {
+        const materials = Array.isArray(object.material) ? object.material : [object.material]
+        for (const material of materials) {
+          if (material instanceof THREE.MeshStandardMaterial) {
+            callback(material)
+          }
+        }
+      }
+    })
+  }
   dispose(): void {
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()
