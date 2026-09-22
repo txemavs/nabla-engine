@@ -1,19 +1,19 @@
 # Proposal: Stargates and CSS interiors
 
-Status: fixed WebGL gates and the carrier's two hosted gates are implemented.
+Status: fixed WebGL gates and the carrier's hosted stern gate are implemented.
 CSS interiors and general cross-seam contacts remain future work.
 
 ## Current playable slice
 
 **+ Stargates** adds a linked pair of road gates without replacing the scene.
-The original container GLB already has bow and stern frames. Nabla installs two
-closed mouths into those frames when opening an older container scene; it does
-not duplicate their visible frames or overwrite authored entities. Save/export
+The original container GLB already has bow and stern frames. Nabla installs one closed stern mouth and a physical bow window. Older reference
+carrier scenes retire bow mouths and disconnect their partners. Existing stern
+links and placements are preserved. Save/export
 persists the added mouths and their authored links through the scene workflow.
 
 Independent gates have one thin landscape tablet centred on their black rear
 panel. Approach within one metre and press G to release the mouse. Carrier gate
-controls live on the left/right screens of the existing helm, with speed,
+controls live on the right screen of the existing helm, with speed,
 altitude and the animated garage-door control in the centre. A stern portal can
 open only after the garage door finishes closing; opening the door closes its
 connection first. See [helm and CSS controls](css-interior-prototype.md).
@@ -37,7 +37,7 @@ but retains a barrier. Open mode enables front-to-front traversal. The stern gat
 the visible door remains closed and its collision shape supplies a level floor
 apron until an actor centre crosses. Disconnecting restores the closed door
 collider; the helm button opens it with an animation. The front console and centre partition remain real obstacles:
-the stern is the tested car route, and the bow is accessible to the monitor.
+the stern is the car and monitor route; the bow glass blocks passage.
 
 Hosted frames and barriers are collision shapes of the existing carrier body,
 not duplicate kinematic bodies. Their world poses follow the simulated host,
@@ -67,8 +67,7 @@ landing before release. This is not yet the complete orbit-to-Earth scenario bel
 
 ## Intended experience
 
-The original black frame is a Stargate. The carrier has two independently linked
-mouths, at bow and stern, following Agency's current arrangement. Placement is
+The original black frame is a Stargate. The carrier has one stern mouth and an armoured bow window. Placement is
 editable data, so side-wall mouths can be authored too. An office inside the
 carrier can use live CSS 3D surfaces and HTML tools. Looking through an open gate
 shows the destination with correct head-relative perspective. Walking or driving

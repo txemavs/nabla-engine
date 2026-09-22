@@ -16,8 +16,8 @@ the mouse.
 
 ## Carrier helm
 
-The original three-screen console is reused: proa (bow) on the left, telemetry
-and control in the centre, and popa (stern) on the right. The central screen shows
+The original three-screen console is reused: flight/ground mode on the left,
+telemetry and control in the centre, and the sole stern portal on the right. The central screen shows
 actual speed in km/h and altitude in metres, a maximum flight speed selector
 (0, 100, 300, 600 or 1000 km/h), and a garage door button. Selecting a speed sets
 the assisted-flight target limit; it does not automatically apply throttle.
@@ -29,11 +29,29 @@ start play and approach or take the helm to operate it. Carrier mouths no longer
 have separate rear tablets. The former side-wall point-drawing demonstration is
 replaced by the helm.
 
-Above the controls, a 2.49 m wide screen shows a live exterior camera placed ahead
-of the nose, tilted down to show the terrain being overflown. Its 960 × 256 render
-target updates at up to 10 Hz while a viewer is within 20 m of the carrier. The
-feed hides monitor surfaces and uses non-recursive portal placeholders. It adds
-one scene render per update, and does not request separate remote-world detail.
+The desk carries a horizontal 2.43 × 0.54 m CSS touchscreen. Hold its buttons to
+climb, descend, yaw, move forward/back/sideways or brake. It accepts multiple
+pointers, so vertical/yaw and lateral controls can be used together. Movement
+requires the player to be piloting this carrier in flight mode. Releasing or
+cancelling a pointer, losing focus, changing pointer lock or leaving activation
+range clears held input. Keyboard and gamepad input remain available.
+
+The previous external nose-camera feed and its render target are removed. This
+screen uses native DOM and adds no extra WebGL scene render.
+
+The bow is now tinted armoured glass with a matching physical collider. Existing
+reference scenes retire hosted bow gates, close their remote connections and
+install the glass collider idempotently. The stern portal and garage interlock
+remain unchanged.
+
+## Interior finish
+
+`assets/world/room-skin.jpg` is the user's unchanged Agency texture atlas. Floor,
+ceiling and walls sample its panel regions through mesh UVs; the painted landscape
+region is not used as a fake window. Interior panels no longer emit light and
+have reduced environment reflections. They cast and receive shadows; only the
+lighting strips glow. Dark material tuning approximates reduced ambient light:
+the renderer still uses global hemispheric illumination, not room-based GI.
 
 ## Garage interlock
 
@@ -56,7 +74,7 @@ WebGL. CSS world and camera transforms use pixel units for native hit testing.
 Tablet content preserves 3D without overflow clipping, which would break button
 hit testing in Chromium. Opaque foreground geometry occludes the display.
 
-Only the main view gets live CSS. Portal textures and the nose camera see solid
+Only the main view gets live CSS. Portal textures see solid
 standby screens; they cannot capture DOM. CSS does not receive scene lighting,
 fog or shadows. Multiple overlapping CSS surfaces and transparent foreground
 objects still need further composition work. Keep browser zoom at 100%.

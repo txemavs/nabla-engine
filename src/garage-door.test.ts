@@ -35,7 +35,7 @@ it('requires a fully closed door on either end and disconnects before opening th
   expect(sim.portalState('stern').mode).toBe('closed')
   expect(sim.portalState('a').mode).toBe('closed')
   expect(sim.vehicleInfo('ship').rampMoving).toBe(true)
-  sim.configurePortal('bow', null, 'closed')
+  sim.configurePortal('b', null, 'closed')
   expect(() => sim.configurePortal('stern', 'a', 'open')).toThrow('Cierra')
   advance(sim)
   expect(sim.vehicleInfo('ship').rampAngle).toBeCloseTo(0)

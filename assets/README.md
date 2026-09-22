@@ -131,3 +131,9 @@ under Apache-2.0. The bundled license is [Lerc-Apache-2.0.txt](licenses/Lerc-Apa
 See [Esri LERC](https://github.com/Esri/lerc) for source and notices. Network OSM and
 Esri data retain the provider attribution described above; LERC's code license
 does not relicense the elevation data.
+
+### Carrier interior atlas
+
+`world/room-skin.jpg` was supplied by the repository owner from Agency
+(`agency-ui/src/assets/stage/room-skin.jpg`). It is copied unchanged. The demo
+samples its metal panel regions with UVs for the floor, ceiling and walls.

@@ -35,7 +35,8 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
 }
 export class SceneView {
   readonly helmScreens = new Map<string, THREE.Mesh>()
-  readonly noseScreens = new Map<string, THREE.Mesh>()
+  readonly touchScreens = new Map<string, THREE.Mesh>()
+  readonly flightScreens = new Map<string, THREE.Mesh>()
   readonly portalTablets = new Map<string, THREE.Mesh[]>()
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
@@ -265,7 +266,8 @@ export class SceneView {
           const interior = carrierInterior()
           group.add(interior.room)
           this.helmScreens.set(e.id, interior.screens[1])
-          this.noseScreens.set(e.id, interior.nose)
+          this.touchScreens.set(e.id, interior.touch)
+          this.flightScreens.set(e.id, interior.screens[0])
           for (const mouth of this.document.entities.filter((m) => m.parentId === e.id && m.portal))
             this.portalTablets.set(mouth.id, [interior.screens[mouth.portal!.clearsRamp ? 2 : 0]])
         }

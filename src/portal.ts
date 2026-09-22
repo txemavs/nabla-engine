@@ -67,17 +67,17 @@ export function createPortalPair(
   }))
 }
 
-/** Reuse the two measured GLB end frames; normals point into the carrier. */
-export function createCarrierPortals(hostId: string, bowId: string, sternId: string): Entity[] {
-  return [false, true].map((stern) => ({
-    ...createEntity(stern ? sternId : bowId, 'group', [0, 0.55, stern ? 5.05 : -5.05]),
-    name: stern ? 'Nave · popa' : 'Nave · proa',
-    parentId: hostId,
-    transform: {
-      position: [0, 0.55, stern ? 5.05 : -5.05],
-      rotation: rotationDegrees(0, stern ? 180 : 0, 0),
+/** The stern is the only portal; the bow is an armoured window.
+ * The legacy bow ID argument is retained for scene-authoring API compatibility. */
+export function createCarrierPortals(hostId: string, _bowId: string, sternId: string): Entity[] {
+  return [
+    {
+      ...createEntity(sternId, 'group', [0, 0.55, 5.05]),
+      name: 'Nave · popa',
+      parentId: hostId,
+      transform: { position: [0, 0.55, 5.05], rotation: rotationDegrees(0, 180, 0) },
+      size: [4.71, 2.91, 0.145],
+      portal: { pairId: null, mode: 'closed', clearsRamp: true },
     },
-    size: [4.71, 2.91, 0.145],
-    portal: { pairId: null, mode: 'closed' as const, clearsRamp: stern },
-  }))
+  ]
 }

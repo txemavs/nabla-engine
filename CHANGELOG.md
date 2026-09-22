@@ -3,7 +3,9 @@
 ## Unreleased
 
 - Centre one 8 mm landscape tablet on each independent portal rear; use black closed surfaces and dark rear panels.
-- Reuse the carrier helm for bow/stern portal controls, live speed/altitude and adjustable flight speed; add a bounded nose-camera feed.
+- Reuse the carrier helm for flight mode, stern portal controls, live speed/altitude and adjustable flight speed.
+- Replace the nose-camera feed with a horizontal CSS flight touchscreen; close the bow with armoured glass and physical collision.
+- Apply the original Agency room atlas to darker, non-emissive interior panels.
 - Animate the garage door and require complete closure before connecting its portal; opening the garage disconnects it first.
 
 - Replace floating portal controls with black, perspective-matched CSS tablets that activate within one metre and expose native destination/open/close controls.

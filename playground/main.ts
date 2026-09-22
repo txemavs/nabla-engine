@@ -1,4 +1,3 @@
-import { NoseCamera } from './nose-camera.js'
 import { readPerformance } from './performance.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
@@ -184,8 +183,6 @@ const outline = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color('#f2ce8a'
 scene.add(outline)
 let view = new SceneView(editor.document)
 scene.add(view.root)
-const noseCamera = new NoseCamera()
-noseCamera.bind(view)
 let geography = new GeographicView(
   editor.document,
   () => {
@@ -266,7 +263,6 @@ function rebuild(): void {
   }
   view.dispose()
   view = new SceneView(editor.document)
-  noseCamera.bind(view)
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
   watchAssets(view)
@@ -1148,21 +1144,26 @@ function currentInput(pad: Gamepad | null = null) {
   const analog = pad
     ? gamepadAxes(pad, flight)
     : { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
+  const touch = portalControls.flightInput()
   return {
     forward:
       (flight
         ? axis('ArrowUp', 'ArrowDown')
-        : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) + analog.forward,
+        : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) +
+      analog.forward +
+      touch.forward,
     right:
       (flight
         ? axis('ArrowRight', 'ArrowLeft')
-        : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')) + analog.right,
-    lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift,
-    turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn,
+        : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')) +
+      analog.right +
+      touch.right,
+    lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
+    turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
     yaw,
     sprint: keys.has('ShiftLeft') || keys.has('ShiftRight') || Boolean(pad?.buttons[10]?.pressed),
     jump: false,
-    brake: keys.has('Space') || analog.brake,
+    brake: keys.has('Space') || analog.brake || touch.brake,
   }
 }
 new ResizeObserver(() => {
@@ -1394,6 +1395,8 @@ function frame(now: number): void {
     camera,
     view.portalTablets,
     view.helmScreens,
+    view.touchScreens,
+    view.flightScreens,
     renderOrigin,
     cameraMode === 'cockpit',
   )
@@ -1468,19 +1471,6 @@ function frame(now: number): void {
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false
-    noseCamera.render(now, view, renderer, scene, camera, (remote) => {
-      view.limitDrawDistance(
-        remote.position.clone().add(renderOrigin),
-        performanceSettings.distance,
-        !!sim,
-        !!performanceSettings.buildings,
-      )
-      if (geography.enabled) {
-        geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
-        renderer.autoClear = false
-        renderer.clearDepth()
-      }
-    })
     renderPortals(view.portals, renderer, scene, camera, (remote) => {
       view.limitDrawDistance(
         remote.position.clone().add(renderOrigin),

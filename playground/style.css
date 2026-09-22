@@ -918,3 +918,33 @@ body.playing #footer-mode {
   font-size: 23px;
   padding: 8px;
 }
+
+.touch-console {
+  width: 2430px;
+  height: 540px;
+  padding: 30px 50px;
+  font-size: 38px;
+  touch-action: none;
+  user-select: none;
+  text-align: center;
+}
+.touch-console .touch-controls {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  width: 1450px;
+  gap: 18px;
+  margin: 25px auto 0;
+}
+.touch-console button {
+  min-height: 120px;
+  font-size: 34px;
+  border: 2px solid #395e79;
+  background: #142735;
+  color: #bfe2ff;
+}
+.touch-console button:active {
+  background: #356186;
+}
+.flight-console p {
+  font-size: 22px;
+}

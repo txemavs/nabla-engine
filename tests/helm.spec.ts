@@ -25,19 +25,21 @@ test('uses the central helm screen to animate the garage door and displays telem
   })
   await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
-  const panel = page.locator('.helm-console')
+  const panel = page.locator('.helm-console:not(.touch-console):not(.flight-console)')
   await expect(panel).toBeVisible()
   await expect(panel.locator('output')).toContainText('Altitud')
-  await expect(page.locator('canvas')).toHaveAttribute('data-nose-camera-frames', /[1-9]/)
-  await expect(page.locator('.portal-console.helm-portal')).toHaveCount(2)
+  await expect(page.locator('canvas')).not.toHaveAttribute('data-nose-camera-frames')
+  await expect(page.locator('.touch-console')).toHaveCount(1)
+  await expect(page.locator('.flight-console')).toHaveCount(1)
+  await expect(page.locator('.portal-console.helm-portal')).toHaveCount(1)
   await panel.locator('select').selectOption('300')
   await panel.getByRole('button', { name: 'Cerrar garaje', exact: true }).click({ timeout: 10000 })
   await expect(panel.getByRole('button')).toHaveText('Puerta en movimiento…')
   await expect(panel.getByRole('button')).toHaveText('Abrir garaje', { timeout: 10000 })
   // Turn toward the right-hand portal screen using captured mouse input.
-  await page.mouse.click(350, 750)
+  await page.mouse.click(350, 300)
   await page.waitForFunction(() => !!document.pointerLockElement)
-  await page.mouse.move(500, 750, { steps: 10 })
+  await page.mouse.move(500, 300, { steps: 10 })
   await page.keyboard.press('KeyG')
   await page.waitForFunction(() => !document.pointerLockElement)
   const stern = page.locator('.portal-console[data-portal-id="carrier-gate-1-stern"]')
@@ -55,13 +57,65 @@ test('uses the central helm screen to animate the garage door and displays telem
   await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
   await expect(stern).toHaveAttribute('data-mode', 'open')
   await page.screenshot({ path: 'test-results/helm-console.png' })
-  await page.mouse.click(350, 750)
+  await page.mouse.click(350, 300)
   await page.waitForFunction(() => !!document.pointerLockElement)
-  await page.mouse.move(200, 750, { steps: 10 })
+  await page.mouse.move(200, 300, { steps: 10 })
   await page.keyboard.press('KeyG')
   await page.waitForFunction(() => !document.pointerLockElement)
   await panel.getByRole('button', { name: 'Abrir garaje', exact: true }).click()
   await expect(panel.getByRole('button')).toHaveText('Cerrar garaje', { timeout: 10000 })
   await expect(stern).toHaveAttribute('data-mode', 'closed')
+  expect(errors).toEqual([])
+})
+
+test('flies using the horizontal CSS desk and releases held input', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/?scene=circuit')
+  await page.locator('#file').setInputFiles({
+    name: 'touch.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        version: 1,
+        name: 'Touch helm',
+        entities: [
+          { ...createEntity('ground', 'box', [0, -0.5, 0]), size: [1000, 1, 1000] },
+          createEntity('spawn', 'spawn', [0, 0.35, -2.85]),
+          createCarrier('ship', [0, 1.2, 0]),
+        ],
+      }),
+    ),
+  })
+  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await page.locator('#play').click()
+  await page.mouse.click(350, 300)
+  await page.waitForFunction(() => !!document.pointerLockElement)
+  await page.keyboard.press('KeyE')
+  await page.keyboard.press('KeyC')
+  await page.keyboard.press('KeyV')
+  await expect(page.locator('canvas')).toHaveAttribute('data-camera-mode', 'cockpit')
+  await page.mouse.move(350, 700, { steps: 10 })
+  await page.keyboard.press('KeyG')
+  const touch = page.locator('.touch-console')
+  await expect(touch).toBeVisible()
+  const advance = touch.getByRole('button', { name: 'Avanzar', exact: true })
+  await expect(advance).toBeEnabled()
+  await expect
+    .poll(() =>
+      advance.evaluate((button) => {
+        const r = button.getBoundingClientRect()
+        return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === button
+      }),
+    )
+    .toBe(true)
+  const r = (await advance.boundingBox())!
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2)
+  await page.mouse.down()
+  const telemetry = page.locator('.helm-console:not(.touch-console):not(.flight-console) output')
+  await expect(telemetry).not.toHaveText(/^0 km\/h/)
+  await page.mouse.up()
+  await expect(telemetry).toHaveText(/^0 km\/h/, { timeout: 15000 })
+  await page.screenshot({ path: 'test-results/touch-helm.png' })
   expect(errors).toEqual([])
 })
