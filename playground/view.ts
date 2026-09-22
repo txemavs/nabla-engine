@@ -1,3 +1,4 @@
+import { SURFACE_LAYERS } from '../src/landcover.js'
 import { withinMapDistance } from './map-visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
 import { takeMapGeometry } from './map-geometry.js'
@@ -6,6 +7,7 @@ import { CarLights } from './car-lights.js'
 import { CarMirrors } from './car-mirrors.js'
 import { CarInstruments } from './car-instruments.js'
 import { RoadBatches } from './road-batches.js'
+import { LandcoverBatches } from './landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
@@ -55,6 +57,7 @@ export class SceneView {
   readonly streetlights = new Streetlights(this.root)
   private readonly roads = new RoadBatches()
   private materialSetup?: (material: THREE.Material) => void
+  private readonly landcover = new LandcoverBatches()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
   readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
@@ -78,6 +81,7 @@ export class SceneView {
     this.graph = new SceneGraph(document)
     this.addEntities(document.entities)
     this.root.add(this.roads.root)
+    this.root.add(this.landcover.root)
     this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar)
@@ -316,8 +320,15 @@ export class SceneView {
           side: e.source ? THREE.FrontSide : THREE.DoubleSide,
         })
         const surface = new THREE.Mesh(geometry, material)
-        surface.castShadow = true
+        surface.castShadow = !e.landcover
         surface.receiveShadow = true
+        if (e.landcover) {
+          const layer = SURFACE_LAYERS[e.landcover.surface]
+          material.polygonOffset = true
+          material.polygonOffsetFactor = -layer
+          material.polygonOffsetUnits = -layer
+          surface.renderOrder = layer
+        }
 
         group.add(surface)
       }
@@ -518,12 +529,14 @@ export class SceneView {
     enabled: boolean,
     buildings = true,
     roadDistance = distance,
+    now = performance.now(),
   ): void {
     this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
+    this.landcover.update(this.document.entities, this.objects, enabled, position, distance, now)
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)!
-      if ((enabled && e.road) || (e.geometry && !buildings)) {
+      if ((enabled && (e.road || e.landcover)) || (e.geometry && !e.landcover && !buildings)) {
         object.visible = false
         continue
       }
@@ -676,6 +689,7 @@ export class SceneView {
   setupMaterials(callback: (material: THREE.Material) => void): void {
     this.materialSetup = callback
     this.roads.onMaterial = callback
+    this.landcover.onMaterial = callback
     this.root.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.SkinnedMesh) {
         const materials = Array.isArray(object.material) ? object.material : [object.material]
@@ -693,6 +707,7 @@ export class SceneView {
     for (const instruments of this.instruments.values()) instruments.dispose()
     this.instruments.clear()
     this.roads.dispose()
+    this.landcover.dispose()
     this.impacts.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()

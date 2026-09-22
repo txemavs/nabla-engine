@@ -7,7 +7,7 @@ const extract = (): WorldExtract => ({
   origin,
   terrain: { columns: 121, rows: 121, spacing: 10, heights: Array(14641).fill(0) },
   features: [],
-  source: { retrievedAt: '2026-09-22', baked: true, bakeVersion: 1, tileKey: '0_0' },
+  source: { retrievedAt: '2026-09-22', baked: true, bakeVersion: 2, tileKey: '0_0' },
 })
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -16,9 +16,9 @@ it('validates version, origin and zone before using a bake', () => {
   const d = extract()
   expect(validBakedExtract(d, origin, '0_0')).toBe(true)
   expect(validBakedExtract(d, origin, '1_0')).toBe(false)
-  expect(validBakedExtract({ ...d, source: { ...d.source, bakeVersion: 2 } }, origin, '0_0')).toBe(
-    false,
-  )
+  expect(
+    validBakedExtract({ ...d, source: { ...d.source, bakeVersion: 999 } }, origin, '0_0'),
+  ).toBe(false)
 })
 it('checks the server even with a warm cache and keeps elevation on 304', async () => {
   const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 304 }))

@@ -31,7 +31,7 @@ function clip(subject: Point[], triangle: Point[]): Point[] {
   return result
 }
 /** Clip the road against actual terrain triangles: no gaps caused by a different tessellation. */
-export function drapeRoad(t: TerrainData, corners: Vec3Tuple[]): SolidGeometry {
+export function drapeRoad(t: TerrainData, corners: Vec3Tuple[], offset = 0.035): SolidGeometry {
   const result: SolidGeometry = { vertices: [], edges: [], faces: [] },
     p = corners.map((v) => [v[0], v[2]] as Point)
   const hx = ((t.columns - 1) * t.spacing) / 2,
@@ -60,7 +60,7 @@ export function drapeRoad(t: TerrainData, corners: Vec3Tuple[]): SolidGeometry {
           for (const [px, pz] of face)
             result.vertices.push([
               px,
-              Math.round((terrainHeight(t, px, pz) + 0.035) * 1000) / 1000,
+              Math.round((terrainHeight(t, px, pz) + offset) * 1000) / 1000,
               pz,
             ])
           result.faces.push([start, start + 1, start + 2])

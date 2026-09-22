@@ -2,7 +2,7 @@ import { parseScene, createEntity, type Entity } from '../src/scene.js'
 import type { GeoPoint } from '../src/geography.js'
 import type { PreparedMapGeometry } from './map-geometry.js'
 
-export const PREPARED_VERSION = 2
+export const PREPARED_VERSION = 3
 export function preparedPath(origin: GeoPoint, key: string): string {
   return `${PREPARED_VERSION}/${origin.latitude.toFixed(6)}/${origin.longitude.toFixed(6)}/${origin.altitude.toFixed(3)}/${key}.json`
 }
@@ -73,7 +73,7 @@ export async function loadPrepared(origin: GeoPoint, key: string, signal: AbortS
   const url = `${BASE}/${preparedPath(origin, key)}`
   let cache: Cache | undefined, hit: Response | undefined, response: Response | undefined
   try {
-    cache = await caches.open('nabla-prepared-v2')
+    cache = await caches.open('nabla-prepared-v3')
     hit = await cache.match(url)
   } catch {
     /* Optional disk cache. */

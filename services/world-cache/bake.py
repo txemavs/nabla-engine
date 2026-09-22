@@ -55,7 +55,7 @@ def geo_offset(origin, dx_m, dz_m):
 def overpass_query(bounds):
     """Generate Overpass query for a zone."""
     s, w, n, e = bounds
-    return f'[out:json][timeout:25];(way[building]({s},{w},{n},{e});way["building:part"]({s},{w},{n},{e});way[highway]({s},{w},{n},{e});relation[building]({s},{w},{n},{e});node[natural=tree]({s},{w},{n},{e}););out geom;'
+    return f'[out:json][timeout:25];(way[building]({s},{w},{n},{e});way["building:part"]({s},{w},{n},{e});way[highway]({s},{w},{n},{e});relation[building]({s},{w},{n},{e});node[natural=tree]({s},{w},{n},{e});way[landuse]({s},{w},{n},{e});way[leisure]({s},{w},{n},{e});way["natural"~"water|wood|beach|sand|scrub|heath|wetland|marsh|grassland"]({s},{w},{n},{e});way[water]({s},{w},{n},{e});way[waterway~"riverbank|dock"]({s},{w},{n},{e});relation[landuse]({s},{w},{n},{e});relation[leisure]({s},{w},{n},{e});relation["natural"~"water|wood"]({s},{w},{n},{e}););out geom;'
 
 def zone_bounds(origin, x, z):
     """Get geographic bounds for zone (x, z) centered on origin."""

@@ -12,8 +12,10 @@ import {
 import { createA3, createCarrier } from './presets.js'
 import { terrainHeight, type TerrainData } from './terrain.js'
 import { validateSolid, type SolidGeometry } from './solid.js'
+import { drapeRoad } from './draped-road.js'
 import { treeSprite } from './vegetation.js'
 import { buildingRoofWithFaces } from './building-roof.js'
+import { classifySurface, isLandcoverFeature, isWaterFeature, SURFACE_COLORS } from './landcover.js'
 
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 export interface MapFeature {
@@ -104,11 +106,17 @@ export function createRealWorld(
     })()
   const height = (x: number, z: number) =>
     terrainHeight(t, Math.max(-half, Math.min(half, x)), Math.max(-depth, Math.min(depth, z)))
-  const groups = ['world-buildings', 'world-roads', 'world-trees'].map((id) => id + suffix)
+  const groups = [
+    'world-buildings',
+    'world-roads',
+    'world-trees',
+    'world-landcover',
+    'world-water',
+  ].map((id) => id + suffix)
   for (const [i, id] of groups.entries())
     entities.push({
       ...createEntity(id, 'group'),
-      name: ['Edificios OSM', 'Calles OSM', 'Árboles OSM'][i],
+      name: ['Edificios OSM', 'Calles OSM', 'Árboles OSM', 'Terreno OSM', 'Agua OSM'][i],
     })
   const terrain = createEntity('world-terrain' + suffix, 'terrain')
   terrain.name = 'Relieve real · Ventas'
@@ -238,6 +246,46 @@ export function createRealWorld(
       e.parentId = groups[2]
       e.source = source(f)
       entities.push(e)
+    } else if (isLandcoverFeature(tags)) {
+      const surface = classifySurface(tags)
+      const isWater = isWaterFeature(tags)
+      const rings = f.rings.map((r) => ({ ...r, points: r.coordinates.map(project) }))
+      if (!rings.length || rings.some((r) => r.points.length < 4)) continue
+      // Clip into each tile, rather than assigning a whole polygon to its centroid.
+      // Chunk the result to retain the editor's bounded solid topology.
+      const geometry = drapeLandcoverPolygon(rings, t)
+      for (let first = 0; first < geometry.faces.length; first += 600) {
+        const faces = geometry.faces.slice(first, first + 600)
+        const vertices: Vec3Tuple[] = [],
+          indices: number[][] = []
+        const seen = new Map<string, number>()
+        for (const face of faces)
+          indices.push(
+            face.map((i) => {
+              const v = geometry.vertices[i],
+                key = v.join(',')
+              let index = seen.get(key)
+              if (index === undefined) {
+                index = vertices.length
+                vertices.push(v)
+                seen.set(key, index)
+              }
+              return index
+            }),
+          )
+        const e = createEntity(
+          `osm-${f.id.replace('/', '-')}-land${suffix}-${first / 600}`,
+          'solid',
+        )
+        e.motion = 'none'
+        e.geometry = { vertices, edges: [], faces: indices }
+        e.name = tags.name ?? `${surface} · ${f.id}`
+        e.color = SURFACE_COLORS[surface]
+        e.parentId = isWater ? groups[4] : groups[3]
+        e.source = source(f)
+        e.landcover = { surface, isWater }
+        entities.push(e)
+      }
     }
   }
   entities.find((e) => e.id === groups[1])!.parentId = terrain.id
@@ -292,6 +340,56 @@ export function createRealWorld(
     mapTileEntities(doc, options.tileId ?? '0_0'),
   )
   return doc
+}
+
+/**
+ * Create draped landcover geometry following terrain height.
+ * Similar to road draping but for arbitrary polygons.
+ */
+export function drapeLandcoverPolygon(
+  rings: { role: string; points: Vec3Tuple[] }[],
+  terrain: TerrainData,
+): SolidGeometry {
+  const result: SolidGeometry = { vertices: [], edges: [], faces: [] }
+  const clean = (points: Vec3Tuple[]) => {
+    const out = points.map((p) => new Vector2(p[0], p[2]))
+    if (out.length > 1 && out[0].distanceTo(out[out.length - 1]) < 0.001) out.pop()
+    return out.filter((p, i) => i === 0 || p.distanceTo(out[i - 1]) > 0.001)
+  }
+  const contains = (ring: Vector2[], p: Vector2) => {
+    let inside = false
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[i],
+        b = ring[j]
+      if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x)
+        inside = !inside
+    }
+    return inside
+  }
+  const closed = (points: Vec3Tuple[]) =>
+    points.length >= 4 &&
+    Math.hypot(points[0][0] - points.at(-1)![0], points[0][2] - points.at(-1)![2]) < 0.001
+  const holes = rings
+    .filter((r) => r.role === 'inner' && closed(r.points))
+    .map((r) => clean(r.points))
+  for (const outer of rings.filter((r) => r.role !== 'inner' && closed(r.points))) {
+    const contour = clean(outer.points)
+    if (contour.length < 3) continue
+    const inner = holes.filter((h) => h.length >= 3 && contains(contour, h[0]))
+    const vertices = [contour, ...inner].flat()
+    for (const face of ShapeUtils.triangulateShape(contour, inner)) {
+      // Reuse exact terrain-triangle clipping. Land sits below the road's 35mm offset.
+      const patch = drapeRoad(
+        terrain,
+        face.map((i) => [vertices[i].x, 0, vertices[i].y]),
+        0.015,
+      )
+      const base = result.vertices.length
+      for (const v of patch.vertices) result.vertices.push(v)
+      for (const f of patch.faces) result.faces.push(f.map((i) => i + base).reverse())
+    }
+  }
+  return result
 }
 
 /** Clip centre lines at shared tile edges; the draper clips their full width. */

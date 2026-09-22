@@ -1,3 +1,4 @@
+import { classifySurface, SURFACE_COLORS } from './landcover.js'
 import { readFileSync } from 'node:fs'
 import { expect, it } from 'vitest'
 import { createRealWorld, normalizeColor, type WorldExtract, IRUN_VENTAS } from './real-world.js'
@@ -228,4 +229,97 @@ it('uses building:color as alias for building:colour', () => {
   const building = doc.entities.find((e) => e.source?.id === 'way/1')
   expect(building!.color).toBe('#112233')
   // Note: roof:color works only if there's a supported roof shape
+})
+
+it('creates landcover entities from landuse/leisure/natural polygons', () => {
+  const doc = createRealWorld({
+    name: 'Landcover test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/100',
+        tags: { landuse: 'grass' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.819, 43.329],
+              [-1.818, 43.329],
+              [-1.818, 43.33],
+              [-1.819, 43.33],
+              [-1.819, 43.329],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/101',
+        tags: { natural: 'water' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.329],
+              [-1.821, 43.329],
+              [-1.821, 43.33],
+              [-1.82, 43.33],
+              [-1.82, 43.329],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/102',
+        tags: { leisure: 'park' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.817, 43.329],
+              [-1.816, 43.329],
+              [-1.816, 43.33],
+              [-1.817, 43.33],
+              [-1.817, 43.329],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+
+  const landcoverEntities = doc.entities.filter((e) => e.landcover)
+  expect(landcoverEntities.length).toBe(3)
+
+  const grass = landcoverEntities.find((e) => e.landcover?.surface === 'grass')
+  expect(grass).toBeDefined()
+  expect(grass!.color).toBe(SURFACE_COLORS.grass)
+  expect(grass!.parentId).toContain('world-landcover')
+
+  const water = landcoverEntities.find((e) => e.landcover?.surface === 'water')
+  expect(water).toBeDefined()
+  expect(water!.landcover!.isWater).toBe(true)
+  expect(water!.parentId).toContain('world-water')
+  expect(water!.color).toBe(SURFACE_COLORS.water)
+
+  const park = landcoverEntities.find((e) => e.source?.id === 'way/102')
+  expect(park).toBeDefined()
+  expect(park!.landcover!.surface).toBe('grass')
+
+  // All landcover entities should have geometry (draped polygons)
+  for (const e of landcoverEntities) {
+    expect(e.geometry).toBeDefined()
+    expect(e.geometry!.vertices.length).toBeGreaterThan(0)
+    expect(e.geometry!.faces.length).toBeGreaterThan(0)
+  }
+})
+
+it('assigns correct surface colors based on OSM tags', () => {
+  expect(classifySurface({ landuse: 'forest' })).toBe('forest')
+  expect(classifySurface({ natural: 'beach' })).toBe('sand')
+  expect(classifySurface({ landuse: 'farmland' })).toBe('farmland')
+  expect(classifySurface({ natural: 'scrub' })).toBe('scrub')
+  expect(classifySurface({ landuse: 'residential' })).toBe('residential')
+  expect(classifySurface({ landuse: 'industrial' })).toBe('industrial')
 })

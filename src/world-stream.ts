@@ -55,7 +55,14 @@ export function wantedWorldTiles(position: Vec3Tuple, velocity: Vec3Tuple): stri
 export function mapTileEntities(doc: SceneDocument, key: string): Entity[] {
   const suffix = key === '0_0' ? '' : `-${key}`
   const ids = new Set(
-    ['world-terrain', 'world-buildings', 'world-roads', 'world-trees'].map((id) => id + suffix),
+    [
+      'world-terrain',
+      'world-buildings',
+      'world-roads',
+      'world-trees',
+      'world-landcover',
+      'world-water',
+    ].map((id) => id + suffix),
   )
   let changed = true
   while (changed) {

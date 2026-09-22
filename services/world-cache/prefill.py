@@ -38,10 +38,7 @@ def geo_offset(origin, dx_m, dz_m):
     new_lon = lon + (dx_m / (EARTH_RADIUS * math.cos(lat * math.pi / 180))) * (180 / math.pi)
     return (new_lat, new_lon)
 
-def overpass_query(bounds):
-    """Generate Overpass query for a zone."""
-    s, w, n, e = bounds
-    return f'[out:json][timeout:25];(way[building]({s},{w},{n},{e});way["building:part"]({s},{w},{n},{e});way[highway]({s},{w},{n},{e});relation[building]({s},{w},{n},{e});node[natural=tree]({s},{w},{n},{e}););out geom;'
+from bake import overpass_query
 
 def zone_bounds(origin, x, z):
     """Get geographic bounds for zone (x, z) centered on origin."""

@@ -5,7 +5,7 @@ import os
 import tempfile
 from pathlib import Path
 
-VERSION = 1
+VERSION = 2
 
 def valid_bake(data, lat, lon, key):
     try:
