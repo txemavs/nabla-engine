@@ -22,6 +22,10 @@ export { terrainHeight, terrainVertices, terrainIndices } from './terrain.js'
 export type { TerrainData } from './terrain.js'
 export {
   roadGeometry,
+  smoothFloatRoadGeometry,
+  SMOOTH_FLOAT_MIN_OFFSET,
+  SMOOTH_FLOAT_WINDOW,
+  type RoadMode,
   roadHeightOffset,
   roadColliders,
   nearestRoadCenterline,

@@ -87,7 +87,12 @@ export function drapeRoad(t: TerrainData, corners: Vec3Tuple[], offset = 0.035):
   return result
 }
 
+export type RoadMode = 'raw' | 'smooth-float'
+export const SMOOTH_FLOAT_MIN_OFFSET = 0.1
+export const SMOOTH_FLOAT_WINDOW = 30
+
 export interface RoadGeometryOptions {
+  mode?: RoadMode
   elevation?: RoadElevation
   layer?: number
   profiled?: boolean
@@ -103,6 +108,8 @@ export function roadGeometry(
   const { elevation, layer, profiled } = options
   const heightOffset = roadHeightOffset(elevation, layer)
   if (elevation === 'tunnel') return { vertices: [], edges: [], faces: [] }
+  if (options.mode === 'smooth-float' && (!elevation || elevation === 'terrain'))
+    return smoothFloatRoadGeometry(t, paths, width)
   const elevated = elevation === 'bridge'
 
   // Shared cross-sections keep deck seams continuous even on a slope or bend.
@@ -358,4 +365,99 @@ export function nearestRoadCenterline(
   }
 
   return nearest
+}
+
+/** Conservative optional road deck. No discs, hidden boxes or terrain excavation.
+ * A DEM triangle is affine: its maximum over a clipped road triangle occurs at
+ * a clipping vertex. Raising both station ends above that maximum guarantees
+ * clearance over the complete ribbon, including bumps between OSM nodes. */
+export function smoothFloatRoadGeometry(
+  t: TerrainData,
+  paths: Vec3Tuple[][],
+  width: number,
+): SolidGeometry {
+  const fallback = () => roadGeometry(t, paths, width)
+  const chains: Vec3Tuple[][] = []
+  const same = (a: Vec3Tuple, b: Vec3Tuple) => Math.hypot(a[0] - b[0], a[2] - b[2]) < 1e-6
+  for (const path of paths) {
+    if (path.length < 2) continue
+    const last = chains.at(-1)
+    if (last && same(last.at(-1)!, path[0])) last.push(...path.slice(1))
+    else chains.push([...path])
+  }
+  const samples: Vec3Tuple[][] = []
+  let count = 0
+  for (const chain of chains) {
+    // Closed rings need network-aware junction grading; preserve the raw surface.
+    if (same(chain[0], chain.at(-1)!)) return fallback()
+    const out: Vec3Tuple[] = [[chain[0][0], 0, chain[0][2]]]
+    for (let i = 1; i < chain.length; i++) {
+      const a = chain[i - 1],
+        b = chain[i],
+        length = Math.hypot(b[0] - a[0], b[2] - a[2])
+      if (length < 0.01) continue
+      const steps = Math.ceil(length / 5)
+      if ((count += steps) > 4096) return fallback()
+      for (let j = 1; j <= steps; j++)
+        out.push([a[0] + ((b[0] - a[0]) * j) / steps, 0, a[2] + ((b[2] - a[2]) * j) / steps])
+    }
+    if (out.length > 1) samples.push(out)
+  }
+  const g = roadGeometry(t, samples, width, { elevation: 'bridge', profiled: true })
+  const hx = ((t.columns - 1) * t.spacing) / 2,
+    hz = ((t.rows - 1) * t.spacing) / 2
+  let segment = 0
+  for (const path of samples) {
+    const floor = path.map(() => -Infinity),
+      dist = [0]
+    const firstSegment = segment
+    for (let i = 1; i < path.length; i++, segment++) {
+      dist.push(dist[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][2] - path[i - 1][2]))
+      const corners = g.vertices.slice(segment * 4, segment * 4 + 4)
+      if (corners.length !== 4) return fallback()
+      let peak = -Infinity
+      for (const f of [
+        [0, 1, 2],
+        [0, 2, 3],
+      ]) {
+        const [a, b, c] = f.map((k) => corners[k])
+        if ((b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]) <= 1e-6) return fallback()
+        const patch = drapeRoad(
+          t,
+          f.map((k) => corners[k]),
+          0,
+        )
+        for (const p of patch.vertices) peak = Math.max(peak, p[1])
+      }
+      for (const p of corners)
+        peak = Math.max(
+          peak,
+          terrainHeight(t, Math.max(-hx, Math.min(hx, p[0])), Math.max(-hz, Math.min(hz, p[2]))),
+        )
+      const height = peak + SMOOTH_FLOAT_MIN_OFFSET + 0.002
+      floor[i - 1] = Math.max(floor[i - 1], height)
+      floor[i] = Math.max(floor[i], height)
+    }
+    // Sliding prefix sums keep smoothing linear even with densely sampled OSM nodes.
+    const sums = [0]
+    for (const value of floor) sums.push(sums.at(-1)! + value)
+    let lo = 0,
+      hi = 0
+    const heights = floor.map((minimum, i) => {
+      while (dist[i] - dist[lo] > SMOOTH_FLOAT_WINDOW) lo++
+      while (hi + 1 < dist.length && dist[hi + 1] - dist[i] <= SMOOTH_FLOAT_WINDOW) hi++
+      return Math.max(minimum, (sums[hi + 1] - sums[lo]) / (hi - lo + 1))
+    })
+    // Raise approaches instead of cutting into the terrain. Limit longitudinal grade to 15%.
+    for (let i = 1; i < heights.length; i++)
+      heights[i] = Math.max(heights[i], heights[i - 1] - (dist[i] - dist[i - 1]) * 0.15)
+    for (let i = heights.length - 2; i >= 0; i--)
+      heights[i] = Math.max(heights[i], heights[i + 1] - (dist[i + 1] - dist[i]) * 0.15)
+    for (let i = 1; i < path.length; i++) {
+      const base = (firstSegment + i - 1) * 4
+      g.vertices[base][1] = g.vertices[base + 1][1] = heights[i - 1]
+      g.vertices[base + 2][1] = g.vertices[base + 3][1] = heights[i]
+    }
+  }
+  return g
 }
