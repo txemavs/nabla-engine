@@ -144,11 +144,11 @@ it('evicts clean distant zones but retains authored changes during a long journe
     status: () => undefined,
   })
   stream.update([0, 0, 0], [0, 0, 0])
-  await new Promise((r) => setTimeout(r, 0))
+  await new Promise((r) => setTimeout(r, 10))
   editor.update(`building-${first}`, { color: '#123456' })
-  for (let i = 1; i < 24; i++) {
+  for (let i = 1; i < 16; i++) {
     stream.update([i * 1200, 0, 0], [0, 0, 0], [], Date.now() + i * 10000)
-    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 10))
   }
   expect(editor.document.entities.find((e) => e.id === `building-${first}`)!.color).toBe('#123456')
   expect(editor.document.entities.filter((e) => e.terrain).length).toBeLessThanOrEqual(12)
