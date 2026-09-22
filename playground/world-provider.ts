@@ -207,12 +207,28 @@ export async function loadWorldTile(
   } catch {
     /* Storage is optional; exploration still works in private browsers. */
   }
+  if (!extract && CACHE_BASE) {
+    const bakedUrl = `${CACHE_BASE}/baked/${origin.latitude.toFixed(5)}/${origin.longitude.toFixed(5)}/${key}`
+    try {
+      const response = await fetch(bakedUrl, {
+        signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]),
+      })
+      if (response.ok) {
+        const baked = (await response.json()) as WorldExtract
+        if (baked.source?.baked) {
+          const heights = await elevation(origin, ox, oz, signal)
+          extract = { ...baked, terrain: { ...baked.terrain, heights } }
+        }
+      }
+    } catch {
+      /* Baked zone not available; fall through to live Overpass. */
+    }
+  }
   if (!extract) {
     const nw = sampleGeo(origin, ox - 750, oz - 750),
       se = sampleGeo(origin, ox + 750, oz + 750)
     const box = `${se.latitude},${nw.longitude},${nw.latitude},${se.longitude}`
     const query = `[out:json][timeout:25];(way[building](${box});way["building:part"](${box});way[highway](${box});relation[building](${box});node[natural=tree](${box}););out geom;`
-    // Cached visits are immediate; public OSM requests are deliberately paced.
     const delay = Math.max(0, nextRemoteRequest - Date.now())
     if (delay)
       await new Promise<void>((resolve, reject) => {
@@ -243,20 +259,20 @@ export async function loadWorldTile(
       features: overpassFeatures(json.elements),
       source: { retrievedAt: new Date().toISOString(), osm: OVERPASS, elevation: ESRI },
     }
-    if (cache)
-      try {
-        await cache.put(
-          cacheKey,
-          new Response(JSON.stringify(extract), {
-            headers: { 'content-type': 'application/json', 'x-cached-at': String(Date.now()) },
-          }),
-        )
-        const keys = await cache.keys()
-        for (const old of keys.slice(0, Math.max(0, keys.length - 32))) await cache.delete(old)
-      } catch {
-        /* Quota failure must not discard usable terrain. */
-      }
   }
+  if (cache && extract)
+    try {
+      await cache.put(
+        cacheKey,
+        new Response(JSON.stringify(extract), {
+          headers: { 'content-type': 'application/json', 'x-cached-at': String(Date.now()) },
+        }),
+      )
+      const keys = await cache.keys()
+      for (const old of keys.slice(0, Math.max(0, keys.length - 32))) await cache.delete(old)
+    } catch {
+      /* Quota failure must not discard usable terrain. */
+    }
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
   const doc = createRealWorld(extract, destination ? {} : { offset: [ox, oz], tileId: key })
   if (destination) return doc.entities

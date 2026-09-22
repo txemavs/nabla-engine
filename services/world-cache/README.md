@@ -83,6 +83,78 @@ about 60 minutes to fill; subsequent runs are instant cache hits. Run periodical
 
 **Storage estimate:** ~50-200 KB per zone × 121 zones ≈ 6-24 MB for Irun.
 
+## Baking zones (pre-computed static data)
+
+The `bake.py` script creates pre-computed zone JSON that bypasses Overpass entirely.
+Baked zones are served with priority — the client checks baked data before falling
+back to live Overpass.
+
+### Baking on chained.world
+
+```sh
+# Bake Irun region (default 11×11 grid)
+python3 bake.py --output /data/baked
+
+# Use the running cache service for faster bake (optional)
+python3 bake.py --output /data/baked --cache-url http://127.0.0.1:8080
+
+# Bake a custom region
+python3 bake.py --lat 40.4168 --lon -3.7038 --name "Madrid" --radius 10 --output /data/baked
+
+# Skip zones that already exist (incremental bake)
+python3 bake.py --output /data/baked --skip-existing
+```
+
+The baked files are placed in:
+
+```
+/data/baked/<lat>/<lon>/<x>_<z>.json
+```
+
+For example, Irun zone 0_0:
+
+```
+/data/baked/43.32969/-1.81961/0_0.json
+```
+
+### How baked zones are served
+
+The cache server exposes baked zones at:
+
+```
+GET /baked/<lat>/<lon>/<key>
+```
+
+For example:
+
+```
+GET /baked/43.32969/-1.81961/0_0
+```
+
+Returns the baked JSON with `X-Nabla-Cache: BAKED` header, or 404 if not baked.
+
+### Client behavior
+
+The client (in `playground/world-provider.ts`) checks for baked zones before
+hitting live Overpass:
+
+1. Check browser Cache Storage (30-day freshness)
+2. If CACHE_BASE is set, check `/baked/<lat>/<lon>/<key>`
+3. If baked zone found, fetch fresh elevation from Esri (baked zones have stub heights)
+4. Fall back to live Overpass if no baked zone
+
+### Baked vs demand-cached
+
+| Aspect      | Prefill (demand cache) | Bake (static)                  |
+| ----------- | ---------------------- | ------------------------------ |
+| Storage     | Cache hash files       | Named zone JSON                |
+| Served from | `/osm` POST            | `/baked/<lat>/<lon>/<key>` GET |
+| Elevation   | Included               | Stub (client fetches live)     |
+| Priority    | Normal cache           | Checked first                  |
+| Use case    | Warm cache faster      | Guaranteed instant hits        |
+
+**Recommendation:** Use both. Bake for core regions (Irun), prefill for extended coverage.
+
 ## Tests
 
 ```sh

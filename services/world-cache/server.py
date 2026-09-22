@@ -4,6 +4,7 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 ROOT = Path(os.environ.get('CACHE_DIR', '/data'))
 ROOT.mkdir(parents=True, exist_ok=True)
+BAKED = ROOT / 'baked'
 TTL = int(os.environ.get('CACHE_TTL_SECONDS', '2592000'))
 LIMIT = int(os.environ.get('CACHE_MAX_BYTES', '10737418240'))
 OSM = 'https://overpass-api.de/api/interpreter'
@@ -11,6 +12,13 @@ ESRI = 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Ter
 locks = [threading.Lock() for _ in range(64)]
 osm_lock = threading.Lock()
 next_osm = 0.0
+
+def get_baked(lat, lon, key):
+    """Check for pre-baked zone file. Returns (data, True) or (None, False)."""
+    path = BAKED / f"{lat:.5f}" / f"{lon:.5f}" / f"{key}.json"
+    if path.exists():
+        return path.read_bytes(), True
+    return None, False
 
 def cached(key, url, body=None):
     global next_osm
@@ -84,6 +92,16 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/health':
             self.respond(200, b'{"ok":true}')
+            return
+        # Baked zone endpoint: GET /baked/<lat>/<lon>/<key>
+        baked_match = re.fullmatch(r'/baked/(-?\d+\.\d+)/(-?\d+\.\d+)/(-?\d+_-?\d+)', self.path)
+        if baked_match:
+            lat, lon, key = baked_match.groups()
+            data, found = get_baked(float(lat), float(lon), key)
+            if found:
+                self.respond(200, data, 'application/json', 'BAKED')
+            else:
+                self.respond(404, b'{"error":"Zone not baked"}')
             return
         match = re.fullmatch(r'/elevation/12/(\d{1,4})/(\d{1,4})', self.path)
         if not match or any(int(n) >= 4096 for n in match.groups()):
