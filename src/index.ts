@@ -27,3 +27,11 @@ export type { WorldStreamHost } from './world-stream.js'
 
 export { entityCapabilities, type EntityCapability } from './capabilities.js'
 export { entityCatalog, createCatalogEntities, type CatalogId } from './catalog.js'
+
+export {
+  classifySurface,
+  isLandcoverFeature,
+  isWaterFeature,
+  SURFACE_COLORS,
+  type SurfaceType,
+} from './landcover.js'

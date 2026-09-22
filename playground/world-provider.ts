@@ -211,7 +211,7 @@ export async function loadWorldTile(
     const nw = sampleGeo(origin, ox - 750, oz - 750),
       se = sampleGeo(origin, ox + 750, oz + 750)
     const box = `${se.latitude},${nw.longitude},${nw.latitude},${se.longitude}`
-    const query = `[out:json][timeout:25];(way[building](${box});way["building:part"](${box});way[highway](${box});relation[building](${box});node[natural=tree](${box}););out geom;`
+    const query = `[out:json][timeout:25];(way[building](${box});way["building:part"](${box});way[highway](${box});relation[building](${box});node[natural=tree](${box});way[landuse](${box});way[leisure](${box});way["natural"~"water|wood|beach|sand|scrub|heath|wetland|marsh|grassland"](${box});way[water](${box});way[waterway~"riverbank|dock"](${box});relation[landuse](${box});relation[leisure](${box});relation["natural"~"water|wood"](${box}););out geom;`
     // Cached visits are immediate; public OSM requests are deliberately paced.
     const delay = Math.max(0, nextRemoteRequest - Date.now())
     if (delay)

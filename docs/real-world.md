@@ -175,11 +175,38 @@ Total building height includes the roof; `roof:height` sets the rise, otherwise 
 inferred from footprint width (capped at 3 m). Ridge orientation follows the longer
 footprint axis; explicit roof direction/orientation tags are not interpreted yet.
 Unsupported shapes and complex footprints retain flat roofs. Closed-member
-multipolygons are supported; incomplete/split-member relations, other roof forms,
-bridge/tunnel surfaces, steps, water meshes and full landcover remain unsupported.
-Bridge/tunnel/construction/step road features are omitted rather than presented as
-correct drivable structures. The elevation source is terrain, not a surveyed road
-surface model. The remaining streets follow it, including unmodeled grade changes.
+multipolygons are supported; incomplete/split-member relations and other roof forms
+remain unsupported. Bridge/tunnel/construction/step road features are omitted rather
+than presented as correct drivable structures. The elevation source is terrain, not
+a surveyed road surface model. The remaining streets follow it, including unmodeled
+grade changes.
+
+### Landcover and water from OSM
+
+Landcover polygons are now extracted from OSM `landuse`, `leisure`, and `natural` tags.
+Each polygon is draped onto the terrain with a slight vertical offset to avoid z-fighting.
+Surface types are classified and rendered with distinct colors:
+
+| OSM Tag(s)                                                                           | Surface Type | Color     |
+| ------------------------------------------------------------------------------------ | ------------ | --------- |
+| `landuse=grass`, `landuse=meadow`, `leisure=park`, `leisure=garden`, `leisure=pitch` | grass        | `#7cb868` |
+| `landuse=forest`, `natural=wood`, `natural=tree_row`                                 | forest       | `#4a8c3a` |
+| `landuse=farmland`, `landuse=orchard`, `landuse=vineyard`, `landuse=allotments`      | farmland     | `#c5b87a` |
+| `natural=beach`, `natural=sand`, `natural=dune`                                      | sand         | `#e8dca8` |
+| `natural=scrub`, `natural=heath`, `natural=grassland`                                | scrub        | `#8ba86a` |
+| `natural=water`, `water=*`, `waterway=riverbank`, `landuse=reservoir`                | water        | `#4a90a8` |
+| `natural=wetland`, `natural=marsh`, `natural=swamp`                                  | wetland      | `#6a9878` |
+| `natural=bare_rock`, `natural=scree`, `natural=rock`                                 | rock         | `#9a9a8a` |
+| `landuse=residential`, `landuse=garages`                                             | residential  | `#d0c8b8` |
+| `landuse=industrial`, `landuse=commercial`, `landuse=retail`                         | industrial   | `#b8b0a0` |
+
+Water surfaces use animated wave normals adapted from Streets GL (MIT licensed).
+The water normal texture is at `assets/geography/water-normal.png`. Landcover and
+water polygons are batched by 256m cell and surface type for efficient rendering.
+
+Landcover is visual only; it does not affect collision or physics. The terrain
+heightfield remains the collider. This implementation does not use satellite/orthophoto
+imagery; it relies solely on OSM vector data for surface classification.
 
 Buildings retain their OSM type/ID, retrieval time and source tags. They use the
 solid editor and can be recolored, reshaped, cloned or removed. Saves store a full

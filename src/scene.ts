@@ -154,6 +154,25 @@ const entitySchema = z
       .object({ url: z.string().regex(/^\/(?!\/)[a-zA-Z0-9_./-]+\.(jpg|jpeg|png)$/) })
       .strict()
       .optional(),
+    landcover: z
+      .object({
+        surface: z.enum([
+          'grass',
+          'forest',
+          'farmland',
+          'sand',
+          'scrub',
+          'water',
+          'wetland',
+          'rock',
+          'residential',
+          'industrial',
+          'default',
+        ]),
+        isWater: z.boolean(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
 const documentSchema = z

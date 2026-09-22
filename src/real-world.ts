@@ -14,6 +14,7 @@ import { terrainHeight, type TerrainData } from './terrain.js'
 import { validateSolid, type SolidGeometry } from './solid.js'
 import { treeSprite } from './vegetation.js'
 import { buildingRoof } from './building-roof.js'
+import { classifySurface, isLandcoverFeature, isWaterFeature, SURFACE_COLORS } from './landcover.js'
 
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 export interface MapFeature {
@@ -58,11 +59,17 @@ export function createRealWorld(
     })()
   const height = (x: number, z: number) =>
     terrainHeight(t, Math.max(-half, Math.min(half, x)), Math.max(-depth, Math.min(depth, z)))
-  const groups = ['world-buildings', 'world-roads', 'world-trees'].map((id) => id + suffix)
+  const groups = [
+    'world-buildings',
+    'world-roads',
+    'world-trees',
+    'world-landcover',
+    'world-water',
+  ].map((id) => id + suffix)
   for (const [i, id] of groups.entries())
     entities.push({
       ...createEntity(id, 'group'),
-      name: ['Edificios OSM', 'Calles OSM', 'Árboles OSM'][i],
+      name: ['Edificios OSM', 'Calles OSM', 'Árboles OSM', 'Terreno OSM', 'Agua OSM'][i],
     })
   const terrain = createEntity('world-terrain' + suffix, 'terrain')
   terrain.name = 'Relieve real · Ventas'
@@ -185,6 +192,34 @@ export function createRealWorld(
       e.parentId = groups[2]
       e.source = source(f)
       entities.push(e)
+    } else if (isLandcoverFeature(tags)) {
+      const surface = classifySurface(tags)
+      const isWater = isWaterFeature(tags)
+      const rings = f.rings.map((r) => ({ ...r, points: r.coordinates.map(project) }))
+      if (!rings.length || rings.some((r) => r.points.length < 4)) continue
+      const all = rings.flatMap((r) => r.points)
+      const cx = all.reduce((s, p) => s + p[0], 0) / all.length
+      const cz = all.reduce((s, p) => s + p[2], 0) / all.length
+      // Skip polygons whose centroid is outside this tile
+      if (cx < -half || cx >= half || cz < -depth || cz >= depth) continue
+
+      // Build draped polygon triangles
+      const landcoverGeom = drapeLandcoverPolygon(rings, height, cx, cz)
+      if (!landcoverGeom.faces.length) continue
+
+      const e = createEntity('osm-' + f.id.replace('/', '-'), 'solid', [cx, 0, cz])
+      e.geometry = landcoverGeom
+      e.name = tags.name ?? `${surface.charAt(0).toUpperCase() + surface.slice(1)} · ${f.id}`
+      e.color = SURFACE_COLORS[surface]
+      e.parentId = isWater ? groups[4] : groups[3]
+      e.source = source(f)
+      e.landcover = { surface, isWater }
+      e.size = [
+        Math.max(0.01, Math.max(...all.map((p) => p[0])) - Math.min(...all.map((p) => p[0]))),
+        0.1,
+        Math.max(0.01, Math.max(...all.map((p) => p[2])) - Math.min(...all.map((p) => p[2]))),
+      ]
+      entities.push(e)
     }
   }
   entities.find((e) => e.id === groups[1])!.parentId = terrain.id
@@ -239,6 +274,65 @@ export function createRealWorld(
     mapTileEntities(doc, options.tileId ?? '0_0'),
   )
   return doc
+}
+
+/**
+ * Create draped landcover geometry following terrain height.
+ * Similar to road draping but for arbitrary polygons.
+ */
+function drapeLandcoverPolygon(
+  rings: { role: string; points: Vec3Tuple[] }[],
+  height: (x: number, z: number) => number,
+  cx: number,
+  cz: number,
+): SolidGeometry {
+  const g: SolidGeometry = { vertices: [], edges: [], faces: [] }
+
+  // Extract outer and inner rings
+  const outers = rings.filter((r) => r.role !== 'inner')
+  const inners = rings.filter((r) => r.role === 'inner')
+
+  for (const outer of outers) {
+    const clean = (points: Vec3Tuple[]) => {
+      const out = points.map((p) => new Vector2(p[0] - cx, p[2] - cz))
+      if (out.length > 1 && out[0].distanceTo(out[out.length - 1]) < 0.001) out.pop()
+      return out.filter((p, i) => i === 0 || p.distanceTo(out[i - 1]) > 0.001)
+    }
+
+    const contour = clean(outer.points)
+    if (contour.length < 3) continue
+    if (!ShapeUtils.isClockWise(contour)) contour.reverse()
+
+    const holes = inners.map((r) => clean(r.points)).filter((r) => r.length >= 3)
+    for (const hole of holes) if (ShapeUtils.isClockWise(hole)) hole.reverse()
+
+    // Triangulate the polygon
+    const triangleIndices = ShapeUtils.triangulateShape(contour, holes)
+    const loops = [contour, ...holes]
+    const flat = loops.flat()
+
+    // Create vertices at terrain height (with small offset to avoid z-fighting)
+    const start = g.vertices.length
+    for (const p of flat) {
+      const wx = p.x + cx
+      const wz = p.y + cz
+      const h = height(wx, wz) + 0.04
+      g.vertices.push([p.x, h, p.y])
+    }
+
+    // Create faces
+    for (const face of triangleIndices) {
+      const indices = face.map((i) => start + i)
+      const va = new Vector3(...g.vertices[indices[0]])
+      const vb = new Vector3(...g.vertices[indices[1]])
+      const vc = new Vector3(...g.vertices[indices[2]])
+      // Ensure consistent winding for upward-facing normals
+      if (vb.sub(va).cross(vc.sub(va)).y < 0) indices.reverse()
+      g.faces.push(indices)
+    }
+  }
+
+  return g
 }
 
 /** Clip centre lines at shared tile edges; the draper clips their full width. */

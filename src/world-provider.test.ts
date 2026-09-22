@@ -23,6 +23,25 @@ it('keeps OSM identities and rejects incomplete building footprints', () => {
   expect(result[0].rings[0].coordinates[0]).toEqual([-1, 43])
 })
 
+it('extracts landcover features (landuse, leisure, natural water/wood)', () => {
+  const geometry = [
+    { lat: 43, lon: -1 },
+    { lat: 43, lon: -1.01 },
+    { lat: 43.01, lon: -1 },
+    { lat: 43, lon: -1 },
+  ]
+  const result = overpassFeatures([
+    { type: 'way', id: 10, tags: { landuse: 'grass' }, geometry },
+    { type: 'way', id: 11, tags: { leisure: 'park' }, geometry },
+    { type: 'way', id: 12, tags: { natural: 'water' }, geometry },
+    { type: 'way', id: 13, tags: { natural: 'wood' }, geometry },
+    { type: 'way', id: 14, tags: { water: 'lake' }, geometry },
+  ])
+  expect(result.map((f) => f.id)).toEqual(['way/10', 'way/11', 'way/12', 'way/13', 'way/14'])
+  expect(result[0].tags.landuse).toBe('grass')
+  expect(result[2].tags.natural).toBe('water')
+})
+
 it('retries a transient provider error once and honours cancellation during backoff', async () => {
   vi.useFakeTimers()
   const fetcher = vi

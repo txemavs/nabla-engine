@@ -4,6 +4,7 @@ import { CarLights } from './car-lights.js'
 import { CarMirrors } from './car-mirrors.js'
 import { CarInstruments } from './car-instruments.js'
 import { RoadBatches } from './road-batches.js'
+import { LandcoverBatches } from './landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
@@ -51,6 +52,7 @@ export class SceneView {
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   private readonly roads = new RoadBatches()
+  private readonly landcover = new LandcoverBatches()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
   readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
@@ -74,6 +76,7 @@ export class SceneView {
     this.graph = new SceneGraph(document)
     this.addEntities(document.entities)
     this.root.add(this.roads.root)
+    this.root.add(this.landcover.root)
     this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar)
@@ -474,8 +477,10 @@ export class SceneView {
     enabled: boolean,
     buildings = true,
     roadDistance = distance,
+    now = performance.now(),
   ): void {
     this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
+    this.landcover.update(this.document.entities, this.objects, enabled, position, distance, now)
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)!
@@ -628,6 +633,7 @@ export class SceneView {
     for (const instruments of this.instruments.values()) instruments.dispose()
     this.instruments.clear()
     this.roads.dispose()
+    this.landcover.dispose()
     this.impacts.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()
