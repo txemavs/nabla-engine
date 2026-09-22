@@ -1,3 +1,4 @@
+import { SparseContactMatrix } from './contact-matrix.js'
 import { terrainHeight } from './terrain.js'
 import { triangles } from './solid.js'
 import { SceneEditor } from './editor.js'
@@ -145,6 +146,8 @@ export class Simulation {
       .filter((e) => e.terrain)
       .map((e) => ({ e, pose: this.graph.worldTransform(e.id) }))
     this.portalEntities = this.document.entities.filter((e) => e.portal)
+    this.world.collisionMatrix = new SparseContactMatrix()
+    this.world.collisionMatrixPrevious = new SparseContactMatrix()
     this.world.broadphase = new SAPBroadphase(this.world)
     ;(this.world.solver as GSSolver).iterations = 15
     this.world.defaultContactMaterial.friction = 0.55

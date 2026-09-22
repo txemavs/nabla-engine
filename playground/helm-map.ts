@@ -1,9 +1,50 @@
 import { Matrix4, Quaternion, Vector3 } from 'three'
 import { SceneGraph, type SceneDocument, type Entity, type Transform } from '../src/scene.js'
+type ChartRoad = {
+  points: Vector3[]
+  width: number
+  minX: number
+  maxX: number
+  minZ: number
+  maxZ: number
+}
+const chartCache = new WeakMap<Entity[], ChartRoad[]>()
+/** All cockpit screens share one immutable projection per scene revision. */
+export function chartRoads(doc: SceneDocument): ChartRoad[] {
+  const cached = chartCache.get(doc.entities)
+  if (cached) return cached
+  const graph = SceneGraph.fromValidated(doc)
+  const roads = doc.entities
+    .filter((e) => e.road)
+    .flatMap((e) => {
+      const t = graph.worldTransform(e.id)
+      const m = new Matrix4().compose(
+        new Vector3(...t.position),
+        new Quaternion(...t.rotation),
+        new Vector3(1, 1, 1),
+      )
+      return e.road!.paths.map((path) => {
+        const points = path.map((p) => new Vector3(...p).applyMatrix4(m))
+        let minX = Infinity,
+          maxX = -Infinity,
+          minZ = Infinity,
+          maxZ = -Infinity
+        for (const p of points) {
+          minX = Math.min(minX, p.x)
+          maxX = Math.max(maxX, p.x)
+          minZ = Math.min(minZ, p.z)
+          maxZ = Math.max(maxZ, p.z)
+        }
+        return { points, width: e.road!.width, minX, maxX, minZ, maxZ }
+      })
+    })
+  chartCache.set(doc.entities, roads)
+  return roads
+}
 /** Local north-up chart: loaded vector roads only, no network or extra WebGL camera. */
 export class HelmMap {
   private entities: Entity[] | null = null
-  private roads: { points: Vector3[]; width: number }[] = []
+  private roads: ChartRoad[] = []
   private next = 0
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -18,21 +59,7 @@ export class HelmMap {
     this.next = now + 250
     if (doc.entities !== this.entities) {
       this.entities = doc.entities
-      const graph = SceneGraph.fromValidated(doc)
-      this.roads = doc.entities
-        .filter((e) => e.road)
-        .flatMap((e) => {
-          const t = graph.worldTransform(e.id)
-          const m = new Matrix4().compose(
-            new Vector3(...t.position),
-            new Quaternion(...t.rotation),
-            new Vector3(1, 1, 1),
-          )
-          return e.road!.paths.map((path) => ({
-            points: path.map((p) => new Vector3(...p).applyMatrix4(m)),
-            width: e.road!.width,
-          }))
-        })
+      this.roads = chartRoads(doc)
     }
     const ctx = this.canvas.getContext('2d')!
     const scale = 0.23 * this.zoom,
@@ -56,10 +83,12 @@ export class HelmMap {
     }
     ctx.strokeStyle = '#549bd3'
     for (const road of this.roads) {
+      const pad = road.width / 2
       if (
-        !road.points.some(
-          (p) => Math.abs(p.x - pose.position[0]) < 1600 && Math.abs(p.z - pose.position[2]) < 1000,
-        )
+        road.maxX + pad < pose.position[0] - cx / scale ||
+        road.minX - pad > pose.position[0] + cx / scale ||
+        road.maxZ + pad < pose.position[2] - cy / scale ||
+        road.minZ - pad > pose.position[2] + cy / scale
       )
         continue
       ctx.lineWidth = Math.max(1, road.width * scale)

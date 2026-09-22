@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Use sparse collision-contact history instead of resetting a quadratic dense matrix every physics tick.
+- Share cockpit road-chart projections and cull paths by cached bounds at the current zoom.
+- Document remaining performance work and measurement limits in docs/performance.md.
+
 - Add a cached, worker-decoded OpenFreeMap sea layer with coastline/island polygons and animated water normals.
 - Adapt the Streets GL angular sun disc/halo and retain its MIT notice and water texture attribution.
 - Bound physics catch-up to four steps, remove redundant validated graph parsing and share streamed additions across undo snapshots; expose physics and sector-install timings.
