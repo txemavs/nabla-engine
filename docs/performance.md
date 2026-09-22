@@ -87,8 +87,10 @@ the shaded areas. Radius-zero PCF retains hardware bilinear comparison without t
 screen-pixel-dependent rotated sampling pattern. Cascades blend at their boundaries.
 
 Only the main view refreshes shadow maps. Auxiliary views reuse them and do not
-receive independent camera-fitted cascades. Shadows turn off above 500 m; ordinary
-sun/moon lighting remains without doubling the CSM light. Newly streamed surfaces,
+receive independent camera-fitted cascades. Coverage is limited by camera-relative
+cascade distance, not geographic altitude: a car on elevated terrain still casts
+a shadow. Distant terrain outside cascade reach receives ordinary sun/moon lighting
+without doubling the CSM light. Newly streamed surfaces,
 road batches and asynchronously loaded assets register their materials. Disposed
 materials and shadow render targets are released when zones or quality tiers change.
 

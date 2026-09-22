@@ -1778,7 +1778,9 @@ function frame(now: number): void {
     camera.position,
     !!view.document.geography && geography.atmosphere.day < 0.15,
   )
-  const shadowsActive = height < 500 && performanceSettings.shadows > 0
+  // Cascade reach is already camera-relative. Geographic elevation must not
+  // disable shadows on high ground or after traveling to another origin.
+  const shadowsActive = performanceSettings.shadows > 0
   sun.visible = !shadowsActive
   for (const light of shadowManager.lights) light.visible = shadowsActive
   renderer.domElement.dataset.shadowCascades = String(
