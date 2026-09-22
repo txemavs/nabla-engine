@@ -454,3 +454,14 @@ flat lake level or hydrology simulation. Incomplete/open relation rings are stil
 skipped by the OSM normalizer. Nested equal-priority landuse polygons are not a
 full polygon-union/classification system. The procedural atlas prototype has
 been removed because it was unused; current land materials use solid colors.
+
+### Physical reflections with cascaded shadows
+
+The CSM addon bundled with Three.js r186 still carries an older complete lighting
+chunk. Its wholesale replacement omits the current DFG lookup and multi-scattering
+initialization, making metallic materials lose reflections. Nabla retains the
+installed engine's lighting chunk and replaces only the directional-light branch
+with the addon's cascade handling. This preserves paint/chrome material values,
+iridescence, environment lighting and the current other-light/probe support.
+A browser regression measures an environment-only metal sphere across all shadow
+tiers; reflection brightness must remain unchanged.

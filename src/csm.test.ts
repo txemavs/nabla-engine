@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
-import { MeshStandardMaterial, PerspectiveCamera, Scene, Vector3 } from 'three'
-import { ShadowManager } from '../playground/csm.js'
+import { MeshStandardMaterial, PerspectiveCamera, Scene, Vector3, ShaderChunk } from 'three'
+import { ShadowManager, cascadedLighting } from '../playground/csm.js'
 
 it('reconfigures cascade count, restores hooks and releases shadow maps', () => {
   const manager = new ShadowManager(),
@@ -58,4 +58,21 @@ it('updates the projection on zoom and keeps absolute cascade positions during r
   manager.update(camera, origin)
   expect(manager.lights[0].shadow.camera.right).not.toBe(oldWidth)
   manager.dispose()
+})
+
+it('preserves physical-material reflection initialization with shadows on and off', () => {
+  const manager = new ShadowManager()
+  for (const quality of [512, 1024, 2048, 0, 512]) {
+    manager.reconfigure(quality, new PerspectiveCamera(), new Scene(), new Vector3(1, -2, 1), 3)
+    const source = ShaderChunk.lights_fragment_begin
+    expect(source).toContain('material.dfg = texture2D( dfgLUT')
+    expect(source).toContain('material.multiScatteringCompensation =')
+    expect(source).toContain('material.iridescenceF0Metallic =')
+    expect(source).toContain('NUM_SUN_LIGHTS')
+    expect(source).toContain('USE_LIGHT_PROBES_GRID')
+    expect(source.match(/material.dfg =/g)).toHaveLength(1)
+    expect(source).toContain('CSM_cascades')
+  }
+  manager.dispose()
+  expect(() => cascadedLighting('changed upstream layout', '')).toThrow('Unsupported')
 })

@@ -12,6 +12,26 @@ import { CSM } from 'three/addons/csm/CSM.js'
 import * as THREE from 'three'
 import { shadowTiers, type ShadowTier } from './performance.js'
 
+// The addon ships an older full lighting chunk. Replacing it wholesale drops
+// r186's DFG lookup and multi-scattering initialization, turning metals black.
+// Keep the installed engine's lighting and replace only its directional branch.
+const directionalStart = '#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )'
+const directionalEnd = '#if ( NUM_RECT_AREA_LIGHTS > 0 )'
+export function cascadedLighting(standard: string, cascaded: string): string {
+  const start = standard.indexOf(directionalStart)
+  const end = standard.indexOf(directionalEnd, start)
+  const replacementStart = cascaded.indexOf(directionalStart)
+  const replacementEnd = cascaded.indexOf(directionalEnd, replacementStart)
+  if ([start, end, replacementStart, replacementEnd].some((index) => index < 0))
+    throw new Error('Unsupported Three.js CSM lighting layout')
+  return (
+    standard.slice(0, start) +
+    cascaded.slice(replacementStart, replacementEnd) +
+    standard.slice(end)
+  )
+}
+const standardLighting = THREE.ShaderChunk.lights_fragment_begin
+
 export interface CSMConfig {
   camera: THREE.PerspectiveCamera
   scene: THREE.Scene
@@ -50,6 +70,10 @@ export class ShadowManager {
       lightMargin: 200,
       mode: 'practical',
     })
+    THREE.ShaderChunk.lights_fragment_begin = cascadedLighting(
+      standardLighting,
+      THREE.ShaderChunk.lights_fragment_begin,
+    )
     this.csm.fade = true
     for (const light of this.csm.lights) {
       light.shadow.normalBias = 0.04
