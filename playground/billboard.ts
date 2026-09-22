@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 
 /** Camera-facing in yaw only: the trunk retains world up, including in portal passes. */
 export class UprightBillboard extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> {
@@ -24,7 +25,24 @@ export class UprightBillboard extends THREE.Mesh<THREE.PlaneGeometry, THREE.Mesh
   }
 }
 
-export function softenFoliage(material: THREE.MeshBasicMaterial, saturation: number): void {
+/** Two fixed cutout planes in a single draw call. Keep generic gallery sprites as billboards. */
+export class CrossedTree extends THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial> {
+  constructor(material: THREE.MeshLambertMaterial) {
+    const front = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0)
+    const side = front.clone().rotateY(Math.PI / 2)
+    const geometry = mergeGeometries([front, side])
+    front.dispose()
+    side.dispose()
+    super(geometry, material)
+    this.castShadow = true
+    this.receiveShadow = true
+  }
+}
+
+export function softenFoliage(
+  material: THREE.MeshBasicMaterial | THREE.MeshLambertMaterial,
+  saturation: number,
+): void {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.foliageSaturation = { value: saturation }
     shader.fragmentShader = 'uniform float foliageSaturation;\n' + shader.fragmentShader

@@ -9,7 +9,7 @@ import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { terrainVertices, terrainIndices } from '../src/terrain.js'
 import { triangles } from '../src/solid.js'
-import { UprightBillboard, softenFoliage } from './billboard.js'
+import { UprightBillboard, CrossedTree, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
 import { createPortalSurface, type PortalSurface } from './portals.js'
@@ -53,7 +53,7 @@ export class SceneView {
   private readonly roads = new RoadBatches()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
-  readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
+  readonly sprites = new Map<string, THREE.Sprite | UprightBillboard | CrossedTree>()
   private readonly spritePixels = new Map<string, ImageData>()
   private readonly spriteImages = new Map<
     string,
@@ -156,19 +156,26 @@ export class SceneView {
       }
       if (e.sprite) {
         const options = { color: '#ffffff', alphaTest: 0.1, transparent: false, depthWrite: true }
-        const material = e.sprite.upright
-          ? new THREE.MeshBasicMaterial({ ...options, side: THREE.DoubleSide })
-          : new THREE.SpriteMaterial(options)
-        if (material instanceof THREE.MeshBasicMaterial)
+        const material = e.sprite.crossed
+          ? new THREE.MeshLambertMaterial({ ...options, side: THREE.DoubleSide })
+          : e.sprite.upright
+            ? new THREE.MeshBasicMaterial({ ...options, side: THREE.DoubleSide })
+            : new THREE.SpriteMaterial(options)
+        if (
+          material instanceof THREE.MeshBasicMaterial ||
+          material instanceof THREE.MeshLambertMaterial
+        )
           softenFoliage(material, e.sprite.saturation ?? 1)
         const sprite =
-          material instanceof THREE.MeshBasicMaterial
-            ? new UprightBillboard(material)
-            : new THREE.Sprite(material)
+          material instanceof THREE.MeshLambertMaterial
+            ? new CrossedTree(material)
+            : material instanceof THREE.MeshBasicMaterial
+              ? new UprightBillboard(material)
+              : new THREE.Sprite(material)
         if (sprite instanceof THREE.Sprite) sprite.center.set(0.5, 0)
         // Keep overhead-facing billboards above the ground image overlay.
         sprite.position.y = 0.02
-        sprite.scale.set(e.size[0], e.size[1], 1)
+        sprite.scale.set(e.size[0], e.size[1], sprite instanceof CrossedTree ? e.size[0] : 1)
         sprite.userData.entityId = e.id
         group.add(sprite)
         this.sprites.set(e.id, sprite)
@@ -203,7 +210,7 @@ export class SceneView {
             material.map = texture
             material.needsUpdate = true
             this.spritePixels.set(e.id, pixels)
-            if (e.sprite!.groundShadow) {
+            if (e.sprite!.groundShadow && !e.sprite!.crossed) {
               const shadow = new THREE.Mesh(
                 new THREE.PlaneGeometry(e.size[0], e.size[1] * 0.7).translate(
                   0,

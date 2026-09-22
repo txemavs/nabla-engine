@@ -4,6 +4,7 @@ export interface PerformanceSettings {
   distance: number
   collisions: number
   resolution: number
+  shadowDistance: number
   shadows: number
 }
 export const performanceDefaults: PerformanceSettings = {
@@ -13,6 +14,7 @@ export const performanceDefaults: PerformanceSettings = {
   collisions: 400,
   resolution: 1.25,
   shadows: 1024,
+  shadowDistance: 250,
 }
 export function readPerformance(): PerformanceSettings {
   try {
@@ -25,6 +27,7 @@ export function readPerformance(): PerformanceSettings {
       distance: choose(s.distance, [1000, 2000, 4000, 6000], 4000),
       collisions: choose(s.collisions, [200, 400, 800, 2000], 400),
       resolution: choose(s.resolution, [0.75, 1, 1.25, 2], 1.25),
+      shadowDistance: choose(s.shadowDistance, [100, 250, 500], 250),
       shadows: choose(s.shadows, [0, 512, 1024, 2048], 1024),
     }
   } catch {

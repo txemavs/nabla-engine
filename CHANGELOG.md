@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Follow the viewer with stable, configurable sun shadows; reduce daytime fill and add lit crossed-tree cutouts without an extra draw call per tree.
+
 - Assign OSM courtyards to their containing building body and subtract detailed building parts from generic outlines to prevent overlapping roofs and walls.
 
 - Use sparse collision-contact history instead of resetting a quadratic dense matrix every physics tick.

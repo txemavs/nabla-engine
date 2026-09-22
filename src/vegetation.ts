@@ -4,6 +4,7 @@ export function treeSprite(index: number) {
   return {
     url: generated ? '/sprites/tree.png' : `/sprites/tree-${(index % 5) + 1}.png`,
     upright: true,
+    crossed: true,
     saturation: generated ? 1 : 0.35,
     groundShadow: true,
   }

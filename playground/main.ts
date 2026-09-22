@@ -1,3 +1,4 @@
+import { FollowingShadows } from './following-shadows.js'
 import { SeaWater } from './water.js'
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
@@ -158,7 +159,9 @@ sun.shadow.camera.top = 55
 sun.shadow.camera.bottom = -55
 sun.shadow.camera.far = 150
 sun.shadow.normalBias = 0.035
-scene.add(sun)
+scene.add(sun, sun.target)
+const followingShadows = new FollowingShadows()
+const sunDirection = new THREE.Vector3(-25, 45, 25).normalize()
 const grid = new THREE.GridHelper(100, 100, '#9eb9ae', '#829b93')
 grid.position.y = 0.035
 ;(grid.material as THREE.Material).opacity = 0.18
@@ -961,6 +964,7 @@ for (const [id, key] of [
   ['collision-distance', 'collisions'],
   ['render-resolution', 'resolution'],
   ['shadow-quality', 'shadows'],
+  ['shadow-distance', 'shadowDistance'],
 ] as const) {
   const control = $<HTMLSelectElement>(id)
   control.value = String(performanceSettings[key])
@@ -1541,10 +1545,10 @@ function frame(now: number): void {
     scene.background = null
     const air = geography.atmosphere
     scene.fog = air.space >= 1 ? null : new THREE.Fog(air.color, air.near, air.far)
-    hemisphere.intensity = 0.16 + 2.34 * air.day
-    scene.environmentIntensity = 0.025 + 0.375 * air.day
+    hemisphere.intensity = 0.16 + 1.1 * air.day
+    scene.environmentIntensity = 0.025 + 0.225 * air.day
     const lightDirection = air.day > 0.05 ? geography.sunDirection : geography.moonDirection
-    sun.position.copy(lightDirection).multiplyScalar(65)
+    sunDirection.copy(lightDirection)
     sun.intensity = air.day > 0.05 ? 3.2 * air.day : 0.22
     sun.color.set(air.day > 0.05 ? '#fff0d8' : '#b8ccff')
     renderer.domElement.dataset.skyPhase =
@@ -1571,7 +1575,12 @@ function frame(now: number): void {
     camera.position,
     !!view.document.geography && geography.atmosphere.day < 0.15,
   )
-  sun.castShadow = height < 500
+  sun.castShadow = performanceSettings.shadows > 0 && height < 5000
+  followingShadows.update(sun, camera.position, sunDirection, performanceSettings.shadowDistance)
+  renderer.domElement.dataset.shadowCenter = sun.target.position
+    .toArray()
+    .map((n) => n.toFixed(1))
+    .join(',')
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false

@@ -50,3 +50,27 @@ Targeted browser tests exercise road rendering, ocean/solar shaders and streamin
 at the origin and 12 km away. Contact-matrix tests compare collision events and
 motion against Cannon's default matrix and verify zero dense storage at 18,000
 bodies. Chart tests cover shared projections and long segments crossing the view.
+
+## Visual comparison with Streets GL
+
+The local Streets GL source was inspected in `src/app/render/CSM.ts`,
+`src/app/render/PassManager.ts` and `src/app/render/materials/TreeMaterialContainer.ts`.
+Its appearance combines camera-following cascaded shadows, screen-space ambient
+occlusion, textured facades and tree shading with volume-normal textures. Crossed
+cutouts alone do not reproduce that renderer.
+
+Nabla now follows the viewer with one texel-snapped directional shadow map instead
+of a fixed 110 m box at the origin. Options exposes 100/250/500 m half-extents;
+resolution remains independent. A wider area trades sharpness and shadow-caster
+work for coverage. The local light and target both use floating-origin coordinates.
+Daytime fill light is reduced so sunlit and shaded faces remain distinguishable.
+Trees created by the vegetation factory use two fixed alpha-tested planes in one
+mesh/draw call, receive lighting and cast shadows. Existing saved sprites retain
+their layout unless their optional `crossed` flag is enabled. The generic gallery
+billboard mode remains available. Crossed trees have four triangles rather than
+two and do not use the old additional ground-shadow sticker.
+
+Next visual steps: facade/window and roof materials, terrain land-cover detail,
+and optional cascaded shadows/ambient occlusion with GPU measurements. We have
+not enabled those additional render passes or claimed Streets GL-level distance
+or performance. Browser smoke tests use software rendering, not the user's GPU.
