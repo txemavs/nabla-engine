@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add a cached, worker-decoded OpenFreeMap sea layer with coastline/island polygons and animated water normals.
+- Adapt the Streets GL angular sun disc/halo and retain its MIT notice and water texture attribution.
+- Bound physics catch-up to four steps, remove redundant validated graph parsing and share streamed additions across undo snapshots; expose physics and sector-install timings.
+
 - Preserve unchanged road cell buffers across map streaming and defer hidden road batch preparation.
 - Prepare streamed terrain, roads and building render buffers in the world worker and transfer them without copying.
 

@@ -24,6 +24,7 @@ import {
 } from 'cannon-es'
 import {
   parseScene,
+  replaceMapScene,
   SceneGraph,
   type Entity,
   type SceneDocument,
@@ -138,7 +139,7 @@ export class Simulation {
     this.minimumFlightAltitude = this.terrainEntity?.terrain
       ? Math.min(...this.terrainEntity.terrain.heights) - 10
       : 0
-    this.graph = new SceneGraph(this.document)
+    this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
     this.terrainGrounds = this.document.entities
       .filter((e) => e.terrain)
@@ -271,12 +272,9 @@ export class Simulation {
     for (const e of [...this.document.entities.filter((e) => remove.has(e.id)), ...add])
       if (e.motion === 'dynamic' || e.kind === 'spawn' || e.portal || e.kind === 'vehicle')
         throw new Error('Streaming only supports static map entities')
-    const next = parseScene({
-      ...this.document,
-      entities: [...this.document.entities.filter((e) => !remove.has(e.id)), ...add],
-    })
+    const next = replaceMapScene(this.document, remove, add)
     this.document.entities = next.entities
-    this.graph = new SceneGraph(this.document)
+    this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
     this.terrainGrounds = this.document.entities
       .filter((e) => e.terrain)
@@ -627,7 +625,7 @@ export class Simulation {
     if (this.disposed) throw new Error('Simulation is disposed')
     if (!Number.isFinite(elapsed) || elapsed < 0)
       throw new Error('Elapsed seconds must be finite and nonnegative')
-    const accepted = Math.min(elapsed, 0.25)
+    const accepted = Math.min(elapsed, FIXED_STEP * 4)
     this.lostTime += elapsed - accepted
     this.accumulator += accepted
     while (this.accumulator + 1e-10 >= FIXED_STEP) {

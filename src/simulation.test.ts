@@ -121,8 +121,10 @@ describe('shared simulation', () => {
     expect(() => sim.step(NaN)).toThrow()
     expect(() => sim.step(-1)).toThrow()
     sim.step(1)
-    expect(sim.stats.ticks).toBe(15)
-    expect(sim.stats.droppedSeconds).toBeCloseTo(0.75)
+    expect(sim.stats.ticks).toBe(4)
+    expect(sim.stats.droppedSeconds).toBeCloseTo(1 - 4 / 60)
+    sim.step(1 / 60)
+    expect(sim.stats.ticks).toBe(5)
     sim.dispose()
   })
   it('moves the camera before a wall', () => {

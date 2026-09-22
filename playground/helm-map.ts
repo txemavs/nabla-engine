@@ -18,7 +18,7 @@ export class HelmMap {
     this.next = now + 250
     if (doc.entities !== this.entities) {
       this.entities = doc.entities
-      const graph = new SceneGraph(doc)
+      const graph = SceneGraph.fromValidated(doc)
       this.roads = doc.entities
         .filter((e) => e.road)
         .flatMap((e) => {

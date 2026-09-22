@@ -1,3 +1,4 @@
+import { SeaWater } from './water.js'
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
 import { readPerformance } from './performance.js'
@@ -184,6 +185,8 @@ gizmo.addEventListener('change', () => {
 })
 const outline = new SelectionOutline()
 scene.add(outline)
+let lastWorldInstallMs = 0
+let water: SeaWater | undefined
 let view = new SceneView(editor.document)
 scene.add(view.root)
 let geography = new GeographicView(
@@ -276,6 +279,9 @@ function rebuild(): void {
 function setupWorldStream(): void {
   streamSample = null
   const doc = editor.document
+  water?.dispose()
+  water = doc.geography ? new SeaWater(doc.geography) : undefined
+  if (water) scene.add(water.root)
   $('stream-status').textContent = ''
   if (!doc.geography || !doc.entities.some((e) => e.id === 'world-terrain')) return
   const origin = doc.geography
@@ -299,10 +305,13 @@ function setupWorldStream(): void {
     document: () => view.document,
     load: (key, signal) => loader.load(origin, key, signal),
     replace: (remove, add) => {
+      const started = performance.now()
       sim?.replaceMapEntities(remove, add)
       editor.replaceMapEntities(remove, add)
       view.replaceMapEntities(remove, add)
       distantTerrain?.setDocument(view.document)
+      lastWorldInstallMs = performance.now() - started
+      renderer.domElement.dataset.worldInstallMs = lastWorldInstallMs.toFixed(1)
       for (const e of add) if (e.kind === 'group') collapsed.add(e.id)
       view.setPlaying(!!sim)
       if (sim) {
@@ -1263,6 +1272,7 @@ let nextPerformanceReadout = 0
 renderer.info.autoReset = false
 function frame(now: number): void {
   const frameStart = performance.now()
+  let physicsMs = 0
   renderer.info.reset()
   frameTimes.push(now - previous)
   if (frameTimes.length > 120) frameTimes.shift()
@@ -1275,7 +1285,9 @@ function frame(now: number): void {
       yaw = sim.player.yaw
     }
     sim.setInput(currentInput(pad))
+    const physicsStart = performance.now()
     sim.step(document.hidden ? 0 : dt)
+    physicsMs = performance.now() - physicsStart
     if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       const c = sim.collisionStats
       $('performance-status').textContent =
@@ -1511,6 +1523,8 @@ function frame(now: number): void {
   const position = sim?.player.position ?? camera.position.toArray()
   renderOrigin.set(0, 0, 0)
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
+  water?.update(worldCamera, renderOrigin, performanceSettings.distance, now)
+  renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
   geography.viewDistance = performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
   distantTerrain?.update(position)
@@ -1619,7 +1633,7 @@ function frame(now: number): void {
     const sorted = [...frameTimes].sort((a, b) => a - b)
     const p95 = sorted[Math.floor((sorted.length - 1) * 0.95)] || 0
     const cpu = performance.now() - frameStart
-    performanceText = `${p95.toFixed(0)} ms P95 · CPU ${cpu.toFixed(1)} ms · ${renderer.info.render.calls} dibujos · ${(renderer.info.render.triangles / 1000).toFixed(0)}k triángulos`
+    performanceText = `${p95.toFixed(0)} ms P95 · CPU ${cpu.toFixed(1)} ms · Física ${physicsMs.toFixed(1)} ms · Última zona ${lastWorldInstallMs.toFixed(0)} ms · ${renderer.info.render.calls} dibujos · ${(renderer.info.render.triangles / 1000).toFixed(0)}k triángulos`
     renderer.domElement.dataset.drawCalls = String(renderer.info.render.calls)
     renderer.domElement.dataset.frameP95 = p95.toFixed(1)
   }

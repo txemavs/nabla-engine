@@ -1,3 +1,4 @@
+import { addSunDisc } from './sun-disc.js'
 import { atmosphere, skyTime, type SkyClock } from '../src/sky.js'
 import * as THREE from 'three'
 import {
@@ -30,7 +31,6 @@ export class GeographicView {
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 1e-8, 200000)
   private readonly earth: THREE.Mesh
   private readonly moon: THREE.Mesh
-  private readonly sun: THREE.Mesh
   private readonly stars: THREE.Points
   private readonly cache = new Map<string, Tile>()
   private readonly hasTerrain: boolean
@@ -74,11 +74,8 @@ export class GeographicView {
       new THREE.SphereGeometry(1.7374, 32, 24),
       new THREE.MeshLambertMaterial({ color: '#c5c4bd', fog: false }),
     )
-    this.sun = new THREE.Mesh(
-      new THREE.SphereGeometry(696.34, 32, 24),
-      new THREE.MeshBasicMaterial({ color: '#fff2bc', toneMapped: false, fog: false }),
-    )
-    this.space.add(this.moon, this.sun, new THREE.AmbientLight('#a2b6d3', 0.35))
+    addSunDisc(this.backdrop.material, this.sunDirection)
+    this.space.add(this.moon, new THREE.AmbientLight('#a2b6d3', 0.35))
     const rotation = this.origin ? localFrame(this.origin).invert() : new THREE.Quaternion()
     this.space.add(this.daylight, this.backdrop)
     this.backdrop.renderOrder = -100
@@ -155,7 +152,6 @@ export class GeographicView {
       this.sunDirection.copy(dirs.sun).applyQuaternion(rotation)
       this.moonDirection.copy(dirs.moon).applyQuaternion(rotation)
       this.daylight.position.copy(this.sunDirection)
-      this.sun.position.copy(this.sunDirection).multiplyScalar(149597.87).add(this.earth.position)
       this.moon.position.copy(this.moonDirection).multiplyScalar(384.4).add(this.earth.position)
       this.changed()
     }

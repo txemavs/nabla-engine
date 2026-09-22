@@ -351,3 +351,46 @@ the original draped surface. This is a work-elimination guarantee, not an FPS cl
 The browser performance fixture still checks draw-call bounds and road-distance controls.
 GPU uploads, collision installation and whole-document validation remain synchronous;
 precomputed geographic tiles and progressive terrain LOD remain separate improvements.
+
+### Sea and sunlight
+
+The sea is a separate visual layer of OpenFreeMap/OpenMapTiles `water` polygons
+with `class=ocean`, including coastline cutouts and island holes. It loads zoom-12
+vector tiles through a dedicated worker, transfers triangles and renders at sea
+level relative to the geographic origin. It is not inferred from a terrain height
+threshold. Inland rivers/lakes are intentionally excluded until their elevations
+can be resolved; no swimming, buoyancy or water collision is added.
+
+OpenFreeMap requests disclose the explored tile coordinates to that provider.
+The provider was explicitly authorized for this installation. Set
+`VITE_WATER_TILEJSON_URL` to use another compatible TileJSON endpoint, including
+an operator's own mirror; no private URL or Mapbox key is committed. The browser
+cache holds up to 96 responses for seven days. Only one request is active at a
+time, failed tiles back off for a minute, and up to 25 nearby tile meshes are
+retained. Loading stops above 12 km. Existing OSM/Esri server cache is unchanged.
+Attribution remains visible with the geographic HUD.
+
+The angular sun disc and Gaussian halo, and three scrolling water-normal samples,
+are adapted from Streets GL. The normal texture and MIT notice are included in
+`assets/geography/water-normal.png` and `assets/licenses/streets-gl-MIT.txt`.
+These effects use no reflection camera, screen-space reflection or bloom pass.
+Existing geographic time, moon and directional lighting remain in control.
+
+### Long-frame recovery
+
+Simulation catch-up is capped at four fixed 1/60-second steps per display frame;
+excess elapsed time is reported as dropped time instead of creating a 15-step
+catch-up burst. Normal 30/60/120 Hz simulation timing is unchanged. Under sustained
+very low frame rates the simulation advances more slowly than wall time.
+Already-validated simulation documents and map-chart/view graph updates avoid
+redundant whole-scene validation. Streaming history shares one detached addition
+batch between immutable snapshots rather than copying it once per undo entry.
+Performance readouts distinguish physics time from the most recent sector install.
+GPU uploads and sector installation can still produce long frames; this is not a
+guarantee of a particular frame rate on the user's hardware.
+
+Streaming transactions additionally parse and validate only incoming topology,
+retaining existing validated entity/geometry references. Global identity, hierarchy,
+portal and terrain-reference checks still run on the combined document before it
+is committed. The internal `replaceMapScene` path requires privately owned validated
+data; authored edits and external scene imports continue to use full `parseScene`.

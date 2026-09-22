@@ -96,7 +96,7 @@ export class SceneView {
       ...this.document.entities.filter((e) => !remove.has(e.id)),
       ...structuredClone(add),
     ]
-    this.graph = new SceneGraph(this.document)
+    this.graph = SceneGraph.fromValidated(this.document)
     this.addEntities(add)
     // Resource promises are consumed per batch rather than retained for the whole journey.
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
