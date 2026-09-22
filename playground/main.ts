@@ -1,3 +1,4 @@
+import { roadGeometry } from '../src/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
@@ -31,6 +32,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { TransformControls } from 'three/addons/controls/TransformControls.js'
 import {
   SceneEditor,
+  parseScene,
+  type SceneDocument,
   SceneGraph,
   Simulation,
   createSampleScene,
@@ -198,6 +201,78 @@ scene.add(gizmo.getHelper())
 gizmo.addEventListener('change', () => {
   needsRender = true
 })
+const worldCursor = new THREE.Group()
+const cursorAxes = new THREE.AxesHelper(1)
+worldCursor.add(cursorAxes)
+const cursorRing = new THREE.Mesh(
+  new THREE.TorusGeometry(0.3, 0.025, 6, 24),
+  new THREE.MeshBasicMaterial({ color: 0xffd36e, depthTest: false, depthWrite: false }),
+)
+cursorRing.renderOrder = 50
+worldCursor.add(cursorRing)
+worldCursor.renderOrder = 50
+scene.add(worldCursor)
+function syncCursor(): void {
+  const position = editor.document.cursor ?? [0, 0, 0]
+  worldCursor.position.fromArray(position)
+  for (const [i, axis] of ['x', 'y', 'z'].entries())
+    $<HTMLInputElement>(`cursor-${axis}`).value = String(position[i])
+  needsRender = true
+}
+function placeCursor(position: Vec3Tuple): void {
+  editor.setCursor(position)
+  syncCursor()
+  $('status').textContent = 'Cambios sin guardar'
+}
+$('cursor-apply').onclick = () =>
+  action(() =>
+    placeCursor(
+      ['x', 'y', 'z'].map((a) => $<HTMLInputElement>(`cursor-${a}`).valueAsNumber) as Vec3Tuple,
+    ),
+  )
+$('cursor-selection').onclick = () =>
+  action(() => placeCursor(new SceneGraph(editor.document).worldTransform(selectedId).position))
+$('cursor-view').onclick = () => action(() => placeCursor(orbit.target.toArray()))
+$('selection-cursor').onclick = () =>
+  action(() => {
+    editor.moveToCursor(selectedId)
+    rebuild()
+  })
+$('origin-cursor').onclick = () =>
+  action(() => {
+    editor.originToCursor(selectedId)
+    rebuild()
+  })
+function lockAxis(axis: string): void {
+  $<HTMLSelectElement>('transform-axis').value = axis
+  gizmo.showX = axis === 'all' || axis === 'X'
+  gizmo.showY = axis === 'all' || axis === 'Y'
+  gizmo.showZ = axis === 'all' || axis === 'Z'
+  needsRender = true
+}
+$('transform-axis').onchange = () => lockAxis($<HTMLSelectElement>('transform-axis').value)
+$('transform-exact').onclick = () =>
+  action(() => {
+    const axis = $<HTMLSelectElement>('transform-axis').value,
+      amount = $<HTMLInputElement>('transform-amount').valueAsNumber
+    if (axis === 'all' || !Number.isFinite(amount))
+      throw new Error('Elige X, Y o Z y una cantidad finita')
+    const doc = editor.document,
+      graph = new SceneGraph(doc),
+      entity = doc.entities.find((e) => e.id === selectedId)!
+    const pose = graph.worldTransform(selectedId),
+      i = 'XYZ'.indexOf(axis)
+    if (gizmo.getMode() === 'rotate') {
+      const v = new THREE.Vector3()
+      v.setComponent(i, 1)
+      pose.rotation = new THREE.Quaternion()
+        .setFromAxisAngle(v, (amount * Math.PI) / 180)
+        .multiply(new THREE.Quaternion(...pose.rotation))
+        .toArray()
+    } else pose.position[i] += amount
+    editor.update(selectedId, { transform: graph.localFromWorld(entity.parentId, pose) })
+    rebuild()
+  })
 const outline = new SelectionOutline()
 scene.add(outline)
 let lastWorldInstallMs = 0
@@ -263,9 +338,11 @@ const solidEditor = new SolidEditor(
   },
   refreshUi,
   toast,
+  () => editor.document.cursor ?? [0, 0, 0],
 )
 
 function rebuild(): void {
+  syncCursor()
   distantTerrain?.dispose()
   distantTerrain = null
   worldStream?.dispose()
@@ -345,13 +422,19 @@ function setupWorldStream(): void {
       $('stream-status').textContent = message
     },
   })
-  $('stream-status').textContent = 'Exploración conectada · precarga al jugar'
+  $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
 function select(id: string): void {
   selectedId = id
   refreshUi()
 }
 function refreshUi(): void {
+  syncCursor()
+  $('cursor-menu')
+    .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
+      'input,button,select',
+    )
+    .forEach((el) => (el.disabled = !!sim || loadingWorld))
   needsRender = true
   const doc = editor.document
   let parentId = doc.entities.find((e) => e.id === selectedId)?.parentId
@@ -430,6 +513,25 @@ function refreshUi(): void {
     ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
+  if (e.road && !sim && e.road.elevation !== 'tunnel') {
+    const button = document.createElement('button')
+    button.textContent = 'Convertir carretera en sólido editable'
+    button.onclick = () =>
+      action(() => {
+        const doc = editor.document,
+          road = doc.entities.find((item) => item.id === e.id)!,
+          terrain = doc.entities.find((item) => item.id === road.road!.terrainId)?.terrain
+        if (!terrain) throw new Error('Carga el terreno de esta carretera')
+        const geometry = roadGeometry(terrain, road.road!.paths, road.road!.width, road.road)
+        delete road.road
+        road.kind = 'solid'
+        road.geometry = geometry
+        road.motion = 'static'
+        editor.load(doc)
+        rebuild()
+      })
+    props.append(button)
+  }
   solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
   if (e.light) {
     const controls = document.createElement('div')
@@ -641,26 +743,14 @@ for (const [id, kind] of [
   $(id).onclick = () =>
     action(() => {
       selectedId = editor.add(kind)
+      setAddMenu(false)
       rebuild()
     })
 }
 for (const entry of entityCatalog) {
   $(`add-${entry.id}`).onclick = () =>
     action(() => {
-      const ground = orbit.target.clone()
-      view.root.updateWorldMatrix(true, true)
-      const ray = new THREE.Raycaster(
-        new THREE.Vector3(ground.x, ground.y + 10000, ground.z),
-        new THREE.Vector3(0, -1, 0),
-      )
-      const surfaces = editor.document.entities
-        .filter(
-          (e) => e.kind === 'terrain' || (e.kind === 'box' && e.motion === 'static' && !e.light),
-        )
-        .map((e) => view.objects.get(e.id)!)
-        .filter(Boolean)
-      const hit = ray.intersectObjects(surfaces, true)[0]
-      ground.y = hit ? hit.point.y : 0
+      const ground = new THREE.Vector3(...(editor.document.cursor ?? [0, 0, 0]))
       const entities = createCatalogEntities(entry.id, crypto.randomUUID(), ground.toArray())
       const doc = editor.document
       doc.entities.push(...entities)
@@ -698,7 +788,7 @@ $('sample-assets').onclick = () =>
 $('add-sprite').onclick = () =>
   action(() => {
     const doc = editor.document
-    const sprite = createEntity(crypto.randomUUID(), 'group')
+    const sprite = createEntity(crypto.randomUUID(), 'group', doc.cursor ?? [0, 0, 0])
     sprite.name = 'Sprite · árbol'
     sprite.size = [7, 7, 0.1]
     sprite.sprite = treeSprite(0)
@@ -711,6 +801,11 @@ $('sample-gallery').onclick = () =>
   action(() => {
     const doc = editor.document
     const entities = createGallery(crypto.randomUUID())
+    for (const e of entities)
+      if (!e.parentId)
+        e.transform.position = e.transform.position.map(
+          (v, i) => v + (doc.cursor?.[i] ?? 0),
+        ) as Vec3Tuple
     doc.entities.push(...entities)
     editor.load(doc)
     selectedId = entities[0].id
@@ -721,13 +816,16 @@ $('sample-portals').onclick = () =>
   action(() => {
     const next = editor.document
     const ids = [crypto.randomUUID(), crypto.randomUUID()]
-    next.entities.push(...createPortalPair(ids[0], ids[1]))
+    const [x, y, z] = next.cursor ?? [0, 0, 0]
+    const portals = createPortalPair(ids[0], ids[1], [x, y + 1.455, z], [x + 8, y + 1.455, z])
+    for (const portal of portals) portal.portal!.mode = 'closed'
+    next.entities.push(...portals)
     editor.load(next)
     selectedId = ids[0]
     collapsed.delete(ids[0])
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
-    toast('Dos Stargates añadidos. El A3 tiene el primero delante; puedes moverlos o deshacer.')
+    toast('Dos Stargates añadidos junto al cursor · enlazados y cerrados.')
   })
 async function loadIrun(): Promise<void> {
   if (sim || loadingWorld) return
@@ -819,25 +917,34 @@ async function travelTo(): Promise<void> {
   $('world-loading').textContent = message
   $('travel-status').textContent = message
   try {
-    const entities = await loader.load(
-      { latitude, longitude, altitude: 0 },
-      '0_0',
-      controller.signal,
-      true,
-    )
+    const current = editor.document
+    const placeKey = (lat: number, lon: number) => `nabla-place:${lat.toFixed(6)}:${lon.toFixed(6)}`
+    if (current.geography)
+      await writeScene(
+        placeKey(current.geography.latitude, current.geography.longitude),
+        editor.serialize(),
+      )
+    const saved = await readScene(placeKey(latitude, longitude))
+    let next: SceneDocument
+    if (saved) next = parseScene(JSON.parse(saved))
+    else {
+      const entities = await loader.load(
+        { latitude, longitude, altitude: 0 },
+        '0_0',
+        controller.signal,
+        true,
+      )
+      for (const e of entities) if (e.terrain) e.name = `Relieve · ${name}`
+      next = upgradeReferenceScene({
+        version: 1,
+        name,
+        geography: { latitude, longitude, altitude: 0, imagery: 'offline' },
+        sky: current.sky,
+        entities,
+      })
+    }
     if (controller.signal.aborted) return
     $('travel-cancel').hidden = true
-    for (const e of entities) {
-      if (e.terrain) e.name = `Relieve · ${name}`
-      if (e.id === 'carrier') e.name = 'Nave'
-    }
-    const next = upgradeReferenceScene({
-      version: 1,
-      name,
-      geography: { latitude, longitude, altitude: 0, imagery: 'offline' },
-      sky: editor.document.sky,
-      entities,
-    })
     editor.load(next)
     for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
     selectedId = 'car-a'
@@ -845,14 +952,14 @@ async function travelTo(): Promise<void> {
     $('welcome').hidden = true
     await view.ready
     focusSelection()
-    const car = next.entities.find((e) => e.id === 'car-a')!
-    const [x, y, z] = car.transform.position
+    const car = next.entities.find((e) => e.id === 'car-a')
+    const [x, y, z] = car?.transform.position ?? next.cursor ?? [0, 0, 0]
     orbit.target.set(x, y + 2, z)
     camera.position.set(x + 35, y + 32, z + 40)
     orbit.update()
     renderer.domElement.dataset.world = 'destination'
     $('travel-status').textContent =
-      `${name} cargado · pulsa Jugar para explorar. Deshacer vuelve a la escena anterior.`
+      `${name} cargado · pulsa Jugar para explorar. Los cambios del lugar anterior se guardaron en este navegador.`
     toast(`${name} · destino cargado`)
     $('travel-menu').hidePopover()
   } catch (error) {
@@ -1072,6 +1179,17 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     ),
     camera,
   )
+  if (e.shiftKey) {
+    const hit = raycaster.intersectObjects([...view.objects.values()], true)[0]
+    const point =
+      hit?.point ??
+      raycaster.ray.intersectPlane(
+        new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+        new THREE.Vector3(),
+      )
+    if (point) action(() => placeCursor(point.toArray()))
+    return
+  }
   if (solidEditor.active) {
     solidEditor.click(
       raycaster,
@@ -1150,6 +1268,9 @@ window.addEventListener('keydown', (e) => {
       else editor.undo()
       rebuild()
     }
+    if (['KeyX', 'KeyY', 'KeyZ'].includes(e.code) && !e.ctrlKey && !e.metaKey)
+      lockAxis(e.code.slice(-1))
+    if (e.code === 'Escape') lockAxis('all')
     if (e.code === 'KeyF') focusSelection()
     if (e.code === 'KeyG') setTool('translate')
     if (e.code === 'KeyR') setTool('rotate')
@@ -1503,9 +1624,29 @@ function frame(now: number): void {
         : 'WASD volar · Espacio saltar · C cámara · Clic disparar'
   } else {
     orbit.update()
+    if (
+      worldStream &&
+      !dragging &&
+      !solidEditor.active &&
+      !document.hidden &&
+      (!streamSample || now - streamSample.at > 500)
+    ) {
+      const position = orbit.target.toArray()
+      worldStream.update(
+        position,
+        [0, 0, 0],
+        [view.objects.get(selectedId)?.getWorldPosition(new THREE.Vector3()).toArray() ?? position],
+      )
+      streamSample = { at: now, position }
+    }
     const object = view.objects.get(selectedId)
     outline.update(object)
   }
+  cursorRing.quaternion.copy(camera.quaternion)
+  worldCursor.visible = !sim
+  worldCursor.scale.setScalar(
+    Math.max(0.25, camera.position.distanceTo(worldCursor.position) * 0.018),
+  )
   gallery.update(view, !!sim, document.hidden ? 0 : dt)
   portalControls.update(
     sim,

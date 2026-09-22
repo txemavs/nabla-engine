@@ -16,6 +16,7 @@
         <nav class="app-menus" aria-label="Menú principal">
           <button id="file-menu-button" popovertarget="file-menu">Archivo</button>
           <button id="travel-menu-button" popovertarget="travel-menu">Ir</button>
+          <button popovertarget="cursor-menu">Cursor 3D</button>
           <button id="options-menu-button" popovertarget="options-menu">Opciones</button>
           <button id="help-menu-button" popovertarget="help-menu">Ayuda</button>
         </nav>
@@ -40,11 +41,41 @@
             <button id="travel-go" type="submit">Cargar destino</button>
           </form>
           <p>
-            Carga terreno y edificios reales alrededor del destino, con el coche y la nave. La
-            escena anterior se conserva en Deshacer. Guarda o exporta para conservarla en disco.
+            Carga terreno y edificios reales alrededor del destino, con el coche y la nave. Cada
+            lugar se guarda en este navegador antes de viajar y se recupera al regresar. Exporta las
+            escenas para conservarar una copia fuera del navegador.
           </p>
           <p id="travel-status" role="status"></p>
           <button id="travel-cancel" hidden>Cancelar carga</button>
+        </div>
+        <div id="cursor-menu" class="app-menu" popover aria-label="Cursor 3D">
+          <h3>Cursor 3D · punto de inserción</h3>
+          <p>Mayús + clic sobre el mundo para colocarlo. Las entidades nuevas nacen aquí.</p>
+          <div class="axis-row">
+            <label>X<input id="cursor-x" type="number" step="0.1" value="0" /></label>
+            <label>Y<input id="cursor-y" type="number" step="0.1" value="0" /></label>
+            <label>Z<input id="cursor-z" type="number" step="0.1" value="0" /></label>
+          </div>
+          <button id="cursor-apply">Aplicar coordenadas · m</button>
+          <button id="cursor-selection">Cursor a la selección</button>
+          <button id="cursor-view">Cursor al centro de la vista</button>
+          <button id="selection-cursor">Selección al cursor</button>
+          <button id="origin-cursor">Origen del sólido al cursor</button>
+          <hr />
+          <label>Bloqueo para mover o girar</label>
+          <select id="transform-axis">
+            <option value="all">Libre</option>
+            <option>X</option>
+            <option>Y</option>
+            <option>Z</option>
+          </select>
+          <label>Movimiento exacto · m / giro · grados</label
+          ><input id="transform-amount" type="number" step="0.1" value="1" />
+          <button id="transform-exact">Aplicar a la selección</button>
+          <p>
+            G mover · R girar · X/Y/Z bloquear eje. Origen: conserva la forma y la posición de los
+            hijos.
+          </p>
         </div>
         <div id="file-menu" class="app-menu" popover aria-label="Archivo">
           <button id="import">Abrir escena JSON…</button>

@@ -1,9 +1,11 @@
+import { Vector3, Quaternion } from 'three'
 import {
   createEntity,
   parseScene,
   replaceMapScene,
   SceneGraph,
   type Entity,
+  type Vec3Tuple,
   type SceneDocument,
 } from './scene.js'
 
@@ -59,9 +61,45 @@ export class SceneEditor {
   add(kind: Entity['kind']): string {
     const next = this.document,
       id = crypto.randomUUID()
-    next.entities.push(createEntity(id, kind, [0, kind === 'vehicle' ? 1 : 1, 0]))
+    next.entities.push(createEntity(id, kind, next.cursor ?? [0, 0, 0]))
     this.commit(next)
     return id
+  }
+  setCursor(position: Vec3Tuple): void {
+    this.commit({ ...this.document, cursor: position })
+  }
+  moveToCursor(id: string): void {
+    const next = this.document,
+      graph = new SceneGraph(next)
+    const entity = next.entities.find((e) => e.id === id)
+    if (!entity) throw new Error('Select an object')
+    const world = graph.worldTransform(id)
+    world.position = next.cursor ?? [0, 0, 0]
+    entity.transform = graph.localFromWorld(entity.parentId, world)
+    this.commit(next)
+  }
+  /** Rebase editable vertices and direct children without moving their world geometry. */
+  originToCursor(id: string): void {
+    const next = this.document,
+      graph = new SceneGraph(next)
+    const entity = next.entities.find((e) => e.id === id)
+    if (!entity?.geometry || entity.visual || entity.road)
+      throw new Error('El origen se ajusta en sólidos editables')
+    const old = graph.worldTransform(id)
+    const world = { ...old, position: next.cursor ?? ([0, 0, 0] as Vec3Tuple) }
+    const offset = new Vector3(...world.position)
+      .sub(new Vector3(...old.position))
+      .applyQuaternion(new Quaternion(...old.rotation).invert())
+    const children = next.entities
+      .filter((e) => e.parentId === id)
+      .map((e) => ({ entity: e, world: graph.worldTransform(e.id) }))
+    entity.geometry.vertices = entity.geometry.vertices.map((p) =>
+      new Vector3(...p).sub(offset).toArray(),
+    )
+    entity.transform = graph.localFromWorld(entity.parentId, world)
+    const after = new SceneGraph(next)
+    for (const child of children) child.entity.transform = after.localFromWorld(id, child.world)
+    this.commit(next)
   }
   duplicate(id: string): string {
     const next = this.document

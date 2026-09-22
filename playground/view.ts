@@ -1,3 +1,4 @@
+import { isMapBuilding } from '../src/scene.js'
 import { SURFACE_LAYERS } from '../src/landcover.js'
 import { withinMapDistance } from './map-visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
@@ -540,7 +541,7 @@ export class SceneView {
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)!
-      if ((enabled && (e.road || e.landcover)) || (e.geometry && !e.landcover && !buildings)) {
+      if ((enabled && (e.road || e.landcover)) || (isMapBuilding(e) && !buildings)) {
         object.visible = false
         continue
       }

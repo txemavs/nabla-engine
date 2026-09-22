@@ -26,6 +26,7 @@ import {
 } from 'cannon-es'
 import {
   parseScene,
+  isMapBuilding,
   replaceMapScene,
   SceneGraph,
   type Entity,
@@ -305,7 +306,7 @@ export class Simulation {
   private addEntityBody(e: Entity): void {
     const bridge = e.road?.elevation === 'bridge'
     if ((e.motion === 'none' && !e.portal && !bridge) || (e.portal && e.parentId)) return
-    if (e.source && e.geometry && e.motion === 'static' && !this.mapBuildingsEnabled) return
+    if (isMapBuilding(e) && e.motion === 'static' && !this.mapBuildingsEnabled) return
     const transform = this.graph.worldTransform(e.id)
     const body = new Body({
       mass: e.motion === 'dynamic' ? e.mass : 0,
@@ -401,7 +402,7 @@ export class Simulation {
     this.mapBuildingsEnabled = enabled
     if (enabled)
       for (const e of this.document.entities) {
-        if (e.source && e.geometry && e.motion === 'static' && !this.bodies.has(e.id))
+        if (isMapBuilding(e) && e.motion === 'static' && !this.bodies.has(e.id))
           this.addEntityBody(e)
       }
     this.updateMapCollisions()
@@ -426,7 +427,7 @@ export class Simulation {
   private updateMapCollisions(): void {
     const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
     for (const [id, body] of this.mapBodies) {
-      if (!this.mapBuildingsEnabled && this.entitiesById.get(id)?.geometry) {
+      if (!this.mapBuildingsEnabled && isMapBuilding(this.entitiesById.get(id))) {
         if (body.world === this.world) this.world.removeBody(body)
         continue
       }
@@ -899,7 +900,7 @@ export class Simulation {
       })
     // Exit safety must include map bodies suspended by distance culling.
     const mapObstacles = [...this.mapBodies]
-      .filter(([id]) => this.mapBuildingsEnabled || !this.entitiesById.get(id)?.geometry)
+      .filter(([id]) => this.mapBuildingsEnabled || !isMapBuilding(this.entitiesById.get(id)))
       .map(([, obstacle]) => obstacle)
     const obstacles = [...new Set([...this.world.bodies, ...mapObstacles])]
       .filter((b) => b !== body)

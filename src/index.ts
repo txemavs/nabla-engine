@@ -13,7 +13,7 @@ export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './g
 
 export { createCarrierPortals, createPortalPair, portalMapping, portalCrossing } from './portal.js'
 
-export { boxSolid, extrudeFace, removeVertex, validateSolid } from './solid.js'
+export { boxSolid, extrudeElement, extrudeFace, removeVertex, validateSolid } from './solid.js'
 export type { SolidGeometry } from './solid.js'
 
 export { createRealWorld, IRUN_VENTAS } from './real-world.js'

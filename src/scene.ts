@@ -187,6 +187,7 @@ const documentSchema = z
   .object({
     version: z.literal(1),
     name: z.string().min(1).max(100),
+    cursor: vector.optional(),
     geography: z
       .object({
         latitude: finite.min(-90).max(90),
@@ -420,4 +421,9 @@ export class SceneGraph {
     world.decompose(p, q, s)
     return { position: p.toArray(), rotation: q.normalize().toArray() }
   }
+}
+
+/** Authored road solids retain OSM provenance but are not optional map buildings. */
+export function isMapBuilding(entity?: Entity): boolean {
+  return !!(entity?.source && entity.geometry && !entity.landcover && !entity.source.tags.highway)
 }

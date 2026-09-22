@@ -119,13 +119,24 @@ export function removeVertex(g: SolidGeometry, index: number): SolidGeometry {
     faces: g.faces.filter((f) => !f.includes(index)).map((f) => f.map(remap)),
   }
 }
-export function extrudeFace(g: SolidGeometry, index: number, distance: number): SolidGeometry {
+export function extrudeFace(
+  g: SolidGeometry,
+  index: number,
+  distance: number,
+  axis?: Vec3Tuple,
+): SolidGeometry {
   if (!Number.isFinite(distance) || Math.abs(distance) < 0.01)
     throw new Error('Extrusion needs a distance')
   const next = structuredClone(g),
     f = next.faces[index]
   if (!f) throw new Error('Select a face')
-  const offset = faceNormal(g, f).multiplyScalar(distance)
+  const direction = axis ? new Vector3(...axis).normalize() : faceNormal(g, f)
+  if (
+    !direction.toArray().every(Number.isFinite) ||
+    Math.abs(direction.dot(faceNormal(g, f))) < 1e-6
+  )
+    throw new Error('El eje de extrusión debe salir del plano de la cara')
+  const offset = direction.multiplyScalar(distance)
   const top = f.map(
     (i) => next.vertices.push(new Vector3(...g.vertices[i]).add(offset).toArray()) - 1,
   )
@@ -135,6 +146,31 @@ export function extrudeFace(g: SolidGeometry, index: number, distance: number): 
     next.faces.push([a, f[j], top[j], top[i]])
     next.edges.push([a, top[i]], [top[i], top[j]])
   })
+  validateSolid(next)
+  return next
+}
+
+/** Extrude a point into an edge, or an edge into a quad, by a local-space vector. */
+export function extrudeElement(
+  g: SolidGeometry,
+  kind: 'point' | 'edge',
+  index: number,
+  offset: Vec3Tuple,
+): SolidGeometry {
+  if (!offset.every(Number.isFinite) || Math.hypot(...offset) < 0.01)
+    throw new Error('Extrusion needs a finite distance')
+  const ids = kind === 'point' ? [index] : g.edges[index]
+  if (!ids || ids.some((i) => !g.vertices[i])) throw new Error('Select an element')
+  const next = structuredClone(g)
+  const top = ids.map(
+    (i) =>
+      next.vertices.push(new Vector3(...g.vertices[i]).add(new Vector3(...offset)).toArray()) - 1,
+  )
+  ids.forEach((i, j) => next.edges.push([i, top[j]]))
+  if (kind === 'edge') {
+    next.edges.push([top[0], top[1]])
+    next.faces.push([ids[0], ids[1], top[1], top[0]])
+  }
   validateSolid(next)
   return next
 }
