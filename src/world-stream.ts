@@ -156,7 +156,6 @@ export class WorldStream {
     }
     this.wanted = wantedWorldTiles(position, velocity)
     const neighborhood = immediateNeighborhood(position)
-    const playerKey = worldTileKey(...worldTileAt(position))
     const neighborsMissing = [...neighborhood].filter(
       (k) => !this.resident.has(k) && !this.inFlight.has(k),
     )
@@ -187,9 +186,7 @@ export class WorldStream {
   }
   private updateStatus(neighborhood: Set<string>): void {
     const loading = this.inFlight.size
-    const pending = this.wanted.filter(
-      (k) => !this.resident.has(k) && !this.inFlight.has(k),
-    ).length
+    const pending = this.wanted.filter((k) => !this.resident.has(k) && !this.inFlight.has(k)).length
     const neighborLoading = [...this.inFlight.keys()].filter((k) => neighborhood.has(k)).length
     const neighborPending = [...neighborhood].filter(
       (k) => !this.resident.has(k) && !this.inFlight.has(k),
@@ -211,7 +208,7 @@ export class WorldStream {
       this.host.status(`Anticipando recorrido · ${loading} zona(s) cargando, ${pending} pendientes`)
     }
   }
-  private startLoad(key: string, now: number, isNeighbor = false): void {
+  private startLoad(key: string, _now: number, isNeighbor = false): void {
     const controller = new AbortController()
     this.inFlight.set(key, controller)
     void this.host

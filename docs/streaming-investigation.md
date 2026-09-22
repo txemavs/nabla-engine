@@ -37,7 +37,7 @@ nextRemoteRequest = Date.now() + (CACHE_BASE ? 0 : 30000)
 Without the private cache, each uncached OSM request incurs a **30-second pacing delay**. Combined with sequential loading:
 
 - Zone 1: fetch (2-5s network) → 30s delay
-- Zone 2: fetch → 30s delay  
+- Zone 2: fetch → 30s delay
 - Zone 3: fetch → 30s delay
 - ...
 
@@ -83,14 +83,14 @@ This is **intentional safety behavior**: vehicles are stopped 8m before an unloa
 
 Streets GL avoids these problems through fundamentally different architecture:
 
-| Aspect | nabla-engine | Streets GL |
-|--------|--------------|-----------|
-| Data source | Live Overpass queries | Prebuilt vector tiles |
-| Tile size | 1,200m zones | Standard web mercator tiles |
-| Data prep | Runtime OSM→geometry | Offline Planetiler pipeline |
-| Caching | Browser Cache Storage | CDN + browser cache |
-| Rate limits | 30s public Overpass pacing | None (static tiles) |
-| Coverage | On-demand global | Pre-processed regions |
+| Aspect      | nabla-engine               | Streets GL                  |
+| ----------- | -------------------------- | --------------------------- |
+| Data source | Live Overpass queries      | Prebuilt vector tiles       |
+| Tile size   | 1,200m zones               | Standard web mercator tiles |
+| Data prep   | Runtime OSM→geometry       | Offline Planetiler pipeline |
+| Caching     | Browser Cache Storage      | CDN + browser cache         |
+| Rate limits | 30s public Overpass pacing | None (static tiles)         |
+| Coverage    | On-demand global           | Pre-processed regions       |
 
 **Key insight:** Streets GL's tiles at `tiles.streets.gl/vector/{z}/{x}/{y}` are preprocessed. A browser can request 50+ tiles/second because they're served from CDN, not computed live.
 
@@ -153,8 +153,9 @@ if (!this.resident.has(playerKey)) {
 The 250ms gap is conservative. Cache hits (browser Cache Storage) can use a shorter interval.
 
 ```typescript
-const cacheHit = /* check if this was from cache */
-this.nextRequest = Date.now() + (cacheHit ? 50 : 250)
+const cacheHit =
+  /* check if this was from cache */
+  (this.nextRequest = Date.now() + (cacheHit ? 50 : 250))
 ```
 
 **Benefit:** Cached neighborhoods load 5× faster. Repeat visits to areas work much better.
@@ -166,7 +167,7 @@ this.nextRequest = Date.now() + (cacheHit ? 50 : 250)
 The `services/world-cache` Docker service already exists. With it configured:
 
 ```typescript
-nextRemoteRequest = Date.now() + (CACHE_BASE ? 0 : 30000)  // 0 with cache!
+nextRemoteRequest = Date.now() + (CACHE_BASE ? 0 : 30000) // 0 with cache!
 ```
 
 **Benefit:** Eliminates 30s delays entirely. Cold starts still require Overpass, but the cache serializes upstream requests.
@@ -176,6 +177,7 @@ nextRemoteRequest = Date.now() + (CACHE_BASE ? 0 : 30000)  // 0 with cache!
 ### 5. Progressive Zone Loading (MEDIUM IMPACT, MEDIUM EFFORT)
 
 Split zone loading: terrain first (fast), then buildings. This way:
+
 1. Player can drive on terrain immediately
 2. Buildings pop in as they complete
 3. No hard boundary wall for missing buildings
@@ -209,12 +211,13 @@ Currently, missing zones appear as void/boundary. Adding a visual "loading" indi
 
 The Docker cache stores:
 
-| Data | Format | Storage Key |
-|------|--------|-------------|
-| OSM features | Raw Overpass JSON | `sha256("osm:" + query_body)` |
-| Elevation | Raw Esri LERC bytes | `sha256("elevation:/12/y/x")` |
+| Data         | Format              | Storage Key                   |
+| ------------ | ------------------- | ----------------------------- |
+| OSM features | Raw Overpass JSON   | `sha256("osm:" + query_body)` |
+| Elevation    | Raw Esri LERC bytes | `sha256("elevation:/12/y/x")` |
 
 **Flow:**
+
 ```
 Browser → world-cache (Docker) → Overpass/Esri → disk cache
                                       ↑
@@ -224,6 +227,7 @@ Browser → world-cache (Docker) → Overpass/Esri → disk cache
 The cache is **demand-driven**: first request for a zone fetches from upstream and caches; subsequent requests are instant cache hits. But cold regions still hit Overpass with all its rate limits.
 
 **What the client receives:**
+
 ```typescript
 // playground/world-provider.ts creates WorldExtract:
 {
@@ -242,6 +246,7 @@ This JSON is cached in browser Cache Storage (`nabla-world-v1`) for 30 days.
 **Concept:** Generate the same `WorldExtract` JSON offline for a region, serve statically.
 
 **Process:**
+
 1. Download OSM extract for region (e.g., spain-latest.osm.pbf from Geofabrik)
 2. Run a script that:
    - Iterates over 1,200m grid cells
@@ -252,9 +257,10 @@ This JSON is cached in browser Cache Storage (`nabla-world-v1`) for 30 days.
 4. Client checks static endpoint before falling back to live Overpass
 
 **Client changes:**
+
 ```typescript
 // playground/world-provider.ts
-const STATIC_ZONES = import.meta.env.VITE_STATIC_ZONES_URL  // e.g., https://chained.world/nabla-zones
+const STATIC_ZONES = import.meta.env.VITE_STATIC_ZONES_URL // e.g., https://chained.world/nabla-zones
 if (STATIC_ZONES) {
   const staticUrl = `${STATIC_ZONES}/${origin.latitude.toFixed(1)}/${origin.longitude.toFixed(1)}/${key}.json`
   const response = await fetch(staticUrl)
@@ -264,12 +270,14 @@ if (STATIC_ZONES) {
 ```
 
 **Pros:**
+
 - Minimal client changes (same WorldExtract format)
 - No new dependencies
 - Works with existing browser cache
 - Can pre-bake just Irun/Basque region initially
 
 **Cons:**
+
 - Larger file sizes than vector tiles (JSON + full coordinate precision)
 - Regeneration required for OSM updates
 - Custom grid system (not standard tile pyramid)
@@ -281,12 +289,14 @@ if (STATIC_ZONES) {
 **Concept:** Run Planetiler to produce MVT/PBF tiles with preprocessed building heights, roof types, materials.
 
 **Planetiler overview:**
+
 - Java tool that processes OSM PBF → vector tiles
 - Streets GL uses a [modified Planetiler profile](https://github.com/StrandedKitty/streets-gl/tree/dev/tile-processing)
 - Outputs standard MVT tiles at web mercator zoom levels
 - Can embed derived fields: `height`, `minHeight`, `levels`, `roofShape`, `color`, `material`
 
 **Process for chained.world:**
+
 ```bash
 # Download regional extract
 wget https://download.geofabrik.de/europe/spain-latest.osm.pbf
@@ -301,18 +311,19 @@ java -jar planetiler.jar \
 ```
 
 **Client changes:**
+
 ```typescript
 // New: playground/vector-tile-provider.ts
 import { VectorTile } from '@mapbox/vector-tile'
 import Protobuf from 'pbf'
 
-const TILE_URL = import.meta.env.VITE_VECTOR_TILES_URL  // https://chines.pol/tiles/{z}/{x}/{y}.pbf
+const TILE_URL = import.meta.env.VITE_VECTOR_TILES_URL // https://chines.pol/tiles/{z}/{x}/{y}.pbf
 
 export async function loadVectorTile(z: number, x: number, y: number): Promise<MapFeature[]> {
   const response = await fetch(`${TILE_URL}/${z}/${x}/${y}.pbf`)
   const buffer = await response.arrayBuffer()
   const tile = new VectorTile(new Protobuf(buffer))
-  
+
   const features: MapFeature[] = []
   const buildings = tile.layers['buildings']
   for (let i = 0; i < buildings.length; i++) {
@@ -334,18 +345,21 @@ export async function loadVectorTile(z: number, x: number, y: number): Promise<M
 ```
 
 **Additional work:**
+
 - Create nabla-specific Planetiler profile (or adapt Streets GL's)
 - Handle coordinate transform (MVT uses tile-local coords)
 - Merge elevation separately (MVT doesn't include terrain heights)
 - Update zone grid to align with or bridge from tile pyramid
 
 **Pros:**
+
 - Compact binary format (~10× smaller than JSON)
 - Standard ecosystem (tileserver-gl, pmtiles, CDN-friendly)
 - Same preprocessed data Streets GL uses
 - Can support multiple zoom levels
 
 **Cons:**
+
 - Significant client refactor (new tile coordinate system)
 - Need to merge with elevation pipeline
 - MVT doesn't include Esri elevation; still need separate fetch
@@ -369,11 +383,11 @@ Client loads PMTiles directly in browser (no tile server needed), combines with 
 
 ### Comparison
 
-| Approach | Client Work | Server Work | Storage | Update Freq |
-|----------|-------------|-------------|---------|-------------|
-| A: Zone JSON | Minimal | Script + nginx | ~200 MB/region | Manual |
-| B: Planetiler MVT | Significant | Planetiler + tileserver | ~2 GB/country | Weekly |
-| C: PMTiles hybrid | Moderate | Planetiler + preprocess | ~3 GB/country | Weekly |
+| Approach          | Client Work | Server Work             | Storage        | Update Freq |
+| ----------------- | ----------- | ----------------------- | -------------- | ----------- |
+| A: Zone JSON      | Minimal     | Script + nginx          | ~200 MB/region | Manual      |
+| B: Planetiler MVT | Significant | Planetiler + tileserver | ~2 GB/country  | Weekly      |
+| C: PMTiles hybrid | Moderate    | Planetiler + preprocess | ~3 GB/country  | Weekly      |
 
 ### Recommended Path
 
@@ -405,7 +419,7 @@ class BuildingHandler(SimpleHandler):
         super().__init__()
         self.bounds = bounds
         self.features = []
-    
+
     def way(self, w):
         if not w.tags.get('building'): return
         coords = [(n.lon, n.lat) for n in w.nodes]
@@ -448,6 +462,7 @@ if (
 This is intentional — bridges/tunnels need stacked surfaces (multiple drivable levels), not terrain-draped roads. But it leaves holes in the road network.
 
 The user needs to **author corrections** for a zone (e.g., draw a missing bridge in Irun) and have those corrections:
+
 1. Persist on chained.world (not OpenStreetMap)
 2. Merge with the base OSM layer at runtime
 3. Survive tile rebuilds (match by stable ID / geo anchor)
@@ -465,11 +480,12 @@ chained.world/
 ```
 
 **Override patch schema:**
+
 ```typescript
 interface ZoneOverride {
-  zone: string                      // "0_0"
-  origin: GeoPoint                  // Geographic anchor
-  version: number                   // Increment on save
+  zone: string // "0_0"
+  origin: GeoPoint // Geographic anchor
+  version: number // Increment on save
   createdAt: string
   updatedAt: string
   entries: OverrideEntry[]
@@ -478,10 +494,10 @@ interface ZoneOverride {
 interface OverrideEntry {
   action: 'add' | 'edit' | 'hide'
   // For edits/hides: match existing OSM feature
-  sourceId?: string                 // "way/123456" or "relation/789"
-  sourceFingerprint?: string        // Content hash for conflict detection
+  sourceId?: string // "way/123456" or "relation/789"
+  sourceFingerprint?: string // Content hash for conflict detection
   // For adds: new authored geometry
-  entity?: Partial<Entity>          // Bridge solid, tunnel, etc.
+  entity?: Partial<Entity> // Bridge solid, tunnel, etc.
   // Geographic anchor (survives coordinate shifts)
   anchor: {
     latitude: number
@@ -509,22 +525,22 @@ Nabla Studio is the existing playground app (`playground/main.ts`) — the «Nab
 ```typescript
 // playground/world-provider.ts
 async function loadWorldTile(origin, key, signal): Promise<Entity[]> {
-  const base = await fetchBase(origin, key, signal)        // OSM-derived
+  const base = await fetchBase(origin, key, signal) // OSM-derived
   const override = await fetchOverride(origin, key, signal) // chained.world patch
-  
-  const merged = base.entities.filter(e => 
-    !override.entries.some(o => o.action === 'hide' && o.sourceId === e.source?.id)
+
+  const merged = base.entities.filter(
+    (e) => !override.entries.some((o) => o.action === 'hide' && o.sourceId === e.source?.id),
   )
-  
+
   for (const entry of override.entries) {
     if (entry.action === 'add' && entry.entity) {
       merged.push(entry.entity)
     } else if (entry.action === 'edit' && entry.sourceId) {
-      const target = merged.find(e => e.source?.id === entry.sourceId)
+      const target = merged.find((e) => e.source?.id === entry.sourceId)
       if (target) Object.assign(target, entry.entity)
     }
   }
-  
+
   return merged
 }
 ```
@@ -533,14 +549,15 @@ async function loadWorldTile(origin, key, signal): Promise<Entity[]> {
 
 Bridges and tunnels need **stacked drivable surfaces**, not terrain heightfields:
 
-| Feature | Current | Required |
-|---------|---------|----------|
+| Feature      | Current                 | Required                      |
+| ------------ | ----------------------- | ----------------------------- |
 | Road surface | Terrain-draped polyline | Solid mesh at fixed elevation |
-| Collider | Heightfield (2D) | 3D convex hull / trimesh |
-| Under-bridge | N/A | Separate lower surface |
-| Tunnel | N/A | Enclosed tube with entry/exit |
+| Collider     | Heightfield (2D)        | 3D convex hull / trimesh      |
+| Under-bridge | N/A                     | Separate lower surface        |
+| Tunnel       | N/A                     | Enclosed tube with entry/exit |
 
 **Minimum viable bridge:**
+
 ```typescript
 const bridge = createEntity('override-bridge-irun-1', 'solid', [x, y, z])
 bridge.geometry = {
@@ -558,23 +575,24 @@ bridge.source = {
 ```
 
 The solid editor already supports this — the work is:
+
 1. Bridge-specific drawing helpers (span between two road endpoints)
 2. Physics: ensure vehicle wheels contact bridge deck, not terrain underneath
 3. Visual: render road surface texture on bridge deck
 
 ### Ranked Implementation Plan
 
-| Phase | Work | Complexity |
-|-------|------|------------|
-| **0** | ✅ Parallel streaming + player prioritization | Done |
-| **1** | Pre-baked zone JSON for Irun (Option A) | Low |
-| **2** | Override API endpoint on chained.world | Low |
-| **3** | Editor: load base + override, show combined | Medium |
-| **4** | Extend existing solid editor: "save override to server" action | Medium |
-| **5** | First bridge: hand-author one Irun span in existing solid editor | Low |
-| **6** | Bridge physics: deck collision separate from terrain | Medium |
-| **7** | Bridge drawing helpers in existing solid editor | Medium |
-| **8** | Tunnel geometry + portal-like entry/exit | High |
+| Phase | Work                                                             | Complexity |
+| ----- | ---------------------------------------------------------------- | ---------- |
+| **0** | ✅ Parallel streaming + player prioritization                    | Done       |
+| **1** | Pre-baked zone JSON for Irun (Option A)                          | Low        |
+| **2** | Override API endpoint on chained.world                           | Low        |
+| **3** | Editor: load base + override, show combined                      | Medium     |
+| **4** | Extend existing solid editor: "save override to server" action   | Medium     |
+| **5** | First bridge: hand-author one Irun span in existing solid editor | Low        |
+| **6** | Bridge physics: deck collision separate from terrain             | Medium     |
+| **7** | Bridge drawing helpers in existing solid editor                  | Medium     |
+| **8** | Tunnel geometry + portal-like entry/exit                         | High       |
 
 ### Smallest Vertical Slice (Phase 1-5)
 
