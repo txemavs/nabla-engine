@@ -43,6 +43,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
 }
 export class SceneView {
   private readonly thrusters = new Map<string, CarrierThrusters>()
+  private readonly exteriorReflections = new Set<THREE.MeshStandardMaterial>()
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
@@ -441,6 +442,20 @@ export class SceneView {
           })
         }
 
+        model.traverse((part) => {
+          if (!(part instanceof THREE.Mesh)) return
+          for (const material of Array.isArray(part.material) ? part.material : [part.material]) {
+            if (!(material instanceof THREE.MeshStandardMaterial)) continue
+            if (material.name.startsWith('Pintura')) {
+              material.roughness = 0.2
+              this.exteriorReflections.add(material)
+            } else if (material.name.startsWith('Cromo')) {
+              material.roughness = 0.12
+              material.metalness = 1
+              this.exteriorReflections.add(material)
+            }
+          }
+        })
         this.carLights.set(e.id, new CarLights(model))
         this.carMirrors.set(e.id, new CarMirrors(model))
         const interior = model.getObjectByName('Interior')
@@ -701,6 +716,18 @@ export class SceneView {
     ))
       mirrors.render(renderer, scene, camera, id === vehicleId, now)
   }
+  /** Reuse the scene's prefiltered environment; exterior gloss adds no render pass. */
+  updateExteriorReflections(environment: THREE.Texture | null, intensity: number): void {
+    for (const material of this.exteriorReflections) {
+      if (material.envMap !== environment) {
+        material.envMap = environment
+        material.needsUpdate = true
+      }
+      // An explicit map permits per-material intensity; scene.environment otherwise
+      // overrides envMapIntensity in the renderer. Follow daylight, including night.
+      material.envMapIntensity = intensity * 2.5
+    }
+  }
   /** Traverse all materials and call the callback for CSM setup. */
   setupMaterials(callback: (material: THREE.Material) => void): void {
     this.materialSetup = callback
@@ -717,6 +744,7 @@ export class SceneView {
     })
   }
   dispose(): void {
+    this.exteriorReflections.clear()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()
     for (const instruments of this.instruments.values()) instruments.dispose()

@@ -1610,6 +1610,7 @@ function frame(now: number): void {
     $('gps-status').textContent = 'Sin ubicación · configura el punto GPS'
     $('map-status').textContent = ''
   }
+  view.updateExteriorReflections(scene.environment, scene.environmentIntensity)
   view.streetlights.update(
     camera.position,
     !!view.document.geography && geography.atmosphere.day < 0.15,
