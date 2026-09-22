@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Stabilize side-mirror captures against head rotation by fitting the whole lens from the eye position, independently of the viewport crop.
+
 - Match the upper helm screen titles to the flight desk typography: telemetry, navigation and portal.
 - Add cockpit-only, visibility-culled A3 side-mirror reflections capped at 8 Hz.
 - Power down unoccupied A3 displays and lamps; add lower red brake lights, inner white reverse lights and upper amber turn signals.

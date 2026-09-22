@@ -317,3 +317,7 @@ The two side mirrors reflect the scene only while driving that car in cockpit
 view. Visible mirrors update at most 8 Hz into 384 × 256 targets, without recursive
 portal/mirror captures or additional shadow-map updates. Exterior, overhead,
 on-foot and editor views do not render mirror passes. Hidden browser tabs skip them.
+
+Mirror captures aim from the eye position at the complete lens. Turning the head
+changes visibility, not the captured perspective; translating the eye or moving
+the vehicle still changes the reflected view.

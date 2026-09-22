@@ -1,11 +1,45 @@
 import * as THREE from 'three'
 import { Reflector } from 'three/addons/objects/Reflector.js'
+/** Fit the whole mirror from the eye position, independently of head rotation.
+ * The viewer's orientation only decides whether the mirror is visible.
+ */
+export function fitMirrorCamera(
+  target: THREE.PerspectiveCamera,
+  viewer: THREE.PerspectiveCamera,
+  mirror: THREE.Mesh,
+): void {
+  viewer.getWorldPosition(target.position)
+  target.up.set(0, 1, 0).transformDirection(mirror.matrixWorld)
+  target.lookAt(mirror.getWorldPosition(new THREE.Vector3()))
+  target.updateMatrixWorld(true)
+  mirror.geometry.computeBoundingBox()
+  const box = mirror.geometry.boundingBox!
+  let slope = 0
+  target.aspect = 384 / 256
+  for (const x of [box.min.x, box.max.x])
+    for (const y of [box.min.y, box.max.y])
+      for (const z of [box.min.z, box.max.z]) {
+        const p = new THREE.Vector3(x, y, z)
+          .applyMatrix4(mirror.matrixWorld)
+          .applyMatrix4(target.matrixWorldInverse)
+        slope = Math.max(
+          slope,
+          Math.abs(p.y) / Math.max(0.001, -p.z),
+          Math.abs(p.x) / (Math.max(0.001, -p.z) * target.aspect),
+        )
+      }
+  target.fov = THREE.MathUtils.radToDeg(2 * Math.atan(slope * 1.02))
+  target.near = Math.min(viewer.near, 0.01)
+  target.far = viewer.far
+  target.updateProjectionMatrix()
+}
 /** Side mirrors render only in the occupied cockpit, at most 8 Hz. */
 export class CarMirrors {
   private entries: {
     original: THREE.Mesh
     mirror: Reflector
     render: Reflector['onBeforeRender']
+    capture: THREE.PerspectiveCamera
   }[] = []
   private next = 0
   private frames = 0
@@ -53,7 +87,7 @@ export class CarMirrors {
       original.parent!.add(mirror)
       const render = mirror.onBeforeRender
       mirror.onBeforeRender = () => {}
-      this.entries.push({ original, mirror, render })
+      this.entries.push({ original, mirror, render, capture: new THREE.PerspectiveCamera() })
     }
   }
   render(
@@ -94,36 +128,13 @@ export class CarMirrors {
         const eye = camera.position.clone().sub(e.mirror.getWorldPosition(new THREE.Vector3()))
         const normal = new THREE.Vector3(0, 0, 1).transformDirection(e.mirror.matrixWorld)
         if (eye.dot(normal) <= 0) continue
-        // Crop the viewer's projection to the small mirror instead of wasting its target on the entire windshield view.
-        e.mirror.geometry.computeBoundingBox()
-        const box = e.mirror.geometry.boundingBox!,
-          corners: THREE.Vector3[] = []
-        for (const x of [box.min.x, box.max.x])
-          for (const y of [box.min.y, box.max.y])
-            for (const z of [box.min.z, box.max.z])
-              corners.push(
-                new THREE.Vector3(x, y, z).applyMatrix4(e.mirror.matrixWorld).project(camera),
-              )
-        const left = Math.max(-1, Math.min(...corners.map((p) => p.x))),
-          right = Math.min(1, Math.max(...corners.map((p) => p.x)))
-        const bottom = Math.max(-1, Math.min(...corners.map((p) => p.y))),
-          top = Math.min(1, Math.max(...corners.map((p) => p.y)))
-        if (right <= left || top <= bottom) continue
-        const cropped = camera.clone()
-        cropped.setViewOffset(
-          1000 * camera.aspect,
-          1000,
-          (left + 1) * 500 * camera.aspect,
-          (1 - top) * 500,
-          (right - left) * 500 * camera.aspect,
-          (top - bottom) * 500,
-        )
+        fitMirrorCamera(e.capture, camera, e.mirror)
         e.original.visible = false
         e.render.call(
           e.mirror,
           renderer,
           scene,
-          cropped,
+          e.capture,
           e.mirror.geometry,
           e.mirror.material as THREE.Material,
           null!,
