@@ -254,6 +254,7 @@ export class SceneView {
             elevation: e.road.elevation,
             layer: e.road.layer,
             profiled: e.road.profiled,
+            mode: e.road.mode,
           })
           g = new THREE.BufferGeometry()
           g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))

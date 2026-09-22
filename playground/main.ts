@@ -513,6 +513,26 @@ function refreshUi(): void {
     ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
+  if (e.road && !sim && (!e.road.elevation || e.road.elevation === 'terrain')) {
+    const label = document.createElement('label')
+    label.className = 'field-label'
+    label.textContent = 'Superficie de conducción'
+    label.htmlFor = 'road-surface-mode'
+    const control = document.createElement('select')
+    control.id = 'road-surface-mode'
+    control.innerHTML =
+      '<option value="raw">Terreno original</option><option value="smooth-float">Suavizada · experimental</option>'
+    control.value = e.road.mode ?? 'raw'
+    control.onchange = () =>
+      action(() => {
+        editor.update(e.id, { road: { ...e.road!, mode: control.value as 'raw' | 'smooth-float' } })
+        rebuild()
+      })
+    const note = document.createElement('p')
+    note.textContent =
+      'Aplana el ancho y suaviza pendientes elevando la calzada. Revisa sus extremos y cruces; no une otras carreteras automáticamente.'
+    props.append(label, control, note)
+  }
   if (e.road && !sim && e.road.elevation !== 'tunnel') {
     const button = document.createElement('button')
     button.textContent = 'Convertir carretera en sólido editable'

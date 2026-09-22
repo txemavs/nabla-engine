@@ -46,6 +46,7 @@ export function prepareMapGeometry(entities: Entity[]): PreparedMapGeometry {
         elevation: e.road.elevation,
         layer: e.road.layer,
         profiled: e.road.profiled,
+        mode: e.road.mode,
       })
       vertices = data.vertices.flat()
       indices = data.faces.flat()

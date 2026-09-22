@@ -509,3 +509,28 @@ Ground categories have distinct millimetre offsets, in surface-precedence order,
 below the 35mm road offset. This prevents different landuse colours from occupying
 the same depth and does not rely exclusively on polygon offset with logarithmic
 depth rendering. Prepared geometry v4 invalidates older roofs and ground heights.
+
+### Optional smooth road decks
+
+Select a terrain-level road in Studio and change **Superficie de conducción** to
+**Suavizada · experimental**. The choice is stored as `road.mode: "smooth-float"`
+and supports undo, scene export and edited-tile preservation. `raw` remains the
+default. There is deliberately no global switch that changes every road at once.
+
+The implementation replaces PR #18's original endpoint-only smoothing and flat
+joint discs. It samples the route at intervals of at most 5 m, uses shared mitered
+cross-sections, and clips each deck triangle against the DEM triangles to bound the
+highest terrain under its entire footprint. Both station ends stay at least 0.1 m
+above that bound. A 30 m moving average and 15% grade envelope raise approaches;
+they never cut terrain away. Averaging uses linear-time prefix sums. Rendering,
+worker preparation, conversion to editable solids and physics share `roadGeometry`.
+Collision prisms extend below the visible surface and no default box is added.
+
+This is a conservative opt-in treatment for individual roads, not surveyed highway
+engineering. Decks can rise several metres above terrain on steep cross-slopes.
+Independent roads/intersections and tile boundaries are not jointly graded; inspect
+connections before using a smoothed road as a route. Closed rings, folded ribbons
+and roads exceeding 4096 sampling intervals fall back to the original surface.
+Bridge profiles retain their separate implementation; tunnels remain deferred until
+terrain excavation and collision cutouts exist. Turning buildings off does not
+remove road-deck collision.

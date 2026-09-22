@@ -304,8 +304,10 @@ export class Simulation {
     this.world.broadphase.dirty = true
   }
   private addEntityBody(e: Entity): void {
-    const bridge = e.road?.elevation === 'bridge'
-    if ((e.motion === 'none' && !e.portal && !bridge) || (e.portal && e.parentId)) return
+    const roadSurface =
+      e.road?.elevation === 'bridge' ||
+      (e.road?.mode === 'smooth-float' && (!e.road.elevation || e.road.elevation === 'terrain'))
+    if ((e.motion === 'none' && !e.portal && !roadSurface) || (e.portal && e.parentId)) return
     if (isMapBuilding(e) && e.motion === 'static' && !this.mapBuildingsEnabled) return
     const transform = this.graph.worldTransform(e.id)
     const body = new Body({
@@ -336,7 +338,9 @@ export class Simulation {
         new Quaternion().setFromEuler(-Math.PI / 2, 0, 0),
       )
     }
-    const bridgeTerrain = bridge ? this.entitiesById.get(e.road!.terrainId)?.terrain : undefined
+    const bridgeTerrain = roadSurface
+      ? this.entitiesById.get(e.road!.terrainId)?.terrain
+      : undefined
     const geometry =
       e.geometry ??
       (bridgeTerrain
@@ -353,7 +357,7 @@ export class Simulation {
           .cross(points[2].clone().sub(points[0]))
           .normalize()
           .multiplyScalar(0.025)
-        if (bridge) for (const p of points) p.addScaledVector(n, -2)
+        if (roadSurface) for (const p of points) p.addScaledVector(n, -2)
         const center = points
           .reduce((a, p) => a.add(p), new Vector3())
           .multiplyScalar(1 / 3)
@@ -393,7 +397,7 @@ export class Simulation {
     body.angularDamping = 0.35
     this.bodies.set(e.id, body)
     if (e.source && e.motion === 'static' && !e.terrain && !e.portal) this.mapBodies.set(e.id, body)
-    if (bridge) this.mapBodies.set(e.id, body)
+    if (roadSurface) this.mapBodies.set(e.id, body)
     if (e.kind === 'vehicle') this.createVehicle(e, body)
     else this.world.addBody(body)
   }
