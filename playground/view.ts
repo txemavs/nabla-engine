@@ -378,6 +378,35 @@ export class SceneView {
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
       if (visual.body.url === '/world/car.audi.a3.cabrio.glb') {
+        // Matte cabin plastics and upholstery; preserve glass, displays and chrome.
+        for (const name of [
+          'Interior',
+          'Piloto',
+          'Copiloto',
+          'Pasajeros',
+          'Puerta Izquierda',
+          'Puerta Derecha',
+          'Maletero Capota',
+        ]) {
+          model.getObjectByName(name)?.traverse((part) => {
+            if (!(part instanceof THREE.Mesh)) return
+            const materials = Array.isArray(part.material) ? part.material : [part.material]
+            for (const material of materials) {
+              if (!(material instanceof THREE.MeshStandardMaterial) || material.transparent)
+                continue
+              if (
+                !/^(Asiento|Tela|Plastico|Gris 2$|Llanta 8$|\*(12|22|35)$|\[Color M08\]$)/.test(
+                  material.name,
+                )
+              )
+                continue
+              material.roughness = 0.9
+              material.metalness = 0
+              material.envMapIntensity = 0.25
+            }
+          })
+        }
+
         this.carLights.set(e.id, new CarLights(model))
         this.carMirrors.set(e.id, new CarMirrors(model))
         const interior = model.getObjectByName('Interior')
