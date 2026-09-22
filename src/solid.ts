@@ -6,6 +6,8 @@ export interface SolidGeometry {
   vertices: Vec3Tuple[]
   edges: [number, number][]
   faces: number[][]
+  /** Indices of faces that belong to the roof (for separate roof coloring). */
+  roofFaces?: number[]
 }
 export function boxSolid(size: Vec3Tuple): SolidGeometry {
   const [x, y, z] = size.map((n) => n / 2)
@@ -89,6 +91,25 @@ export function validateSolid(g: SolidGeometry): void {
 }
 export function triangles(g: SolidGeometry): number[][] {
   return g.faces.flatMap((f) => f.slice(1, -1).map((v, i) => [f[0], v, f[i + 2]]))
+}
+
+/** Like triangles but returns whether each triangle is a roof face. */
+export function trianglesWithRoofInfo(g: SolidGeometry): {
+  indices: number[][]
+  isRoof: boolean[]
+} {
+  const roofSet = new Set(g.roofFaces ?? [])
+  const indices: number[][] = []
+  const isRoof: boolean[] = []
+  for (let faceIdx = 0; faceIdx < g.faces.length; faceIdx++) {
+    const f = g.faces[faceIdx]
+    const faceIsRoof = roofSet.has(faceIdx)
+    for (let i = 1; i < f.length - 1; i++) {
+      indices.push([f[0], f[i], f[i + 1]])
+      isRoof.push(faceIsRoof)
+    }
+  }
+  return { indices, isRoof }
 }
 export function removeVertex(g: SolidGeometry, index: number): SolidGeometry {
   const remap = (i: number) => (i > index ? i - 1 : i)

@@ -127,8 +127,13 @@ const entitySchema = z
           .array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]))
           .max(8192),
         faces: z.array(z.array(z.number().int().nonnegative()).min(3).max(64)).max(4096),
+        roofFaces: z.array(z.number().int().nonnegative()).max(4096).optional(),
       })
       .strict()
+      .optional(),
+    roofColor: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
       .optional(),
     vehicle: vehicleDefinition.optional(),
     visual: visualDefinition.optional(),
