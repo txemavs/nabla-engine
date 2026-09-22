@@ -12,6 +12,7 @@ type Cell = {
 }
 /** Render-only cells. Streaming preserves buffers outside the changed cells. */
 export class RoadBatches {
+  onMaterial?: (material: THREE.Material) => void
   readonly root = new THREE.Group()
   private source: Entity[] | null = null
   private readonly roads = new Map<string, Road>()
@@ -98,6 +99,7 @@ export class RoadBatches {
         side: THREE.DoubleSide,
       }),
     )
+    this.onMaterial?.(cell.mesh.material)
     cell.mesh.receiveShadow = true
     cell.mesh.matrixAutoUpdate = false
     this.root.add(cell.mesh)

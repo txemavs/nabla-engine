@@ -70,15 +70,24 @@ fades with flight mode and varies with speed. A shared Web Audio turbine graph s
 only after user interaction, attenuates with distance and inside the cabin, and mutes
 when the page is hidden or play stops. The footer sound toggle persists locally.
 
-## Stable local shadows
+## Cascaded local shadows
 
-The sun uses one fixed-size orthographic shadow map centered on the player. Its
-absolute light-space center is snapped to whole shadow texels before render-origin
-rebasing, preserving the grid during small movements and distant travel. Resolution
-settings change the texel size rather than the coverage. PCF radius is zero: hardware
-bilinear comparison remains, without the screen-pixel-dependent rotated sampling
-pattern used by the installed Three.js filter. Edges are simpler and less noisy.
+The sun uses one cascade at low quality (512 px, 80 m), two at medium quality
+(1024 px each, 200 m) and three at high quality (2048 px each, 500 m). Low is the
+default for new profiles; saved preferences are respected. High quality adds shadow
+passes and memory, so it is an optional distance/detail tradeoff, not a free upgrade.
 
-Only the main scene requests a shadow update. Mirrors and portal views reuse the
-last completed local map rather than rendering it repeatedly. This deliberately
-prioritizes local shadows; distant portal destinations do not get another shadow map.
+CSM fits a proxy camera in absolute coordinates, snaps to its shadow texel grid,
+then rebases its lights into render coordinates. Projection changes refresh cascade
+bounds. Radius-zero PCF retains hardware bilinear comparison without the unstable
+screen-pixel-dependent rotated sampling pattern. Cascades blend at their boundaries.
+
+Only the main view refreshes shadow maps. Auxiliary views reuse them and do not
+receive independent camera-fitted cascades. Shadows turn off above 500 m; ordinary
+sun/moon lighting remains without doubling the CSM light. Newly streamed surfaces,
+road batches and asynchronously loaded assets register their materials. Disposed
+materials and shadow render targets are released when zones or quality tiers change.
+
+Automated tests cover quality switching, material lifecycle, origin rebasing and
+camera projection changes. Browser checks capture every quality tier and inspect
+WebGL shader errors. Software-rendered test results do not establish laptop FPS.

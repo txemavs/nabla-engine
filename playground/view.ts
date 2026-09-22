@@ -54,6 +54,7 @@ export class SceneView {
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   private readonly roads = new RoadBatches()
+  private materialSetup?: (material: THREE.Material) => void
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
   readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
@@ -101,6 +102,7 @@ export class SceneView {
     ]
     this.graph = SceneGraph.fromValidated(this.document)
     this.addEntities(add)
+    if (this.materialSetup) this.setupMaterials(this.materialSetup)
     // Resource promises are consumed per batch rather than retained for the whole journey.
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
   }
@@ -395,6 +397,7 @@ export class SceneView {
         applyPose(model, part.transform)
         parent.add(model)
         prepare?.(model)
+        if (this.materialSetup) this.setupMaterials(this.materialSetup)
         if (fallback) {
           fallback.removeFromParent()
           disposeObject(fallback)
@@ -697,6 +700,21 @@ export class SceneView {
       ([a], [b]) => Number(a === vehicleId) - Number(b === vehicleId),
     ))
       mirrors.render(renderer, scene, camera, id === vehicleId, now)
+  }
+  /** Traverse all materials and call the callback for CSM setup. */
+  setupMaterials(callback: (material: THREE.Material) => void): void {
+    this.materialSetup = callback
+    this.roads.onMaterial = callback
+    this.root.traverse((object) => {
+      if (object instanceof THREE.Mesh || object instanceof THREE.SkinnedMesh) {
+        const materials = Array.isArray(object.material) ? object.material : [object.material]
+        for (const material of materials) {
+          if (material instanceof THREE.MeshStandardMaterial) {
+            callback(material)
+          }
+        }
+      }
+    })
   }
   dispose(): void {
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
