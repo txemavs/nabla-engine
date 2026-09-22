@@ -577,3 +577,22 @@ it('keeps an explicitly editable OSM building when leaving and returning after s
   expect(remaining[0]).toMatchObject({ mapEditable: true, color: '#335577' })
   stream.dispose()
 })
+
+it('installs delayed neighboring zones while hovering, without descending or touching ground', async () => {
+  const editor = new SceneEditor(document())
+  const resolvers = new Map<string, (entities: Entity[]) => void>()
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load: (key) => new Promise((resolve) => resolvers.set(key, resolve)),
+    replace: (remove, add) => editor.replaceMapEntities(remove, add),
+    status: () => undefined,
+  })
+  const hovering: [number, number, number] = [12000, 1500, 0]
+  stream.update(hovering, [0, 0, 0])
+  expect(resolvers.has('10_0')).toBe(true)
+  stream.update(hovering, [0, 0, 0], [], Date.now() + 60000)
+  resolvers.get('10_0')!([terrain('10_0', 12000)])
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(true)
+  stream.dispose()
+})

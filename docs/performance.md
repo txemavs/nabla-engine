@@ -58,6 +58,13 @@ above a road does not hide it merely because the camera is high. Frustum culling
 still applies, and the camera far plane includes the vertical distance to the ground.
 The streaming planner continues loading at flight altitude below its 12 km cutoff;
 landing is not a prerequisite. Cold provider requests can still take time.
+Near-ground fog now uses the same altitude-adjusted footprint as the camera far
+plane: `hypot(0.75 × distance, height)` through `hypot(distance, height)`. A fixed
+1 km fog range previously hid already-loaded ground when hovering above 1 km,
+even though the camera and streaming still included it. This changes visibility,
+not the requested map radius or the number of zones loaded. A browser pixel test
+checks visible preloaded ground at 100 m, 1.2 km and 5 km; a scheduler test checks
+that delayed data is installed while hovering without a landing event.
 
 Closed OSM building meshes render their outward faces only. This avoids drawing an
 adjacent building's back-facing wall on the same plane. Authored solids retain their

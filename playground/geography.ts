@@ -1,5 +1,5 @@
 import { addSunDisc } from './sun-disc.js'
-import { atmosphere, skyTime, type SkyClock } from '../src/sky.js'
+import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../src/sky.js'
 import * as THREE from 'three'
 import {
   celestialDirections,
@@ -165,8 +165,7 @@ export class GeographicView {
     )
     const air = this.atmosphere
     if (this.hasTerrain && height < 12000) {
-      air.near = this.viewDistance * 0.75
-      air.far = this.viewDistance
+      Object.assign(air, mapFogRange(height, this.viewDistance))
     }
     this.backdrop.material.color.copy(air.color)
     this.space.background = null
