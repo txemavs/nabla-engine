@@ -24,6 +24,7 @@ export function buildingRoofWithFaces(g: SolidGeometry, tags: Record<string, str
     return { geometry: g, roofFaces }
   }
   const shape = tags['roof:shape']
+  if (shape === 'pyramidal' && g.vertices.length !== 8) return pyramidalRoof(g, tags) ?? flat()
   if (!['gabled', 'hipped', 'skillion', 'pyramidal'].includes(shape) || g.vertices.length !== 8)
     return flat()
   const corners = g.vertices.slice(0, 4).map((p) => new Vector3(...p))
@@ -111,4 +112,86 @@ export function buildingRoofWithFaces(g: SolidGeometry, tags: Record<string, str
     }
   }
   return { geometry: { vertices, faces, edges: [...unique.values()], roofFaces }, roofFaces }
+}
+
+/** A single star-shaped outline may have survey points beyond four corners. */
+function pyramidalRoof(g: SolidGeometry, tags: Record<string, string>): RoofResult | undefined {
+  const n = g.vertices.length / 2
+  if (!Number.isInteger(n) || n < 3) return
+  const base = g.vertices.slice(0, n),
+    bottom = base[0][1],
+    top = g.vertices[n][1]
+  if (
+    base.some((p) => Math.abs(p[1] - bottom) > 0.001) ||
+    g.vertices
+      .slice(n)
+      .some((p, i) => Math.abs(p[1] - top) > 0.001 || p[0] !== base[i][0] || p[2] !== base[i][2])
+  )
+    return
+  // Separate outer rings and courtyards cannot be covered by one apex.
+  for (let i = 0; i < n; i++)
+    if (!g.edges.some(([a, b]) => (a === i && b === (i + 1) % n) || (b === i && a === (i + 1) % n)))
+      return
+  let area = 0,
+    cx = 0,
+    cz = 0
+  for (let i = 0; i < n; i++) {
+    const a = base[i],
+      b = base[(i + 1) % n],
+      cross = a[0] * b[2] - b[0] * a[2]
+    area += cross
+    cx += (a[0] + b[0]) * cross
+    cz += (a[2] + b[2]) * cross
+  }
+  if (Math.abs(area) < 1e-6) return
+  cx /= 3 * area
+  cz /= 3 * area
+  const winding = Math.sign(area)
+  // The apex projection must see every edge without crossing the outline.
+  if (
+    base.some((a, i) => {
+      const b = base[(i + 1) % n]
+      return winding * ((b[0] - a[0]) * (cz - a[2]) - (b[2] - a[2]) * (cx - a[0])) < -1e-6
+    })
+  )
+    return
+  const specified = Number.parseFloat(tags['roof:height'] ?? '')
+  const levels = Number.parseFloat(tags['roof:levels'] ?? '')
+  const width = Math.min(
+    Math.max(...base.map((p) => p[0])) - Math.min(...base.map((p) => p[0])),
+    Math.max(...base.map((p) => p[2])) - Math.min(...base.map((p) => p[2])),
+  )
+  const rise = Math.min(
+    (top - bottom) * 0.8,
+    Number.isFinite(specified)
+      ? specified
+      : Number.isFinite(levels)
+        ? levels * 3
+        : Math.min(3, width * 0.3),
+  )
+  if (rise <= 0) return
+  const vertices: Vec3Tuple[] = [
+    ...base.map((p) => [...p] as Vec3Tuple),
+    ...base.map((p) => [p[0], top - rise, p[2]] as Vec3Tuple),
+    [cx, top, cz],
+  ]
+  const faces = g.faces.filter((f) => f.every((i) => i < n)).map((f) => [...f]),
+    roofFaces: number[] = []
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n
+    faces.push([i, j, j + n], [i, j + n, i + n])
+    roofFaces.push(faces.length)
+    faces.push([i + n, j + n, 2 * n])
+  }
+  const center = new Vector3(cx, (bottom + top - rise) / 2, cz),
+    edges = new Map<string, [number, number]>()
+  for (const face of faces) {
+    const [a, b, c] = face.map((i) => new Vector3(...vertices[i]))
+    if (b.clone().sub(a).cross(c.clone().sub(a)).dot(a.clone().sub(center)) < 0) face.reverse()
+    for (let i = 0; i < face.length; i++) {
+      const pair = [face[i], face[(i + 1) % face.length]].sort((a, b) => a - b) as [number, number]
+      edges.set(pair.join(','), pair)
+    }
+  }
+  return { geometry: { vertices, faces, edges: [...edges.values()], roofFaces }, roofFaces }
 }

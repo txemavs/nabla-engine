@@ -29,7 +29,7 @@ class QueueTests(unittest.TestCase):
         self.queue.enqueue(ORIGIN,['0_0'])
         self.assertEqual(self.queue.stats(),{'queued':1})
     def test_normalization_and_validation(self):
-        self.assertEqual(normalize(ORIGIN,'0_0')[1],'3/43.329690/-1.819606/28.253/0_0.json')
+        self.assertEqual(normalize(ORIGIN,'0_0')[1],'4/43.329690/-1.819606/28.253/0_0.json')
         for keys in [['../secret'],['99999_0'],['0_0']*25]:
             with self.assertRaises(ValueError):self.queue.enqueue(ORIGIN,keys)
         with self.assertRaises(ValueError):self.queue.enqueue({**ORIGIN,'altitude':float('nan')},['0_0'])

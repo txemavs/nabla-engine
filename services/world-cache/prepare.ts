@@ -80,7 +80,7 @@ const wire = Object.fromEntries(
   ]),
 )
 const result = JSON.stringify({
-  version: 3,
+  version: 4,
   origin,
   key,
   retrievedAt: extract.source.retrievedAt,

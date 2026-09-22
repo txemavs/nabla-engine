@@ -15,7 +15,13 @@ import { validateSolid, type SolidGeometry } from './solid.js'
 import { drapeRoad } from './draped-road.js'
 import { treeSprite } from './vegetation.js'
 import { buildingRoofWithFaces } from './building-roof.js'
-import { classifySurface, isLandcoverFeature, isWaterFeature, SURFACE_COLORS } from './landcover.js'
+import {
+  classifySurface,
+  isLandcoverFeature,
+  isWaterFeature,
+  SURFACE_COLORS,
+  SURFACE_LAYERS,
+} from './landcover.js'
 
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 export interface MapFeature {
@@ -253,7 +259,7 @@ export function createRealWorld(
       if (!rings.length || rings.some((r) => r.points.length < 4)) continue
       // Clip into each tile, rather than assigning a whole polygon to its centroid.
       // Chunk the result to retain the editor's bounded solid topology.
-      const geometry = drapeLandcoverPolygon(rings, t)
+      const geometry = drapeLandcoverPolygon(rings, t, 0.005 + SURFACE_LAYERS[surface] * 0.002)
       for (let first = 0; first < geometry.faces.length; first += 600) {
         const faces = geometry.faces.slice(first, first + 600)
         const vertices: Vec3Tuple[] = [],
@@ -349,6 +355,7 @@ export function createRealWorld(
 export function drapeLandcoverPolygon(
   rings: { role: string; points: Vec3Tuple[] }[],
   terrain: TerrainData,
+  offset = 0.015,
 ): SolidGeometry {
   const result: SolidGeometry = { vertices: [], edges: [], faces: [] }
   const clean = (points: Vec3Tuple[]) => {
@@ -382,7 +389,7 @@ export function drapeLandcoverPolygon(
       const patch = drapeRoad(
         terrain,
         face.map((i) => [vertices[i].x, 0, vertices[i].y]),
-        0.015,
+        offset,
       )
       const base = result.vertices.length
       for (const v of patch.vertices) result.vertices.push(v)

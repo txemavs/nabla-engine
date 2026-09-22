@@ -430,7 +430,7 @@ data; authored edits and external scene imports continue to use full `parseScene
 
 ### Landcover delivery and rendering contract
 
-Normalized bakes use version **2**, prepared geometry uses version **3**, and the
+Normalized bakes use version **2**, prepared geometry uses version **4**, and the
 browser extract cache uses `nabla-world-v2`. Older extracts cannot establish that
 landcover was fetched, so they are not silently reused as complete data. Rebuild
 bakes without `--skip-existing` after deploying the new worker. Browser queries,
@@ -465,3 +465,18 @@ with the addon's cascade handling. This preserves paint/chrome material values,
 iridescence, environment lighting and the current other-light/probe support.
 A browser regression measures an environment-only metal sphere across all shadow
 tiers; reflection brightness must remain unchanged.
+
+### Surveyed pyramidal roofs and overlapping ground
+
+Pyramidal roofs also support single star-shaped surveyed outlines with more than
+four corners. The area centroid must lie in the outline's visibility kernel;
+multiple rings/courtyards and incompatible outlines retain a flat fallback.
+`roof:height` takes precedence over `roof:levels` (three metres per level). The
+real OSM outline of `way/154094152` is a regression fixture: seven sloped roof
+faces, upward normals and the original red roof colour. Other nonrectangular
+roof shapes still need separate generators.
+
+Ground categories have distinct millimetre offsets, in surface-precedence order,
+below the 35mm road offset. This prevents different landuse colours from occupying
+the same depth and does not rely exclusively on polygon offset with logarithmic
+depth rendering. Prepared geometry v4 invalidates older roofs and ground heights.
