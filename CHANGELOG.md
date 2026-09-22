@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Restore close-range car shadow detail and smaller bias while driving; anchor shadows to the car instead of head movement.
+
 - Follow the viewer with stable, configurable sun shadows; reduce daytime fill and add lit crossed-tree cutouts without an extra draw call per tree.
 
 - Assign OSM courtyards to their containing building body and subtract detailed building parts from generic outlines to prevent overlapping roofs and walls.

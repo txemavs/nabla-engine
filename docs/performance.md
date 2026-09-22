@@ -61,7 +61,9 @@ cutouts alone do not reproduce that renderer.
 
 Nabla now follows the viewer with one texel-snapped directional shadow map instead
 of a fixed 110 m box at the origin. Options exposes 100/250/500 m half-extents;
-resolution remains independent. A wider area trades sharpness and shadow-caster
+resolution remains independent. Chase/cockpit car views use a 55 m half-extent
+centered on the interpolated vehicle pose, preserving close shadow detail and
+avoiding shifts from head movement; aerial/map views keep the selected range. A wider area trades sharpness and shadow-caster
 work for coverage. The local light and target both use floating-origin coordinates.
 Daytime fill light is reduced so sunlit and shaded faces remain distinguishable.
 Trees created by the vegetation factory use two fixed alpha-tested planes in one

@@ -17,8 +17,8 @@ export class FollowingShadows {
     this.right.crossVectors(this.up, this.direction).normalize()
     this.up.crossVectors(this.direction, this.right).normalize()
     const texel = (2 * radius) / light.shadow.mapSize.x
-    light.shadow.bias = -0.0001
-    light.shadow.normalBias = Math.max(0.035, texel * 0.35)
+    light.shadow.bias = radius <= 55 ? -0.00002 : -0.0001
+    light.shadow.normalBias = radius <= 55 ? 0.025 : Math.max(0.035, texel * 0.35)
     this.center.copy(eye)
     this.center.addScaledVector(
       this.right,

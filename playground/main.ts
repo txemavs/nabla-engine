@@ -1576,7 +1576,15 @@ function frame(now: number): void {
     !!view.document.geography && geography.atmosphere.day < 0.15,
   )
   sun.castShadow = performanceSettings.shadows > 0 && height < 5000
-  followingShadows.update(sun, camera.position, sunDirection, performanceSettings.shadowDistance)
+  const shadowVehicle = sim?.player.vehicleId
+  const closeDrivingShadows =
+    !!shadowVehicle && cameraMode !== 'map' && !sim!.vehicleInfo(shadowVehicle).isCarrier
+  const shadowRadius = closeDrivingShadows ? 55 : performanceSettings.shadowDistance
+  const shadowFocus = closeDrivingShadows
+    ? new THREE.Vector3(...sim!.entityTransform(shadowVehicle!, true).position).sub(renderOrigin)
+    : camera.position
+  followingShadows.update(sun, shadowFocus, sunDirection, shadowRadius)
+  renderer.domElement.dataset.shadowRadius = String(shadowRadius)
   renderer.domElement.dataset.shadowCenter = sun.target.position
     .toArray()
     .map((n) => n.toFixed(1))
