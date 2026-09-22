@@ -1,3 +1,5 @@
+import { CarLights } from './car-lights.js'
+import { CarMirrors } from './car-mirrors.js'
 import { CarInstruments } from './car-instruments.js'
 import { RoadBatches } from './road-batches.js'
 import { carrierInterior } from './carrier-interior.js'
@@ -36,6 +38,8 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  private readonly carLights = new Map<string, CarLights>()
+  private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
   readonly touchScreens = new Map<string, THREE.Mesh>()
@@ -351,6 +355,8 @@ export class SceneView {
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
       if (visual.body.url === '/world/car.audi.a3.cabrio.glb') {
+        this.carLights.set(e.id, new CarLights(model))
+        this.carMirrors.set(e.id, new CarMirrors(model))
         const interior = model.getObjectByName('Interior')
         if (interior) {
           const instruments = new CarInstruments(interior)
@@ -510,7 +516,15 @@ export class SceneView {
     for (const [id, wheel] of this.steering)
       wheel.rotation.z =
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
+    for (const [id, lights] of this.carLights) {
+      const info = sim.vehicleInfo(id)
+      lights.update(
+        { powered: sim.player.vehicleId === id, braking: info.braking, reversing: info.reversing },
+        performance.now(),
+      )
+    }
     for (const [id, instruments] of this.instruments) {
+      instruments.setPowered(sim.player.vehicleId === id)
       if (sim.player.vehicleId === id)
         instruments.update(
           this.document,
@@ -575,7 +589,29 @@ export class SceneView {
     return hit
   }
   private readonly surfaceTextures: THREE.Texture[] = []
+  signal(id: string, side: number): void {
+    this.carLights.get(id)?.toggle(side)
+  }
+  renderMirrors(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera,
+    vehicleId: string | null,
+    now: number,
+  ): void {
+    if (!this.carMirrors.size) {
+      renderer.domElement.dataset.mirrorActive = 'false'
+      return
+    }
+    // Inactive cars are processed first so diagnostics describe the occupied car.
+    for (const [id, mirrors] of [...this.carMirrors].sort(
+      ([a], [b]) => Number(a === vehicleId) - Number(b === vehicleId),
+    ))
+      mirrors.render(renderer, scene, camera, id === vehicleId, now)
+  }
   dispose(): void {
+    for (const mirrors of this.carMirrors.values()) mirrors.dispose()
+    this.carMirrors.clear()
     for (const instruments of this.instruments.values()) instruments.dispose()
     this.instruments.clear()
     this.roads.dispose()

@@ -943,11 +943,14 @@ body.playing #footer-mode {
   user-select: none;
   text-align: center;
 }
-.helm-indicators {
+.helm-indicators,
+.helm-console > strong,
+.helm-portal > strong {
   color: #7395ad;
   font-size: 24px;
   height: 35px;
   letter-spacing: 6px;
+  font-weight: 400;
 }
 .hand-controls {
   display: flex;

@@ -88,7 +88,7 @@ export class PortalControls {
       panel.dataset.portalId = mouth.id
       panel.hidden = true
       const title = window.document.createElement('strong')
-      title.textContent = mouth.name
+      title.textContent = mouth.parentId ? 'PORTAL' : mouth.name
       const select = window.document.createElement('select')
       select.setAttribute('aria-label', `Destino de ${mouth.name}`)
       const placeholder = new Option('Elegir destino…', '')
@@ -137,10 +137,10 @@ export class PortalControls {
         panel.dataset.carrier = carrier.id
         panel.hidden = true
         if (kind === 'telemetry')
-          panel.innerHTML = '<strong>NABLA · TELEMETRÍA</strong><output></output><small></small>'
+          panel.innerHTML = '<strong>TELEMETRÍA</strong><output></output><small></small>'
         if (kind === 'map')
           panel.innerHTML =
-            '<strong>NABLA · NAVEGACIÓN</strong><canvas aria-label="Mapa cenital de carreteras"></canvas><small>Norte arriba · mapa local</small>'
+            '<strong>NAVEGACIÓN</strong><canvas aria-label="Mapa cenital de carreteras"></canvas><small>Norte arriba · mapa local</small>'
         if (kind === 'touch') {
           panel.innerHTML =
             '<div class="helm-indicators">NABLA · CONTROL DE VUELO</div><div class="hand-controls"><div class="dpad" data-hand="left"><span>WASD</span></div><div class="desk-switches"><button data-flight>Activar vuelo</button><button data-door>Cerrar garaje</button><label>Límite <select aria-label="Velocidad máxima"><option value="0">Parado</option><option value="100">100 km/h</option><option value="300">300 km/h</option><option value="600">600 km/h</option><option value="1000" selected>1000 km/h</option></select></label><button data-brake>Frenar</button></div><div class="dpad" data-hand="right"><span>CURSORES</span></div></div>'

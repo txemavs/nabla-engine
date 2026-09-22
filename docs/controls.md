@@ -307,3 +307,13 @@ chart without labels, at 4× the carrier chart zoom (one quarter of the distance
 across each axis). Speed digits use a compact 50 px canvas font. It reuses the carrier chart at 4 Hz through a canvas texture,
 without an additional scene camera or network requests. No-road scenes retain the
 blue grid and vehicle marker.
+
+The car's position lamps, navigation chart and speed digits switch off when the
+player leaves the driving seat. Lower outer rear lenses light red while braking;
+lower inner lenses light white when reversing. The upper strips are amber turn
+signals: **comma** toggles left and **period** toggles right; press again to cancel.
+
+The two side mirrors reflect the scene only while driving that car in cockpit
+view. Visible mirrors update at most 8 Hz into 384 × 256 targets, without recursive
+portal/mirror captures or additional shadow-map updates. Exterior, overhead,
+on-foot and editor views do not render mirror passes. Hidden browser tabs skip them.

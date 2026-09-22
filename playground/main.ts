@@ -1065,6 +1065,10 @@ window.addEventListener('keydown', (e) => {
     toast('Partida reiniciada')
     return
   }
+  if ((e.code === 'Comma' || e.code === 'Period') && !e.repeat && sim?.player.vehicleId) {
+    view.signal(sim.player.vehicleId, e.code === 'Comma' ? -1 : 1)
+    return
+  }
   if (e.code === 'KeyN' && !e.repeat) {
     gallery.reset()
     return
@@ -1487,6 +1491,25 @@ function frame(now: number): void {
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false
+    const mirrorVehicle =
+      cameraMode === 'cockpit' && !document.hidden ? (sim?.player.vehicleId ?? null) : null
+    if (mirrorVehicle)
+      view.limitDrawDistance(
+        worldCamera,
+        performanceSettings.distance,
+        !!sim,
+        !!performanceSettings.buildings,
+        Math.min(performanceSettings.distance, performanceSettings.roads),
+      )
+    const portalLive = [...view.portals.values()].map((p) => p.mesh.material.uniforms.live.value)
+    try {
+      for (const p of view.portals.values()) p.mesh.material.uniforms.live.value = 0
+      view.renderMirrors(renderer, scene, camera, mirrorVehicle, now)
+    } finally {
+      ;[...view.portals.values()].forEach((p, i) => {
+        p.mesh.material.uniforms.live.value = portalLive[i]
+      })
+    }
     renderPortals(view.portals, renderer, scene, camera, (remote) => {
       view.limitDrawDistance(
         remote.position.clone().add(renderOrigin),

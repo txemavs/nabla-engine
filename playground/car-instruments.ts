@@ -9,6 +9,8 @@ export class CarInstruments {
   private readonly chart = new HelmMap(this.mapCanvas, true, 4)
   private readonly speedTexture = new THREE.CanvasTexture(this.speedCanvas)
   private readonly mapTexture = new THREE.CanvasTexture(this.mapCanvas)
+  private powered = false
+  private readonly displays: THREE.Mesh[] = []
   private lastSpeed = -1
   private nextMap = 0
   constructor(interior: THREE.Object3D) {
@@ -31,6 +33,8 @@ export class CarInstruments {
     digits.name = 'A3 speed readout'
     digits.rotation.y = Math.PI
     digits.position.set(1.135, 0.685, -0.533)
+    digits.visible = false
+    this.displays.push(digits)
     interior.add(digits)
     // Exact inset quadrilateral: the original display is slightly turned toward the driver.
     const geometry = new THREE.BufferGeometry()
@@ -55,9 +59,16 @@ export class CarInstruments {
       }),
     )
     navigator.name = 'A3 navigator'
+    navigator.visible = false
+    this.displays.push(navigator)
     interior.add(navigator)
   }
+  setPowered(powered: boolean): void {
+    this.powered = powered
+    for (const display of this.displays) display.visible = powered
+  }
   update(doc: SceneDocument, pose: Transform, speedKmh: number, now: number): void {
+    if (!this.powered) return
     const speed = Math.round(Math.abs(speedKmh))
     if (speed !== this.lastSpeed) {
       this.lastSpeed = speed

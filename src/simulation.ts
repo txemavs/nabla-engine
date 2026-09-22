@@ -1403,6 +1403,8 @@ export class Simulation {
     rampAngle: number
     rampMoving: boolean
     speedKmh: number
+    braking: boolean
+    reversing: boolean
     altitude: number
     cruiseSpeed: number
     flightMode: boolean
@@ -1411,6 +1413,7 @@ export class Simulation {
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
+    const signedSpeed = v.body.velocity.dot(v.body.quaternion.vmult(new Vec3(0, 0, -1)))
     return {
       steer: v.steer,
       driver: new Vector3(...v.definition.driver)
@@ -1425,6 +1428,11 @@ export class Simulation {
       rampAngle: v.rampAngle,
       rampMoving: Math.abs(v.rampTarget - v.rampAngle) > 0.001,
       speedKmh: v.body.velocity.length() * 3.6,
+      braking:
+        this.vehicleId === id && (this.input.brake || this.input.forward * signedSpeed < -0.8),
+      reversing:
+        this.vehicleId === id &&
+        (signedSpeed < -0.15 || (this.input.forward < 0 && Math.abs(signedSpeed) <= 0.15)),
       altitude: this.height(v.body),
       cruiseSpeed: v.cruiseSpeed,
       flightMode: Boolean(v.flight),

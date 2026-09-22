@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Match the upper helm screen titles to the flight desk typography: telemetry, navigation and portal.
+- Add cockpit-only, visibility-culled A3 side-mirror reflections capped at 8 Hz.
+- Power down unoccupied A3 displays and lamps; add lower red brake lights, inner white reverse lights and upper amber turn signals.
+
 - Lower the A3 cockpit eye anchor 5 cm; add white dashboard speed digits and a label-free blue map on the original navigation display.
 
 - Reorganize the helm into left telemetry, central local road chart and right stern controls; add paired mode-2 circular D-pads and desk switches with clearance from the upright screens.
