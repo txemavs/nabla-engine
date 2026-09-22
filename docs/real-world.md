@@ -107,6 +107,7 @@ entity, without hiding or modifying the source building.
   the current per-triangle solid collision for an entire city.
 - Treat bridges, tunnels and stacked roads as separate surfaces, not merely a
   single terrain heightfield. Make missing metadata and fallback behavior explicit.
+  (Implemented: bridges and tunnels now render at layer-offset heights with collision.)
 - Prefetch in the direction of travel. Switch render/collision tiles atomically
   at simulation boundaries and retain support beneath vehicles until replacements
   are ready. Missing or failed data must not become a hole under the car.
@@ -176,10 +177,41 @@ inferred from footprint width (capped at 3 m). Ridge orientation follows the lon
 footprint axis; explicit roof direction/orientation tags are not interpreted yet.
 Unsupported shapes and complex footprints retain flat roofs. Closed-member
 multipolygons are supported; incomplete/split-member relations, other roof forms,
-bridge/tunnel surfaces, steps, water meshes and full landcover remain unsupported.
-Bridge/tunnel/construction/step road features are omitted rather than presented as
-correct drivable structures. The elevation source is terrain, not a surveyed road
-surface model. The remaining streets follow it, including unmodeled grade changes.
+steps, water meshes and full landcover remain unsupported.
+
+### Bridges, tunnels and stacked roads
+
+Bridge and tunnel ways are now included (previously filtered). Road entities carry
+`elevation` (`'bridge'` | `'tunnel'` | `undefined`) and `layer` (integer) from OSM tags.
+Construction and step roads remain omitted.
+
+**Height offset behavior:**
+
+| OSM tags                    | `elevation` | `layer` | Height offset        |
+|-----------------------------|-------------|---------|----------------------|
+| (none)                      | —           | —       | Terrain-draped       |
+| `bridge=yes`                | `bridge`    | 1       | +5 m from terrain    |
+| `bridge=yes layer=2`        | `bridge`    | 2       | +10 m from terrain   |
+| `tunnel=yes`                | `tunnel`    | -1      | -5 m from terrain    |
+| `tunnel=yes layer=-2`       | `tunnel`    | -2      | -10 m from terrain   |
+
+Each layer corresponds to ~5 m of vertical clearance. Bridges render as flat surfaces
+above terrain; tunnels render below. Both have physics collision boxes along their
+centerlines so vehicles can drive on them.
+
+**Road assist:** Vehicles receive gentle steering assist toward the nearest road
+centerline when drifting onto the verge. This uses the same OSM highway data already
+loaded—not a third-party GPS product. The assist is enabled by default and can be
+toggled via `Simulation.setRoadAssist(enabled, strength)`.
+
+**Limitations:**
+- Vertical separation is estimated from `layer` tags; absolute `ele` and `height` tags
+  are not yet interpreted.
+- Tunnels intersect terrain collision; vehicles may clip through terrain when driving
+  deep underground. Terrain collision masking in the tunnel corridor is future work.
+- Complex interchange ramps with variable heights are approximated with flat segments.
+- Not all bridge/tunnel cases are visually correct; obvious fallbacks are preferred over
+  silently wrong geometry.
 
 Buildings retain their OSM type/ID, retrieval time and source tags. They use the
 solid editor and can be recolored, reshaped, cloned or removed. Saves store a full

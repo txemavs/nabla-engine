@@ -235,7 +235,10 @@ export class SceneView {
         let g = takeMapGeometry(e)
         if (!g) {
           const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!
-          const data = roadGeometry(t, e.road.paths, e.road.width)
+          const data = roadGeometry(t, e.road.paths, e.road.width, {
+            elevation: e.road.elevation,
+            layer: e.road.layer,
+          })
           g = new THREE.BufferGeometry()
           g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))
           g.setIndex(data.faces.flat())

@@ -40,7 +40,10 @@ export function prepareMapGeometry(entities: Entity[]): PreparedMapGeometry {
     if (e.road) {
       const terrain = byId.get(e.road.terrainId)?.terrain
       if (!terrain) continue // A separately authored reference is handled by the scene renderer.
-      const data = roadGeometry(terrain, e.road.paths, e.road.width)
+      const data = roadGeometry(terrain, e.road.paths, e.road.width, {
+        elevation: e.road.elevation,
+        layer: e.road.layer,
+      })
       vertices = data.vertices.flat()
       indices = data.faces.flat()
     } else if (e.terrain) {

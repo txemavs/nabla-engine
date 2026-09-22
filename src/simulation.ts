@@ -7,6 +7,7 @@ import { EARTH_RADIUS, localFrame, localToGeo } from './geography.js'
 import { OBB } from 'three/addons/math/OBB.js'
 import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition } from './vehicle.js'
+import { roadColliders, nearestRoadCenterline } from './draped-road.js'
 import {
   Heightfield,
   ConvexPolyhedron,
@@ -116,6 +117,8 @@ export class Simulation {
   private readonly docks = new Map<string, { carrierId: string; constraint: LockConstraint }>()
   private ticks = 0
   private lostTime = 0
+  private roadAssistEnabled = true
+  private roadAssistStrength = 0.3
   private portalSequence = 0
   private lastPortalEvent: {
     sequence: number
@@ -371,6 +374,23 @@ export class Simulation {
         new Vec3(...collider.transform.position),
         new Quaternion(...collider.transform.rotation),
       )
+    if (e.road && (e.road.elevation === 'bridge' || e.road.elevation === 'tunnel')) {
+      const terrain = this.document.entities.find((t) => t.id === e.road!.terrainId)?.terrain
+      if (terrain) {
+        const boxes = roadColliders(terrain, e.road.paths, e.road.width, {
+          elevation: e.road.elevation,
+          layer: e.road.layer,
+        })
+        for (const box of boxes) {
+          const q = new Quaternion().setFromAxisAngle(new Vec3(0, 1, 0), box.yaw)
+          body.addShape(
+            new Box(new Vec3(box.size[0] / 2, box.size[1] / 2, box.size[2] / 2)),
+            new Vec3(...box.position),
+            q,
+          )
+        }
+      }
+    }
     body.position.set(...transform.position)
     body.quaternion.set(...transform.rotation)
     body.previousPosition.copy(body.position)
@@ -379,6 +399,8 @@ export class Simulation {
     body.angularDamping = 0.35
     this.bodies.set(e.id, body)
     if (e.source && e.motion === 'static' && !e.terrain && !e.portal) this.mapBodies.set(e.id, body)
+    if (e.road && (e.road.elevation === 'bridge' || e.road.elevation === 'tunnel'))
+      this.mapBodies.set(e.id, body)
     if (e.kind === 'vehicle') this.createVehicle(e, body)
     else this.world.addBody(body)
   }
@@ -1103,6 +1125,7 @@ export class Simulation {
               : 0
         v.raycast.setBrake(brake, i)
       }
+      if (active && this.roadAssistEnabled) this.applyRoadAssist(v)
     }
     if (!this.vehicleId) {
       let x = this.input.right,
@@ -1522,6 +1545,36 @@ export class Simulation {
     if (!vehicle?.definition.flight || !Number.isFinite(speed) || speed < 0 || speed > 1000)
       throw new Error('Velocidad: 0–1000 km/h')
     vehicle.cruiseSpeed = speed
+  }
+
+  /** Enable/disable road assist (gentle snap to road centerline). */
+  setRoadAssist(enabled: boolean, strength = 0.3): void {
+    this.roadAssistEnabled = enabled
+    this.roadAssistStrength = clamp(strength, 0, 1)
+  }
+
+  get roadAssist(): { enabled: boolean; strength: number } {
+    return { enabled: this.roadAssistEnabled, strength: this.roadAssistStrength }
+  }
+
+  private applyRoadAssist(v: Vehicle): void {
+    const speed = v.body.velocity.length()
+    if (speed < 0.5 || speed > 40) return
+
+    const roads = this.document.entities
+      .filter((e) => e.road && !e.road.elevation)
+      .map((e) => ({ paths: e.road!.paths, width: e.road!.width }))
+
+    const position: Vec3Tuple = [v.body.position.x, v.body.position.y, v.body.position.z]
+    const nearest = nearestRoadCenterline(position, roads)
+
+    if (!nearest || nearest.onRoad) return
+
+    const effectiveStrength = this.roadAssistStrength * Math.min(1, (nearest.distance - 1) / 5)
+    if (effectiveStrength < 0.01) return
+
+    const force = effectiveStrength * v.body.mass * 2
+    v.body.applyForce(new Vec3(nearest.direction[0] * force, 0, nearest.direction[2] * force))
   }
 
   setGarageDoor(id: string, closed: boolean): string {

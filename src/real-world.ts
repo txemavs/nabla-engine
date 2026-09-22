@@ -149,12 +149,7 @@ export function createRealWorld(
       ]
       entities.push(e)
     } else if (tags.highway) {
-      if (
-        ['construction', 'proposed', 'steps'].includes(tags.highway) ||
-        tags.bridge === 'yes' ||
-        tags.tunnel === 'yes'
-      )
-        continue
+      if (['construction', 'proposed', 'steps'].includes(tags.highway)) continue
       const foot = ['footway', 'path', 'pedestrian', 'cycleway'].includes(tags.highway),
         width = Math.min(25, Math.max(1, number(tags.width, foot ? 2 : number(tags.lanes, 2) * 3)))
       const paths: Vec3Tuple[][] = []
@@ -168,7 +163,16 @@ export function createRealWorld(
       if (paths.length) {
         const e = createEntity('osm-' + f.id.replace('/', '-') + suffix, 'group')
         e.name = tags.name ?? tags.highway
-        e.road = { paths, width, terrainId: terrain.id }
+        const elevation: 'terrain' | 'bridge' | 'tunnel' | undefined =
+          tags.bridge === 'yes' ? 'bridge' : tags.tunnel === 'yes' ? 'tunnel' : undefined
+        const layer = Number.parseInt(tags.layer ?? '0', 10)
+        e.road = {
+          paths,
+          width,
+          terrainId: terrain.id,
+          ...(elevation && { elevation }),
+          ...(Number.isFinite(layer) && layer !== 0 && { layer }),
+        }
         e.color = foot ? '#b2b0a0' : '#525c60'
         e.parentId = groups[1]
         e.source = source(f)
