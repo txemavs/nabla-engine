@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep selection bounds in object-local axes so the outline rotates with the selected entity instead of changing size with its world orientation.
+
 - Stabilize side-mirror captures against head rotation by fitting the whole lens from the eye position, independently of the viewport crop.
 
 - Match the upper helm screen titles to the flight desk typography: telemetry, navigation and portal.

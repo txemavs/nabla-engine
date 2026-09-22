@@ -1,3 +1,4 @@
+import { SelectionOutline } from './selection-outline.js'
 import { readPerformance } from './performance.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
@@ -179,7 +180,7 @@ scene.add(gizmo.getHelper())
 gizmo.addEventListener('change', () => {
   needsRender = true
 })
-const outline = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color('#f2ce8a'))
+const outline = new SelectionOutline()
 scene.add(outline)
 let view = new SceneView(editor.document)
 scene.add(view.root)
@@ -1403,10 +1404,7 @@ function frame(now: number): void {
   } else {
     orbit.update()
     const object = view.objects.get(selectedId)
-    if (object) {
-      outline.box.setFromObject(object)
-      outline.visible = !outline.box.isEmpty()
-    }
+    outline.update(object)
   }
   gallery.update(view, !!sim, document.hidden ? 0 : dt)
   portalControls.update(
