@@ -21,6 +21,7 @@ test('starts in Ventas, edits and saves an OSM building and drives the A3', asyn
   const building = page.locator('#tree [data-entity-id^="osm-way-"]').first()
   const id = await building.getAttribute('data-entity-id')
   await building.click()
+  await page.locator('#make-building-editable').click()
   await page.locator('#color').evaluate((el: HTMLInputElement) => {
     el.value = '#7199bc'
     el.dispatchEvent(new Event('change', { bubbles: true }))

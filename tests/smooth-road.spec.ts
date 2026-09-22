@@ -34,19 +34,17 @@ test('selects, saves and renders a smooth road with buildings disabled', async (
   }
   await page.goto('/?scene=circuit')
   await page.locator('#welcome-close').click()
-  await page
-    .locator('#file')
-    .setInputFiles({
-      name: 'road.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(
-        JSON.stringify({
-          version: 1,
-          name: 'Road test',
-          entities: [terrain, road, createEntity('spawn', 'spawn', [2, 3, 12])],
-        }),
-      ),
-    })
+  await page.locator('#file').setInputFiles({
+    name: 'road.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        version: 1,
+        name: 'Road test',
+        entities: [terrain, road, createEntity('spawn', 'spawn', [2, 3, 12])],
+      }),
+    ),
+  })
   await page.locator('[data-entity-id="road"]').click()
   await expect(page.locator('#road-surface-mode')).toHaveValue('raw')
   await page.locator('#road-surface-mode').selectOption('smooth-float')

@@ -1,3 +1,4 @@
+import { BuildingBatches } from './building-batches.js'
 import { isMapBuilding } from '../src/scene.js'
 import { SURFACE_LAYERS, mapSurfaceColor } from '../src/landcover.js'
 import { withinMapDistance } from './map-visibility.js'
@@ -57,6 +58,11 @@ export class SceneView {
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   private readonly roads = new RoadBatches()
+  private readonly buildings = new BuildingBatches()
+  batchBuildings = true
+  get pendingBuildingBatches(): boolean {
+    return this.batchBuildings && this.buildings.pending
+  }
   private materialSetup?: (material: THREE.Material) => void
   private readonly landcover = new LandcoverBatches()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
@@ -82,6 +88,7 @@ export class SceneView {
     this.graph = new SceneGraph(document)
     this.addEntities(document.entities)
     this.root.add(this.roads.root)
+    this.root.add(this.buildings.root)
     this.root.add(this.landcover.root)
     this.avatar.add(this.monitor)
     this.avatar.visible = false
@@ -546,11 +553,24 @@ export class SceneView {
     roadDistance = distance,
     now = performance.now(),
   ): void {
+    this.buildings.update(
+      this.document.entities,
+      this.objects,
+      buildings && this.batchBuildings,
+      position,
+      distance,
+    )
     this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
     this.landcover.update(this.document.entities, this.objects, enabled, position, distance, now)
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)!
+      if (isMapBuilding(e)) {
+        // Keep the entity frame alive for picking and attached bullet marks.
+        for (const child of object.children)
+          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial)
+            child.visible = !this.buildings.covers(e.id)
+      }
       if ((enabled && (e.road || e.landcover)) || (isMapBuilding(e) && !buildings)) {
         object.visible = false
         continue
@@ -704,6 +724,7 @@ export class SceneView {
   setupMaterials(callback: (material: THREE.Material) => void): void {
     this.materialSetup = callback
     this.roads.onMaterial = callback
+    this.buildings.onMaterial = callback
     this.landcover.onMaterial = callback
     this.root.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.SkinnedMesh) {
@@ -722,6 +743,7 @@ export class SceneView {
     for (const instruments of this.instruments.values()) instruments.dispose()
     this.instruments.clear()
     this.roads.dispose()
+    this.buildings.dispose()
     this.landcover.dispose()
     this.impacts.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()

@@ -1,3 +1,4 @@
+import { isMapBuilding } from '../src/scene.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
@@ -235,11 +236,17 @@ $('cursor-selection').onclick = () =>
 $('cursor-view').onclick = () => action(() => placeCursor(orbit.target.toArray()))
 $('selection-cursor').onclick = () =>
   action(() => {
+    const entity = editor.document.entities.find((e) => e.id === selectedId)!
+    if (isMapBuilding(entity) && !entity.mapEditable)
+      throw new Error('Pulsa Crear modificación antes de editar el edificio')
     editor.moveToCursor(selectedId)
     rebuild()
   })
 $('origin-cursor').onclick = () =>
   action(() => {
+    const entity = editor.document.entities.find((e) => e.id === selectedId)!
+    if (isMapBuilding(entity) && !entity.mapEditable)
+      throw new Error('Pulsa Crear modificación antes de editar el edificio')
     editor.originToCursor(selectedId)
     rebuild()
   })
@@ -260,6 +267,8 @@ $('transform-exact').onclick = () =>
     const doc = editor.document,
       graph = new SceneGraph(doc),
       entity = doc.entities.find((e) => e.id === selectedId)!
+    if (isMapBuilding(entity) && !entity.mapEditable)
+      throw new Error('Pulsa Crear modificación antes de editar el edificio')
     const pose = graph.worldTransform(selectedId),
       i = 'XYZ'.indexOf(axis)
     if (gizmo.getMode() === 'rotate') {
@@ -552,7 +561,9 @@ function refreshUi(): void {
       })
     props.append(button)
   }
-  solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
+  const mapReadOnly = isMapBuilding(e) && !e.mapEditable
+  if (mapReadOnly) solidEditor.close()
+  else solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
   if (e.light) {
     const controls = document.createElement('div')
     controls.innerHTML = `<label class="field-label">Farola</label><label><input id="light-enabled" type="checkbox" ${e.light.enabled ? 'checked' : ''}> Encendida</label><label><input id="light-night" type="checkbox" ${e.light.nightOnly ? 'checked' : ''}> Solo de noche</label><label class="field-label" for="light-color">Color de luz</label><input id="light-color" type="color" value="${e.light.color}"><label class="field-label" for="light-intensity">Intensidad · cd</label><input id="light-intensity" type="number" min="0" max="10000" value="${e.light.intensity}"><label class="field-label" for="light-distance">Alcance · m</label><input id="light-distance" type="number" min="1" max="100" value="${e.light.distance}">`
@@ -695,8 +706,30 @@ function refreshUi(): void {
     $<HTMLButtonElement>('delete').disabled = e.kind === 'spawn'
     $<HTMLSelectElement>('parent').disabled =
       e.kind === 'spawn' || e.motion === 'dynamic' || !!e.portal
-    if (solidEditor.active) gizmo.detach()
+    if (solidEditor.active || mapReadOnly) gizmo.detach()
     else gizmo.attach(view.objects.get(e.id)!)
+  }
+  if (mapReadOnly && !sim) {
+    props
+      .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
+        'input,button,select',
+      )
+      .forEach((control) => {
+        control.disabled = true
+      })
+    const button = document.createElement('button')
+    button.id = 'make-building-editable'
+    button.textContent = 'Crear modificación'
+    button.disabled = loadingWorld
+    button.onclick = () =>
+      action(() => {
+        editor.update(e.id, { mapEditable: true })
+        rebuild()
+      })
+    const note = document.createElement('p')
+    note.textContent =
+      'Edificio del mapa · dibujo agrupado. Crea una modificación para cambiar su forma, color o posición.'
+    props.append(note, button)
   }
   $<HTMLButtonElement>('undo').disabled = !!sim || loadingWorld || !editor.canUndo
   $<HTMLButtonElement>('redo').disabled = !!sim || loadingWorld || !editor.canRedo
@@ -1822,6 +1855,7 @@ function frame(now: number): void {
       }
     })
     outline.visible = outlineVisible
+    view.batchBuildings = !gizmo.dragging
     view.limitDrawDistance(
       worldCamera,
       performanceSettings.distance,
@@ -1841,7 +1875,7 @@ function frame(now: number): void {
     renderer.render(scene, camera)
     portalControls.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
-    needsRender = false
+    needsRender = view.pendingBuildingBatches
   }
   camera.position.copy(worldCamera)
   if (now >= nextPerformanceReadout) {

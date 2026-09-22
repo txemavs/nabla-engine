@@ -73,3 +73,14 @@ Portals can be placed at any loaded destination. Linking/seeing through/traversi
 portals across **different archived scenes** is not implemented yet; existing portal
 links operate within the currently loaded scene. Actual tunnels also require terrain
 cutouts and matching collision, rather than merely adding an underground corridor.
+
+### Editing a building from the map
+
+OSM buildings are selectable but initially use grouped rendering. Select one and
+choose **Crear modificación** in its properties before changing its color,
+transform or solid geometry. The same entity becomes editable (`mapEditable: true`)
+and leaves the render batch, retaining its OSM source identity. Save the scene to
+keep this exception; undoing the opt-in returns it to grouped rendering. An editable
+building can then be duplicated and reshaped. See the
+[performance guide](performance.md#map-building-batches-and-editable-exceptions)
+for memory and streaming limitations.

@@ -535,3 +535,45 @@ it('installs neighboring map zones while flying without waiting for descent', as
   expect(editor.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(true)
   stream.dispose()
 })
+
+it('keeps an explicitly editable OSM building when leaving and returning after save', async () => {
+  const { mapFingerprint } = await import('./world-stream.js')
+  const doc = document()
+  doc.entities.push(createEntity('world-buildings', 'group'), {
+    ...createEntity('building', 'solid'),
+    parentId: 'world-buildings',
+    source: {
+      provider: 'openstreetmap',
+      id: 'way/123',
+      retrievedAt: '2026-09-23',
+      tags: { building: 'yes' },
+    },
+  })
+  doc.entities[0].mapBaseline = mapFingerprint(mapTileEntities(doc, '0_0'))
+  const edited = new SceneEditor(doc)
+  edited.update('building', { mapEditable: true, color: '#335577' })
+  const reopened = new SceneEditor(JSON.parse(edited.serialize()))
+  const stream = new WorldStream(
+    {
+      document: () => reopened.document,
+      load: async (key) => {
+        const [x, z] = key.split('_').map(Number)
+        const ground = terrain(key, x * 1200)
+        ground.transform.position[2] = z * 1200
+        return [ground]
+      },
+      replace: (remove, add) => reopened.replaceMapEntities(remove, add),
+      status: () => undefined,
+    },
+    3,
+  )
+  let now = Date.now()
+  for (const x of [12000, 24000, 0]) {
+    stream.update([x, 5, 0], [0, 0, 0], [], (now += 1000))
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  const remaining = reopened.document.entities.filter((e) => e.source?.id === 'way/123')
+  expect(remaining).toHaveLength(1)
+  expect(remaining[0]).toMatchObject({ mapEditable: true, color: '#335577' })
+  stream.dispose()
+})

@@ -115,6 +115,7 @@ const entitySchema = z
       })
       .strict()
       .optional(),
+    mapEditable: z.boolean().optional(),
     source: z
       .object({
         provider: z.literal('openstreetmap'),

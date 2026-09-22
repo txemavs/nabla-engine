@@ -97,3 +97,38 @@ materials and shadow render targets are released when zones or quality tiers cha
 Automated tests cover quality switching, material lifecycle, origin rebasing and
 camera projection changes. Browser checks capture every quality tier and inspect
 WebGL shader errors. Software-rendered test results do not establish laptop FPS.
+
+## Map building batches and editable exceptions
+
+Unmodified static OSM buildings now render in 256 m cells, in both Studio and play
+mode. A cell uses one shared vertex-colored material; roof and wall colors survive
+merging, and the merged mesh casts and receives shadows. Distance/frustum culling
+operates on each cell. Streaming rebuilds affected cells only, one per update;
+original geometry stays visible until its replacement is ready. Dragging a group
+uses the original meshes temporarily, so its preview stays aligned.
+
+Picking still uses original entity meshes, even while their rendering is hidden.
+Entity frames remain visible for attached shot marks. This first implementation
+retains source geometry for picking and editing and adds merged render buffers:
+it reduces draw calls, **not** geometry storage or physics costs. It is not yet a
+compact server-side override database or a merged collision representation.
+
+Select an OSM building and press **Crear modificación** to opt it out of batching.
+The document records `mapEditable: true` on the same entity, preserving its OSM
+provenance and ID. Position, color, geometry editing and duplication then work
+normally. There is no second original to overlap it. Undo can restore the batched
+state, and scene save/load preserves the exception. Old documents without the
+flag render their existing geometry unchanged but require this action to edit it.
+
+The existing streaming fingerprint includes this field: modified zones stay pinned
+and survive save/reopen instead of being evicted and replaced with fresh map data.
+This currently retains the whole modified zone, not only a minimal per-building
+diff; many modified zones can therefore still increase memory and document size.
+Public prepared cache artifacts remain unmodified. No preparation format bump or
+server-cache regeneration is required for this renderer-only grouping.
+
+A browser fixture with 100 buildings in one cell reduced total scene draw calls
+from 102 to 3 (100 building draws to one), with effectively identical pixels.
+That isolates draw-call reduction; it is not a claim of a proportional FPS gain
+on a real city or a particular GPU. Tests cover colors, rebasing, incremental
+replacement, picking, shot-mark visibility, editable opt-in and saved exceptions.
