@@ -6,7 +6,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1'
+VERSION = '2'
 
 def normalize(origin, key):
     if not isinstance(origin, dict) or not isinstance(key, str):

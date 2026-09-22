@@ -2,7 +2,7 @@ import { parseScene, createEntity, type Entity } from '../src/scene.js'
 import type { GeoPoint } from '../src/geography.js'
 import type { PreparedMapGeometry } from './map-geometry.js'
 
-export const PREPARED_VERSION = 1
+export const PREPARED_VERSION = 2
 export function preparedPath(origin: GeoPoint, key: string): string {
   return `${PREPARED_VERSION}/${origin.latitude.toFixed(6)}/${origin.longitude.toFixed(6)}/${origin.altitude.toFixed(3)}/${key}.json`
 }
@@ -16,7 +16,7 @@ export function decodePrepared(
     origin: GeoPoint
     key: string
     entities: Entity[]
-    geometry: Record<string, { position: string; normal: string; index?: string }>
+    geometry: Record<string, { position: string; normal: string; index?: string; color?: string }>
   }
   if (
     !data ||
@@ -50,16 +50,20 @@ export function decodePrepared(
     if (!g) continue
     const position = new Float32Array(buffer(g.position)),
       normal = new Float32Array(buffer(g.normal)),
-      index = g.index ? new Uint32Array(buffer(g.index)) : undefined
+      index = g.index ? new Uint32Array(buffer(g.index)) : undefined,
+      color = g.color ? new Float32Array(buffer(g.color)) : undefined
     if (
       position.length !== normal.length ||
+      (color &&
+        (color.length !== position.length ||
+          !color.every((v) => Number.isFinite(v) && v >= 0 && v <= 1))) ||
       position.length % 3 ||
       !position.every(Number.isFinite) ||
       !normal.every(Number.isFinite) ||
       index?.some((i) => i >= position.length / 3)
     )
       throw Error('Invalid geometry')
-    geometry[e.id] = { position, normal, index }
+    geometry[e.id] = { position, normal, index, color }
   }
   return { entities, geometry }
 }
@@ -69,7 +73,7 @@ export async function loadPrepared(origin: GeoPoint, key: string, signal: AbortS
   const url = `${BASE}/${preparedPath(origin, key)}`
   let cache: Cache | undefined, hit: Response | undefined, response: Response | undefined
   try {
-    cache = await caches.open('nabla-prepared-v1')
+    cache = await caches.open('nabla-prepared-v2')
     hit = await cache.match(url)
   } catch {
     /* Optional disk cache. */

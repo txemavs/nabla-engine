@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { expect, it } from 'vitest'
-import { createRealWorld, type WorldExtract, IRUN_VENTAS } from './real-world.js'
+import { createRealWorld, normalizeColor, type WorldExtract, IRUN_VENTAS } from './real-world.js'
 import { terrainHeight } from './terrain.js'
 import { Simulation, idleInput } from './simulation.js'
 import { SceneEditor } from './editor.js'
@@ -140,4 +140,92 @@ it('uses the same origin tile ids and fingerprint when revisiting the initial zo
   expect(revisit.entities.find((e) => e.terrain)!.mapBaseline).toBe(
     first.entities.find((e) => e.terrain)!.mapBaseline,
   )
+})
+
+it('normalizes OSM colour tags to hex format', () => {
+  // Hex passthrough
+  expect(normalizeColor('#C75D4D', '#000000')).toBe('#c75d4d')
+  expect(normalizeColor('#ABC', '#000000')).toBe('#aabbcc')
+  // Named colors
+  expect(normalizeColor('red', '#000000')).toBe('#ff0000')
+  expect(normalizeColor('grey', '#000000')).toBe('#808080')
+  expect(normalizeColor('Gray', '#000000')).toBe('#808080')
+  expect(normalizeColor('BLUE', '#000000')).toBe('#0000ff')
+  expect(normalizeColor('salmon', '#000000')).toBe('#fa8072')
+  expect(normalizeColor('brick', '#000000')).toBe('#cb4154')
+  // Fallback
+  expect(normalizeColor(undefined, '#b9b5a8')).toBe('#b9b5a8')
+  expect(normalizeColor('unknowncolor', '#b9b5a8')).toBe('#b9b5a8')
+})
+
+it('interprets roof tags for pyramidal buildings with separate roof/wall colors', () => {
+  const doc = createRealWorld({
+    name: 'Roof test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 28 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/154094152',
+        tags: {
+          building: 'apartments',
+          'building:levels': '8',
+          'building:material': 'brick',
+          'building:colour': '#E5A38E',
+          'roof:shape': 'pyramidal',
+          'roof:colour': '#C75D4D',
+          'roof:levels': '1',
+          'roof:material': 'roof_tiles',
+        },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.8196, 43.3297],
+              [-1.8194, 43.3297],
+              [-1.8194, 43.3299],
+              [-1.8196, 43.3299],
+              [-1.8196, 43.3297],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  const building = doc.entities.find((e) => e.source?.id === 'way/154094152')
+  expect(building).toBeDefined()
+  expect(building!.kind).toBe('solid')
+  expect(building!.color).toBe('#e5a38e') // building:colour normalized
+  expect(building!.roofColor).toBe('#c75d4d') // roof:colour normalized
+  expect(building!.geometry?.roofFaces?.length).toBeGreaterThan(0) // pyramidal roof has roof faces
+})
+
+it('uses building:color as alias for building:colour', () => {
+  const doc = createRealWorld({
+    name: 'Color alias test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 28 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/1',
+        tags: { building: 'yes', 'building:color': '#112233', 'roof:color': 'red' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.8196, 43.3297],
+              [-1.8194, 43.3297],
+              [-1.8194, 43.3299],
+              [-1.8196, 43.3299],
+              [-1.8196, 43.3297],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  const building = doc.entities.find((e) => e.source?.id === 'way/1')
+  expect(building!.color).toBe('#112233')
+  // Note: roof:color works only if there's a supported roof shape
 })

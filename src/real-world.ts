@@ -13,7 +13,7 @@ import { createA3, createCarrier } from './presets.js'
 import { terrainHeight, type TerrainData } from './terrain.js'
 import { validateSolid, type SolidGeometry } from './solid.js'
 import { treeSprite } from './vegetation.js'
-import { buildingRoof } from './building-roof.js'
+import { buildingRoofWithFaces } from './building-roof.js'
 
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 export interface MapFeature {
@@ -28,8 +28,54 @@ export interface WorldExtract {
   features: MapFeature[]
   source: { retrievedAt: string; [key: string]: unknown }
 }
-const color = (value: string | undefined, fallback: string) =>
-  value && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback
+/** CSS 1.0 basic color names plus common OSM color names. Case insensitive. */
+const OSM_COLOR_NAMES: Record<string, string> = {
+  black: '#000000',
+  white: '#ffffff',
+  grey: '#808080',
+  gray: '#808080',
+  silver: '#c0c0c0',
+  maroon: '#800000',
+  red: '#ff0000',
+  olive: '#808000',
+  yellow: '#ffff00',
+  green: '#008000',
+  lime: '#00ff00',
+  teal: '#008080',
+  aqua: '#00ffff',
+  cyan: '#00ffff',
+  navy: '#000080',
+  blue: '#0000ff',
+  purple: '#800080',
+  fuchsia: '#ff00ff',
+  magenta: '#ff00ff',
+  orange: '#ff8000',
+  brown: '#804000',
+  pink: '#ffc0cb',
+  beige: '#f5f5dc',
+  cream: '#fffdd0',
+  tan: '#d2b48c',
+  terracotta: '#e2725b',
+  brick: '#cb4154',
+  salmon: '#fa8072',
+}
+
+/** Normalize an OSM colour value (hex or name) to #RRGGBB. */
+export function normalizeColor(value: string | undefined, fallback: string): string {
+  if (!value) return fallback
+  const trimmed = value.trim().toLowerCase()
+  // #RRGGBB or #RGB
+  if (/^#[0-9a-f]{6}$/i.test(trimmed)) return trimmed.toLowerCase()
+  if (/^#[0-9a-f]{3}$/i.test(trimmed)) {
+    // Expand #RGB to #RRGGBB
+    const [r, g, b] = trimmed.slice(1)
+    return `#${r}${r}${g}${g}${b}${b}`
+  }
+  // Named color
+  const named = Object.hasOwn(OSM_COLOR_NAMES, trimmed) ? OSM_COLOR_NAMES[trimmed] : undefined
+  if (named) return named
+  return fallback
+}
 const number = (value: string | undefined, fallback: number) => {
   const n = Number.parseFloat(value ?? '')
   return Number.isFinite(n) && n >= 0 ? n : fallback
@@ -137,9 +183,16 @@ export function createRealWorld(
       }
       if (!g.faces.length || g.vertices.length > 2048) continue
       const e = createEntity('osm-' + f.id.replace('/', '-'), 'solid', [cx, base, cz])
-      e.geometry = buildingRoof(g, tags)
+      const roofResult = buildingRoofWithFaces(g, tags)
+      e.geometry = { ...roofResult.geometry, roofFaces: roofResult.roofFaces }
       e.name = tags.name ?? `Edificio · ${f.id}`
-      e.color = color(tags['building:colour'], '#b9b5a8')
+      // building:colour / building:color for walls
+      e.color = normalizeColor(tags['building:colour'] ?? tags['building:color'], '#b9b5a8')
+      // roof:colour / roof:color for roof faces
+      const roofColorTag = tags['roof:colour'] ?? tags['roof:color']
+      if (roofColorTag && roofResult.roofFaces.length > 0) {
+        e.roofColor = normalizeColor(roofColorTag, e.color)
+      }
       e.parentId = groups[0]
       e.source = source(f)
       e.size = [

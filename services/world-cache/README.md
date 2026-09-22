@@ -249,14 +249,14 @@ loading path until prepared output exists. No imagery-provider bulk download is 
 
 Jobs reuse normalized OSM from the cache, cache and decode Esri tiles, sample the
 121×121 elevation lattice, call the same `createRealWorld`/`prepareMapGeometry` as
-the browser, then atomically publish entities plus base64 Float32/Uint32 mesh buffers.
+the browser, then atomically publish entities plus base64 Float32/Uint32 mesh buffers including roof/wall vertex colors.
 This includes terrain, road and building geometry and tree entities. Browser work
 still includes JSON/typed-array decoding, validation, physics installation and GPU
 upload; those costs do not disappear. Distant horizon, water tiles and satellite
 imagery retain their existing independent pipelines.
 
-Artifacts use `1/<latitude:6>/<longitude:6>/<altitude:3>/<tile>.json`. Increment both
-`queue_store.VERSION` and `PREPARED_VERSION` when geometry/scene generation becomes
+Artifacts use `2/<latitude:6>/<longitude:6>/<altitude:3>/<tile>.json`. Increment both
+`queue_store.VERSION` and `PREPARED_VERSION` and the CLI wire version when geometry/scene generation becomes
 incompatible. The queue deduplicates requests, retries up to three times with backoff,
 recovers interrupted jobs on restart, and requeues evicted output on demand. Ready
 jobs are eligible for refresh after 24 hours; upstream data still observes its own

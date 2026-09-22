@@ -10,7 +10,7 @@ import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { terrainVertices, terrainIndices } from '../src/terrain.js'
-import { triangles } from '../src/solid.js'
+import { triangles, trianglesWithRoofInfo } from '../src/solid.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
@@ -269,23 +269,54 @@ export class SceneView {
       }
       if (e.geometry) {
         let geometry = takeMapGeometry(e)
+        const hasRoofColor = !!(e.roofColor && e.geometry.roofFaces?.length)
+        // Geometry may be pre-prepared with vertex colors (from map worker) or need generation
+        if (geometry && hasRoofColor && !geometry.hasAttribute('color')) {
+          geometry.dispose()
+          geometry = undefined
+        }
+        const hasVertexColors = !!geometry?.hasAttribute('color') || hasRoofColor
         if (!geometry) {
           geometry = new THREE.BufferGeometry()
-          geometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute(
-              triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
-              3,
-            ),
-          )
+          if (hasRoofColor) {
+            // Use trianglesWithRoofInfo to get roof/wall separation
+            const { indices, isRoof } = trianglesWithRoofInfo(e.geometry)
+            const positions: number[] = []
+            const colors: number[] = []
+            const wallColor = new THREE.Color(e.color)
+            const roofColor = new THREE.Color(e.roofColor!)
+            for (let i = 0; i < indices.length; i++) {
+              const tri = indices[i]
+              const color = isRoof[i] ? roofColor : wallColor
+              for (const idx of tri) {
+                const v = e.geometry!.vertices[idx]
+                positions.push(v[0], v[1], v[2])
+                colors.push(color.r, color.g, color.b)
+              }
+            }
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+          } else {
+            geometry.setAttribute(
+              'position',
+              new THREE.Float32BufferAttribute(
+                triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
+                3,
+              ),
+            )
+          }
           geometry.computeVertexNormals()
         }
-        const surface = mesh(geometry, e.color)
-        // OSM solids are closed and outward-wound. Rendering both sides makes
-        // adjoining walls fight with the neighbor's inward-facing wall.
-        ;(surface.material as THREE.MeshStandardMaterial).side = e.source
-          ? THREE.FrontSide
-          : THREE.DoubleSide
+        const material = new THREE.MeshStandardMaterial({
+          color: hasVertexColors ? '#ffffff' : e.color,
+          roughness: 0.72,
+          vertexColors: hasVertexColors,
+          side: e.source ? THREE.FrontSide : THREE.DoubleSide,
+        })
+        const surface = new THREE.Mesh(geometry, material)
+        surface.castShadow = true
+        surface.receiveShadow = true
+
         group.add(surface)
       }
       if (e.kind === 'box' && !e.light) group.add(box(e.size, e.color))

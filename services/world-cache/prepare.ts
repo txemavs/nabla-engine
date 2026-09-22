@@ -75,11 +75,12 @@ const wire = Object.fromEntries(
       position: encode(g.position),
       normal: encode(g.normal),
       ...(g.index ? { index: encode(g.index) } : {}),
+      ...(g.color ? { color: encode(g.color) } : {}),
     },
   ]),
 )
 const result = JSON.stringify({
-  version: 1,
+  version: 2,
   origin,
   key,
   retrievedAt: extract.source.retrievedAt,
