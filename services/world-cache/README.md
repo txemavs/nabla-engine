@@ -1,5 +1,8 @@
 # Private shared world cache
 
+For the deployed layout, refresh procedures and operational history, see the
+[world cache runbook](../../docs/world-cache-operations.md).
+
 This service caches exact OSM queries and Esri elevation tiles on disk. It is a
 shared demand cache, not a pre-generated national map archive. Source OSM data
 remains ODbL; provider elevation terms still apply. It does not fetch satellite imagery.
@@ -61,13 +64,13 @@ the Vite proxy is development-only.
 ## Pre-filling the cache
 
 The `prefill.py` script warms the cache for a region so users hit cache instead
-of live Overpass. Run this on chained.world where the cache service is deployed.
+of live Overpass. Run this on the server where the cache service is deployed.
 
 ```sh
-# Default: 11×11 grid around Irun Ventas (121 zones, ~40 km coverage)
+# Default: 11×11 grid around Irun Ventas (121 zones, ~13.2 km per side)
 python3 prefill.py --cache-url http://127.0.0.1:8080
 
-# Larger region: 21×21 grid (441 zones, ~50 km coverage)
+# Larger region: 21×21 grid (441 zones, ~25.2 km per side)
 python3 prefill.py --radius 10
 
 # Custom location (Madrid)
@@ -96,7 +99,7 @@ and rate-limit delays, but does not skip the client-side geometry generation wor
 For large/dense zones, there will still be a brief hitch as the browser constructs
 the scene from the baked JSON.
 
-### Baking on chained.world
+### Baking on your server
 
 ```sh
 # Bake Irun region (default 11×11 grid)
@@ -156,7 +159,7 @@ hitting live Overpass:
 | ----------- | ---------------------- | ------------------------------ |
 | Storage     | Cache hash files       | Named zone JSON                |
 | Served from | `/osm` POST            | `/baked/<lat>/<lon>/<key>` GET |
-| Elevation   | Included               | Stub (client fetches live)     |
+| Elevation   | Not warmed by prefill  | Stub (client fetches live)     |
 | Priority    | Normal cache           | Checked first                  |
 | Use case    | Warm cache faster      | Guaranteed instant hits        |
 
@@ -255,7 +258,7 @@ still includes JSON/typed-array decoding, validation, physics installation and G
 upload; those costs do not disappear. Distant horizon, water tiles and satellite
 imagery retain their existing independent pipelines.
 
-Artifacts use `2/<latitude:6>/<longitude:6>/<altitude:3>/<tile>.json`. Increment both
+Artifacts use `4/<latitude:6>/<longitude:6>/<altitude:3>/<tile>.json`. Increment both
 `queue_store.VERSION` and `PREPARED_VERSION` and the CLI wire version when geometry/scene generation becomes
 incompatible. The queue deduplicates requests, retries up to three times with backoff,
 recovers interrupted jobs on restart, and requeues evicted output on demand. Ready
