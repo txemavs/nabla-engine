@@ -493,13 +493,15 @@ interface OverrideEntry {
 
 ### Nabla Studio UX Flow
 
-1. **Load zone:** Fetch base + override from chained.world
-2. **Visualize:** Render base features (buildings/roads) + override entities (bridges)
-3. **Edit modes:**
+Nabla Studio is the existing playground app (`playground/main.ts`) — the «Nabla · Distrito cero» UI with solid editor, Irún Ventas travel, etc. Zone overrides extend this existing app:
+
+1. **Load zone:** Existing streamer fetches base from chained.world; add override fetch
+2. **Visualize:** Existing scene view renders base + override entities (bridges show up)
+3. **Edit modes:** Existing solid editor already supports:
    - **Add bridge:** Draw solid geometry at elevation, mark as `action: 'add'`
-   - **Hide feature:** Click OSM building → mark as `action: 'hide'`
-   - **Edit feature:** Modify color/height → mark as `action: 'edit'`
-4. **Save:** POST patch to chained.world, increment version
+   - **Hide feature:** Select OSM entity → new "hide from base" action
+   - **Edit feature:** Existing property editing → detect as override
+4. **Save:** New endpoint: POST patch to chained.world (vs. existing localStorage save)
 5. **Conflict:** If base changed (new OSM data), flag entries with stale fingerprint
 
 ### Runtime Merge
@@ -568,10 +570,10 @@ The solid editor already supports this — the work is:
 | **1** | Pre-baked zone JSON for Irun (Option A) | Low |
 | **2** | Override API endpoint on chained.world | Low |
 | **3** | Editor: load base + override, show combined | Medium |
-| **4** | Nabla Studio: add/hide/edit override entries, save | Medium |
-| **5** | First bridge: hand-author one Irun span in Nabla Studio | Low |
+| **4** | Extend existing solid editor: "save override to server" action | Medium |
+| **5** | First bridge: hand-author one Irun span in existing solid editor | Low |
 | **6** | Bridge physics: deck collision separate from terrain | Medium |
-| **7** | Bridge drawing helpers in Nabla Studio solid editor | Medium |
+| **7** | Bridge drawing helpers in existing solid editor | Medium |
 | **8** | Tunnel geometry + portal-like entry/exit | High |
 
 ### Smallest Vertical Slice (Phase 1-5)
@@ -579,11 +581,11 @@ The solid editor already supports this — the work is:
 **Goal:** Persist a hand-authored bridge override for one Irun span.
 
 1. Add `overrides/` directory to chained.world static serving
-2. Create `0_0.patch.json` with one bridge entity (hand-drawn in Nabla Studio)
+2. Create `0_0.patch.json` with one bridge entity (hand-drawn in existing solid editor)
 3. Modify `loadWorldTile` to fetch and merge override
-4. Drive over the bridge
+4. Drive over the bridge in Nabla Studio
 
-This proves the architecture without building full Nabla Studio override UX.
+This proves the architecture by extending the existing playground, not building a new editor.
 
 ---
 
