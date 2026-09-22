@@ -72,14 +72,18 @@ when the page is hidden or play stops. The footer sound toggle persists locally.
 
 ## Cascaded local shadows
 
-The sun uses one cascade at low quality (512 px, 80 m), two at medium quality
+The sun uses one cascade at low quality (512 px, 40 m), two at medium quality
 (1024 px each, 200 m) and three at high quality (2048 px each, 500 m). Low is the
 default for new profiles; saved preferences are respected. High quality adds shadow
 passes and memory, so it is an optional distance/detail tradeoff, not a free upgrade.
 
 CSM fits a proxy camera in absolute coordinates, snaps to its shadow texel grid,
 then rebases its lights into render coordinates. Projection changes refresh cascade
-bounds. Radius-zero PCF retains hardware bilinear comparison without the unstable
+bounds. The depth bias is a fixed 2 cm in world units rather than a constant
+fraction of the shadow-camera depth range; the latter detached or erased small
+vehicle shadows. Low quality prioritizes nearby vehicles without adding a pass.
+Shadow intensity is full occlusion of direct light; ambient lighting still fills
+the shaded areas. Radius-zero PCF retains hardware bilinear comparison without the unstable
 screen-pixel-dependent rotated sampling pattern. Cascades blend at their boundaries.
 
 Only the main view refreshes shadow maps. Auxiliary views reuse them and do not

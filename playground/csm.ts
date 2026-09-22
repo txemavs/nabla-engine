@@ -64,7 +64,8 @@ export class ShadowManager {
       shadowMapSize: config.tier.mapSize,
       lightDirection: config.lightDirection.clone().normalize(),
       lightIntensity: config.lightIntensity ?? 3.2,
-      shadowBias: -0.0003,
+      // Keep the depth offset in metres, independent of the tier's depth range.
+      shadowBias: -0.02 / (config.tier.maxFar + 500 - 0.1),
       lightNear: 0.1,
       lightFar: config.tier.maxFar + 500,
       lightMargin: 200,
@@ -76,9 +77,9 @@ export class ShadowManager {
     )
     this.csm.fade = true
     for (const light of this.csm.lights) {
-      light.shadow.normalBias = 0.04
+      light.shadow.normalBias = 0.025
       light.shadow.radius = 0
-      light.shadow.intensity = 0.8
+      light.shadow.intensity = 1
     }
     for (const material of this.registeredMaterials) {
       this.bind(material)

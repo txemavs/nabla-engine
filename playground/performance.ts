@@ -17,7 +17,7 @@ export interface ShadowTier {
 /** Mapping from shadow quality value to CSM configuration. */
 export const shadowTiers: Record<number, ShadowTier | null> = {
   0: null, // disabled
-  512: { cascades: 1, mapSize: 512, maxFar: 80 },
+  512: { cascades: 1, mapSize: 512, maxFar: 40 },
   1024: { cascades: 2, mapSize: 1024, maxFar: 200 },
   2048: { cascades: 3, mapSize: 2048, maxFar: 500 },
 }
