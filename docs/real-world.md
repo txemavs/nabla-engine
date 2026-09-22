@@ -107,6 +107,7 @@ entity, without hiding or modifying the source building.
   the current per-triangle solid collision for an entire city.
 - Treat bridges, tunnels and stacked roads as separate surfaces, not merely a
   single terrain heightfield. Make missing metadata and fallback behavior explicit.
+  (Bridges now have matching deck geometry and collision; tunnel cutouts remain deferred.)
 - Prefetch in the direction of travel. Switch render/collision tiles atomically
   at simulation boundaries and retain support beneath vehicles until replacements
   are ready. Missing or failed data must not become a hole under the car.
@@ -176,8 +177,8 @@ inferred from footprint width (capped at 3 m). Ridge orientation follows the lon
 footprint axis; explicit roof direction/orientation tags are not interpreted yet.
 Unsupported shapes and complex footprints retain flat roofs. Closed-member
 multipolygons are supported; incomplete/split-member relations and other roof forms
-remain unsupported. Bridge/tunnel/construction/step road features are omitted rather
-than presented as correct drivable structures. The elevation source is terrain, not
+remain unsupported. Construction and step roads are omitted; bridges use estimated
+elevation profiles and tunnels remain metadata until terrain cutouts exist. The elevation source is terrain, not
 a surveyed road surface model. The remaining streets follow it, including unmodeled
 grade changes.
 
@@ -207,6 +208,34 @@ water polygons are batched by 256m cell and surface type for efficient rendering
 Landcover is visual only; it does not affect collision or physics. The terrain
 heightfield remains the collider. This implementation does not use satellite/orthophoto
 imagery; it relies solely on OSM vector data for surface classification.
+
+### Bridges, tunnels and stacked roads
+
+Bridge and tunnel ways are now included (previously filtered). Road entities carry
+`elevation` (`'bridge'` | `'tunnel'` | `undefined`) and `layer` (integer) from OSM tags.
+Construction and step roads remain omitted.
+
+Bridges use an estimated clearance of 5 m per absolute layer (at least one layer),
+with ramps returning to terrain at the ends of the original OSM way. Profiles are
+sampled at intervals of at most 5 m inside the tile. Clipped segments preserve their
+position along the original way so tile boundaries do not introduce extra ramps.
+Shared cross-sections join sloping deck segments without horizontal joint discs.
+Physics uses the same triangles as rendering, with thin collision prisms below the
+deck. Streamed bridge bodies participate in collision-distance culling.
+
+Tunnels retain source metadata but have no visible surface or road collider yet.
+Rendering asphalt below an intact terrain collider would not make a usable tunnel;
+terrain openings and corridor collision are required first.
+
+Road assist is **disabled by default**. Applications may opt in through
+`Simulation.setRoadAssist(enabled, strength)`. It indexes terrain-road segments in
+world coordinates, considers vertical separation, and yields to manual steering.
+Flight-capable vehicles are excluded. The spatial index is rebuilt when the scene's
+entity list changes, rather than scanning all roads each physics tick.
+
+These are approximations, not surveyed interchange elevations. Absolute `ele` and
+`height`, connected-way ramp topology, grade limits and terrain-cutting tunnels are
+still future work. Layer values are bounded to the supported range of -5 to 5.
 
 Buildings retain their OSM type/ID, retrieval time and source tags. They use the
 solid editor and can be recolored, reshaped, cloned or removed. Saves store a full

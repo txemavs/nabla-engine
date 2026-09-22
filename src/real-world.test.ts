@@ -323,3 +323,136 @@ it('assigns correct surface colors based on OSM tags', () => {
   expect(classifySurface({ landuse: 'residential' })).toBe('residential')
   expect(classifySurface({ landuse: 'industrial' })).toBe('industrial')
 })
+
+it('includes bridge and tunnel roads with elevation and layer metadata', () => {
+  const doc = createRealWorld({
+    name: 'Bridge/Tunnel test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 0 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/100000001',
+        tags: { highway: 'primary', bridge: 'yes', layer: '1' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.329],
+              [-1.818, 43.33],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/100000002',
+        tags: { highway: 'secondary', tunnel: 'yes', layer: '-1' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.819, 43.3295],
+              [-1.819, 43.331],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/100000003',
+        tags: { highway: 'residential' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.328],
+              [-1.818, 43.328],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  const bridge = doc.entities.find((e) => e.source?.id === 'way/100000001')
+  const tunnel = doc.entities.find((e) => e.source?.id === 'way/100000002')
+  const road = doc.entities.find((e) => e.source?.id === 'way/100000003')
+
+  expect(bridge).toBeDefined()
+  expect(bridge!.road?.elevation).toBe('bridge')
+  expect(bridge!.road?.layer).toBe(1)
+
+  expect(tunnel).toBeDefined()
+  expect(tunnel!.road?.elevation).toBe('tunnel')
+  expect(tunnel!.road?.layer).toBe(-1)
+
+  expect(road).toBeDefined()
+  expect(road!.road?.elevation).toBeUndefined()
+  expect(road!.road?.layer).toBeUndefined()
+})
+
+it('does not filter out bridge=yes or tunnel=yes highways', () => {
+  const doc = createRealWorld({
+    name: 'No filter test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 0 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/200000001',
+        tags: { highway: 'motorway', bridge: 'yes' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.329],
+              [-1.818, 43.33],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/200000002',
+        tags: { highway: 'trunk', tunnel: 'yes' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.819, 43.3295],
+              [-1.819, 43.331],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/200000003',
+        tags: { highway: 'construction' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.328],
+              [-1.818, 43.328],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/200000004',
+        tags: { highway: 'steps' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.817, 43.328],
+              [-1.816, 43.328],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+
+  expect(doc.entities.some((e) => e.source?.id === 'way/200000001')).toBe(true)
+  expect(doc.entities.some((e) => e.source?.id === 'way/200000002')).toBe(true)
+  expect(doc.entities.some((e) => e.source?.id === 'way/200000003')).toBe(false)
+  expect(doc.entities.some((e) => e.source?.id === 'way/200000004')).toBe(false)
+})

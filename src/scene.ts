@@ -99,6 +99,9 @@ const entitySchema = z
         paths: z.array(z.array(vector).min(2).max(8192)).min(1).max(8192),
         width: finite.min(0.5).max(30),
         terrainId: z.string(),
+        elevation: z.enum(['terrain', 'bridge', 'tunnel']).optional(),
+        profiled: z.boolean().optional(),
+        layer: z.number().int().min(-5).max(5).optional(),
       })
       .strict()
       .optional(),

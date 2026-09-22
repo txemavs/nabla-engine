@@ -12,7 +12,7 @@ import {
 import { createA3, createCarrier } from './presets.js'
 import { terrainHeight, type TerrainData } from './terrain.js'
 import { validateSolid, type SolidGeometry } from './solid.js'
-import { drapeRoad } from './draped-road.js'
+import { drapeRoad, roadHeightOffset } from './draped-road.js'
 import { treeSprite } from './vegetation.js'
 import { buildingRoofWithFaces } from './building-roof.js'
 import {
@@ -216,17 +216,61 @@ export function createRealWorld(
       ]
       entities.push(e)
     } else if (tags.highway) {
-      if (
-        ['construction', 'proposed', 'steps'].includes(tags.highway) ||
-        tags.bridge === 'yes' ||
-        tags.tunnel === 'yes'
-      )
-        continue
+      if (['construction', 'proposed', 'steps'].includes(tags.highway)) continue
       const foot = ['footway', 'path', 'pedestrian', 'cycleway'].includes(tags.highway),
         width = Math.min(25, Math.max(1, number(tags.width, foot ? 2 : number(tags.lanes, 2) * 3)))
+      const elevation =
+        tags.bridge && tags.bridge !== 'no'
+          ? 'bridge'
+          : tags.tunnel && tags.tunnel !== 'no'
+            ? 'tunnel'
+            : undefined
+      const parsedLayer = Number.parseInt(tags.layer ?? '', 10)
+      const layer = Number.isFinite(parsedLayer)
+        ? Math.max(-5, Math.min(5, parsedLayer))
+        : undefined
       const paths: Vec3Tuple[][] = []
       for (const ring of f.rings) {
         const points = ring.coordinates.map(project)
+        if (elevation === 'bridge') {
+          const distances = [0]
+          for (let i = 1; i < points.length; i++)
+            distances.push(
+              distances[i - 1] +
+                Math.hypot(points[i][0] - points[i - 1][0], points[i][2] - points[i - 1][2]),
+            )
+          const total = distances.at(-1)!,
+            ramp = Math.min(30, total / 4)
+          for (let i = 1; i < points.length; i++) {
+            const segment = clipRoadSegment(points[i - 1], points[i], half, depth)
+            if (!segment) continue
+            const [a, b] = segment,
+              length = Math.hypot(b[0] - a[0], b[2] - a[2]),
+              start =
+                distances[i - 1] + Math.hypot(a[0] - points[i - 1][0], a[2] - points[i - 1][2]),
+              steps = Math.max(1, Math.ceil(length / 5))
+            const profile: Vec3Tuple[] = []
+            for (let k = 0; k <= steps; k++) {
+              const f = k / steps,
+                x = a[0] + (b[0] - a[0]) * f,
+                z = a[2] + (b[2] - a[2]) * f,
+                d = start + length * f
+              profile.push([
+                x,
+                height(x, z) +
+                  roadHeightOffset('bridge', layer) *
+                    Math.max(
+                      0,
+                      Math.min(1, d / Math.max(1, ramp), (total - d) / Math.max(1, ramp)),
+                    ),
+                z,
+              ])
+            }
+            paths.push(profile)
+          }
+          continue
+        }
+
         for (let i = 1; i < points.length; i++) {
           const segment = clipRoadSegment(points[i - 1], points[i], half, depth)
           if (segment) paths.push(segment)
@@ -235,7 +279,14 @@ export function createRealWorld(
       if (paths.length) {
         const e = createEntity('osm-' + f.id.replace('/', '-') + suffix, 'group')
         e.name = tags.name ?? tags.highway
-        e.road = { paths, width, terrainId: terrain.id }
+        e.road = {
+          paths,
+          width,
+          terrainId: terrain.id,
+          ...(elevation && { elevation }),
+          ...(elevation === 'bridge' && { profiled: true }),
+          ...(layer !== undefined && { layer }),
+        }
         e.color = foot ? '#b2b0a0' : '#525c60'
         e.parentId = groups[1]
         e.source = source(f)
