@@ -47,6 +47,13 @@ export function renderPortals(
   background: (camera: THREE.PerspectiveCamera) => void,
 ): void {
   if (!surfaces.size) return
+  const connected = [...surfaces.values()].some(
+    (s) => s.entity.portal!.mode !== 'closed' && surfaces.has(s.entity.portal!.pairId ?? ''),
+  )
+  if (!connected) {
+    for (const surface of surfaces.values()) surface.mesh.material.uniforms.live.value = 0
+    return
+  }
   scene.updateMatrixWorld(true)
   camera.updateMatrixWorld(true)
   const oldTarget = renderer.getRenderTarget(),

@@ -293,7 +293,7 @@ function setupWorldStream(): void {
   const loader = new WorldLoader()
   worldLoader = loader
   worldStream = new WorldStream({
-    document: () => editor.document,
+    document: () => view.document,
     load: (key, signal) => loader.load(origin, key, signal),
     replace: (remove, add) => {
       sim?.replaceMapEntities(remove, add)
@@ -302,7 +302,10 @@ function setupWorldStream(): void {
       distantTerrain?.setDocument(view.document)
       for (const e of add) if (e.kind === 'group') collapsed.add(e.id)
       view.setPlaying(!!sim)
-      refreshUi()
+      if (sim) {
+        $('entity-count').textContent = String(view.document.entities.length)
+        $('status').textContent = 'Mapa actualizado · cambios sin guardar'
+      } else refreshUi()
       renderer.domElement.dataset.worldZones = String(
         view.document.entities.filter((e) => e.terrain).length,
       )
@@ -844,7 +847,10 @@ function togglePlay(): void {
       orbitStartPosition = camera.position.clone()
       orbitStartTarget = orbit.target.clone()
       portalControls.rebuild(editor.document)
-      sim = new Simulation(editor.document, { playerMode: 'hover' })
+      sim = new Simulation(editor.document, {
+        playerMode: 'hover',
+        mapBuildingsEnabled: !!performanceSettings.buildings,
+      })
       sim.setMapBuildingsEnabled(!!performanceSettings.buildings)
       sim.setCollisionDistance(performanceSettings.collisions)
       firstPerson = true
@@ -883,6 +889,7 @@ function togglePlay(): void {
 for (const [id, key] of [
   ['map-buildings', 'buildings'],
   ['draw-distance', 'distance'],
+  ['road-distance', 'roads'],
   ['collision-distance', 'collisions'],
   ['render-resolution', 'resolution'],
   ['shadow-quality', 'shadows'],
@@ -1177,7 +1184,15 @@ new ResizeObserver(() => {
 let playerInterior: string | null = null
 let portalSequence = 0
 let previous = performance.now()
+const frameTimes: number[] = []
+let performanceText = ''
+let nextPerformanceReadout = 0
+renderer.info.autoReset = false
 function frame(now: number): void {
+  const frameStart = performance.now()
+  renderer.info.reset()
+  frameTimes.push(now - previous)
+  if (frameTimes.length > 120) frameTimes.shift()
   const dt = (now - previous) / 1000
   previous = now
   if (sim) {
@@ -1190,7 +1205,8 @@ function frame(now: number): void {
     sim.step(document.hidden ? 0 : dt)
     if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       const c = sim.collisionStats
-      $('performance-status').textContent = `Edificios con colisión: ${c.active} / ${c.total}`
+      $('performance-status').textContent =
+        `${performanceText} · Colisiones: ${c.active} / ${c.total}`
     }
     if (worldStream && !document.hidden && (!streamSample || now - streamSample.at > 500)) {
       const position = sim.player.position
@@ -1477,6 +1493,7 @@ function frame(now: number): void {
         performanceSettings.distance,
         !!sim,
         !!performanceSettings.buildings,
+        Math.min(performanceSettings.distance, performanceSettings.roads),
       )
       if (geography.enabled) {
         geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
@@ -1489,6 +1506,7 @@ function frame(now: number): void {
       performanceSettings.distance,
       !!sim,
       !!performanceSettings.buildings,
+      Math.min(performanceSettings.distance, performanceSettings.roads),
     )
     renderer.autoClear = true
     if (geography.enabled) {
@@ -1503,6 +1521,15 @@ function frame(now: number): void {
     needsRender = false
   }
   camera.position.copy(worldCamera)
+  if (now >= nextPerformanceReadout) {
+    nextPerformanceReadout = now + 500
+    const sorted = [...frameTimes].sort((a, b) => a - b)
+    const p95 = sorted[Math.floor((sorted.length - 1) * 0.95)] || 0
+    const cpu = performance.now() - frameStart
+    performanceText = `${p95.toFixed(0)} ms P95 · CPU ${cpu.toFixed(1)} ms · ${renderer.info.render.calls} dibujos · ${(renderer.info.render.triangles / 1000).toFixed(0)}k triángulos`
+    renderer.domElement.dataset.drawCalls = String(renderer.info.render.calls)
+    renderer.domElement.dataset.frameP95 = p95.toFixed(1)
+  }
   requestAnimationFrame(frame)
 }
 function applyLocation(latitude: number, longitude: number): void {

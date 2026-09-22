@@ -13,8 +13,9 @@ persists the added mouths and their authored links through the scene workflow.
 
 Independent gates have one thin landscape tablet centred on their black rear
 panel. Approach within one metre and press G to release the mouse. Carrier gate
-controls live on the right screen of the existing helm, with speed,
-altitude and the animated garage-door control in the centre. A stern portal can
+controls live on the right screen of the helm, with telemetry on the left and a
+local road chart in the centre. The horizontal desk holds two mode-2 D-pads,
+flight mode, speed limit and the animated garage-door controls. A stern portal can
 open only after the garage door finishes closing; opening the door closes its
 connection first. See [helm and CSS controls](css-interior-prototype.md).
 

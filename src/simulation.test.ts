@@ -332,3 +332,29 @@ it('disables imported building collisions while retaining authored ground and re
   expect(sim.collisionStats.active).toBe(1)
   sim.dispose()
 })
+
+it('defers hidden building bodies at startup and during streaming until enabled', () => {
+  const building = createEntity('building', 'solid', [10, 2, 0])
+  building.geometry = boxSolid([4, 4, 4])
+  building.source = {
+    provider: 'openstreetmap',
+    id: 'way/1',
+    retrievedAt: '2026-09-22',
+    tags: { building: 'yes' },
+  }
+  const sim = new Simulation(scene([building]), { mapBuildingsEnabled: false })
+  expect(sim.collisionStats).toEqual({ active: 0, total: 1 })
+  const baseline = sim.stats.bodies
+  const next = structuredClone(building)
+  next.id = 'second'
+  next.transform.position[0] = 20
+  sim.replaceMapEntities(new Set(), [next])
+  expect(sim.stats.bodies).toBe(baseline)
+  expect(sim.collisionStats).toEqual({ active: 0, total: 2 })
+  sim.setMapBuildingsEnabled(true)
+  expect(sim.stats.bodies).toBe(baseline + 2)
+  expect(sim.collisionStats.active).toBe(2)
+  sim.setMapBuildingsEnabled(true)
+  expect(sim.stats.bodies).toBe(baseline + 2)
+  sim.dispose()
+})

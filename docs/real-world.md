@@ -302,3 +302,31 @@ Building surfaces render without permanent edge overlays; topology lines remain
 available in the solid editor.
 
 Options → Performance → Map buildings can hide imported building surfaces and disable their collisions, including portal exit checks. Terrain, roads and authored objects remain available. The preference persists locally and applies to newly streamed zones; it does not delete buildings or reduce downloaded data or scene residency. Re-enable it in a clear location to avoid overlapping a restored building.
+
+### Driving frame cost
+
+Imported roads use render-only batches grouped by 256 m cell and colour while
+playing. Original entities and geometry remain available for selection/export in
+edit mode; streaming invalidates the batches. Authored roads without an OSM source
+are left unchanged. Batches preserve terrain-draped heights and pedestrian offsets.
+
+**Options → Performance → Road detail** controls a separate 250 m–6 km drawing
+radius, or hides road geometry entirely. It is capped by the overall drawing
+distance and uses conservative batch bounds, so a road crossing the boundary can
+remain visible. Terrain and its collisions remain in place. This option reduces
+drawing work; it does not reduce map downloads.
+
+With buildings disabled, the simulation defers constructing new imported building
+collision shapes, including streamed arrivals. Enabling buildings constructs those
+missing shapes and restores normal collision culling. Existing disabled bodies are
+retained for reuse. Play-mode streaming updates the count/status without rebuilding
+the disabled editor tree and inspector; stopping play refreshes the full editor.
+
+The performance panel reports frame interval P95 over the last 120 frames, main-thread
+frame submission time, draw calls and triangles across rendering passes. These are
+diagnostics, not GPU timer measurements. High P95 with low CPU time may reflect GPU,
+browser scheduling or other work outside the measured frame. Try road detail at
+250/500 m, shadows off and resolution 0.75× when comparing the same route. Terrain
+integration, scene validation and road mesh generation on tile arrival can still
+cause occasional stalls; these changes do not claim to eliminate every source of
+stutter or guarantee a hardware-independent frame rate.

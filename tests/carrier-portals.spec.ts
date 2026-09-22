@@ -51,5 +51,5 @@ test('activates a rear tablet only nearby and disables it on departure', async (
   await expect(panel).toHaveAttribute('data-active', 'false')
   await page.keyboard.up('KeyS')
   await expect(panel).toBeHidden()
-  await expect(page.locator('canvas')).not.toHaveCSS('pointer-events', 'none')
+  await expect(page.locator('#viewport > canvas')).not.toHaveCSS('pointer-events', 'none')
 })

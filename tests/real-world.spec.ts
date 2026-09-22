@@ -15,7 +15,7 @@ test('starts in Ventas, edits and saves an OSM building and drives the A3', asyn
   await expect(page.locator('#scene-name')).toHaveText('Irún · Ventas / Katea', { timeout: 30000 })
   await expect(page.locator('#world-loading')).toBeHidden({ timeout: 30000 })
   await expect(page.locator('#latitude')).toHaveValue('43.32969')
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.screenshot({ path: 'test-results/irun-world.png' })
   await page.locator('[data-entity-id="world-buildings"]').click()
   const building = page.locator('#tree [data-entity-id^="osm-way-"]').first()

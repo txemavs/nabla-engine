@@ -1,3 +1,4 @@
+import { RoadBatches } from './road-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
@@ -40,6 +41,7 @@ export class SceneView {
   readonly portalTablets = new Map<string, THREE.Mesh[]>()
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
+  private readonly roads = new RoadBatches()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
   readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
@@ -62,6 +64,7 @@ export class SceneView {
   constructor(readonly document: SceneDocument) {
     this.graph = new SceneGraph(document)
     this.addEntities(document.entities)
+    this.root.add(this.roads.root)
     this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar)
@@ -441,11 +444,13 @@ export class SceneView {
     distance: number,
     enabled: boolean,
     buildings = true,
+    roadDistance = distance,
   ): void {
+    this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)!
-      if (e.geometry && !buildings) {
+      if ((enabled && e.road) || (e.geometry && !buildings)) {
         object.visible = false
         continue
       }
@@ -468,7 +473,7 @@ export class SceneView {
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
     for (const e of this.document.entities) {
-      if (e.terrain || (e.source && e.motion === 'static')) continue
+      if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue
       applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
       if (e.portal) {
         e.portal = sim.portalState(e.id)
@@ -552,6 +557,7 @@ export class SceneView {
   }
   private readonly surfaceTextures: THREE.Texture[] = []
   dispose(): void {
+    this.roads.dispose()
     this.impacts.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()

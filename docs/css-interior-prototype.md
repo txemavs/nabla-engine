@@ -16,25 +16,28 @@ the mouse.
 
 ## Carrier helm
 
-The original three-screen console is reused: flight/ground mode on the left,
-telemetry and control in the centre, and the sole stern portal on the right. The central screen shows
-actual speed in km/h and altitude in metres, a maximum flight speed selector
-(0, 100, 300, 600 or 1000 km/h), and a garage door button. Selecting a speed sets
-the assisted-flight target limit; it does not automatically apply throttle.
+The three upright screens show telemetry on the left, a north-up local road chart
+in the centre, and stern portal controls on the right. Telemetry shows speed,
+altitude (metres, or kilometres above 1 km), pitch, roll, flight mode and cruise
+limit. It uses the simulation's altitude datum, not an independently measured
+AGL sensor. The chart uses already loaded road vectors, a heading marker and a
+200 m scale. It updates at 4 Hz in a 580 × 230 canvas; it does not render the 3D
+world a second time or request network map tiles. Empty areas are labelled when
+no roads are loaded; this is not a satellite or terrain-height map.
 
-The three screens activate together near the centre console (within one metre)
-or while piloting the carrier in cockpit view. G enables native HTML interaction. In edit mode,
-**Options → Carrier console** (**Opciones → Consola de la nave**) frames the helm;
-start play and approach or take the helm to operate it. Carrier mouths no longer
-have separate rear tablets. The former side-wall point-drawing demonstration is
-replaced by the helm.
+The desk has a horizontal 2.43 × 0.40 m touchscreen, set forward to leave about
+16 cm of bare desk between its rear edge and the upright screens. Two circular
+D-pads reproduce mode-2 drone controls: left W/S controls climb/descent, A/D yaw;
+right arrows control forward/back and lateral movement. The central desk switches
+control flight/ground mode, garage door, cruise-speed limit and braking. Both
+hands can hold separate pointers. Motion requires piloting this ship in flight
+mode; releasing/cancelling a pointer, losing focus, changing pointer lock or
+leaving range releases held input. Keyboard and gamepad remain available.
 
-The desk carries a horizontal 2.43 × 0.54 m CSS touchscreen. Hold its buttons to
-climb, descend, yaw, move forward/back/sideways or brake. It accepts multiple
-pointers, so vertical/yaw and lateral controls can be used together. Movement
-requires the player to be piloting this carrier in flight mode. Releasing or
-cancelling a pointer, losing focus, changing pointer lock or leaving activation
-range clears held input. Keyboard and gamepad input remain available.
+Screens activate within one metre of the centre console, or while piloting in
+cockpit view. Press G for native HTML interaction. In edit mode, **Options →
+Carrier console** (**Opciones → Consola de la nave**) frames the helm. The former
+side-wall drawing demonstration is replaced by these controls.
 
 The previous external nose-camera feed and its render target are removed. This
 screen uses native DOM and adds no extra WebGL scene render.

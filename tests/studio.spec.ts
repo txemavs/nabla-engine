@@ -5,8 +5,10 @@ test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) =
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/?scene=circuit')
   await expect(page.getByRole('heading', { name: 'Distrito cero.' })).toBeVisible()
-  await expect(page.locator('canvas')).toBeVisible()
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded', { timeout: 20000 })
+  await expect(page.locator('#viewport > canvas')).toBeVisible()
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
+    timeout: 20000,
+  })
   await expect(page.locator('#name')).toHaveValue('Audi A3 Cabrio')
   await page.locator('#name').fill('Mi coche')
   await page.locator('#name').press('Tab')

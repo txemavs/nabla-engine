@@ -130,8 +130,9 @@ export class Simulation {
 
   constructor(
     raw: SceneDocument,
-    readonly options: { playerMode?: 'walk' | 'hover' } = {},
+    readonly options: { playerMode?: 'walk' | 'hover'; mapBuildingsEnabled?: boolean } = {},
   ) {
+    this.mapBuildingsEnabled = options.mapBuildingsEnabled ?? true
     this.document = parseScene(raw)
     this.terrainEntity = this.document.entities.find((e) => e.terrain)
     this.minimumFlightAltitude = this.terrainEntity?.terrain
@@ -297,6 +298,7 @@ export class Simulation {
   }
   private addEntityBody(e: Entity): void {
     if ((e.motion === 'none' && !e.portal) || (e.portal && e.parentId)) return
+    if (e.source && e.geometry && e.motion === 'static' && !this.mapBuildingsEnabled) return
     const transform = this.graph.worldTransform(e.id)
     const body = new Body({
       mass: e.motion === 'dynamic' ? e.mass : 0,
@@ -382,6 +384,11 @@ export class Simulation {
 
   setMapBuildingsEnabled(enabled: boolean): void {
     this.mapBuildingsEnabled = enabled
+    if (enabled)
+      for (const e of this.document.entities) {
+        if (e.source && e.geometry && e.motion === 'static' && !this.bodies.has(e.id))
+          this.addEntityBody(e)
+      }
     this.updateMapCollisions()
   }
   setCollisionDistance(distance: number): void {
@@ -393,7 +400,11 @@ export class Simulation {
   get collisionStats() {
     return {
       active: [...this.mapBodies.values()].filter((b) => b.world === this.world).length,
-      total: this.mapBodies.size,
+      total: this.document.entities.reduce(
+        (count, e) =>
+          count + Number(!!e.source && e.motion === 'static' && !e.terrain && !e.portal),
+        0,
+      ),
     }
   }
   /** Keep terrain, actors and portal colliders. Cull map solids conservatively around every actor. */

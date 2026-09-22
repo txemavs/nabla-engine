@@ -75,13 +75,13 @@ export function carrierInterior(): { room: THREE.Group; screens: THREE.Mesh[]; t
   )
   glass.position.set(0, 0.55, -5.05)
   room.add(glass)
-  panel([2.49, 0.008, 0.6], [0, 0.016, -3.43], '#050608')
+  panel([2.49, 0.008, 0.44], [0, 0.016, -3.34], '#050608')
   const touch = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.43, 0.54),
+    new THREE.PlaneGeometry(2.43, 0.4),
     new THREE.MeshBasicMaterial({ color: '#030405' }),
   )
   touch.rotation.x = -Math.PI / 2
-  touch.position.set(0, 0.0202, -3.43)
+  touch.position.set(0, 0.0202, -3.34)
   room.add(touch)
   return { room, screens, touch }
 }

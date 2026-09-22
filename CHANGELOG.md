@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reorganize the helm into left telemetry, central local road chart and right stern controls; add paired mode-2 circular D-pads and desk switches with clearance from the upright screens.
+- Batch static OSM roads by spatial cell/material while playing, skip their per-frame simulation pose updates, and add an independent road detail distance.
+- Avoid inactive CSS screen raycasts, redundant DOM/resize work and closed-portal preparation; expose frame P95, CPU frame time and render counters under Performance.
+
 - Centre one 8 mm landscape tablet on each independent portal rear; use black closed surfaces and dark rear panels.
 - Reuse the carrier helm for flight mode, stern portal controls, live speed/altitude and adjustable flight speed.
 - Replace the nose-camera feed with a horizontal CSS flight touchscreen; close the bow with armoured glass and physical collision.

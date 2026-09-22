@@ -4,7 +4,7 @@ test('reveals a viewport selection inside a collapsed group and creates from the
   page,
 }) => {
   await page.goto('/?scene=circuit')
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#welcome-close').click()
   const group = page.locator('[data-entity-id="architecture"]')
   const building = page.locator('[data-entity-id="building-0"]')
@@ -13,7 +13,7 @@ test('reveals a viewport selection inside a collapsed group and creates from the
   await page.locator('#focus').click()
   await group.click()
   await expect(building).toHaveCount(0)
-  await page.locator('canvas').click()
+  await page.locator('#viewport > canvas').click()
   await expect(building).toHaveAttribute('aria-selected', 'true')
   await expect(group).toHaveAttribute('aria-expanded', 'true')
   await expect(building).toBeInViewport()

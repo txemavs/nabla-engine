@@ -25,7 +25,7 @@ test('flies with a mode 2 gamepad, releases sticks to hover and disconnects safe
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(scene)),
   })
-  await expect(page.locator('canvas')).toHaveAttribute('data-assets', 'loaded')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
   await page.waitForTimeout(1000)
   const button = async (i: number, down: boolean) =>

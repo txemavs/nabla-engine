@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { HelmMap } from './helm-map.js'
+import { localToGeo } from '../src/geography.js'
 import { CSS3DObject, CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js'
 import type { SceneDocument } from '../src/scene.js'
 import type { Simulation } from '../src/simulation.js'
@@ -21,14 +23,19 @@ export class PortalControls {
     string,
     { panel: HTMLDivElement; select: HTMLSelectElement; status: HTMLElement; object: CSS3DObject }
   >()
-  private helm = new Map<
+  private panels = new Map<
     string,
-    { panel: HTMLDivElement; object: CSS3DObject; readout: HTMLElement; door: HTMLButtonElement }
+    {
+      carrier: string
+      kind: 'touch' | 'telemetry' | 'map'
+      panel: HTMLDivElement
+      object: CSS3DObject
+      chart?: HelmMap
+    }
   >()
-  private auxiliary = new Map<
-    string,
-    { carrier: string; kind: 'touch' | 'flight'; panel: HTMLDivElement; object: CSS3DObject }
-  >()
+  private mouths: SceneDocument['entities'] = []
+  private size = new THREE.Vector2()
+  private nextReadout = 0
   private held = new Map<number, { carrier: string; action: string }>()
   private simulation: Simulation | null = null
   flightInput() {
@@ -58,7 +65,7 @@ export class PortalControls {
     this.renderer.domElement.className = 'css-world-layer portal-tablet-layer'
     this.viewport.prepend(this.renderer.domElement)
     this.viewport.addEventListener('pointerdown', (event) => {
-      const canvas = this.viewport.querySelector('canvas')
+      const canvas = this.viewport.querySelector<HTMLCanvasElement>('#viewport > canvas')
       if (
         this.simulation &&
         event.target === this.viewport &&
@@ -69,13 +76,12 @@ export class PortalControls {
   }
   rebuild(document: SceneDocument): void {
     this.held.clear()
-    for (const entry of this.auxiliary.values()) this.scene.remove(entry.object)
-    this.auxiliary.clear()
+    for (const entry of this.panels.values()) this.scene.remove(entry.object)
+    this.panels.clear()
     for (const entry of this.entries.values()) this.scene.remove(entry.object)
     this.entries.clear()
-    for (const entry of this.helm.values()) this.scene.remove(entry.object)
-    this.helm.clear()
     const mouths = document.entities.filter((e) => e.portal)
+    this.mouths = mouths
     for (const mouth of mouths) {
       const panel = window.document.createElement('div')
       panel.className = mouth.parentId ? 'portal-console helm-portal' : 'portal-console'
@@ -119,77 +125,54 @@ export class PortalControls {
       }
       panel.append(title, select, buttons, status)
       const object = new CSS3DObject(panel)
+      this.renderer.domElement.append(panel)
       object.matrixAutoUpdate = false
       this.scene.add(object)
       this.entries.set(mouth.id, { panel, select, status, object })
     }
     for (const carrier of document.entities.filter((e) => e.vehicle?.interior)) {
-      const panel = window.document.createElement('div')
-      panel.className = 'helm-console'
-      panel.dataset.carrier = carrier.id
-      panel.innerHTML =
-        '<strong>NABLA · MANDO</strong><output></output><label>Velocidad máxima <select aria-label="Velocidad máxima"><option value="0">Parado</option><option value="100">100 km/h</option><option value="300">300 km/h</option><option value="600">600 km/h</option><option value="1000" selected>1000 km/h</option></select></label><button>Puerta del garaje</button><small>G libera el ratón</small>'
-      const readout = panel.querySelector('output')!
-      const door = panel.querySelector('button')!
-      const select = panel.querySelector('select')!
-      select.onchange = () => {
-        if (this.simulation && panel.dataset.active === 'true')
-          this.simulation.setCruiseSpeed(carrier.id, Number(select.value))
-      }
-      door.onclick = () => {
-        if (!this.simulation || panel.dataset.active !== 'true') return
-        try {
-          this.report(
-            this.simulation.setGarageDoor(
-              carrier.id,
-              !this.simulation.vehicleInfo(carrier.id).rampClosed,
-            ),
-          )
-        } catch (error) {
-          this.report((error as Error).message)
-        }
-      }
-      const object = new CSS3DObject(panel)
-      object.matrixAutoUpdate = false
-      this.scene.add(object)
-      this.helm.set(carrier.id, { panel, object, readout, door })
-      for (const kind of ['touch', 'flight'] as const) {
-        const extra = window.document.createElement('div')
-        extra.className =
-          kind === 'touch' ? 'helm-console touch-console' : 'helm-console flight-console'
-        extra.dataset.carrier = carrier.id
-        extra.hidden = true
-        extra.innerHTML =
-          kind === 'flight'
-            ? '<strong>NABLA · VUELO</strong><output></output><button data-flight>Activar vuelo</button><p>En vuelo, soltar los controles mantiene la altura. G libera el ratón.</p>'
-            : '<strong>NABLA · MESA TÁCTIL</strong><small>Al mando: mantén pulsado para maniobrar · suelta para estabilizar</small><div class="touch-controls"></div>'
-        if (kind === 'flight')
-          extra.querySelector('button')!.onclick = () => {
-            if (
-              this.simulation &&
-              extra.dataset.active === 'true' &&
-              this.simulation.player.vehicleId === carrier.id
-            )
+      for (const kind of ['touch', 'telemetry', 'map'] as const) {
+        const panel = window.document.createElement('div')
+        panel.className = `helm-console ${kind}-console`
+        panel.dataset.carrier = carrier.id
+        panel.hidden = true
+        if (kind === 'telemetry')
+          panel.innerHTML = '<strong>NABLA · TELEMETRÍA</strong><output></output><small></small>'
+        if (kind === 'map')
+          panel.innerHTML =
+            '<strong>NABLA · NAVEGACIÓN</strong><canvas aria-label="Mapa cenital de carreteras"></canvas><small>Norte arriba · mapa local</small>'
+        if (kind === 'touch') {
+          panel.innerHTML =
+            '<div class="helm-indicators">NABLA · CONTROL DE VUELO</div><div class="hand-controls"><div class="dpad" data-hand="left"><span>WASD</span></div><div class="desk-switches"><button data-flight>Activar vuelo</button><button data-door>Cerrar garaje</button><label>Límite <select aria-label="Velocidad máxima"><option value="0">Parado</option><option value="100">100 km/h</option><option value="300">300 km/h</option><option value="600">600 km/h</option><option value="1000" selected>1000 km/h</option></select></label><button data-brake>Frenar</button></div><div class="dpad" data-hand="right"><span>CURSORES</span></div></div>'
+          panel.querySelector<HTMLSelectElement>('select')!.onchange = (event) => {
+            if (this.simulation && panel.dataset.active === 'true')
+              this.simulation.setCruiseSpeed(
+                carrier.id,
+                Number((event.target as HTMLSelectElement).value),
+              )
+          }
+          panel.querySelector<HTMLButtonElement>('[data-flight]')!.onclick = () => {
+            if (this.simulation?.player.vehicleId === carrier.id && panel.dataset.active === 'true')
               this.report(this.simulation.toggleFlight())
           }
-        else
-          for (const [label, action] of [
-            ['Subir', 'lift:1'],
-            ['Bajar', 'lift:-1'],
-            ['Girar izquierda', 'turn:-1'],
-            ['Girar derecha', 'turn:1'],
-            ['Avanzar', 'forward:1'],
-            ['Retroceder', 'forward:-1'],
-            ['Izquierda', 'right:-1'],
-            ['Derecha', 'right:1'],
-            ['Frenar', 'brake'],
-          ]) {
-            const button = window.document.createElement('button')
-            button.textContent = label
+          panel.querySelector<HTMLButtonElement>('[data-door]')!.onclick = () => {
+            if (!this.simulation || panel.dataset.active !== 'true') return
+            try {
+              this.report(
+                this.simulation.setGarageDoor(
+                  carrier.id,
+                  !this.simulation.vehicleInfo(carrier.id).rampClosed,
+                ),
+              )
+            } catch (error) {
+              this.report((error as Error).message)
+            }
+          }
+          const bind = (button: HTMLButtonElement, action: string) => {
             button.dataset.action = action
             button.onpointerdown = (event) => {
               if (
-                extra.dataset.active !== 'true' ||
+                panel.dataset.active !== 'true' ||
                 this.simulation?.player.vehicleId !== carrier.id ||
                 !this.simulation.vehicleInfo(carrier.id).flightMode
               )
@@ -202,16 +185,37 @@ export class PortalControls {
             button.onpointerup = release
             button.onpointercancel = release
             button.onlostpointercapture = release
-            extra.querySelector('.touch-controls')!.append(button)
           }
-        const css = new CSS3DObject(extra)
-        css.matrixAutoUpdate = false
-        this.scene.add(css)
-        this.auxiliary.set(`${carrier.id}:${kind}`, {
+          for (const [hand, position, key, label, action] of [
+            ['left', 'up', 'W', 'Subir', 'lift:1'],
+            ['left', 'left', 'A', 'Girar izquierda', 'turn:-1'],
+            ['left', 'down', 'S', 'Bajar', 'lift:-1'],
+            ['left', 'right', 'D', 'Girar derecha', 'turn:1'],
+            ['right', 'up', '↑', 'Avanzar', 'forward:1'],
+            ['right', 'left', '←', 'Izquierda', 'right:-1'],
+            ['right', 'down', '↓', 'Retroceder', 'forward:-1'],
+            ['right', 'right', '→', 'Derecha', 'right:1'],
+          ]) {
+            const button = window.document.createElement('button')
+            button.className = position
+            button.textContent = key
+            button.title = label
+            button.setAttribute('aria-label', label)
+            bind(button, action)
+            panel.querySelector(`[data-hand="${hand}"]`)!.append(button)
+          }
+          bind(panel.querySelector('[data-brake]')!, 'brake')
+        }
+        const object = new CSS3DObject(panel)
+        this.renderer.domElement.append(panel)
+        object.matrixAutoUpdate = false
+        this.scene.add(object)
+        this.panels.set(`${carrier.id}:${kind}`, {
           carrier: carrier.id,
           kind,
-          panel: extra,
-          object: css,
+          panel,
+          object,
+          chart: kind === 'map' ? new HelmMap(panel.querySelector('canvas')!) : undefined,
         })
       }
     }
@@ -230,13 +234,13 @@ export class PortalControls {
     this.simulation = sim
     this.active = []
     camera.updateMatrixWorld(true)
+    const now = performance.now()
+    const readout = now >= this.nextReadout
+    if (readout) this.nextReadout = now + 100
     let interactive = false
-    for (const mouth of document.entities.filter((e) => e.portal)) {
+    for (const mouth of this.mouths) {
       const entry = this.entries.get(mouth.id)
       if (!entry) continue
-      entry.panel.hidden = true
-      entry.panel.dataset.active = 'false'
-      entry.panel.style.pointerEvents = 'none'
       if (!sim) continue
       const mesh = tablets.get(mouth.id)?.[0]
       if (!mesh) continue
@@ -265,101 +269,113 @@ export class PortalControls {
         (screen.z < -1 || screen.z > 1 || Math.abs(screen.x) > 1.2 || Math.abs(screen.y) > 1.2)
       )
         continue
-      entry.panel.hidden = false
-      entry.panel.dataset.active = 'true'
-      entry.panel.style.pointerEvents = window.document.pointerLockElement ? 'none' : 'auto'
       interactive ||= !window.document.pointerLockElement
       this.active.push({ mesh, material: mesh.material, object: entry.object })
       const state = sim.portalState(mouth.id)
       entry.panel.dataset.mode = state.mode
       const destination = document.entities.find((e) => e.id === state.pairId)?.name
-      entry.status.textContent = `${state.mode === 'open' ? 'Abierto' : state.mode === 'window' ? 'Ventana' : 'Cerrado'}${destination ? ' · ' + destination : ''} · G libera el ratón`
+      if (readout)
+        entry.status.textContent = `${state.mode === 'open' ? 'Abierto' : state.mode === 'window' ? 'Ventana' : 'Cerrado'}${destination ? ' · ' + destination : ''} · G libera el ratón`
     }
-    for (const [id, entry] of this.helm) {
-      entry.panel.hidden = true
-      entry.panel.dataset.active = 'false'
-      entry.panel.style.pointerEvents = 'none'
-      const mesh = helmScreens.get(id)
-      if (!sim || !mesh) continue
+    for (const entry of this.panels.values()) {
+      const mesh = (
+        entry.kind === 'touch'
+          ? touchScreens
+          : entry.kind === 'telemetry'
+            ? flightScreens
+            : helmScreens
+      ).get(entry.carrier)
+      const anchor = helmScreens.get(entry.carrier)
+      if (!sim || !mesh || !anchor) continue
+      anchor.updateWorldMatrix(true, false)
+      const activation = anchor.getWorldPosition(new THREE.Vector3()).add(renderOrigin)
+      const piloting = cockpit && sim.player.vehicleId === entry.carrier
+      if (
+        !piloting &&
+        (sim.player.vehicleId ||
+          camera.position.distanceTo(activation) >= 1 ||
+          new THREE.Vector3(...sim.player.position).distanceTo(activation) >= 1)
+      )
+        continue
       mesh.updateWorldMatrix(true, false)
       const point = mesh.getWorldPosition(new THREE.Vector3()).add(renderOrigin)
       const normal = new THREE.Vector3(0, 0, 1).transformDirection(mesh.matrixWorld)
       if (camera.position.clone().sub(point).dot(normal) <= 0) continue
-      const piloting = cockpit && sim.player.vehicleId === id
       if (
-        !piloting &&
-        (sim.player.vehicleId ||
-          camera.position.distanceTo(point) >= 1 ||
-          new THREE.Vector3(...sim.player.position).distanceTo(point) >= 1)
+        new THREE.Vector3(
+          ...sim.cameraPosition(camera.position.toArray(), point.toArray()),
+        ).distanceTo(point) > 0.12
       )
         continue
-      const clear = sim.cameraPosition(camera.position.toArray(), point.toArray())
-      if (new THREE.Vector3(...clear).distanceTo(point) > 0.12) continue
-      const info = sim.vehicleInfo(id)
-      entry.panel.hidden = false
-      entry.panel.dataset.active = 'true'
-      entry.panel.style.pointerEvents = window.document.pointerLockElement ? 'none' : 'auto'
-      interactive ||= !window.document.pointerLockElement
-      entry.readout.textContent = `${info.speedKmh.toFixed(0)} km/h · Altitud ${info.altitude.toFixed(0)} m`
-      entry.door.textContent = info.rampMoving
-        ? 'Puerta en movimiento…'
-        : info.rampClosed
-          ? 'Abrir garaje'
-          : 'Cerrar garaje'
-      entry.door.disabled = info.rampMoving
       this.active.push({ mesh, material: mesh.material, object: entry.object })
-    }
-    for (const entry of this.auxiliary.values()) {
-      const mesh = (entry.kind === 'touch' ? touchScreens : flightScreens).get(entry.carrier)
-      const anchor = helmScreens.get(entry.carrier)
-      let visible = false
-      if (sim && mesh && anchor) {
-        mesh.updateWorldMatrix(true, false)
-        anchor.updateWorldMatrix(true, false)
-        const point = mesh.getWorldPosition(new THREE.Vector3()).add(renderOrigin)
-        const activation = anchor.getWorldPosition(new THREE.Vector3()).add(renderOrigin)
-        const normal = new THREE.Vector3(0, 0, 1).transformDirection(mesh.matrixWorld)
-        const piloting = cockpit && sim.player.vehicleId === entry.carrier
-        const nearby =
-          !sim.player.vehicleId &&
-          camera.position.distanceTo(activation) < 1 &&
-          new THREE.Vector3(...sim.player.position).distanceTo(activation) < 1
-        const clear = sim.cameraPosition(camera.position.toArray(), point.toArray())
-        visible =
-          (piloting || nearby) &&
-          camera.position.clone().sub(point).dot(normal) > 0 &&
-          new THREE.Vector3(...clear).distanceTo(point) < 0.12
-        if (visible) {
-          this.active.push({ mesh, material: mesh.material, object: entry.object })
-          interactive ||= !window.document.pointerLockElement
-          const info = sim.vehicleInfo(entry.carrier)
-          if (entry.kind === 'flight') {
-            entry.panel.querySelector('output')!.textContent = info.flightMode
-              ? 'Vuelo · altura estabilizada'
-              : 'Modo tierra'
-            const button = entry.panel.querySelector('button')!
-            button.textContent = info.flightMode ? 'Activar tierra' : 'Activar vuelo'
-            button.disabled = sim.player.vehicleId !== entry.carrier
-          } else
-            for (const button of entry.panel.querySelectorAll('button'))
-              button.disabled = !piloting || !info.flightMode
+      interactive ||= !window.document.pointerLockElement
+      const info = sim.vehicleInfo(entry.carrier)
+      if (readout && entry.kind === 'telemetry') {
+        const altitude =
+          Math.abs(info.altitude) >= 1000
+            ? `${(info.altitude / 1000).toFixed(2)} km`
+            : `${info.altitude.toFixed(0)} m`
+        const q = new THREE.Quaternion(...sim.entityTransform(entry.carrier).rotation)
+        const euler = new THREE.Euler().setFromQuaternion(q, 'YXZ')
+        entry.panel.querySelector('output')!.textContent =
+          `${info.speedKmh.toFixed(0)} km/h · Altitud ${altitude}`
+        entry.panel.querySelector('small')!.textContent =
+          `${info.flightMode ? 'VUELO · altura asistida' : 'TIERRA'}\nCabeceo ${((euler.x * 180) / Math.PI).toFixed(0)}° · Alabeo ${((euler.z * 180) / Math.PI).toFixed(0)}°\nLímite ${info.cruiseSpeed} km/h`
+      }
+      if (entry.chart) {
+        const pose = sim.entityTransform(entry.carrier)
+        entry.chart.update(document, pose, now)
+        if (readout && document.geography) {
+          const gps = localToGeo(document.geography, pose.position)
+          entry.panel.querySelector('small')!.textContent =
+            `${gps.latitude.toFixed(5)}°, ${gps.longitude.toFixed(5)}° · N ↑`
         }
       }
-      entry.panel.hidden = !visible
-      entry.panel.dataset.active = String(visible)
-      entry.panel.style.pointerEvents =
-        visible && !window.document.pointerLockElement ? 'auto' : 'none'
-      if (entry.kind === 'touch' && (!visible || window.document.pointerLockElement)) {
-        for (const [pointer, held] of this.held)
-          if (held.carrier === entry.carrier) this.held.delete(pointer)
+      if (entry.kind === 'touch') {
+        const door = entry.panel.querySelector<HTMLButtonElement>('[data-door]')!
+        const flight = entry.panel.querySelector<HTMLButtonElement>('[data-flight]')!
+        if (readout) {
+          const label = info.rampMoving
+            ? 'Puerta en movimiento…'
+            : info.rampClosed
+              ? 'Abrir garaje'
+              : 'Cerrar garaje'
+          if (door.textContent !== label) door.textContent = label
+          const mode = info.flightMode ? 'Activar tierra' : 'Activar vuelo'
+          if (flight.textContent !== mode) flight.textContent = mode
+        }
+        door.disabled = info.rampMoving
+        flight.disabled = sim.player.vehicleId !== entry.carrier
+        for (const button of entry.panel.querySelectorAll<HTMLButtonElement>('[data-action]'))
+          button.disabled = !piloting || !info.flightMode
       }
     }
+    const active = new Set(this.active.map((e) => e.object))
+    for (const entry of [...this.entries.values(), ...this.panels.values()]) {
+      const visible = active.has(entry.object)
+      if (entry.panel.hidden === visible) entry.panel.hidden = !visible
+      const state = String(visible)
+      if (entry.panel.dataset.active !== state) entry.panel.dataset.active = state
+      const events = visible && !window.document.pointerLockElement ? 'auto' : 'none'
+      if (entry.panel.style.pointerEvents !== events) entry.panel.style.pointerEvents = events
+    }
+    for (const [pointer, held] of this.held) {
+      const panel = this.panels.get(`${held.carrier}:touch`)
+      if (!panel || !active.has(panel.object) || window.document.pointerLockElement)
+        this.held.delete(pointer)
+    }
     // The canvas remains visually above the DOM; only nearby, visible tablets receive native input.
-    const canvas = this.viewport.querySelector('canvas')
+    const canvas = this.viewport.querySelector<HTMLCanvasElement>('#viewport > canvas')
     if (canvas) canvas.style.pointerEvents = interactive ? 'none' : ''
   }
   prepare(camera: THREE.Camera): void {
-    this.renderer.setSize(this.viewport.clientWidth, this.viewport.clientHeight)
+    if (!this.active.length) return
+    const width = this.viewport.clientWidth,
+      height = this.viewport.clientHeight
+    if (this.size.x !== width || this.size.y !== height) {
+      this.size.set(width, height)
+      this.renderer.setSize(width, height)
+    }
     for (const entry of this.active) {
       entry.mesh.updateWorldMatrix(true, false)
       // Use CSS pixel units for native DOM hit testing as well as visual projection.
