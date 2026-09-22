@@ -72,7 +72,7 @@ describe('rigid driver head', () => {
         head.quaternion.clone().premultiply(body.clone().invert()).angleTo(local.quaternion),
       ).toBeLessThan(1e-7)
       const offset = head.position.sub(driver).applyQuaternion(body.clone().invert())
-      expect(offset.distanceTo(new Vector3(0, -0.1, -0.26))).toBeLessThan(1e-10)
+      expect(offset.distanceTo(new Vector3(0, -0.15, -0.26))).toBeLessThan(1e-10)
     }
   })
   it('looks forward with the car by default and keeps the carrier eye anchor', () => {

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Lower the A3 cockpit eye anchor 5 cm; add white dashboard speed digits and a label-free blue map on the original navigation display.
+
 - Reorganize the helm into left telemetry, central local road chart and right stern controls; add paired mode-2 circular D-pads and desk switches with clearance from the upright screens.
 - Batch static OSM roads by spatial cell/material while playing, skip their per-frame simulation pose updates, and add an independent road detail distance.
 - Avoid inactive CSS screen raycasts, redundant DOM/resize work and closed-portal preparation; expose frame P95, CPU frame time and render counters under Performance.

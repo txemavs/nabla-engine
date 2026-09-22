@@ -297,3 +297,12 @@ aim probes and misses do not leave marks. They are removed when their map zone u
 when play stops or when the scene changes, and are not saved in scene JSON.
 These are simple surface-aligned discs with shared geometry/material, not holes or
 geometry damage. Sprite targets retain their existing hit/respawn behavior.
+
+### A3 dashboard
+
+The A3 driver's eye anchor is 15 cm below and 26 cm forward of the seat reference
+(5 cm lower than the previous cockpit). The instrument cluster has a white digital
+speed readout in km/h. The original navigation display carries a blue local road
+chart without labels. It reuses the carrier chart at 4 Hz through a canvas texture,
+without an additional scene camera or network requests. No-road scenes retain the
+blue grid and vehicle marker.

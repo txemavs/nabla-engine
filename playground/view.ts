@@ -1,3 +1,4 @@
+import { CarInstruments } from './car-instruments.js'
 import { RoadBatches } from './road-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
@@ -35,6 +36,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  private readonly instruments = new Map<string, CarInstruments>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
   readonly touchScreens = new Map<string, THREE.Mesh>()
   readonly flightScreens = new Map<string, THREE.Mesh>()
@@ -348,6 +350,14 @@ export class SceneView {
     const fallback = box(e.size, e.color)
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
+      if (visual.body.url === '/world/car.audi.a3.cabrio.glb') {
+        const interior = model.getObjectByName('Interior')
+        if (interior) {
+          const instruments = new CarInstruments(interior)
+          instruments.update(this.document, this.graph.worldTransform(e.id), 0, performance.now())
+          this.instruments.set(e.id, instruments)
+        }
+      }
       for (const name of ['Helm_Screen_1', 'Helm_Screen_2', 'Helm_Screen_3']) {
         const original = model.getObjectByName(name)
         if (original) original.visible = false
@@ -500,6 +510,15 @@ export class SceneView {
     for (const [id, wheel] of this.steering)
       wheel.rotation.z =
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
+    for (const [id, instruments] of this.instruments) {
+      if (sim.player.vehicleId === id)
+        instruments.update(
+          this.document,
+          sim.entityTransform(id, true),
+          sim.vehicleInfo(id, true).speedKmh,
+          performance.now(),
+        )
+    }
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
       const info = sim.vehicleInfo(vehicleId, true)
@@ -557,6 +576,8 @@ export class SceneView {
   }
   private readonly surfaceTextures: THREE.Texture[] = []
   dispose(): void {
+    for (const instruments of this.instruments.values()) instruments.dispose()
+    this.instruments.clear()
     this.roads.dispose()
     this.impacts.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()

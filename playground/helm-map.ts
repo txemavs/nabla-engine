@@ -5,9 +5,12 @@ export class HelmMap {
   private entities: Entity[] | null = null
   private roads: { points: Vector3[]; width: number }[] = []
   private next = 0
-  constructor(readonly canvas: HTMLCanvasElement) {
+  constructor(
+    readonly canvas: HTMLCanvasElement,
+    private readonly clean = false,
+  ) {
     canvas.width = 580
-    canvas.height = 230
+    canvas.height = clean ? 384 : 230
   }
   update(doc: SceneDocument, pose: Transform, now: number): void {
     if (now < this.next) return
@@ -33,24 +36,24 @@ export class HelmMap {
     const ctx = this.canvas.getContext('2d')!
     const scale = 0.23,
       cx = 290,
-      cy = 115
-    ctx.fillStyle = '#101e25'
-    ctx.fillRect(0, 0, 580, 230)
-    ctx.strokeStyle = '#243943'
+      cy = this.canvas.height / 2
+    ctx.fillStyle = '#07172c'
+    ctx.fillRect(0, 0, 580, this.canvas.height)
+    ctx.strokeStyle = '#123253'
     ctx.lineWidth = 1
     for (let x = 0; x < 580; x += 46) {
       ctx.beginPath()
       ctx.moveTo(x, 0)
-      ctx.lineTo(x, 230)
+      ctx.lineTo(x, this.canvas.height)
       ctx.stroke()
     }
-    for (let y = 0; y < 230; y += 46) {
+    for (let y = 0; y < this.canvas.height; y += 46) {
       ctx.beginPath()
       ctx.moveTo(0, y)
       ctx.lineTo(580, y)
       ctx.stroke()
     }
-    ctx.strokeStyle = '#99b8b5'
+    ctx.strokeStyle = '#549bd3'
     for (const road of this.roads) {
       if (
         !road.points.some(
@@ -81,6 +84,7 @@ export class HelmMap {
     ctx.closePath()
     ctx.fill()
     ctx.restore()
+    if (this.clean) return
     ctx.fillStyle = '#d5e6ef'
     ctx.font = '18px sans-serif'
     ctx.fillText('N ↑', 12, 25)
