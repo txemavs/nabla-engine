@@ -127,7 +127,7 @@ export function createRealWorld(
   const terrain = createEntity('world-terrain' + suffix, 'terrain')
   terrain.name = 'Relieve real · Ventas'
   terrain.terrain = structuredClone(t)
-  terrain.color = '#7c927b'
+  terrain.color = SURFACE_COLORS.default
   terrain.size = [half * 2, 100, depth * 2]
   entities.push(terrain)
   const source = (f: MapFeature) => ({

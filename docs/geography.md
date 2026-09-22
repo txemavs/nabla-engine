@@ -112,3 +112,13 @@ The current sample uses this plan. An older locally saved baseline with its know
 plan IDs are replaced; vehicles, portals and unrelated additions are preserved.
 The saved document is not overwritten until **Guardar**. This is an authored
 placement pass, not automatic image recognition or a real-world building import.
+
+### Terrain palette
+
+Local landcover uses darker grass/forest greens and warmer ochre soil colors. The
+unloaded low-resolution terrain uses the same base color as the lightest grass
+surface, preventing a pale gray-green band at the streaming boundary. Legacy
+baked surface defaults are translated by the renderer, so existing cached zones
+receive the palette without downloading or rebuilding geometry. Custom color
+values are retained. Daylight uses less ambient fill and lower exposure to retain
+contrast; vehicle materials and the physical reflection shader are unchanged.

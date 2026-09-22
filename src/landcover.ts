@@ -16,7 +16,7 @@ export type SurfaceType =
   | 'default'
 
 /** Base colors for each surface type (hex strings). */
-export const SURFACE_COLORS: Record<SurfaceType, string> = {
+const LEGACY_SURFACE_COLORS: Record<SurfaceType, string> = {
   grass: '#7cb868',
   forest: '#4a8c3a',
   farmland: '#c5b87a',
@@ -28,6 +28,26 @@ export const SURFACE_COLORS: Record<SurfaceType, string> = {
   residential: '#d0c8b8',
   industrial: '#b8b0a0',
   default: '#7c927b',
+}
+
+export const SURFACE_COLORS: Record<SurfaceType, string> = {
+  grass: '#416629',
+  forest: '#234828',
+  farmland: '#947133',
+  sand: '#b79960',
+  scrub: '#3d5e2e',
+  water: '#296b83',
+  wetland: '#315740',
+  rock: '#787a6b',
+  residential: '#b0a28e',
+  industrial: '#929386',
+  default: '#416629',
+}
+
+/** Update generated defaults at render time, including old baked/cached zones.
+ * Authored colors remain authored data; no cache invalidation or geometry rebuild is needed. */
+export function mapSurfaceColor(surface: SurfaceType, color: string): string {
+  return color.toLowerCase() === LEGACY_SURFACE_COLORS[surface] ? SURFACE_COLORS[surface] : color
 }
 
 /**

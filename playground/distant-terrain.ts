@@ -1,3 +1,4 @@
+import { SURFACE_COLORS } from '../src/landcover.js'
 import * as THREE from 'three'
 import type { GeoPoint } from '../src/geography.js'
 import { terrainVertices, terrainIndices, type TerrainData } from '../src/terrain.js'
@@ -9,7 +10,10 @@ export class DistantTerrain {
   private readonly worker = new Worker(new URL('./world-worker.ts', import.meta.url), {
     type: 'module',
   })
-  private readonly material = new THREE.MeshStandardMaterial({ color: '#7c927b', roughness: 1 })
+  private readonly material = new THREE.MeshStandardMaterial({
+    color: SURFACE_COLORS.default,
+    roughness: 1,
+  })
   private readonly regions = { value: Array.from({ length: 64 }, () => new THREE.Vector4()) }
   private readonly regionCount = { value: 0 }
   private mesh: THREE.Mesh | null = null

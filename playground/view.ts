@@ -1,5 +1,5 @@
 import { isMapBuilding } from '../src/scene.js'
-import { SURFACE_LAYERS } from '../src/landcover.js'
+import { SURFACE_LAYERS, mapSurfaceColor } from '../src/landcover.js'
 import { withinMapDistance } from './map-visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
 import { takeMapGeometry } from './map-geometry.js'
@@ -165,7 +165,12 @@ export class SceneView {
         }
       }
       if (e.sprite) {
-        const options = { color: '#ffffff', alphaTest: 0.1, transparent: false, depthWrite: true }
+        const options = {
+          color: /^\/sprites\/tree(?:-\d+)?\.png$/.test(e.sprite.url) ? '#c5d2b9' : '#ffffff',
+          alphaTest: 0.1,
+          transparent: false,
+          depthWrite: true,
+        }
         const material = e.sprite.upright
           ? new THREE.MeshBasicMaterial({ ...options, side: THREE.DoubleSide })
           : new THREE.SpriteMaterial(options)
@@ -276,7 +281,7 @@ export class SceneView {
           g.setIndex(terrainIndices(e.terrain))
           g.computeVertexNormals()
         }
-        group.add(mesh(g, e.color))
+        group.add(mesh(g, mapSurfaceColor('default', e.color)))
       }
       if (e.geometry) {
         let geometry = takeMapGeometry(e)
@@ -319,7 +324,11 @@ export class SceneView {
           geometry.computeVertexNormals()
         }
         const material = new THREE.MeshStandardMaterial({
-          color: hasVertexColors ? '#ffffff' : e.color,
+          color: hasVertexColors
+            ? '#ffffff'
+            : e.landcover
+              ? mapSurfaceColor(e.landcover.surface, e.color)
+              : e.color,
           roughness: 0.72,
           vertexColors: hasVertexColors,
           side: e.source ? THREE.FrontSide : THREE.DoubleSide,
