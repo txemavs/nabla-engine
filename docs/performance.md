@@ -50,3 +50,22 @@ Targeted browser tests exercise road rendering, ocean/solar shaders and streamin
 at the origin and 12 km away. Contact-matrix tests compare collision events and
 motion against Cannon's default matrix and verify zero dense storage at 18,000
 bodies. Chart tests cover shared projections and long segments crossing the view.
+
+## Flight presentation
+
+Map detail distances measure horizontal distance to the ground footprint, so flying
+above a road does not hide it merely because the camera is high. Frustum culling
+still applies, and the camera far plane includes the vertical distance to the ground.
+The streaming planner continues loading at flight altitude below its 12 km cutoff;
+landing is not a prerequisite. Cold provider requests can still take time.
+
+Closed OSM building meshes render their outward faces only. This avoids drawing an
+adjacent building's back-facing wall on the same plane. Authored solids retain their
+existing two-sided editing presentation. Distinct overlapping OSM volumes can still
+require data-specific correction; back-face culling is not polygon union.
+
+Container exhaust uses four pairs of eight-sided, unlit cones at the model's lower
+sockets. It adds no shadow lights, particles or offscreen render passes. Exhaust
+fades with flight mode and varies with speed. A shared Web Audio turbine graph starts
+only after user interaction, attenuates with distance and inside the cabin, and mutes
+when the page is hidden or play stops. The footer sound toggle persists locally.

@@ -513,3 +513,25 @@ it('queues the current ground zone before the flight corridor, including in orbi
   stream.update([4800, 15000, 0], [100, 0, 0])
   expect(prepare).toHaveBeenCalledTimes(2)
 })
+
+it('installs neighboring map zones while flying without waiting for descent', async () => {
+  const editor = new SceneEditor(document())
+  const loaded: string[] = []
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load: async (key) => {
+      loaded.push(key)
+      const [x, z] = key.split('_').map(Number)
+      const entity = terrain(key, x * 1200)
+      entity.transform.position[2] = z * 1200
+      return [entity]
+    },
+    replace: (remove, add) => editor.replaceMapEntities(remove, add),
+    status: () => undefined,
+  })
+  stream.update([12000, 450, 0], [150, 0, 0])
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(loaded).toContain('10_0')
+  expect(editor.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(true)
+  stream.dispose()
+})

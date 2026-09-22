@@ -1,3 +1,4 @@
+import { withinMapDistance } from './map-visibility.js'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { Entity } from '../src/scene.js'
@@ -70,7 +71,7 @@ export class RoadBatches {
     for (const { mesh } of this.cells.values()) {
       if (!mesh) continue
       const bounds = mesh.geometry.boundingSphere!
-      mesh.visible = bounds.center.distanceToSquared(eye) <= (distance + bounds.radius) ** 2
+      mesh.visible = withinMapDistance(bounds.center, eye, bounds.radius, distance)
     }
   }
   private rebuild(key: string): void {

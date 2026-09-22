@@ -1,3 +1,5 @@
+import { withinMapDistance } from './map-visibility.js'
+import { CarrierThrusters } from './carrier-thrusters.js'
 import { takeMapGeometry } from './map-geometry.js'
 import { Streetlights } from './streetlights.js'
 import { CarLights } from './car-lights.js'
@@ -40,6 +42,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  private readonly thrusters = new Map<string, CarrierThrusters>()
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
@@ -278,13 +281,20 @@ export class SceneView {
           geometry.computeVertexNormals()
         }
         const surface = mesh(geometry, e.color)
-        ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
+        // OSM solids are closed and outward-wound. Rendering both sides makes
+        // adjoining walls fight with the neighbor's inward-facing wall.
+        ;(surface.material as THREE.MeshStandardMaterial).side = e.source
+          ? THREE.FrontSide
+          : THREE.DoubleSide
         group.add(surface)
       }
       if (e.kind === 'box' && !e.light) group.add(box(e.size, e.color))
       if (e.light) this.streetlights.add(e, group)
       if (e.kind === 'vehicle') {
         if (e.vehicle?.interior && e.visual?.body.url.includes('ship.container')) {
+          const thrusters = new CarrierThrusters()
+          group.add(thrusters.root)
+          this.thrusters.set(e.id, thrusters)
           const interior = carrierInterior()
           group.add(interior.room)
           this.helmScreens.set(e.id, interior.screens[1])
@@ -491,11 +501,13 @@ export class SceneView {
         bounds.center.sub(this.root.position)
         this.mapBounds.set(e.id, bounds)
       }
-      object.visible = !enabled || bounds.center.distanceTo(position) <= distance + bounds.radius
+      object.visible =
+        !enabled || withinMapDistance(bounds.center, position, bounds.radius, distance)
     }
   }
   setPlaying(playing: boolean): void {
     this.avatar.visible = playing
+    if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
     for (const e of this.document.entities)
       if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal && !e.sprite && !e.road))
         this.objects.get(e.id)!.visible = !playing
@@ -524,6 +536,10 @@ export class SceneView {
         this.root.add(wheels[i])
         applyPose(wheels[i], p)
       })
+    }
+    for (const [id, thrusters] of this.thrusters) {
+      const info = sim.vehicleInfo(id)
+      thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now())
     }
     for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
     for (const [id, wheel] of this.steering)

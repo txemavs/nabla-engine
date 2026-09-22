@@ -1,3 +1,4 @@
+import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
 import { SeaWater } from './water.js'
@@ -57,6 +58,7 @@ const STORAGE_KEY = 'nabla.scene.v1'
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = false
 let distantTerrain: DistantTerrain | null = null
+const flightAudio = new FlightAudio()
 let worldStream: WorldStream | null = null
 let worldLoader: WorldLoader | null = null
 let streamSample: { at: number; position: Vec3Tuple } | null = null
@@ -1521,6 +1523,25 @@ function frame(now: number): void {
       renderer.domElement.dataset.impacts = String(view.impacts.count)
     }
   }
+  let flightLevel = 0,
+    flightSpeed = 0
+  if (sim)
+    for (const e of view.document.entities) {
+      if (!e.vehicle?.flight) continue
+      const info = sim.vehicleInfo(e.id)
+      if (!info.flightMode) continue
+      const p = sim.entityTransform(e.id, true).position
+      const distance = camera.position.distanceTo(new THREE.Vector3(...p))
+      const level =
+        sim.player.vehicleId === e.id || sim.player.interiorId === e.id
+          ? 0.55
+          : Math.max(0, 1 - distance / 100)
+      if (level > flightLevel) {
+        flightLevel = level
+        flightSpeed = info.speedKmh
+      }
+    }
+  flightAudio.update(flightLevel, flightSpeed)
   fireRequested = false
   const worldCamera = camera.position.clone()
   const position = sim?.player.position ?? camera.position.toArray()
@@ -1555,7 +1576,7 @@ function frame(now: number): void {
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
     camera.far = distantTerrain
-      ? performanceSettings.distance + 500
+      ? Math.hypot(performanceSettings.distance + 500, Math.max(0, height))
       : Math.max(300, Math.min(100000000, height * 15))
     renderer.domElement.dataset.viewDistance = String(camera.far)
     camera.updateProjectionMatrix()
