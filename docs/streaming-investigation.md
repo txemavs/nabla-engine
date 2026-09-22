@@ -194,10 +194,239 @@ Currently, missing zones appear as void/boundary. Adding a visual "loading" indi
 
 ## Recommended Implementation Order
 
-1. **Parallel zone fetching** (biggest bang for buck)
-2. **Prioritize player's zone** (eliminates standing-on-nothing)
-3. **Reduce cache-hit delay** (improves repeat visits)
-4. Document self-hosted cache setup more prominently
+1. **Parallel zone fetching** (biggest bang for buck) ✅ IMPLEMENTED
+2. **Prioritize player's zone** (eliminates standing-on-nothing) ✅ IMPLEMENTED
+3. **Reduce cache-hit delay** (improves repeat visits) ✅ IMPLEMENTED (100ms)
+4. Preprocessed tiles or regional extracts (see below)
+
+---
+
+## Preprocessing Strategy: From Demand Cache to Offline Tiles
+
+### Current world-cache Architecture
+
+**Location:** `services/world-cache/server.py`
+
+The Docker cache stores:
+
+| Data | Format | Storage Key |
+|------|--------|-------------|
+| OSM features | Raw Overpass JSON | `sha256("osm:" + query_body)` |
+| Elevation | Raw Esri LERC bytes | `sha256("elevation:/12/y/x")` |
+
+**Flow:**
+```
+Browser → world-cache (Docker) → Overpass/Esri → disk cache
+                                      ↑
+                            30s pacing, 60s failure cooldown
+```
+
+The cache is **demand-driven**: first request for a zone fetches from upstream and caches; subsequent requests are instant cache hits. But cold regions still hit Overpass with all its rate limits.
+
+**What the client receives:**
+```typescript
+// playground/world-provider.ts creates WorldExtract:
+{
+  name: string,
+  origin: GeoPoint,
+  terrain: { columns: 121, rows: 121, spacing: 10, heights: number[] },
+  features: MapFeature[],  // normalized from Overpass elements
+  source: { retrievedAt, osm, elevation }
+}
+```
+
+This JSON is cached in browser Cache Storage (`nabla-world-v1`) for 30 days.
+
+### Option A: Pre-Baked Zone JSON (Smallest Path)
+
+**Concept:** Generate the same `WorldExtract` JSON offline for a region, serve statically.
+
+**Process:**
+1. Download OSM extract for region (e.g., spain-latest.osm.pbf from Geofabrik)
+2. Run a script that:
+   - Iterates over 1,200m grid cells
+   - Extracts buildings/roads/trees using osmium or similar
+   - Fetches elevation from Esri (can be parallelized, no rate limit for bulk)
+   - Outputs one JSON file per zone: `zones/43.3/-1.8/0_0.json`
+3. Serve via nginx/CDN
+4. Client checks static endpoint before falling back to live Overpass
+
+**Client changes:**
+```typescript
+// playground/world-provider.ts
+const STATIC_ZONES = import.meta.env.VITE_STATIC_ZONES_URL  // e.g., https://chines.pol/nabla-zones
+if (STATIC_ZONES) {
+  const staticUrl = `${STATIC_ZONES}/${origin.latitude.toFixed(1)}/${origin.longitude.toFixed(1)}/${key}.json`
+  const response = await fetch(staticUrl)
+  if (response.ok) return response.json() as WorldExtract
+}
+// Fall back to live Overpass...
+```
+
+**Pros:**
+- Minimal client changes (same WorldExtract format)
+- No new dependencies
+- Works with existing browser cache
+- Can pre-bake just Irun/Basque region initially
+
+**Cons:**
+- Larger file sizes than vector tiles (JSON + full coordinate precision)
+- Regeneration required for OSM updates
+- Custom grid system (not standard tile pyramid)
+
+**Estimated storage:** ~50-200 KB per zone × ~1,000 zones for Irun area ≈ 50-200 MB
+
+### Option B: Planetiler Vector Tiles (Streets GL Style)
+
+**Concept:** Run Planetiler to produce MVT/PBF tiles with preprocessed building heights, roof types, materials.
+
+**Planetiler overview:**
+- Java tool that processes OSM PBF → vector tiles
+- Streets GL uses a [modified Planetiler profile](https://github.com/StrandedKitty/streets-gl/tree/dev/tile-processing)
+- Outputs standard MVT tiles at web mercator zoom levels
+- Can embed derived fields: `height`, `minHeight`, `levels`, `roofShape`, `color`, `material`
+
+**Process for chines.pol:**
+```bash
+# Download regional extract
+wget https://download.geofabrik.de/europe/spain-latest.osm.pbf
+
+# Run Planetiler with Streets GL profile (or custom nabla profile)
+java -jar planetiler.jar \
+  --osm-path=spain-latest.osm.pbf \
+  --output=spain-tiles.mbtiles \
+  --profile=nabla-buildings
+
+# Serve via tileserver-gl or nginx with pmtiles
+```
+
+**Client changes:**
+```typescript
+// New: playground/vector-tile-provider.ts
+import { VectorTile } from '@mapbox/vector-tile'
+import Protobuf from 'pbf'
+
+const TILE_URL = import.meta.env.VITE_VECTOR_TILES_URL  // https://chines.pol/tiles/{z}/{x}/{y}.pbf
+
+export async function loadVectorTile(z: number, x: number, y: number): Promise<MapFeature[]> {
+  const response = await fetch(`${TILE_URL}/${z}/${x}/${y}.pbf`)
+  const buffer = await response.arrayBuffer()
+  const tile = new VectorTile(new Protobuf(buffer))
+  
+  const features: MapFeature[] = []
+  const buildings = tile.layers['buildings']
+  for (let i = 0; i < buildings.length; i++) {
+    const f = buildings.feature(i)
+    features.push({
+      id: `way/${f.properties.osmId}`,
+      tags: {
+        building: 'yes',
+        height: f.properties.height,
+        'building:levels': f.properties.levels,
+        'roof:shape': f.properties.roofShape,
+        'building:colour': f.properties.color,
+      },
+      rings: [{ role: 'outer', coordinates: f.loadGeometry() }],
+    })
+  }
+  return features
+}
+```
+
+**Additional work:**
+- Create nabla-specific Planetiler profile (or adapt Streets GL's)
+- Handle coordinate transform (MVT uses tile-local coords)
+- Merge elevation separately (MVT doesn't include terrain heights)
+- Update zone grid to align with or bridge from tile pyramid
+
+**Pros:**
+- Compact binary format (~10× smaller than JSON)
+- Standard ecosystem (tileserver-gl, pmtiles, CDN-friendly)
+- Same preprocessed data Streets GL uses
+- Can support multiple zoom levels
+
+**Cons:**
+- Significant client refactor (new tile coordinate system)
+- Need to merge with elevation pipeline
+- MVT doesn't include Esri elevation; still need separate fetch
+- Custom Planetiler profile development
+
+**Estimated storage:** ~1-5 GB for Spain at useful zoom levels
+
+### Option C: Hybrid — PMTiles + Pre-Baked Elevation
+
+**Concept:** Use PMTiles (single-file tile archive) for buildings, pre-bake elevation grids.
+
+```
+chines.pol/
+├── spain-buildings.pmtiles     # Planetiler output, served via range requests
+├── elevation/
+│   ├── 12/1499/2027.lerc      # Pre-fetched Esri tiles
+│   └── ...
+```
+
+Client loads PMTiles directly in browser (no tile server needed), combines with static elevation.
+
+### Comparison
+
+| Approach | Client Work | Server Work | Storage | Update Freq |
+|----------|-------------|-------------|---------|-------------|
+| A: Zone JSON | Minimal | Script + nginx | ~200 MB/region | Manual |
+| B: Planetiler MVT | Significant | Planetiler + tileserver | ~2 GB/country | Weekly |
+| C: PMTiles hybrid | Moderate | Planetiler + preprocess | ~3 GB/country | Weekly |
+
+### Recommended Path
+
+1. **Immediate (done):** Parallel loading + player prioritization
+2. **Short-term:** Option A for Irun region
+   - Pre-bake zone JSON for 50×50 km around Irun
+   - Serve from chines.pol as static files
+   - Zero client changes beyond URL config
+3. **Medium-term:** Option C for Spain/Europe
+   - Run Planetiler for country extracts
+   - Serve PMTiles + pre-baked elevation
+   - Refactor client to read MVT
+4. **Never:** Depend on tiles.streets.gl — always self-host
+
+### Pre-Baking Script Sketch (Option A)
+
+```python
+#!/usr/bin/env python3
+"""Pre-bake zone JSON for a region. Requires osmium, requests."""
+import json, os, requests
+from osmium import SimpleHandler
+
+ORIGIN = (43.32969, -1.819606, 28.253)  # Irun Ventas
+ZONE_SIZE = 1200
+GRID_RADIUS = 20  # ±20 zones = 48km coverage
+
+class BuildingHandler(SimpleHandler):
+    def __init__(self, bounds):
+        super().__init__()
+        self.bounds = bounds
+        self.features = []
+    
+    def way(self, w):
+        if not w.tags.get('building'): return
+        coords = [(n.lon, n.lat) for n in w.nodes]
+        if not self.in_bounds(coords): return
+        self.features.append({
+            'id': f'way/{w.id}',
+            'tags': dict(w.tags),
+            'rings': [{'role': 'outer', 'coordinates': coords}]
+        })
+
+def generate_zone(x, z, osm_data, output_dir):
+    # ... extract features for zone, fetch elevation, output JSON
+    pass
+
+if __name__ == '__main__':
+    for x in range(-GRID_RADIUS, GRID_RADIUS + 1):
+        for z in range(-GRID_RADIUS, GRID_RADIUS + 1):
+            generate_zone(x, z, osm_data, 'output/zones')
+```
+
+---
 
 ## Files Involved
 
@@ -207,3 +436,4 @@ Currently, missing zones appear as void/boundary. Adding a visual "loading" indi
 - `playground/world-loader.ts` - Main thread ↔ worker bridge
 - `src/simulation.ts` - Terrain boundary constraint (L439-480)
 - `docs/real-world.md` - Streaming architecture documentation
+- `services/world-cache/server.py` - Docker cache implementation
