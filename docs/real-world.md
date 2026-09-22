@@ -185,10 +185,10 @@ surface model. The remaining streets follow it, including unmodeled grade change
 
 Roads support two surface modes via `road.mode`:
 
-| Mode | Behaviour |
-|------|-----------|
-| `raw` (default) | Drapes the road ribbon directly onto the terrain heightfield. The asphalt follows every DEM dip and ridge. Collision uses the terrain collider. |
-| `smooth-float` | Longitudinally smoothed centreline height with laterally flat cross-section (roll ≈ 0). The ribbon floats above DEM valleys to avoid potholes while staying close to the surveyed profile. Collision matches the visual smooth surface, not the terrain underneath. |
+| Mode            | Behaviour                                                                                                                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `raw` (default) | Drapes the road ribbon directly onto the terrain heightfield. The asphalt follows every DEM dip and ridge. Collision uses the terrain collider.                                                                                                                     |
+| `smooth-float`  | Longitudinally smoothed centreline height with laterally flat cross-section (roll ≈ 0). The ribbon floats above DEM valleys to avoid potholes while staying close to the surveyed profile. Collision matches the visual smooth surface, not the terrain underneath. |
 
 **Smooth-float constants** (exported from `draped-road.ts`):
 
