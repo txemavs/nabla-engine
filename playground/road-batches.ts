@@ -45,7 +45,8 @@ export class RoadBatches {
         group.updateMatrix()
         const parts = new Map<string, Part[]>()
         for (const child of group.children) {
-          if (!(child instanceof THREE.Mesh)) continue
+          if (!(child instanceof THREE.Mesh) || !child.geometry.getAttribute('position')?.count)
+            continue
           child.updateMatrix()
           const matrix = new THREE.Matrix4().multiplyMatrices(group.matrix, child.matrix)
           if (!child.geometry.boundingSphere) child.geometry.computeBoundingSphere()
