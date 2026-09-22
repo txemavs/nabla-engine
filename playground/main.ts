@@ -1,3 +1,4 @@
+import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
 import { readPerformance } from './performance.js'
 import { DistantTerrain } from './distant-terrain.js'
@@ -385,7 +386,8 @@ function refreshUi(): void {
   function row(label: string, key: string, values: number[]): string {
     return `<label class="field-label">${label}</label><div class="axis-row">${values.map((n, i) => `<label><span>${'XYZ'[i]}</span><input aria-label="${label} ${'XYZ'[i]}" data-vector="${key}" data-axis="${i}" type="number" step="${key === 'rotation' ? '1' : '0.1'}" value="${Number(n.toFixed(3))}"></label>`).join('')}</div>`
   }
-  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${{ terrain: 'Relieve · Esri Terrain 3D', solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
+  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${e.light ? 'Farola · iluminación' : { terrain: 'Relieve · Esri Terrain 3D', solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
+    <label class="field-label">Capacidades</label><div class="entity-capabilities">${entityCapabilities(e).map(escape).join(' · ')}</div>
     <label class="field-label" for="name">Nombre</label><input id="name" value="${escape(e.name)}" maxlength="100">
     ${row('Posición local · m', 'position', e.transform.position)}${row('Rotación local · °', 'rotation', angles)}
     ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
@@ -401,6 +403,31 @@ function refreshUi(): void {
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
   solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
+  if (e.light) {
+    const controls = document.createElement('div')
+    controls.innerHTML = `<label class="field-label">Farola</label><label><input id="light-enabled" type="checkbox" ${e.light.enabled ? 'checked' : ''}> Encendida</label><label><input id="light-night" type="checkbox" ${e.light.nightOnly ? 'checked' : ''}> Solo de noche</label><label class="field-label" for="light-color">Color de luz</label><input id="light-color" type="color" value="${e.light.color}"><label class="field-label" for="light-intensity">Intensidad · cd</label><input id="light-intensity" type="number" min="0" max="10000" value="${e.light.intensity}"><label class="field-label" for="light-distance">Alcance · m</label><input id="light-distance" type="number" min="1" max="100" value="${e.light.distance}">`
+    props.append(controls)
+    for (const id of [
+      'light-enabled',
+      'light-night',
+      'light-color',
+      'light-intensity',
+      'light-distance',
+    ])
+      $(id).onchange = () =>
+        action(() => {
+          editor.update(e.id, {
+            light: {
+              enabled: $<HTMLInputElement>('light-enabled').checked,
+              nightOnly: $<HTMLInputElement>('light-night').checked,
+              color: $<HTMLInputElement>('light-color').value,
+              intensity: $<HTMLInputElement>('light-intensity').valueAsNumber,
+              distance: $<HTMLInputElement>('light-distance').valueAsNumber,
+            },
+          })
+          rebuild()
+        })
+  }
   if (e.sprite) {
     const controls = document.createElement('div')
     controls.innerHTML = `<label class="field-label" for="sprite-url">PNG transparente</label><input id="sprite-url" value="${escape(e.sprite.url)}">`
@@ -528,6 +555,8 @@ function refreshUi(): void {
     'add-solid',
     'add-box',
     'add-car',
+    'add-carrier',
+    'add-streetlight',
     'add-group',
     'add-sprite',
     'sample-gallery',
@@ -579,13 +608,40 @@ $('redo').onclick = () => {
 for (const [id, kind] of [
   ['add-solid', 'solid'],
   ['add-box', 'box'],
-  ['add-car', 'vehicle'],
   ['add-group', 'group'],
 ] as const) {
   $(id).onclick = () =>
     action(() => {
       selectedId = editor.add(kind)
       rebuild()
+    })
+}
+for (const entry of entityCatalog) {
+  $(`add-${entry.id}`).onclick = () =>
+    action(() => {
+      const ground = orbit.target.clone()
+      view.root.updateWorldMatrix(true, true)
+      const ray = new THREE.Raycaster(
+        new THREE.Vector3(ground.x, ground.y + 10000, ground.z),
+        new THREE.Vector3(0, -1, 0),
+      )
+      const surfaces = editor.document.entities
+        .filter(
+          (e) => e.kind === 'terrain' || (e.kind === 'box' && e.motion === 'static' && !e.light),
+        )
+        .map((e) => view.objects.get(e.id)!)
+        .filter(Boolean)
+      const hit = ray.intersectObjects(surfaces, true)[0]
+      ground.y = hit ? hit.point.y : 0
+      const entities = createCatalogEntities(entry.id, crypto.randomUUID(), ground.toArray())
+      const doc = editor.document
+      doc.entities.push(...entities)
+      editor.load(doc)
+      selectedId = entities[0].id
+      setAddMenu(false)
+      rebuild()
+      view.ready.then(focusSelection).catch(() => undefined)
+      toast(`${entry.label} añadido · G mover · R girar`)
     })
 }
 function focusSelection(): void {
@@ -1497,6 +1553,10 @@ function frame(now: number): void {
     $('gps-status').textContent = 'Sin ubicación · configura el punto GPS'
     $('map-status').textContent = ''
   }
+  view.streetlights.update(
+    camera.position,
+    !!view.document.geography && geography.atmosphere.day < 0.15,
+  )
   sun.castShadow = height < 500
   if (sim || needsRender) {
     const outlineVisible = outline.visible

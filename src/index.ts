@@ -24,3 +24,6 @@ export { roadGeometry } from './draped-road.js'
 
 export { WorldStream, wantedWorldTiles, worldTileAt, WORLD_TILE_SIZE } from './world-stream.js'
 export type { WorldStreamHost } from './world-stream.js'
+
+export { entityCapabilities, type EntityCapability } from './capabilities.js'
+export { entityCatalog, createCatalogEntities, type CatalogId } from './catalog.js'

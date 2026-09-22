@@ -84,6 +84,16 @@ const entitySchema = z
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     motion: z.enum(['none', 'static', 'dynamic']),
     mass: finite.min(0.1).max(100000),
+    light: z
+      .object({
+        color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+        intensity: finite.min(0).max(10000),
+        distance: finite.min(1).max(100),
+        enabled: z.boolean(),
+        nightOnly: z.boolean(),
+      })
+      .strict()
+      .optional(),
     road: z
       .object({
         paths: z.array(z.array(vector).min(2).max(8192)).min(1).max(8192),

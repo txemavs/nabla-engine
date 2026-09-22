@@ -1,3 +1,4 @@
+import { Streetlights } from './streetlights.js'
 import { CarLights } from './car-lights.js'
 import { CarMirrors } from './car-mirrors.js'
 import { CarInstruments } from './car-instruments.js'
@@ -47,6 +48,7 @@ export class SceneView {
   readonly portalTablets = new Map<string, THREE.Mesh[]>()
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
+  readonly streetlights = new Streetlights(this.root)
   private readonly roads = new RoadBatches()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
@@ -269,7 +271,8 @@ export class SceneView {
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         group.add(surface)
       }
-      if (e.kind === 'box') group.add(box(e.size, e.color))
+      if (e.kind === 'box' && !e.light) group.add(box(e.size, e.color))
+      if (e.light) this.streetlights.add(e, group)
       if (e.kind === 'vehicle') {
         if (e.vehicle?.interior && e.visual?.body.url.includes('ship.container')) {
           const interior = carrierInterior()

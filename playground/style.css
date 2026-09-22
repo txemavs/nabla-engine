@@ -1016,3 +1016,9 @@ body.playing #footer-mode {
 .desk-switches select {
   font-size: 27px;
 }
+
+.entity-capabilities {
+  font-size: 12px;
+  color: #91aabd;
+  margin-bottom: 12px;
+}

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a component-derived entity capability API and catalogue factories for the A3, flying container with stern portal, and highway streetlight.
+- Add editable night lighting with six nearby shadowless spotlights, scene placement and saved light settings.
+
 - Start with the weapon holstered; Tab draws/holsters it and F8 starts/stops play.
 - Keep carrier screens active throughout the occupied interior and lower/retract the pilot eye and monitor anchor by 10/20 cm.
 
