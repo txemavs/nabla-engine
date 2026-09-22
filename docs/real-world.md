@@ -187,13 +187,13 @@ Construction and step roads remain omitted.
 
 **Height offset behavior:**
 
-| OSM tags                    | `elevation` | `layer` | Height offset        |
-|-----------------------------|-------------|---------|----------------------|
-| (none)                      | —           | —       | Terrain-draped       |
-| `bridge=yes`                | `bridge`    | 1       | +5 m from terrain    |
-| `bridge=yes layer=2`        | `bridge`    | 2       | +10 m from terrain   |
-| `tunnel=yes`                | `tunnel`    | -1      | -5 m from terrain    |
-| `tunnel=yes layer=-2`       | `tunnel`    | -2      | -10 m from terrain   |
+| OSM tags              | `elevation` | `layer` | Height offset      |
+| --------------------- | ----------- | ------- | ------------------ |
+| (none)                | —           | —       | Terrain-draped     |
+| `bridge=yes`          | `bridge`    | 1       | +5 m from terrain  |
+| `bridge=yes layer=2`  | `bridge`    | 2       | +10 m from terrain |
+| `tunnel=yes`          | `tunnel`    | -1      | -5 m from terrain  |
+| `tunnel=yes layer=-2` | `tunnel`    | -2      | -10 m from terrain |
 
 Each layer corresponds to ~5 m of vertical clearance. Bridges render as flat surfaces
 above terrain; tunnels render below. Both have physics collision boxes along their
@@ -205,6 +205,7 @@ loaded—not a third-party GPS product. The assist is enabled by default and can
 toggled via `Simulation.setRoadAssist(enabled, strength)`.
 
 **Limitations:**
+
 - Vertical separation is estimated from `layer` tags; absolute `ele` and `height` tags
   are not yet interpreted.
 - Tunnels intersect terrain collision; vehicles may clip through terrain when driving
