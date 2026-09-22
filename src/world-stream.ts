@@ -97,7 +97,11 @@ export interface WorldStreamHost {
   replace(remove: Set<string>, add: Entity[]): void
   status(message: string): void
 }
-/** One request at a time. Edited/saved zones stay pinned; untouched far zones are evicted. */
+/**
+ * Parallel zone streaming with player-zone prioritization.
+ * Up to 3 concurrent requests; the player's current zone jumps to front of queue.
+ * Edited/saved zones stay pinned; untouched far zones are evicted.
+ */
 export class WorldStream {
   private readonly resident = new Map<
     string,
@@ -107,9 +111,10 @@ export class WorldStream {
   private wanted: string[] = []
   private position: Vec3Tuple = [0, 0, 0]
   private protectedPositions: Vec3Tuple[] = []
-  private busy: { key: string; controller: AbortController } | null = null
+  private readonly inFlight = new Map<string, AbortController>()
+  private readonly maxConcurrent = 3
   private readonly limited = new Map<string, string>()
-  private nextRequest = 0
+  private nextSlot = 0
   private disposed = false
   constructor(
     private readonly host: WorldStreamHost,
@@ -135,32 +140,50 @@ export class WorldStream {
     if (this.disposed) return
     this.position = position
     this.protectedPositions = protectedPositions
-    // At orbital altitude, keep the cache instead of downloading invisible ground.
     if (position[1] > 12000) {
       this.wanted = []
       return
     }
     this.wanted = wantedWorldTiles(position, velocity)
-    // Let an in-flight tile finish warming the cache. Repeated cancellation while
-    // flying can otherwise discard every cold request before any sector arrives.
-    // Disposing/changing destination still aborts the session immediately.
-    if (this.busy || now < this.nextRequest) return
-    const area = this.budgetArea()
-    const key = this.wanted.find(
-      (k) =>
-        !this.resident.has(k) && now >= (this.failed.get(k) ?? 0) && this.limited.get(k) !== area,
-    )
-    if (!key) return
+    const playerKey = worldTileKey(...worldTileAt(position))
+    const playerMissing = !this.resident.has(playerKey) && !this.inFlight.has(playerKey)
+    if (playerMissing && this.inFlight.size >= this.maxConcurrent) {
+      const farthest = [...this.inFlight.entries()].sort(
+        (a, b) => tileDistance(b[0], position) - tileDistance(a[0], position),
+      )[0]
+      if (farthest && tileDistance(farthest[0], position) > tileDistance(playerKey, position)) {
+        farthest[1].abort()
+        this.inFlight.delete(farthest[0])
+      }
+    }
+    while (this.inFlight.size < this.maxConcurrent && now >= this.nextSlot) {
+      const area = this.budgetArea()
+      const prioritized = playerMissing ? [playerKey, ...this.wanted] : this.wanted
+      const key = prioritized.find(
+        (k) =>
+          !this.resident.has(k) &&
+          !this.inFlight.has(k) &&
+          now >= (this.failed.get(k) ?? 0) &&
+          this.limited.get(k) !== area,
+      )
+      if (!key) break
+      this.startLoad(key, now)
+    }
+  }
+  private startLoad(key: string, now: number): void {
     const controller = new AbortController()
-    this.busy = { key, controller }
-    this.host.status(`Cargando zona ${key} · anticipando el recorrido…`)
+    this.inFlight.set(key, controller)
+    const loading = this.inFlight.size
+    const status =
+      loading > 1
+        ? `Cargando ${loading} zonas · anticipando el recorrido…`
+        : `Cargando zona ${key} · anticipando el recorrido…`
+    this.host.status(status)
     void this.host
       .load(key, controller.signal)
       .then(async (entities) => {
         if (this.disposed || controller.signal.aborted || !this.wanted.includes(key)) return
         let remove = this.makeRoom(key, entities)
-        // Old saves have no fingerprint. Only release a saved zone after comparing
-        // it with its generated source; never infer that an edited zone is disposable.
         if (!remove) {
           for (const [candidate, state] of this.resident) {
             if (
@@ -223,8 +246,8 @@ export class WorldStream {
         )
       })
       .finally(() => {
-        if (this.busy?.controller === controller) this.busy = null
-        this.nextRequest = Math.max(this.nextRequest, Date.now() + 250)
+        this.inFlight.delete(key)
+        this.nextSlot = Math.max(this.nextSlot, Date.now() + 100)
       })
   }
   private budgetArea(): string {
@@ -286,6 +309,7 @@ export class WorldStream {
   }
   dispose(): void {
     this.disposed = true
-    this.busy?.controller.abort()
+    for (const controller of this.inFlight.values()) controller.abort()
+    this.inFlight.clear()
   }
 }
