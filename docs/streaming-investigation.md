@@ -428,6 +428,165 @@ if __name__ == '__main__':
 
 ---
 
+---
+
+## Zone-Scoped Authoring: Server-Side Override Layer
+
+### Problem
+
+Bridges and tunnels are explicitly omitted from OSM import (`src/real-world.ts:154-156`):
+
+```typescript
+if (
+  ['construction', 'proposed', 'steps'].includes(tags.highway) ||
+  tags.bridge === 'yes' ||
+  tags.tunnel === 'yes'
+)
+  continue
+```
+
+This is intentional — bridges/tunnels need stacked surfaces (multiple drivable levels), not terrain-draped roads. But it leaves holes in the road network.
+
+The user needs to **author corrections** for a zone (e.g., draw a missing bridge in Irun) and have those corrections:
+1. Persist on chained.world (not OpenStreetMap)
+2. Merge with the base OSM layer at runtime
+3. Survive tile rebuilds (match by stable ID / geo anchor)
+
+### Architecture
+
+```
+chained.world/
+├── zones/                          # Preprocessed base (Option A/C)
+│   └── 43.3/-1.8/0_0.json         # Read-only OSM-derived
+├── overrides/                      # Zone-scoped corrections
+│   └── 43.3/-1.8/0_0.patch.json   # Authored additions/edits/hides
+└── api/
+    └── POST /override/{zone}       # Save patch from editor
+```
+
+**Override patch schema:**
+```typescript
+interface ZoneOverride {
+  zone: string                      // "0_0"
+  origin: GeoPoint                  // Geographic anchor
+  version: number                   // Increment on save
+  createdAt: string
+  updatedAt: string
+  entries: OverrideEntry[]
+}
+
+interface OverrideEntry {
+  action: 'add' | 'edit' | 'hide'
+  // For edits/hides: match existing OSM feature
+  sourceId?: string                 // "way/123456" or "relation/789"
+  sourceFingerprint?: string        // Content hash for conflict detection
+  // For adds: new authored geometry
+  entity?: Partial<Entity>          // Bridge solid, tunnel, etc.
+  // Geographic anchor (survives coordinate shifts)
+  anchor: {
+    latitude: number
+    longitude: number
+    altitude: number
+  }
+}
+```
+
+### Editor UX Flow
+
+1. **Load zone:** Fetch base + override from chained.world
+2. **Visualize:** Render base features (buildings/roads) + override entities (bridges)
+3. **Edit modes:**
+   - **Add bridge:** Draw solid geometry at elevation, mark as `action: 'add'`
+   - **Hide feature:** Click OSM building → mark as `action: 'hide'`
+   - **Edit feature:** Modify color/height → mark as `action: 'edit'`
+4. **Save:** POST patch to chained.world, increment version
+5. **Conflict:** If base changed (new OSM data), flag entries with stale fingerprint
+
+### Runtime Merge
+
+```typescript
+// playground/world-provider.ts
+async function loadWorldTile(origin, key, signal): Promise<Entity[]> {
+  const base = await fetchBase(origin, key, signal)        // OSM-derived
+  const override = await fetchOverride(origin, key, signal) // chained.world patch
+  
+  const merged = base.entities.filter(e => 
+    !override.entries.some(o => o.action === 'hide' && o.sourceId === e.source?.id)
+  )
+  
+  for (const entry of override.entries) {
+    if (entry.action === 'add' && entry.entity) {
+      merged.push(entry.entity)
+    } else if (entry.action === 'edit' && entry.sourceId) {
+      const target = merged.find(e => e.source?.id === entry.sourceId)
+      if (target) Object.assign(target, entry.entity)
+    }
+  }
+  
+  return merged
+}
+```
+
+### Bridges/Tunnels: Geometry & Physics Requirements
+
+Bridges and tunnels need **stacked drivable surfaces**, not terrain heightfields:
+
+| Feature | Current | Required |
+|---------|---------|----------|
+| Road surface | Terrain-draped polyline | Solid mesh at fixed elevation |
+| Collider | Heightfield (2D) | 3D convex hull / trimesh |
+| Under-bridge | N/A | Separate lower surface |
+| Tunnel | N/A | Enclosed tube with entry/exit |
+
+**Minimum viable bridge:**
+```typescript
+const bridge = createEntity('override-bridge-irun-1', 'solid', [x, y, z])
+bridge.geometry = {
+  vertices: [...],  // Deck polygon extruded
+  edges: [...],
+  faces: [...]
+}
+bridge.size = [width, thickness, length]
+bridge.source = {
+  provider: 'override',
+  id: 'bridge/irun-1',
+  retrievedAt: '2026-09-22',
+  tags: { highway: 'primary', bridge: 'yes' }
+}
+```
+
+The solid editor already supports this — the work is:
+1. Bridge-specific drawing helpers (span between two road endpoints)
+2. Physics: ensure vehicle wheels contact bridge deck, not terrain underneath
+3. Visual: render road surface texture on bridge deck
+
+### Ranked Implementation Plan
+
+| Phase | Work | Complexity |
+|-------|------|------------|
+| **0** | ✅ Parallel streaming + player prioritization | Done |
+| **1** | Pre-baked zone JSON for Irun (Option A) | Low |
+| **2** | Override API endpoint on chained.world | Low |
+| **3** | Editor: load base + override, show combined | Medium |
+| **4** | Editor: add/hide/edit override entries, save | Medium |
+| **5** | First bridge: hand-author one Irun span as solid | Low |
+| **6** | Bridge physics: deck collision separate from terrain | Medium |
+| **7** | Bridge drawing helpers in solid editor | Medium |
+| **8** | Tunnel geometry + portal-like entry/exit | High |
+
+### Smallest Vertical Slice (Phase 1-5)
+
+**Goal:** Persist a hand-authored bridge override for one Irun span.
+
+1. Add `overrides/` directory to chained.world static serving
+2. Create `0_0.patch.json` with one bridge entity (hand-drawn in solid editor)
+3. Modify `loadWorldTile` to fetch and merge override
+4. Drive over the bridge
+
+This proves the architecture without building full editor UX.
+
+---
+
 ## Files Involved
 
 - `src/world-stream.ts` - Zone scheduling, serialization, eviction
@@ -435,5 +594,7 @@ if __name__ == '__main__':
 - `playground/world-worker.ts` - Worker message handling
 - `playground/world-loader.ts` - Main thread ↔ worker bridge
 - `src/simulation.ts` - Terrain boundary constraint (L439-480)
+- `src/real-world.ts` - OSM feature parsing, bridge/tunnel exclusion (L154-156)
+- `src/scene.ts` - Entity schema including `source` field
 - `docs/real-world.md` - Streaming architecture documentation
 - `services/world-cache/server.py` - Docker cache implementation
