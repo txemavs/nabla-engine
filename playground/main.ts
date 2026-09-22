@@ -1,3 +1,5 @@
+import { activatePreparation } from './preparation-access.js'
+void activatePreparation()
 import { SeaWater } from './water.js'
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
@@ -304,6 +306,7 @@ function setupWorldStream(): void {
   worldStream = new WorldStream({
     document: () => view.document,
     load: (key, signal) => loader.load(origin, key, signal),
+    prepare: (keys) => loader.prepare(origin, keys),
     replace: (remove, add) => {
       const started = performance.now()
       sim?.replaceMapEntities(remove, add)

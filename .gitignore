@@ -11,3 +11,8 @@ test-results/
 services/world-cache/data/
 
 __pycache__/
+
+prepare-dist/
+
+services/world-cache/.prepare.env
+services/world-cache/prepared/

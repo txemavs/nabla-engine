@@ -30,7 +30,8 @@
     "check": "npm run format:check && npm run typecheck && npm test && npm run build && npm run build:demo",
     "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "build:prepare": "tsc -p tsconfig.prepare.json"
   },
   "keywords": [
     "3d",

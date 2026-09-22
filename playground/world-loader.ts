@@ -60,6 +60,9 @@ export class WorldLoader {
       this.worker.postMessage({ id, key, origin, destination })
     })
   }
+  prepare(origin: GeoPoint, keys: string[]): void {
+    this.worker.postMessage({ prepare: keys, origin })
+  }
   dispose(): void {
     this.worker.terminate()
     for (const p of this.pending.values()) p.reject(new Error('Carga cancelada'))

@@ -490,3 +490,26 @@ it('does not drop replacement request tracking when cancelled request finally ru
   expect(callsAfterAbort.length).toBe(1)
   stream.dispose()
 })
+
+it('queues the current ground zone before the flight corridor, including in orbit', () => {
+  const editor = new SceneEditor(document())
+  const prepare = vi.fn()
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load: async () => [],
+    replace: (r, a) => editor.replaceMapEntities(r, a),
+    status: () => undefined,
+    prepare,
+  })
+  stream.update([2400, 500, 0], [100, 0, 0])
+  const keys = prepare.mock.calls[0][0] as string[]
+  expect(keys[0]).toBe('2_0')
+  expect(keys.length).toBeGreaterThan(1)
+  expect(keys.length).toBeLessThanOrEqual(24)
+  expect(new Set(keys).size).toBe(keys.length)
+  stream.update([3600, 15000, 0], [100, 0, 0])
+  expect(prepare.mock.calls[1][0]).toEqual(['3_0'])
+  stream.dispose()
+  stream.update([4800, 15000, 0], [100, 0, 0])
+  expect(prepare).toHaveBeenCalledTimes(2)
+})

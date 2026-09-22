@@ -1,5 +1,7 @@
 """Private, disk-backed OSM/Esri cache. Bind behind an authenticated/private transport."""
-import hashlib, json, os, re, threading, time, urllib.request, urllib.error
+import hashlib, hmac, json, os, re, threading, time, urllib.request, urllib.error
+from http.cookies import SimpleCookie
+from queue_store import Queue
 from pathlib import Path
 from baked_format import valid_bake
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -13,6 +15,10 @@ ESRI = 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Ter
 locks = [threading.Lock() for _ in range(64)]
 osm_lock = threading.Lock()
 next_osm = 0.0
+PREPARE_TOKEN = os.environ.get('PREPARE_TOKEN', '')
+PREPARE_ROOT = Path(os.environ.get('PREPARE_ROOT', str(ROOT / 'prepared')))
+PREPARE_QUEUE = Queue(ROOT / 'prepare.sqlite', output=PREPARE_ROOT) if PREPARE_TOKEN else None
+
 
 def get_baked(lat, lon, key):
     """Check for pre-baked zone file. Returns (data, True) or (None, False)."""
@@ -96,7 +102,26 @@ class Handler(BaseHTTPRequestHandler):
         if code == 429: self.send_header('Retry-After', '60')
         self.end_headers()
         self.wfile.write(data)
+    def authorized(self):
+        if not PREPARE_TOKEN:
+            return False
+        try:
+            cookie = SimpleCookie(self.headers.get('Cookie', ''))
+            value = cookie['nabla_prepare'].value
+            expires, signature = value.split('.')
+            expected = hmac.new(PREPARE_TOKEN.encode(), expires.encode(), hashlib.sha256).hexdigest()
+            return int(expires) > time.time() and hmac.compare_digest(signature, expected)
+        except (KeyError, ValueError):
+            return False
+
     def do_GET(self):
+        if self.path == '/prepare/status':
+            if not self.authorized():
+                self.respond(401, b'{"error":"Preparation access required"}')
+            else:
+                self.respond(200, json.dumps(PREPARE_QUEUE.stats()).encode())
+            return
+
         if self.path == '/health':
             self.respond(200, b'{"ok":true}')
             return
@@ -119,6 +144,33 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(404, b'{"error":"Unknown tile"}'); return
         self.fetch('elevation:' + self.path, ESRI + self.path.removeprefix('/elevation/'), None, 'application/octet-stream')
     def do_POST(self):
+        if self.path == '/prepare/session':
+            supplied = self.headers.get('Authorization', '').removeprefix('Bearer ')
+            if not PREPARE_TOKEN or not hmac.compare_digest(supplied, PREPARE_TOKEN):
+                self.respond(401, b'{"error":"Invalid preparation access"}')
+                return
+            expires = str(int(time.time()) + 30 * 86400)
+            signature = hmac.new(PREPARE_TOKEN.encode(), expires.encode(), hashlib.sha256).hexdigest()
+            self.send_response(204)
+            self.send_header('Set-Cookie', f'nabla_prepare={expires}.{signature}; Path=/prepare; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            return
+        if self.path == '/prepare/zones':
+            if not self.authorized():
+                self.respond(401, b'{"error":"Preparation access required"}')
+                return
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 8192:
+                    raise ValueError('Invalid request size')
+                data = json.loads(self.rfile.read(length))
+                accepted = PREPARE_QUEUE.enqueue(data['origin'], data['keys'])
+                self.respond(202 if accepted else 429, json.dumps({'accepted':accepted,'queue':PREPARE_QUEUE.stats()}).encode())
+            except (ValueError, KeyError, TypeError):
+                self.respond(400, b'{"error":"Invalid zone request"}')
+            return
+
         if self.path != '/osm': self.respond(404, b'{}'); return
         try: size = int(self.headers.get('Content-Length', '0'))
         except ValueError: size = 0
@@ -136,4 +188,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     threading.Thread(target=prune, daemon=True).start()
+    if PREPARE_QUEUE:
+        from prepare_worker import run
+        threading.Thread(target=run, args=(PREPARE_QUEUE, ROOT, PREPARE_ROOT, int(os.environ.get('PREPARE_MAX_BYTES', '5368709120'))), daemon=True).start()
     ThreadingHTTPServer(('0.0.0.0', 8080), Handler).serve_forever()

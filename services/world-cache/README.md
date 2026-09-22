@@ -202,3 +202,76 @@ addresses, credentials and private service configuration outside the repository.
 Validation: `CACHE_DIR=/tmp/nabla-cache-tests python3 -m unittest discover -s
 services/world-cache`. Browser/core tests additionally exercise fresh bake,
 304 reuse, changed version, schema mismatch, offline fallback and cancellation.
+
+## Durable route preparation
+
+The optional `Dockerfile.prepare` image runs the cache plus one durable SQLite
+worker. `compose.prepare.yaml` builds from the repository root; the plain Python
+image remains available for caching without geometry preparation. Set local
+`CACHE_UID`/`CACHE_GID` to match ownership of the bind-mounted data directories.
+Create a private `.prepare.env` containing a random `PREPARE_TOKEN` (at least 32
+random bytes, never a frontend environment variable or committed file). The worker
+is disabled if this token is absent. Keep the cache bound to loopback/private networking.
+
+Expose only `/prepare/session`, `/prepare/zones`, `/prepare/status` through your
+HTTPS reverse proxy, with an 8 KB request limit. Publish `/publish` as a read-only
+static prepared-data directory (JSON MIME, gzip, ETag and `Cache-Control: no-cache`).
+Keep ordinary `/osm` and `/elevation` private. Limits in the example allocate 5 GiB
+to upstream cache and 5 GiB to prepared artifacts, one CPU and 1 GiB container memory.
+A Node job has a 512 MiB heap, a 180-second timeout and a 48 MiB artifact limit.
+
+### Access and client configuration
+
+- POST `/prepare/session` with `Authorization: Bearer <owner token>` grants a signed
+  30-day HttpOnly, Secure, SameSite=Strict cookie scoped to `/prepare`. Rotate the
+  token to revoke sessions. No token is embedded in the frontend build.
+- POST `/prepare/zones` accepts `{origin:{latitude,longitude,altitude},keys:["0_0",...]}`
+  only with that session. Maximum 24 keys/request and 256 pending/running jobs.
+  Invalid geographic inputs and paths are rejected; callers cannot choose URLs.
+- GET `/prepare/status` returns counts to authenticated owners, not traveled coordinates.
+- Configure `VITE_WORLD_PREPARE_API` for these authenticated routes and
+  `VITE_WORLD_PREPARED_URL` for the static artifacts. `VITE_WORLD_BAKED_URL` is still
+  the normalized-OSM fallback. All three settings are optional.
+- An owner can activate the demo using a private `#prepare=<token>` fragment. The
+  frontend removes it from the address bar, exchanges it for the cookie and reloads.
+  Treat this activation link as a credential; do not publish or commit it. Unauthenticated
+  visitors can reuse published artifacts but cannot enqueue work. The footer shows
+  queue counts only for an authenticated owner.
+
+While playing, the existing streaming planner queues the current tile first and
+then its requested neighbors/ahead corridor. Above the streaming altitude limit it
+queues only the ground footprint. The client throttles updates and does not cancel
+accepted server work when the ship moves on. Work is not instantaneous: far routes
+can exceed the queue's processing rate, and the browser retains the previous live
+loading path until prepared output exists. No imagery-provider bulk download is added.
+
+### Prepared content and lifecycle
+
+Jobs reuse normalized OSM from the cache, cache and decode Esri tiles, sample the
+121×121 elevation lattice, call the same `createRealWorld`/`prepareMapGeometry` as
+the browser, then atomically publish entities plus base64 Float32/Uint32 mesh buffers.
+This includes terrain, road and building geometry and tree entities. Browser work
+still includes JSON/typed-array decoding, validation, physics installation and GPU
+upload; those costs do not disappear. Distant horizon, water tiles and satellite
+imagery retain their existing independent pipelines.
+
+Artifacts use `1/<latitude:6>/<longitude:6>/<altitude:3>/<tile>.json`. Increment both
+`queue_store.VERSION` and `PREPARED_VERSION` when geometry/scene generation becomes
+incompatible. The queue deduplicates requests, retries up to three times with backoff,
+recovers interrupted jobs on restart, and requeues evicted output on demand. Ready
+jobs are eligible for refresh after 24 hours; upstream data still observes its own
+cache TTL. Completed job history is bounded. Prepared output has an independent
+oldest-file eviction budget. Authored scene edits are never written into these files.
+
+The browser keeps at most eight prepared artifacts in Cache Storage and revalidates
+ETags on loading. A missing, incompatible or failed artifact falls back to ordinary
+baked/live loading. Currently resident scene geometry is not replaced during play;
+revisiting/reloading consumes newly prepared output. This is a cache, not document storage.
+
+### Checks
+
+`npm run build:prepare` builds the server CLI. Python tests cover persistence,
+capacity, recovery, retries, validation and authenticated queue access. TypeScript
+tests cover wire paths, compatibility checks, geometry decoding and unauthorized
+client behavior. Use real-server cold/warm checks to verify 200/304 responses and
+that prepared zones arrive in the scene; unit tests alone cannot measure frame pacing.

@@ -92,6 +92,7 @@ export function mapFingerprint(entities: Entity[]): string {
   return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0')
 }
 export interface WorldStreamHost {
+  prepare?(keys: string[]): void
   document(): SceneDocument
   load(key: string, signal: AbortSignal): Promise<Entity[]>
   replace(remove: Set<string>, add: Entity[]): void
@@ -155,6 +156,15 @@ export class WorldStream {
     if (this.disposed) return
     this.position = position
     this.protectedPositions = protectedPositions
+    const currentKey = worldTileKey(...worldTileAt(position))
+    const preparing =
+      position[1] > 12000
+        ? [currentKey]
+        : [
+            currentKey,
+            ...wantedWorldTiles(position, velocity).filter((k) => k !== currentKey),
+          ].slice(0, 24)
+    this.host.prepare?.(preparing)
     if (position[1] > 12000) {
       this.wanted = []
       return
