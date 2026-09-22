@@ -1,3 +1,4 @@
+import { takeMapGeometry } from './map-geometry.js'
 import { Streetlights } from './streetlights.js'
 import { CarLights } from './car-lights.js'
 import { CarMirrors } from './car-mirrors.js'
@@ -231,12 +232,15 @@ export class SceneView {
         )
       }
       if (e.road) {
-        const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!
-        const data = roadGeometry(t, e.road.paths, e.road.width)
-        const g = new THREE.BufferGeometry()
-        g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))
-        g.setIndex(data.faces.flat())
-        g.computeVertexNormals()
+        let g = takeMapGeometry(e)
+        if (!g) {
+          const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!
+          const data = roadGeometry(t, e.road.paths, e.road.width)
+          g = new THREE.BufferGeometry()
+          g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))
+          g.setIndex(data.faces.flat())
+          g.computeVertexNormals()
+        }
         const surface = mesh(g, e.color)
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         surface.position.y = ['footway', 'path', 'pedestrian', 'cycleway'].includes(
@@ -248,25 +252,31 @@ export class SceneView {
         group.add(surface)
       }
       if (e.terrain) {
-        const g = new THREE.BufferGeometry()
-        g.setAttribute(
-          'position',
-          new THREE.Float32BufferAttribute(terrainVertices(e.terrain).flat(), 3),
-        )
-        g.setIndex(terrainIndices(e.terrain))
-        g.computeVertexNormals()
+        let g = takeMapGeometry(e)
+        if (!g) {
+          g = new THREE.BufferGeometry()
+          g.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(terrainVertices(e.terrain).flat(), 3),
+          )
+          g.setIndex(terrainIndices(e.terrain))
+          g.computeVertexNormals()
+        }
         group.add(mesh(g, e.color))
       }
       if (e.geometry) {
-        const geometry = new THREE.BufferGeometry()
-        geometry.setAttribute(
-          'position',
-          new THREE.Float32BufferAttribute(
-            triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
-            3,
-          ),
-        )
-        geometry.computeVertexNormals()
+        let geometry = takeMapGeometry(e)
+        if (!geometry) {
+          geometry = new THREE.BufferGeometry()
+          geometry.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(
+              triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
+              3,
+            ),
+          )
+          geometry.computeVertexNormals()
+        }
         const surface = mesh(geometry, e.color)
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         group.add(surface)

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Preserve unchanged road cell buffers across map streaming and defer hidden road batch preparation.
+- Prepare streamed terrain, roads and building render buffers in the world worker and transfer them without copying.
+
 - Add a component-derived entity capability API and catalogue factories for the A3, flying container with stern portal, and highway streetlight.
 - Add editable night lighting with six nearby shadowless spotlights, scene placement and saved light settings.
 

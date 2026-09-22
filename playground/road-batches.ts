@@ -1,11 +1,20 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { Entity } from '../src/scene.js'
-/** Render-only batches. Authored road entities stay intact for editing and export. */
+
+type Part = { mesh: THREE.Mesh; matrix: THREE.Matrix4 }
+type Road = { entity: Entity; group: THREE.Group; parts: Map<string, Part[]> }
+type Cell = {
+  color: string
+  roads: Map<string, Part[]>
+  mesh?: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>
+}
+/** Render-only cells. Streaming preserves buffers outside the changed cells. */
 export class RoadBatches {
   readonly root = new THREE.Group()
   private source: Entity[] | null = null
-  private batches: { mesh: THREE.Mesh; bounds: THREE.Sphere }[] = []
+  private readonly roads = new Map<string, Road>()
+  private readonly cells = new Map<string, Cell>()
   update(
     entities: Entity[],
     objects: Map<string, THREE.Group>,
@@ -13,65 +22,94 @@ export class RoadBatches {
     eye: THREE.Vector3,
     distance: number,
   ): void {
-    this.root.visible = playing
-    if (!playing) return
+    this.root.visible = playing && distance > 0
+    // Defer even the initial preparation while road detail is disabled.
+    if (!this.root.visible) return
     if (entities !== this.source) {
-      this.clear()
-      this.source = entities
-      const buckets = new Map<string, { geometry: THREE.BufferGeometry[]; color: string }>()
-      for (const e of entities) {
-        if (!e.road || !e.source) continue
-        const group = objects.get(e.id)!
+      const dirty = new Set<string>()
+      const next = new Map(entities.filter((e) => e.road && e.source).map((e) => [e.id, e]))
+      for (const [id, road] of this.roads) {
+        if (next.get(id) === road.entity && objects.get(id) === road.group) continue
+        for (const key of road.parts.keys()) {
+          this.cells.get(key)!.roads.delete(id)
+          dirty.add(key)
+        }
+        this.roads.delete(id)
+      }
+      for (const [id, entity] of next) {
+        if (this.roads.has(id)) continue
+        const group = objects.get(id)
+        if (!group) continue
         group.updateMatrix()
+        const parts = new Map<string, Part[]>()
         for (const child of group.children) {
           if (!(child instanceof THREE.Mesh)) continue
           child.updateMatrix()
-          const geometry = child.geometry
-            .clone()
-            .applyMatrix4(new THREE.Matrix4().multiplyMatrices(group.matrix, child.matrix))
-          geometry.computeBoundingSphere()
-          const p = geometry.boundingSphere!.center
-          const key = `${Math.floor(p.x / 256)}:${Math.floor(p.z / 256)}:${e.color}`
-          let bucket = buckets.get(key)
-          if (!bucket) {
-            bucket = { geometry: [], color: e.color }
-            buckets.set(key, bucket)
-          }
-          bucket.geometry.push(geometry)
+          const matrix = new THREE.Matrix4().multiplyMatrices(group.matrix, child.matrix)
+          if (!child.geometry.boundingSphere) child.geometry.computeBoundingSphere()
+          const center = child.geometry.boundingSphere!.center.clone().applyMatrix4(matrix)
+          const key = `${Math.floor(center.x / 256)}:${Math.floor(center.z / 256)}:${entity.color}`
+          const list = parts.get(key) ?? []
+          list.push({ mesh: child, matrix })
+          parts.set(key, list)
         }
+        for (const [key, list] of parts) {
+          let cell = this.cells.get(key)
+          if (!cell) {
+            cell = { color: entity.color, roads: new Map() }
+            this.cells.set(key, cell)
+          }
+          cell.roads.set(id, list)
+          dirty.add(key)
+        }
+        this.roads.set(id, { entity, group, parts })
       }
-      for (const bucket of buckets.values()) {
-        const geometry = mergeGeometries(bucket.geometry)!
-        bucket.geometry.forEach((g) => g.dispose())
-        geometry.computeBoundingSphere()
-        const mesh = new THREE.Mesh(
-          geometry,
-          new THREE.MeshStandardMaterial({
-            color: bucket.color,
-            roughness: 0.85,
-            side: THREE.DoubleSide,
-          }),
-        )
-        mesh.receiveShadow = true
-        mesh.matrixAutoUpdate = false
-        this.root.add(mesh)
-        this.batches.push({ mesh, bounds: geometry.boundingSphere! })
-      }
+      for (const key of dirty) this.rebuild(key)
+      this.source = entities
     }
-    for (const { mesh, bounds } of this.batches)
-      mesh.visible =
-        distance > 0 && bounds.center.distanceToSquared(eye) <= (distance + bounds.radius) ** 2
+    for (const { mesh } of this.cells.values()) {
+      if (!mesh) continue
+      const bounds = mesh.geometry.boundingSphere!
+      mesh.visible = bounds.center.distanceToSquared(eye) <= (distance + bounds.radius) ** 2
+    }
   }
-  private clear(): void {
-    for (const { mesh } of this.batches) {
-      mesh.geometry.dispose()
-      ;(mesh.material as THREE.Material).dispose()
+  private rebuild(key: string): void {
+    const cell = this.cells.get(key)!
+    if (cell.mesh) {
+      cell.mesh.removeFromParent()
+      cell.mesh.geometry.dispose()
+      cell.mesh.material.dispose()
     }
-    this.root.clear()
-    this.batches = []
+    if (!cell.roads.size) {
+      this.cells.delete(key)
+      return
+    }
+    const parts = [...cell.roads.values()].flat()
+    const geometries = parts.map(({ mesh, matrix }) => mesh.geometry.clone().applyMatrix4(matrix))
+    const geometry = mergeGeometries(geometries)!
+    geometries.forEach((g) => g.dispose())
+    geometry.computeBoundingSphere()
+    cell.mesh = new THREE.Mesh(
+      geometry,
+      new THREE.MeshStandardMaterial({
+        color: cell.color,
+        roughness: 0.85,
+        side: THREE.DoubleSide,
+      }),
+    )
+    cell.mesh.receiveShadow = true
+    cell.mesh.matrixAutoUpdate = false
+    this.root.add(cell.mesh)
   }
   dispose(): void {
-    this.clear()
+    for (const { mesh } of this.cells.values()) {
+      mesh?.geometry.dispose()
+      mesh?.material.dispose()
+    }
+    this.cells.clear()
+    this.roads.clear()
+    this.source = null
+    this.root.clear()
     this.root.removeFromParent()
   }
 }

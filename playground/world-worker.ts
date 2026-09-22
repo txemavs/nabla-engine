@@ -1,3 +1,4 @@
+import { prepareMapGeometry, mapGeometryTransfers } from './map-geometry.js'
 import { loadWorldTile, loadDistantTerrain } from './world-provider.js'
 import type { GeoPoint } from '../src/geography.js'
 const controllers = new Map<number, AbortController>()
@@ -25,7 +26,10 @@ self.onmessage = async (
       return
     }
     const entities = await loadWorldTile(origin!, key!, controller.signal, event.data.destination)
-    if (!controller.signal.aborted) self.postMessage({ id, entities })
+    if (!controller.signal.aborted) {
+      const geometry = event.data.destination ? {} : prepareMapGeometry(entities)
+      self.postMessage({ id, entities, geometry }, { transfer: mapGeometryTransfers(geometry) })
+    }
   } catch (error) {
     self.postMessage({ id, error: error instanceof Error ? error.message : String(error) })
   } finally {

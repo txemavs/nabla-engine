@@ -57,3 +57,86 @@ it('batches immutable authored roads, preserves offsets, culls and returns to ed
   batch.dispose()
   expect(batch.root.children).toHaveLength(0)
 })
+
+function roadFixture(count: number) {
+  const entities = Array.from({ length: count }, (_, i) => ({
+    ...createEntity(`road-${i}`, 'group', [i * 256 + 20, 0, 0]),
+    road: {
+      paths: [
+        [
+          [0, 0, 0],
+          [10, 0, 0],
+        ],
+      ] as [number, number, number][][],
+      width: 5,
+      terrainId: 'ground',
+    },
+    source: {
+      provider: 'openstreetmap' as const,
+      id: `way/${i}`,
+      retrievedAt: '2026-09-22',
+      tags: {},
+    },
+  }))
+  const objects = new Map(
+    entities.map((e) => {
+      const group = new Group()
+      group.position.fromArray(e.transform.position)
+      group.add(new Mesh(new BoxGeometry(10, 0.02, 5), new MeshStandardMaterial()))
+      return [e.id, group] as const
+    }),
+  )
+  return { entities, objects }
+}
+
+it('keeps all 800 resident cell buffers when another sector arrives and leaves', () => {
+  const { entities, objects } = roadFixture(801)
+  const batch = new RoadBatches()
+  const eye = new Vector3()
+  batch.update(entities.slice(0, 800), objects, true, eye, 4000)
+  const resident = [...batch.root.children]
+  let disposed = 0
+  resident.forEach((m) => (m as Mesh).geometry.addEventListener('dispose', () => disposed++))
+  batch.update(entities, objects, true, eye, 4000)
+  expect(batch.root.children).toHaveLength(801)
+  expect(batch.root.children.slice(0, 800)).toEqual(resident)
+  expect(disposed).toBe(0)
+  batch.update(entities.slice(0, 800), objects, true, eye, 4000)
+  expect(batch.root.children).toEqual(resident)
+  expect(disposed).toBe(0)
+  batch.dispose()
+  expect(disposed).toBe(800)
+})
+
+it('rebuilds only an edited cell and removes the previous cell when a road moves', () => {
+  const { entities, objects } = roadFixture(3)
+  const batch = new RoadBatches()
+  const eye = new Vector3()
+  batch.update(entities, objects, true, eye, 4000)
+  const retained = batch.root.children.slice(1)
+  const changed = { ...entities[0], color: '#ff0000' }
+  objects.get(changed.id)!.position.x = 1024
+  batch.update([changed, ...entities.slice(1)], objects, true, eye, 4000)
+  expect(batch.root.children).toHaveLength(3)
+  expect(batch.root.children.slice(0, 2)).toEqual(retained)
+  const edited = batch.root.children[2] as Mesh
+  expect(edited.geometry.boundingSphere!.center.x).toBeCloseTo(1024)
+  expect((edited.material as MeshStandardMaterial).color.getHexString()).toBe('ff0000')
+  batch.dispose()
+})
+
+it('defers hidden road geometry and reconciles streaming changes when enabled again', () => {
+  const { entities, objects } = roadFixture(3)
+  const batch = new RoadBatches()
+  const eye = new Vector3()
+  batch.update(entities, objects, true, eye, 0)
+  expect(batch.root.children).toHaveLength(0)
+  batch.update(entities, objects, true, eye, 4000)
+  const retained = batch.root.children[1]
+  batch.update(entities.slice(1), objects, true, eye, 0)
+  expect(batch.root.visible).toBe(false)
+  batch.update(entities.slice(1), objects, true, eye, 4000)
+  expect(batch.root.children).toHaveLength(2)
+  expect(batch.root.children[0]).toBe(retained)
+  batch.dispose()
+})

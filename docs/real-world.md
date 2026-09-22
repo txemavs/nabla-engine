@@ -330,3 +330,24 @@ browser scheduling or other work outside the measured frame. Try road detail at
 integration, scene validation and road mesh generation on tile arrival can still
 cause occasional stalls; these changes do not claim to eliminate every source of
 stutter or guarantee a hardware-independent frame rate.
+
+### Incremental render preparation
+
+Streamed sectors now prepare terrain, terrain-clipped road meshes, building triangles
+and vertex normals in the world worker. Typed position, normal and index buffers are
+transferred to the renderer rather than cloned. The scene view adopts these arrays
+directly. Render buffers are ephemeral, consumed once and never serialized into scene
+JSON, undo history or the persistent geographic cache. Initial saved scenes and travel
+destinations retain the synchronous fallback; this change targets arrivals during play.
+
+Road batches retain their 256 m spatial cells across streaming updates. Adding,
+removing or replacing a road rebuilds only cells containing that road. Unaffected GPU
+buffers remain resident. Disabling road detail defers batch reconciliation until it
+is enabled again; individual authored roads remain available in edit mode.
+
+Regression coverage verifies that adding/removing a separate cell preserves all 800
+resident cell meshes, including their buffers, and that transferred geometry matches
+the original draped surface. This is a work-elimination guarantee, not an FPS claim.
+The browser performance fixture still checks draw-call bounds and road-distance controls.
+GPU uploads, collision installation and whole-document validation remain synchronous;
+precomputed geographic tiles and progressive terrain LOD remain separate improvements.
