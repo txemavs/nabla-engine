@@ -181,6 +181,29 @@ Bridge/tunnel/construction/step road features are omitted rather than presented 
 correct drivable structures. The elevation source is terrain, not a surveyed road
 surface model. The remaining streets follow it, including unmodeled grade changes.
 
+### Road modes
+
+Roads support two surface modes via `road.mode`:
+
+| Mode | Behaviour |
+|------|-----------|
+| `raw` (default) | Drapes the road ribbon directly onto the terrain heightfield. The asphalt follows every DEM dip and ridge. Collision uses the terrain collider. |
+| `smooth-float` | Longitudinally smoothed centreline height with laterally flat cross-section (roll ≈ 0). The ribbon floats above DEM valleys to avoid potholes while staying close to the surveyed profile. Collision matches the visual smooth surface, not the terrain underneath. |
+
+**Smooth-float constants** (exported from `draped-road.ts`):
+
+- `SMOOTH_FLOAT_MIN_OFFSET = 0.1 m` — minimum elevation above the DEM to prevent z-fighting.
+- `SMOOTH_FLOAT_WINDOW = 30 m` — longitudinal smoothing radius; centreline heights are averaged within this distance.
+
+Smooth-float roads add per-triangle collision prisms, so vehicles drive on the
+visible ribbon rather than clipping through to the raw terrain. This mode is
+intended for highways and main roads where a smoother driving experience matters
+more than pixel-accurate DEM fidelity. Bridges and tunnels (features with
+`bridge=yes` or `tunnel=yes`) skip the smooth-float layer and remain omitted.
+
+Set `road.mode` per entity, or pass `roadMode` to `createRealWorld()` to apply a
+default to all generated roads in a tile.
+
 Buildings retain their OSM type/ID, retrieval time and source tags. They use the
 solid editor and can be recolored, reshaped, cloned or removed. Saves store a full
 local scene snapshot; reload preserves modifications without regenerating the

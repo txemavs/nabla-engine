@@ -99,6 +99,7 @@ const entitySchema = z
         paths: z.array(z.array(vector).min(2).max(8192)).min(1).max(8192),
         width: finite.min(0.5).max(30),
         terrainId: z.string(),
+        mode: z.enum(['raw', 'smooth-float']).optional(),
       })
       .strict()
       .optional(),

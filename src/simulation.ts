@@ -7,6 +7,7 @@ import { EARTH_RADIUS, localFrame, localToGeo } from './geography.js'
 import { OBB } from 'three/addons/math/OBB.js'
 import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition } from './vehicle.js'
+import { smoothFloatRoadGeometry } from './draped-road.js'
 import {
   Heightfield,
   ConvexPolyhedron,
@@ -298,7 +299,8 @@ export class Simulation {
     this.world.broadphase.dirty = true
   }
   private addEntityBody(e: Entity): void {
-    if ((e.motion === 'none' && !e.portal) || (e.portal && e.parentId)) return
+    const isSmoothFloatRoad = e.road?.mode === 'smooth-float'
+    if ((e.motion === 'none' && !e.portal && !isSmoothFloatRoad) || (e.portal && e.parentId)) return
     if (e.source && e.geometry && e.motion === 'static' && !this.mapBuildingsEnabled) return
     const transform = this.graph.worldTransform(e.id)
     const body = new Body({
@@ -371,6 +373,48 @@ export class Simulation {
         new Vec3(...collider.transform.position),
         new Quaternion(...collider.transform.rotation),
       )
+    if (isSmoothFloatRoad && e.road) {
+      const terrainEntity = this.entitiesById.get(e.road.terrainId)
+      if (terrainEntity?.terrain) {
+        const roadGeometry = smoothFloatRoadGeometry(
+          terrainEntity.terrain,
+          e.road.paths,
+          e.road.width,
+        )
+        for (const face of roadGeometry.faces) {
+          const points = face.map((i) => new Vector3(...roadGeometry.vertices[i]))
+          const n = points[1]
+            .clone()
+            .sub(points[0])
+            .cross(points[2].clone().sub(points[0]))
+            .normalize()
+            .multiplyScalar(0.025)
+          const center = points
+            .reduce((a, p) => a.add(p), new Vector3())
+            .multiplyScalar(1 / 3)
+            .add(n)
+          const vertices = [
+            ...points.map((p) => p.clone().addScaledVector(n, 2)),
+            ...points.map((p) => p.clone()),
+          ]
+            .map((p) => p.sub(center))
+            .map((p) => new Vec3(p.x, p.y, p.z))
+          body.addShape(
+            new ConvexPolyhedron({
+              vertices,
+              faces: [
+                [0, 1, 2],
+                [5, 4, 3],
+                [0, 3, 4, 1],
+                [1, 4, 5, 2],
+                [2, 5, 3, 0],
+              ],
+            }),
+            new Vec3(center.x, center.y, center.z),
+          )
+        }
+      }
+    }
     body.position.set(...transform.position)
     body.quaternion.set(...transform.rotation)
     body.previousPosition.copy(body.position)
@@ -379,6 +423,7 @@ export class Simulation {
     body.angularDamping = 0.35
     this.bodies.set(e.id, body)
     if (e.source && e.motion === 'static' && !e.terrain && !e.portal) this.mapBodies.set(e.id, body)
+    if (isSmoothFloatRoad && e.source) this.mapBodies.set(e.id, body)
     if (e.kind === 'vehicle') this.createVehicle(e, body)
     else this.world.addBody(body)
   }

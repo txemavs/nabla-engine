@@ -20,7 +20,13 @@ export { createRealWorld, IRUN_VENTAS } from './real-world.js'
 export type { WorldExtract, MapFeature } from './real-world.js'
 export { terrainHeight, terrainVertices, terrainIndices } from './terrain.js'
 export type { TerrainData } from './terrain.js'
-export { roadGeometry } from './draped-road.js'
+export {
+  roadGeometry,
+  smoothFloatRoadGeometry,
+  SMOOTH_FLOAT_MIN_OFFSET,
+  SMOOTH_FLOAT_WINDOW,
+  type RoadMode,
+} from './draped-road.js'
 
 export { WorldStream, wantedWorldTiles, worldTileAt, WORLD_TILE_SIZE } from './world-stream.js'
 export type { WorldStreamHost } from './world-stream.js'

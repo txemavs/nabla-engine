@@ -14,6 +14,7 @@ import { terrainHeight, type TerrainData } from './terrain.js'
 import { validateSolid, type SolidGeometry } from './solid.js'
 import { treeSprite } from './vegetation.js'
 import { buildingRoof } from './building-roof.js'
+import type { RoadMode } from './draped-road.js'
 
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 export interface MapFeature {
@@ -37,7 +38,7 @@ const number = (value: string | undefined, fallback: number) => {
 /** Bounded real-data district. No synthetic replacement for missing streets or heights. */
 export function createRealWorld(
   data: WorldExtract,
-  options: { offset?: [number, number]; tileId?: string } = {},
+  options: { offset?: [number, number]; tileId?: string; roadMode?: RoadMode } = {},
 ): SceneDocument {
   const [ox, oz] = options.offset ?? [0, 0]
   const suffix = options.tileId && options.tileId !== '0_0' ? `-${options.tileId}` : ''
@@ -168,7 +169,7 @@ export function createRealWorld(
       if (paths.length) {
         const e = createEntity('osm-' + f.id.replace('/', '-') + suffix, 'group')
         e.name = tags.name ?? tags.highway
-        e.road = { paths, width, terrainId: terrain.id }
+        e.road = { paths, width, terrainId: terrain.id, mode: options.roadMode }
         e.color = foot ? '#b2b0a0' : '#525c60'
         e.parentId = groups[1]
         e.source = source(f)

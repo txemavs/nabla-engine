@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry } from 'three'
-import { roadGeometry } from '../src/draped-road.js'
+import { roadGeometry, smoothFloatRoadGeometry, type RoadMode } from '../src/draped-road.js'
 import { terrainVertices, terrainIndices } from '../src/terrain.js'
 import { triangles } from '../src/solid.js'
 import type { Entity } from '../src/scene.js'
@@ -32,7 +32,10 @@ export function receiveMapGeometry(entities: Entity[], buffers: PreparedMapGeome
 }
 
 /** Called in the map worker, including expensive terrain clipping and normal generation. */
-export function prepareMapGeometry(entities: Entity[]): PreparedMapGeometry {
+export function prepareMapGeometry(
+  entities: Entity[],
+  defaultRoadMode: RoadMode = 'raw',
+): PreparedMapGeometry {
   const byId = new Map(entities.map((e) => [e.id, e]))
   const result: PreparedMapGeometry = Object.create(null)
   for (const e of entities) {
@@ -40,7 +43,11 @@ export function prepareMapGeometry(entities: Entity[]): PreparedMapGeometry {
     if (e.road) {
       const terrain = byId.get(e.road.terrainId)?.terrain
       if (!terrain) continue // A separately authored reference is handled by the scene renderer.
-      const data = roadGeometry(terrain, e.road.paths, e.road.width)
+      const mode = e.road.mode ?? defaultRoadMode
+      const data =
+        mode === 'smooth-float'
+          ? smoothFloatRoadGeometry(terrain, e.road.paths, e.road.width)
+          : roadGeometry(terrain, e.road.paths, e.road.width)
       vertices = data.vertices.flat()
       indices = data.faces.flat()
     } else if (e.terrain) {

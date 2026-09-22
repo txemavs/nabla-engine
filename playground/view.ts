@@ -6,7 +6,7 @@ import { CarInstruments } from './car-instruments.js'
 import { RoadBatches } from './road-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
-import { roadGeometry } from '../src/draped-road.js'
+import { roadGeometry, smoothFloatRoadGeometry } from '../src/draped-road.js'
 import { terrainVertices, terrainIndices } from '../src/terrain.js'
 import { triangles } from '../src/solid.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
@@ -235,7 +235,11 @@ export class SceneView {
         let g = takeMapGeometry(e)
         if (!g) {
           const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!
-          const data = roadGeometry(t, e.road.paths, e.road.width)
+          const mode = e.road.mode ?? 'raw'
+          const data =
+            mode === 'smooth-float'
+              ? smoothFloatRoadGeometry(t, e.road.paths, e.road.width)
+              : roadGeometry(t, e.road.paths, e.road.width)
           g = new THREE.BufferGeometry()
           g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))
           g.setIndex(data.faces.flat())
