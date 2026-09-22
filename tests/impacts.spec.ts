@@ -22,6 +22,7 @@ test('leaves visible persistent surface marks and clears them when play stops', 
     ),
   })
   await page.locator('#play').click()
+  await page.keyboard.press('Tab')
   await page.locator('#viewport > canvas').click()
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(true)
   await page.mouse.click(700, 450)
@@ -34,6 +35,6 @@ test('leaves visible persistent surface marks and clears them when play stops', 
   await page.waitForTimeout(1000)
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-impacts', '2')
   await page.screenshot({ path: 'test-results/impact-marks.png' })
-  await page.keyboard.press('Tab')
+  await page.keyboard.press('F8')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-impacts', '0')
 })

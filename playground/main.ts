@@ -76,6 +76,7 @@ let sim: Simulation | null = null
 let needsRender = true
 let firstPerson = true
 let fireRequested = false
+let weaponDrawn = false
 let cameraMode: 'chase' | 'cockpit' | 'map' = 'chase'
 let headYaw = 0
 let headPitch = 0.05
@@ -856,6 +857,7 @@ function togglePlay(): void {
       sim.setCollisionDistance(performanceSettings.collisions)
       firstPerson = true
       fireRequested = false
+      weaponDrawn = false
       sidearm.reset()
       gallery.reset()
       portalSequence = 0
@@ -874,11 +876,11 @@ function togglePlay(): void {
       refreshUi()
     }
     document.body.classList.toggle('playing', !!sim)
-    $('play').innerHTML = sim ? '■ Detener <kbd>Tab</kbd>' : '▶ Jugar <kbd>Tab</kbd>'
+    $('play').innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
     $('mode-label').textContent = sim ? 'Jugando' : 'Edición'
     $('game-hud').hidden = !sim
     $('view-hint').textContent = sim
-      ? 'Clic para mirar con el ratón · E entrar / salir · Tab detener'
+      ? 'Clic para mirar con el ratón · E entrar / salir · Tab sacar / guardar arma · F8 detener'
       : 'Arrastra para orbitar · Rueda para acercar · Clic para seleccionar'
     $('footer-mode').textContent = sim
       ? 'Simulación compartida · 60 Hz'
@@ -958,6 +960,7 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
     e.button === 0 &&
     sim &&
     !sim.player.vehicleId &&
+    weaponDrawn &&
     document.pointerLockElement === renderer.domElement
   )
     fireRequested = true
@@ -1031,7 +1034,16 @@ document.addEventListener('mousemove', (e) => {
 window.addEventListener('keydown', (e) => {
   if (document.querySelector('.app-menu:popover-open')) return
   if ((e.target as HTMLElement)?.matches('input,select,textarea,[contenteditable]')) return
-  if (e.code === 'Tab') {
+  if (e.code === 'Tab' && sim) {
+    e.preventDefault()
+    if (!e.repeat && !sim.player.vehicleId) {
+      weaponDrawn = !weaponDrawn
+      fireRequested = false
+      toast(weaponDrawn ? 'Arma desenfundada' : 'Arma guardada')
+    }
+    return
+  }
+  if (e.code === 'F8') {
     e.preventDefault()
     if (!e.repeat) togglePlay()
     return
@@ -1418,7 +1430,7 @@ function frame(now: number): void {
     renderOrigin,
     cameraMode === 'cockpit',
   )
-  sidearm.visible = !!sim && !sim.player.vehicleId
+  sidearm.visible = !!sim && !sim.player.vehicleId && weaponDrawn
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
     if (sidearm.fire(now)) {

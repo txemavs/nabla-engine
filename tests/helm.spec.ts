@@ -127,3 +127,33 @@ test('flies using the horizontal CSS desk and releases held input', async ({ pag
   await page.screenshot({ path: 'test-results/touch-helm.png' })
   expect(errors).toEqual([])
 })
+
+test('keeps CSS screens active and clickable from the rear of the occupied interior', async ({
+  page,
+}) => {
+  await page.goto('/?scene=circuit')
+  await page.locator('#file').setInputFiles({
+    name: 'interior-screens.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        version: 1,
+        name: 'Interior screens',
+        entities: [
+          { ...createEntity('ground', 'box', [0, -0.5, 0]), size: [100, 1, 100] },
+          createEntity('spawn', 'spawn', [0, 1, 2]),
+          createCarrier('ship', [0, 1.2, 0]),
+        ],
+      }),
+    ),
+  })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
+  await page.locator('#play').click()
+  await expect(page.locator('#player-mode')).toContainText('INTERIOR DE LA NAVE')
+  await expect(page.locator('.telemetry-console')).toHaveAttribute('data-active', 'true')
+  await expect(page.locator('.touch-console')).toHaveAttribute('data-active', 'true')
+  const open = page.locator('.helm-portal').getByRole('button', { name: 'Abrir', exact: true })
+  await page.waitForTimeout(700)
+  await open.click({ timeout: 10000 })
+  await expect(page.locator('#toast')).toContainText('Elige un destino primero')
+})

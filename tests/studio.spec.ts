@@ -79,7 +79,7 @@ test('organizes file actions and settings outside the selection inspector', asyn
   await page.locator('#options-menu-button').click()
   await page.locator('#performance-section > summary').click()
   await page.locator('#draw-distance').selectOption('2000')
-  await page.keyboard.press('Tab')
+  await page.keyboard.press('F8')
   await expect(page.locator('#mode-label')).toHaveText('Edición')
   await page.locator('#file-menu-button').click()
   await expect(page.locator('#options-menu')).toBeHidden()

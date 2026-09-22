@@ -253,16 +253,20 @@ export class PortalControls {
       const activationPoint = consoleMesh
         ? consoleMesh.getWorldPosition(new THREE.Vector3()).add(renderOrigin)
         : point
-      const piloting = cockpit && !!mouth.parentId && sim.player.vehicleId === mouth.parentId
+      const aboard =
+        !!mouth.parentId &&
+        (sim.player.interiorId === mouth.parentId || sim.player.vehicleId === mouth.parentId)
       if (
-        !piloting &&
+        !aboard &&
         (sim.player.vehicleId ||
           new THREE.Vector3(...sim.player.position).distanceTo(activationPoint) >= 1 ||
           camera.position.distanceTo(activationPoint) >= 1)
       )
         continue
-      const clear = sim.cameraPosition(camera.position.toArray(), point.toArray())
-      if (new THREE.Vector3(...clear).distanceTo(point) > 0.12) continue
+      if (!aboard) {
+        const clear = sim.cameraPosition(camera.position.toArray(), point.toArray())
+        if (new THREE.Vector3(...clear).distanceTo(point) > 0.12) continue
+      }
       const screen = point.clone().project(camera)
       if (
         !mouth.parentId &&
@@ -290,8 +294,10 @@ export class PortalControls {
       anchor.updateWorldMatrix(true, false)
       const activation = anchor.getWorldPosition(new THREE.Vector3()).add(renderOrigin)
       const piloting = cockpit && sim.player.vehicleId === entry.carrier
+      const aboard =
+        sim.player.interiorId === entry.carrier || sim.player.vehicleId === entry.carrier
       if (
-        !piloting &&
+        !aboard &&
         (sim.player.vehicleId ||
           camera.position.distanceTo(activation) >= 1 ||
           new THREE.Vector3(...sim.player.position).distanceTo(activation) >= 1)
@@ -302,6 +308,7 @@ export class PortalControls {
       const normal = new THREE.Vector3(0, 0, 1).transformDirection(mesh.matrixWorld)
       if (camera.position.clone().sub(point).dot(normal) <= 0) continue
       if (
+        !aboard &&
         new THREE.Vector3(
           ...sim.cameraPosition(camera.position.toArray(), point.toArray()),
         ).distanceTo(point) > 0.12

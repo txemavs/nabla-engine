@@ -34,8 +34,7 @@ hands can hold separate pointers. Motion requires piloting this ship in flight
 mode; releasing/cancelling a pointer, losing focus, changing pointer lock or
 leaving range releases held input. Keyboard and gamepad remain available.
 
-Screens activate within one metre of the centre console, or while piloting in
-cockpit view. Press G for native HTML interaction. In edit mode, **Options →
+Screens stay active anywhere inside the carrier, including its pilot seat. Outside the carrier, the one-metre proximity rule still applies. Press G for native HTML interaction. In edit mode, **Options →
 Carrier console** (**Opciones → Consola de la nave**) frames the helm. The former
 side-wall drawing demonstration is replaced by these controls.
 

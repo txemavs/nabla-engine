@@ -17,7 +17,7 @@ and motion. Original GLB vehicles preserve their authored dimensions and materia
 | Save locally          | Guardar / Ctrl/Cmd+S                             |
 | Export / import scene | Exportar / Abrir JSON                            |
 | Load current example  | Escena A3                                        |
-| Play / stop           | Jugar / Detener / Tab                            |
+| Play / stop           | Jugar / Detener / F8                             |
 
 Reparenting preserves the world transform. Groups can be expanded in the scene
 tree. Saving stores the authored document, not the runtime physics state.
@@ -123,8 +123,8 @@ the carrier and CSS-interior experience.
 
 ## Driving camera and avatar
 
-The cockpit eye sits 0.26 m forward and 0.10 m below the authored driver anchor
-in ordinary cars; the carrier cockpit is unchanged. This is a host camera offset,
+The cockpit eye sits 0.26 m forward and 0.15 m below the authored driver anchor
+in ordinary cars. The carrier eye sits 0.20 m back and 0.10 m below its pilot anchor. This is a host camera offset,
 so existing saved A3 scenes receive the improvement without rewriting their data.
 The cockpit position and orientation are rigidly attached to the interpolated
 vehicle pose, including pitch and roll. Mouse look rotates the head relative to
@@ -162,7 +162,7 @@ above the surface below to recover normal clearance. **Space** gives one upward
 impulse followed by a fall; it does not select a permanent height. The library's default walking controller remains available; the playground
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
-Click the viewport once to capture the mouse, then left-click to fire. The centre
+The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Click the viewport once to capture the mouse, then left-click to fire with the weapon drawn. The centre
 reticle shows aim and briefly changes to a cross on impact. The supplied HK USP Compact body and separate slide
 have muzzle flash, recoil and a visual slide cycle, with a 220 ms shot interval. Shots stop at the first
 physical solid and push dynamic props. In third person, a second ray from the
@@ -230,7 +230,7 @@ Use **Scene + → Edificio**, then **Editar geometría** in the inspector. Point
 ## Irun Ventas
 
 New sessions start in the real-data district. **Irún · Ventas** restores its baseline;
-**Escena A3** opens the original test circuit. **Tab** starts play and **E** enters the
+**Escena A3** opens the original test circuit. **F8** starts play and **E** enters the
 nearby A3. The carrier is placed nearby; enter its helm and use **V** to switch flight
 mode, then the existing lift/flight controls. Buildings under **Edificios OSM** use
 the same color and geometry editor. Save preserves a local snapshot. GPS relocation
@@ -335,3 +335,5 @@ cache, and is installed only if still wanted; the next request uses the latest
 position. Stopping/replacing the scene still cancels its loader. This prevents fast
 flight from repeatedly aborting cold sectors, but does not guarantee that public
 map providers can deliver unseen terrain ahead of a vehicle at 1000 km/h.
+
+Carrier screens stay active throughout the occupied interior, without a proximity requirement. Use **G** to release the mouse for native CSS clicks. Driving controls still require the pilot seat. The carrier eye and monitor anchor sit 10 cm lower and 20 cm behind the authored pilot reference.

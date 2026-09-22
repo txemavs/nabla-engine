@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Start with the weapon holstered; Tab draws/holsters it and F8 starts/stops play.
+- Keep carrier screens active throughout the occupied interior and lower/retract the pilot eye and monitor anchor by 10/20 cm.
+
 - Preserve generated map fingerprints across saves so unchanged sectors remain evictable; verify legacy saved zones against their source before reclaiming them.
 - Let moving-world downloads finish warming the cache instead of repeatedly cancelling them in fast flight; retain cancellation on scene changes.
 - Retry transient OSM HTTP failures once and use consistent origin-sector identifiers when reloading the starting zone.

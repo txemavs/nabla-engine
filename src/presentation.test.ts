@@ -75,10 +75,11 @@ describe('rigid driver head', () => {
       expect(offset.distanceTo(new Vector3(0, -0.15, -0.26))).toBeLessThan(1e-10)
     }
   })
-  it('looks forward with the car by default and keeps the carrier eye anchor', () => {
+  it('looks forward with the car by default and offsets the carrier eye down and back', () => {
     const body = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2)
     const head = driverHeadPose([1, 2, 3], body.toArray(), true, 0, 0)
-    expect(head.position.toArray()).toEqual([1, 2, 3])
+    const expected = new Vector3(0, -0.1, 0.2).applyQuaternion(body).add(new Vector3(1, 2, 3))
+    expect(head.position.distanceTo(expected)).toBeLessThan(1e-7)
     expect(head.quaternion.angleTo(body)).toBeLessThan(1e-7)
   })
 })
