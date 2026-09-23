@@ -284,3 +284,24 @@ capacity, recovery, retries, validation and authenticated queue access. TypeScri
 tests cover wire paths, compatibility checks, geometry decoding and unauthorized
 client behavior. Use real-server cold/warm checks to verify 200/304 responses and
 that prepared zones arrive in the scene; unit tests alone cannot measure frame pacing.
+
+### Optional public neighbor generation
+
+Set `PREPARE_PUBLIC_NEIGHBORS_PER_HOUR=24` to let visitors without an owner cookie
+queue a tile adjacent to an existing, complete GLB tile at the same zoom, or a
+tile whose footprint overlaps a prepared ancestor/descendant at another supported
+zoom (13, 14 or 15). The default
+is `0` (private generation only). Eight neighbors are supported, with X wrapping at
+the antimeridian and no Y wrapping. Queued tiles do not count as seeds.
+
+The limit is global across visitors and uses a rolling one-hour SQLite admission
+ledger, checked in the same transaction as queue insertion. Restarts and concurrent
+requests do not reset or multiply it. Duplicate requests do not consume another
+slot or reprioritize private work. Owner requests bypass this public limit, but
+retain normal queue capacity and worker limits. A completed public tile may seed
+further expansion within the same global allowance.
+
+`/prepare/tiles` reports `generationAccess` as `owner`, `neighbors` or `read-only`.
+`authorized` still means **owner authentication**: it can be false while a neighbor
+request is accepted. All visitors can download existing artifacts. Private session
+activation is needed to begin a disconnected region or bypass the public allowance.

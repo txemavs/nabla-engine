@@ -67,6 +67,7 @@ export class PlanetWorld {
   private serial = 0
   private disposed = false
   private busy = false
+  private discoveryOffset = 0
   private next = 0
   private distance = 4000
   private originOffset = new THREE.Vector3()
@@ -172,6 +173,11 @@ export class PlanetWorld {
         this.ready.get(mapTileId(t))?.geometryRevision !== 'native-surfaces-v2',
     )
     if (!missing.length) return
+    // Public requests may be ineligible; do not let the first rejected batch
+    // permanently hide available/adjacent cells later in the flight plan.
+    const offset = this.access ? 0 : this.discoveryOffset % missing.length
+    const batch = [...missing.slice(offset), ...missing.slice(0, offset)].slice(0, 24)
+    this.discoveryOffset = (offset + batch.length) % missing.length
     this.busy = true
     this.next = Date.now() + 3000
     try {
@@ -179,19 +185,21 @@ export class PlanetWorld {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keys: missing.slice(0, 24).map(mapTilePath) }),
+        body: JSON.stringify({ keys: batch.map(mapTilePath) }),
         signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(15000)]),
       })
       if (!response.ok) throw Error(`HTTP ${response.status}`)
       const data = await response.json()
       this.access = !!data.authorized
-      for (const tile of missing.slice(0, 24)) {
+      for (const tile of batch) {
         const value = data.available?.[mapTilePath(tile)]
         if (value) this.ready.set(mapTileId(tile), validatePlanetManifest(value, tile))
       }
       this.status = this.access
         ? 'Preparando GLB en el servidor…'
-        : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
+        : data.generationAccess === 'neighbors'
+          ? 'GLB vecinos y otros zooms · generación pública limitada · activa tu sesión para otras zonas'
+          : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
       this.pump()
       this.changed()
     } catch (error) {

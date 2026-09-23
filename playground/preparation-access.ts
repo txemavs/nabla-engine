@@ -43,7 +43,7 @@ export async function activatePreparation(): Promise<void> {
         status.replaceChildren()
         const activate = document.createElement('button')
         activate.textContent = 'Activar generación GLB…'
-        activate.title = 'Sin sesión privada solo se descargan baldosas ya preparadas.'
+        activate.title = 'Sin sesión privada solo se generan vecinas si el servidor lo permite.'
         activate.onclick = () => {
           const dialog = document.createElement('dialog')
           const form = document.createElement('form')
@@ -87,7 +87,7 @@ export async function activatePreparation(): Promise<void> {
           dialog.showModal()
           input.focus()
         }
-        status.append('Generación desactivada · ', activate)
+        status.append('Sin sesión de propietario · ', activate)
         return
       }
       if (!response.ok) throw Error()

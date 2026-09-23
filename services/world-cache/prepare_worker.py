@@ -2,6 +2,7 @@
 import json
 import time
 import shutil
+from urllib.error import HTTPError
 from pathlib import Path
 from prepare_planet import prepare
 
@@ -17,6 +18,19 @@ def trim_prepared(publish, target, limit):
             continue
         shutil.rmtree(directory)
         total -= sizes[directory]
+
+
+def failure_detail(error):
+    if isinstance(error, HTTPError):
+        detail = f'OSM cache HTTP {error.code}'
+        try:
+            status = json.loads(error.read(4096)).get('upstreamStatus')
+            if isinstance(status, int):
+                detail += f' (provider HTTP {status})'
+        except (ValueError, OSError, AttributeError):
+            pass
+        return detail
+    return type(error).__name__
 
 
 def run(queue, root, publish, limit):
@@ -35,5 +49,5 @@ def run(queue, root, publish, limit):
             queue.finish(job['id'], True)
             print('Planet preparation ready:', job['tile'], f'{time.monotonic()-started:.1f}s', flush=True)
         except Exception as error:
-            print('Planet preparation failed:', job['tile'], type(error).__name__, flush=True)
+            print('Planet preparation failed:', job['tile'], failure_detail(error), '· queue retry/backoff applies', flush=True)
             queue.finish(job['id'], False)
