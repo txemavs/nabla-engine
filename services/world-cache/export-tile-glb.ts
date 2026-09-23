@@ -64,14 +64,15 @@ await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2))
 console.log(JSON.stringify(report))
 
 // Keep the combined pilot for comparison; production consumes independent layers.
-const tile = decoded as unknown as TileArtifact
+const originalTile = decoded as unknown as TileArtifact
+const tile = compactGround(originalTile, 0.1)
 const files: Record<string, string> = {}
 const hashes: Record<string, string> = {}
 for (const [name, buildings] of [
   ['terrain', false],
   ['buildings-osm', true],
 ] as const) {
-  const layer = root.clone(true)
+  const layer = buildings ? root.clone(true) : tileAsset(tile)
   for (const child of [...layer.children])
     if ((child.name === 'Buildings') !== buildings) layer.remove(child)
   const binary = await new GLTFExporter().parseAsync(layer, { binary: true })
@@ -90,6 +91,19 @@ const id = [
   tile.origin.altitude.toFixed(3),
   tile.key,
 ].join('/')
+const [cellX, cellZ] = tile.key.split('_').map(Number)
+const latitude = tile.origin.latitude - (((cellZ * 1200) / 6371000) * 180) / Math.PI
+const longitude =
+  tile.origin.longitude +
+  (((cellX * 1200) / (6371000 * Math.cos((tile.origin.latitude * Math.PI) / 180))) * 180) / Math.PI
+const coordinate = (n: number, positive: string, negative: string) =>
+  (n < 0 ? negative : positive) + Math.abs(n).toFixed(6)
+const stableId = createHash('sha256').update(id).digest('hex').slice(0, 16)
+const stem = `nabla-earth-${coordinate(latitude, 'N', 'S')}-${coordinate(longitude, 'E', 'W')}-${stableId}`
+const downloads = {
+  terrain: stem + '-terrain-10cm.glb',
+  'buildings-osm': stem + '-buildings-osm.glb',
+}
 await writeFile(
   output + '/manifest.json',
   JSON.stringify({
@@ -99,6 +113,8 @@ await writeFile(
     origin: tile.origin,
     key: tile.key,
     sizeMetres: 1200,
+    groundGridMetres: 0.1,
+    downloads,
     files,
     hashes,
     entities: tile.entities,
@@ -112,7 +128,7 @@ await writeFile(
 // Experimental render-only variants; do not replace near collision-aligned geometry.
 const variants = []
 for (const step of [0.1, 1]) {
-  const compact = compactGround(tile, step)
+  const compact = compactGround(originalTile, step)
   const layer = tileAsset(compact)
   for (const child of [...layer.children]) if (child.name === 'Buildings') layer.remove(child)
   const bytes = (await new GLTFExporter().parseAsync(layer, { binary: true })) as ArrayBuffer

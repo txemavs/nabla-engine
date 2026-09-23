@@ -178,3 +178,14 @@ renderer.setAnimationLoop(() => {
 })
 table()
 void load('glb')
+
+void fetch('/experiments/tile-glb/irun/manifest.json', { cache: 'no-cache' })
+  .then((r) => (r.ok ? r.json() : undefined))
+  .then((manifest) => {
+    for (const layer of ['terrain', 'buildings-osm']) {
+      const filename = manifest?.downloads?.[layer]
+      if (typeof filename === 'string' && /^nabla-earth-[a-zA-Z0-9.-]+\.glb$/.test(filename))
+        (element('download-' + layer) as HTMLAnchorElement).download = filename
+    }
+  })
+  .catch(() => {})

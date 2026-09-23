@@ -83,3 +83,19 @@ The first saves 14.6%; the second 15.8%. This does not establish an FPS gain or 
 production LOD. Browser previews loaded both, and 298 TypeScript unit tests plus
 35 cache-service tests passed. The geographic streaming migration remains the
 explicit next architectural stage above.
+
+## Near GLB activation, 2026-09-23
+
+Following approval of the 10 cm preview, the exporter now writes the compacted
+10 cm ground as the normal `terrain.glb`. The existing runtime manifest selects
+it. Roads, thin rails, buildings and authored edits retain their prior precision;
+physics retains the source heightfield (at most 5 cm per-axis rounding on the
+quantized ground). The 1 m variant remains a preview only. Existing sidecars need
+regeneration; future preparation jobs produce 10 cm ground automatically.
+
+Download names contain hemisphere-labelled centre coordinates, a stable 16-hex
+footprint token, and `terrain-10cm.glb` or `buildings-osm.glb`. The token derives
+from the full existing tile identity, independently of content or viewing position.
+The manifest retains the full geographic frame and layer hashes. These names do
+not claim that legacy footprints have already migrated to the global grid.
+The viewer uses manifest download names; server layer URLs remain stable.
