@@ -81,3 +81,32 @@ sea level or inflate the planet radius.
 Tests cover ground-to-orbit and orbit-to-ground atmospheric separation, cleanup on
 render failure, an orbital working-frame origin, global pose migration, stable
 identities, and roundtrip precision/orientation/velocity across Madrid and Sydney.
+
+## Geographic anchors in the inspector
+
+For a georeferenced root object (or a feature under an unmodified generated map
+group), Studio presents longitude, latitude and model altitude first. An implicit
+anchor coincides with the object's world position, so the local translation reads
+zero. Orientation is expressed in the tangent frame at that anchor, not the
+working set's original tangent frame.
+
+Editing a local offset pins an explicit optional Entity.geoAnchor. That anchor
+survives scene/project serialization; the runtime transform remains the derived
+working-frame pose. Editing GPS moves the anchor and preserves that local pose.
+“Ancla en la posición actual · XYZ a cero” removes the fixed anchor without moving
+the object. Ordinary children display their actual GPS read-only and keep their
+pose relative to their parent. This supports a geographically placed custom floor
+with a local simulation hierarchy beneath it.
+
+During play, the inspector refreshes the implicit GPS position from the simulated
+object; play poses do not silently overwrite authored scene data. Planetary
+WorldPose remains the authoritative persisted global pose for georeferenced roots.
+The engine still renders/simulates in nearby local coordinates for precision.
+GPS entry outside the current working frame's supported bounds is rejected with
+an instruction to open the destination through Travel; this does not implement
+cross-city physical transfer. Altitudes use Nabla's sphere, not a surveyed geoid.
+
+Solid selection now traces the actual face boundaries in object space, including
+rotated or irregular building footprints. It no longer substitutes an enclosing
+box for editable/generated solids. Geometry is rebuilt only when the selected
+topology changes; other asset types retain the existing oriented bounds.

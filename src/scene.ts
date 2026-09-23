@@ -80,6 +80,14 @@ const entitySchema = z
       .optional(),
     kind: z.enum(['group', 'box', 'vehicle', 'spawn', 'solid', 'terrain']),
     transform,
+    geoAnchor: z
+      .object({
+        latitude: finite.min(-90).max(90),
+        longitude: finite.min(-180).max(180),
+        altitude: finite,
+      })
+      .strict()
+      .optional(),
     size,
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     motion: z.enum(['none', 'static', 'dynamic']),

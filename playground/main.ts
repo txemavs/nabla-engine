@@ -1,3 +1,4 @@
+import { geographicPose, anchoredWorldPose } from './studio/geographic-pose.js'
 import { prepareStartup } from './startup.js'
 import { authoredTree, isMapEnvironment } from './studio/outliner.js'
 import { RemotePortalViews } from './remote-portals.js'
@@ -107,6 +108,7 @@ let savedDocument = editor.serialize()
 const collapsed = new Set(
   editor.document.entities.filter((e) => e.kind === 'group').map((e) => e.id),
 )
+let selectedGeometry: Entity['geometry']
 let selectedId =
   editor.document.entities.find((e) => e.kind === 'vehicle')?.id ?? editor.document.entities[0].id
 let sim: Simulation | null = null
@@ -584,14 +586,30 @@ function refreshUi(): void {
   }
   const e = doc.entities.find((item) => item.id === selectedId)!
   const props = $('properties')
-  const angles = toDegrees(e.transform.rotation)
+  selectedGeometry = e.geometry
+  // Only the selected ancestry is needed here; avoid allocating a graph for the entire map.
+  const ancestry = [e]
+  const byId = new Map(doc.entities.map((entity) => [entity.id, entity]))
+  let ancestor = e
+  while (ancestor.parentId) {
+    ancestor = byId.get(ancestor.parentId)!
+    ancestry.push(ancestor)
+  }
+  const graph = SceneGraph.fromValidated({ ...doc, entities: ancestry })
+  const parent = doc.entities.find((p) => p.id === e.parentId)
+  const geographic =
+    doc.geography && (!parent || (isMapEnvironment(parent) && !parent.mapEditable))
+      ? geographicPose(doc.geography, graph.worldTransform(e.id), e.geoAnchor)
+      : undefined
+  const displayedPose = geographic?.pose ?? e.transform
+  const angles = toDegrees(displayedPose.rotation)
   function row(label: string, key: string, values: number[]): string {
     return `<label class="field-label">${label}</label><div class="axis-row">${values.map((n, i) => `<label><span>${'XYZ'[i]}</span><input aria-label="${label} ${'XYZ'[i]}" data-vector="${key}" data-axis="${i}" type="number" step="${key === 'rotation' ? '1' : '0.1'}" value="${Number(n.toFixed(3))}"></label>`).join('')}</div>`
   }
   props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${e.light ? 'Farola · iluminación' : { terrain: 'Relieve · Esri Terrain 3D', solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
     <label class="field-label">Capacidades</label><div class="entity-capabilities">${entityCapabilities(e).map(escape).join(' · ')}</div>
     <label class="field-label" for="name">Nombre</label><input id="name" value="${escape(e.name)}" maxlength="100">
-    ${row('Posición local · m', 'position', e.transform.position)}${row('Rotación local · °', 'rotation', angles)}
+    ${row(geographic ? 'Pose desde ancla · m' : 'Posición respecto al padre · m', 'position', displayedPose.position)}${row('Rotación local · °', 'rotation', angles)}
     ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
     <label class="field-label" for="color">Color</label><input id="color" type="color" value="${e.color}">
     <label class="field-label" for="parent">Padre</label><select id="parent"><option value="">Mundo</option>${doc.entities
@@ -609,6 +627,67 @@ function refreshUi(): void {
     ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
+  if (geographic) {
+    const geo = document.createElement('section')
+    geo.id = 'entity-geography'
+    geo.innerHTML =
+      '<label class="field-label">Ancla geográfica · altitud sobre el modelo terrestre</label>'
+    for (const [key, title] of [
+      ['longitude', 'Longitud'],
+      ['latitude', 'Latitud'],
+      ['altitude', 'Altitud · m'],
+    ] as const) {
+      const label = document.createElement('label')
+      label.textContent = title
+      const input = document.createElement('input')
+      input.type = 'number'
+      input.step = key === 'altitude' ? '0.1' : '0.000001'
+      input.id = 'entity-' + key
+      input.value = String(Number(geographic.anchor[key].toFixed(key === 'altitude' ? 3 : 8)))
+      input.onchange = () =>
+        action(() => {
+          const anchor = { ...geographic.anchor, [key]: input.valueAsNumber }
+          const world = anchoredWorldPose(doc.geography!, anchor, geographic.pose)
+          editor.update(e.id, {
+            ...(e.geoAnchor ? { geoAnchor: anchor } : {}),
+            transform: graph.localFromWorld(e.parentId, world),
+          })
+          rebuild()
+        })
+      label.append(input)
+      geo.append(label)
+    }
+    const reset = document.createElement('button')
+    reset.textContent = 'Ancla en la posición actual · XYZ a cero'
+    reset.onclick = () =>
+      action(() => {
+        editor.update(e.id, { geoAnchor: undefined })
+        rebuild()
+      })
+    geo.append(reset)
+    props.querySelector('#name')!.after(geo)
+  }
+  if (doc.geography && !geographic) {
+    const geo = geographicPose(doc.geography, graph.worldTransform(e.id)).anchor
+    const section = document.createElement('section')
+    section.id = 'entity-geography'
+    section.innerHTML = '<label class="field-label">GPS del objeto · pose relativa al padre</label>'
+    for (const [key, title] of [
+      ['longitude', 'Longitud'],
+      ['latitude', 'Latitud'],
+      ['altitude', 'Altitud · m'],
+    ] as const) {
+      const label = document.createElement('label')
+      label.textContent = title
+      const input = document.createElement('input')
+      input.id = 'entity-' + key
+      input.disabled = true
+      input.value = String(Number(geo[key].toFixed(key === 'altitude' ? 3 : 8)))
+      label.append(input)
+      section.append(label)
+    }
+    props.querySelector('#name')!.after(section)
+  }
   if (e.road && !sim && (!e.road.elevation || e.road.elevation === 'terrain')) {
     const label = document.createElement('label')
     label.className = 'field-label'
@@ -765,11 +844,23 @@ function refreshUi(): void {
         const axis = Number(input.dataset.axis),
           key = input.dataset.vector!
         const values = [
-          ...(key === 'rotation' ? angles : key === 'size' ? e.size : e.transform.position),
+          ...(key === 'rotation' ? angles : key === 'size' ? e.size : displayedPose.position),
         ] as Vec3Tuple
         values[axis] = input.valueAsNumber
         if (key === 'size') editor.update(e.id, { size: values })
-        else
+        else if (geographic) {
+          const pose = {
+            ...displayedPose,
+            [key]: key === 'rotation' ? rotationDegrees(...values) : values,
+          }
+          editor.update(e.id, {
+            ...(key === 'position' ? { geoAnchor: geographic.anchor } : {}),
+            transform: graph.localFromWorld(
+              e.parentId,
+              anchoredWorldPose(doc.geography!, geographic.anchor, pose),
+            ),
+          })
+        } else
           editor.update(e.id, {
             transform: {
               ...e.transform,
@@ -2013,7 +2104,7 @@ function frame(now: number): void {
       streamSample = { at: now, position }
     }
     const object = view.objects.get(selectedId)
-    outline.update(object)
+    outline.update(object, selectedGeometry)
   }
   cursorRing.quaternion.copy(camera.quaternion)
   worldCursor.visible = !sim
@@ -2249,6 +2340,19 @@ function frame(now: number): void {
   camera.position.copy(worldCamera)
   if (now >= nextPerformanceReadout) {
     nextPerformanceReadout = now + 500
+    if (sim && view.document.geography && $('properties').querySelector('#entity-geography')) {
+      const entity = view.document.entities.find((e) => e.id === selectedId)
+      if (entity && (!entity.geoAnchor || entity.parentId)) {
+        const live = geographicPose(
+          view.document.geography,
+          sim.entityTransform(selectedId, true),
+        ).anchor
+        for (const key of ['latitude', 'longitude', 'altitude'] as const) {
+          const field = document.getElementById('entity-' + key) as HTMLInputElement | null
+          if (field) field.value = String(Number(live[key].toFixed(key === 'altitude' ? 3 : 8)))
+        }
+      }
+    }
     const sorted = [...frameTimes].sort((a, b) => a - b)
     const p95 = sorted[Math.floor((sorted.length - 1) * 0.95)] || 0
     const cpu = performance.now() - frameStart

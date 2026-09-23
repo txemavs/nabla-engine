@@ -29,3 +29,31 @@ it('keeps local bounds and follows the full object pose during rotation', () => 
   outline.update(undefined)
   expect(outline.visible).toBe(false)
 })
+
+it('traces the actual polygon instead of fitting an axis-aligned box to a rotated footprint', () => {
+  const object = new THREE.Group()
+  object.rotation.y = 0.4
+  const geometry = {
+    vertices: [
+      [0, 0, 0],
+      [2, 0, 1],
+      [1, 0, 3],
+      [-1, 0, 2],
+    ] as [number, number, number][],
+    faces: [[0, 1, 2, 3]],
+    edges: [],
+  }
+  const outline = new SelectionOutline()
+  outline.update(object, geometry)
+  const lines = outline.children.find(
+    (o) => o instanceof THREE.LineSegments && !(o instanceof THREE.Box3Helper),
+  ) as THREE.LineSegments
+  expect(Array.from(lines.geometry.getAttribute('position').array)).toEqual([
+    0, 0, 0, 2, 0, 1, 2, 0, 1, 1, 0, 3, 1, 0, 3, -1, 0, 2, -1, 0, 2, 0, 0, 0,
+  ])
+  expect(outline.children[0].visible).toBe(false)
+  const buffer = lines.geometry
+  outline.update(object, geometry)
+  expect(lines.geometry).toBe(buffer)
+  expect(outline.matrix.elements).toEqual(object.matrixWorld.elements)
+})
