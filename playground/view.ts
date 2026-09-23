@@ -117,6 +117,31 @@ export class SceneView {
     this.root.add(this.avatar)
     this.ready = Promise.all(this.loading).then(() => undefined)
   }
+  /** A known pose-only edit; preserve all unrelated entities and render batches. */
+  updateEntityPose(entity: Entity): void {
+    const affected = new Set([entity.id])
+    const children = new Map<string, string[]>()
+    for (const e of this.document.entities)
+      if (e.parentId) {
+        const list = children.get(e.parentId) ?? []
+        list.push(e.id)
+        children.set(e.parentId, list)
+      }
+    for (const id of affected) for (const child of children.get(id) ?? []) affected.add(child)
+    this.document.entities = this.document.entities.map((e) =>
+      e.id === entity.id ? entity : affected.has(e.id) ? { ...e } : e,
+    )
+    this.graph = SceneGraph.fromValidated(this.document)
+    for (const id of affected) {
+      const object = this.objects.get(id)
+      if (object) applyPose(object, this.graph.worldTransform(id))
+      this.mapBounds.delete(id)
+    }
+    const entities = new Map(this.document.entities.map((e) => [e.id, e]))
+    this.pendingMapMeshes = this.pendingMapMeshes.map((e) =>
+      affected.has(e.id) ? entities.get(e.id)! : e,
+    )
+  }
   /** Keep installed meshes and the streaming queue for pose-only editor changes. */
   updateEditorPoses(next: SceneDocument): boolean {
     if (this.avatar.visible) return false

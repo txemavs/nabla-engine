@@ -155,8 +155,22 @@ test('orbiting and a transform edit do not restart the scene asset lifecycle', a
   await page.mouse.up({ button: 'middle' })
   await page.mouse.wheel(0, 120)
   const x = page.locator('[data-vector=position][data-axis="0"]')
+  await page.evaluate(() => {
+    const clone = window.structuredClone
+    const canvas = document.querySelector('#viewport > canvas')!
+    canvas.setAttribute('data-document-clones', '0')
+    window.structuredClone = (value, options) => {
+      if (value && typeof value === 'object' && 'entities' in value)
+        canvas.setAttribute(
+          'data-document-clones',
+          String(Number(canvas.getAttribute('data-document-clones')) + 1),
+        )
+      return clone(value, options)
+    }
+  })
   await x.fill('2')
   await x.press('Tab')
   await expect(x).toHaveValue('2')
   await expect(canvas).toHaveAttribute('data-test-reloads', '0')
+  await expect(canvas).toHaveAttribute('data-document-clones', '0')
 })

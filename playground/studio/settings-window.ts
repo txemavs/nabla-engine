@@ -75,6 +75,8 @@ export function mountSettingsWindow(input: StudioInputOwner): void {
                       tabindex: selected.value === tab.id ? 0 : -1,
                       onClick: () => {
                         selected.value = tab.id
+                        if (tab.id === 'portal-registry')
+                          window.dispatchEvent(new Event('portal-registry-request'))
                       },
                       onKeydown: (event: KeyboardEvent) => {
                         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
@@ -87,6 +89,8 @@ export function mountSettingsWindow(input: StudioInputOwner): void {
                               : (index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) %
                                 tabs.length
                         selected.value = tabs[next].id
+                        if (selected.value === 'portal-registry')
+                          window.dispatchEvent(new Event('portal-registry-request'))
                         document.getElementById(`settings-tab-${tabs[next].id}`)?.focus()
                       },
                     },

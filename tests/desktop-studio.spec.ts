@@ -60,3 +60,28 @@ test('invalid desktop layout cannot prevent opening the real editor', async ({ p
   await expect(page.locator('.studio-workspace #viewport > canvas')).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Propiedades', exact: true })).toBeVisible()
 })
+
+test('project settings keep flat tabs fixed and scroll only their content', async ({ page }) => {
+  await page.goto('/?scene=circuit&studio=desktop')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-startup', 'ready')
+  await page.getByRole('button', { name: 'Opciones', exact: true }).click()
+  const tab = page.getByRole('tab', { name: 'Rendimiento', exact: true })
+  await expect(tab).toBeVisible()
+  expect(await tab.evaluate((el) => getComputedStyle(el).borderRadius)).toBe('0px')
+  const body = page.locator('.studio-settings-host .window-frame__body')
+  expect(
+    await body.evaluate((el) => ({
+      overflow: getComputedStyle(el).overflowY,
+      fits: el.scrollHeight <= el.clientHeight + 1,
+    })),
+  ).toEqual({ overflow: 'hidden', fits: true })
+  await page.getByRole('tab', { name: 'Portales', exact: true }).click()
+  await expect(page.locator('#settings-panel-portal-registry')).toBeVisible()
+  await expect(page.locator('#portal-registry-list .portal-place h4').first()).toContainText(
+    'Lugar actual',
+  )
+  expect(await body.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true)
+  await page.getByRole('tab', { name: 'Ubicación', exact: true }).click()
+  await expect(page.locator('#settings-panel-geography-section')).toBeVisible()
+  await expect(page.locator('#settings-panel-portal-registry')).toBeHidden()
+})

@@ -3,6 +3,7 @@ import {
   createEntity,
   parseScene,
   replaceMapScene,
+  updateSceneEntity,
   SceneGraph,
   type Entity,
   type Vec3Tuple,
@@ -64,12 +65,20 @@ export class SceneEditor {
     this.future = this.future.map((doc) => (sameWorld(doc) ? apply(doc) : doc))
   }
   update(id: string, patch: Partial<Omit<Entity, 'id' | 'parentId'>>): void {
-    const next = this.document
-    const entity = next.entities.find((e) => e.id === id)
-    if (!entity) throw new Error('Unknown entity: ' + id)
-    Object.assign(entity, patch)
-    this.commit(next)
+    const next = updateSceneEntity(this.current, id, patch)
+    if (next === this.current) return
+    this.past.push(this.current)
+    if (this.past.length > 100) this.past.shift()
+    this.current = next
+    this.future = []
   }
+  /** An isolated entity snapshot, without copying the entire map. */
+  entity(id: string): Entity {
+    const entity = this.current.entities.find((e) => e.id === id)
+    if (!entity) throw new Error('Unknown entity: ' + id)
+    return structuredClone(entity)
+  }
+
   add(kind: Entity['kind']): string {
     const next = this.document,
       id = crypto.randomUUID()

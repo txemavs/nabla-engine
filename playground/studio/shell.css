@@ -64,8 +64,14 @@
   position: relative;
   z-index: 1000;
 }
+.studio-settings-host .window-frame__body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .studio-settings-content {
-  height: calc(100% - 44px);
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 16px;
   box-sizing: border-box;
@@ -94,12 +100,32 @@
 }
 .studio-settings-tabs {
   display: flex;
-  gap: 4px;
-  padding: 8px;
+  flex: 0 0 36px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #444;
 }
-.studio-settings-tabs [aria-selected='true'] {
-  background: #40516a;
-  color: white;
+.studio-settings-tabs button {
+  font: inherit;
+  color: #e0e0e0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 0 10px;
+}
+.studio-settings-tabs button[aria-selected='true'] {
+  background: #1e1e1e;
+  border-bottom-color: #81aee6;
+}
+.studio-settings-tabs button:focus-visible {
+  outline: 2px solid #81aee6;
+  outline-offset: -2px;
+}
+.portal-place {
+  margin: 16px 0;
+}
+.portal-place h4 {
+  margin: 0 0 6px;
 }
 
 /* Dock tools remain keyboard accessible but stay out of the normal editing surface. */

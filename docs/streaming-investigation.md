@@ -677,3 +677,22 @@ rebuild to restore the authored state.
 Browser regressions cover orbit/zoom plus an inspector edit without restarting
 asset loading, and editing a parent while a map is partly installed without
 replacing existing meshes/batches or resetting the installation queue.
+
+### Entity edits must not revalidate the environmental topology
+
+Preserving meshes did not remove the editor transaction's full-document clone,
+parse, solid validation and JSON comparison. Hiding buildings only affects
+rendering, so it did not reduce that transaction cost.
+
+Entity updates now parse the supplied fields, share immutable unchanged data
+with undo snapshots and retain global reference/invariant checks. Only changed
+solid topology is validated again. Invalid required fields, invalid topology,
+no-op updates and undo ownership are covered by regression tests.
+
+Gizmo and numeric pose edits use a dedicated view update for the object and its
+descendants. They retain unrelated batches, avoid full-document shape comparisons,
+share the existing view document with the inspector and skip whole-scene dirty
+serialization. A browser regression checks that a position edit performs no
+whole-document structured clone and does not restart asset loading. Full scene
+imports and structural edits still use the broader validation/rebuild paths;
+this is not a claim that every editor operation is now constant-time.

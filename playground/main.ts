@@ -296,7 +296,7 @@ $('transform-exact').onclick = () =>
       amount = $<HTMLInputElement>('transform-amount').valueAsNumber
     if (axis === 'all' || !Number.isFinite(amount))
       throw new Error('Elige X, Y o Z y una cantidad finita')
-    const doc = editor.document,
+    const doc = view.document,
       graph = SceneGraph.fromValidated(doc),
       entity = doc.entities.find((e) => e.id === selectedId)!
     if (isMapEnvironment(entity) && !entity.mapEditable)
@@ -312,7 +312,7 @@ $('transform-exact').onclick = () =>
         .toArray()
     } else pose.position[i] += amount
     editor.update(selectedId, { transform: graph.localFromWorld(entity.parentId, pose) })
-    rebuild()
+    finishPoseEdit(selectedId)
   })
 const outline = new SelectionOutline()
 scene.add(outline)
@@ -361,15 +361,15 @@ gizmo.addEventListener('mouseUp', () => {
   action(() => {
     const object = view.objects.get(selectedId)
     if (!object) return
-    const entity = editor.document.entities.find((e) => e.id === selectedId)!
-    const graph = SceneGraph.fromValidated(editor.document)
+    const entity = view.document.entities.find((e) => e.id === selectedId)!
+    const graph = SceneGraph.fromValidated(view.document)
     editor.update(selectedId, {
       transform: graph.localFromWorld(entity.parentId, {
         position: object.position.toArray(),
         rotation: object.quaternion.clone().normalize().toArray(),
       }),
     })
-    rebuild()
+    finishPoseEdit(selectedId)
   })
 })
 const solidEditor = new SolidEditor(
@@ -381,6 +381,11 @@ const solidEditor = new SolidEditor(
   toast,
   () => editor.document.cursor ?? [0, 0, 0],
 )
+
+function finishPoseEdit(id: string): void {
+  view.updateEntityPose(editor.entity(id))
+  refreshUi(view.document, true)
+}
 
 function rebuild(prepared?: PreparedMapGeometry): void {
   const document = editor.document
@@ -487,8 +492,7 @@ function select(id: string): void {
   selectedId = id
   refreshUi()
 }
-function refreshUi(): void {
-  const doc = editor.document
+function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): void {
   refreshPortalEntries(doc)
   const places = $<HTMLSelectElement>('project-places')
   places.replaceChildren(
@@ -531,7 +535,7 @@ function refreshUi(): void {
     $<HTMLInputElement>(id).disabled = Boolean(sim) || loadingWorld || id === 'imagery'
   $('entity-count').textContent = String(doc.entities.length)
   $('status').textContent =
-    editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
+    !poseEdited && editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
   const tree = $('tree')
   tree.replaceChildren()
   const treeChildren = authoredTree(doc.entities)
@@ -655,7 +659,7 @@ function refreshUi(): void {
             ...(e.geoAnchor ? { geoAnchor: anchor } : {}),
             transform: graph.localFromWorld(e.parentId, world),
           })
-          rebuild()
+          finishPoseEdit(e.id)
         })
       label.append(input)
       geo.append(label)
@@ -665,7 +669,7 @@ function refreshUi(): void {
     reset.onclick = () =>
       action(() => {
         editor.update(e.id, { geoAnchor: undefined })
-        rebuild()
+        finishPoseEdit(e.id)
       })
     geo.append(reset)
     props.querySelector('#name')!.after(geo)
@@ -870,7 +874,8 @@ function refreshUi(): void {
               [key]: key === 'rotation' ? rotationDegrees(...values) : values,
             },
           })
-        rebuild()
+        if (key === 'size') rebuild()
+        else finishPoseEdit(e.id)
       })
   })
   $('name').onchange = () =>
@@ -2609,16 +2614,34 @@ function configureProjectPortal(
     : 'Ventana remota cerrada'
 }
 function refreshPortalRegistry(): void {
-  project = retainLocation(project!, editor.document)
+  refreshPortalEntries(view.document)
   const list = $('portal-registry-list')
   list.replaceChildren()
-  for (const portal of projectPortalEntries()) {
-    const button = document.createElement('button')
-    button.textContent = `${portal.name} · ${portal.place}`
-    button.onclick = () => {
-      void openProjectPlace(portal.locationId, portal.entityId)
+  const entries = projectPortalEntries()
+  const places = [...project!.locations].sort(
+    (a, b) => Number(b.id === project!.activeLocation) - Number(a.id === project!.activeLocation),
+  )
+  for (const place of places) {
+    const portals = entries.filter((p) => p.locationId === place.id)
+    if (!portals.length) continue
+    const section = document.createElement('section')
+    section.className = 'portal-place'
+    section.dataset.locationId = place.id
+    const heading = document.createElement('h4')
+    heading.textContent =
+      place.scene.name + (place.id === project!.activeLocation ? ' · Lugar actual' : '')
+    section.append(heading)
+    for (const portal of portals) {
+      const button = document.createElement('button')
+      button.textContent = portal.name
+      button.title = `${portal.place} · ${portal.entityId}`
+      button.dataset.portalId = portal.id
+      button.onclick = () => {
+        void openProjectPlace(portal.locationId, portal.entityId)
+      }
+      section.append(button)
     }
-    list.append(button)
+    list.append(section)
   }
 }
 window.addEventListener('portal-registry-request', refreshPortalRegistry)
