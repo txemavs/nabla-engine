@@ -394,11 +394,7 @@ function validateScene(doc: SceneDocument, changed?: Set<Entity>): SceneDocument
       if (e.portal.clearsRamp && (!e.parentId || !byId.get(e.parentId)?.vehicle?.garage?.ramp))
         throw new Error('Ramp clearance requires a carrier ramp')
       const up = new Vector3(0, 1, 0).applyQuaternion(new Quaternion(...e.transform.rotation))
-      if (
-        !doc.geography?.planetary &&
-        !e.parentId &&
-        up.distanceTo(new Vector3(0, 1, 0)) > 1e-5
-      )
+      if (!doc.geography?.planetary && !e.parentId && up.distanceTo(new Vector3(0, 1, 0)) > 1e-5)
         throw new Error('This portal release requires upright fixed mouths')
       if (e.portal.pairId === null) {
         if (e.portal.mode !== 'closed') throw new Error('An unlinked portal must be closed')
