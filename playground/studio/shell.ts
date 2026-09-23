@@ -197,5 +197,23 @@ export function mountStudio(host: StudioHost): void {
         },
       ),
   }).mount(root)
+  // Desktop currently reserves 72px for tabs + actions. Studio overlays actions
+  // on the 36px tab strip; keep its 1px border and reclaim the unused row.
+  const compactPanels = () => {
+    for (const panel of root.querySelectorAll<HTMLElement>('.nd-panel-content, .nd-drop-grid')) {
+      for (const dimension of ['top', 'height'] as const) {
+        const key = `--studio-panel-${dimension}`
+        if (panel.style.getPropertyValue(key) !== panel.style[dimension])
+          panel.style.setProperty(key, panel.style[dimension])
+      }
+    }
+  }
+  new MutationObserver(compactPanels).observe(root, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['style'],
+  })
+  compactPanels()
   host.refresh()
 }
