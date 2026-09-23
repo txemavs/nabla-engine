@@ -1,3 +1,4 @@
+import { portalEnvironment } from './portal-environment.js'
 import {
   createProject,
   locationId,
@@ -2064,9 +2065,27 @@ function frame(now: number): void {
           : Math.min(performanceSettings.distance, performanceSettings.roads),
       )
       if (geography.enabled) {
-        geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
-        renderer.autoClear = false
+        const remotePosition = remote.position.clone().add(renderOrigin)
+        const restore = portalEnvironment(
+          geography,
+          scene,
+          remotePosition,
+          worldCamera,
+          renderOrigin,
+          skyClock,
+          ambientFill,
+          [sun, ...shadowManager.lights],
+        )
+        try {
+          geography.render(renderer, remote, remotePosition)
+          renderer.autoClear = false
+        } catch (error) {
+          restore()
+          throw error
+        }
+        return restore
       }
+      return undefined
     })
     outline.visible = outlineVisible
     view.batchBuildings = !gizmo.dragging

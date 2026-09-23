@@ -57,3 +57,6 @@ export {
   type AssembledRing,
   type AssemblyResult,
 } from './multipolygon.js'
+
+export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from './world-pose.js'
+export type { WorldPose } from './world-pose.js'

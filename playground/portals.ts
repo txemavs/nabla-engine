@@ -44,7 +44,7 @@ export function renderPortals(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
   camera: THREE.PerspectiveCamera,
-  background: (camera: THREE.PerspectiveCamera) => void,
+  background: (camera: THREE.PerspectiveCamera) => void | (() => void),
 ): void {
   if (!surfaces.size) return
   const connected = [...surfaces.values()].some(
@@ -92,19 +92,21 @@ export function renderPortals(
       renderer.setRenderTarget(surface.target)
       renderer.autoClear = true
       renderer.clippingPlanes = []
-      background(remote)
-      renderer.clearDepth()
-      const normal = new THREE.Vector3(0, 0, 1).transformDirection(destination.mesh.matrixWorld)
-      const point = new THREE.Vector3()
-        .setFromMatrixPosition(destination.mesh.matrixWorld)
-        .addScaledVector(normal, 0.015)
-      renderer.clippingPlanes = [new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point)]
+      let restoreEnvironment: void | (() => void) = undefined
       const wasVisible = destination.mesh.visible
-      destination.mesh.visible = false
       try {
+        restoreEnvironment = background(remote)
+        renderer.clearDepth()
+        const normal = new THREE.Vector3(0, 0, 1).transformDirection(destination.mesh.matrixWorld)
+        const point = new THREE.Vector3()
+          .setFromMatrixPosition(destination.mesh.matrixWorld)
+          .addScaledVector(normal, 0.015)
+        renderer.clippingPlanes = [new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point)]
+        destination.mesh.visible = false
         renderer.render(scene, remote)
       } finally {
         destination.mesh.visible = wasVisible
+        restoreEnvironment?.()
       }
     }
     for (const surface of surfaces.values()) {

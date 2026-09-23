@@ -1,18 +1,44 @@
 import { z } from 'zod'
 import { parseScene, type SceneDocument } from '../../src/scene.js'
+import { toWorldPose, fromWorldPose, type WorldPose } from '../../src/world-pose.js'
 
-/** Locations have their own metre-scale frame. Entity IDs are scoped to a location. */
+/** Places retain payloads and working frames; planet poses address root objects globally. */
 export interface StudioProject {
   format: 'nabla-project'
-  version: 1
+  version: 2
+  objects: PlanetObject[]
   name: string
   activeLocation: string
   locations: { id: string; scene: SceneDocument }[]
 }
+export interface PlanetObject {
+  id: string
+  locationId: string
+  entityId: string
+  pose: WorldPose
+}
+const worldPoseSchema = z
+  .object({
+    frame: z.literal('nabla-earth-sphere-v1'),
+    position: z.tuple([z.number().finite(), z.number().finite(), z.number().finite()]),
+    rotation: z
+      .tuple([z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite()])
+      .refine((q) => Math.abs(Math.hypot(...q) - 1) < 1e-5, 'Expected unit rotation'),
+  })
+  .strict()
+const planetObjectSchema = z
+  .object({
+    id: z.string().min(1).max(160),
+    locationId: z.string().min(1).max(160),
+    entityId: z.string().min(1).max(128),
+    pose: worldPoseSchema,
+  })
+  .strict()
 const schema = z
   .object({
     format: z.literal('nabla-project'),
-    version: z.literal(1),
+    version: z.union([z.literal(1), z.literal(2)]),
+    objects: z.array(planetObjectSchema).max(100000).optional(),
     name: z.string().trim().min(1).max(100),
     activeLocation: z.string().min(1).max(160),
     locations: z
@@ -29,13 +55,14 @@ export function locationId(scene: SceneDocument): string {
 }
 export function createProject(scene: SceneDocument): StudioProject {
   const id = locationId(scene)
-  return {
+  return synchronizeWorldObjects({
     format: 'nabla-project',
-    version: 1,
+    version: 2,
+    objects: [],
     name: scene.name,
     activeLocation: id,
     locations: [{ id, scene: structuredClone(scene) }],
-  }
+  })
 }
 export function parseProject(raw: unknown, large = false): StudioProject {
   const value = schema.parse(raw)
@@ -46,7 +73,33 @@ export function parseProject(raw: unknown, large = false): StudioProject {
   if (new Set(locations.map((p) => p.id)).size !== locations.length)
     throw Error('Duplicate location ID')
   if (!locations.some((p) => p.id === value.activeLocation)) throw Error('Unknown active location')
-  return { ...value, locations }
+  if (value.version === 1)
+    return synchronizeWorldObjects({ ...value, version: 2, objects: [], locations })
+  if (!value.objects) throw Error('Missing planetary objects')
+  const ids = new Set<string>(),
+    references = new Set<string>()
+  for (const object of value.objects) {
+    const reference = JSON.stringify([object.locationId, object.entityId])
+    if (ids.has(object.id) || references.has(reference)) throw Error('Duplicate planetary object')
+    ids.add(object.id)
+    references.add(reference)
+    const place = locations.find((p) => p.id === object.locationId)
+    const entity = place?.scene.entities.find((e) => e.id === object.entityId)
+    if (!place?.scene.geography || !entity || entity.parentId)
+      throw Error('Invalid planetary object reference')
+    entity.transform = fromWorldPose(place.scene.geography, object.pose)
+  }
+  for (const place of locations) {
+    if (
+      place.scene.geography &&
+      place.scene.entities.some(
+        (e) => !e.parentId && !references.has(JSON.stringify([place.id, e.id])),
+      )
+    )
+      throw Error('Missing root world pose')
+    place.scene = parseScene(place.scene, large)
+  }
+  return { ...value, version: 2, objects: value.objects, locations }
 }
 export function retainLocation(project: StudioProject, scene: SceneDocument): StudioProject {
   return visitLocation(project, scene)
@@ -61,7 +114,7 @@ export function visitLocation(project: StudioProject, scene: SceneDocument): Stu
     next.locations.push({ id, scene: structuredClone(scene) })
   }
   next.activeLocation = place?.id ?? id
-  return next
+  return synchronizeWorldObjects(next)
 }
 export function projectFilename(name: string): string {
   const stem = name
@@ -70,4 +123,26 @@ export function projectFilename(name: string): string {
     .trim()
     .slice(0, 100)
   return `${stem || 'Untitled'}.nabla.json`
+}
+
+/** Synchronize edited local working copies at transaction/save boundaries, never per frame. */
+function synchronizeWorldObjects(project: StudioProject): StudioProject {
+  const previous = new Map(
+    project.objects.map((o) => [JSON.stringify([o.locationId, o.entityId]), o.id]),
+  )
+  const objects: PlanetObject[] = []
+  for (const place of project.locations) {
+    if (!place.scene.geography) continue
+    for (const entity of place.scene.entities) {
+      if (entity.parentId) continue
+      const key = JSON.stringify([place.id, entity.id])
+      objects.push({
+        id: previous.get(key) ?? crypto.randomUUID(),
+        locationId: place.id,
+        entityId: entity.id,
+        pose: toWorldPose(place.scene.geography, entity.transform),
+      })
+    }
+  }
+  return { ...project, objects }
 }

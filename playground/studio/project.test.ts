@@ -38,3 +38,32 @@ test('file names remain portable and receive one project extension', () => {
   expect(projectFilename('My world.nabla.json')).toBe('My world.nabla.json')
   expect(projectFilename('../World: demo')).toBe('..-World- demo.nabla.json')
 })
+
+test('v1 migrates to stable global root identities and v2 treats planet poses as authoritative', () => {
+  const scene = createSampleScene()
+  const old = {
+    format: 'nabla-project',
+    version: 1,
+    name: 'Legacy',
+    activeLocation: 'legacy',
+    locations: [{ id: 'legacy', scene }],
+  }
+  const migrated = parseProject(old)
+  expect(migrated.version).toBe(2)
+  const car = migrated.objects.find((o) => o.entityId === 'car-a')!
+  expect(car.pose.frame).toBe('nabla-earth-sphere-v1')
+  expect(Math.hypot(...car.pose.position)).toBeGreaterThan(6000000)
+  // Local transform is only a working copy; editing it in a v2 file cannot override the world pose.
+  const copy = structuredClone(migrated)
+  copy.locations[0].scene.entities.find((e) => e.id === 'car-a')!.transform.position = [99, 99, 99]
+  const restored = parseProject(copy)
+  expect(
+    restored.locations[0].scene.entities.find((e) => e.id === 'car-a')!.transform.position[0],
+  ).toBeCloseTo(4, 6)
+  expect(
+    retainLocation(restored, restored.locations[0].scene).objects.find(
+      (o) => o.entityId === 'car-a',
+    )!.id,
+  ).toBe(car.id)
+  expect(() => parseProject({ ...copy, objects: [] })).toThrow('Missing root world pose')
+})

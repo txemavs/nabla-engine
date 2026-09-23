@@ -2,6 +2,8 @@
 
 Studio's **Archivo → Guardar como…** downloads a named `.nabla.json` project.
 **Abrir proyecto o escena…** accepts either that format or a legacy scene JSON.
+Version 2 also stores authoritative planetary poses and stable IDs for root objects;
+version 1 files migrate on open. See [the planetary model](planetary-world.md).
 A project contains its name, active location and all locations retained during
 navigation. Each location holds an ordinary validated Engine scene in its own
 local coordinate frame. Entity IDs are scoped to that scene, so two cities can
