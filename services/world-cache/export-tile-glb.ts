@@ -114,6 +114,8 @@ await writeFile(
     key: tile.key,
     sizeMetres: 1200,
     groundGridMetres: 0.1,
+    groundRevision: 2,
+    groundQuantization: 'horizontal-only-preserve-elevation',
     downloads,
     files,
     hashes,

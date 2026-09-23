@@ -21,7 +21,11 @@ export function compactGround(data: TileArtifact, step: number): TileArtifact {
       const triangle: number[] = []
       for (let j = 0; j < 3; j++) {
         const v = input?.[i + j] ?? i + j
-        const point = [0, 1, 2].map((axis) => Math.round(p[v * 3 + axis] / step) * step)
+        // Preserve elevation: separately rounding ground and draped surfaces buries roads.
+        // Only horizontal coordinates are snapped; thin layer offsets stay exact.
+        const point = [0, 1, 2].map((axis) =>
+          axis === 1 ? p[v * 3 + axis] : Math.round(p[v * 3 + axis] / step) * step,
+        )
         const color = colors ? Array.from(colors.subarray(v * 3, v * 3 + 3)) : []
         const key = [...point, ...color].join(',')
         let index = vertices.get(key)

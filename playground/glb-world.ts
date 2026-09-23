@@ -20,6 +20,8 @@ export async function loadGlbWorld(
     const data = await response.json()
     if (data.format !== 'nabla-tile-glb-v1' || !Array.isArray(data.geometryIds))
       throw Error('Invalid GLB manifest')
+    if (data.groundGridMetres && data.groundRevision !== 2)
+      throw Error('Obsolete ground quantization')
     decodePrepared({ ...data, geometry: {} }, origin, key)
     const manager = new LoadingManager()
     manager.setURLModifier(() => {

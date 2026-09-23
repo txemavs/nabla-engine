@@ -31,13 +31,57 @@ def trim_prepared(publish, target, limit):
 
 
 
+def sidecar_current(target):
+    folder = target.with_suffix('.glb-tile')
+    try:
+        manifest = json.loads((folder / 'manifest.json').read_text())
+        return (manifest.get('groundRevision') == 2 and
+                (folder / 'manifest.json').stat().st_mtime >= target.with_suffix('.bin').stat().st_mtime and
+                all((folder / name).is_file() for name in ('terrain.glb', 'buildings-osm.glb')))
+    except (OSError, ValueError):
+        return False
+
+def prepare_sidecar(target, root, exporter):
+    if not exporter.exists():
+        return False
+    sidecar = target.with_suffix('.glb-tile')
+    staging = root / 'preparing-glb'
+    shutil.rmtree(staging, ignore_errors=True)
+    try:
+        subprocess.run(['node', '--max-old-space-size=512', str(exporter), str(target.with_suffix('.bin')), str(staging)], check=True, timeout=180, stdout=subprocess.DEVNULL)
+        sidecar.mkdir(parents=True, exist_ok=True)
+        for artifact in staging.iterdir():
+            if artifact.name not in ('tile.glb', 'source.bin', 'manifest.json'):
+                temporary = sidecar / (artifact.name + '.next')
+                shutil.copyfile(artifact, temporary)
+                temporary.replace(sidecar / artifact.name)
+        shutil.copyfile(staging / 'manifest.json', sidecar / 'manifest.next')
+        (sidecar / 'manifest.next').replace(sidecar / 'manifest.json')
+        print('GLB prepared:', target.name, flush=True)
+        return True
+    except Exception as error:
+        print('GLB preparation skipped:', type(error).__name__, flush=True)
+        return False
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+
+
 def run(queue, root, publish, limit):
     base = 'http://127.0.0.1:8080'
     script = Path('/app/prepare-dist/services/world-cache/prepare.js')
     publish.mkdir(parents=True, exist_ok=True)
+    retry_after = {}
     while True:
         job = queue.claim()
         if not job:
+            # Migrate resident binaries while idle, without querying OSM or elevation.
+            candidate = next((p.with_suffix('.json') for p in publish.rglob('*.bin')
+                              if retry_after.get(str(p), 0) <= time.time() and not sidecar_current(p)), None)
+            if candidate:
+                binary = str(candidate.with_suffix('.bin'))
+                retry_after[binary] = time.time() + 300
+                prepare_sidecar(candidate, root, script.with_name('export-tile-glb.js'))
+                trim_prepared(publish, candidate, limit)
             time.sleep(2)
             continue
         try:
@@ -49,25 +93,7 @@ def run(queue, root, publish, limit):
             atomic_write(source, extract)
             target = publish / job['path']
             subprocess.run(['node', '--max-old-space-size=512', str(script), str(source), str(target), job['tile'], base], check=True, timeout=180, stdout=subprocess.DEVNULL)
-            # Optional render sidecars must not prevent the authoritative prepared tile publishing.
-            exporter = script.with_name('export-tile-glb.js')
-            if exporter.exists():
-                sidecar = target.with_suffix('.glb-tile')
-                staging = root / 'preparing-glb'
-                shutil.rmtree(staging, ignore_errors=True)
-                try:
-                    subprocess.run(['node', '--max-old-space-size=512', str(exporter), str(target.with_suffix('.bin')), str(staging)], check=True, timeout=180, stdout=subprocess.DEVNULL)
-                    sidecar.mkdir(parents=True, exist_ok=True)
-                    # Viewer comparison artifacts are not duplicated for every streamed tile.
-                    for artifact in staging.iterdir():
-                        if artifact.name not in ('tile.glb', 'source.bin', 'manifest.json'):
-                            shutil.copyfile(artifact, sidecar / artifact.name)
-                    shutil.copyfile(staging / 'manifest.json', sidecar / 'manifest.next')
-                    (sidecar / 'manifest.next').replace(sidecar / 'manifest.json')
-                except Exception as error:
-                    print('GLB preparation skipped:', type(error).__name__, flush=True)
-                finally:
-                    shutil.rmtree(staging, ignore_errors=True)
+            prepare_sidecar(target, root, script.with_name('export-tile-glb.js'))
             trim_prepared(publish, target, limit)
             queue.finish(job['id'], True)
         except Exception as error:

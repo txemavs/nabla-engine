@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { SceneGraph, type Entity } from '../src/scene.js'
 import { mapSurfaceColor, SURFACE_LAYERS } from '../src/landcover.js'
-import { transportLayer } from './ground-material.js'
+import { transportLayer, matteGroundMaterial } from './ground-material.js'
 
 export interface TileArtifact {
   version: number
@@ -62,12 +62,19 @@ export function tileAsset(data: TileArtifact): THREE.Group {
       geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(buffers.index), 1))
     if (buffers.color)
       geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(buffers.color), 3))
-    const material = new THREE.MeshStandardMaterial({
+    const material = (
+      e.terrain || e.landcover || e.road || e.railway
+        ? matteGroundMaterial
+        : (parameters: THREE.MeshStandardMaterialParameters) =>
+            new THREE.MeshStandardMaterial(parameters)
+    )({
       color: buffers.color
         ? '#ffffff'
         : e.landcover
           ? mapSurfaceColor(e.landcover.surface, e.color)
-          : e.color,
+          : e.terrain
+            ? mapSurfaceColor('default', e.color)
+            : e.color,
       vertexColors: !!buffers.color,
       roughness: 1,
       metalness: 0,

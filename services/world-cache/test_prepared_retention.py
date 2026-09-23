@@ -30,5 +30,25 @@ class PreparedRetentionTest(unittest.TestCase):
             self.assertTrue((root / 'current.glb-tile' / 'terrain.glb').exists())
             self.assertEqual(sum(p.stat().st_size for p in root.rglob('*') if p.is_file()), 180)
 
+
+class SidecarRevisionTest(unittest.TestCase):
+    def test_missing_old_and_complete_revision(self):
+        import json
+        from prepare_worker import sidecar_current
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / '0_0.bin'
+            target.write_bytes(b'prepared')
+            self.assertFalse(sidecar_current(target))
+            layer = target.with_suffix('.glb-tile')
+            layer.mkdir()
+            (layer / 'manifest.json').write_text(json.dumps({'groundRevision': 1}))
+            for name in ('terrain.glb', 'buildings-osm.glb'):
+                (layer / name).write_bytes(b'glb')
+            self.assertFalse(sidecar_current(target))
+            (layer / 'manifest.json').write_text(json.dumps({'groundRevision': 2}))
+            self.assertTrue(sidecar_current(target))
+            (layer / 'terrain.glb').unlink()
+            self.assertFalse(sidecar_current(target))
+
 if __name__ == '__main__':
     unittest.main()

@@ -99,3 +99,20 @@ from the full existing tile identity, independently of content or viewing positi
 The manifest retains the full geographic frame and layer hashes. These names do
 not claim that legacy footprints have already migrated to the global grid.
 The viewer uses manifest download names; server layer URLs remain stable.
+
+## Ground revision 2 and resident-cache backfill
+
+Independent vertical rounding buried roads beneath rounded grass/terrain.
+Revision 2 preserves all elevations and only snaps X/Z for ground surfaces,
+retaining their original vertical separation and collision heights. Clients
+reject revision-1 quantized artifacts and fall back to prepared data during the
+upgrade. The tile exporter also matches the runtime's matte ground materials and
+legacy terrain palette mapping.
+
+The worker now converts resident prepared binaries while idle, one at a time,
+without querying upstream providers. Queued exploration jobs retain priority.
+Missing, obsolete or incomplete sidecars are rebuilt; failed conversions back off
+for five minutes. A newer source binary also triggers regeneration. Publishing
+uses temporary layer files and replaces the manifest last. Private preparation
+authorization remains unchanged: arbitrary visitors cannot enqueue remote work.
+The pilot viewer is one explicit sample, not an indicator of all server coverage.
