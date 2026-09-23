@@ -121,3 +121,65 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
   expect(oldRequests).toEqual([])
   expect(errors).toEqual([])
 })
+
+test('picks a visible building inside a GLB batch and ignores hidden layers', async ({ page }) => {
+  await page.goto('/?scene=circuit')
+  const result = await page.evaluate(async (root) => {
+    const module = '/planet-world.ts'
+    const { PlanetWorld } = await import(module)
+    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const stream = new PlanetWorld(
+      { latitude: 43, longitude: -1, altitude: 0 },
+      () => {},
+      () => {},
+    )
+    const tile = new T.Group()
+    tile.userData.planetTile = {
+      key: 'WebMercatorQuad/15/16218/11999',
+      directory: '/prepared/z/15/16218/11999/',
+      manifest: {
+        anchor: { latitude: 43, longitude: -1 },
+        files: {
+          terrain: { path: 'terrain.glb', download: 'terrain.glb', bytes: 100 },
+          'buildings-osm': { path: 'buildings.glb', download: 'buildings.glb', bytes: 100 },
+        },
+      },
+    }
+    const mesh = new T.Mesh(new T.PlaneGeometry(4, 4), new T.MeshBasicMaterial())
+    mesh.rotation.x = -Math.PI / 2
+    mesh.userData = {
+      category: 'Buildings',
+      parts: [
+        {
+          id: 'osm-building',
+          start: 0,
+          count: 6,
+          source: { id: 123, tags: { name: 'Test building' } },
+        },
+      ],
+    }
+    tile.add(mesh)
+    stream.root.add(tile)
+    stream.root.position.set(-10000, 0, 0)
+    const panel = document.createElement('div')
+    const ray = new T.Raycaster(new T.Vector3(-10000, 10, 0), new T.Vector3(0, -1, 0))
+    const selected = stream.inspect(ray, panel)
+    const label = panel.querySelector('h3')?.textContent
+    const links = panel.querySelectorAll('a').length
+    const highlighted = mesh.children.length
+    mesh.visible = false
+    const hiddenPicked = stream.inspect(ray, panel)
+    stream.clearSelection()
+    const cleared = mesh.children.length
+    stream.dispose()
+    return { selected, label, links, highlighted, hiddenPicked, cleared }
+  }, process.cwd())
+  expect(result).toEqual({
+    selected: true,
+    label: 'Edificio · Test building',
+    links: 2,
+    highlighted: 1,
+    hiddenPicked: false,
+    cleared: 0,
+  })
+})

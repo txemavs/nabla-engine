@@ -1,7 +1,9 @@
-export function groundGlb(empty = false, category = 'Terrain') {
-  const positions = new Float32Array([
-    -600, 0, -600, -600, 0, 600, 600, 0, 600, -600, 0, -600, 600, 0, 600, 600, 0, -600,
-  ])
+export function groundGlb(empty = false, category = 'Terrain', vertices?: number[]) {
+  const positions = new Float32Array(
+    vertices ?? [
+      -600, 0, -600, -600, 0, 600, 600, 0, 600, -600, 0, -600, 600, 0, 600, 600, 0, -600,
+    ],
+  )
   const normals = new Float32Array(Array.from({ length: 18 }, (_, i) => (i % 3 === 1 ? 1 : 0)))
   const binary = Buffer.concat([Buffer.from(positions.buffer), Buffer.from(normals.buffer)])
   const json = Buffer.from(
@@ -22,8 +24,8 @@ export function groundGlb(empty = false, category = 'Terrain') {
           componentType: 5126,
           count: 6,
           type: 'VEC3',
-          min: [-600, 0, -600],
-          max: [600, 0, 600],
+          min: [0, 1, 2].map((axis) => Math.min(...positions.filter((_, i) => i % 3 === axis))),
+          max: [0, 1, 2].map((axis) => Math.max(...positions.filter((_, i) => i % 3 === axis))),
         },
         { bufferView: 1, componentType: 5126, count: 6, type: 'VEC3' },
       ],

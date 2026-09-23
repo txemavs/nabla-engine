@@ -191,7 +191,7 @@ export class PlanetWorld {
       }
       this.status = this.access
         ? 'Preparando GLB en el servidor…'
-        : 'Esperando GLB preparados · generación privada'
+        : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
       this.pump()
       this.changed()
     } catch (error) {
@@ -437,8 +437,22 @@ export class PlanetWorld {
       await new Promise((r) => setTimeout(r, 200))
     }
   }
+  private selection?: THREE.Mesh
+  clearSelection(): void {
+    if (!this.selection) return
+    this.selection.removeFromParent()
+    this.selection.geometry.dispose()
+    ;(this.selection.material as THREE.Material).dispose()
+    this.selection = undefined
+  }
   inspect(ray: THREE.Raycaster, host: HTMLElement, otherDistance = Infinity): boolean {
-    const hit = ray.intersectObject(this.root, true).find((h) => h.object.parent?.visible)
+    this.root.updateMatrixWorld(true)
+    const hit = ray.intersectObject(this.root, true).find((h) => {
+      if (h.object === this.selection || h.object.userData.skirt) return false
+      for (let node: THREE.Object3D | null = h.object; node; node = node.parent)
+        if (!node.visible) return false
+      return true
+    })
     if (!hit || hit.distance > otherDistance) return false
     let node: THREE.Object3D | null = hit.object
     while (node && !node.userData.planetTile) node = node.parent
@@ -448,12 +462,46 @@ export class PlanetWorld {
       manifest: PlanetManifest
       directory: string
     }
+    this.clearSelection()
+    const mesh = hit.object as THREE.Mesh
+    const part = mesh.userData.parts?.find(
+      (p: { start: number; count: number }) =>
+        hit.faceIndex !== undefined &&
+        hit.faceIndex !== null &&
+        hit.faceIndex * 3 >= p.start &&
+        hit.faceIndex * 3 < p.start + p.count,
+    )
+    const building = mesh.userData.category === 'Buildings'
+    if (building && mesh.geometry) {
+      const geometry = mesh.geometry.clone()
+      if (part) geometry.setDrawRange(part.start, part.count)
+      this.selection = new THREE.Mesh(
+        geometry,
+        new THREE.MeshBasicMaterial({
+          color: '#ffd54f',
+          wireframe: true,
+          depthTest: false,
+          transparent: true,
+          opacity: 0.65,
+        }),
+      )
+      this.selection.renderOrder = 1000
+      mesh.add(this.selection)
+    }
     host.replaceChildren()
     const title = document.createElement('h3')
-    title.textContent = key
+    title.textContent = building
+      ? `Edificio · ${part?.source?.tags?.name ?? part?.id ?? mesh.name}`
+      : key
     const info = document.createElement('p')
     info.textContent = `GLB · ${manifest.anchor.latitude.toFixed(6)}°, ${manifest.anchor.longitude.toFixed(6)}° · marco local en metros`
     host.append(title, info)
+    if (building) {
+      const source = document.createElement('p')
+      source.textContent = `Baldosa: ${key} · ${part?.source?.id ?? 'Edificio del GLB'}`
+      host.append(source)
+    }
+    this.changed()
     for (const layer of ['terrain', 'buildings-osm'] as const) {
       const link = document.createElement('a')
       link.href = directory + manifest.files[layer].path
@@ -485,6 +533,7 @@ export class PlanetWorld {
     this.resident.delete(key)
   }
   dispose() {
+    this.clearSelection()
     this.disposed = true
     this.controller.abort()
     this.worker.terminate()

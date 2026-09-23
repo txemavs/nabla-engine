@@ -76,6 +76,7 @@ services:
     volumes:
       - ./services/development/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - prepared:/srv/prepared:ro
+      - secrets:/run/nabla:ro
 volumes:
   cache:
   prepared:

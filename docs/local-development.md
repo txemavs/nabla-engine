@@ -37,27 +37,22 @@ local scene, or [the zoom lab](http://localhost:8080/zoom-lab.html) to inspect t
 
 ### Enable your local generator
 
-An initialization service creates a random activation token in a private Docker
-volume. It is not in your source checkout or JavaScript bundle. Print your own
-activation URL:
+Generation is enabled automatically through the **loopback-only development gateway**.
+No activation link, browser cookie or production credential is required. The setup
+service creates a private key and a signed gateway session in a Docker volume;
+Nginx adds that session only to requests forwarded to `/prepare`. Cross-site browser
+requests are rejected. Do not expose this development gateway to the internet.
 
-```sh
-docker compose -f compose.dev.yaml exec world-cache python3 -c "from pathlib import Path; print('http://localhost:8080/?studio=desktop#prepare=' + Path('/secrets/prepare-token').read_text().strip())"
-```
+Visiting a place queues its required tiles automatically. The footer shows
+prepared/pending/failed counts. The first empty cache is slower than the hosted
+demo's warm cache. If it says generation is disabled, recreate the gateway and setup
+with `docker compose -f compose.dev.yaml up -d --force-recreate setup web`.
 
-Open that URL in your browser once. Studio exchanges the token for an HttpOnly
-cookie and removes it from the address bar. Use **localhost**, not a LAN address:
-the cookie is Secure, and browsers treat localhost as a local secure exception.
-The cookie expires after 30 days; open the same activation URL again to renew it.
-Do not share this URL. The stack binds only to `127.0.0.1`.
+Production continues to require the owner's private session. Its footer offers
+**Activar generación GLB…** when that session is absent or expired; the owner enters
+the server's private generation key. The key is not saved in browser storage.
 
-Before activation you can view already prepared GLBs and the elevation horizon,
-but visits cannot enqueue new generation jobs. After activation, visiting a place
-queues its required tiles automatically. The footer shows prepared/pending/failed
-counts. The first empty cache is slower than the hosted demo's warm cache.
-
-If port 8080 is occupied, set `NABLA_DEV_PORT=8081` in your shell before `up` and
-use that port in all browser URLs, including the activation URL.
+If port 8080 is occupied, set `NABLA_DEV_PORT=8081` before `up` and use that port.
 
 ## What is running?
 

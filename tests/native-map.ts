@@ -1,11 +1,12 @@
 import type { Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 import { mapTileBounds, mapTileId, mapTileSample } from '../src/map-tiles.js'
+import { geoToLocal } from '../src/geography.js'
 import { groundGlb } from './planet-fixture.js'
 /** Deterministic native XYZ service; no live provider requests in browser tests. */
 export async function nativeMap(page: Page) {
-  const terrain = groundGlb(),
-    buildings = groundGlb(true)
+  const buildings = groundGlb(true)
+  const assets = new Map<string, Buffer>()
   await page.route('**/prepare/tiles', async (route) => {
     const available = Object.fromEntries(
       route
@@ -14,6 +15,18 @@ export async function nativeMap(page: Page) {
         .keys.map((key: string) => {
           const [, z, x, y] = key.split('/').map(Number)
           const tile = { z, x, y }
+          const anchor = mapTileSample(tile, 1, 1, 2)
+          const corners = [
+            [0, 0],
+            [0, 1],
+            [1, 1],
+            [1, 0],
+          ].map(([x, y]) => geoToLocal(anchor, mapTileSample(tile, x, y, 1)))
+          const terrain = groundGlb(
+            false,
+            'Terrain',
+            [0, 1, 2, 0, 2, 3].flatMap((i) => corners[i]),
+          )
           return [
             key,
             {
@@ -27,6 +40,7 @@ export async function nativeMap(page: Page) {
                 ['terrain', 'buildings-osm'].map((name) => {
                   const b = name === 'terrain' ? terrain : buildings,
                     sha256 = createHash('sha256').update(b).digest('hex')
+                  assets.set(`${name}-${sha256.slice(0, 16)}.glb`, b)
                   return [
                     name,
                     {
@@ -46,7 +60,7 @@ export async function nativeMap(page: Page) {
   })
   await page.route('**/prepared/z/**/*.glb', (route) =>
     route.fulfill({
-      body: route.request().url().includes('buildings-osm') ? buildings : terrain,
+      body: assets.get(route.request().url().split('/').at(-1)!)!,
       contentType: 'model/gltf-binary',
     }),
   )

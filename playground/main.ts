@@ -454,6 +454,7 @@ function setupWorldStream(): void {
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
 function select(id: string): void {
+  worldStream?.clearSelection()
   selectedId = id
   refreshUi()
 }
@@ -1558,12 +1559,17 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   )
     return
   const bounds = renderer.domElement.getBoundingClientRect()
+  // The camera is restored to world coordinates after rendering, while scene roots
+  // remain relative to the floating origin. Pick in the same frame as those roots.
+  const pickCamera = camera.clone()
+  pickCamera.position.sub(renderOrigin)
+  pickCamera.updateMatrixWorld(true)
   raycaster.setFromCamera(
     new THREE.Vector2(
       ((e.clientX - bounds.left) / bounds.width) * 2 - 1,
       (-(e.clientY - bounds.top) / bounds.height) * 2 + 1,
     ),
-    camera,
+    pickCamera,
   )
   if (e.shiftKey) {
     const hit = raycaster.intersectObjects(
@@ -1573,10 +1579,10 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     const point =
       hit?.point ??
       raycaster.ray.intersectPlane(
-        new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+        new THREE.Plane(new THREE.Vector3(0, 1, 0), renderOrigin.y),
         new THREE.Vector3(),
       )
-    if (point) action(() => placeCursor(point.toArray()))
+    if (point) action(() => placeCursor(point.add(renderOrigin).toArray()))
     return
   }
   if (solidEditor.active) {
@@ -1588,7 +1594,11 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     needsRender = true
     return
   }
-  const hits = raycaster.intersectObjects([...view.objects.values()], true)
+  const hits = raycaster.intersectObjects([...view.objects.values()], true).filter((hit) => {
+    for (let node: THREE.Object3D | null = hit.object; node; node = node.parent)
+      if (!node.visible) return false
+    return true
+  })
   if (worldStream?.inspect(raycaster, $('properties'), hits[0]?.distance)) return
   for (const hit of hits) {
     let object: THREE.Object3D | null = hit.object
