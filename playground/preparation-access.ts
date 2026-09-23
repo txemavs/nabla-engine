@@ -1,5 +1,11 @@
+let listening = false
+
 /** Owner activation secret arrives only in the URL fragment, never in the build. */
 export async function activatePreparation(): Promise<void> {
+  if (!listening) {
+    listening = true
+    window.addEventListener('hashchange', () => void activatePreparation())
+  }
   const base = import.meta.env.VITE_WORLD_PREPARE_API || '/prepare'
   const params = new URLSearchParams(location.hash.slice(1)),
     token = params.get('prepare')
@@ -20,6 +26,7 @@ export async function activatePreparation(): Promise<void> {
     return
   }
   if (!base) return
+  if (document.getElementById('prepare-status')) return
   const status = document.createElement('span')
   status.id = 'prepare-status'
   status.setAttribute('role', 'status')
