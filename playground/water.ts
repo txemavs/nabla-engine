@@ -62,7 +62,9 @@ export class SeaWater {
         vec3 solarView = normalize(mat3(viewMatrix) * waterSunDirection);
         float alignment = max(0.0, dot(reflectedEye, solarView));
         float glint = pow(alignment, 350.0) * 8.0 + pow(alignment, 35.0) * 0.12;
-        outgoingLight += vec3(glint * waterSunStrength);
+        // This material does not use the cascade shader: suppress its repeated
+        // directional specular lobes and keep one astronomical solar reflection.
+        outgoingLight = diffuseColor.rgb * waterSunStrength * 0.8 + vec3(glint * waterSunStrength);
         #include <opaque_fragment>`,
           )
     }

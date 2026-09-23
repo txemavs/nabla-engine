@@ -35,7 +35,6 @@ import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
 import { GeographicView } from './geography.js'
 import { localToGeo, MADRID } from '../src/geography.js'
 import { gamepadAxes } from './input.js'
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { TransformControls } from 'three/addons/controls/TransformControls.js'
@@ -159,14 +158,9 @@ renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
 scene.background = new THREE.Color('#a6bbd5')
 scene.fog = new THREE.Fog('#a6bbd5', 70, 160)
-const environment = new RoomEnvironment()
-const pmrem = new THREE.PMREMGenerator(renderer)
-scene.environment = pmrem.fromScene(environment, 0.04).texture
-scene.environmentIntensity = 0.4
-environment.dispose()
-pmrem.dispose()
-const hemisphere = new THREE.HemisphereLight('#edf4ff', '#59644f', 0.4)
-scene.add(hemisphere)
+// The astronomical sun is the only global illumination source.
+scene.environment = null
+scene.environmentIntensity = 0
 const sun = new THREE.DirectionalLight('#ffe1b1', 3.2)
 sun.position.set(-25, 45, 25)
 sun.castShadow = false
@@ -1870,11 +1864,9 @@ function frame(now: number): void {
     const air = geography.atmosphere
     water?.setSun(geography.sunDirection, air.day)
     scene.fog = air.space >= 1 ? null : new THREE.Fog(air.color, air.near, air.far)
-    hemisphere.intensity = 0.04 + 0.36 * air.day
-    scene.environmentIntensity = 0.025 + 0.375 * air.day
-    const lightDirection = air.day > 0.05 ? geography.sunDirection : geography.moonDirection
+    const lightDirection = geography.sunDirection
     sun.position.copy(lightDirection).multiplyScalar(65)
-    sun.intensity = air.day > 0.05 ? 3.2 * air.day : 0.22
+    sun.intensity = geography.sunDirection.y > 0 ? 3.2 * air.day : 0
     sun.color.set(air.day > 0.05 ? '#fff0d8' : '#b8ccff')
     sunDirection.copy(lightDirection).negate()
     shadowManager.setLightDirection(sunDirection)

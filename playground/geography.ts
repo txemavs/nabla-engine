@@ -75,7 +75,7 @@ export class GeographicView {
       new THREE.MeshLambertMaterial({ color: '#c5c4bd', fog: false }),
     )
     addSunDisc(this.backdrop.material, this.sunDirection)
-    this.space.add(this.moon, new THREE.AmbientLight('#a2b6d3', 0.35))
+    this.space.add(this.moon)
     const rotation = this.origin ? localFrame(this.origin).invert() : new THREE.Quaternion()
     this.space.add(this.daylight, this.backdrop)
     this.backdrop.renderOrder = -100
