@@ -1,5 +1,20 @@
 # World Streaming Investigation: Missing Buildings at Moderate Speed
 
+## Update: duplicate tile planning (#38)
+
+The scheduling snapshot below predates the current concurrent loader. For the
+current implementation, WorldStream.update shares one install plan for both
+wanted and prefetch filtering. Preparation reuses it at the same 15-second
+horizon. A distinct horizon needs a second evaluation because its corridor,
+ranking and 24-tile cutoff differ; it cannot safely be sliced from the other plan.
+Disabled preparation performs one evaluation, and orbital updates perform none.
+Tests compare exact coverage and ordering against the previous algorithm and
+assert these evaluation counts.
+
+This completes the redundant-call part of #37, not its quantized scheduling or
+fingerprint work. The reduction applies to planner CPU, not total frame time or
+rendering cost; no threefold overall speedup is claimed.
+
 ## Problem Summary
 
 When driving at moderate speed, zones sometimes appear empty (no buildings) even though OSM data exists for those locations. This is a streaming latency/scheduling problem, not a visual quality issue.

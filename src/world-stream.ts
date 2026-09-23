@@ -56,6 +56,26 @@ export function wantedWorldTiles(
     )
     .slice(0, 24)
 }
+/**
+ * Share the install plan. A second evaluation is required only when preparation
+ * uses a different horizon: its larger corridor and ranking are not a prefix of
+ * the 15-second installation plan, so deriving one from the other changes coverage.
+ */
+export function planWorldTiles(
+  position: Vec3Tuple,
+  velocity: Vec3Tuple,
+  preparationAhead: number,
+  evaluate: typeof wantedWorldTiles = wantedWorldTiles,
+): { wanted: string[]; preparing: string[]; prefetch: string[] } {
+  const currentKey = worldTileKey(...worldTileAt(position))
+  if (position[1] > 12000) return { wanted: [], preparing: [currentKey], prefetch: [] }
+  const wanted = evaluate(position, velocity)
+  if (preparationAhead === 0) return { wanted, preparing: [currentKey], prefetch: [] }
+  const ahead = preparationAhead === 15 ? wanted : evaluate(position, velocity, preparationAhead)
+  const preparing = [currentKey, ...ahead.filter((key) => key !== currentKey)].slice(0, 24)
+  const installing = new Set(wanted)
+  return { wanted, preparing, prefetch: preparing.filter((key) => !installing.has(key)) }
+}
 export function mapTileEntities(doc: SceneDocument, key: string): Entity[] {
   const suffix = key === '0_0' ? '' : `-${key}`
   const ids = new Set(
@@ -182,28 +202,11 @@ export class WorldStream {
     if (this.disposed) return
     this.position = position
     this.protectedPositions = protectedPositions
-    const currentKey = worldTileKey(...worldTileAt(position))
-    const preparing =
-      position[1] > 12000
-        ? [currentKey]
-        : [
-            currentKey,
-            ...wantedWorldTiles(position, velocity, this.preparationAhead).filter(
-              (k) => k !== currentKey,
-            ),
-          ].slice(0, 24)
-    if (this.preparationAhead > 0) this.host.prepare?.(preparing)
-    const installing = new Set(wantedWorldTiles(position, velocity))
-    this.host.prefetch?.(
-      position[1] > 12000 || this.preparationAhead === 0
-        ? []
-        : preparing.filter((key) => !installing.has(key)),
-    )
-    if (position[1] > 12000) {
-      this.wanted = []
-      return
-    }
-    this.wanted = wantedWorldTiles(position, velocity)
+    const plan = planWorldTiles(position, velocity, this.preparationAhead)
+    if (this.preparationAhead > 0) this.host.prepare?.(plan.preparing)
+    this.host.prefetch?.(plan.prefetch)
+    this.wanted = plan.wanted
+    if (position[1] > 12000) return
     if (this.retentionArea !== this.budgetArea()) {
       this.retentionArea = this.budgetArea()
       this.evict()

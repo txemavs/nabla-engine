@@ -1,5 +1,11 @@
 import { expect, it, vi } from 'vitest'
-import { WorldStream, wantedWorldTiles, worldTileAt, mapTileEntities } from './world-stream.js'
+import {
+  WorldStream,
+  wantedWorldTiles,
+  worldTileAt,
+  mapTileEntities,
+  planWorldTiles,
+} from './world-stream.js'
 import { createEntity, type Entity, type SceneDocument } from './scene.js'
 import { SceneEditor } from './editor.js'
 import { Simulation, idleInput } from './simulation.js'
@@ -688,4 +694,40 @@ it('requires explicit Ultra opt-in for scenes above 20000 entities', async () =>
   const extended = replaceMapScene(checked, new Set(), [createEntity('extra', 'group')], true)
   expect(parseScene(extended, true).entities).toHaveLength(20002)
   expect(replaceMapScene(extended, new Set(['extra', 'g-0']), []).entities).toHaveLength(20000)
+})
+
+it('shares the wanted plan without changing preparation coverage at different horizons', () => {
+  for (const position of [
+    [0, 0, 0],
+    [599, 100, -601],
+    [-2000, 12000, 1400],
+  ] as [number, number, number][])
+    for (const velocity of [
+      [0, 0, 0],
+      [90, 0, -70],
+      [-270, 3, 0],
+    ] as [number, number, number][])
+      for (const horizon of [0, 15, 45]) {
+        const evaluate = vi.fn(wantedWorldTiles)
+        const plan = planWorldTiles(position, velocity, horizon, evaluate)
+        const expected = wantedWorldTiles(position, velocity)
+        const key = worldTileAt(position).join('_')
+        const preparing = [
+          key,
+          ...wantedWorldTiles(position, velocity, horizon).filter((k) => k !== key),
+        ].slice(0, 24)
+        expect(plan.wanted).toEqual(expected)
+        expect(plan.preparing).toEqual(horizon === 0 ? [key] : preparing)
+        expect(plan.prefetch).toEqual(
+          horizon === 0 ? [] : preparing.filter((k) => !expected.includes(k)),
+        )
+        expect(evaluate).toHaveBeenCalledTimes(horizon === 45 ? 2 : 1)
+      }
+  const evaluate = vi.fn(wantedWorldTiles)
+  expect(planWorldTiles([50, 12001, 50], [300, 0, 0], 45, evaluate)).toEqual({
+    wanted: [],
+    preparing: ['0_0'],
+    prefetch: [],
+  })
+  expect(evaluate).not.toHaveBeenCalled()
 })
