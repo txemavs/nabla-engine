@@ -111,7 +111,7 @@ export class SeaWater {
     const point = localToGeo(this.origin, position.toArray())
     const center = tileCoordinate(point.latitude, point.longitude, 12)
     const tileMeters = (40075016 * Math.cos((point.latitude * Math.PI) / 180)) / 4096
-    const radius = Math.min(2, Math.max(1, Math.ceil(distance / tileMeters)))
+    const radius = Math.min(3, Math.max(1, Math.ceil(distance / tileMeters)))
     this.wanted = []
     for (let dx = -radius; dx <= radius; dx++)
       for (let dy = -radius; dy <= radius; dy++) {

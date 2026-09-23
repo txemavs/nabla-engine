@@ -643,6 +643,7 @@ export class SceneView {
     this.wheels.set(e.id, wheels)
   }
   /** Distance culling is repeated for portal cameras, never shared from the main frustum. */
+  buildingDistance = 3000
   limitDrawDistance(
     position: THREE.Vector3,
     distance: number,
@@ -656,7 +657,7 @@ export class SceneView {
       this.objects,
       buildings && this.batchBuildings,
       position,
-      distance,
+      Math.min(distance, this.buildingDistance),
     )
     this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
     this.landcover.update(this.document.entities, this.objects, enabled, position, distance, now)
@@ -683,7 +684,13 @@ export class SceneView {
         this.mapBounds.set(e.id, bounds)
       }
       object.visible =
-        !enabled || withinMapDistance(bounds.center, position, bounds.radius, distance)
+        !enabled ||
+        withinMapDistance(
+          bounds.center,
+          position,
+          bounds.radius,
+          isMapBuilding(e) ? Math.min(distance, this.buildingDistance) : distance,
+        )
     }
   }
   setPlaying(playing: boolean): void {

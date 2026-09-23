@@ -9,7 +9,12 @@ void activatePreparation()
 import { SeaWater } from './water.js'
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
-import { readPerformance, shadowTiers } from './performance.js'
+import {
+  readPerformance,
+  shadowTiers,
+  performancePresets,
+  performanceProfile,
+} from './performance.js'
 import { ShadowManager } from './csm.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
@@ -437,6 +442,10 @@ function setupWorldStream(): void {
       $('stream-status').textContent = message
     },
   })
+  worldStream.setQuality(
+    performanceProfile(performanceSettings).concurrent,
+    performanceProfile(performanceSettings).ahead,
+  )
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
 function select(id: string): void {
@@ -1188,6 +1197,12 @@ for (const [id, key] of [
   control.value = String(performanceSettings[key])
   control.onchange = () => {
     performanceSettings[key] = Number(control.value)
+    performanceSettings.preset = 'custom'
+    $<HTMLSelectElement>('performance-preset').value = 'custom'
+    worldStream?.setQuality(
+      performanceProfile(performanceSettings).concurrent,
+      performanceProfile(performanceSettings).ahead,
+    )
     try {
       localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
     } catch {
@@ -1209,6 +1224,37 @@ for (const [id, key] of [
       sun.intensity,
     )
     needsRender = true
+  }
+}
+$<HTMLSelectElement>('performance-preset').value = performanceSettings.preset
+$('performance-preset').onchange = async () => {
+  const id = $<HTMLSelectElement>('performance-preset').value as keyof typeof performancePresets
+  const preset = performancePresets[id]
+  if (!preset) return
+  Object.assign(performanceSettings, preset.settings)
+  for (const [control, key] of [
+    ['map-buildings', 'buildings'],
+    ['draw-distance', 'distance'],
+    ['road-distance', 'roads'],
+    ['collision-distance', 'collisions'],
+    ['render-resolution', 'resolution'],
+    ['shadow-quality', 'shadows'],
+  ] as const)
+    $<HTMLSelectElement>(control).value = String(performanceSettings[key])
+  $('draw-distance').dispatchEvent(new Event('change'))
+  performanceSettings.preset = id
+  $<HTMLSelectElement>('performance-preset').value = id
+  try {
+    localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
+  } catch {
+    /* Optional persistence. */
+  }
+  worldStream?.setQuality(preset.concurrent, preset.ahead)
+  try {
+    await setMapCacheBudget(preset.cache)
+    await refreshMapCacheUi()
+  } catch {
+    toast('Calidad aplicada; caché no disponible')
   }
 }
 for (const section of document.querySelectorAll<HTMLDetailsElement>('.app-menu details')) {
@@ -1806,9 +1852,10 @@ function frame(now: number): void {
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
   water?.update(worldCamera, renderOrigin, performanceSettings.distance, now)
   renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
+  view.buildingDistance = Math.min(3000, performanceSettings.distance)
   geography.viewDistance = performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
-  distantTerrain?.update(position)
+  distantTerrain?.update(position, performanceSettings.distance)
   distantTerrain?.root.position.copy(renderOrigin).negate()
   view.root.position.copy(renderOrigin).negate()
   camera.position.sub(renderOrigin)

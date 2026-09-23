@@ -14,6 +14,7 @@ self.onmessage = async (
     origin?: GeoPoint
     cancel?: boolean
     destination?: boolean
+    spacing?: number
     far?: [number, number]
   }>,
 ) => {
@@ -30,7 +31,13 @@ self.onmessage = async (
   controllers.set(id, controller)
   try {
     if (far) {
-      const terrain = await loadDistantTerrain(origin!, far[0], far[1], controller.signal)
+      const terrain = await loadDistantTerrain(
+        origin!,
+        far[0],
+        far[1],
+        controller.signal,
+        event.data.spacing,
+      )
       if (!controller.signal.aborted) self.postMessage({ id, terrain })
       return
     }

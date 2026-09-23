@@ -184,24 +184,25 @@ async function elevation(
 ) {
   ready ??= Lerc.load({ locateFile: () => lercWasm })
   await ready
+  const zoom = spacing > 150 ? 10 : 12
   const samples = Array.from({ length: 121 * 121 }, (_, i) => {
     const p = sampleGeo(
       origin,
       ox + (i % 121) * spacing - 60 * spacing,
       oz + Math.floor(i / 121) * spacing - 60 * spacing,
     )
-    return tileCoordinate(p.latitude, p.longitude, 12)
+    return tileCoordinate(p.latitude, p.longitude, zoom)
   })
   const rasters = new Map<string, Lerc.LercData>()
   for (const p of samples) {
     const x = Math.floor(p.x),
       y = Math.floor(p.y),
-      key = `${x}/${y}`
+      key = `${zoom}/${x}/${y}`
     if (rasters.has(key)) continue
     if (!decoded.has(key))
       decoded.set(
         key,
-        fetchChecked(`${ESRI}/12/${y}/${x}`, signal)
+        fetchChecked(`${ESRI}/${zoom}/${y}/${x}`, signal)
           .then((r) => r.arrayBuffer())
           .then((b) => Lerc.decode(b))
           .catch((e) => {
@@ -213,7 +214,7 @@ async function elevation(
   }
   while (decoded.size > 16) decoded.delete(decoded.keys().next().value!)
   return samples.map((p) => {
-    const d = rasters.get(`${Math.floor(p.x)}/${Math.floor(p.y)}`)!,
+    const d = rasters.get(`${zoom}/${Math.floor(p.x)}/${Math.floor(p.y)}`)!,
       u = (p.x % 1) * (d.width - 1),
       v = (p.y % 1) * (d.height - 1)
     const x = Math.floor(u),
@@ -337,11 +338,12 @@ export async function loadDistantTerrain(
   x: number,
   z: number,
   signal: AbortSignal,
+  spacing = 100,
 ) {
   return {
     columns: 121,
     rows: 121,
-    spacing: 100,
-    heights: await elevation(origin, x, z, signal, 100),
+    spacing,
+    heights: await elevation(origin, x, z, signal, spacing),
   }
 }

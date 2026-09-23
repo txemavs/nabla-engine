@@ -442,3 +442,19 @@ find /data/prepared/5 -type f -name '*.json' -exec \
 Run conversion with the service's filesystem ownership. It preserves JSON and atomically replaces each binary sidecar. Check available disk space first: keeping both formats uses more server storage. The preparation worker's existing output budget now counts both extensions. Rebuild/restart the preparation image to make future jobs produce both files; deploy the client afterward. Keep JSON for older clients and rollback. For a rollback, restore the previous frontend and worker image; existing JSON remains usable.
 
 A local check on one existing zone measured 21.2 MB JSON versus 16.9 MB binary before HTTP compression (about 20% smaller). This is one sample, not a frame-rate or network-compression benchmark. Retained browser data still shares the 100 MB budget.
+
+### Five performance presets
+
+Options → Performance → General quality applies a complete preset and persists it. Individual visual controls remain available and mark the selection as Custom. Cache settings can still be adjusted separately. A lower cache preset immediately trims old map payloads to the new budget.
+
+| Preset       | Terrain horizon | Road detail cap | Buildings | Shadows | Pixel ratio cap | Cache  | Demand concurrency | Prepare lookahead |
+| ------------ | --------------- | --------------- | --------- | ------- | --------------- | ------ | ------------------ | ----------------- |
+| Basic mobile | 1 km            | 250 m           | Off       | Off     | 0.75            | 25 MB  | 1                  | Off               |
+| Low          | 2 km            | 500 m           | On        | Low     | 1               | 50 MB  | 1                  | 15 s              |
+| Balanced     | 4 km            | 1 km            | On        | Low     | 1.25            | 100 MB | 2                  | 30 s              |
+| High         | 10 km           | 4 km            | On        | Medium  | 1.25            | 100 MB | 3                  | 45 s              |
+| Ultra        | 20 km           | 6 km            | On        | High    | 2               | 100 MB | 3                  | 45 s              |
+
+Buildings have an additional 3 km visibility cap. Road distances are visibility caps for installed detailed zones, not a promise of a complete road ring. High/Ultra expand the low-resolution elevation mesh, keeping its grid at 121×121 samples and using coarser elevation tiles for the outer horizon. The mesh includes a margin for camera movement between recenters. Existing nearby terrain masks the coarse mesh.
+
+Ultra does **not** request 800 complete OSM zones, enlarge the 100 MB browser limit or increase live provider concurrency to 16. The detailed corridor/entity budget remain bounded. A complete 3–10 km road ring and distant building silhouettes would require additional prepared LOD products; they are not represented as implemented by these presets. Preset names describe settings, not a hardware FPS guarantee.

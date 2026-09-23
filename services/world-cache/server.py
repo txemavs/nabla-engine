@@ -139,8 +139,8 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self.respond(404, b'{"error":"Zone not baked"}')
             return
-        match = re.fullmatch(r'/elevation/12/(\d{1,4})/(\d{1,4})', self.path)
-        if not match or any(int(n) >= 4096 for n in match.groups()):
+        match = re.fullmatch(r'/elevation/(10|12)/(\d{1,4})/(\d{1,4})', self.path)
+        if not match or any(int(n) >= 2 ** int(match.group(1)) for n in match.groups()[1:]):
             self.respond(404, b'{"error":"Unknown tile"}'); return
         self.fetch('elevation:' + self.path, ESRI + self.path.removeprefix('/elevation/'), None, 'application/octet-stream')
     def do_POST(self):

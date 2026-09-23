@@ -142,7 +142,12 @@ export class WorldStream {
   private position: Vec3Tuple = [0, 0, 0]
   private protectedPositions: Vec3Tuple[] = []
   private readonly inFlight = new Map<string, AbortController>()
-  private readonly maxConcurrent = 3
+  private maxConcurrent = 3
+  private preparationAhead = 45
+  setQuality(concurrent: number, ahead: number): void {
+    this.maxConcurrent = Math.max(1, Math.min(3, Math.round(concurrent)))
+    this.preparationAhead = Math.max(0, Math.min(45, ahead))
+  }
   private readonly limited = new Map<string, string>()
   private nextSlot = 0
   private disposed = false
@@ -176,11 +181,17 @@ export class WorldStream {
         ? [currentKey]
         : [
             currentKey,
-            ...wantedWorldTiles(position, velocity, 45).filter((k) => k !== currentKey),
+            ...wantedWorldTiles(position, velocity, this.preparationAhead).filter(
+              (k) => k !== currentKey,
+            ),
           ].slice(0, 24)
-    this.host.prepare?.(preparing)
+    if (this.preparationAhead > 0) this.host.prepare?.(preparing)
     const installing = new Set(wantedWorldTiles(position, velocity))
-    this.host.prefetch?.(position[1] > 12000 ? [] : preparing.filter((key) => !installing.has(key)))
+    this.host.prefetch?.(
+      position[1] > 12000 || this.preparationAhead === 0
+        ? []
+        : preparing.filter((key) => !installing.has(key)),
+    )
     if (position[1] > 12000) {
       this.wanted = []
       return

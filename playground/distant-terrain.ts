@@ -19,6 +19,8 @@ export class DistantTerrain {
   private center: [number, number] | null = null
   status: 'loading' | 'ready' | 'unavailable' = 'loading'
   private pendingCenter: [number, number] = [0, 0]
+  private spacing = 100
+  private requestedSpacing = 100
   private pending = false
   private nextAttempt = 0
   private id = 0
@@ -58,6 +60,7 @@ export class DistantTerrain {
         this.changed()
         return
       }
+      this.spacing = this.requestedSpacing
       this.center = this.pendingCenter
       const t = event.data.terrain,
         geometry = new THREE.BufferGeometry()
@@ -99,18 +102,26 @@ export class DistantTerrain {
       )
     })
   }
-  update(position: Vec3Tuple): void {
+  update(position: Vec3Tuple, distance = 4000): void {
+    const spacing = Math.max(50, Math.ceil((distance + 2400) / 60 / 50) * 50)
     if (this.pending || Date.now() < this.nextAttempt || position[1] > 12000) return
     const center: [number, number] = [
       Math.round(position[0] / 2400) * 2400,
       Math.round(position[2] / 2400) * 2400,
     ]
-    if (this.mesh && this.center?.[0] === center[0] && this.center[1] === center[1]) return
+    if (
+      this.mesh &&
+      this.spacing === spacing &&
+      this.center?.[0] === center[0] &&
+      this.center[1] === center[1]
+    )
+      return
+    this.requestedSpacing = spacing
     this.pendingCenter = center
     this.pending = true
     this.status = 'loading'
     this.changed()
-    this.worker.postMessage({ id: ++this.id, origin: this.origin, far: center })
+    this.worker.postMessage({ id: ++this.id, origin: this.origin, far: center, spacing })
   }
   dispose(): void {
     this.worker.terminate()
