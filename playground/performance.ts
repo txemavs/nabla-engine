@@ -13,7 +13,7 @@ export interface ShadowTier {
   cascades: number
   mapSize: number
   maxFar: number
-  /** Shadow blur radius for PCFSoftShadowMap (0 = hard edges). */
+  /** Shadow sampling radius for Three.js r186 PCF filtering. */
   radius: number
   /** Normal bias to reduce shadow acne on curved surfaces (metres). */
   normalBias: number

@@ -155,7 +155,7 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
 renderer.shadowMap.enabled = performanceSettings.shadows > 0
-renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.shadowMap.type = THREE.PCFShadowMap
 // Refresh once for the main view; auxiliary cameras reuse that map.
 renderer.shadowMap.autoUpdate = false
 renderer.toneMapping = THREE.ACESFilmicToneMapping
