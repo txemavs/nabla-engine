@@ -117,6 +117,39 @@ export class SceneView {
     this.root.add(this.avatar)
     this.ready = Promise.all(this.loading).then(() => undefined)
   }
+  /** Keep installed meshes and the streaming queue for pose-only editor changes. */
+  updateEditorPoses(next: SceneDocument): boolean {
+    if (this.avatar.visible) return false
+    const { entities: previousEntities, ...previousSettings } = this.document
+    const { entities: nextEntities, ...nextSettings } = next
+    if (
+      JSON.stringify(previousSettings) !== JSON.stringify(nextSettings) ||
+      previousEntities.length !== nextEntities.length
+    )
+      return false
+    const unchangedShape = (entity: Entity) => {
+      const { transform, geoAnchor, name, ...shape } = entity
+      return JSON.stringify(shape)
+    }
+    for (let i = 0; i < nextEntities.length; i++)
+      if (unchangedShape(previousEntities[i]) !== unchangedShape(nextEntities[i])) return false
+    const nextGraph = SceneGraph.fromValidated(next)
+    const entities = nextEntities.map((entity, i) => {
+      const previous = previousEntities[i]
+      const pose = nextGraph.worldTransform(entity.id)
+      const moved = JSON.stringify(this.graph.worldTransform(entity.id)) !== JSON.stringify(pose)
+      const object = this.objects.get(entity.id)
+      if (object) applyPose(object, pose)
+      if (moved) this.mapBounds.delete(entity.id)
+      // Stable identity keeps unrelated road/building batches installed.
+      return !moved && JSON.stringify(previous) === JSON.stringify(entity) ? previous : entity
+    })
+    this.document.entities = entities
+    this.graph = nextGraph
+    const byId = new Map(entities.map((e) => [e.id, e]))
+    this.pendingMapMeshes = this.pendingMapMeshes.map((e) => byId.get(e.id)!)
+    return true
+  }
   replaceMapEntities(remove: Set<string>, add: Entity[]): void {
     this.pendingMapMeshes = this.pendingMapMeshes.filter((e) => !remove.has(e.id))
     for (const id of remove) {

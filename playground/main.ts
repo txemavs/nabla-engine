@@ -383,6 +383,11 @@ const solidEditor = new SolidEditor(
 )
 
 function rebuild(prepared?: PreparedMapGeometry): void {
+  const document = editor.document
+  if (!prepared && view.updateEditorPoses(document)) {
+    refreshUi()
+    return
+  }
   remotePortalViews?.dispose()
   syncCursor()
   distantTerrain?.dispose()
@@ -392,7 +397,6 @@ function rebuild(prepared?: PreparedMapGeometry): void {
   worldStream = null
   worldLoader = null
   gizmo.detach()
-  const document = editor.document
   if (
     JSON.stringify(view.document.geography) !== JSON.stringify(document.geography) ||
     view.document.entities.some((e) => !!e.terrain) !== document.entities.some((e) => !!e.terrain)

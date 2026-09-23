@@ -662,3 +662,18 @@ This proves the architecture by extending the existing playground, not building 
 - `src/scene.ts` - Entity schema including `source` field
 - `docs/real-world.md` - Streaming architecture documentation
 - `services/world-cache/server.py` - Docker cache implementation
+
+### Preserve the installed world during pose edits
+
+The editor's generic `rebuild` path disposed the entire SceneView and streaming
+controller after a gizmo or inspector transform. With progressive installation,
+this made existing buildings disappear and repopulate from the beginning.
+Pose-only changes now reconcile the existing view: object and descendant poses
+are updated, unchanged entity identities retain their batches, and pending map
+installation continues. Changes to geometry, scene settings or entity membership
+still use the full rebuild path. Returning from simulation also uses a full
+rebuild to restore the authored state.
+
+Browser regressions cover orbit/zoom plus an inspector edit without restarting
+asset loading, and editing a parent while a map is partly installed without
+replacing existing meshes/batches or resetting the installation queue.
