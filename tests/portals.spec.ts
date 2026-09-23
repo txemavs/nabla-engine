@@ -12,7 +12,7 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
   await page.goto('/?scene=circuit')
   await page.locator('[popovertarget="cursor-menu"]').click()
   await page.locator('#cursor-x').fill('4')
-  await page.locator('#cursor-y').fill('0')
+  await page.locator('#cursor-y').fill('1.455')
   await page.locator('#cursor-z').fill('0')
   await page.locator('#cursor-apply').click()
   await page.keyboard.press('Escape')
@@ -22,6 +22,19 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
     timeout: 20000,
   })
   await expect(page.locator('#portal-mode')).toHaveValue('closed')
+  await page.locator('[popovertarget="cursor-menu"]').click()
+  await page.locator('#cursor-x').fill('-4')
+  await page.locator('#cursor-z').fill('24')
+  await page.locator('#cursor-apply').click()
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Añadir entidad', exact: true }).click()
+  await page.locator('#sample-portals').click()
+  const target = await page
+    .locator('#portal-destination option')
+    .evaluateAll(
+      (options) => (options as HTMLOptionElement[]).find((o) => o.text === 'Portal')!.value,
+    )
+  await page.locator('#portal-destination').selectOption(target)
   await page.locator('#portal-mode').selectOption('window')
   await page.locator('#file-menu-button').click()
   await page.locator('#save').click()

@@ -19,6 +19,7 @@
           <button popovertarget="cursor-menu">Cursor 3D</button>
           <button id="options-menu-button" popovertarget="options-menu">Opciones</button>
           <a class="studio-preview-link" href="?studio=desktop">Studio Desktop · prueba</a>
+          <button id="portal-registry-button" hidden>Portales</button>
           <button id="help-menu-button" popovertarget="help-menu">Ayuda</button>
         </nav>
         <div id="travel-menu" class="app-menu" popover aria-label="Viajar por el mundo">
@@ -30,6 +31,7 @@
           <select id="travel-city">
             <option value="">Coordenadas personalizadas</option>
             <option value="40.4168,-3.7038">Madrid · Sol</option>
+            <option value="41.50354,-5.74665">Zamora · Plaza Mayor</option>
             <option value="41.3870,2.1700">Barcelona · Plaça de Catalunya</option>
             <option value="48.8584,2.2945">París · Torre Eiffel</option>
             <option value="52.5163,13.3777">Berlín · Puerta de Brandeburgo</option>
@@ -285,7 +287,7 @@
             ><button id="add-streetlight">Farola de autopista</button>
             <button id="add-sprite">Sprite</button><button id="add-group">Grupo</button>
             <hr />
-            <button id="sample-portals">Stargates</button
+            <button id="sample-portals">Portal</button
             ><button id="sample-gallery">Galería 2.5D</button>
           </div>
         </div>
@@ -348,6 +350,13 @@
         ><span>NABLA ENGINE <b>0.2</b></span>
       </footer>
     </div>
+    <section id="portal-registry" hidden>
+      <h3>Registro de portales</h3>
+      <p>
+        Los nombres se editan en Propiedades. Selecciona un portal para localizarlo en su lugar.
+      </p>
+      <div id="portal-registry-list"></div>
+    </section>
     <dialog id="save-project-dialog" aria-labelledby="save-project-title">
       <form id="save-project-form">
         <h2 id="save-project-title">Guardar proyecto como…</h2>

@@ -11,7 +11,13 @@ export type { VehicleDefinition, VisualDefinition } from './scene.js'
 
 export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './geography.js'
 
-export { createCarrierPortals, createPortalPair, portalMapping, portalCrossing } from './portal.js'
+export {
+  createCarrierPortals,
+  createPortal,
+  createPortalPair,
+  portalMapping,
+  portalCrossing,
+} from './portal.js'
 
 export { boxSolid, extrudeElement, extrudeFace, removeVertex, validateSolid } from './solid.js'
 export type { SolidGeometry } from './solid.js'

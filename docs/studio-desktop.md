@@ -67,3 +67,10 @@ rendering parity. In this environment both the legacy and Desktop screenshots
 showed a black world with the transform gizmo visible, without JavaScript errors.
 Interactive GPU validation is still required; this work does not claim to diagnose
 or fix that rendering issue.
+
+## Compact docking controls
+
+Dock tabs use square edges. Split-direction buttons and the move-group select are
+hidden; dragging tabs remains the primary docking action. Float/dock and close
+controls appear on group hover or keyboard focus, retaining keyboard access.
+The extra move/resize handles remain available on floating panels.

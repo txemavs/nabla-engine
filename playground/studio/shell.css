@@ -101,3 +101,39 @@
   background: #40516a;
   color: white;
 }
+
+/* Dock tools remain keyboard accessible but stay out of the normal editing surface. */
+.studio-workspace .nd-panel-actions {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  max-width: calc(100% - 85px);
+  height: 30px;
+  background: #303030;
+}
+.studio-workspace .nd-group:hover > .nd-panel-actions,
+.studio-workspace .nd-group:focus-within > .nd-panel-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.studio-workspace .nd-tabs button {
+  border-radius: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+}
+.studio-workspace .nd-tabs button[aria-selected='true'] {
+  border-bottom-color: #81aee6;
+}
+#portal-registry-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 6px 0;
+}
+/* Drag tabs to dock. Keep only float/dock and close in the compact action strip. */
+.studio-workspace .nd-panel-actions select,
+.studio-workspace .nd-panel-actions button[aria-label^='Dividir'] {
+  display: none;
+}

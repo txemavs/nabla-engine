@@ -7,6 +7,12 @@ import type { Simulation } from '../src/simulation.js'
 
 /** Native DOM tablets share the portal pose; activation is limited to one metre. */
 export class PortalControls {
+  projectRegistry?: {
+    entries: () => { id: string; name: string; place: string; size: number[] }[]
+    selected: (source: string) => string | undefined
+    configure: (source: string, destination: string | null, open: boolean) => string
+    status: (source: string) => string | undefined
+  }
   private readonly renderer = new CSS3DRenderer()
   private readonly scene = new THREE.Scene()
   private readonly aperture = new THREE.MeshBasicMaterial({
@@ -99,7 +105,11 @@ export class PortalControls {
         )
         .sort((a, b) => Number(!!a.parentId) - Number(!!b.parentId)))
         select.add(new Option(target.name, target.id))
-      select.value = mouth.portal!.pairId ?? ''
+      for (const target of this.projectRegistry?.entries() ?? [])
+        if (target.size.every((n, i) => Math.abs(n - mouth.size[i]) < 1e-6))
+          select.add(new Option(`${target.name} · ${target.place}`, `global:${target.id}`))
+      const global = this.projectRegistry?.selected(mouth.id)
+      select.value = global ? `global:${global}` : (mouth.portal!.pairId ?? '')
       const status = window.document.createElement('small')
       const buttons = window.document.createElement('div')
       for (const [label, mode] of [
@@ -111,6 +121,18 @@ export class PortalControls {
         button.onclick = () => {
           if (!this.simulation || panel.hidden || panel.dataset.active !== 'true') return
           try {
+            const currentGlobal = this.projectRegistry?.selected(mouth.id)
+            if (select.value.startsWith('global:') || (mode === 'closed' && currentGlobal)) {
+              this.report(
+                this.projectRegistry!.configure(
+                  mouth.id,
+                  mode === 'closed' ? (currentGlobal ?? null) : select.value.slice(7),
+                  mode === 'open',
+                ),
+              )
+              return
+            }
+            if (currentGlobal) this.projectRegistry!.configure(mouth.id, null, false)
             const target =
               mode === 'closed'
                 ? this.simulation.portalState(mouth.id).pairId
@@ -279,7 +301,9 @@ export class PortalControls {
       entry.panel.dataset.mode = state.mode
       const destination = document.entities.find((e) => e.id === state.pairId)?.name
       if (readout)
-        entry.status.textContent = `${state.mode === 'open' ? 'Abierto' : state.mode === 'window' ? 'Ventana' : 'Cerrado'}${destination ? ' · ' + destination : ''} · G libera el ratón`
+        entry.status.textContent =
+          this.projectRegistry?.status(mouth.id) ??
+          `${state.mode === 'open' ? 'Abierto' : state.mode === 'window' ? 'Ventana' : 'Cerrado'}${destination ? ' · ' + destination : ''} · G libera el ratón`
     }
     for (const entry of this.panels.values()) {
       const mesh = (

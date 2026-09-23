@@ -20,12 +20,14 @@ export function mountSettingsWindow(input: StudioInputOwner): void {
     { id: 'performance-section', title: 'Rendimiento' },
     { id: 'sky-section', title: 'Sol y luna' },
     { id: 'geography-section', title: 'Ubicación' },
+    { id: 'portal-registry', title: 'Portales' },
   ]
   const factories = new Map<string, ContentFactory>()
   for (const tab of tabs) {
     const element = document.getElementById(tab.id)! as HTMLDetailsElement
     factories.set(tab.id, (host) => {
       element.open = true
+      element.hidden = false
       host.append(element)
       return { dispose: () => document.getElementById('options-menu')!.append(element) }
     })
@@ -40,6 +42,12 @@ export function mountSettingsWindow(input: StudioInputOwner): void {
   createApp({
     setup() {
       const selected = ref(tabs[0].id)
+      document.getElementById('portal-registry-button')!.hidden = false
+      document.getElementById('portal-registry-button')!.onclick = () => {
+        window.dispatchEvent(new Event('portal-registry-request'))
+        selected.value = 'portal-registry'
+        store.openWindow('settings')
+      }
       watch(
         () => {
           const w = store.windows.get('settings')!

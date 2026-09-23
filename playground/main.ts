@@ -1,3 +1,5 @@
+import { RemotePortalViews } from './remote-portals.js'
+import { portalRegistry, setPortalConnection } from './studio/portal-registry.js'
 import { portalEnvironment } from './portal-environment.js'
 import {
   createProject,
@@ -41,8 +43,8 @@ import { PortalControls } from './portal-controls.js'
 import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
 import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
-import { createPortalPair } from '../src/portal.js'
-import { renderPortals } from './portals.js'
+import { createPortal } from '../src/portal.js'
+import { renderPortals, type ExternalPortalView } from './portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
 import { GeographicView } from './geography.js'
 import { localToGeo, MADRID } from '../src/geography.js'
@@ -81,6 +83,8 @@ const performanceSettings = readPerformance()
 const STORAGE_KEY = 'nabla.scene.v1'
 const PROJECT_KEY = 'nabla.project.v1'
 let project: StudioProject | undefined
+let portalEntriesCache: ReturnType<typeof portalRegistry> = []
+let portalEntriesProject: StudioProject | undefined
 let recoverLegacyPlaces = true
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = false
@@ -158,6 +162,7 @@ const studioInput = new StudioInputOwner(() => {
   if (document.pointerLockElement) document.exitPointerLock()
 })
 let toastTimer: ReturnType<typeof setTimeout>
+let remotePortalViews: RemotePortalViews | undefined
 function toast(message: string): void {
   $('toast').textContent = message
   $('toast').style.display = 'block'
@@ -390,6 +395,7 @@ const solidEditor = new SolidEditor(
 )
 
 function rebuild(prepared?: PreparedMapGeometry): void {
+  remotePortalViews?.dispose()
   syncCursor()
   distantTerrain?.dispose()
   distantTerrain = null
@@ -490,6 +496,7 @@ function select(id: string): void {
   refreshUi()
 }
 function refreshUi(): void {
+  refreshPortalEntries()
   const places = $<HTMLSelectElement>('project-places')
   places.replaceChildren(
     ...project!.locations.map((place) => {
@@ -667,7 +674,7 @@ function refreshUi(): void {
   }
   if (e.portal) {
     const controls = document.createElement('div')
-    controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>La conexión cambia en ambos extremos.</p>`
+    controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>Los destinos de esta ciudad permiten el paso. Entre ciudades, de momento solo ventana.</p>`
     controls.insertAdjacentHTML(
       'afterbegin',
       `<label class="field-label" for="portal-destination">Destino del Stargate</label><select id="portal-destination"><option value="">Sin enlace</option>${doc.entities
@@ -676,15 +683,48 @@ function refreshUi(): void {
         .join('')}</select>`,
     )
     props.append(controls)
-    $<HTMLSelectElement>('portal-destination').value = e.portal.pairId ?? ''
+    const sourceEntry = registrySource(e.id)
+    const remoteEntries = projectPortalEntries().filter(
+      (p) =>
+        p.locationId !== project!.activeLocation &&
+        p.size.every((n, i) => Math.abs(n - e.size[i]) < 1e-6),
+    )
+    for (const target of remoteEntries)
+      $<HTMLSelectElement>('portal-destination').add(
+        new Option(`${target.name} · ${target.place}`, `global:${target.id}`),
+      )
+    const remoteConnection = project!.connections?.find((c) => c.source === sourceEntry?.id)
+    $<HTMLSelectElement>('portal-destination').value = remoteConnection
+      ? `global:${remoteConnection.destination}`
+      : (e.portal.pairId ?? '')
     $('portal-destination').onchange = () =>
       action(() => {
-        editor.linkPortals(e.id, $<HTMLSelectElement>('portal-destination').value || null)
+        const target = $<HTMLSelectElement>('portal-destination').value
+        if (target.startsWith('global:')) {
+          editor.linkPortals(e.id, null)
+          configureProjectPortal(e.id, target.slice(7), false)
+        } else {
+          if (remoteConnection) configureProjectPortal(e.id, null, false)
+          editor.linkPortals(e.id, target || null)
+        }
         rebuild()
       })
-    $<HTMLSelectElement>('portal-mode').value = e.portal.mode
+    $<HTMLSelectElement>('portal-mode').value = remoteConnection?.mode ?? e.portal.mode
+    if (remoteConnection)
+      $<HTMLSelectElement>('portal-mode').querySelector<HTMLOptionElement>(
+        'option[value=open]',
+      )!.disabled = true
     $('portal-mode').onchange = () =>
       action(() => {
+        if (remoteConnection) {
+          configureProjectPortal(
+            e.id,
+            remoteConnection.destination,
+            $<HTMLSelectElement>('portal-mode').value === 'window',
+          )
+          refreshUi()
+          return
+        }
         editor.setPortalMode(
           e.id,
           $<HTMLSelectElement>('portal-mode').value as 'open' | 'closed' | 'window',
@@ -939,17 +979,15 @@ $('sample-gallery').onclick = () =>
 $('sample-portals').onclick = () =>
   action(() => {
     const next = editor.document
-    const ids = [crypto.randomUUID(), crypto.randomUUID()]
-    const [x, y, z] = next.cursor ?? [0, 0, 0]
-    const portals = createPortalPair(ids[0], ids[1], [x, y + 1.455, z], [x + 8, y + 1.455, z])
-    for (const portal of portals) portal.portal!.mode = 'closed'
-    next.entities.push(...portals)
+    const id = crypto.randomUUID()
+    next.entities.push(createPortal(id, next.cursor ?? [0, 0, 0]))
     editor.load(next)
-    selectedId = ids[0]
-    collapsed.delete(ids[0])
+    project = retainLocation(project!, editor.document)
+    selectedId = id
+    setAddMenu(false)
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
-    toast('Dos Stargates añadidos junto al cursor · enlazados y cerrados.')
+    toast('Portal colocado en el cursor 3D · dale un nombre y elige su destino.')
   })
 async function loadIrun(combined = false): Promise<void> {
   if (sim || loadingWorld) return
@@ -1245,6 +1283,7 @@ function togglePlay(): void {
     } else {
       orbitStartPosition = camera.position.clone()
       orbitStartTarget = orbit.target.clone()
+      project = retainLocation(project!, editor.document)
       portalControls.rebuild(editor.document)
       sim = new Simulation(editor.document, {
         playerMode: 'hover',
@@ -1387,7 +1426,22 @@ $('file-menu').addEventListener('click', (event) => {
   if ((event.target as HTMLElement).closest('button')) $('file-menu').hidePopover()
 })
 $('play').onclick = togglePlay
+remotePortalViews = new RemotePortalViews(() => {
+  needsRender = true
+}, toast)
 const portalControls = new PortalControls(viewport, toast)
+portalControls.projectRegistry = {
+  entries: () => projectPortalEntries().filter((p) => p.locationId !== project!.activeLocation),
+  selected: (id) =>
+    project!.connections?.find((c) => c.source === registrySource(id)?.id)?.destination,
+  configure: configureProjectPortal,
+  status: (id) => {
+    const connection = project!.connections?.find((c) => c.source === registrySource(id)?.id)
+    return connection
+      ? `${connection.mode === 'window' ? 'Ventana remota' : 'Cerrado'} · ${projectPortalEntries().find((p) => p.id === connection.destination)?.name ?? ''}`
+      : undefined
+  },
+}
 portalControls.rebuild(editor.document)
 const gallery = new Gallery(viewport)
 const sidearm = new Sidearm(viewport)
@@ -2054,39 +2108,64 @@ function frame(now: number): void {
         p.mesh.material.uniforms.live.value = portalLive[i]
       })
     }
-    renderPortals(view.portals, renderer, scene, camera, (remote) => {
-      view.limitDrawDistance(
-        remote.position.clone().add(renderOrigin),
-        performanceSettings.distance,
-        !!sim,
-        !!performanceSettings.buildings,
-        performanceSettings.preset === 'ultra'
-          ? 20000
-          : Math.min(performanceSettings.distance, performanceSettings.roads),
+    const externalViews = new Map<string, ExternalPortalView>()
+    for (const connection of project!.connections ?? []) {
+      if (connection.mode !== 'window') continue
+      const registry = projectPortalEntries()
+      const source = registry.find((p) => p.id === connection.source)
+      const target = registry.find((p) => p.id === connection.destination)
+      if (!source || !target || source.locationId !== project!.activeLocation) continue
+      const surface = view.portals.get(source.entityId)
+      if (!surface || !surface.mesh.visible) continue
+      const destination = project!.locations.find((p) => p.id === target.locationId)
+      if (!destination) continue
+      const remote = remotePortalViews?.resolve(
+        target.locationId,
+        destination.scene,
+        target.entityId,
       )
-      if (geography.enabled) {
-        const remotePosition = remote.position.clone().add(renderOrigin)
-        const restore = portalEnvironment(
-          geography,
-          scene,
-          remotePosition,
-          worldCamera,
-          renderOrigin,
-          skyClock,
-          ambientFill,
-          [sun, ...shadowManager.lights],
+      if (remote) externalViews.set(source.entityId, remote)
+    }
+    renderPortals(
+      view.portals,
+      renderer,
+      scene,
+      camera,
+      (remote) => {
+        view.limitDrawDistance(
+          remote.position.clone().add(renderOrigin),
+          performanceSettings.distance,
+          !!sim,
+          !!performanceSettings.buildings,
+          performanceSettings.preset === 'ultra'
+            ? 20000
+            : Math.min(performanceSettings.distance, performanceSettings.roads),
         )
-        try {
-          geography.render(renderer, remote, remotePosition)
-          renderer.autoClear = false
-        } catch (error) {
-          restore()
-          throw error
+        if (geography.enabled) {
+          const remotePosition = remote.position.clone().add(renderOrigin)
+          const restore = portalEnvironment(
+            geography,
+            scene,
+            remotePosition,
+            worldCamera,
+            renderOrigin,
+            skyClock,
+            ambientFill,
+            [sun, ...shadowManager.lights],
+          )
+          try {
+            geography.render(renderer, remote, remotePosition)
+            renderer.autoClear = false
+          } catch (error) {
+            restore()
+            throw error
+          }
+          return restore
         }
-        return restore
-      }
-      return undefined
-    })
+        return undefined
+      },
+      externalViews,
+    )
     outline.visible = outlineVisible
     view.batchBuildings = !gizmo.dragging
     view.limitDrawDistance(
@@ -2110,7 +2189,7 @@ function frame(now: number): void {
     renderer.render(scene, camera)
     portalControls.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
-    needsRender = view.pendingBuildingBatches
+    needsRender = view.pendingBuildingBatches || !!remotePortalViews?.pending
   }
   camera.position.copy(worldCamera)
   if (now >= nextPerformanceReadout) {
@@ -2303,9 +2382,11 @@ $('save-project-form').onsubmit = (event) => {
   })
 }
 
-$('project-place-open').onclick = async () => {
+$('project-place-open').onclick = () => {
+  void openProjectPlace($<HTMLSelectElement>('project-places').value)
+}
+async function openProjectPlace(id: string, entityId?: string): Promise<void> {
   if (loadingWorld) return
-  const id = $<HTMLSelectElement>('project-places').value
   const place = project!.locations.find((p) => p.id === id)
   if (!place) return
   if (sim) togglePlay()
@@ -2317,6 +2398,7 @@ $('project-place-open').onclick = async () => {
     await writeScene(PROJECT_KEY, JSON.stringify(next))
     editor.load(next.locations.find((p) => p.id === id)!.scene)
     project = next
+    if (entityId) selectedId = entityId
     rebuild()
     $('welcome').hidden = true
     $('travel-menu').hidePopover()
@@ -2329,3 +2411,61 @@ $('project-place-open').onclick = async () => {
     refreshUi()
   }
 }
+
+function refreshPortalEntries() {
+  const doc = editor.document
+  const working = project!.locations.find((p) => locationId(p.scene) === locationId(doc))
+  portalEntriesCache = portalRegistry({
+    ...project!,
+    locations: project!.locations.map((p) => (p === working ? { ...p, scene: doc } : p)),
+  })
+  portalEntriesProject = project
+}
+function projectPortalEntries() {
+  if (portalEntriesProject !== project) refreshPortalEntries()
+  return portalEntriesCache
+}
+function registrySource(entityId: string) {
+  return projectPortalEntries().find(
+    (p) => p.entityId === entityId && p.locationId === project!.activeLocation,
+  )
+}
+function configureProjectPortal(
+  sourceId: string,
+  destination: string | null,
+  open: boolean,
+): string {
+  project = retainLocation(project!, editor.document)
+  const source = registrySource(sourceId)
+  if (!source) throw Error('Portal no registrado')
+  const mouth = editor.document.entities.find((e) => e.id === sourceId)!
+  if (
+    open &&
+    sim &&
+    mouth.portal?.clearsRamp &&
+    mouth.parentId &&
+    !sim.vehicleInfo(mouth.parentId).rampClosed
+  )
+    throw Error('Cierra primero la puerta del garaje')
+  if (destination && sim) sim.configurePortal(sourceId, null, 'closed')
+  project = setPortalConnection(project!, source.id, destination, open ? 'window' : 'closed')
+  remotePortalViews?.dispose()
+  needsRender = true
+  return open
+    ? 'Ventana remota abierta · el paso físico entre lugares aún está cerrado'
+    : 'Ventana remota cerrada'
+}
+function refreshPortalRegistry(): void {
+  project = retainLocation(project!, editor.document)
+  const list = $('portal-registry-list')
+  list.replaceChildren()
+  for (const portal of projectPortalEntries()) {
+    const button = document.createElement('button')
+    button.textContent = `${portal.name} · ${portal.place}`
+    button.onclick = () => {
+      void openProjectPlace(portal.locationId, portal.entityId)
+    }
+    list.append(button)
+  }
+}
+window.addEventListener('portal-registry-request', refreshPortalRegistry)

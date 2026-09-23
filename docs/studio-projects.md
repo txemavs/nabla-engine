@@ -38,20 +38,55 @@ surviving the switch.
 ## Windows rather than long option menus
 
 In Desktop mode, **Opciones** opens a movable/resizable Desktop window with
-**Rendimiento**, **Sol y luna** and **Ubicación** tabs. The real controls retain
+**Rendimiento**, **Sol y luna**, **Ubicación** and **Portales** tabs. The real controls retain
 their event handlers and values across tab changes and window close/reopen.
 Arrow keys, Home and End navigate the tabs. Gameplay input is suspended while
 that settings window is visible. This change prioritizes settings windows; it
 does not require the user to rearrange the editor's docked panels.
 
-## Cross-city portals: remaining work
+## Named portal registry and remote windows
 
-The project format can retain multiple cities, but current Engine portals still
-link entities inside one scene. Cross-location portal targets, remote rendering,
-streaming readiness and player/vehicle transfer are not implemented by this change.
-They need explicit `(locationId, entityId)` references and frame conversion, plus
-failure handling when a destination is unavailable. Do not merge distant cities
-into one enormous local-coordinate scene to simulate that behavior.
+**Add → Portal** creates one closed mouth at the 3D cursor, without a partner.
+Its transform origin is the aperture centre. For a frame standing on level ground,
+place that centre about 1.6 metres above the surface, then adjust it with the gizmo.
+Rename it in the ordinary entity inspector.
+
+**Portales** opens the project-wide registry in Desktop mode. Each row shows the
+portal and its location; selecting it opens that retained place and selects the
+entity for editing. Choose a compatible destination in the inspector. Ship consoles
+also list portals in other saved locations.
+
+The optional version-2 `connections` list stores directed remote-window routes:
+`{ source, destination, mode: 'closed' | 'window' }`. Endpoints use the global
+root UUID plus the local mouth ID (or the location ID for non-geographic scenes).
+Names are read from entities, so renaming does not break links. Deleting an endpoint
+or changing its aperture dimensions removes incompatible routes on synchronization.
+A local Engine pair still uses its existing reciprocal traversal contract.
+
+Remote windows prepare a separate scene and destination atmosphere in that scene's
+working frame. Preparation is asynchronous; the aperture stays black until ready.
+The initial budget is two destination scenes, 1.5 km draw distance, 1 km roads and
+one portal recursion level. Remote scenes show retained authored data, without
+their own physics, extra map streaming, or shadow cascades. Closing/reconfiguring
+a route or rebuilding the scene releases the remote GPU resources.
+
+**Cross-city physical traversal is not implemented.** A remote connection exposes
+only Closed/Window, not Open passage. The ship garage must be fully closed to open
+its remote window. An orbiting ship can look at a saved city through its stern
+portal, but leaving the ship through that window and returning to a persistent
+orbital simulation still requires the transfer work in [planetary-world.md](planetary-world.md).
+
+### Madrid / Zamora trial
+
+1. Use **Ir → Madrid · Sol**, put the cursor where the frame should be, add a
+   Portal and name it “Puerta del Sol”.
+2. Use **Ir → Zamora · Plaza Mayor**, add and name another portal.
+   The destination preset is centred near 41.50354, -5.74665
+   ([OSM-derived location](https://mapcarta.com/es/W46122017)).
+3. Return to the saved place containing the ship. In its portal console, select
+   either named city portal. Close the garage and open the window. Flight changes
+   the source pose while the destination remains in its own frame.
+4. Use **Archivo → Guardar como…** to preserve both places and their routes in one file.
 
 The initial migration can recover legacy `nabla-place:*` browser snapshots when
 there is no saved project yet. Opening a named project disables that fallback, so

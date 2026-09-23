@@ -49,10 +49,11 @@ coordinate foundation, not a completed planet-wide streaming runtime.
 
 1. Make working sets spatial caches selected around observers and open portal
    destinations, rather than the ownership boundary for authored objects.
-2. Resolve portal endpoints by global root UUID plus child/entity reference.
-3. Load and retain a destination working set before showing an open portal.
-4. Map the remote observer into the destination frame. Render that frame's terrain,
-   objects and environment with its own visibility/collision budget.
+2. Implemented for remote windows: resolve endpoints by global root UUID plus child/entity reference.
+3. Implemented for retained destination scenes: wait for assets before showing the window.
+   Additional destination streaming and loading feedback remain to be added.
+4. Implemented for rendering: map the observer into a separate destination frame,
+   scene and atmosphere with a bounded draw distance. Remote collision remains unimplemented.
 5. Transfer a player or vehicle hierarchy, orientation and velocities atomically;
    remove its old runtime body without changing its global identity or duplicating it.
 6. Keep a ship's orbital frame alive while its pilot is on Earth. Avoid serializing
@@ -61,16 +62,16 @@ coordinate foundation, not a completed planet-wide streaming runtime.
 In particular, do not feed Sydney coordinates into Madrid's physics scene as
 multi-million-metre floats. Version 2 still validates each cached scene against
 the current local scene bounds; arbitrary reassignment to a distant working frame
-requires the streaming/transfer work above. Full world-object CRUD and portal
-routing across working sets are not yet wired into Studio.
+requires the streaming/transfer work above. Full world-object transfer is not yet wired into Studio. Named remote-window routing
+is available; see [the portal registry](studio-projects.md#named-portal-registry-and-remote-windows).
 
 ## Portal sky correction
 
 The previous remote pass moved the camera but reused the main observer's atmosphere.
 Now each portal evaluates the destination camera's atmosphere, stars, fog and direct/
 ambient light intensities, renders the remote view, then restores the main context
-in a `finally` cleanup. The same globe and textures are reused; no duplicate network
-loader or planet geometry is created per portal. Existing main-camera shadow maps
+in a `finally` cleanup. Local paired portals reuse the main globe and textures. Cross-location windows use
+a separate destination scene and geographic view, capped at two destination scenes. Existing main-camera shadow maps
 remain a separate limitation; this is not a remote shadow-cascade implementation.
 
 Altitude is measured against the planet surface, not subtracted from the working

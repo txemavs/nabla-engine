@@ -1,3 +1,4 @@
+import { portalRegistry, type PortalConnection } from './portal-registry.js'
 import { z } from 'zod'
 import { parseScene, type SceneDocument } from '../../src/scene.js'
 import { toWorldPose, fromWorldPose, type WorldPose } from '../../src/world-pose.js'
@@ -7,6 +8,7 @@ export interface StudioProject {
   format: 'nabla-project'
   version: 2
   objects: PlanetObject[]
+  connections?: PortalConnection[]
   name: string
   activeLocation: string
   locations: { id: string; scene: SceneDocument }[]
@@ -39,6 +41,18 @@ const schema = z
     format: z.literal('nabla-project'),
     version: z.union([z.literal(1), z.literal(2)]),
     objects: z.array(planetObjectSchema).max(100000).optional(),
+    connections: z
+      .array(
+        z
+          .object({
+            source: z.string().max(400),
+            destination: z.string().max(400),
+            mode: z.enum(['closed', 'window']),
+          })
+          .strict(),
+      )
+      .max(10000)
+      .optional(),
     name: z.string().trim().min(1).max(100),
     activeLocation: z.string().min(1).max(160),
     locations: z
@@ -99,7 +113,23 @@ export function parseProject(raw: unknown, large = false): StudioProject {
       throw Error('Missing root world pose')
     place.scene = parseScene(place.scene, large)
   }
-  return { ...value, version: 2, objects: value.objects, locations }
+  const project: StudioProject = { ...value, version: 2, objects: value.objects, locations }
+  const registry = new Map(portalRegistry(project).map((p) => [p.id, p]))
+  const sources = new Set<string>()
+  for (const connection of project.connections ?? []) {
+    const source = registry.get(connection.source),
+      destination = registry.get(connection.destination)
+    if (
+      !source ||
+      !destination ||
+      source.id === destination.id ||
+      sources.has(source.id) ||
+      source.size.some((n, i) => Math.abs(n - destination.size[i]) > 1e-6)
+    )
+      throw Error('Invalid project portal connection')
+    sources.add(source.id)
+  }
+  return project
 }
 export function retainLocation(project: StudioProject, scene: SceneDocument): StudioProject {
   return visitLocation(project, scene)
@@ -144,5 +174,14 @@ function synchronizeWorldObjects(project: StudioProject): StudioProject {
       })
     }
   }
-  return { ...project, objects }
+  const next = { ...project, objects }
+  const known = new Map(portalRegistry(next).map((p) => [p.id, p]))
+  next.connections = next.connections?.filter((c) => {
+    const source = known.get(c.source),
+      destination = known.get(c.destination)
+    return (
+      source && destination && source.size.every((n, i) => Math.abs(n - destination.size[i]) < 1e-6)
+    )
+  })
+  return next
 }
