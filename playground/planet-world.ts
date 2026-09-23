@@ -1,3 +1,4 @@
+import { placeLabel } from './place-label.js'
 import { validPlanetPlaces } from '../src/planet-places.js'
 import { PlanetHorizon } from './planet-horizon.js'
 import { matteGroundMaterial } from './ground-material.js'
@@ -297,6 +298,16 @@ export class PlanetWorld {
       manifest,
       directory: this.base + '/' + mapTilePath(manifest.tile) + '/',
     }
+    for (const place of validPlanetPlaces(manifest.places)) {
+      const label = placeLabel(place.text)
+      label.name = place.text
+      const gps = localToGeo(manifest.anchor, place.position)
+      // Cached label metadata is 20m above ground; display at 1000m AGL.
+      label.position.fromArray(
+        geoToLocal(manifest.anchor, { ...gps, altitude: gps.altitude + 980 }),
+      )
+      group.add(label)
+    }
     if (payload.vegetation.length) {
       this.treeTexture ??= new THREE.TextureLoader().load('/sprites/tree.png', () => this.changed())
       this.treeTexture.colorSpace = THREE.SRGBColorSpace
@@ -343,6 +354,7 @@ export class PlanetWorld {
       },
       bytes:
         payload.bytes +
+        validPlanetPlaces(manifest.places).length * 512 * 64 * 4 +
         (payload.chart ? 1024 * 1024 * 4 : 0) +
         payload.chunks.reduce((n, c) => n + c.triangles.byteLength, 0),
       revision: manifest.files.terrain.sha256,

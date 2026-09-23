@@ -1,5 +1,4 @@
 import * as THREE from 'three'
-import { navigationPlaces } from './navigation-places.js'
 /** One transparent canvas on the inside of the bow glass; no world-space labels. */
 export class ShipHud {
   readonly mesh: THREE.Mesh
@@ -29,7 +28,7 @@ export class ShipHud {
   }
   update(
     camera: THREE.Camera,
-    origin: THREE.Vector3,
+    _origin: THREE.Vector3,
     now: number,
     telemetry: { speedKmh: number; altitude: number } | null,
   ) {
@@ -50,27 +49,6 @@ export class ShipHud {
     ctx.fillStyle = '#79ff9c'
     ctx.strokeStyle = '#102a18'
     ctx.lineWidth = 4
-    // Intersect eye-to-city rays with the actual glass plane. Labels therefore
-    // track head movement, clip to the window and never follow the exterior camera.
-    const occupied: [number, number][] = []
-    for (const place of navigationPlaces()) {
-      const point = place.position.clone().sub(origin).applyMatrix4(inverse)
-      const t = -eye.z / (point.z - eye.z)
-      if (t <= 0 || t > 1) continue
-      const x = 512 + ((eye.x + (point.x - eye.x) * t) / 4.65) * 1024
-      const y = 300 - ((eye.y + (point.y - eye.y) * t) / 2.85) * 600
-      if (
-        x < 90 ||
-        x > 934 ||
-        y < 65 ||
-        y > 510 ||
-        occupied.some(([px, py]) => Math.abs(px - x) < 190 && Math.abs(py - y) < 32)
-      )
-        continue
-      occupied.push([x, y])
-      ctx.strokeText(place.text, x, y, 220)
-      ctx.fillText(place.text, x, y, 220)
-    }
     const up = new THREE.Vector3(0, 1, 0).transformDirection(inverse)
     ctx.save()
     ctx.translate(512, 300)
