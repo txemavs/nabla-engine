@@ -1,6 +1,6 @@
 /** Owner activation secret arrives only in the URL fragment, never in the build. */
 export async function activatePreparation(): Promise<void> {
-  const base = import.meta.env.VITE_WORLD_PREPARE_API
+  const base = import.meta.env.VITE_WORLD_PREPARE_API || '/prepare'
   const params = new URLSearchParams(location.hash.slice(1)),
     token = params.get('prepare')
   if (token) {
