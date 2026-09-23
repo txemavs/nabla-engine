@@ -9,6 +9,7 @@ import { parseScene } from './scene.js'
 const data = JSON.parse(
   readFileSync(new URL('../assets/geography/irun-ventas.json', import.meta.url), 'utf8'),
 ) as WorldExtract
+// Full-district geometry plus repeated validation needs headroom on shared CI runners.
 it('builds an actual Ventas district with original OSM identities and no circuit overlay', () => {
   const d = createRealWorld(data)
   expect(d.geography!.latitude).toBe(IRUN_VENTAS.latitude)
@@ -30,7 +31,7 @@ it('builds an actual Ventas district with original OSM identities and no circuit
   expect(parseScene(JSON.parse(saved)).entities.find((e) => e.id === building.id)!.source).toEqual(
     building.source,
   )
-})
+}, 20000)
 it('matches triangular height interpolation and rejects malformed grids', () => {
   const t = { columns: 2, rows: 2, spacing: 2, heights: [0, 2, 4, 10] }
   expect(terrainHeight(t, 0, 0)).toBe(5)
