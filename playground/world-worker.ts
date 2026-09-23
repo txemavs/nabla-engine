@@ -1,3 +1,4 @@
+import { loadGlbWorld } from './glb-world.js'
 import { compactMapTags } from '../src/map-metadata.js'
 import { mapFingerprint, mapTileEntities } from '../src/world-stream.js'
 import { loadPrepared, PreparationClient } from './prepared-world.js'
@@ -42,7 +43,13 @@ self.onmessage = async (
       return
     }
     if (!event.data.destination) {
-      const cached = await loadPrepared(origin!, key!, controller.signal)
+      const cached =
+        (await loadGlbWorld(
+          origin!,
+          key!,
+          controller.signal,
+          import.meta.env.VITE_WORLD_PREPARED_URL || '',
+        )) ?? (await loadPrepared(origin!, key!, controller.signal))
       if (cached && !controller.signal.aborted) {
         for (const e of cached.entities)
           if (e.source && !e.mapEditable) e.source.tags = compactMapTags(e.source.tags)

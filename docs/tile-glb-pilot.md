@@ -63,7 +63,7 @@ Both formats use the same camera and lighting and expose layer visibility. The
 viewer intentionally retains individually editable meshes and does not apply
 Studio's runtime draw-call batching. It therefore cannot establish that switching
 the production renderer to GLB would increase FPS. Index compression, spatial
-batches, multiple LODs and separate terrain/building files are later experiments.
+batches, multiple LODs are later experiments. Separate terrain/building files are now available below.
 
 ## Validation
 
@@ -71,8 +71,44 @@ batches, multiple LODs and separate terrain/building files are later experiments
 - Both pilot formats report the same visible triangle count in the comparison view.
 - The automated round-trip checks a non-origin tile's bounds, local offset, entity
   identity, vertex colors and triangle vertices after export and import.
-- Normal Studio and its map cache are left unchanged by the pilot.
+- The combined pilot remains available; the optional split-layer runtime path is described below.
 
 Coplanar transport surfaces use distinct depth priorities: paths, roads, ballast,
 then rails, above land cover. The viewer restores these from glTF extras (including
 older pilot exports); no collision heights or bridge geometry are changed.
+
+## Split-layer runtime experiment
+
+The exporter now also writes `terrain.glb`, `buildings-osm.glb`, and
+`manifest.json`. Terrain includes elevation, land cover, water, roads and railways.
+Buildings are separate meshes with their original entity IDs. Authored scene
+objects remain outside both generated files and retain the existing scene-edit
+and map override lifecycle.
+
+Identity is `nabla-local-v1/1200/<latitude>/<longitude>/<altitude>/<x>_<z>`.
+Coordinates use the same 6/6/3 decimal precision as the prepared cache. Each cell
+is 1,200 metres on each side (1.44 square kilometres). This is explicitly a local
+anchored grid, not a globally unique ground partition: two different origins can
+cover overlapping ground. A bare `0_0` is never a global identity. The prefix is
+versioned so a future global grid can coexist without silently changing saves.
+OGC 3D Tiles is the target interoperability model for geographic bounds,
+transforms, multiple contents and LOD; these manifests do not claim conformance.
+
+Place the three files beside a prepared tile in `<key>.glb-tile/`, e.g.
+`/prepared/5/43.329690/-1.819606/28.253/0_0.glb-tile/`. Publish the manifest
+last. SHA-256 hashes tie its entity metadata to exact layer revisions; mixed
+revisions fall back safely. The map worker tries this manifest first and uses the
+existing binary/JSON/provider chain when absent or invalid. Destination-only
+portal queries retain the original provider path.
+
+This experiment reads GLB geometry in the worker and hands its vertex buffers to
+the existing renderer. It retains runtime batching, entity selection, source
+metadata and physics instead of adding a duplicate GLB scene. It does **not**
+replace runtime materials with arbitrary GLB materials or support publishing
+edited geometry with stale physics. GLB transforms, textures and collision edits
+need a separate authored-asset import contract; the existing tile-lab import is
+still a visual preview only. Both generated layers are currently fetched before
+a tile is installed; independent deferred building installation is future work.
+HTTP caching applies to GLBs; the existing budgeted prepared-file disk cache is
+unchanged. This is an A/B transport experiment, not a promised FPS improvement:
+manifest overhead and GLB parsing must be counted along with geometry bytes.
