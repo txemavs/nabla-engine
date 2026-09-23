@@ -108,3 +108,18 @@ parent-relative transforms. Catalog vehicles added at the ground cursor use thei
 catalog clearance. Arbitrary authored heights, including orbital poses, remain
 unchanged. Old scenes are recovered only when they contain the exact untouched
 reference trio at their original unplaced coordinates.
+
+### Open a GPS destination from a URL
+
+Open `https://chained.world/?lat=43.32969&lon=-1.819606` to start at Irún · Ventas.
+`lat` and `lon` are decimal degrees (dot separator); their order does not matter.
+The aliases `latitude` and `longitude` are also accepted. Both coordinates are
+required, latitude must fit WebMercatorQuad (approximately ±85.05112878°), and
+longitude must be between −180° and +180°. Invalid or conflicting parameters show
+an error and leave the saved starting place intact.
+
+An explicit GPS destination takes precedence over the previous active place and
+legacy `scene`/`world` startup options. The saved project and its other places are
+preserved; opening a place already in the project reuses its authored objects.
+New places receive the standard vehicles and cursor with terrain-aware placement.
+Coordinates do not grant private tile-generation access or change its limits.

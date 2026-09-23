@@ -1,3 +1,4 @@
+import { urlLocation } from './studio/url-location.js'
 import { settleGroundPlacement } from './studio/ground-placement.js'
 import { mountStudio } from './studio/shell.js'
 import { setPlanetCharts } from './helm-map.js'
@@ -88,7 +89,11 @@ let project: StudioProject | undefined
 let portalEntriesCache: ReturnType<typeof portalRegistry> = []
 let portalEntriesProject: StudioProject | undefined
 let recoverLegacyPlaces = true
-const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
+const requestedLocation = urlLocation(location.search)
+const urlDestination =
+  requestedLocation && !('error' in requestedLocation) ? requestedLocation : null
+const circuitMode =
+  !urlDestination && new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = true
 const flightAudio = new FlightAudio()
 let groundPlacementDirty = true
@@ -2401,7 +2406,7 @@ function locate(): void {
 $('locate').onclick = locate
 setupWorldStream()
 refreshUi()
-if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
+if (circuitMode && !requestedLocation && !localStorage.getItem('nabla.location.requested')) {
   localStorage.setItem('nabla.location.requested', '1')
   void startupDone.then(() => locate())
 }
@@ -2648,8 +2653,10 @@ async function restoreStartup(): Promise<void> {
       initialScene = JSON.stringify(
         upgradeReferenceScene(
           createPlanetScene(
-            { latitude: 43.32969, longitude: -1.819606, altitude: 0 },
-            'Irún · Ventas',
+            { ...(urlDestination ?? { latitude: 43.32969, longitude: -1.819606 }), altitude: 0 },
+            urlDestination
+              ? `${urlDestination.latitude.toFixed(5)}, ${urlDestination.longitude.toFixed(5)}`
+              : 'Irún · Ventas',
           ),
         ),
       )
@@ -2662,6 +2669,24 @@ async function restoreStartup(): Promise<void> {
       },
       false,
     )
+    if (urlDestination) {
+      const { latitude, longitude } = urlDestination
+      const id = `geo:${latitude.toFixed(6)}:${longitude.toFixed(6)}`
+      const retained = result.project.locations.find((place) => locationId(place.scene) === id)
+      const destination =
+        retained?.scene ??
+        upgradeReferenceScene(
+          createPlanetScene(
+            { latitude, longitude, altitude: 0 },
+            `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+          ),
+        )
+      result.project = visitLocation(result.project, destination)
+      result.scene = result.project.locations.find(
+        (place) => place.id === result.project.activeLocation,
+      )!.scene
+      result.saved = JSON.stringify(result.scene)
+    }
     project = result.project
     recoverLegacyPlaces = !storedProject
     editor = SceneEditor.fromValidated(result.scene, performanceSettings.preset === 'ultra')
@@ -2681,11 +2706,22 @@ async function restoreStartup(): Promise<void> {
     renderer.domElement.dataset.startup = 'ready'
     finishStartup()
     if (freshWorld) {
-      renderer.domElement.dataset.world = 'irun'
+      renderer.domElement.dataset.world = urlDestination ? 'destination' : 'irun'
       focusSelection()
       void placeNewWorldObjects()
     }
-    if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
+    if (urlDestination) {
+      focusSelection()
+      groundPlacementDirty = true
+      $<HTMLInputElement>('travel-latitude').value = String(urlDestination.latitude)
+      $<HTMLInputElement>('travel-longitude').value = String(urlDestination.longitude)
+      void writeScene(PROJECT_KEY, JSON.stringify(project)).catch(() =>
+        toast('No se pudo guardar el destino en este navegador.'),
+      )
+    } else if (requestedLocation && 'error' in requestedLocation) {
+      toast(requestedLocation.error)
+    } else if (new URLSearchParams(location.search).get('world') === 'geoeuskadi')
+      void loadIrun(true)
     else if (
       !freshWorld &&
       !circuitMode &&
