@@ -94,3 +94,17 @@ unrelated scenes from previous projects are not pulled into the opened file.
 **Ir → Lugares de este proyecto** reopens any retained location without a network
 request. Raster Esri/CARTO tiles are no longer requested by the Studio runtime;
 the local example can still show its authored floor texture and planetary backdrop.
+
+### Initial terrain placement
+
+New planetary destinations place the cursor, player start, car and carrier on the
+terrain at their own horizontal positions. Placement remains pending while data
+loads and follows refinement from distant relief to native GLBs. Root entities
+record a `groundOffset` (metres above support); the initial cursor records
+`cursorOnGround`. These optional fields survive saving before terrain arrives.
+An explicit object pose edit clears its automatic offset, and explicitly placing
+the cursor disables its automatic ground alignment. Attached children keep their
+parent-relative transforms. Catalog vehicles added at the ground cursor use their
+catalog clearance. Arbitrary authored heights, including orbital poses, remain
+unchanged. Old scenes are recovered only when they contain the exact untouched
+reference trio at their original unplaced coordinates.

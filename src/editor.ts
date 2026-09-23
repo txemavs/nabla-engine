@@ -87,7 +87,7 @@ export class SceneEditor {
     return id
   }
   setCursor(position: Vec3Tuple): void {
-    this.commit({ ...this.document, cursor: position })
+    this.commit({ ...this.document, cursor: position, cursorOnGround: false })
   }
   moveToCursor(id: string): void {
     const next = this.document,
@@ -97,6 +97,7 @@ export class SceneEditor {
     const world = graph.worldTransform(id)
     world.position = next.cursor ?? [0, 0, 0]
     entity.transform = graph.localFromWorld(entity.parentId, world)
+    delete entity.groundOffset
     this.commit(next)
   }
   /** Rebase editable vertices and direct children without moving their world geometry. */

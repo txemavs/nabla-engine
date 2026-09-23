@@ -1,8 +1,10 @@
+import { recoverUnplacedDefaults } from './ground-placement.js'
 import { createEntity, SceneGraph, type SceneDocument } from '../../src/scene.js'
 import { createA3, createCarrier } from '../../src/presets.js'
 import type { GeoPoint } from '../../src/geography.js'
 /** User-owned content survives removal of generated context, with its world pose intact. */
 export function planetaryScene(document: SceneDocument): SceneDocument {
+  document = recoverUnplacedDefaults(document)
   if (
     !document.geography ||
     (!document.geography.planetary &&
@@ -46,10 +48,15 @@ export function createPlanetScene(origin: GeoPoint, name: string): SceneDocument
     name,
     sky: { mode: 'fixed', at: '2026-09-21T12:00:00.000Z' },
     geography: { ...origin, imagery: 'offline', planetary: true },
+    cursor: [0, 0, 0],
+    cursorOnGround: true,
     entities: [
       createEntity('spawn', 'spawn', [-2, 1, 0]),
       createA3('car-a', [0, 1, 0]),
       createCarrier('carrier', [20, 2, 0]),
-    ],
+    ].map((e) => ({
+      ...e,
+      groundOffset: e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.2 : 0.62,
+    })),
   }
 }

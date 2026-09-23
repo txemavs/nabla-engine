@@ -4,7 +4,7 @@ import { mapTileBounds, mapTileId, mapTileSample } from '../src/map-tiles.js'
 import { geoToLocal } from '../src/geography.js'
 import { groundGlb } from './planet-fixture.js'
 /** Deterministic native XYZ service; no live provider requests in browser tests. */
-export async function nativeMap(page: Page) {
+export async function nativeMap(page: Page, altitude = 0) {
   const buildings = groundGlb(true)
   const assets = new Map<string, Buffer>()
   await page.route('**/prepare/tiles', async (route) => {
@@ -21,7 +21,7 @@ export async function nativeMap(page: Page) {
             [0, 1],
             [1, 1],
             [1, 0],
-          ].map(([x, y]) => geoToLocal(anchor, mapTileSample(tile, x, y, 1)))
+          ].map(([x, y]) => geoToLocal(anchor, { ...mapTileSample(tile, x, y, 1), altitude }))
           const terrain = groundGlb(
             false,
             'Terrain',

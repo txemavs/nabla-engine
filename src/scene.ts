@@ -80,6 +80,7 @@ const entitySchema = z
       .optional(),
     kind: z.enum(['group', 'box', 'vehicle', 'spawn', 'solid', 'terrain']),
     transform,
+    groundOffset: finite.min(0).max(10000).optional(),
     geoAnchor: z
       .object({
         latitude: finite.min(-90).max(90),
@@ -221,6 +222,7 @@ const documentSchema = z
     version: z.literal(1),
     name: z.string().min(1).max(100),
     cursor: vector.optional(),
+    cursorOnGround: z.boolean().optional(),
     geography: z
       .object({
         latitude: finite.min(-90).max(90),
@@ -342,6 +344,7 @@ export function updateSceneEntity(
   )
     return document
   const entity = { ...previous, ...checked }
+  if (checked.transform && !('groundOffset' in checked)) delete entity.groundOffset
   const entities = [...document.entities]
   entities[index] = entity
   // Topology was already validated unless this transaction actually changes it.
