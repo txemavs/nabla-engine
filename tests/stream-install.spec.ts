@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createEntity } from '../src/scene.js'
 const buildings = Array.from({ length: 200 }, (_, i) => ({
   ...createEntity(`building-${i}`, 'solid', [(i % 20) * 5, 0, Math.floor(i / 20) * 5]),

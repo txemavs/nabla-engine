@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createSampleScene } from '../src/sample.js'
 
 test('requests location, saves the GPS pin and preserves it on reload', async ({
@@ -46,6 +46,7 @@ test('flies from the Agency ground to space with local assets and returns to the
   })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(1000)
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toContainText('CONTAINER')
@@ -96,6 +97,7 @@ test('flies from the Agency ground to space with local assets and returns to the
   await expect(page.locator('#speed')).toHaveText('0 km/h', { timeout: 20000 })
   await page.screenshot({ path: 'test-results/geography-earth.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-geo-level', 'local')
   await expect(page.locator('#latitude')).toHaveValue('40.4166')
   expect(errors).toEqual([])

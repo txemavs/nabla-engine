@@ -1240,6 +1240,7 @@ $('file').onchange = async () => {
     toast('La escena supera el límite de 40 MB')
     return
   }
+  if (sim) await togglePlay()
   loadingWorld = true
   refreshUi()
   try {
@@ -1249,7 +1250,6 @@ $('file').onchange = async () => {
         ? parseProject(raw, performanceSettings.preset === 'ultra')
         : createProject(upgradeReferenceScene(raw))
     const scene = opened.locations.find((p) => p.id === opened.activeLocation)!.scene
-    if (sim) await togglePlay()
     editor = new SceneEditor(scene, performanceSettings.preset === 'ultra')
     project = opened
     recoverLegacyPlaces = false
@@ -2384,7 +2384,7 @@ setupWorldStream()
 refreshUi()
 if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
   localStorage.setItem('nabla.location.requested', '1')
-  locate()
+  void startupDone.then(() => locate())
 }
 const frameLoop = new FrameLoop(frame)
 frameLoop.start()

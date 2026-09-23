@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('split GLBs preserve buffers and fail safely on missing or mismatched layers', async ({
   page,

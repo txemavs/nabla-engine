@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createEntity } from '../src/scene.js'
 
 test('opaque PNG pixels occlude deeper sprites regardless of draw order and match shot hits', async ({

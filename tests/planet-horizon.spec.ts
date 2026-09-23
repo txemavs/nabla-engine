@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { readFileSync } from 'node:fs'
 const raster = readFileSync(new URL('./fixtures/terrain-irun.lerc', import.meta.url))
 test('elevation-only relief loads without GLBs and supplies ground collisions beyond prepared areas', async ({

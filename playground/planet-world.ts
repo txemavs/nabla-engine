@@ -169,7 +169,7 @@ export class PlanetWorld {
     const missing = this.wanted.filter(
       (t) =>
         (!this.resident.has(mapTileId(t)) && !this.ready.has(mapTileId(t))) ||
-        this.ready.get(mapTileId(t))?.geometryRevision !== 'transport-union-v1',
+        this.ready.get(mapTileId(t))?.geometryRevision !== 'native-surfaces-v2',
     )
     if (!missing.length) return
     this.busy = true

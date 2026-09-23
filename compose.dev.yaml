@@ -6,7 +6,12 @@ services:
       - cache:/data
       - prepared:/publish
       - secrets:/secrets
+      - dependencies:/dependencies
+      - npm-cache:/npm-cache
       - ./services/development/init.py:/init.py:ro
+    environment:
+      DEV_UID: '${NABLA_DEV_UID:-1000}'
+      DEV_GID: '${NABLA_DEV_GID:-1000}'
     command: [python3, /init.py]
   world-cache:
     build:
@@ -46,15 +51,20 @@ services:
   studio:
     image: node:22-alpine
     working_dir: /workspace
+    user: '${NABLA_DEV_UID:-1000}:${NABLA_DEV_GID:-1000}'
+    depends_on:
+      setup:
+        condition: service_completed_successfully
     command: [sh, -c, 'npm ci --ignore-scripts && npm run dev -- --host 0.0.0.0']
     environment:
+      npm_config_cache: /npm-cache
       VITE_WORLD_PREPARE_API: /prepare
       VITE_WORLD_PREPARED_URL: /prepared
       VITE_WORLD_ELEVATION_URL: /world-cache/elevation
     volumes:
       - .:/workspace
       - dependencies:/workspace/node_modules
-      - npm-cache:/root/.npm
+      - npm-cache:/npm-cache
   web:
     image: nginx:1.28-alpine
     ports: ['127.0.0.1:${NABLA_DEV_PORT:-8080}:80']

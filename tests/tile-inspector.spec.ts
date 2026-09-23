@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './studio-test.js'
 test('tile inspector distinguishes loaded geometry from server GLBs and offers downloads and refresh', async ({
   page,
 }) => {

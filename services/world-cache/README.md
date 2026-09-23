@@ -1,5 +1,9 @@
 # Private shared world cache
 
+For the complete local Studio + generator stack, start with the
+[local development guide](../../docs/local-development.md). The standalone service
+recipes below are intended for server operators.
+
 > Current runtime: [native planetary GLB pipeline](../../docs/architecture/native-planet-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
 
 For the deployed layout, refresh procedures and operational history, see the

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('preloaded ground stays visible while hovering above the low detail distance', async ({
   page,

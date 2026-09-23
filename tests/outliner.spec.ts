@@ -1,11 +1,11 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('reveals a viewport selection inside a collapsed group and creates from the scene menu', async ({
   page,
 }) => {
   await page.goto('/?scene=circuit')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   const group = page.locator('[data-entity-id="architecture"]')
   const building = page.locator('[data-entity-id="building-0"]')
   await group.click()
@@ -32,5 +32,6 @@ test('reveals a viewport selection inside a collapsed group and creates from the
   await expect(page.locator('#add-menu')).toBeHidden()
   await expect(page.locator('#tree [aria-selected="true"]')).toContainText('Bloque')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(add).toBeDisabled()
 })

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 test('a car uses GPS by default and retains an explicit local offset through saving', async ({
   page,
 }) => {

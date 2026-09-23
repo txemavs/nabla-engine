@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 test('shows settlement labels and batched railway ribbons above terrain', async ({ page }) => {
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
@@ -57,6 +57,7 @@ test('shows settlement labels and batched railway ribbons above terrain', async 
     })
     doc.entities = doc.entities.filter((e: any) => e.kind !== 'vehicle')
     const view = new SceneView(doc)
+    while (view.pendingMapInstall) view.flushMapInstall(1000, 1000)
     const renderer = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
     renderer.setSize(960, 600)
     const scene = new T.Scene()

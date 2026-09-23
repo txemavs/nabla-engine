@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createEntity } from '../src/scene.js'
 
 const buildings = Array.from({ length: 100 }, (_, i) => ({
@@ -29,6 +29,7 @@ test('100 unmodified buildings use fewer draw calls with the same visible image'
       const module = '/view.ts'
       const { SceneView } = await import(module)
       const view = new SceneView(doc)
+      while (view.pendingMapInstall) view.flushMapInstall(1000, 1000)
       await view.ready
       const scene = new T.Scene()
       scene.add(view.root, new T.HemisphereLight('#ffffff', '#888888', 2))
@@ -81,31 +82,27 @@ test('100 unmodified buildings use fewer draw calls with the same visible image'
   expect(result.difference).toBeLessThan(0.5)
 })
 
-test('selection stays read-only until explicitly made editable, and the exception survives reload', async ({
+test('generated context stays outside the authored tree while customized buildings survive saving', async ({
   page,
 }) => {
   await page.goto('/?scene=circuit')
+  const custom = structuredClone(doc)
+  Object.assign(custom.entities[0], { mapEditable: true })
+  custom.entities[0].color = '#335577'
   await page.locator('#file').setInputFiles({
     name: 'buildings.json',
     mimeType: 'application/json',
-    buffer: Buffer.from(JSON.stringify(doc)),
+    buffer: Buffer.from(JSON.stringify(custom)),
   })
+  await expect(page.locator('#scene-name')).toHaveText('Batch test')
+  await expect(page.locator('[data-entity-id="building-1"]')).toHaveCount(0)
   await page.locator('[data-entity-id="building-0"]').click()
-  await expect(page.locator('#color')).toBeDisabled()
-  await expect(page.locator('#edit-solid')).toHaveCount(0)
-  await page.locator('#make-building-editable').click()
   await expect(page.locator('#color')).toBeEnabled()
-  await expect(page.locator('#edit-solid')).toBeVisible()
-  await page.locator('#color').fill('#335577')
-  await page.locator('#color').dispatchEvent('change')
+  await expect(page.locator('#color')).toHaveValue('#335577')
   await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   await page.reload()
   await page.locator('[data-entity-id="building-0"]').click()
   await expect(page.locator('#color')).toHaveValue('#335577')
-  await expect(page.locator('#make-building-editable')).toHaveCount(0)
-  await expect(page.locator('[data-entity-id="building-0"]')).toHaveCount(1)
-  await page.locator('[data-entity-id="building-1"]').click()
-  await expect(page.locator('#color')).toBeDisabled()
-  await expect(page.locator('#make-building-editable')).toBeEnabled()
+  await expect(page.locator('[data-entity-id="building-1"]')).toHaveCount(0)
 })

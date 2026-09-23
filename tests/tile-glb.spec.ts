@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './studio-test.js'
 
 test('tile GLB round-trip preserves mesh identity, bounds, triangles and vertex colors', async ({
   page,

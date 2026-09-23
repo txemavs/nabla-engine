@@ -1,11 +1,11 @@
 import { createEntity } from '../src/scene.js'
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('adds complete catalogue entities and saves editable lamp settings', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/?scene=circuit')
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
   floor.size = [200, 1, 200]
   await page.locator('#file').setInputFiles({
@@ -15,7 +15,6 @@ test('adds complete catalogue entities and saves editable lamp settings', async 
       JSON.stringify({
         version: 1,
         name: 'Catalogue',
-        geography: { latitude: 40.4168, longitude: -3.7038, altitude: 0, imagery: 'offline' },
         sky: { mode: 'fixed', at: '2026-09-22T00:00:00Z' },
         entities: [floor, createEntity('spawn', 'spawn', [0, 0.1, 0])],
       }),
@@ -29,8 +28,8 @@ test('adds complete catalogue entities and saves editable lamp settings', async 
       kind === 'streetlight' ? 'light' : 'drive',
     )
   }
-  await page.getByLabel('Posición local · m X', { exact: true }).fill('18')
-  await page.getByLabel('Posición local · m X', { exact: true }).press('Tab')
+  await page.getByLabel('Posición respecto al padre · m X', { exact: true }).fill('18')
+  await page.getByLabel('Posición respecto al padre · m X', { exact: true }).press('Tab')
   await page.locator('#focus').click()
   await page.locator('#light-night').uncheck()
   await page.locator('#light-intensity').fill('2400')

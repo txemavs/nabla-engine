@@ -1,104 +1,49 @@
-import { test, expect } from '@playwright/test'
-
-test('travels to another city with its own terrain, saves it and can undo the trip', async ({
+import { test, expect } from './studio-test.js'
+import { nativeMap } from './native-map.js'
+test('travels between native cities and restores authored edits after returning and reloading', async ({
   page,
 }) => {
-  let queries = 0
-  await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) => {
-    queries++
-    return route.fulfill({
-      json: {
-        elements: [
-          {
-            type: 'way',
-            id: 987654,
-            tags: { building: 'yes' },
-            geometry: [
-              { lat: 40.4175, lon: -3.7031 },
-              { lat: 40.4175, lon: -3.7029 },
-              { lat: 40.4177, lon: -3.7029 },
-              { lat: 40.4177, lon: -3.7031 },
-              { lat: 40.4175, lon: -3.7031 },
-            ],
-          },
-        ],
-      },
-      headers: { 'access-control-allow-origin': '*' },
-    })
-  })
-  await page.route(/WorldElevation3D|\/world-cache\/elevation/, (route) =>
-    route.fulfill({
-      path: 'tests/fixtures/terrain.lerc',
-      contentType: 'application/octet-stream',
-      headers: { 'access-control-allow-origin': '*' },
-    }),
-  )
-  await page.goto('/?scene=circuit')
-  const before = await page.locator('#scene-name').textContent()
+  await nativeMap(page)
+  await page.goto('/')
   await page.locator('#travel-menu-button').click()
   await page.locator('#travel-city').selectOption('40.4168,-3.7038')
   await page.locator('#travel-go').click()
-  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-world', 'destination', {
-    timeout: 30000,
-  })
   await expect(page.locator('#scene-name')).toHaveText('Madrid · Sol')
-  await expect(page.locator('[data-entity-id="world-terrain"]')).toHaveCount(1)
-  await expect(page.locator('#latitude')).toHaveValue('40.4168')
-  await expect(page.locator('#world-note')).toContainText('Madrid')
-  await expect(page.locator('#travel-menu')).toBeHidden()
+  await expect(page.locator('#travel-go')).toBeEnabled()
   await page.locator('#name').fill('Madrid custom car')
   await page.locator('#name').press('Tab')
+  await page.locator('#travel-menu-button').click()
+  await page.locator('#travel-city').selectOption('43.32969,-1.819606')
+  await page.locator('#travel-go').click()
+  await expect(page.locator('#scene-name')).toContainText('Irún')
+  await expect(page.locator('#travel-go')).toBeEnabled()
+  await page.locator('#travel-menu-button').click()
+  await page.locator('#travel-city').selectOption('40.4168,-3.7038')
+  await page.locator('#travel-go').click()
+  await expect(page.locator('#name')).toHaveValue('Madrid custom car')
   await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   await expect(page.locator('#status')).toHaveText('Guardado local')
-  expect(
-    await page.evaluate(() =>
-      JSON.parse(localStorage.getItem('nabla.scene.v1')!).entities.some(
-        (e: { source?: { id: string } }) => e.source?.id === 'way/987654',
-      ),
-    ),
-  ).toBe(true)
-  await page.locator('#undo').click()
-  await page.locator('#undo').click()
-  await expect(page.locator('#scene-name')).toHaveText(before!)
-  await page.locator('#redo').click()
-  await page.locator('#redo').click()
-  await expect(page.locator('#scene-name')).toHaveText('Madrid · Sol')
-  await page.screenshot({ path: 'test-results/travel-madrid.png' })
   await page.reload()
-  await expect(page.locator('#scene-name')).toHaveText('Madrid · Sol')
   await expect(page.locator('#name')).toHaveValue('Madrid custom car')
-  expect(queries).toBeGreaterThan(0)
+  await expect(page.locator('[data-entity-id="world-terrain"]')).toHaveCount(0)
 })
-
-test('preserves the scene on destination failure and cancellation; validates coordinates', async ({
+test('validates coordinates and opens an uncached destination without blocking on providers', async ({
   page,
 }) => {
-  await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) =>
-    // Terminal failure: 503 intentionally retries for up to a minute.
-    route.fulfill({ status: 400, body: 'invalid request' }),
-  )
+  await page.route('**/prepare/tiles', (r) => r.fulfill({ status: 503, body: 'offline' }))
+  await page.route('**/ImageServer/tile/**', (r) => r.fulfill({ status: 503, body: 'offline' }))
   await page.goto('/?scene=circuit')
   const before = await page.locator('#scene-name').textContent()
   await page.locator('#travel-menu-button').click()
   await page.locator('#travel-latitude').fill('91')
   await page.locator('#travel-go').click()
-  await expect(page.locator('#world-loading')).toBeHidden()
+  await expect(page.locator('#scene-name')).toHaveText(before!)
   await page.locator('#travel-latitude').fill('52.5163')
   await page.locator('#travel-longitude').fill('13.3777')
   await page.locator('#travel-go').click()
-  await expect(page.locator('#travel-status')).toContainText('No se pudo cargar', {
-    timeout: 15000,
-  })
-  await expect(page.locator('#scene-name')).toHaveText(before!)
-  await page.unroute(/overpass-api\.de\/|\/world-cache\/osm/)
-  await page.route(/overpass-api\.de\/|\/world-cache\/osm/, async (route) => {
-    await new Promise((r) => setTimeout(r, 3000))
-    await route.fulfill({ json: { elements: [] } }).catch(() => {})
-  })
-  await page.locator('#travel-go').click()
-  await page.locator('#travel-cancel').click()
-  await expect(page.locator('#travel-status')).toContainText('Viaje cancelado')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-world', 'destination')
   await expect(page.locator('#world-loading')).toBeHidden()
-  await expect(page.locator('#scene-name')).toHaveText(before!)
+  await expect(page.locator('#latitude')).toHaveValue('52.5163')
+  await expect(page.locator('#play')).toBeEnabled()
 })

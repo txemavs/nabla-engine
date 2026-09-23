@@ -143,7 +143,7 @@ try {
         units: 'metres',
         axes: '+X east, +Y up, +Z south',
         generator: 'native-xyz-v2',
-        geometryRevision: 'transport-union-v1',
+        geometryRevision: 'native-surfaces-v2',
         retrievedAt: source.retrievedAt,
         source: { path: sourcePath, sha256: sourceHash },
         files,

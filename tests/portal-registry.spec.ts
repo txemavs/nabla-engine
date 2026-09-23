@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createSampleScene } from '../src/sample.js'
 import { createPortal } from '../src/portal.js'
 import { createProject, visitLocation } from '../playground/studio/project.js'
@@ -24,10 +24,10 @@ test('registry locates individual portals and saves a named remote window', asyn
     buffer: Buffer.from(JSON.stringify(project)),
   })
   await page.locator('#portal-registry-button').click()
-  await expect(page.locator('#portal-registry-list')).toContainText('Puerta del Sol · Madrid')
+  await expect(page.locator('#portal-registry-list')).toContainText('Puerta del Sol')
   await page
     .locator('#portal-registry-list')
-    .getByRole('button', { name: 'Plaza Mayor · Zamora' })
+    .getByRole('button', { name: 'Plaza Mayor', exact: true })
     .click()
   await page.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(page.locator('#name')).toHaveValue('Plaza Mayor')

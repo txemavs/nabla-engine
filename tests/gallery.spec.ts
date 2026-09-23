@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createGallery } from '../playground/gallery.js'
 import { createEntity, parseScene } from '../src/scene.js'
 
@@ -26,8 +26,9 @@ test('renders PNG targets through a window and registers a shot from first perso
     buffer: Buffer.from(JSON.stringify(doc)),
   })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.keyboard.press('Tab')
   await page.waitForTimeout(700)
   const canvas = page.locator('#viewport > canvas')

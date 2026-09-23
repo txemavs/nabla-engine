@@ -45,7 +45,7 @@ class QueueTests(unittest.TestCase):
             filename=name+'-'+'a'*16+'.glb'
             (directory/filename).write_bytes(b'glb')
             files[name]={'path':filename,'bytes':3}
-        (directory/'manifest.json').write_text(json.dumps({'format':'nabla-planet-tile-v1','generator':'native-xyz-v2','id':'WebMercatorQuad/15/1/1','geometryRevision':'transport-union-v1','files':files}))
+        (directory/'manifest.json').write_text(json.dumps({'format':'nabla-planet-tile-v1','generator':'native-xyz-v2','id':'WebMercatorQuad/15/1/1','geometryRevision':'native-surfaces-v2','files':files}))
         self.assertEqual(self.queue.enqueue(['z/15/1/1']),1)
         self.assertEqual(self.queue.stats(),{'ready':1})
         self.assertIsNone(self.queue.claim())

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './studio-test.js'
 
 test('desktop retains the live viewport, edits and layout across panel moves', async ({ page }) => {
   const errors: string[] = []

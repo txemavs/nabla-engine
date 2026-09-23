@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 test('five presets persist their visual settings and cap speculative demand', async ({ page }) => {
   await page.goto('/geography/geoeuskadi-pilot/manifest.json')
   const values = await page.evaluate(async () => {

@@ -13,6 +13,8 @@ Linux containers. On Windows, enable Docker Desktop's WSL integration for your
 Ubuntu distribution, clone into its Linux home directory, and run these commands
 in that distribution. A working `docker version` must show both Client and Server.
 You do not need Node or Python installed on the host for this workflow.
+On Linux/WSL, if your user ID is not 1000, export `NABLA_DEV_UID=$(id -u)`
+and `NABLA_DEV_GID=$(id -g)` before starting; Studio writes files as that user.
 
 Allow roughly 4 GB of free RAM for the stack, additional memory for the browser,
 and at least 12 GB of free disk for caches, images and dependencies. The generator
@@ -73,7 +75,8 @@ flowchart LR
 
 - **studio:** Node 22, installs the lockfile and serves the bind-mounted source.
   Editing TypeScript/CSS reloads the browser. Its `node_modules` is an isolated
-  Docker volume, not your host installation.
+  Docker volume, not your host installation. The service runs as your configured
+  development user so build outputs do not become root-owned.
 - **world-cache:** the production `Dockerfile.prepare` image. Python serves the
   cache/API and starts the bounded queue worker. The worker invokes the compiled
   Node publisher, then atomically publishes manifests and GLBs.

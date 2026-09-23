@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { readFile } from 'node:fs/promises'
 import { createSampleScene } from '../src/sample.js'
 import { createProject, visitLocation } from '../playground/studio/project.js'

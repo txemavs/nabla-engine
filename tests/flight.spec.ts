@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createSampleScene } from '../src/sample.js'
 
 test('flies with a mode 2 gamepad, releases sticks to hover and disconnects safely', async ({
@@ -27,6 +27,7 @@ test('flies with a mode 2 gamepad, releases sticks to hover and disconnects safe
   })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(1000)
   const button = async (i: number, down: boolean) =>
     page.evaluate(
@@ -67,6 +68,7 @@ test('flies with a mode 2 gamepad, releases sticks to hover and disconnects safe
   await expect(page.locator('#flight-status')).not.toContainText('Mando modo 2')
   await expect(page.locator('#player-mode')).toContainText('VUELO')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#mode-label')).toHaveText('Edición')
   expect(errors).toEqual([])
 })

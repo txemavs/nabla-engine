@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './studio-test.js'
 import { createSampleScene } from '../src/sample.js'
 test('changes daylight, freezes time, restores real time and saves the selected clock', async ({
   page,
@@ -34,6 +34,7 @@ test('changes daylight, freezes time, restores real time and saves the selected 
   await expect(page.locator('#sky-status')).toContainText('Hora fija')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-sky-phase', 'night')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.locator('#options-menu-button').click()
   await page.locator('#sky-live').click()
   await expect(page.locator('#sky-status')).toContainText('Tiempo real')

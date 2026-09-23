@@ -4,7 +4,7 @@ import type { PlanetCollisionChunk } from './planet-collisions.js'
 export interface PlanetManifest {
   format: 'nabla-planet-tile-v1'
   generator: 'native-xyz-v2'
-  geometryRevision?: 'transport-union-v1'
+  geometryRevision?: 'native-surfaces-v2'
   id: string
   tile: MapTile
   anchor: GeoPoint

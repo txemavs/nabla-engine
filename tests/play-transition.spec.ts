@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('Play paints a busy state, ignores repeat activation and marks exit', async ({ page }) => {
   const errors: string[] = []

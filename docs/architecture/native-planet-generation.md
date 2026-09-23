@@ -128,8 +128,9 @@ Resting actors are raised when a more detailed surface arrives above their old s
 This is approximate ground, not a substitute for detailed road geometry; unavailable
 upstream elevation is retried and cannot be fabricated locally.
 
-`geometryRevision: transport-union-v1` identifies roads with shared bend cross-sections
-and a unioned footprint. End caps no longer remain separate coplanar discs after
+`geometryRevision: native-surfaces-v2` includes roads with shared bend cross-sections
+and a unioned footprint, plus courtyard ownership and subtraction of contained
+building parts from generic outlines. It supersedes `transport-union-v1`. End caps no longer remain separate coplanar discs after
 spherical projection. Old GLBs remain readable during regeneration. Owner discovery
 queues stale revisions, and the client replaces a resident revision when the new
 content-addressed manifest is published.

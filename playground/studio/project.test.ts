@@ -67,3 +67,20 @@ test('v1 migrates to stable global root identities and v2 treats planet poses as
   ).toBe(car.id)
   expect(() => parseProject({ ...copy, objects: [] })).toThrow('Missing root world pose')
 })
+
+test('native planetary places retain identity without generated terrain entities', async () => {
+  const { createPlanetScene } = await import('./planet-scene.js')
+  const madrid = createPlanetScene({ latitude: 40.4168, longitude: -3.7038, altitude: 0 }, 'Madrid')
+  const irun = createPlanetScene({ latitude: 43.32969, longitude: -1.819606, altitude: 0 }, 'Irún')
+  let project = createProject(madrid)
+  const id = project.activeLocation
+  expect(id).toBe('geo:40.416800:-3.703800')
+  madrid.entities.find((e) => e.id === 'car-a')!.name = 'My Madrid car'
+  project = retainLocation(project, madrid)
+  project = visitLocation(project, irun)
+  const retained = project.locations.find((p) => p.id === id)!
+  expect(retained.scene.entities.find((e) => e.id === 'car-a')!.name).toBe('My Madrid car')
+  project = visitLocation(project, retained.scene)
+  expect(project.locations).toHaveLength(2)
+  expect(project.activeLocation).toBe(id)
+})

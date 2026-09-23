@@ -63,7 +63,7 @@ const schema = z
   .strict()
 export function locationId(scene: SceneDocument): string {
   const geo = scene.geography
-  return geo && scene.entities.some((e) => e.terrain)
+  return geo && (geo.planetary || scene.entities.some((e) => e.terrain))
     ? `geo:${geo.latitude.toFixed(6)}:${geo.longitude.toFixed(6)}`
     : `local:${scene.name}`
 }

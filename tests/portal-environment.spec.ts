@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('a ground portal renders orbital atmosphere and restores the main camera environment', async ({
   page,

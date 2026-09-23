@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('the A3 casts a visible ground shadow at every enabled quality', async ({ page }) => {
   await page.goto('/?scene=circuit')

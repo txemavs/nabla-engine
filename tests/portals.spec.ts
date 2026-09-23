@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('adds original Stargates, persists modes and drives the A3 through a live view', async ({
   page,
@@ -45,9 +45,10 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
       .every((e: { portal: { mode: string } }) => e.portal.mode === 'window'),
   ).toBe(true)
   await page.locator('#portal-mode').selectOption('open')
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.screenshot({ path: 'test-results/stargates-editor.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#interaction')).toContainText('E para entrar', { timeout: 10000 })
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toContainText('AUDI')
@@ -66,5 +67,6 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
   await expect(page.locator('#player-mode')).toContainText('AUDI')
   await page.screenshot({ path: 'test-results/stargate-arrival.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   expect(errors).toEqual([])
 })

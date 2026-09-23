@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import Pbf from 'pbf'
 import { createEntity } from '../src/scene.js'
 

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createCarrier } from '../src/presets.js'
 import { createEntity, type Entity } from '../src/scene.js'
 
@@ -48,6 +48,7 @@ test('bounds draw calls for 800 roads and can hide their detail', async ({ page 
   })
   await expect(page.locator('#scene-name')).toHaveText('Profile')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
 
   const canvas = page.locator('#viewport > canvas')
   await expect(canvas).toHaveAttribute('data-camera-mode', 'first-person')

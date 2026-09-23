@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './studio-test.js'
 
 test('paths remain above grass in both individual and batched rendering', async ({ page }) => {
   await page.goto('/?scene=circuit')
@@ -71,8 +71,12 @@ test('transport crossings retain separate depth layers after GLB restoration', a
     for (const [i, entity] of entities.entries()) {
       const mesh = new T.Mesh(new T.PlaneGeometry(), new T.MeshStandardMaterial())
       mesh.name = i === 2 ? 'osm-way-1-ballast-0' : 'osm-way-1-rail-0-0'
-      // Previously exported GLBs all stored 12. Restore them without rebaking.
-      mesh.userData = { category: 'Roads', source: entity.source, groundLayer: 12 }
+      // Native GLBs persist the transport depth layer through batching.
+      mesh.userData = {
+        category: 'Roads',
+        source: entity.source,
+        groundLayer: transportLayer(entity),
+      }
       group.add(mesh)
     }
     restoreTileLayers(group)

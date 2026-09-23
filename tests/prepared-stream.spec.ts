@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('speculative binary download is reused and validates when installed', async ({ page }) => {
   await page.goto('/geography/geoeuskadi-pilot/manifest.json')

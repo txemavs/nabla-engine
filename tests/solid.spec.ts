@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('edits a building clone, extrudes and deletes faces, undoes and persists topology', async ({
   page,
@@ -7,7 +7,7 @@ test('edits a building clone, extrudes and deletes faces, undoes and persists to
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/?scene=circuit')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.locator('[data-entity-id="architecture"]').click()
   await page.locator('[data-entity-id="building-0"]').click()
   await page.locator('#duplicate').click()
@@ -39,6 +39,7 @@ test('edits a building clone, extrudes and deletes faces, undoes and persists to
   await page.locator('#edit-solid').click()
   await expect(page.locator('.solid-tools')).toContainText('10 caras')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#mode-label')).toHaveText('Jugando')
   expect(errors).toEqual([])
 })
@@ -46,7 +47,7 @@ test('edits a building clone, extrudes and deletes faces, undoes and persists to
 test('draws points, an edge and a plane with viewport clicks', async ({ page }) => {
   await page.goto('/?scene=circuit')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.locator('#add-entity').click()
   await page.locator('#add-solid').click()
   await page.locator('#focus').click()

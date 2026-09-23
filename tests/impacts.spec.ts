@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createEntity } from '../src/scene.js'
 
 test('leaves visible persistent surface marks and clears them when play stops', async ({
@@ -22,6 +22,7 @@ test('leaves visible persistent surface marks and clears them when play stops', 
     ),
   })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.keyboard.press('Tab')
   await page.locator('#viewport > canvas').click()
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(true)

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 test('GLB road chart draws without scene road entities and HUD sits above the world', async ({
   page,
 }) => {
