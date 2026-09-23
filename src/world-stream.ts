@@ -164,6 +164,33 @@ function sortByDistance(keys: Iterable<string>, position: Vec3Tuple): string[] {
   return [...keys].sort((a, b) => tileDistance(a, position) - tileDistance(b, position))
 }
 
+/** Load the ground beneath the actor, then the route it will cross before side streets. */
+export function prioritizedWorldLoads(
+  position: Vec3Tuple,
+  velocity: Vec3Tuple,
+  wanted: string[],
+): string[] {
+  const current = worldTileKey(...worldTileAt(position))
+  const speed = Math.hypot(velocity[0], velocity[2])
+  const lead = speed >= 10 ? Math.min(4800, speed * 15) : 0
+  const route = new Set<string>([current])
+  const samples = Math.ceil(lead / 600)
+  for (let i = 1; i <= samples; i++) {
+    const distance = (lead * i) / samples
+    const key = worldTileKey(
+      ...worldTileAt([
+        position[0] + (velocity[0] / speed) * distance,
+        position[1],
+        position[2] + (velocity[2] / speed) * distance,
+      ]),
+    )
+    if (wanted.includes(key)) route.add(key)
+  }
+  return [
+    ...new Set([...route, ...sortByDistance(immediateNeighborhood(position), position), ...wanted]),
+  ]
+}
+
 /**
  * Parallel zone streaming with player-zone prioritization.
  * Up to 3 concurrent requests; the player's current zone and immediate neighbors
@@ -241,7 +268,8 @@ export class WorldStream {
     const neighborsMissing = [...neighborhood].filter(
       (k) => !this.resident.has(k) && !this.inFlight.has(k),
     )
-    if (neighborsMissing.length && this.inFlight.size >= this.maxConcurrent) {
+    const currentKey = worldTileKey(...worldTileAt(position))
+    if (neighborsMissing.includes(currentKey) && this.inFlight.size >= this.maxConcurrent) {
       const cancellable = [...this.inFlight.entries()].filter(([k]) => !neighborhood.has(k))
       const farthest = cancellable.sort(
         (a, b) => tileDistance(b[0], position) - tileDistance(a[0], position),
@@ -251,12 +279,9 @@ export class WorldStream {
         this.inFlight.delete(farthest[0])
       }
     }
+    const prioritized = prioritizedWorldLoads(position, velocity, this.wanted)
     while (this.inFlight.size < this.maxConcurrent && now >= this.nextSlot) {
       const area = this.budgetArea()
-      const prioritized = [
-        ...sortByDistance(neighborsMissing, position),
-        ...this.wanted.filter((k) => !neighborhood.has(k)),
-      ]
       const key = prioritized.find(
         (k) =>
           !this.resident.has(k) &&

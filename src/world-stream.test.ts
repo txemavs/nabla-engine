@@ -779,3 +779,22 @@ it('collects nested map descendants in document order without absorbing authored
   expect(mapTileEntities(doc, '0_0').map((e) => e.id)).toEqual(['c', 'b', 'a', 'world-buildings'])
   expect(mapTileEntities(doc, '1_0')).toEqual([])
 })
+
+it('starts the flight route before side tiles and does not repeatedly cancel anticipation', () => {
+  const requests: { key: string; signal: AbortSignal }[] = []
+  const stream = new WorldStream({
+    document,
+    load: (key, signal) => {
+      requests.push({ key, signal })
+      return new Promise<Entity[]>(() => {})
+    },
+    replace: vi.fn(),
+    status: vi.fn(),
+  })
+  stream.update([0, 1500, 0], [277, 0, 0], [], 100)
+  expect(requests.map((r) => r.key)).toEqual(['1_0', '2_0', '3_0'])
+  for (let i = 1; i <= 5; i++) stream.update([0, 1500, 0], [277, 0, 0], [], 100 + i * 500)
+  expect(requests).toHaveLength(3)
+  expect(requests.every((r) => !r.signal.aborted)).toBe(true)
+  stream.dispose()
+})

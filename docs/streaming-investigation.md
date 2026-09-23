@@ -696,3 +696,21 @@ serialization. A browser regression checks that a position edit performs no
 whole-document structured clone and does not restart asset loading. Full scene
 imports and structural edits still use the broader validation/rebuild paths;
 this is not a claim that every editor operation is now constant-time.
+
+### Flight anticipation must survive nearby missing tiles
+
+The green coarse horizon can remain visible while detailed zones are still loading.
+The scheduler previously gave every tile in the 3×3 neighborhood priority over the
+flight corridor. Worse, missing side tiles could cancel an in-flight forward tile
+outside that neighborhood on subsequent updates.
+
+Scheduling now requests the current ground tile first, then tiles crossed by the
+next 15 seconds of horizontal travel (bounded to 4.8 km), then surrounding tiles.
+Only a missing current ground tile can preempt a request outside its neighborhood.
+This retains anticipation even with slow downloads; a regression holds those
+requests unresolved at 1,500 m altitude over repeated updates and checks their
+order and that their signals remain live. Existing delayed-hover installation
+and current-tile priority tests remain in place.
+
+This does not eliminate upstream latency or make a coarse horizon identical to
+10 m terrain. At high flight speed, unprepared regions can still arrive late.
