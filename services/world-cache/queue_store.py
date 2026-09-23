@@ -33,6 +33,18 @@ def ready_manifest(output, key):
         return None
 
 
+def has_ready_neighbor(output, key):
+    if not output:
+        return False
+    normalize(key)
+    _, z, x, y = key.split('/')
+    z, x, y = int(z), int(x), int(y)
+    size = 2 ** z
+    return any(ready_manifest(output, f'z/{z}/{(x+dx) % size}/{y+dy}')
+               for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+               if (dx or dy) and 0 <= y+dy < size)
+
+
 class Queue:
     def __init__(self, path, capacity=256, output=None):
         self.path = str(path)
@@ -40,6 +52,7 @@ class Queue:
         self.output = Path(output) if output else None
         with self.connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS planet_jobs (id TEXT PRIMARY KEY, path TEXT, tile TEXT, state TEXT, priority INTEGER, attempts INTEGER DEFAULT 0, next REAL DEFAULT 0, updated REAL)')
+            db.execute('CREATE TABLE IF NOT EXISTS public_admissions (tile TEXT, admitted REAL)')
             db.execute("UPDATE planet_jobs SET state='queued' WHERE state='running'")
 
     def connect(self):
@@ -47,7 +60,7 @@ class Queue:
         db.row_factory = sqlite3.Row
         return db
 
-    def enqueue(self, keys):
+    def enqueue(self, keys, *, public_limit=None):
         if not isinstance(keys, list) or not 1 <= len(keys) <= 24:
             raise ValueError('Expected 1–24 tile keys')
         cells = [normalize(key) for key in keys]
@@ -56,12 +69,15 @@ class Queue:
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
             db.execute("DELETE FROM planet_jobs WHERE state='queued' AND updated < ?", (now-600,))
+            db.execute('DELETE FROM public_admissions WHERE admitted <= ?', (now-3600,))
+            public_count = db.execute('SELECT count(*) FROM public_admissions').fetchone()[0]
             pending = db.execute("SELECT count(*) FROM planet_jobs WHERE state IN ('queued','running')").fetchone()[0]
             for priority, (identity, path, tile) in enumerate(cells):
                 row = db.execute('SELECT * FROM planet_jobs WHERE id=?', (identity,)).fetchone()
                 if row:
                     if row['state'] in ('queued', 'running'):
-                        db.execute('UPDATE planet_jobs SET priority=?,updated=? WHERE id=?', (priority, now, identity))
+                        if public_limit is None:
+                            db.execute('UPDATE planet_jobs SET priority=?,updated=? WHERE id=?', (priority, now, identity))
                         accepted += 1
                         continue
                     manifest = ready_manifest(self.output, tile) if self.output else None
@@ -76,8 +92,15 @@ class Queue:
                     db.execute('INSERT INTO planet_jobs (id,path,tile,state,priority,attempts,next,updated) VALUES (?,?,?,?,?,0,0,?)', (identity,path,tile,'ready',priority,now))
                     accepted += 1
                     continue
+                if public_limit is not None:
+                    if public_count >= public_limit or not has_ready_neighbor(self.output, tile):
+                        continue
+                    priority += 100  # Owner requests keep priority over public expansion.
                 if pending >= self.capacity:
                     continue
+                if public_limit is not None:
+                    db.execute('INSERT INTO public_admissions VALUES (?,?)', (tile, now))
+                    public_count += 1
                 db.execute('INSERT OR REPLACE INTO planet_jobs (id,path,tile,state,priority,attempts,next,updated) VALUES (?,?,?,?,?,0,0,?)', (identity,path,tile,'queued',priority,now))
                 pending += 1
                 accepted += 1

@@ -16,6 +16,7 @@ locks = [threading.Lock() for _ in range(64)]
 osm_lock = threading.Lock()
 next_osm = 0.0
 PREPARE_TOKEN = os.environ.get('PREPARE_TOKEN', '')
+PUBLIC_NEIGHBOR_LIMIT = max(0, int(os.environ.get('PREPARE_PUBLIC_NEIGHBORS_PER_HOUR', '0')))
 PREPARE_ROOT = Path(os.environ.get('PREPARE_ROOT', str(ROOT / 'prepared')))
 PREPARE_QUEUE = Queue(ROOT / 'prepare.sqlite', output=PREPARE_ROOT) if PREPARE_TOKEN else None
 
@@ -171,13 +172,15 @@ class Handler(BaseHTTPRequestHandler):
                 from queue_store import normalize
                 tiles = [normalize(key) for key in keys]
                 authorized = self.authorized()
-                accepted = PREPARE_QUEUE.enqueue(keys) if authorized and PREPARE_QUEUE else 0
+                access = 'owner' if authorized else 'neighbors' if PUBLIC_NEIGHBOR_LIMIT and PREPARE_QUEUE else 'read-only'
+                accepted = (PREPARE_QUEUE.enqueue(keys, public_limit=None if authorized else PUBLIC_NEIGHBOR_LIMIT)
+                            if PREPARE_QUEUE and access != 'read-only' else 0)
                 available = {}
                 for _, _, key in tiles:
                     manifest = ready_manifest(PREPARE_ROOT, key)
                     if manifest:
                         available[key] = manifest
-                self.respond(200, json.dumps({'available':available, 'accepted':accepted, 'authorized':authorized}).encode())
+                self.respond(200, json.dumps({'available':available, 'accepted':accepted, 'authorized':authorized, 'generationAccess':access}).encode())
             except (ValueError, KeyError, TypeError):
                 self.respond(400, b'{"error":"Invalid planetary tile request"}')
             return

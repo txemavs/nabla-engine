@@ -36,3 +36,25 @@ class AccessTests(unittest.TestCase):
                         self.assertEqual(json.load(response),{'queued':1})
                 finally:
                     http.shutdown();http.server_close();worker.join()
+
+    def test_public_mode_reports_neighbor_access_without_owner_authorization(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            queue = Queue(Path(tmp)/'jobs.sqlite', output=tmp)
+            with patch.object(server, 'PREPARE_TOKEN', 'owner'), \
+                 patch.object(server, 'PREPARE_QUEUE', queue), \
+                 patch.object(server, 'PUBLIC_NEIGHBOR_LIMIT', 2), \
+                 patch('queue_store.has_ready_neighbor', return_value=True):
+                http = ThreadingHTTPServer(('127.0.0.1', 0), server.Handler)
+                worker = threading.Thread(target=http.serve_forever, daemon=True)
+                worker.start()
+                try:
+                    request = urllib.request.Request(
+                        f'http://127.0.0.1:{http.server_port}/prepare/tiles',
+                        data=json.dumps({'keys': ['z/15/101/100']}).encode())
+                    with urllib.request.urlopen(request) as response:
+                        result = json.load(response)
+                    self.assertFalse(result['authorized'])
+                    self.assertEqual(result['generationAccess'], 'neighbors')
+                    self.assertEqual(result['accepted'], 1)
+                finally:
+                    http.shutdown(); http.server_close(); worker.join()
