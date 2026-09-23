@@ -1,3 +1,4 @@
+import { entityMapArtifact } from './map-artifact.js'
 import { isMapEnvironment } from './studio/outliner.js'
 import { matteGroundMaterial, groundDepthBias, transportLayer } from './ground-material.js'
 import { BuildingBatches } from './building-batches.js'
@@ -258,6 +259,7 @@ export class SceneView {
     for (const e of entities) {
       const group = this.objects.get(e.id) ?? new THREE.Group()
       group.userData.entityId = e.id
+      group.userData.mapArtifact = entityMapArtifact(e)
       this.objects.set(e.id, group)
       this.root.add(group)
       applyPose(group, this.graph.worldTransform(e.id))

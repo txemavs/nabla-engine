@@ -1,4 +1,3 @@
-import { BufferAttribute, BufferGeometry } from 'three'
 import type { TileArtifact } from '../../playground/tile-asset.js'
 
 /** Render-only ground compaction. Never quantize thin rails or modify collision metadata. */
@@ -9,10 +8,12 @@ export function compactGround(data: TileArtifact, step: number): TileArtifact {
     const source = geometry[entity.id]
     if (!source || (!entity.terrain && !entity.landcover) || entity.mapEditable) continue
     const p = new Float32Array(source.position)
+    const sourceNormals = new Float32Array(source.normal)
     const colors = source.color ? new Float32Array(source.color) : undefined
     const input = source.index ? new Uint32Array(source.index) : undefined
     const positions: number[] = [],
       outputColors: number[] = [],
+      normals: number[] = [],
       indices: number[] = []
     const vertices = new Map<string, number>(),
       faces = new Set<string>()
@@ -24,15 +25,19 @@ export function compactGround(data: TileArtifact, step: number): TileArtifact {
         // Preserve elevation: separately rounding ground and draped surfaces buries roads.
         // Only horizontal coordinates are snapped; thin layer offsets stay exact.
         const point = [0, 1, 2].map((axis) =>
-          axis === 1 ? p[v * 3 + axis] : Math.round(p[v * 3 + axis] / step) * step,
+          axis === 1 || entity.landcover
+            ? p[v * 3 + axis]
+            : Math.round(p[v * 3 + axis] / step) * step,
         )
         const color = colors ? Array.from(colors.subarray(v * 3, v * 3 + 3)) : []
-        const key = [...point, ...color].join(',')
+        const normal = Array.from(sourceNormals.subarray(v * 3, v * 3 + 3))
+        const key = [...point, ...normal, ...color].join(',')
         let index = vertices.get(key)
         if (index === undefined) {
           index = positions.length / 3
           vertices.set(key, index)
           positions.push(...point)
+          normals.push(...normal)
           outputColors.push(...color)
         }
         triangle.push(index)
@@ -58,28 +63,25 @@ export function compactGround(data: TileArtifact, step: number): TileArtifact {
     // Drop vertices belonging only to collapsed triangles.
     const used = new Map<number, number>(),
       compact: number[] = [],
-      compactColors: number[] = []
+      compactColors: number[] = [],
+      compactNormals: number[] = []
     const mapped = indices.map((old) => {
       let n = used.get(old)
       if (n === undefined) {
         n = used.size
         used.set(old, n)
         compact.push(...positions.slice(old * 3, old * 3 + 3))
+        compactNormals.push(...normals.slice(old * 3, old * 3 + 3))
         if (colors) compactColors.push(...outputColors.slice(old * 3, old * 3 + 3))
       }
       return n
     })
-    const g = new BufferGeometry()
-    g.setAttribute('position', new BufferAttribute(new Float32Array(compact), 3))
-    g.setIndex(mapped)
-    g.computeVertexNormals()
     geometry[entity.id] = {
       position: new Float32Array(compact).buffer,
-      normal: new Float32Array(g.getAttribute('normal').array).buffer,
+      normal: new Float32Array(compactNormals).buffer,
       index: new Uint32Array(mapped).buffer,
       ...(colors ? { color: new Float32Array(compactColors).buffer } : {}),
     }
-    g.dispose()
   }
   return { ...data, geometry }
 }

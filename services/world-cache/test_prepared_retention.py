@@ -45,7 +45,7 @@ class SidecarRevisionTest(unittest.TestCase):
             for name in ('terrain.glb', 'buildings-osm.glb'):
                 (layer / name).write_bytes(b'glb')
             self.assertFalse(sidecar_current(target))
-            (layer / 'manifest.json').write_text(json.dumps({'groundRevision': 2}))
+            (layer / 'manifest.json').write_text(json.dumps({'groundRevision': 4}))
             self.assertTrue(sidecar_current(target))
             (layer / 'terrain.glb').unlink()
             self.assertFalse(sidecar_current(target))

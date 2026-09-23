@@ -1,3 +1,4 @@
+import { registerMapArtifact, type MapArtifact } from './map-artifact.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
 import type { GeoPoint } from '../src/geography.js'
 import type { Entity } from '../src/scene.js'
@@ -21,6 +22,7 @@ export class WorldLoader {
       event: MessageEvent<{
         id: number
         entities: Entity[]
+        artifact?: MapArtifact
         geometry?: PreparedMapGeometry
         error?: string
       }>,
@@ -30,6 +32,7 @@ export class WorldLoader {
       this.pending.delete(event.data.id)
       if (event.data.error) request.reject(new Error(event.data.error))
       else {
+        registerMapArtifact(event.data.entities, event.data.artifact)
         if (event.data.geometry) receiveMapGeometry(event.data.entities, event.data.geometry)
         request.resolve(event.data.entities)
       }
@@ -39,7 +42,13 @@ export class WorldLoader {
       this.pending.clear()
     }
   }
-  load(origin: GeoPoint, key: string, signal: AbortSignal, destination = false): Promise<Entity[]> {
+  load(
+    origin: GeoPoint,
+    key: string,
+    signal: AbortSignal,
+    destination = false,
+    glbOnly = false,
+  ): Promise<Entity[]> {
     return new Promise((resolve, reject) => {
       if (signal.aborted) {
         reject(new Error('Carga cancelada'))
@@ -62,7 +71,7 @@ export class WorldLoader {
           reject(error)
         },
       })
-      this.worker.postMessage({ id, key, origin, destination })
+      this.worker.postMessage({ id, key, origin, destination, glbOnly })
     })
   }
   prepare(origin: GeoPoint, keys: string[]): void {

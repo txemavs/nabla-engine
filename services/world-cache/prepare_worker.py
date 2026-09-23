@@ -35,7 +35,7 @@ def sidecar_current(target):
     folder = target.with_suffix('.glb-tile')
     try:
         manifest = json.loads((folder / 'manifest.json').read_text())
-        return (manifest.get('groundRevision') == 2 and
+        return (manifest.get('groundRevision') == 4 and
                 (folder / 'manifest.json').stat().st_mtime >= target.with_suffix('.bin').stat().st_mtime and
                 all((folder / name).is_file() for name in ('terrain.glb', 'buildings-osm.glb')))
     except (OSError, ValueError):

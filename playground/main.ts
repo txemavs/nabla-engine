@@ -1,3 +1,4 @@
+import { tileInspector } from './tile-inspector.js'
 import { geographicPose, anchoredWorldPose } from './studio/geographic-pose.js'
 import { prepareStartup } from './startup.js'
 import { authoredTree, isMapEnvironment } from './studio/outliner.js'
@@ -460,6 +461,7 @@ function setupWorldStream(): void {
   worldStream = new WorldStream({
     document: () => view.document,
     load: (key, signal) => loader.load(origin, key, signal),
+    refreshLoad: (key, signal) => loader.load(origin, key, signal, false, true),
     prepare: (keys) => loader.prepare(origin, keys),
     prefetch: (keys) => loader.prefetch(origin, keys),
     replace: (remove, add) => {
@@ -476,7 +478,11 @@ function setupWorldStream(): void {
       if (sim) {
         $('entity-count').textContent = String(view.document.entities.length)
         $('status').textContent = 'Mapa actualizado · cambios sin guardar'
-      } else refreshUi()
+      } else {
+        if (!view.document.entities.some((e) => e.id === selectedId))
+          selectedId = add.find((e) => e.terrain)?.id ?? view.document.entities[0].id
+        refreshUi()
+      }
       renderer.domElement.dataset.worldZones = String(
         view.document.entities.filter((e) => e.terrain).length,
       )
@@ -737,6 +743,45 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
         rebuild()
       })
     props.append(button)
+  }
+  if (doc.geography && isMapEnvironment(e)) {
+    const tileAncestor = ancestry.find((item) =>
+      /^world-(terrain|buildings|roads|trees|landcover|railways)(?:-(-?\d+_-?\d+))?$/.test(item.id),
+    )
+    const match = tileAncestor?.id.match(
+      /^world-(?:terrain|buildings|roads|trees|landcover|railways)(?:-(-?\d+_-?\d+))?$/,
+    )
+    if (match) {
+      const key = match[1] ?? '0_0'
+      const terrainId = key === '0_0' ? 'world-terrain' : 'world-terrain-' + key
+      tileInspector(
+        props,
+        doc.geography,
+        key,
+        view.objects.get(terrainId)?.userData.mapArtifact,
+        async (neighbors) => {
+          if (!worldStream || sim) throw Error('Actualiza las baldosas desde el editor')
+          const stream = worldStream
+          const [x, z] = key.split('_').map(Number)
+          const keys = neighbors
+            ? Array.from({ length: 9 }, (_, i) => `${x + (i % 3) - 1}_${z + Math.floor(i / 3) - 1}`)
+            : [key]
+          let updated = 0
+          for (const tileKey of keys) {
+            if (worldStream !== stream) break
+            try {
+              await stream.refreshTile(tileKey)
+              updated++
+            } catch {
+              /* Keep the existing tile if unavailable or busy. */
+            }
+          }
+          toast(`${updated} de ${keys.length} baldosas actualizadas; las demás se conservan`)
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+          refreshUi()
+        },
+      )
+    }
   }
   const mapReadOnly = isMapEnvironment(e) && !e.mapEditable
   if (mapReadOnly) solidEditor.close()

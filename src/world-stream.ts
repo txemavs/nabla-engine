@@ -147,6 +147,7 @@ export interface WorldStreamHost {
   prefetch?(keys: string[]): void
   document(): SceneDocument
   load(key: string, signal: AbortSignal): Promise<Entity[]>
+  refreshLoad?(key: string, signal: AbortSignal): Promise<Entity[]>
   replace(remove: Set<string>, add: Entity[]): void
   status(message: string): void
 }
@@ -293,6 +294,46 @@ export class WorldStream {
       this.startLoad(key, now, neighborhood.has(key))
     }
     this.updateStatus(neighborhood)
+  }
+  /** Explicit format refresh; authored objects and their required parent frames survive. */
+  async refreshTile(key: string): Promise<void> {
+    if (this.disposed || this.inFlight.has(key)) throw Error('La baldosa ya está cargando')
+    const controller = new AbortController()
+    this.inFlight.set(key, controller)
+    try {
+      const incoming = await (this.host.refreshLoad ?? this.host.load)(key, controller.signal)
+      if (this.disposed || controller.signal.aborted) return
+      const doc = this.host.document()
+      const current = mapTileEntities(doc, key)
+      const protectedIds = new Set(current.filter((e) => e.mapEditable).map((e) => e.id))
+      const incomingIds = new Set(incoming.map((e) => e.id))
+      const remove = new Set(current.filter((e) => !protectedIds.has(e.id)).map((e) => e.id))
+      // Keep old frames still needed by authored or externally attached children.
+      for (let changed = true; changed;) {
+        changed = false
+        for (const entity of doc.entities)
+          if (
+            !remove.has(entity.id) &&
+            entity.parentId &&
+            remove.has(entity.parentId) &&
+            !incomingIds.has(entity.parentId)
+          ) {
+            remove.delete(entity.parentId)
+            changed = true
+          }
+      }
+      const retained = new Set(doc.entities.filter((e) => !remove.has(e.id)).map((e) => e.id))
+      this.host.replace(
+        remove,
+        incoming.filter((e) => !retained.has(e.id)),
+      )
+      this.resident.set(key, {
+        baseline: JSON.stringify(mapTileEntities(this.host.document(), key)),
+        pinned: protectedIds.size > 0,
+      })
+    } finally {
+      if (this.inFlight.get(key) === controller) this.inFlight.delete(key)
+    }
   }
   private updateStatus(neighborhood: Set<string>): void {
     const loading = this.inFlight.size

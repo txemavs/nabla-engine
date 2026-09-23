@@ -68,6 +68,7 @@ const originalTile = decoded as unknown as TileArtifact
 const tile = compactGround(originalTile, 0.1)
 const files: Record<string, string> = {}
 const hashes: Record<string, string> = {}
+const byteLengths: Record<string, number> = {}
 for (const [name, buildings] of [
   ['terrain', false],
   ['buildings-osm', true],
@@ -79,6 +80,7 @@ for (const [name, buildings] of [
   const filename = name + '.glb'
   await writeFile(output + '/' + filename, new Uint8Array(binary as ArrayBuffer))
   files[name] = filename
+  byteLengths[name] = (binary as ArrayBuffer).byteLength
   hashes[name] = createHash('sha256')
     .update(new Uint8Array(binary as ArrayBuffer))
     .digest('hex')
@@ -114,11 +116,12 @@ await writeFile(
     key: tile.key,
     sizeMetres: 1200,
     groundGridMetres: 0.1,
-    groundRevision: 2,
+    groundRevision: 4,
     groundQuantization: 'horizontal-only-preserve-elevation',
     downloads,
     files,
     hashes,
+    byteLengths,
     entities: tile.entities,
     geometryIds: Object.keys(tile.geometry),
     emptyGeometryIds: Object.entries(tile.geometry)

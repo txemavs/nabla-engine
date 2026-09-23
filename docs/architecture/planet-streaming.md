@@ -116,3 +116,22 @@ for five minutes. A newer source binary also triggers regeneration. Publishing
 uses temporary layer files and replaces the manifest last. Private preparation
 authorization remains unchanged: arbitrary visitors cannot enqueue remote work.
 The pilot viewer is one explicit sample, not an indicator of all server coverage.
+
+## Selected-tile diagnostics and revision 4
+
+The inspector distinguishes the actual loaded representation (GLB, prepared
+binary, generated geometry, or saved-scene geometry) from a GLB merely available
+on the server. Worker provenance is transient render metadata, never inserted
+into scene files or inferred from appearance. Selecting a generated surface or
+terrain offers the manifest revision, grid, file sizes/names and separate terrain
+and building downloads. Explicit tile and 3x3 refreshes request GLBs only: no
+unexpected upstream generation if a file is missing. Authored map entities and
+required parent frames survive replacement; busy/missing tiles remain visible.
+Resident scene tiles are not silently rewritten when server files change.
+
+Revision 4 preserves source normals in the weld key and output attributes. It also
+keeps draped land-cover coordinates exact: even a horizontal shift on a slope can
+bury a surface whose vertical offset is only centimetres. Terrain X/Z snapping
+remains, but roads, rails, heights, land-cover boundaries and shading normals keep
+their source precision. This prioritizes visual and selection equivalence over
+aggressive rounding. The idle backfill upgrades existing artifacts automatically.

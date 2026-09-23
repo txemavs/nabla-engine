@@ -14,13 +14,13 @@ export async function loadGlbWorld(
   const directory = `${base}/${preparedPath(origin, key).replace(/\.json$/, '.glb-tile')}/`
   try {
     const response = await fetch(directory + 'manifest.json', {
-      signal: AbortSignal.any([signal, AbortSignal.timeout(1500)]),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
     })
     if (!response.ok) return undefined
     const data = await response.json()
     if (data.format !== 'nabla-tile-glb-v1' || !Array.isArray(data.geometryIds))
       throw Error('Invalid GLB manifest')
-    if (data.groundGridMetres && data.groundRevision !== 2)
+    if (data.groundGridMetres && data.groundRevision !== 4)
       throw Error('Obsolete ground quantization')
     decodePrepared({ ...data, geometry: {} }, origin, key)
     const manager = new LoadingManager()
@@ -87,7 +87,16 @@ export async function loadGlbWorld(
       geometry[id] = { position: new ArrayBuffer(0), normal: new ArrayBuffer(0) }
     }
     if (data.geometryIds.some((id: string) => !geometry[id])) throw Error('Incomplete GLB tile')
-    return decodePrepared({ ...data, geometry }, origin, key)
+    return {
+      ...decodePrepared({ ...data, geometry }, origin, key),
+      artifact: {
+        format: 'glb' as const,
+        key,
+        revision: data.groundRevision,
+        directory,
+        downloads: data.downloads,
+      },
+    }
   } catch (error) {
     if (import.meta.env.DEV) console.debug('GLB tile fallback', error)
     signal.throwIfAborted()

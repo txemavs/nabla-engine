@@ -14,6 +14,7 @@ self.onmessage = async (
     key?: string
     origin?: GeoPoint
     cancel?: boolean
+    glbOnly?: boolean
     destination?: boolean
     spacing?: number
     far?: [number, number]
@@ -43,13 +44,14 @@ self.onmessage = async (
       return
     }
     if (!event.data.destination) {
-      const cached =
-        (await loadGlbWorld(
-          origin!,
-          key!,
-          controller.signal,
-          import.meta.env.VITE_WORLD_PREPARED_URL || '',
-        )) ?? (await loadPrepared(origin!, key!, controller.signal))
+      const glb = await loadGlbWorld(
+        origin!,
+        key!,
+        controller.signal,
+        import.meta.env.VITE_WORLD_PREPARED_URL || '',
+      )
+      if (event.data.glbOnly && !glb) throw Error('GLB todavía no disponible para esta baldosa')
+      const cached = glb ?? (await loadPrepared(origin!, key!, controller.signal))
       if (cached && !controller.signal.aborted) {
         for (const e of cached.entities)
           if (e.source && !e.mapEditable) e.source.tags = compactMapTags(e.source.tags)
@@ -60,14 +62,20 @@ self.onmessage = async (
               mapTileEntities({ version: 1, name: 'Prepared', entities: cached.entities }, key),
             )
           }
-        self.postMessage({ id, ...cached }, { transfer: mapGeometryTransfers(cached.geometry) })
+        self.postMessage(
+          { id, artifact: { format: 'prepared', key }, ...cached },
+          { transfer: mapGeometryTransfers(cached.geometry) },
+        )
         return
       }
     }
     const entities = await loadWorldTile(origin!, key!, controller.signal, event.data.destination)
     if (!controller.signal.aborted) {
       const geometry = event.data.destination ? {} : prepareMapGeometry(entities)
-      self.postMessage({ id, entities, geometry }, { transfer: mapGeometryTransfers(geometry) })
+      self.postMessage(
+        { id, entities, geometry, artifact: { format: 'generated', key } },
+        { transfer: mapGeometryTransfers(geometry) },
+      )
     }
   } catch (error) {
     self.postMessage({ id, error: error instanceof Error ? error.message : String(error) })

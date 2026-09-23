@@ -798,3 +798,30 @@ it('starts the flight route before side tiles and does not repeatedly cancel ant
   expect(requests.every((r) => !r.signal.aborted)).toBe(true)
   stream.dispose()
 })
+
+it('explicit tile refresh preserves edited objects and parent frames needed by authored children', async () => {
+  const doc = document()
+  const group = createEntity('world-landcover', 'group')
+  const edited = createEntity('edited-grass', 'solid')
+  edited.mapEditable = true
+  edited.parentId = group.id
+  const old = createEntity('old-grass', 'solid')
+  old.parentId = group.id
+  doc.entities.push(group, edited, old)
+  const updatedTerrain = terrain('0_0', 0)
+  updatedTerrain.name = 'GLB terrain'
+  const stream = new WorldStream({
+    document: () => doc,
+    load: async () => [updatedTerrain],
+    status: () => {},
+    replace: (remove, add) => {
+      doc.entities = [...doc.entities.filter((e) => !remove.has(e.id)), ...add]
+    },
+  })
+  await stream.refreshTile('0_0')
+  expect(doc.entities.find((e) => e.id === 'world-terrain')?.name).toBe('GLB terrain')
+  expect(doc.entities).toContain(edited)
+  expect(doc.entities).toContain(group)
+  expect(doc.entities).not.toContain(old)
+  stream.dispose()
+})
