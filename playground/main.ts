@@ -227,7 +227,7 @@ orbit.addEventListener('change', () => {
   needsRender = true
 })
 const gizmo = new TransformControls(camera, renderer.domElement)
-gizmo.setSpace('world')
+gizmo.setSpace('local')
 gizmo.setSize(0.8)
 scene.add(gizmo.getHelper())
 gizmo.addEventListener('change', () => {
@@ -306,11 +306,15 @@ $('transform-exact').onclick = () =>
     if (gizmo.getMode() === 'rotate') {
       const v = new THREE.Vector3()
       v.setComponent(i, 1)
-      pose.rotation = new THREE.Quaternion()
-        .setFromAxisAngle(v, (amount * Math.PI) / 180)
-        .multiply(new THREE.Quaternion(...pose.rotation))
+      pose.rotation = new THREE.Quaternion(...pose.rotation)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(v, (amount * Math.PI) / 180))
         .toArray()
-    } else pose.position[i] += amount
+    } else {
+      const delta = new THREE.Vector3()
+        .setComponent(i, amount)
+        .applyQuaternion(new THREE.Quaternion(...pose.rotation))
+      pose.position = new THREE.Vector3(...pose.position).add(delta).toArray()
+    }
     editor.update(selectedId, { transform: graph.localFromWorld(entity.parentId, pose) })
     finishPoseEdit(selectedId)
   })
