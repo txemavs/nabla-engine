@@ -39,6 +39,7 @@ export function prepareMapGeometry(entities: Entity[]): PreparedMapGeometry {
   const result: PreparedMapGeometry = Object.create(null)
   for (const e of entities) {
     let vertices: number[], indices: number[] | undefined, colors: number[] | undefined
+    if (e.road?.renderSuppressed) continue
     if (e.road) {
       const terrain = byId.get(e.road.terrainId)?.terrain
       if (!terrain) continue // A separately authored reference is handled by the scene renderer.

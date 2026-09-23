@@ -341,7 +341,7 @@ export class SceneView {
           }),
         )
       }
-      if (e.road) {
+      if (e.road && !e.road.renderSuppressed) {
         let g = takeMapGeometry(e)
         if (!g) {
           const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!

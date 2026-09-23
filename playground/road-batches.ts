@@ -30,7 +30,9 @@ export class RoadBatches {
     if (entities !== this.source) {
       const dirty = new Set<string>()
       const next = new Map(
-        entities.filter((e) => (e.road || e.railway) && e.source).map((e) => [e.id, e]),
+        entities
+          .filter((e) => (e.road || e.railway) && !e.road?.renderSuppressed && e.source)
+          .map((e) => [e.id, e]),
       )
       for (const [id, road] of this.roads) {
         if (next.get(id) === road.entity && objects.get(id) === road.group) continue

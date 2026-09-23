@@ -107,6 +107,7 @@ const entitySchema = z
         paths: z.array(z.array(vector).min(2).max(8192)).min(1).max(8192),
         width: finite.min(0.5).max(30),
         terrainId: z.string(),
+        renderSuppressed: z.boolean().optional(),
         mode: z.enum(['raw', 'smooth-float']).optional(),
         elevation: z.enum(['terrain', 'bridge', 'tunnel']).optional(),
         profiled: z.boolean().optional(),
@@ -126,12 +127,21 @@ const entitySchema = z
     mapEditable: z.boolean().optional(),
     source: z
       .object({
-        provider: z.literal('openstreetmap'),
-        id: z.string().regex(/^(way|node|relation)\/\d+$/),
+        provider: z.enum(['openstreetmap', 'geoeuskadi']),
+        dataset: z.string().optional(),
+        revision: z.string().optional(),
+        id: z.string().min(1).max(160),
         retrievedAt: z.string(),
         tags: z.record(z.string(), z.string()),
       })
       .strict()
+      .refine(
+        (source) =>
+          source.provider === 'openstreetmap'
+            ? /^(way|node|relation)\/\d+$/.test(source.id)
+            : !!source.dataset && /^[a-f0-9]{64}$/.test(source.revision ?? ''),
+        'Invalid provider provenance',
+      )
       .optional(),
     geometry: z
       .object({

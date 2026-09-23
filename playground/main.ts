@@ -1,3 +1,5 @@
+import { decodePrepared } from './prepared-world.js'
+import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
 import { isMapBuilding } from '../src/scene.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
@@ -350,7 +352,7 @@ const solidEditor = new SolidEditor(
   () => editor.document.cursor ?? [0, 0, 0],
 )
 
-function rebuild(): void {
+function rebuild(prepared?: PreparedMapGeometry): void {
   syncCursor()
   distantTerrain?.dispose()
   distantTerrain = null
@@ -371,7 +373,9 @@ function rebuild(): void {
     scene.add(geography.tiles)
   }
   view.dispose()
-  view = new SceneView(editor.document)
+  const document = editor.document
+  if (prepared) receiveMapGeometry(document.entities, prepared)
+  view = new SceneView(document)
   view.setupMaterials((material) => shadowManager.setupMaterial(material))
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
@@ -747,6 +751,7 @@ function refreshUi(): void {
     'rotate',
     'import',
     'world-irun',
+    'world-irun-official',
     'sample-assets',
     'sample-portals',
     'focus',
@@ -880,23 +885,54 @@ $('sample-portals').onclick = () =>
     view.ready.then(focusSelection).catch(() => undefined)
     toast('Dos Stargates añadidos junto al cursor · enlazados y cerrados.')
   })
-async function loadIrun(): Promise<void> {
+async function loadIrun(combined = false): Promise<void> {
   if (sim || loadingWorld) return
   loadingWorld = true
   refreshUi()
   for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = true
   $<HTMLButtonElement>('play').disabled = true
   $('world-loading').hidden = false
-  $('world-loading').textContent = 'Cargando Ventas de Irún · OSM + relieve…'
+  $('world-loading').textContent = combined
+    ? 'Cargando Ventas · OSM + geoEuskadi preparado…'
+    : 'Cargando Ventas de Irún · OSM + relieve…'
   try {
-    const response = await fetch('/geography/irun-ventas.json')
-    if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
-    const extract = (await response.json()) as WorldExtract
-    const next = upgradeReferenceScene(createRealWorld(extract))
+    let next: SceneDocument
+    let geometry: PreparedMapGeometry | undefined
+    if (combined) {
+      const response = await fetch('/geography/ventas-combined.pack', { cache: 'no-cache' })
+      if (!response.ok) throw new Error('La zona combinada todavía no está preparada')
+      if (!response.body) throw new Error('Zona combinada vacía')
+      const data = await new Response(
+        response.body.pipeThrough(new DecompressionStream('gzip')),
+      ).json()
+      if (data.recipe !== 'ventas-combined-roads-v1') throw new Error('Receta incompatible')
+      const entities = data.entities as Entity[]
+      const prepared = decodePrepared(
+        { ...data, entities: entities.filter((e) => e.kind !== 'spawn') },
+        data.origin,
+        '0_0',
+      )
+      next = upgradeReferenceScene(
+        parseScene({
+          ...data.scene,
+          entities: [...prepared.entities, ...entities.filter((e) => e.kind === 'spawn')],
+        }),
+      )
+      geometry = prepared.geometry
+    } else {
+      const response = await fetch('/geography/irun-ventas.json')
+      if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
+      next = upgradeReferenceScene(createRealWorld((await response.json()) as WorldExtract))
+    }
     editor.load(next)
+    if (combined) {
+      const url = new URL(location.href)
+      url.searchParams.delete('world')
+      history.replaceState(null, '', url)
+    }
     for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
     selectedId = 'car-a'
-    rebuild()
+    rebuild(geometry)
     $('welcome').hidden = true
     await view.ready
     focusSelection()
@@ -904,9 +940,13 @@ async function loadIrun(): Promise<void> {
     orbit.target.set(0, 2, 0)
     camera.position.set(35, 32, 40)
     orbit.update()
-    renderer.domElement.dataset.world = 'irun'
+    renderer.domElement.dataset.world = combined ? 'geoeuskadi' : 'irun'
     localStorage.setItem('nabla.irun.introduced', '1')
-    toast('Ventas de Irún · exploración conectada · las zonas se precargan al jugar')
+    toast(
+      combined
+        ? 'Ventas · piloto combinado en la zona inicial · OSM en el resto del mundo'
+        : 'Ventas de Irún · exploración conectada · las zonas se precargan al jugar',
+    )
   } catch (error) {
     toast(error instanceof Error ? error.message : 'No se pudo abrir Ventas')
   } finally {
@@ -1033,6 +1073,7 @@ async function travelTo(): Promise<void> {
   }
 }
 $('world-irun').onclick = () => void loadIrun()
+$('world-irun-official').onclick = () => void loadIrun(true)
 
 $('welcome-close').onclick = () => {
   $('welcome').hidden = true
@@ -1956,7 +1997,8 @@ if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
 if (loadError) toast(loadError)
 requestAnimationFrame(frame)
 
-if (
+if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
+else if (
   !circuitMode &&
   (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
 )

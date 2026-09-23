@@ -5,10 +5,10 @@ This implements the **data audit and visual comparison** slice of issue #22. Ope
 on the same existing Esri terrain in Irún / Ventas. The camera stays in place when
 switching. Buildings are optional. It renders only on camera/UI changes.
 
-This is a laboratory, not an enabled worldwide provider preset. The production
-scene, saved edits, portals, streaming cache and vehicle collisions are unchanged.
-Do not enable this layer in the driving scene until the reconciliation and elevation
-work below is complete.
+The comparison remains a laboratory. A separate drivable combined starter is now
+available; see **Drivable combined pilot** below. It does not change the default
+worldwide source preset or existing saved scenes. Regional rollout still requires
+the reconciliation and elevation work below.
 
 ## Verified product
 
@@ -126,3 +126,63 @@ Still required before the main-world enhancement preset:
 5. Plug preparation into the durable queue and benchmark the real Irún–Hendaye flight
    route before regional rollout. No LiDAR mirror, automatic provider switch or new
    collision behavior is implied by this visual pilot.
+
+## Drivable combined pilot (second slice)
+
+Open `/?world=geoeuskadi`, or **Archivo → Irún · Ventas · OSM + geoEuskadi**.
+This opens a new starter scene, like the existing OSM starter; save/export any
+current work first. It is not a hot provider toggle on an authored scene.
+The launch parameter is consumed after loading so a later reload can restore the
+saved scene instead of overwriting edits with the starter again.
+
+The prepared pilot combines **only the initial Ventas tile**. OSM continues to
+supply surrounding streamed tiles. The original OSM baseline fingerprint is retained,
+so existing streaming treats the combined tile as modified/pinned and cannot replace
+it with a global cached tile. This costs one resident tile even when traveling away;
+regional source-aware streaming and versioned overrides remain future work.
+
+Preparation unions valid official ground polygons, clips them to the terrain tile,
+and subtracts that mask from overlapping OSM ground-road footprints. OSM roads that
+do not overlap are untouched. The footprint uses the same segment rectangles and
+12-sided joint caps as the raw road renderer. Remaining OSM surfaces retain their
+colors and footpath offset. This is **coverage subtraction**, not a semantic match:
+OSM shoulders wider than the official polygon remain. Narrowing roads to BTA widths
+requires a later centerline/feature match and replacement envelope.
+
+OSM bridges, tunnels, nonzero layers and smooth-float roads are not cut or changed.
+Official elevated, hidden or unknown features are not projected onto the ground.
+The ground-road centerline entities retain their IDs and simulation properties;
+`road.renderSuppressed` hides only their old ribbon rendering. New surface chunks
+have `motion: none`, with terrain as the single collision support. This does not
+improve the existing terrain's vertical accuracy or implement new bridge profiles.
+The existing 35 mm rendering offset (25 mm for footpaths) is retained.
+
+The scene source schema now also accepts geoEuskadi dataset/revision provenance.
+OSM source IDs still validate as node/way/relation IDs. Official polygons are merged
+for rendering, so their scene provenance identifies the dataset union; native
+per-feature identity remains in the source snapshot. Selecting individual official
+road records and editing them is not implemented in this slice.
+
+Rebuild on the preparation machine/server:
+
+```sh
+npm ci
+npm run build:prepare
+node prepare-dist/services/world-cache/prepare-driving-pilot.js \
+  assets/geography/irun-ventas.json \
+  assets/geography/geoeuskadi-ventas.json \
+  assets/geography/ventas-combined.pack
+npm run build:demo
+```
+
+The `.pack` is gzip-compressed JSON containing the scene and prepared render buffers,
+using the existing prepared decoder version 5 plus the separate
+`ventas-combined-roads-v1` recipe. It is about 6.3 MiB compressed, 23.6 MiB decoded in
+the initial fixture. No polygon operations or mesh generation run in the client's
+initial load. JSON decoding, validation, GPU upload and simulation initialization
+still happen there. This is not the future binary prepared-world format.
+Serve it without a `Content-Encoding` header; load revalidates it. Publish a temporary
+pack and rename it atomically before publishing the matching frontend. Keep the
+previous pack/index for rollback. Neither the global `/prepared` namespace nor the
+queue service is changed. The committed pack allows a fresh clone/demo build to run
+without access to the live provider; regenerating it is an explicit operator action.

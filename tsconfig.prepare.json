@@ -7,6 +7,10 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["services/world-cache/prepare.ts", "services/world-cache/prepare-pilot.ts"],
+  "include": [
+    "services/world-cache/prepare.ts",
+    "services/world-cache/prepare-pilot.ts",
+    "services/world-cache/prepare-driving-pilot.ts"
+  ],
   "exclude": ["**/*.test.ts"]
 }
