@@ -22,8 +22,12 @@ test('starts in Ventas, saves authored content without generated entities and dr
   await expect(page.locator('body')).toHaveClass(/playing/)
   await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#interaction')).toContainText('E para entrar', { timeout: 15000 })
-  await page.keyboard.press('KeyE')
-  await expect(page.locator('#player-mode')).toHaveText('MI A3')
+  // The prompt can appear before the suspension finishes its first settling step.
+  await expect(async () => {
+    if ((await page.locator('#player-mode').textContent()) !== 'MI A3')
+      await page.keyboard.press('KeyE')
+    await expect(page.locator('#player-mode')).toHaveText('MI A3', { timeout: 500 })
+  }).toPass({ timeout: 15000, intervals: [300] })
   await page.keyboard.down('KeyW')
   await expect(page.locator('#speed')).not.toHaveText('0 km/h')
   await page.keyboard.up('KeyW')

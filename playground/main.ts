@@ -1,3 +1,4 @@
+import { settleGroundPlacement } from './studio/ground-placement.js'
 import { mountStudio } from './studio/shell.js'
 import { setPlanetCharts } from './helm-map.js'
 import { PlanetWorld } from './planet-world.js'
@@ -90,6 +91,7 @@ let recoverLegacyPlaces = true
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = true
 const flightAudio = new FlightAudio()
+let groundPlacementDirty = true
 let worldStream: PlanetWorld | null = null
 let streamGeography = ''
 let streamSample: { at: number; position: Vec3Tuple } | null = null
@@ -392,6 +394,7 @@ function finishPoseEdit(id: string): void {
 }
 
 function rebuild(prepared?: PreparedMapGeometry): void {
+  groundPlacementDirty = true
   const migrated = planetaryScene(editor.document)
   if (migrated !== editor.document) editor.load(migrated)
   const document = editor.document
@@ -447,6 +450,7 @@ function setupWorldStream(): void {
     () => {
       needsRender = true
       $('stream-status').textContent = worldStream?.status ?? ''
+      groundPlacementDirty = true
     },
     (material) => shadowManager.setupMaterial(material),
   )
@@ -998,6 +1002,10 @@ for (const [id, kind] of [
   $(id).onclick = () =>
     action(() => {
       selectedId = editor.add(kind)
+      if (worldStream && editor.document.cursorOnGround) {
+        const entity = editor.entity(selectedId)
+        editor.update(selectedId, { groundOffset: kind === 'group' ? 0 : entity.size[1] / 2 })
+      }
       setAddMenu(false)
       rebuild()
     })
@@ -1006,7 +1014,13 @@ for (const entry of entityCatalog) {
   $(`add-${entry.id}`).onclick = () =>
     action(() => {
       const ground = new THREE.Vector3(...(editor.document.cursor ?? [0, 0, 0]))
+      const terrain = worldStream?.groundHeight(ground.toArray())
+      const onSurface =
+        !!worldStream &&
+        (editor.document.cursorOnGround || terrain === undefined || ground.y <= terrain + 0.05)
+      if (onSurface && terrain !== undefined) ground.y = terrain
       const entities = createCatalogEntities(entry.id, crypto.randomUUID(), ground.toArray())
+      if (onSurface) entities[0].groundOffset = entry.clearance
       const doc = editor.document
       doc.entities.push(...entities)
       editor.load(doc)
@@ -1050,6 +1064,7 @@ $('add-sprite').onclick = () =>
     sprite.name = 'Sprite · árbol'
     sprite.size = [7, 7, 0.1]
     sprite.sprite = treeSprite(0)
+    if (worldStream && doc.cursorOnGround) sprite.groundOffset = 0
     doc.entities.push(sprite)
     editor.load(doc)
     selectedId = sprite.id
@@ -1074,7 +1089,9 @@ $('sample-portals').onclick = () =>
   action(() => {
     const next = editor.document
     const id = crypto.randomUUID()
-    next.entities.push(createPortal(id, next.cursor ?? [0, 0, 0]))
+    const portal = createPortal(id, next.cursor ?? [0, 0, 0])
+    if (worldStream && next.cursorOnGround) portal.groundOffset = 0
+    next.entities.push(portal)
     editor.load(next)
     project = retainLocation(project!, editor.document)
     selectedId = id
@@ -1266,36 +1283,25 @@ $('file').onchange = async () => {
   refreshUi()
   $<HTMLInputElement>('file').value = ''
 }
-/** Only new default objects need initial placement; never relocate a saved/edited object. */
-async function placeNewWorldObjects(): Promise<void> {
-  const currentEditor = editor,
-    stream = worldStream
-  if (!stream) return
-  const initial = new Map(
-    editor.document.entities
-      .filter((e) => e.kind === 'vehicle' || e.kind === 'spawn')
-      .map((e) => [e.id, JSON.stringify(e.transform)]),
-  )
-  const eye = camera.position.clone()
-  try {
-    await stream.ensureGround([0, 0, 0])
-    if (editor !== currentEditor || worldStream !== stream || sim) return
-    const doc = structuredClone(editor.document)
-    let changed = false
-    for (const e of doc.entities) {
-      if (initial.get(e.id) !== JSON.stringify(e.transform)) continue
-      const ground = stream.groundHeight(e.transform.position)
-      if (ground === undefined) continue
-      e.transform.position[1] = ground + (e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.5 : 0.85)
-      changed = true
-    }
-    if (changed) {
-      editor.load(doc)
-      rebuild()
-      if (camera.position.distanceToSquared(eye) < 0.01) focusSelection()
-    }
-  } catch {
-    /* Availability is already displayed by the stream; keep editing responsive. */
+/** Loading a scene stays nonblocking; each new terrain result retries its pending placements. */
+function placeNewWorldObjects(): void {
+  groundPlacementDirty = true
+}
+function settlePendingGround(): void {
+  if (!worldStream || sim || startupPending || loadingWorld || !groundPlacementDirty) return
+  groundPlacementDirty = false
+  const doc = editor.document
+  const previousTarget = doc.entities.find((e) => e.id === selectedId)?.transform.position[1]
+  if (!settleGroundPlacement(doc, (p) => worldStream!.groundHeight(p))) return
+  editor.load(doc)
+  rebuild()
+  groundPlacementDirty = false
+  const nextTarget = doc.entities.find((e) => e.id === selectedId)?.transform.position[1]
+  if (previousTarget !== undefined && nextTarget !== undefined) {
+    const delta = nextTarget - previousTarget
+    camera.position.y += delta
+    orbit.target.y += delta
+    orbit.update()
   }
 }
 let playTransition = false
@@ -1835,6 +1841,7 @@ let nextPerformanceReadout = 0
 renderer.info.autoReset = false
 function frame(now: number): void {
   const frameStart = performance.now()
+  settlePendingGround()
   if (view.flushMapInstall(4, 24, camera.position)) needsRender = true
   renderer.domElement.dataset.worldInstallPending = String(view.pendingMapInstall)
   const installStatus = $('map-install-status')
