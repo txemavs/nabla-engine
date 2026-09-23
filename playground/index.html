@@ -48,9 +48,9 @@
         </nav>
         <div id="travel-menu" class="app-menu" popover aria-label="Viajar por el mundo">
           <h3>Ir a un lugar</h3>
-          <label for="project-places">Lugares de este proyecto</label>
+          <label for="project-places">Destinos de este planeta</label>
           <select id="project-places"></select>
-          <button id="project-place-open">Abrir lugar guardado</button>
+          <button id="project-place-open">Viajar al destino</button>
           <label class="field-label" for="travel-city">Destinos</label>
           <select id="travel-city">
             <option value="">Coordenadas personalizadas</option>
@@ -108,15 +108,16 @@
           </p>
         </div>
         <div id="file-menu" class="app-menu" popover aria-label="Archivo">
-          <button id="import">Abrir proyecto o escena…</button>
+          <button id="new-planet">Nuevo planeta…</button>
+          <button id="import">Abrir planeta o archivo anterior…</button>
           <button id="save-as">Guardar como…</button>
           <button id="save">Guardar en este navegador <kbd>Ctrl S</kbd></button>
-          <button id="export">Exportar escena JSON…</button>
+          <button id="export">Descargar planeta JSON…</button>
           <hr />
-          <span class="eyebrow">ESCENAS DE INICIO</span>
+          <span class="eyebrow">DESTINOS Y EJEMPLOS</span>
           <button id="world-irun">Irún · Ventas · OSM</button>
           <button id="world-irun-official">Irún · Ventas · OSM + geoEuskadi (piloto)</button>
-          <button id="sample-assets">Circuito · A3</button>
+          <button id="sample-assets" hidden>Circuito · A3</button>
         </div>
         <input id="file" type="file" accept=".json,application/json" hidden />
         <div id="options-menu" class="app-menu" popover aria-label="Opciones">

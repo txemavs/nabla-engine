@@ -21,9 +21,7 @@ export function anchoredWorldPose(origin: GeoPoint, anchor: GeoPoint, pose: Tran
   )
     throw new Error('Coordenadas geográficas no válidas')
   const world = fromWorldPose(origin, toWorldPose(anchor, pose))
-  if (world.position.some((n) => Math.abs(n) > 100000))
-    throw new Error(
-      'Destino fuera del área activa. Abre esa ciudad con Ir para colocar el objeto allí.',
-    )
+  if (world.position.some((n) => Math.abs(n) > 100000000))
+    throw new Error('Destino fuera del límite de coordenadas del planeta.')
   return world
 }
