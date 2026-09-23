@@ -105,6 +105,14 @@ docker compose -f compose.dev.yaml exec world-cache python3 /app/dev-status.py
 docker compose -f compose.dev.yaml exec world-cache sh -c 'find /publish/z -name manifest.json | head -20'
 ```
 
+Press Ctrl+C to leave a log-following terminal; the detached services keep running.
+
+While driving in Play mode, **F9** toggles wheel diagnostics: green markers show
+physics contacts, orange markers show visual ground hits, and the HUD reports their
+height difference. It includes native GLB terrain and accounts for the floating
+render origin. Leave it off for ordinary performance measurements: it adds debug
+raycasts only while enabled.
+
 Logs report each tile's start, completion time or failure. Inspection opens SQLite
 read-only. Do not instantiate `Queue` in an inspection script: its constructor
 recovers interrupted jobs and is intended for server startup.
