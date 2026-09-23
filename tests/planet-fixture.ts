@@ -1,4 +1,4 @@
-export function groundGlb(empty = false) {
+export function groundGlb(empty = false, category = 'Terrain') {
   const positions = new Float32Array([
     -600, 0, -600, -600, 0, 600, 600, 0, 600, -600, 0, -600, 600, 0, 600, 600, 0, -600,
   ])
@@ -9,7 +9,7 @@ export function groundGlb(empty = false) {
       asset: { version: '2.0' },
       scene: 0,
       scenes: [{ nodes: empty ? [] : [0] }],
-      nodes: [{ mesh: 0, extras: { category: 'Terrain' } }],
+      nodes: [{ mesh: 0, extras: { category } }],
       meshes: [{ primitives: [{ attributes: { POSITION: 0, NORMAL: 1 } }] }],
       buffers: [{ byteLength: binary.length }],
       bufferViews: [

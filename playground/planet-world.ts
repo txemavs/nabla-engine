@@ -24,6 +24,7 @@ import type { Simulation } from '../src/simulation.js'
 import type { Vec3Tuple } from '../src/scene.js'
 import { restoreTileLayers } from './tile-asset.js'
 interface Resident {
+  chart?: PlanetPayload['chart']
   group: THREE.Group
   collision: PlanetCollisionTile
   bytes: number
@@ -43,6 +44,14 @@ export class PlanetWorld {
           directory: string
         },
     )
+  }
+  get chartTiles() {
+    return this.visible.flatMap((key) => {
+      const r = this.resident.get(key)
+      if (!r?.chart) return []
+      r.group.updateMatrix()
+      return [{ ...r.chart, matrix: r.group.matrix }]
+    })
   }
   private simulation: Simulation | null = null
   private horizon: PlanetHorizon
@@ -78,7 +87,10 @@ export class PlanetWorld {
       event: MessageEvent<{ id: number; payload?: PlanetPayload; error?: string }>,
     ) => {
       const request = this.requests.get(event.data.id)
-      if (!request) return
+      if (!request) {
+        event.data.payload?.chart?.bitmap.close()
+        return
+      }
       this.requests.delete(event.data.id)
       if (event.data.payload && !this.disposed)
         this.install(request.key, request.manifest, event.data.payload)
@@ -292,12 +304,16 @@ export class PlanetWorld {
     this.root.add(group)
     this.resident.set(key, {
       group,
+      chart: payload.chart,
       collision: {
         id: key + '@' + manifest.files.terrain.sha256,
         pose: { position, rotation },
         chunks: payload.chunks,
       },
-      bytes: payload.bytes + payload.chunks.reduce((n, c) => n + c.triangles.byteLength, 0),
+      bytes:
+        payload.bytes +
+        (payload.chart ? 1024 * 1024 * 4 : 0) +
+        payload.chunks.reduce((n, c) => n + c.triangles.byteLength, 0),
       revision: manifest.files.terrain.sha256,
       buildings: payload.buildings,
     })
@@ -457,6 +473,7 @@ export class PlanetWorld {
   private remove(key: string) {
     const r = this.resident.get(key)
     if (!r) return
+    r.chart?.bitmap.close()
     r.group.removeFromParent()
     r.group.traverse((n) => {
       const m = n as THREE.Mesh

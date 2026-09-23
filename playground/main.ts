@@ -1,3 +1,4 @@
+import { setPlanetCharts } from './helm-map.js'
 import { PlanetWorld } from './planet-world.js'
 import { planetaryScene, createPlanetScene } from './studio/planet-scene.js'
 import { geographicPose, anchoredWorldPose } from './studio/geographic-pose.js'
@@ -436,6 +437,7 @@ function setupWorldStream(): void {
   if (worldStream && streamGeography === identity) return
   worldStream?.dispose()
   worldStream = null
+  setPlanetCharts(() => worldStream?.chartTiles ?? [])
   streamGeography = identity
   if (!doc.geography?.planetary) return
   worldStream = new PlanetWorld(
@@ -2007,9 +2009,7 @@ function frame(now: number): void {
           ? `Altura ${altitude.toFixed(1)} m · objetivo ${info.targetAltitude!.toFixed(1)} m`
           : 'Modo tierra · V / Y para vuelo') + (pad ? ' · Mando modo 2' : '')
       : ''
-    // The physical helm screens already show flight telemetry; the overlay leaks
-    // through CSS3D screen cutouts when viewed from the pilot's seat.
-    $('game-hud').hidden = Boolean(info?.isCarrier && cameraMode === 'cockpit')
+    $('game-hud').hidden = false
     const near = sim.nearestVehicle()
     $('interaction').textContent = p.vehicleId
       ? info?.dockedTo

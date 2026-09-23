@@ -1082,3 +1082,10 @@ body.playing #footer-mode {
     animation: none;
   }
 }
+
+/* Gameplay guidance belongs above both WebGL and the CSS3D cutout layer. */
+#game-hud,
+#view-hint {
+  z-index: 10;
+  pointer-events: none;
+}

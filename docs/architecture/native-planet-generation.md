@@ -133,3 +133,14 @@ and a unioned footprint. End caps no longer remain separate coplanar discs after
 spherical projection. Old GLBs remain readable during regeneration. Owner discovery
 queues stale revisions, and the client replaces a resident revision when the new
 content-addressed manifest is published.
+
+### Cockpit navigation charts
+
+The GLB loader worker rasterizes the `Roads` mesh category into a transparent
+1024 × 1024 blue chart once per loaded cell. The transferred bitmap stays with
+that resident cell, counts toward its memory budget, and is closed on eviction.
+Cockpit charts share the main world's visible tile coverage and local tile poses;
+they redraw at 4 Hz without another WebGL camera or another map request. Authored
+road entities remain supported. This is a schematic map of loaded transport
+surfaces, not a route planner or a live aerial video. Gameplay HUD and mouse hints
+sit above the WebGL canvas and CSS3D screen cutouts and do not intercept clicks.

@@ -1,3 +1,4 @@
+import { planetChart } from './planet-chart.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, Mesh, MeshStandardMaterial, Matrix3, Vector3 } from 'three'
 import {
@@ -120,6 +121,7 @@ self.onmessage = async (
       }
     }
     const chunks = planetCollisionChunks(meshes)
+    const chart = planetChart(meshes)
     controller.signal.throwIfAborted()
     const transfers = [
       ...meshes.flatMap((m) => [
@@ -135,13 +137,14 @@ self.onmessage = async (
         id,
         payload: {
           meshes,
+          chart,
           chunks,
           bytes: bytesTotal,
           buildings: event.data.buildings !== false,
           vegetation,
         },
       },
-      { transfer: transfers },
+      { transfer: [...transfers, ...(chart ? [chart.bitmap] : [])] },
     )
   } catch (error) {
     self.postMessage({ id, error: String(error) })

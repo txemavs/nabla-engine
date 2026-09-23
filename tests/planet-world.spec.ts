@@ -11,7 +11,7 @@ import { groundGlb } from './planet-fixture.js'
 test('native GLB stream loads global cells, exposes downloads and supplies playable collisions', async ({
   page,
 }) => {
-  const bytes = groundGlb(),
+  const bytes = groundGlb(false, 'Roads'),
     empty = groundGlb(true)
   const tile = mapTileAt(43.32969, -1.819606, 15),
     anchor = mapTileSample(tile, 1, 1, 2)
@@ -100,12 +100,14 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
       )
       const links = panel.querySelectorAll('a').length
       const count = stream.root.children.filter((c: any) => c.userData.planetTile).length
+      const charts = stream.chartTiles.length
       stream.dispose()
       sim.dispose()
-      return { height, player, selected, links, count, entered, car }
+      return { height, player, selected, links, count, entered, car, charts }
     },
     { anchor, root: process.cwd() },
   )
+  expect(result.charts).toBe(1)
   expect(result.height).toBeCloseTo(0, 3)
   expect(result.player[1]).toBeGreaterThan(0)
   expect(result.player[1]).toBeLessThan(3)

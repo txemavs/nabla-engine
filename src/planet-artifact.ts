@@ -25,6 +25,7 @@ export interface PlanetMesh {
   metadata: Record<string, any>
 }
 export interface PlanetPayload {
+  chart?: { bitmap: ImageBitmap; bounds: [number, number, number, number] }
   meshes: PlanetMesh[]
   chunks: PlanetCollisionChunk[]
   bytes: number
