@@ -52,3 +52,35 @@ test('paths remain above grass in both individual and batched rendering', async 
   expect(result.individual).toBeLessThan(-11)
   expect(result.batched).toBe(result.individual)
 })
+
+test('transport crossings retain separate depth layers after GLB restoration', async ({ page }) => {
+  await page.goto('/?scene=circuit')
+  const result = await page.evaluate(async (root) => {
+    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const groundModule = '/ground-material.ts'
+    const tileModule = '/tile-asset.ts'
+    const { transportLayer } = await import(groundModule)
+    const { restoreTileLayers } = await import(tileModule)
+    const entities = [
+      { source: { tags: { highway: 'path' } } },
+      { source: { tags: { highway: 'residential' } } },
+      { railway: { part: 'ballast' }, source: { tags: { railway: 'rail' } } },
+      { railway: { part: 'rail' }, source: { tags: { railway: 'rail' } } },
+    ]
+    const group = new T.Group()
+    for (const [i, entity] of entities.entries()) {
+      const mesh = new T.Mesh(new T.PlaneGeometry(), new T.MeshStandardMaterial())
+      mesh.name = i === 2 ? 'osm-way-1-ballast-0' : 'osm-way-1-rail-0-0'
+      // Previously exported GLBs all stored 12. Restore them without rebaking.
+      mesh.userData = { category: 'Roads', source: entity.source, groundLayer: 12 }
+      group.add(mesh)
+    }
+    restoreTileLayers(group)
+    return {
+      expected: entities.map(transportLayer),
+      restored: group.children.map((mesh: any) => -mesh.material.polygonOffsetFactor),
+    }
+  }, process.cwd())
+  expect(result.expected).toEqual([12, 13, 14, 15])
+  expect(result.restored).toEqual(result.expected)
+})

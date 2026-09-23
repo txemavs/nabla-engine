@@ -72,3 +72,7 @@ batches, multiple LODs and separate terrain/building files are later experiments
 - The automated round-trip checks a non-origin tile's bounds, local offset, entity
   identity, vertex colors and triangle vertices after export and import.
 - Normal Studio and its map cache are left unchanged by the pilot.
+
+Coplanar transport surfaces use distinct depth priorities: paths, roads, ballast,
+then rails, above land cover. The viewer restores these from glTF extras (including
+older pilot exports); no collision heights or bridge geometry are changed.

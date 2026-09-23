@@ -1,5 +1,5 @@
 import { isMapEnvironment } from './studio/outliner.js'
-import { matteGroundMaterial, roadDepthBias } from './ground-material.js'
+import { matteGroundMaterial, groundDepthBias, transportLayer } from './ground-material.js'
 import { BuildingBatches } from './building-batches.js'
 import { isMapBuilding } from '../src/scene.js'
 import { SURFACE_LAYERS, mapSurfaceColor } from '../src/landcover.js'
@@ -434,7 +434,10 @@ export class SceneView {
           g.setIndex(data.faces.flat())
           g.computeVertexNormals()
         }
-        const surface = new THREE.Mesh(g, matteGroundMaterial({ color: e.color, ...roadDepthBias }))
+        const surface = new THREE.Mesh(
+          g,
+          matteGroundMaterial({ color: e.color, ...groundDepthBias(transportLayer(e)) }),
+        )
         surface.receiveShadow = true
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         surface.castShadow = false
@@ -523,8 +526,8 @@ export class SceneView {
         const surface = new THREE.Mesh(geometry, material)
         surface.castShadow = !e.landcover && !e.railway
         surface.receiveShadow = true
-        if (e.landcover) {
-          const layer = SURFACE_LAYERS[e.landcover.surface]
+        if (e.landcover || e.railway) {
+          const layer = e.landcover ? SURFACE_LAYERS[e.landcover.surface] : transportLayer(e)
           material.polygonOffset = true
           material.polygonOffsetFactor = -layer
           material.polygonOffsetUnits = -layer

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { SceneGraph, type Entity } from '../src/scene.js'
 import { mapSurfaceColor, SURFACE_LAYERS } from '../src/landcover.js'
-import { roadDepthBias } from './ground-material.js'
+import { transportLayer } from './ground-material.js'
 
 export interface TileArtifact {
   version: number
@@ -80,9 +80,10 @@ export function tileAsset(data: TileArtifact): THREE.Group {
       label: e.name,
       source: e.source,
       category,
+      transport: e.road ? 'road' : e.railway?.part,
       groundLayer:
         e.road || e.railway
-          ? -roadDepthBias.polygonOffsetFactor
+          ? transportLayer(e)
           : e.landcover
             ? SURFACE_LAYERS[e.landcover.surface]
             : 0,
@@ -97,9 +98,30 @@ export function tileAsset(data: TileArtifact): THREE.Group {
 
 /** glTF does not encode polygon offset; Nabla restores its rendering convention from extras. */
 export function restoreTileLayers(root: THREE.Object3D): void {
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return
-    const layer = Number(object.userData.groundLayer || 0)
+  root.traverse((node) => {
+    const object = node as THREE.Mesh
+    if (!object.isMesh) return
+    const { source, category, transport } = object.userData
+    const isRail =
+      transport === 'rail' ||
+      transport === 'ballast' ||
+      (!transport && source?.tags?.railway && !source?.tags?.highway)
+    const layer =
+      category === 'Roads'
+        ? transportLayer({
+            source,
+            ...(isRail
+              ? {
+                  railway: {
+                    part:
+                      transport === 'ballast' || (!transport && object.name.includes('-ballast'))
+                        ? 'ballast'
+                        : 'rail',
+                  },
+                }
+              : {}),
+          })
+        : Number(object.userData.groundLayer || 0)
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
       material.polygonOffset = layer > 0
       material.polygonOffsetFactor = material.polygonOffsetUnits = -layer

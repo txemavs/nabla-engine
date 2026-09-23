@@ -1,4 +1,4 @@
-import { matteGroundMaterial, roadDepthBias } from './ground-material.js'
+import { matteGroundMaterial, groundDepthBias, transportLayer } from './ground-material.js'
 import { withinMapDistance } from './map-visibility.js'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
@@ -8,6 +8,7 @@ type Part = { mesh: THREE.Mesh; matrix: THREE.Matrix4 }
 type Road = { entity: Entity; group: THREE.Group; parts: Map<string, Part[]> }
 type Cell = {
   color: string
+  layer: number
   roads: Map<string, Part[]>
   mesh?: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>
 }
@@ -56,7 +57,7 @@ export class RoadBatches {
           const matrix = new THREE.Matrix4().multiplyMatrices(group.matrix, child.matrix)
           if (!child.geometry.boundingSphere) child.geometry.computeBoundingSphere()
           const center = child.geometry.boundingSphere!.center.clone().applyMatrix4(matrix)
-          const key = `${entity.railway ? 'rail' : 'road'}:${Math.floor(center.x / 256)}:${Math.floor(center.z / 256)}:${entity.color}`
+          const key = `${transportLayer(entity)}:${Math.floor(center.x / 256)}:${Math.floor(center.z / 256)}:${entity.color}`
           const list = parts.get(key) ?? []
           list.push({ mesh: child, matrix })
           parts.set(key, list)
@@ -64,7 +65,7 @@ export class RoadBatches {
         for (const [key, list] of parts) {
           let cell = this.cells.get(key)
           if (!cell) {
-            cell = { color: entity.color, roads: new Map() }
+            cell = { color: entity.color, layer: transportLayer(entity), roads: new Map() }
             this.cells.set(key, cell)
           }
           cell.roads.set(id, list)
@@ -100,7 +101,7 @@ export class RoadBatches {
     cell.mesh = new THREE.Mesh(
       geometry,
       matteGroundMaterial({
-        ...roadDepthBias,
+        ...groundDepthBias(cell.layer),
         color: cell.color,
         roughness: 0.85,
         side: THREE.DoubleSide,

@@ -14,9 +14,27 @@ export function matteGroundMaterial(
   })
 }
 
-/** Roads sit above every draped land-use layer, in both editor and batches. */
-export const roadDepthBias = {
-  polygonOffset: true,
-  polygonOffsetFactor: -(Math.max(...Object.values(SURFACE_LAYERS)) + 1),
-  polygonOffsetUnits: -(Math.max(...Object.values(SURFACE_LAYERS)) + 1),
+const firstTransportLayer = Math.max(...Object.values(SURFACE_LAYERS)) + 1
+
+/** Order only coplanar transport surfaces; physical bridge/tunnel heights still apply. */
+export function transportLayer(entity: {
+  railway?: { part: string }
+  source?: { tags?: Record<string, string> }
+}): number {
+  if (entity.railway) return firstTransportLayer + (entity.railway.part === 'ballast' ? 2 : 3)
+  const highway = entity.source?.tags?.highway
+  return (
+    firstTransportLayer +
+    (highway && ['path', 'footway', 'pedestrian', 'cycleway', 'steps', 'track'].includes(highway)
+      ? 0
+      : 1)
+  )
+}
+
+export function groundDepthBias(layer: number) {
+  return {
+    polygonOffset: true,
+    polygonOffsetFactor: -layer,
+    polygonOffsetUnits: -layer,
+  }
 }
