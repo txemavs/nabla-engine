@@ -40,11 +40,13 @@ test('bounds draw calls for 800 roads and can hide their detail', async ({ page 
     ),
   )
   await page.goto('/?scene=circuit')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-startup', 'ready')
   await page.locator('#file').setInputFiles({
     name: 'perf.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify({ version: 1, name: 'Profile', entities })),
   })
+  await expect(page.locator('#scene-name')).toHaveText('Profile')
   await page.locator('#play').click()
 
   const canvas = page.locator('#viewport > canvas')

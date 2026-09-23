@@ -1,5 +1,5 @@
 import { isMapEnvironment } from './studio/outliner.js'
-import { matteGroundMaterial } from './ground-material.js'
+import { matteGroundMaterial, roadDepthBias } from './ground-material.js'
 import { BuildingBatches } from './building-batches.js'
 import { isMapBuilding } from '../src/scene.js'
 import { SURFACE_LAYERS, mapSurfaceColor } from '../src/landcover.js'
@@ -434,14 +434,9 @@ export class SceneView {
           g.setIndex(data.faces.flat())
           g.computeVertexNormals()
         }
-        const surface = new THREE.Mesh(g, matteGroundMaterial({ color: e.color }))
+        const surface = new THREE.Mesh(g, matteGroundMaterial({ color: e.color, ...roadDepthBias }))
         surface.receiveShadow = true
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
-        surface.position.y = ['footway', 'path', 'pedestrian', 'cycleway'].includes(
-          e.source?.tags.highway ?? '',
-        )
-          ? -0.01
-          : 0
         surface.castShadow = false
         group.add(surface)
       }

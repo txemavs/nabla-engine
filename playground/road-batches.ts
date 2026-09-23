@@ -1,3 +1,4 @@
+import { matteGroundMaterial, roadDepthBias } from './ground-material.js'
 import { withinMapDistance } from './map-visibility.js'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
@@ -98,7 +99,8 @@ export class RoadBatches {
     geometry.computeBoundingSphere()
     cell.mesh = new THREE.Mesh(
       geometry,
-      new THREE.MeshStandardMaterial({
+      matteGroundMaterial({
+        ...roadDepthBias,
         color: cell.color,
         roughness: 0.85,
         side: THREE.DoubleSide,

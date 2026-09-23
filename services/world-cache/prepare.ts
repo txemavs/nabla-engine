@@ -1,3 +1,4 @@
+import { optimizePreparedBuildings } from './optimize-buildings.js'
 import { encodePreparedBinary } from '../../src/prepared-binary.js'
 /** Server CLI: uses the same scene and mesh generation as the map worker. */
 import { readFile, mkdir, rename, writeFile, unlink } from 'node:fs/promises'
@@ -67,6 +68,8 @@ const entities = createRealWorld(extract, { offset: [ox, oz], tileId: key }).ent
   (e) => e.kind !== 'spawn' && e.kind !== 'vehicle',
 )
 const geometry = prepareMapGeometry(entities)
+const optimization = optimizePreparedBuildings(entities, geometry)
+console.log(JSON.stringify({ stage: 'building-render-optimization', key, ...optimization }))
 const encode = (a: Float32Array | Uint32Array) =>
   Buffer.from(a.buffer, a.byteOffset, a.byteLength).toString('base64')
 const wire = Object.fromEntries(

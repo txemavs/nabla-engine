@@ -476,3 +476,24 @@ Ultra now retains every already-installed generated zone whose footprint is with
 Acquisition stays progressive and concurrency-limited; selecting Ultra does not bulk-request the entire disk. It is intentionally a memory/GPU stress-test mode without a nearby entity cap. Normal frustum clipping, fog and nearby physics remain. Generated untouched zones outside the radius may be released; authored/edited zones stay protected. Leaving Ultra restores ordinary retention and visibility limits. The disk-cache budget remains separate and unchanged.
 
 The default 20,000-entity document limit is preserved outside Ultra. Ultra explicitly opts into larger validated scenes, including save/reopen and editing; deletion-only cleanup remains available when returning to a normal preset. Per-batch validation and entity/reference checks still apply.
+
+## Conservative building render compaction
+
+`prepare.ts` now runs `optimizePreparedBuildings` and emits a JSON report with
+building counts, vertex/triangle counts and buffer bytes before and after.
+The pass indexes exactly equal position/normal/color tuples and removes exactly
+repeated same-winding triangles within each unedited OSM building. It preserves
+roof colors, normal discontinuities and opposite winding; it never merges
+neighboring buildings or changes authoritative scene/collision topology. If the
+indexed buffers would be larger, the original buffers are retained.
+
+On the bundled Irún extract (391 buildings), the pass reduced render buffers from
+624,960 to 481,728 bytes and vertices from 26,040 to 15,732. All 8,680 triangles
+remained: this sample had no exact duplicate triangles. These are uncompressed
+buffer sizes, not total project sizes or an FPS claim. Runtime building batching
+may expand indexed buffers again.
+
+Deploy the updated preparation worker to enable the pass for newly generated
+zones. Already published prepared files are unchanged until regenerated. Keep
+existing artifacts until replacement validation completes; no blanket deletion
+or lossy coordinate quantization is part of this change.
