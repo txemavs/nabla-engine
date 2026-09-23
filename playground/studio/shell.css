@@ -1,7 +1,7 @@
 #app.studio-desktop {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  grid-template-areas: 'header' 'toolbar' 'workspace' 'footer';
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'header' 'workspace' 'footer';
   background: #282828;
   font-size: 14px;
 }
@@ -136,4 +136,67 @@
 .studio-workspace .nd-panel-actions select,
 .studio-workspace .nd-panel-actions button[aria-label^='Dividir'] {
   display: none;
+}
+
+/* The viewport owns its mode header and tools, including when floated. */
+#studio-viewport-panel {
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+#studio-viewport-panel > .toolbar {
+  background: #363636;
+  padding: 0 10px;
+  gap: 10px;
+  overflow: auto;
+}
+#studio-viewport-panel .mode {
+  width: auto;
+}
+#studio-object-mode {
+  width: auto;
+  min-width: 120px;
+  font-size: 13px;
+}
+.studio-viewport-tools {
+  position: absolute;
+  right: 10px;
+  top: 48px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+  background: #303030;
+  border: 1px solid #505050;
+}
+.studio-viewport-tools button {
+  text-align: left;
+  border-radius: 0;
+}
+body.playing .studio-viewport-tools {
+  display: none;
+}
+#studio-locations {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+#studio-locations > details {
+  border: 0;
+  border-radius: 0;
+}
+#studio-locations summary {
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #c8d6e5;
+}
+#studio-locations #tree {
+  overflow: visible;
+}
+.studio-workspace .inspector {
+  padding: 12px;
 }

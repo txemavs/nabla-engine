@@ -74,3 +74,18 @@ Dock tabs use square edges. Split-direction buttons and the move-group select ar
 hidden; dragging tabs remains the primary docking action. Float/dock and close
 controls appear on group hover or keyboard focus, retaining keyboard access.
 The extra move/resize handles remain available on floating panels.
+
+## Blender-style initial workspace
+
+Desktop layout version 2 places the viewport on the left (76% initial width), with
+the scene tree above Properties on the right. The viewport owns its mode header
+and a vertical Move/Rotate/Frame toolbar on its right edge, so these controls travel
+with a floating viewport. Locations group the active scene's object tree; other
+saved locations can be opened from the same column. Version-1 layout preferences
+are left intact but no longer override the new default. Reset Layout restores it.
+
+Object/Edit mode delegates to the existing solid editor. Edit is unavailable for
+non-editable objects, including imported vehicle GLBs. There is no timeline yet.
+GLB vertex editing/export requires an editable mesh document, preservation of UVs,
+material assignments and hierarchy, normal/bounds and collider updates, undoable
+mesh operations and a GLB exporter. It is not implemented by this layout change.

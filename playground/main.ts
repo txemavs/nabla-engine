@@ -567,6 +567,27 @@ function refreshUi(): void {
     }
   }
   append(null, 0)
+  const locationsTree = document.getElementById('studio-locations')
+  if (locationsTree) {
+    locationsTree.replaceChildren()
+    for (const place of project!.locations) {
+      const active = place.id === project!.activeLocation
+      const section = document.createElement('details')
+      section.open = active
+      const label = document.createElement('summary')
+      label.textContent = active ? doc.name : place.scene.name
+      section.append(label)
+      if (active) section.append(tree)
+      else {
+        const visit = document.createElement('button')
+        visit.textContent = 'Abrir lugar · ' + place.scene.entities.length + ' objetos'
+        visit.disabled = !!sim || loadingWorld
+        visit.onclick = () => void openProjectPlace(place.id)
+        section.append(visit)
+      }
+      locationsTree.append(section)
+    }
+  }
   if (tree.dataset.selection !== selectedId) {
     tree.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' })
     tree.dataset.selection = selectedId
@@ -635,6 +656,17 @@ function refreshUi(): void {
   const mapReadOnly = isMapBuilding(e) && !e.mapEditable
   if (mapReadOnly) solidEditor.close()
   else solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
+  const objectMode = $<HTMLSelectElement>('studio-object-mode')
+  objectMode.value = solidEditor.active ? 'edit' : 'object'
+  objectMode.disabled = !!sim || loadingWorld
+  objectMode.querySelector<HTMLOptionElement>('[value=edit]')!.disabled = !e.geometry || mapReadOnly
+  objectMode.title = e.geometry
+    ? 'Editar el objeto o su geometría'
+    : 'Este objeto no contiene un sólido editable'
+  objectMode.onchange = () => {
+    if ((objectMode.value === 'edit') !== solidEditor.active)
+      document.getElementById('edit-solid')?.click()
+  }
   if (e.light) {
     const controls = document.createElement('div')
     controls.innerHTML = `<label class="field-label">Farola</label><label><input id="light-enabled" type="checkbox" ${e.light.enabled ? 'checked' : ''}> Encendida</label><label><input id="light-night" type="checkbox" ${e.light.nightOnly ? 'checked' : ''}> Solo de noche</label><label class="field-label" for="light-color">Color de luz</label><input id="light-color" type="color" value="${e.light.color}"><label class="field-label" for="light-intensity">Intensidad · cd</label><input id="light-intensity" type="number" min="0" max="10000" value="${e.light.intensity}"><label class="field-label" for="light-distance">Alcance · m</label><input id="light-distance" type="number" min="1" max="100" value="${e.light.distance}">`
@@ -2341,6 +2373,7 @@ void refreshMapCacheUi()
 if (new URLSearchParams(location.search).get('studio') === 'desktop') {
   const { mountStudio } = await import('./studio/shell.js')
   mountStudio({
+    refresh: refreshUi,
     input: studioInput,
     reportError: (error) => toast(String(error)),
     undo: undoScene,

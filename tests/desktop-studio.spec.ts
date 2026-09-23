@@ -5,6 +5,17 @@ test('desktop retains the live viewport, edits and layout across panel moves', a
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/?scene=circuit&studio=desktop')
   await expect(page.locator('.studio-workspace #viewport > canvas')).toBeVisible()
+  const world = await page.locator('#studio-viewport-panel').boundingBox()
+  const sceneTree = await page.locator('.outliner').boundingBox()
+  const properties = await page.locator('.inspector').boundingBox()
+  expect(world!.x).toBeLessThan(sceneTree!.x)
+  expect(sceneTree!.x).toBeCloseTo(properties!.x, 0)
+  expect(sceneTree!.y + sceneTree!.height).toBeLessThanOrEqual(properties!.y)
+  await expect(page.locator('#studio-viewport-panel > .toolbar #studio-object-mode')).toHaveValue(
+    'object',
+  )
+  await expect(page.locator('.studio-viewport-tools #translate')).toBeVisible()
+  await expect(page.locator('#studio-locations #tree')).toBeVisible()
   await page.evaluate(() => {
     const canvas = document.querySelector('#viewport > canvas')!
     canvas.setAttribute('data-retained-test', 'original')
@@ -44,7 +55,7 @@ test('desktop retains the live viewport, edits and layout across panel moves', a
 })
 
 test('invalid desktop layout cannot prevent opening the real editor', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('nabla.studio.layout.v1', '{broken'))
+  await page.addInitScript(() => localStorage.setItem('nabla.studio.layout.v2', '{broken'))
   await page.goto('/?scene=circuit&studio=desktop')
   await expect(page.locator('.studio-workspace #viewport > canvas')).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Propiedades', exact: true })).toBeVisible()

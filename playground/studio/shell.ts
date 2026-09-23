@@ -12,6 +12,7 @@ import '@nabla/desktop/style.css'
 import './shell.css'
 
 export interface StudioHost {
+  refresh: () => void
   undo: () => void
   redo: () => void
   togglePlay: () => void
@@ -22,11 +23,25 @@ export interface StudioHost {
   input: StudioInputOwner
   reportError: (error: unknown) => void
 }
-const layoutKey = 'nabla.studio.layout.v1'
+const layoutKey = 'nabla.studio.layout.v2'
 export function mountStudio(host: StudioHost): void {
   document.getElementById('welcome')!.hidden = true
   mountSettingsWindow(host.input)
   const app = document.getElementById('app')!
+  const viewport = document.getElementById('viewport')!
+  const viewportPanel = document.createElement('section')
+  viewportPanel.id = 'studio-viewport-panel'
+  app.append(viewportPanel)
+  viewportPanel.append(app.querySelector('.toolbar')!, viewport)
+  const tools = document.createElement('nav')
+  tools.className = 'studio-viewport-tools'
+  tools.setAttribute('aria-label', 'Herramientas 3D')
+  for (const id of ['translate', 'rotate', 'focus']) tools.append(document.getElementById(id)!)
+  viewport.append(tools)
+  document.getElementById('studio-object-mode')!.hidden = false
+  const locations = document.createElement('div')
+  locations.id = 'studio-locations'
+  document.getElementById('tree')!.before(locations)
   const workspace = createWorkspace()
   const registry = createCommandRegistry()
   registry.register({ id: 'undo', label: 'Deshacer', enabled: host.canUndo, execute: host.undo })
@@ -39,7 +54,7 @@ export function mountStudio(host: StudioHost): void {
     execute: host.togglePlay,
   })
   const definitions = [
-    { id: 'world', title: 'Vista 3D', selector: '#viewport' },
+    { id: 'world', title: 'Vista 3D', selector: '#studio-viewport-panel' },
     { id: 'scene', title: 'Escena', selector: '.outliner' },
     { id: 'properties', title: 'Propiedades', selector: '.inspector' },
   ]
@@ -73,16 +88,16 @@ export function mountStudio(host: StudioHost): void {
     floating: [],
     root: {
       kind: 'split',
-      id: 'left',
+      id: 'main',
       axis: 'horizontal',
-      ratio: 0.18,
-      first: { kind: 'tabs', id: 'scene-tabs', tabs: ['scene'], active: 'scene' },
+      ratio: 0.76,
+      first: { kind: 'tabs', id: 'world-tabs', tabs: ['world'], active: 'world' },
       second: {
         kind: 'split',
-        id: 'right',
-        axis: 'horizontal',
-        ratio: 0.76,
-        first: { kind: 'tabs', id: 'world-tabs', tabs: ['world'], active: 'world' },
+        id: 'sidebar',
+        axis: 'vertical',
+        ratio: 0.38,
+        first: { kind: 'tabs', id: 'scene-tabs', tabs: ['scene'], active: 'scene' },
         second: { kind: 'tabs', id: 'properties-tabs', tabs: ['properties'], active: 'properties' },
       },
     },
@@ -182,4 +197,5 @@ export function mountStudio(host: StudioHost): void {
         },
       ),
   }).mount(root)
+  host.refresh()
 }
