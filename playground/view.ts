@@ -1,3 +1,4 @@
+import { placeLabel } from './place-label.js'
 import { entityMapArtifact } from './map-artifact.js'
 import { isMapEnvironment } from './studio/outliner.js'
 import { matteGroundMaterial, groundDepthBias, transportLayer } from './ground-material.js'
@@ -310,33 +311,7 @@ export class SceneView {
         }
       }
       if (e.placeLabel) {
-        const canvas = document.createElement('canvas')
-        canvas.width = 512
-        canvas.height = 64
-        const ctx = canvas.getContext('2d')!
-        ctx.font = '600 30px system-ui, sans-serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.lineWidth = 6
-        ctx.strokeStyle = '#17212a'
-        ctx.fillStyle = '#f5f3e9'
-        ctx.strokeText(e.placeLabel.text, 256, 32, 490)
-        ctx.fillText(e.placeLabel.text, 256, 32, 490)
-        const texture = new THREE.CanvasTexture(canvas)
-        texture.colorSpace = THREE.SRGBColorSpace
-        const label = new THREE.Sprite(
-          new THREE.SpriteMaterial({
-            map: texture,
-            sizeAttenuation: false,
-            depthTest: false,
-            depthWrite: false,
-            transparent: true,
-          }),
-        )
-        label.scale.set(0.32, 0.04, 1)
-        label.userData.ownedLabelTexture = true
-        label.raycast = () => undefined
-        label.renderOrder = 100
+        const label = placeLabel(e.placeLabel.text)
         group.add(label)
       }
       if (e.sprite) {

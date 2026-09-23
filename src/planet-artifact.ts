@@ -1,7 +1,9 @@
+import type { PlanetPlace } from './planet-places.js'
 import { mapTileBounds, mapTileId, mapTileSample, type MapTile } from './map-tiles.js'
 import type { GeoPoint } from './geography.js'
 import type { PlanetCollisionChunk } from './planet-collisions.js'
 export interface PlanetManifest {
+  places?: PlanetPlace[]
   format: 'nabla-planet-tile-v1'
   generator: 'native-xyz-v2'
   geometryRevision?: 'native-surfaces-v2'
