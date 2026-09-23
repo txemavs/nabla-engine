@@ -816,6 +816,7 @@ export class SceneView {
   }
   setPlaying(playing: boolean): void {
     this.avatar.visible = playing
+    if (!playing) this.impacts.clear()
     if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
     for (const e of this.document.entities)
       if (

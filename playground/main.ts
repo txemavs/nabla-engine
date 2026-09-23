@@ -1345,6 +1345,7 @@ function togglePlayNow(): void {
       sim.dispose()
       sim = null
       view.setPlaying(false)
+      renderer.domElement.dataset.impacts = '0'
       document.exitPointerLock()
       camera.up.set(0, 1, 0)
       document.querySelector('.caption-tag')!.textContent = 'PERSPECTIVA'

@@ -41,9 +41,12 @@ export class ImpactMarks {
       return false
     })
   }
-  dispose(): void {
+  clear(): void {
     for (const mark of this.marks) mark.removeFromParent()
     this.marks = []
+  }
+  dispose(): void {
+    this.clear()
     this.geometry.dispose()
     this.material.dispose()
   }
