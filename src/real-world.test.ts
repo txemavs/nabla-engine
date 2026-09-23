@@ -457,3 +457,20 @@ it('does not filter out bridge=yes or tunnel=yes highways', () => {
   expect(doc.entities.some((e) => e.source?.id === 'way/200000003')).toBe(false)
   expect(doc.entities.some((e) => e.source?.id === 'way/200000004')).toBe(false)
 })
+
+it('defers distant streamed building collision cooking until an actor approaches', () => {
+  const doc = createRealWorld(data)
+  const sim = new Simulation(doc)
+  const template = doc.entities.find((e) => e.source && e.geometry && !e.landcover && !e.railway)!
+  const building = structuredClone(template)
+  building.id = 'distant-stream-building'
+  building.parentId = null
+  building.transform.position = [12000, 0, 0]
+  sim.replaceMapEntities(new Set(), [building])
+  expect(sim['bodies'].has(building.id)).toBe(false)
+  sim['playerBody'].position.set(12000, 50, 0)
+  sim.setCollisionDistance(500)
+  expect(sim['bodies'].has(building.id)).toBe(true)
+  sim.replaceMapEntities(new Set([building.id]), [])
+  expect(sim['bodies'].has(building.id)).toBe(false)
+})

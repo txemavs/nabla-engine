@@ -119,7 +119,7 @@ export class LandcoverBatches {
       for (const [id, entity] of current) {
         if (this.entities.has(id)) continue
         const group = objects.get(id)
-        if (!group) continue
+        if (!group || group.userData.mapPending) continue
         group.updateWorldMatrix(true, true)
         // Reuse worker-prepared geometry and include all parent transforms.
         const vertices: number[] = []

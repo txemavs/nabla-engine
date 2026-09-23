@@ -1,3 +1,5 @@
+import { compactMapTags } from '../src/map-metadata.js'
+import { mapFingerprint, mapTileEntities } from '../src/world-stream.js'
 import { loadPrepared, PreparationClient } from './prepared-world.js'
 const preparation = new PreparationClient()
 import { prepareMapGeometry, mapGeometryTransfers } from './map-geometry.js'
@@ -35,6 +37,15 @@ self.onmessage = async (
     if (!event.data.destination) {
       const cached = await loadPrepared(origin!, key!, controller.signal)
       if (cached && !controller.signal.aborted) {
+        for (const e of cached.entities)
+          if (e.source && !e.mapEditable) e.source.tags = compactMapTags(e.source.tags)
+        for (const e of cached.entities)
+          if (e.terrain && e.id.startsWith('world-terrain')) {
+            const key = e.id === 'world-terrain' ? '0_0' : e.id.slice('world-terrain-'.length)
+            e.mapBaseline = mapFingerprint(
+              mapTileEntities({ version: 1, name: 'Prepared', entities: cached.entities }, key),
+            )
+          }
         self.postMessage({ id, ...cached }, { transfer: mapGeometryTransfers(cached.geometry) })
         return
       }

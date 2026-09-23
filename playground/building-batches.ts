@@ -66,7 +66,7 @@ export class BuildingBatches {
       for (const [id, entity] of next) {
         if (this.buildings.has(id)) continue
         const object = objects.get(id)
-        if (!object) continue
+        if (!object || object.userData.mapPending) continue
         object.updateWorldMatrix(true, true)
         const center = object.getWorldPosition(new THREE.Vector3()).applyMatrix4(inverse)
         const key = `${Math.floor(center.x / 256)}:${Math.floor(center.z / 256)}`

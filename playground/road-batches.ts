@@ -43,7 +43,7 @@ export class RoadBatches {
       for (const [id, entity] of next) {
         if (this.roads.has(id)) continue
         const group = objects.get(id)
-        if (!group) continue
+        if (!group || group.userData.mapPending) continue
         group.updateMatrix()
         const parts = new Map<string, Part[]>()
         for (const child of group.children) {

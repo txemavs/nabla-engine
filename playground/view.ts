@@ -80,6 +80,8 @@ export class SceneView {
   readonly ready: Promise<void>
   private readonly loading: Promise<void>[] = []
   private disposed = false
+  private pendingMapMeshes: Entity[] = []
+  private readonly mapInstallEye = new THREE.Vector3()
   readonly avatar = new THREE.Group()
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
@@ -96,6 +98,7 @@ export class SceneView {
     this.ready = Promise.all(this.loading).then(() => undefined)
   }
   replaceMapEntities(remove: Set<string>, add: Entity[]): void {
+    this.pendingMapMeshes = this.pendingMapMeshes.filter((e) => !remove.has(e.id))
     for (const id of remove) {
       const object = this.objects.get(id)
       if (object) {
@@ -113,14 +116,69 @@ export class SceneView {
       ...structuredClone(add),
     ]
     this.graph = SceneGraph.fromValidated(this.document)
-    this.addEntities(add)
-    if (this.materialSetup) this.setupMaterials(this.materialSetup)
+    // Publish lightweight frames first; expensive meshes and GPU uploads follow over frames.
+    for (const e of add) {
+      const group = new THREE.Group()
+      group.userData.entityId = e.id
+      group.userData.mapPending = true
+      this.objects.set(e.id, group)
+      this.root.add(group)
+      applyPose(group, this.graph.worldTransform(e.id))
+    }
+    this.pendingMapMeshes.push(...add)
+    const priority = (e: Entity) => (e.terrain ? 0 : e.road ? 1 : isMapBuilding(e) ? 2 : 3)
+    const distances = new Map(
+      this.pendingMapMeshes.map((e) => {
+        const p = this.objects.get(e.id)!.position,
+          local = e.geometry?.vertices[0] ?? [0, 0, 0]
+        return [
+          e.id,
+          Math.hypot(p.x + local[0] - this.mapInstallEye.x, p.z + local[2] - this.mapInstallEye.z),
+        ]
+      }),
+    )
+    this.pendingMapMeshes.sort(
+      (a, b) => priority(a) - priority(b) || distances.get(a.id)! - distances.get(b.id)!,
+    )
     // Resource promises are consumed per batch rather than retained for the whole journey.
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
   }
+  /** A soft CPU budget; one indivisible mesh may exceed it. Call once per main frame. */
+  flushMapInstall(budgetMs = 4, maxEntities = 24, eye?: THREE.Vector3): number {
+    if (eye) this.mapInstallEye.copy(eye)
+    const started = performance.now()
+    let count = 0
+    while (
+      this.pendingMapMeshes.length &&
+      count < maxEntities &&
+      (count === 0 || performance.now() - started < budgetMs)
+    ) {
+      const e = this.pendingMapMeshes.shift()!
+      const group = this.objects.get(e.id)
+      if (!group?.userData.mapPending) continue
+      this.addEntities([e])
+      delete group.userData.mapPending
+      this.mapBounds.delete(e.id)
+      if (this.materialSetup)
+        group.traverse((object) => {
+          if (object instanceof THREE.Mesh)
+            for (const material of Array.isArray(object.material)
+              ? object.material
+              : [object.material])
+              if (material instanceof THREE.MeshStandardMaterial) this.materialSetup!(material)
+        })
+      count++
+    }
+    if (count) this.document.entities = [...this.document.entities]
+    void Promise.all(this.loading.splice(0)).catch(() => undefined)
+    return count
+  }
+  get pendingMapInstall(): number {
+    return this.pendingMapMeshes.length
+  }
   private addEntities(entities: Entity[]): void {
     for (const e of entities) {
-      const group = new THREE.Group()
+      const group = this.objects.get(e.id) ?? new THREE.Group()
       group.userData.entityId = e.id
       this.objects.set(e.id, group)
       this.root.add(group)
@@ -783,6 +841,7 @@ export class SceneView {
     this.portals.clear()
     this.surfaceTextures.forEach((texture) => texture.dispose())
     this.disposed = true
+    this.pendingMapMeshes = []
     this.root.removeFromParent()
     disposeObject(this.root)
   }

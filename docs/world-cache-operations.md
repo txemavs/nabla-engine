@@ -345,3 +345,32 @@ This is an on-demand migration, not a bulk rebuild of every explored region.
 The first visit to a previously uncooked zone can still wait for upstream OSM.
 Preparing geometry removes that work from subsequent clients; it does not provide
 terrain excavation, surveyed water levels or underground railway rendering.
+
+## Main-thread installation and lean metadata
+
+Streaming registers entity frames immediately, then materializes meshes once per
+main render frame. The default soft budget is 4 ms and at most 24 entities per
+slice, with terrain and road entities first. Geometry buffers retain their worker
+ownership until consumed by a slice. Removed zones cancel their pending meshes;
+placeholder frames do not enter rendering batches. GPU uploads consequently occur
+across frames instead of all meshes being introduced in one frame. One large
+mesh, a batch rebuild or a shader compilation can still exceed that soft budget.
+`canvas.dataset.worldInstallPending` exposes the remaining entity count.
+
+Streamed building collision shapes are deferred outside the collision neighborhood
+of every actor, including two seconds of velocity look-ahead. Terrain collision is
+installed immediately. Deferred buildings are checked at the normal collision
+update interval and built before they enter the configured nearby collision range.
+This avoids cooking distant city geometry simply because a tile finished loading;
+it is not a hard frame budget for nearby physics or a replacement for GPU profiling.
+
+`compactMapTags` retains classification and structural OSM tags in runtime scenes.
+Addresses, contact information, descriptions and translated names remain in raw
+OSM/baked extracts, rather than being repeated on every prepared scene fragment.
+OSM IDs and displayed entity/place names are retained. Existing prepared version-5
+files are compacted in the worker before transfer; newly prepared files are compact
+on disk as well. The wire format stays compatible. Full metadata lookup in the
+inspector is a future consumer of those stored IDs; this change adds no automatic
+selection-time network request. Binary prepared geometry remains a separate future
+migration: typed buffers already transfer between workers and the main thread,
+while public prepared files still contain JSON and base64.

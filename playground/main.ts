@@ -1466,6 +1466,8 @@ let nextPerformanceReadout = 0
 renderer.info.autoReset = false
 function frame(now: number): void {
   const frameStart = performance.now()
+  view.flushMapInstall(4, 24, camera.position)
+  renderer.domElement.dataset.worldInstallPending = String(view.pendingMapInstall)
   let physicsMs = 0
   renderer.info.reset()
   frameTimes.push(now - previous)

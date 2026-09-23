@@ -101,6 +101,10 @@ export class Simulation {
   private readonly bodies = new Map<string, Body>()
   private mapBuildingsEnabled = true
   private collisionDistance = 400
+  private readonly deferredMapBodies = new Map<
+    string,
+    { entity: Entity; center: Vec3; radius: number }
+  >()
   private readonly mapBodies = new Map<string, Body>()
   private readonly vehicles = new Map<string, Vehicle>()
   private readonly hostedShapes = new Map<string, Box[]>()
@@ -293,8 +297,16 @@ export class Simulation {
       if (b) this.world.removeBody(b)
       this.bodies.delete(id)
       this.mapBodies.delete(id)
+      this.deferredMapBodies.delete(id)
     }
-    for (const e of add) this.addEntityBody(e)
+    for (const e of add) {
+      if (isMapBuilding(e) && e.motion === 'static') {
+        const pose = this.graph.worldTransform(e.id)
+        const radius = Math.max(1, ...e.geometry!.vertices.map((v) => Math.hypot(...v)))
+        this.deferredMapBodies.set(e.id, { entity: e, center: new Vec3(...pose.position), radius })
+      } else this.addEntityBody(e)
+    }
+    this.installNearbyMapBodies()
     this.minimumFlightAltitude = Math.min(
       0,
       ...this.document.entities.flatMap((e) =>
@@ -406,7 +418,12 @@ export class Simulation {
     this.mapBuildingsEnabled = enabled
     if (enabled)
       for (const e of this.document.entities) {
-        if (isMapBuilding(e) && e.motion === 'static' && !this.bodies.has(e.id))
+        if (
+          isMapBuilding(e) &&
+          e.motion === 'static' &&
+          !this.bodies.has(e.id) &&
+          !this.deferredMapBodies.has(e.id)
+        )
           this.addEntityBody(e)
       }
     this.updateMapCollisions()
@@ -427,8 +444,28 @@ export class Simulation {
       ),
     }
   }
+  private installNearbyMapBodies(): void {
+    if (!this.mapBuildingsEnabled) return
+    const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
+    for (const [id, pending] of this.deferredMapBodies) {
+      if (
+        !actors.some(
+          (actor) =>
+            actor.position.distanceTo(pending.center) <
+            pending.radius +
+              this.collisionDistance +
+              actor.velocity.length() * 2 +
+              actor.boundingRadius,
+        )
+      )
+        continue
+      this.addEntityBody(pending.entity)
+      this.deferredMapBodies.delete(id)
+    }
+  }
   /** Keep terrain, actors and portal colliders. Cull map solids conservatively around every actor. */
   private updateMapCollisions(): void {
+    this.installNearbyMapBodies()
     const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
     for (const [id, body] of this.mapBodies) {
       if (!this.mapBuildingsEnabled && isMapBuilding(this.entitiesById.get(id))) {
@@ -1731,6 +1768,8 @@ export class Simulation {
     for (const b of [...this.world.bodies]) this.world.removeBody(b)
     this.vehicles.clear()
     this.bodies.clear()
+    this.mapBodies.clear()
+    this.deferredMapBodies.clear()
     this.disposed = true
   }
 }

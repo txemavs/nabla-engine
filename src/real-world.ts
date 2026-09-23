@@ -1,3 +1,4 @@
+import { compactMapTags } from './map-metadata.js'
 import { pointInPolygon } from './multipolygon.js'
 import { mapFingerprint, mapTileEntities } from './world-stream.js'
 import { ShapeUtils, Vector2, Vector3 } from 'three'
@@ -152,7 +153,7 @@ export function createRealWorld(
     provider: 'openstreetmap' as const,
     id: f.id,
     retrievedAt: data.source.retrievedAt,
-    tags: f.tags,
+    tags: compactMapTags(f.tags),
   })
   const waterAreas = data.features
     .filter((f) => isWaterFeature(f.tags))
