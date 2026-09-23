@@ -46,6 +46,8 @@ export class RemotePortalViews {
     }
     const target = entry.view.portals.get(entityId)
     if (!entry.ready || !target) return undefined
+    // Drain preparation even when the source aperture is outside the camera frustum.
+    entry.view.flushMapInstall(3, 16)
     entry.scene.updateMatrixWorld(true)
     const e = entry
     return {
@@ -54,7 +56,6 @@ export class RemotePortalViews {
       background: (renderer, camera) => {
         camera.far = Math.max(camera.far, 2000)
         camera.updateProjectionMatrix()
-        e.view.flushMapInstall(3, 16, camera.position)
         e.view.limitDrawDistance(camera.position, 1500, false, true, 1000)
         e.geography.viewDistance = 1500
         e.geography.update(camera.position.toArray(), new THREE.Vector3(), document.sky)
