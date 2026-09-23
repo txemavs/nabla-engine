@@ -160,7 +160,7 @@ scene.environment = pmrem.fromScene(environment, 0.04).texture
 scene.environmentIntensity = 0.4
 environment.dispose()
 pmrem.dispose()
-const hemisphere = new THREE.HemisphereLight('#edf4ff', '#59644f', 1.6)
+const hemisphere = new THREE.HemisphereLight('#edf4ff', '#59644f', 0.4)
 scene.add(hemisphere)
 const sun = new THREE.DirectionalLight('#ffe1b1', 3.2)
 sun.position.set(-25, 45, 25)
@@ -1823,7 +1823,7 @@ function frame(now: number): void {
     const air = geography.atmosphere
     water?.setSun(geography.sunDirection, air.day)
     scene.fog = air.space >= 1 ? null : new THREE.Fog(air.color, air.near, air.far)
-    hemisphere.intensity = 0.16 + 1.44 * air.day
+    hemisphere.intensity = 0.04 + 0.36 * air.day
     scene.environmentIntensity = 0.025 + 0.375 * air.day
     const lightDirection = air.day > 0.05 ? geography.sunDirection : geography.moonDirection
     sun.position.copy(lightDirection).multiplyScalar(65)
