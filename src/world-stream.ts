@@ -14,9 +14,13 @@ export function tileDistance(key: string, position: Vec3Tuple): number {
   )
 }
 /** Near terrain first, then a velocity-dependent corridor before the actor arrives. */
-export function wantedWorldTiles(position: Vec3Tuple, velocity: Vec3Tuple): string[] {
+export function wantedWorldTiles(
+  position: Vec3Tuple,
+  velocity: Vec3Tuple,
+  horizonSeconds = 15,
+): string[] {
   const speed = Math.hypot(velocity[0], velocity[2])
-  const lead = Math.min(4800, speed * 15),
+  const lead = Math.min(horizonSeconds > 15 ? 12000 : 4800, speed * horizonSeconds),
     scale = speed > 0 ? lead / speed : 0
   const ahead: Vec3Tuple = [
     position[0] + velocity[0] * scale,
@@ -55,7 +59,16 @@ export function wantedWorldTiles(position: Vec3Tuple, velocity: Vec3Tuple): stri
 export function mapTileEntities(doc: SceneDocument, key: string): Entity[] {
   const suffix = key === '0_0' ? '' : `-${key}`
   const ids = new Set(
-    ['world-terrain', 'world-buildings', 'world-roads', 'world-trees'].map((id) => id + suffix),
+    [
+      'world-terrain',
+      'world-buildings',
+      'world-roads',
+      'world-trees',
+      'world-landcover',
+      'world-water',
+      'world-railways',
+      'world-places',
+    ].map((id) => id + suffix),
   )
   let changed = true
   while (changed) {
@@ -92,24 +105,58 @@ export function mapFingerprint(entities: Entity[]): string {
   return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0')
 }
 export interface WorldStreamHost {
+  prepare?(keys: string[]): void
+  prefetch?(keys: string[]): void
   document(): SceneDocument
   load(key: string, signal: AbortSignal): Promise<Entity[]>
   replace(remove: Set<string>, add: Entity[]): void
   status(message: string): void
 }
-/** One request at a time. Edited/saved zones stay pinned; untouched far zones are evicted. */
+/** Keys for the 3×3 neighborhood around position — these should never be cancelled. */
+export function immediateNeighborhood(position: Vec3Tuple): Set<string> {
+  const [cx, cz] = worldTileAt(position)
+  const keys = new Set<string>()
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dz = -1; dz <= 1; dz++) keys.add(worldTileKey(cx + dx, cz + dz))
+  return keys
+}
+
+/** Sort keys by distance to position (nearest first). */
+function sortByDistance(keys: Iterable<string>, position: Vec3Tuple): string[] {
+  return [...keys].sort((a, b) => tileDistance(a, position) - tileDistance(b, position))
+}
+
+/**
+ * Parallel zone streaming with player-zone prioritization.
+ * Up to 3 concurrent requests; the player's current zone and immediate neighbors
+ * are never cancelled. Edited/saved zones stay pinned; untouched far zones are evicted.
+ */
 export class WorldStream {
   private readonly resident = new Map<
     string,
     { baseline: string; pinned: boolean; verify?: boolean }
   >()
   private readonly failed = new Map<string, number>()
+  private readonly retryCount = new Map<string, number>()
   private wanted: string[] = []
   private position: Vec3Tuple = [0, 0, 0]
   private protectedPositions: Vec3Tuple[] = []
-  private busy: { key: string; controller: AbortController } | null = null
+  private readonly inFlight = new Map<string, AbortController>()
+  private maxConcurrent = 3
+  private preparationAhead = 45
+  private retainLoaded = false
+  private retentionArea = ''
+  setQuality(concurrent: number, ahead: number, retainLoaded = false): void {
+    if (this.retainLoaded !== retainLoaded) {
+      this.limited.clear()
+      this.retentionArea = ''
+    }
+    this.retainLoaded = retainLoaded
+    this.maxConcurrent = Math.max(1, Math.min(3, Math.round(concurrent)))
+    this.preparationAhead = Math.max(0, Math.min(45, ahead))
+  }
   private readonly limited = new Map<string, string>()
-  private nextRequest = 0
+  private nextSlot = 0
   private disposed = false
   constructor(
     private readonly host: WorldStreamHost,
@@ -135,32 +182,96 @@ export class WorldStream {
     if (this.disposed) return
     this.position = position
     this.protectedPositions = protectedPositions
-    // At orbital altitude, keep the cache instead of downloading invisible ground.
+    const currentKey = worldTileKey(...worldTileAt(position))
+    const preparing =
+      position[1] > 12000
+        ? [currentKey]
+        : [
+            currentKey,
+            ...wantedWorldTiles(position, velocity, this.preparationAhead).filter(
+              (k) => k !== currentKey,
+            ),
+          ].slice(0, 24)
+    if (this.preparationAhead > 0) this.host.prepare?.(preparing)
+    const installing = new Set(wantedWorldTiles(position, velocity))
+    this.host.prefetch?.(
+      position[1] > 12000 || this.preparationAhead === 0
+        ? []
+        : preparing.filter((key) => !installing.has(key)),
+    )
     if (position[1] > 12000) {
       this.wanted = []
       return
     }
     this.wanted = wantedWorldTiles(position, velocity)
-    // Let an in-flight tile finish warming the cache. Repeated cancellation while
-    // flying can otherwise discard every cold request before any sector arrives.
-    // Disposing/changing destination still aborts the session immediately.
-    if (this.busy || now < this.nextRequest) return
-    const area = this.budgetArea()
-    const key = this.wanted.find(
-      (k) =>
-        !this.resident.has(k) && now >= (this.failed.get(k) ?? 0) && this.limited.get(k) !== area,
+    if (this.retentionArea !== this.budgetArea()) {
+      this.retentionArea = this.budgetArea()
+      this.evict()
+    }
+    const neighborhood = immediateNeighborhood(position)
+    const neighborsMissing = [...neighborhood].filter(
+      (k) => !this.resident.has(k) && !this.inFlight.has(k),
     )
-    if (!key) return
+    if (neighborsMissing.length && this.inFlight.size >= this.maxConcurrent) {
+      const cancellable = [...this.inFlight.entries()].filter(([k]) => !neighborhood.has(k))
+      const farthest = cancellable.sort(
+        (a, b) => tileDistance(b[0], position) - tileDistance(a[0], position),
+      )[0]
+      if (farthest) {
+        farthest[1].abort()
+        this.inFlight.delete(farthest[0])
+      }
+    }
+    while (this.inFlight.size < this.maxConcurrent && now >= this.nextSlot) {
+      const area = this.budgetArea()
+      const prioritized = [
+        ...sortByDistance(neighborsMissing, position),
+        ...this.wanted.filter((k) => !neighborhood.has(k)),
+      ]
+      const key = prioritized.find(
+        (k) =>
+          !this.resident.has(k) &&
+          !this.inFlight.has(k) &&
+          now >= (this.failed.get(k) ?? 0) &&
+          this.limited.get(k) !== area,
+      )
+      if (!key) break
+      this.startLoad(key, now, neighborhood.has(key))
+    }
+    this.updateStatus(neighborhood)
+  }
+  private updateStatus(neighborhood: Set<string>): void {
+    const loading = this.inFlight.size
+    const pending = this.wanted.filter((k) => !this.resident.has(k) && !this.inFlight.has(k)).length
+    const neighborLoading = [...this.inFlight.keys()].filter((k) => neighborhood.has(k)).length
+    const neighborPending = [...neighborhood].filter(
+      (k) => !this.resident.has(k) && !this.inFlight.has(k),
+    ).length
+    if (loading === 0 && pending === 0) {
+      this.host.status(`Mapa conectado · ${this.resident.size} zonas disponibles`)
+    } else if (neighborLoading > 0 || neighborPending > 0) {
+      const failedNearby = [...neighborhood].filter((k) => this.failed.has(k)).length
+      if (failedNearby > 0) {
+        this.host.status(
+          `Cargando terreno cercano · ${failedNearby} zona(s) pendiente(s) de reintento`,
+        )
+      } else {
+        this.host.status(
+          `Cargando terreno cercano · ${neighborLoading + neighborPending} zona(s) inmediata(s)`,
+        )
+      }
+    } else if (loading > 0) {
+      this.host.status(`Anticipando recorrido · ${loading} zona(s) cargando, ${pending} pendientes`)
+    }
+  }
+  private startLoad(key: string, _now: number, isNeighbor = false): void {
     const controller = new AbortController()
-    this.busy = { key, controller }
-    this.host.status(`Cargando zona ${key} · anticipando el recorrido…`)
+    this.inFlight.set(key, controller)
     void this.host
       .load(key, controller.signal)
       .then(async (entities) => {
         if (this.disposed || controller.signal.aborted || !this.wanted.includes(key)) return
         let remove = this.makeRoom(key, entities)
-        // Old saves have no fingerprint. Only release a saved zone after comparing
-        // it with its generated source; never infer that an edited zone is disposable.
         if (!remove) {
           for (const [candidate, state] of this.resident) {
             if (
@@ -212,19 +323,27 @@ export class WorldStream {
           pinned: false,
         })
         this.failed.delete(key)
+        this.retryCount.delete(key)
         this.evict()
-        this.host.status(`Mapa conectado · ${this.resident.size} zonas disponibles`)
       })
       .catch((error: unknown) => {
         if (this.disposed || controller.signal.aborted) return
-        this.failed.set(key, Date.now() + 60000)
+        const retries = (this.retryCount.get(key) ?? 0) + 1
+        this.retryCount.set(key, retries)
+        const backoff = isNeighbor
+          ? Math.min(5000, 1000 * retries)
+          : Math.min(60000, 10000 * retries)
+        this.failed.set(key, Date.now() + backoff)
+        const seconds = Math.round(backoff / 1000)
         this.host.status(
-          `Zona ${key} pendiente · ${error instanceof Error ? error.message : 'sin conexión'} · reintento en 60 s`,
+          `Zona ${key} pendiente · ${error instanceof Error ? error.message : 'sin conexión'} · reintento en ${seconds} s`,
         )
       })
       .finally(() => {
-        if (this.busy?.controller === controller) this.busy = null
-        this.nextRequest = Math.max(this.nextRequest, Date.now() + 250)
+        if (this.inFlight.get(key) === controller) {
+          this.inFlight.delete(key)
+        }
+        this.nextSlot = Math.max(this.nextSlot, Date.now() + 100)
       })
   }
   private budgetArea(): string {
@@ -234,6 +353,8 @@ export class WorldStream {
   private makeRoom(key: string, incoming: Entity[]): Set<string> | null {
     const doc = this.host.document(),
       remove = new Set<string>()
+    // Experimental Ultra keeps all acquired detail inside the local 20 km footprint.
+    if (this.retainLoaded && tileDistance(key, this.position) <= 20000) return remove
     const fits = () => {
       const ids = new Set(doc.entities.filter((e) => !remove.has(e.id)).map((e) => e.id))
       for (const e of incoming) ids.add(e.id)
@@ -270,6 +391,7 @@ export class WorldStream {
       const state = this.resident.get(key)!
       if (
         state.pinned ||
+        (this.retainLoaded && tileDistance(key, this.position) <= 20000) ||
         this.wanted.includes(key) ||
         this.protectedPositions.some((p) => tileDistance(key, p) < 200)
       )
@@ -286,6 +408,7 @@ export class WorldStream {
   }
   dispose(): void {
     this.disposed = true
-    this.busy?.controller.abort()
+    for (const controller of this.inFlight.values()) controller.abort()
+    this.inFlight.clear()
   }
 }

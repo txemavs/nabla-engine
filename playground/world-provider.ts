@@ -1,10 +1,14 @@
+import { mapCache, type MapCache } from './map-cache.js'
+import { revalidateBaked } from './baked-world.js'
 import * as Lerc from 'lerc'
 import lercWasm from 'lerc/lerc-wasm.wasm?url'
 import { createRealWorld, type MapFeature, type WorldExtract } from '../src/real-world.js'
 import { tileCoordinate, EARTH_RADIUS, type GeoPoint } from '../src/geography.js'
 import type { Entity } from '../src/scene.js'
+import { assembleMultipolygonRings } from '../src/multipolygon.js'
 
 const CACHE_BASE = import.meta.env.VITE_WORLD_CACHE_URL || ''
+const BAKED_BASE = import.meta.env.VITE_WORLD_BAKED_URL || CACHE_BASE
 const ESRI = CACHE_BASE
   ? `${CACHE_BASE}/elevation`
   : 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/tile'
@@ -12,7 +16,7 @@ const OVERPASS = CACHE_BASE
   ? `${CACHE_BASE}/osm`
   : import.meta.env.VITE_WORLD_OVERPASS_URL || 'https://overpass-api.de/api/interpreter'
 let nextRemoteRequest = 0
-const CACHE = 'nabla-world-v1'
+const CACHE = 'nabla-world-v3'
 const decoded = new Map<string, Promise<Lerc.LercData>>()
 let ready: Promise<void> | undefined
 async function waitForRetry(ms: number, signal: AbortSignal): Promise<void> {
@@ -78,6 +82,10 @@ interface OsmElement {
   geometry?: { lat: number; lon: number }[]
   members?: { type: string; ref: number; role: string; geometry?: { lat: number; lon: number }[] }[]
 }
+/**
+ * Convert Overpass elements to MapFeatures.
+ * Handles multipolygon assembly for relations where member ways need to be joined.
+ */
 export function overpassFeatures(elements: OsmElement[]): MapFeature[] {
   const result: MapFeature[] = [],
     members = new Set<number>()
@@ -85,20 +93,66 @@ export function overpassFeatures(elements: OsmElement[]): MapFeature[] {
     g.map((p) => [p.lon, p.lat] as [number, number])
   const closed = (g: { lat: number; lon: number }[]) =>
     g.length >= 4 && g[0].lat === g[g.length - 1].lat && g[0].lon === g[g.length - 1].lon
-  for (const e of elements)
+
+  for (const e of elements) {
     if (e.type === 'relation' && e.members?.length) {
-      const ways = e.members.filter((m) => m.type === 'way')
-      if (!ways.length || ways.some((m) => !m.geometry || !closed(m.geometry))) continue
-      result.push({
-        id: `relation/${e.id}`,
-        tags: e.tags ?? {},
-        rings: ways.map((m) => ({
-          role: m.role || 'outer',
-          coordinates: coordinates(m.geometry!),
-        })),
-      })
-      ways.forEach((m) => members.add(m.ref))
+      const ways = e.members.filter(
+        (m) => m.type === 'way' && (!m.role || m.role === 'outer' || m.role === 'inner'),
+      )
+      if (!ways.length) continue
+
+      const allClosed = ways.every((m) => m.geometry && closed(m.geometry))
+      if (allClosed) {
+        result.push({
+          id: `relation/${e.id}`,
+          tags: e.tags ?? {},
+          rings: ways.map((m) => ({
+            role: m.role || 'outer',
+            coordinates: coordinates(m.geometry!),
+          })),
+        })
+        ways.forEach((m) => members.add(m.ref))
+      } else {
+        const wayGeoms = ways
+          .filter((m) => m.geometry && m.geometry.length >= 2)
+          .map((m) => ({
+            role: m.role || 'outer',
+            ref: m.ref,
+            geometry: m.geometry!,
+          }))
+
+        if (!wayGeoms.length) continue
+
+        const assembled = assembleMultipolygonRings(wayGeoms)
+        const joinedPoints = new Set(
+          assembled.rings.flatMap((r) => r.coordinates.map((p) => p.join(','))),
+        )
+        const used = ways.filter(
+          (m) =>
+            m.geometry?.length &&
+            m.geometry.every((p) => joinedPoints.has([p.lon, p.lat].join(','))),
+        )
+        // Never fill a missing courtyard, or turn a partial building into a new footprint.
+        if (
+          ways.some((m) => m.role === 'inner' && !used.includes(m)) ||
+          ((e.tags?.building || e.tags?.['building:part']) && used.length !== ways.length)
+        )
+          continue
+        if (assembled.rings.length > 0) {
+          result.push({
+            id: `relation/${e.id}`,
+            tags: e.tags ?? {},
+            rings: assembled.rings.map((r) => ({
+              role: r.role,
+              coordinates: r.coordinates,
+            })),
+          })
+          used.forEach((m) => members.add(m.ref))
+        }
+      }
     }
+  }
+
   for (const e of elements) {
     if (e.type === 'way' && e.geometry?.length && !members.has(e.id)) {
       if ((e.tags?.building || e.tags?.['building:part']) && !closed(e.geometry)) continue
@@ -109,18 +163,47 @@ export function overpassFeatures(elements: OsmElement[]): MapFeature[] {
       })
     } else if (
       e.type === 'node' &&
-      e.tags?.natural === 'tree' &&
+      (e.tags?.natural === 'tree' || !!e.tags?.place) &&
       e.lat !== undefined &&
       e.lon !== undefined
     )
       result.push({
         id: `node/${e.id}`,
-        tags: e.tags,
+        tags: e.tags!,
         rings: [{ role: 'point', coordinates: [[e.lon, e.lat]] }],
       })
   }
   return result
 }
+/** Retain source elevation as well as prepared geometry, including the distant horizon. */
+async function elevationRaster(url: string, signal: AbortSignal): Promise<Lerc.LercData> {
+  const cache = mapCache('nabla-elevation-v1')
+  let hit: Response | undefined
+  try {
+    hit = await cache.match(url)
+  } catch {
+    /* Optional disk storage. */
+  }
+  signal.throwIfAborted()
+  if (hit && Date.now() - Number(hit.headers.get('x-nabla-stored-at')) < 30 * 86400000)
+    return Lerc.decode(await hit.arrayBuffer())
+  try {
+    const response = await fetchChecked(url, signal)
+    const bytes = await response.arrayBuffer()
+    // Validate before caching; provider error documents must not poison the horizon.
+    const raster = Lerc.decode(bytes)
+    signal.throwIfAborted()
+    await cache
+      .put(url, new Response(bytes, { headers: { 'content-type': 'application/octet-stream' } }))
+      .catch(() => {})
+    return raster
+  } catch (error) {
+    signal.throwIfAborted()
+    if (hit) return Lerc.decode(await hit.arrayBuffer())
+    throw error
+  }
+}
+
 async function elevation(
   origin: GeoPoint,
   ox: number,
@@ -130,36 +213,34 @@ async function elevation(
 ) {
   ready ??= Lerc.load({ locateFile: () => lercWasm })
   await ready
+  const zoom = spacing > 150 ? 10 : 12
   const samples = Array.from({ length: 121 * 121 }, (_, i) => {
     const p = sampleGeo(
       origin,
       ox + (i % 121) * spacing - 60 * spacing,
       oz + Math.floor(i / 121) * spacing - 60 * spacing,
     )
-    return tileCoordinate(p.latitude, p.longitude, 12)
+    return tileCoordinate(p.latitude, p.longitude, zoom)
   })
   const rasters = new Map<string, Lerc.LercData>()
   for (const p of samples) {
     const x = Math.floor(p.x),
       y = Math.floor(p.y),
-      key = `${x}/${y}`
+      key = `${zoom}/${x}/${y}`
     if (rasters.has(key)) continue
     if (!decoded.has(key))
       decoded.set(
         key,
-        fetchChecked(`${ESRI}/12/${y}/${x}`, signal)
-          .then((r) => r.arrayBuffer())
-          .then((b) => Lerc.decode(b))
-          .catch((e) => {
-            decoded.delete(key)
-            throw e
-          }),
+        elevationRaster(`${ESRI}/${zoom}/${y}/${x}`, signal).catch((e) => {
+          decoded.delete(key)
+          throw e
+        }),
       )
     rasters.set(key, await decoded.get(key)!)
   }
   while (decoded.size > 16) decoded.delete(decoded.keys().next().value!)
   return samples.map((p) => {
-    const d = rasters.get(`${Math.floor(p.x)}/${Math.floor(p.y)}`)!,
+    const d = rasters.get(`${zoom}/${Math.floor(p.x)}/${Math.floor(p.y)}`)!,
       u = (p.x % 1) * (d.width - 1),
       v = (p.y % 1) * (d.height - 1)
     const x = Math.floor(u),
@@ -198,20 +279,32 @@ export async function loadWorldTile(
     `/__world-cache/${origin.latitude}/${origin.longitude}/${origin.altitude}/${key}`,
     location.origin,
   ).href
-  let cache: Cache | undefined, extract: WorldExtract | undefined
+  let cache: MapCache | undefined, extract: WorldExtract | undefined
+  let bakedEtag: string | undefined,
+    changed = false
   try {
-    cache = await caches.open(CACHE)
+    cache = mapCache(CACHE)
     const hit = await cache.match(cacheKey)
-    if (hit && Date.now() - Number(hit.headers.get('x-cached-at')) < 30 * 86400000)
+    if (hit && Date.now() - Number(hit.headers.get('x-cached-at')) < 30 * 86400000) {
       extract = (await hit.json()) as WorldExtract
+      bakedEtag = hit.headers.get('x-baked-etag') ?? undefined
+    }
   } catch {
     /* Storage is optional; exploration still works in private browsers. */
+  }
+  if (BAKED_BASE) {
+    const result = await revalidateBaked(CACHE_BASE, origin, key, signal, extract, bakedEtag, () =>
+      elevation(origin, ox, oz, signal),
+    )
+    extract = result.extract
+    bakedEtag = result.etag
+    changed = result.changed
   }
   if (!extract) {
     const nw = sampleGeo(origin, ox - 750, oz - 750),
       se = sampleGeo(origin, ox + 750, oz + 750)
     const box = `${se.latitude},${nw.longitude},${nw.latitude},${se.longitude}`
-    const query = `[out:json][timeout:25];(way[building](${box});way["building:part"](${box});way[highway](${box});relation[building](${box});node[natural=tree](${box}););out geom;`
+    const query = `[out:json][timeout:25];(way[building](${box});way["building:part"](${box});way[highway](${box});relation[building](${box});node[natural=tree](${box});node[place~"^(city|town|village)$"][name](${box});way[railway~"^(rail|light_rail|tram|narrow_gauge)$"](${box});way[landuse](${box});way[leisure](${box});way["natural"~"water|wood|beach|sand|scrub|heath|wetland|marsh|grassland"](${box});way[water](${box});way[waterway~"riverbank|dock|river|stream"](${box});relation[landuse](${box});relation[leisure](${box});relation["natural"~"water|wood"](${box});relation[water](${box});relation[waterway~"riverbank"](${box}););out geom;`
     // Cached visits are immediate; public OSM requests are deliberately paced.
     const delay = Math.max(0, nextRemoteRequest - Date.now())
     if (delay)
@@ -236,6 +329,7 @@ export async function loadWorldTile(
     const json = (await response.json()) as { elements: OsmElement[]; remark?: string }
     if (json.remark || !Array.isArray(json.elements)) throw new Error('Consulta OSM incompleta')
     const heights = await elevation(origin, ox, oz, signal)
+    changed = true
     extract = {
       name: 'Irún · exploración',
       origin,
@@ -243,20 +337,22 @@ export async function loadWorldTile(
       features: overpassFeatures(json.elements),
       source: { retrievedAt: new Date().toISOString(), osm: OVERPASS, elevation: ESRI },
     }
-    if (cache)
-      try {
-        await cache.put(
-          cacheKey,
-          new Response(JSON.stringify(extract), {
-            headers: { 'content-type': 'application/json', 'x-cached-at': String(Date.now()) },
-          }),
-        )
-        const keys = await cache.keys()
-        for (const old of keys.slice(0, Math.max(0, keys.length - 32))) await cache.delete(old)
-      } catch {
-        /* Quota failure must not discard usable terrain. */
-      }
   }
+  if (cache && extract && changed)
+    try {
+      await cache.put(
+        cacheKey,
+        new Response(JSON.stringify(extract), {
+          headers: {
+            'content-type': 'application/json',
+            'x-cached-at': String(Date.now()),
+            ...(bakedEtag ? { 'x-baked-etag': bakedEtag } : {}),
+          },
+        }),
+      )
+    } catch {
+      /* Quota failure must not discard usable terrain. */
+    }
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
   const doc = createRealWorld(extract, destination ? {} : { offset: [ox, oz], tileId: key })
   if (destination) return doc.entities
@@ -268,11 +364,12 @@ export async function loadDistantTerrain(
   x: number,
   z: number,
   signal: AbortSignal,
+  spacing = 100,
 ) {
   return {
     columns: 121,
     rows: 121,
-    spacing: 100,
-    heights: await elevation(origin, x, z, signal, 100),
+    spacing,
+    heights: await elevation(origin, x, z, signal, spacing),
   }
 }

@@ -1,14 +1,21 @@
+import { matteGroundMaterial } from './ground-material.js'
+import { BuildingBatches } from './building-batches.js'
+import { isMapBuilding } from '../src/scene.js'
+import { SURFACE_LAYERS, mapSurfaceColor } from '../src/landcover.js'
+import { withinMapDistance } from './map-visibility.js'
+import { CarrierThrusters } from './carrier-thrusters.js'
 import { takeMapGeometry } from './map-geometry.js'
 import { Streetlights } from './streetlights.js'
 import { CarLights } from './car-lights.js'
 import { CarMirrors } from './car-mirrors.js'
 import { CarInstruments } from './car-instruments.js'
 import { RoadBatches } from './road-batches.js'
+import { LandcoverBatches } from './landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { terrainVertices, terrainIndices } from '../src/terrain.js'
-import { triangles } from '../src/solid.js'
+import { triangles, trianglesWithRoofInfo } from '../src/solid.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
@@ -19,11 +26,18 @@ import { vehicleDefinition, type VisualDefinition } from '../src/index.js'
 import * as THREE from 'three'
 import {
   SceneGraph,
+  parseScene,
   type SceneDocument,
   type Entity,
   type Simulation,
   type Transform,
 } from '../src/index.js'
+
+function standardMaterial(
+  parameters: THREE.MeshStandardMaterialParameters,
+): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial(parameters)
+}
 
 function mesh(geometry: THREE.BufferGeometry, color: string, roughness = 0.72): THREE.Mesh {
   const material = new THREE.MeshStandardMaterial({ color, roughness })
@@ -40,6 +54,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export class SceneView {
+  private readonly thrusters = new Map<string, CarrierThrusters>()
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
@@ -51,6 +66,13 @@ export class SceneView {
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   private readonly roads = new RoadBatches()
+  private readonly buildings = new BuildingBatches()
+  batchBuildings = true
+  get pendingBuildingBatches(): boolean {
+    return this.batchBuildings && this.buildings.pending
+  }
+  private materialSetup?: (material: THREE.Material) => void
+  private readonly landcover = new LandcoverBatches()
   private readonly mapBounds = new Map<string, THREE.Sphere>()
   readonly objects = new Map<string, THREE.Group>()
   readonly sprites = new Map<string, THREE.Sprite | UprightBillboard>()
@@ -66,20 +88,28 @@ export class SceneView {
   readonly ready: Promise<void>
   private readonly loading: Promise<void>[] = []
   private disposed = false
+  private pendingMapMeshes: Entity[] = []
+  private readonly mapInstallEye = new THREE.Vector3()
   readonly avatar = new THREE.Group()
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
   private graph: SceneGraph
-  constructor(readonly document: SceneDocument) {
-    this.graph = new SceneGraph(document)
+  constructor(
+    readonly document: SceneDocument,
+    experimentalLargeScene = false,
+  ) {
+    this.graph = SceneGraph.fromValidated(parseScene(document, experimentalLargeScene))
     this.addEntities(document.entities)
     this.root.add(this.roads.root)
+    this.root.add(this.buildings.root)
+    this.root.add(this.landcover.root)
     this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar)
     this.ready = Promise.all(this.loading).then(() => undefined)
   }
   replaceMapEntities(remove: Set<string>, add: Entity[]): void {
+    this.pendingMapMeshes = this.pendingMapMeshes.filter((e) => !remove.has(e.id))
     for (const id of remove) {
       const object = this.objects.get(id)
       if (object) {
@@ -97,13 +127,69 @@ export class SceneView {
       ...structuredClone(add),
     ]
     this.graph = SceneGraph.fromValidated(this.document)
-    this.addEntities(add)
+    // Even empty THREE.Groups are installed in the frame budget, not in one large burst.
+    this.pendingMapMeshes.push(...add)
+    const priority = (e: Entity) => (e.terrain ? 0 : e.road ? 1 : isMapBuilding(e) ? 2 : 3)
+    const distances = new Map(
+      this.pendingMapMeshes.map((e) => {
+        const pose = this.graph.worldTransform(e.id).position,
+          p = { x: pose[0], z: pose[2] },
+          local = e.geometry?.vertices[0] ?? [0, 0, 0]
+        return [
+          e.id,
+          Math.hypot(p.x + local[0] - this.mapInstallEye.x, p.z + local[2] - this.mapInstallEye.z),
+        ]
+      }),
+    )
+    this.pendingMapMeshes.sort(
+      (a, b) => priority(a) - priority(b) || distances.get(a.id)! - distances.get(b.id)!,
+    )
     // Resource promises are consumed per batch rather than retained for the whole journey.
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
   }
+  /** A soft CPU budget; one indivisible mesh may exceed it. Call once per main frame. */
+  flushMapInstall(budgetMs = 4, maxEntities = 24, eye?: THREE.Vector3): number {
+    if (eye) this.mapInstallEye.copy(eye)
+    const started = performance.now()
+    let count = 0
+    while (
+      this.pendingMapMeshes.length &&
+      count < maxEntities &&
+      (count === 0 || performance.now() - started < budgetMs)
+    ) {
+      const e = this.pendingMapMeshes.shift()!
+      this.addEntities([e])
+      const group = this.objects.get(e.id)!
+      if (
+        this.avatar.visible &&
+        e.kind === 'group' &&
+        !e.portal &&
+        !e.sprite &&
+        !e.road &&
+        !e.placeLabel
+      )
+        group.visible = false
+      this.mapBounds.delete(e.id)
+      if (this.materialSetup)
+        group.traverse((object) => {
+          if (object instanceof THREE.Mesh)
+            for (const material of Array.isArray(object.material)
+              ? object.material
+              : [object.material])
+              if (material instanceof THREE.MeshStandardMaterial) this.materialSetup!(material)
+        })
+      count++
+    }
+    if (count) this.document.entities = [...this.document.entities]
+    void Promise.all(this.loading.splice(0)).catch(() => undefined)
+    return count
+  }
+  get pendingMapInstall(): number {
+    return this.pendingMapMeshes.length
+  }
   private addEntities(entities: Entity[]): void {
     for (const e of entities) {
-      const group = new THREE.Group()
+      const group = this.objects.get(e.id) ?? new THREE.Group()
       group.userData.entityId = e.id
       this.objects.set(e.id, group)
       this.root.add(group)
@@ -154,8 +240,43 @@ export class SceneView {
           this.portalTablets.set(e.id, [screen])
         }
       }
+      if (e.placeLabel) {
+        const canvas = document.createElement('canvas')
+        canvas.width = 512
+        canvas.height = 64
+        const ctx = canvas.getContext('2d')!
+        ctx.font = '600 30px system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.lineWidth = 6
+        ctx.strokeStyle = '#17212a'
+        ctx.fillStyle = '#f5f3e9'
+        ctx.strokeText(e.placeLabel.text, 256, 32, 490)
+        ctx.fillText(e.placeLabel.text, 256, 32, 490)
+        const texture = new THREE.CanvasTexture(canvas)
+        texture.colorSpace = THREE.SRGBColorSpace
+        const label = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: texture,
+            sizeAttenuation: false,
+            depthTest: false,
+            depthWrite: false,
+            transparent: true,
+          }),
+        )
+        label.scale.set(0.32, 0.04, 1)
+        label.userData.ownedLabelTexture = true
+        label.raycast = () => undefined
+        label.renderOrder = 100
+        group.add(label)
+      }
       if (e.sprite) {
-        const options = { color: '#ffffff', alphaTest: 0.1, transparent: false, depthWrite: true }
+        const options = {
+          color: /^\/sprites\/tree(?:-\d+)?\.png$/.test(e.sprite.url) ? '#c5d2b9' : '#ffffff',
+          alphaTest: 0.1,
+          transparent: false,
+          depthWrite: true,
+        }
         const material = e.sprite.upright
           ? new THREE.MeshBasicMaterial({ ...options, side: THREE.DoubleSide })
           : new THREE.SpriteMaterial(options)
@@ -231,17 +352,23 @@ export class SceneView {
           }),
         )
       }
-      if (e.road) {
+      if (e.road && !e.road.renderSuppressed) {
         let g = takeMapGeometry(e)
         if (!g) {
           const t = this.document.entities.find((n) => n.id === e.road!.terrainId)!.terrain!
-          const data = roadGeometry(t, e.road.paths, e.road.width)
+          const data = roadGeometry(t, e.road.paths, e.road.width, {
+            elevation: e.road.elevation,
+            layer: e.road.layer,
+            profiled: e.road.profiled,
+            mode: e.road.mode,
+          })
           g = new THREE.BufferGeometry()
           g.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3))
           g.setIndex(data.faces.flat())
           g.computeVertexNormals()
         }
-        const surface = mesh(g, e.color)
+        const surface = new THREE.Mesh(g, matteGroundMaterial({ color: e.color }))
+        surface.receiveShadow = true
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         surface.position.y = ['footway', 'path', 'pedestrian', 'cycleway'].includes(
           e.source?.tags.highway ?? '',
@@ -262,29 +389,95 @@ export class SceneView {
           g.setIndex(terrainIndices(e.terrain))
           g.computeVertexNormals()
         }
-        group.add(mesh(g, e.color))
-      }
-      if (e.geometry) {
-        let geometry = takeMapGeometry(e)
-        if (!geometry) {
-          geometry = new THREE.BufferGeometry()
-          geometry.setAttribute(
-            'position',
+        if (e.terrain.colors && !g.hasAttribute('color'))
+          g.setAttribute(
+            'color',
             new THREE.Float32BufferAttribute(
-              triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
+              e.terrain.colors.flatMap((c) => new THREE.Color(c).toArray()),
               3,
             ),
           )
+        const surface = new THREE.Mesh(
+          g,
+          matteGroundMaterial({
+            color: e.terrain.colors ? '#ffffff' : mapSurfaceColor('default', e.color),
+          }),
+        )
+        surface.castShadow = true
+        surface.receiveShadow = true
+        ;(surface.material as THREE.MeshStandardMaterial).vertexColors = !!e.terrain.colors
+        group.add(surface)
+      }
+      if (e.geometry) {
+        let geometry = takeMapGeometry(e)
+        const hasRoofColor = !!(e.roofColor && e.geometry.roofFaces?.length)
+        // Geometry may be pre-prepared with vertex colors (from map worker) or need generation
+        if (geometry && hasRoofColor && !geometry.hasAttribute('color')) {
+          geometry.dispose()
+          geometry = undefined
+        }
+        const hasVertexColors = !!geometry?.hasAttribute('color') || hasRoofColor
+        if (!geometry) {
+          geometry = new THREE.BufferGeometry()
+          if (hasRoofColor) {
+            // Use trianglesWithRoofInfo to get roof/wall separation
+            const { indices, isRoof } = trianglesWithRoofInfo(e.geometry)
+            const positions: number[] = []
+            const colors: number[] = []
+            const wallColor = new THREE.Color(e.color)
+            const roofColor = new THREE.Color(e.roofColor!)
+            for (let i = 0; i < indices.length; i++) {
+              const tri = indices[i]
+              const color = isRoof[i] ? roofColor : wallColor
+              for (const idx of tri) {
+                const v = e.geometry!.vertices[idx]
+                positions.push(v[0], v[1], v[2])
+                colors.push(color.r, color.g, color.b)
+              }
+            }
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+          } else {
+            geometry.setAttribute(
+              'position',
+              new THREE.Float32BufferAttribute(
+                triangles(e.geometry).flatMap((f) => f.flatMap((i) => e.geometry!.vertices[i])),
+                3,
+              ),
+            )
+          }
           geometry.computeVertexNormals()
         }
-        const surface = mesh(geometry, e.color)
-        ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
+        const material = (e.landcover || e.railway ? matteGroundMaterial : standardMaterial)({
+          color: hasVertexColors
+            ? '#ffffff'
+            : e.landcover
+              ? mapSurfaceColor(e.landcover.surface, e.color)
+              : e.color,
+          roughness: 0.72,
+          vertexColors: hasVertexColors,
+          side: e.source ? THREE.FrontSide : THREE.DoubleSide,
+        })
+        const surface = new THREE.Mesh(geometry, material)
+        surface.castShadow = !e.landcover && !e.railway
+        surface.receiveShadow = true
+        if (e.landcover) {
+          const layer = SURFACE_LAYERS[e.landcover.surface]
+          material.polygonOffset = true
+          material.polygonOffsetFactor = -layer
+          material.polygonOffsetUnits = -layer
+          surface.renderOrder = layer
+        }
+
         group.add(surface)
       }
       if (e.kind === 'box' && !e.light) group.add(box(e.size, e.color))
       if (e.light) this.streetlights.add(e, group)
       if (e.kind === 'vehicle') {
         if (e.vehicle?.interior && e.visual?.body.url.includes('ship.container')) {
+          const thrusters = new CarrierThrusters()
+          group.add(thrusters.root)
+          this.thrusters.set(e.id, thrusters)
           const interior = carrierInterior()
           group.add(interior.room)
           this.helmScreens.set(e.id, interior.screens[1])
@@ -307,7 +500,7 @@ export class SceneView {
     }
     for (const entity of entities) {
       if (!entity.surface) continue
-      const material = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 })
+      const material = matteGroundMaterial({ color: '#ffffff' })
       const plane = new THREE.Mesh(
         new THREE.PlaneGeometry(entity.size[0], entity.size[2]),
         material,
@@ -354,6 +547,7 @@ export class SceneView {
         applyPose(model, part.transform)
         parent.add(model)
         prepare?.(model)
+        if (this.materialSetup) this.setupMaterials(this.materialSetup)
         if (fallback) {
           fallback.removeFromParent()
           disposeObject(fallback)
@@ -468,18 +662,35 @@ export class SceneView {
     this.wheels.set(e.id, wheels)
   }
   /** Distance culling is repeated for portal cameras, never shared from the main frustum. */
+  buildingDistance = 3000
   limitDrawDistance(
     position: THREE.Vector3,
     distance: number,
     enabled: boolean,
     buildings = true,
     roadDistance = distance,
+    now = performance.now(),
   ): void {
+    this.buildings.update(
+      this.document.entities,
+      this.objects,
+      buildings && this.batchBuildings,
+      position,
+      Math.min(distance, this.buildingDistance),
+    )
     this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
+    this.landcover.update(this.document.entities, this.objects, enabled, position, distance, now)
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
-      const object = this.objects.get(e.id)!
-      if ((enabled && e.road) || (e.geometry && !buildings)) {
+      const object = this.objects.get(e.id)
+      if (!object) continue // A streamed frame may still be queued.
+      if (isMapBuilding(e)) {
+        // Keep the entity frame alive for picking and attached bullet marks.
+        for (const child of object.children)
+          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial)
+            child.visible = !this.buildings.covers(e.id)
+      }
+      if ((enabled && (e.road || e.railway || e.landcover)) || (isMapBuilding(e) && !buildings)) {
         object.visible = false
         continue
       }
@@ -491,19 +702,34 @@ export class SceneView {
         bounds.center.sub(this.root.position)
         this.mapBounds.set(e.id, bounds)
       }
-      object.visible = !enabled || bounds.center.distanceTo(position) <= distance + bounds.radius
+      object.visible =
+        !enabled ||
+        withinMapDistance(
+          bounds.center,
+          position,
+          bounds.radius,
+          isMapBuilding(e) ? Math.min(distance, this.buildingDistance) : distance,
+        )
     }
   }
   setPlaying(playing: boolean): void {
     this.avatar.visible = playing
+    if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
     for (const e of this.document.entities)
-      if (e.kind === 'spawn' || (e.kind === 'group' && !e.portal && !e.sprite && !e.road))
-        this.objects.get(e.id)!.visible = !playing
+      if (
+        e.kind === 'spawn' ||
+        (e.kind === 'group' && !e.portal && !e.sprite && !e.road && !e.placeLabel)
+      ) {
+        const object = this.objects.get(e.id)
+        if (object) object.visible = !playing
+      }
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
     for (const e of this.document.entities) {
       if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue
-      applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
+      const object = this.objects.get(e.id)
+      if (!object) continue
+      applyPose(object, sim.entityTransform(e.id, true))
       if (e.portal) {
         e.portal = sim.portalState(e.id)
         this.portals.get(e.id)!.mesh.visible =
@@ -524,6 +750,10 @@ export class SceneView {
         this.root.add(wheels[i])
         applyPose(wheels[i], p)
       })
+    }
+    for (const [id, thrusters] of this.thrusters) {
+      const info = sim.vehicleInfo(id)
+      thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now())
     }
     for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
     for (const [id, wheel] of this.steering)
@@ -622,17 +852,37 @@ export class SceneView {
     ))
       mirrors.render(renderer, scene, camera, id === vehicleId, now)
   }
+  /** Traverse all materials and call the callback for CSM setup. */
+  setupMaterials(callback: (material: THREE.Material) => void): void {
+    this.materialSetup = callback
+    this.roads.onMaterial = callback
+    this.buildings.onMaterial = callback
+    this.landcover.onMaterial = callback
+    this.root.traverse((object) => {
+      if (object instanceof THREE.Mesh || object instanceof THREE.SkinnedMesh) {
+        const materials = Array.isArray(object.material) ? object.material : [object.material]
+        for (const material of materials) {
+          if (material instanceof THREE.MeshStandardMaterial) {
+            callback(material)
+          }
+        }
+      }
+    })
+  }
   dispose(): void {
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()
     for (const instruments of this.instruments.values()) instruments.dispose()
     this.instruments.clear()
     this.roads.dispose()
+    this.buildings.dispose()
+    this.landcover.dispose()
     this.impacts.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()
     this.surfaceTextures.forEach((texture) => texture.dispose())
     this.disposed = true
+    this.pendingMapMeshes = []
     this.root.removeFromParent()
     disposeObject(this.root)
   }

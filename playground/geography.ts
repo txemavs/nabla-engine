@@ -1,5 +1,5 @@
 import { addSunDisc } from './sun-disc.js'
-import { atmosphere, skyTime, type SkyClock } from '../src/sky.js'
+import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../src/sky.js'
 import * as THREE from 'three'
 import {
   celestialDirections,
@@ -75,7 +75,7 @@ export class GeographicView {
       new THREE.MeshLambertMaterial({ color: '#c5c4bd', fog: false }),
     )
     addSunDisc(this.backdrop.material, this.sunDirection)
-    this.space.add(this.moon, new THREE.AmbientLight('#a2b6d3', 0.35))
+    this.space.add(this.moon)
     const rotation = this.origin ? localFrame(this.origin).invert() : new THREE.Quaternion()
     this.space.add(this.daylight, this.backdrop)
     this.backdrop.renderOrder = -100
@@ -165,8 +165,7 @@ export class GeographicView {
     )
     const air = this.atmosphere
     if (this.hasTerrain && height < 12000) {
-      air.near = this.viewDistance * 0.75
-      air.far = this.viewDistance
+      Object.assign(air, mapFogRange(height, this.viewDistance))
     }
     this.backdrop.material.color.copy(air.color)
     this.space.background = null

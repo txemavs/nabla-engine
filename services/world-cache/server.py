@@ -1,9 +1,13 @@
 """Private, disk-backed OSM/Esri cache. Bind behind an authenticated/private transport."""
-import hashlib, json, os, re, threading, time, urllib.request, urllib.error
+import hashlib, hmac, json, os, re, threading, time, urllib.request, urllib.error
+from http.cookies import SimpleCookie
+from queue_store import Queue
 from pathlib import Path
+from baked_format import valid_bake
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 ROOT = Path(os.environ.get('CACHE_DIR', '/data'))
 ROOT.mkdir(parents=True, exist_ok=True)
+BAKED = ROOT / 'baked'
 TTL = int(os.environ.get('CACHE_TTL_SECONDS', '2592000'))
 LIMIT = int(os.environ.get('CACHE_MAX_BYTES', '10737418240'))
 OSM = 'https://overpass-api.de/api/interpreter'
@@ -11,6 +15,22 @@ ESRI = 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Ter
 locks = [threading.Lock() for _ in range(64)]
 osm_lock = threading.Lock()
 next_osm = 0.0
+PREPARE_TOKEN = os.environ.get('PREPARE_TOKEN', '')
+PREPARE_ROOT = Path(os.environ.get('PREPARE_ROOT', str(ROOT / 'prepared')))
+PREPARE_QUEUE = Queue(ROOT / 'prepare.sqlite', output=PREPARE_ROOT) if PREPARE_TOKEN else None
+
+
+def get_baked(lat, lon, key):
+    """Check for pre-baked zone file. Returns (data, True) or (None, False)."""
+    path = BAKED / f"{lat:.5f}" / f"{lon:.5f}" / f"{key}.json"
+    if path.exists():
+        try:
+            data = path.read_bytes()
+            if valid_bake(json.loads(data), lat, lon, key):
+                return data, True
+        except (OSError, ValueError):
+            pass
+    return None, False
 
 def cached(key, url, body=None):
     global next_osm
@@ -72,24 +92,85 @@ def prune():
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args): pass  # No location/query logging.
-    def respond(self, code, data, mime='application/json', state=None):
+    def respond(self, code, data, mime='application/json', state=None, etag=None):
         self.send_response(code)
         self.send_header('Content-Type', mime)
-        self.send_header('Content-Length', str(len(data)))
+        if code != 304: self.send_header('Content-Length', str(len(data)))
+        if etag: self.send_header('ETag', etag)
         self.send_header('Cache-Control', 'private, max-age=0')
         if state: self.send_header('X-Nabla-Cache', state)
         if code == 429: self.send_header('Retry-After', '60')
         self.end_headers()
         self.wfile.write(data)
+    def authorized(self):
+        if not PREPARE_TOKEN:
+            return False
+        try:
+            cookie = SimpleCookie(self.headers.get('Cookie', ''))
+            value = cookie['nabla_prepare'].value
+            expires, signature = value.split('.')
+            expected = hmac.new(PREPARE_TOKEN.encode(), expires.encode(), hashlib.sha256).hexdigest()
+            return int(expires) > time.time() and hmac.compare_digest(signature, expected)
+        except (KeyError, ValueError):
+            return False
+
     def do_GET(self):
+        if self.path == '/prepare/status':
+            if not self.authorized():
+                self.respond(401, b'{"error":"Preparation access required"}')
+            else:
+                self.respond(200, json.dumps(PREPARE_QUEUE.stats()).encode())
+            return
+
         if self.path == '/health':
             self.respond(200, b'{"ok":true}')
             return
-        match = re.fullmatch(r'/elevation/12/(\d{1,4})/(\d{1,4})', self.path)
-        if not match or any(int(n) >= 4096 for n in match.groups()):
+        # Baked zone endpoint: GET /baked/<lat>/<lon>/<key>
+        baked_match = re.fullmatch(r'/baked/(-?\d+\.\d+)/(-?\d+\.\d+)/(-?\d+_-?\d+)', self.path)
+        if baked_match:
+            lat, lon, key = baked_match.groups()
+            data, found = get_baked(float(lat), float(lon), key)
+            if found:
+                etag = '"' + hashlib.sha256(data).hexdigest() + '"'
+                if self.headers.get('If-None-Match') == etag:
+                    self.respond(304, b'', state='BAKED', etag=etag)
+                else:
+                    self.respond(200, data, 'application/json', 'BAKED', etag)
+            else:
+                self.respond(404, b'{"error":"Zone not baked"}')
+            return
+        match = re.fullmatch(r'/elevation/(10|12)/(\d{1,4})/(\d{1,4})', self.path)
+        if not match or any(int(n) >= 2 ** int(match.group(1)) for n in match.groups()[1:]):
             self.respond(404, b'{"error":"Unknown tile"}'); return
         self.fetch('elevation:' + self.path, ESRI + self.path.removeprefix('/elevation/'), None, 'application/octet-stream')
     def do_POST(self):
+        if self.path == '/prepare/session':
+            supplied = self.headers.get('Authorization', '').removeprefix('Bearer ')
+            if not PREPARE_TOKEN or not hmac.compare_digest(supplied, PREPARE_TOKEN):
+                self.respond(401, b'{"error":"Invalid preparation access"}')
+                return
+            expires = str(int(time.time()) + 30 * 86400)
+            signature = hmac.new(PREPARE_TOKEN.encode(), expires.encode(), hashlib.sha256).hexdigest()
+            self.send_response(204)
+            self.send_header('Set-Cookie', f'nabla_prepare={expires}.{signature}; Path=/prepare; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            return
+        if self.path == '/prepare/zones':
+            if not self.authorized():
+                self.respond(401, b'{"error":"Preparation access required"}')
+                return
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 8192:
+                    raise ValueError('Invalid request size')
+                data = json.loads(self.rfile.read(length))
+                accepted = PREPARE_QUEUE.enqueue(data['origin'], data['keys'])
+                self.respond(202 if accepted else 429, json.dumps({'accepted':accepted,'queue':PREPARE_QUEUE.stats()}).encode())
+            except (ValueError, KeyError, TypeError):
+                self.respond(400, b'{"error":"Invalid zone request"}')
+            return
+
         if self.path != '/osm': self.respond(404, b'{}'); return
         try: size = int(self.headers.get('Content-Length', '0'))
         except ValueError: size = 0
@@ -107,4 +188,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     threading.Thread(target=prune, daemon=True).start()
+    if PREPARE_QUEUE:
+        from prepare_worker import run
+        threading.Thread(target=run, args=(PREPARE_QUEUE, ROOT, PREPARE_ROOT, int(os.environ.get('PREPARE_MAX_BYTES', '5368709120'))), daemon=True).start()
     ThreadingHTTPServer(('0.0.0.0', 8080), Handler).serve_forever()

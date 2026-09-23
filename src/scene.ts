@@ -94,11 +94,24 @@ const entitySchema = z
       })
       .strict()
       .optional(),
+    railway: z
+      .object({ part: z.enum(['ballast', 'rail']) })
+      .strict()
+      .optional(),
+    placeLabel: z
+      .object({ text: z.string().min(1).max(100), category: z.enum(['city', 'town', 'village']) })
+      .strict()
+      .optional(),
     road: z
       .object({
         paths: z.array(z.array(vector).min(2).max(8192)).min(1).max(8192),
         width: finite.min(0.5).max(30),
         terrainId: z.string(),
+        renderSuppressed: z.boolean().optional(),
+        mode: z.enum(['raw', 'smooth-float']).optional(),
+        elevation: z.enum(['terrain', 'bridge', 'tunnel']).optional(),
+        profiled: z.boolean().optional(),
+        layer: z.number().int().min(-5).max(5).optional(),
       })
       .strict()
       .optional(),
@@ -108,17 +121,32 @@ const entitySchema = z
         rows: z.number().int().min(2).max(129),
         spacing: finite.min(0.25).max(100),
         heights: z.array(coordinate).min(4).max(16641),
+        colors: z
+          .array(z.string().regex(/^#[0-9a-fA-F]{6}$/))
+          .min(4)
+          .max(16641)
+          .optional(),
       })
       .strict()
       .optional(),
+    mapEditable: z.boolean().optional(),
     source: z
       .object({
-        provider: z.literal('openstreetmap'),
-        id: z.string().regex(/^(way|node|relation)\/\d+$/),
+        provider: z.enum(['openstreetmap', 'geoeuskadi']),
+        dataset: z.string().optional(),
+        revision: z.string().optional(),
+        id: z.string().min(1).max(160),
         retrievedAt: z.string(),
         tags: z.record(z.string(), z.string()),
       })
       .strict()
+      .refine(
+        (source) =>
+          source.provider === 'openstreetmap'
+            ? /^(way|node|relation)\/\d+$/.test(source.id)
+            : !!source.dataset && /^[a-f0-9]{64}$/.test(source.revision ?? ''),
+        'Invalid provider provenance',
+      )
       .optional(),
     geometry: z
       .object({
@@ -127,8 +155,13 @@ const entitySchema = z
           .array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]))
           .max(8192),
         faces: z.array(z.array(z.number().int().nonnegative()).min(3).max(64)).max(4096),
+        roofFaces: z.array(z.number().int().nonnegative()).max(4096).optional(),
       })
       .strict()
+      .optional(),
+    roofColor: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
       .optional(),
     vehicle: vehicleDefinition.optional(),
     visual: visualDefinition.optional(),
@@ -154,12 +187,32 @@ const entitySchema = z
       .object({ url: z.string().regex(/^\/(?!\/)[a-zA-Z0-9_./-]+\.(jpg|jpeg|png)$/) })
       .strict()
       .optional(),
+    landcover: z
+      .object({
+        surface: z.enum([
+          'grass',
+          'forest',
+          'farmland',
+          'sand',
+          'scrub',
+          'water',
+          'wetland',
+          'rock',
+          'residential',
+          'industrial',
+          'default',
+        ]),
+        isWater: z.boolean(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
 const documentSchema = z
   .object({
     version: z.literal(1),
     name: z.string().min(1).max(100),
+    cursor: vector.optional(),
     geography: z
       .object({
         latitude: finite.min(-90).max(90),
@@ -231,8 +284,11 @@ export function createEntity(
 }
 
 /** Validates external data before changing any state. Names never select behavior. */
-export function parseScene(raw: unknown): SceneDocument {
-  return validateScene(documentSchema.parse(raw))
+export function parseScene(raw: unknown, experimentalLargeScene = false): SceneDocument {
+  const schema = experimentalLargeScene
+    ? documentSchema.extend({ entities: z.array(entitySchema).min(1) })
+    : documentSchema
+  return validateScene(schema.parse(raw))
 }
 
 /** Internal streaming transaction over an already validated, privately owned document.
@@ -242,10 +298,15 @@ export function replaceMapScene(
   document: SceneDocument,
   remove: Set<string>,
   add: Entity[],
+  experimentalLargeScene = false,
 ): SceneDocument {
   const additions = z.array(entitySchema).max(20000).parse(add)
   const entities = [...document.entities.filter((e) => !remove.has(e.id)), ...additions]
-  if (!entities.length || entities.length > 20000) throw new Error('Scene entity limit exceeded')
+  if (
+    !entities.length ||
+    (!experimentalLargeScene && entities.length > 20000 && !(add.length === 0 && remove.size > 0))
+  )
+    throw new Error('Scene entity limit exceeded')
   return validateScene({ ...document, entities }, new Set(additions))
 }
 
@@ -264,6 +325,7 @@ function validateScene(doc: SceneDocument, changed?: Set<Entity>): SceneDocument
       if (
         !e.terrain ||
         e.terrain.heights.length !== e.terrain.columns * e.terrain.rows ||
+        (e.terrain.colors && e.terrain.colors.length !== e.terrain.heights.length) ||
         e.motion === 'dynamic' ||
         e.visual ||
         e.surface
@@ -393,4 +455,15 @@ export class SceneGraph {
     world.decompose(p, q, s)
     return { position: p.toArray(), rotation: q.normalize().toArray() }
   }
+}
+
+/** Authored road solids retain OSM provenance but are not optional map buildings. */
+export function isMapBuilding(entity?: Entity): boolean {
+  return !!(
+    entity?.source &&
+    entity.geometry &&
+    !entity.landcover &&
+    !entity.railway &&
+    !entity.source.tags.highway
+  )
 }

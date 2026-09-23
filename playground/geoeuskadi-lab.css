@@ -1,0 +1,92 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  color: #e7edf2;
+  background: #20282e;
+}
+body {
+  margin: 0;
+}
+#viewport {
+  position: fixed;
+  inset: 0;
+}
+canvas {
+  display: block;
+}
+header,
+aside,
+footer {
+  position: fixed;
+  background: #202428ec;
+  border: 1px solid #56616a;
+  border-radius: 8px;
+}
+header {
+  left: 18px;
+  top: 18px;
+  padding: 14px 18px;
+}
+h1 {
+  font-size: 24px;
+  margin: 8px 0 12px;
+}
+h1 span {
+  color: #a8b7c3;
+  font-size: 15px;
+  font-weight: 400;
+  margin-left: 12px;
+}
+nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+button {
+  font: inherit;
+  background: #343b42;
+  color: inherit;
+  border: 1px solid #65727f;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button[aria-pressed='true'] {
+  background: #315b75;
+  border-color: #8ec9ed;
+}
+p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #bdc8d2;
+  margin-bottom: 0;
+}
+a {
+  color: #a3d6f7;
+}
+aside {
+  bottom: 64px;
+  left: 18px;
+  width: min(400px, calc(100vw - 72px));
+  padding: 14px 18px;
+}
+footer {
+  bottom: 10px;
+  left: 18px;
+  right: 18px;
+  padding: 8px 12px;
+  font-size: 11px;
+}
+@media (max-width: 700px) {
+  header {
+    right: 18px;
+  }
+  h1 span {
+    display: block;
+    margin: 4px 0;
+  }
+  aside p {
+    display: none;
+  }
+}

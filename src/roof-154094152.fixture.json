@@ -1,0 +1,28 @@
+{
+  "id": "way/154094152",
+  "tags": {
+    "building": "apartments",
+    "building:colour": "#E5A38E",
+    "building:levels": "8",
+    "building:material": "brick",
+    "roof:colour": "#C75D4D",
+    "roof:levels": "1",
+    "roof:material": "roof_tiles",
+    "roof:shape": "pyramidal"
+  },
+  "rings": [
+    {
+      "role": "outer",
+      "coordinates": [
+        [-1.7821685, 43.3377967],
+        [-1.7819425, 43.3377604],
+        [-1.7819885, 43.3376088],
+        [-1.7820871, 43.3376246],
+        [-1.7822412, 43.3376493],
+        [-1.7821979, 43.3377922],
+        [-1.7821952, 43.337801],
+        [-1.7821685, 43.3377967]
+      ]
+    }
+  ]
+}

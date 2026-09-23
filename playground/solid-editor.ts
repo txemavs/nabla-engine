@@ -1,5 +1,11 @@
 import * as THREE from 'three'
-import { extrudeFace, removeVertex, triangles, type SolidGeometry } from '../src/solid.js'
+import {
+  extrudeElement,
+  extrudeFace,
+  removeVertex,
+  triangles,
+  type SolidGeometry,
+} from '../src/solid.js'
 import type { Entity, Vec3Tuple } from '../src/scene.js'
 
 /** Host adapter: every completed operation is one SceneEditor transaction. */
@@ -12,11 +18,13 @@ export class SolidEditor {
   private face = 0
   private plane = 'xz'
   private level = 0
+  private axis = 'free'
   private overlay = new THREE.Group()
   constructor(
     private commit: (geometry: SolidGeometry) => void,
     private refresh: () => void,
     private report: (message: string) => void,
+    private cursor: () => Vec3Tuple = () => [0, 0, 0],
   ) {}
   private run(fn: () => void): void {
     try {
@@ -67,6 +75,7 @@ export class SolidEditor {
       `
       <div class="property-actions"><button data-mode="point">Puntos</button><button data-mode="line">Líneas</button><button data-mode="face">Planos</button></div>
       <p>Clic para colocar puntos o elegir vértices. Líneas: dos puntos. Planos: perímetro en orden y Crear cara. Arrastra para orbitar.</p>
+      <div class="property-actions"><button id="solid-cursor-point">Punto en cursor</button><button id="solid-cursor-plane">Plano al cursor</button></div>
       <button id="solid-clear">Vaciar geometría</button>
       <label class="field-label">Plano de dibujo</label><select id="solid-plane"><option value="xz">Suelo · XZ</option><option value="xy">Frontal · XY</option><option value="yz">Lateral · YZ</option></select>
       <label class="field-label">Altura / distancia local · m</label><input id="solid-level" type="number" step="0.25" value="${this.level}">
@@ -76,9 +85,10 @@ export class SolidEditor {
       <div class="axis-row">${(g.vertices[this.vertex] ?? [0, 0, 0]).map((v, i) => `<label>${'XYZ'[i]}<input data-point-axis="${i}" aria-label="Punto ${'XYZ'[i]}" type="number" step="0.25" value="${v}"></label>`).join('')}</div>
       <button id="solid-delete-point">Borrar punto y sus caras</button>
       <label class="field-label">Cara</label><select id="solid-selected-face">${g.faces.map((_, i) => `<option value="${i}">Cara ${i + 1}</option>`).join('')}</select>
+      <label class="field-label">Eje local · dibujo y extrusión</label><select id="solid-axis"><option value="free">Libre / normal de la cara</option><option>X</option><option>Y</option><option>Z</option></select>
       <label class="field-label">Extrusión · m</label><input id="solid-distance" type="number" step="0.25" value="1">
       <div class="property-actions"><button id="solid-extrude">Extruir cara</button><button id="solid-delete-face">Borrar cara</button></div>
-      <label class="field-label">Línea</label><select id="solid-edge">${g.edges.map((e, i) => `<option value="${i}">${e[0] + 1} → ${e[1] + 1}</option>`).join('')}</select><button id="solid-delete-edge">Borrar línea</button>`,
+      <label class="field-label">Línea</label><select id="solid-edge">${g.edges.map((e, i) => `<option value="${i}">${e[0] + 1} → ${e[1] + 1}</option>`).join('')}</select><button id="solid-delete-edge">Borrar línea</button><div class="property-actions"><button id="solid-extrude-point">Extruir punto</button><button id="solid-extrude-edge">Extruir línea</button></div>`,
     )
     const el = <T extends HTMLElement = HTMLInputElement>(id: string) =>
       panel.querySelector<T>('#' + id)!
@@ -98,6 +108,27 @@ export class SolidEditor {
     el('solid-level').onchange = () => {
       const n = el<HTMLInputElement>('solid-level').valueAsNumber
       if (Number.isFinite(n)) this.level = n
+      this.refresh()
+    }
+    const localCursor = () => {
+      object.updateWorldMatrix(true, false)
+      return object.worldToLocal(new THREE.Vector3(...this.cursor()))
+    }
+    el('solid-cursor-point').onclick = () =>
+      this.run(() => {
+        const next = structuredClone(g),
+          point = localCursor().toArray()
+        this.vertex = next.vertices.findIndex(
+          (p) => new THREE.Vector3(...p).distanceTo(new THREE.Vector3(...point)) < 1e-6,
+        )
+        if (this.vertex < 0) this.vertex = next.vertices.push(point) - 1
+        if (this.mode === 'face' && !this.chain.includes(this.vertex)) this.chain.push(this.vertex)
+        this.commit(next)
+        this.refresh()
+      })
+    el('solid-cursor-plane').onclick = () => {
+      const p = localCursor()
+      this.level = this.plane === 'xz' ? p.y : this.plane === 'xy' ? p.z : p.x
       this.refresh()
     }
     el('solid-clear').onclick = () =>
@@ -150,7 +181,14 @@ export class SolidEditor {
     el('solid-extrude').onclick = () =>
       this.run(() =>
         this.commit(
-          extrudeFace(g, this.face, el<HTMLInputElement>('solid-distance').valueAsNumber),
+          extrudeFace(
+            g,
+            this.face,
+            el<HTMLInputElement>('solid-distance').valueAsNumber,
+            this.axis === 'free'
+              ? undefined
+              : [Number(this.axis === 'X'), Number(this.axis === 'Y'), Number(this.axis === 'Z')],
+          ),
         ),
       )
     el('solid-delete-face').onclick = () =>
@@ -159,6 +197,28 @@ export class SolidEditor {
         next.faces.splice(this.face, 1)
         this.commit(next)
       })
+    el<HTMLSelectElement>('solid-axis').value = this.axis
+    el('solid-axis').onchange = () => {
+      this.axis = el<HTMLSelectElement>('solid-axis').value
+    }
+    const extrude = (kind: 'point' | 'edge') =>
+      this.run(() => {
+        if (this.axis === 'free') throw new Error('Elige un eje X, Y o Z para extruir')
+        const offset: Vec3Tuple = [0, 0, 0]
+        offset['XYZ'.indexOf(this.axis)] = el<HTMLInputElement>('solid-distance').valueAsNumber
+        this.commit(
+          extrudeElement(
+            g,
+            kind,
+            kind === 'point' ? this.vertex : Number(el<HTMLSelectElement>('solid-edge').value),
+            offset,
+          ),
+        )
+      })
+    el('solid-extrude-point').onclick = () => extrude('point')
+    el('solid-extrude-edge').onclick = () => extrude('edge')
+    el<HTMLButtonElement>('solid-extrude-point').disabled = !g.vertices.length
+    el<HTMLButtonElement>('solid-extrude-edge').disabled = !g.edges.length
     el('solid-delete-edge').onclick = () =>
       this.run(() => {
         const next = structuredClone(g)
@@ -249,6 +309,11 @@ export class SolidEditor {
               : new THREE.Vector3(1, 0, 0)
         const p = local.intersectPlane(new THREE.Plane(normal, -this.level), new THREE.Vector3())
         if (!p) throw new Error('Orienta la cámara hacia el plano de dibujo')
+        if (this.axis !== 'free' && g.vertices[this.vertex]) {
+          const axis = 'XYZ'.indexOf(this.axis),
+            anchor = g.vertices[this.vertex]
+          for (let i = 0; i < 3; i++) if (i !== axis) p.setComponent(i, anchor[i])
+        }
         p.set(...(p.toArray().map((n) => Math.round(n * 4) / 4) as Vec3Tuple))
         nearest = g.vertices.findIndex((v) => p.distanceTo(new THREE.Vector3(...v)) < 0.01)
         if (nearest < 0) {

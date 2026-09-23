@@ -1,6 +1,7 @@
+import { classifySurface, SURFACE_COLORS } from './landcover.js'
 import { readFileSync } from 'node:fs'
 import { expect, it } from 'vitest'
-import { createRealWorld, type WorldExtract, IRUN_VENTAS } from './real-world.js'
+import { createRealWorld, normalizeColor, type WorldExtract, IRUN_VENTAS } from './real-world.js'
 import { terrainHeight } from './terrain.js'
 import { Simulation, idleInput } from './simulation.js'
 import { SceneEditor } from './editor.js'
@@ -8,6 +9,7 @@ import { parseScene } from './scene.js'
 const data = JSON.parse(
   readFileSync(new URL('../assets/geography/irun-ventas.json', import.meta.url), 'utf8'),
 ) as WorldExtract
+// Full-district geometry plus repeated validation needs headroom on shared CI runners.
 it('builds an actual Ventas district with original OSM identities and no circuit overlay', () => {
   const d = createRealWorld(data)
   expect(d.geography!.latitude).toBe(IRUN_VENTAS.latitude)
@@ -21,14 +23,15 @@ it('builds an actual Ventas district with original OSM identities and no circuit
     building = d.entities.find((e) => e.parentId === 'world-buildings')!
   editor.update(building.id, { color: '#123456' })
   const saved = editor.serialize()
-  expect(saved.length).toBeLessThan(2_500_000)
+  // The fixture now includes draped railway and inland-water geometry.
+  expect(saved.length).toBeLessThan(4_000_000)
   expect(parseScene(JSON.parse(saved)).entities.find((e) => e.id === building.id)!.color).toBe(
     '#123456',
   )
   expect(parseScene(JSON.parse(saved)).entities.find((e) => e.id === building.id)!.source).toEqual(
     building.source,
   )
-})
+}, 20000)
 it('matches triangular height interpolation and rejects malformed grids', () => {
   const t = { columns: 2, rows: 2, spacing: 2, heights: [0, 2, 4, 10] }
   expect(terrainHeight(t, 0, 0)).toBe(5)
@@ -140,4 +143,335 @@ it('uses the same origin tile ids and fingerprint when revisiting the initial zo
   expect(revisit.entities.find((e) => e.terrain)!.mapBaseline).toBe(
     first.entities.find((e) => e.terrain)!.mapBaseline,
   )
+})
+
+it('normalizes OSM colour tags to hex format', () => {
+  // Hex passthrough
+  expect(normalizeColor('#C75D4D', '#000000')).toBe('#c75d4d')
+  expect(normalizeColor('#ABC', '#000000')).toBe('#aabbcc')
+  // Named colors
+  expect(normalizeColor('red', '#000000')).toBe('#ff0000')
+  expect(normalizeColor('grey', '#000000')).toBe('#808080')
+  expect(normalizeColor('Gray', '#000000')).toBe('#808080')
+  expect(normalizeColor('BLUE', '#000000')).toBe('#0000ff')
+  expect(normalizeColor('salmon', '#000000')).toBe('#fa8072')
+  expect(normalizeColor('brick', '#000000')).toBe('#cb4154')
+  // Fallback
+  expect(normalizeColor(undefined, '#b9b5a8')).toBe('#b9b5a8')
+  expect(normalizeColor('unknowncolor', '#b9b5a8')).toBe('#b9b5a8')
+})
+
+it('interprets roof tags for pyramidal buildings with separate roof/wall colors', () => {
+  const doc = createRealWorld({
+    name: 'Roof test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 28 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/154094152',
+        tags: {
+          building: 'apartments',
+          'building:levels': '8',
+          'building:material': 'brick',
+          'building:colour': '#E5A38E',
+          'roof:shape': 'pyramidal',
+          'roof:colour': '#C75D4D',
+          'roof:levels': '1',
+          'roof:material': 'roof_tiles',
+        },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.8196, 43.3297],
+              [-1.8194, 43.3297],
+              [-1.8194, 43.3299],
+              [-1.8196, 43.3299],
+              [-1.8196, 43.3297],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  const building = doc.entities.find((e) => e.source?.id === 'way/154094152')
+  expect(building).toBeDefined()
+  expect(building!.kind).toBe('solid')
+  expect(building!.color).toBe('#e5a38e') // building:colour normalized
+  expect(building!.roofColor).toBe('#c75d4d') // roof:colour normalized
+  expect(building!.geometry?.roofFaces?.length).toBeGreaterThan(0) // pyramidal roof has roof faces
+})
+
+it('uses building:color as alias for building:colour', () => {
+  const doc = createRealWorld({
+    name: 'Color alias test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 28 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/1',
+        tags: { building: 'yes', 'building:color': '#112233', 'roof:color': 'red' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.8196, 43.3297],
+              [-1.8194, 43.3297],
+              [-1.8194, 43.3299],
+              [-1.8196, 43.3299],
+              [-1.8196, 43.3297],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  const building = doc.entities.find((e) => e.source?.id === 'way/1')
+  expect(building!.color).toBe('#112233')
+  // Note: roof:color works only if there's a supported roof shape
+})
+
+it('creates landcover entities from landuse/leisure/natural polygons', () => {
+  const doc = createRealWorld({
+    name: 'Landcover test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/100',
+        tags: { landuse: 'grass' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.819, 43.329],
+              [-1.818, 43.329],
+              [-1.818, 43.33],
+              [-1.819, 43.33],
+              [-1.819, 43.329],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/101',
+        tags: { natural: 'water' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.329],
+              [-1.821, 43.329],
+              [-1.821, 43.33],
+              [-1.82, 43.33],
+              [-1.82, 43.329],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/102',
+        tags: { leisure: 'park' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.817, 43.329],
+              [-1.816, 43.329],
+              [-1.816, 43.33],
+              [-1.817, 43.33],
+              [-1.817, 43.329],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+
+  const landcoverEntities = doc.entities.filter((e) => e.landcover)
+  expect(landcoverEntities.length).toBe(3)
+
+  const grass = landcoverEntities.find((e) => e.landcover?.surface === 'grass')
+  expect(grass).toBeDefined()
+  expect(grass!.color).toBe(SURFACE_COLORS.grass)
+  expect(grass!.parentId).toContain('world-landcover')
+
+  const water = landcoverEntities.find((e) => e.landcover?.surface === 'water')
+  expect(water).toBeDefined()
+  expect(water!.landcover!.isWater).toBe(true)
+  expect(water!.parentId).toContain('world-water')
+  expect(water!.color).toBe(SURFACE_COLORS.water)
+
+  const park = landcoverEntities.find((e) => e.source?.id === 'way/102')
+  expect(park).toBeDefined()
+  expect(park!.landcover!.surface).toBe('grass')
+
+  // All landcover entities should have geometry (draped polygons)
+  for (const e of landcoverEntities) {
+    expect(e.geometry).toBeDefined()
+    expect(e.geometry!.vertices.length).toBeGreaterThan(0)
+    expect(e.geometry!.faces.length).toBeGreaterThan(0)
+  }
+})
+
+it('assigns correct surface colors based on OSM tags', () => {
+  expect(classifySurface({ landuse: 'forest' })).toBe('forest')
+  expect(classifySurface({ natural: 'beach' })).toBe('sand')
+  expect(classifySurface({ landuse: 'farmland' })).toBe('farmland')
+  expect(classifySurface({ natural: 'scrub' })).toBe('scrub')
+  expect(classifySurface({ landuse: 'residential' })).toBe('residential')
+  expect(classifySurface({ landuse: 'industrial' })).toBe('industrial')
+})
+
+it('includes bridge and tunnel roads with elevation and layer metadata', () => {
+  const doc = createRealWorld({
+    name: 'Bridge/Tunnel test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 0 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/100000001',
+        tags: { highway: 'primary', bridge: 'yes', layer: '1' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.329],
+              [-1.818, 43.33],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/100000002',
+        tags: { highway: 'secondary', tunnel: 'yes', layer: '-1' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.819, 43.3295],
+              [-1.819, 43.331],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/100000003',
+        tags: { highway: 'residential' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.328],
+              [-1.818, 43.328],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  const bridge = doc.entities.find((e) => e.source?.id === 'way/100000001')
+  const tunnel = doc.entities.find((e) => e.source?.id === 'way/100000002')
+  const road = doc.entities.find((e) => e.source?.id === 'way/100000003')
+
+  expect(bridge).toBeDefined()
+  expect(bridge!.road?.elevation).toBe('bridge')
+  expect(bridge!.road?.layer).toBe(1)
+
+  expect(tunnel).toBeDefined()
+  expect(tunnel!.road?.elevation).toBe('tunnel')
+  expect(tunnel!.road?.layer).toBe(-1)
+
+  expect(road).toBeDefined()
+  expect(road!.road?.elevation).toBeUndefined()
+  expect(road!.road?.layer).toBeUndefined()
+})
+
+it('does not filter out bridge=yes or tunnel=yes highways', () => {
+  const doc = createRealWorld({
+    name: 'No filter test',
+    origin: { latitude: 43.32969, longitude: -1.819606, altitude: 0 },
+    terrain: { columns: 13, rows: 13, spacing: 100, heights: Array(169).fill(0) },
+    source: { retrievedAt: '2026-09-21' },
+    features: [
+      {
+        id: 'way/200000001',
+        tags: { highway: 'motorway', bridge: 'yes' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.329],
+              [-1.818, 43.33],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/200000002',
+        tags: { highway: 'trunk', tunnel: 'yes' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.819, 43.3295],
+              [-1.819, 43.331],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/200000003',
+        tags: { highway: 'construction' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.82, 43.328],
+              [-1.818, 43.328],
+            ],
+          },
+        ],
+      },
+      {
+        id: 'way/200000004',
+        tags: { highway: 'steps' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [-1.817, 43.328],
+              [-1.816, 43.328],
+            ],
+          },
+        ],
+      },
+    ],
+  })
+
+  expect(doc.entities.some((e) => e.source?.id === 'way/200000001')).toBe(true)
+  expect(doc.entities.some((e) => e.source?.id === 'way/200000002')).toBe(true)
+  expect(doc.entities.some((e) => e.source?.id === 'way/200000003')).toBe(false)
+  expect(doc.entities.some((e) => e.source?.id === 'way/200000004')).toBe(false)
+})
+
+it('defers distant streamed building collision cooking until an actor approaches', () => {
+  const doc = createRealWorld(data)
+  const sim = new Simulation(doc)
+  const template = doc.entities.find((e) => e.source && e.geometry && !e.landcover && !e.railway)!
+  const building = structuredClone(template)
+  building.id = 'distant-stream-building'
+  building.parentId = null
+  building.transform.position = [12000, 0, 0]
+  sim.replaceMapEntities(new Set(), [building])
+  expect(sim['bodies'].has(building.id)).toBe(false)
+  sim['playerBody'].position.set(12000, 50, 0)
+  sim.setCollisionDistance(500)
+  expect(sim['bodies'].has(building.id)).toBe(true)
+  sim.replaceMapEntities(new Set([building.id]), [])
+  expect(sim['bodies'].has(building.id)).toBe(false)
 })

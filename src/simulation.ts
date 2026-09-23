@@ -7,6 +7,7 @@ import { EARTH_RADIUS, localFrame, localToGeo } from './geography.js'
 import { OBB } from 'three/addons/math/OBB.js'
 import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition } from './vehicle.js'
+import { roadGeometry, nearestRoadCenterline } from './draped-road.js'
 import {
   Heightfield,
   ConvexPolyhedron,
@@ -25,6 +26,7 @@ import {
 } from 'cannon-es'
 import {
   parseScene,
+  isMapBuilding,
   replaceMapScene,
   SceneGraph,
   type Entity,
@@ -99,6 +101,12 @@ export class Simulation {
   private readonly bodies = new Map<string, Body>()
   private mapBuildingsEnabled = true
   private collisionDistance = 400
+  private readonly deferredMapBodies = new Map<
+    string,
+    { entity: Entity; center: Vec3; radius: number }
+  >()
+  private pendingBodyOrder: string[] = []
+  private nextBodyOrder = 0
   private readonly mapBodies = new Map<string, Body>()
   private readonly vehicles = new Map<string, Vehicle>()
   private readonly hostedShapes = new Map<string, Box[]>()
@@ -116,6 +124,10 @@ export class Simulation {
   private readonly docks = new Map<string, { carrierId: string; constraint: LockConstraint }>()
   private ticks = 0
   private lostTime = 0
+  private roadAssistEnabled = false
+  private assistSource?: Entity[]
+  private readonly assistCells = new Map<string, { paths: Vec3Tuple[][]; width: number }[]>()
+  private roadAssistStrength = 0.3
   private portalSequence = 0
   private lastPortalEvent: {
     sequence: number
@@ -132,10 +144,14 @@ export class Simulation {
 
   constructor(
     raw: SceneDocument,
-    readonly options: { playerMode?: 'walk' | 'hover'; mapBuildingsEnabled?: boolean } = {},
+    readonly options: {
+      playerMode?: 'walk' | 'hover'
+      mapBuildingsEnabled?: boolean
+      experimentalLargeScene?: boolean
+    } = {},
   ) {
     this.mapBuildingsEnabled = options.mapBuildingsEnabled ?? true
-    this.document = parseScene(raw)
+    this.document = parseScene(raw, options.experimentalLargeScene)
     this.terrainEntity = this.document.entities.find((e) => e.terrain)
     this.minimumFlightAltitude = this.terrainEntity?.terrain
       ? Math.min(...this.terrainEntity.terrain.heights) - 10
@@ -271,11 +287,11 @@ export class Simulation {
   }
 
   /** Add/remove only static map entities without touching actor state or the physics clock. */
-  replaceMapEntities(remove: Set<string>, add: Entity[]): void {
+  replaceMapEntities(remove: Set<string>, add: Entity[], experimentalLargeScene = false): void {
     for (const e of [...this.document.entities.filter((e) => remove.has(e.id)), ...add])
       if (e.motion === 'dynamic' || e.kind === 'spawn' || e.portal || e.kind === 'vehicle')
         throw new Error('Streaming only supports static map entities')
-    const next = replaceMapScene(this.document, remove, add)
+    const next = replaceMapScene(this.document, remove, add, experimentalLargeScene)
     this.document.entities = next.entities
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
@@ -287,8 +303,18 @@ export class Simulation {
       if (b) this.world.removeBody(b)
       this.bodies.delete(id)
       this.mapBodies.delete(id)
+      this.deferredMapBodies.delete(id)
     }
-    for (const e of add) this.addEntityBody(e)
+    for (const e of add) {
+      if ((isMapBuilding(e) && e.motion === 'static') || e.road) {
+        const pose = this.graph.worldTransform(e.id)
+        const points = e.geometry?.vertices ?? e.road?.paths.flat() ?? []
+        const radius = points.reduce((r, v) => Math.max(r, Math.hypot(...v)), 1)
+        this.deferredMapBodies.set(e.id, { entity: e, center: new Vec3(...pose.position), radius })
+      } else this.addEntityBody(e)
+    }
+    this.nextBodyOrder = 0
+    this.installNearbyMapBodies()
     this.minimumFlightAltitude = Math.min(
       0,
       ...this.document.entities.flatMap((e) =>
@@ -298,8 +324,11 @@ export class Simulation {
     this.world.broadphase.dirty = true
   }
   private addEntityBody(e: Entity): void {
-    if ((e.motion === 'none' && !e.portal) || (e.portal && e.parentId)) return
-    if (e.source && e.geometry && e.motion === 'static' && !this.mapBuildingsEnabled) return
+    const roadSurface =
+      e.road?.elevation === 'bridge' ||
+      (e.road?.mode === 'smooth-float' && (!e.road.elevation || e.road.elevation === 'terrain'))
+    if ((e.motion === 'none' && !e.portal && !roadSurface) || (e.portal && e.parentId)) return
+    if (isMapBuilding(e) && e.motion === 'static' && !this.mapBuildingsEnabled) return
     const transform = this.graph.worldTransform(e.id)
     const body = new Body({
       mass: e.motion === 'dynamic' ? e.mass : 0,
@@ -329,17 +358,26 @@ export class Simulation {
         new Quaternion().setFromEuler(-Math.PI / 2, 0, 0),
       )
     }
-    if (e.geometry) {
+    const bridgeTerrain = roadSurface
+      ? this.entitiesById.get(e.road!.terrainId)?.terrain
+      : undefined
+    const geometry =
+      e.geometry ??
+      (bridgeTerrain
+        ? roadGeometry(bridgeTerrain, e.road!.paths, e.road!.width, e.road)
+        : undefined)
+    if (geometry) {
       // Thin convex triangle prisms support Cannon sphere, box and ray contacts.
       // Open faces remain openings; no hidden bounding-box collider.
-      for (const indices of triangles(e.geometry)) {
-        const points = indices.map((i) => new Vector3(...e.geometry!.vertices[i]))
+      for (const indices of triangles(geometry)) {
+        const points = indices.map((i) => new Vector3(...geometry.vertices[i]))
         const n = points[1]
           .clone()
           .sub(points[0])
           .cross(points[2].clone().sub(points[0]))
           .normalize()
           .multiplyScalar(0.025)
+        if (roadSurface) for (const p of points) p.addScaledVector(n, -2)
         const center = points
           .reduce((a, p) => a.add(p), new Vector3())
           .multiplyScalar(1 / 3)
@@ -365,7 +403,7 @@ export class Simulation {
         )
       }
     }
-    for (const collider of e.geometry || e.terrain ? [] : colliders)
+    for (const collider of geometry || e.terrain || e.road ? [] : colliders)
       body.addShape(
         new Box(new Vec3(...(collider.size.map((n) => n / 2) as Vec3Tuple))),
         new Vec3(...collider.transform.position),
@@ -379,15 +417,23 @@ export class Simulation {
     body.angularDamping = 0.35
     this.bodies.set(e.id, body)
     if (e.source && e.motion === 'static' && !e.terrain && !e.portal) this.mapBodies.set(e.id, body)
+    if (roadSurface) this.mapBodies.set(e.id, body)
     if (e.kind === 'vehicle') this.createVehicle(e, body)
     else this.world.addBody(body)
   }
 
   setMapBuildingsEnabled(enabled: boolean): void {
     this.mapBuildingsEnabled = enabled
+    this.nextBodyOrder = 0
+    this.installNearbyMapBodies()
     if (enabled)
       for (const e of this.document.entities) {
-        if (e.source && e.geometry && e.motion === 'static' && !this.bodies.has(e.id))
+        if (
+          isMapBuilding(e) &&
+          e.motion === 'static' &&
+          !this.bodies.has(e.id) &&
+          !this.deferredMapBodies.has(e.id)
+        )
           this.addEntityBody(e)
       }
     this.updateMapCollisions()
@@ -396,6 +442,7 @@ export class Simulation {
     if (!Number.isFinite(distance) || distance < 200 || distance > 2000)
       throw new Error('Collision distance must be 200–2000 m')
     this.collisionDistance = distance
+    this.installNearbyMapBodies()
     this.updateMapCollisions()
   }
   get collisionStats() {
@@ -408,11 +455,49 @@ export class Simulation {
       ),
     }
   }
+  private installNearbyMapBodies(): void {
+    const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
+    const started = performance.now()
+    let installed = 0
+    const distance = (pending: { center: Vec3; radius: number }) =>
+      Math.min(
+        ...actors.map(
+          (actor) =>
+            actor.position.distanceTo(pending.center) -
+            pending.radius -
+            actor.boundingRadius -
+            actor.velocity.length() * 2,
+        ),
+      )
+    if (started >= this.nextBodyOrder) {
+      const distances = new Map([...this.deferredMapBodies].map(([id, p]) => [id, distance(p)]))
+      this.pendingBodyOrder = [...distances.keys()].sort(
+        (a, b) => distances.get(a)! - distances.get(b)!,
+      )
+      this.nextBodyOrder = started + 200
+    }
+    for (const id of this.pendingBodyOrder) {
+      const pending = this.deferredMapBodies.get(id)
+      if (!pending) continue
+      if (!this.mapBuildingsEnabled && isMapBuilding(pending.entity)) continue
+      const gap = distance(pending)
+      // Ordered distances are refreshed at most every 200 ms. Keep a travel margin.
+      if (gap > this.collisionDistance + 100) break
+      if (gap > this.collisionDistance) continue
+      // Immediate safety colliders can exceed this soft budget; distant cooking cannot.
+      const critical = gap < 80
+      if (!critical && (installed >= 4 || performance.now() - started >= 2)) break
+      this.addEntityBody(pending.entity)
+      this.deferredMapBodies.delete(id)
+      installed++
+    }
+  }
   /** Keep terrain, actors and portal colliders. Cull map solids conservatively around every actor. */
   private updateMapCollisions(): void {
+    // Collider installation has its own per-frame budget in step().
     const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
     for (const [id, body] of this.mapBodies) {
-      if (!this.mapBuildingsEnabled && this.entitiesById.get(id)?.geometry) {
+      if (!this.mapBuildingsEnabled && isMapBuilding(this.entitiesById.get(id))) {
         if (body.world === this.world) this.world.removeBody(body)
         continue
       }
@@ -628,6 +713,7 @@ export class Simulation {
     if (this.disposed) throw new Error('Simulation is disposed')
     if (!Number.isFinite(elapsed) || elapsed < 0)
       throw new Error('Elapsed seconds must be finite and nonnegative')
+    this.installNearbyMapBodies()
     const accepted = Math.min(elapsed, FIXED_STEP * 4)
     this.lostTime += elapsed - accepted
     this.accumulator += accepted
@@ -885,7 +971,7 @@ export class Simulation {
       })
     // Exit safety must include map bodies suspended by distance culling.
     const mapObstacles = [...this.mapBodies]
-      .filter(([id]) => this.mapBuildingsEnabled || !this.entitiesById.get(id)?.geometry)
+      .filter(([id]) => this.mapBuildingsEnabled || !isMapBuilding(this.entitiesById.get(id)))
       .map(([, obstacle]) => obstacle)
     const obstacles = [...new Set([...this.world.bodies, ...mapObstacles])]
       .filter((b) => b !== body)
@@ -1103,6 +1189,7 @@ export class Simulation {
               : 0
         v.raycast.setBrake(brake, i)
       }
+      if (active && this.roadAssistEnabled) this.applyRoadAssist(v)
     }
     if (!this.vehicleId) {
       let x = this.input.right,
@@ -1524,6 +1611,77 @@ export class Simulation {
     vehicle.cruiseSpeed = speed
   }
 
+  /** Enable/disable road assist (gentle snap to road centerline). */
+  setRoadAssist(enabled: boolean, strength = 0.3): void {
+    this.roadAssistEnabled = enabled
+    this.roadAssistStrength = clamp(strength, 0, 1)
+  }
+
+  get roadAssist(): { enabled: boolean; strength: number } {
+    return { enabled: this.roadAssistEnabled, strength: this.roadAssistStrength }
+  }
+
+  private applyRoadAssist(v: Vehicle): void {
+    const speed = v.body.velocity.length()
+    if (speed < 0.5 || speed > 40) return
+
+    if (v.definition.flight || Math.abs(this.input.right) > 0.1) return
+    if (this.assistSource !== this.document.entities) {
+      this.assistCells.clear()
+      for (const e of this.document.entities) {
+        if (!e.road || (e.road.elevation && e.road.elevation !== 'terrain')) continue
+        const highway = e.source?.tags?.highway
+        if (highway && ['footway', 'path', 'pedestrian', 'cycleway', 'steps'].includes(highway))
+          continue
+        const pose = this.graph.worldTransform(e.id),
+          q = new RenderQuaternion(...pose.rotation)
+        const terrain = this.entitiesById.get(e.road.terrainId)?.terrain
+        for (const path of e.road.paths)
+          for (let i = 1; i < path.length; i++) {
+            const points = [path[i - 1], path[i]].map((p) => {
+              const h = terrain ? terrainHeight(terrain, p[0], p[2]) : p[1]
+              return new Vector3(p[0], h, p[2])
+                .applyQuaternion(q)
+                .add(new Vector3(...pose.position))
+                .toArray() as Vec3Tuple
+            })
+            const road = { paths: [points], width: e.road.width }
+            for (
+              let x = Math.floor((Math.min(points[0][0], points[1][0]) - 20) / 64);
+              x <= Math.floor((Math.max(points[0][0], points[1][0]) + 20) / 64);
+              x++
+            )
+              for (
+                let z = Math.floor((Math.min(points[0][2], points[1][2]) - 20) / 64);
+                z <= Math.floor((Math.max(points[0][2], points[1][2]) + 20) / 64);
+                z++
+              ) {
+                const key = `${x}:${z}`,
+                  cell = this.assistCells.get(key) ?? []
+                cell.push(road)
+                this.assistCells.set(key, cell)
+              }
+          }
+      }
+      this.assistSource = this.document.entities
+    }
+    const roads =
+      this.assistCells.get(
+        `${Math.floor(v.body.position.x / 64)}:${Math.floor(v.body.position.z / 64)}`,
+      ) ?? []
+
+    const position: Vec3Tuple = [v.body.position.x, v.body.position.y, v.body.position.z]
+    const nearest = nearestRoadCenterline(position, roads, 20, 3)
+
+    if (!nearest || nearest.onRoad) return
+
+    const effectiveStrength = this.roadAssistStrength * Math.min(1, (nearest.distance - 1) / 5)
+    if (effectiveStrength < 0.01) return
+
+    const force = effectiveStrength * v.body.mass * 2
+    v.body.applyForce(new Vec3(nearest.direction[0] * force, 0, nearest.direction[2] * force))
+  }
+
   setGarageDoor(id: string, closed: boolean): string {
     const carrier = this.vehicles.get(id)
     if (!carrier?.definition.garage) throw new Error('Nave desconocida')
@@ -1640,6 +1798,8 @@ export class Simulation {
     for (const b of [...this.world.bodies]) this.world.removeBody(b)
     this.vehicles.clear()
     this.bodies.clear()
+    this.mapBodies.clear()
+    this.deferredMapBodies.clear()
     this.disposed = true
   }
 }

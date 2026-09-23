@@ -24,3 +24,9 @@ export function atmosphere(height: number, sunElevation: number, visibility = 22
     space,
   }
 }
+
+/** Match aerial fog to the horizontal map footprint, like the camera far plane. */
+export function mapFogRange(height: number, distance: number): { near: number; far: number } {
+  const altitude = Math.max(0, height)
+  return { near: Math.hypot(distance * 0.75, altitude), far: Math.hypot(distance, altitude) }
+}

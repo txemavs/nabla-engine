@@ -16,6 +16,7 @@
         <nav class="app-menus" aria-label="Menú principal">
           <button id="file-menu-button" popovertarget="file-menu">Archivo</button>
           <button id="travel-menu-button" popovertarget="travel-menu">Ir</button>
+          <button popovertarget="cursor-menu">Cursor 3D</button>
           <button id="options-menu-button" popovertarget="options-menu">Opciones</button>
           <button id="help-menu-button" popovertarget="help-menu">Ayuda</button>
         </nav>
@@ -40,11 +41,41 @@
             <button id="travel-go" type="submit">Cargar destino</button>
           </form>
           <p>
-            Carga terreno y edificios reales alrededor del destino, con el coche y la nave. La
-            escena anterior se conserva en Deshacer. Guarda o exporta para conservarla en disco.
+            Carga terreno y edificios reales alrededor del destino, con el coche y la nave. Cada
+            lugar se guarda en este navegador antes de viajar y se recupera al regresar. Exporta las
+            escenas para conservarar una copia fuera del navegador.
           </p>
           <p id="travel-status" role="status"></p>
           <button id="travel-cancel" hidden>Cancelar carga</button>
+        </div>
+        <div id="cursor-menu" class="app-menu" popover aria-label="Cursor 3D">
+          <h3>Cursor 3D · punto de inserción</h3>
+          <p>Mayús + clic sobre el mundo para colocarlo. Las entidades nuevas nacen aquí.</p>
+          <div class="axis-row">
+            <label>X<input id="cursor-x" type="number" step="0.1" value="0" /></label>
+            <label>Y<input id="cursor-y" type="number" step="0.1" value="0" /></label>
+            <label>Z<input id="cursor-z" type="number" step="0.1" value="0" /></label>
+          </div>
+          <button id="cursor-apply">Aplicar coordenadas · m</button>
+          <button id="cursor-selection">Cursor a la selección</button>
+          <button id="cursor-view">Cursor al centro de la vista</button>
+          <button id="selection-cursor">Selección al cursor</button>
+          <button id="origin-cursor">Origen del sólido al cursor</button>
+          <hr />
+          <label>Bloqueo para mover o girar</label>
+          <select id="transform-axis">
+            <option value="all">Libre</option>
+            <option>X</option>
+            <option>Y</option>
+            <option>Z</option>
+          </select>
+          <label>Movimiento exacto · m / giro · grados</label
+          ><input id="transform-amount" type="number" step="0.1" value="1" />
+          <button id="transform-exact">Aplicar a la selección</button>
+          <p>
+            G mover · R girar · X/Y/Z bloquear eje. Origen: conserva la forma y la posición de los
+            hijos.
+          </p>
         </div>
         <div id="file-menu" class="app-menu" popover aria-label="Archivo">
           <button id="import">Abrir escena JSON…</button>
@@ -52,7 +83,8 @@
           <button id="export">Exportar escena JSON…</button>
           <hr />
           <span class="eyebrow">ESCENAS DE INICIO</span>
-          <button id="world-irun">Irún · Ventas</button>
+          <button id="world-irun">Irún · Ventas · OSM</button>
+          <button id="world-irun-official">Irún · Ventas · OSM + geoEuskadi (piloto)</button>
           <button id="sample-assets">Circuito · A3</button>
         </div>
         <input id="file" type="file" accept=".json,application/json" hidden />
@@ -60,6 +92,38 @@
           <button id="css-screen-demo">Consola de la nave</button>
           <details id="performance-section" class="help">
             <summary>RENDIMIENTO</summary>
+            <label class="field-label" for="performance-preset">Calidad general</label>
+            <select id="performance-preset">
+              <option value="mobile">Móvil básico</option>
+              <option value="low">Bajo</option>
+              <option value="balanced">Equilibrado</option>
+              <option value="high">Alto</option>
+              <option value="ultra">Ultra · retención experimental 20 km</option>
+              <option value="custom" disabled>Personalizado</option>
+            </select>
+            <p>
+              Ultra conserva y dibuja todo el detalle ya cargado hasta 20 km, sin límite de
+              entidades dentro de ese radio. No descarga de golpe todo el círculo. Los demás modos
+              conservan sus límites habituales. La caché de disco se ajusta por separado.
+            </p>
+            <label class="field-label" for="map-cache-budget">Caché de mapas · MB</label>
+            <select id="map-cache-budget">
+              <option value="0">Desactivada</option>
+              <option value="25">25 MB</option>
+              <option value="50">50 MB</option>
+              <option value="100" selected>100 MB</option>
+              <option value="500">500 MB</option>
+              <option value="1000">1 GB</option>
+              <option value="2000">2 GB</option>
+              <option value="5000">5 GB</option>
+              <option value="10000">10 GB · copia local de zonas visitadas</option>
+            </select>
+            <p id="map-cache-usage" role="status">Consultando caché…</p>
+            <button id="map-cache-persist">Proteger almacenamiento local</button>
+            <p id="map-cache-storage">
+              El espacio depende del navegador. No es una descarga completa del planeta.
+            </p>
+            <button id="map-cache-clear">Vaciar caché de mapas</button>
             <label class="field-label" for="map-buildings">Edificios del mapa</label>
             <select id="map-buildings">
               <option value="1">Mostrar edificios</option>
@@ -71,6 +135,8 @@
               <option value="2000">2 km</option>
               <option value="4000">4 km</option>
               <option value="6000">6 km</option>
+              <option value="10000">10 km · relieve</option>
+              <option value="20000">20 km · relieve</option>
             </select>
             <label class="field-label" for="road-distance">Detalle de carreteras</label>
             <select id="road-distance">
@@ -81,6 +147,7 @@
               <option value="2000">2 km</option>
               <option value="4000">4 km</option>
               <option value="6000">6 km</option>
+              <option value="20000">20 km · detalle cargado</option>
             </select>
             <label class="field-label" for="collision-distance"
               >Colisiones de edificios cercanos</label
@@ -101,9 +168,9 @@
             <label class="field-label" for="shadow-quality">Sombras</label>
             <select id="shadow-quality">
               <option value="0">Desactivadas</option>
-              <option value="512">Bajas</option>
-              <option value="1024">Medias</option>
-              <option value="2048">Altas</option>
+              <option value="512">Bajas · cerca · menor consumo</option>
+              <option value="1024">Medias · hasta 200 m</option>
+              <option value="2048">Altas · hasta 500 m</option>
             </select>
             <p>
               En altura se retiran las colisiones lejanas. El suelo, los vehículos y los portales
@@ -252,6 +319,9 @@
               >© OpenStreetMap</a
             >
             · <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> ·
+            <a href="https://www.geo.euskadi.eus/" target="_blank" rel="noreferrer"
+              >geoEuskadi · Eusko Jaurlaritza / Gobierno Vasco · CC BY 4.0 (piloto adaptado)</a
+            >
             <a href="https://openmaptiles.org" target="_blank" rel="noreferrer">© OpenMapTiles</a>
             ·
             <a href="https://carto.com/attributions" target="_blank" rel="noreferrer"

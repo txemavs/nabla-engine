@@ -22,3 +22,9 @@ preserves the edit/play contract and a single physics owner.
 
 - [Solid and building editor](solid-editor.md): points, lines, faces, extrusion and the future entity catalog boundary.
 - [Real-world driving](real-world.md): reviewed Streets GL integration boundary, streamed geography, local edits and the first playable milestone.
+
+- [World cache operations](world-cache-operations.md): deployed cache layers, preparation queue, regeneration, publishing, backups and troubleshooting.
+
+## Regional data pilots
+
+- [geoEuskadi road-area comparison: import, preparation and remaining integration gates](geoeuskadi-pilot.md)

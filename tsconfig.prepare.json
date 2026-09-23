@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "prepare-dist",
+    "rootDir": ".",
+    "types": ["node"],
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "services/world-cache/prepare.ts",
+    "services/world-cache/prepare-pilot.ts",
+    "services/world-cache/prepare-driving-pilot.ts",
+    "services/world-cache/convert-prepared.ts"
+  ],
+  "exclude": ["**/*.test.ts"]
+}

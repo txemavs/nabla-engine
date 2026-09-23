@@ -107,6 +107,7 @@ entity, without hiding or modifying the source building.
   the current per-triangle solid collision for an entire city.
 - Treat bridges, tunnels and stacked roads as separate surfaces, not merely a
   single terrain heightfield. Make missing metadata and fallback behavior explicit.
+  (Bridges now have matching deck geometry and collision; tunnel cutouts remain deferred.)
 - Prefetch in the direction of travel. Switch render/collision tiles atomically
   at simulation boundaries and retain support beneath vehicles until replacements
   are ready. Missing or failed data must not become a hole under the car.
@@ -175,11 +176,89 @@ Total building height includes the roof; `roof:height` sets the rise, otherwise 
 inferred from footprint width (capped at 3 m). Ridge orientation follows the longer
 footprint axis; explicit roof direction/orientation tags are not interpreted yet.
 Unsupported shapes and complex footprints retain flat roofs. Closed-member
-multipolygons are supported; incomplete/split-member relations, other roof forms,
-bridge/tunnel surfaces, steps, water meshes and full landcover remain unsupported.
-Bridge/tunnel/construction/step road features are omitted rather than presented as
-correct drivable structures. The elevation source is terrain, not a surveyed road
-surface model. The remaining streets follow it, including unmodeled grade changes.
+multipolygons are supported; incomplete/split-member relations and other roof forms
+remain unsupported. Construction and step roads are omitted; bridges use estimated
+elevation profiles and tunnels remain metadata until terrain cutouts exist. The elevation source is terrain, not
+a surveyed road surface model. The remaining streets follow it, including unmodeled
+grade changes.
+
+### Landcover and water from OSM
+
+Landcover polygons are now extracted from OSM `landuse`, `leisure`, and `natural` tags.
+Each polygon is draped onto the terrain with a slight vertical offset to avoid z-fighting.
+Surface types are classified and rendered with distinct colors:
+
+| OSM Tag(s)                                                                           | Surface Type | Color     |
+| ------------------------------------------------------------------------------------ | ------------ | --------- |
+| `landuse=grass`, `landuse=meadow`, `leisure=park`, `leisure=garden`, `leisure=pitch` | grass        | `#7cb868` |
+| `landuse=forest`, `natural=wood`, `natural=tree_row`                                 | forest       | `#4a8c3a` |
+| `landuse=farmland`, `landuse=orchard`, `landuse=vineyard`, `landuse=allotments`      | farmland     | `#c5b87a` |
+| `natural=beach`, `natural=sand`, `natural=dune`                                      | sand         | `#e8dca8` |
+| `natural=scrub`, `natural=heath`, `natural=grassland`                                | scrub        | `#8ba86a` |
+| `natural=water`, `water=*`, `waterway=riverbank`, `landuse=reservoir`                | water        | `#4a90a8` |
+| `natural=wetland`, `natural=marsh`, `natural=swamp`                                  | wetland      | `#6a9878` |
+| `natural=bare_rock`, `natural=scree`, `natural=rock`                                 | rock         | `#9a9a8a` |
+| `landuse=residential`, `landuse=garages`                                             | residential  | `#d0c8b8` |
+| `landuse=industrial`, `landuse=commercial`, `landuse=retail`                         | industrial   | `#b8b0a0` |
+
+Water surfaces use animated wave normals adapted from Streets GL (MIT licensed).
+The water normal texture is at `assets/geography/water-normal.png`. Landcover and
+water polygons are batched by 256m cell and surface type for efficient rendering.
+
+#### Inland water areas (rivers, lakes, reservoirs)
+
+Inland water bodies are rendered from OSM **area** geometries, not the OpenFreeMap
+ocean layer (which handles `class=ocean` only). This includes:
+
+- `natural=water` areas (lakes, ponds, rivers mapped as areas)
+- `water=river` / `water=lake` / etc. polygons
+- `waterway=riverbank` / `waterway=dock` area ways
+- `landuse=reservoir` / `landuse=basin` areas
+- Multipolygon relations with proper outer/inner ring assembly
+
+**Multipolygon assembly**: Large rivers are often mapped as multipolygon relations
+where member ways need to be joined at shared endpoints to form complete rings.
+The importer assembles these automatically, joining ways that share coordinates
+and handling reversed way directions. When some member ways are missing or
+cannot be joined, complete rings are still salvaged — incomplete chains are
+skipped without discarding the entire relation.
+
+**Centerline fallback**: Where no area polygon exists, `waterway=river` and
+`waterway=stream` centerlines are rendered as extruded ribbons using the OSM
+`width=*` tag or type-based defaults (15m for rivers, 3m for streams). These
+are explicitly labelled as centerline approximations in their entity names.
+
+Landcover is visual only; it does not affect collision or physics. The terrain
+heightfield remains the collider. This implementation does not use satellite/orthophoto
+imagery; it relies solely on OSM vector data for surface classification.
+
+### Bridges, tunnels and stacked roads
+
+Bridge and tunnel ways are now included (previously filtered). Road entities carry
+`elevation` (`'bridge'` | `'tunnel'` | `undefined`) and `layer` (integer) from OSM tags.
+Construction and step roads remain omitted.
+
+Bridges use an estimated clearance of 5 m per absolute layer (at least one layer),
+with ramps returning to terrain at the ends of the original OSM way. Profiles are
+sampled at intervals of at most 5 m inside the tile. Clipped segments preserve their
+position along the original way so tile boundaries do not introduce extra ramps.
+Shared cross-sections join sloping deck segments without horizontal joint discs.
+Physics uses the same triangles as rendering, with thin collision prisms below the
+deck. Streamed bridge bodies participate in collision-distance culling.
+
+Tunnels retain source metadata but have no visible surface or road collider yet.
+Rendering asphalt below an intact terrain collider would not make a usable tunnel;
+terrain openings and corridor collision are required first.
+
+Road assist is **disabled by default**. Applications may opt in through
+`Simulation.setRoadAssist(enabled, strength)`. It indexes terrain-road segments in
+world coordinates, considers vertical separation, and yields to manual steering.
+Flight-capable vehicles are excluded. The spatial index is rebuilt when the scene's
+entity list changes, rather than scanning all roads each physics tick.
+
+These are approximations, not surveyed interchange elevations. Absolute `ele` and
+`height`, connected-way ramp topology, grade limits and terrain-cutting tunnels are
+still future work. Layer values are bounded to the supported range of -5 to 5.
 
 Buildings retain their OSM type/ID, retrieval time and source tags. They use the
 solid editor and can be recolored, reshaped, cloned or removed. Saves store a full
@@ -217,14 +296,20 @@ decodes Esri LERC elevation, and generates editable building topology. Physics
 and render entities are appended without recreating the simulation, resetting
 vehicles, or replacing the existing scene view.
 
-- One zone request runs at a time, with a 250 ms scheduling interval after completion,
-  so cached arrivals do not pay an artificial eight-second delay. A failed zone backs
-  off for 60 seconds without freezing the whole scheduler. The worker still paces
-  uncached public Overpass requests at 30 seconds and cools down failed OSM requests
-  for 60 seconds; local cache hits are checked before that wait. The private server
-  retains its upstream pacing. Obsolete requests are cancelled when the actor moves
-  beyond their desired neighborhood. Incomplete responses are never installed as
-  empty ground. Stopping or replacing the scene cancels outstanding work.
+- Up to three zone requests run in parallel, with a 100 ms scheduling interval
+  between request slots. The player's **immediate 3×3 neighborhood** is always
+  prioritized and never cancelled: if the player crosses into unloaded terrain,
+  those nine zones jump to the front of the queue and may preempt distant prefetch.
+  Failed zones use progressive backoff: 1-5 seconds for nearby zones (fast retry
+  when the player needs them), 10-60 seconds for distant prefetch. The worker still
+  paces uncached public Overpass requests at 30 seconds and cools down failed OSM
+  requests for 60 seconds; local cache hits are checked before that wait. The private
+  server retains its upstream pacing. Obsolete requests are cancelled when the actor
+  moves beyond their desired neighborhood, except for the immediate neighborhood which
+  is always protected. Incomplete responses are never installed as empty ground.
+  Stopping or replacing the scene cancels outstanding work.
+- The status bar shows loading progress: how many zones are loading, how many are
+  pending, and whether any nearby zones are waiting for retry.
 - `VITE_WORLD_OVERPASS_URL` can select a self-hosted/contracted Overpass endpoint
   at build time. By default the provider uses public Overpass via POST, not the OSM editing API
   for traversal. It is a development provider, not a guaranteed production tile
@@ -358,8 +443,8 @@ The sea is a separate visual layer of OpenFreeMap/OpenMapTiles `water` polygons
 with `class=ocean`, including coastline cutouts and island holes. It loads zoom-12
 vector tiles through a dedicated worker, transfers triangles and renders at sea
 level relative to the geographic origin. It is not inferred from a terrain height
-threshold. Inland rivers/lakes are intentionally excluded until their elevations
-can be resolved; no swimming, buoyancy or water collision is added.
+threshold. The ocean layer excludes inland rivers/lakes; those now use the separate OSM
+landcover layer described above. No swimming, buoyancy or water collision is added.
 
 OpenFreeMap requests disclose the explored tile coordinates to that provider.
 The provider was explicitly authorized for this installation. Set
@@ -394,3 +479,108 @@ retaining existing validated entity/geometry references. Global identity, hierar
 portal and terrain-reference checks still run on the combined document before it
 is committed. The internal `replaceMapScene` path requires privately owned validated
 data; authored edits and external scene imports continue to use full `parseScene`.
+
+### Landcover delivery and rendering contract
+
+Normalized bakes use version **2**, prepared geometry uses version **4**, and the
+browser extract cache uses `nabla-world-v2`. Older extracts cannot establish that
+landcover was fetched, so they are not silently reused as complete data. Rebuild
+bakes without `--skip-existing` after deploying the new worker. Browser queries,
+bake and prefill request the same landuse/leisure/natural/water polygons.
+
+Closed outlines are triangulated with holes assigned to their containing outer
+ring, clipped to each tile and intersected with the actual terrain triangles in
+the worker. Vertex sharing and bounded topology chunks keep the solid editor's
+limits intact. Tile-specific identities prevent duplicate ownership across zone
+boundaries. Generated surfaces have `motion: none`; hiding map buildings does
+not hide landcover. They remain part of the tile eviction/fingerprint lifecycle.
+
+The renderer reuses prepared mesh positions, including parent transforms. It only
+rebuilds dirty 256m/material cells once per scene revision; camera movement and
+origin rebasing reuse those buffers. Distance culling uses actual geometry bounds
+and shadow materials are registered through the existing CSM integration. Water
+uses the existing normal texture without another camera or reflection pass.
+
+Limitations: inland water follows the elevation grid; this is not a surveyed
+flat lake level or hydrology simulation. Multipolygon relations with ways that
+cannot be joined (no shared endpoints) produce partial results — complete rings
+are salvaged but incomplete chains are skipped. Nested equal-priority landuse
+polygons are not a full polygon-union/classification system. The procedural atlas
+prototype has been removed because it was unused; current land materials use solid
+colors. Centerline river fallback is an approximation using default or tagged
+widths; it does not match actual surveyed banks.
+
+### Physical reflections with cascaded shadows
+
+The CSM addon bundled with Three.js r186 still carries an older complete lighting
+chunk. Its wholesale replacement omits the current DFG lookup and multi-scattering
+initialization, making metallic materials lose reflections. Nabla retains the
+installed engine's lighting chunk and replaces only the directional-light branch
+with the addon's cascade handling. This preserves paint/chrome material values,
+iridescence, environment lighting and the current other-light/probe support.
+A browser regression measures an environment-only metal sphere across all shadow
+tiers; reflection brightness must remain unchanged.
+
+### Surveyed pyramidal roofs and overlapping ground
+
+Pyramidal roofs also support single star-shaped surveyed outlines with more than
+four corners. The area centroid must lie in the outline's visibility kernel;
+multiple rings/courtyards and incompatible outlines retain a flat fallback.
+`roof:height` takes precedence over `roof:levels` (three metres per level). The
+real OSM outline of `way/154094152` is a regression fixture: seven sloped roof
+faces, upward normals and the original red roof colour. Other nonrectangular
+roof shapes still need separate generators.
+
+Ground categories have distinct millimetre offsets, in surface-precedence order,
+below the 35mm road offset. This prevents different landuse colours from occupying
+the same depth and does not rely exclusively on polygon offset with logarithmic
+depth rendering. Prepared geometry v4 invalidates older roofs and ground heights.
+
+### Optional smooth road decks
+
+Select a terrain-level road in Studio and change **Superficie de conducción** to
+**Suavizada · experimental**. The choice is stored as `road.mode: "smooth-float"`
+and supports undo, scene export and edited-tile preservation. `raw` remains the
+default. There is deliberately no global switch that changes every road at once.
+
+The implementation replaces PR #18's original endpoint-only smoothing and flat
+joint discs. It samples the route at intervals of at most 5 m, uses shared mitered
+cross-sections, and clips each deck triangle against the DEM triangles to bound the
+highest terrain under its entire footprint. Both station ends stay at least 0.1 m
+above that bound. A 30 m moving average and 15% grade envelope raise approaches;
+they never cut terrain away. Averaging uses linear-time prefix sums. Rendering,
+worker preparation, conversion to editable solids and physics share `roadGeometry`.
+Collision prisms extend below the visible surface and no default box is added.
+
+This is a conservative opt-in treatment for individual roads, not surveyed highway
+engineering. Decks can rise several metres above terrain on steep cross-slopes.
+Independent roads/intersections and tile boundaries are not jointly graded; inspect
+connections before using a smoothed road as a route. Closed rings, folded ribbons
+and roads exceeding 4096 sampling intervals fall back to the original surface.
+Bridge profiles retain their separate implementation; tunnels remain deferred until
+terrain excavation and collision cutouts exist. Turning buildings off does not
+remove road-deck collision.
+
+## Railways and settlement names
+
+The import includes `railway=rail|light_rail|tram|narrow_gauge`. Each track has a
+ballast ribbon and two narrow rail ribbons, draped on the same terrain triangles
+as roads. `gauge` is interpreted in millimetres (1,435 mm fallback), and bridge
+profiles respect `bridge` and `layer`. The **Vías OSM** group is independent of
+roads: its bounded solid chunks have `railway.part` and `motion: none`, never a
+road component. They are batched by cell and colour using the road renderer, but
+do not create road assist, vehicle support or rigid-body colliders. Road detail
+distance also controls railway draw distance. Tunnels/subways and inactive or
+proposed tracks are omitted; sleepers, trains and catenary are not included.
+
+Named OSM `place=city|town|village` nodes become nonphysical `placeLabel` entities
+in **Poblaciones OSM**. Each node has one tile owner, preserving its OSM identity
+and spelling. Labels use canvas text (not HTML), a fixed apparent text size, and
+are discarded with their streamed zone. Only loaded settlements can be named;
+this is not a worldwide geocoding database.
+
+Inland water is visual only. Centerline fallback is generated as water geometry,
+not as a road; mapped areas take precedence over covered centerline triangles.
+The shore transition remains approximate at terrain-triangle resolution. Missing
+inner relation rings are not filled, and incomplete building relations are not
+salvaged into invented footprints. Named streams in tunnels are omitted.

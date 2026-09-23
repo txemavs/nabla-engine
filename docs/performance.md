@@ -50,3 +50,92 @@ Targeted browser tests exercise road rendering, ocean/solar shaders and streamin
 at the origin and 12 km away. Contact-matrix tests compare collision events and
 motion against Cannon's default matrix and verify zero dense storage at 18,000
 bodies. Chart tests cover shared projections and long segments crossing the view.
+
+## Flight presentation
+
+Map detail distances measure horizontal distance to the ground footprint, so flying
+above a road does not hide it merely because the camera is high. Frustum culling
+still applies, and the camera far plane includes the vertical distance to the ground.
+The streaming planner continues loading at flight altitude below its 12 km cutoff;
+landing is not a prerequisite. Cold provider requests can still take time.
+Near-ground fog now uses the same altitude-adjusted footprint as the camera far
+plane: `hypot(0.75 × distance, height)` through `hypot(distance, height)`. A fixed
+1 km fog range previously hid already-loaded ground when hovering above 1 km,
+even though the camera and streaming still included it. This changes visibility,
+not the requested map radius or the number of zones loaded. A browser pixel test
+checks visible preloaded ground at 100 m, 1.2 km and 5 km; a scheduler test checks
+that delayed data is installed while hovering without a landing event.
+
+Closed OSM building meshes render their outward faces only. This avoids drawing an
+adjacent building's back-facing wall on the same plane. Authored solids retain their
+existing two-sided editing presentation. Distinct overlapping OSM volumes can still
+require data-specific correction; back-face culling is not polygon union.
+
+Container exhaust uses four pairs of eight-sided, unlit cones at the model's lower
+sockets. It adds no shadow lights, particles or offscreen render passes. Exhaust
+fades with flight mode and varies with speed. A shared Web Audio turbine graph starts
+only after user interaction, attenuates with distance and inside the cabin, and mutes
+when the page is hidden or play stops. The footer sound toggle persists locally.
+
+## Cascaded local shadows
+
+The sun uses one cascade at low quality (512 px, 40 m), two at medium quality
+(1024 px each, 200 m) and three at high quality (2048 px each, 500 m). Low is the
+default for new profiles; saved preferences are respected. High quality adds shadow
+passes and memory, so it is an optional distance/detail tradeoff, not a free upgrade.
+
+CSM fits a proxy camera in absolute coordinates, snaps to its shadow texel grid,
+then rebases its lights into render coordinates. Projection changes refresh cascade
+bounds. The depth bias is a fixed 2 cm in world units rather than a constant
+fraction of the shadow-camera depth range; the latter detached or erased small
+vehicle shadows. Low quality prioritizes nearby vehicles without adding a pass.
+Shadow intensity is full occlusion of direct light; ambient lighting still fills
+the shaded areas. Radius-zero PCF retains hardware bilinear comparison without the unstable
+screen-pixel-dependent rotated sampling pattern. Cascades blend at their boundaries.
+
+Only the main view refreshes shadow maps. Auxiliary views reuse them and do not
+receive independent camera-fitted cascades. Coverage is limited by camera-relative
+cascade distance, not geographic altitude: a car on elevated terrain still casts
+a shadow. Distant terrain outside cascade reach receives ordinary sun/moon lighting
+without doubling the CSM light. Newly streamed surfaces,
+road batches and asynchronously loaded assets register their materials. Disposed
+materials and shadow render targets are released when zones or quality tiers change.
+
+Automated tests cover quality switching, material lifecycle, origin rebasing and
+camera projection changes. Browser checks capture every quality tier and inspect
+WebGL shader errors. Software-rendered test results do not establish laptop FPS.
+
+## Map building batches and editable exceptions
+
+Unmodified static OSM buildings now render in 256 m cells, in both Studio and play
+mode. A cell uses one shared vertex-colored material; roof and wall colors survive
+merging, and the merged mesh casts and receives shadows. Distance/frustum culling
+operates on each cell. Streaming rebuilds affected cells only, one per update;
+original geometry stays visible until its replacement is ready. Dragging a group
+uses the original meshes temporarily, so its preview stays aligned.
+
+Picking still uses original entity meshes, even while their rendering is hidden.
+Entity frames remain visible for attached shot marks. This first implementation
+retains source geometry for picking and editing and adds merged render buffers:
+it reduces draw calls, **not** geometry storage or physics costs. It is not yet a
+compact server-side override database or a merged collision representation.
+
+Select an OSM building and press **Crear modificación** to opt it out of batching.
+The document records `mapEditable: true` on the same entity, preserving its OSM
+provenance and ID. Position, color, geometry editing and duplication then work
+normally. There is no second original to overlap it. Undo can restore the batched
+state, and scene save/load preserves the exception. Old documents without the
+flag render their existing geometry unchanged but require this action to edit it.
+
+The existing streaming fingerprint includes this field: modified zones stay pinned
+and survive save/reopen instead of being evicted and replaced with fresh map data.
+This currently retains the whole modified zone, not only a minimal per-building
+diff; many modified zones can therefore still increase memory and document size.
+Public prepared cache artifacts remain unmodified. No preparation format bump or
+server-cache regeneration is required for this renderer-only grouping.
+
+A browser fixture with 100 buildings in one cell reduced total scene draw calls
+from 102 to 3 (100 building draws to one), with effectively identical pixels.
+That isolates draw-call reduction; it is not a claim of a proportional FPS gain
+on a real city or a particular GPU. Tests cover colors, rebasing, incremental
+replacement, picking, shot-mark visibility, editable opt-in and saved exceptions.

@@ -1,7 +1,21 @@
+import { mapCacheStats, setMapCacheBudget, clearMapCache } from './map-cache.js'
+import { decodePrepared } from './prepared-world.js'
+import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
+import { isMapBuilding } from '../src/scene.js'
+import { roadGeometry } from '../src/draped-road.js'
+import { FlightAudio } from './flight-audio.js'
+import { activatePreparation } from './preparation-access.js'
+void activatePreparation()
 import { SeaWater } from './water.js'
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
-import { readPerformance } from './performance.js'
+import {
+  readPerformance,
+  shadowTiers,
+  performancePresets,
+  performanceProfile,
+} from './performance.js'
+import { ShadowManager } from './csm.js'
 import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { WorldStream } from '../src/world-stream.js'
@@ -21,12 +35,13 @@ import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
 import { GeographicView } from './geography.js'
 import { localToGeo, MADRID } from '../src/geography.js'
 import { gamepadAxes } from './input.js'
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { TransformControls } from 'three/addons/controls/TransformControls.js'
 import {
   SceneEditor,
+  parseScene,
+  type SceneDocument,
   SceneGraph,
   Simulation,
   createSampleScene,
@@ -55,14 +70,22 @@ const STORAGE_KEY = 'nabla.scene.v1'
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = false
 let distantTerrain: DistantTerrain | null = null
+const flightAudio = new FlightAudio()
 let worldStream: WorldStream | null = null
 let worldLoader: WorldLoader | null = null
 let streamSample: { at: number; position: Vec3Tuple } | null = null
-let editor = new SceneEditor(upgradeReferenceScene(createSampleScene()))
+let editor = new SceneEditor(
+  upgradeReferenceScene(createSampleScene()),
+  performanceSettings.preset === 'ultra',
+)
 let loadError = ''
 try {
   const saved = await readScene(STORAGE_KEY)
-  if (saved) editor = new SceneEditor(upgradeReferenceScene(JSON.parse(saved)))
+  if (saved)
+    editor = new SceneEditor(
+      upgradeReferenceScene(JSON.parse(saved), performanceSettings.preset === 'ultra'),
+      performanceSettings.preset === 'ultra',
+    )
   if (editor.document.entities.some((e) => e.id === 'road' && e.size[0] === 16 && e.size[2] === 85))
     editor.load(alignCircuitPlan(editor.document))
 } catch {
@@ -133,32 +156,25 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
 renderer.shadowMap.enabled = performanceSettings.shadows > 0
 renderer.shadowMap.type = THREE.PCFShadowMap
+// Refresh once for the main view; auxiliary cameras reuse that map.
+renderer.shadowMap.autoUpdate = false
 renderer.toneMapping = THREE.ACESFilmicToneMapping
-renderer.toneMappingExposure = 1.35
+renderer.toneMappingExposure = 1.08
 viewport.prepend(renderer.domElement)
 renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
 scene.background = new THREE.Color('#a6bbd5')
 scene.fog = new THREE.Fog('#a6bbd5', 70, 160)
-const environment = new RoomEnvironment()
-const pmrem = new THREE.PMREMGenerator(renderer)
-scene.environment = pmrem.fromScene(environment, 0.04).texture
-scene.environmentIntensity = 0.4
-environment.dispose()
-pmrem.dispose()
-const hemisphere = new THREE.HemisphereLight('#edf4ff', '#657a99', 2.5)
-scene.add(hemisphere)
+// A small diffuse fill lifts shadows without adding an environment reflection.
+scene.environment = null
+scene.environmentIntensity = 0
 const sun = new THREE.DirectionalLight('#ffe1b1', 3.2)
 sun.position.set(-25, 45, 25)
-sun.castShadow = true
-sun.shadow.mapSize.set(performanceSettings.shadows || 512, performanceSettings.shadows || 512)
-sun.shadow.camera.left = -55
-sun.shadow.camera.right = 55
-sun.shadow.camera.top = 55
-sun.shadow.camera.bottom = -55
-sun.shadow.camera.far = 150
-sun.shadow.normalBias = 0.035
+sun.castShadow = false
 scene.add(sun)
+const ambientFill = new THREE.AmbientLight('#dce7f5', 0.22)
+scene.add(ambientFill)
+
 const grid = new THREE.GridHelper(100, 100, '#9eb9ae', '#829b93')
 grid.position.y = 0.035
 ;(grid.material as THREE.Material).opacity = 0.18
@@ -166,6 +182,20 @@ grid.position.y = 0.035
 scene.add(grid)
 const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 250)
 camera.position.set(10, 5, 12)
+
+const shadowManager = new ShadowManager()
+const sunDirection = new THREE.Vector3(25, -45, -25).normalize()
+const shadowTier = shadowTiers[performanceSettings.shadows]
+if (shadowTier) {
+  shadowManager.init({
+    camera,
+    scene,
+    lightDirection: sunDirection,
+    lightIntensity: 3.2,
+    tier: shadowTier,
+  })
+}
+
 const orbit = new OrbitControls(camera, renderer.domElement)
 orbit.target.set(4, 0.6, 5)
 orbit.enableDamping = true
@@ -183,11 +213,94 @@ scene.add(gizmo.getHelper())
 gizmo.addEventListener('change', () => {
   needsRender = true
 })
+const worldCursor = new THREE.Group()
+const cursorAxes = new THREE.AxesHelper(1)
+worldCursor.add(cursorAxes)
+const cursorRing = new THREE.Mesh(
+  new THREE.TorusGeometry(0.3, 0.025, 6, 24),
+  new THREE.MeshBasicMaterial({ color: 0xffd36e, depthTest: false, depthWrite: false }),
+)
+cursorRing.renderOrder = 50
+worldCursor.add(cursorRing)
+worldCursor.renderOrder = 50
+scene.add(worldCursor)
+function syncCursor(): void {
+  const position = editor.document.cursor ?? [0, 0, 0]
+  worldCursor.position.fromArray(position)
+  for (const [i, axis] of ['x', 'y', 'z'].entries())
+    $<HTMLInputElement>(`cursor-${axis}`).value = String(position[i])
+  needsRender = true
+}
+function placeCursor(position: Vec3Tuple): void {
+  editor.setCursor(position)
+  syncCursor()
+  $('status').textContent = 'Cambios sin guardar'
+}
+$('cursor-apply').onclick = () =>
+  action(() =>
+    placeCursor(
+      ['x', 'y', 'z'].map((a) => $<HTMLInputElement>(`cursor-${a}`).valueAsNumber) as Vec3Tuple,
+    ),
+  )
+$('cursor-selection').onclick = () =>
+  action(() =>
+    placeCursor(SceneGraph.fromValidated(editor.document).worldTransform(selectedId).position),
+  )
+$('cursor-view').onclick = () => action(() => placeCursor(orbit.target.toArray()))
+$('selection-cursor').onclick = () =>
+  action(() => {
+    const entity = editor.document.entities.find((e) => e.id === selectedId)!
+    if (isMapBuilding(entity) && !entity.mapEditable)
+      throw new Error('Pulsa Crear modificación antes de editar el edificio')
+    editor.moveToCursor(selectedId)
+    rebuild()
+  })
+$('origin-cursor').onclick = () =>
+  action(() => {
+    const entity = editor.document.entities.find((e) => e.id === selectedId)!
+    if (isMapBuilding(entity) && !entity.mapEditable)
+      throw new Error('Pulsa Crear modificación antes de editar el edificio')
+    editor.originToCursor(selectedId)
+    rebuild()
+  })
+function lockAxis(axis: string): void {
+  $<HTMLSelectElement>('transform-axis').value = axis
+  gizmo.showX = axis === 'all' || axis === 'X'
+  gizmo.showY = axis === 'all' || axis === 'Y'
+  gizmo.showZ = axis === 'all' || axis === 'Z'
+  needsRender = true
+}
+$('transform-axis').onchange = () => lockAxis($<HTMLSelectElement>('transform-axis').value)
+$('transform-exact').onclick = () =>
+  action(() => {
+    const axis = $<HTMLSelectElement>('transform-axis').value,
+      amount = $<HTMLInputElement>('transform-amount').valueAsNumber
+    if (axis === 'all' || !Number.isFinite(amount))
+      throw new Error('Elige X, Y o Z y una cantidad finita')
+    const doc = editor.document,
+      graph = SceneGraph.fromValidated(doc),
+      entity = doc.entities.find((e) => e.id === selectedId)!
+    if (isMapBuilding(entity) && !entity.mapEditable)
+      throw new Error('Pulsa Crear modificación antes de editar el edificio')
+    const pose = graph.worldTransform(selectedId),
+      i = 'XYZ'.indexOf(axis)
+    if (gizmo.getMode() === 'rotate') {
+      const v = new THREE.Vector3()
+      v.setComponent(i, 1)
+      pose.rotation = new THREE.Quaternion()
+        .setFromAxisAngle(v, (amount * Math.PI) / 180)
+        .multiply(new THREE.Quaternion(...pose.rotation))
+        .toArray()
+    } else pose.position[i] += amount
+    editor.update(selectedId, { transform: graph.localFromWorld(entity.parentId, pose) })
+    rebuild()
+  })
 const outline = new SelectionOutline()
 scene.add(outline)
 let lastWorldInstallMs = 0
 let water: SeaWater | undefined
-let view = new SceneView(editor.document)
+let view = new SceneView(editor.document, performanceSettings.preset === 'ultra')
+view.setupMaterials((material) => shadowManager.setupMaterial(material))
 scene.add(view.root)
 let geography = new GeographicView(
   editor.document,
@@ -206,6 +319,7 @@ function watchAssets(current: SceneView): void {
     .then(() => {
       if (view === current) {
         renderer.domElement.dataset.assets = 'loaded'
+        current.setupMaterials((material) => shadowManager.setupMaterial(material))
         needsRender = true
       }
     })
@@ -229,7 +343,7 @@ gizmo.addEventListener('mouseUp', () => {
     const object = view.objects.get(selectedId)
     if (!object) return
     const entity = editor.document.entities.find((e) => e.id === selectedId)!
-    const graph = new SceneGraph(editor.document)
+    const graph = SceneGraph.fromValidated(editor.document)
     editor.update(selectedId, {
       transform: graph.localFromWorld(entity.parentId, {
         position: object.position.toArray(),
@@ -246,9 +360,11 @@ const solidEditor = new SolidEditor(
   },
   refreshUi,
   toast,
+  () => editor.document.cursor ?? [0, 0, 0],
 )
 
-function rebuild(): void {
+function rebuild(prepared?: PreparedMapGeometry): void {
+  syncCursor()
   distantTerrain?.dispose()
   distantTerrain = null
   worldStream?.dispose()
@@ -268,7 +384,10 @@ function rebuild(): void {
     scene.add(geography.tiles)
   }
   view.dispose()
-  view = new SceneView(editor.document)
+  const document = editor.document
+  if (prepared) receiveMapGeometry(document.entities, prepared)
+  view = new SceneView(document, performanceSettings.preset === 'ultra')
+  view.setupMaterials((material) => shadowManager.setupMaterial(material))
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
   watchAssets(view)
@@ -304,9 +423,12 @@ function setupWorldStream(): void {
   worldStream = new WorldStream({
     document: () => view.document,
     load: (key, signal) => loader.load(origin, key, signal),
+    prepare: (keys) => loader.prepare(origin, keys),
+    prefetch: (keys) => loader.prefetch(origin, keys),
     replace: (remove, add) => {
       const started = performance.now()
-      sim?.replaceMapEntities(remove, add)
+      sim?.replaceMapEntities(remove, add, performanceSettings.preset === 'ultra')
+      editor.experimentalLargeScene = performanceSettings.preset === 'ultra'
       editor.replaceMapEntities(remove, add)
       view.replaceMapEntities(remove, add)
       distantTerrain?.setDocument(view.document)
@@ -326,13 +448,24 @@ function setupWorldStream(): void {
       $('stream-status').textContent = message
     },
   })
-  $('stream-status').textContent = 'Exploración conectada · precarga al jugar'
+  worldStream.setQuality(
+    performanceProfile(performanceSettings).concurrent,
+    performanceProfile(performanceSettings).ahead,
+    performanceSettings.preset === 'ultra',
+  )
+  $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
 function select(id: string): void {
   selectedId = id
   refreshUi()
 }
 function refreshUi(): void {
+  syncCursor()
+  $('cursor-menu')
+    .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
+      'input,button,select',
+    )
+    .forEach((el) => (el.disabled = !!sim || loadingWorld))
   needsRender = true
   const doc = editor.document
   let parentId = doc.entities.find((e) => e.id === selectedId)?.parentId
@@ -411,7 +544,48 @@ function refreshUi(): void {
     ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
-  solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
+  if (e.road && !sim && (!e.road.elevation || e.road.elevation === 'terrain')) {
+    const label = document.createElement('label')
+    label.className = 'field-label'
+    label.textContent = 'Superficie de conducción'
+    label.htmlFor = 'road-surface-mode'
+    const control = document.createElement('select')
+    control.id = 'road-surface-mode'
+    control.innerHTML =
+      '<option value="raw">Terreno original</option><option value="smooth-float">Suavizada · experimental</option>'
+    control.value = e.road.mode ?? 'raw'
+    control.onchange = () =>
+      action(() => {
+        editor.update(e.id, { road: { ...e.road!, mode: control.value as 'raw' | 'smooth-float' } })
+        rebuild()
+      })
+    const note = document.createElement('p')
+    note.textContent =
+      'Aplana el ancho y suaviza pendientes elevando la calzada. Revisa sus extremos y cruces; no une otras carreteras automáticamente.'
+    props.append(label, control, note)
+  }
+  if (e.road && !sim && e.road.elevation !== 'tunnel') {
+    const button = document.createElement('button')
+    button.textContent = 'Convertir carretera en sólido editable'
+    button.onclick = () =>
+      action(() => {
+        const doc = editor.document,
+          road = doc.entities.find((item) => item.id === e.id)!,
+          terrain = doc.entities.find((item) => item.id === road.road!.terrainId)?.terrain
+        if (!terrain) throw new Error('Carga el terreno de esta carretera')
+        const geometry = roadGeometry(terrain, road.road!.paths, road.road!.width, road.road)
+        delete road.road
+        road.kind = 'solid'
+        road.geometry = geometry
+        road.motion = 'static'
+        editor.load(doc)
+        rebuild()
+      })
+    props.append(button)
+  }
+  const mapReadOnly = isMapBuilding(e) && !e.mapEditable
+  if (mapReadOnly) solidEditor.close()
+  else solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
   if (e.light) {
     const controls = document.createElement('div')
     controls.innerHTML = `<label class="field-label">Farola</label><label><input id="light-enabled" type="checkbox" ${e.light.enabled ? 'checked' : ''}> Encendida</label><label><input id="light-night" type="checkbox" ${e.light.nightOnly ? 'checked' : ''}> Solo de noche</label><label class="field-label" for="light-color">Color de luz</label><input id="light-color" type="color" value="${e.light.color}"><label class="field-label" for="light-intensity">Intensidad · cd</label><input id="light-intensity" type="number" min="0" max="10000" value="${e.light.intensity}"><label class="field-label" for="light-distance">Alcance · m</label><input id="light-distance" type="number" min="1" max="100" value="${e.light.distance}">`
@@ -554,8 +728,30 @@ function refreshUi(): void {
     $<HTMLButtonElement>('delete').disabled = e.kind === 'spawn'
     $<HTMLSelectElement>('parent').disabled =
       e.kind === 'spawn' || e.motion === 'dynamic' || !!e.portal
-    if (solidEditor.active) gizmo.detach()
+    if (solidEditor.active || mapReadOnly) gizmo.detach()
     else gizmo.attach(view.objects.get(e.id)!)
+  }
+  if (mapReadOnly && !sim) {
+    props
+      .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
+        'input,button,select',
+      )
+      .forEach((control) => {
+        control.disabled = true
+      })
+    const button = document.createElement('button')
+    button.id = 'make-building-editable'
+    button.textContent = 'Crear modificación'
+    button.disabled = loadingWorld
+    button.onclick = () =>
+      action(() => {
+        editor.update(e.id, { mapEditable: true })
+        rebuild()
+      })
+    const note = document.createElement('p')
+    note.textContent =
+      'Edificio del mapa · dibujo agrupado. Crea una modificación para cambiar su forma, color o posición.'
+    props.append(note, button)
   }
   $<HTMLButtonElement>('undo').disabled = !!sim || loadingWorld || !editor.canUndo
   $<HTMLButtonElement>('redo').disabled = !!sim || loadingWorld || !editor.canRedo
@@ -573,6 +769,7 @@ function refreshUi(): void {
     'rotate',
     'import',
     'world-irun',
+    'world-irun-official',
     'sample-assets',
     'sample-portals',
     'focus',
@@ -622,26 +819,14 @@ for (const [id, kind] of [
   $(id).onclick = () =>
     action(() => {
       selectedId = editor.add(kind)
+      setAddMenu(false)
       rebuild()
     })
 }
 for (const entry of entityCatalog) {
   $(`add-${entry.id}`).onclick = () =>
     action(() => {
-      const ground = orbit.target.clone()
-      view.root.updateWorldMatrix(true, true)
-      const ray = new THREE.Raycaster(
-        new THREE.Vector3(ground.x, ground.y + 10000, ground.z),
-        new THREE.Vector3(0, -1, 0),
-      )
-      const surfaces = editor.document.entities
-        .filter(
-          (e) => e.kind === 'terrain' || (e.kind === 'box' && e.motion === 'static' && !e.light),
-        )
-        .map((e) => view.objects.get(e.id)!)
-        .filter(Boolean)
-      const hit = ray.intersectObjects(surfaces, true)[0]
-      ground.y = hit ? hit.point.y : 0
+      const ground = new THREE.Vector3(...(editor.document.cursor ?? [0, 0, 0]))
       const entities = createCatalogEntities(entry.id, crypto.randomUUID(), ground.toArray())
       const doc = editor.document
       doc.entities.push(...entities)
@@ -679,7 +864,7 @@ $('sample-assets').onclick = () =>
 $('add-sprite').onclick = () =>
   action(() => {
     const doc = editor.document
-    const sprite = createEntity(crypto.randomUUID(), 'group')
+    const sprite = createEntity(crypto.randomUUID(), 'group', doc.cursor ?? [0, 0, 0])
     sprite.name = 'Sprite · árbol'
     sprite.size = [7, 7, 0.1]
     sprite.sprite = treeSprite(0)
@@ -692,6 +877,11 @@ $('sample-gallery').onclick = () =>
   action(() => {
     const doc = editor.document
     const entities = createGallery(crypto.randomUUID())
+    for (const e of entities)
+      if (!e.parentId)
+        e.transform.position = e.transform.position.map(
+          (v, i) => v + (doc.cursor?.[i] ?? 0),
+        ) as Vec3Tuple
     doc.entities.push(...entities)
     editor.load(doc)
     selectedId = entities[0].id
@@ -702,31 +892,65 @@ $('sample-portals').onclick = () =>
   action(() => {
     const next = editor.document
     const ids = [crypto.randomUUID(), crypto.randomUUID()]
-    next.entities.push(...createPortalPair(ids[0], ids[1]))
+    const [x, y, z] = next.cursor ?? [0, 0, 0]
+    const portals = createPortalPair(ids[0], ids[1], [x, y + 1.455, z], [x + 8, y + 1.455, z])
+    for (const portal of portals) portal.portal!.mode = 'closed'
+    next.entities.push(...portals)
     editor.load(next)
     selectedId = ids[0]
     collapsed.delete(ids[0])
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
-    toast('Dos Stargates añadidos. El A3 tiene el primero delante; puedes moverlos o deshacer.')
+    toast('Dos Stargates añadidos junto al cursor · enlazados y cerrados.')
   })
-async function loadIrun(): Promise<void> {
+async function loadIrun(combined = false): Promise<void> {
   if (sim || loadingWorld) return
   loadingWorld = true
   refreshUi()
   for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = true
   $<HTMLButtonElement>('play').disabled = true
   $('world-loading').hidden = false
-  $('world-loading').textContent = 'Cargando Ventas de Irún · OSM + relieve…'
+  $('world-loading').textContent = combined
+    ? 'Cargando Ventas · OSM + geoEuskadi preparado…'
+    : 'Cargando Ventas de Irún · OSM + relieve…'
   try {
-    const response = await fetch('/geography/irun-ventas.json')
-    if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
-    const extract = (await response.json()) as WorldExtract
-    const next = upgradeReferenceScene(createRealWorld(extract))
+    let next: SceneDocument
+    let geometry: PreparedMapGeometry | undefined
+    if (combined) {
+      const response = await fetch('/geography/ventas-combined.pack', { cache: 'no-cache' })
+      if (!response.ok) throw new Error('La zona combinada todavía no está preparada')
+      if (!response.body) throw new Error('Zona combinada vacía')
+      const data = await new Response(
+        response.body.pipeThrough(new DecompressionStream('gzip')),
+      ).json()
+      if (data.recipe !== 'ventas-combined-roads-v1') throw new Error('Receta incompatible')
+      const entities = data.entities as Entity[]
+      const prepared = decodePrepared(
+        { ...data, entities: entities.filter((e) => e.kind !== 'spawn') },
+        data.origin,
+        '0_0',
+      )
+      next = upgradeReferenceScene(
+        parseScene({
+          ...data.scene,
+          entities: [...prepared.entities, ...entities.filter((e) => e.kind === 'spawn')],
+        }),
+      )
+      geometry = prepared.geometry
+    } else {
+      const response = await fetch('/geography/irun-ventas.json')
+      if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
+      next = upgradeReferenceScene(createRealWorld((await response.json()) as WorldExtract))
+    }
     editor.load(next)
+    if (combined) {
+      const url = new URL(location.href)
+      url.searchParams.delete('world')
+      history.replaceState(null, '', url)
+    }
     for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
     selectedId = 'car-a'
-    rebuild()
+    rebuild(geometry)
     $('welcome').hidden = true
     await view.ready
     focusSelection()
@@ -734,9 +958,13 @@ async function loadIrun(): Promise<void> {
     orbit.target.set(0, 2, 0)
     camera.position.set(35, 32, 40)
     orbit.update()
-    renderer.domElement.dataset.world = 'irun'
+    renderer.domElement.dataset.world = combined ? 'geoeuskadi' : 'irun'
     localStorage.setItem('nabla.irun.introduced', '1')
-    toast('Ventas de Irún · exploración conectada · las zonas se precargan al jugar')
+    toast(
+      combined
+        ? 'Ventas · piloto combinado en la zona inicial · OSM en el resto del mundo'
+        : 'Ventas de Irún · exploración conectada · las zonas se precargan al jugar',
+    )
   } catch (error) {
     toast(error instanceof Error ? error.message : 'No se pudo abrir Ventas')
   } finally {
@@ -800,25 +1028,34 @@ async function travelTo(): Promise<void> {
   $('world-loading').textContent = message
   $('travel-status').textContent = message
   try {
-    const entities = await loader.load(
-      { latitude, longitude, altitude: 0 },
-      '0_0',
-      controller.signal,
-      true,
-    )
+    const current = editor.document
+    const placeKey = (lat: number, lon: number) => `nabla-place:${lat.toFixed(6)}:${lon.toFixed(6)}`
+    if (current.geography)
+      await writeScene(
+        placeKey(current.geography.latitude, current.geography.longitude),
+        editor.serialize(),
+      )
+    const saved = await readScene(placeKey(latitude, longitude))
+    let next: SceneDocument
+    if (saved) next = parseScene(JSON.parse(saved), performanceSettings.preset === 'ultra')
+    else {
+      const entities = await loader.load(
+        { latitude, longitude, altitude: 0 },
+        '0_0',
+        controller.signal,
+        true,
+      )
+      for (const e of entities) if (e.terrain) e.name = `Relieve · ${name}`
+      next = upgradeReferenceScene({
+        version: 1,
+        name,
+        geography: { latitude, longitude, altitude: 0, imagery: 'offline' },
+        sky: current.sky,
+        entities,
+      })
+    }
     if (controller.signal.aborted) return
     $('travel-cancel').hidden = true
-    for (const e of entities) {
-      if (e.terrain) e.name = `Relieve · ${name}`
-      if (e.id === 'carrier') e.name = 'Nave'
-    }
-    const next = upgradeReferenceScene({
-      version: 1,
-      name,
-      geography: { latitude, longitude, altitude: 0, imagery: 'offline' },
-      sky: editor.document.sky,
-      entities,
-    })
     editor.load(next)
     for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
     selectedId = 'car-a'
@@ -826,14 +1063,14 @@ async function travelTo(): Promise<void> {
     $('welcome').hidden = true
     await view.ready
     focusSelection()
-    const car = next.entities.find((e) => e.id === 'car-a')!
-    const [x, y, z] = car.transform.position
+    const car = next.entities.find((e) => e.id === 'car-a')
+    const [x, y, z] = car?.transform.position ?? next.cursor ?? [0, 0, 0]
     orbit.target.set(x, y + 2, z)
     camera.position.set(x + 35, y + 32, z + 40)
     orbit.update()
     renderer.domElement.dataset.world = 'destination'
     $('travel-status').textContent =
-      `${name} cargado · pulsa Jugar para explorar. Deshacer vuelve a la escena anterior.`
+      `${name} cargado · pulsa Jugar para explorar. Los cambios del lugar anterior se guardaron en este navegador.`
     toast(`${name} · destino cargado`)
     $('travel-menu').hidePopover()
   } catch (error) {
@@ -854,6 +1091,7 @@ async function travelTo(): Promise<void> {
   }
 }
 $('world-irun').onclick = () => void loadIrun()
+$('world-irun-official').onclick = () => void loadIrun(true)
 
 $('welcome-close').onclick = () => {
   $('welcome').hidden = true
@@ -916,6 +1154,7 @@ function togglePlay(): void {
       portalControls.rebuild(editor.document)
       sim = new Simulation(editor.document, {
         playerMode: 'hover',
+        experimentalLargeScene: performanceSettings.preset === 'ultra',
         mapBuildingsEnabled: !!performanceSettings.buildings,
       })
       sim.setMapBuildingsEnabled(!!performanceSettings.buildings)
@@ -966,6 +1205,14 @@ for (const [id, key] of [
   control.value = String(performanceSettings[key])
   control.onchange = () => {
     performanceSettings[key] = Number(control.value)
+    performanceSettings.preset = 'custom'
+    editor.experimentalLargeScene = false
+    $<HTMLSelectElement>('performance-preset').value = 'custom'
+    worldStream?.setQuality(
+      performanceProfile(performanceSettings).concurrent,
+      performanceProfile(performanceSettings).ahead,
+      performanceSettings.preset === 'ultra',
+    )
     try {
       localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
     } catch {
@@ -979,13 +1226,46 @@ for (const [id, key] of [
     renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
     renderer.setSize(viewport.clientWidth, viewport.clientHeight)
     renderer.shadowMap.enabled = performanceSettings.shadows > 0
-    const size = performanceSettings.shadows || 512
-    if (sun.shadow.mapSize.x !== size) {
-      sun.shadow.map?.dispose()
-      sun.shadow.map = null
-      sun.shadow.mapSize.set(size, size)
-    }
+    shadowManager.reconfigure(
+      performanceSettings.shadows,
+      camera,
+      scene,
+      sunDirection,
+      sun.intensity,
+    )
     needsRender = true
+  }
+}
+$<HTMLSelectElement>('performance-preset').value = performanceSettings.preset
+$('performance-preset').onchange = async () => {
+  const id = $<HTMLSelectElement>('performance-preset').value as keyof typeof performancePresets
+  const preset = performancePresets[id]
+  if (!preset) return
+  Object.assign(performanceSettings, preset.settings)
+  for (const [control, key] of [
+    ['map-buildings', 'buildings'],
+    ['draw-distance', 'distance'],
+    ['road-distance', 'roads'],
+    ['collision-distance', 'collisions'],
+    ['render-resolution', 'resolution'],
+    ['shadow-quality', 'shadows'],
+  ] as const)
+    $<HTMLSelectElement>(control).value = String(performanceSettings[key])
+  $('draw-distance').dispatchEvent(new Event('change'))
+  performanceSettings.preset = id
+  editor.experimentalLargeScene = id === 'ultra'
+  $<HTMLSelectElement>('performance-preset').value = id
+  try {
+    localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
+  } catch {
+    /* Optional persistence. */
+  }
+  worldStream?.setQuality(preset.concurrent, preset.ahead, id === 'ultra')
+  try {
+    await setMapCacheBudget(Math.max(preset.cache, (await mapCacheStats()).budget / 1_000_000))
+    await refreshMapCacheUi()
+  } catch {
+    toast('Calidad aplicada; caché no disponible')
   }
 }
 for (const section of document.querySelectorAll<HTMLDetailsElement>('.app-menu details')) {
@@ -1052,6 +1332,17 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     ),
     camera,
   )
+  if (e.shiftKey) {
+    const hit = raycaster.intersectObjects([...view.objects.values()], true)[0]
+    const point =
+      hit?.point ??
+      raycaster.ray.intersectPlane(
+        new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+        new THREE.Vector3(),
+      )
+    if (point) action(() => placeCursor(point.toArray()))
+    return
+  }
   if (solidEditor.active) {
     solidEditor.click(
       raycaster,
@@ -1130,6 +1421,9 @@ window.addEventListener('keydown', (e) => {
       else editor.undo()
       rebuild()
     }
+    if (['KeyX', 'KeyY', 'KeyZ'].includes(e.code) && !e.ctrlKey && !e.metaKey)
+      lockAxis(e.code.slice(-1))
+    if (e.code === 'Escape') lockAxis('all')
     if (e.code === 'KeyF') focusSelection()
     if (e.code === 'KeyG') setTool('translate')
     if (e.code === 'KeyR') setTool('rotate')
@@ -1272,6 +1566,8 @@ let nextPerformanceReadout = 0
 renderer.info.autoReset = false
 function frame(now: number): void {
   const frameStart = performance.now()
+  if (view.flushMapInstall(4, 24, camera.position)) needsRender = true
+  renderer.domElement.dataset.worldInstallPending = String(view.pendingMapInstall)
   let physicsMs = 0
   renderer.info.reset()
   frameTimes.push(now - previous)
@@ -1467,6 +1763,9 @@ function frame(now: number): void {
           ? `Altura ${altitude.toFixed(1)} m · objetivo ${info.targetAltitude!.toFixed(1)} m`
           : 'Modo tierra · V / Y para vuelo') + (pad ? ' · Mando modo 2' : '')
       : ''
+    // The physical helm screens already show flight telemetry; the overlay leaks
+    // through CSS3D screen cutouts when viewed from the pilot's seat.
+    $('game-hud').hidden = Boolean(info?.isCarrier && cameraMode === 'cockpit')
     const near = sim.nearestVehicle()
     $('interaction').textContent = p.vehicleId
       ? info?.dockedTo
@@ -1483,9 +1782,29 @@ function frame(now: number): void {
         : 'WASD volar · Espacio saltar · C cámara · Clic disparar'
   } else {
     orbit.update()
+    if (
+      worldStream &&
+      !dragging &&
+      !solidEditor.active &&
+      !document.hidden &&
+      (!streamSample || now - streamSample.at > 500)
+    ) {
+      const position = orbit.target.toArray()
+      worldStream.update(
+        position,
+        [0, 0, 0],
+        [view.objects.get(selectedId)?.getWorldPosition(new THREE.Vector3()).toArray() ?? position],
+      )
+      streamSample = { at: now, position }
+    }
     const object = view.objects.get(selectedId)
     outline.update(object)
   }
+  cursorRing.quaternion.copy(camera.quaternion)
+  worldCursor.visible = !sim
+  worldCursor.scale.setScalar(
+    Math.max(0.25, camera.position.distanceTo(worldCursor.position) * 0.018),
+  )
   gallery.update(view, !!sim, document.hidden ? 0 : dt)
   portalControls.update(
     sim,
@@ -1518,6 +1837,25 @@ function frame(now: number): void {
       renderer.domElement.dataset.impacts = String(view.impacts.count)
     }
   }
+  let flightLevel = 0,
+    flightSpeed = 0
+  if (sim)
+    for (const e of view.document.entities) {
+      if (!e.vehicle?.flight) continue
+      const info = sim.vehicleInfo(e.id)
+      if (!info.flightMode) continue
+      const p = sim.entityTransform(e.id, true).position
+      const distance = camera.position.distanceTo(new THREE.Vector3(...p))
+      const level =
+        sim.player.vehicleId === e.id || sim.player.interiorId === e.id
+          ? 0.55
+          : Math.max(0, 1 - distance / 100)
+      if (level > flightLevel) {
+        flightLevel = level
+        flightSpeed = info.speedKmh
+      }
+    }
+  flightAudio.update(flightLevel, flightSpeed)
   fireRequested = false
   const worldCamera = camera.position.clone()
   const position = sim?.player.position ?? camera.position.toArray()
@@ -1525,9 +1863,11 @@ function frame(now: number): void {
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
   water?.update(worldCamera, renderOrigin, performanceSettings.distance, now)
   renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
+  view.buildingDistance =
+    performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
   geography.viewDistance = performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
-  distantTerrain?.update(position)
+  distantTerrain?.update(position, performanceSettings.distance)
   distantTerrain?.root.position.copy(renderOrigin).negate()
   view.root.position.copy(renderOrigin).negate()
   camera.position.sub(renderOrigin)
@@ -1540,24 +1880,29 @@ function frame(now: number): void {
       height > 100000 ? 'space' : height > 250 ? 'map' : 'local'
     scene.background = null
     const air = geography.atmosphere
+    ambientFill.intensity = 0.22 * air.day * (1 - air.space)
+    water?.setSun(geography.sunDirection, air.day)
     scene.fog = air.space >= 1 ? null : new THREE.Fog(air.color, air.near, air.far)
-    hemisphere.intensity = 0.16 + 2.34 * air.day
-    scene.environmentIntensity = 0.025 + 0.375 * air.day
-    const lightDirection = air.day > 0.05 ? geography.sunDirection : geography.moonDirection
+    const lightDirection = geography.sunDirection
     sun.position.copy(lightDirection).multiplyScalar(65)
-    sun.intensity = air.day > 0.05 ? 3.2 * air.day : 0.22
+    sun.intensity = geography.sunDirection.y > 0 ? 3.2 * air.day : 0
     sun.color.set(air.day > 0.05 ? '#fff0d8' : '#b8ccff')
+    sunDirection.copy(lightDirection).negate()
+    shadowManager.setLightDirection(sunDirection)
+    shadowManager.setLightIntensity(sun.intensity)
+    shadowManager.setLightColor(sun.color)
     renderer.domElement.dataset.skyPhase =
       air.day > 0.8 ? 'day' : air.day < 0.1 ? 'night' : 'twilight'
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
     camera.far = distantTerrain
-      ? performanceSettings.distance + 500
+      ? Math.hypot(performanceSettings.distance + 500, Math.max(0, height))
       : Math.max(300, Math.min(100000000, height * 15))
     renderer.domElement.dataset.viewDistance = String(camera.far)
     camera.updateProjectionMatrix()
   } else {
     scene.background = new THREE.Color('#a6bbd5')
+    ambientFill.intensity = 0.22
     const mapView = sim?.player.vehicleId && cameraMode === 'map'
     camera.far = mapView ? mapHeight * 4 : 300
     camera.updateProjectionMatrix()
@@ -1571,7 +1916,14 @@ function frame(now: number): void {
     camera.position,
     !!view.document.geography && geography.atmosphere.day < 0.15,
   )
-  sun.castShadow = height < 500
+  // Cascade reach is already camera-relative. Geographic elevation must not
+  // disable shadows on high ground or after traveling to another origin.
+  const shadowsActive = performanceSettings.shadows > 0
+  sun.visible = !shadowsActive
+  for (const light of shadowManager.lights) light.visible = shadowsActive
+  renderer.domElement.dataset.shadowCascades = String(
+    shadowsActive ? shadowManager.lights.length : 0,
+  )
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false
@@ -1583,7 +1935,9 @@ function frame(now: number): void {
         performanceSettings.distance,
         !!sim,
         !!performanceSettings.buildings,
-        Math.min(performanceSettings.distance, performanceSettings.roads),
+        performanceSettings.preset === 'ultra'
+          ? 20000
+          : Math.min(performanceSettings.distance, performanceSettings.roads),
       )
     const portalLive = [...view.portals.values()].map((p) => p.mesh.material.uniforms.live.value)
     try {
@@ -1600,7 +1954,9 @@ function frame(now: number): void {
         performanceSettings.distance,
         !!sim,
         !!performanceSettings.buildings,
-        Math.min(performanceSettings.distance, performanceSettings.roads),
+        performanceSettings.preset === 'ultra'
+          ? 20000
+          : Math.min(performanceSettings.distance, performanceSettings.roads),
       )
       if (geography.enabled) {
         geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
@@ -1608,12 +1964,15 @@ function frame(now: number): void {
       }
     })
     outline.visible = outlineVisible
+    view.batchBuildings = !gizmo.dragging
     view.limitDrawDistance(
       worldCamera,
       performanceSettings.distance,
       !!sim,
       !!performanceSettings.buildings,
-      Math.min(performanceSettings.distance, performanceSettings.roads),
+      performanceSettings.preset === 'ultra'
+        ? 20000
+        : Math.min(performanceSettings.distance, performanceSettings.roads),
     )
     renderer.autoClear = true
     if (geography.enabled) {
@@ -1621,11 +1980,13 @@ function frame(now: number): void {
       renderer.autoClear = false
       renderer.clearDepth()
     }
+    shadowManager.update(camera, renderOrigin)
     portalControls.prepare(camera)
+    renderer.shadowMap.needsUpdate = shadowsActive
     renderer.render(scene, camera)
     portalControls.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
-    needsRender = false
+    needsRender = view.pendingBuildingBatches
   }
   camera.position.copy(worldCamera)
   if (now >= nextPerformanceReadout) {
@@ -1704,7 +2065,8 @@ if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
 if (loadError) toast(loadError)
 requestAnimationFrame(frame)
 
-if (
+if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
+else if (
   !circuitMode &&
   (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
 )
@@ -1736,3 +2098,48 @@ $('css-screen-demo').onclick = () => {
     'Consola de mando: juega y acércate para usar las pantallas, o entra en el puesto de conducción.',
   )
 }
+
+async function refreshMapCacheUi() {
+  try {
+    const stats = await mapCacheStats()
+    $<HTMLSelectElement>('map-cache-budget').value = String(stats.budget / 1_000_000)
+    const capacity = await navigator.storage?.estimate?.()
+    if (capacity?.quota)
+      $('map-cache-storage').textContent =
+        `Cuota del sitio: ${(capacity.quota / 1e9).toFixed(1)} GB · uso total del sitio: ${((capacity.usage ?? 0) / 1e9).toFixed(2)} GB. No reserva espacio por adelantado.`
+    $('map-cache-usage').textContent =
+      `${(stats.bytes / 1_000_000).toFixed(1)} / ${stats.budget / 1_000_000} MB · ${stats.entries} archivos`
+  } catch {
+    $('map-cache-usage').textContent = 'Caché no disponible · el mapa seguirá funcionando'
+  }
+}
+$('map-cache-budget').onchange = async () => {
+  try {
+    await setMapCacheBudget(Number($<HTMLSelectElement>('map-cache-budget').value))
+    await refreshMapCacheUi()
+  } catch {
+    $('map-cache-usage').textContent = 'No se pudo ajustar la caché'
+  }
+}
+$('map-cache-persist').onclick = async () => {
+  try {
+    const granted = await navigator.storage.persist()
+    $('map-cache-storage').textContent = granted
+      ? 'Almacenamiento persistente concedido. Borrar los datos del sitio elimina también esta copia.'
+      : 'El navegador no ha concedido persistencia; la caché sigue funcionando y puede ser liberada por él.'
+  } catch {
+    $('map-cache-storage').textContent = 'Persistencia no disponible en este navegador.'
+  }
+}
+$('map-cache-clear').onclick = async () => {
+  try {
+    await clearMapCache()
+    await refreshMapCacheUi()
+  } catch {
+    toast('No se pudo vaciar la caché')
+  }
+}
+$('options-menu').addEventListener('toggle', () => {
+  if ($('options-menu').matches(':popover-open')) void refreshMapCacheUi()
+})
+void refreshMapCacheUi()

@@ -1,3 +1,5 @@
+import { compactMapTags } from './map-metadata.js'
+import { pointInPolygon } from './multipolygon.js'
 import { mapFingerprint, mapTileEntities } from './world-stream.js'
 import { ShapeUtils, Vector2, Vector3 } from 'three'
 import { geoToLocal, type GeoPoint } from './geography.js'
@@ -12,8 +14,23 @@ import {
 import { createA3, createCarrier } from './presets.js'
 import { terrainHeight, type TerrainData } from './terrain.js'
 import { validateSolid, type SolidGeometry } from './solid.js'
+import {
+  drapeRoad,
+  roadHeightOffset,
+  roadGeometry,
+  type RoadGeometryOptions,
+} from './draped-road.js'
 import { treeSprite } from './vegetation.js'
-import { buildingRoof } from './building-roof.js'
+import { buildingRoofWithFaces } from './building-roof.js'
+import {
+  classifySurface,
+  isLandcoverFeature,
+  isWaterFeature,
+  isWaterwayCenterline,
+  getWaterwayWidth,
+  SURFACE_COLORS,
+  SURFACE_LAYERS,
+} from './landcover.js'
 
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 export interface MapFeature {
@@ -28,8 +45,54 @@ export interface WorldExtract {
   features: MapFeature[]
   source: { retrievedAt: string; [key: string]: unknown }
 }
-const color = (value: string | undefined, fallback: string) =>
-  value && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback
+/** CSS 1.0 basic color names plus common OSM color names. Case insensitive. */
+const OSM_COLOR_NAMES: Record<string, string> = {
+  black: '#000000',
+  white: '#ffffff',
+  grey: '#808080',
+  gray: '#808080',
+  silver: '#c0c0c0',
+  maroon: '#800000',
+  red: '#ff0000',
+  olive: '#808000',
+  yellow: '#ffff00',
+  green: '#008000',
+  lime: '#00ff00',
+  teal: '#008080',
+  aqua: '#00ffff',
+  cyan: '#00ffff',
+  navy: '#000080',
+  blue: '#0000ff',
+  purple: '#800080',
+  fuchsia: '#ff00ff',
+  magenta: '#ff00ff',
+  orange: '#ff8000',
+  brown: '#804000',
+  pink: '#ffc0cb',
+  beige: '#f5f5dc',
+  cream: '#fffdd0',
+  tan: '#d2b48c',
+  terracotta: '#e2725b',
+  brick: '#cb4154',
+  salmon: '#fa8072',
+}
+
+/** Normalize an OSM colour value (hex or name) to #RRGGBB. */
+export function normalizeColor(value: string | undefined, fallback: string): string {
+  if (!value) return fallback
+  const trimmed = value.trim().toLowerCase()
+  // #RRGGBB or #RGB
+  if (/^#[0-9a-f]{6}$/i.test(trimmed)) return trimmed.toLowerCase()
+  if (/^#[0-9a-f]{3}$/i.test(trimmed)) {
+    // Expand #RGB to #RRGGBB
+    const [r, g, b] = trimmed.slice(1)
+    return `#${r}${r}${g}${g}${b}${b}`
+  }
+  // Named color
+  const named = Object.hasOwn(OSM_COLOR_NAMES, trimmed) ? OSM_COLOR_NAMES[trimmed] : undefined
+  if (named) return named
+  return fallback
+}
 const number = (value: string | undefined, fallback: number) => {
   const n = Number.parseFloat(value ?? '')
   return Number.isFinite(n) && n >= 0 ? n : fallback
@@ -58,24 +121,95 @@ export function createRealWorld(
     })()
   const height = (x: number, z: number) =>
     terrainHeight(t, Math.max(-half, Math.min(half, x)), Math.max(-depth, Math.min(depth, z)))
-  const groups = ['world-buildings', 'world-roads', 'world-trees'].map((id) => id + suffix)
+  const groups = [
+    'world-buildings',
+    'world-roads',
+    'world-trees',
+    'world-landcover',
+    'world-water',
+    'world-railways',
+    'world-places',
+  ].map((id) => id + suffix)
   for (const [i, id] of groups.entries())
     entities.push({
       ...createEntity(id, 'group'),
-      name: ['Edificios OSM', 'Calles OSM', 'Árboles OSM'][i],
+      name: [
+        'Edificios OSM',
+        'Calles OSM',
+        'Árboles OSM',
+        'Terreno OSM',
+        'Agua OSM',
+        'Vías OSM',
+        'Poblaciones OSM',
+      ][i],
     })
   const terrain = createEntity('world-terrain' + suffix, 'terrain')
-  terrain.name = 'Relieve real · Ventas'
+  terrain.name = `Relieve real · ${data.name}`
   terrain.terrain = structuredClone(t)
-  terrain.color = '#7c927b'
+  terrain.color = SURFACE_COLORS.default
   terrain.size = [half * 2, 100, depth * 2]
   entities.push(terrain)
   const source = (f: MapFeature) => ({
     provider: 'openstreetmap' as const,
     id: f.id,
     retrievedAt: data.source.retrievedAt,
-    tags: f.tags,
+    tags: compactMapTags(f.tags),
   })
+  const waterAreas = data.features
+    .filter((f) => isWaterFeature(f.tags))
+    .map((f) =>
+      f.rings.map((r) => ({
+        role: r.role,
+        points: r.coordinates.map((p) => {
+          const v = project(p)
+          return [v[0], v[2]] as [number, number]
+        }),
+      })),
+    )
+  const coveredByWater = (p: [number, number]) =>
+    waterAreas.some(
+      (rings) =>
+        rings.some((r) => r.role !== 'inner' && pointInPolygon(p, r.points)) &&
+        !rings.some((r) => r.role === 'inner' && pointInPolygon(p, r.points)),
+    )
+  const addSurface = (
+    f: MapFeature,
+    geometry: SolidGeometry,
+    part: string,
+    color: string,
+    parentId: string,
+  ) => {
+    for (let first = 0; first < geometry.faces.length; first += 600) {
+      const vertices: Vec3Tuple[] = []
+      const seen = new Map<string, number>()
+      const faces = geometry.faces.slice(first, first + 600).map((face) =>
+        face.map((index) => {
+          const point = geometry.vertices[index],
+            key = point.join(',')
+          let local = seen.get(key)
+          if (local === undefined) {
+            local = vertices.length
+            vertices.push(point)
+            seen.set(key, local)
+          }
+          return local
+        }),
+      )
+      const e = createEntity(
+        `osm-${f.id.replace('/', '-')}-${part}${suffix}-${first / 600}`,
+        'solid',
+      )
+      e.geometry = { vertices, edges: [], faces }
+      e.motion = 'none'
+      e.name = f.tags.name ?? `${part} · ${f.id}`
+      e.color = color
+      e.parentId = parentId
+      e.source = source(f)
+      if (part === 'waterway') e.landcover = { surface: 'water', isWater: true }
+      else e.railway = { part: part === 'ballast' ? 'ballast' : 'rail' }
+      entities.push(e)
+    }
+  }
   for (const f of data.features) {
     const tags = f.tags
     if (tags.building === 'no' || tags['building:part'] === 'no') continue
@@ -137,9 +271,16 @@ export function createRealWorld(
       }
       if (!g.faces.length || g.vertices.length > 2048) continue
       const e = createEntity('osm-' + f.id.replace('/', '-'), 'solid', [cx, base, cz])
-      e.geometry = buildingRoof(g, tags)
+      const roofResult = buildingRoofWithFaces(g, tags)
+      e.geometry = { ...roofResult.geometry, roofFaces: roofResult.roofFaces }
       e.name = tags.name ?? `Edificio · ${f.id}`
-      e.color = color(tags['building:colour'], '#b9b5a8')
+      // building:colour / building:color for walls
+      e.color = normalizeColor(tags['building:colour'] ?? tags['building:color'], '#b9b5a8')
+      // roof:colour / roof:color for roof faces
+      const roofColorTag = tags['roof:colour'] ?? tags['roof:color']
+      if (roofColorTag && roofResult.roofFaces.length > 0) {
+        e.roofColor = normalizeColor(roofColorTag, e.color)
+      }
       e.parentId = groups[0]
       e.source = source(f)
       e.size = [
@@ -148,32 +289,129 @@ export function createRealWorld(
         Math.max(0.01, Math.max(...all.map((p) => p[2])) - Math.min(...all.map((p) => p[2]))),
       ]
       entities.push(e)
-    } else if (tags.highway) {
-      if (
-        ['construction', 'proposed', 'steps'].includes(tags.highway) ||
-        tags.bridge === 'yes' ||
-        tags.tunnel === 'yes'
-      )
-        continue
+    } else if (tags.highway || tags.railway) {
+      const rail =
+        ['rail', 'light_rail', 'tram', 'narrow_gauge'].includes(tags.railway) &&
+        (!tags.tunnel || tags.tunnel === 'no')
+      if (!tags.highway && !rail) continue
+      if (['construction', 'proposed', 'steps'].includes(tags.highway)) continue
       const foot = ['footway', 'path', 'pedestrian', 'cycleway'].includes(tags.highway),
         width = Math.min(25, Math.max(1, number(tags.width, foot ? 2 : number(tags.lanes, 2) * 3)))
+      const elevation =
+        tags.bridge && tags.bridge !== 'no'
+          ? 'bridge'
+          : tags.tunnel && tags.tunnel !== 'no'
+            ? 'tunnel'
+            : undefined
+      const parsedLayer = Number.parseInt(tags.layer ?? '', 10)
+      const layer = Number.isFinite(parsedLayer)
+        ? Math.max(-5, Math.min(5, parsedLayer))
+        : undefined
       const paths: Vec3Tuple[][] = []
       for (const ring of f.rings) {
         const points = ring.coordinates.map(project)
+        if (elevation === 'bridge') {
+          const distances = [0]
+          for (let i = 1; i < points.length; i++)
+            distances.push(
+              distances[i - 1] +
+                Math.hypot(points[i][0] - points[i - 1][0], points[i][2] - points[i - 1][2]),
+            )
+          const total = distances.at(-1)!,
+            ramp = Math.min(30, total / 4)
+          for (let i = 1; i < points.length; i++) {
+            const segment = clipRoadSegment(points[i - 1], points[i], half, depth)
+            if (!segment) continue
+            const [a, b] = segment,
+              length = Math.hypot(b[0] - a[0], b[2] - a[2]),
+              start =
+                distances[i - 1] + Math.hypot(a[0] - points[i - 1][0], a[2] - points[i - 1][2]),
+              steps = Math.max(1, Math.ceil(length / 5))
+            const profile: Vec3Tuple[] = []
+            for (let k = 0; k <= steps; k++) {
+              const f = k / steps,
+                x = a[0] + (b[0] - a[0]) * f,
+                z = a[2] + (b[2] - a[2]) * f,
+                d = start + length * f
+              profile.push([
+                x,
+                height(x, z) +
+                  roadHeightOffset('bridge', layer) *
+                    Math.max(
+                      0,
+                      Math.min(1, d / Math.max(1, ramp), (total - d) / Math.max(1, ramp)),
+                    ),
+                z,
+              ])
+            }
+            paths.push(profile)
+          }
+          continue
+        }
+
         for (let i = 1; i < points.length; i++) {
           const segment = clipRoadSegment(points[i - 1], points[i], half, depth)
           if (segment) paths.push(segment)
         }
       }
-      if (paths.length) {
+      if (paths.length && rail) {
+        const gauge = Math.max(0.5, Math.min(2.5, number(tags.gauge, 1435) / 1000))
+        const options: RoadGeometryOptions = {
+          ...(elevation && { elevation }),
+          ...(elevation === 'bridge' && { profiled: true }),
+          ...(layer !== undefined && { layer }),
+        }
+        addSurface(f, roadGeometry(t, paths, gauge + 1.4, options), 'ballast', '#68655d', groups[5])
+        for (const [side, offset] of [
+          [0, -gauge / 2],
+          [1, gauge / 2],
+        ]) {
+          const shifted = paths.map((path) =>
+            path.map((p, i): Vec3Tuple => {
+              const a = path[Math.max(0, i - 1)],
+                b = path[Math.min(path.length - 1, i + 1)]
+              const length = Math.hypot(b[0] - a[0], b[2] - a[2]) || 1
+              return [
+                p[0] - ((b[2] - a[2]) / length) * offset,
+                p[1],
+                p[2] + ((b[0] - a[0]) / length) * offset,
+              ]
+            }),
+          )
+          const g = roadGeometry(t, shifted, 0.09, options)
+          for (const v of g.vertices) v[1] += 0.055
+          addSurface(f, g, `rail-${side}`, '#a4a7aa', groups[5])
+        }
+      }
+      if (paths.length && (!rail || tags.highway)) {
         const e = createEntity('osm-' + f.id.replace('/', '-') + suffix, 'group')
         e.name = tags.name ?? tags.highway
-        e.road = { paths, width, terrainId: terrain.id }
+        e.road = {
+          paths,
+          width,
+          terrainId: terrain.id,
+          ...(elevation && { elevation }),
+          ...(elevation === 'bridge' && { profiled: true }),
+          ...(layer !== undefined && { layer }),
+        }
         e.color = foot ? '#b2b0a0' : '#525c60'
         e.parentId = groups[1]
         e.source = source(f)
         entities.push(e)
       }
+    } else if (tags.place && ['city', 'town', 'village'].includes(tags.place) && tags.name) {
+      const coordinate = f.rings[0]?.coordinates[0]
+      if (!coordinate) continue
+      const p = project(coordinate)
+      if (p[0] < -half || p[0] >= half || p[2] < -depth || p[2] >= depth) continue
+      p[1] = height(p[0], p[2]) + 20
+      const e = createEntity('osm-' + f.id.replace('/', '-'), 'group', p)
+      e.name = tags.name.slice(0, 100)
+      e.placeLabel = { text: e.name, category: tags.place as 'city' | 'town' | 'village' }
+      e.motion = 'none'
+      e.parentId = groups[6]
+      e.source = source(f)
+      entities.push(e)
     } else if (tags.natural === 'tree') {
       const p = project(f.rings[0].coordinates[0])
       if (!inside(p)) continue
@@ -185,6 +423,73 @@ export function createRealWorld(
       e.parentId = groups[2]
       e.source = source(f)
       entities.push(e)
+    } else if (isLandcoverFeature(tags)) {
+      const surface = classifySurface(tags)
+      const isWater = isWaterFeature(tags)
+      const rings = f.rings.map((r) => ({ ...r, points: r.coordinates.map(project) }))
+      if (!rings.length || rings.some((r) => r.points.length < 4)) continue
+      // Clip into each tile, rather than assigning a whole polygon to its centroid.
+      // Chunk the result to retain the editor's bounded solid topology.
+      const geometry = drapeLandcoverPolygon(rings, t, 0.005 + SURFACE_LAYERS[surface] * 0.002)
+      for (let first = 0; first < geometry.faces.length; first += 600) {
+        const faces = geometry.faces.slice(first, first + 600)
+        const vertices: Vec3Tuple[] = [],
+          indices: number[][] = []
+        const seen = new Map<string, number>()
+        for (const face of faces)
+          indices.push(
+            face.map((i) => {
+              const v = geometry.vertices[i],
+                key = v.join(',')
+              let index = seen.get(key)
+              if (index === undefined) {
+                index = vertices.length
+                vertices.push(v)
+                seen.set(key, index)
+              }
+              return index
+            }),
+          )
+        const e = createEntity(
+          `osm-${f.id.replace('/', '-')}-land${suffix}-${first / 600}`,
+          'solid',
+        )
+        e.motion = 'none'
+        e.geometry = { vertices, edges: [], faces: indices }
+        e.name = tags.name ?? `${surface} · ${f.id}`
+        e.color = SURFACE_COLORS[surface]
+        e.parentId = isWater ? groups[4] : groups[3]
+        e.source = source(f)
+        e.landcover = { surface, isWater }
+        entities.push(e)
+      }
+    } else if (isWaterwayCenterline(tags)) {
+      if (tags.tunnel && tags.tunnel !== 'no') continue
+      // Fallback: render river/stream centerlines as extruded water ribbons
+      // when no area polygon exists. Width uses OSM width tag or type defaults.
+      const width = getWaterwayWidth(tags)
+      const paths: Vec3Tuple[][] = []
+      for (const ring of f.rings) {
+        const points = ring.coordinates.map(project)
+        for (let i = 1; i < points.length; i++) {
+          const segment = clipRoadSegment(points[i - 1], points[i], half, depth)
+          if (segment) paths.push(segment)
+        }
+      }
+      if (paths.length) {
+        // Visual-only surface: never a driveable road or a rigid-body collider.
+        const geometry = roadGeometry(t, paths, width)
+        geometry.faces = geometry.faces.filter((face) => {
+          const points = face.map((i) => geometry.vertices[i])
+          return !coveredByWater([
+            points.reduce((sum, p) => sum + p[0], 0) / points.length,
+            points.reduce((sum, p) => sum + p[2], 0) / points.length,
+          ])
+        })
+        // Area polygons take visual precedence at the remaining shore boundary.
+        for (const v of geometry.vertices) v[1] -= 0.025
+        addSurface(f, geometry, 'waterway', SURFACE_COLORS.water, groups[4])
+      }
     }
   }
   entities.find((e) => e.id === groups[1])!.parentId = terrain.id
@@ -239,6 +544,57 @@ export function createRealWorld(
     mapTileEntities(doc, options.tileId ?? '0_0'),
   )
   return doc
+}
+
+/**
+ * Create draped landcover geometry following terrain height.
+ * Similar to road draping but for arbitrary polygons.
+ */
+export function drapeLandcoverPolygon(
+  rings: { role: string; points: Vec3Tuple[] }[],
+  terrain: TerrainData,
+  offset = 0.015,
+): SolidGeometry {
+  const result: SolidGeometry = { vertices: [], edges: [], faces: [] }
+  const clean = (points: Vec3Tuple[]) => {
+    const out = points.map((p) => new Vector2(p[0], p[2]))
+    if (out.length > 1 && out[0].distanceTo(out[out.length - 1]) < 0.001) out.pop()
+    return out.filter((p, i) => i === 0 || p.distanceTo(out[i - 1]) > 0.001)
+  }
+  const contains = (ring: Vector2[], p: Vector2) => {
+    let inside = false
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[i],
+        b = ring[j]
+      if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x)
+        inside = !inside
+    }
+    return inside
+  }
+  const closed = (points: Vec3Tuple[]) =>
+    points.length >= 4 &&
+    Math.hypot(points[0][0] - points.at(-1)![0], points[0][2] - points.at(-1)![2]) < 0.001
+  const holes = rings
+    .filter((r) => r.role === 'inner' && closed(r.points))
+    .map((r) => clean(r.points))
+  for (const outer of rings.filter((r) => r.role !== 'inner' && closed(r.points))) {
+    const contour = clean(outer.points)
+    if (contour.length < 3) continue
+    const inner = holes.filter((h) => h.length >= 3 && contains(contour, h[0]))
+    const vertices = [contour, ...inner].flat()
+    for (const face of ShapeUtils.triangulateShape(contour, inner)) {
+      // Reuse exact terrain-triangle clipping. Land sits below the road's 35mm offset.
+      const patch = drapeRoad(
+        terrain,
+        face.map((i) => [vertices[i].x, 0, vertices[i].y]),
+        offset,
+      )
+      const base = result.vertices.length
+      for (const v of patch.vertices) result.vertices.push(v)
+      for (const f of patch.faces) result.faces.push(f.map((i) => i + base).reverse())
+    }
+  }
+  return result
 }
 
 /** Clip centre lines at shared tile edges; the draper clips their full width. */

@@ -27,3 +27,60 @@ This is a first topology editor, not a boolean/CSG modeler. It does not guarante
 The scene owns entity instances. A future catalog should supply versioned presets or factories that return entities (or subtrees with remapped IDs), not add catalog-specific behavior to the renderer. Building presets will provide topology and appearance; vehicle presets already supply vehicle definitions and visual assets; portal/gallery presets can supply coordinated subtrees. Inserting a preset should make a local editable copy. Shared linked instances and asset-version upgrades should be explicit future operations, never implicit changes to authored scenes.
 
 The public engine exports `SolidGeometry`, `boxSolid`, `extrudeFace`, `removeVertex` and `validateSolid`. The browser `SolidEditor` is an adapter that commits topology through `SceneEditor.update`; it does not own a second document or undo history.
+
+## World cursor and precise operations
+
+The **Cursor 3D** menu exposes a persistent insertion point in scene metres. Shift-click
+on a visible surface to place it, or enter exact X/Y/Z coordinates. With no surface,
+the ray falls back to the horizontal world plane. The visible cross and ring appear
+only in the editor. Cursor coordinates are saved in scene JSON and support undo/redo.
+
+All add actions use this point. Catalog vehicles and streetlights retain their ground
+clearance; portals place their lower edge at the cursor and add a linked, closed pair.
+Sprites use their existing pivot convention. Gallery roots are offset by the cursor.
+
+- **Cursor a la selección** copies the selected object's world origin.
+- **Selección al cursor** moves its world origin while respecting its parent transform.
+- **Origen del sólido al cursor** rebases editable solid vertices and direct children,
+  preserving their world positions. Imported vehicle/GLB pivots are not rewritten.
+- G/R select translation/rotation. X/Y/Z restrict the gizmo; Escape restores all axes.
+  The menu also applies an exact world-axis displacement in metres or rotation in degrees.
+- Geometry mode uses local axes. A point extrudes into an edge, an edge into a quad,
+  and a face into a surface shell. Enter an exact distance and choose X/Y/Z, or use the
+  face normal. A parallel/degenerate extrusion is rejected without changing the scene.
+  Drawing can lock the other two coordinates to the selected point.
+
+Select a generated road and use **Convertir carretera en sólido editable** to detach
+its procedural road component into editable triangles with physical surfaces. This is
+an explicit edit of that tile; it is no longer regenerated as an ordinary road strip.
+This supports authored ramps and bridge decks, but does not excavate the terrain.
+Solid wall panels can be built from an edge, extruded vertically, then given thickness.
+
+## Editing across places
+
+The map streams around the editor's orbit target as well as the player. Streaming
+pauses while dragging a gizmo or drawing geometry. Use **Ir** for city presets or GPS
+coordinates to establish a fresh local origin, avoiding planet-sized local coordinates.
+The current map providers cover latitudes from -85 to 85 degrees.
+
+Before travelling, the current scene is archived in browser storage under its latitude
+and longitude (six decimal places). Returning to the same destination restores that
+scene, including edits, cursor, and placed portals. Storage failures cancel travel before
+replacing the current scene. These archives are private to this browser; export scenes
+for backups or transfer. They are not uploaded to OpenStreetMap or the preparation cache.
+
+Portals can be placed at any loaded destination. Linking/seeing through/traversing
+portals across **different archived scenes** is not implemented yet; existing portal
+links operate within the currently loaded scene. Actual tunnels also require terrain
+cutouts and matching collision, rather than merely adding an underground corridor.
+
+### Editing a building from the map
+
+OSM buildings are selectable but initially use grouped rendering. Select one and
+choose **Crear modificación** in its properties before changing its color,
+transform or solid geometry. The same entity becomes editable (`mapEditable: true`)
+and leaves the render batch, retaining its OSM source identity. Save the scene to
+keep this exception; undoing the opt-in returns it to grouped rendering. An editable
+building can then be duplicated and reshaped. See the
+[performance guide](performance.md#map-building-batches-and-editable-exceptions)
+for memory and streaming limitations.

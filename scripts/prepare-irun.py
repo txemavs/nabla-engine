@@ -6,7 +6,7 @@ nodes={e.attrib['id']:e for e in r.findall('node')}
 def tags(e): return {t.attrib['k']:t.attrib['v'] for t in e.findall('tag')}
 def point(e): return [float(e.attrib['lon']),float(e.attrib['lat'])]
 features=[]
-keys={'building','building:part','height','min_height','building:levels','building:min_level','building:colour','building:material','roof:shape','roof:height','roof:colour','name','highway','width','lanes','bridge','tunnel','layer','landuse','natural','leisure','amenity','access'}
+keys={'building','building:part','height','min_height','building:levels','building:min_level','building:colour','building:material','roof:shape','roof:height','roof:colour','name','highway','width','lanes','bridge','tunnel','layer','landuse','natural','leisure','amenity','access','water','waterway'}
 ways={w.attrib['id']:w for w in r.findall('way')}
 # Relations are retained as rings when each member is closed; unsupported split rings stay explicit.
 relation_members=set()

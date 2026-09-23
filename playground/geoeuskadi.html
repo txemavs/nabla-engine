@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nabla · geoEuskadi — Ventas</title>
+  </head>
+  <body>
+    <main id="viewport" aria-label="Comparador 3D de carreteras en Irún Ventas"></main>
+    <header>
+      <a href="./">← Nabla Studio</a> · <a href="./?world=geoeuskadi">Conducir mapa combinado →</a>
+      <h1>Irún · Ventas <span>Laboratorio de carreteras</span></h1>
+      <nav aria-label="Fuente de carreteras">
+        <button id="osm" aria-pressed="false">OpenStreetMap</button>
+        <button id="official" aria-pressed="false">Solo carreteras BTA</button>
+        <button id="combined" aria-pressed="true">Combinado · suelo oficial</button>
+        <button id="top">Desde arriba</button>
+        <button id="oblique">Perspectiva</button>
+        <label><input type="checkbox" id="buildings" /> Edificios</label>
+      </nav>
+      <p>Mueve con el ratón · rueda para acercar · botón derecho para desplazar</p>
+    </header>
+    <aside>
+      <strong id="status" role="status">Cargando comparación preparada…</strong>
+      <p>
+        Mismo relieve en ambas vistas. La BTA aporta superficies; OSM también incluye calles y
+        caminos que esta capa no contiene.
+      </p>
+      <p>
+        Prueba visual: el combinado conserva calles y puentes OSM y usa los colores oficiales del
+        suelo. Usa «Conducir mapa combinado» para probarlo en el juego.
+      </p>
+    </aside>
+    <footer id="attribution"></footer>
+    <script type="module" src="./geoeuskadi-lab.ts"></script>
+  </body>
+</html>

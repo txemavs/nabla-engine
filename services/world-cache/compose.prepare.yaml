@@ -1,0 +1,23 @@
+# Optional worker-enabled deployment; run from this directory.
+services:
+  world-cache:
+    build:
+      context: ../..
+      dockerfile: services/world-cache/Dockerfile.prepare
+    user: '${CACHE_UID:-1000}:${CACHE_GID:-1000}'
+    restart: unless-stopped
+    ports: ['127.0.0.1:8787:8080']
+    volumes:
+      - ./data:/data
+      - ./prepared:/publish
+    env_file: .prepare.env
+    environment:
+      CACHE_MAX_BYTES: '5368709120'
+      PREPARE_MAX_BYTES: '5368709120'
+      PREPARE_ROOT: /publish
+    read_only: true
+    tmpfs: ['/tmp:size=64m']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    cpus: 1

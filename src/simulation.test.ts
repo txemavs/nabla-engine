@@ -360,3 +360,24 @@ it('defers hidden building bodies at startup and during streaming until enabled'
   expect(sim.stats.bodies).toBe(baseline + 2)
   sim.dispose()
 })
+
+it('spreads noncritical streamed building collision cooking over frames', () => {
+  const sim = new Simulation(scene([]))
+  const baseline = sim.stats.bodies
+  const buildings = Array.from({ length: 20 }, (_, i) => {
+    const building = createEntity(`stream-${i}`, 'solid', [300 + i, 2, 0])
+    building.geometry = boxSolid([4, 4, 4])
+    building.source = {
+      provider: 'openstreetmap',
+      id: `way/${i + 1}`,
+      retrievedAt: '2026-09-22',
+      tags: { building: 'yes' },
+    }
+    return building
+  })
+  sim.replaceMapEntities(new Set(), buildings)
+  expect(sim.stats.bodies - baseline).toBeLessThanOrEqual(4)
+  for (let i = 0; i < 100; i++) sim.step(1 / 60)
+  expect(sim.stats.bodies - baseline).toBe(20)
+  sim.dispose()
+})

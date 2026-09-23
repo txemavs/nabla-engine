@@ -30,7 +30,8 @@
     "check": "npm run format:check && npm run typecheck && npm test && npm run build && npm run build:demo",
     "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "build:prepare": "tsc -p tsconfig.prepare.json"
   },
   "keywords": [
     "3d",
@@ -55,7 +56,8 @@
     "cannon-es": "^0.20.0",
     "pbf": "^4.0.1",
     "three": "^0.186.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "polygon-clipping": "^0.15.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
