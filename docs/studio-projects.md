@@ -123,3 +123,10 @@ legacy `scene`/`world` startup options. The saved project and its other places a
 preserved; opening a place already in the project reuses its authored objects.
 New places receive the standard vehicles and cursor with terrain-aware placement.
 Coordinates do not grant private tile-generation access or change its limits.
+
+Optional `alt` specifies absolute altitude in meters, using the same altitude datum
+as scene GPS coordinates, rather than height above terrain. For example,
+`https://chained.world/?lat=41.5033&lon=-5.7446&alt=1200` places the editor cursor
+and view at 1,200 meters. New default vehicles start at that altitude plus their
+normal clearance; existing saved objects keep their poses. Zero and negative
+altitudes are accepted. Omitting `alt` retains terrain-aware placement.
