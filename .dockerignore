@@ -1,0 +1,12 @@
+.git
+node_modules
+dist
+demo-dist
+prepare-dist
+playwright-report
+test-results
+*.log
+.env*
+services/world-cache/.prepare.env
+services/world-cache/data
+services/world-cache/prepared

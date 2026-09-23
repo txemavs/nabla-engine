@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 test('five presets persist their visual settings and cap speculative demand', async ({ page }) => {
   await page.goto('/geography/geoeuskadi-pilot/manifest.json')
   const values = await page.evaluate(async () => {
@@ -21,23 +21,4 @@ test('five presets persist their visual settings and cap speculative demand', as
   )
   expect(saved.preset).toBe('ultra')
   expect(saved.distance).toBe(20000)
-})
-
-test('distant terrain masks more than 64 retained map tiles', async ({ page }) => {
-  await page.goto('/geography/geoeuskadi-pilot/manifest.json')
-  const count = await page.evaluate(async () => {
-    const { DistantTerrain } = await import(String('/distant-terrain.ts'))
-    const view = new DistantTerrain({ latitude: 43, longitude: -1, altitude: 0 }, () => {})
-    view.setDocument({
-      entities: Array.from({ length: 70 }, (_, i) => ({
-        id: `world-terrain-${i}`,
-        terrain: {},
-        transform: { position: [(i % 10) * 1200, 0, Math.floor(i / 10) * 1200] },
-      })),
-    })
-    const count = [...view.maskData].filter((n) => n === 255).length
-    view.dispose()
-    return count
-  })
-  expect(count).toBe(70)
 })

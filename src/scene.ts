@@ -80,6 +80,14 @@ const entitySchema = z
       .optional(),
     kind: z.enum(['group', 'box', 'vehicle', 'spawn', 'solid', 'terrain']),
     transform,
+    geoAnchor: z
+      .object({
+        latitude: finite.min(-90).max(90),
+        longitude: finite.min(-180).max(180),
+        altitude: finite,
+      })
+      .strict()
+      .optional(),
     size,
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     motion: z.enum(['none', 'static', 'dynamic']),
@@ -219,6 +227,7 @@ const documentSchema = z
         longitude: finite.min(-180).max(180),
         altitude: finite.min(-500).max(10000),
         imagery: z.enum(['satellite', 'streets', 'offline']),
+        planetary: z.boolean().optional(),
       })
       .strict()
       .optional(),
@@ -308,6 +317,35 @@ export function replaceMapScene(
   )
     throw new Error('Scene entity limit exceeded')
   return validateScene({ ...document, entities }, new Set(additions))
+}
+
+/** Patch a privately owned validated scene without reparsing unrelated geometry. */
+export function updateSceneEntity(
+  document: SceneDocument,
+  id: string,
+  patch: Partial<Omit<Entity, 'id' | 'parentId'>>,
+): SceneDocument {
+  const index = document.entities.findIndex((e) => e.id === id)
+  if (index < 0) throw new Error('Unknown entity: ' + id)
+  const checked = entitySchema.omit({ id: true, parentId: true }).partial().parse(patch)
+  // Partial updates may omit required fields, but must not erase them with undefined.
+  for (const key of Object.keys(checked) as (keyof typeof checked)[])
+    if (checked[key] === undefined)
+      Object.assign(checked, { [key]: entitySchema.shape[key].parse(undefined) })
+  const previous = document.entities[index]
+  if (
+    Object.keys(checked).every(
+      (key) =>
+        JSON.stringify(previous[key as keyof Entity]) ===
+        JSON.stringify(checked[key as keyof typeof checked]),
+    )
+  )
+    return document
+  const entity = { ...previous, ...checked }
+  const entities = [...document.entities]
+  entities[index] = entity
+  // Topology was already validated unless this transaction actually changes it.
+  return validateScene({ ...document, entities }, new Set('geometry' in checked ? [entity] : []))
 }
 
 function validateScene(doc: SceneDocument, changed?: Set<Entity>): SceneDocument {

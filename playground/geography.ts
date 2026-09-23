@@ -60,13 +60,13 @@ export class GeographicView {
     private readonly changed: () => void,
     online = false,
   ) {
-    this.hasTerrain = document.entities.some((e) => !!e.terrain)
+    this.hasTerrain = !!document.geography?.planetary || document.entities.some((e) => !!e.terrain)
     if (this.hasTerrain) online = false
     this.origin = document.geography
       ? { ...document.geography, imagery: online ? document.geography.imagery : 'offline' }
       : undefined
     this.earth = new THREE.Mesh(
-      new THREE.SphereGeometry((EARTH_RADIUS + (this.origin?.altitude ?? 0)) * SCALE, 128, 96),
+      new THREE.SphereGeometry(EARTH_RADIUS * SCALE, 128, 96),
       new THREE.MeshLambertMaterial({ color: '#c4d8e9' }),
     )
     this.space.add(this.earth)
@@ -142,7 +142,7 @@ export class GeographicView {
   update(position: Vec3Tuple, renderOrigin: THREE.Vector3, clock?: SkyClock): number {
     if (!this.origin) return 0
     const point = localToGeo(this.origin, position)
-    const height = Math.max(0, point.altitude - this.origin.altitude)
+    const height = Math.max(0, point.altitude)
     const at = skyTime(clock),
       second = Math.floor(at.getTime() / 1000)
     if (second !== this.lastClockSecond) {

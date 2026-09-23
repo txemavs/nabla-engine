@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('metal reflections survive every shadow tier without changing materials', async ({ page }) => {
   await page.goto('/?scene=circuit')

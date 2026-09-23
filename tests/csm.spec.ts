@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('switches shadow quality without shader errors and renders the city', async ({ page }) => {
   const errors: string[] = []

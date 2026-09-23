@@ -1,5 +1,5 @@
 import { createSampleScene } from '../src/sample.js'
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('loads the original GLBs, shows the interior and keeps models after editing', async ({
   page,
@@ -23,9 +23,10 @@ test('loads the original GLBs, shows the interior and keeps models after editing
       'ship.container.5x10.glb',
     ]),
   )
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.screenshot({ path: 'test-results/a3-editor.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(700)
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
@@ -38,6 +39,7 @@ test('loads the original GLBs, shows the interior and keeps models after editing
   await page.keyboard.up('KeyD')
   await page.screenshot({ path: 'test-results/a3-steering.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.getByRole('treeitem', { name: /Container 5 × 10/ }).click()
   await page.locator('#focus').click()
@@ -61,6 +63,7 @@ test('operates the garage latch and carrier controls in the browser', async ({ p
     timeout: 20000,
   })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(1200)
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')

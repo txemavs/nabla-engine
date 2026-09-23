@@ -654,6 +654,28 @@ body.playing #footer-mode {
   font-size: 11px;
 }
 
+#wheel-debug-hud {
+  position: absolute;
+  left: 18px;
+  bottom: 80px;
+  padding: 10px 14px;
+  background: #102035ee;
+  border: 1px solid #5bacff;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: monospace;
+  color: #e8f4ff;
+  white-space: pre;
+  pointer-events: none;
+  z-index: 10;
+}
+#wheel-debug-hud[hidden] {
+  display: none;
+}
+#wheel-debug-hud .spike {
+  color: #ff6b6b;
+}
+
 #geo-overlay {
   position: absolute;
   right: 14px;
@@ -1021,4 +1043,71 @@ body.playing #footer-mode {
   font-size: 12px;
   color: #91aabd;
   margin-bottom: 12px;
+}
+
+.studio-preview-link {
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: none;
+}
+.studio-preview-link:hover {
+  text-decoration: underline;
+}
+
+#save-project-dialog {
+  color: #eee;
+  background: #303030;
+  border: 1px solid #666;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 480px;
+}
+#save-project-dialog input {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 16px;
+}
+#save-project-dialog::backdrop {
+  background: #0008;
+}
+
+#map-install-status {
+  position: absolute;
+  bottom: 62px;
+  left: 12px;
+  z-index: 6;
+  padding: 8px 12px;
+  background: #282828e8;
+  color: #d9e5f5;
+  font-size: 13px;
+  pointer-events: none;
+}
+#map-install-status::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border: 2px solid #62738b;
+  border-top-color: #d9e5f5;
+  border-radius: 50%;
+  animation: map-loading-turn 1s linear infinite;
+}
+@keyframes map-loading-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #map-install-status::before {
+    animation: none;
+  }
+}
+
+/* Gameplay guidance belongs above both WebGL and the CSS3D cutout layer. */
+#game-hud,
+#view-hint {
+  z-index: 10;
+  pointer-events: none;
 }

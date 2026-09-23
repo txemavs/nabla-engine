@@ -48,3 +48,7 @@ journeys for walking, transport, flight and geographic continuity.
 Browser checks use Playwright's `chromium` channel (full Chromium in headless
 mode), including on CI. Avoid silently switching to Headless Shell: the WebGL
 rendering path must match the locally validated browser.
+
+For the full local Studio/cache/generator environment, follow
+[Local development](docs/local-development.md). Browser test readiness and fixture
+conventions are documented in [tests/README.md](tests/README.md).

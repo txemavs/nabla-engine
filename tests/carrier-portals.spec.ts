@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createPortalPair } from '../src/portal.js'
 import { createEntity, rotationDegrees } from '../src/scene.js'
 async function openScene(page: import('@playwright/test').Page, z: number) {
@@ -20,6 +20,7 @@ async function openScene(page: import('@playwright/test').Page, z: number) {
     buffer: Buffer.from(JSON.stringify(doc)),
   })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
 }
 test('uses the single rear landscape tablet to close and open a portal', async ({ page }) => {
   const errors: string[] = []

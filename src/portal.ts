@@ -51,6 +51,16 @@ export function portalColliders(entity: Entity): { size: Vec3Tuple; transform: T
     parts.push(part([w, h, depth], [0, 0, 0]))
   return parts
 }
+/** One independent, closed mouth. Its transform origin is the aperture centre. */
+export function createPortal(id: string, position: Vec3Tuple = [0, 0, 0]): Entity {
+  return {
+    ...createEntity(id, 'group', position),
+    name: 'Portal',
+    size: [4.71, 2.91, 0.145],
+    color: '#11151a',
+    portal: { pairId: null, mode: 'closed' },
+  }
+}
 export function createPortalPair(
   firstId: string,
   secondId: string,

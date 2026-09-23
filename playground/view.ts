@@ -1,4 +1,6 @@
-import { matteGroundMaterial } from './ground-material.js'
+import { entityMapArtifact } from './map-artifact.js'
+import { isMapEnvironment } from './studio/outliner.js'
+import { matteGroundMaterial, groundDepthBias, transportLayer } from './ground-material.js'
 import { BuildingBatches } from './building-batches.js'
 import { isMapBuilding } from '../src/scene.js'
 import { SURFACE_LAYERS, mapSurfaceColor } from '../src/landcover.js'
@@ -97,9 +99,17 @@ export class SceneView {
   constructor(
     readonly document: SceneDocument,
     experimentalLargeScene = false,
+    validated = false,
   ) {
-    this.graph = SceneGraph.fromValidated(parseScene(document, experimentalLargeScene))
-    this.addEntities(document.entities)
+    this.graph = SceneGraph.fromValidated(
+      validated ? document : parseScene(document, experimentalLargeScene),
+    )
+    const immediate = document.entities.filter((e) => !isMapEnvironment(e) || e.mapEditable)
+    this.pendingMapMeshes = document.entities.filter((e) => isMapEnvironment(e) && !e.mapEditable)
+    const priority = (e: Entity) =>
+      e.terrain ? 0 : e.road ? 1 : e.kind === 'group' && !e.sprite ? 2 : 3
+    this.pendingMapMeshes.sort((a, b) => priority(a) - priority(b))
+    this.addEntities(immediate)
     this.root.add(this.roads.root)
     this.root.add(this.buildings.root)
     this.root.add(this.landcover.root)
@@ -107,6 +117,64 @@ export class SceneView {
     this.avatar.visible = false
     this.root.add(this.avatar)
     this.ready = Promise.all(this.loading).then(() => undefined)
+  }
+  /** A known pose-only edit; preserve all unrelated entities and render batches. */
+  updateEntityPose(entity: Entity): void {
+    const affected = new Set([entity.id])
+    const children = new Map<string, string[]>()
+    for (const e of this.document.entities)
+      if (e.parentId) {
+        const list = children.get(e.parentId) ?? []
+        list.push(e.id)
+        children.set(e.parentId, list)
+      }
+    for (const id of affected) for (const child of children.get(id) ?? []) affected.add(child)
+    this.document.entities = this.document.entities.map((e) =>
+      e.id === entity.id ? entity : affected.has(e.id) ? { ...e } : e,
+    )
+    this.graph = SceneGraph.fromValidated(this.document)
+    for (const id of affected) {
+      const object = this.objects.get(id)
+      if (object) applyPose(object, this.graph.worldTransform(id))
+      this.mapBounds.delete(id)
+    }
+    const entities = new Map(this.document.entities.map((e) => [e.id, e]))
+    this.pendingMapMeshes = this.pendingMapMeshes.map((e) =>
+      affected.has(e.id) ? entities.get(e.id)! : e,
+    )
+  }
+  /** Keep installed meshes and the streaming queue for pose-only editor changes. */
+  updateEditorPoses(next: SceneDocument): boolean {
+    if (this.avatar.visible) return false
+    const { entities: previousEntities, ...previousSettings } = this.document
+    const { entities: nextEntities, ...nextSettings } = next
+    if (
+      JSON.stringify(previousSettings) !== JSON.stringify(nextSettings) ||
+      previousEntities.length !== nextEntities.length
+    )
+      return false
+    const unchangedShape = (entity: Entity) => {
+      const { transform, geoAnchor, name, ...shape } = entity
+      return JSON.stringify(shape)
+    }
+    for (let i = 0; i < nextEntities.length; i++)
+      if (unchangedShape(previousEntities[i]) !== unchangedShape(nextEntities[i])) return false
+    const nextGraph = SceneGraph.fromValidated(next)
+    const entities = nextEntities.map((entity, i) => {
+      const previous = previousEntities[i]
+      const pose = nextGraph.worldTransform(entity.id)
+      const moved = JSON.stringify(this.graph.worldTransform(entity.id)) !== JSON.stringify(pose)
+      const object = this.objects.get(entity.id)
+      if (object) applyPose(object, pose)
+      if (moved) this.mapBounds.delete(entity.id)
+      // Stable identity keeps unrelated road/building batches installed.
+      return !moved && JSON.stringify(previous) === JSON.stringify(entity) ? previous : entity
+    })
+    this.document.entities = entities
+    this.graph = nextGraph
+    const byId = new Map(entities.map((e) => [e.id, e]))
+    this.pendingMapMeshes = this.pendingMapMeshes.map((e) => byId.get(e.id)!)
+    return true
   }
   replaceMapEntities(remove: Set<string>, add: Entity[]): void {
     this.pendingMapMeshes = this.pendingMapMeshes.filter((e) => !remove.has(e.id))
@@ -191,6 +259,7 @@ export class SceneView {
     for (const e of entities) {
       const group = this.objects.get(e.id) ?? new THREE.Group()
       group.userData.entityId = e.id
+      group.userData.mapArtifact = entityMapArtifact(e)
       this.objects.set(e.id, group)
       this.root.add(group)
       applyPose(group, this.graph.worldTransform(e.id))
@@ -367,14 +436,12 @@ export class SceneView {
           g.setIndex(data.faces.flat())
           g.computeVertexNormals()
         }
-        const surface = new THREE.Mesh(g, matteGroundMaterial({ color: e.color }))
+        const surface = new THREE.Mesh(
+          g,
+          matteGroundMaterial({ color: e.color, ...groundDepthBias(transportLayer(e)) }),
+        )
         surface.receiveShadow = true
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
-        surface.position.y = ['footway', 'path', 'pedestrian', 'cycleway'].includes(
-          e.source?.tags.highway ?? '',
-        )
-          ? -0.01
-          : 0
         surface.castShadow = false
         group.add(surface)
       }
@@ -461,8 +528,8 @@ export class SceneView {
         const surface = new THREE.Mesh(geometry, material)
         surface.castShadow = !e.landcover && !e.railway
         surface.receiveShadow = true
-        if (e.landcover) {
-          const layer = SURFACE_LAYERS[e.landcover.surface]
+        if (e.landcover || e.railway) {
+          const layer = e.landcover ? SURFACE_LAYERS[e.landcover.surface] : transportLayer(e)
           material.polygonOffset = true
           material.polygonOffsetFactor = -layer
           material.polygonOffsetUnits = -layer
@@ -661,6 +728,22 @@ export class SceneView {
     }
     this.wheels.set(e.id, wheels)
   }
+  private mapOmissions = new Set<string>()
+  private omittedMeshes = new Map<THREE.Object3D, boolean>()
+  private mapRenderSource?: Entity[]
+  private mapRenderEntities?: Entity[]
+  setMapRenderOmissions(ids: ReadonlySet<string>): void {
+    if (ids.size === this.mapOmissions.size && [...ids].every((id) => this.mapOmissions.has(id)))
+      return
+    for (const [mesh, visible] of this.omittedMeshes) mesh.visible = visible
+    this.omittedMeshes.clear()
+    for (const id of this.mapOmissions) {
+      const object = this.objects.get(id)
+      if (object) object.visible = true
+    }
+    this.mapOmissions = new Set(ids)
+    this.mapRenderSource = undefined
+  }
   /** Distance culling is repeated for portal cameras, never shared from the main frustum. */
   buildingDistance = 3000
   limitDrawDistance(
@@ -671,16 +754,35 @@ export class SceneView {
     roadDistance = distance,
     now = performance.now(),
   ): void {
+    if (this.mapRenderSource !== this.document.entities) {
+      this.mapRenderSource = this.document.entities
+      this.mapRenderEntities = this.mapOmissions.size
+        ? this.document.entities.filter((e) => !this.mapOmissions.has(e.id))
+        : this.document.entities
+    }
     this.buildings.update(
-      this.document.entities,
+      this.mapRenderEntities!,
       this.objects,
       buildings && this.batchBuildings,
       position,
       Math.min(distance, this.buildingDistance),
     )
-    this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
-    this.landcover.update(this.document.entities, this.objects, enabled, position, distance, now)
+    this.roads.update(this.mapRenderEntities!, this.objects, enabled, position, roadDistance)
+    this.landcover.update(this.mapRenderEntities!, this.objects, enabled, position, distance, now)
     for (const e of this.document.entities) {
+      if (this.mapOmissions.has(e.id)) {
+        const object = this.objects.get(e.id)
+        if (object) {
+          object.visible = true
+          object.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.name !== 'shot-impact') {
+              if (!this.omittedMeshes.has(child)) this.omittedMeshes.set(child, child.visible)
+              child.visible = false
+            }
+          })
+        }
+        continue
+      }
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)
       if (!object) continue // A streamed frame may still be queued.
@@ -714,6 +816,7 @@ export class SceneView {
   }
   setPlaying(playing: boolean): void {
     this.avatar.visible = playing
+    if (!playing) this.impacts.clear()
     if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
     for (const e of this.document.entities)
       if (

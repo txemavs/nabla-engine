@@ -1,5 +1,10 @@
 import { Matrix4, Quaternion, Vector3 } from 'three'
 import { SceneGraph, type SceneDocument, type Entity, type Transform } from '../src/scene.js'
+type ChartTile = { bitmap: ImageBitmap; bounds: [number, number, number, number]; matrix: Matrix4 }
+let planetCharts: () => ChartTile[] = () => []
+export function setPlanetCharts(provider: () => ChartTile[]) {
+  planetCharts = provider
+}
 type ChartRoad = {
   points: Vector3[]
   width: number
@@ -81,6 +86,23 @@ export class HelmMap {
       ctx.lineTo(580, y)
       ctx.stroke()
     }
+    const tiles = planetCharts()
+    for (const tile of tiles) {
+      const [x, z, maxX, maxZ] = tile.bounds
+      const e = tile.matrix.elements
+      ctx.save()
+      ctx.translate(cx - pose.position[0] * scale, cy - pose.position[2] * scale)
+      ctx.transform(
+        e[0] * scale,
+        e[2] * scale,
+        e[8] * scale,
+        e[10] * scale,
+        e[12] * scale,
+        e[14] * scale,
+      )
+      ctx.drawImage(tile.bitmap, x, z, maxX - x, maxZ - z)
+      ctx.restore()
+    }
     ctx.strokeStyle = '#549bd3'
     for (const road of this.roads) {
       const pad = road.width / 2
@@ -120,6 +142,6 @@ export class HelmMap {
     ctx.fillText('N ↑', 12, 25)
     ctx.fillText('200 m', 475, 212)
     ctx.fillRect(475, 218, 46, 2)
-    if (!this.roads.length) ctx.fillText('Sin carreteras cargadas', 12, 215)
+    if (!this.roads.length && !tiles.length) ctx.fillText('Sin carreteras cargadas', 12, 215)
   }
 }

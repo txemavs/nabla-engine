@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createCarrier } from '../src/presets.js'
 import { createPortalPair } from '../src/portal.js'
 import { createEntity } from '../src/scene.js'
@@ -25,6 +25,7 @@ test('uses the horizontal desk to animate the garage door and displays telemetry
   })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   const panel = page.locator('.touch-console')
   await page.mouse.click(350, 300)
   await page.waitForFunction(() => !!document.pointerLockElement)
@@ -97,6 +98,7 @@ test('flies using the horizontal CSS desk and releases held input', async ({ pag
   })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.mouse.click(350, 300)
   await page.waitForFunction(() => !!document.pointerLockElement)
   await page.keyboard.press('KeyE')
@@ -149,6 +151,7 @@ test('keeps CSS screens active and clickable from the rear of the occupied inter
   })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#player-mode')).toContainText('INTERIOR DE LA NAVE')
   await expect(page.locator('.telemetry-console')).toHaveAttribute('data-active', 'true')
   await expect(page.locator('.touch-console')).toHaveAttribute('data-active', 'true')

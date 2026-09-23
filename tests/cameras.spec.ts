@@ -1,19 +1,15 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('cycles chase, cockpit and north-up overhead map with adjustable height', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/?scene=circuit')
-  await page.locator('#options-menu-button').click()
-  await page.locator('#geography-section > summary').click()
-  await page.locator('#imagery').selectOption('offline')
-  await page.locator('#apply-location').click()
-  await page.keyboard.press('Escape')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
     timeout: 20000,
   })
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(700)
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toContainText('AUDI')
@@ -33,5 +29,6 @@ test('cycles chase, cockpit and north-up overhead map with adjustable height', a
   await page.keyboard.press('KeyC')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-camera-mode', 'chase')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   expect(errors).toEqual([])
 })

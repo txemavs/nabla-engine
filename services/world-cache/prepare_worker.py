@@ -1,49 +1,39 @@
-"""One bounded worker; network queries retain the cache service's upstream pacing."""
+"""One bounded native XYZ worker. Local-grid generation is retired."""
 import json
-import os
-import subprocess
 import time
+import shutil
 from pathlib import Path
-from bake import bake_zone
-from baked_format import atomic_write
+from prepare_planet import prepare
+
 
 def trim_prepared(publish, target, limit):
-    """Count both formats and evict old zone pairs, retaining the current job."""
-    files = [p for p in publish.rglob('*') if p.is_file() and p.suffix in ('.json', '.bin')]
-    total = sum(p.stat().st_size for p in files)
-    groups = {}
-    for path in files:
-        groups.setdefault(path.with_suffix('.json'), []).append(path)
-    for key, paths in sorted(groups.items(), key=lambda item: min(p.stat().st_mtime for p in item[1])):
+    directories = [p.parent for p in (publish / 'z').glob('*/*/*/manifest.json')]
+    sizes = {d: sum(p.stat().st_size for p in d.iterdir() if p.is_file()) for d in directories}
+    total = sum(sizes.values())
+    for directory in sorted(directories, key=lambda d: (d / 'manifest.json').stat().st_mtime):
         if total <= limit:
             break
-        if key == target:
+        if directory == target.parent:
             continue
-        for path in paths:
-            total -= path.stat().st_size
-            path.unlink(missing_ok=True)
+        shutil.rmtree(directory)
+        total -= sizes[directory]
 
 
 def run(queue, root, publish, limit):
-    base = 'http://127.0.0.1:8080'
-    script = Path('/app/prepare-dist/services/world-cache/prepare.js')
     publish.mkdir(parents=True, exist_ok=True)
+    publisher = Path('/app/prepare-dist/services/world-cache/prepare-planet.js')
     while True:
         job = queue.claim()
         if not job:
             time.sleep(2)
             continue
+        started = time.monotonic()
+        print('Planet preparation started:', job['tile'], flush=True)
         try:
-            origin = json.loads(job['origin'])
-            x, z = map(int, job['tile'].split('_'))
-            extract = bake_zone(origin, x, z, 'Prepared map zone', base)
-            # Intermediate input is private, and always regenerated from the cache.
-            source = root / 'preparing.json'
-            atomic_write(source, extract)
-            target = publish / job['path']
-            subprocess.run(['node', '--max-old-space-size=512', str(script), str(source), str(target), job['tile'], base], check=True, timeout=180, stdout=subprocess.DEVNULL)
-            trim_prepared(publish, target, limit)
+            prepare(job['tile'], publish, 'http://127.0.0.1:8080', publisher)
+            trim_prepared(publish, publish / job['path'], limit)
             queue.finish(job['id'], True)
+            print('Planet preparation ready:', job['tile'], f'{time.monotonic()-started:.1f}s', flush=True)
         except Exception as error:
-            print('Preparation failed:', type(error).__name__, flush=True)
+            print('Planet preparation failed:', job['tile'], type(error).__name__, flush=True)
             queue.finish(job['id'], False)

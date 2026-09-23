@@ -1,6 +1,7 @@
+import { buildingFootprints } from './building-footprints.js'
 import { compactMapTags } from './map-metadata.js'
 import { pointInPolygon } from './multipolygon.js'
-import { mapFingerprint, mapTileEntities } from './world-stream.js'
+import { mapFingerprint, mapTileEntities } from './map-fingerprint.js'
 import { ShapeUtils, Vector2, Vector3 } from 'three'
 import { geoToLocal, type GeoPoint } from './geography.js'
 import {
@@ -100,7 +101,14 @@ const number = (value: string | undefined, fallback: number) => {
 /** Bounded real-data district. No synthetic replacement for missing streets or heights. */
 export function createRealWorld(
   data: WorldExtract,
-  options: { offset?: [number, number]; tileId?: string } = {},
+  options: {
+    offset?: [number, number]
+    tileId?: string
+    project?: (point: [number, number]) => Vec3Tuple
+    preservePrecision?: boolean
+    halfOpenOwnership?: boolean
+    experimentalLargeScene?: boolean
+  } = {},
 ): SceneDocument {
   const [ox, oz] = options.offset ?? [0, 0]
   const suffix = options.tileId && options.tileId !== '0_0' ? `-${options.tileId}` : ''
@@ -109,16 +117,20 @@ export function createRealWorld(
     half = ((t.columns - 1) * t.spacing) / 2,
     depth = ((t.rows - 1) * t.spacing) / 2
   const inside = (p: Vec3Tuple, margin = 5) =>
-    Math.abs(p[0]) <= half - margin && Math.abs(p[2]) <= depth - margin
-  const project = (p: [number, number]): Vec3Tuple =>
-    (() => {
-      const local = geoToLocal(data.origin, {
-        latitude: p[1],
-        longitude: p[0],
-        altitude: data.origin.altitude,
-      })
-      return [local[0] - ox, local[1], local[2] - oz] as Vec3Tuple
-    })()
+    options.halfOpenOwnership
+      ? p[0] >= -half && p[0] < half && p[2] >= -depth && p[2] < depth
+      : Math.abs(p[0]) <= half - margin && Math.abs(p[2]) <= depth - margin
+  const project =
+    options.project ??
+    ((p: [number, number]): Vec3Tuple =>
+      (() => {
+        const local = geoToLocal(data.origin, {
+          latitude: p[1],
+          longitude: p[0],
+          altitude: data.origin.altitude,
+        })
+        return [local[0] - ox, local[1], local[2] - oz] as Vec3Tuple
+      })())
   const height = (x: number, z: number) =>
     terrainHeight(t, Math.max(-half, Math.min(half, x)), Math.max(-depth, Math.min(depth, z)))
   const groups = [
@@ -210,6 +222,7 @@ export function createRealWorld(
       entities.push(e)
     }
   }
+  const footprints = buildingFootprints(data.features, project)
   for (const f of data.features) {
     const tags = f.tags
     if (tags.building === 'no' || tags['building:part'] === 'no') continue
@@ -230,21 +243,11 @@ export function createRealWorld(
           number(tags['building:levels'], tags.building === 'industrial' ? 2 : 3) * 3,
         ),
       )
-      // Each outer ring may own holes; the fixture keeps complete closed relation members.
-      for (const outer of rings.filter((r) => r.role !== 'inner')) {
-        const clean = (points: Vec3Tuple[]) => {
-          const out = points.map((p) => new Vector2(p[0] - cx, p[2] - cz))
-          if (out.length > 1 && out[0].distanceTo(out[out.length - 1]) < 0.001) out.pop()
-          return out.filter((p, i) => i === 0 || p.distanceTo(out[i - 1]) > 0.001)
-        }
-        const contour = clean(outer.points)
-        if (contour.length < 3) continue
-        if (!ShapeUtils.isClockWise(contour)) contour.reverse()
-        const holes = rings
-          .filter((r) => r.role === 'inner')
-          .map((r) => clean(r.points))
-          .filter((r) => r.length >= 3)
-        for (const hole of holes) if (ShapeUtils.isClockWise(hole)) hole.reverse()
+      const polygons = (footprints.get(f.id) ?? []).map(({ contour, holes }) => ({
+        contour: contour.map((p) => p.clone().sub(new Vector2(cx, cz))),
+        holes: holes.map((r) => r.map((p) => p.clone().sub(new Vector2(cx, cz)))),
+      }))
+      for (const { contour, holes } of polygons) {
         const loops = [contour, ...holes],
           flat = loops.flat(),
           start = g.vertices.length,
@@ -504,20 +507,8 @@ export function createRealWorld(
   carrier.name = 'Nave · Ventas'
   const spawn = createEntity('spawn', 'spawn', [-2, height(-2, 0) + 0.1, 0])
   entities.push(car, carrier, spawn)
-  // Millimetre precision is sufficient locally and keeps editable snapshots compact.
-  for (const e of entities) {
-    e.transform.position = e.transform.position.map((n) => Math.round(n * 1000) / 1000) as Vec3Tuple
-    if (e.road)
-      e.road.paths = e.road.paths.map((path) =>
-        path.map((p) => p.map((n) => Math.round(n * 1000) / 1000) as Vec3Tuple),
-      )
-    if (e.geometry)
-      e.geometry.vertices = e.geometry.vertices.map(
-        (p) => p.map((n) => Math.round(n * 1000) / 1000) as Vec3Tuple,
-      )
-  }
-  // Validate imported buildings after millimetre rounding. A malformed footprint
-  // must not prevent the terrain and all other OSM features from loading.
+  // Keep source precision through clipping and projection. Rounding after topology
+  // assembly can collapse distinct vertices and discard otherwise valid surfaces.
   let omitted = 0
   const usable = entities.filter((e) => {
     e.name = e.name.slice(0, 100)
@@ -533,13 +524,16 @@ export function createRealWorld(
   if (omitted)
     usable.find((e) => e.id === groups[0])!.name =
       `Edificios OSM · ${omitted} omitidos por geometría inválida`
-  const doc = parseScene({
-    version: 1,
-    name: data.name,
-    geography: { ...data.origin, imagery: 'offline' },
-    sky: { mode: 'fixed', at: '2026-09-21T12:00:00.000Z' },
-    entities: usable,
-  })
+  const doc = parseScene(
+    {
+      version: 1,
+      name: data.name,
+      geography: { ...data.origin, imagery: 'offline' },
+      sky: { mode: 'fixed', at: '2026-09-21T12:00:00.000Z' },
+      entities: usable,
+    },
+    options.experimentalLargeScene,
+  )
   doc.entities.find((e) => e.id === terrain.id)!.mapBaseline = mapFingerprint(
     mapTileEntities(doc, options.tileId ?? '0_0'),
   )

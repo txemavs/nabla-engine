@@ -6,6 +6,11 @@ export interface PortalSurface {
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
   target: THREE.WebGLRenderTarget
 }
+export interface ExternalPortalView {
+  destination: PortalSurface
+  scene: THREE.Scene
+  background: (renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) => void
+}
 export function createPortalSurface(entity: Entity): PortalSurface {
   const target = new THREE.WebGLRenderTarget(1, 1)
   const material = new THREE.ShaderMaterial({
@@ -44,13 +49,14 @@ export function renderPortals(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
   camera: THREE.PerspectiveCamera,
-  background: (camera: THREE.PerspectiveCamera) => void,
+  background: (camera: THREE.PerspectiveCamera) => void | (() => void),
+  externalViews?: Map<string, ExternalPortalView>,
 ): void {
   if (!surfaces.size) return
   const connected = [...surfaces.values()].some(
     (s) => s.entity.portal!.mode !== 'closed' && surfaces.has(s.entity.portal!.pairId ?? ''),
   )
-  if (!connected) {
+  if (!connected && !externalViews?.size) {
     for (const surface of surfaces.values()) surface.mesh.material.uniforms.live.value = 0
     return
   }
@@ -71,8 +77,9 @@ export function renderPortals(
     for (const surface of surfaces.values()) surface.mesh.material.uniforms.live.value = 0
     renderer.shadowMap.autoUpdate = false
     for (const surface of surfaces.values()) {
-      const destination = surfaces.get(surface.entity.portal!.pairId ?? '')
-      if (!destination || surface.entity.portal!.mode === 'closed') continue
+      const external = externalViews?.get(surface.entity.id)
+      const destination = external?.destination ?? surfaces.get(surface.entity.portal!.pairId ?? '')
+      if (!destination || (!external && surface.entity.portal!.mode === 'closed')) continue
       const localEye = camera.position
         .clone()
         .applyMatrix4(surface.mesh.matrixWorld.clone().invert())
@@ -92,19 +99,22 @@ export function renderPortals(
       renderer.setRenderTarget(surface.target)
       renderer.autoClear = true
       renderer.clippingPlanes = []
-      background(remote)
-      renderer.clearDepth()
-      const normal = new THREE.Vector3(0, 0, 1).transformDirection(destination.mesh.matrixWorld)
-      const point = new THREE.Vector3()
-        .setFromMatrixPosition(destination.mesh.matrixWorld)
-        .addScaledVector(normal, 0.015)
-      renderer.clippingPlanes = [new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point)]
+      let restoreEnvironment: void | (() => void) = undefined
       const wasVisible = destination.mesh.visible
-      destination.mesh.visible = false
       try {
-        renderer.render(scene, remote)
+        if (external) external.background(renderer, remote)
+        else restoreEnvironment = background(remote)
+        renderer.clearDepth()
+        const normal = new THREE.Vector3(0, 0, 1).transformDirection(destination.mesh.matrixWorld)
+        const point = new THREE.Vector3()
+          .setFromMatrixPosition(destination.mesh.matrixWorld)
+          .addScaledVector(normal, 0.015)
+        renderer.clippingPlanes = [new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point)]
+        destination.mesh.visible = false
+        renderer.render(external?.scene ?? scene, remote)
       } finally {
         destination.mesh.visible = wasVisible
+        restoreEnvironment?.()
       }
     }
     for (const surface of surfaces.values()) {
@@ -112,9 +122,9 @@ export function renderPortals(
         .clone()
         .applyMatrix4(surface.mesh.matrixWorld.clone().invert())
       surface.mesh.material.uniforms.live.value =
-        surface.entity.portal!.mode !== 'closed' &&
+        (surface.entity.portal!.mode !== 'closed' || externalViews?.has(surface.entity.id)) &&
         localEye.z > 0.015 &&
-        surfaces.has(surface.entity.portal!.pairId ?? '')
+        (surfaces.has(surface.entity.portal!.pairId ?? '') || externalViews?.has(surface.entity.id))
           ? 1
           : 0
     }

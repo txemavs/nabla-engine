@@ -1,8 +1,9 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, localCircuit } from './studio-test.js'
 
 test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
+  await localCircuit(page)
   await page.goto('/?scene=circuit')
   await expect(page.getByRole('heading', { name: 'Distrito cero.' })).toBeVisible()
   await expect(page.locator('#viewport > canvas')).toBeVisible()
@@ -13,13 +14,19 @@ test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) =
   await page.locator('#name').fill('Mi coche')
   await page.locator('#name').press('Tab')
   await expect(page.locator('.entity-title')).toHaveText('Mi coche')
-  await page.getByLabel('Posición local · m X', { exact: true }).fill('5')
-  await page.getByLabel('Posición local · m X', { exact: true }).press('Tab')
-  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('5')
+  await page.getByLabel('Posición respecto al padre · m X', { exact: true }).fill('5')
+  await page.getByLabel('Posición respecto al padre · m X', { exact: true }).press('Tab')
+  await expect(page.getByLabel('Posición respecto al padre · m X', { exact: true })).toHaveValue(
+    '5',
+  )
   await page.locator('#undo').click()
-  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('4')
+  await expect(page.getByLabel('Posición respecto al padre · m X', { exact: true })).toHaveValue(
+    '4',
+  )
   await page.locator('#redo').click()
-  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('5')
+  await expect(page.getByLabel('Posición respecto al padre · m X', { exact: true })).toHaveValue(
+    '5',
+  )
   await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   const saved = await page.evaluate(() => localStorage.getItem('nabla.scene.v1'))
@@ -28,9 +35,12 @@ test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) =
   )
   await page.reload()
   await expect(page.locator('#name')).toHaveValue('Mi coche')
-  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('5')
+  await expect(page.getByLabel('Posición respecto al padre · m X', { exact: true })).toHaveValue(
+    '5',
+  )
   await page.screenshot({ path: 'test-results/studio.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#mode-label')).toHaveText('Jugando')
   await expect(page.locator('#name')).toBeDisabled()
   await expect(page.locator('#game-hud')).toBeVisible()
@@ -46,8 +56,11 @@ test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) =
   await expect(page.locator('#speed')).not.toHaveText('0 km/h')
   await page.screenshot({ path: 'test-results/driving.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#mode-label')).toHaveText('Edición')
-  await expect(page.getByLabel('Posición local · m X', { exact: true })).toHaveValue('5')
+  await expect(page.getByLabel('Posición respecto al padre · m X', { exact: true })).toHaveValue(
+    '5',
+  )
   expect(await page.evaluate(() => localStorage.getItem('nabla.scene.v1'))).toBe(saved)
   expect(errors).toEqual([])
 })

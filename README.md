@@ -143,3 +143,9 @@ acceptance stages are recorded in [the portal guide](docs/portals.md).
 Source code: [MIT](LICENSE). See [asset provenance](assets/README.md) for bundled
 artwork and external map attribution; the code license does not grant rights to
 third-party trademarks or map imagery.
+
+## Run the complete local development stack
+
+Start Studio, the cache and native planetary GLB generation with Docker Compose.
+See [Local development](docs/local-development.md) for setup, activation, job
+inspection, storage, debugging and a guided tour of the implementation.

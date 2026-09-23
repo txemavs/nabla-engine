@@ -1,0 +1,228 @@
+#app.studio-desktop {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'header' 'workspace' 'footer';
+  background: #282828;
+  font-size: 14px;
+}
+.studio-desktop > header {
+  grid-area: header;
+  background: #303030;
+}
+.studio-desktop > .toolbar {
+  grid-area: toolbar;
+  background: #363636;
+}
+.studio-desktop > footer {
+  grid-area: footer;
+}
+.studio-workspace {
+  grid-area: workspace;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.studio-workspace .outliner,
+.studio-workspace .inspector,
+.studio-workspace #viewport {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+.studio-workspace .outliner,
+.studio-workspace .inspector {
+  background: #303030;
+}
+.studio-desktop .desktop-menu-bar {
+  background: transparent;
+}
+.studio-desktop .desktop-menu-bar button {
+  font-size: 14px;
+}
+
+.studio-desktop .studio-preview-link {
+  display: none;
+}
+.studio-desktop .outliner button,
+.studio-desktop .inspector input,
+.studio-desktop .inspector select {
+  font-size: 13px;
+}
+.studio-desktop > header {
+  min-height: 52px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.studio-desktop > .toolbar {
+  min-height: 42px;
+}
+
+.studio-settings-host {
+  position: relative;
+  z-index: 1000;
+}
+.studio-settings-host .window-frame__body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.studio-settings-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.studio-settings-content .desktop-external-content {
+  height: auto;
+  overflow: visible;
+}
+.studio-settings-content summary {
+  display: none;
+}
+.studio-settings-content details {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.studio-settings-content label {
+  display: block;
+  margin-top: 14px;
+  font-size: 14px;
+}
+.studio-settings-content input,
+.studio-settings-content select {
+  width: 100%;
+  font-size: 14px;
+}
+.studio-settings-tabs {
+  display: flex;
+  flex: 0 0 36px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #444;
+}
+.studio-settings-tabs button {
+  font: inherit;
+  color: #e0e0e0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 0 10px;
+}
+.studio-settings-tabs button[aria-selected='true'] {
+  background: #1e1e1e;
+  border-bottom-color: #81aee6;
+}
+.studio-settings-tabs button:focus-visible {
+  outline: 2px solid #81aee6;
+  outline-offset: -2px;
+}
+.portal-place {
+  margin: 16px 0;
+}
+.portal-place h4 {
+  margin: 0 0 6px;
+}
+
+/* Dock tools remain keyboard accessible but stay out of the normal editing surface. */
+.studio-workspace .nd-panel-actions {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  max-width: calc(100% - 85px);
+  height: 30px;
+  background: #303030;
+}
+.studio-workspace .nd-group:hover > .nd-panel-actions,
+.studio-workspace .nd-group:focus-within > .nd-panel-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.studio-workspace .nd-tabs button {
+  border-radius: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+}
+.studio-workspace .nd-tabs button[aria-selected='true'] {
+  border-bottom-color: #81aee6;
+}
+#portal-registry-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 6px 0;
+}
+/* Drag tabs to dock. Keep only float/dock and close in the compact action strip. */
+.studio-workspace .nd-panel-actions select,
+.studio-workspace .nd-panel-actions button[aria-label^='Dividir'] {
+  display: none;
+}
+
+/* The viewport owns its mode header and tools, including when floated. */
+#studio-viewport-panel {
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+#studio-viewport-panel > .toolbar {
+  background: #363636;
+  padding: 0 10px;
+  gap: 10px;
+  overflow: auto;
+}
+#studio-viewport-panel .mode {
+  width: auto;
+}
+#studio-object-mode {
+  width: auto;
+  min-width: 120px;
+  font-size: 13px;
+}
+.studio-viewport-tools {
+  position: absolute;
+  right: 10px;
+  top: 48px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+  background: #303030;
+  border: 1px solid #505050;
+}
+.studio-viewport-tools button {
+  text-align: left;
+  border-radius: 0;
+}
+body.playing .studio-viewport-tools {
+  display: none;
+}
+#studio-locations {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+#studio-locations > details {
+  border: 0;
+  border-radius: 0;
+}
+#studio-locations summary {
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #c8d6e5;
+}
+#studio-locations #tree {
+  overflow: visible;
+}
+.studio-workspace .inspector {
+  padding: 12px;
+}

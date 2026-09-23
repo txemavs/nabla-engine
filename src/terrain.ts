@@ -7,10 +7,14 @@ export interface TerrainData {
 }
 /** Exact triangular interpolation matching the Cannon heightfield and render mesh. */
 export function terrainHeight(t: TerrainData, x: number, z: number): number {
-  const u = x / t.spacing + (t.columns - 1) / 2,
+  let u = x / t.spacing + (t.columns - 1) / 2,
     v = z / t.spacing + (t.rows - 1) / 2
-  if (u < 0 || v < 0 || u > t.columns - 1 || v > t.rows - 1)
+  // Fractional XYZ widths can land a few ulps beyond a mathematically shared edge.
+  const epsilon = 1e-8
+  if (u < -epsilon || v < -epsilon || u > t.columns - 1 + epsilon || v > t.rows - 1 + epsilon)
     throw new Error('Outside terrain coverage')
+  u = Math.max(0, Math.min(t.columns - 1, u))
+  v = Math.max(0, Math.min(t.rows - 1, v))
   const i = Math.min(t.columns - 2, Math.floor(u)),
     j = Math.min(t.rows - 2, Math.floor(v)),
     fx = u - i,

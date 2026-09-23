@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createA3 } from '../src/presets.js'
 import { createEntity } from '../src/scene.js'
 

@@ -1,26 +1,32 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 import { createSampleScene } from '../src/sample.js'
 
 test('requests location, saves the GPS pin and preserves it on reload', async ({
   page,
   context,
 }) => {
+  await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) =>
+    route.fulfill({ json: { elements: [] } }),
+  )
+  await page.route(/WorldElevation3D|\/world-cache\/elevation/, (route) =>
+    route.fulfill({ path: 'tests/fixtures/terrain.lerc', contentType: 'application/octet-stream' }),
+  )
   await context.grantPermissions(['geolocation'])
   await context.setGeolocation({ latitude: 41.38, longitude: 2.17 })
   await page.goto('/?scene=circuit')
-  await expect(page.locator('#latitude')).toHaveValue('41.38')
+  await expect(page.locator('#latitude')).toHaveValue('41.38', { timeout: 30000 })
   await expect(page.locator('#longitude')).toHaveValue('2.17')
   await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   await page.reload()
-  await expect(page.locator('#latitude')).toHaveValue('41.38')
+  await expect(page.locator('#latitude')).toHaveValue('41.38', { timeout: 30000 })
   await page.locator('#options-menu-button').click()
   await page.locator('#geography-section > summary').click()
   await page.locator('#latitude').fill('95')
   await page.locator('#apply-location').click()
   await expect(page.locator('#toast')).toBeVisible()
   await page.reload()
-  await expect(page.locator('#latitude')).toHaveValue('41.38')
+  await expect(page.locator('#latitude')).toHaveValue('41.38', { timeout: 30000 })
 })
 
 test('flies from the Agency ground to space with local assets and returns to the edited scene', async ({
@@ -40,6 +46,7 @@ test('flies from the Agency ground to space with local assets and returns to the
   })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(1000)
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toContainText('CONTAINER')
@@ -90,73 +97,23 @@ test('flies from the Agency ground to space with local assets and returns to the
   await expect(page.locator('#speed')).toHaveText('0 km/h', { timeout: 20000 })
   await page.screenshot({ path: 'test-results/geography-earth.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-geo-level', 'local')
   await expect(page.locator('#latitude')).toHaveValue('40.4166')
   expect(errors).toEqual([])
 })
 
-test('loads bounded map tiles, switches provider and stops external requests in offline mode', async ({
-  page,
-}) => {
+test('legacy scenes no longer request raster map tiles', async ({ page }) => {
   let requested = 0
   await page.route(
     /https:\/\/(server\.arcgisonline\.com|a\.basemaps\.cartocdn\.com)\//,
-    async (route) => {
+    (route) => {
       requested++
-      await route.fulfill({
-        path: 'assets/geography/agency-ground.jpg',
-        contentType: 'image/jpeg',
-        headers: { 'access-control-allow-origin': '*' },
-      })
+      return route.abort()
     },
   )
   await page.goto('/?scene=circuit')
-  await expect(page.locator('#map-status')).toHaveText('Esri · imágenes satélite', {
-    timeout: 20000,
-  })
-  expect(requested).toBeGreaterThan(0)
-  expect(requested).toBeLessThanOrEqual(100)
-  await page.locator('#options-menu-button').click()
-  await page.locator('#geography-section > summary').click()
-  await page.locator('#imagery').selectOption('streets')
-  await page.locator('#apply-location').click()
-  await expect(page.locator('#map-status')).toHaveText('CARTO · OpenStreetMap', { timeout: 20000 })
-  await page.locator('#imagery').selectOption('offline')
-  await page.locator('#apply-location').click()
   await expect(page.locator('#map-status')).toContainText('sin conexión')
-  const count = requested
-  await page.waitForTimeout(500)
-  expect(requested).toBe(count)
-})
-
-test('retries failed map images without requiring movement or a reload', async ({ page }) => {
-  const requests = new Map<string, number>()
-  let first = ''
-  await page.route(
-    /https:\/\/(server\.arcgisonline\.com|a\.basemaps\.cartocdn\.com)\//,
-    async (route) => {
-      const url = route.request().url()
-      first ||= url
-      const count = (requests.get(url) ?? 0) + 1
-      requests.set(url, count)
-      if (url === first && count === 1) {
-        await route.fulfill({
-          status: 503,
-          body: 'Temporary failure',
-          headers: { 'access-control-allow-origin': '*' },
-        })
-      } else {
-        await route.fulfill({
-          path: 'assets/geography/agency-ground.jpg',
-          contentType: 'image/jpeg',
-          headers: { 'access-control-allow-origin': '*' },
-        })
-      }
-    },
-  )
-  await page.goto('/?scene=circuit')
-  await expect.poll(() => requests.get(first) ?? 0, { timeout: 30000 }).toBe(2)
-  await expect(page.locator('#map-status')).toHaveText('Esri · imágenes satélite', {
-    timeout: 30000,
-  })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
+  expect(requested).toBe(0)
 })

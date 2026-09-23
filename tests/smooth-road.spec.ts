@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './studio-test.js'
 import { createEntity } from '../src/scene.js'
 
 test('selects, saves and renders a smooth road with buildings disabled', async ({ page }) => {
@@ -16,6 +16,7 @@ test('selects, saves and renders a smooth road with buildings disabled', async (
   }
   const road = createEntity('road', 'group')
   road.name = 'Carretera de prueba'
+  road.mapEditable = true
   road.road = {
     terrainId: 'terrain',
     width: 5,
@@ -33,7 +34,7 @@ test('selects, saves and renders a smooth road with buildings disabled', async (
     tags: { highway: 'primary' },
   }
   await page.goto('/?scene=circuit')
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.locator('#file').setInputFiles({
     name: 'road.json',
     mimeType: 'application/json',
@@ -67,9 +68,11 @@ test('selects, saves and renders a smooth road with buildings disabled', async (
   await page.locator('#map-buildings').selectOption('0')
   await page.keyboard.press('Escape')
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#mode-label')).toHaveText('Jugando')
   await page.screenshot({ path: 'test-results/smooth-road.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await page.locator('[data-entity-id="road"]').click()
   await expect(page.locator('#road-surface-mode')).toHaveValue('smooth-float')
   expect(errors).toEqual([])

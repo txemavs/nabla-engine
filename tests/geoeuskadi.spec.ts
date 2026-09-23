@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('compares cached official surfaces with OSM without querying either provider', async ({
   page,

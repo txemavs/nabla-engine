@@ -16,3 +16,7 @@ prepare-dist/
 
 services/world-cache/.prepare.env
 services/world-cache/prepared/
+
+!vendor/*.tgz
+
+local-backup/

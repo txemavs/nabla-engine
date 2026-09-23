@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 test.beforeEach(async ({ page }) => {
   await page.goto('/geography/geoeuskadi-pilot/manifest.json')
 })

@@ -169,3 +169,36 @@ describe('nearestRoadCenterline', () => {
     expect(result!.distance).toBeGreaterThan(10)
   })
 })
+
+it('unions bend caps and ribbons into single coverage before spherical projection', () => {
+  const terrain = { columns: 5, rows: 5, spacing: 10, heights: Array(25).fill(0) }
+  const g = roadGeometry(
+    terrain,
+    [
+      [
+        [-15, 0, 0],
+        [0, 0, 0],
+        [15, 0, 3],
+      ],
+    ],
+    4,
+  )
+  // Interior probes avoid polygon/triangulation boundaries. Each point must be
+  // covered once, even where the old round cap overlapped both road segments.
+  for (const [x, z] of [
+    [-0.41, 0.23],
+    [0.37, 0.13],
+    [0.91, -0.38],
+    [-1.27, -0.57],
+  ]) {
+    let count = 0
+    for (const face of g.faces) {
+      const [a, b, c] = face.map((i) => g.vertices[i])
+      const cross = (p: number[], q: number[]) =>
+        (q[0] - p[0]) * (z - p[2]) - (q[2] - p[2]) * (x - p[0])
+      const signs = [cross(a, b), cross(b, c), cross(c, a)]
+      if (signs.every((v) => v > 1e-8) || signs.every((v) => v < -1e-8)) count++
+    }
+    expect(count).toBe(1)
+  }
+})

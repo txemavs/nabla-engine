@@ -1,5 +1,42 @@
 # World Streaming Investigation: Missing Buildings at Moderate Speed
 
+## Update: duplicate tile planning (#38)
+
+The scheduling snapshot below predates the current concurrent loader. For the
+current implementation, WorldStream.update shares one install plan for both
+wanted and prefetch filtering. Preparation reuses it at the same 15-second
+horizon. A distinct horizon needs a second evaluation because its corridor,
+ranking and 24-tile cutoff differ; it cannot safely be sliced from the other plan.
+Disabled preparation performs one evaluation, and orbital updates perform none.
+Tests compare exact coverage and ordering against the previous algorithm and
+assert these evaluation counts.
+
+This completes the redundant-call part of #37, not its quantized scheduling or
+fingerprint work. The reduction applies to planner CPU, not total frame time or
+rendering cost; no threefold overall speedup is claimed.
+
+## Follow-up audit: repeated work in the current implementation
+
+- Cache the last tile plan by exact position, velocity and horizon values. Input
+  tuples are copied into the cache key, so in-place vector mutation invalidates it.
+  Retries, scheduling and eviction continue on every update; a cached plan does
+  not short-circuit the rest of the stream state machine.
+- Compute each tile's sorting score once instead of recalculating distances during
+  every comparator call. Coverage, ordering and visual quality are unchanged.
+- Emit status only when its text changes, including asynchronous load/error states.
+- Extract a resident tile once during startup for baseline serialization and
+  fingerprint comparison. Traverse descendant IDs through a child index rather
+  than rescanning the whole scene once per hierarchy level.
+- Share one editor snapshot across outliner, portal-registry and cursor refresh.
+  Previously each independently cloned the same scene geometry.
+
+This is exact-input reuse, not the position/speed/heading quantization proposed
+in #37. Preparation callbacks still run so provider retries/polling can progress.
+Expensive fingerprints on eviction remain: they protect edited zones and cannot
+be dropped safely without replacing that invariant. Large imports, individual
+mesh creation, batch rebuilding and GPU work still merit profiling. These changes
+make no claim about a measured aggregate FPS multiplier.
+
 ## Problem Summary
 
 When driving at moderate speed, zones sometimes appear empty (no buildings) even though OSM data exists for those locations. This is a streaming latency/scheduling problem, not a visual quality issue.
@@ -625,3 +662,55 @@ This proves the architecture by extending the existing playground, not building 
 - `src/scene.ts` - Entity schema including `source` field
 - `docs/real-world.md` - Streaming architecture documentation
 - `services/world-cache/server.py` - Docker cache implementation
+
+### Preserve the installed world during pose edits
+
+The editor's generic `rebuild` path disposed the entire SceneView and streaming
+controller after a gizmo or inspector transform. With progressive installation,
+this made existing buildings disappear and repopulate from the beginning.
+Pose-only changes now reconcile the existing view: object and descendant poses
+are updated, unchanged entity identities retain their batches, and pending map
+installation continues. Changes to geometry, scene settings or entity membership
+still use the full rebuild path. Returning from simulation also uses a full
+rebuild to restore the authored state.
+
+Browser regressions cover orbit/zoom plus an inspector edit without restarting
+asset loading, and editing a parent while a map is partly installed without
+replacing existing meshes/batches or resetting the installation queue.
+
+### Entity edits must not revalidate the environmental topology
+
+Preserving meshes did not remove the editor transaction's full-document clone,
+parse, solid validation and JSON comparison. Hiding buildings only affects
+rendering, so it did not reduce that transaction cost.
+
+Entity updates now parse the supplied fields, share immutable unchanged data
+with undo snapshots and retain global reference/invariant checks. Only changed
+solid topology is validated again. Invalid required fields, invalid topology,
+no-op updates and undo ownership are covered by regression tests.
+
+Gizmo and numeric pose edits use a dedicated view update for the object and its
+descendants. They retain unrelated batches, avoid full-document shape comparisons,
+share the existing view document with the inspector and skip whole-scene dirty
+serialization. A browser regression checks that a position edit performs no
+whole-document structured clone and does not restart asset loading. Full scene
+imports and structural edits still use the broader validation/rebuild paths;
+this is not a claim that every editor operation is now constant-time.
+
+### Flight anticipation must survive nearby missing tiles
+
+The green coarse horizon can remain visible while detailed zones are still loading.
+The scheduler previously gave every tile in the 3×3 neighborhood priority over the
+flight corridor. Worse, missing side tiles could cancel an in-flight forward tile
+outside that neighborhood on subsequent updates.
+
+Scheduling now requests the current ground tile first, then tiles crossed by the
+next 15 seconds of horizontal travel (bounded to 4.8 km), then surrounding tiles.
+Only a missing current ground tile can preempt a request outside its neighborhood.
+This retains anticipation even with slow downloads; a regression holds those
+requests unresolved at 1,500 m altitude over repeated updates and checks their
+order and that their signals remain live. Existing delayed-hover installation
+and current-tile priority tests remain in place.
+
+This does not eliminate upstream latency or make a coarse horizon identical to
+10 m terrain. At high flight speed, unprepared regions can still arrive late.

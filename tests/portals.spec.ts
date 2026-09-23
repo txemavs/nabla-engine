@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('adds original Stargates, persists modes and drives the A3 through a live view', async ({
   page,
@@ -10,14 +10,9 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
       errors.push(message.text())
   })
   await page.goto('/?scene=circuit')
-  await page.locator('#options-menu-button').click()
-  await page.locator('#geography-section > summary').click()
-  await page.locator('#imagery').selectOption('offline')
-  await page.locator('#apply-location').click()
-  await page.keyboard.press('Escape')
   await page.locator('[popovertarget="cursor-menu"]').click()
   await page.locator('#cursor-x').fill('4')
-  await page.locator('#cursor-y').fill('0')
+  await page.locator('#cursor-y').fill('1.455')
   await page.locator('#cursor-z').fill('0')
   await page.locator('#cursor-apply').click()
   await page.keyboard.press('Escape')
@@ -27,6 +22,19 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
     timeout: 20000,
   })
   await expect(page.locator('#portal-mode')).toHaveValue('closed')
+  await page.locator('[popovertarget="cursor-menu"]').click()
+  await page.locator('#cursor-x').fill('-4')
+  await page.locator('#cursor-z').fill('24')
+  await page.locator('#cursor-apply').click()
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Añadir entidad', exact: true }).click()
+  await page.locator('#sample-portals').click()
+  const target = await page
+    .locator('#portal-destination option')
+    .evaluateAll(
+      (options) => (options as HTMLOptionElement[]).find((o) => o.text === 'Portal')!.value,
+    )
+  await page.locator('#portal-destination').selectOption(target)
   await page.locator('#portal-mode').selectOption('window')
   await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
@@ -37,9 +45,10 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
       .every((e: { portal: { mode: string } }) => e.portal.mode === 'window'),
   ).toBe(true)
   await page.locator('#portal-mode').selectOption('open')
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.screenshot({ path: 'test-results/stargates-editor.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   await expect(page.locator('#interaction')).toContainText('E para entrar', { timeout: 10000 })
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toContainText('AUDI')
@@ -58,5 +67,6 @@ test('adds original Stargates, persists modes and drives the A3 through a live v
   await expect(page.locator('#player-mode')).toContainText('AUDI')
   await page.screenshot({ path: 'test-results/stargate-arrival.png' })
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   expect(errors).toEqual([])
 })

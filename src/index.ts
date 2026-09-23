@@ -11,7 +11,13 @@ export type { VehicleDefinition, VisualDefinition } from './scene.js'
 
 export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './geography.js'
 
-export { createCarrierPortals, createPortalPair, portalMapping, portalCrossing } from './portal.js'
+export {
+  createCarrierPortals,
+  createPortal,
+  createPortalPair,
+  portalMapping,
+  portalCrossing,
+} from './portal.js'
 
 export { boxSolid, extrudeElement, extrudeFace, removeVertex, validateSolid } from './solid.js'
 export type { SolidGeometry } from './solid.js'
@@ -32,9 +38,6 @@ export {
   LAYER_HEIGHT,
 } from './draped-road.js'
 export type { RoadElevation, RoadGeometryOptions, RoadCollider } from './draped-road.js'
-
-export { WorldStream, wantedWorldTiles, worldTileAt, WORLD_TILE_SIZE } from './world-stream.js'
-export type { WorldStreamHost } from './world-stream.js'
 
 export { entityCapabilities, type EntityCapability } from './capabilities.js'
 export { entityCatalog, createCatalogEntities, type CatalogId } from './catalog.js'
@@ -57,3 +60,25 @@ export {
   type AssembledRing,
   type AssemblyResult,
 } from './multipolygon.js'
+
+export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from './world-pose.js'
+export type { WorldPose } from './world-pose.js'
+
+export {
+  MAP_TILE_MATRIX,
+  MAP_ZOOMS,
+  MERCATOR_LIMIT,
+  mapTileAt,
+  mapTileBounds,
+  mapTileId,
+  parseMapTileId,
+  mapTileParent,
+  mapTileChildren,
+  mapTileGroundWidth,
+  planMapZooms,
+  readyMapCover,
+  type MapTile,
+  type MapZoomPlan,
+} from './map-tiles.js'
+
+export { mapTilePath, parseMapTilePath, mapTileFilename, mapTileSample } from './map-tiles.js'

@@ -1,5 +1,8 @@
 # Documentation
 
+Start with [Local development](local-development.md) to run the complete Docker
+stack and follow the guided source-code tour.
+
 This documentation describes the working 0.2.0 baseline. The playground keeps its
 Spanish interface; UI labels are quoted where needed to locate a control.
 
@@ -28,3 +31,9 @@ preserves the edit/play contract and a single physics owner.
 ## Regional data pilots
 
 - [geoEuskadi road-area comparison: import, preparation and remaining integration gates](geoeuskadi-pilot.md)
+
+- [Studio Desktop foundation](studio-desktop.md): experimental dockable workspace, runtime boundaries and the migration sequence.
+
+- [Named Studio projects](studio-projects.md): portable files, retained places, consistent geographic navigation and tabbed settings windows.
+
+- [Planetary world model](planetary-world.md): global object poses, local working frames and destination-specific portal environments.

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Nabla · Zooms del mundo</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #252525;
+        color: #eee;
+        font: 15px system-ui;
+        height: 100dvh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+      header {
+        padding: 12px 18px;
+        background: #303030;
+      }
+      h1 {
+        font-size: 19px;
+        margin: 0 0 6px;
+      }
+      p {
+        margin: 6px 0;
+      }
+      button,
+      a {
+        margin-right: 10px;
+        color: #cde3ff;
+      }
+      button {
+        background: #444;
+        border: 1px solid #666;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      #view {
+        min-height: 0;
+        position: relative;
+      }
+      canvas {
+        display: block;
+      }
+      #stats {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: #222d;
+        padding: 10px;
+        pointer-events: none;
+        white-space: pre-line;
+      }
+      #files {
+        max-height: 90px;
+        overflow: auto;
+        font-size: 13px;
+      }
+      #status {
+        color: #b9d4ef;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Nabla · Tres zooms del mundo</h1>
+      <p>Baldosas XYZ nativas · El mismo cargador GLB que utiliza el juego.</p>
+      <button id="near">Cerca · z15</button><button id="middle">Vuelo · z14</button
+      ><button id="far">Alto · z13</button
+      ><label><input id="buildings" type="checkbox" checked /> Edificios</label> ·
+      <a href="/?studio=desktop">Volver a Studio</a>
+      <p>Arrastra para orbitar; rueda para acercarte; botón derecho para desplazarte.</p>
+      <p id="status">Buscando baldosas preparadas…</p>
+      <details>
+        <summary>GLB visibles y descargas</summary>
+        <div id="files"></div>
+      </details>
+      <small>© OpenStreetMap contributors · Relieve: Esri</small>
+    </header>
+    <div id="view"><div id="stats"></div></div>
+    <script type="module" src="/zoom-lab.ts"></script>
+  </body>
+</html>

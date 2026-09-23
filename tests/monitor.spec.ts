@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './studio-test.js'
 
 test('starts in first person, toggles monitor view and fires only in play with captured mouse', async ({
   page,
@@ -6,16 +6,12 @@ test('starts in first person, toggles monitor view and fires only in play with c
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/?scene=circuit')
-  await page.locator('#options-menu-button').click()
-  await page.locator('#geography-section > summary').click()
-  await page.locator('#imagery').selectOption('offline')
-  await page.locator('#apply-location').click()
-  await page.keyboard.press('Escape')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
     timeout: 20000,
   })
-  await page.locator('#welcome-close').click()
+  if (await page.locator('#welcome-close').isVisible()) await page.locator('#welcome-close').click()
   await page.locator('#play').click()
+  await expect(page.locator('#play')).toBeEnabled()
   const canvas = page.locator('#viewport > canvas'),
     reticle = page.getByLabel('Punto de mira')
   await expect(canvas).toHaveAttribute('data-camera-mode', 'first-person')

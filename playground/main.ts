@@ -1,7 +1,25 @@
+import { setPlanetCharts } from './helm-map.js'
+import { PlanetWorld } from './planet-world.js'
+import { planetaryScene, createPlanetScene } from './studio/planet-scene.js'
+import { geographicPose, anchoredWorldPose } from './studio/geographic-pose.js'
+import { prepareStartup } from './startup.js'
+import { authoredTree, isMapEnvironment } from './studio/outliner.js'
+import { RemotePortalViews } from './remote-portals.js'
+import { portalRegistry, setPortalConnection } from './studio/portal-registry.js'
+import { portalEnvironment } from './portal-environment.js'
+import {
+  createProject,
+  locationId,
+  parseProject,
+  retainLocation,
+  visitLocation,
+  projectFilename,
+  type StudioProject,
+} from './studio/project.js'
+import { FrameLoop } from './studio/frame-loop.js'
+import { StudioInputOwner } from './studio/input-owner.js'
 import { mapCacheStats, setMapCacheBudget, clearMapCache } from './map-cache.js'
-import { decodePrepared } from './prepared-world.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
-import { isMapBuilding } from '../src/scene.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
@@ -16,21 +34,17 @@ import {
   performanceProfile,
 } from './performance.js'
 import { ShadowManager } from './csm.js'
-import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
-import { WorldStream } from '../src/world-stream.js'
-import { WorldLoader } from './world-loader.js'
-import { createRealWorld, type WorldExtract } from '../src/real-world.js'
 import { SolidEditor } from './solid-editor.js'
 import { treeSprite } from '../src/vegetation.js'
 import { createGallery, Gallery } from './gallery.js'
-import { alignCircuitPlan } from '../src/circuit-plan.js'
 import { PortalControls } from './portal-controls.js'
 import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
 import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
-import { createPortalPair } from '../src/portal.js'
-import { renderPortals } from './portals.js'
+import { WheelDebugOverlay } from './wheel-debug.js'
+import { createPortal } from '../src/portal.js'
+import { renderPortals, type ExternalPortalView } from './portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
 import { GeographicView } from './geography.js'
 import { localToGeo, MADRID } from '../src/geography.js'
@@ -41,10 +55,10 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js'
 import {
   SceneEditor,
   parseScene,
+  createSampleScene,
   type SceneDocument,
   SceneGraph,
   Simulation,
-  createSampleScene,
   createEntity,
   idleInput,
   rotationDegrees,
@@ -67,34 +81,33 @@ const escape = (s: string): string =>
   )
 const performanceSettings = readPerformance()
 const STORAGE_KEY = 'nabla.scene.v1'
+const PROJECT_KEY = 'nabla.project.v1'
+let project: StudioProject | undefined
+let portalEntriesCache: ReturnType<typeof portalRegistry> = []
+let portalEntriesProject: StudioProject | undefined
+let recoverLegacyPlaces = true
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
-let loadingWorld = false
-let distantTerrain: DistantTerrain | null = null
+let loadingWorld = true
 const flightAudio = new FlightAudio()
-let worldStream: WorldStream | null = null
-let worldLoader: WorldLoader | null = null
+let worldStream: PlanetWorld | null = null
+let streamGeography = ''
 let streamSample: { at: number; position: Vec3Tuple } | null = null
-let editor = new SceneEditor(
-  upgradeReferenceScene(createSampleScene()),
-  performanceSettings.preset === 'ultra',
-)
-let loadError = ''
-try {
-  const saved = await readScene(STORAGE_KEY)
-  if (saved)
-    editor = new SceneEditor(
-      upgradeReferenceScene(JSON.parse(saved), performanceSettings.preset === 'ultra'),
-      performanceSettings.preset === 'ultra',
-    )
-  if (editor.document.entities.some((e) => e.id === 'road' && e.size[0] === 16 && e.size[2] === 85))
-    editor.load(alignCircuitPlan(editor.document))
-} catch {
-  loadError = 'La escena guardada no es válida. Se ha abierto el ejemplo.'
-}
+let editor = new SceneEditor({
+  version: 1,
+  name: 'Preparando mundo',
+  entities: [createEntity('spawn', 'spawn')],
+})
+let startupPending = true
+let finishStartup!: () => void
+const startupDone = new Promise<void>((resolve) => {
+  finishStartup = resolve
+})
+project = createProject(editor.document)
 let savedDocument = editor.serialize()
 const collapsed = new Set(
   editor.document.entities.filter((e) => e.kind === 'group').map((e) => e.id),
 )
+let selectedGeometry: Entity['geometry']
 let selectedId =
   editor.document.entities.find((e) => e.kind === 'vehicle')?.id ?? editor.document.entities[0].id
 let sim: Simulation | null = null
@@ -131,7 +144,13 @@ let lastLookTime = 0
 let yaw = 0,
   pitch = 0.24
 const keys = new Set<string>()
+const studioInput = new StudioInputOwner(() => {
+  keys.clear()
+  fireRequested = false
+  if (document.pointerLockElement) document.exitPointerLock()
+})
 let toastTimer: ReturnType<typeof setTimeout>
+let remotePortalViews: RemotePortalViews | undefined
 function toast(message: string): void {
   $('toast').textContent = message
   $('toast').style.display = 'block'
@@ -207,7 +226,7 @@ orbit.addEventListener('change', () => {
   needsRender = true
 })
 const gizmo = new TransformControls(camera, renderer.domElement)
-gizmo.setSpace('world')
+gizmo.setSpace('local')
 gizmo.setSize(0.8)
 scene.add(gizmo.getHelper())
 gizmo.addEventListener('change', () => {
@@ -224,8 +243,7 @@ cursorRing.renderOrder = 50
 worldCursor.add(cursorRing)
 worldCursor.renderOrder = 50
 scene.add(worldCursor)
-function syncCursor(): void {
-  const position = editor.document.cursor ?? [0, 0, 0]
+function syncCursor(position: Vec3Tuple = editor.document.cursor ?? [0, 0, 0]): void {
   worldCursor.position.fromArray(position)
   for (const [i, axis] of ['x', 'y', 'z'].entries())
     $<HTMLInputElement>(`cursor-${axis}`).value = String(position[i])
@@ -250,7 +268,7 @@ $('cursor-view').onclick = () => action(() => placeCursor(orbit.target.toArray()
 $('selection-cursor').onclick = () =>
   action(() => {
     const entity = editor.document.entities.find((e) => e.id === selectedId)!
-    if (isMapBuilding(entity) && !entity.mapEditable)
+    if (isMapEnvironment(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
     editor.moveToCursor(selectedId)
     rebuild()
@@ -258,7 +276,7 @@ $('selection-cursor').onclick = () =>
 $('origin-cursor').onclick = () =>
   action(() => {
     const entity = editor.document.entities.find((e) => e.id === selectedId)!
-    if (isMapBuilding(entity) && !entity.mapEditable)
+    if (isMapEnvironment(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
     editor.originToCursor(selectedId)
     rebuild()
@@ -277,29 +295,33 @@ $('transform-exact').onclick = () =>
       amount = $<HTMLInputElement>('transform-amount').valueAsNumber
     if (axis === 'all' || !Number.isFinite(amount))
       throw new Error('Elige X, Y o Z y una cantidad finita')
-    const doc = editor.document,
+    const doc = view.document,
       graph = SceneGraph.fromValidated(doc),
       entity = doc.entities.find((e) => e.id === selectedId)!
-    if (isMapBuilding(entity) && !entity.mapEditable)
+    if (isMapEnvironment(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
     const pose = graph.worldTransform(selectedId),
       i = 'XYZ'.indexOf(axis)
     if (gizmo.getMode() === 'rotate') {
       const v = new THREE.Vector3()
       v.setComponent(i, 1)
-      pose.rotation = new THREE.Quaternion()
-        .setFromAxisAngle(v, (amount * Math.PI) / 180)
-        .multiply(new THREE.Quaternion(...pose.rotation))
+      pose.rotation = new THREE.Quaternion(...pose.rotation)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(v, (amount * Math.PI) / 180))
         .toArray()
-    } else pose.position[i] += amount
+    } else {
+      const delta = new THREE.Vector3()
+        .setComponent(i, amount)
+        .applyQuaternion(new THREE.Quaternion(...pose.rotation))
+      pose.position = new THREE.Vector3(...pose.position).add(delta).toArray()
+    }
     editor.update(selectedId, { transform: graph.localFromWorld(entity.parentId, pose) })
-    rebuild()
+    finishPoseEdit(selectedId)
   })
 const outline = new SelectionOutline()
 scene.add(outline)
-let lastWorldInstallMs = 0
+const lastWorldInstallMs = 0
 let water: SeaWater | undefined
-let view = new SceneView(editor.document, performanceSettings.preset === 'ultra')
+let view = new SceneView(editor.document, performanceSettings.preset === 'ultra', true)
 view.setupMaterials((material) => shadowManager.setupMaterial(material))
 scene.add(view.root)
 let geography = new GeographicView(
@@ -307,7 +329,7 @@ let geography = new GeographicView(
   () => {
     needsRender = true
   },
-  true,
+  false,
 )
 scene.add(geography.tiles)
 let skyClock: SkyClock = editor.document.sky ?? { mode: 'live' }
@@ -318,7 +340,7 @@ function watchAssets(current: SceneView): void {
   current.ready
     .then(() => {
       if (view === current) {
-        renderer.domElement.dataset.assets = 'loaded'
+        if (!startupPending) renderer.domElement.dataset.assets = 'loaded'
         current.setupMaterials((material) => shadowManager.setupMaterial(material))
         needsRender = true
       }
@@ -342,15 +364,15 @@ gizmo.addEventListener('mouseUp', () => {
   action(() => {
     const object = view.objects.get(selectedId)
     if (!object) return
-    const entity = editor.document.entities.find((e) => e.id === selectedId)!
-    const graph = SceneGraph.fromValidated(editor.document)
+    const entity = view.document.entities.find((e) => e.id === selectedId)!
+    const graph = SceneGraph.fromValidated(view.document)
     editor.update(selectedId, {
       transform: graph.localFromWorld(entity.parentId, {
         position: object.position.toArray(),
         rotation: object.quaternion.clone().normalize().toArray(),
       }),
     })
-    rebuild()
+    finishPoseEdit(selectedId)
   })
 })
 const solidEditor = new SolidEditor(
@@ -363,36 +385,46 @@ const solidEditor = new SolidEditor(
   () => editor.document.cursor ?? [0, 0, 0],
 )
 
+function finishPoseEdit(id: string): void {
+  view.updateEntityPose(editor.entity(id))
+  refreshUi(view.document, true)
+}
+
 function rebuild(prepared?: PreparedMapGeometry): void {
+  const migrated = planetaryScene(editor.document)
+  if (migrated !== editor.document) editor.load(migrated)
+  const document = editor.document
+  if (!prepared && view.updateEditorPoses(document)) {
+    refreshUi()
+    return
+  }
+  remotePortalViews?.dispose()
   syncCursor()
-  distantTerrain?.dispose()
-  distantTerrain = null
-  worldStream?.dispose()
-  worldLoader?.dispose()
-  worldStream = null
-  worldLoader = null
   gizmo.detach()
-  if (JSON.stringify(view.document.geography) !== JSON.stringify(editor.document.geography)) {
+  if (
+    JSON.stringify(view.document.geography) !== JSON.stringify(document.geography) ||
+    view.document.entities.some((e) => !!e.terrain) !== document.entities.some((e) => !!e.terrain)
+  ) {
     geography.dispose()
     geography = new GeographicView(
-      editor.document,
+      document,
       () => {
         needsRender = true
       },
-      true,
+      false,
     )
     scene.add(geography.tiles)
   }
   view.dispose()
-  const document = editor.document
   if (prepared) receiveMapGeometry(document.entities, prepared)
-  view = new SceneView(document, performanceSettings.preset === 'ultra')
+  view = new SceneView(document, performanceSettings.preset === 'ultra', true)
   view.setupMaterials((material) => shadowManager.setupMaterial(material))
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
   watchAssets(view)
   setupWorldStream()
-  if (!view.objects.has(selectedId)) selectedId = editor.document.entities[0].id
+  if (!document.entities.some((e) => e.id === selectedId))
+    selectedId = document.entities.find((e) => !isMapEnvironment(e))?.id ?? document.entities[0].id
   refreshUi()
 }
 function setupWorldStream(): void {
@@ -402,72 +434,51 @@ function setupWorldStream(): void {
   water = doc.geography ? new SeaWater(doc.geography) : undefined
   if (water) scene.add(water.root)
   $('stream-status').textContent = ''
-  if (!doc.geography || !doc.entities.some((e) => e.id === 'world-terrain')) return
-  const origin = doc.geography
-  distantTerrain = new DistantTerrain(origin, () => {
-    needsRender = true
-    const status = distantTerrain?.status ?? 'loading'
-    renderer.domElement.dataset.distantTerrain = status
-    $('world-note').textContent =
-      `${doc.name} · OSM + ESRI · ` +
-      (status === 'ready'
-        ? `Vista ≈ ${performanceSettings.distance / 1000} km`
-        : status === 'unavailable'
-          ? 'Relieve lejano pendiente'
-          : 'Cargando horizonte…')
-  })
-  distantTerrain.setDocument(doc)
-  scene.add(distantTerrain.root)
-  const loader = new WorldLoader()
-  worldLoader = loader
-  worldStream = new WorldStream({
-    document: () => view.document,
-    load: (key, signal) => loader.load(origin, key, signal),
-    prepare: (keys) => loader.prepare(origin, keys),
-    prefetch: (keys) => loader.prefetch(origin, keys),
-    replace: (remove, add) => {
-      const started = performance.now()
-      sim?.replaceMapEntities(remove, add, performanceSettings.preset === 'ultra')
-      editor.experimentalLargeScene = performanceSettings.preset === 'ultra'
-      editor.replaceMapEntities(remove, add)
-      view.replaceMapEntities(remove, add)
-      distantTerrain?.setDocument(view.document)
-      lastWorldInstallMs = performance.now() - started
-      renderer.domElement.dataset.worldInstallMs = lastWorldInstallMs.toFixed(1)
-      for (const e of add) if (e.kind === 'group') collapsed.add(e.id)
-      view.setPlaying(!!sim)
-      if (sim) {
-        $('entity-count').textContent = String(view.document.entities.length)
-        $('status').textContent = 'Mapa actualizado · cambios sin guardar'
-      } else refreshUi()
-      renderer.domElement.dataset.worldZones = String(
-        view.document.entities.filter((e) => e.terrain).length,
-      )
+  const identity = doc.geography?.planetary ? JSON.stringify(doc.geography) : ''
+  if (worldStream && streamGeography === identity) return
+  worldStream?.dispose()
+  worldStream = null
+  setPlanetCharts(() => worldStream?.chartTiles ?? [])
+  streamGeography = identity
+  if (!doc.geography?.planetary) return
+  worldStream = new PlanetWorld(
+    doc.geography,
+    () => {
+      needsRender = true
+      $('stream-status').textContent = worldStream?.status ?? ''
     },
-    status: (message) => {
-      $('stream-status').textContent = message
-    },
-  })
-  worldStream.setQuality(
-    performanceProfile(performanceSettings).concurrent,
-    performanceProfile(performanceSettings).ahead,
-    performanceSettings.preset === 'ultra',
+    (material) => shadowManager.setupMaterial(material),
   )
+  worldStream.setDistance(performanceSettings.distance)
+  scene.add(worldStream.root)
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
 function select(id: string): void {
+  worldStream?.clearSelection()
   selectedId = id
   refreshUi()
 }
-function refreshUi(): void {
-  syncCursor()
+function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): void {
+  refreshPortalEntries(doc)
+  const places = $<HTMLSelectElement>('project-places')
+  places.replaceChildren(
+    ...project!.locations.map((place) => {
+      const option = document.createElement('option')
+      option.value = place.id
+      option.textContent = place.scene.name
+      option.selected = place.id === project!.activeLocation
+      return option
+    }),
+  )
+  $<HTMLButtonElement>('project-place-open').disabled = loadingWorld
+
+  syncCursor(doc.cursor ?? [0, 0, 0])
   $('cursor-menu')
     .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
       'input,button,select',
     )
     .forEach((el) => (el.disabled = !!sim || loadingWorld))
   needsRender = true
-  const doc = editor.document
   let parentId = doc.entities.find((e) => e.id === selectedId)?.parentId
   while (parentId) {
     collapsed.delete(parentId)
@@ -476,8 +487,8 @@ function refreshUi(): void {
   setAddMenu(false)
   $('scene-name').textContent = doc.name
   $('view-subtitle').textContent = doc.name
-  grid.visible = !sim && !doc.entities.some((e) => e.terrain)
-  $('world-note').hidden = !doc.entities.some((e) => e.terrain)
+  grid.visible = !sim && !doc.geography?.planetary && !doc.entities.some((e) => e.terrain)
+  $('world-note').hidden = !doc.geography?.planetary && !doc.entities.some((e) => e.terrain)
   skyClock = doc.sky ?? { mode: 'live' }
   $<HTMLInputElement>('sky-time').value = localTimeInput(skyTime(skyClock))
   $('sky-live').classList.toggle('active', skyClock.mode === 'live')
@@ -487,21 +498,24 @@ function refreshUi(): void {
   $<HTMLInputElement>('longitude').value = String(geo.longitude)
   $<HTMLSelectElement>('imagery').value = doc.geography?.imagery ?? 'satellite'
   for (const id of ['latitude', 'longitude', 'imagery', 'apply-location', 'locate'])
-    $<HTMLInputElement>(id).disabled = Boolean(sim) || doc.entities.some((e) => !!e.terrain)
+    $<HTMLInputElement>(id).disabled = Boolean(sim) || loadingWorld || id === 'imagery'
   $('entity-count').textContent = String(doc.entities.length)
   $('status').textContent =
-    editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
+    !poseEdited && editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
   const tree = $('tree')
   tree.replaceChildren()
+  const treeChildren = authoredTree(doc.entities)
+  const authoredCount = [...treeChildren.values()].reduce((n, list) => n + list.length, 0)
+  $('entity-count').textContent = String(authoredCount)
+  $('entity-count').title = 'Objetos propios y modificaciones; el mapa se carga aparte'
   const icons = { terrain: '▧', solid: '⬡', box: '◇', vehicle: '▰', spawn: '◎', group: '▱' }
   function append(parent: string | null, depth: number): void {
-    for (const e of doc.entities.filter((item) => item.parentId === parent)) {
+    for (const e of treeChildren.get(parent) ?? []) {
       const button = document.createElement('button')
       button.className = 'tree-item' + (e.id === selectedId ? ' selected' : '')
       button.dataset.entityId = e.id
       button.setAttribute('role', 'treeitem')
-      if (doc.entities.some((child) => child.parentId === e.id))
-        button.setAttribute('aria-expanded', String(!collapsed.has(e.id)))
+      if (treeChildren.has(e.id)) button.setAttribute('aria-expanded', String(!collapsed.has(e.id)))
       button.setAttribute('aria-selected', String(e.id === selectedId))
       button.style.paddingLeft = `${10 + depth * 14}px`
       button.innerHTML = `<span class="kind-icon">${e.kind === 'group' ? (collapsed.has(e.id) ? '›' : '⌄') : icons[e.kind]}</span><span class="name">${escape(e.name)}</span>${e.motion === 'dynamic' ? '<span class="motion">●</span>' : ''}`
@@ -518,24 +532,66 @@ function refreshUi(): void {
     }
   }
   append(null, 0)
+  const locationsTree = document.getElementById('studio-locations')
+  if (locationsTree) {
+    locationsTree.replaceChildren()
+    for (const place of project!.locations) {
+      const active = place.id === project!.activeLocation
+      const section = document.createElement('details')
+      section.open = active
+      const label = document.createElement('summary')
+      label.textContent = active ? doc.name : place.scene.name
+      section.append(label)
+      if (active) section.append(tree)
+      else {
+        const visit = document.createElement('button')
+        visit.textContent = 'Abrir lugar · ' + place.scene.entities.length + ' objetos'
+        visit.disabled = !!sim || loadingWorld
+        visit.onclick = () => void openProjectPlace(place.id)
+        section.append(visit)
+      }
+      locationsTree.append(section)
+    }
+  }
   if (tree.dataset.selection !== selectedId) {
     tree.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' })
     tree.dataset.selection = selectedId
   }
   const e = doc.entities.find((item) => item.id === selectedId)!
   const props = $('properties')
-  const angles = toDegrees(e.transform.rotation)
+  selectedGeometry = e.geometry
+  // Only the selected ancestry is needed here; avoid allocating a graph for the entire map.
+  const ancestry = [e]
+  const byId = new Map(doc.entities.map((entity) => [entity.id, entity]))
+  let ancestor = e
+  while (ancestor.parentId) {
+    ancestor = byId.get(ancestor.parentId)!
+    ancestry.push(ancestor)
+  }
+  const graph = SceneGraph.fromValidated({ ...doc, entities: ancestry })
+  const parent = doc.entities.find((p) => p.id === e.parentId)
+  const geographic =
+    doc.geography && (!parent || (isMapEnvironment(parent) && !parent.mapEditable))
+      ? geographicPose(doc.geography, graph.worldTransform(e.id), e.geoAnchor)
+      : undefined
+  const displayedPose = geographic?.pose ?? e.transform
+  const angles = toDegrees(displayedPose.rotation)
   function row(label: string, key: string, values: number[]): string {
     return `<label class="field-label">${label}</label><div class="axis-row">${values.map((n, i) => `<label><span>${'XYZ'[i]}</span><input aria-label="${label} ${'XYZ'[i]}" data-vector="${key}" data-axis="${i}" type="number" step="${key === 'rotation' ? '1' : '0.1'}" value="${Number(n.toFixed(3))}"></label>`).join('')}</div>`
   }
   props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${e.light ? 'Farola · iluminación' : { terrain: 'Relieve · Esri Terrain 3D', solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
     <label class="field-label">Capacidades</label><div class="entity-capabilities">${entityCapabilities(e).map(escape).join(' · ')}</div>
     <label class="field-label" for="name">Nombre</label><input id="name" value="${escape(e.name)}" maxlength="100">
-    ${row('Posición local · m', 'position', e.transform.position)}${row('Rotación local · °', 'rotation', angles)}
+    ${row(geographic ? 'Pose desde ancla · m' : 'Posición respecto al padre · m', 'position', displayedPose.position)}${row('Rotación local · °', 'rotation', angles)}
     ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
     <label class="field-label" for="color">Color</label><input id="color" type="color" value="${e.color}">
     <label class="field-label" for="parent">Padre</label><select id="parent"><option value="">Mundo</option>${doc.entities
-      .filter((item) => item.id !== e.id && item.kind !== 'spawn')
+      .filter(
+        (item) =>
+          item.id !== e.id &&
+          item.kind !== 'spawn' &&
+          (!isMapEnvironment(item) || item.mapEditable || item.id === e.parentId),
+      )
       .map(
         (item) =>
           `<option value="${escape(item.id)}" ${e.parentId === item.id ? 'selected' : ''}>${escape(item.name)}</option>`,
@@ -544,6 +600,67 @@ function refreshUi(): void {
     ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
     ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
     <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
+  if (geographic) {
+    const geo = document.createElement('section')
+    geo.id = 'entity-geography'
+    geo.innerHTML =
+      '<label class="field-label">Ancla geográfica · altitud sobre el modelo terrestre</label>'
+    for (const [key, title] of [
+      ['longitude', 'Longitud'],
+      ['latitude', 'Latitud'],
+      ['altitude', 'Altitud · m'],
+    ] as const) {
+      const label = document.createElement('label')
+      label.textContent = title
+      const input = document.createElement('input')
+      input.type = 'number'
+      input.step = key === 'altitude' ? '0.1' : '0.000001'
+      input.id = 'entity-' + key
+      input.value = String(Number(geographic.anchor[key].toFixed(key === 'altitude' ? 3 : 8)))
+      input.onchange = () =>
+        action(() => {
+          const anchor = { ...geographic.anchor, [key]: input.valueAsNumber }
+          const world = anchoredWorldPose(doc.geography!, anchor, geographic.pose)
+          editor.update(e.id, {
+            ...(e.geoAnchor ? { geoAnchor: anchor } : {}),
+            transform: graph.localFromWorld(e.parentId, world),
+          })
+          finishPoseEdit(e.id)
+        })
+      label.append(input)
+      geo.append(label)
+    }
+    const reset = document.createElement('button')
+    reset.textContent = 'Ancla en la posición actual · XYZ a cero'
+    reset.onclick = () =>
+      action(() => {
+        editor.update(e.id, { geoAnchor: undefined })
+        finishPoseEdit(e.id)
+      })
+    geo.append(reset)
+    props.querySelector('#name')!.after(geo)
+  }
+  if (doc.geography && !geographic) {
+    const geo = geographicPose(doc.geography, graph.worldTransform(e.id)).anchor
+    const section = document.createElement('section')
+    section.id = 'entity-geography'
+    section.innerHTML = '<label class="field-label">GPS del objeto · pose relativa al padre</label>'
+    for (const [key, title] of [
+      ['longitude', 'Longitud'],
+      ['latitude', 'Latitud'],
+      ['altitude', 'Altitud · m'],
+    ] as const) {
+      const label = document.createElement('label')
+      label.textContent = title
+      const input = document.createElement('input')
+      input.id = 'entity-' + key
+      input.disabled = true
+      input.value = String(Number(geo[key].toFixed(key === 'altitude' ? 3 : 8)))
+      label.append(input)
+      section.append(label)
+    }
+    props.querySelector('#name')!.after(section)
+  }
   if (e.road && !sim && (!e.road.elevation || e.road.elevation === 'terrain')) {
     const label = document.createElement('label')
     label.className = 'field-label'
@@ -583,9 +700,20 @@ function refreshUi(): void {
       })
     props.append(button)
   }
-  const mapReadOnly = isMapBuilding(e) && !e.mapEditable
+  const mapReadOnly = isMapEnvironment(e) && !e.mapEditable
   if (mapReadOnly) solidEditor.close()
   else solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
+  const objectMode = $<HTMLSelectElement>('studio-object-mode')
+  objectMode.value = solidEditor.active ? 'edit' : 'object'
+  objectMode.disabled = !!sim || loadingWorld
+  objectMode.querySelector<HTMLOptionElement>('[value=edit]')!.disabled = !e.geometry || mapReadOnly
+  objectMode.title = e.geometry
+    ? 'Editar el objeto o su geometría'
+    : 'Este objeto no contiene un sólido editable'
+  objectMode.onchange = () => {
+    if ((objectMode.value === 'edit') !== solidEditor.active)
+      document.getElementById('edit-solid')?.click()
+  }
   if (e.light) {
     const controls = document.createElement('div')
     controls.innerHTML = `<label class="field-label">Farola</label><label><input id="light-enabled" type="checkbox" ${e.light.enabled ? 'checked' : ''}> Encendida</label><label><input id="light-night" type="checkbox" ${e.light.nightOnly ? 'checked' : ''}> Solo de noche</label><label class="field-label" for="light-color">Color de luz</label><input id="light-color" type="color" value="${e.light.color}"><label class="field-label" for="light-intensity">Intensidad · cd</label><input id="light-intensity" type="number" min="0" max="10000" value="${e.light.intensity}"><label class="field-label" for="light-distance">Alcance · m</label><input id="light-distance" type="number" min="1" max="100" value="${e.light.distance}">`
@@ -625,7 +753,7 @@ function refreshUi(): void {
   }
   if (e.portal) {
     const controls = document.createElement('div')
-    controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>La conexión cambia en ambos extremos.</p>`
+    controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>Los destinos de esta ciudad permiten el paso. Entre ciudades, de momento solo ventana.</p>`
     controls.insertAdjacentHTML(
       'afterbegin',
       `<label class="field-label" for="portal-destination">Destino del Stargate</label><select id="portal-destination"><option value="">Sin enlace</option>${doc.entities
@@ -634,15 +762,48 @@ function refreshUi(): void {
         .join('')}</select>`,
     )
     props.append(controls)
-    $<HTMLSelectElement>('portal-destination').value = e.portal.pairId ?? ''
+    const sourceEntry = registrySource(e.id)
+    const remoteEntries = projectPortalEntries().filter(
+      (p) =>
+        p.locationId !== project!.activeLocation &&
+        p.size.every((n, i) => Math.abs(n - e.size[i]) < 1e-6),
+    )
+    for (const target of remoteEntries)
+      $<HTMLSelectElement>('portal-destination').add(
+        new Option(`${target.name} · ${target.place}`, `global:${target.id}`),
+      )
+    const remoteConnection = project!.connections?.find((c) => c.source === sourceEntry?.id)
+    $<HTMLSelectElement>('portal-destination').value = remoteConnection
+      ? `global:${remoteConnection.destination}`
+      : (e.portal.pairId ?? '')
     $('portal-destination').onchange = () =>
       action(() => {
-        editor.linkPortals(e.id, $<HTMLSelectElement>('portal-destination').value || null)
+        const target = $<HTMLSelectElement>('portal-destination').value
+        if (target.startsWith('global:')) {
+          editor.linkPortals(e.id, null)
+          configureProjectPortal(e.id, target.slice(7), false)
+        } else {
+          if (remoteConnection) configureProjectPortal(e.id, null, false)
+          editor.linkPortals(e.id, target || null)
+        }
         rebuild()
       })
-    $<HTMLSelectElement>('portal-mode').value = e.portal.mode
+    $<HTMLSelectElement>('portal-mode').value = remoteConnection?.mode ?? e.portal.mode
+    if (remoteConnection)
+      $<HTMLSelectElement>('portal-mode').querySelector<HTMLOptionElement>(
+        'option[value=open]',
+      )!.disabled = true
     $('portal-mode').onchange = () =>
       action(() => {
+        if (remoteConnection) {
+          configureProjectPortal(
+            e.id,
+            remoteConnection.destination,
+            $<HTMLSelectElement>('portal-mode').value === 'window',
+          )
+          refreshUi()
+          return
+        }
         editor.setPortalMode(
           e.id,
           $<HTMLSelectElement>('portal-mode').value as 'open' | 'closed' | 'window',
@@ -656,18 +817,31 @@ function refreshUi(): void {
         const axis = Number(input.dataset.axis),
           key = input.dataset.vector!
         const values = [
-          ...(key === 'rotation' ? angles : key === 'size' ? e.size : e.transform.position),
+          ...(key === 'rotation' ? angles : key === 'size' ? e.size : displayedPose.position),
         ] as Vec3Tuple
         values[axis] = input.valueAsNumber
         if (key === 'size') editor.update(e.id, { size: values })
-        else
+        else if (geographic) {
+          const pose = {
+            ...displayedPose,
+            [key]: key === 'rotation' ? rotationDegrees(...values) : values,
+          }
+          editor.update(e.id, {
+            ...(key === 'position' ? { geoAnchor: geographic.anchor } : {}),
+            transform: graph.localFromWorld(
+              e.parentId,
+              anchoredWorldPose(doc.geography!, geographic.anchor, pose),
+            ),
+          })
+        } else
           editor.update(e.id, {
             transform: {
               ...e.transform,
               [key]: key === 'rotation' ? rotationDegrees(...values) : values,
             },
           })
-        rebuild()
+        if (key === 'size') rebuild()
+        else finishPoseEdit(e.id)
       })
   })
   $('name').onchange = () =>
@@ -729,7 +903,8 @@ function refreshUi(): void {
     $<HTMLSelectElement>('parent').disabled =
       e.kind === 'spawn' || e.motion === 'dynamic' || !!e.portal
     if (solidEditor.active || mapReadOnly) gizmo.detach()
-    else gizmo.attach(view.objects.get(e.id)!)
+    else if (view.objects.has(e.id)) gizmo.attach(view.objects.get(e.id)!)
+    else gizmo.detach()
   }
   if (mapReadOnly && !sim) {
     props
@@ -750,7 +925,7 @@ function refreshUi(): void {
       })
     const note = document.createElement('p')
     note.textContent =
-      'Edificio del mapa · dibujo agrupado. Crea una modificación para cambiar su forma, color o posición.'
+      'Elemento del mapa. Crea una modificación para incorporarlo al árbol y editarlo.'
     props.append(note, button)
   }
   $<HTMLButtonElement>('undo').disabled = !!sim || loadingWorld || !editor.canUndo
@@ -771,6 +946,7 @@ function refreshUi(): void {
     'world-irun',
     'world-irun-official',
     'sample-assets',
+    'save-as',
     'sample-portals',
     'focus',
   ])
@@ -803,14 +979,16 @@ document.addEventListener('keydown', (event) => {
     $('add-entity').focus()
   }
 })
-$('undo').onclick = () => {
+function undoScene(): void {
   editor.undo()
   rebuild()
 }
-$('redo').onclick = () => {
+function redoScene(): void {
   editor.redo()
   rebuild()
 }
+$('undo').onclick = undoScene
+$('redo').onclick = redoScene
 for (const [id, kind] of [
   ['add-solid', 'solid'],
   ['add-box', 'box'],
@@ -855,7 +1033,10 @@ function focusSelection(): void {
 $('focus').onclick = focusSelection
 $('sample-assets').onclick = () =>
   action(() => {
-    editor.load(upgradeReferenceScene(createSampleScene()))
+    project = retainLocation(project!, editor.document)
+    const sample = upgradeReferenceScene(createSampleScene())
+    project = visitLocation(project, sample)
+    editor.load(sample)
     selectedId = 'car-a'
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
@@ -891,89 +1072,22 @@ $('sample-gallery').onclick = () =>
 $('sample-portals').onclick = () =>
   action(() => {
     const next = editor.document
-    const ids = [crypto.randomUUID(), crypto.randomUUID()]
-    const [x, y, z] = next.cursor ?? [0, 0, 0]
-    const portals = createPortalPair(ids[0], ids[1], [x, y + 1.455, z], [x + 8, y + 1.455, z])
-    for (const portal of portals) portal.portal!.mode = 'closed'
-    next.entities.push(...portals)
+    const id = crypto.randomUUID()
+    next.entities.push(createPortal(id, next.cursor ?? [0, 0, 0]))
     editor.load(next)
-    selectedId = ids[0]
-    collapsed.delete(ids[0])
+    project = retainLocation(project!, editor.document)
+    selectedId = id
+    setAddMenu(false)
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
-    toast('Dos Stargates añadidos junto al cursor · enlazados y cerrados.')
+    toast('Portal colocado en el cursor 3D · dale un nombre y elige su destino.')
   })
-async function loadIrun(combined = false): Promise<void> {
+async function loadIrun(_combined = false): Promise<void> {
   if (sim || loadingWorld) return
-  loadingWorld = true
-  refreshUi()
-  for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = true
-  $<HTMLButtonElement>('play').disabled = true
-  $('world-loading').hidden = false
-  $('world-loading').textContent = combined
-    ? 'Cargando Ventas · OSM + geoEuskadi preparado…'
-    : 'Cargando Ventas de Irún · OSM + relieve…'
-  try {
-    let next: SceneDocument
-    let geometry: PreparedMapGeometry | undefined
-    if (combined) {
-      const response = await fetch('/geography/ventas-combined.pack', { cache: 'no-cache' })
-      if (!response.ok) throw new Error('La zona combinada todavía no está preparada')
-      if (!response.body) throw new Error('Zona combinada vacía')
-      const data = await new Response(
-        response.body.pipeThrough(new DecompressionStream('gzip')),
-      ).json()
-      if (data.recipe !== 'ventas-combined-roads-v1') throw new Error('Receta incompatible')
-      const entities = data.entities as Entity[]
-      const prepared = decodePrepared(
-        { ...data, entities: entities.filter((e) => e.kind !== 'spawn') },
-        data.origin,
-        '0_0',
-      )
-      next = upgradeReferenceScene(
-        parseScene({
-          ...data.scene,
-          entities: [...prepared.entities, ...entities.filter((e) => e.kind === 'spawn')],
-        }),
-      )
-      geometry = prepared.geometry
-    } else {
-      const response = await fetch('/geography/irun-ventas.json')
-      if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
-      next = upgradeReferenceScene(createRealWorld((await response.json()) as WorldExtract))
-    }
-    editor.load(next)
-    if (combined) {
-      const url = new URL(location.href)
-      url.searchParams.delete('world')
-      history.replaceState(null, '', url)
-    }
-    for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
-    selectedId = 'car-a'
-    rebuild(geometry)
-    $('welcome').hidden = true
-    await view.ready
-    focusSelection()
-    // Start with a wider view of the street instead of a close-up of the bonnet.
-    orbit.target.set(0, 2, 0)
-    camera.position.set(35, 32, 40)
-    orbit.update()
-    renderer.domElement.dataset.world = combined ? 'geoeuskadi' : 'irun'
-    localStorage.setItem('nabla.irun.introduced', '1')
-    toast(
-      combined
-        ? 'Ventas · piloto combinado en la zona inicial · OSM en el resto del mundo'
-        : 'Ventas de Irún · exploración conectada · las zonas se precargan al jugar',
-    )
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'No se pudo abrir Ventas')
-  } finally {
-    loadingWorld = false
-    refreshUi()
-    for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = false
-    $<HTMLButtonElement>('play').disabled = false
-    $('world-loading').hidden = true
-  }
+  $<HTMLSelectElement>('travel-city').value = '43.32969,-1.819606'
+  $<HTMLInputElement>('travel-latitude').value = '43.32969'
+  $<HTMLInputElement>('travel-longitude').value = '-1.819606'
+  await travelTo()
 }
 let travelController: AbortController | null = null
 $('travel-city').onchange = () => {
@@ -1009,18 +1123,18 @@ async function travelTo(): Promise<void> {
     Math.abs(longitude) > 180
   ) {
     $('travel-status').textContent = 'Introduce coordenadas válidas (latitud entre −85 y 85).'
+    toast($('travel-status').textContent!)
     return
   }
   const city = $<HTMLSelectElement>('travel-city')
   const name = city.value
     ? city.selectedOptions[0].textContent!
     : `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-  if (sim) togglePlay()
+  if (sim) await togglePlay()
   loadingWorld = true
   refreshUi()
   const controller = new AbortController()
   travelController = controller
-  const loader = new WorldLoader()
   for (const id of ['save', 'export', 'play', 'travel-go']) $<HTMLButtonElement>(id).disabled = true
   $('travel-cancel').hidden = false
   $('world-loading').hidden = false
@@ -1035,26 +1149,27 @@ async function travelTo(): Promise<void> {
         placeKey(current.geography.latitude, current.geography.longitude),
         editor.serialize(),
       )
-    const saved = await readScene(placeKey(latitude, longitude))
+    project = retainLocation(project!, current)
+    await writeScene(PROJECT_KEY, JSON.stringify(project))
+    const retained = project.locations.find(
+      (p) => locationId(p.scene) === `geo:${latitude.toFixed(6)}:${longitude.toFixed(6)}`,
+    )
+    const saved = retained
+      ? JSON.stringify(retained.scene)
+      : recoverLegacyPlaces
+        ? await readScene(placeKey(latitude, longitude))
+        : null
     let next: SceneDocument
-    if (saved) next = parseScene(JSON.parse(saved), performanceSettings.preset === 'ultra')
-    else {
-      const entities = await loader.load(
-        { latitude, longitude, altitude: 0 },
-        '0_0',
-        controller.signal,
-        true,
-      )
-      for (const e of entities) if (e.terrain) e.name = `Relieve · ${name}`
-      next = upgradeReferenceScene({
-        version: 1,
-        name,
-        geography: { latitude, longitude, altitude: 0, imagery: 'offline' },
-        sky: current.sky,
-        entities,
-      })
-    }
+    const savedScene = saved
+      ? parseScene(JSON.parse(saved), performanceSettings.preset === 'ultra')
+      : null
+    next = savedScene
+      ? planetaryScene(savedScene)
+      : upgradeReferenceScene(createPlanetScene({ latitude, longitude, altitude: 0 }, name))
     if (controller.signal.aborted) return
+    const nextProject = visitLocation(project!, next)
+    await writeScene(PROJECT_KEY, JSON.stringify(nextProject))
+    project = nextProject
     $('travel-cancel').hidden = true
     editor.load(next)
     for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
@@ -1073,6 +1188,7 @@ async function travelTo(): Promise<void> {
       `${name} cargado · pulsa Jugar para explorar. Los cambios del lugar anterior se guardaron en este navegador.`
     toast(`${name} · destino cargado`)
     $('travel-menu').hidePopover()
+    if (!savedScene) void placeNewWorldObjects()
   } catch (error) {
     const message = controller.signal.aborted
       ? 'Viaje cancelado. Se conserva la escena anterior.'
@@ -1080,7 +1196,6 @@ async function travelTo(): Promise<void> {
     $('travel-status').textContent = message
     toast(message)
   } finally {
-    loader.dispose()
     travelController = null
     loadingWorld = false
     refreshUi()
@@ -1091,7 +1206,7 @@ async function travelTo(): Promise<void> {
   }
 }
 $('world-irun').onclick = () => void loadIrun()
-$('world-irun-official').onclick = () => void loadIrun(true)
+$('world-irun-official').hidden = true
 
 $('welcome-close').onclick = () => {
   $('welcome').hidden = true
@@ -1100,6 +1215,8 @@ $('save').onclick = async () => {
   const snapshot = editor.serialize()
   try {
     await writeScene(STORAGE_KEY, snapshot)
+    project = retainLocation(project!, editor.document)
+    await writeScene(PROJECT_KEY, JSON.stringify(project))
     savedDocument = snapshot
     $('status').textContent = 'Guardado local'
     toast('Escena guardada en este navegador')
@@ -1117,28 +1234,119 @@ $('export').onclick = () => {
 }
 $('import').onclick = () => $<HTMLInputElement>('file').click()
 $('file').onchange = async () => {
+  await startupDone
   const file = $<HTMLInputElement>('file').files?.[0]
-  if (!file) return
+  if (!file || loadingWorld || playTransition) return
   if (file.size > 40_000_000) {
     toast('La escena supera el límite de 40 MB')
     return
   }
+  if (sim) await togglePlay()
+  loadingWorld = true
+  refreshUi()
   try {
-    editor.load(upgradeReferenceScene(JSON.parse(await file.text())))
+    const raw = JSON.parse(await file.text())
+    const opened =
+      raw?.format === 'nabla-project'
+        ? parseProject(raw, performanceSettings.preset === 'ultra')
+        : createProject(upgradeReferenceScene(raw))
+    const scene = opened.locations.find((p) => p.id === opened.activeLocation)!.scene
+    editor = new SceneEditor(scene, performanceSettings.preset === 'ultra')
+    project = opened
+    recoverLegacyPlaces = false
+    savedDocument = editor.serialize()
+    $('welcome').hidden = true
     rebuild()
     toast('Escena abierta')
   } catch {
     toast('Archivo no válido. La escena actual se conserva.')
   }
+  loadingWorld = false
+  refreshUi()
   $<HTMLInputElement>('file').value = ''
 }
-function togglePlay(): void {
-  if (loadingWorld) return
+/** Only new default objects need initial placement; never relocate a saved/edited object. */
+async function placeNewWorldObjects(): Promise<void> {
+  const currentEditor = editor,
+    stream = worldStream
+  if (!stream) return
+  const initial = new Map(
+    editor.document.entities
+      .filter((e) => e.kind === 'vehicle' || e.kind === 'spawn')
+      .map((e) => [e.id, JSON.stringify(e.transform)]),
+  )
+  const eye = camera.position.clone()
+  try {
+    await stream.ensureGround([0, 0, 0])
+    if (editor !== currentEditor || worldStream !== stream || sim) return
+    const doc = structuredClone(editor.document)
+    let changed = false
+    for (const e of doc.entities) {
+      if (initial.get(e.id) !== JSON.stringify(e.transform)) continue
+      const ground = stream.groundHeight(e.transform.position)
+      if (ground === undefined) continue
+      e.transform.position[1] = ground + (e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.5 : 0.85)
+      changed = true
+    }
+    if (changed) {
+      editor.load(doc)
+      rebuild()
+      if (camera.position.distanceToSquared(eye) < 0.01) focusSelection()
+    }
+  } catch {
+    /* Availability is already displayed by the stream; keep editing responsive. */
+  }
+}
+let playTransition = false
+async function togglePlay(): Promise<void> {
+  if (loadingWorld || playTransition) return
+  playTransition = true
+  const button = $<HTMLButtonElement>('play')
+  button.disabled = true
+  button.textContent = sim ? 'Saliendo…' : 'Loading…'
+  button.setAttribute('aria-busy', 'true')
+  try {
+    // Yield through a paint before constructing or disposing the synchronous simulation.
+    await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+    if (!sim && worldStream) {
+      const spawn = editor.document.entities.find((e) => e.kind === 'spawn')!
+      await worldStream.ensureGround(spawn.transform.position)
+      const adjusted = editor.document
+      for (const e of adjusted.entities)
+        if (e.kind === 'vehicle' || e.kind === 'spawn') {
+          const ground = worldStream.groundHeight(e.transform.position)
+          if (ground !== undefined)
+            e.transform.position[1] = Math.max(
+              e.transform.position[1],
+              ground + (e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.5 : 0.85),
+            )
+        }
+      editor.load(adjusted)
+    }
+    togglePlayNow()
+    if (sim && worldStream) {
+      worldStream.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
+      while (!sim.preparePlanetCollisions())
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    }
+  } catch (error) {
+    toast(String(error))
+  } finally {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+    playTransition = false
+    button.disabled = loadingWorld
+    button.removeAttribute('aria-busy')
+    button.innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
+  }
+}
+function togglePlayNow(): void {
   action(() => {
     keys.clear()
     if (sim) {
       sim.dispose()
       sim = null
+      view.setPlaying(false)
+      renderer.domElement.dataset.impacts = '0'
       document.exitPointerLock()
       camera.up.set(0, 1, 0)
       document.querySelector('.caption-tag')!.textContent = 'PERSPECTIVA'
@@ -1147,13 +1355,17 @@ function togglePlay(): void {
       camera.position.copy(orbitStartPosition)
       orbit.target.copy(orbitStartTarget)
       orbit.enabled = true
+      if (wheelDebug.isEnabled) wheelDebug.toggle()
+      $('wheel-debug-hud').hidden = true
       rebuild()
     } else {
       orbitStartPosition = camera.position.clone()
       orbitStartTarget = orbit.target.clone()
+      project = retainLocation(project!, editor.document)
       portalControls.rebuild(editor.document)
       sim = new Simulation(editor.document, {
         playerMode: 'hover',
+        planetaryTerrain: !!editor.document.geography?.planetary,
         experimentalLargeScene: performanceSettings.preset === 'ultra',
         mapBuildingsEnabled: !!performanceSettings.buildings,
       })
@@ -1180,7 +1392,8 @@ function togglePlay(): void {
       refreshUi()
     }
     document.body.classList.toggle('playing', !!sim)
-    $('play').innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
+    if (!playTransition)
+      $('play').innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
     $('mode-label').textContent = sim ? 'Jugando' : 'Edición'
     $('game-hud').hidden = !sim
     $('view-hint').textContent = sim
@@ -1189,7 +1402,10 @@ function togglePlay(): void {
     $('footer-mode').textContent = sim
       ? 'Simulación compartida · 60 Hz'
       : 'Edición · metros · Y arriba'
-    grid.visible = !sim && !editor.document.entities.some((e) => e.terrain)
+    grid.visible =
+      !sim &&
+      !editor.document.geography?.planetary &&
+      !editor.document.entities.some((e) => e.terrain)
     outline.visible = !sim
   })
 }
@@ -1218,7 +1434,8 @@ for (const [id, key] of [
     } catch {
       /* Current session remains usable. */
     }
-    if (distantTerrain?.status === 'ready')
+    worldStream?.setDistance(performanceSettings.distance)
+    if (worldStream)
       $('world-note').textContent =
         `${editor.document.name} · OSM + ESRI · Vista ≈ ${performanceSettings.distance / 1000} km`
     sim?.setMapBuildingsEnabled(!!performanceSettings.buildings)
@@ -1293,10 +1510,27 @@ $('file-menu').addEventListener('click', (event) => {
   if ((event.target as HTMLElement).closest('button')) $('file-menu').hidePopover()
 })
 $('play').onclick = togglePlay
+remotePortalViews = new RemotePortalViews(() => {
+  needsRender = true
+}, toast)
 const portalControls = new PortalControls(viewport, toast)
+portalControls.projectRegistry = {
+  entries: () => projectPortalEntries().filter((p) => p.locationId !== project!.activeLocation),
+  selected: (id) =>
+    project!.connections?.find((c) => c.source === registrySource(id)?.id)?.destination,
+  configure: configureProjectPortal,
+  status: (id) => {
+    const connection = project!.connections?.find((c) => c.source === registrySource(id)?.id)
+    return connection
+      ? `${connection.mode === 'window' ? 'Ventana remota' : 'Cerrado'} · ${projectPortalEntries().find((p) => p.id === connection.destination)?.name ?? ''}`
+      : undefined
+  },
+}
 portalControls.rebuild(editor.document)
 const gallery = new Gallery(viewport)
 const sidearm = new Sidearm(viewport)
+const wheelDebug = new WheelDebugOverlay()
+scene.add(wheelDebug.root)
 const raycaster = new THREE.Raycaster()
 let down = new THREE.Vector2()
 renderer.domElement.addEventListener('pointerdown', (e) => {
@@ -1325,22 +1559,30 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   )
     return
   const bounds = renderer.domElement.getBoundingClientRect()
+  // The camera is restored to world coordinates after rendering, while scene roots
+  // remain relative to the floating origin. Pick in the same frame as those roots.
+  const pickCamera = camera.clone()
+  pickCamera.position.sub(renderOrigin)
+  pickCamera.updateMatrixWorld(true)
   raycaster.setFromCamera(
     new THREE.Vector2(
       ((e.clientX - bounds.left) / bounds.width) * 2 - 1,
       (-(e.clientY - bounds.top) / bounds.height) * 2 + 1,
     ),
-    camera,
+    pickCamera,
   )
   if (e.shiftKey) {
-    const hit = raycaster.intersectObjects([...view.objects.values()], true)[0]
+    const hit = raycaster.intersectObjects(
+      [...view.objects.values(), ...(worldStream ? [worldStream.root] : [])],
+      true,
+    )[0]
     const point =
       hit?.point ??
       raycaster.ray.intersectPlane(
-        new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+        new THREE.Plane(new THREE.Vector3(0, 1, 0), renderOrigin.y),
         new THREE.Vector3(),
       )
-    if (point) action(() => placeCursor(point.toArray()))
+    if (point) action(() => placeCursor(point.add(renderOrigin).toArray()))
     return
   }
   if (solidEditor.active) {
@@ -1352,7 +1594,12 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     needsRender = true
     return
   }
-  const hits = raycaster.intersectObjects([...view.objects.values()], true)
+  const hits = raycaster.intersectObjects([...view.objects.values()], true).filter((hit) => {
+    for (let node: THREE.Object3D | null = hit.object; node; node = node.parent)
+      if (!node.visible) return false
+    return true
+  })
+  if (worldStream?.inspect(raycaster, $('properties'), hits[0]?.distance)) return
   for (const hit of hits) {
     let object: THREE.Object3D | null = hit.object
     while (object && !object.userData.entityId) object = object.parent
@@ -1388,7 +1635,8 @@ document.addEventListener('mousemove', (e) => {
   }
 })
 window.addEventListener('keydown', (e) => {
-  if (document.querySelector('.app-menu:popover-open')) return
+  if (e.defaultPrevented || !studioInput.acceptsInput) return
+  if (document.querySelector('.app-menu:popover-open, dialog[open]')) return
   if ((e.target as HTMLElement)?.matches('input,select,textarea,[contenteditable]')) return
   if (e.code === 'Tab' && sim) {
     e.preventDefault()
@@ -1402,6 +1650,14 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'F8') {
     e.preventDefault()
     if (!e.repeat) togglePlay()
+    return
+  }
+  if (e.code === 'F9' && sim) {
+    e.preventDefault()
+    if (!e.repeat) {
+      const enabled = wheelDebug.toggle()
+      toast(enabled ? 'Debug ruedas ON · verde=física, naranja=visual' : 'Debug ruedas OFF')
+    }
     return
   }
   if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
@@ -1432,9 +1688,10 @@ window.addEventListener('keydown', (e) => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code))
     e.preventDefault()
   if (e.code === 'KeyR' && !e.repeat) {
-    togglePlay()
-    togglePlay()
-    toast('Partida reiniciada')
+    if (!playTransition)
+      void togglePlay()
+        .then(() => togglePlay())
+        .then(() => toast('Partida reiniciada'))
     return
   }
   if ((e.code === 'Comma' || e.code === 'Period') && !e.repeat && sim?.player.vehicleId) {
@@ -1492,7 +1749,12 @@ document.addEventListener('pointerlockchange', () => {
 let previousButtons: boolean[] = []
 let previousPadIndex: number | null = null
 function pollGamepad(): Gamepad | null {
-  if (!document.hasFocus() || document.hidden || document.querySelector('.app-menu:popover-open')) {
+  if (
+    !studioInput.acceptsInput ||
+    !document.hasFocus() ||
+    document.hidden ||
+    document.querySelector('.app-menu:popover-open, dialog[open]')
+  ) {
     previousButtons = []
     return null
   }
@@ -1518,7 +1780,12 @@ function pollGamepad(): Gamepad | null {
   return pad
 }
 function currentInput(pad: Gamepad | null = null) {
-  if (!document.hasFocus() || document.hidden || document.querySelector('.app-menu:popover-open'))
+  if (
+    !studioInput.acceptsInput ||
+    !document.hasFocus() ||
+    document.hidden ||
+    document.querySelector('.app-menu:popover-open, dialog[open]')
+  )
     return idleInput()
   const id = sim?.player.vehicleId
   const flight = Boolean(id && sim?.vehicleInfo(id).flightMode)
@@ -1552,6 +1819,7 @@ function currentInput(pad: Gamepad | null = null) {
 new ResizeObserver(() => {
   const w = viewport.clientWidth,
     h = viewport.clientHeight
+  if (w <= 0 || h <= 0) return
   renderer.setSize(w, h)
   camera.aspect = w / Math.max(h, 1)
   camera.updateProjectionMatrix()
@@ -1568,6 +1836,12 @@ function frame(now: number): void {
   const frameStart = performance.now()
   if (view.flushMapInstall(4, 24, camera.position)) needsRender = true
   renderer.domElement.dataset.worldInstallPending = String(view.pendingMapInstall)
+  const installStatus = $('map-install-status')
+  installStatus.hidden = !startupPending && view.pendingMapInstall === 0
+  if (view.pendingMapInstall) {
+    const label = 'Cargando entorno · ' + view.pendingMapInstall + ' elementos pendientes'
+    if (installStatus.textContent !== label) installStatus.textContent = label
+  }
   let physicsMs = 0
   renderer.info.reset()
   frameTimes.push(now - previous)
@@ -1582,7 +1856,7 @@ function frame(now: number): void {
     }
     sim.setInput(currentInput(pad))
     const physicsStart = performance.now()
-    sim.step(document.hidden ? 0 : dt)
+    sim.step(document.hidden || playTransition ? 0 : dt)
     physicsMs = performance.now() - physicsStart
     if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       const c = sim.collisionStats
@@ -1628,6 +1902,24 @@ function frame(now: number): void {
       headYaw,
       headPitch,
     )
+    if (wheelDebug.isEnabled) {
+      const terrainMeshes: THREE.Object3D[] = []
+      for (const e of view.document.entities) {
+        if (e.terrain || e.road) {
+          const obj = view.objects.get(e.id)
+          if (obj) terrainMeshes.push(obj)
+        }
+      }
+      worldStream?.root.traverseVisible((object) => {
+        if (
+          (object as THREE.Mesh).isMesh &&
+          ['Terrain', 'Roads'].includes(object.userData.category)
+        )
+          terrainMeshes.push(object)
+      })
+      wheelDebug.setTerrainMeshes(terrainMeshes)
+      wheelDebug.update(sim, sim.player.vehicleId, renderOrigin)
+    }
     if (playerInterior !== sim.player.interiorId) {
       playerInterior = sim.player.interiorId
       yaw = sim.player.yaw
@@ -1763,9 +2055,10 @@ function frame(now: number): void {
           ? `Altura ${altitude.toFixed(1)} m · objetivo ${info.targetAltitude!.toFixed(1)} m`
           : 'Modo tierra · V / Y para vuelo') + (pad ? ' · Mando modo 2' : '')
       : ''
-    // The physical helm screens already show flight telemetry; the overlay leaks
-    // through CSS3D screen cutouts when viewed from the pilot's seat.
-    $('game-hud').hidden = Boolean(info?.isCarrier && cameraMode === 'cockpit')
+    $('game-hud').hidden = false
+    const wheelDebugText = wheelDebug.formatHud()
+    $('wheel-debug-hud').hidden = !wheelDebugText
+    $('wheel-debug-hud').textContent = wheelDebugText
     const near = sim.nearestVehicle()
     $('interaction').textContent = p.vehicleId
       ? info?.dockedTo
@@ -1798,7 +2091,7 @@ function frame(now: number): void {
       streamSample = { at: now, position }
     }
     const object = view.objects.get(selectedId)
-    outline.update(object)
+    outline.update(object, selectedGeometry)
   }
   cursorRing.quaternion.copy(camera.quaternion)
   worldCursor.visible = !sim
@@ -1865,10 +2158,12 @@ function frame(now: number): void {
   renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
   view.buildingDistance =
     performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
-  geography.viewDistance = performanceSettings.distance
+  geography.viewDistance = worldStream
+    ? Math.max(10000, performanceSettings.distance)
+    : performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
-  distantTerrain?.update(position, performanceSettings.distance)
-  distantTerrain?.root.position.copy(renderOrigin).negate()
+  worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
+  if (worldStream) $('world-note').textContent = worldStream.status
   view.root.position.copy(renderOrigin).negate()
   camera.position.sub(renderOrigin)
   if (view.document.geography) {
@@ -1895,8 +2190,8 @@ function frame(now: number): void {
       air.day > 0.8 ? 'day' : air.day < 0.1 ? 'night' : 'twilight'
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
-    camera.far = distantTerrain
-      ? Math.hypot(performanceSettings.distance + 500, Math.max(0, height))
+    camera.far = worldStream
+      ? Math.hypot(Math.max(12000, performanceSettings.distance + 500), Math.max(0, height))
       : Math.max(300, Math.min(100000000, height * 15))
     renderer.domElement.dataset.viewDistance = String(camera.far)
     camera.updateProjectionMatrix()
@@ -1948,21 +2243,64 @@ function frame(now: number): void {
         p.mesh.material.uniforms.live.value = portalLive[i]
       })
     }
-    renderPortals(view.portals, renderer, scene, camera, (remote) => {
-      view.limitDrawDistance(
-        remote.position.clone().add(renderOrigin),
-        performanceSettings.distance,
-        !!sim,
-        !!performanceSettings.buildings,
-        performanceSettings.preset === 'ultra'
-          ? 20000
-          : Math.min(performanceSettings.distance, performanceSettings.roads),
+    const externalViews = new Map<string, ExternalPortalView>()
+    for (const connection of project!.connections ?? []) {
+      if (connection.mode !== 'window') continue
+      const registry = projectPortalEntries()
+      const source = registry.find((p) => p.id === connection.source)
+      const target = registry.find((p) => p.id === connection.destination)
+      if (!source || !target || source.locationId !== project!.activeLocation) continue
+      const surface = view.portals.get(source.entityId)
+      if (!surface || !surface.mesh.visible) continue
+      const destination = project!.locations.find((p) => p.id === target.locationId)
+      if (!destination) continue
+      const remote = remotePortalViews?.resolve(
+        target.locationId,
+        destination.scene,
+        target.entityId,
       )
-      if (geography.enabled) {
-        geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
-        renderer.autoClear = false
-      }
-    })
+      if (remote) externalViews.set(source.entityId, remote)
+    }
+    renderPortals(
+      view.portals,
+      renderer,
+      scene,
+      camera,
+      (remote) => {
+        view.limitDrawDistance(
+          remote.position.clone().add(renderOrigin),
+          performanceSettings.distance,
+          !!sim,
+          !!performanceSettings.buildings,
+          performanceSettings.preset === 'ultra'
+            ? 20000
+            : Math.min(performanceSettings.distance, performanceSettings.roads),
+        )
+        if (geography.enabled) {
+          const remotePosition = remote.position.clone().add(renderOrigin)
+          const restore = portalEnvironment(
+            geography,
+            scene,
+            remotePosition,
+            worldCamera,
+            renderOrigin,
+            skyClock,
+            ambientFill,
+            [sun, ...shadowManager.lights],
+          )
+          try {
+            geography.render(renderer, remote, remotePosition)
+            renderer.autoClear = false
+          } catch (error) {
+            restore()
+            throw error
+          }
+          return restore
+        }
+        return undefined
+      },
+      externalViews,
+    )
     outline.visible = outlineVisible
     view.batchBuildings = !gizmo.dragging
     view.limitDrawDistance(
@@ -1986,11 +2324,24 @@ function frame(now: number): void {
     renderer.render(scene, camera)
     portalControls.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
-    needsRender = view.pendingBuildingBatches
+    needsRender = view.pendingBuildingBatches || !!remotePortalViews?.pending
   }
   camera.position.copy(worldCamera)
   if (now >= nextPerformanceReadout) {
     nextPerformanceReadout = now + 500
+    if (sim && view.document.geography && $('properties').querySelector('#entity-geography')) {
+      const entity = view.document.entities.find((e) => e.id === selectedId)
+      if (entity && (!entity.geoAnchor || entity.parentId)) {
+        const live = geographicPose(
+          view.document.geography,
+          sim.entityTransform(selectedId, true),
+        ).anchor
+        for (const key of ['latitude', 'longitude', 'altitude'] as const) {
+          const field = document.getElementById('entity-' + key) as HTMLInputElement | null
+          if (field) field.value = String(Number(live[key].toFixed(key === 'altitude' ? 3 : 8)))
+        }
+      }
+    }
     const sorted = [...frameTimes].sort((a, b) => a - b)
     const p95 = sorted[Math.floor((sorted.length - 1) * 0.95)] || 0
     const cpu = performance.now() - frameStart
@@ -1998,30 +2349,14 @@ function frame(now: number): void {
     renderer.domElement.dataset.drawCalls = String(renderer.info.render.calls)
     renderer.domElement.dataset.frameP95 = p95.toFixed(1)
   }
-  requestAnimationFrame(frame)
 }
 function applyLocation(latitude: number, longitude: number): void {
-  if (editor.document.entities.some((e) => e.terrain)) {
-    toast('Usa el menú Ir para cargar otra zona del mundo')
-    return
-  }
-  if (sim) {
-    toast('Detén la partida para cambiar la ubicación')
-    return
-  }
-  action(() => {
-    const doc = editor.document
-    doc.geography = {
-      latitude,
-      longitude,
-      altitude: doc.geography?.altitude ?? 0,
-      imagery: $<HTMLSelectElement>('imagery').value as 'satellite' | 'streets' | 'offline',
-    }
-    editor.load(doc)
-    rebuild()
-    toast('Ubicación aplicada · Guardar para conservarla')
-  })
+  $<HTMLSelectElement>('travel-city').value = ''
+  $<HTMLInputElement>('travel-latitude').value = String(latitude)
+  $<HTMLInputElement>('travel-longitude').value = String(longitude)
+  void travelTo()
 }
+
 function setSkyClock(clock: SkyClock): void {
   action(() => {
     editor.load({ ...editor.document, sky: clock })
@@ -2060,17 +2395,15 @@ setupWorldStream()
 refreshUi()
 if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
   localStorage.setItem('nabla.location.requested', '1')
-  locate()
+  void startupDone.then(() => locate())
 }
-if (loadError) toast(loadError)
-requestAnimationFrame(frame)
-
-if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
-else if (
-  !circuitMode &&
-  (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
-)
-  void loadIrun()
+const frameLoop = new FrameLoop(frame)
+frameLoop.start()
+window.addEventListener('pagehide', () => frameLoop.stop())
+window.addEventListener('pageshow', () => {
+  previous = performance.now()
+  frameLoop.start()
+})
 
 $('css-screen-demo').onclick = () => {
   $('options-menu').hidePopover()
@@ -2143,3 +2476,224 @@ $('options-menu').addEventListener('toggle', () => {
   if ($('options-menu').matches(':popover-open')) void refreshMapCacheUi()
 })
 void refreshMapCacheUi()
+
+if (new URLSearchParams(location.search).get('studio') === 'desktop') {
+  const { mountStudio } = await import('./studio/shell.js')
+  mountStudio({
+    refresh: refreshUi,
+    input: studioInput,
+    reportError: (error) => toast(String(error)),
+    undo: undoScene,
+    redo: redoScene,
+    togglePlay,
+    canUndo: () => !sim && editor.canUndo,
+    canRedo: () => !sim && editor.canRedo,
+    canPlay: () => !loadingWorld && !playTransition,
+    isPlaying: () => !!sim,
+  })
+}
+
+$('save-as').onclick = () => {
+  $<HTMLInputElement>('project-filename').value = projectFilename(project!.name)
+  $('file-menu').hidePopover()
+  keys.clear()
+  if (document.pointerLockElement) document.exitPointerLock()
+  $<HTMLDialogElement>('save-project-dialog').showModal()
+}
+$('save-project-cancel').onclick = () => $<HTMLDialogElement>('save-project-dialog').close()
+$('save-project-form').onsubmit = (event) => {
+  event.preventDefault()
+  action(() => {
+    const filename = projectFilename($<HTMLInputElement>('project-filename').value)
+    const snapshot = retainLocation(project!, editor.document)
+    snapshot.name = filename.replace(/\.nabla\.json$/i, '')
+    const data = new Blob([JSON.stringify(snapshot)], { type: 'application/json' })
+    if (data.size > 40_000_000)
+      throw Error('El proyecto supera 40 MB; reduce las zonas cargadas antes de exportarlo')
+    const url = URL.createObjectURL(data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    project = snapshot
+    $<HTMLDialogElement>('save-project-dialog').close()
+    toast(`Archivo preparado: ${filename} · ${snapshot.locations.length} lugares`)
+  })
+}
+
+$('project-place-open').onclick = () => {
+  void openProjectPlace($<HTMLSelectElement>('project-places').value)
+}
+async function openProjectPlace(id: string, entityId?: string): Promise<void> {
+  if (loadingWorld || playTransition) return
+  const place = project!.locations.find((p) => p.id === id)
+  if (!place) return
+  if (sim) await togglePlay()
+  const retained = retainLocation(project!, editor.document)
+  const next = { ...retained, activeLocation: id }
+  loadingWorld = true
+  refreshUi()
+  try {
+    await writeScene(PROJECT_KEY, JSON.stringify(next))
+    editor.load(next.locations.find((p) => p.id === id)!.scene)
+    project = next
+    if (entityId) selectedId = entityId
+    rebuild()
+    $('welcome').hidden = true
+    $('travel-menu').hidePopover()
+    await view.ready
+    focusSelection()
+  } catch (error) {
+    toast(String(error))
+  } finally {
+    loadingWorld = false
+    refreshUi()
+  }
+}
+
+function refreshPortalEntries(doc = editor.document) {
+  const working = project!.locations.find((p) => locationId(p.scene) === locationId(doc))
+  portalEntriesCache = portalRegistry({
+    ...project!,
+    locations: project!.locations.map((p) => (p === working ? { ...p, scene: doc } : p)),
+  })
+  portalEntriesProject = project
+}
+function projectPortalEntries() {
+  if (portalEntriesProject !== project) refreshPortalEntries()
+  return portalEntriesCache
+}
+function registrySource(entityId: string) {
+  return projectPortalEntries().find(
+    (p) => p.entityId === entityId && p.locationId === project!.activeLocation,
+  )
+}
+function configureProjectPortal(
+  sourceId: string,
+  destination: string | null,
+  open: boolean,
+): string {
+  project = retainLocation(project!, editor.document)
+  const source = registrySource(sourceId)
+  if (!source) throw Error('Portal no registrado')
+  const mouth = editor.document.entities.find((e) => e.id === sourceId)!
+  if (
+    open &&
+    sim &&
+    mouth.portal?.clearsRamp &&
+    mouth.parentId &&
+    !sim.vehicleInfo(mouth.parentId).rampClosed
+  )
+    throw Error('Cierra primero la puerta del garaje')
+  if (destination && sim) sim.configurePortal(sourceId, null, 'closed')
+  project = setPortalConnection(project!, source.id, destination, open ? 'window' : 'closed')
+  remotePortalViews?.dispose()
+  needsRender = true
+  return open
+    ? 'Ventana remota abierta · el paso físico entre lugares aún está cerrado'
+    : 'Ventana remota cerrada'
+}
+function refreshPortalRegistry(): void {
+  refreshPortalEntries(view.document)
+  const list = $('portal-registry-list')
+  list.replaceChildren()
+  const entries = projectPortalEntries()
+  const places = [...project!.locations].sort(
+    (a, b) => Number(b.id === project!.activeLocation) - Number(a.id === project!.activeLocation),
+  )
+  for (const place of places) {
+    const portals = entries.filter((p) => p.locationId === place.id)
+    if (!portals.length) continue
+    const section = document.createElement('section')
+    section.className = 'portal-place'
+    section.dataset.locationId = place.id
+    const heading = document.createElement('h4')
+    heading.textContent =
+      place.scene.name + (place.id === project!.activeLocation ? ' · Lugar actual' : '')
+    section.append(heading)
+    for (const portal of portals) {
+      const button = document.createElement('button')
+      button.textContent = portal.name
+      button.title = `${portal.place} · ${portal.entityId}`
+      button.dataset.portalId = portal.id
+      button.onclick = () => {
+        void openProjectPlace(portal.locationId, portal.entityId)
+      }
+      section.append(button)
+    }
+    list.append(section)
+  }
+}
+window.addEventListener('portal-registry-request', refreshPortalRegistry)
+
+// The actual empty viewport and its animation loop exist before any saved project is parsed.
+setTimeout(() => void restoreStartup(), 0)
+async function restoreStartup(): Promise<void> {
+  const label = $('map-install-status')
+  label.hidden = false
+  label.textContent = 'Leyendo el proyecto guardado…'
+  renderer.domElement.dataset.startup = 'loading'
+  try {
+    const storedProject = await readScene(PROJECT_KEY)
+    const storedScene = storedProject ? null : await readScene(STORAGE_KEY)
+    const freshWorld = !circuitMode && !storedProject && !storedScene
+    let initialScene = storedScene
+    if (freshWorld)
+      initialScene = JSON.stringify(
+        upgradeReferenceScene(
+          createPlanetScene(
+            { latitude: 43.32969, longitude: -1.819606, altitude: 0 },
+            'Irún · Ventas',
+          ),
+        ),
+      )
+    const result = await prepareStartup(
+      storedProject,
+      initialScene,
+      performanceSettings.preset === 'ultra',
+      (message) => {
+        label.textContent = message
+      },
+      false,
+    )
+    project = result.project
+    recoverLegacyPlaces = !storedProject
+    editor = SceneEditor.fromValidated(result.scene, performanceSettings.preset === 'ultra')
+    savedDocument = result.saved
+    selectedId =
+      result.scene.entities.find((e) => e.kind === 'vehicle')?.id ??
+      result.scene.entities.find((e) => !isMapEnvironment(e))!.id
+    collapsed.clear()
+    for (const e of result.scene.entities) if (e.kind === 'group') collapsed.add(e.id)
+    await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+    rebuild()
+    portalControls.rebuild(result.scene)
+    loadingWorld = false
+    startupPending = false
+    watchAssets(view)
+    refreshUi()
+    renderer.domElement.dataset.startup = 'ready'
+    finishStartup()
+    if (freshWorld) {
+      renderer.domElement.dataset.world = 'irun'
+      focusSelection()
+      void placeNewWorldObjects()
+    }
+    if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
+    else if (
+      !freshWorld &&
+      !circuitMode &&
+      !storedProject &&
+      (!storedScene || !localStorage.getItem('nabla.irun.introduced'))
+    )
+      void loadIrun()
+  } catch (error) {
+    startupPending = false
+    loadingWorld = false
+    refreshUi()
+    renderer.domElement.dataset.startup = 'failed'
+    finishStartup()
+    toast('No se pudo abrir el proyecto. Tu copia guardada se conserva. ' + String(error))
+  }
+}
