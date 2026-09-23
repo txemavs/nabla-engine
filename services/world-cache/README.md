@@ -288,7 +288,9 @@ that prepared zones arrive in the scene; unit tests alone cannot measure frame p
 ### Optional public neighbor generation
 
 Set `PREPARE_PUBLIC_NEIGHBORS_PER_HOUR=24` to let visitors without an owner cookie
-queue a tile adjacent to an existing, complete GLB tile at the same zoom. The default
+queue a tile adjacent to an existing, complete GLB tile at the same zoom, or a
+tile whose footprint overlaps a prepared ancestor/descendant at another supported
+zoom (13, 14 or 15). The default
 is `0` (private generation only). Eight neighbors are supported, with X wrapping at
 the antimeridian and no Y wrapping. Queued tiles do not count as seeds.
 

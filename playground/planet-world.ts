@@ -198,7 +198,7 @@ export class PlanetWorld {
       this.status = this.access
         ? 'Preparando GLB en el servidor…'
         : data.generationAccess === 'neighbors'
-          ? 'GLB vecinos · generación pública limitada · activa tu sesión para otras zonas'
+          ? 'GLB vecinos y otros zooms · generación pública limitada · activa tu sesión para otras zonas'
           : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
       this.pump()
       this.changed()

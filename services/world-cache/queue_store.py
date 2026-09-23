@@ -45,6 +45,26 @@ def has_ready_neighbor(output, key):
                if (dx or dy) and 0 <= y+dy < size)
 
 
+def has_ready_context(output, key):
+    if has_ready_neighbor(output, key):
+        return True
+    if not output:
+        return False
+    _, z, x, y = key.split('/')
+    z, x, y = int(z), int(x), int(y)
+    for other in (13, 14, 15):
+        if other < z:
+            scale = 2 ** (z-other)
+            if ready_manifest(output, f'z/{other}/{x//scale}/{y//scale}'):
+                return True
+        elif other > z:
+            scale = 2 ** (other-z)
+            if any(ready_manifest(output, f'z/{other}/{x*scale+dx}/{y*scale+dy}')
+                   for dx in range(scale) for dy in range(scale)):
+                return True
+    return False
+
+
 class Queue:
     def __init__(self, path, capacity=256, output=None):
         self.path = str(path)
@@ -93,7 +113,7 @@ class Queue:
                     accepted += 1
                     continue
                 if public_limit is not None:
-                    if public_count >= public_limit or not has_ready_neighbor(self.output, tile):
+                    if public_count >= public_limit or not has_ready_context(self.output, tile):
                         continue
                     priority += 100  # Owner requests keep priority over public expansion.
                 if pending >= self.capacity:

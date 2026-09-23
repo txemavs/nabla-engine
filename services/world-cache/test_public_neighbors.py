@@ -34,7 +34,7 @@ class PublicNeighborsTests(unittest.TestCase):
     def test_only_complete_same_zoom_neighbors_seed_expansion(self):
         self.assertEqual(self.queue.enqueue(['z/15/101/100'], public_limit=24), 1)
         self.assertEqual(self.queue.enqueue(['z/15/102/100'], public_limit=24), 0)
-        self.assertEqual(self.queue.enqueue(['z/14/50/50'], public_limit=24), 0)
+        self.assertEqual(self.queue.enqueue(['z/14/50/50'], public_limit=24), 1)
         self.assertEqual(self.queue.enqueue(['z/15/101/101'], public_limit=24), 1)
         (self.root / 'z/15/100/100' / ('terrain-' + 'a'*16 + '.glb')).unlink()
         self.assertFalse(has_ready_neighbor(self.root, 'z/15/99/100'))
@@ -71,3 +71,10 @@ class PublicNeighborsTests(unittest.TestCase):
         self.assertEqual(self.queue.enqueue(['z/15/101/100'], public_limit=24), 0)
         with self.queue.connect() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM public_admissions').fetchone()[0], 0)
+
+    def test_ancestor_and_descendant_coverage_allow_other_zooms(self):
+        self.assertEqual(self.queue.enqueue(['z/13/25/25'], public_limit=24), 1)
+        self.assertEqual(self.queue.enqueue(['z/14/51/50'], public_limit=24), 0)
+        self.seed('z/13/200/300')
+        self.assertEqual(self.queue.enqueue(['z/15/803/1203'], public_limit=24), 1)
+        self.assertEqual(self.queue.enqueue(['z/15/804/1203'], public_limit=24), 0)
