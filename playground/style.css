@@ -1049,3 +1049,15 @@ body.playing #footer-mode {
 #save-project-dialog::backdrop {
   background: #0008;
 }
+
+#map-install-status {
+  position: absolute;
+  bottom: 62px;
+  left: 12px;
+  z-index: 6;
+  padding: 8px 12px;
+  background: #282828e8;
+  color: #d9e5f5;
+  font-size: 13px;
+  pointer-events: none;
+}

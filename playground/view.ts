@@ -1,3 +1,4 @@
+import { isMapEnvironment } from './studio/outliner.js'
 import { matteGroundMaterial } from './ground-material.js'
 import { BuildingBatches } from './building-batches.js'
 import { isMapBuilding } from '../src/scene.js'
@@ -99,7 +100,12 @@ export class SceneView {
     experimentalLargeScene = false,
   ) {
     this.graph = SceneGraph.fromValidated(parseScene(document, experimentalLargeScene))
-    this.addEntities(document.entities)
+    const immediate = document.entities.filter((e) => !isMapEnvironment(e) || e.mapEditable)
+    this.pendingMapMeshes = document.entities.filter((e) => isMapEnvironment(e) && !e.mapEditable)
+    const priority = (e: Entity) =>
+      e.terrain ? 0 : e.road ? 1 : e.kind === 'group' && !e.sprite ? 2 : 3
+    this.pendingMapMeshes.sort((a, b) => priority(a) - priority(b))
+    this.addEntities(immediate)
     this.root.add(this.roads.root)
     this.root.add(this.buildings.root)
     this.root.add(this.landcover.root)

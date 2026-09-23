@@ -71,7 +71,9 @@ export class RemotePortalViews {
     }
   }
   get pending(): boolean {
-    return [...this.views.values()].some((e) => e.ready && e.view.pendingBuildingBatches)
+    return [...this.views.values()].some(
+      (e) => e.ready && (e.view.pendingMapInstall > 0 || e.view.pendingBuildingBatches),
+    )
   }
   dispose(): void {
     for (const e of this.views.values()) {

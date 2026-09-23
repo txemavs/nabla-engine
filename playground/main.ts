@@ -1,3 +1,4 @@
+import { authoredTree, isMapEnvironment } from './studio/outliner.js'
 import { RemotePortalViews } from './remote-portals.js'
 import { portalRegistry, setPortalConnection } from './studio/portal-registry.js'
 import { portalEnvironment } from './portal-environment.js'
@@ -15,7 +16,6 @@ import { StudioInputOwner } from './studio/input-owner.js'
 import { mapCacheStats, setMapCacheBudget, clearMapCache } from './map-cache.js'
 import { decodePrepared } from './prepared-world.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
-import { isMapBuilding } from '../src/scene.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
@@ -281,7 +281,7 @@ $('cursor-view').onclick = () => action(() => placeCursor(orbit.target.toArray()
 $('selection-cursor').onclick = () =>
   action(() => {
     const entity = editor.document.entities.find((e) => e.id === selectedId)!
-    if (isMapBuilding(entity) && !entity.mapEditable)
+    if (isMapEnvironment(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
     editor.moveToCursor(selectedId)
     rebuild()
@@ -289,7 +289,7 @@ $('selection-cursor').onclick = () =>
 $('origin-cursor').onclick = () =>
   action(() => {
     const entity = editor.document.entities.find((e) => e.id === selectedId)!
-    if (isMapBuilding(entity) && !entity.mapEditable)
+    if (isMapEnvironment(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
     editor.originToCursor(selectedId)
     rebuild()
@@ -311,7 +311,7 @@ $('transform-exact').onclick = () =>
     const doc = editor.document,
       graph = SceneGraph.fromValidated(doc),
       entity = doc.entities.find((e) => e.id === selectedId)!
-    if (isMapBuilding(entity) && !entity.mapEditable)
+    if (isMapEnvironment(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
     const pose = graph.worldTransform(selectedId),
       i = 'XYZ'.indexOf(axis)
@@ -428,7 +428,8 @@ function rebuild(prepared?: PreparedMapGeometry): void {
   scene.add(view.root)
   watchAssets(view)
   setupWorldStream()
-  if (!view.objects.has(selectedId)) selectedId = editor.document.entities[0].id
+  if (!document.entities.some((e) => e.id === selectedId))
+    selectedId = document.entities.find((e) => !isMapEnvironment(e))?.id ?? document.entities[0].id
   refreshUi()
 }
 function setupWorldStream(): void {
@@ -542,15 +543,18 @@ function refreshUi(): void {
     editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
   const tree = $('tree')
   tree.replaceChildren()
+  const treeChildren = authoredTree(doc.entities)
+  const authoredCount = [...treeChildren.values()].reduce((n, list) => n + list.length, 0)
+  $('entity-count').textContent = String(authoredCount)
+  $('entity-count').title = 'Objetos propios y modificaciones; el mapa se carga aparte'
   const icons = { terrain: '▧', solid: '⬡', box: '◇', vehicle: '▰', spawn: '◎', group: '▱' }
   function append(parent: string | null, depth: number): void {
-    for (const e of doc.entities.filter((item) => item.parentId === parent)) {
+    for (const e of treeChildren.get(parent) ?? []) {
       const button = document.createElement('button')
       button.className = 'tree-item' + (e.id === selectedId ? ' selected' : '')
       button.dataset.entityId = e.id
       button.setAttribute('role', 'treeitem')
-      if (doc.entities.some((child) => child.parentId === e.id))
-        button.setAttribute('aria-expanded', String(!collapsed.has(e.id)))
+      if (treeChildren.has(e.id)) button.setAttribute('aria-expanded', String(!collapsed.has(e.id)))
       button.setAttribute('aria-selected', String(e.id === selectedId))
       button.style.paddingLeft = `${10 + depth * 14}px`
       button.innerHTML = `<span class="kind-icon">${e.kind === 'group' ? (collapsed.has(e.id) ? '›' : '⌄') : icons[e.kind]}</span><span class="name">${escape(e.name)}</span>${e.motion === 'dynamic' ? '<span class="motion">●</span>' : ''}`
@@ -605,7 +609,12 @@ function refreshUi(): void {
     ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
     <label class="field-label" for="color">Color</label><input id="color" type="color" value="${e.color}">
     <label class="field-label" for="parent">Padre</label><select id="parent"><option value="">Mundo</option>${doc.entities
-      .filter((item) => item.id !== e.id && item.kind !== 'spawn')
+      .filter(
+        (item) =>
+          item.id !== e.id &&
+          item.kind !== 'spawn' &&
+          (!isMapEnvironment(item) || item.mapEditable || item.id === e.parentId),
+      )
       .map(
         (item) =>
           `<option value="${escape(item.id)}" ${e.parentId === item.id ? 'selected' : ''}>${escape(item.name)}</option>`,
@@ -653,7 +662,7 @@ function refreshUi(): void {
       })
     props.append(button)
   }
-  const mapReadOnly = isMapBuilding(e) && !e.mapEditable
+  const mapReadOnly = isMapEnvironment(e) && !e.mapEditable
   if (mapReadOnly) solidEditor.close()
   else solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
   const objectMode = $<HTMLSelectElement>('studio-object-mode')
@@ -843,7 +852,8 @@ function refreshUi(): void {
     $<HTMLSelectElement>('parent').disabled =
       e.kind === 'spawn' || e.motion === 'dynamic' || !!e.portal
     if (solidEditor.active || mapReadOnly) gizmo.detach()
-    else gizmo.attach(view.objects.get(e.id)!)
+    else if (view.objects.has(e.id)) gizmo.attach(view.objects.get(e.id)!)
+    else gizmo.detach()
   }
   if (mapReadOnly && !sim) {
     props
@@ -864,7 +874,7 @@ function refreshUi(): void {
       })
     const note = document.createElement('p')
     note.textContent =
-      'Edificio del mapa · dibujo agrupado. Crea una modificación para cambiar su forma, color o posición.'
+      'Elemento del mapa. Crea una modificación para incorporarlo al árbol y editarlo.'
     props.append(note, button)
   }
   $<HTMLButtonElement>('undo').disabled = !!sim || loadingWorld || !editor.canUndo
@@ -1760,6 +1770,12 @@ function frame(now: number): void {
   const frameStart = performance.now()
   if (view.flushMapInstall(4, 24, camera.position)) needsRender = true
   renderer.domElement.dataset.worldInstallPending = String(view.pendingMapInstall)
+  const installStatus = $('map-install-status')
+  installStatus.hidden = view.pendingMapInstall === 0
+  if (view.pendingMapInstall) {
+    const label = 'Cargando entorno · ' + view.pendingMapInstall + ' elementos pendientes'
+    if (installStatus.textContent !== label) installStatus.textContent = label
+  }
   let physicsMs = 0
   renderer.info.reset()
   frameTimes.push(now - previous)
@@ -2290,13 +2306,14 @@ window.addEventListener('pageshow', () => {
   frameLoop.start()
 })
 
-if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
+if (new URLSearchParams(location.search).get('world') === 'geoeuskadi')
+  setTimeout(() => void loadIrun(true), 0)
 else if (
   !circuitMode &&
   !localStorage.getItem(PROJECT_KEY) &&
   (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
 )
-  void loadIrun()
+  setTimeout(() => void loadIrun(), 0)
 
 $('css-screen-demo').onclick = () => {
   $('options-menu').hidePopover()

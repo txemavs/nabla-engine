@@ -89,3 +89,24 @@ non-editable objects, including imported vehicle GLBs. There is no timeline yet.
 GLB vertex editing/export requires an editable mesh document, preservation of UVs,
 material assignments and hierarchy, normal/bounds and collider updates, undoable
 mesh operations and a GLB exporter. It is not implemented by this layout change.
+
+## Progressive startup and authored outliner
+
+A small boot module lets the HTML loading status paint before downloading and
+evaluating the engine. It reports startup failures and offers a retry. This is
+feedback, not a way to suppress a browser's unresponsive-page warning.
+
+SceneView now installs authored objects first and queues generated map geometry,
+including restored scenes, through the existing per-frame installation budget.
+Terrain and roads precede buildings and vegetation. The editor can be used while
+the remaining context is installed, with a pending-count indicator in the viewport.
+A single terrain/mesh operation, scene validation, JSON parsing and GPU compilation
+can still exceed a frame budget; this change does not guarantee a stall-free startup.
+
+The outliner indexes authored children once instead of scanning every entity for
+every row. Generated terrain, OSM features and map groups do not produce rows or
+parent-picker entries. Picking a map object still exposes its inspector; **Crear
+modificación** sets its existing mapEditable flag and admits it to the authored tree.
+A customized object's map parent remains intact in the saved document even when
+that generated parent is absent from the tree. The editor does not delete or omit
+environment data from project saves.
