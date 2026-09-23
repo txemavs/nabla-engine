@@ -1,0 +1,4 @@
+{
+  "name": "@nabla/engine",
+  "install": "npm ci"
+}
