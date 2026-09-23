@@ -1,3 +1,4 @@
+import { compactGround } from './compact-ground.js'
 /** Standalone experiment: preserve production artifacts and export an editable GLB sidecar. */
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
@@ -107,3 +108,34 @@ await writeFile(
       .map(([id]) => id),
   }),
 )
+
+// Experimental render-only variants; do not replace near collision-aligned geometry.
+const variants = []
+for (const step of [0.1, 1]) {
+  const compact = compactGround(tile, step)
+  const layer = tileAsset(compact)
+  for (const child of [...layer.children]) if (child.name === 'Buildings') layer.remove(child)
+  const bytes = (await new GLTFExporter().parseAsync(layer, { binary: true })) as ArrayBuffer
+  const filename = step === 0.1 ? 'terrain-10cm.glb' : 'terrain-1m.glb'
+  await writeFile(output + '/' + filename, new Uint8Array(bytes))
+  const sourceGround = Object.values(tile.geometry).reduce(
+    (sum, g) => sum + g.position.byteLength,
+    0,
+  )
+  const resultGround = Object.values(compact.geometry).reduce(
+    (sum, g) => sum + g.position.byteLength,
+    0,
+  )
+  variants.push({
+    filename,
+    gridMetres: step,
+    bytes: bytes.byteLength,
+    gzipBytes: gzipSync(new Uint8Array(bytes)).byteLength,
+    sourcePositionBytes: sourceGround,
+    resultPositionBytes: resultGround,
+    renderOnly: true,
+    automaticLod: false,
+  })
+}
+await writeFile(output + '/variants.json', JSON.stringify(variants, null, 2))
+console.log(JSON.stringify({ variants }))

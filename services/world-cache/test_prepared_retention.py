@@ -14,5 +14,21 @@ class PreparedRetentionTest(unittest.TestCase):
             self.assertFalse((root / 'old.bin').exists())
             self.assertEqual(sum(p.stat().st_size for p in root.iterdir()), 60)
 
+    def test_glb_sidecars_count_toward_budget_and_evict_with_tile(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name in ('old.json', 'old.bin', 'current.json', 'current.bin'):
+                (root / name).write_bytes(b'x' * 30)
+            for tile in ('old', 'current'):
+                layer = root / (tile + '.glb-tile')
+                layer.mkdir()
+                (layer / 'terrain.glb').write_bytes(b'x' * 100)
+                (layer / 'manifest.json').write_bytes(b'x' * 20)
+            trim_prepared(root, root / 'current.json', 200)
+            self.assertFalse((root / 'old.glb-tile').exists())
+            self.assertFalse((root / 'old.bin').exists())
+            self.assertTrue((root / 'current.glb-tile' / 'terrain.glb').exists())
+            self.assertEqual(sum(p.stat().st_size for p in root.rglob('*') if p.is_file()), 180)
+
 if __name__ == '__main__':
     unittest.main()

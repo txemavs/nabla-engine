@@ -4,7 +4,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY tsconfig*.json ./
 COPY src ./src
-COPY playground/map-geometry.ts ./playground/map-geometry.ts
+COPY playground/map-geometry.ts playground/tile-asset.ts playground/ground-material.ts ./playground/
 COPY services/world-cache/*.ts ./services/world-cache/
 RUN npx tsc -p tsconfig.prepare.json
 

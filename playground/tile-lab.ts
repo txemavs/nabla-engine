@@ -94,10 +94,10 @@ function table() {
     body.append(row)
   }
 }
-async function load(format: 'prepared' | 'glb', file?: File) {
+async function load(format: 'prepared' | 'glb' | 'ground10' | 'ground1', file?: File) {
   if (loading) return
   loading = true
-  for (const id of ['prepared', 'glb', 'edited'])
+  for (const id of ['prepared', 'glb', 'ground10', 'ground1', 'edited'])
     (element(id) as HTMLButtonElement | HTMLInputElement).disabled = true
   status.textContent = 'Cargando la baldosa…'
   try {
@@ -106,7 +106,7 @@ async function load(format: 'prepared' | 'glb', file?: File) {
     const bytes = file
       ? await file.arrayBuffer()
       : await fetch(
-          `/experiments/tile-glb/irun/${format === 'glb' ? 'tile.glb' : 'source.bin'}`,
+          `/experiments/tile-glb/irun/${format === 'ground10' ? 'terrain-10cm.glb' : format === 'ground1' ? 'terrain-1m.glb' : format === 'glb' ? 'tile.glb' : 'source.bin'}`,
         ).then((r) => {
           if (!r.ok) throw Error(`Descarga HTTP ${r.status}`)
           return r.arrayBuffer()
@@ -116,7 +116,7 @@ async function load(format: 'prepared' | 'glb', file?: File) {
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
     const parseStart = performance.now()
     let root: THREE.Object3D =
-      format === 'glb'
+      format !== 'prepared'
         ? (await loader.parseAsync(bytes, '')).scene
         : tileAsset(decodePreparedBinary(bytes) as unknown as TileArtifact)
     if (root.children.length === 1 && root.children[0].userData.nablaTile) root = root.children[0]
@@ -140,24 +140,26 @@ async function load(format: 'prepared' | 'glb', file?: File) {
       calls,
       triangles,
     }
-    if (!file) {
+    if (!file && (format === 'prepared' || format === 'glb')) {
       metrics[format] = result
       table()
     }
     renderer.domElement.dataset.loaded = file ? 'edited' : format
     status.textContent = file
       ? `Copia modificada · ${file.name}`
-      : `${format === 'glb' ? 'GLB' : 'Preparado'} · listo`
+      : `${format === 'ground10' ? 'Terreno · rejilla 10 cm' : format === 'ground1' ? 'Terreno · rejilla 1 m' : format === 'glb' ? 'GLB' : 'Preparado'} · ${(bytes.byteLength / 1e6).toFixed(2)} MB · ${triangles.toLocaleString()} triángulos · ${Math.round(parsed - parseStart)} ms lectura`
   } catch (error) {
     status.textContent = String(error)
   } finally {
     loading = false
-    for (const id of ['prepared', 'glb', 'edited'])
+    for (const id of ['prepared', 'glb', 'ground10', 'ground1', 'edited'])
       (element(id) as HTMLButtonElement | HTMLInputElement).disabled = false
   }
 }
 element('prepared').onclick = () => void load('prepared')
 element('glb').onclick = () => void load('glb')
+element('ground10').onclick = () => void load('ground10')
+element('ground1').onclick = () => void load('ground1')
 element('frame').onclick = frame
 element<HTMLInputElement>('edited').onchange = () => {
   const file = element<HTMLInputElement>('edited').files?.[0]

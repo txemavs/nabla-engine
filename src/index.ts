@@ -66,3 +66,5 @@ export {
 
 export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from './world-pose.js'
 export type { WorldPose } from './world-pose.js'
+
+export { PLANET_GRID_VERSION, planetCellAt, planetCellBounds } from './planet-grid.js'
