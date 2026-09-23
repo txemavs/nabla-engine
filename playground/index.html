@@ -92,6 +92,15 @@
           <button id="css-screen-demo">Consola de la nave</button>
           <details id="performance-section" class="help">
             <summary>RENDIMIENTO</summary>
+            <label class="field-label" for="map-cache-budget">Caché de mapas · MB</label>
+            <select id="map-cache-budget">
+              <option value="0">Desactivada</option>
+              <option value="25">25 MB</option>
+              <option value="50">50 MB</option>
+              <option value="100" selected>100 MB</option>
+            </select>
+            <p id="map-cache-usage" role="status">Consultando caché…</p>
+            <button id="map-cache-clear">Vaciar caché de mapas</button>
             <label class="field-label" for="map-buildings">Edificios del mapa</label>
             <select id="map-buildings">
               <option value="1">Mostrar edificios</option>

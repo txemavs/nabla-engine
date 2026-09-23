@@ -374,3 +374,43 @@ inspector is a future consumer of those stored IDs; this change adds no automati
 selection-time network request. Binary prepared geometry remains a separate future
 migration: typed buffers already transfer between workers and the main thread,
 while public prepared files still contain JSON and base64.
+
+## Browser map cache: shared 100 MB budget
+
+Options → Performance → **Caché de mapas · MB** controls a persistent browser-side
+budget of 0 (disabled), 25, 50 or **100 MB**, defaulting to 100. One MB is 1,000,000
+bytes. The panel shows retained response-body bytes and entry count; reopening it
+refreshes the figures. **Vaciar caché de mapas** removes only cached map responses,
+not saved scenes. It retains the selected budget.
+
+Extracts (OSM features plus sampled elevation), prepared zone JSON/buffers and water
+vector tiles share one IndexedDB database, `nabla-map-cache-v1`. Replacing an entry
+counts only its new size. Reads update recency; writes evict least-recently-used
+entries until the combined payload fits. A response larger than the selected budget
+is used for the current request but not retained. IndexedDB read/write transactions
+serialize changes across terrain and water workers, avoiding independent caches each
+spending the entire budget. The old 32/8/96 entry-count caps are removed.
+
+On first use, supported legacy Cache Storage entries are imported within the budget,
+then the old map cache stores are removed. Unsupported old map-format namespaces are
+removed without importing incompatible data. Concurrent migration uses a Web Lock
+where available. Migration is best effort when the browser denies storage/quota;
+some entries may be discarded and downloaded again. Unrelated app caches are untouched.
+
+Prepared hits younger than five minutes load without a network round trip. Older
+ones revalidate using their ETag. Last-known prepared data and water responses remain
+usable if the server/network is unavailable. Existing extract/water normal freshness
+periods remain 30 days / 7 days. These rules do not guarantee a cold location is
+available offline.
+
+A lower budget trims immediately. Disabling empties the cache and prevents new
+retention. On quota failure, the cache makes room in a separate transaction and retries
+once; if storage is still unavailable, the caller continues using downloaded data.
+The browser can impose a smaller quota or reclaim storage. The 100 MB ceiling counts
+response bodies, **not** IndexedDB metadata, HTTP image/asset cache, saved scenes,
+resident meshes, GPU memory or server disk. More disk cache does not itself increase
+world draw distance or keep more collision bodies active.
+
+This implements the storage-budget part of issue #20. Existing draw/road/collision
+quality controls are unchanged; expanding streaming/preparation radii is separate
+work, and the issue remains open for that scope.

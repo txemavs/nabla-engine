@@ -1,3 +1,4 @@
+import { mapCache, type MapCache } from './map-cache.js'
 import { revalidateBaked } from './baked-world.js'
 import * as Lerc from 'lerc'
 import lercWasm from 'lerc/lerc-wasm.wasm?url'
@@ -251,11 +252,11 @@ export async function loadWorldTile(
     `/__world-cache/${origin.latitude}/${origin.longitude}/${origin.altitude}/${key}`,
     location.origin,
   ).href
-  let cache: Cache | undefined, extract: WorldExtract | undefined
+  let cache: MapCache | undefined, extract: WorldExtract | undefined
   let bakedEtag: string | undefined,
     changed = false
   try {
-    cache = await caches.open(CACHE)
+    cache = mapCache(CACHE)
     const hit = await cache.match(cacheKey)
     if (hit && Date.now() - Number(hit.headers.get('x-cached-at')) < 30 * 86400000) {
       extract = (await hit.json()) as WorldExtract
@@ -322,8 +323,6 @@ export async function loadWorldTile(
           },
         }),
       )
-      const keys = await cache.keys()
-      for (const old of keys.slice(0, Math.max(0, keys.length - 32))) await cache.delete(old)
     } catch {
       /* Quota failure must not discard usable terrain. */
     }

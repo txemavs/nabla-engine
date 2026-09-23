@@ -1,19 +1,26 @@
+import { mapCache, type MapCache } from './map-cache.js'
 import { decodeSea } from './water-geometry.js'
 import type { GeoPoint } from '../src/geography.js'
 const endpoint =
   import.meta.env.VITE_WATER_TILEJSON_URL || 'https://tiles.openfreemap.org/planet/latest'
 let template: Promise<string> | undefined
 async function cached(url: string): Promise<Response> {
-  let cache: Cache | undefined
+  let cache: MapCache | undefined, hit: Response | undefined
   try {
-    cache = await caches.open('nabla-water-v1')
-    const hit = await cache.match(url)
+    cache = mapCache('nabla-water-v1')
+    hit = await cache.match(url)
     if (hit && Date.now() - Number(hit.headers.get('x-cached-at')) < 7 * 86400000) return hit
   } catch {
     /* Optional browser storage. */
   }
-  const response = await fetch(url, { signal: AbortSignal.timeout(20000) })
-  if (!response.ok) throw new Error(`Water HTTP ${response.status}`)
+  let response: Response
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(20000) })
+    if (!response.ok) throw new Error(`Water HTTP ${response.status}`)
+  } catch (error) {
+    if (hit) return hit
+    throw error
+  }
   const data = await response.arrayBuffer()
   if (data.byteLength > 8000000) throw new Error('Water tile too large')
   const headers = new Headers(response.headers)
@@ -22,8 +29,6 @@ async function cached(url: string): Promise<Response> {
   if (cache)
     try {
       await cache.put(url, result.clone())
-      const keys = await cache.keys()
-      for (const key of keys.slice(0, Math.max(0, keys.length - 96))) await cache.delete(key)
     } catch {
       /* Continue with the downloaded tile. */
     }

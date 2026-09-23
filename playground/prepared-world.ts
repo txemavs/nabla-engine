@@ -1,3 +1,4 @@
+import { mapCache, type MapCache } from './map-cache.js'
 import { parseScene, createEntity, type Entity } from '../src/scene.js'
 import type { GeoPoint } from '../src/geography.js'
 import type { PreparedMapGeometry } from './map-geometry.js'
@@ -71,12 +72,20 @@ const BASE = import.meta.env.VITE_WORLD_PREPARED_URL || ''
 export async function loadPrepared(origin: GeoPoint, key: string, signal: AbortSignal) {
   if (!BASE) return undefined
   const url = `${BASE}/${preparedPath(origin, key)}`
-  let cache: Cache | undefined, hit: Response | undefined, response: Response | undefined
+  let cache: MapCache | undefined, hit: Response | undefined, response: Response | undefined
   try {
-    cache = await caches.open('nabla-prepared-v5')
+    cache = mapCache('nabla-prepared-v5')
     hit = await cache.match(url)
   } catch {
     /* Optional disk cache. */
+  }
+  if (hit && Date.now() - Number(hit.headers.get('x-nabla-stored-at')) < 5 * 60_000) {
+    signal.throwIfAborted()
+    try {
+      return decodePrepared(await hit.clone().json(), origin, key)
+    } catch {
+      /* Re-fetch invalid entries. */
+    }
   }
   try {
     response = await fetch(url, {
@@ -85,7 +94,7 @@ export async function loadPrepared(origin: GeoPoint, key: string, signal: AbortS
       headers: hit?.headers.get('etag') ? { 'If-None-Match': hit.headers.get('etag')! } : {},
     })
     if (response.status === 304) response = hit
-    else if (!response.ok) return undefined
+    else if (!response.ok) response = hit
   } catch {
     signal.throwIfAborted()
     response = hit
@@ -96,8 +105,6 @@ export async function loadPrepared(origin: GeoPoint, key: string, signal: AbortS
       result = decodePrepared(await response.json(), origin, key)
     if (cache) {
       await cache.put(url, copy).catch(() => {})
-      const keys = await cache.keys()
-      for (const old of keys.slice(0, Math.max(0, keys.length - 8))) await cache.delete(old)
     }
     return result
   } catch {

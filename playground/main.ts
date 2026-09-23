@@ -1,3 +1,4 @@
+import { mapCacheStats, setMapCacheBudget, clearMapCache } from './map-cache.js'
 import { decodePrepared } from './prepared-world.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
 import { isMapBuilding } from '../src/scene.js'
@@ -2030,3 +2031,34 @@ $('css-screen-demo').onclick = () => {
     'Consola de mando: juega y acércate para usar las pantallas, o entra en el puesto de conducción.',
   )
 }
+
+async function refreshMapCacheUi() {
+  try {
+    const stats = await mapCacheStats()
+    $<HTMLSelectElement>('map-cache-budget').value = String(stats.budget / 1_000_000)
+    $('map-cache-usage').textContent =
+      `${(stats.bytes / 1_000_000).toFixed(1)} / ${stats.budget / 1_000_000} MB · ${stats.entries} archivos`
+  } catch {
+    $('map-cache-usage').textContent = 'Caché no disponible · el mapa seguirá funcionando'
+  }
+}
+$('map-cache-budget').onchange = async () => {
+  try {
+    await setMapCacheBudget(Number($<HTMLSelectElement>('map-cache-budget').value))
+    await refreshMapCacheUi()
+  } catch {
+    $('map-cache-usage').textContent = 'No se pudo ajustar la caché'
+  }
+}
+$('map-cache-clear').onclick = async () => {
+  try {
+    await clearMapCache()
+    await refreshMapCacheUi()
+  } catch {
+    toast('No se pudo vaciar la caché')
+  }
+}
+$('options-menu').addEventListener('toggle', () => {
+  if ($('options-menu').matches(':popover-open')) void refreshMapCacheUi()
+})
+void refreshMapCacheUi()
