@@ -2,7 +2,7 @@ import { MeshBasicMaterial, Vector3, Color } from 'three'
 /** Angular disc and Gaussian halo adapted from Streets GL, StrandedKitty, MIT.
  * See assets/licenses/streets-gl-MIT.txt. No extra render target or bloom pass. */
 export function addSunDisc(material: MeshBasicMaterial, direction: Vector3) {
-  const color = { value: new Color('#fff1d0') }
+  const color = { value: new Color('#ffffff') }
   material.onBeforeCompile = (shader) => {
     shader.uniforms.nablaSun = { value: direction }
     shader.uniforms.nablaSunColor = color
@@ -17,10 +17,12 @@ export function addSunDisc(material: MeshBasicMaterial, direction: Vector3) {
       shader.fragmentShader.replace(
         '#include <opaque_fragment>',
         `float cosine = dot(normalize(skyRay), normalize(nablaSun));
-       float edge = cos(radians(0.265));
-       float disc = smoothstep(edge - 0.000002, edge + 0.000002, cosine);
+       float edge = cos(radians(0.53));
+       float aa = max(fwidth(cosine), 0.000001);
+       float disc = smoothstep(edge - aa, edge + aa, cosine);
        float halo = exp(-max(0.0, edge - cosine) * 100000.0);
-       outgoingLight += nablaSunColor * (disc * 3.0 + halo * 0.3);
+       float glare = exp(-max(0.0, edge - cosine) * 1800.0);
+       outgoingLight += nablaSunColor * (disc * 30.0 + halo * 3.0 + glare * 0.35);
        #include <opaque_fragment>`,
       )
   }

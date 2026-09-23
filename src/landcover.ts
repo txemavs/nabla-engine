@@ -36,7 +36,7 @@ export const SURFACE_COLORS: Record<SurfaceType, string> = {
   farmland: '#947133',
   sand: '#b79960',
   scrub: '#3d5e2e',
-  water: '#296b83',
+  water: '#102f43',
   wetland: '#315740',
   rock: '#787a6b',
   residential: '#b0a28e',
@@ -47,7 +47,10 @@ export const SURFACE_COLORS: Record<SurfaceType, string> = {
 /** Update generated defaults at render time, including old baked/cached zones.
  * Authored colors remain authored data; no cache invalidation or geometry rebuild is needed. */
 export function mapSurfaceColor(surface: SurfaceType, color: string): string {
-  return color.toLowerCase() === LEGACY_SURFACE_COLORS[surface] ? SURFACE_COLORS[surface] : color
+  return (surface === 'water' && color.toLowerCase() === '#296b83') ||
+    color.toLowerCase() === LEGACY_SURFACE_COLORS[surface]
+    ? SURFACE_COLORS[surface]
+    : color
 }
 
 /**

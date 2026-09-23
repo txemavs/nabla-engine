@@ -1821,6 +1821,7 @@ function frame(now: number): void {
       height > 100000 ? 'space' : height > 250 ? 'map' : 'local'
     scene.background = null
     const air = geography.atmosphere
+    water?.setSun(geography.sunDirection, air.day)
     scene.fog = air.space >= 1 ? null : new THREE.Fog(air.color, air.near, air.far)
     hemisphere.intensity = 0.16 + 1.44 * air.day
     scene.environmentIntensity = 0.025 + 0.375 * air.day
