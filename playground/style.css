@@ -1031,3 +1031,21 @@ body.playing #footer-mode {
 .studio-preview-link:hover {
   text-decoration: underline;
 }
+
+#save-project-dialog {
+  color: #eee;
+  background: #303030;
+  border: 1px solid #666;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 480px;
+}
+#save-project-dialog input {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 16px;
+}
+#save-project-dialog::backdrop {
+  background: #0008;
+}

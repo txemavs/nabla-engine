@@ -1,3 +1,12 @@
+import {
+  createProject,
+  locationId,
+  parseProject,
+  retainLocation,
+  visitLocation,
+  projectFilename,
+  type StudioProject,
+} from './studio/project.js'
 import { FrameLoop } from './studio/frame-loop.js'
 import { StudioInputOwner } from './studio/input-owner.js'
 import { mapCacheStats, setMapCacheBudget, clearMapCache } from './map-cache.js'
@@ -69,6 +78,9 @@ const escape = (s: string): string =>
   )
 const performanceSettings = readPerformance()
 const STORAGE_KEY = 'nabla.scene.v1'
+const PROJECT_KEY = 'nabla.project.v1'
+let project: StudioProject | undefined
+let recoverLegacyPlaces = true
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = false
 let distantTerrain: DistantTerrain | null = null
@@ -82,7 +94,12 @@ let editor = new SceneEditor(
 )
 let loadError = ''
 try {
-  const saved = await readScene(STORAGE_KEY)
+  const savedProject = await readScene(PROJECT_KEY)
+  if (savedProject)
+    project = parseProject(JSON.parse(savedProject), performanceSettings.preset === 'ultra')
+  const saved = project
+    ? JSON.stringify(project.locations.find((p) => p.id === project!.activeLocation)!.scene)
+    : await readScene(STORAGE_KEY)
   if (saved)
     editor = new SceneEditor(
       upgradeReferenceScene(JSON.parse(saved), performanceSettings.preset === 'ultra'),
@@ -93,6 +110,7 @@ try {
 } catch {
   loadError = 'La escena guardada no es válida. Se ha abierto el ejemplo.'
 }
+project ??= createProject(editor.document)
 let savedDocument = editor.serialize()
 const collapsed = new Set(
   editor.document.entities.filter((e) => e.kind === 'group').map((e) => e.id),
@@ -314,7 +332,7 @@ let geography = new GeographicView(
   () => {
     needsRender = true
   },
-  true,
+  false,
 )
 scene.add(geography.tiles)
 let skyClock: SkyClock = editor.document.sky ?? { mode: 'live' }
@@ -379,14 +397,18 @@ function rebuild(prepared?: PreparedMapGeometry): void {
   worldStream = null
   worldLoader = null
   gizmo.detach()
-  if (JSON.stringify(view.document.geography) !== JSON.stringify(editor.document.geography)) {
+  if (
+    JSON.stringify(view.document.geography) !== JSON.stringify(editor.document.geography) ||
+    view.document.entities.some((e) => !!e.terrain) !==
+      editor.document.entities.some((e) => !!e.terrain)
+  ) {
     geography.dispose()
     geography = new GeographicView(
       editor.document,
       () => {
         needsRender = true
       },
-      true,
+      false,
     )
     scene.add(geography.tiles)
   }
@@ -467,6 +489,18 @@ function select(id: string): void {
   refreshUi()
 }
 function refreshUi(): void {
+  const places = $<HTMLSelectElement>('project-places')
+  places.replaceChildren(
+    ...project!.locations.map((place) => {
+      const option = document.createElement('option')
+      option.value = place.id
+      option.textContent = place.scene.name
+      option.selected = place.id === project!.activeLocation
+      return option
+    }),
+  )
+  $<HTMLButtonElement>('project-place-open').disabled = loadingWorld
+
   syncCursor()
   $('cursor-menu')
     .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
@@ -494,7 +528,7 @@ function refreshUi(): void {
   $<HTMLInputElement>('longitude').value = String(geo.longitude)
   $<HTMLSelectElement>('imagery').value = doc.geography?.imagery ?? 'satellite'
   for (const id of ['latitude', 'longitude', 'imagery', 'apply-location', 'locate'])
-    $<HTMLInputElement>(id).disabled = Boolean(sim) || doc.entities.some((e) => !!e.terrain)
+    $<HTMLInputElement>(id).disabled = Boolean(sim) || loadingWorld || id === 'imagery'
   $('entity-count').textContent = String(doc.entities.length)
   $('status').textContent =
     editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
@@ -778,6 +812,7 @@ function refreshUi(): void {
     'world-irun',
     'world-irun-official',
     'sample-assets',
+    'save-as',
     'sample-portals',
     'focus',
   ])
@@ -864,7 +899,10 @@ function focusSelection(): void {
 $('focus').onclick = focusSelection
 $('sample-assets').onclick = () =>
   action(() => {
-    editor.load(upgradeReferenceScene(createSampleScene()))
+    project = retainLocation(project!, editor.document)
+    const sample = upgradeReferenceScene(createSampleScene())
+    project = visitLocation(project, sample)
+    editor.load(sample)
     selectedId = 'car-a'
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
@@ -914,6 +952,13 @@ $('sample-portals').onclick = () =>
   })
 async function loadIrun(combined = false): Promise<void> {
   if (sim || loadingWorld) return
+  if (!combined) {
+    $<HTMLSelectElement>('travel-city').value = '43.32969,-1.819606'
+    $<HTMLInputElement>('travel-latitude').value = '43.32969'
+    $<HTMLInputElement>('travel-longitude').value = '-1.819606'
+    await travelTo()
+    return
+  }
   loadingWorld = true
   refreshUi()
   for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = true
@@ -951,6 +996,8 @@ async function loadIrun(combined = false): Promise<void> {
       if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
       next = upgradeReferenceScene(createRealWorld((await response.json()) as WorldExtract))
     }
+    project = visitLocation(retainLocation(project!, editor.document), next)
+    await writeScene(PROJECT_KEY, JSON.stringify(project))
     editor.load(next)
     if (combined) {
       const url = new URL(location.href)
@@ -1018,6 +1065,7 @@ async function travelTo(): Promise<void> {
     Math.abs(longitude) > 180
   ) {
     $('travel-status').textContent = 'Introduce coordenadas válidas (latitud entre −85 y 85).'
+    toast($('travel-status').textContent!)
     return
   }
   const city = $<HTMLSelectElement>('travel-city')
@@ -1044,10 +1092,30 @@ async function travelTo(): Promise<void> {
         placeKey(current.geography.latitude, current.geography.longitude),
         editor.serialize(),
       )
-    const saved = await readScene(placeKey(latitude, longitude))
+    project = retainLocation(project!, current)
+    await writeScene(PROJECT_KEY, JSON.stringify(project))
+    const retained = project.locations.find(
+      (p) => locationId(p.scene) === `geo:${latitude.toFixed(6)}:${longitude.toFixed(6)}`,
+    )
+    const saved = retained
+      ? JSON.stringify(retained.scene)
+      : recoverLegacyPlaces
+        ? await readScene(placeKey(latitude, longitude))
+        : null
     let next: SceneDocument
-    if (saved) next = parseScene(JSON.parse(saved), performanceSettings.preset === 'ultra')
-    else {
+    const savedScene = saved
+      ? parseScene(JSON.parse(saved), performanceSettings.preset === 'ultra')
+      : null
+    if (savedScene?.entities.some((e) => e.terrain)) next = savedScene
+    else if (
+      Math.abs(latitude - 43.32969) < 0.000001 &&
+      Math.abs(longitude + 1.819606) < 0.000001
+    ) {
+      const response = await fetch('/geography/irun-ventas.json', { signal: controller.signal })
+      if (!response.ok) throw Error('No se pudo cargar Ventas')
+      next = upgradeReferenceScene(createRealWorld((await response.json()) as WorldExtract))
+    } else {
+      if (savedScene) project = visitLocation(project!, savedScene)
       const entities = await loader.load(
         { latitude, longitude, altitude: 0 },
         '0_0',
@@ -1064,6 +1132,9 @@ async function travelTo(): Promise<void> {
       })
     }
     if (controller.signal.aborted) return
+    const nextProject = visitLocation(project!, next)
+    await writeScene(PROJECT_KEY, JSON.stringify(nextProject))
+    project = nextProject
     $('travel-cancel').hidden = true
     editor.load(next)
     for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
@@ -1109,6 +1180,8 @@ $('save').onclick = async () => {
   const snapshot = editor.serialize()
   try {
     await writeScene(STORAGE_KEY, snapshot)
+    project = retainLocation(project!, editor.document)
+    await writeScene(PROJECT_KEY, JSON.stringify(project))
     savedDocument = snapshot
     $('status').textContent = 'Guardado local'
     toast('Escena guardada en este navegador')
@@ -1127,13 +1200,24 @@ $('export').onclick = () => {
 $('import').onclick = () => $<HTMLInputElement>('file').click()
 $('file').onchange = async () => {
   const file = $<HTMLInputElement>('file').files?.[0]
-  if (!file) return
+  if (!file || loadingWorld) return
   if (file.size > 40_000_000) {
     toast('La escena supera el límite de 40 MB')
     return
   }
   try {
-    editor.load(upgradeReferenceScene(JSON.parse(await file.text())))
+    const raw = JSON.parse(await file.text())
+    const opened =
+      raw?.format === 'nabla-project'
+        ? parseProject(raw, performanceSettings.preset === 'ultra')
+        : createProject(upgradeReferenceScene(raw))
+    const scene = opened.locations.find((p) => p.id === opened.activeLocation)!.scene
+    if (sim) togglePlay()
+    editor = new SceneEditor(scene, performanceSettings.preset === 'ultra')
+    project = opened
+    recoverLegacyPlaces = false
+    savedDocument = editor.serialize()
+    $('welcome').hidden = true
     rebuild()
     toast('Escena abierta')
   } catch {
@@ -1398,7 +1482,7 @@ document.addEventListener('mousemove', (e) => {
 })
 window.addEventListener('keydown', (e) => {
   if (e.defaultPrevented || !studioInput.acceptsInput) return
-  if (document.querySelector('.app-menu:popover-open')) return
+  if (document.querySelector('.app-menu:popover-open, dialog[open]')) return
   if ((e.target as HTMLElement)?.matches('input,select,textarea,[contenteditable]')) return
   if (e.code === 'Tab' && sim) {
     e.preventDefault()
@@ -1506,7 +1590,7 @@ function pollGamepad(): Gamepad | null {
     !studioInput.acceptsInput ||
     !document.hasFocus() ||
     document.hidden ||
-    document.querySelector('.app-menu:popover-open')
+    document.querySelector('.app-menu:popover-open, dialog[open]')
   ) {
     previousButtons = []
     return null
@@ -1537,7 +1621,7 @@ function currentInput(pad: Gamepad | null = null) {
     !studioInput.acceptsInput ||
     !document.hasFocus() ||
     document.hidden ||
-    document.querySelector('.app-menu:popover-open')
+    document.querySelector('.app-menu:popover-open, dialog[open]')
   )
     return idleInput()
   const id = sim?.player.vehicleId
@@ -2021,27 +2105,12 @@ function frame(now: number): void {
   }
 }
 function applyLocation(latitude: number, longitude: number): void {
-  if (editor.document.entities.some((e) => e.terrain)) {
-    toast('Usa el menú Ir para cargar otra zona del mundo')
-    return
-  }
-  if (sim) {
-    toast('Detén la partida para cambiar la ubicación')
-    return
-  }
-  action(() => {
-    const doc = editor.document
-    doc.geography = {
-      latitude,
-      longitude,
-      altitude: doc.geography?.altitude ?? 0,
-      imagery: $<HTMLSelectElement>('imagery').value as 'satellite' | 'streets' | 'offline',
-    }
-    editor.load(doc)
-    rebuild()
-    toast('Ubicación aplicada · Guardar para conservarla')
-  })
+  $<HTMLSelectElement>('travel-city').value = ''
+  $<HTMLInputElement>('travel-latitude').value = String(latitude)
+  $<HTMLInputElement>('travel-longitude').value = String(longitude)
+  void travelTo()
 }
+
 function setSkyClock(clock: SkyClock): void {
   action(() => {
     editor.load({ ...editor.document, sky: clock })
@@ -2094,6 +2163,7 @@ window.addEventListener('pageshow', () => {
 if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
 else if (
   !circuitMode &&
+  !localStorage.getItem(PROJECT_KEY) &&
   (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
 )
   void loadIrun()
@@ -2183,4 +2253,60 @@ if (new URLSearchParams(location.search).get('studio') === 'desktop') {
     canPlay: () => !loadingWorld,
     isPlaying: () => !!sim,
   })
+}
+
+$('save-as').onclick = () => {
+  $<HTMLInputElement>('project-filename').value = projectFilename(project!.name)
+  $('file-menu').hidePopover()
+  keys.clear()
+  if (document.pointerLockElement) document.exitPointerLock()
+  $<HTMLDialogElement>('save-project-dialog').showModal()
+}
+$('save-project-cancel').onclick = () => $<HTMLDialogElement>('save-project-dialog').close()
+$('save-project-form').onsubmit = (event) => {
+  event.preventDefault()
+  action(() => {
+    const filename = projectFilename($<HTMLInputElement>('project-filename').value)
+    const snapshot = retainLocation(project!, editor.document)
+    snapshot.name = filename.replace(/\.nabla\.json$/i, '')
+    const data = new Blob([JSON.stringify(snapshot)], { type: 'application/json' })
+    if (data.size > 40_000_000)
+      throw Error('El proyecto supera 40 MB; reduce las zonas cargadas antes de exportarlo')
+    const url = URL.createObjectURL(data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    project = snapshot
+    $<HTMLDialogElement>('save-project-dialog').close()
+    toast(`Archivo preparado: ${filename} · ${snapshot.locations.length} lugares`)
+  })
+}
+
+$('project-place-open').onclick = async () => {
+  if (loadingWorld) return
+  const id = $<HTMLSelectElement>('project-places').value
+  const place = project!.locations.find((p) => p.id === id)
+  if (!place) return
+  if (sim) togglePlay()
+  const retained = retainLocation(project!, editor.document)
+  const next = { ...retained, activeLocation: id }
+  loadingWorld = true
+  refreshUi()
+  try {
+    await writeScene(PROJECT_KEY, JSON.stringify(next))
+    editor.load(next.locations.find((p) => p.id === id)!.scene)
+    project = next
+    rebuild()
+    $('welcome').hidden = true
+    $('travel-menu').hidePopover()
+    await view.ready
+    focusSelection()
+  } catch (error) {
+    toast(String(error))
+  } finally {
+    loadingWorld = false
+    refreshUi()
+  }
 }

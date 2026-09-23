@@ -23,6 +23,9 @@
         </nav>
         <div id="travel-menu" class="app-menu" popover aria-label="Viajar por el mundo">
           <h3>Ir a un lugar</h3>
+          <label for="project-places">Lugares de este proyecto</label>
+          <select id="project-places"></select>
+          <button id="project-place-open">Abrir lugar guardado</button>
           <label class="field-label" for="travel-city">Destinos</label>
           <select id="travel-city">
             <option value="">Coordenadas personalizadas</option>
@@ -79,7 +82,8 @@
           </p>
         </div>
         <div id="file-menu" class="app-menu" popover aria-label="Archivo">
-          <button id="import">Abrir escena JSON…</button>
+          <button id="import">Abrir proyecto o escena…</button>
+          <button id="save-as">Guardar como…</button>
           <button id="save">Guardar en este navegador <kbd>Ctrl S</kbd></button>
           <button id="export">Exportar escena JSON…</button>
           <hr />
@@ -194,14 +198,15 @@
             ><input id="latitude" type="number" min="-90" max="90" step="0.00001" />
             <label class="field-label" for="longitude">Longitud</label
             ><input id="longitude" type="number" min="-180" max="180" step="0.00001" />
-            <label class="field-label" for="imagery">Mapa</label
-            ><select id="imagery">
-              <option value="satellite">Satélite · Esri</option>
-              <option value="streets">Calles · CARTO / OSM</option>
-              <option value="offline">Sin conexión</option>
+            <select id="imagery" hidden>
+              <option value="offline">OSM + relieve 3D</option>
             </select>
+            <p>
+              Todos los destinos cargan terreno, carreteras y edificios 3D. Cambiar de ubicación
+              conserva el lugar anterior dentro del proyecto.
+            </p>
             <div>
-              <button id="apply-location">Aplicar GPS</button
+              <button id="apply-location">Cargar lugar 3D</button
               ><button id="locate">Mi ubicación</button>
             </div>
             <p>
@@ -343,6 +348,16 @@
         ><span>NABLA ENGINE <b>0.2</b></span>
       </footer>
     </div>
+    <dialog id="save-project-dialog" aria-labelledby="save-project-title">
+      <form id="save-project-form">
+        <h2 id="save-project-title">Guardar proyecto como…</h2>
+        <label for="project-filename">Nombre de archivo</label>
+        <input id="project-filename" required maxlength="120" />
+        <p>Incluye todos los lugares de este proyecto. El navegador descargará el archivo.</p>
+        <button type="button" id="save-project-cancel">Cancelar</button>
+        <button type="submit">Guardar archivo</button>
+      </form>
+    </dialog>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

@@ -15,7 +15,7 @@ The existing viewport ResizeObserver continues to own renderer dimensions.
 
 The shared command registry provides Edit (undo/redo), Run and Windows menus.
 These commands call application functions directly and use current undo/play state.
-File, travel, cursor, settings and help retain their existing controls for this slice.
+File, travel, cursor and help retain their existing menus. Options now opens a Desktop window with retained settings controls and tabs (see [projects and places](studio-projects.md)).
 Windows can reopen panels and reset the layout. Layout persists separately from
 the scene under `nabla.studio.layout.v1`; invalid or unavailable storage falls back
 to the default layout without discarding scene data.

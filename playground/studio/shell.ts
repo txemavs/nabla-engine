@@ -1,3 +1,4 @@
+import { mountSettingsWindow } from './settings-window.js'
 import { createApp, h } from 'vue'
 import { ExternalContent, MenuBar, WorkspaceHost } from '@nabla/desktop'
 import {
@@ -23,6 +24,8 @@ export interface StudioHost {
 }
 const layoutKey = 'nabla.studio.layout.v1'
 export function mountStudio(host: StudioHost): void {
+  document.getElementById('welcome')!.hidden = true
+  mountSettingsWindow(host.input)
   const app = document.getElementById('app')!
   const workspace = createWorkspace()
   const registry = createCommandRegistry()

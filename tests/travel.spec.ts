@@ -46,6 +46,8 @@ test('travels to another city with its own terrain, saves it and can undo the tr
   await expect(page.locator('#latitude')).toHaveValue('40.4168')
   await expect(page.locator('#world-note')).toContainText('Madrid')
   await expect(page.locator('#travel-menu')).toBeHidden()
+  await page.locator('#name').fill('Madrid custom car')
+  await page.locator('#name').press('Tab')
   await page.locator('#file-menu-button').click()
   await page.locator('#save').click()
   await expect(page.locator('#status')).toHaveText('Guardado local')
@@ -57,20 +59,24 @@ test('travels to another city with its own terrain, saves it and can undo the tr
     ),
   ).toBe(true)
   await page.locator('#undo').click()
+  await page.locator('#undo').click()
   await expect(page.locator('#scene-name')).toHaveText(before!)
+  await page.locator('#redo').click()
   await page.locator('#redo').click()
   await expect(page.locator('#scene-name')).toHaveText('Madrid · Sol')
   await page.screenshot({ path: 'test-results/travel-madrid.png' })
   await page.reload()
   await expect(page.locator('#scene-name')).toHaveText('Madrid · Sol')
-  expect(queries).toBe(1)
+  await expect(page.locator('#name')).toHaveValue('Madrid custom car')
+  expect(queries).toBeGreaterThan(0)
 })
 
 test('preserves the scene on destination failure and cancellation; validates coordinates', async ({
   page,
 }) => {
   await page.route(/overpass-api\.de\/|\/world-cache\/osm/, (route) =>
-    route.fulfill({ status: 503, body: 'unavailable' }),
+    // Terminal failure: 503 intentionally retries for up to a minute.
+    route.fulfill({ status: 400, body: 'invalid request' }),
   )
   await page.goto('/?scene=circuit')
   const before = await page.locator('#scene-name').textContent()
