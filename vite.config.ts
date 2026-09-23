@@ -14,7 +14,11 @@ export default defineConfig(({ mode }) => {
       outDir: '../demo-dist',
       emptyOutDir: true,
       rollupOptions: {
-        input: { main: 'playground/index.html', geoeuskadi: 'playground/geoeuskadi.html' },
+        input: {
+          main: 'playground/index.html',
+          geoeuskadi: 'playground/geoeuskadi.html',
+          tileLab: 'playground/tile-lab.html',
+        },
       },
     },
     server: {
