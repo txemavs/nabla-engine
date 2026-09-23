@@ -193,8 +193,8 @@ export class XyzWorld {
           p.needsUpdate = true
           mesh.geometry.computeBoundingSphere()
           for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-            this.setupMaterial?.(m)
             this.coverage.apply(m, true)
+            this.setupMaterial?.(m)
           }
         })
       }

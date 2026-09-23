@@ -59,6 +59,11 @@ test('game XYZ replaces complete generated ground only, preserves edits, and res
   })
   const result = await page.evaluate(
     async ({ root, origin }) => {
+      const csmPath = '/csm.ts',
+        performancePath = '/performance.ts'
+      const { ShadowManager } = await import(csmPath),
+        { shadowTiers } = await import(performancePath)
+      const shadows = new ShadowManager()
       const xyzPath = '/xyz-world.ts',
         viewPath = '/view.ts'
       const { XyzWorld } = await import(xyzPath),
@@ -75,7 +80,12 @@ test('game XYZ replaces complete generated ground only, preserves edits, and res
         geography: { ...origin, imagery: 'offline' },
         entities: [terrain, createEntity('spawn', 'spawn')],
       }
-      const xyz = new XyzWorld(origin, () => {}),
+      const xyz = new XyzWorld(
+          origin,
+          () => {},
+          undefined,
+          (material: any) => shadows.setupMaterial(material),
+        ),
         view = new SceneView(doc)
       while (view.pendingMapInstall) view.flushMapInstall(1000, 24)
       const offset = new T.Vector3()
@@ -98,7 +108,27 @@ test('game XYZ replaces complete generated ground only, preserves edits, and res
       camera.position.set(0, 4000, 1)
       camera.lookAt(0, 0, 0)
       scene.add(xyz.root, new T.HemisphereLight(0xffffff, 0x888888, 2))
+      renderer.shadowMap.enabled = true
+      shadows.init({
+        camera,
+        scene,
+        lightDirection: new T.Vector3(-1, -1, -1).normalize(),
+        tier: shadowTiers[512],
+      })
+      shadows.update(camera, offset)
       renderer.render(scene, camera)
+      shadows.dispose()
+      let maskRetained = false
+      xyz.root.traverse((node: any) => {
+        if (!node.isMesh || maskRetained) return
+        const shader = {
+          uniforms: {},
+          vertexShader: '#include <project_vertex>',
+          fragmentShader: '#include <clipping_planes_fragment>',
+        }
+        node.material.onBeforeCompile(shader, renderer)
+        maskRetained = shader.fragmentShader.includes('xyzRects')
+      })
       const edited = { ...doc, entities: [{ ...terrain, mapEditable: true }, doc.entities[1]] }
       update(edited)
       const editPreserved = xyz.omitted.size === 0 && xyz.coverage.count.value === 0
@@ -109,10 +139,16 @@ test('game XYZ replaces complete generated ground only, preserves edits, and res
       xyz.dispose()
       view.dispose()
       renderer.dispose()
-      return { covered, hidden, editPreserved, restored }
+      return { covered, hidden, editPreserved, restored, maskRetained }
     },
     { root: process.cwd(), origin },
   )
-  expect(result).toEqual({ covered: true, hidden: true, editPreserved: true, restored: true })
+  expect(result).toEqual({
+    covered: true,
+    hidden: true,
+    editPreserved: true,
+    restored: true,
+    maskRetained: true,
+  })
   expect(errors).toEqual([])
 })
