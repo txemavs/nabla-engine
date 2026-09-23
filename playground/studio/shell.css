@@ -43,9 +43,6 @@
   font-size: 14px;
 }
 
-.studio-desktop .studio-preview-link {
-  display: none;
-}
 .studio-desktop .outliner button,
 .studio-desktop .inspector input,
 .studio-desktop .inspector select {

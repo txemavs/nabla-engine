@@ -1,9 +1,9 @@
 # Studio Desktop foundation
 
-Status: first integration slice for [issue #35](https://github.com/txemavs/nabla-engine/issues/35).
-Open `/?studio=desktop` to use the experimental workspace, or
-`/?scene=circuit&studio=desktop` for the local circuit without world downloads.
-The existing editor remains the default during migration.
+Studio uses the gray Nabla Desktop workspace as its only interface. Open `/` for
+the planetary world or `/?scene=circuit` for the local circuit without world
+downloads. Existing `?studio=desktop` links still work, but no query parameter is
+needed and there is no alternate editor theme.
 
 ## What works
 
