@@ -98,8 +98,11 @@ export class SceneView {
   constructor(
     readonly document: SceneDocument,
     experimentalLargeScene = false,
+    validated = false,
   ) {
-    this.graph = SceneGraph.fromValidated(parseScene(document, experimentalLargeScene))
+    this.graph = SceneGraph.fromValidated(
+      validated ? document : parseScene(document, experimentalLargeScene),
+    )
     const immediate = document.entities.filter((e) => !isMapEnvironment(e) || e.mapEditable)
     this.pendingMapMeshes = document.entities.filter((e) => isMapEnvironment(e) && !e.mapEditable)
     const priority = (e: Entity) =>

@@ -45,3 +45,39 @@ test('initial map geometry is queued and installed incrementally', async ({ page
   expect(result.before).toEqual({ pending: 1000, objects: 1 })
   expect(result.after).toEqual({ pending: 990, objects: 11 })
 })
+
+test('an empty viewport stays responsive while project preparation is pending', async ({
+  page,
+}) => {
+  let release!: () => void
+  const wait = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route('**/startup.worker.ts*', async (route) => {
+    await wait
+    await route.continue()
+  })
+  await page.goto('/?scene=circuit&studio=desktop', { waitUntil: 'commit' })
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-startup', 'loading')
+  await expect(page.locator('#boot-status')).toBeHidden()
+  await expect(page.locator('#scene-name')).toHaveText('Preparando mundo')
+  await expect(page.locator('#map-install-status')).toBeVisible()
+  // The browser can continue scheduling frames while the worker is unavailable.
+  const frames = await page.evaluate(
+    () =>
+      new Promise<number>((resolve) => {
+        let count = 0
+        const tick = () => {
+          if (++count === 6) resolve(count)
+          else requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      }),
+  )
+  expect(frames).toBe(6)
+  release()
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-startup', 'ready', {
+    timeout: 30000,
+  })
+  await expect(page.locator('#scene-name')).toHaveText('Distrito cero')
+})

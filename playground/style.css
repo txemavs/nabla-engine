@@ -1061,3 +1061,24 @@ body.playing #footer-mode {
   font-size: 13px;
   pointer-events: none;
 }
+#map-install-status::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border: 2px solid #62738b;
+  border-top-color: #d9e5f5;
+  border-radius: 50%;
+  animation: map-loading-turn 1s linear infinite;
+}
+@keyframes map-loading-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #map-install-status::before {
+    animation: none;
+  }
+}

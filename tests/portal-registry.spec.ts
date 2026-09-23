@@ -17,6 +17,7 @@ test('registry locates individual portals and saves a named remote window', asyn
   zamora.entities.push(b)
   const project = visitLocation(createProject(madrid), zamora)
   await page.goto('/?scene=circuit&studio=desktop')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-startup', 'ready')
   await page.locator('#file').setInputFiles({
     name: 'Cities.nabla.json',
     mimeType: 'application/json',

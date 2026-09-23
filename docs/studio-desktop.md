@@ -100,8 +100,19 @@ SceneView now installs authored objects first and queues generated map geometry,
 including restored scenes, through the existing per-frame installation budget.
 Terrain and roads precede buildings and vegetation. The editor can be used while
 the remaining context is installed, with a pending-count indicator in the viewport.
-A single terrain/mesh operation, scene validation, JSON parsing and GPU compilation
-can still exceed a frame budget; this change does not guarantee a stall-free startup.
+The real empty viewport and frame loop now start before saved-project preparation.
+JSON parsing, migration, validation and initial Irún geometry generation run in
+a module worker; startup status remains visible in the viewport. The validated
+document is adopted without parsing it again in SceneEditor or SceneView.
+Preparing a new installation goes directly from the empty scene to Irún, without
+briefly displaying the reference circuit.
+
+Single mesh operations, main-thread object/graph installation, structured-clone
+transfer and GPU compilation can still exceed a frame budget. Other import/travel
+paths may still validate synchronously. This does not guarantee zero long frames.
+The loading indicator is not a modal screen: camera navigation remains available
+while preparation runs. Editing is disabled until ownership of the validated
+document transfers; a failed restore preserves the user's saved copy.
 
 The outliner indexes authored children once instead of scanning every entity for
 every row. Generated terrain, OSM features and map groups do not produce rows or

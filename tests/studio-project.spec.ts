@@ -7,6 +7,7 @@ test('named project files preserve multiple places and reopen the active place',
   page,
 }) => {
   await page.goto('/?scene=circuit&studio=desktop')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-startup', 'ready')
   const madrid = createSampleScene()
   madrid.name = 'Madrid studio'
   const irun = createSampleScene()
@@ -52,6 +53,7 @@ test('Desktop options open a retained window with working keyboard accessible ta
   page,
 }) => {
   await page.goto('/?scene=circuit&studio=desktop')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-startup', 'ready')
   await expect(page.locator('.studio-workspace')).toBeVisible()
   await page.locator('#options-menu-button').click()
   await expect(page.getByRole('tab', { name: 'Rendimiento', exact: true })).toBeVisible()

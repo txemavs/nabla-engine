@@ -20,6 +20,15 @@ export class SceneEditor {
   ) {
     this.current = parseScene(document, this.experimentalLargeScene)
   }
+  /** Internal ownership transfer from a validating worker; never use with untrusted raw input. */
+  static fromValidated(document: SceneDocument, large = false): SceneEditor {
+    const editor = Object.create(SceneEditor.prototype) as SceneEditor
+    editor.current = document
+    editor.past = []
+    editor.future = []
+    editor.experimentalLargeScene = large
+    return editor
+  }
   get document(): SceneDocument {
     return structuredClone(this.current)
   }

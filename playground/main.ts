@@ -1,3 +1,4 @@
+import { prepareStartup } from './startup.js'
 import { authoredTree, isMapEnvironment } from './studio/outliner.js'
 import { RemotePortalViews } from './remote-portals.js'
 import { portalRegistry, setPortalConnection } from './studio/portal-registry.js'
@@ -34,11 +35,9 @@ import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { WorldStream } from '../src/world-stream.js'
 import { WorldLoader } from './world-loader.js'
-import { createRealWorld, type WorldExtract } from '../src/real-world.js'
 import { SolidEditor } from './solid-editor.js'
 import { treeSprite } from '../src/vegetation.js'
 import { createGallery, Gallery } from './gallery.js'
-import { alignCircuitPlan } from '../src/circuit-plan.js'
 import { PortalControls } from './portal-controls.js'
 import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
@@ -55,10 +54,10 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js'
 import {
   SceneEditor,
   parseScene,
+  createSampleScene,
   type SceneDocument,
   SceneGraph,
   Simulation,
-  createSampleScene,
   createEntity,
   idleInput,
   rotationDegrees,
@@ -87,35 +86,23 @@ let portalEntriesCache: ReturnType<typeof portalRegistry> = []
 let portalEntriesProject: StudioProject | undefined
 let recoverLegacyPlaces = true
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
-let loadingWorld = false
+let loadingWorld = true
 let distantTerrain: DistantTerrain | null = null
 const flightAudio = new FlightAudio()
 let worldStream: WorldStream | null = null
 let worldLoader: WorldLoader | null = null
 let streamSample: { at: number; position: Vec3Tuple } | null = null
-let editor = new SceneEditor(
-  upgradeReferenceScene(createSampleScene()),
-  performanceSettings.preset === 'ultra',
-)
-let loadError = ''
-try {
-  const savedProject = await readScene(PROJECT_KEY)
-  if (savedProject)
-    project = parseProject(JSON.parse(savedProject), performanceSettings.preset === 'ultra')
-  const saved = project
-    ? JSON.stringify(project.locations.find((p) => p.id === project!.activeLocation)!.scene)
-    : await readScene(STORAGE_KEY)
-  if (saved)
-    editor = new SceneEditor(
-      upgradeReferenceScene(JSON.parse(saved), performanceSettings.preset === 'ultra'),
-      performanceSettings.preset === 'ultra',
-    )
-  if (editor.document.entities.some((e) => e.id === 'road' && e.size[0] === 16 && e.size[2] === 85))
-    editor.load(alignCircuitPlan(editor.document))
-} catch {
-  loadError = 'La escena guardada no es válida. Se ha abierto el ejemplo.'
-}
-project ??= createProject(editor.document)
+let editor = new SceneEditor({
+  version: 1,
+  name: 'Preparando mundo',
+  entities: [createEntity('spawn', 'spawn')],
+})
+let startupPending = true
+let finishStartup!: () => void
+const startupDone = new Promise<void>((resolve) => {
+  finishStartup = resolve
+})
+project = createProject(editor.document)
 let savedDocument = editor.serialize()
 const collapsed = new Set(
   editor.document.entities.filter((e) => e.kind === 'group').map((e) => e.id),
@@ -330,7 +317,7 @@ const outline = new SelectionOutline()
 scene.add(outline)
 let lastWorldInstallMs = 0
 let water: SeaWater | undefined
-let view = new SceneView(editor.document, performanceSettings.preset === 'ultra')
+let view = new SceneView(editor.document, performanceSettings.preset === 'ultra', true)
 view.setupMaterials((material) => shadowManager.setupMaterial(material))
 scene.add(view.root)
 let geography = new GeographicView(
@@ -404,14 +391,14 @@ function rebuild(prepared?: PreparedMapGeometry): void {
   worldStream = null
   worldLoader = null
   gizmo.detach()
+  const document = editor.document
   if (
-    JSON.stringify(view.document.geography) !== JSON.stringify(editor.document.geography) ||
-    view.document.entities.some((e) => !!e.terrain) !==
-      editor.document.entities.some((e) => !!e.terrain)
+    JSON.stringify(view.document.geography) !== JSON.stringify(document.geography) ||
+    view.document.entities.some((e) => !!e.terrain) !== document.entities.some((e) => !!e.terrain)
   ) {
     geography.dispose()
     geography = new GeographicView(
-      editor.document,
+      document,
       () => {
         needsRender = true
       },
@@ -420,9 +407,8 @@ function rebuild(prepared?: PreparedMapGeometry): void {
     scene.add(geography.tiles)
   }
   view.dispose()
-  const document = editor.document
   if (prepared) receiveMapGeometry(document.entities, prepared)
-  view = new SceneView(document, performanceSettings.preset === 'ultra')
+  view = new SceneView(document, performanceSettings.preset === 'ultra', true)
   view.setupMaterials((material) => shadowManager.setupMaterial(material))
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
@@ -1075,7 +1061,17 @@ async function loadIrun(combined = false): Promise<void> {
     } else {
       const response = await fetch('/geography/irun-ventas.json')
       if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
-      next = upgradeReferenceScene(createRealWorld((await response.json()) as WorldExtract))
+      next = (
+        await prepareStartup(
+          null,
+          await response.text(),
+          performanceSettings.preset === 'ultra',
+          (message) => {
+            $('world-loading').textContent = message
+          },
+          true,
+        )
+      ).scene
     }
     project = visitLocation(retainLocation(project!, editor.document), next)
     await writeScene(PROJECT_KEY, JSON.stringify(project))
@@ -1194,7 +1190,17 @@ async function travelTo(): Promise<void> {
     ) {
       const response = await fetch('/geography/irun-ventas.json', { signal: controller.signal })
       if (!response.ok) throw Error('No se pudo cargar Ventas')
-      next = upgradeReferenceScene(createRealWorld((await response.json()) as WorldExtract))
+      next = (
+        await prepareStartup(
+          null,
+          await response.text(),
+          performanceSettings.preset === 'ultra',
+          (message) => {
+            $('world-loading').textContent = message
+          },
+          true,
+        )
+      ).scene
     } else {
       if (savedScene) project = visitLocation(project!, savedScene)
       const entities = await loader.load(
@@ -1280,6 +1286,7 @@ $('export').onclick = () => {
 }
 $('import').onclick = () => $<HTMLInputElement>('file').click()
 $('file').onchange = async () => {
+  await startupDone
   const file = $<HTMLInputElement>('file').files?.[0]
   if (!file || loadingWorld) return
   if (file.size > 40_000_000) {
@@ -1771,7 +1778,7 @@ function frame(now: number): void {
   if (view.flushMapInstall(4, 24, camera.position)) needsRender = true
   renderer.domElement.dataset.worldInstallPending = String(view.pendingMapInstall)
   const installStatus = $('map-install-status')
-  installStatus.hidden = view.pendingMapInstall === 0
+  installStatus.hidden = !startupPending && view.pendingMapInstall === 0
   if (view.pendingMapInstall) {
     const label = 'Cargando entorno · ' + view.pendingMapInstall + ' elementos pendientes'
     if (installStatus.textContent !== label) installStatus.textContent = label
@@ -2297,7 +2304,6 @@ if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
   localStorage.setItem('nabla.location.requested', '1')
   locate()
 }
-if (loadError) toast(loadError)
 const frameLoop = new FrameLoop(frame)
 frameLoop.start()
 window.addEventListener('pagehide', () => frameLoop.stop())
@@ -2305,15 +2311,6 @@ window.addEventListener('pageshow', () => {
   previous = performance.now()
   frameLoop.start()
 })
-
-if (new URLSearchParams(location.search).get('world') === 'geoeuskadi')
-  setTimeout(() => void loadIrun(true), 0)
-else if (
-  !circuitMode &&
-  !localStorage.getItem(PROJECT_KEY) &&
-  (!localStorage.getItem(STORAGE_KEY) || !localStorage.getItem('nabla.irun.introduced'))
-)
-  setTimeout(() => void loadIrun(), 0)
 
 $('css-screen-demo').onclick = () => {
   $('options-menu').hidePopover()
@@ -2519,3 +2516,69 @@ function refreshPortalRegistry(): void {
   }
 }
 window.addEventListener('portal-registry-request', refreshPortalRegistry)
+
+// The actual empty viewport and its animation loop exist before any saved project is parsed.
+setTimeout(() => void restoreStartup(), 0)
+async function restoreStartup(): Promise<void> {
+  const label = $('map-install-status')
+  label.hidden = false
+  label.textContent = 'Leyendo el proyecto guardado…'
+  renderer.domElement.dataset.startup = 'loading'
+  try {
+    const storedProject = await readScene(PROJECT_KEY)
+    const storedScene = storedProject ? null : await readScene(STORAGE_KEY)
+    const freshWorld = !circuitMode && !storedProject && !storedScene
+    let initialScene = storedScene
+    if (freshWorld) {
+      label.textContent = 'Descargando terreno y calles de Irún…'
+      const response = await fetch('/geography/irun-ventas.json')
+      if (!response.ok) throw new Error('No se pudo descargar el mundo inicial')
+      initialScene = await response.text()
+    }
+    const result = await prepareStartup(
+      storedProject,
+      initialScene,
+      performanceSettings.preset === 'ultra',
+      (message) => {
+        label.textContent = message
+      },
+      freshWorld,
+    )
+    project = result.project
+    recoverLegacyPlaces = !storedProject
+    editor = SceneEditor.fromValidated(result.scene, performanceSettings.preset === 'ultra')
+    savedDocument = result.saved
+    selectedId =
+      result.scene.entities.find((e) => e.kind === 'vehicle')?.id ??
+      result.scene.entities.find((e) => !isMapEnvironment(e))!.id
+    collapsed.clear()
+    for (const e of result.scene.entities) if (e.kind === 'group') collapsed.add(e.id)
+    await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+    rebuild()
+    portalControls.rebuild(result.scene)
+    loadingWorld = false
+    startupPending = false
+    refreshUi()
+    renderer.domElement.dataset.startup = 'ready'
+    finishStartup()
+    if (freshWorld) {
+      renderer.domElement.dataset.world = 'irun'
+      focusSelection()
+    }
+    if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
+    else if (
+      !freshWorld &&
+      !circuitMode &&
+      !storedProject &&
+      (!storedScene || !localStorage.getItem('nabla.irun.introduced'))
+    )
+      void loadIrun()
+  } catch (error) {
+    startupPending = false
+    loadingWorld = false
+    refreshUi()
+    renderer.domElement.dataset.startup = 'failed'
+    finishStartup()
+    toast('No se pudo abrir el proyecto. Tu copia guardada se conserva. ' + String(error))
+  }
+}
