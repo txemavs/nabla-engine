@@ -27,10 +27,13 @@ def run(queue, root, publish, limit):
         if not job:
             time.sleep(2)
             continue
+        started = time.monotonic()
+        print('Planet preparation started:', job['tile'], flush=True)
         try:
             prepare(job['tile'], publish, 'http://127.0.0.1:8080', publisher)
             trim_prepared(publish, publish / job['path'], limit)
             queue.finish(job['id'], True)
+            print('Planet preparation ready:', job['tile'], f'{time.monotonic()-started:.1f}s', flush=True)
         except Exception as error:
             print('Planet preparation failed:', job['tile'], type(error).__name__, flush=True)
             queue.finish(job['id'], False)

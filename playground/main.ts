@@ -339,7 +339,7 @@ function watchAssets(current: SceneView): void {
   current.ready
     .then(() => {
       if (view === current) {
-        renderer.domElement.dataset.assets = 'loaded'
+        if (!startupPending) renderer.domElement.dataset.assets = 'loaded'
         current.setupMaterials((material) => shadowManager.setupMaterial(material))
         needsRender = true
       }
@@ -2622,6 +2622,7 @@ async function restoreStartup(): Promise<void> {
     portalControls.rebuild(result.scene)
     loadingWorld = false
     startupPending = false
+    watchAssets(view)
     refreshUi()
     renderer.domElement.dataset.startup = 'ready'
     finishStartup()
