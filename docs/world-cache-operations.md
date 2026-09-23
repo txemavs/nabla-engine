@@ -414,3 +414,31 @@ world draw distance or keep more collision bodies active.
 This implements the storage-budget part of issue #20. Existing draw/road/collision
 quality controls are unchanged; expanding streaming/preparation radii is separate
 work, and the issue remains open for that scope.
+
+### Predictive downloads and binary preparation
+
+Streaming now separates the immediate scene from speculative disk downloads:
+
+- The existing 15-second corridor (maximum 4.8 km) and current 3×3 neighborhood remain the installation policy, with three demand requests. Drawing/entity budgets are unchanged.
+- A second corridor looks up to 45 seconds ahead (maximum 12 km, 24 requested keys). It follows horizontal velocity, including at flight altitude. Above 12 km altitude, speculative downloads stop.
+- One separate worker downloads prepared artifacts for that longer corridor without parsing entities, creating meshes, transferring geometry to the main thread or calling Overpass. Missing prepared zones retry after one minute; successful downloads wait five minutes. Changing origin or leaving the corridor cancels obsolete speculation.
+- The server preparation request includes the longer corridor. Server preparation still requires the existing private session; public clients can read already published artifacts but cannot enqueue arbitrary jobs.
+- Speculative cache writes cannot evict existing entries, even when workers race. They pause when less than 1 MB is free. Demand loads retain normal LRU eviction. Disabling cache also disables speculative downloads.
+
+Scene installation retains terrain/road/building priority. Creation of placeholder objects now shares the mesh installation budget (4 ms / 24 entities per frame). Streamed road and building colliders are queued near actors; noncritical cooking has a soft 2 ms / four-body allowance per frame. Terrain and immediate safety colliders remain synchronous. A single large mesh, terrain collider, GPU upload, scene graph update or validation can still exceed a frame budget; this is not a hard real-time guarantee.
+
+New prepared jobs write both the version-5 JSON and a `.bin` sidecar at the same path. The client prefers binary and falls back to JSON, then the ordinary map provider. The binary envelope is `NBZ1`, followed by a little-endian 32-bit manifest length, a UTF-8 JSON manifest padded to a four-byte boundary, and geometry buffers. Ranges are aligned, contiguous and bounds-checked; scene version, origin, key and geometry values receive the same validation as JSON. The artifact limit is 64 MiB. Entity descriptions remain JSON so authored geometry and editing semantics are preserved; mesh buffers no longer use base64. Worker-to-main delivery still uses transferable arrays.
+
+To add binary files to existing prepared JSON **without downloading OSM or elevation again**:
+
+```sh
+npm ci
+npm run build:prepare
+# Use the prepared directory mounted by your cache service; adjust the path.
+find /data/prepared/5 -type f -name '*.json' -exec \
+  node prepare-dist/services/world-cache/convert-prepared.js {} \;
+```
+
+Run conversion with the service's filesystem ownership. It preserves JSON and atomically replaces each binary sidecar. Check available disk space first: keeping both formats uses more server storage. The preparation worker's existing output budget now counts both extensions. Rebuild/restart the preparation image to make future jobs produce both files; deploy the client afterward. Keep JSON for older clients and rollback. For a rollback, restore the previous frontend and worker image; existing JSON remains usable.
+
+A local check on one existing zone measured 21.2 MB JSON versus 16.9 MB binary before HTTP compression (about 20% smaller). This is one sample, not a frame-rate or network-compression benchmark. Retained browser data still shares the 100 MB budget.

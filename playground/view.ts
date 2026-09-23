@@ -116,20 +116,13 @@ export class SceneView {
       ...structuredClone(add),
     ]
     this.graph = SceneGraph.fromValidated(this.document)
-    // Publish lightweight frames first; expensive meshes and GPU uploads follow over frames.
-    for (const e of add) {
-      const group = new THREE.Group()
-      group.userData.entityId = e.id
-      group.userData.mapPending = true
-      this.objects.set(e.id, group)
-      this.root.add(group)
-      applyPose(group, this.graph.worldTransform(e.id))
-    }
+    // Even empty THREE.Groups are installed in the frame budget, not in one large burst.
     this.pendingMapMeshes.push(...add)
     const priority = (e: Entity) => (e.terrain ? 0 : e.road ? 1 : isMapBuilding(e) ? 2 : 3)
     const distances = new Map(
       this.pendingMapMeshes.map((e) => {
-        const p = this.objects.get(e.id)!.position,
+        const pose = this.graph.worldTransform(e.id).position,
+          p = { x: pose[0], z: pose[2] },
           local = e.geometry?.vertices[0] ?? [0, 0, 0]
         return [
           e.id,
@@ -154,10 +147,8 @@ export class SceneView {
       (count === 0 || performance.now() - started < budgetMs)
     ) {
       const e = this.pendingMapMeshes.shift()!
-      const group = this.objects.get(e.id)
-      if (!group?.userData.mapPending) continue
       this.addEntities([e])
-      delete group.userData.mapPending
+      const group = this.objects.get(e.id)!
       this.mapBounds.delete(e.id)
       if (this.materialSetup)
         group.traverse((object) => {

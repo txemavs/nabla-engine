@@ -1,4 +1,5 @@
-import { mapCache, type MapCache } from './map-cache.js'
+import { decodePreparedBinary, PREPARED_BINARY_LIMIT } from '../src/prepared-binary.js'
+import { mapCache, mapCacheStats, type MapCache } from './map-cache.js'
 import { parseScene, createEntity, type Entity } from '../src/scene.js'
 import type { GeoPoint } from '../src/geography.js'
 import type { PreparedMapGeometry } from './map-geometry.js'
@@ -17,7 +18,15 @@ export function decodePrepared(
     origin: GeoPoint
     key: string
     entities: Entity[]
-    geometry: Record<string, { position: string; normal: string; index?: string; color?: string }>
+    geometry: Record<
+      string,
+      {
+        position: string | ArrayBuffer
+        normal: string | ArrayBuffer
+        index?: string | ArrayBuffer
+        color?: string | ArrayBuffer
+      }
+    >
   }
   if (
     !data ||
@@ -37,7 +46,11 @@ export function decodePrepared(
     entities: [...data.entities, createEntity('__prepared_validation_spawn', 'spawn')],
   }).entities.filter((e) => e.id !== '__prepared_validation_spawn')
   const geometry: PreparedMapGeometry = Object.create(null)
-  function buffer(text: string): ArrayBuffer {
+  function buffer(text: string | ArrayBuffer): ArrayBuffer {
+    if (text instanceof ArrayBuffer) {
+      if (text.byteLength % 4) throw Error('Unaligned buffer')
+      return text
+    }
     if (typeof text !== 'string' || text.length > 64 * 1024 * 1024)
       throw Error('Invalid prepared buffer')
     const raw = atob(text)
@@ -69,9 +82,16 @@ export function decodePrepared(
   return { entities, geometry }
 }
 const BASE = import.meta.env.VITE_WORLD_PREPARED_URL || ''
-export async function loadPrepared(origin: GeoPoint, key: string, signal: AbortSignal) {
-  if (!BASE) return undefined
-  const url = `${BASE}/${preparedPath(origin, key)}`
+async function fetchPrepared(
+  origin: GeoPoint,
+  key: string,
+  signal: AbortSignal,
+  binary: boolean,
+  base: string,
+  speculative = false,
+): Promise<Response | undefined> {
+  if (!base) return undefined
+  const url = `${base}/${preparedPath(origin, key).replace(/\.json$/, binary ? '.bin' : '.json')}`
   let cache: MapCache | undefined, hit: Response | undefined, response: Response | undefined
   try {
     cache = mapCache('nabla-prepared-v5')
@@ -79,12 +99,14 @@ export async function loadPrepared(origin: GeoPoint, key: string, signal: AbortS
   } catch {
     /* Optional disk cache. */
   }
-  if (hit && Date.now() - Number(hit.headers.get('x-nabla-stored-at')) < 5 * 60_000) {
-    signal.throwIfAborted()
+  signal.throwIfAborted()
+  if (hit && Date.now() - Number(hit.headers.get('x-nabla-stored-at')) < 5 * 60_000) return hit
+  if (speculative) {
     try {
-      return decodePrepared(await hit.clone().json(), origin, key)
+      const stats = await mapCacheStats()
+      if (stats.budget - stats.bytes < 1_000_000) return undefined
     } catch {
-      /* Re-fetch invalid entries. */
+      return undefined
     }
   }
   try {
@@ -93,24 +115,58 @@ export async function loadPrepared(origin: GeoPoint, key: string, signal: AbortS
       cache: 'no-cache',
       headers: hit?.headers.get('etag') ? { 'If-None-Match': hit.headers.get('etag')! } : {},
     })
-    if (response.status === 304) response = hit
-    else if (!response.ok) response = hit
+    if (response.status === 304 || !response.ok) response = hit
   } catch {
     signal.throwIfAborted()
     response = hit
   }
   if (!response) return undefined
-  try {
-    const copy = response.clone(),
-      result = decodePrepared(await response.json(), origin, key)
-    if (cache) {
-      await cache.put(url, copy).catch(() => {})
-    }
-    return result
-  } catch {
-    signal.throwIfAborted()
-    return undefined
+  // Bound speculative downloads before retaining them. Full scene validation happens on load.
+  const bytes = await response.arrayBuffer()
+  if (bytes.byteLength > PREPARED_BINARY_LIMIT || bytes.byteLength < 8) return undefined
+  if (binary && new DataView(bytes).getUint32(0, true) !== 0x315a424e) return undefined
+  if (!binary && !response.headers.get('content-type')?.includes('json')) return undefined
+  if (speculative) {
+    const stats = await mapCacheStats()
+    if (stats.bytes + bytes.byteLength > stats.budget) return undefined
   }
+  const result = new Response(bytes, { headers: response.headers })
+  signal.throwIfAborted()
+  if (cache) await cache.put(url, result.clone(), !speculative).catch(() => {})
+  return result
+}
+/** Fetch into the disk budget only: no scene parsing, mesh generation or transfer to the main thread. */
+export async function prefetchPrepared(
+  origin: GeoPoint,
+  key: string,
+  signal: AbortSignal,
+  base = BASE,
+): Promise<boolean> {
+  return !!(
+    (await fetchPrepared(origin, key, signal, true, base, true)) ??
+    (await fetchPrepared(origin, key, signal, false, base, true))
+  )
+}
+export async function loadPrepared(
+  origin: GeoPoint,
+  key: string,
+  signal: AbortSignal,
+  base = BASE,
+) {
+  for (const binary of [true, false]) {
+    try {
+      const response = await fetchPrepared(origin, key, signal, binary, base)
+      if (!response) continue
+      const value = binary
+        ? decodePreparedBinary(await response.arrayBuffer())
+        : await response.json()
+      return decodePrepared(value, origin, key)
+    } catch {
+      signal.throwIfAborted()
+      // Old servers and invalid artifacts fall back to JSON, then the ordinary provider.
+    }
+  }
+  return undefined
 }
 
 /** The browser only queues work after the owner has enabled a private session. */

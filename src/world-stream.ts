@@ -14,9 +14,13 @@ export function tileDistance(key: string, position: Vec3Tuple): number {
   )
 }
 /** Near terrain first, then a velocity-dependent corridor before the actor arrives. */
-export function wantedWorldTiles(position: Vec3Tuple, velocity: Vec3Tuple): string[] {
+export function wantedWorldTiles(
+  position: Vec3Tuple,
+  velocity: Vec3Tuple,
+  horizonSeconds = 15,
+): string[] {
   const speed = Math.hypot(velocity[0], velocity[2])
-  const lead = Math.min(4800, speed * 15),
+  const lead = Math.min(horizonSeconds > 15 ? 12000 : 4800, speed * horizonSeconds),
     scale = speed > 0 ? lead / speed : 0
   const ahead: Vec3Tuple = [
     position[0] + velocity[0] * scale,
@@ -102,6 +106,7 @@ export function mapFingerprint(entities: Entity[]): string {
 }
 export interface WorldStreamHost {
   prepare?(keys: string[]): void
+  prefetch?(keys: string[]): void
   document(): SceneDocument
   load(key: string, signal: AbortSignal): Promise<Entity[]>
   replace(remove: Set<string>, add: Entity[]): void
@@ -171,9 +176,11 @@ export class WorldStream {
         ? [currentKey]
         : [
             currentKey,
-            ...wantedWorldTiles(position, velocity).filter((k) => k !== currentKey),
+            ...wantedWorldTiles(position, velocity, 45).filter((k) => k !== currentKey),
           ].slice(0, 24)
     this.host.prepare?.(preparing)
+    const installing = new Set(wantedWorldTiles(position, velocity))
+    this.host.prefetch?.(position[1] > 12000 ? [] : preparing.filter((key) => !installing.has(key)))
     if (position[1] > 12000) {
       this.wanted = []
       return

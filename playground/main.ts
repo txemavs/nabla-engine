@@ -414,6 +414,7 @@ function setupWorldStream(): void {
     document: () => view.document,
     load: (key, signal) => loader.load(origin, key, signal),
     prepare: (keys) => loader.prepare(origin, keys),
+    prefetch: (keys) => loader.prefetch(origin, keys),
     replace: (remove, add) => {
       const started = performance.now()
       sim?.replaceMapEntities(remove, add)
@@ -1508,7 +1509,7 @@ let nextPerformanceReadout = 0
 renderer.info.autoReset = false
 function frame(now: number): void {
   const frameStart = performance.now()
-  view.flushMapInstall(4, 24, camera.position)
+  if (view.flushMapInstall(4, 24, camera.position)) needsRender = true
   renderer.domElement.dataset.worldInstallPending = String(view.pendingMapInstall)
   let physicsMs = 0
   renderer.info.reset()

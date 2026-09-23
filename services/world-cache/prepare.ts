@@ -1,3 +1,4 @@
+import { encodePreparedBinary } from '../../src/prepared-binary.js'
 /** Server CLI: uses the same scene and mesh generation as the map worker. */
 import { readFile, mkdir, rename, writeFile, unlink } from 'node:fs/promises'
 import { dirname } from 'node:path'
@@ -93,6 +94,24 @@ const temporary = `${output}.${process.pid}.tmp`
 try {
   await writeFile(temporary, result, { mode: 0o644 })
   await rename(temporary, output)
+  const binary = encodePreparedBinary(
+    { version: 5, origin, key, retrievedAt: extract.source.retrievedAt, entities },
+    Object.fromEntries(
+      Object.entries(geometry).map(([id, g]) => [
+        id,
+        Object.fromEntries(
+          Object.entries(g)
+            .filter(([, v]) => v)
+            .map(([field, array]) => [
+              field,
+              array!.buffer.slice(array!.byteOffset, array!.byteOffset + array!.byteLength),
+            ]),
+        ),
+      ]),
+    ),
+  )
+  await writeFile(temporary, new Uint8Array(binary), { mode: 0o644 })
+  await rename(temporary, output.replace(/\.json$/, '.bin'))
 } finally {
   await unlink(temporary).catch(() => {})
 }

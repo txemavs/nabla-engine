@@ -7,6 +7,23 @@ from pathlib import Path
 from bake import bake_zone
 from baked_format import atomic_write
 
+def trim_prepared(publish, target, limit):
+    """Count both formats and evict old zone pairs, retaining the current job."""
+    files = [p for p in publish.rglob('*') if p.is_file() and p.suffix in ('.json', '.bin')]
+    total = sum(p.stat().st_size for p in files)
+    groups = {}
+    for path in files:
+        groups.setdefault(path.with_suffix('.json'), []).append(path)
+    for key, paths in sorted(groups.items(), key=lambda item: min(p.stat().st_mtime for p in item[1])):
+        if total <= limit:
+            break
+        if key == target:
+            continue
+        for path in paths:
+            total -= path.stat().st_size
+            path.unlink(missing_ok=True)
+
+
 def run(queue, root, publish, limit):
     base = 'http://127.0.0.1:8080'
     script = Path('/app/prepare-dist/services/world-cache/prepare.js')
@@ -25,16 +42,7 @@ def run(queue, root, publish, limit):
             atomic_write(source, extract)
             target = publish / job['path']
             subprocess.run(['node', '--max-old-space-size=512', str(script), str(source), str(target), job['tile'], base], check=True, timeout=180, stdout=subprocess.DEVNULL)
-            # Bound prepared output separately; retain the just-completed zone.
-            files = sorted(publish.rglob('*.json'), key=lambda p:p.stat().st_mtime)
-            total = sum(p.stat().st_size for p in files)
-            for path in files:
-                if total <= limit:
-                    break
-                if path == target:
-                    continue
-                total -= path.stat().st_size
-                path.unlink(missing_ok=True)
+            trim_prepared(publish, target, limit)
             queue.finish(job['id'], True)
         except Exception as error:
             print('Preparation failed:', type(error).__name__, flush=True)

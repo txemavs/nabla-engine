@@ -80,7 +80,7 @@ export async function clearMapCache() {
   tx.objectStore('entries').clear()
   await done
 }
-async function put(key: string, response: Response, retried = false) {
+async function put(key: string, response: Response, retried = false, evict = true) {
   const headers = new Headers(response.headers)
   headers.set('x-nabla-stored-at', String(Date.now()))
   const blob = await response.blob()
@@ -98,6 +98,7 @@ async function put(key: string, response: Response, retried = false) {
         .filter((x) => x.key !== key)
         .sort((a, b) => a.used - b.used)
       let bytes = entries.reduce((n, x) => n + x.size, 0) + blob.size
+      if (!evict && bytes > budget) return
       for (const entry of entries) {
         if (bytes <= budget) break
         store.delete(entry.key)
@@ -115,7 +116,12 @@ async function put(key: string, response: Response, retried = false) {
   try {
     await done
   } catch (error) {
-    if (retried || !(error instanceof DOMException) || error.name !== 'QuotaExceededError')
+    if (
+      !evict ||
+      retried ||
+      !(error instanceof DOMException) ||
+      error.name !== 'QuotaExceededError'
+    )
       throw error
     // Quota-aborted transactions roll back eviction too. Free space separately, then retry once.
     const cleanup = db.transaction('entries', 'readwrite'),
@@ -186,9 +192,9 @@ export function mapCache(namespace: string) {
       await done
       return entry ? new Response(entry.blob, { headers: entry.headers }) : undefined
     },
-    async put(url: string, response: Response) {
+    async put(url: string, response: Response, evict = true) {
       await migrate()
-      await put(namespace + '|' + new URL(url, location.origin).href, response)
+      await put(namespace + '|' + new URL(url, location.origin).href, response, false, evict)
     },
   }
 }

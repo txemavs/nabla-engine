@@ -596,3 +596,30 @@ it('installs delayed neighboring zones while hovering, without descending or tou
   expect(editor.document.entities.some((e) => e.id === 'world-terrain-10_0')).toBe(true)
   stream.dispose()
 })
+
+it('warms a longer flight corridor without installing speculative zones', () => {
+  const editor = new SceneEditor(document()),
+    prefetch = vi.fn(),
+    prepare = vi.fn()
+  const load = vi.fn(() => new Promise<Entity[]>(() => {}))
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load,
+    prepare,
+    prefetch,
+    replace: vi.fn(),
+    status: vi.fn(),
+  })
+  const position: [number, number, number] = [0, 500, 0],
+    velocity: [number, number, number] = [200, 0, 0]
+  stream.update(position, velocity)
+  const installing = wantedWorldTiles(position, velocity)
+  const speculative: string[] = prefetch.mock.calls[0][0]
+  expect(speculative.length).toBeGreaterThan(0)
+  expect(speculative.every((key) => !installing.includes(key))).toBe(true)
+  expect(prepare.mock.calls[0][0].length).toBeLessThanOrEqual(24)
+  expect(load.mock.calls.length).toBeLessThanOrEqual(3)
+  stream.update([0, 13000, 0], velocity)
+  expect(prefetch.mock.calls.at(-1)![0]).toEqual([])
+  stream.dispose()
+})

@@ -6,6 +6,11 @@ export class WorldLoader {
   private readonly worker = new Worker(new URL('./world-worker.ts', import.meta.url), {
     type: 'module',
   })
+  private readonly prefetchWorker = new Worker(
+    new URL('./world-prefetch-worker.ts', import.meta.url),
+    { type: 'module' },
+  )
+  private prefetchSignature = ''
   private serial = 0
   private readonly pending = new Map<
     number,
@@ -63,7 +68,14 @@ export class WorldLoader {
   prepare(origin: GeoPoint, keys: string[]): void {
     this.worker.postMessage({ prepare: keys, origin })
   }
+  prefetch(origin: GeoPoint, keys: string[]): void {
+    const signature = JSON.stringify([origin, keys])
+    if (signature === this.prefetchSignature) return
+    this.prefetchSignature = signature
+    this.prefetchWorker.postMessage({ origin, keys })
+  }
   dispose(): void {
+    this.prefetchWorker.terminate()
     this.worker.terminate()
     for (const p of this.pending.values()) p.reject(new Error('Carga cancelada'))
     this.pending.clear()

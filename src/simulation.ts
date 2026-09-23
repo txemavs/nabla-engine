@@ -105,6 +105,8 @@ export class Simulation {
     string,
     { entity: Entity; center: Vec3; radius: number }
   >()
+  private pendingBodyOrder: string[] = []
+  private nextBodyOrder = 0
   private readonly mapBodies = new Map<string, Body>()
   private readonly vehicles = new Map<string, Vehicle>()
   private readonly hostedShapes = new Map<string, Box[]>()
@@ -300,12 +302,14 @@ export class Simulation {
       this.deferredMapBodies.delete(id)
     }
     for (const e of add) {
-      if (isMapBuilding(e) && e.motion === 'static') {
+      if ((isMapBuilding(e) && e.motion === 'static') || e.road) {
         const pose = this.graph.worldTransform(e.id)
-        const radius = Math.max(1, ...e.geometry!.vertices.map((v) => Math.hypot(...v)))
+        const points = e.geometry?.vertices ?? e.road?.paths.flat() ?? []
+        const radius = points.reduce((r, v) => Math.max(r, Math.hypot(...v)), 1)
         this.deferredMapBodies.set(e.id, { entity: e, center: new Vec3(...pose.position), radius })
       } else this.addEntityBody(e)
     }
+    this.nextBodyOrder = 0
     this.installNearbyMapBodies()
     this.minimumFlightAltitude = Math.min(
       0,
@@ -416,6 +420,8 @@ export class Simulation {
 
   setMapBuildingsEnabled(enabled: boolean): void {
     this.mapBuildingsEnabled = enabled
+    this.nextBodyOrder = 0
+    this.installNearbyMapBodies()
     if (enabled)
       for (const e of this.document.entities) {
         if (
@@ -432,6 +438,7 @@ export class Simulation {
     if (!Number.isFinite(distance) || distance < 200 || distance > 2000)
       throw new Error('Collision distance must be 200–2000 m')
     this.collisionDistance = distance
+    this.installNearbyMapBodies()
     this.updateMapCollisions()
   }
   get collisionStats() {
@@ -445,27 +452,45 @@ export class Simulation {
     }
   }
   private installNearbyMapBodies(): void {
-    if (!this.mapBuildingsEnabled) return
     const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
-    for (const [id, pending] of this.deferredMapBodies) {
-      if (
-        !actors.some(
+    const started = performance.now()
+    let installed = 0
+    const distance = (pending: { center: Vec3; radius: number }) =>
+      Math.min(
+        ...actors.map(
           (actor) =>
-            actor.position.distanceTo(pending.center) <
-            pending.radius +
-              this.collisionDistance +
-              actor.velocity.length() * 2 +
-              actor.boundingRadius,
-        )
+            actor.position.distanceTo(pending.center) -
+            pending.radius -
+            actor.boundingRadius -
+            actor.velocity.length() * 2,
+        ),
       )
-        continue
+    if (started >= this.nextBodyOrder) {
+      const distances = new Map([...this.deferredMapBodies].map(([id, p]) => [id, distance(p)]))
+      this.pendingBodyOrder = [...distances.keys()].sort(
+        (a, b) => distances.get(a)! - distances.get(b)!,
+      )
+      this.nextBodyOrder = started + 200
+    }
+    for (const id of this.pendingBodyOrder) {
+      const pending = this.deferredMapBodies.get(id)
+      if (!pending) continue
+      if (!this.mapBuildingsEnabled && isMapBuilding(pending.entity)) continue
+      const gap = distance(pending)
+      // Ordered distances are refreshed at most every 200 ms. Keep a travel margin.
+      if (gap > this.collisionDistance + 100) break
+      if (gap > this.collisionDistance) continue
+      // Immediate safety colliders can exceed this soft budget; distant cooking cannot.
+      const critical = gap < 80
+      if (!critical && (installed >= 4 || performance.now() - started >= 2)) break
       this.addEntityBody(pending.entity)
       this.deferredMapBodies.delete(id)
+      installed++
     }
   }
   /** Keep terrain, actors and portal colliders. Cull map solids conservatively around every actor. */
   private updateMapCollisions(): void {
-    this.installNearbyMapBodies()
+    // Collider installation has its own per-frame budget in step().
     const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
     for (const [id, body] of this.mapBodies) {
       if (!this.mapBuildingsEnabled && isMapBuilding(this.entitiesById.get(id))) {
@@ -684,6 +709,7 @@ export class Simulation {
     if (this.disposed) throw new Error('Simulation is disposed')
     if (!Number.isFinite(elapsed) || elapsed < 0)
       throw new Error('Elapsed seconds must be finite and nonnegative')
+    this.installNearbyMapBodies()
     const accepted = Math.min(elapsed, FIXED_STEP * 4)
     this.lostTime += elapsed - accepted
     this.accumulator += accepted

@@ -90,3 +90,22 @@ test('serializes concurrent workers and applies lower/disabled budgets', async (
   expect(result.before.bytes).toBeLessThanOrEqual(100)
   expect(result.after).toMatchObject({ bytes: 0, entries: 0, budget: 0 })
 })
+
+test('speculative writes cannot evict useful zones when concurrent writers fill the budget', async ({
+  page,
+}) => {
+  const result = await page.evaluate(async () => {
+    const { mapCache, setMapCacheBudget, mapCacheStats } = await import(String('/map-cache.ts'))
+    await setMapCacheBudget(0.0001)
+    const cache = mapCache('prepared')
+    await cache.put('/near', new Response('n'.repeat(60)))
+    await Promise.all([
+      cache.put('/ahead-a', new Response('a'.repeat(30)), false),
+      cache.put('/ahead-b', new Response('b'.repeat(30)), false),
+    ])
+    return { near: !!(await cache.match('/near')), stats: await mapCacheStats() }
+  })
+  expect(result.near).toBe(true)
+  expect(result.stats.bytes).toBe(90)
+  expect(result.stats.entries).toBe(2)
+})
