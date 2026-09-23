@@ -138,3 +138,14 @@ simulation copy; stopping restores the editor's object placement. The scene must
 contain a car and a flying container. `play=0` / `play=false` keep editor startup.
 Example: `https://chained.world/?lat=43.32969&lon=-1.819606&play`.
 The browser still requires a click to capture the mouse for looking around.
+
+### Ship navigation HUD
+
+Settlement names are confined to the inside of the ship's forward glass. Their
+virtual signs sit 120 meters above sampled terrain, projected from the current eye
+position onto the glass. They do not appear in exterior views or as world labels.
+The green attitude indicator, speed and absolute altitude update at 10 Hz only
+while the HUD is visible. GPS screens show the nearest loaded settlement; beyond
+2 km it is explicitly described as nearby, not as an administrative municipality.
+No geocoding service is called. Street names are not inferred from rendered GLBs.
+This does not change the `play` entry height.
