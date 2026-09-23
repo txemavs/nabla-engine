@@ -68,3 +68,20 @@ export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from '.
 export type { WorldPose } from './world-pose.js'
 
 export { PLANET_GRID_VERSION, planetCellAt, planetCellBounds } from './planet-grid.js'
+
+export {
+  MAP_TILE_MATRIX,
+  MAP_ZOOMS,
+  MERCATOR_LIMIT,
+  mapTileAt,
+  mapTileBounds,
+  mapTileId,
+  parseMapTileId,
+  mapTileParent,
+  mapTileChildren,
+  mapTileGroundWidth,
+  planMapZooms,
+  readyMapCover,
+  type MapTile,
+  type MapZoomPlan,
+} from './map-tiles.js'

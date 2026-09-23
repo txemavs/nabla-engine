@@ -4,7 +4,14 @@ The planet owns positions and tiles. Cities are search bookmarks, never namespac
 or separate maps. A cursor is the editor's geographic focus; cameras, physics and
 renderers may use temporary nearby Cartesian frames without changing identity.
 
-## Fixed grid contract
+## Updated grid decision
+
+The custom grid below is superseded for new map artifacts by
+[standard XYZ tiles and three flight zooms](map-zoom-streaming.md). Its API is
+retained for compatibility. The production anchored grid is still pending an
+end-to-end migration; neither proposal silently relabels old GLBs.
+
+## Historical fixed grid contract
 
 `src/planet-grid.ts` defines `earth-bands-v1/<row>/<column>`. Latitude bands are
 fixed once from Earth's mean-radius circumference and a target 1,200 m spacing.

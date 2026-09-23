@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
           main: 'playground/index.html',
           geoeuskadi: 'playground/geoeuskadi.html',
           tileLab: 'playground/tile-lab.html',
+          zoomLab: 'playground/zoom-lab.html',
         },
       },
     },
