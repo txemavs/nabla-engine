@@ -1,3 +1,4 @@
+import { buildingFootprints } from './building-footprints.js'
 import { compactMapTags } from './map-metadata.js'
 import { pointInPolygon } from './multipolygon.js'
 import { mapFingerprint, mapTileEntities } from './map-fingerprint.js'
@@ -221,6 +222,7 @@ export function createRealWorld(
       entities.push(e)
     }
   }
+  const footprints = buildingFootprints(data.features, project)
   for (const f of data.features) {
     const tags = f.tags
     if (tags.building === 'no' || tags['building:part'] === 'no') continue
@@ -241,21 +243,11 @@ export function createRealWorld(
           number(tags['building:levels'], tags.building === 'industrial' ? 2 : 3) * 3,
         ),
       )
-      // Each outer ring may own holes; the fixture keeps complete closed relation members.
-      for (const outer of rings.filter((r) => r.role !== 'inner')) {
-        const clean = (points: Vec3Tuple[]) => {
-          const out = points.map((p) => new Vector2(p[0] - cx, p[2] - cz))
-          if (out.length > 1 && out[0].distanceTo(out[out.length - 1]) < 0.001) out.pop()
-          return out.filter((p, i) => i === 0 || p.distanceTo(out[i - 1]) > 0.001)
-        }
-        const contour = clean(outer.points)
-        if (contour.length < 3) continue
-        if (!ShapeUtils.isClockWise(contour)) contour.reverse()
-        const holes = rings
-          .filter((r) => r.role === 'inner')
-          .map((r) => clean(r.points))
-          .filter((r) => r.length >= 3)
-        for (const hole of holes) if (ShapeUtils.isClockWise(hole)) hole.reverse()
+      const polygons = (footprints.get(f.id) ?? []).map(({ contour, holes }) => ({
+        contour: contour.map((p) => p.clone().sub(new Vector2(cx, cz))),
+        holes: holes.map((r) => r.map((p) => p.clone().sub(new Vector2(cx, cz)))),
+      }))
+      for (const { contour, holes } of polygons) {
         const loops = [contour, ...holes],
           flat = loops.flat(),
           start = g.vertices.length,
