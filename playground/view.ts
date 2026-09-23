@@ -149,6 +149,15 @@ export class SceneView {
       const e = this.pendingMapMeshes.shift()!
       this.addEntities([e])
       const group = this.objects.get(e.id)!
+      if (
+        this.avatar.visible &&
+        e.kind === 'group' &&
+        !e.portal &&
+        !e.sprite &&
+        !e.road &&
+        !e.placeLabel
+      )
+        group.visible = false
       this.mapBounds.delete(e.id)
       if (this.materialSetup)
         group.traverse((object) => {
@@ -653,7 +662,8 @@ export class SceneView {
     this.landcover.update(this.document.entities, this.objects, enabled, position, distance, now)
     for (const e of this.document.entities) {
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
-      const object = this.objects.get(e.id)!
+      const object = this.objects.get(e.id)
+      if (!object) continue // A streamed frame may still be queued.
       if (isMapBuilding(e)) {
         // Keep the entity frame alive for picking and attached bullet marks.
         for (const child of object.children)
@@ -683,13 +693,17 @@ export class SceneView {
       if (
         e.kind === 'spawn' ||
         (e.kind === 'group' && !e.portal && !e.sprite && !e.road && !e.placeLabel)
-      )
-        this.objects.get(e.id)!.visible = !playing
+      ) {
+        const object = this.objects.get(e.id)
+        if (object) object.visible = !playing
+      }
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
     for (const e of this.document.entities) {
       if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue
-      applyPose(this.objects.get(e.id)!, sim.entityTransform(e.id, true))
+      const object = this.objects.get(e.id)
+      if (!object) continue
+      applyPose(object, sim.entityTransform(e.id, true))
       if (e.portal) {
         e.portal = sim.portalState(e.id)
         this.portals.get(e.id)!.mesh.visible =
