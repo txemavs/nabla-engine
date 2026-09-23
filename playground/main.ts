@@ -15,6 +15,7 @@ import { portalRegistry, setPortalConnection } from './studio/portal-registry.js
 import { portalEnvironment } from './portal-environment.js'
 import {
   createProject,
+  travelPlanet,
   locationId,
   parseProject,
   retainLocation,
@@ -60,7 +61,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { TransformControls } from 'three/addons/controls/TransformControls.js'
 import {
   SceneEditor,
-  parseScene,
   createSampleScene,
   type SceneDocument,
   SceneGraph,
@@ -91,7 +91,6 @@ const PROJECT_KEY = 'nabla.project.v1'
 let project: StudioProject | undefined
 let portalEntriesCache: ReturnType<typeof portalRegistry> = []
 let portalEntriesProject: StudioProject | undefined
-let recoverLegacyPlaces = true
 const requestedLocation = urlLocation(location.search)
 const urlDestination =
   requestedLocation && !('error' in requestedLocation) ? requestedLocation : null
@@ -476,13 +475,21 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
   refreshPortalEntries(doc)
   const places = $<HTMLSelectElement>('project-places')
   places.replaceChildren(
-    ...project!.locations.map((place) => {
+    ...(project!.bookmarks ?? []).map((place, index) => {
       const option = document.createElement('option')
-      option.value = place.id
-      option.textContent = place.scene.name
-      option.selected = place.id === project!.activeLocation
+      option.value = `bookmark:${index}`
+      option.textContent = place.name
       return option
     }),
+    ...project!.locations
+      .filter((p) => p.id !== 'planet')
+      .map((place) => {
+        const option = document.createElement('option')
+        option.value = place.id
+        option.textContent = place.scene.name
+        option.selected = place.id === project!.activeLocation
+        return option
+      }),
   )
   $<HTMLButtonElement>('project-place-open').disabled = loadingWorld
 
@@ -767,7 +774,7 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
   }
   if (e.portal) {
     const controls = document.createElement('div')
-    controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>Los destinos de esta ciudad permiten el paso. Entre ciudades, de momento solo ventana.</p>`
+    controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>Todos los portales de este planeta comparten el mismo registro y se pueden enlazar.</p>`
     controls.insertAdjacentHTML(
       'afterbegin',
       `<label class="field-label" for="portal-destination">Destino del Stargate</label><select id="portal-destination"><option value="">Sin enlace</option>${doc.entities
@@ -779,7 +786,10 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
     const sourceEntry = registrySource(e.id)
     const remoteEntries = projectPortalEntries().filter(
       (p) =>
-        p.locationId !== project!.activeLocation &&
+        (p.locationId !== project!.activeLocation ||
+          project!.connections?.some(
+            (c) => c.source === sourceEntry?.id && c.destination === p.id,
+          )) &&
         p.size.every((n, i) => Math.abs(n - e.size[i]) < 1e-6),
     )
     for (const target of remoteEntries)
@@ -1169,53 +1179,28 @@ async function travelTo(): Promise<void> {
   $('world-loading').textContent = message
   $('travel-status').textContent = message
   try {
-    const current = editor.document
-    const placeKey = (lat: number, lon: number) => `nabla-place:${lat.toFixed(6)}:${lon.toFixed(6)}`
-    if (current.geography)
-      await writeScene(
-        placeKey(current.geography.latitude, current.geography.longitude),
-        editor.serialize(),
-      )
-    project = retainLocation(project!, current)
-    await writeScene(PROJECT_KEY, JSON.stringify(project))
-    const retained = project.locations.find(
-      (p) => locationId(p.scene) === `geo:${latitude.toFixed(6)}:${longitude.toFixed(6)}`,
-    )
-    const saved = retained
-      ? JSON.stringify(retained.scene)
-      : recoverLegacyPlaces
-        ? await readScene(placeKey(latitude, longitude))
-        : null
-    let next: SceneDocument
-    const savedScene = saved
-      ? parseScene(JSON.parse(saved), performanceSettings.preset === 'ultra')
-      : null
-    next = savedScene
-      ? planetaryScene(savedScene)
-      : upgradeReferenceScene(createPlanetScene({ latitude, longitude, altitude: 0 }, name))
+    project = retainLocation(project!, editor.document)
+    const nextProject = travelPlanet(project!, latitude, longitude, name)
+    const next = nextProject.locations.find((p) => p.id === nextProject.activeLocation)!.scene
     if (controller.signal.aborted) return
-    const nextProject = visitLocation(project!, next)
     await writeScene(PROJECT_KEY, JSON.stringify(nextProject))
     project = nextProject
     $('travel-cancel').hidden = true
     editor.load(next)
     for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
-    selectedId = 'car-a'
+    if (!next.entities.some((e) => e.id === selectedId)) selectedId = next.entities[0].id
     rebuild()
     $('welcome').hidden = true
     await view.ready
-    focusSelection()
-    const car = next.entities.find((e) => e.id === 'car-a')
-    const [x, y, z] = car?.transform.position ?? next.cursor ?? [0, 0, 0]
+    const [x, y, z] = next.cursor ?? [0, 0, 0]
     orbit.target.set(x, y + 2, z)
     camera.position.set(x + 35, y + 32, z + 40)
     orbit.update()
     renderer.domElement.dataset.world = 'destination'
-    $('travel-status').textContent =
-      `${name} cargado · pulsa Jugar para explorar. Los cambios del lugar anterior se guardaron en este navegador.`
+    $('travel-status').textContent = `${name} · mismo planeta. Tus objetos conservan su ubicación.`
     toast(`${name} · destino cargado`)
     $('travel-menu').hidePopover()
-    if (!savedScene) void placeNewWorldObjects()
+    void placeNewWorldObjects()
   } catch (error) {
     const message = controller.signal.aborted
       ? 'Viaje cancelado. Se conserva la escena anterior.'
@@ -1238,6 +1223,33 @@ $('world-irun-official').hidden = true
 $('welcome-close').onclick = () => {
   $('welcome').hidden = true
 }
+$('new-planet').onclick = async () => {
+  await startupDone
+  if (loadingWorld || playTransition) return
+  if (
+    !confirm(
+      '¿Empezar un planeta nuevo? Se conservará una copia de seguridad del planeta actual en este navegador. Para conservar un archivo, usa Guardar como antes de continuar.',
+    )
+  )
+    return
+  if (sim) await togglePlay()
+  try {
+    const backup = retainLocation(project!, editor.document)
+    await writeScene(PROJECT_KEY + '.backup.' + Date.now(), JSON.stringify(backup))
+    const fresh = createProject(
+      upgradeReferenceScene(
+        createPlanetScene({ latitude: 43.32969, longitude: -1.819606, altitude: 0 }, 'Mi planeta'),
+      ),
+    )
+    await writeScene(PROJECT_KEY, JSON.stringify(fresh))
+    const url = new URL(location.href)
+    for (const key of ['lat', 'lon', 'latitude', 'longitude', 'alt', 'play', 'scene', 'world'])
+      url.searchParams.delete(key)
+    location.assign(url.href)
+  } catch (error) {
+    toast(`No se pudo crear el planeta: ${String(error)}`)
+  }
+}
 $('save').onclick = async () => {
   const snapshot = editor.serialize()
   try {
@@ -1246,16 +1258,20 @@ $('save').onclick = async () => {
     await writeScene(PROJECT_KEY, JSON.stringify(project))
     savedDocument = snapshot
     $('status').textContent = 'Guardado local'
-    toast('Escena guardada en este navegador')
+    toast('Planeta guardado en este navegador')
   } catch (error) {
     toast(error instanceof Error ? error.message : 'No se pudo guardar; puedes exportar la escena')
   }
 }
 $('export').onclick = () => {
-  const url = URL.createObjectURL(new Blob([editor.serialize()], { type: 'application/json' }))
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(retainLocation(project!, editor.document))], {
+      type: 'application/json',
+    }),
+  )
   const a = document.createElement('a')
   a.href = url
-  a.download = 'nabla-scene.json'
+  a.download = projectFilename(project!.name)
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
@@ -1280,7 +1296,6 @@ $('file').onchange = async () => {
     const scene = opened.locations.find((p) => p.id === opened.activeLocation)!.scene
     editor = new SceneEditor(scene, performanceSettings.preset === 'ultra')
     project = opened
-    recoverLegacyPlaces = false
     savedDocument = editor.serialize()
     $('welcome').hidden = true
     rebuild()
@@ -1300,12 +1315,21 @@ function settlePendingGround(): void {
   if (!worldStream || sim || startupPending || loadingWorld || !groundPlacementDirty) return
   groundPlacementDirty = false
   const doc = editor.document
-  const previousTarget = doc.entities.find((e) => e.id === selectedId)?.transform.position[1]
+  const cursor = doc.cursor ?? [0, 0, 0]
+  const followCursor =
+    doc.cursorOnGround &&
+    Math.hypot(orbit.target.x - cursor[0], orbit.target.z - cursor[2]) < 50 &&
+    Math.abs(orbit.target.y - cursor[1]) < 10
+  const previousTarget = followCursor
+    ? cursor[1]
+    : doc.entities.find((e) => e.id === selectedId)?.transform.position[1]
   if (!settleGroundPlacement(doc, (p) => worldStream!.groundHeight(p))) return
   editor.load(doc)
   rebuild()
   groundPlacementDirty = false
-  const nextTarget = doc.entities.find((e) => e.id === selectedId)?.transform.position[1]
+  const nextTarget = followCursor
+    ? doc.cursor?.[1]
+    : doc.entities.find((e) => e.id === selectedId)?.transform.position[1]
   if (previousTarget !== undefined && nextTarget !== undefined) {
     const delta = nextTarget - previousTarget
     camera.position.y += delta
@@ -2551,12 +2575,20 @@ $('save-project-form').onsubmit = (event) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
     project = snapshot
     $<HTMLDialogElement>('save-project-dialog').close()
-    toast(`Archivo preparado: ${filename} · ${snapshot.locations.length} lugares`)
+    toast(`Planeta preparado: ${filename} · ${snapshot.objects.length} objetos`)
   })
 }
 
 $('project-place-open').onclick = () => {
-  void openProjectPlace($<HTMLSelectElement>('project-places').value)
+  const value = $<HTMLSelectElement>('project-places').value
+  if (value.startsWith('bookmark:')) {
+    const place = project!.bookmarks?.[Number(value.slice(9))]
+    if (!place) return
+    $<HTMLInputElement>('travel-latitude').value = String(place.latitude)
+    $<HTMLInputElement>('travel-longitude').value = String(place.longitude)
+    $<HTMLSelectElement>('travel-city').value = ''
+    void travelTo()
+  } else void openProjectPlace(value)
 }
 async function openProjectPlace(id: string, entityId?: string): Promise<void> {
   if (loadingWorld || playTransition) return
@@ -2669,6 +2701,8 @@ async function restoreStartup(): Promise<void> {
   renderer.domElement.dataset.startup = 'loading'
   try {
     const storedProject = await readScene(PROJECT_KEY)
+    if (storedProject && !(await readScene(PROJECT_KEY + '.before-planet-v3')))
+      await writeScene(PROJECT_KEY + '.before-planet-v3', storedProject)
     const storedScene = storedProject ? null : await readScene(STORAGE_KEY)
     const freshWorld = !circuitMode && !storedProject && !storedScene
     let initialScene = storedScene
@@ -2694,10 +2728,16 @@ async function restoreStartup(): Promise<void> {
     )
     if (urlDestination) {
       const { latitude, longitude } = urlDestination
-      const id = `geo:${latitude.toFixed(6)}:${longitude.toFixed(6)}`
-      const retained = result.project.locations.find((place) => locationId(place.scene) === id)
+      const retained = result.project.locations.find((place) => place.id === 'planet')
+      if (retained)
+        result.project = travelPlanet(
+          result.project,
+          latitude,
+          longitude,
+          `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+        )
       const destination =
-        retained?.scene ??
+        result.project.locations.find((place) => place.id === 'planet')?.scene ??
         upgradeReferenceScene(
           createPlanetScene(
             { latitude, longitude, altitude: 0 },
@@ -2727,8 +2767,16 @@ async function restoreStartup(): Promise<void> {
       )!.scene
       result.saved = JSON.stringify(result.scene)
     }
-    project = result.project
-    recoverLegacyPlaces = !storedProject
+    project = retainLocation(result.project, result.scene)
+    if (project.version === 3) {
+      try {
+        await writeScene(PROJECT_KEY, JSON.stringify(project))
+      } catch {
+        toast(
+          'El planeta está abierto, pero no se pudo guardar en este navegador. Descarga el JSON para conservarlo.',
+        )
+      }
+    }
     editor = SceneEditor.fromValidated(result.scene, performanceSettings.preset === 'ultra')
     savedDocument = result.saved
     selectedId =
@@ -2752,7 +2800,7 @@ async function restoreStartup(): Promise<void> {
     }
     if (urlDestination) {
       focusSelection()
-      if (urlDestination.altitude !== undefined) {
+      {
         const target = new THREE.Vector3(...editor.document.cursor!)
         camera.position.add(target.clone().sub(orbit.target))
         orbit.target.copy(target)

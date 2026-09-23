@@ -1,5 +1,7 @@
 # Planetary object addresses and portal view environments
 
+> Current Studio implementation: version-3 saves use one owned planet and navigation bookmarks. See [One owned planet](studio-projects.md) for migration, travel and persistence behavior. The remaining sections also describe simulation and streaming work beyond this storage change.
+
 A scene's geographic origin is a **working frame**, not the address of the world
 and not a constraint on which destinations a project may contain. Rendering and
 physics need nearby coordinates; persistence and identity need planet-wide ones.

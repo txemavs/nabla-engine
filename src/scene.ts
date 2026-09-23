@@ -15,7 +15,13 @@ const size = z.tuple([
   finite.min(0.01).max(10000),
   finite.min(0.01).max(10000),
 ])
-const transform = z.object({ position: vector, rotation }).strict()
+// Planetary working frames may span the diameter of Earth; local geometry keeps its bounds.
+const worldVector = z.tuple([
+  finite.min(-100000000).max(100000000),
+  finite.min(-100000000).max(100000000),
+  finite.min(-100000000).max(100000000),
+])
+const transform = z.object({ position: worldVector, rotation }).strict()
 const boxCollider = z.object({ size, transform }).strict()
 const assetPart = z
   .object({
@@ -388,7 +394,11 @@ function validateScene(doc: SceneDocument, changed?: Set<Entity>): SceneDocument
       if (e.portal.clearsRamp && (!e.parentId || !byId.get(e.parentId)?.vehicle?.garage?.ramp))
         throw new Error('Ramp clearance requires a carrier ramp')
       const up = new Vector3(0, 1, 0).applyQuaternion(new Quaternion(...e.transform.rotation))
-      if (!e.parentId && up.distanceTo(new Vector3(0, 1, 0)) > 1e-5)
+      if (
+        !doc.geography?.planetary &&
+        !e.parentId &&
+        up.distanceTo(new Vector3(0, 1, 0)) > 1e-5
+      )
         throw new Error('This portal release requires upright fixed mouths')
       if (e.portal.pairId === null) {
         if (e.portal.mode !== 'closed') throw new Error('An unlinked portal must be closed')
