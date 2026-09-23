@@ -146,6 +146,11 @@ export function restoreTileLayers(root: THREE.Object3D): void {
             })
           : Number(object.userData.groundLayer || 0)
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+      // Land-use polygons are overlapping paint on terrain, not separate solids.
+      // Their fixed render order resolves nesting; writing depth here causes
+      // draped/curved triangles to fight with the next surface on mountain slopes.
+      // Keep depth testing against terrain/buildings and normal depth for water.
+      material.depthWrite = !(category === 'Surfaces' && layer !== SURFACE_LAYERS.water)
       material.polygonOffset = layer > 0
       material.polygonOffsetFactor = material.polygonOffsetUnits = -layer
     }

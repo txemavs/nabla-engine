@@ -240,3 +240,12 @@ docker compose -f compose.dev.yaml exec world-cache node /app/prepare-dist/servi
 The migration reads checksum-verified cached sources, samples their terrain height,
 and atomically updates only manifests. It can be repeated; manifests that already
 have labels are skipped. Reload Studio after migration.
+
+### Overlapping land-use surfaces
+
+The native GLB viewer treats non-water `Surfaces` as ordered terrain paint: they
+depth-test against solid geometry but do not write depth themselves. Existing
+surface layer precedence resolves overlaps without coplanar depth competition.
+Terrain, buildings, roads and water retain depth writes. This rendering-only
+mitigation applies to existing GLBs; it does not repair erroneous source polygons
+or replace their geometry.
