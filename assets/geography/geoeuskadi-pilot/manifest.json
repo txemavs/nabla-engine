@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "recipe": "geoeuskadi-comparison-v1",
+  "file": "pilot-030ec3be01ed5a81.pack",
+  "bytes": 14892660,
+  "downloadBytes": 3183817,
+  "sha256": "030ec3be01ed5a81f159b8b248859e906e86be619fc551df6fba9992ee493c90",
+  "groups": {
+    "terrain": {
+      "offset": 0,
+      "count": 86400
+    },
+    "osm": {
+      "offset": 3110400,
+      "count": 201255
+    },
+    "official": {
+      "offset": 10355580,
+      "count": 99990
+    },
+    "buildings": {
+      "offset": 13955220,
+      "count": 26040
+    }
+  },
+  "origin": {
+    "latitude": 43.32969,
+    "longitude": -1.819606,
+    "altitude": 28.253
+  },
+  "bbox": [-1.825, 43.325, -1.81, 43.335],
+  "source": {
+    "schemaVersion": 1,
+    "provider": "geoeuskadi",
+    "dataset": "bta5-road-areas-59",
+    "revision": "c3adce187586a1e87b9b7a75868def77a232362bdf1b334b61cd2e10d69bcd9a",
+    "recipe": "road-area-audit-v1",
+    "crs": "EPSG:4326",
+    "bbox": [-1.825, 43.325, -1.81, 43.335],
+    "complete": true,
+    "retrievedAt": "2026-09-23T00:32:40.193106+00:00",
+    "attribution": "Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi. Adapted by Nabla.",
+    "license": "CC-BY-4.0",
+    "source": "https://www.geo.euskadi.eus/geoeuskadi/rest/services/U11/KARTOGRAFIA_CAS/MapServer/59",
+    "catalog": "https://www.geo.euskadi.eus/base-topografica-armonizada-a-escala-1-5-000-de-gobierno-vasco-bta/webgeo00-dataset/es/",
+    "dictionary": "https://www.geo.euskadi.eus/cartografia/DatosDescarga/Documentacion/BTA/BTA_GV_2022.pdf"
+  },
+  "terrain": "Existing Esri terrain; official elevation is not imported yet.",
+  "featureCount": 38,
+  "drawnPolygons": 27,
+  "excluded": {
+    "not-surface": 5,
+    "hidden-or-unclassified": 5
+  },
+  "attribution": "Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi. Adapted by Nabla. CC BY 4.0. OSM © OpenStreetMap contributors (ODbL). Terrain © Esri and its data providers."
+}

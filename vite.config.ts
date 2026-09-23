@@ -4,7 +4,13 @@ export default defineConfig(({ mode }) => {
   return {
     root: 'playground',
     publicDir: '../assets',
-    build: { outDir: '../demo-dist', emptyOutDir: true },
+    build: {
+      outDir: '../demo-dist',
+      emptyOutDir: true,
+      rollupOptions: {
+        input: { main: 'playground/index.html', geoeuskadi: 'playground/geoeuskadi.html' },
+      },
+    },
     server: {
       port: 5173,
       strictPort: true,
