@@ -108,3 +108,19 @@ missing/unprepared data from genuinely empty map cells. The pilot crops legacy
 extraction margins, including buildings, and is not an editor/physics migration.
 It must not be used to overwrite authored scenes or the production prepared cache.
 The full migration contract above remains outstanding.
+
+### Production pilot verification (2026-09-23)
+
+Available at `https://chained.world/zoom-lab.html`, linked from `tile-lab.html`.
+The first catalog contains 27 XYZ cells across three zooms, generated offline from
+three existing Irún source tiles. Source bins, production preparation worker and
+Studio's entry point were not replaced. Publication used content-hashed GLBs,
+then the catalog, then the viewer and laboratory link.
+
+Verified all three levels in Chromium on the public domain, GLB download links,
+no page exceptions, and HTTP 200 for Studio and the existing tile lab. All 310
+unit tests, the new browser test, type checking, preparation compilation and
+production frontend build passed. Local screenshot inspection confirmed that
+roads, buildings and landcover render. This is a coverage/transition prototype;
+no claim is made that long-distance flight performance is solved. The coarse
+meshes still need considerably stronger simplification or baked surface detail.
