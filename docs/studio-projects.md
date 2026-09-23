@@ -130,3 +130,11 @@ as scene GPS coordinates, rather than height above terrain. For example,
 and view at 1,200 meters. New default vehicles start at that altitude plus their
 normal clearance; existing saved objects keep their poses. Zero and negative
 altitudes are accepted. Omitting `alt` retains terrain-aware placement.
+
+Add `play` (or `play=1` / `play=true`) to start playing immediately in the flying
+container cockpit, 120 meters vertically above the first car. Ground loading
+finishes before entry. Flight mode is enabled automatically. This uses a temporary
+simulation copy; stopping restores the editor's object placement. The scene must
+contain a car and a flying container. `play=0` / `play=false` keep editor startup.
+Example: `https://chained.world/?lat=43.32969&lon=-1.819606&play`.
+The browser still requires a click to capture the mouse for looking around.

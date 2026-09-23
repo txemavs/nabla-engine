@@ -1435,12 +1435,18 @@ export class Simulation {
     if (this.vehicleId) return this.exitVehicle()
     const id = this.nearestVehicle()
     if (!id) return 'Acércate a un coche detenido'
+    this.startInVehicle(id)
+    return 'Conduciendo ' + this.vehicles.get(id)!.entity.name
+  }
+  /** Explicit scenario entry; ordinary interaction still checks reach and obstructions. */
+  startInVehicle(id: string): void {
+    if (this.disposed || this.vehicleId || !this.vehicles.has(id))
+      throw new Error('Invalid initial vehicle')
     this.setInterior(null)
     this.vehicleId = id
     this.world.removeBody(this.playerBody)
     this.playerBody.velocity.setZero()
     this.grounded = false
-    return 'Conduciendo ' + this.vehicles.get(id)!.entity.name
   }
   private exitVehicle(): string {
     const v = this.vehicles.get(this.vehicleId!)!
