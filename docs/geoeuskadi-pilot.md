@@ -45,7 +45,7 @@ npm run build:prepare
 node prepare-dist/services/world-cache/prepare-pilot.js \
   assets/geography/irun-ventas.json \
   assets/geography/geoeuskadi-ventas.json \
-  assets/geography/geoeuskadi-pilot
+  assets/geography/geoeuskadi-pilot assets/geography/ventas-combined.pack
 npm run build:demo
 ```
 
@@ -206,3 +206,54 @@ Create `pilot-output` before running this command. The current pilot was rebuilt
 this way on the demo server with network disabled; its output matched the local
 artifact byte-for-byte. This image was run as a separate job, without replacing or
 restarting the active world-cache queue service.
+
+## Visible surfaces update
+
+The comparison now opens in **Combinado · suelo oficial**. OSM, isolated BTA roads
+and the combined result can be compared from the same camera. Building preview
+geometry now receives its entity transform; previously local building vertices
+were incorrectly accumulated around the origin in this laboratory only.
+
+The new land-use snapshot queries layer 11 and retains its `LEYENDA_1` palette from
+the service renderer. It contains 23 polygons and 14 legend entries. The palette is
+cartographic styling, not satellite-derived colour. Dataset and palette are both
+included in the content revision. The catalogue assigns this layer to the same
+CC BY 4.0 BTA5 product. Attribution remains visible.
+
+Official categories colour 14,467 of the existing 14,641 terrain vertices. The
+remaining vertices use OSM land-cover colours or the original terrain fallback.
+Non-water OSM cover meshes are replaced by these baked colours; water remains
+separate. This avoids extra terrain geometry/draw calls. Category boundaries are
+interpolated on the existing 10 m terrain lattice, so close-up edges are approximate;
+a higher-resolution baked colour texture is a possible later improvement.
+
+For roads, the first composition retained every OSM shoulder outside the official
+mask, which visually concealed much of the narrower BTA contour. A road ribbon is
+now replaced completely when every centerline sample (at most 2 m spacing) falls
+inside verified official pavement. Footpaths, bridges, tunnels, other vertical
+layers and smooth-float roads are excluded from this rule. Partial coverage still
+uses conservative subtraction. This is a containment heuristic, not proof of
+semantic correspondence; gaps between samples and partially covered ways remain
+limitations. Centerline physics is unchanged.
+
+Rebuild the current version in this order:
+
+```sh
+python3 services/world-cache/import_geoeuskadi_landcover.py \
+  --output assets/geography/geoeuskadi-landcover.json
+npm run build:prepare
+node prepare-dist/services/world-cache/prepare-driving-pilot.js \
+  assets/geography/irun-ventas.json assets/geography/geoeuskadi-ventas.json \
+  assets/geography/ventas-combined.pack assets/geography/geoeuskadi-landcover.json
+node prepare-dist/services/world-cache/prepare-pilot.js \
+  assets/geography/irun-ventas.json assets/geography/geoeuskadi-ventas.json \
+  assets/geography/geoeuskadi-pilot assets/geography/ventas-combined.pack
+npm run build:demo
+```
+
+Use the corresponding fourth argument `/input/geoeuskadi-landcover.json` for the
+Docker driving-pilot command above. The comparison's geometry pack grows because it
+contains both terrain palettes and all three alternatives; only the selected pair
+of terrain/road meshes is drawn. These comparison download figures are separate
+from the driving starter. Keep the current and previous public hashed packs during
+publication; the committed fixture only needs the current one.

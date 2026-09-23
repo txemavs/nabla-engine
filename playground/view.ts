@@ -377,7 +377,17 @@ export class SceneView {
           g.setIndex(terrainIndices(e.terrain))
           g.computeVertexNormals()
         }
-        group.add(mesh(g, mapSurfaceColor('default', e.color)))
+        if (e.terrain.colors && !g.hasAttribute('color'))
+          g.setAttribute(
+            'color',
+            new THREE.Float32BufferAttribute(
+              e.terrain.colors.flatMap((c) => new THREE.Color(c).toArray()),
+              3,
+            ),
+          )
+        const surface = mesh(g, e.terrain.colors ? '#ffffff' : mapSurfaceColor('default', e.color))
+        ;(surface.material as THREE.MeshStandardMaterial).vertexColors = !!e.terrain.colors
+        group.add(surface)
       }
       if (e.geometry) {
         let geometry = takeMapGeometry(e)

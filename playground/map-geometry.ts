@@ -54,6 +54,7 @@ export function prepareMapGeometry(entities: Entity[]): PreparedMapGeometry {
     } else if (e.terrain) {
       vertices = terrainVertices(e.terrain).flat()
       indices = terrainIndices(e.terrain)
+      if (e.terrain.colors) colors = e.terrain.colors.flatMap((c) => new Color(c).toArray())
     } else if (e.geometry) {
       const hasRoofColor = e.roofColor && e.geometry.roofFaces?.length
       if (hasRoofColor) {

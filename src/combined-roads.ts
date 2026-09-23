@@ -1,4 +1,5 @@
 import clipping, { type MultiPolygon, type Polygon } from 'polygon-clipping'
+import { pointInPolygon } from './multipolygon.js'
 import { geoToLocal } from './geography.js'
 import { createEntity, type SceneDocument, type Entity, type Vec3Tuple } from './scene.js'
 import { drapeLandcoverPolygon } from './real-world.js'
@@ -135,7 +136,25 @@ export function combineRoadSurfaces(doc: SceneDocument, snapshot: RoadAreaSnapsh
     if (!patches.length) continue
     const footprint = clipping.intersection(clipping.union(patches), bounds)
     if (!clipping.intersection(footprint, mask).length) continue
-    const remainder = clipping.difference(footprint, mask)
+    // Replace complete ribbons only when every 2 m centerline sample lies in official pavement.
+    // Partial coverage keeps the conservative subtraction used by the first pilot.
+    const covered = (x: number, z: number) =>
+      mask.some(
+        (p) => pointInPolygon([x, z], p[0]) && !p.slice(1).some((h) => pointInPolygon([x, z], h)),
+      )
+    const fullyCovered =
+      !['footway', 'path', 'pedestrian', 'cycleway'].includes(e.source?.tags.highway ?? '') &&
+      e.road.paths.every((path) =>
+        path.slice(1).every((b, i) => {
+          const a = path[i],
+            steps = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[2] - a[2]) / 2))
+          for (let k = 0; k <= steps; k++)
+            if (!covered(a[0] + ((b[0] - a[0]) * k) / steps, a[2] + ((b[2] - a[2]) * k) / steps))
+              return false
+          return true
+        }),
+      )
+    const remainder = fullyCovered ? [] : clipping.difference(footprint, mask)
     add(
       remainder,
       e.id,

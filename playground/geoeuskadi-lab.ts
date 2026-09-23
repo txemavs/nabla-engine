@@ -14,7 +14,7 @@ interface Manifest {
 }
 const host = document.querySelector<HTMLElement>('#viewport')!
 const status = document.querySelector<HTMLElement>('#status')!
-const buttons = ['osm', 'official'] as const
+const buttons = ['osm', 'official', 'combined'] as const
 async function start() {
   const base = './geography/geoeuskadi-pilot/'
   const response = await fetch(base + 'manifest.json', { cache: 'no-cache' })
@@ -71,7 +71,7 @@ async function start() {
     const material = new THREE.MeshLambertMaterial({
       vertexColors: true,
       side: THREE.DoubleSide,
-      polygonOffset: key === 'osm' || key === 'official',
+      polygonOffset: key === 'osm' || key === 'official' || key === 'combined',
       polygonOffsetFactor: -1,
       polygonOffsetUnits: -1,
     })
@@ -86,6 +86,9 @@ async function start() {
   function select(mode: (typeof buttons)[number]) {
     meshes.osm.visible = mode === 'osm'
     meshes.official.visible = mode === 'official'
+    meshes.combined.visible = mode === 'combined'
+    meshes.terrain.visible = mode === 'osm'
+    meshes.officialTerrain.visible = mode !== 'osm'
     for (const id of buttons)
       document.getElementById(id)!.setAttribute('aria-pressed', String(id === mode))
     host.dataset.provider = mode
@@ -114,7 +117,7 @@ async function start() {
   new ResizeObserver(resize).observe(host)
   controls.addEventListener('change', render)
   position(false)
-  select('official')
+  select('combined')
   document.getElementById('attribution')!.textContent = manifest.attribution
   status.textContent = `${manifest.featureCount} superficies oficiales descargadas · ${manifest.drawnPolygons} polígonos representados · ${(manifest.downloadBytes / 1048576).toFixed(1)} MB`
   host.dataset.ready = 'true'

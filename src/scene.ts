@@ -121,6 +121,11 @@ const entitySchema = z
         rows: z.number().int().min(2).max(129),
         spacing: finite.min(0.25).max(100),
         heights: z.array(coordinate).min(4).max(16641),
+        colors: z
+          .array(z.string().regex(/^#[0-9a-fA-F]{6}$/))
+          .min(4)
+          .max(16641)
+          .optional(),
       })
       .strict()
       .optional(),
@@ -312,6 +317,7 @@ function validateScene(doc: SceneDocument, changed?: Set<Entity>): SceneDocument
       if (
         !e.terrain ||
         e.terrain.heights.length !== e.terrain.columns * e.terrain.rows ||
+        (e.terrain.colors && e.terrain.colors.length !== e.terrain.heights.length) ||
         e.motion === 'dynamic' ||
         e.visual ||
         e.surface

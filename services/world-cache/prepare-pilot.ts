@@ -2,15 +2,17 @@
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { resolve, join } from 'node:path'
-import { gzipSync } from 'node:zlib'
-import { BufferGeometry, Float32BufferAttribute, Color } from 'three'
+import { gzipSync, gunzipSync } from 'node:zlib'
+import { BufferGeometry, Float32BufferAttribute, Color, Matrix4, Vector3, Quaternion } from 'three'
 import { roadAreaSnapshotSchema, groundRoadAreas } from '../../src/map-provider.js'
 import { createRealWorld, type WorldExtract } from '../../src/real-world.js'
 import { prepareMapGeometry, geometryFromBuffers } from '../../playground/map-geometry.js'
 
-const [extractPath, snapshotPath, output] = process.argv.slice(2)
-if (!extractPath || !snapshotPath || !output)
-  throw new Error('Usage: prepare-pilot.js <OSM extract> <official snapshot> <output directory>')
+const [extractPath, snapshotPath, output, combinedPath] = process.argv.slice(2)
+if (!extractPath || !snapshotPath || !output || !combinedPath)
+  throw new Error(
+    'Usage: prepare-pilot.js <OSM extract> <official snapshot> <output directory> <combined pack>',
+  )
 const extract = JSON.parse(readFileSync(extractPath, 'utf8')) as WorldExtract
 const snapshot = roadAreaSnapshotSchema.parse(JSON.parse(readFileSync(snapshotPath, 'utf8')))
 const scene = createRealWorld(extract)
@@ -44,8 +46,17 @@ function append(target: string, geometry: BufferGeometry, color: string) {
 }
 for (const e of selected) {
   const b = buffers[e.id]
-  if (b)
-    append(e.terrain ? 'terrain' : e.road ? 'osm' : 'buildings', geometryFromBuffers(b), e.color)
+  if (b) {
+    const g = geometryFromBuffers(b)
+    g.applyMatrix4(
+      new Matrix4().compose(
+        new Vector3(...e.transform.position),
+        new Quaternion(...e.transform.rotation),
+        new Vector3(1, 1, 1),
+      ),
+    )
+    append(e.terrain ? 'terrain' : e.road ? 'osm' : 'buildings', g, e.color)
+  }
 }
 const official = groundRoadAreas(snapshot, extract.origin, extract.terrain)
 for (const { geometry } of official.surfaces) {
@@ -53,6 +64,34 @@ for (const { geometry } of official.surfaces) {
   buffer.setAttribute('position', new Float32BufferAttribute(geometry.vertices.flat(), 3))
   buffer.setIndex(geometry.faces.flat())
   append('official', buffer, '#42494d')
+}
+if (combinedPath) {
+  const combined = JSON.parse(gunzipSync(readFileSync(combinedPath)).toString())
+  groups.combined = []
+  groups.officialTerrain = []
+  for (const e of combined.entities as typeof scene.entities) {
+    const kind = e.terrain
+      ? 'officialTerrain'
+      : (e.road && !e.road.renderSuppressed) || (e.parentId === 'world-roads' && e.landcover)
+        ? 'combined'
+        : null
+    const wire = combined.geometry[e.id]
+    if (!kind || !wire) continue
+    const decode = (s: string) => {
+      const b = Buffer.from(s, 'base64')
+      return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)
+    }
+    append(
+      kind,
+      geometryFromBuffers({
+        position: new Float32Array(decode(wire.position)),
+        normal: new Float32Array(decode(wire.normal)),
+        ...(wire.index ? { index: new Uint32Array(decode(wire.index)) } : {}),
+        ...(wire.color ? { color: new Float32Array(decode(wire.color)) } : {}),
+      }),
+      e.color,
+    )
+  }
 }
 const chunks: Buffer[] = []
 const ranges: Record<string, { offset: number; count: number }> = {}

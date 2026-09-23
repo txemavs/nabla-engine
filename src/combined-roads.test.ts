@@ -79,3 +79,47 @@ it('cuts only official overlap, preserves centerlines and bridges, and survives 
   expect(doc.entities.find((e) => e.terrain)!.mapBaseline).toBe(baseline)
   expect(parseScene(JSON.parse(JSON.stringify(doc))).entities).toHaveLength(doc.entities.length)
 })
+it('does not retain OSM shoulders when the whole centerline is inside official pavement', () => {
+  const doc = createRealWorld({
+    name: 'narrow',
+    origin,
+    terrain: { columns: 11, rows: 11, spacing: 10, heights: Array(121).fill(0) },
+    source: { retrievedAt: '2026-09-23' },
+    features: [
+      {
+        id: 'way/9',
+        tags: { highway: 'residential', width: '12' },
+        rings: [{ role: 'outer', coordinates: [coordinate(-5, 0), coordinate(5, 0)] }],
+      },
+    ],
+  })
+  const snapshot = roadAreaSnapshotSchema.parse(fixture)
+  snapshot.features = [
+    {
+      type: 'Feature',
+      properties: {
+        OBJECTID: 1,
+        ID_TIPO: '0029',
+        ESTADO: 'USO',
+        SITUACION: 'SUP',
+        COMPONEN2D: 'CGN',
+        CODIGOC: null,
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-10, -1],
+            [10, -1],
+            [10, 1],
+            [-10, 1],
+            [-10, -1],
+          ].map(([x, z]) => coordinate(x, z)),
+        ],
+      },
+    },
+  ]
+  combineRoadSurfaces(doc, snapshot)
+  expect(doc.entities.find((e) => e.id === 'osm-way-9')!.road!.renderSuppressed).toBe(true)
+  expect(doc.entities.some((e) => e.source?.id === 'way/9' && e.geometry)).toBe(false)
+})

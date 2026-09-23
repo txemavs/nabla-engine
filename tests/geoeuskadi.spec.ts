@@ -13,7 +13,7 @@ test('compares cached official surfaces with OSM without querying either provide
   await page.goto('/geoeuskadi.html')
   const view = page.locator('#viewport')
   await expect(view).toHaveAttribute('data-ready', 'true')
-  await expect(view).toHaveAttribute('data-provider', 'official')
+  await expect(view).toHaveAttribute('data-provider', 'combined')
   await expect(view).toHaveAttribute('data-draw-calls', '2')
   await page.locator('#osm').click()
   await expect(view).toHaveAttribute('data-provider', 'osm')

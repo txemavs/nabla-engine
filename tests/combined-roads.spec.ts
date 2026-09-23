@@ -32,7 +32,7 @@ test('loads prepared combined roads and drives while preserving the source basel
   })
   await page.locator('#play').click()
   await expect(page.locator('#interaction')).toContainText('E para entrar', { timeout: 30000 })
-  await page.keyboard.press('KeyE')
+  await page.keyboard.press('KeyE', { delay: 200 })
   await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
   await page.keyboard.down('KeyW')
   await page.waitForTimeout(2200)

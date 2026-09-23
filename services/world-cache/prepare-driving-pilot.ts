@@ -1,3 +1,4 @@
+import { applyOfficialLandcover } from '../../src/official-landcover.js'
 import { gzipSync } from 'node:zlib'
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -6,12 +7,17 @@ import { combineRoadSurfaces } from '../../src/combined-roads.js'
 import { roadAreaSnapshotSchema } from '../../src/map-provider.js'
 import { parseScene } from '../../src/scene.js'
 import { prepareMapGeometry } from '../../playground/map-geometry.js'
-const [input, snapshotPath, output] = process.argv.slice(2)
+const [input, snapshotPath, output, landcoverPath] = process.argv.slice(2)
 if (!output) throw Error('Usage: prepare-driving-pilot.js <OSM extract> <BTA snapshot> <output>')
 const extract = JSON.parse(readFileSync(input, 'utf8')) as WorldExtract
 const snapshot = roadAreaSnapshotSchema.parse(JSON.parse(readFileSync(snapshotPath, 'utf8')))
 const doc = createRealWorld(extract)
 const added = combineRoadSurfaces(doc, snapshot)
+if (landcoverPath)
+  console.log(
+    'Official colour vertices:',
+    applyOfficialLandcover(doc, JSON.parse(readFileSync(landcoverPath, 'utf8')), extract),
+  )
 doc.name = 'Irún · Ventas · OSM + geoEuskadi'
 parseScene(doc)
 const geometry = prepareMapGeometry(doc.entities)
