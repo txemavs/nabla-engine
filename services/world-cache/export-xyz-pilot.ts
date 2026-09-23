@@ -183,7 +183,7 @@ for (const tile of [...cells.values()].sort((a, b) => a.z - b.z || a.x - b.x || 
       }
     })
   }
-  const directory = `${tile.z}/${tile.x}/${tile.y}`
+  const directory = `z/${tile.z}/${tile.x}/${tile.y}`
   await mkdir(join(output, directory), { recursive: true })
   let triangles = 0,
     draws = 0,

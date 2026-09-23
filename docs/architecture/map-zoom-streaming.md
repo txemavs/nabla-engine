@@ -124,3 +124,32 @@ production frontend build passed. Local screenshot inspection confirmed that
 roads, buildings and landcover render. This is a coverage/transition prototype;
 no claim is made that long-distance flight performance is solved. The coarse
 meshes still need considerably stronger simplification or baked surface detail.
+
+## Initial game integration
+
+The game now uses `XyzWorld` to stream available generated zoom layers; the editor
+retains its original individually editable entities. Public layer URLs have the
+shape `z/<zoom>/<x>/<y>/<layer>-<hash>.glb`; the canonical identity still names the
+OGC matrix. Detailed simulation/collision data continues to use the existing
+loader. This is a visual integration, **not** completion of the canonical server
+preparation/physics migration.
+
+A generated region replaces drawing only when every intersecting cell is ready.
+A shader mask clips XYZ rendering to those regions and removes the coarse horizon
+underneath. Original render batches omit replaced entities; trees, impacts and
+customized regions remain on their existing path. Building visibility settings
+apply to both paths. Leaving Play clears the mask and restores editor meshes.
+GLBs are checked against catalog sizes and SHA-256 hashes, with one request job
+at a time, a resident download-byte budget, retry backoff and disposal on travel.
+The byte budget is not a precise GPU-memory measurement.
+
+Coverage still consists of the three prepared Irún source tiles. Elsewhere the
+existing streaming system remains active. Do not claim that visiting a new city
+will automatically create XYZ artifacts yet. Coarse geometry reduction still
+requires further work before claiming a long-distance performance improvement.
+
+Play/Stop now have a shared asynchronous transition lock. They show `Loading…`
+and `Saliendo…`, disable repeated activation (including keyboard/menu commands),
+and yield a frame before the synchronous simulation construction/disposal.
+This makes the status visible; it does not move physics initialization to a worker
+or guarantee that initialization itself is nonblocking.

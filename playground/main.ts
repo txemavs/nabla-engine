@@ -1,3 +1,4 @@
+import { XyzWorld } from './xyz-world.js'
 import { tileInspector } from './tile-inspector.js'
 import { geographicPose, anchoredWorldPose } from './studio/geographic-pose.js'
 import { prepareStartup } from './startup.js'
@@ -90,6 +91,7 @@ let recoverLegacyPlaces = true
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = true
 let distantTerrain: DistantTerrain | null = null
+let xyzWorld: XyzWorld | null = null
 const flightAudio = new FlightAudio()
 let worldStream: WorldStream | null = null
 let worldLoader: WorldLoader | null = null
@@ -400,6 +402,8 @@ function rebuild(prepared?: PreparedMapGeometry): void {
   }
   remotePortalViews?.dispose()
   syncCursor()
+  xyzWorld?.dispose()
+  xyzWorld = null
   distantTerrain?.dispose()
   distantTerrain = null
   worldStream?.dispose()
@@ -454,6 +458,16 @@ function setupWorldStream(): void {
           ? 'Relieve lejano pendiente'
           : 'Cargando horizonte…')
   })
+  xyzWorld = new XyzWorld(
+    origin,
+    () => {
+      needsRender = true
+    },
+    undefined,
+    (material) => shadowManager.setupMaterial(material),
+  )
+  scene.add(xyzWorld.root)
+  distantTerrain.setXyzCoverage(xyzWorld.coverage)
   distantTerrain.setDocument(doc)
   scene.add(distantTerrain.root)
   const loader = new WorldLoader()
@@ -1297,7 +1311,7 @@ async function travelTo(): Promise<void> {
   const name = city.value
     ? city.selectedOptions[0].textContent!
     : `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-  if (sim) togglePlay()
+  if (sim) await togglePlay()
   loadingWorld = true
   refreshUi()
   const controller = new AbortController()
@@ -1436,7 +1450,7 @@ $('import').onclick = () => $<HTMLInputElement>('file').click()
 $('file').onchange = async () => {
   await startupDone
   const file = $<HTMLInputElement>('file').files?.[0]
-  if (!file || loadingWorld) return
+  if (!file || loadingWorld || playTransition) return
   if (file.size > 40_000_000) {
     toast('La escena supera el límite de 40 MB')
     return
@@ -1448,7 +1462,7 @@ $('file').onchange = async () => {
         ? parseProject(raw, performanceSettings.preset === 'ultra')
         : createProject(upgradeReferenceScene(raw))
     const scene = opened.locations.find((p) => p.id === opened.activeLocation)!.scene
-    if (sim) togglePlay()
+    if (sim) await togglePlay()
     editor = new SceneEditor(scene, performanceSettings.preset === 'ultra')
     project = opened
     recoverLegacyPlaces = false
@@ -1461,13 +1475,33 @@ $('file').onchange = async () => {
   }
   $<HTMLInputElement>('file').value = ''
 }
-function togglePlay(): void {
-  if (loadingWorld) return
+let playTransition = false
+async function togglePlay(): Promise<void> {
+  if (loadingWorld || playTransition) return
+  playTransition = true
+  const button = $<HTMLButtonElement>('play')
+  button.disabled = true
+  button.textContent = sim ? 'Saliendo…' : 'Loading…'
+  button.setAttribute('aria-busy', 'true')
+  try {
+    // Yield through a paint before constructing or disposing the synchronous simulation.
+    await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+    togglePlayNow()
+  } finally {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+    playTransition = false
+    button.disabled = loadingWorld
+    button.removeAttribute('aria-busy')
+    button.innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
+  }
+}
+function togglePlayNow(): void {
   action(() => {
     keys.clear()
     if (sim) {
       sim.dispose()
       sim = null
+      view.setPlaying(false)
       document.exitPointerLock()
       camera.up.set(0, 1, 0)
       document.querySelector('.caption-tag')!.textContent = 'PERSPECTIVA'
@@ -1510,7 +1544,8 @@ function togglePlay(): void {
       refreshUi()
     }
     document.body.classList.toggle('playing', !!sim)
-    $('play').innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
+    if (!playTransition)
+      $('play').innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
     $('mode-label').textContent = sim ? 'Jugando' : 'Edición'
     $('game-hud').hidden = !sim
     $('view-hint').textContent = sim
@@ -1778,9 +1813,10 @@ window.addEventListener('keydown', (e) => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code))
     e.preventDefault()
   if (e.code === 'KeyR' && !e.repeat) {
-    togglePlay()
-    togglePlay()
-    toast('Partida reiniciada')
+    if (!playTransition)
+      void togglePlay()
+        .then(() => togglePlay())
+        .then(() => toast('Partida reiniciada'))
     return
   }
   if ((e.code === 'Comma' || e.code === 'Period') && !e.repeat && sim?.player.vehicleId) {
@@ -2232,6 +2268,19 @@ function frame(now: number): void {
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
   distantTerrain?.update(position, performanceSettings.distance)
   distantTerrain?.root.position.copy(renderOrigin).negate()
+  xyzWorld?.update(
+    position,
+    height,
+    performanceSettings.distance,
+    view.document,
+    !!sim,
+    !!performanceSettings.buildings,
+    renderOrigin,
+  )
+  view.setMapRenderOmissions(xyzWorld?.omitted ?? new Set())
+  renderer.domElement.dataset.xyzZooms = xyzWorld?.zooms ?? ''
+  renderer.domElement.dataset.xyzRegions = String(xyzWorld?.coverage.count.value ?? 0)
+  if (sim && xyzWorld?.coverage.count.value) $('world-note').textContent = xyzWorld.status
   view.root.position.copy(renderOrigin).negate()
   camera.position.sub(renderOrigin)
   if (view.document.geography) {
@@ -2556,7 +2605,7 @@ if (new URLSearchParams(location.search).get('studio') === 'desktop') {
     togglePlay,
     canUndo: () => !sim && editor.canUndo,
     canRedo: () => !sim && editor.canRedo,
-    canPlay: () => !loadingWorld,
+    canPlay: () => !loadingWorld && !playTransition,
     isPlaying: () => !!sim,
   })
 }
@@ -2594,10 +2643,10 @@ $('project-place-open').onclick = () => {
   void openProjectPlace($<HTMLSelectElement>('project-places').value)
 }
 async function openProjectPlace(id: string, entityId?: string): Promise<void> {
-  if (loadingWorld) return
+  if (loadingWorld || playTransition) return
   const place = project!.locations.find((p) => p.id === id)
   if (!place) return
-  if (sim) togglePlay()
+  if (sim) await togglePlay()
   const retained = retainLocation(project!, editor.document)
   const next = { ...retained, activeLocation: id }
   loadingWorld = true

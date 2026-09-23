@@ -75,7 +75,7 @@ async function load(tile: Tile) {
     for (const [name, file] of Object.entries(tile.files)) {
       if (
         !new RegExp(
-          `^${tile.z}/${tile.x}/${tile.y}/(terrain|buildings-osm)-[a-f0-9]{16}\\.glb$`,
+          `^z/${tile.z}/${tile.x}/${tile.y}/(terrain|buildings-osm)-[a-f0-9]{16}\\.glb$`,
         ).test(file.path)
       )
         throw Error('Ruta GLB inválida')
@@ -170,7 +170,7 @@ function update() {
         const link = document.createElement('a')
         link.href = base + file.path
         link.download = `nabla-earth-${id.replaceAll('/', '-')}-${layer}.glb`
-        link.textContent = `${id} · ${layer} (${(file.bytes / 1e6).toFixed(2)} MB)`
+        link.textContent = `${id.replace('WebMercatorQuad/', 'z/')} · ${layer} (${(file.bytes / 1e6).toFixed(2)} MB)`
         const row = document.createElement('div')
         row.append(link)
         el('files').append(row)

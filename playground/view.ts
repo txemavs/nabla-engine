@@ -728,6 +728,22 @@ export class SceneView {
     }
     this.wheels.set(e.id, wheels)
   }
+  private mapOmissions = new Set<string>()
+  private omittedMeshes = new Map<THREE.Object3D, boolean>()
+  private mapRenderSource?: Entity[]
+  private mapRenderEntities?: Entity[]
+  setMapRenderOmissions(ids: ReadonlySet<string>): void {
+    if (ids.size === this.mapOmissions.size && [...ids].every((id) => this.mapOmissions.has(id)))
+      return
+    for (const [mesh, visible] of this.omittedMeshes) mesh.visible = visible
+    this.omittedMeshes.clear()
+    for (const id of this.mapOmissions) {
+      const object = this.objects.get(id)
+      if (object) object.visible = true
+    }
+    this.mapOmissions = new Set(ids)
+    this.mapRenderSource = undefined
+  }
   /** Distance culling is repeated for portal cameras, never shared from the main frustum. */
   buildingDistance = 3000
   limitDrawDistance(
@@ -738,16 +754,35 @@ export class SceneView {
     roadDistance = distance,
     now = performance.now(),
   ): void {
+    if (this.mapRenderSource !== this.document.entities) {
+      this.mapRenderSource = this.document.entities
+      this.mapRenderEntities = this.mapOmissions.size
+        ? this.document.entities.filter((e) => !this.mapOmissions.has(e.id))
+        : this.document.entities
+    }
     this.buildings.update(
-      this.document.entities,
+      this.mapRenderEntities!,
       this.objects,
       buildings && this.batchBuildings,
       position,
       Math.min(distance, this.buildingDistance),
     )
-    this.roads.update(this.document.entities, this.objects, enabled, position, roadDistance)
-    this.landcover.update(this.document.entities, this.objects, enabled, position, distance, now)
+    this.roads.update(this.mapRenderEntities!, this.objects, enabled, position, roadDistance)
+    this.landcover.update(this.mapRenderEntities!, this.objects, enabled, position, distance, now)
     for (const e of this.document.entities) {
+      if (this.mapOmissions.has(e.id)) {
+        const object = this.objects.get(e.id)
+        if (object) {
+          object.visible = true
+          object.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.name !== 'shot-impact') {
+              if (!this.omittedMeshes.has(child)) this.omittedMeshes.set(child, child.visible)
+              child.visible = false
+            }
+          })
+        }
+        continue
+      }
       if (!e.source || e.motion === 'dynamic' || e.portal) continue
       const object = this.objects.get(e.id)
       if (!object) continue // A streamed frame may still be queued.

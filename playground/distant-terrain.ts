@@ -1,3 +1,4 @@
+import type { XyzCoverage } from './xyz-world.js'
 import { matteGroundMaterial } from './ground-material.js'
 import * as THREE from 'three'
 import type { GeoPoint } from '../src/geography.js'
@@ -89,6 +90,9 @@ export class DistantTerrain {
       this.status = 'unavailable'
       this.changed()
     }
+  }
+  setXyzCoverage(coverage: XyzCoverage): void {
+    coverage.apply(this.material, false)
   }
   setDocument(doc: SceneDocument): void {
     this.document = doc
