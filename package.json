@@ -31,7 +31,8 @@
     "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build:prepare": "tsc -p tsconfig.prepare.json"
+    "build:prepare": "tsc -p tsconfig.prepare.json",
+    "prebuild:prepare": "node -e \"require('node:fs').rmSync('prepare-dist', { recursive: true, force: true })\""
   },
   "keywords": [
     "3d",

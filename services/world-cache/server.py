@@ -1,7 +1,7 @@
 """Private, disk-backed OSM/Esri cache. Bind behind an authenticated/private transport."""
 import hashlib, hmac, json, os, re, threading, time, urllib.request, urllib.error
 from http.cookies import SimpleCookie
-from queue_store import Queue
+from queue_store import Queue, ready_manifest
 from pathlib import Path
 from baked_format import valid_bake
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -157,18 +157,29 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         if self.path == '/prepare/zones':
-            if not self.authorized():
-                self.respond(401, b'{"error":"Preparation access required"}')
-                return
+            self.respond(410, b'{"error":"Use canonical XYZ /prepare/tiles"}')
+            return
+        if self.path == '/prepare/tiles':
             try:
                 length = int(self.headers.get('Content-Length', '0'))
                 if not 0 < length <= 8192:
                     raise ValueError('Invalid request size')
                 data = json.loads(self.rfile.read(length))
-                accepted = PREPARE_QUEUE.enqueue(data['origin'], data['keys'])
-                self.respond(202 if accepted else 429, json.dumps({'accepted':accepted,'queue':PREPARE_QUEUE.stats()}).encode())
+                keys = data['keys']
+                if not isinstance(keys, list) or not 1 <= len(keys) <= 24:
+                    raise ValueError('Expected 1-24 canonical tiles')
+                from queue_store import normalize
+                tiles = [normalize(key) for key in keys]
+                authorized = self.authorized()
+                accepted = PREPARE_QUEUE.enqueue(keys) if authorized and PREPARE_QUEUE else 0
+                available = {}
+                for _, _, key in tiles:
+                    manifest = ready_manifest(PREPARE_ROOT, key)
+                    if manifest:
+                        available[key] = manifest
+                self.respond(200, json.dumps({'available':available, 'accepted':accepted, 'authorized':authorized}).encode())
             except (ValueError, KeyError, TypeError):
-                self.respond(400, b'{"error":"Invalid zone request"}')
+                self.respond(400, b'{"error":"Invalid planetary tile request"}')
             return
 
         if self.path != '/osm': self.respond(404, b'{}'); return

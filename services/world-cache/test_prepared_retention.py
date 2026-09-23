@@ -3,52 +3,17 @@ import unittest
 from pathlib import Path
 from prepare_worker import trim_prepared
 
-class PreparedRetentionTest(unittest.TestCase):
-    def test_budget_counts_both_formats_and_keeps_current_pair(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            for name in ('old.json', 'old.bin', 'current.json', 'current.bin'):
-                (root / name).write_bytes(b'x' * 30)
-            trim_prepared(root, root / 'current.json', 70)
-            self.assertFalse((root / 'old.json').exists())
-            self.assertFalse((root / 'old.bin').exists())
-            self.assertEqual(sum(p.stat().st_size for p in root.iterdir()), 60)
-
-    def test_glb_sidecars_count_toward_budget_and_evict_with_tile(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            for name in ('old.json', 'old.bin', 'current.json', 'current.bin'):
-                (root / name).write_bytes(b'x' * 30)
-            for tile in ('old', 'current'):
-                layer = root / (tile + '.glb-tile')
-                layer.mkdir()
-                (layer / 'terrain.glb').write_bytes(b'x' * 100)
-                (layer / 'manifest.json').write_bytes(b'x' * 20)
-            trim_prepared(root, root / 'current.json', 200)
-            self.assertFalse((root / 'old.glb-tile').exists())
-            self.assertFalse((root / 'old.bin').exists())
-            self.assertTrue((root / 'current.glb-tile' / 'terrain.glb').exists())
-            self.assertEqual(sum(p.stat().st_size for p in root.rglob('*') if p.is_file()), 180)
-
-
-class SidecarRevisionTest(unittest.TestCase):
-    def test_missing_old_and_complete_revision(self):
-        import json
-        from prepare_worker import sidecar_current
-        with tempfile.TemporaryDirectory() as folder:
-            target = Path(folder) / '0_0.bin'
-            target.write_bytes(b'prepared')
-            self.assertFalse(sidecar_current(target))
-            layer = target.with_suffix('.glb-tile')
-            layer.mkdir()
-            (layer / 'manifest.json').write_text(json.dumps({'groundRevision': 1}))
-            for name in ('terrain.glb', 'buildings-osm.glb'):
-                (layer / name).write_bytes(b'glb')
-            self.assertFalse(sidecar_current(target))
-            (layer / 'manifest.json').write_text(json.dumps({'groundRevision': 4}))
-            self.assertTrue(sidecar_current(target))
-            (layer / 'terrain.glb').unlink()
-            self.assertFalse(sidecar_current(target))
-
-if __name__ == '__main__':
-    unittest.main()
+class RetentionTests(unittest.TestCase):
+    def test_native_eviction_keeps_current_and_legacy_authored_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            for key in ['z/15/1/1','z/15/1/2']:
+                directory=root/key;directory.mkdir(parents=True)
+                (directory/'manifest.json').write_text('{}')
+                (directory/'terrain.glb').write_bytes(b'x'*100)
+            legacy=root/'saved-scene.json';legacy.write_text('keep')
+            current=root/'z/15/1/2/manifest.json'
+            trim_prepared(root,current,105)
+            self.assertTrue(current.exists())
+            self.assertFalse((root/'z/15/1/1').exists())
+            self.assertEqual(legacy.read_text(),'keep')

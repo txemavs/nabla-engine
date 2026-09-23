@@ -1,3 +1,4 @@
+import { planetaryScene } from './studio/planet-scene.js'
 import { createRealWorld } from '../src/real-world.js'
 import { createProject, parseProject } from './studio/project.js'
 import { upgradeReferenceScene } from './scene-upgrades.js'
@@ -28,7 +29,8 @@ self.onmessage = (
     )
     if (scene.entities.some((e) => e.id === 'road' && e.size[0] === 16 && e.size[2] === 85))
       scene = alignCircuitPlan(scene)
-    scene = parseScene(scene, input.large)
+    scene = parseScene(planetaryScene(scene), input.large)
+    if (project) for (const place of project.locations) place.scene = planetaryScene(place.scene)
     self.postMessage({ stage: 'Preparando objetos y terreno…' })
     self.postMessage({
       result: { project: project ?? createProject(scene), scene, saved: JSON.stringify(scene) },

@@ -1,3 +1,4 @@
+import { PlanetWorld } from './planet-world.js'
 import * as THREE from 'three'
 import { SceneView } from './view.js'
 import { GeographicView } from './geography.js'
@@ -14,6 +15,8 @@ export class RemotePortalViews {
       geography: GeographicView
       ambient: THREE.AmbientLight
       sun: THREE.DirectionalLight
+      planet?: PlanetWorld
+      nextPlanet: number
       ready: boolean
     }
   >()
@@ -32,7 +35,14 @@ export class RemotePortalViews {
       const ambient = new THREE.AmbientLight('#dce7f5', 0.22),
         sun = new THREE.DirectionalLight('#fff0d8', 3.2)
       scene.add(view.root, geography.tiles, ambient, sun)
-      entry = { scene, view, geography, ambient, sun, ready: false }
+      const planet = document.geography?.planetary
+        ? new PlanetWorld(document.geography, this.changed, () => {})
+        : undefined
+      if (planet) {
+        planet.setDistance(1500)
+        scene.add(planet.root)
+      }
+      entry = { scene, view, geography, ambient, sun, planet, nextPlanet: 0, ready: false }
       this.views.set(key, entry)
       const owned = entry
       void view.ready
@@ -54,6 +64,11 @@ export class RemotePortalViews {
       destination: target,
       scene: e.scene,
       background: (renderer, camera) => {
+        if (e.planet && performance.now() > e.nextPlanet) {
+          e.nextPlanet = performance.now() + 1000
+          e.planet.update(camera.position.toArray(), [0, 0, 0])
+          e.planet.renderUpdate(new THREE.Vector3(), true, null)
+        }
         camera.far = Math.max(camera.far, 2000)
         camera.updateProjectionMatrix()
         e.view.limitDrawDistance(camera.position, 1500, false, true, 1000)
@@ -78,6 +93,7 @@ export class RemotePortalViews {
   }
   dispose(): void {
     for (const e of this.views.values()) {
+      e.planet?.dispose()
       e.view.dispose()
       e.geography.dispose()
     }

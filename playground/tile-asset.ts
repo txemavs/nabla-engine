@@ -128,21 +128,23 @@ export function restoreTileLayers(root: THREE.Object3D): void {
       transport === 'ballast' ||
       (!transport && source?.tags?.railway && !source?.tags?.highway)
     const layer =
-      category === 'Roads'
-        ? transportLayer({
-            source,
-            ...(isRail
-              ? {
-                  railway: {
-                    part:
-                      transport === 'ballast' || (!transport && object.name.includes('-ballast'))
-                        ? 'ballast'
-                        : 'rail',
-                  },
-                }
-              : {}),
-          })
-        : Number(object.userData.groundLayer || 0)
+      Number.isFinite(object.userData.groundLayer) && object.userData.groundLayer > 0
+        ? Number(object.userData.groundLayer)
+        : category === 'Roads'
+          ? transportLayer({
+              source,
+              ...(isRail
+                ? {
+                    railway: {
+                      part:
+                        transport === 'ballast' || (!transport && object.name.includes('-ballast'))
+                          ? 'ballast'
+                          : 'rail',
+                    },
+                  }
+                : {}),
+            })
+          : Number(object.userData.groundLayer || 0)
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
       material.polygonOffset = layer > 0
       material.polygonOffsetFactor = material.polygonOffsetUnits = -layer

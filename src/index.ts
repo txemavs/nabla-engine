@@ -39,9 +39,6 @@ export {
 } from './draped-road.js'
 export type { RoadElevation, RoadGeometryOptions, RoadCollider } from './draped-road.js'
 
-export { WorldStream, wantedWorldTiles, worldTileAt, WORLD_TILE_SIZE } from './world-stream.js'
-export type { WorldStreamHost } from './world-stream.js'
-
 export { entityCapabilities, type EntityCapability } from './capabilities.js'
 export { entityCatalog, createCatalogEntities, type CatalogId } from './catalog.js'
 
@@ -66,8 +63,6 @@ export {
 
 export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from './world-pose.js'
 export type { WorldPose } from './world-pose.js'
-
-export { PLANET_GRID_VERSION, planetCellAt, planetCellBounds } from './planet-grid.js'
 
 export {
   MAP_TILE_MATRIX,

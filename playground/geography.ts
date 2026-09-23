@@ -60,7 +60,7 @@ export class GeographicView {
     private readonly changed: () => void,
     online = false,
   ) {
-    this.hasTerrain = document.entities.some((e) => !!e.terrain)
+    this.hasTerrain = !!document.geography?.planetary || document.entities.some((e) => !!e.terrain)
     if (this.hasTerrain) online = false
     this.origin = document.geography
       ? { ...document.geography, imagery: online ? document.geography.imagery : 'offline' }

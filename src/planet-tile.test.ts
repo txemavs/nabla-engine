@@ -68,3 +68,25 @@ describe('planet-global tile addressing and geometry', () => {
     expect(se.latitude).toBeCloseTo(b.south, 12)
   })
 })
+
+it('keeps a complete parent while grandchildren only provide partial child coverage', async () => {
+  const { planetReadyCover, mapTileId } = await import('./map-tiles.js')
+  const root = mapTileAt(43, -1, 13),
+    children = mapTileChildren(root),
+    leaves = children.flatMap(mapTileChildren)
+  const plan = {
+    roots: [root],
+    leaves,
+    requests: [root, ...children, ...leaves],
+    budgetLimited: false,
+  }
+  const partial = new Set([
+    mapTileId(root),
+    ...children.map((c) => mapTileId(mapTileChildren(c)[0])),
+  ])
+  expect(planetReadyCover(plan, partial)).toEqual([root])
+  const full = new Set([mapTileId(root), ...leaves.map(mapTileId)])
+  expect(planetReadyCover(plan, full)).toEqual(leaves)
+  partial.delete(mapTileId(root))
+  expect(planetReadyCover(plan, partial)).toHaveLength(4)
+})

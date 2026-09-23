@@ -1,5 +1,5 @@
-import { XyzWorld } from './xyz-world.js'
-import { tileInspector } from './tile-inspector.js'
+import { PlanetWorld } from './planet-world.js'
+import { planetaryScene, createPlanetScene } from './studio/planet-scene.js'
 import { geographicPose, anchoredWorldPose } from './studio/geographic-pose.js'
 import { prepareStartup } from './startup.js'
 import { authoredTree, isMapEnvironment } from './studio/outliner.js'
@@ -18,7 +18,6 @@ import {
 import { FrameLoop } from './studio/frame-loop.js'
 import { StudioInputOwner } from './studio/input-owner.js'
 import { mapCacheStats, setMapCacheBudget, clearMapCache } from './map-cache.js'
-import { decodePrepared } from './prepared-world.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
 import { roadGeometry } from '../src/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
@@ -34,10 +33,7 @@ import {
   performanceProfile,
 } from './performance.js'
 import { ShadowManager } from './csm.js'
-import { DistantTerrain } from './distant-terrain.js'
 import { readScene, writeScene } from './scene-storage.js'
-import { WorldStream } from '../src/world-stream.js'
-import { WorldLoader } from './world-loader.js'
 import { SolidEditor } from './solid-editor.js'
 import { treeSprite } from '../src/vegetation.js'
 import { createGallery, Gallery } from './gallery.js'
@@ -90,11 +86,9 @@ let portalEntriesProject: StudioProject | undefined
 let recoverLegacyPlaces = true
 const circuitMode = new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = true
-let distantTerrain: DistantTerrain | null = null
-let xyzWorld: XyzWorld | null = null
 const flightAudio = new FlightAudio()
-let worldStream: WorldStream | null = null
-let worldLoader: WorldLoader | null = null
+let worldStream: PlanetWorld | null = null
+let streamGeography = ''
 let streamSample: { at: number; position: Vec3Tuple } | null = null
 let editor = new SceneEditor({
   version: 1,
@@ -323,7 +317,7 @@ $('transform-exact').onclick = () =>
   })
 const outline = new SelectionOutline()
 scene.add(outline)
-let lastWorldInstallMs = 0
+const lastWorldInstallMs = 0
 let water: SeaWater | undefined
 let view = new SceneView(editor.document, performanceSettings.preset === 'ultra', true)
 view.setupMaterials((material) => shadowManager.setupMaterial(material))
@@ -395,6 +389,8 @@ function finishPoseEdit(id: string): void {
 }
 
 function rebuild(prepared?: PreparedMapGeometry): void {
+  const migrated = planetaryScene(editor.document)
+  if (migrated !== editor.document) editor.load(migrated)
   const document = editor.document
   if (!prepared && view.updateEditorPoses(document)) {
     refreshUi()
@@ -402,14 +398,6 @@ function rebuild(prepared?: PreparedMapGeometry): void {
   }
   remotePortalViews?.dispose()
   syncCursor()
-  xyzWorld?.dispose()
-  xyzWorld = null
-  distantTerrain?.dispose()
-  distantTerrain = null
-  worldStream?.dispose()
-  worldLoader?.dispose()
-  worldStream = null
-  worldLoader = null
   gizmo.detach()
   if (
     JSON.stringify(view.document.geography) !== JSON.stringify(document.geography) ||
@@ -444,72 +432,22 @@ function setupWorldStream(): void {
   water = doc.geography ? new SeaWater(doc.geography) : undefined
   if (water) scene.add(water.root)
   $('stream-status').textContent = ''
-  if (!doc.geography || !doc.entities.some((e) => e.id === 'world-terrain')) return
-  const origin = doc.geography
-  distantTerrain = new DistantTerrain(origin, () => {
-    needsRender = true
-    const status = distantTerrain?.status ?? 'loading'
-    renderer.domElement.dataset.distantTerrain = status
-    $('world-note').textContent =
-      `${doc.name} · OSM + ESRI · ` +
-      (status === 'ready'
-        ? `Vista ≈ ${performanceSettings.distance / 1000} km`
-        : status === 'unavailable'
-          ? 'Relieve lejano pendiente'
-          : 'Cargando horizonte…')
-  })
-  xyzWorld = new XyzWorld(
-    origin,
+  const identity = doc.geography?.planetary ? JSON.stringify(doc.geography) : ''
+  if (worldStream && streamGeography === identity) return
+  worldStream?.dispose()
+  worldStream = null
+  streamGeography = identity
+  if (!doc.geography?.planetary) return
+  worldStream = new PlanetWorld(
+    doc.geography,
     () => {
       needsRender = true
+      $('stream-status').textContent = worldStream?.status ?? ''
     },
-    undefined,
     (material) => shadowManager.setupMaterial(material),
   )
-  scene.add(xyzWorld.root)
-  distantTerrain.setXyzCoverage(xyzWorld.coverage)
-  distantTerrain.setDocument(doc)
-  scene.add(distantTerrain.root)
-  const loader = new WorldLoader()
-  worldLoader = loader
-  worldStream = new WorldStream({
-    document: () => view.document,
-    load: (key, signal) => loader.load(origin, key, signal),
-    refreshLoad: (key, signal) => loader.load(origin, key, signal, false, true),
-    prepare: (keys) => loader.prepare(origin, keys),
-    prefetch: (keys) => loader.prefetch(origin, keys),
-    replace: (remove, add) => {
-      const started = performance.now()
-      sim?.replaceMapEntities(remove, add, performanceSettings.preset === 'ultra')
-      editor.experimentalLargeScene = performanceSettings.preset === 'ultra'
-      editor.replaceMapEntities(remove, add)
-      view.replaceMapEntities(remove, add)
-      distantTerrain?.setDocument(view.document)
-      lastWorldInstallMs = performance.now() - started
-      renderer.domElement.dataset.worldInstallMs = lastWorldInstallMs.toFixed(1)
-      for (const e of add) if (e.kind === 'group') collapsed.add(e.id)
-      view.setPlaying(!!sim)
-      if (sim) {
-        $('entity-count').textContent = String(view.document.entities.length)
-        $('status').textContent = 'Mapa actualizado · cambios sin guardar'
-      } else {
-        if (!view.document.entities.some((e) => e.id === selectedId))
-          selectedId = add.find((e) => e.terrain)?.id ?? view.document.entities[0].id
-        refreshUi()
-      }
-      renderer.domElement.dataset.worldZones = String(
-        view.document.entities.filter((e) => e.terrain).length,
-      )
-    },
-    status: (message) => {
-      $('stream-status').textContent = message
-    },
-  })
-  worldStream.setQuality(
-    performanceProfile(performanceSettings).concurrent,
-    performanceProfile(performanceSettings).ahead,
-    performanceSettings.preset === 'ultra',
-  )
+  worldStream.setDistance(performanceSettings.distance)
+  scene.add(worldStream.root)
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
 function select(id: string): void {
@@ -545,8 +483,8 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
   setAddMenu(false)
   $('scene-name').textContent = doc.name
   $('view-subtitle').textContent = doc.name
-  grid.visible = !sim && !doc.entities.some((e) => e.terrain)
-  $('world-note').hidden = !doc.entities.some((e) => e.terrain)
+  grid.visible = !sim && !doc.geography?.planetary && !doc.entities.some((e) => e.terrain)
+  $('world-note').hidden = !doc.geography?.planetary && !doc.entities.some((e) => e.terrain)
   skyClock = doc.sky ?? { mode: 'live' }
   $<HTMLInputElement>('sky-time').value = localTimeInput(skyTime(skyClock))
   $('sky-live').classList.toggle('active', skyClock.mode === 'live')
@@ -757,45 +695,6 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
         rebuild()
       })
     props.append(button)
-  }
-  if (doc.geography && isMapEnvironment(e)) {
-    const tileAncestor = ancestry.find((item) =>
-      /^world-(terrain|buildings|roads|trees|landcover|railways)(?:-(-?\d+_-?\d+))?$/.test(item.id),
-    )
-    const match = tileAncestor?.id.match(
-      /^world-(?:terrain|buildings|roads|trees|landcover|railways)(?:-(-?\d+_-?\d+))?$/,
-    )
-    if (match) {
-      const key = match[1] ?? '0_0'
-      const terrainId = key === '0_0' ? 'world-terrain' : 'world-terrain-' + key
-      tileInspector(
-        props,
-        doc.geography,
-        key,
-        view.objects.get(terrainId)?.userData.mapArtifact,
-        async (neighbors) => {
-          if (!worldStream || sim) throw Error('Actualiza las baldosas desde el editor')
-          const stream = worldStream
-          const [x, z] = key.split('_').map(Number)
-          const keys = neighbors
-            ? Array.from({ length: 9 }, (_, i) => `${x + (i % 3) - 1}_${z + Math.floor(i / 3) - 1}`)
-            : [key]
-          let updated = 0
-          for (const tileKey of keys) {
-            if (worldStream !== stream) break
-            try {
-              await stream.refreshTile(tileKey)
-              updated++
-            } catch {
-              /* Keep the existing tile if unavailable or busy. */
-            }
-          }
-          toast(`${updated} de ${keys.length} baldosas actualizadas; las demás se conservan`)
-          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-          refreshUi()
-        },
-      )
-    }
   }
   const mapReadOnly = isMapEnvironment(e) && !e.mapEditable
   if (mapReadOnly) solidEditor.close()
@@ -1179,96 +1078,12 @@ $('sample-portals').onclick = () =>
     view.ready.then(focusSelection).catch(() => undefined)
     toast('Portal colocado en el cursor 3D · dale un nombre y elige su destino.')
   })
-async function loadIrun(combined = false): Promise<void> {
+async function loadIrun(_combined = false): Promise<void> {
   if (sim || loadingWorld) return
-  if (!combined) {
-    $<HTMLSelectElement>('travel-city').value = '43.32969,-1.819606'
-    $<HTMLInputElement>('travel-latitude').value = '43.32969'
-    $<HTMLInputElement>('travel-longitude').value = '-1.819606'
-    await travelTo()
-    return
-  }
-  loadingWorld = true
-  refreshUi()
-  for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = true
-  $<HTMLButtonElement>('play').disabled = true
-  $('world-loading').hidden = false
-  $('world-loading').textContent = combined
-    ? 'Cargando Ventas · OSM + geoEuskadi preparado…'
-    : 'Cargando Ventas de Irún · OSM + relieve…'
-  try {
-    let next: SceneDocument
-    let geometry: PreparedMapGeometry | undefined
-    if (combined) {
-      const response = await fetch('/geography/ventas-combined.pack', { cache: 'no-cache' })
-      if (!response.ok) throw new Error('La zona combinada todavía no está preparada')
-      if (!response.body) throw new Error('Zona combinada vacía')
-      const data = await new Response(
-        response.body.pipeThrough(new DecompressionStream('gzip')),
-      ).json()
-      if (data.recipe !== 'ventas-combined-roads-v1') throw new Error('Receta incompatible')
-      const entities = data.entities as Entity[]
-      const prepared = decodePrepared(
-        { ...data, entities: entities.filter((e) => e.kind !== 'spawn') },
-        data.origin,
-        '0_0',
-      )
-      next = upgradeReferenceScene(
-        parseScene({
-          ...data.scene,
-          entities: [...prepared.entities, ...entities.filter((e) => e.kind === 'spawn')],
-        }),
-      )
-      geometry = prepared.geometry
-    } else {
-      const response = await fetch('/geography/irun-ventas.json')
-      if (!response.ok) throw new Error('No se pudo cargar el extracto de Ventas')
-      next = (
-        await prepareStartup(
-          null,
-          await response.text(),
-          performanceSettings.preset === 'ultra',
-          (message) => {
-            $('world-loading').textContent = message
-          },
-          true,
-        )
-      ).scene
-    }
-    project = visitLocation(retainLocation(project!, editor.document), next)
-    await writeScene(PROJECT_KEY, JSON.stringify(project))
-    editor.load(next)
-    if (combined) {
-      const url = new URL(location.href)
-      url.searchParams.delete('world')
-      history.replaceState(null, '', url)
-    }
-    for (const e of next.entities) if (e.kind === 'group') collapsed.add(e.id)
-    selectedId = 'car-a'
-    rebuild(geometry)
-    $('welcome').hidden = true
-    await view.ready
-    focusSelection()
-    // Start with a wider view of the street instead of a close-up of the bonnet.
-    orbit.target.set(0, 2, 0)
-    camera.position.set(35, 32, 40)
-    orbit.update()
-    renderer.domElement.dataset.world = combined ? 'geoeuskadi' : 'irun'
-    localStorage.setItem('nabla.irun.introduced', '1')
-    toast(
-      combined
-        ? 'Ventas · piloto combinado en la zona inicial · OSM en el resto del mundo'
-        : 'Ventas de Irún · exploración conectada · las zonas se precargan al jugar',
-    )
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'No se pudo abrir Ventas')
-  } finally {
-    loadingWorld = false
-    refreshUi()
-    for (const id of ['save', 'export']) $<HTMLButtonElement>(id).disabled = false
-    $<HTMLButtonElement>('play').disabled = false
-    $('world-loading').hidden = true
-  }
+  $<HTMLSelectElement>('travel-city').value = '43.32969,-1.819606'
+  $<HTMLInputElement>('travel-latitude').value = '43.32969'
+  $<HTMLInputElement>('travel-longitude').value = '-1.819606'
+  await travelTo()
 }
 let travelController: AbortController | null = null
 $('travel-city').onchange = () => {
@@ -1316,7 +1131,6 @@ async function travelTo(): Promise<void> {
   refreshUi()
   const controller = new AbortController()
   travelController = controller
-  const loader = new WorldLoader()
   for (const id of ['save', 'export', 'play', 'travel-go']) $<HTMLButtonElement>(id).disabled = true
   $('travel-cancel').hidden = false
   $('world-loading').hidden = false
@@ -1345,41 +1159,9 @@ async function travelTo(): Promise<void> {
     const savedScene = saved
       ? parseScene(JSON.parse(saved), performanceSettings.preset === 'ultra')
       : null
-    if (savedScene?.entities.some((e) => e.terrain)) next = savedScene
-    else if (
-      Math.abs(latitude - 43.32969) < 0.000001 &&
-      Math.abs(longitude + 1.819606) < 0.000001
-    ) {
-      const response = await fetch('/geography/irun-ventas.json', { signal: controller.signal })
-      if (!response.ok) throw Error('No se pudo cargar Ventas')
-      next = (
-        await prepareStartup(
-          null,
-          await response.text(),
-          performanceSettings.preset === 'ultra',
-          (message) => {
-            $('world-loading').textContent = message
-          },
-          true,
-        )
-      ).scene
-    } else {
-      if (savedScene) project = visitLocation(project!, savedScene)
-      const entities = await loader.load(
-        { latitude, longitude, altitude: 0 },
-        '0_0',
-        controller.signal,
-        true,
-      )
-      for (const e of entities) if (e.terrain) e.name = `Relieve · ${name}`
-      next = upgradeReferenceScene({
-        version: 1,
-        name,
-        geography: { latitude, longitude, altitude: 0, imagery: 'offline' },
-        sky: current.sky,
-        entities,
-      })
-    }
+    next = savedScene
+      ? planetaryScene(savedScene)
+      : upgradeReferenceScene(createPlanetScene({ latitude, longitude, altitude: 0 }, name))
     if (controller.signal.aborted) return
     const nextProject = visitLocation(project!, next)
     await writeScene(PROJECT_KEY, JSON.stringify(nextProject))
@@ -1402,6 +1184,7 @@ async function travelTo(): Promise<void> {
       `${name} cargado · pulsa Jugar para explorar. Los cambios del lugar anterior se guardaron en este navegador.`
     toast(`${name} · destino cargado`)
     $('travel-menu').hidePopover()
+    if (!savedScene) void placeNewWorldObjects()
   } catch (error) {
     const message = controller.signal.aborted
       ? 'Viaje cancelado. Se conserva la escena anterior.'
@@ -1409,7 +1192,6 @@ async function travelTo(): Promise<void> {
     $('travel-status').textContent = message
     toast(message)
   } finally {
-    loader.dispose()
     travelController = null
     loadingWorld = false
     refreshUi()
@@ -1420,7 +1202,7 @@ async function travelTo(): Promise<void> {
   }
 }
 $('world-irun').onclick = () => void loadIrun()
-$('world-irun-official').onclick = () => void loadIrun(true)
+$('world-irun-official').hidden = true
 
 $('welcome-close').onclick = () => {
   $('welcome').hidden = true
@@ -1475,6 +1257,38 @@ $('file').onchange = async () => {
   }
   $<HTMLInputElement>('file').value = ''
 }
+/** Only new default objects need initial placement; never relocate a saved/edited object. */
+async function placeNewWorldObjects(): Promise<void> {
+  const currentEditor = editor,
+    stream = worldStream
+  if (!stream) return
+  const initial = new Map(
+    editor.document.entities
+      .filter((e) => e.kind === 'vehicle' || e.kind === 'spawn')
+      .map((e) => [e.id, JSON.stringify(e.transform)]),
+  )
+  const eye = camera.position.clone()
+  try {
+    await stream.ensureGround([0, 0, 0])
+    if (editor !== currentEditor || worldStream !== stream || sim) return
+    const doc = structuredClone(editor.document)
+    let changed = false
+    for (const e of doc.entities) {
+      if (initial.get(e.id) !== JSON.stringify(e.transform)) continue
+      const ground = stream.groundHeight(e.transform.position)
+      if (ground === undefined) continue
+      e.transform.position[1] = ground + (e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.5 : 0.85)
+      changed = true
+    }
+    if (changed) {
+      editor.load(doc)
+      rebuild()
+      if (camera.position.distanceToSquared(eye) < 0.01) focusSelection()
+    }
+  } catch {
+    /* Availability is already displayed by the stream; keep editing responsive. */
+  }
+}
 let playTransition = false
 async function togglePlay(): Promise<void> {
   if (loadingWorld || playTransition) return
@@ -1486,7 +1300,29 @@ async function togglePlay(): Promise<void> {
   try {
     // Yield through a paint before constructing or disposing the synchronous simulation.
     await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+    if (!sim && worldStream) {
+      const spawn = editor.document.entities.find((e) => e.kind === 'spawn')!
+      await worldStream.ensureGround(spawn.transform.position)
+      const adjusted = editor.document
+      for (const e of adjusted.entities)
+        if (e.kind === 'vehicle' || e.kind === 'spawn') {
+          const ground = worldStream.groundHeight(e.transform.position)
+          if (ground !== undefined)
+            e.transform.position[1] = Math.max(
+              e.transform.position[1],
+              ground + (e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.5 : 0.85),
+            )
+        }
+      editor.load(adjusted)
+    }
     togglePlayNow()
+    if (sim && worldStream) {
+      worldStream.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
+      while (!sim.preparePlanetCollisions())
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    }
+  } catch (error) {
+    toast(String(error))
   } finally {
     await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
     playTransition = false
@@ -1518,6 +1354,7 @@ function togglePlayNow(): void {
       portalControls.rebuild(editor.document)
       sim = new Simulation(editor.document, {
         playerMode: 'hover',
+        planetaryTerrain: !!editor.document.geography?.planetary,
         experimentalLargeScene: performanceSettings.preset === 'ultra',
         mapBuildingsEnabled: !!performanceSettings.buildings,
       })
@@ -1554,7 +1391,10 @@ function togglePlayNow(): void {
     $('footer-mode').textContent = sim
       ? 'Simulación compartida · 60 Hz'
       : 'Edición · metros · Y arriba'
-    grid.visible = !sim && !editor.document.entities.some((e) => e.terrain)
+    grid.visible =
+      !sim &&
+      !editor.document.geography?.planetary &&
+      !editor.document.entities.some((e) => e.terrain)
     outline.visible = !sim
   })
 }
@@ -1583,7 +1423,8 @@ for (const [id, key] of [
     } catch {
       /* Current session remains usable. */
     }
-    if (distantTerrain?.status === 'ready')
+    worldStream?.setDistance(performanceSettings.distance)
+    if (worldStream)
       $('world-note').textContent =
         `${editor.document.name} · OSM + ESRI · Vista ≈ ${performanceSettings.distance / 1000} km`
     sim?.setMapBuildingsEnabled(!!performanceSettings.buildings)
@@ -1713,7 +1554,10 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     camera,
   )
   if (e.shiftKey) {
-    const hit = raycaster.intersectObjects([...view.objects.values()], true)[0]
+    const hit = raycaster.intersectObjects(
+      [...view.objects.values(), ...(worldStream ? [worldStream.root] : [])],
+      true,
+    )[0]
     const point =
       hit?.point ??
       raycaster.ray.intersectPlane(
@@ -1733,6 +1577,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     return
   }
   const hits = raycaster.intersectObjects([...view.objects.values()], true)
+  if (worldStream?.inspect(raycaster, $('properties'), hits[0]?.distance)) return
   for (const hit of hits) {
     let object: THREE.Object3D | null = hit.object
     while (object && !object.userData.entityId) object = object.parent
@@ -1981,7 +1826,7 @@ function frame(now: number): void {
     }
     sim.setInput(currentInput(pad))
     const physicsStart = performance.now()
-    sim.step(document.hidden ? 0 : dt)
+    sim.step(document.hidden || playTransition ? 0 : dt)
     physicsMs = performance.now() - physicsStart
     if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       const c = sim.collisionStats
@@ -2266,21 +2111,8 @@ function frame(now: number): void {
     performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
   geography.viewDistance = performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
-  distantTerrain?.update(position, performanceSettings.distance)
-  distantTerrain?.root.position.copy(renderOrigin).negate()
-  xyzWorld?.update(
-    position,
-    height,
-    performanceSettings.distance,
-    view.document,
-    !!sim,
-    !!performanceSettings.buildings,
-    renderOrigin,
-  )
-  view.setMapRenderOmissions(xyzWorld?.omitted ?? new Set())
-  renderer.domElement.dataset.xyzZooms = xyzWorld?.zooms ?? ''
-  renderer.domElement.dataset.xyzRegions = String(xyzWorld?.coverage.count.value ?? 0)
-  if (sim && xyzWorld?.coverage.count.value) $('world-note').textContent = xyzWorld.status
+  worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
+  if (worldStream) $('world-note').textContent = worldStream.status
   view.root.position.copy(renderOrigin).negate()
   camera.position.sub(renderOrigin)
   if (view.document.geography) {
@@ -2307,7 +2139,7 @@ function frame(now: number): void {
       air.day > 0.8 ? 'day' : air.day < 0.1 ? 'night' : 'twilight'
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
-    camera.far = distantTerrain
+    camera.far = worldStream
       ? Math.hypot(performanceSettings.distance + 500, Math.max(0, height))
       : Math.max(300, Math.min(100000000, height * 15))
     renderer.domElement.dataset.viewDistance = String(camera.far)
@@ -2756,12 +2588,15 @@ async function restoreStartup(): Promise<void> {
     const storedScene = storedProject ? null : await readScene(STORAGE_KEY)
     const freshWorld = !circuitMode && !storedProject && !storedScene
     let initialScene = storedScene
-    if (freshWorld) {
-      label.textContent = 'Descargando terreno y calles de Irún…'
-      const response = await fetch('/geography/irun-ventas.json')
-      if (!response.ok) throw new Error('No se pudo descargar el mundo inicial')
-      initialScene = await response.text()
-    }
+    if (freshWorld)
+      initialScene = JSON.stringify(
+        upgradeReferenceScene(
+          createPlanetScene(
+            { latitude: 43.32969, longitude: -1.819606, altitude: 0 },
+            'Irún · Ventas',
+          ),
+        ),
+      )
     const result = await prepareStartup(
       storedProject,
       initialScene,
@@ -2769,7 +2604,7 @@ async function restoreStartup(): Promise<void> {
       (message) => {
         label.textContent = message
       },
-      freshWorld,
+      false,
     )
     project = result.project
     recoverLegacyPlaces = !storedProject
@@ -2791,6 +2626,7 @@ async function restoreStartup(): Promise<void> {
     if (freshWorld) {
       renderer.domElement.dataset.world = 'irun'
       focusSelection()
+      void placeNewWorldObjects()
     }
     if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
     else if (

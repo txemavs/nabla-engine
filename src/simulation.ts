@@ -1,3 +1,4 @@
+import { PlanetCollisions, type PlanetCollisionTile } from './planet-collisions.js'
 import { SparseContactMatrix } from './contact-matrix.js'
 import { terrainHeight } from './terrain.js'
 import { triangles } from './solid.js'
@@ -97,6 +98,20 @@ export class Simulation {
   private readonly portalEntities: Entity[]
   private readonly world = new World({ gravity: new Vec3(0, -9.81, 0) })
   private readonly solidMaterial = new Material({ friction: 0.55, restitution: 0 })
+  private readonly planetCollisions = new PlanetCollisions(this.world, this.solidMaterial)
+  setPlanetTiles(tiles: PlanetCollisionTile[]): void {
+    this.planetCollisions.setTiles(tiles)
+  }
+  preparePlanetCollisions(): boolean {
+    this.planetCollisions.update(
+      [
+        vec(this.playerBody.position),
+        ...[...this.vehicles.values()].map((v) => vec(v.body.position)),
+      ],
+      this.mapBuildingsEnabled,
+    )
+    return this.planetCollisions.ready
+  }
   private readonly characterMaterial = new Material({ friction: 0, restitution: 0 })
   private readonly bodies = new Map<string, Body>()
   private mapBuildingsEnabled = true
@@ -148,6 +163,7 @@ export class Simulation {
       playerMode?: 'walk' | 'hover'
       mapBuildingsEnabled?: boolean
       experimentalLargeScene?: boolean
+      planetaryTerrain?: boolean
     } = {},
   ) {
     this.mapBuildingsEnabled = options.mapBuildingsEnabled ?? true
@@ -155,7 +171,9 @@ export class Simulation {
     this.terrainEntity = this.document.entities.find((e) => e.terrain)
     this.minimumFlightAltitude = this.terrainEntity?.terrain
       ? Math.min(...this.terrainEntity.terrain.heights) - 10
-      : 0
+      : options.planetaryTerrain
+        ? -12000
+        : 0
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
     this.terrainGrounds = this.document.entities
@@ -183,7 +201,10 @@ export class Simulation {
       const terrain = new Body({ mass: 0, material: this.solidMaterial })
       const radius = EARTH_RADIUS + this.document.geography.altitude
       terrain.addShape(
-        new Sphere(radius - (this.document.entities.some((e) => e.terrain) ? 200 : 0)),
+        new Sphere(
+          radius -
+            (options.planetaryTerrain || this.document.entities.some((e) => e.terrain) ? 200 : 0),
+        ),
       )
       terrain.position.set(0, -radius, 0)
       this.world.addBody(terrain)
@@ -314,6 +335,7 @@ export class Simulation {
       } else this.addEntityBody(e)
     }
     this.nextBodyOrder = 0
+    this.preparePlanetCollisions()
     this.installNearbyMapBodies()
     this.minimumFlightAltitude = Math.min(
       0,
@@ -425,6 +447,7 @@ export class Simulation {
   setMapBuildingsEnabled(enabled: boolean): void {
     this.mapBuildingsEnabled = enabled
     this.nextBodyOrder = 0
+    this.preparePlanetCollisions()
     this.installNearbyMapBodies()
     if (enabled)
       for (const e of this.document.entities) {
@@ -442,6 +465,7 @@ export class Simulation {
     if (!Number.isFinite(distance) || distance < 200 || distance > 2000)
       throw new Error('Collision distance must be 200–2000 m')
     this.collisionDistance = distance
+    this.preparePlanetCollisions()
     this.installNearbyMapBodies()
     this.updateMapCollisions()
   }
@@ -713,6 +737,7 @@ export class Simulation {
     if (this.disposed) throw new Error('Simulation is disposed')
     if (!Number.isFinite(elapsed) || elapsed < 0)
       throw new Error('Elapsed seconds must be finite and nonnegative')
+    this.preparePlanetCollisions()
     this.installNearbyMapBodies()
     const accepted = Math.min(elapsed, FIXED_STEP * 4)
     this.lostTime += elapsed - accepted
@@ -1793,6 +1818,7 @@ export class Simulation {
     if (this.disposed) return
     for (const dock of this.docks.values()) this.world.removeConstraint(dock.constraint)
     this.docks.clear()
+    this.planetCollisions.dispose()
     this.previousWheels.clear()
     for (const v of this.vehicles.values()) v.raycast.removeFromWorld(this.world)
     for (const b of [...this.world.bodies]) this.world.removeBody(b)

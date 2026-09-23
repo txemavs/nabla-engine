@@ -1,6 +1,6 @@
 import { compactMapTags } from './map-metadata.js'
 import { pointInPolygon } from './multipolygon.js'
-import { mapFingerprint, mapTileEntities } from './world-stream.js'
+import { mapFingerprint, mapTileEntities } from './map-fingerprint.js'
 import { ShapeUtils, Vector2, Vector3 } from 'three'
 import { geoToLocal, type GeoPoint } from './geography.js'
 import {
@@ -106,6 +106,7 @@ export function createRealWorld(
     project?: (point: [number, number]) => Vec3Tuple
     preservePrecision?: boolean
     halfOpenOwnership?: boolean
+    experimentalLargeScene?: boolean
   } = {},
 ): SceneDocument {
   const [ox, oz] = options.offset ?? [0, 0]
@@ -514,20 +515,8 @@ export function createRealWorld(
   carrier.name = 'Nave · Ventas'
   const spawn = createEntity('spawn', 'spawn', [-2, height(-2, 0) + 0.1, 0])
   entities.push(car, carrier, spawn)
-  // Millimetre precision is sufficient locally and keeps editable snapshots compact.
-  for (const e of options.preservePrecision ? [] : entities) {
-    e.transform.position = e.transform.position.map((n) => Math.round(n * 1000) / 1000) as Vec3Tuple
-    if (e.road)
-      e.road.paths = e.road.paths.map((path) =>
-        path.map((p) => p.map((n) => Math.round(n * 1000) / 1000) as Vec3Tuple),
-      )
-    if (e.geometry)
-      e.geometry.vertices = e.geometry.vertices.map(
-        (p) => p.map((n) => Math.round(n * 1000) / 1000) as Vec3Tuple,
-      )
-  }
-  // Validate imported buildings after millimetre rounding. A malformed footprint
-  // must not prevent the terrain and all other OSM features from loading.
+  // Keep source precision through clipping and projection. Rounding after topology
+  // assembly can collapse distinct vertices and discard otherwise valid surfaces.
   let omitted = 0
   const usable = entities.filter((e) => {
     e.name = e.name.slice(0, 100)
@@ -543,13 +532,16 @@ export function createRealWorld(
   if (omitted)
     usable.find((e) => e.id === groups[0])!.name =
       `Edificios OSM · ${omitted} omitidos por geometría inválida`
-  const doc = parseScene({
-    version: 1,
-    name: data.name,
-    geography: { ...data.origin, imagery: 'offline' },
-    sky: { mode: 'fixed', at: '2026-09-21T12:00:00.000Z' },
-    entities: usable,
-  })
+  const doc = parseScene(
+    {
+      version: 1,
+      name: data.name,
+      geography: { ...data.origin, imagery: 'offline' },
+      sky: { mode: 'fixed', at: '2026-09-21T12:00:00.000Z' },
+      entities: usable,
+    },
+    options.experimentalLargeScene,
+  )
   doc.entities.find((e) => e.id === terrain.id)!.mapBaseline = mapFingerprint(
     mapTileEntities(doc, options.tileId ?? '0_0'),
   )

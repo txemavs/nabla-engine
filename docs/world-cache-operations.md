@@ -1,5 +1,7 @@
 # World cache and server preparation runbook
 
+> Current runtime: [native planetary GLB pipeline](architecture/native-planet-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
+
 This records the deployed design checked on **22 September 2026**. It uses no
 production hostname or credentials. `https://demo.example` is a placeholder;
 server paths below describe the current layout and can be changed for another

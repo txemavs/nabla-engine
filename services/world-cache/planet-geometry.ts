@@ -1,4 +1,12 @@
-import { BufferAttribute, BufferGeometry, Matrix4, Quaternion, Vector3 } from 'three'
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Matrix4,
+  Quaternion,
+  Vector3,
+  Mesh,
+  MeshStandardMaterial,
+} from 'three'
 import { createRealWorld } from '../../src/real-world.js'
 import { SceneGraph } from '../../src/scene.js'
 import { prepareMapGeometry } from '../../playground/map-geometry.js'
@@ -33,11 +41,18 @@ export function planetTileAsset(source: PlanetTileSource) {
       project: frame.project,
       preservePrecision: true,
       halfOpenOwnership: true,
+      experimentalLargeScene: true,
     },
   )
   const entities = document.entities.filter((e) => e.kind !== 'vehicle' && e.kind !== 'spawn')
   const geometry = prepareMapGeometry(entities)
   const graph = SceneGraph.fromValidated({ version: 1, name: document.name, entities })
+  const vegetation = entities
+    .filter((e) => e.sprite)
+    .map((e) => ({
+      position: frame.local(graph.worldTransform(e.id).position),
+      size: [e.size[0], e.size[1]],
+    }))
   // Warp every vertex (not just each tile's centre). Shared edges therefore coincide
   // after placement in any ECEF/ENU scene, including cells generated independently.
   for (const e of entities) {
@@ -86,8 +101,42 @@ export function planetTileAsset(source: PlanetTileSource) {
       units: 'metres',
       axes: '+X east, +Y up, +Z south',
       attribution: '© OpenStreetMap contributors; elevation: Esri',
-      renderOnly: true,
+      collision: 'render-triangle-prisms-v1',
+      vegetation,
     },
   )
+  // Vertical edge skirts hide coarse/fine T-junctions. They never enter physics.
+  const terrain = Object.entries(geometry).find(([id]) => id.startsWith('world-terrain'))?.[1]
+  if (terrain) {
+    const count = segments + 1,
+      edge: number[] = []
+    for (let x = 0; x < segments; x++) edge.push(x)
+    for (let y = 0; y < segments; y++) edge.push(y * count + segments)
+    for (let x = segments; x > 0; x--) edge.push(segments * count + x)
+    for (let y = segments; y > 0; y--) edge.push(y * count)
+    const vertices: number[] = []
+    for (let i = 0; i < edge.length; i++) {
+      const a = Array.from(terrain.position.subarray(edge[i] * 3, edge[i] * 3 + 3))
+      const j = edge[(i + 1) % edge.length],
+        b = Array.from(terrain.position.subarray(j * 3, j * 3 + 3))
+      const c = [b[0], b[1] - 40, b[2]],
+        d = [a[0], a[1] - 40, a[2]]
+      vertices.push(...a, ...b, ...c, ...a, ...c, ...d)
+    }
+    const g = new BufferGeometry()
+    g.setAttribute('position', new BufferAttribute(new Float32Array(vertices), 3))
+    g.computeVertexNormals()
+    const first = root.children
+      .flatMap((c) => c.children)
+      .find((m) => m.userData.category === 'Terrain') as Mesh | undefined
+    const m = new MeshStandardMaterial({
+      color: first ? (first.material as MeshStandardMaterial).color : 0x77936a,
+      roughness: 1,
+    })
+    const skirt = new Mesh(g, m)
+    skirt.name = 'Tile edge'
+    skirt.userData = { category: 'Skirt', skirt: true, groundLayer: 0 }
+    root.add(skirt)
+  }
   return { root, frame, geometry }
 }

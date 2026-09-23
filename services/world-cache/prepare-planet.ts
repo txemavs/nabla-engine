@@ -1,3 +1,4 @@
+import { batchPlanetMeshes } from './planet-batches.js'
 /** Native planet publisher: source features -> elevation -> independent terrain/building GLBs. */
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
@@ -92,6 +93,7 @@ if (pending) {
 }
 validatePlanetTileSource(source)
 const { root, frame } = planetTileAsset(source)
+batchPlanetMeshes(root)
 const directory = join(output, mapTilePath(source.tile))
 await mkdir(directory, { recursive: true })
 const sha = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex')
@@ -140,11 +142,11 @@ try {
         anchor: frame.anchor,
         units: 'metres',
         axes: '+X east, +Y up, +Z south',
-        generator: 'native-xyz-v1',
+        generator: 'native-xyz-v2',
         retrievedAt: source.retrievedAt,
         source: { path: sourcePath, sha256: sourceHash },
         files,
-        renderOnly: true,
+        collision: 'render-triangle-prisms-v1',
         attribution: '© OpenStreetMap contributors; elevation: Esri',
       },
       null,

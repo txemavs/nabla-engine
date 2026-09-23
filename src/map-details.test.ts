@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { createRealWorld, type MapFeature, type WorldExtract } from './real-world.js'
 import { localToGeo } from './geography.js'
 import { isMapBuilding } from './scene.js'
-import { mapTileEntities } from './world-stream.js'
+import { mapTileEntities } from './map-fingerprint.js'
 const origin = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 const ring = (points: [number, number][]) => [
   {

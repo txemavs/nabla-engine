@@ -1,106 +1,113 @@
-# Native planetary tile generation
+# Native planetary tile generation and runtime
 
-## Status
+## One planetary address
 
-The native **server generation** route exists and has automated boundary and geometry tests.
-It does not consume a 1,200 m prepared tile, a saved scene, or a local tile offset.
-**The production game, automatic preparation queue, collision stream, and XYZ pilot still use
-parts of the previous pipeline. This document does not mark that migration complete.**
-Do not delete the old cache or switch production to these render-only artifacts yet.
-
-## Identity and storage
-
-A cell is identified by `WebMercatorQuad/{z}/{x}/{y}`. Its directory is
-`z/{z}/{x}/{y}/`. Rows increase southward; columns increase eastward. The matrix covers
-latitudes up to approximately ±85.05112878 degrees. A tile has angular/projected bounds,
-not a constant physical width. The first supported zooms are 13, 14, and 15.
-
-Example directory:
+Game, editor, remote portal views, and the zoom viewer share `PlanetWorld`. Generated
+context is addressed as `WebMercatorQuad/{z}/{x}/{y}`, with storage at
+`z/{z}/{x}/{y}/`. Columns increase eastward, rows southward. The supported zooms are
+13, 14 and 15, within Web Mercator's latitude limit (approximately ±85.05112878°).
+Tiles do not have a fixed physical width and do not depend on a city or scene origin.
 
 ```text
-z/15/16218/11997/
+z/15/16218/11999/
   manifest.json
   source-<sha256-prefix>.json
   terrain-<sha256-prefix>.glb
   buildings-osm-<sha256-prefix>.glb
 ```
 
-A downloaded terrain file is named
-`earth-WebMercatorQuad-z15-x16218-y11997-terrain.glb`. The building layer uses the same
-stem and `buildings-osm.glb`. A content digest denotes a revision, never a location.
-A filename or path does not depend on Madrid, Irún, the editor cursor, or the scene origin.
+Downloaded files use `earth-WebMercatorQuad-z15-x16218-y11999-terrain.glb` and the
+corresponding `buildings-osm.glb` suffix. Hashes identify revisions, not locations.
+The inspector and zoom viewer expose both downloads.
 
-## Native source and projection
+## Generation and transformations
 
-`prepare_planet.py` requests OSM for the exact XYZ bounding box through the owner's cache.
-It reuses only the addressing-independent OSM query/relation normalizer. It passes a
-`nabla-planet-source-v1` source to `prepare-planet.ts`, which fetches Esri elevation and
-builds the terrain and building layers directly.
+`prepare_planet.py` obtains OSM through the installation's cache. Requests share a
+z13 ancestor query, then filter features to the exact requested cell. The publisher
+samples Esri elevation on a global lattice: 128 segments at z15, 64 at z14/z13.
+Shared samples use the same coordinates and elevation source zoom (12).
 
-Elevation samples use an integer global lattice. Adjacent tiles and matching parent/child
-samples evaluate the same longitude/latitude expression. All levels sample the same source
-elevation zoom (12); they do not query different elevation pyramids at shared vertices.
-The current sample counts are 128 segments at z15 and 64 at z14/z13. These are terrain
-sampling densities, not centimetre quantization. No 10 cm position snapping is applied.
+Geometry is constructed in a metric Mercator plane and projected once, vertex by
+vertex, into the cell's east/up/south frame. GLB coordinates are metres; the anchor
+is the geographic cell centre at zero altitude. The runtime applies one rigid root
+transform to place each cell in the scene's floating local frame. Physics uses the
+same frame and vertices. No 1,200 m intermediate grid, local tile offsets, or
+centimetre snapping are involved.
 
-Geometry is constructed in a metric Mercator plane, then **every vertex** is projected to
-the tile's local east/up/south frame on the engine's existing mean-radius Earth sphere.
-The anchor is the tile's geographic centre at zero altitude. Heights are metres above the
-provider's vertical reference, not relative to the user's current location. Earth datum
-and vertical datum integration remain a separate concern; this is not a WGS84 ellipsoid
-or an orthometric-to-ellipsoidal height conversion.
+The engine currently uses a mean-radius Earth sphere. This is not a WGS84 ellipsoid
+or a conversion between geoidal and ellipsoidal heights. WebMercatorQuad addressing
+is standard; accurate geodetic/vertical datum conversion remains future work.
 
-GLBs retain named meshes, source metadata, colours, roof colours, and rendering layer
-metadata. `renderOnly: true` is deliberate: the exporter does not advertise the old flat
-construction scene as a valid collision mesh or editable scene after spherical projection.
-Trees and other sprite assets are not yet part of these two mesh layers.
+Meshes are batched by rendering category/layer. Linear vertex colours preserve
+surface and roof colours. Shared render vertices are indexed without changing their
+positions. Feature ranges and source metadata remain in GLB extras. Terrain-edge
+skirts hide mixed-resolution cracks; they do not participate in collisions. OSM
+trees are metadata instances rendered as crossed, upright, alpha-tested planes.
 
-## Atomic publication
+## Discovery and private preparation
 
-Layer and source files are content-addressed. Each is written through a temporary file
-and renamed; `manifest.json` is replaced last. The manifest records exact bounds, anchor,
-full SHA-256 digests, byte sizes, suggested download names, source revision, and attribution.
-An interrupted generation must not point the current manifest at a partial revision.
-Old content-addressed revisions are not deleted by this command. Retention belongs in the
-queue/cache rollout, with a grace period for readers of the previous manifest.
+`POST /prepare/tiles` accepts `{ "keys": ["z/15/16218/11999"] }`, at most 24 cells.
+It returns available native manifests to every visitor. Only an authenticated owner
+session can enqueue missing cells. `/prepare/session` and `/prepare/status` retain
+the existing private cookie protocol. `/prepare/zones` returns 410.
 
-## Running on the owner server
+The durable `planet_jobs` queue is separate from retired local-grid jobs. One worker
+prepares cells, with bounded retries, capacity and retention. Sources and layers are
+written atomically, with `manifest.json` published last. Manifests include exact
+bounds, anchor, attribution, hashes and byte counts. The browser verifies GLB size
+and SHA-256, then caches the content-addressed asset locally. Missing cells are a
+pending state, not speculative requests for legacy BIN/JSON files.
+
+Expose `/prepare/tiles` in the reverse proxy as well as session/status. Serve
+`/prepared/z/` publicly, but never expose the generation token or arbitrary upstream
+proxy. Independent installations choose their own storage and credentials.
+
+## Streaming and interaction
+
+The stream requests near cells, parent fallbacks, an anticipated movement position,
+and cells supporting parked vehicles/portals. A parent remains visible until its
+required children are ready. Worker threads fetch, decode and spatially partition
+GLBs. Buildings can be disabled independently, avoiding their download and collision
+work. Resident cache retention and fetch concurrency follow performance settings.
+
+Collision chunks are made from the GLB triangles, not a parallel legacy heightfield.
+Only chunks within 65 m of an actor become convex triangle prisms; Cannon's box
+vehicles cannot use Trimesh for all required contacts. Construction has a per-frame
+budget and coverage swaps atomically. The chunk working set is reused within an 8 m
+movement cell. High flight does not instantiate distant ground colliders.
+
+Play displays Loading and ignores repeated activation while waiting for ground and
+nearby colliders. Exit likewise displays its transition. The map is generated
+context, not thousands of editable scene entities. Migration preserves authored
+objects and explicitly customized map entities, including their world pose when a
+generated parent is removed. Existing scene files remain user data.
+
+## Operation
 
 ```sh
 npm run build:prepare
-python3 services/world-cache/prepare_planet.py z/15/16218/11997 /path/to/planet-cache \
+python3 services/world-cache/prepare_planet.py z/15/16218/11999 /path/to/planet-cache \
   --cache-base http://127.0.0.1:8080 \
   --publisher prepare-dist/services/world-cache/prepare-planet.js
+
+VITE_WORLD_PREPARED_URL=/prepared VITE_WORLD_PREPARE_API=/prepare npm run build:demo
 ```
 
-The command uses the existing authenticated/private cache deployment; it does not introduce
-an unauthenticated public generation endpoint. Server hostnames, credentials and deployment
-paths do not belong in the repository. Independent installations choose their own output root.
+For offline regeneration, pass a complete source (including elevation) directly to
+`prepare-planet.js`. Keep the previous frontend, worker image and old cache through
+the rollback window; the new runtime does not read the legacy cache.
 
-For offline regeneration from a complete source including elevation:
+## Validation and remaining limits
 
-```sh
-node prepare-dist/services/world-cache/prepare-planet.js source.json /path/to/planet-cache
-```
+Tests cover canonical identities, boundaries, complete parent replacement, source
+precision, migration of authored content, private queue access, retention, GLB
+loading, driving collisions, downloads, zoom changes and Play/Exit transitions.
+Real server generation is checked separately from mocked browser tests.
 
-## Required cutover work
-
-- Replace local queue identities and requests with canonical XYZ IDs. Retire local `x_z`
-  lookups rather than probing every legacy format when a global tile is absent.
-- Add bounded availability/status discovery so a missing tile is a pending state, not a
-  cascade of speculative `.bin`, `.json`, and manifest 404s.
-- Connect the game/editor to native manifests. Retain a parent until all required children
-  are ready; enforce network, memory, and per-frame installation budgets.
-- Supply collision data in the same geographic frame. Validate driving across tile edges;
-  flat legacy heightfields cannot simply be renamed and reused.
-- Stitch mixed-resolution terrain edges (or use a verified skirt strategy), and coordinate
-  boundary normals. Identical matching samples alone do not eliminate coarse/fine T-junctions.
-- Add distant building simplification/merging. A broader tile with fewer elevation samples
-  alone does not make a dense city's buildings cheaper to render.
-- Preserve custom objects, edited map features and required parent frames during migration.
-  Regenerate untouched environment data. Do not reinterpret local offsets as XYZ indices.
-- Replace the finite pilot catalogue and remove the legacy active stream only after the
-  native pipeline has passed travel, flight, collision, scene save/load and rollback checks.
-
-The cutover must be tested with independent generation of neighbouring cells, all three
-zooms, at least two cities, a saved custom object and a portal between distant locations.
+Cold areas require server generation and are not instant or prebuilt worldwide.
+Public visitors cannot generate arbitrary new regions. Three zooms reduce terrain
+sampling density, but building topology is still detailed and dense-city far LODs
+can be improved further. Shared-vertex indexing and batching are not mesh
+simplification or meshopt compression. Cross-tile editable topology, independent
+feature extraction from a batched GLB, polar coverage, and geodetic datum accuracy
+are separate future work.

@@ -69,16 +69,14 @@ export function drapeRoad(t: TerrainData, corners: Vec3Tuple[], offset = 0.035):
       ]) {
         const polygon = clip(p, triangle)
         for (let i = 1; i < polygon.length - 1; i++) {
-          const face = [polygon[0], polygon[i], polygon[i + 1]].map(
-            ([px, pz]) => [Math.round(px * 1000) / 1000, Math.round(pz * 1000) / 1000] as Point,
-          )
+          const face = [polygon[0], polygon[i], polygon[i + 1]]
           if (Math.abs(side(face[0], face[1], face[2])) < 0.0001) continue
           const start = result.vertices.length
           for (const [px, pz] of face)
             result.vertices.push([
-              px,
-              Math.round((terrainHeight(t, px, pz) + offset) * 1000) / 1000,
-              pz,
+              Math.max(-hx, Math.min(hx, px)),
+              terrainHeight(t, px, pz) + offset,
+              Math.max(-hz, Math.min(hz, pz)),
             ])
           result.faces.push([start, start + 1, start + 2])
         }
@@ -233,26 +231,10 @@ function elevatedRoadSegment(
   const heightB = profiled ? b[1] : clampedHeight(b[0], b[2])
 
   const corners: Vec3Tuple[] = [
-    [
-      Math.round((a[0] + crossA[0]) * 1000) / 1000,
-      Math.round((heightA + 0.035) * 1000) / 1000,
-      Math.round((a[2] + crossA[1]) * 1000) / 1000,
-    ],
-    [
-      Math.round((a[0] - crossA[0]) * 1000) / 1000,
-      Math.round((heightA + 0.035) * 1000) / 1000,
-      Math.round((a[2] - crossA[1]) * 1000) / 1000,
-    ],
-    [
-      Math.round((b[0] - crossB[0]) * 1000) / 1000,
-      Math.round((heightB + 0.035) * 1000) / 1000,
-      Math.round((b[2] - crossB[1]) * 1000) / 1000,
-    ],
-    [
-      Math.round((b[0] + crossB[0]) * 1000) / 1000,
-      Math.round((heightB + 0.035) * 1000) / 1000,
-      Math.round((b[2] + crossB[1]) * 1000) / 1000,
-    ],
+    [a[0] + crossA[0], heightA + 0.035, a[2] + crossA[1]],
+    [a[0] - crossA[0], heightA + 0.035, a[2] - crossA[1]],
+    [b[0] - crossB[0], heightB + 0.035, b[2] - crossB[1]],
+    [b[0] + crossB[0], heightB + 0.035, b[2] + crossB[1]],
   ]
 
   result.vertices.push(...corners)

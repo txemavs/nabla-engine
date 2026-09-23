@@ -1,4 +1,4 @@
-import { EARTH_RADIUS, geoToLocal, type GeoPoint } from './geography.js'
+import { EARTH_RADIUS, ecef, localFrame, type GeoPoint } from './geography.js'
 import { mapTileBounds, mapTileId, mapTileSample, type MapTile } from './map-tiles.js'
 import type { MapFeature } from './real-world.js'
 import type { Vec3Tuple } from './scene.js'
@@ -16,6 +16,8 @@ export interface PlanetTileSource {
 export function planetTileFrame(tile: MapTile) {
   mapTileId(tile)
   const anchor = mapTileSample(tile, 1, 1, 2)
+  const center = ecef(anchor),
+    rotation = localFrame(anchor).invert()
   const scale = Math.cos((anchor.latitude * Math.PI) / 180)
   const circumference = 2 * Math.PI * EARTH_RADIUS
   const width = (circumference / 2 ** tile.z) * scale
@@ -32,7 +34,13 @@ export function planetTileFrame(tile: MapTile) {
       Math.PI,
     altitude: y,
   })
-  return { anchor, width, project, point, local: (p: Vec3Tuple) => geoToLocal(anchor, point(p)) }
+  return {
+    anchor,
+    width,
+    project,
+    point,
+    local: (p: Vec3Tuple) => ecef(point(p)).sub(center).applyQuaternion(rotation).toArray(),
+  }
 }
 
 export function validatePlanetTileSource(source: PlanetTileSource): void {

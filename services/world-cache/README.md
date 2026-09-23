@@ -1,5 +1,7 @@
 # Private shared world cache
 
+> Current runtime: [native planetary GLB pipeline](../../docs/architecture/native-planet-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
+
 For the deployed layout, refresh procedures and operational history, see the
 [world cache runbook](../../docs/world-cache-operations.md).
 

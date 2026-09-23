@@ -227,6 +227,7 @@ const documentSchema = z
         longitude: finite.min(-180).max(180),
         altitude: finite.min(-500).max(10000),
         imagery: z.enum(['satellite', 'streets', 'offline']),
+        planetary: z.boolean().optional(),
       })
       .strict()
       .optional(),

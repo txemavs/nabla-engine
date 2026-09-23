@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { drapeLandcoverPolygon, createRealWorld, IRUN_VENTAS } from './real-world.js'
 import { terrainHeight } from './terrain.js'
-import { mapTileEntities } from './world-stream.js'
+import { mapTileEntities } from './map-fingerprint.js'
 import { geoToLocal } from './geography.js'
 import type { Vec3Tuple } from './scene.js'
 const ring = (x0: number, z0: number, x1: number, z1: number, role = 'outer') => ({

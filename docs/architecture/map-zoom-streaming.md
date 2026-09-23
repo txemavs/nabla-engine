@@ -1,5 +1,7 @@
 # Standard map tiles and three flight zoom levels
 
+> Current runtime: [native planetary GLB pipeline](native-planet-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
+
 ## Decision
 
 Use OGC **WebMercatorQuad**, with XYZ addressing (`z/x/y`, rows increasing

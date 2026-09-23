@@ -1,5 +1,7 @@
 # One planet, independent render frames
 
+> Current runtime: [native planetary GLB pipeline](native-planet-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
+
 The planet owns positions and tiles. Cities are search bookmarks, never namespaces
 or separate maps. A cursor is the editor's geographic focus; cameras, physics and
 renderers may use temporary nearby Cartesian frames without changing identity.

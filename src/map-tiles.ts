@@ -218,3 +218,18 @@ export function readyMapCover(plan: MapZoomPlan, ready: ReadonlySet<string>): Ma
   }
   return plan.roots.flatMap((root) => visit(root) ?? [])
 }
+
+/** Progressive first paint, but an existing parent remains until every child is complete. */
+export function planetReadyCover(plan: MapZoomPlan, ready: ReadonlySet<string>): MapTile[] {
+  const wanted = new Set(plan.requests.map(mapTileId))
+  const visit = (tile: MapTile): { tiles: MapTile[]; complete: boolean } => {
+    const children = tile.z < 15 ? mapTileChildren(tile) : []
+    const covers =
+      children.length && children.every((c) => wanted.has(mapTileId(c))) ? children.map(visit) : []
+    if (covers.length && covers.every((c) => c.complete))
+      return { tiles: covers.flatMap((c) => c.tiles), complete: true }
+    if (ready.has(mapTileId(tile))) return { tiles: [tile], complete: true }
+    return { tiles: covers.flatMap((c) => c.tiles), complete: false }
+  }
+  return plan.roots.flatMap((t) => visit(t).tiles)
+}

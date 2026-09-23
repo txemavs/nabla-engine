@@ -45,3 +45,34 @@ it('builds native XYZ terrain and buildings without any local prepared input', (
     planetTileAsset({ ...source, elevation: { ...source.elevation, heights: [] } }),
   ).toThrow()
 })
+it('drapes landcover across fractional XYZ tile borders without treating rounding as missing coverage', () => {
+  const tile = mapTileAt(43.32969, -1.819606, 15),
+    b = mapTileBounds(tile)
+  const source: PlanetTileSource = {
+    format: 'nabla-planet-source-v1',
+    tile,
+    retrievedAt: '2026-09-23T00:00:00Z',
+    elevation: { segments: 128, heights: Array(129 ** 2).fill(20), provider: 'esri-terrain-3d' },
+    features: [
+      {
+        id: 'way/2',
+        tags: { landuse: 'grass' },
+        rings: [
+          {
+            role: 'outer',
+            coordinates: [
+              [b.west - 0.001, b.north + 0.001],
+              [b.east + 0.001, b.north + 0.001],
+              [b.east + 0.001, b.south - 0.001],
+              [b.west - 0.001, b.south - 0.001],
+              [b.west - 0.001, b.north + 0.001],
+            ],
+          },
+        ],
+      },
+    ],
+  }
+  const result = planetTileAsset(source)
+  expect(Object.values(result.geometry).every((g) => g.position.every(Number.isFinite))).toBe(true)
+  expect(Object.keys(result.geometry).some((k) => k.includes('land'))).toBe(true)
+})
