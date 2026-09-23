@@ -1,3 +1,4 @@
+import { nearestLocality } from './navigation-places.js'
 import { Matrix4, Quaternion, Vector3 } from 'three'
 import { SceneGraph, type SceneDocument, type Entity, type Transform } from '../src/scene.js'
 type ChartTile = { bitmap: ImageBitmap; bounds: [number, number, number, number]; matrix: Matrix4 }
@@ -136,10 +137,17 @@ export class HelmMap {
     ctx.closePath()
     ctx.fill()
     ctx.restore()
+    ctx.fillStyle = '#07172c'
+    ctx.fillRect(0, 0, 580, 36)
+    ctx.fillStyle = '#d5e6ef'
+    ctx.font = '20px system-ui'
+    ctx.textAlign = 'center'
+    ctx.fillText(nearestLocality(pose.position), 290, 25, 560)
+    ctx.textAlign = 'start'
     if (this.clean) return
     ctx.fillStyle = '#d5e6ef'
     ctx.font = '18px sans-serif'
-    ctx.fillText('N ↑', 12, 25)
+    ctx.fillText('N ↑', 12, 58)
     ctx.fillText('200 m', 475, 212)
     ctx.fillRect(475, 218, 46, 2)
     if (!this.roads.length && !tiles.length) ctx.fillText('Sin carreteras cargadas', 12, 215)

@@ -1,3 +1,4 @@
+import { setNavigationPlaces } from './navigation-places.js'
 import { flightEntry, urlPlay } from './studio/flight-entry.js'
 import { geoToLocal } from '../src/geography.js'
 import { urlLocation } from './studio/url-location.js'
@@ -450,6 +451,7 @@ function setupWorldStream(): void {
   worldStream?.dispose()
   worldStream = null
   setPlanetCharts(() => worldStream?.chartTiles ?? [])
+  setNavigationPlaces(() => worldStream?.navigationPlaces ?? [])
   streamGeography = identity
   if (!doc.geography?.planetary) return
   worldStream = new PlanetWorld(
@@ -2137,6 +2139,13 @@ function frame(now: number): void {
     renderOrigin,
     cameraMode === 'cockpit',
   )
+  for (const [id, hud] of view.shipHuds) {
+    const inside =
+      sim &&
+      ((sim.player.interiorId === id && firstPerson) ||
+        (sim.player.vehicleId === id && cameraMode === 'cockpit'))
+    hud.update(camera, renderOrigin, now, inside ? sim!.vehicleInfo(id) : null)
+  }
   sidearm.visible = !!sim && !sim.player.vehicleId && weaponDrawn
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)

@@ -1,4 +1,3 @@
-import { placeLabel } from './place-label.js'
 import { validPlanetPlaces } from '../src/planet-places.js'
 import { PlanetHorizon } from './planet-horizon.js'
 import { matteGroundMaterial } from './ground-material.js'
@@ -53,6 +52,28 @@ export class PlanetWorld {
       if (!r?.chart) return []
       r.group.updateMatrix()
       return [{ ...r.chart, matrix: r.group.matrix }]
+    })
+  }
+  get navigationPlaces() {
+    const seen = new Set<string>()
+    return this.visible.flatMap((key) => {
+      const r = this.resident.get(key)!
+      const manifest = r.group.userData.planetTile.manifest as PlanetManifest
+      r.group.updateMatrix()
+      return validPlanetPlaces(manifest.places).flatMap((place) => {
+        if (seen.has(place.id)) return []
+        seen.add(place.id)
+        // Stored labels sit 20m above terrain; HUD signs sit at 120m.
+        return [
+          {
+            id: place.id,
+            text: place.text,
+            position: new THREE.Vector3(...place.position)
+              .add(new THREE.Vector3(0, 100, 0))
+              .applyMatrix4(r.group.matrix),
+          },
+        ]
+      })
     })
   }
   private simulation: Simulation | null = null
@@ -276,12 +297,6 @@ export class PlanetWorld {
       manifest,
       directory: this.base + '/' + mapTilePath(manifest.tile) + '/',
     }
-    for (const place of validPlanetPlaces(manifest.places)) {
-      const label = placeLabel(place.text)
-      label.name = place.text
-      label.position.fromArray(place.position)
-      group.add(label)
-    }
     if (payload.vegetation.length) {
       this.treeTexture ??= new THREE.TextureLoader().load('/sprites/tree.png', () => this.changed())
       this.treeTexture.colorSpace = THREE.SRGBColorSpace
@@ -328,7 +343,6 @@ export class PlanetWorld {
       },
       bytes:
         payload.bytes +
-        validPlanetPlaces(manifest.places).length * 512 * 64 * 4 +
         (payload.chart ? 1024 * 1024 * 4 : 0) +
         payload.chunks.reduce((n, c) => n + c.triangles.byteLength, 0),
       revision: manifest.files.terrain.sha256,

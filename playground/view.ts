@@ -1,4 +1,4 @@
-import { placeLabel } from './place-label.js'
+import { ShipHud } from './ship-hud.js'
 import { entityMapArtifact } from './map-artifact.js'
 import { isMapEnvironment } from './studio/outliner.js'
 import { matteGroundMaterial, groundDepthBias, transportLayer } from './ground-material.js'
@@ -61,6 +61,7 @@ export class SceneView {
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
+  readonly shipHuds = new Map<string, ShipHud>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
   readonly touchScreens = new Map<string, THREE.Mesh>()
   readonly flightScreens = new Map<string, THREE.Mesh>()
@@ -310,10 +311,6 @@ export class SceneView {
           this.portalTablets.set(e.id, [screen])
         }
       }
-      if (e.placeLabel) {
-        const label = placeLabel(e.placeLabel.text)
-        group.add(label)
-      }
       if (e.sprite) {
         const options = {
           color: /^\/sprites\/tree(?:-\d+)?\.png$/.test(e.sprite.url) ? '#c5d2b9' : '#ffffff',
@@ -522,6 +519,9 @@ export class SceneView {
           this.thrusters.set(e.id, thrusters)
           const interior = carrierInterior()
           group.add(interior.room)
+          const hud = new ShipHud()
+          interior.room.add(hud.mesh)
+          this.shipHuds.set(e.id, hud)
           this.helmScreens.set(e.id, interior.screens[1])
           this.touchScreens.set(e.id, interior.touch)
           this.flightScreens.set(e.id, interior.screens[0])
@@ -948,6 +948,7 @@ export class SceneView {
     })
   }
   dispose(): void {
+    for (const hud of this.shipHuds.values()) hud.dispose()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()
     for (const instruments of this.instruments.values()) instruments.dispose()
