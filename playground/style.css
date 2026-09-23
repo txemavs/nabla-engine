@@ -654,6 +654,28 @@ body.playing #footer-mode {
   font-size: 11px;
 }
 
+#wheel-debug-hud {
+  position: absolute;
+  left: 18px;
+  bottom: 80px;
+  padding: 10px 14px;
+  background: #102035ee;
+  border: 1px solid #5bacff;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: monospace;
+  color: #e8f4ff;
+  white-space: pre;
+  pointer-events: none;
+  z-index: 10;
+}
+#wheel-debug-hud[hidden] {
+  display: none;
+}
+#wheel-debug-hud .spike {
+  color: #ff6b6b;
+}
+
 #geo-overlay {
   position: absolute;
   right: 14px;

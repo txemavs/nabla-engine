@@ -29,6 +29,7 @@ import { PortalControls } from './portal-controls.js'
 import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
 import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
+import { WheelDebugOverlay } from './wheel-debug.js'
 import { createPortalPair } from '../src/portal.js'
 import { renderPortals } from './portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
@@ -1147,6 +1148,8 @@ function togglePlay(): void {
       camera.position.copy(orbitStartPosition)
       orbit.target.copy(orbitStartTarget)
       orbit.enabled = true
+      if (wheelDebug.isEnabled) wheelDebug.toggle()
+      $('wheel-debug-hud').hidden = true
       rebuild()
     } else {
       orbitStartPosition = camera.position.clone()
@@ -1297,6 +1300,8 @@ const portalControls = new PortalControls(viewport, toast)
 portalControls.rebuild(editor.document)
 const gallery = new Gallery(viewport)
 const sidearm = new Sidearm(viewport)
+const wheelDebug = new WheelDebugOverlay()
+scene.add(wheelDebug.root)
 const raycaster = new THREE.Raycaster()
 let down = new THREE.Vector2()
 renderer.domElement.addEventListener('pointerdown', (e) => {
@@ -1402,6 +1407,14 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'F8') {
     e.preventDefault()
     if (!e.repeat) togglePlay()
+    return
+  }
+  if (e.code === 'F9' && sim) {
+    e.preventDefault()
+    if (!e.repeat) {
+      const enabled = wheelDebug.toggle()
+      toast(enabled ? 'Debug ruedas ON · verde=física, naranja=visual' : 'Debug ruedas OFF')
+    }
     return
   }
   if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
@@ -1628,6 +1641,17 @@ function frame(now: number): void {
       headYaw,
       headPitch,
     )
+    if (wheelDebug.isEnabled) {
+      const terrainMeshes: THREE.Object3D[] = []
+      for (const e of view.document.entities) {
+        if (e.terrain || e.road) {
+          const obj = view.objects.get(e.id)
+          if (obj) terrainMeshes.push(obj)
+        }
+      }
+      wheelDebug.setTerrainMeshes(terrainMeshes)
+      wheelDebug.update(sim, sim.player.vehicleId, renderOrigin)
+    }
     if (playerInterior !== sim.player.interiorId) {
       playerInterior = sim.player.interiorId
       yaw = sim.player.yaw
@@ -1766,6 +1790,9 @@ function frame(now: number): void {
     // The physical helm screens already show flight telemetry; the overlay leaks
     // through CSS3D screen cutouts when viewed from the pilot's seat.
     $('game-hud').hidden = Boolean(info?.isCarrier && cameraMode === 'cockpit')
+    const wheelDebugText = wheelDebug.formatHud()
+    $('wheel-debug-hud').hidden = !wheelDebugText
+    $('wheel-debug-hud').textContent = wheelDebugText
     const near = sim.nearestVehicle()
     $('interaction').textContent = p.vehicleId
       ? info?.dockedTo
