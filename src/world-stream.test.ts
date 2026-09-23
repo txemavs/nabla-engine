@@ -5,6 +5,7 @@ import {
   worldTileAt,
   mapTileEntities,
   planWorldTiles,
+  TilePlanCache,
 } from './world-stream.js'
 import { createEntity, type Entity, type SceneDocument } from './scene.js'
 import { SceneEditor } from './editor.js'
@@ -730,4 +731,51 @@ it('shares the wanted plan without changing preparation coverage at different ho
     prefetch: [],
   })
   expect(evaluate).not.toHaveBeenCalled()
+})
+
+it('reuses an exact plan but invalidates for movement, heading, height or quality changes', () => {
+  const evaluate = vi.fn(wantedWorldTiles)
+  const cache = new TilePlanCache(evaluate)
+  const position: [number, number, number] = [599, 0, 0]
+  const velocity: [number, number, number] = [40, 0, 0]
+  const first = cache.get(position, velocity, 15)
+  expect(cache.get([...position], [...velocity], 15)).toBe(first)
+  expect(evaluate).toHaveBeenCalledTimes(1)
+  position[0] = 601
+  expect(cache.get(position, velocity, 15).wanted).toEqual(wantedWorldTiles(position, velocity))
+  expect(evaluate).toHaveBeenCalledTimes(2)
+  velocity[0] = -40
+  cache.get(position, velocity, 15)
+  expect(evaluate).toHaveBeenCalledTimes(3)
+  cache.get(position, velocity, 45)
+  expect(evaluate).toHaveBeenCalledTimes(5)
+  position[1] = 12001
+  expect(cache.get(position, velocity, 45).wanted).toEqual([])
+  expect(evaluate).toHaveBeenCalledTimes(5)
+  position[1] = 12000
+  expect(cache.get(position, velocity, 45).wanted.length).toBeGreaterThan(0)
+  expect(evaluate).toHaveBeenCalledTimes(7)
+})
+
+it('does not emit identical status messages or stop scheduling while a plan is cached', () => {
+  const status = vi.fn()
+  const load = vi.fn(() => new Promise<Entity[]>(() => {}))
+  const stream = new WorldStream({ document, status, load, replace: vi.fn() })
+  stream.update([0, 0, 0], [0, 0, 0], [], 100)
+  stream.update([0, 0, 0], [0, 0, 0], [], 200)
+  stream.update([0, 0, 0], [0, 0, 0], [], 300)
+  expect(load).toHaveBeenCalledTimes(3)
+  expect(status).toHaveBeenCalledTimes(1)
+  stream.dispose()
+})
+
+it('collects nested map descendants in document order without absorbing authored roots', () => {
+  const root = createEntity('world-buildings', 'group')
+  const a = { ...createEntity('a', 'group'), parentId: root.id }
+  const b = { ...createEntity('b', 'group'), parentId: a.id }
+  const c = { ...createEntity('c', 'box'), parentId: b.id }
+  const outside = createEntity('authored', 'box')
+  const doc = { version: 1 as const, name: 'Nested', entities: [c, outside, b, a, root] }
+  expect(mapTileEntities(doc, '0_0').map((e) => e.id)).toEqual(['c', 'b', 'a', 'world-buildings'])
+  expect(mapTileEntities(doc, '1_0')).toEqual([])
 })

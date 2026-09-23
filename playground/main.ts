@@ -244,8 +244,7 @@ cursorRing.renderOrder = 50
 worldCursor.add(cursorRing)
 worldCursor.renderOrder = 50
 scene.add(worldCursor)
-function syncCursor(): void {
-  const position = editor.document.cursor ?? [0, 0, 0]
+function syncCursor(position: Vec3Tuple = editor.document.cursor ?? [0, 0, 0]): void {
   worldCursor.position.fromArray(position)
   for (const [i, axis] of ['x', 'y', 'z'].entries())
     $<HTMLInputElement>(`cursor-${axis}`).value = String(position[i])
@@ -485,7 +484,8 @@ function select(id: string): void {
   refreshUi()
 }
 function refreshUi(): void {
-  refreshPortalEntries()
+  const doc = editor.document
+  refreshPortalEntries(doc)
   const places = $<HTMLSelectElement>('project-places')
   places.replaceChildren(
     ...project!.locations.map((place) => {
@@ -498,14 +498,13 @@ function refreshUi(): void {
   )
   $<HTMLButtonElement>('project-place-open').disabled = loadingWorld
 
-  syncCursor()
+  syncCursor(doc.cursor ?? [0, 0, 0])
   $('cursor-menu')
     .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
       'input,button,select',
     )
     .forEach((el) => (el.disabled = !!sim || loadingWorld))
   needsRender = true
-  const doc = editor.document
   let parentId = doc.entities.find((e) => e.id === selectedId)?.parentId
   while (parentId) {
     collapsed.delete(parentId)
@@ -2563,8 +2562,7 @@ async function openProjectPlace(id: string, entityId?: string): Promise<void> {
   }
 }
 
-function refreshPortalEntries() {
-  const doc = editor.document
+function refreshPortalEntries(doc = editor.document) {
   const working = project!.locations.find((p) => locationId(p.scene) === locationId(doc))
   portalEntriesCache = portalRegistry({
     ...project!,

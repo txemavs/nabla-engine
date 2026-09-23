@@ -47,14 +47,13 @@ export function wantedWorldTiles(
       )
         wanted.push(key)
     }
-  return wanted
-    .sort(
-      (a, b) =>
-        tileDistance(a, position) * 0.65 +
-        tileDistance(a, ahead) * 0.35 -
-        (tileDistance(b, position) * 0.65 + tileDistance(b, ahead) * 0.35),
-    )
-    .slice(0, 24)
+  const priorities = new Map(
+    wanted.map((key) => [
+      key,
+      tileDistance(key, position) * 0.65 + tileDistance(key, ahead) * 0.35,
+    ]),
+  )
+  return wanted.sort((a, b) => priorities.get(a)! - priorities.get(b)!).slice(0, 24)
 }
 /**
  * Share the install plan. A second evaluation is required only when preparation
@@ -76,6 +75,20 @@ export function planWorldTiles(
   const installing = new Set(wanted)
   return { wanted, preparing, prefetch: preparing.filter((key) => !installing.has(key)) }
 }
+/** Exact-input cache: preserves boundary ordering and keeps retries independent of planning. */
+export class TilePlanCache {
+  private inputs: number[] = []
+  private plan?: ReturnType<typeof planWorldTiles>
+  constructor(private readonly evaluate: typeof wantedWorldTiles = wantedWorldTiles) {}
+  get(position: Vec3Tuple, velocity: Vec3Tuple, horizon: number) {
+    const inputs = [...position, ...velocity, horizon]
+    if (!this.plan || inputs.some((n, i) => n !== this.inputs[i])) {
+      this.inputs = inputs
+      this.plan = planWorldTiles(position, velocity, horizon, this.evaluate)
+    }
+    return this.plan
+  }
+}
 export function mapTileEntities(doc: SceneDocument, key: string): Entity[] {
   const suffix = key === '0_0' ? '' : `-${key}`
   const ids = new Set(
@@ -90,15 +103,20 @@ export function mapTileEntities(doc: SceneDocument, key: string): Entity[] {
       'world-places',
     ].map((id) => id + suffix),
   )
-  let changed = true
-  while (changed) {
-    changed = false
-    for (const e of doc.entities)
-      if (e.parentId && ids.has(e.parentId) && !ids.has(e.id)) {
-        ids.add(e.id)
-        changed = true
+  const children = new Map<string, string[]>()
+  for (const entity of doc.entities)
+    if (entity.parentId) {
+      const siblings = children.get(entity.parentId) ?? []
+      siblings.push(entity.id)
+      children.set(entity.parentId, siblings)
+    }
+  const queue = [...ids]
+  for (let i = 0; i < queue.length; i++)
+    for (const child of children.get(queue[i]) ?? [])
+      if (!ids.has(child)) {
+        ids.add(child)
+        queue.push(child)
       }
-  }
   return doc.entities.filter((e) => ids.has(e.id))
 }
 /** Persist a compact fingerprint so saving does not turn generated map data into edits. */
@@ -162,6 +180,13 @@ export class WorldStream {
   private position: Vec3Tuple = [0, 0, 0]
   private protectedPositions: Vec3Tuple[] = []
   private readonly inFlight = new Map<string, AbortController>()
+  private readonly plans = new TilePlanCache()
+  private lastStatus?: string
+  private reportStatus(message: string): void {
+    if (message === this.lastStatus) return
+    this.lastStatus = message
+    this.host.status(message)
+  }
   private maxConcurrent = 3
   private preparationAhead = 45
   private retainLoaded = false
@@ -186,9 +211,10 @@ export class WorldStream {
     for (const e of doc.entities)
       if (e.terrain && e.id.startsWith('world-terrain')) {
         const key = e.id === 'world-terrain' ? '0_0' : e.id.slice('world-terrain-'.length)
+        const entities = mapTileEntities(doc, key)
         this.resident.set(key, {
-          baseline: JSON.stringify(mapTileEntities(doc, key)),
-          pinned: !e.mapBaseline || mapFingerprint(mapTileEntities(doc, key)) !== e.mapBaseline,
+          baseline: JSON.stringify(entities),
+          pinned: !e.mapBaseline || mapFingerprint(entities) !== e.mapBaseline,
           verify: !e.mapBaseline,
         })
       }
@@ -202,9 +228,9 @@ export class WorldStream {
     if (this.disposed) return
     this.position = position
     this.protectedPositions = protectedPositions
-    const plan = planWorldTiles(position, velocity, this.preparationAhead)
-    if (this.preparationAhead > 0) this.host.prepare?.(plan.preparing)
-    this.host.prefetch?.(plan.prefetch)
+    const plan = this.plans.get(position, velocity, this.preparationAhead)
+    if (this.preparationAhead > 0) this.host.prepare?.([...plan.preparing])
+    this.host.prefetch?.([...plan.prefetch])
     this.wanted = plan.wanted
     if (position[1] > 12000) return
     if (this.retentionArea !== this.budgetArea()) {
@@ -251,20 +277,22 @@ export class WorldStream {
       (k) => !this.resident.has(k) && !this.inFlight.has(k),
     ).length
     if (loading === 0 && pending === 0) {
-      this.host.status(`Mapa conectado · ${this.resident.size} zonas disponibles`)
+      this.reportStatus(`Mapa conectado · ${this.resident.size} zonas disponibles`)
     } else if (neighborLoading > 0 || neighborPending > 0) {
       const failedNearby = [...neighborhood].filter((k) => this.failed.has(k)).length
       if (failedNearby > 0) {
-        this.host.status(
+        this.reportStatus(
           `Cargando terreno cercano · ${failedNearby} zona(s) pendiente(s) de reintento`,
         )
       } else {
-        this.host.status(
+        this.reportStatus(
           `Cargando terreno cercano · ${neighborLoading + neighborPending} zona(s) inmediata(s)`,
         )
       }
     } else if (loading > 0) {
-      this.host.status(`Anticipando recorrido · ${loading} zona(s) cargando, ${pending} pendientes`)
+      this.reportStatus(
+        `Anticipando recorrido · ${loading} zona(s) cargando, ${pending} pendientes`,
+      )
     }
   }
   private startLoad(key: string, _now: number, isNeighbor = false): void {
@@ -283,7 +311,7 @@ export class WorldStream {
             )
               continue
             if (tileDistance(candidate, this.position) <= tileDistance(key, this.position)) continue
-            this.host.status(`Vaciando caché de escena · comprobando zona ${candidate}…`)
+            this.reportStatus(`Vaciando caché de escena · comprobando zona ${candidate}…`)
             try {
               const original = await this.host.load(candidate, controller.signal)
               if (this.disposed || controller.signal.aborted || !this.wanted.includes(key)) return
@@ -301,7 +329,7 @@ export class WorldStream {
         }
         if (!remove) {
           this.limited.set(key, this.budgetArea())
-          this.host.status(
+          this.reportStatus(
             'Límite de detalle · se priorizarán las zonas cercanas al avanzar; las zonas editadas se conservan',
           )
           return
@@ -338,7 +366,7 @@ export class WorldStream {
           : Math.min(60000, 10000 * retries)
         this.failed.set(key, Date.now() + backoff)
         const seconds = Math.round(backoff / 1000)
-        this.host.status(
+        this.reportStatus(
           `Zona ${key} pendiente · ${error instanceof Error ? error.message : 'sin conexión'} · reintento en ${seconds} s`,
         )
       })

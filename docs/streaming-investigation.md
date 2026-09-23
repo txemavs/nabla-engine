@@ -15,6 +15,28 @@ This completes the redundant-call part of #37, not its quantized scheduling or
 fingerprint work. The reduction applies to planner CPU, not total frame time or
 rendering cost; no threefold overall speedup is claimed.
 
+## Follow-up audit: repeated work in the current implementation
+
+- Cache the last tile plan by exact position, velocity and horizon values. Input
+  tuples are copied into the cache key, so in-place vector mutation invalidates it.
+  Retries, scheduling and eviction continue on every update; a cached plan does
+  not short-circuit the rest of the stream state machine.
+- Compute each tile's sorting score once instead of recalculating distances during
+  every comparator call. Coverage, ordering and visual quality are unchanged.
+- Emit status only when its text changes, including asynchronous load/error states.
+- Extract a resident tile once during startup for baseline serialization and
+  fingerprint comparison. Traverse descendant IDs through a child index rather
+  than rescanning the whole scene once per hierarchy level.
+- Share one editor snapshot across outliner, portal-registry and cursor refresh.
+  Previously each independently cloned the same scene geometry.
+
+This is exact-input reuse, not the position/speed/heading quantization proposed
+in #37. Preparation callbacks still run so provider retries/polling can progress.
+Expensive fingerprints on eviction remain: they protect edited zones and cannot
+be dropped safely without replacing that invariant. Large imports, individual
+mesh creation, batch rebuilding and GPU work still merit profiling. These changes
+make no claim about a measured aggregate FPS multiplier.
+
 ## Problem Summary
 
 When driving at moderate speed, zones sometimes appear empty (no buildings) even though OSM data exists for those locations. This is a streaming latency/scheduling problem, not a visual quality issue.
