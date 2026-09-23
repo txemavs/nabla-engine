@@ -223,3 +223,10 @@ body.playing .studio-viewport-tools {
 .studio-workspace .inspector {
   padding: 12px;
 }
+
+/* Match Studio's single-row dock header, including floating panels/drop targets. */
+.studio-workspace .nd-panel-content,
+.studio-workspace .nd-drop-grid {
+  top: calc(var(--studio-panel-top) - 35px) !important;
+  height: calc(var(--studio-panel-height) + 35px) !important;
+}
