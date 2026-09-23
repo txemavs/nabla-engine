@@ -226,7 +226,7 @@ if (shadowTier) {
 }
 
 const orbit = new OrbitControls(camera, renderer.domElement)
-orbit.target.set(4, 0.6, 5)
+orbit.target.fromArray(editor.document.cursor ?? [0, 0, 0])
 orbit.enableDamping = true
 orbit.maxPolarAngle = Math.PI * 0.48
 orbit.minDistance = 3
@@ -259,9 +259,20 @@ function syncCursor(position: Vec3Tuple = editor.document.cursor ?? [0, 0, 0]): 
     $<HTMLInputElement>(`cursor-${axis}`).value = String(position[i])
   needsRender = true
 }
+/** Recenter without changing the user's viewing angle or zoom. */
+function focusCursor(resetDistance = false): void {
+  if (sim) return
+  const target = new THREE.Vector3(...(editor.document.cursor ?? [0, 0, 0]))
+  if (resetDistance) camera.position.copy(target).add(new THREE.Vector3(35, 32, 40))
+  else camera.position.add(target.clone().sub(orbit.target))
+  orbit.target.copy(target)
+  orbit.update()
+  needsRender = true
+}
 function placeCursor(position: Vec3Tuple): void {
   editor.setCursor(position)
   syncCursor()
+  focusCursor()
   $('status').textContent = 'Cambios sin guardar'
 }
 $('cursor-apply').onclick = () =>
@@ -1192,10 +1203,7 @@ async function travelTo(): Promise<void> {
     rebuild()
     $('welcome').hidden = true
     await view.ready
-    const [x, y, z] = next.cursor ?? [0, 0, 0]
-    orbit.target.set(x, y + 2, z)
-    camera.position.set(x + 35, y + 32, z + 40)
-    orbit.update()
+    focusCursor(true)
     renderer.domElement.dataset.world = 'destination'
     $('travel-status').textContent = `${name} · mismo planeta. Tus objetos conservan su ubicación.`
     toast(`${name} · destino cargado`)
@@ -1299,6 +1307,7 @@ $('file').onchange = async () => {
     savedDocument = editor.serialize()
     $('welcome').hidden = true
     rebuild()
+    focusCursor(true)
     toast('Escena abierta')
   } catch {
     toast('Archivo no válido. La escena actual se conserva.')
@@ -2608,7 +2617,8 @@ async function openProjectPlace(id: string, entityId?: string): Promise<void> {
     $('welcome').hidden = true
     $('travel-menu').hidePopover()
     await view.ready
-    focusSelection()
+    if (entityId) focusSelection()
+    else focusCursor(true)
   } catch (error) {
     toast(String(error))
   } finally {
@@ -2791,21 +2801,14 @@ async function restoreStartup(): Promise<void> {
     startupPending = false
     watchAssets(view)
     refreshUi()
+    focusCursor(true)
     renderer.domElement.dataset.startup = 'ready'
     finishStartup()
     if (freshWorld) {
       renderer.domElement.dataset.world = urlDestination ? 'destination' : 'irun'
-      focusSelection()
       void placeNewWorldObjects()
     }
     if (urlDestination) {
-      focusSelection()
-      {
-        const target = new THREE.Vector3(...editor.document.cursor!)
-        camera.position.add(target.clone().sub(orbit.target))
-        orbit.target.copy(target)
-        orbit.update()
-      }
       groundPlacementDirty = true
       $<HTMLInputElement>('travel-latitude').value = String(urlDestination.latitude)
       $<HTMLInputElement>('travel-longitude').value = String(urlDestination.longitude)
