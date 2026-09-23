@@ -1,3 +1,4 @@
+import { flightEntry, urlPlay } from './studio/flight-entry.js'
 import { geoToLocal } from '../src/geography.js'
 import { urlLocation } from './studio/url-location.js'
 import { settleGroundPlacement } from './studio/ground-placement.js'
@@ -1311,7 +1312,7 @@ function settlePendingGround(): void {
   }
 }
 let playTransition = false
-async function togglePlay(): Promise<void> {
+async function togglePlay(startFlight = false): Promise<void> {
   if (loadingWorld || playTransition) return
   playTransition = true
   const button = $<HTMLButtonElement>('play')
@@ -1323,7 +1324,14 @@ async function togglePlay(): Promise<void> {
     await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
     if (!sim && worldStream) {
       const spawn = editor.document.entities.find((e) => e.kind === 'spawn')!
-      await worldStream.ensureGround(spawn.transform.position)
+      const car = startFlight
+        ? editor.document.entities.find((e) => e.kind === 'vehicle' && !e.vehicle?.flight)
+        : undefined
+      await worldStream.ensureGround(
+        car
+          ? SceneGraph.fromValidated(editor.document).worldTransform(car.id).position
+          : spawn.transform.position,
+      )
       const adjusted = editor.document
       for (const e of adjusted.entities)
         if (e.kind === 'vehicle' || e.kind === 'spawn') {
@@ -1336,7 +1344,7 @@ async function togglePlay(): Promise<void> {
         }
       editor.load(adjusted)
     }
-    togglePlayNow()
+    togglePlayNow(startFlight)
     if (sim && worldStream) {
       worldStream.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
       while (!sim.preparePlanetCollisions())
@@ -1352,7 +1360,7 @@ async function togglePlay(): Promise<void> {
     button.innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
   }
 }
-function togglePlayNow(): void {
+function togglePlayNow(startFlight = false): void {
   action(() => {
     keys.clear()
     if (sim) {
@@ -1376,7 +1384,8 @@ function togglePlayNow(): void {
       orbitStartTarget = orbit.target.clone()
       project = retainLocation(project!, editor.document)
       portalControls.rebuild(editor.document)
-      sim = new Simulation(editor.document, {
+      const entry = startFlight ? flightEntry(editor.document) : null
+      sim = new Simulation(entry?.scene ?? editor.document, {
         playerMode: 'hover',
         planetaryTerrain: !!editor.document.geography?.planetary,
         experimentalLargeScene: performanceSettings.preset === 'ultra',
@@ -1392,7 +1401,11 @@ function togglePlayNow(): void {
       portalSequence = 0
       drivingTelemetry.update(null, 0, 0, 0, true)
       delete renderer.domElement.dataset.portalCrossings
-      cameraMode = 'chase'
+      cameraMode = entry ? 'cockpit' : 'chase'
+      if (entry) {
+        sim.startInVehicle(entry.vehicleId)
+        sim.toggleFlight()
+      }
       const spawn = editor.document.entities.find((e) => e.kind === 'spawn')!
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
         new THREE.Quaternion(...spawn.transform.rotation),
@@ -1522,7 +1535,7 @@ for (const menu of document.querySelectorAll<HTMLElement>('.app-menu')) {
 $('file-menu').addEventListener('click', (event) => {
   if ((event.target as HTMLElement).closest('button')) $('file-menu').hidePopover()
 })
-$('play').onclick = togglePlay
+$('play').onclick = () => void togglePlay()
 remotePortalViews = new RemotePortalViews(() => {
   needsRender = true
 }, toast)
@@ -2753,6 +2766,7 @@ async function restoreStartup(): Promise<void> {
       (!storedScene || !localStorage.getItem('nabla.irun.introduced'))
     )
       void loadIrun()
+    if (urlPlay(location.search)) await togglePlay(true)
   } catch (error) {
     startupPending = false
     loadingWorld = false
