@@ -221,3 +221,22 @@ volume set or deliberately reset your local generated data, preserving projects.
 - **Hot reload slow on Windows:** keep the checkout inside the WSL Linux filesystem.
 - **Want the hosted cache locally:** this recipe intentionally does not fetch it.
   Your own prepared artifacts can be backed up/restored separately.
+
+### City and village labels
+
+Native tile manifests include a small `places` list (OSM ID, name, category and
+position in the tile frame). The viewer renders these as camera-facing text,
+independently of buildings, without adding editor entities or physics bodies.
+The active non-overlapping tile cover owns the labels, and eviction releases their
+textures. Older manifests without this optional field still load normally.
+
+After upgrading the generator, restore names on already prepared tiles without
+regenerating GLBs or fetching OSM again:
+
+```sh
+docker compose -f compose.dev.yaml exec world-cache node /app/prepare-dist/services/world-cache/backfill-places.js /publish
+```
+
+The migration reads checksum-verified cached sources, samples their terrain height,
+and atomically updates only manifests. It can be repeated; manifests that already
+have labels are skipped. Reload Studio after migration.

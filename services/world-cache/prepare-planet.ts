@@ -1,3 +1,4 @@
+import { planetPlaces } from '../../src/planet-places.js'
 import { batchPlanetMeshes } from './planet-batches.js'
 /** Native planet publisher: source features -> elevation -> independent terrain/building GLBs. */
 import { createHash } from 'node:crypto'
@@ -144,6 +145,7 @@ try {
         axes: '+X east, +Y up, +Z south',
         generator: 'native-xyz-v2',
         geometryRevision: 'native-surfaces-v2',
+        places: planetPlaces(source),
         retrievedAt: source.retrievedAt,
         source: { path: sourcePath, sha256: sourceHash },
         files,

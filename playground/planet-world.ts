@@ -1,3 +1,5 @@
+import { placeLabel } from './place-label.js'
+import { validPlanetPlaces } from '../src/planet-places.js'
 import { PlanetHorizon } from './planet-horizon.js'
 import { matteGroundMaterial } from './ground-material.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
@@ -274,6 +276,12 @@ export class PlanetWorld {
       manifest,
       directory: this.base + '/' + mapTilePath(manifest.tile) + '/',
     }
+    for (const place of validPlanetPlaces(manifest.places)) {
+      const label = placeLabel(place.text)
+      label.name = place.text
+      label.position.fromArray(place.position)
+      group.add(label)
+    }
     if (payload.vegetation.length) {
       this.treeTexture ??= new THREE.TextureLoader().load('/sprites/tree.png', () => this.changed())
       this.treeTexture.colorSpace = THREE.SRGBColorSpace
@@ -320,6 +328,7 @@ export class PlanetWorld {
       },
       bytes:
         payload.bytes +
+        validPlanetPlaces(manifest.places).length * 512 * 64 * 4 +
         (payload.chart ? 1024 * 1024 * 4 : 0) +
         payload.chunks.reduce((n, c) => n + c.triangles.byteLength, 0),
       revision: manifest.files.terrain.sha256,
@@ -532,6 +541,10 @@ export class PlanetWorld {
     r.chart?.bitmap.close()
     r.group.removeFromParent()
     r.group.traverse((n) => {
+      if (n instanceof THREE.Sprite && n.userData.ownedLabelTexture) {
+        n.material.map?.dispose()
+        n.material.dispose()
+      }
       const m = n as THREE.Mesh
       if (m.isMesh) {
         m.geometry.dispose()

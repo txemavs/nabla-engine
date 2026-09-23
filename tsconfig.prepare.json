@@ -14,7 +14,8 @@
     "services/world-cache/convert-prepared.ts",
     "services/world-cache/export-tile-glb.ts",
     "services/world-cache/export-xyz-pilot.ts",
-    "services/world-cache/prepare-planet.ts"
+    "services/world-cache/prepare-planet.ts",
+    "services/world-cache/backfill-places.ts"
   ],
   "exclude": ["**/*.test.ts"]
 }
