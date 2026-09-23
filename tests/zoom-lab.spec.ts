@@ -55,6 +55,9 @@ test('native zoom viewer refines, coarsens and exposes global downloads', async 
   )
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
+  await page.route('**/ImageServer/tile/**', (r) =>
+    r.fulfill({ status: 503, body: 'Not used in this test' }),
+  )
   await page.goto('/zoom-lab.html')
   await expect(page.locator('canvas')).toHaveAttribute('data-zooms', /15/)
   await expect(page.locator('#files a').first()).toHaveAttribute(

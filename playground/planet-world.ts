@@ -1,3 +1,4 @@
+import { PlanetHorizon } from './planet-horizon.js'
 import { matteGroundMaterial } from './ground-material.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import * as THREE from 'three'
@@ -43,6 +44,8 @@ export class PlanetWorld {
         },
     )
   }
+  private simulation: Simulation | null = null
+  private horizon: PlanetHorizon
   private treeTexture: THREE.Texture | undefined
   private worker = new Worker(new URL('./planet-worker.ts', import.meta.url), { type: 'module' })
   private resident = new Map<string, Resident>()
@@ -69,6 +72,8 @@ export class PlanetWorld {
     private base = import.meta.env.VITE_WORLD_PREPARED_URL || '/prepared',
     private api = import.meta.env.VITE_WORLD_PREPARE_API || '/prepare',
   ) {
+    this.horizon = new PlanetHorizon(origin, changed)
+    this.root.add(this.horizon.root)
     this.worker.onmessage = (
       event: MessageEvent<{ id: number; payload?: PlanetPayload; error?: string }>,
     ) => {
@@ -105,6 +110,7 @@ export class PlanetWorld {
     if (this.disposed) return
     this.protectedPositions = _protected
     const gps = localToGeo(this.origin, position)
+    this.horizon.update(gps.latitude, gps.longitude, Math.max(8000, this.distance))
     const height = Math.max(0, gps.altitude - this.groundAltitude(position))
     this.plan = planMapZooms({
       latitude: gps.latitude,
@@ -149,7 +155,9 @@ export class PlanetWorld {
   private async discover() {
     if (this.busy || Date.now() < this.next || this.disposed) return
     const missing = this.wanted.filter(
-      (t) => !this.resident.has(mapTileId(t)) && !this.ready.has(mapTileId(t)),
+      (t) =>
+        (!this.resident.has(mapTileId(t)) && !this.ready.has(mapTileId(t))) ||
+        this.ready.get(mapTileId(t))?.geometryRevision !== 'transport-union-v1',
     )
     if (!missing.length) return
     this.busy = true
@@ -188,7 +196,9 @@ export class PlanetWorld {
         manifest = this.ready.get(key)
       if (
         !manifest ||
-        (this.resident.has(key) && (!this.buildings || this.resident.get(key)!.buildings)) ||
+        (this.resident.has(key) &&
+          this.resident.get(key)!.revision === manifest.files.terrain.sha256 &&
+          (!this.buildings || this.resident.get(key)!.buildings)) ||
         [...this.requests.values()].some((r) => r.key === key) ||
         Date.now() < (this.retry.get(key) ?? 0)
       )
@@ -276,6 +286,7 @@ export class PlanetWorld {
       trees.userData.category = 'Trees'
       group.add(trees)
     }
+    const restoreSupport = this.simulation?.capturePlanetSupport((p) => this.groundHeight(p))
     this.remove(key)
     group.visible = false
     this.root.add(group)
@@ -291,12 +302,14 @@ export class PlanetWorld {
       buildings: payload.buildings,
     })
     this.cover()
+    restoreSupport?.()
     this.changed()
   }
   private cover() {
     if (!this.plan) return
     const cover = planetReadyCover(this.plan, new Set(this.resident.keys())).map(mapTileId)
     this.visible = cover.length ? cover : this.visible
+    this.horizon.setCoverage(this.visible.map((key) => this.ready.get(key)!.tile))
     const active = new Set(this.visible)
     for (const [key, r] of this.resident) {
       r.group.visible = active.has(key)
@@ -314,6 +327,7 @@ export class PlanetWorld {
     this.status = `GLB planetarios · ${this.visible.length} baldosas · z/${[...new Set(this.visible.map((k) => k.split('/')[1]))].join(', ')}${this.requests.size ? ' · cargando…' : ''}`
   }
   renderUpdate(origin: THREE.Vector3, buildings: boolean, sim: Simulation | null) {
+    this.simulation = sim
     this.originOffset.copy(origin)
     this.root.position.copy(origin).negate()
     if (this.buildings !== buildings) {
@@ -340,7 +354,10 @@ export class PlanetWorld {
         }
       }
     }
-    sim?.setPlanetTiles([...physics].map((k) => this.resident.get(k)!.collision))
+    sim?.setPlanetTiles([
+      ...this.horizon.collisionTiles,
+      ...[...physics].map((k) => this.resident.get(k)!.collision),
+    ])
   }
   private groundAltitude(position: Vec3Tuple): number {
     const height = this.groundHeight(position)
@@ -363,8 +380,10 @@ export class PlanetWorld {
       b = new THREE.Vector3(),
       c = new THREE.Vector3(),
       hit = new THREE.Vector3()
-    for (const key of this.visible) {
-      const tile = this.resident.get(key)!.collision
+    for (const tile of [
+      ...this.horizon.collisionTiles,
+      ...this.visible.map((key) => this.resident.get(key)!.collision),
+    ]) {
       matrix.compose(
         new THREE.Vector3(...tile.pose.position),
         new THREE.Quaternion(...tile.pose.rotation),
@@ -452,6 +471,7 @@ export class PlanetWorld {
     this.disposed = true
     this.controller.abort()
     this.worker.terminate()
+    this.horizon.dispose()
     for (const key of this.resident.keys()) this.remove(key)
     this.treeTexture?.dispose()
     this.root.removeFromParent()

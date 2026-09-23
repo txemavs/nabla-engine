@@ -381,3 +381,14 @@ it('spreads noncritical streamed building collision cooking over frames', () => 
   expect(sim.stats.bodies - baseline).toBe(20)
   sim.dispose()
 })
+
+it('raises resting actors when coarse planetary support is replaced, but leaves airborne actors alone', () => {
+  const sim = new Simulation(scene([car('resting', [0, 1, 0]), car('airborne', [5, 100, 0])]))
+  let ground = 0
+  const restore = sim.capturePlanetSupport(() => ground)
+  ground = 4
+  restore()
+  expect(sim.entityTransform('resting').position[1]).toBe(5)
+  expect(sim.entityTransform('airborne').position[1]).toBe(100)
+  sim.dispose()
+})

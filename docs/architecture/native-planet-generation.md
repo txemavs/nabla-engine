@@ -111,3 +111,25 @@ can be improved further. Shared-vertex indexing and batching are not mesh
 simplification or meshopt compression. Cross-tile editable topology, independent
 feature extraction from a batched GLB, polar coverage, and geodetic datum accuracy
 are separate future work.
+
+## Elevation-only horizon and transport revisions
+
+The native stream also requests a lightweight, independent elevation-only horizon.
+It uses z13 XYZ cells, a 32-segment lattice, the same z12 Esri rasters and tile-local
+planetary frame as the detailed GLBs. It does not wait for OSM or private generation.
+Up to 25 nearby cells are retained, with two requests in flight and raster caching.
+The default fog/clip range leaves this broad valley silhouette visible independently
+of the detailed-map draw distance.
+
+Each relief cell is partitioned on z15 boundaries. Active GLBs remove the corresponding
+relief triangles from both rendering and collisions; there is no overlapping green
+plane beneath the detailed surface. Nearby fallback triangles supply collision support.
+Resting actors are raised when a more detailed surface arrives above their old support.
+This is approximate ground, not a substitute for detailed road geometry; unavailable
+upstream elevation is retried and cannot be fabricated locally.
+
+`geometryRevision: transport-union-v1` identifies roads with shared bend cross-sections
+and a unioned footprint. End caps no longer remain separate coplanar discs after
+spherical projection. Old GLBs remain readable during regeneration. Owner discovery
+queues stale revisions, and the client replaces a resident revision when the new
+content-addressed manifest is published.

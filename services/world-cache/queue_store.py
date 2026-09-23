@@ -64,13 +64,15 @@ class Queue:
                         db.execute('UPDATE planet_jobs SET priority=?,updated=? WHERE id=?', (priority, now, identity))
                         accepted += 1
                         continue
-                    present = self.output is None or ready_manifest(self.output, tile) is not None
+                    manifest = ready_manifest(self.output, tile) if self.output else None
+                    present = self.output is None or bool(manifest and manifest.get('geometryRevision') == 'transport-union-v1')
                     if (row['state'] != 'ready' or present) and now-row['updated'] < (86400 if row['state']=='ready' else 3600):
                         accepted += 1
                         continue
                 # Owner-side prewarming can publish a cell before it has a queue row.
                 # Adopt that manifest rather than regenerating the same source again.
-                if not row and self.output and ready_manifest(self.output, tile):
+                manifest = ready_manifest(self.output, tile) if self.output else None
+                if not row and manifest and manifest.get('geometryRevision') == 'transport-union-v1':
                     db.execute('INSERT INTO planet_jobs (id,path,tile,state,priority,attempts,next,updated) VALUES (?,?,?,?,?,0,0,?)', (identity,path,tile,'ready',priority,now))
                     accepted += 1
                     continue

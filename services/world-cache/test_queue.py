@@ -45,7 +45,16 @@ class QueueTests(unittest.TestCase):
             filename=name+'-'+'a'*16+'.glb'
             (directory/filename).write_bytes(b'glb')
             files[name]={'path':filename,'bytes':3}
-        (directory/'manifest.json').write_text(json.dumps({'format':'nabla-planet-tile-v1','generator':'native-xyz-v2','id':'WebMercatorQuad/15/1/1','files':files}))
+        (directory/'manifest.json').write_text(json.dumps({'format':'nabla-planet-tile-v1','generator':'native-xyz-v2','id':'WebMercatorQuad/15/1/1','geometryRevision':'transport-union-v1','files':files}))
         self.assertEqual(self.queue.enqueue(['z/15/1/1']),1)
         self.assertEqual(self.queue.stats(),{'ready':1})
         self.assertIsNone(self.queue.claim())
+
+    def test_requeues_old_geometry_while_leaving_its_manifest_available(self):
+        self.test_adopts_native_cells_published_before_the_queue()
+        path=Path(self.tmp.name)/'z/15/1/1/manifest.json'
+        manifest=json.loads(path.read_text());manifest.pop('geometryRevision');path.write_text(json.dumps(manifest))
+        self.queue.enqueue(['z/15/1/1'])
+        self.assertEqual(self.queue.stats(),{'queued':1})
+        from queue_store import ready_manifest
+        self.assertIsNotNone(ready_manifest(self.tmp.name,'z/15/1/1'))

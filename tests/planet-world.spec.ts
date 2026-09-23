@@ -53,6 +53,9 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
       contentType: 'model/gltf-binary',
     }),
   )
+  await page.route('**/ImageServer/tile/**', (r) =>
+    r.fulfill({ status: 503, body: 'Not used in this test' }),
+  )
   await page.goto('/?scene=circuit')
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -96,7 +99,7 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
         panel,
       )
       const links = panel.querySelectorAll('a').length
-      const count = stream.root.children.length
+      const count = stream.root.children.filter((c: any) => c.userData.planetTile).length
       stream.dispose()
       sim.dispose()
       return { height, player, selected, links, count, entered, car }

@@ -2109,7 +2109,9 @@ function frame(now: number): void {
   renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
   view.buildingDistance =
     performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
-  geography.viewDistance = performanceSettings.distance
+  geography.viewDistance = worldStream
+    ? Math.max(10000, performanceSettings.distance)
+    : performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
   worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
   if (worldStream) $('world-note').textContent = worldStream.status
@@ -2140,7 +2142,7 @@ function frame(now: number): void {
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
     camera.far = worldStream
-      ? Math.hypot(performanceSettings.distance + 500, Math.max(0, height))
+      ? Math.hypot(Math.max(12000, performanceSettings.distance + 500), Math.max(0, height))
       : Math.max(300, Math.min(100000000, height * 15))
     renderer.domElement.dataset.viewDistance = String(camera.far)
     camera.updateProjectionMatrix()

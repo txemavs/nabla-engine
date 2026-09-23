@@ -102,6 +102,31 @@ export class Simulation {
   setPlanetTiles(tiles: PlanetCollisionTile[]): void {
     this.planetCollisions.setTiles(tiles)
   }
+  /** Keep resting actors above newly refined ground while collision coverage swaps. */
+  capturePlanetSupport(sample: (position: Vec3Tuple) => number | undefined): () => void {
+    const bodies = [...this.vehicles.values()].map((v) => v.body)
+    if (!this.interiorId && !this.vehicleId) bodies.push(this.playerBody)
+    const support = bodies
+      .map((body) => ({ body, height: sample(vec(body.position)) }))
+      .filter(
+        ({ body, height }) =>
+          height !== undefined &&
+          Math.abs(body.position.y - height) < 3 &&
+          Math.abs(body.velocity.y) < 3,
+      )
+    return () => {
+      for (const { body, height } of support) {
+        const next = sample(vec(body.position))
+        if (next === undefined || next <= height!) continue
+        const rise = next - height!
+        body.position.y += rise
+        body.previousPosition.y += rise
+        body.interpolatedPosition.y += rise
+        body.aabbNeedsUpdate = true
+        body.wakeUp()
+      }
+    }
+  }
   preparePlanetCollisions(): boolean {
     this.planetCollisions.update(
       [

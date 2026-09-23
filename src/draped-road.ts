@@ -1,3 +1,5 @@
+import clipping from 'polygon-clipping'
+import { ShapeUtils, Vector2 } from 'three'
 import type { Vec3Tuple } from './scene.js'
 import type { SolidGeometry } from './solid.js'
 import { terrainHeight, type TerrainData } from './terrain.js'
@@ -96,6 +98,31 @@ export interface RoadGeometryOptions {
   profiled?: boolean
 }
 
+/** Retry only numerically degenerate boolean inputs at sub-millimetre precision.
+ * This is a topology tolerance for coincident stroke edges, not terrain quantization. */
+function unionRoadFootprints(footprints: clipping.Polygon[]): clipping.MultiPolygon {
+  try {
+    return clipping.union(footprints)
+  } catch (original) {
+    for (const scale of [1e5, 1e4]) {
+      const clean = footprints.map((p) =>
+        p.map((r) =>
+          r.map(
+            ([x, y]) =>
+              [Math.round(x * scale) / scale, Math.round(y * scale) / scale] as [number, number],
+          ),
+        ),
+      )
+      try {
+        return clipping.union(clean)
+      } catch {
+        /* Try the next topology tolerance. */
+      }
+    }
+    throw original
+  }
+}
+
 /** Generate road geometry that conforms to terrain or is elevated for bridges/tunnels. */
 export function roadGeometry(
   t: TerrainData,
@@ -113,20 +140,19 @@ export function roadGeometry(
   // Shared cross-sections keep deck seams continuous even on a slope or bend.
   const normals = new Map<string, [number, number][]>()
   const key = (p: Vec3Tuple) => `${p[0]},${p[2]}`
-  if (elevated)
-    for (const path of paths)
-      for (let i = 1; i < path.length; i++) {
-        const a = path[i - 1],
-          b = path[i],
-          length = Math.hypot(b[0] - a[0], b[2] - a[2])
-        if (length < 0.01) continue
-        const normal: [number, number] = [(b[2] - a[2]) / length, -(b[0] - a[0]) / length]
-        for (const p of [a, b]) {
-          const list = normals.get(key(p)) ?? []
-          list.push(normal)
-          normals.set(key(p), list)
-        }
+  for (const path of paths)
+    for (let i = 1; i < path.length; i++) {
+      const a = path[i - 1],
+        b = path[i],
+        length = Math.hypot(b[0] - a[0], b[2] - a[2])
+      if (length < 0.01) continue
+      const normal: [number, number] = [(b[2] - a[2]) / length, -(b[0] - a[0]) / length]
+      for (const p of [a, b]) {
+        const list = normals.get(key(p)) ?? []
+        list.push(normal)
+        normals.set(key(p), list)
       }
+    }
   const cross = (p: Vec3Tuple): [number, number] => {
     const ns = normals.get(key(p))!,
       first = ns[0]
@@ -144,6 +170,7 @@ export function roadGeometry(
     return [x * extent, z * extent]
   }
   const result: SolidGeometry = { vertices: [], edges: [], faces: [] }
+  const footprints: clipping.Polygon[] = []
   for (const points of paths)
     for (let i = 1; i < points.length; i++) {
       const a = points[i - 1],
@@ -171,15 +198,17 @@ export function roadGeometry(
         result.vertices.push(...patch.vertices)
         result.faces.push(...patch.faces.map((f) => f.map((v) => v + offset)))
       } else {
-        const patch = drapeRoad(t, [
-          [a[0] + nx, 0, a[2] + nz],
-          [a[0] - nx, 0, a[2] - nz],
-          [b[0] - nx, 0, b[2] - nz],
-          [b[0] + nx, 0, b[2] + nz],
+        const [ax, az] = cross(a),
+          [bx, bz] = cross(b)
+        footprints.push([
+          [
+            [a[0] + ax, a[2] + az],
+            [a[0] - ax, a[2] - az],
+            [b[0] - bx, b[2] - bz],
+            [b[0] + bx, b[2] + bz],
+            [a[0] + ax, a[2] + az],
+          ],
         ])
-        const offset = result.vertices.length
-        result.vertices.push(...patch.vertices)
-        result.faces.push(...patch.faces.map((f) => f.map((v) => v + offset)))
       }
     }
 
@@ -187,6 +216,10 @@ export function roadGeometry(
   for (const path of paths) for (const p of path) joints.set(`${p[0]},${p[2]}`, p)
   for (const p of joints.values()) {
     if (!elevated) {
+      const ns = normals.get(key(p))
+      if (!ns) continue
+      // Ordinary bends share a miter cross-section, so there is no cap to overlap.
+      if (ns.length === 2 && Math.abs(ns[0][0] * ns[1][0] + ns[0][1] * ns[1][1]) > 0.5) continue
       const circle = Array.from(
         { length: 12 },
         (_, i) =>
@@ -196,12 +229,51 @@ export function roadGeometry(
             p[2] + (Math.sin((i * Math.PI) / 6) * width) / 2,
           ] as Vec3Tuple,
       )
-      const patch = drapeRoad(t, circle),
-        offset = result.vertices.length
-      result.vertices.push(...patch.vertices)
-      result.faces.push(...patch.faces.map((f) => f.map((v) => v + offset)))
+      const ring = circle.map((p) => [p[0], p[2]] as [number, number])
+      ring.push(ring[0])
+      footprints.push([ring])
     }
   }
+  if (elevated) return result
+  // Union caps and ribbons BEFORE draping/projection. Coplanar duplicates become
+  // slightly different curved triangles after planet projection and flicker.
+  if (footprints.length)
+    for (const polygon of unionRoadFootprints(footprints)) {
+      const rings = polygon.map((r) => r.slice(0, -1).map((p) => new Vector2(p[0], p[1])))
+      const vertices = rings.flat()
+      for (const face of ShapeUtils.triangulateShape(rings[0], rings.slice(1))) {
+        const points = face.map((i) => [vertices[i].x, 0, vertices[i].y] as Vec3Tuple)
+        if (
+          side(
+            [points[0][0], points[0][2]],
+            [points[1][0], points[1][2]],
+            [points[2][0], points[2][2]],
+          ) > 0
+        )
+          points.reverse()
+        const patch = drapeRoad(t, points),
+          base = result.vertices.length
+        result.vertices.push(...patch.vertices)
+        result.faces.push(...patch.faces.map((f) => f.map((i) => i + base)))
+      }
+    }
+  // Share clipping intersections without snapping the actual coordinates.
+  const vertices: Vec3Tuple[] = [],
+    seen = new Map<string, number>()
+  const remap = result.vertices.map((p) => {
+    const key = p.map((n) => Math.round(n * 1e7)).join(',')
+    let index = seen.get(key)
+    if (index === undefined) {
+      index = vertices.length
+      vertices.push(p)
+      seen.set(key, index)
+    }
+    return index
+  })
+  result.vertices = vertices
+  result.faces = result.faces
+    .map((f) => f.map((i) => remap[i]))
+    .filter((f) => new Set(f).size === f.length)
   return result
 }
 

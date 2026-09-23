@@ -21,6 +21,7 @@ export class PlanetCollisions {
   private wanted = new Set<string>()
   private selectionKey = ''
   private tileKey = ''
+  private bounds = new WeakMap<PlanetCollisionChunk[], number[]>()
   private candidates: {
     key: string
     tile: PlanetCollisionTile
@@ -40,6 +41,16 @@ export class PlanetCollisions {
       this.tileKey = key
       this.selectionKey = ''
       this.tiles = tiles
+      for (const tile of tiles)
+        if (!this.bounds.has(tile.chunks)) {
+          const b = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]
+          for (const c of tile.chunks)
+            for (let i = 0; i < 3; i++) {
+              b[i] = Math.min(b[i], c.bounds[i])
+              b[i + 3] = Math.max(b[i + 3], c.bounds[i + 3])
+            }
+          this.bounds.set(tile.chunks, b)
+        }
     }
   }
   update(positions: Vec3Tuple[], buildings: boolean, budgetMs = 3): void {
@@ -56,6 +67,21 @@ export class PlanetCollisions {
         const inverse = new Quaternion(...tile.pose.rotation).inverse()
         const origin = new Vec3(...tile.pose.position)
         const local = positions.map((p) => inverse.vmult(new Vec3(...p).vsub(origin)))
+        const bounds = this.bounds.get(tile.chunks)!
+        if (
+          !local.some(
+            (p) =>
+              Math.max(
+                bounds[0] - p.x,
+                p.x - bounds[3],
+                bounds[1] - p.y,
+                p.y - bounds[4],
+                bounds[2] - p.z,
+                p.z - bounds[5],
+              ) < 65,
+          )
+        )
+          continue
         for (const chunk of tile.chunks) {
           if (chunk.buildings && !buildings) continue
           const b = chunk.bounds
