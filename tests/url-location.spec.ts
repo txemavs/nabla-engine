@@ -21,3 +21,23 @@ test('GPS URLs select the starting place and reuse saved objects without erasing
   await expect(page.locator('#name')).toHaveValue('Zamora saved car')
   await expect(page.locator('#toast')).toContainText('URL GPS no válida')
 })
+
+test('explicit URL altitude survives terrain loading and preserves saved object poses', async ({
+  page,
+}) => {
+  await nativeMap(page, 600)
+  await page.goto('/?lat=41.5033&lon=-5.7446&alt=1200')
+  await expect
+    .poll(async () => Number(await page.locator('#cursor-y').inputValue()))
+    .toBeCloseTo(1200, 3)
+  await expect
+    .poll(async () => Number(await page.locator('#entity-altitude').inputValue()))
+    .toBeCloseTo(1200.62, 1)
+  await page.goto('/?lat=41.5033&lon=-5.7446&alt=1800')
+  await expect
+    .poll(async () => Number(await page.locator('#cursor-y').inputValue()))
+    .toBeCloseTo(1800, 3)
+  await expect
+    .poll(async () => Number(await page.locator('#entity-altitude').inputValue()))
+    .toBeCloseTo(1200.62, 1)
+})

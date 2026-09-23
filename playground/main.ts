@@ -1,3 +1,4 @@
+import { geoToLocal } from '../src/geography.js'
 import { urlLocation } from './studio/url-location.js'
 import { settleGroundPlacement } from './studio/ground-placement.js'
 import { mountStudio } from './studio/shell.js'
@@ -2681,6 +2682,23 @@ async function restoreStartup(): Promise<void> {
             `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
           ),
         )
+      if (urlDestination.altitude !== undefined) {
+        const cursor = geoToLocal(destination.geography!, {
+          latitude,
+          longitude,
+          altitude: urlDestination.altitude,
+        })
+        destination.cursor = cursor
+        destination.cursorOnGround = false
+        // Only the initial default vehicles follow an explicit URL altitude.
+        // Returning to a saved place must never move authored objects.
+        if (!retained || freshWorld)
+          for (const entity of destination.entities) {
+            if (entity.parentId || entity.groundOffset === undefined) continue
+            entity.transform.position[1] = cursor[1] + entity.groundOffset
+            delete entity.groundOffset
+          }
+      }
       result.project = visitLocation(result.project, destination)
       result.scene = result.project.locations.find(
         (place) => place.id === result.project.activeLocation,
@@ -2712,6 +2730,12 @@ async function restoreStartup(): Promise<void> {
     }
     if (urlDestination) {
       focusSelection()
+      if (urlDestination.altitude !== undefined) {
+        const target = new THREE.Vector3(...editor.document.cursor!)
+        camera.position.add(target.clone().sub(orbit.target))
+        orbit.target.copy(target)
+        orbit.update()
+      }
       groundPlacementDirty = true
       $<HTMLInputElement>('travel-latitude').value = String(urlDestination.latitude)
       $<HTMLInputElement>('travel-longitude').value = String(urlDestination.longitude)

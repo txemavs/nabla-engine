@@ -23,3 +23,19 @@ it('ignores unrelated parameters and rejects incomplete or ambiguous destination
   ])
     expect(urlLocation(query)).toHaveProperty('error')
 })
+
+it('accepts optional absolute altitude, including zero and below sea level', () => {
+  for (const altitude of [0, -25.5, 1200])
+    expect(urlLocation(`?lat=40&lon=-3&alt=${altitude}`)).toEqual({
+      latitude: 40,
+      longitude: -3,
+      altitude,
+    })
+  for (const query of [
+    '?lat=40&lon=-3&alt=',
+    '?lat=40&lon=-3&alt=NaN',
+    '?lat=40&lon=-3&alt=10&alt=20',
+    '?alt=100',
+  ])
+    expect(urlLocation(query)).toHaveProperty('error')
+})

@@ -1,9 +1,10 @@
 import { MERCATOR_LIMIT } from '../../src/map-tiles.js'
-export type UrlLocation = { latitude: number; longitude: number } | { error: string } | null
+export type UrlLocation =
+  { latitude: number; longitude: number; altitude?: number } | { error: string } | null
 /** Explicit URL coordinates override the starting place, never erase the saved project. */
 export function urlLocation(search: string): UrlLocation {
   const params = new URLSearchParams(search)
-  const keys = ['lat', 'latitude', 'lon', 'longitude']
+  const keys = ['lat', 'latitude', 'lon', 'longitude', 'alt']
   if (!keys.some((key) => params.has(key))) return null
   const read = (aliases: string[]) => {
     const values = aliases.flatMap((key) => params.getAll(key)).map((value) => value.trim())
@@ -24,5 +25,11 @@ export function urlLocation(search: string): UrlLocation {
       error:
         'URL GPS no válida: indica lat y lon en grados decimales (latitud ±85.05112878, longitud ±180).',
     }
+  if (params.has('alt')) {
+    const altitude = read(['alt'])
+    if (!Number.isFinite(altitude))
+      return { error: 'URL GPS no válida: alt debe ser una altitud en metros decimales.' }
+    return { latitude, longitude, altitude }
+  }
   return { latitude, longitude }
 }
