@@ -13,7 +13,8 @@
     "services/world-cache/prepare-driving-pilot.ts",
     "services/world-cache/convert-prepared.ts",
     "services/world-cache/export-tile-glb.ts",
-    "services/world-cache/export-xyz-pilot.ts"
+    "services/world-cache/export-xyz-pilot.ts",
+    "services/world-cache/prepare-planet.ts"
   ],
   "exclude": ["**/*.test.ts"]
 }

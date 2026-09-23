@@ -17,22 +17,36 @@ export interface TileArtifact {
 /** A render-only editable tile. One named mesh per source entity, coordinates in metres. */
 export function tileAsset(data: TileArtifact): THREE.Group {
   if (data.version !== 5 || !data.entities || !data.origin) throw Error('Expected prepared tile v5')
-  const root = new THREE.Group()
-  root.name = `Nabla tile ${data.key}`
   const [x, z] = data.key.split('_').map(Number)
   if (![x, z].every(Number.isFinite)) throw Error('Invalid tile key')
-  root.userData = {
-    nablaTile: {
+  const offset = new THREE.Vector3(x * 1200, 0, z * 1200)
+  return entityTileAsset(
+    data,
+    `Nabla tile ${data.key}`,
+    {
       version: 1,
       origin: data.origin,
       key: data.key,
-      localOffset: [x * 1200, 0, z * 1200],
+      localOffset: offset.toArray(),
       units: 'metres',
       axes: '+Y up, -Z north',
       attribution: '© OpenStreetMap contributors; elevation: Esri',
       renderOnly: true,
     },
-  }
+    offset,
+  )
+}
+
+/** Shared mesh/material assembly, independent of any tile scheme or artifact version. */
+export function entityTileAsset(
+  data: Pick<TileArtifact, 'entities' | 'geometry'>,
+  name: string,
+  metadata: Record<string, unknown>,
+  offset = new THREE.Vector3(),
+): THREE.Group {
+  const root = new THREE.Group()
+  root.name = name
+  root.userData = { nablaTile: metadata }
   const graph = SceneGraph.fromValidated({ version: 1, name: root.name, entities: data.entities })
   const groups = new Map<string, THREE.Group>()
   for (const e of data.entities) {
@@ -96,7 +110,7 @@ export function tileAsset(data: TileArtifact): THREE.Group {
             : 0,
     }
     const pose = graph.worldTransform(e.id)
-    mesh.position.fromArray(pose.position).sub(new THREE.Vector3(x * 1200, 0, z * 1200))
+    mesh.position.fromArray(pose.position).sub(offset)
     mesh.quaternion.fromArray(pose.rotation)
     group.add(mesh)
   }

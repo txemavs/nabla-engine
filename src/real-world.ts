@@ -100,7 +100,13 @@ const number = (value: string | undefined, fallback: number) => {
 /** Bounded real-data district. No synthetic replacement for missing streets or heights. */
 export function createRealWorld(
   data: WorldExtract,
-  options: { offset?: [number, number]; tileId?: string } = {},
+  options: {
+    offset?: [number, number]
+    tileId?: string
+    project?: (point: [number, number]) => Vec3Tuple
+    preservePrecision?: boolean
+    halfOpenOwnership?: boolean
+  } = {},
 ): SceneDocument {
   const [ox, oz] = options.offset ?? [0, 0]
   const suffix = options.tileId && options.tileId !== '0_0' ? `-${options.tileId}` : ''
@@ -109,16 +115,20 @@ export function createRealWorld(
     half = ((t.columns - 1) * t.spacing) / 2,
     depth = ((t.rows - 1) * t.spacing) / 2
   const inside = (p: Vec3Tuple, margin = 5) =>
-    Math.abs(p[0]) <= half - margin && Math.abs(p[2]) <= depth - margin
-  const project = (p: [number, number]): Vec3Tuple =>
-    (() => {
-      const local = geoToLocal(data.origin, {
-        latitude: p[1],
-        longitude: p[0],
-        altitude: data.origin.altitude,
-      })
-      return [local[0] - ox, local[1], local[2] - oz] as Vec3Tuple
-    })()
+    options.halfOpenOwnership
+      ? p[0] >= -half && p[0] < half && p[2] >= -depth && p[2] < depth
+      : Math.abs(p[0]) <= half - margin && Math.abs(p[2]) <= depth - margin
+  const project =
+    options.project ??
+    ((p: [number, number]): Vec3Tuple =>
+      (() => {
+        const local = geoToLocal(data.origin, {
+          latitude: p[1],
+          longitude: p[0],
+          altitude: data.origin.altitude,
+        })
+        return [local[0] - ox, local[1], local[2] - oz] as Vec3Tuple
+      })())
   const height = (x: number, z: number) =>
     terrainHeight(t, Math.max(-half, Math.min(half, x)), Math.max(-depth, Math.min(depth, z)))
   const groups = [
@@ -505,7 +515,7 @@ export function createRealWorld(
   const spawn = createEntity('spawn', 'spawn', [-2, height(-2, 0) + 0.1, 0])
   entities.push(car, carrier, spawn)
   // Millimetre precision is sufficient locally and keeps editable snapshots compact.
-  for (const e of entities) {
+  for (const e of options.preservePrecision ? [] : entities) {
     e.transform.position = e.transform.position.map((n) => Math.round(n * 1000) / 1000) as Vec3Tuple
     if (e.road)
       e.road.paths = e.road.paths.map((path) =>

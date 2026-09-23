@@ -85,3 +85,5 @@ export {
   type MapTile,
   type MapZoomPlan,
 } from './map-tiles.js'
+
+export { mapTilePath, parseMapTilePath, mapTileFilename, mapTileSample } from './map-tiles.js'

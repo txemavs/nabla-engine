@@ -153,3 +153,10 @@ and `Saliendo…`, disable repeated activation (including keyboard/menu commands
 and yield a frame before the synchronous simulation construction/disposal.
 This makes the status visible; it does not move physics initialization to a worker
 or guarantee that initialization itself is nonblocking.
+
+## Native generation follow-up
+
+[Native planetary generation](native-planet-generation.md) now provides an independent
+XYZ source-to-GLB publisher. It does not recut the legacy prepared tiles used by this pilot.
+Its document lists the remaining runtime, collision, queue and mixed-zoom seam work explicitly;
+adding that publisher does not yet retire the legacy production loader.

@@ -37,6 +37,44 @@ export function parseMapTileId(id: string): MapTile {
   if (mapTileId(tile) !== id) throw Error('Noncanonical tile ID')
   return tile
 }
+/** Stable storage address. Scene origins and generator revisions never change identity. */
+export function mapTilePath(tile: MapTile): string {
+  validate(tile)
+  return `z/${tile.z}/${tile.x}/${tile.y}`
+}
+export function parseMapTilePath(path: string): MapTile {
+  if (!/^z\/\d+\/\d+\/\d+$/.test(path)) throw Error('Invalid tile path')
+  const tile = parseMapTileId(path.replace(/^z\//, `${MAP_TILE_MATRIX}/`))
+  if (mapTilePath(tile) !== path) throw Error('Noncanonical tile path')
+  return tile
+}
+/** Unambiguous filenames when an asset is downloaded outside its directory. */
+export function mapTileFilename(tile: MapTile, layer: 'terrain' | 'buildings-osm'): string {
+  validate(tile)
+  return `earth-WebMercatorQuad-z${tile.z}-x${tile.x}-y${tile.y}-${layer}.glb`
+}
+/** Exact shared sample lattice, including parent/child edges and the antimeridian. */
+export function mapTileSample(tile: MapTile, column: number, row: number, segments: number) {
+  validate(tile)
+  if (
+    !Number.isInteger(segments) ||
+    segments < 1 ||
+    segments > 256 ||
+    !Number.isInteger(column) ||
+    !Number.isInteger(row) ||
+    column < 0 ||
+    row < 0 ||
+    column > segments ||
+    row > segments
+  )
+    throw Error('Invalid tile sample')
+  const n = 2 ** tile.z * segments
+  return {
+    longitude: ((tile.x * segments + column) / n) * 360 - 180,
+    latitude: Math.atan(Math.sinh(Math.PI * (1 - (2 * (tile.y * segments + row)) / n))) / radians,
+    altitude: 0,
+  }
+}
 export function mapTileAt(latitude: number, longitude: number, z: number): MapTile {
   if (
     !Number.isFinite(latitude) ||
