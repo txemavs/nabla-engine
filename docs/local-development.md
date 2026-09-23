@@ -119,25 +119,25 @@ The prepared directory is not a listing of every possible world tile.
 
 Use browser DevTools → Network to distinguish:
 
-| Request | Purpose |
-| --- | --- |
-| `/prepare/tiles` | Discover ready cells and, when authorized, enqueue missing ones |
-| `/prepare/status` | Private generation counters; 401 means this browser is not activated |
-| `/prepared/z/.../manifest.json` and `.glb` | Prepared artifacts; only generated cells exist |
-| `/world-cache/elevation/...` | Elevation-only horizon while detailed cells are pending |
-| Vite module and WebSocket requests | Source modules and hot reload |
+| Request                                    | Purpose                                                              |
+| ------------------------------------------ | -------------------------------------------------------------------- |
+| `/prepare/tiles`                           | Discover ready cells and, when authorized, enqueue missing ones      |
+| `/prepare/status`                          | Private generation counters; 401 means this browser is not activated |
+| `/prepared/z/.../manifest.json` and `.glb` | Prepared artifacts; only generated cells exist                       |
+| `/world-cache/elevation/...`               | Elevation-only horizon while detailed cells are pending              |
+| Vite module and WebSocket requests         | Source modules and hot reload                                        |
 
 ## Where your work and data live
 
-| Data | Storage | Lifetime |
-| --- | --- | --- |
-| Code and documentation | Git checkout | Your edits remain on the host |
-| OSM/elevation responses and queue | Docker `cache` volume, `/data` | Survives stop/down; response cache budget 5 GiB |
-| Generated GLBs/manifests | Docker `prepared` volume, `/publish` | Survives stop/down; prepared budget 5 GiB, old cells evicted |
-| Local preparation token | Docker `secrets` volume | Survives stop/down |
-| npm packages/cache | `dependencies` and `npm-cache` volumes | Reusable and disposable |
-| Browser map cache and saved project | Browser storage for `localhost:8080` | Separate from Docker and from the hosted site |
-| Exported project/scene | File you save or download | Keep this as your portable backup |
+| Data                                | Storage                                | Lifetime                                                     |
+| ----------------------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| Code and documentation              | Git checkout                           | Your edits remain on the host                                |
+| OSM/elevation responses and queue   | Docker `cache` volume, `/data`         | Survives stop/down; response cache budget 5 GiB              |
+| Generated GLBs/manifests            | Docker `prepared` volume, `/publish`   | Survives stop/down; prepared budget 5 GiB, old cells evicted |
+| Local preparation token             | Docker `secrets` volume                | Survives stop/down                                           |
+| npm packages/cache                  | `dependencies` and `npm-cache` volumes | Reusable and disposable                                      |
+| Browser map cache and saved project | Browser storage for `localhost:8080`   | Separate from Docker and from the hosted site                |
+| Exported project/scene              | File you save or download              | Keep this as your portable backup                            |
 
 Generated map geometry is replaceable context; authored/customized scene objects
 belong to your project. Export projects before clearing browser storage. Changing

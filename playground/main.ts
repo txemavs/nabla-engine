@@ -1240,6 +1240,8 @@ $('file').onchange = async () => {
     toast('La escena supera el límite de 40 MB')
     return
   }
+  loadingWorld = true
+  refreshUi()
   try {
     const raw = JSON.parse(await file.text())
     const opened =
@@ -1258,6 +1260,8 @@ $('file').onchange = async () => {
   } catch {
     toast('Archivo no válido. La escena actual se conserva.')
   }
+  loadingWorld = false
+  refreshUi()
   $<HTMLInputElement>('file').value = ''
 }
 /** Only new default objects need initial placement; never relocate a saved/edited object. */
