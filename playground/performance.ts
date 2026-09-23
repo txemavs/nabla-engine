@@ -39,7 +39,7 @@ export function readPerformance(): PerformanceSettings {
       allowed.includes(value) ? value : fallback
     return {
       preset: typeof s.preset === 'string' && s.preset in performancePresets ? s.preset : 'custom',
-      roads: choose(s.roads, [0, 250, 500, 1000, 2000, 4000, 6000], 1000),
+      roads: choose(s.roads, [0, 250, 500, 1000, 2000, 4000, 6000, 20000], 1000),
       buildings: choose(s.buildings, [0, 1], 1),
       distance: choose(s.distance, [1000, 2000, 4000, 6000, 10000, 20000], 4000),
       collisions: choose(s.collisions, [200, 400, 800, 2000], 400),
@@ -111,7 +111,7 @@ export const performancePresets = {
   ultra: {
     label: 'Ultra',
     settings: {
-      roads: 6000,
+      roads: 20000,
       buildings: 1,
       distance: 20000,
       collisions: 800,

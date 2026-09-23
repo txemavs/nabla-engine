@@ -13,8 +13,10 @@ export class DistantTerrain {
     color: '#304d25',
     roughness: 1,
   })
-  private readonly regions = { value: Array.from({ length: 64 }, () => new THREE.Vector4()) }
-  private readonly regionCount = { value: 0 }
+  private readonly maskData = new Uint8Array(64 * 64)
+  private readonly mask = new THREE.DataTexture(this.maskData, 64, 64, THREE.RedFormat)
+  private readonly maskOrigin = { value: new THREE.Vector2(-32, -32) }
+  private document?: SceneDocument
   private mesh: THREE.Mesh | null = null
   private center: [number, number] | null = null
   status: 'loading' | 'ready' | 'unavailable' = 'loading'
@@ -29,8 +31,8 @@ export class DistantTerrain {
     private readonly changed: () => void,
   ) {
     this.material.onBeforeCompile = (shader) => {
-      shader.uniforms.nablaRegions = this.regions
-      shader.uniforms.nablaRegionCount = this.regionCount
+      shader.uniforms.nablaMask = { value: this.mask }
+      shader.uniforms.nablaMaskOrigin = this.maskOrigin
       shader.vertexShader =
         'varying vec2 nablaXZ;\n' +
         shader.vertexShader.replace(
@@ -38,14 +40,13 @@ export class DistantTerrain {
           '#include <begin_vertex>\nnablaXZ=position.xz;',
         )
       shader.fragmentShader =
-        'varying vec2 nablaXZ; uniform vec4 nablaRegions[64]; uniform int nablaRegionCount;\n' +
+        'varying vec2 nablaXZ; uniform sampler2D nablaMask; uniform vec2 nablaMaskOrigin;\n' +
         shader.fragmentShader.replace(
           '#include <clipping_planes_fragment>',
           `#include <clipping_planes_fragment>
-        for(int i=0;i<64;i++) {
-          if(i>=nablaRegionCount)break;
-          vec4 r=nablaRegions[i];
-          if(nablaXZ.x>=r.x && nablaXZ.x<=r.z && nablaXZ.y>=r.y && nablaXZ.y<=r.w)discard;
+        vec2 cell = floor((nablaXZ + 600.0) / 1200.0) - nablaMaskOrigin;
+        if(all(greaterThanEqual(cell, vec2(0.0))) && all(lessThan(cell, vec2(64.0)))) {
+          if(texture2D(nablaMask, (cell + 0.5) / 64.0).r > 0.5) discard;
         }`,
         )
     }
@@ -89,20 +90,26 @@ export class DistantTerrain {
     }
   }
   setDocument(doc: SceneDocument): void {
-    const terrain = doc.entities.filter((e) => e.terrain).slice(0, 64)
-    this.regionCount.value = terrain.length
-    terrain.forEach((e, i) => {
-      const hx = ((e.terrain!.columns - 1) * e.terrain!.spacing) / 2,
-        hz = ((e.terrain!.rows - 1) * e.terrain!.spacing) / 2
-      this.regions.value[i].set(
-        e.transform.position[0] - hx,
-        e.transform.position[2] - hz,
-        e.transform.position[0] + hx,
-        e.transform.position[2] + hz,
-      )
-    })
+    this.document = doc
+    this.refreshMask()
+  }
+  private refreshMask(): void {
+    this.maskData.fill(0)
+    for (const e of this.document?.entities ?? []) {
+      if (!e.terrain || !e.id.startsWith('world-terrain')) continue
+      const x = Math.round(e.transform.position[0] / 1200) - this.maskOrigin.value.x
+      const z = Math.round(e.transform.position[2] / 1200) - this.maskOrigin.value.y
+      if (x >= 0 && x < 64 && z >= 0 && z < 64) this.maskData[z * 64 + x] = 255
+    }
+    this.mask.needsUpdate = true
   }
   update(position: Vec3Tuple, distance = 4000): void {
+    const mx = Math.floor((position[0] + 600) / 1200) - 32
+    const mz = Math.floor((position[2] + 600) / 1200) - 32
+    if (this.maskOrigin.value.x !== mx || this.maskOrigin.value.y !== mz) {
+      this.maskOrigin.value.set(mx, mz)
+      this.refreshMask()
+    }
     const spacing = Math.max(50, Math.ceil((distance + 2400) / 60 / 50) * 50)
     if (this.pending || Date.now() < this.nextAttempt || position[1] > 12000) return
     const center: [number, number] = [
@@ -126,6 +133,7 @@ export class DistantTerrain {
   dispose(): void {
     this.worker.terminate()
     this.mesh?.geometry.dispose()
+    this.mask.dispose()
     this.material.dispose()
     this.root.removeFromParent()
   }

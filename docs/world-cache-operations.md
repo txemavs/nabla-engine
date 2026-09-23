@@ -453,11 +453,11 @@ Options → Performance → General quality applies a complete preset and persis
 | Low          | 2 km            | 500 m           | On        | Low     | 1               | 50 MB  | 1                  | 15 s              |
 | Balanced     | 4 km            | 1 km            | On        | Low     | 1.25            | 100 MB | 2                  | 30 s              |
 | High         | 10 km           | 4 km            | On        | Medium  | 1.25            | 100 MB | 3                  | 45 s              |
-| Ultra        | 20 km           | 6 km            | On        | High    | 2               | 100 MB | 3                  | 45 s              |
+| Ultra        | 20 km           | 20 km           | On        | High    | 2               | 100 MB | 3                  | 45 s              |
 
-Buildings have an additional 3 km visibility cap. Road distances are visibility caps for installed detailed zones, not a promise of a complete road ring. High/Ultra expand the low-resolution elevation mesh, keeping its grid at 121×121 samples and using coarser elevation tiles for the outer horizon. The mesh includes a margin for camera movement between recenters. Existing nearby terrain masks the coarse mesh.
+Buildings have an additional 3 km visibility cap outside experimental Ultra. Road distances are visibility caps for installed detailed zones, not a promise of a complete road ring. High/Ultra expand the low-resolution elevation mesh, keeping its grid at 121×121 samples and using coarser elevation tiles for the outer horizon. The mesh includes a margin for camera movement between recenters. Existing nearby terrain masks the coarse mesh.
 
-Ultra does **not** request 800 complete OSM zones, automatically select a multi-GB browser budget or increase live provider concurrency to 16. The detailed corridor/entity budget remain bounded. A complete 3–10 km road ring and distant building silhouettes would require additional prepared LOD products; they are not represented as implemented by these presets. Preset names describe settings, not a hardware FPS guarantee.
+Ultra does **not** request 800 complete OSM zones, automatically select a multi-GB browser budget or increase live provider concurrency to 16. The acquisition corridor remains bounded; the experimental Ultra retention exception is described below. A complete 3–10 km road ring and distant building silhouettes would require additional prepared LOD products; they are not represented as implemented by these presets. Preset names describe settings, not a hardware FPS guarantee.
 
 ### Large local map retention
 
@@ -468,3 +468,11 @@ Raw LERC elevation tiles now use the shared persistent cache (`nabla-elevation-v
 “Protect local storage” requests the browser's persistent-storage permission. The browser decides whether to grant it. Persistence reduces automatic eviction risk; manually clearing site data still deletes the copy. This is a retained collection of downloaded/visited zones, not a complete offline planet or an exported portable map. Missing regions still need the network. There is no bulk OSM download triggered by choosing 10 GB.
 
 A larger cache improves repeat visits. The coarse horizon is still published as one mesh after its elevation samples arrive; the first visit can therefore show a delayed larger update. Increasing disk retention does not turn that initial installation into incremental terrain patches.
+
+### Experimental Ultra: retain acquired detail within 20 km
+
+Ultra now retains every already-installed generated zone whose footprint is within 20 km of the player/editor streaming position, even when it leaves the short acquisition corridor. The normal entity budget does not reject new nearby zones in this mode. Loaded building and road visibility also extends to 20 km. The distant terrain uses a moving 64×64 occupancy texture rather than a 64-zone uniform list, so accumulating more than 64 generated tiles does not reveal overlapping coarse terrain.
+
+Acquisition stays progressive and concurrency-limited; selecting Ultra does not bulk-request the entire disk. It is intentionally a memory/GPU stress-test mode without a nearby entity cap. Normal frustum clipping, fog and nearby physics remain. Generated untouched zones outside the radius may be released; authored/edited zones stay protected. Leaving Ultra restores ordinary retention and visibility limits. The disk-cache budget remains separate and unchanged.
+
+The default 20,000-entity document limit is preserved outside Ultra. Ultra explicitly opts into larger validated scenes, including save/reopen and editing; deletion-only cleanup remains available when returning to a normal preset. Per-batch validation and entity/reference checks still apply.

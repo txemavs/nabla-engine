@@ -284,8 +284,11 @@ export function createEntity(
 }
 
 /** Validates external data before changing any state. Names never select behavior. */
-export function parseScene(raw: unknown): SceneDocument {
-  return validateScene(documentSchema.parse(raw))
+export function parseScene(raw: unknown, experimentalLargeScene = false): SceneDocument {
+  const schema = experimentalLargeScene
+    ? documentSchema.extend({ entities: z.array(entitySchema).min(1) })
+    : documentSchema
+  return validateScene(schema.parse(raw))
 }
 
 /** Internal streaming transaction over an already validated, privately owned document.
@@ -295,10 +298,15 @@ export function replaceMapScene(
   document: SceneDocument,
   remove: Set<string>,
   add: Entity[],
+  experimentalLargeScene = false,
 ): SceneDocument {
   const additions = z.array(entitySchema).max(20000).parse(add)
   const entities = [...document.entities.filter((e) => !remove.has(e.id)), ...additions]
-  if (!entities.length || entities.length > 20000) throw new Error('Scene entity limit exceeded')
+  if (
+    !entities.length ||
+    (!experimentalLargeScene && entities.length > 20000 && !(add.length === 0 && remove.size > 0))
+  )
+    throw new Error('Scene entity limit exceeded')
   return validateScene({ ...document, entities }, new Set(additions))
 }
 

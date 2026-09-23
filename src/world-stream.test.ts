@@ -623,3 +623,69 @@ it('warms a longer flight corridor without installing speculative zones', () => 
   expect(prefetch.mock.calls.at(-1)![0]).toEqual([])
   stream.dispose()
 })
+
+it('Ultra retains acquired detail inside 20 km and bypasses the normal entity budget', async () => {
+  const { mapFingerprint } = await import('./world-stream.js')
+  const doc = document()
+  const far = terrain('12_0', 14400)
+  for (const entity of [doc.entities[0], far]) entity.mapBaseline = mapFingerprint([entity])
+  doc.entities.push(far)
+  const editor = new SceneEditor(doc)
+  const stream = new WorldStream(
+    {
+      document: () => editor.document,
+      load: async (key) => [terrain(key, Number(key.split('_')[0]) * 1200)],
+      replace: (remove, add) => editor.replaceMapEntities(remove, add),
+      status: () => {},
+    },
+    1,
+  )
+  stream.setQuality(1, 45, true)
+  stream.update([0, 0, 0], [0, 0, 0])
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(editor.document.entities.some((e) => e.id === far.id)).toBe(true)
+  expect(editor.document.entities.filter((e) => e.terrain).length).toBeGreaterThan(2)
+  stream.update([60000, 0, 0], [0, 0, 0])
+  expect(editor.document.entities.some((e) => e.id === far.id)).toBe(false)
+  stream.dispose()
+})
+
+it('leaving experimental Ultra restores ordinary resident eviction', async () => {
+  const { mapFingerprint } = await import('./world-stream.js')
+  const doc = document(),
+    far = terrain('12_0', 14400)
+  far.mapBaseline = mapFingerprint([far])
+  doc.entities.push(far)
+  const editor = new SceneEditor(doc)
+  const stream = new WorldStream({
+    document: () => editor.document,
+    load: () => new Promise(() => {}),
+    replace: (r, a) => editor.replaceMapEntities(r, a),
+    status: () => {},
+  })
+  stream.setQuality(1, 45, true)
+  stream.update([0, 0, 0], [0, 0, 0])
+  expect(editor.document.entities.some((e) => e.id === far.id)).toBe(true)
+  stream.setQuality(1, 15, false)
+  stream.update([0, 0, 0], [0, 0, 0])
+  expect(editor.document.entities.some((e) => e.id === far.id)).toBe(false)
+  stream.dispose()
+})
+
+it('requires explicit Ultra opt-in for scenes above 20000 entities', async () => {
+  const { parseScene, replaceMapScene } = await import('./scene.js')
+  const doc = {
+    version: 1 as const,
+    name: 'Large retained scene',
+    entities: [
+      createEntity('spawn', 'spawn'),
+      ...Array.from({ length: 20000 }, (_, i) => createEntity(`g-${i}`, 'group')),
+    ],
+  }
+  expect(() => parseScene(doc)).toThrow()
+  const checked = parseScene(doc, true)
+  expect(() => replaceMapScene(checked, new Set(), [createEntity('extra', 'group')])).toThrow()
+  const extended = replaceMapScene(checked, new Set(), [createEntity('extra', 'group')], true)
+  expect(parseScene(extended, true).entities).toHaveLength(20002)
+  expect(replaceMapScene(extended, new Set(['extra', 'g-0']), []).entities).toHaveLength(20000)
+})

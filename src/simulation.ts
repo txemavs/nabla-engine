@@ -144,10 +144,14 @@ export class Simulation {
 
   constructor(
     raw: SceneDocument,
-    readonly options: { playerMode?: 'walk' | 'hover'; mapBuildingsEnabled?: boolean } = {},
+    readonly options: {
+      playerMode?: 'walk' | 'hover'
+      mapBuildingsEnabled?: boolean
+      experimentalLargeScene?: boolean
+    } = {},
   ) {
     this.mapBuildingsEnabled = options.mapBuildingsEnabled ?? true
-    this.document = parseScene(raw)
+    this.document = parseScene(raw, options.experimentalLargeScene)
     this.terrainEntity = this.document.entities.find((e) => e.terrain)
     this.minimumFlightAltitude = this.terrainEntity?.terrain
       ? Math.min(...this.terrainEntity.terrain.heights) - 10
@@ -283,11 +287,11 @@ export class Simulation {
   }
 
   /** Add/remove only static map entities without touching actor state or the physics clock. */
-  replaceMapEntities(remove: Set<string>, add: Entity[]): void {
+  replaceMapEntities(remove: Set<string>, add: Entity[], experimentalLargeScene = false): void {
     for (const e of [...this.document.entities.filter((e) => remove.has(e.id)), ...add])
       if (e.motion === 'dynamic' || e.kind === 'spawn' || e.portal || e.kind === 'vehicle')
         throw new Error('Streaming only supports static map entities')
-    const next = replaceMapScene(this.document, remove, add)
+    const next = replaceMapScene(this.document, remove, add, experimentalLargeScene)
     this.document.entities = next.entities
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))

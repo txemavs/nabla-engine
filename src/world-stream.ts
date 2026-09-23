@@ -144,7 +144,14 @@ export class WorldStream {
   private readonly inFlight = new Map<string, AbortController>()
   private maxConcurrent = 3
   private preparationAhead = 45
-  setQuality(concurrent: number, ahead: number): void {
+  private retainLoaded = false
+  private retentionArea = ''
+  setQuality(concurrent: number, ahead: number, retainLoaded = false): void {
+    if (this.retainLoaded !== retainLoaded) {
+      this.limited.clear()
+      this.retentionArea = ''
+    }
+    this.retainLoaded = retainLoaded
     this.maxConcurrent = Math.max(1, Math.min(3, Math.round(concurrent)))
     this.preparationAhead = Math.max(0, Math.min(45, ahead))
   }
@@ -197,6 +204,10 @@ export class WorldStream {
       return
     }
     this.wanted = wantedWorldTiles(position, velocity)
+    if (this.retentionArea !== this.budgetArea()) {
+      this.retentionArea = this.budgetArea()
+      this.evict()
+    }
     const neighborhood = immediateNeighborhood(position)
     const neighborsMissing = [...neighborhood].filter(
       (k) => !this.resident.has(k) && !this.inFlight.has(k),
@@ -342,6 +353,8 @@ export class WorldStream {
   private makeRoom(key: string, incoming: Entity[]): Set<string> | null {
     const doc = this.host.document(),
       remove = new Set<string>()
+    // Experimental Ultra keeps all acquired detail inside the local 20 km footprint.
+    if (this.retainLoaded && tileDistance(key, this.position) <= 20000) return remove
     const fits = () => {
       const ids = new Set(doc.entities.filter((e) => !remove.has(e.id)).map((e) => e.id))
       for (const e of incoming) ids.add(e.id)
@@ -378,6 +391,7 @@ export class WorldStream {
       const state = this.resident.get(key)!
       if (
         state.pinned ||
+        (this.retainLoaded && tileDistance(key, this.position) <= 20000) ||
         this.wanted.includes(key) ||
         this.protectedPositions.some((p) => tileDistance(key, p) < 200)
       )

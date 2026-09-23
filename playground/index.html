@@ -98,12 +98,13 @@
               <option value="low">Bajo</option>
               <option value="balanced">Equilibrado</option>
               <option value="high">Alto</option>
-              <option value="ultra">Ultra</option>
+              <option value="ultra">Ultra · retención experimental 20 km</option>
               <option value="custom" disabled>Personalizado</option>
             </select>
             <p>
-              Alto y Ultra amplían el relieve lejano. Edificios hasta 3 km; las carreteras aparecen
-              donde haya zonas detalladas cargadas. La caché de disco se puede ampliar por separado.
+              Ultra conserva y dibuja todo el detalle ya cargado hasta 20 km, sin límite de
+              entidades dentro de ese radio. No descarga de golpe todo el círculo. Los demás modos
+              conservan sus límites habituales. La caché de disco se ajusta por separado.
             </p>
             <label class="field-label" for="map-cache-budget">Caché de mapas · MB</label>
             <select id="map-cache-budget">
@@ -146,6 +147,7 @@
               <option value="2000">2 km</option>
               <option value="4000">4 km</option>
               <option value="6000">6 km</option>
+              <option value="20000">20 km · detalle cargado</option>
             </select>
             <label class="field-label" for="collision-distance"
               >Colisiones de edificios cercanos</label

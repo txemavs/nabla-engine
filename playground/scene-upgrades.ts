@@ -6,8 +6,8 @@ import { createA3 } from '../src/presets.js'
 import { installCarrierPortals } from './carrier-portals.js'
 
 /** Upgrade only recognised reference presets; preserve authored placements and custom mounts. */
-export function upgradeReferenceScene(raw: unknown) {
-  const doc = installCarrierPortals(raw)
+export function upgradeReferenceScene(raw: unknown, experimentalLargeScene = false) {
+  const doc = installCarrierPortals(raw, experimentalLargeScene)
   // Recognised baseline buildings become independent topology components.
   // Preserve edited windows and anything with children.
   const baseline = circuitEntities()

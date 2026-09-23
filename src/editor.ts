@@ -14,8 +14,11 @@ export class SceneEditor {
   private current: SceneDocument
   private past: SceneDocument[] = []
   private future: SceneDocument[] = []
-  constructor(document: SceneDocument) {
-    this.current = parseScene(document)
+  constructor(
+    document: SceneDocument,
+    public experimentalLargeScene = false,
+  ) {
+    this.current = parseScene(document, this.experimentalLargeScene)
   }
   get document(): SceneDocument {
     return structuredClone(this.current)
@@ -27,7 +30,7 @@ export class SceneEditor {
     return this.future.length > 0
   }
   private commit(next: SceneDocument): void {
-    const checked = parseScene(next)
+    const checked = parseScene(next, this.experimentalLargeScene)
     if (JSON.stringify(checked) === JSON.stringify(this.current)) return
     this.past.push(this.current)
     if (this.past.length > 100) this.past.shift()
@@ -47,7 +50,7 @@ export class SceneEditor {
       doc.geography?.latitude === origin?.latitude &&
       doc.geography?.longitude === origin?.longitude &&
       doc.geography?.altitude === origin?.altitude
-    this.current = replaceMapScene(this.current, remove, additions)
+    this.current = replaceMapScene(this.current, remove, additions, this.experimentalLargeScene)
     this.past = this.past.map((doc) => (sameWorld(doc) ? apply(doc) : doc))
     this.future = this.future.map((doc) => (sameWorld(doc) ? apply(doc) : doc))
   }
@@ -70,7 +73,7 @@ export class SceneEditor {
   }
   moveToCursor(id: string): void {
     const next = this.document,
-      graph = new SceneGraph(next)
+      graph = SceneGraph.fromValidated(parseScene(next, this.experimentalLargeScene))
     const entity = next.entities.find((e) => e.id === id)
     if (!entity) throw new Error('Select an object')
     const world = graph.worldTransform(id)
@@ -81,7 +84,7 @@ export class SceneEditor {
   /** Rebase editable vertices and direct children without moving their world geometry. */
   originToCursor(id: string): void {
     const next = this.document,
-      graph = new SceneGraph(next)
+      graph = SceneGraph.fromValidated(parseScene(next, this.experimentalLargeScene))
     const entity = next.entities.find((e) => e.id === id)
     if (!entity?.geometry || entity.visual || entity.road)
       throw new Error('El origen se ajusta en sólidos editables')
@@ -97,7 +100,7 @@ export class SceneEditor {
       new Vector3(...p).sub(offset).toArray(),
     )
     entity.transform = graph.localFromWorld(entity.parentId, world)
-    const after = new SceneGraph(next)
+    const after = SceneGraph.fromValidated(parseScene(next, this.experimentalLargeScene))
     for (const child of children) child.entity.transform = after.localFromWorld(id, child.world)
     this.commit(next)
   }
@@ -190,7 +193,7 @@ export class SceneEditor {
   }
   reparent(id: string, parentId: string | null): void {
     const next = this.document,
-      graph = new SceneGraph(next)
+      graph = SceneGraph.fromValidated(parseScene(next, this.experimentalLargeScene))
     const e = next.entities.find((item) => item.id === id)
     if (!e) throw new Error('Unknown entity: ' + id)
     e.transform = graph.localFromWorld(parentId, graph.worldTransform(id))
@@ -212,7 +215,7 @@ export class SceneEditor {
     }
   }
   load(raw: unknown): void {
-    this.commit(parseScene(raw))
+    this.commit(parseScene(raw, this.experimentalLargeScene))
   }
   serialize(): string {
     return JSON.stringify(this.current)

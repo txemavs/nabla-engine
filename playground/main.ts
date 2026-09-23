@@ -74,11 +74,18 @@ const flightAudio = new FlightAudio()
 let worldStream: WorldStream | null = null
 let worldLoader: WorldLoader | null = null
 let streamSample: { at: number; position: Vec3Tuple } | null = null
-let editor = new SceneEditor(upgradeReferenceScene(createSampleScene()))
+let editor = new SceneEditor(
+  upgradeReferenceScene(createSampleScene()),
+  performanceSettings.preset === 'ultra',
+)
 let loadError = ''
 try {
   const saved = await readScene(STORAGE_KEY)
-  if (saved) editor = new SceneEditor(upgradeReferenceScene(JSON.parse(saved)))
+  if (saved)
+    editor = new SceneEditor(
+      upgradeReferenceScene(JSON.parse(saved), performanceSettings.preset === 'ultra'),
+      performanceSettings.preset === 'ultra',
+    )
   if (editor.document.entities.some((e) => e.id === 'road' && e.size[0] === 16 && e.size[2] === 85))
     editor.load(alignCircuitPlan(editor.document))
 } catch {
@@ -234,7 +241,9 @@ $('cursor-apply').onclick = () =>
     ),
   )
 $('cursor-selection').onclick = () =>
-  action(() => placeCursor(new SceneGraph(editor.document).worldTransform(selectedId).position))
+  action(() =>
+    placeCursor(SceneGraph.fromValidated(editor.document).worldTransform(selectedId).position),
+  )
 $('cursor-view').onclick = () => action(() => placeCursor(orbit.target.toArray()))
 $('selection-cursor').onclick = () =>
   action(() => {
@@ -267,7 +276,7 @@ $('transform-exact').onclick = () =>
     if (axis === 'all' || !Number.isFinite(amount))
       throw new Error('Elige X, Y o Z y una cantidad finita')
     const doc = editor.document,
-      graph = new SceneGraph(doc),
+      graph = SceneGraph.fromValidated(doc),
       entity = doc.entities.find((e) => e.id === selectedId)!
     if (isMapBuilding(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
@@ -288,7 +297,7 @@ const outline = new SelectionOutline()
 scene.add(outline)
 let lastWorldInstallMs = 0
 let water: SeaWater | undefined
-let view = new SceneView(editor.document)
+let view = new SceneView(editor.document, performanceSettings.preset === 'ultra')
 view.setupMaterials((material) => shadowManager.setupMaterial(material))
 scene.add(view.root)
 let geography = new GeographicView(
@@ -332,7 +341,7 @@ gizmo.addEventListener('mouseUp', () => {
     const object = view.objects.get(selectedId)
     if (!object) return
     const entity = editor.document.entities.find((e) => e.id === selectedId)!
-    const graph = new SceneGraph(editor.document)
+    const graph = SceneGraph.fromValidated(editor.document)
     editor.update(selectedId, {
       transform: graph.localFromWorld(entity.parentId, {
         position: object.position.toArray(),
@@ -375,7 +384,7 @@ function rebuild(prepared?: PreparedMapGeometry): void {
   view.dispose()
   const document = editor.document
   if (prepared) receiveMapGeometry(document.entities, prepared)
-  view = new SceneView(document)
+  view = new SceneView(document, performanceSettings.preset === 'ultra')
   view.setupMaterials((material) => shadowManager.setupMaterial(material))
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
@@ -416,7 +425,8 @@ function setupWorldStream(): void {
     prefetch: (keys) => loader.prefetch(origin, keys),
     replace: (remove, add) => {
       const started = performance.now()
-      sim?.replaceMapEntities(remove, add)
+      sim?.replaceMapEntities(remove, add, performanceSettings.preset === 'ultra')
+      editor.experimentalLargeScene = performanceSettings.preset === 'ultra'
       editor.replaceMapEntities(remove, add)
       view.replaceMapEntities(remove, add)
       distantTerrain?.setDocument(view.document)
@@ -439,6 +449,7 @@ function setupWorldStream(): void {
   worldStream.setQuality(
     performanceProfile(performanceSettings).concurrent,
     performanceProfile(performanceSettings).ahead,
+    performanceSettings.preset === 'ultra',
   )
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
@@ -1024,7 +1035,7 @@ async function travelTo(): Promise<void> {
       )
     const saved = await readScene(placeKey(latitude, longitude))
     let next: SceneDocument
-    if (saved) next = parseScene(JSON.parse(saved))
+    if (saved) next = parseScene(JSON.parse(saved), performanceSettings.preset === 'ultra')
     else {
       const entities = await loader.load(
         { latitude, longitude, altitude: 0 },
@@ -1141,6 +1152,7 @@ function togglePlay(): void {
       portalControls.rebuild(editor.document)
       sim = new Simulation(editor.document, {
         playerMode: 'hover',
+        experimentalLargeScene: performanceSettings.preset === 'ultra',
         mapBuildingsEnabled: !!performanceSettings.buildings,
       })
       sim.setMapBuildingsEnabled(!!performanceSettings.buildings)
@@ -1192,10 +1204,12 @@ for (const [id, key] of [
   control.onchange = () => {
     performanceSettings[key] = Number(control.value)
     performanceSettings.preset = 'custom'
+    editor.experimentalLargeScene = false
     $<HTMLSelectElement>('performance-preset').value = 'custom'
     worldStream?.setQuality(
       performanceProfile(performanceSettings).concurrent,
       performanceProfile(performanceSettings).ahead,
+      performanceSettings.preset === 'ultra',
     )
     try {
       localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
@@ -1237,13 +1251,14 @@ $('performance-preset').onchange = async () => {
     $<HTMLSelectElement>(control).value = String(performanceSettings[key])
   $('draw-distance').dispatchEvent(new Event('change'))
   performanceSettings.preset = id
+  editor.experimentalLargeScene = id === 'ultra'
   $<HTMLSelectElement>('performance-preset').value = id
   try {
     localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
   } catch {
     /* Optional persistence. */
   }
-  worldStream?.setQuality(preset.concurrent, preset.ahead)
+  worldStream?.setQuality(preset.concurrent, preset.ahead, id === 'ultra')
   try {
     await setMapCacheBudget(Math.max(preset.cache, (await mapCacheStats()).budget / 1_000_000))
     await refreshMapCacheUi()
@@ -1846,7 +1861,8 @@ function frame(now: number): void {
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
   water?.update(worldCamera, renderOrigin, performanceSettings.distance, now)
   renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
-  view.buildingDistance = Math.min(3000, performanceSettings.distance)
+  view.buildingDistance =
+    performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
   geography.viewDistance = performanceSettings.distance
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
   distantTerrain?.update(position, performanceSettings.distance)
@@ -1915,7 +1931,9 @@ function frame(now: number): void {
         performanceSettings.distance,
         !!sim,
         !!performanceSettings.buildings,
-        Math.min(performanceSettings.distance, performanceSettings.roads),
+        performanceSettings.preset === 'ultra'
+          ? 20000
+          : Math.min(performanceSettings.distance, performanceSettings.roads),
       )
     const portalLive = [...view.portals.values()].map((p) => p.mesh.material.uniforms.live.value)
     try {
@@ -1932,7 +1950,9 @@ function frame(now: number): void {
         performanceSettings.distance,
         !!sim,
         !!performanceSettings.buildings,
-        Math.min(performanceSettings.distance, performanceSettings.roads),
+        performanceSettings.preset === 'ultra'
+          ? 20000
+          : Math.min(performanceSettings.distance, performanceSettings.roads),
       )
       if (geography.enabled) {
         geography.render(renderer, remote, remote.position.clone().add(renderOrigin))
@@ -1946,7 +1966,9 @@ function frame(now: number): void {
       performanceSettings.distance,
       !!sim,
       !!performanceSettings.buildings,
-      Math.min(performanceSettings.distance, performanceSettings.roads),
+      performanceSettings.preset === 'ultra'
+        ? 20000
+        : Math.min(performanceSettings.distance, performanceSettings.roads),
     )
     renderer.autoClear = true
     if (geography.enabled) {

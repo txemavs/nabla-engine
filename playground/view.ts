@@ -25,6 +25,7 @@ import { vehicleDefinition, type VisualDefinition } from '../src/index.js'
 import * as THREE from 'three'
 import {
   SceneGraph,
+  parseScene,
   type SceneDocument,
   type Entity,
   type Simulation,
@@ -86,8 +87,11 @@ export class SceneView {
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
   private graph: SceneGraph
-  constructor(readonly document: SceneDocument) {
-    this.graph = new SceneGraph(document)
+  constructor(
+    readonly document: SceneDocument,
+    experimentalLargeScene = false,
+  ) {
+    this.graph = SceneGraph.fromValidated(parseScene(document, experimentalLargeScene))
     this.addEntities(document.entities)
     this.root.add(this.roads.root)
     this.root.add(this.buildings.root)

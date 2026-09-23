@@ -2,8 +2,8 @@ import { createCarrier } from '../src/presets.js'
 import { parseScene, type SceneDocument } from '../src/scene.js'
 import { createCarrierPortals } from '../src/portal.js'
 
-export function installCarrierPortals(raw: unknown): SceneDocument {
-  const doc = parseScene(raw)
+export function installCarrierPortals(raw: unknown, experimentalLargeScene = false): SceneDocument {
+  const doc = parseScene(raw, experimentalLargeScene)
   for (const host of [...doc.entities]) {
     if (host.visual?.body.url !== '/world/ship.container.5x10.glb' || !host.vehicle?.garage)
       continue
@@ -40,5 +40,5 @@ export function installCarrierPortals(raw: unknown): SceneDocument {
       ...createCarrierPortals(host.id, `carrier-gate-${index}-bow`, `carrier-gate-${index}-stern`),
     )
   }
-  return parseScene(doc)
+  return parseScene(doc, experimentalLargeScene)
 }
