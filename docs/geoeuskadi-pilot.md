@@ -186,3 +186,23 @@ pack and rename it atomically before publishing the matching frontend. Keep the
 previous pack/index for rollback. Neither the global `/prepared` namespace nor the
 queue service is changed. The committed pack allows a fresh clone/demo build to run
 without access to the live provider; regenerating it is an explicit operator action.
+
+For an isolated server rebuild, the same preparation image can run the composer as
+an explicit one-off job. The input directory contains the two source JSON fixtures;
+the output directory must be writable by the chosen UID/GID:
+
+```sh
+docker build -f services/world-cache/Dockerfile.prepare -t nabla-geoeuskadi-pilot .
+docker run --rm --network none --cpus=1 --memory=1g \
+  --user "$(id -u):$(id -g)" \
+  -v "$PWD/assets/geography:/input:ro" \
+  -v "$PWD/pilot-output:/output" \
+  nabla-geoeuskadi-pilot \
+  node prepare-dist/services/world-cache/prepare-driving-pilot.js \
+  /input/irun-ventas.json /input/geoeuskadi-ventas.json /output/ventas-combined.pack
+```
+
+Create `pilot-output` before running this command. The current pilot was rebuilt
+this way on the demo server with network disabled; its output matched the local
+artifact byte-for-byte. This image was run as a separate job, without replacing or
+restarting the active world-cache queue service.
