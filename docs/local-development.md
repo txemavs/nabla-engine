@@ -30,9 +30,9 @@ docker compose -f compose.dev.yaml logs -f studio world-cache
 ```
 
 Wait until Vite prints its ready message. Open
-[Studio](http://localhost:8080/?studio=desktop). A brief HTTP 502 before Vite
+[Studio](http://localhost:8080/). A brief HTTP 502 before Vite
 finishes installing dependencies is normal. The default world starts in Irún.
-Use [the circuit](http://localhost:8080/?scene=circuit&studio=desktop) for a small
+Use [the circuit](http://localhost:8080/?scene=circuit) for a small
 local scene, or [the zoom lab](http://localhost:8080/zoom-lab.html) to inspect tiles.
 
 ### Enable your local generator

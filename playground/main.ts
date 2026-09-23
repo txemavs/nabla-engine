@@ -1,3 +1,4 @@
+import { mountStudio } from './studio/shell.js'
 import { setPlanetCharts } from './helm-map.js'
 import { PlanetWorld } from './planet-world.js'
 import { planetaryScene, createPlanetScene } from './studio/planet-scene.js'
@@ -2477,21 +2478,18 @@ $('options-menu').addEventListener('toggle', () => {
 })
 void refreshMapCacheUi()
 
-if (new URLSearchParams(location.search).get('studio') === 'desktop') {
-  const { mountStudio } = await import('./studio/shell.js')
-  mountStudio({
-    refresh: refreshUi,
-    input: studioInput,
-    reportError: (error) => toast(String(error)),
-    undo: undoScene,
-    redo: redoScene,
-    togglePlay,
-    canUndo: () => !sim && editor.canUndo,
-    canRedo: () => !sim && editor.canRedo,
-    canPlay: () => !loadingWorld && !playTransition,
-    isPlaying: () => !!sim,
-  })
-}
+mountStudio({
+  refresh: refreshUi,
+  input: studioInput,
+  reportError: (error) => toast(String(error)),
+  undo: undoScene,
+  redo: redoScene,
+  togglePlay,
+  canUndo: () => !sim && editor.canUndo,
+  canRedo: () => !sim && editor.canRedo,
+  canPlay: () => !loadingWorld && !playTransition,
+  isPlaying: () => !!sim,
+})
 
 $('save-as').onclick = () => {
   $<HTMLInputElement>('project-filename').value = projectFilename(project!.name)

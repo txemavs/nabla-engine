@@ -3,7 +3,7 @@ import { expect, test } from './studio-test.js'
 test('desktop retains the live viewport, edits and layout across panel moves', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.goto('/?scene=circuit&studio=desktop')
+  await page.goto('/?scene=circuit')
   await expect(page.locator('.studio-workspace #viewport > canvas')).toBeVisible()
   const world = await page.locator('#studio-viewport-panel').boundingBox()
   const sceneTree = await page.locator('.outliner').boundingBox()
@@ -84,4 +84,17 @@ test('project settings keep flat tabs fixed and scroll only their content', asyn
   await page.getByRole('tab', { name: 'Ubicación', exact: true }).click()
   await expect(page.locator('#settings-panel-geography-section')).toBeVisible()
   await expect(page.locator('#settings-panel-portal-registry')).toBeHidden()
+})
+
+test('the root URL and old style parameters always open the gray Desktop workspace', async ({
+  page,
+}) => {
+  for (const url of ['/', '/?scene=circuit&studio=classic']) {
+    await page.goto(url)
+    await expect(page.locator('.studio-workspace #viewport > canvas')).toBeVisible()
+    await expect(page.locator('.studio-preview-link')).toHaveCount(0)
+    expect(await page.locator('#app').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+      'rgb(40, 40, 40)',
+    )
+  }
 })
