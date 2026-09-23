@@ -42,6 +42,7 @@ import { PortalControls } from './portal-controls.js'
 import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
 import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
+import { WheelDebugOverlay } from './wheel-debug.js'
 import { createPortal } from '../src/portal.js'
 import { renderPortals, type ExternalPortalView } from './portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
@@ -1348,6 +1349,8 @@ function togglePlayNow(): void {
       camera.position.copy(orbitStartPosition)
       orbit.target.copy(orbitStartTarget)
       orbit.enabled = true
+      if (wheelDebug.isEnabled) wheelDebug.toggle()
+      $('wheel-debug-hud').hidden = true
       rebuild()
     } else {
       orbitStartPosition = camera.position.clone()
@@ -1520,6 +1523,8 @@ portalControls.projectRegistry = {
 portalControls.rebuild(editor.document)
 const gallery = new Gallery(viewport)
 const sidearm = new Sidearm(viewport)
+const wheelDebug = new WheelDebugOverlay()
+scene.add(wheelDebug.root)
 const raycaster = new THREE.Raycaster()
 let down = new THREE.Vector2()
 renderer.domElement.addEventListener('pointerdown', (e) => {
@@ -1630,6 +1635,14 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'F8') {
     e.preventDefault()
     if (!e.repeat) togglePlay()
+    return
+  }
+  if (e.code === 'F9' && sim) {
+    e.preventDefault()
+    if (!e.repeat) {
+      const enabled = wheelDebug.toggle()
+      toast(enabled ? 'Debug ruedas ON · verde=física, naranja=visual' : 'Debug ruedas OFF')
+    }
     return
   }
   if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
@@ -1874,6 +1887,24 @@ function frame(now: number): void {
       headYaw,
       headPitch,
     )
+    if (wheelDebug.isEnabled) {
+      const terrainMeshes: THREE.Object3D[] = []
+      for (const e of view.document.entities) {
+        if (e.terrain || e.road) {
+          const obj = view.objects.get(e.id)
+          if (obj) terrainMeshes.push(obj)
+        }
+      }
+      worldStream?.root.traverseVisible((object) => {
+        if (
+          (object as THREE.Mesh).isMesh &&
+          ['Terrain', 'Roads'].includes(object.userData.category)
+        )
+          terrainMeshes.push(object)
+      })
+      wheelDebug.setTerrainMeshes(terrainMeshes)
+      wheelDebug.update(sim, sim.player.vehicleId, renderOrigin)
+    }
     if (playerInterior !== sim.player.interiorId) {
       playerInterior = sim.player.interiorId
       yaw = sim.player.yaw
@@ -2010,6 +2041,9 @@ function frame(now: number): void {
           : 'Modo tierra · V / Y para vuelo') + (pad ? ' · Mando modo 2' : '')
       : ''
     $('game-hud').hidden = false
+    const wheelDebugText = wheelDebug.formatHud()
+    $('wheel-debug-hud').hidden = !wheelDebugText
+    $('wheel-debug-hud').textContent = wheelDebugText
     const near = sim.nearestVehicle()
     $('interaction').textContent = p.vehicleId
       ? info?.dockedTo

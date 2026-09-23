@@ -758,6 +758,23 @@ export class Simulation {
     }))
   }
 
+  /** Per-wheel physics contact info for debug diagnostics. */
+  wheelContactInfo(id: string): {
+    wheelCenter: Vec3Tuple
+    contactPoint: Vec3Tuple | null
+    suspensionLength: number
+    isInContact: boolean
+  }[] {
+    const v = this.vehicles.get(id)
+    if (!v) return []
+    return v.raycast.wheelInfos.map((wheel) => ({
+      wheelCenter: vec(wheel.worldTransform.position),
+      contactPoint: wheel.isInContact ? vec(wheel.raycastResult.hitPointWorld) : null,
+      suspensionLength: wheel.suspensionLength,
+      isInContact: wheel.isInContact,
+    }))
+  }
+
   step(elapsed: number): void {
     if (this.disposed) throw new Error('Simulation is disposed')
     if (!Number.isFinite(elapsed) || elapsed < 0)
