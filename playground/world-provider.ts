@@ -175,6 +175,35 @@ export function overpassFeatures(elements: OsmElement[]): MapFeature[] {
   }
   return result
 }
+/** Retain source elevation as well as prepared geometry, including the distant horizon. */
+async function elevationRaster(url: string, signal: AbortSignal): Promise<Lerc.LercData> {
+  const cache = mapCache('nabla-elevation-v1')
+  let hit: Response | undefined
+  try {
+    hit = await cache.match(url)
+  } catch {
+    /* Optional disk storage. */
+  }
+  signal.throwIfAborted()
+  if (hit && Date.now() - Number(hit.headers.get('x-nabla-stored-at')) < 30 * 86400000)
+    return Lerc.decode(await hit.arrayBuffer())
+  try {
+    const response = await fetchChecked(url, signal)
+    const bytes = await response.arrayBuffer()
+    // Validate before caching; provider error documents must not poison the horizon.
+    const raster = Lerc.decode(bytes)
+    signal.throwIfAborted()
+    await cache
+      .put(url, new Response(bytes, { headers: { 'content-type': 'application/octet-stream' } }))
+      .catch(() => {})
+    return raster
+  } catch (error) {
+    signal.throwIfAborted()
+    if (hit) return Lerc.decode(await hit.arrayBuffer())
+    throw error
+  }
+}
+
 async function elevation(
   origin: GeoPoint,
   ox: number,
@@ -202,13 +231,10 @@ async function elevation(
     if (!decoded.has(key))
       decoded.set(
         key,
-        fetchChecked(`${ESRI}/${zoom}/${y}/${x}`, signal)
-          .then((r) => r.arrayBuffer())
-          .then((b) => Lerc.decode(b))
-          .catch((e) => {
-            decoded.delete(key)
-            throw e
-          }),
+        elevationRaster(`${ESRI}/${zoom}/${y}/${x}`, signal).catch((e) => {
+          decoded.delete(key)
+          throw e
+        }),
       )
     rasters.set(key, await decoded.get(key)!)
   }

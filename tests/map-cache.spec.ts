@@ -109,3 +109,26 @@ test('speculative writes cannot evict useful zones when concurrent writers fill 
   expect(result.stats.bytes).toBe(90)
   expect(result.stats.entries).toBe(2)
 })
+
+test('persists a 10 GB budget without allocating it and rejects excessive values', async ({
+  page,
+}) => {
+  const result = await page.evaluate(async () => {
+    const m = await import(String('/map-cache.ts'))
+    await m.setMapCacheBudget(10000)
+    let rejected = false
+    try {
+      await m.setMapCacheBudget(10001)
+    } catch {
+      rejected = true
+    }
+    return { ...(await m.mapCacheStats()), rejected }
+  })
+  expect(result).toMatchObject({ budget: 10_000_000_000, bytes: 0, entries: 0, rejected: true })
+  await page.reload()
+  expect(
+    await page.evaluate(
+      async () => (await (await import(String('/map-cache.ts'))).mapCacheStats()).budget,
+    ),
+  ).toBe(10_000_000_000)
+})

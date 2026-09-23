@@ -103,7 +103,7 @@
             </select>
             <p>
               Alto y Ultra amplían el relieve lejano. Edificios hasta 3 km; las carreteras aparecen
-              donde haya zonas detalladas cargadas. Caché máxima: 100 MB.
+              donde haya zonas detalladas cargadas. La caché de disco se puede ampliar por separado.
             </p>
             <label class="field-label" for="map-cache-budget">Caché de mapas · MB</label>
             <select id="map-cache-budget">
@@ -111,8 +111,17 @@
               <option value="25">25 MB</option>
               <option value="50">50 MB</option>
               <option value="100" selected>100 MB</option>
+              <option value="500">500 MB</option>
+              <option value="1000">1 GB</option>
+              <option value="2000">2 GB</option>
+              <option value="5000">5 GB</option>
+              <option value="10000">10 GB · copia local de zonas visitadas</option>
             </select>
             <p id="map-cache-usage" role="status">Consultando caché…</p>
+            <button id="map-cache-persist">Proteger almacenamiento local</button>
+            <p id="map-cache-storage">
+              El espacio depende del navegador. No es una descarga completa del planeta.
+            </p>
             <button id="map-cache-clear">Vaciar caché de mapas</button>
             <label class="field-label" for="map-buildings">Edificios del mapa</label>
             <select id="map-buildings">

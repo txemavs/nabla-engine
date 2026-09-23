@@ -375,10 +375,10 @@ selection-time network request. Binary prepared geometry remains a separate futu
 migration: typed buffers already transfer between workers and the main thread,
 while public prepared files still contain JSON and base64.
 
-## Browser map cache: shared 100 MB budget
+## Browser map cache: shared byte budget (100 MB default)
 
 Options → Performance → **Caché de mapas · MB** controls a persistent browser-side
-budget of 0 (disabled), 25, 50 or **100 MB**, defaulting to 100. One MB is 1,000,000
+budget from 0 (disabled) through **10 GB**, defaulting to 100 MB. One MB is 1,000,000
 bytes. The panel shows retained response-body bytes and entry count; reopening it
 refreshes the figures. **Vaciar caché de mapas** removes only cached map responses,
 not saved scenes. It retains the selected budget.
@@ -406,7 +406,7 @@ available offline.
 A lower budget trims immediately. Disabling empties the cache and prevents new
 retention. On quota failure, the cache makes room in a separate transaction and retries
 once; if storage is still unavailable, the caller continues using downloaded data.
-The browser can impose a smaller quota or reclaim storage. The 100 MB ceiling counts
+The browser can impose a smaller quota or reclaim storage. The selected budget counts
 response bodies, **not** IndexedDB metadata, HTTP image/asset cache, saved scenes,
 resident meshes, GPU memory or server disk. More disk cache does not itself increase
 world draw distance or keep more collision bodies active.
@@ -441,11 +441,11 @@ find /data/prepared/5 -type f -name '*.json' -exec \
 
 Run conversion with the service's filesystem ownership. It preserves JSON and atomically replaces each binary sidecar. Check available disk space first: keeping both formats uses more server storage. The preparation worker's existing output budget now counts both extensions. Rebuild/restart the preparation image to make future jobs produce both files; deploy the client afterward. Keep JSON for older clients and rollback. For a rollback, restore the previous frontend and worker image; existing JSON remains usable.
 
-A local check on one existing zone measured 21.2 MB JSON versus 16.9 MB binary before HTTP compression (about 20% smaller). This is one sample, not a frame-rate or network-compression benchmark. Retained browser data still shares the 100 MB budget.
+A local check on one existing zone measured 21.2 MB JSON versus 16.9 MB binary before HTTP compression (about 20% smaller). This is one sample, not a frame-rate or network-compression benchmark. Retained browser data shares the selected cache budget (100 MB by default).
 
 ### Five performance presets
 
-Options → Performance → General quality applies a complete preset and persists it. Individual visual controls remain available and mark the selection as Custom. Cache settings can still be adjusted separately. A lower cache preset immediately trims old map payloads to the new budget.
+Options → Performance → General quality applies a complete preset and persists it. Individual visual controls remain available and mark the selection as Custom. Cache settings can still be adjusted separately. Presets can raise a small cache to their recommended minimum but never shrink a larger user-selected cache; lowering the cache selector explicitly trims old payloads.
 
 | Preset       | Terrain horizon | Road detail cap | Buildings | Shadows | Pixel ratio cap | Cache  | Demand concurrency | Prepare lookahead |
 | ------------ | --------------- | --------------- | --------- | ------- | --------------- | ------ | ------------------ | ----------------- |
@@ -457,4 +457,14 @@ Options → Performance → General quality applies a complete preset and persis
 
 Buildings have an additional 3 km visibility cap. Road distances are visibility caps for installed detailed zones, not a promise of a complete road ring. High/Ultra expand the low-resolution elevation mesh, keeping its grid at 121×121 samples and using coarser elevation tiles for the outer horizon. The mesh includes a margin for camera movement between recenters. Existing nearby terrain masks the coarse mesh.
 
-Ultra does **not** request 800 complete OSM zones, enlarge the 100 MB browser limit or increase live provider concurrency to 16. The detailed corridor/entity budget remain bounded. A complete 3–10 km road ring and distant building silhouettes would require additional prepared LOD products; they are not represented as implemented by these presets. Preset names describe settings, not a hardware FPS guarantee.
+Ultra does **not** request 800 complete OSM zones, automatically select a multi-GB browser budget or increase live provider concurrency to 16. The detailed corridor/entity budget remain bounded. A complete 3–10 km road ring and distant building silhouettes would require additional prepared LOD products; they are not represented as implemented by these presets. Preset names describe settings, not a hardware FPS guarantee.
+
+### Large local map retention
+
+The cache selector now offers 500 MB, 1 GB, 2 GB, 5 GB and 10 GB in addition to the smaller limits. The default remains 100 MB. Selecting a budget does not allocate that disk space immediately. All data types share the chosen byte budget and LRU policy; changing visual quality preserves a larger selected cache. The per-response limit remains 100 MB.
+
+Raw LERC elevation tiles now use the shared persistent cache (`nabla-elevation-v1`), including coarse distant-horizon tiles. Validated downloads are retained for 30 days and stale tiles can be used when a refresh fails. This supplements prepared zones, OSM extracts and water. The browser reports its estimated total site quota/usage alongside the selector; that quota also includes other site data and may be smaller than the requested cache limit.
+
+“Protect local storage” requests the browser's persistent-storage permission. The browser decides whether to grant it. Persistence reduces automatic eviction risk; manually clearing site data still deletes the copy. This is a retained collection of downloaded/visited zones, not a complete offline planet or an exported portable map. Missing regions still need the network. There is no bulk OSM download triggered by choosing 10 GB.
+
+A larger cache improves repeat visits. The coarse horizon is still published as one mesh after its elevation samples arrive; the first visit can therefore show a delayed larger update. Increasing disk retention does not turn that initial installation into incremental terrain patches.

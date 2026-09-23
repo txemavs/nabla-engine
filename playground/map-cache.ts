@@ -1,6 +1,7 @@
 /** Shared byte-budgeted map cache. IndexedDB serializes writes across all map workers. */
 const DB = 'nabla-map-cache-v1'
-const MAX = 100_000_000
+const MAX = 100_000_000 // Default budget and per-entry size limit.
+const MAX_BUDGET_MB = 10_000
 interface Entry {
   key: string
   blob: Blob
@@ -54,7 +55,8 @@ export async function mapCacheStats() {
 }
 export async function setMapCacheBudget(mb: number) {
   await migrate()
-  if (!Number.isFinite(mb) || mb < 0 || mb > 100) throw Error('Map cache budget must be 0–100 MB')
+  if (!Number.isFinite(mb) || mb < 0 || mb > MAX_BUDGET_MB)
+    throw Error('Map cache budget must be 0–10000 MB')
   const db = await open(),
     tx = db.transaction(['entries', 'settings'], 'readwrite'),
     done = complete(tx)

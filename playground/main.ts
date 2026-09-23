@@ -1251,7 +1251,7 @@ $('performance-preset').onchange = async () => {
   }
   worldStream?.setQuality(preset.concurrent, preset.ahead)
   try {
-    await setMapCacheBudget(preset.cache)
+    await setMapCacheBudget(Math.max(preset.cache, (await mapCacheStats()).budget / 1_000_000))
     await refreshMapCacheUi()
   } catch {
     toast('Calidad aplicada; caché no disponible')
@@ -2085,6 +2085,10 @@ async function refreshMapCacheUi() {
   try {
     const stats = await mapCacheStats()
     $<HTMLSelectElement>('map-cache-budget').value = String(stats.budget / 1_000_000)
+    const capacity = await navigator.storage?.estimate?.()
+    if (capacity?.quota)
+      $('map-cache-storage').textContent =
+        `Cuota del sitio: ${(capacity.quota / 1e9).toFixed(1)} GB · uso total del sitio: ${((capacity.usage ?? 0) / 1e9).toFixed(2)} GB. No reserva espacio por adelantado.`
     $('map-cache-usage').textContent =
       `${(stats.bytes / 1_000_000).toFixed(1)} / ${stats.budget / 1_000_000} MB · ${stats.entries} archivos`
   } catch {
@@ -2097,6 +2101,16 @@ $('map-cache-budget').onchange = async () => {
     await refreshMapCacheUi()
   } catch {
     $('map-cache-usage').textContent = 'No se pudo ajustar la caché'
+  }
+}
+$('map-cache-persist').onclick = async () => {
+  try {
+    const granted = await navigator.storage.persist()
+    $('map-cache-storage').textContent = granted
+      ? 'Almacenamiento persistente concedido. Borrar los datos del sitio elimina también esta copia.'
+      : 'El navegador no ha concedido persistencia; la caché sigue funcionando y puede ser liberada por él.'
+  } catch {
+    $('map-cache-storage').textContent = 'Persistencia no disponible en este navegador.'
   }
 }
 $('map-cache-clear').onclick = async () => {
