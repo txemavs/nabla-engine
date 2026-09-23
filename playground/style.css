@@ -1022,3 +1022,12 @@ body.playing #footer-mode {
   color: #91aabd;
   margin-bottom: 12px;
 }
+
+.studio-preview-link {
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: none;
+}
+.studio-preview-link:hover {
+  text-decoration: underline;
+}

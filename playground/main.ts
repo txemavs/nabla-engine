@@ -1,3 +1,5 @@
+import { FrameLoop } from './studio/frame-loop.js'
+import { StudioInputOwner } from './studio/input-owner.js'
 import { mapCacheStats, setMapCacheBudget, clearMapCache } from './map-cache.js'
 import { decodePrepared } from './prepared-world.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
@@ -131,6 +133,11 @@ let lastLookTime = 0
 let yaw = 0,
   pitch = 0.24
 const keys = new Set<string>()
+const studioInput = new StudioInputOwner(() => {
+  keys.clear()
+  fireRequested = false
+  if (document.pointerLockElement) document.exitPointerLock()
+})
 let toastTimer: ReturnType<typeof setTimeout>
 function toast(message: string): void {
   $('toast').textContent = message
@@ -803,14 +810,16 @@ document.addEventListener('keydown', (event) => {
     $('add-entity').focus()
   }
 })
-$('undo').onclick = () => {
+function undoScene(): void {
   editor.undo()
   rebuild()
 }
-$('redo').onclick = () => {
+function redoScene(): void {
   editor.redo()
   rebuild()
 }
+$('undo').onclick = undoScene
+$('redo').onclick = redoScene
 for (const [id, kind] of [
   ['add-solid', 'solid'],
   ['add-box', 'box'],
@@ -1388,6 +1397,7 @@ document.addEventListener('mousemove', (e) => {
   }
 })
 window.addEventListener('keydown', (e) => {
+  if (e.defaultPrevented || !studioInput.acceptsInput) return
   if (document.querySelector('.app-menu:popover-open')) return
   if ((e.target as HTMLElement)?.matches('input,select,textarea,[contenteditable]')) return
   if (e.code === 'Tab' && sim) {
@@ -1492,7 +1502,12 @@ document.addEventListener('pointerlockchange', () => {
 let previousButtons: boolean[] = []
 let previousPadIndex: number | null = null
 function pollGamepad(): Gamepad | null {
-  if (!document.hasFocus() || document.hidden || document.querySelector('.app-menu:popover-open')) {
+  if (
+    !studioInput.acceptsInput ||
+    !document.hasFocus() ||
+    document.hidden ||
+    document.querySelector('.app-menu:popover-open')
+  ) {
     previousButtons = []
     return null
   }
@@ -1518,7 +1533,12 @@ function pollGamepad(): Gamepad | null {
   return pad
 }
 function currentInput(pad: Gamepad | null = null) {
-  if (!document.hasFocus() || document.hidden || document.querySelector('.app-menu:popover-open'))
+  if (
+    !studioInput.acceptsInput ||
+    !document.hasFocus() ||
+    document.hidden ||
+    document.querySelector('.app-menu:popover-open')
+  )
     return idleInput()
   const id = sim?.player.vehicleId
   const flight = Boolean(id && sim?.vehicleInfo(id).flightMode)
@@ -1552,6 +1572,7 @@ function currentInput(pad: Gamepad | null = null) {
 new ResizeObserver(() => {
   const w = viewport.clientWidth,
     h = viewport.clientHeight
+  if (w <= 0 || h <= 0) return
   renderer.setSize(w, h)
   camera.aspect = w / Math.max(h, 1)
   camera.updateProjectionMatrix()
@@ -1998,7 +2019,6 @@ function frame(now: number): void {
     renderer.domElement.dataset.drawCalls = String(renderer.info.render.calls)
     renderer.domElement.dataset.frameP95 = p95.toFixed(1)
   }
-  requestAnimationFrame(frame)
 }
 function applyLocation(latitude: number, longitude: number): void {
   if (editor.document.entities.some((e) => e.terrain)) {
@@ -2063,7 +2083,13 @@ if (circuitMode && !localStorage.getItem('nabla.location.requested')) {
   locate()
 }
 if (loadError) toast(loadError)
-requestAnimationFrame(frame)
+const frameLoop = new FrameLoop(frame)
+frameLoop.start()
+window.addEventListener('pagehide', () => frameLoop.stop())
+window.addEventListener('pageshow', () => {
+  previous = performance.now()
+  frameLoop.start()
+})
 
 if (new URLSearchParams(location.search).get('world') === 'geoeuskadi') void loadIrun(true)
 else if (
@@ -2143,3 +2169,18 @@ $('options-menu').addEventListener('toggle', () => {
   if ($('options-menu').matches(':popover-open')) void refreshMapCacheUi()
 })
 void refreshMapCacheUi()
+
+if (new URLSearchParams(location.search).get('studio') === 'desktop') {
+  const { mountStudio } = await import('./studio/shell.js')
+  mountStudio({
+    input: studioInput,
+    reportError: (error) => toast(String(error)),
+    undo: undoScene,
+    redo: redoScene,
+    togglePlay,
+    canUndo: () => !sim && editor.canUndo,
+    canRedo: () => !sim && editor.canRedo,
+    canPlay: () => !loadingWorld,
+    isPlaying: () => !!sim,
+  })
+}

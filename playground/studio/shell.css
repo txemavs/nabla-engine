@@ -1,0 +1,61 @@
+#app.studio-desktop {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: 'header' 'toolbar' 'workspace' 'footer';
+  background: #282828;
+  font-size: 14px;
+}
+.studio-desktop > header {
+  grid-area: header;
+  background: #303030;
+}
+.studio-desktop > .toolbar {
+  grid-area: toolbar;
+  background: #363636;
+}
+.studio-desktop > footer {
+  grid-area: footer;
+}
+.studio-workspace {
+  grid-area: workspace;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.studio-workspace .outliner,
+.studio-workspace .inspector,
+.studio-workspace #viewport {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+.studio-workspace .outliner,
+.studio-workspace .inspector {
+  background: #303030;
+}
+.studio-desktop .desktop-menu-bar {
+  background: transparent;
+}
+.studio-desktop .desktop-menu-bar button {
+  font-size: 14px;
+}
+
+.studio-desktop .studio-preview-link {
+  display: none;
+}
+.studio-desktop .outliner button,
+.studio-desktop .inspector input,
+.studio-desktop .inspector select {
+  font-size: 13px;
+}
+.studio-desktop > header {
+  min-height: 52px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.studio-desktop > .toolbar {
+  min-height: 42px;
+}

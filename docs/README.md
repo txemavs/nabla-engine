@@ -28,3 +28,5 @@ preserves the edit/play contract and a single physics owner.
 ## Regional data pilots
 
 - [geoEuskadi road-area comparison: import, preparation and remaining integration gates](geoeuskadi-pilot.md)
+
+- [Studio Desktop foundation](studio-desktop.md): experimental dockable workspace, runtime boundaries and the migration sequence.
