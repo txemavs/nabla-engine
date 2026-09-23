@@ -77,8 +77,8 @@ export class ShadowManager {
     )
     this.csm.fade = true
     for (const light of this.csm.lights) {
-      light.shadow.normalBias = 0.025
-      light.shadow.radius = 0
+      light.shadow.normalBias = config.tier.normalBias
+      light.shadow.radius = config.tier.radius
       light.shadow.intensity = 1
     }
     for (const material of this.registeredMaterials) {
