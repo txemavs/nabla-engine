@@ -1,3 +1,4 @@
+import { matteGroundMaterial } from './ground-material.js'
 import * as THREE from 'three'
 import type { GeoPoint } from '../src/geography.js'
 import { terrainVertices, terrainIndices, type TerrainData } from '../src/terrain.js'
@@ -9,7 +10,7 @@ export class DistantTerrain {
   private readonly worker = new Worker(new URL('./world-worker.ts', import.meta.url), {
     type: 'module',
   })
-  private readonly material = new THREE.MeshStandardMaterial({
+  private readonly material = matteGroundMaterial({
     color: '#304d25',
     roughness: 1,
   })

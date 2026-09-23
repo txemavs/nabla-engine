@@ -1,3 +1,4 @@
+import { matteGroundMaterial } from './ground-material.js'
 import { BuildingBatches } from './building-batches.js'
 import { isMapBuilding } from '../src/scene.js'
 import { SURFACE_LAYERS, mapSurfaceColor } from '../src/landcover.js'
@@ -31,6 +32,12 @@ import {
   type Simulation,
   type Transform,
 } from '../src/index.js'
+
+function standardMaterial(
+  parameters: THREE.MeshStandardMaterialParameters,
+): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial(parameters)
+}
 
 function mesh(geometry: THREE.BufferGeometry, color: string, roughness = 0.72): THREE.Mesh {
   const material = new THREE.MeshStandardMaterial({ color, roughness })
@@ -360,7 +367,8 @@ export class SceneView {
           g.setIndex(data.faces.flat())
           g.computeVertexNormals()
         }
-        const surface = mesh(g, e.color)
+        const surface = new THREE.Mesh(g, matteGroundMaterial({ color: e.color }))
+        surface.receiveShadow = true
         ;(surface.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide
         surface.position.y = ['footway', 'path', 'pedestrian', 'cycleway'].includes(
           e.source?.tags.highway ?? '',
@@ -389,7 +397,14 @@ export class SceneView {
               3,
             ),
           )
-        const surface = mesh(g, e.terrain.colors ? '#ffffff' : mapSurfaceColor('default', e.color))
+        const surface = new THREE.Mesh(
+          g,
+          matteGroundMaterial({
+            color: e.terrain.colors ? '#ffffff' : mapSurfaceColor('default', e.color),
+          }),
+        )
+        surface.castShadow = true
+        surface.receiveShadow = true
         ;(surface.material as THREE.MeshStandardMaterial).vertexColors = !!e.terrain.colors
         group.add(surface)
       }
@@ -433,7 +448,7 @@ export class SceneView {
           }
           geometry.computeVertexNormals()
         }
-        const material = new THREE.MeshStandardMaterial({
+        const material = (e.landcover || e.railway ? matteGroundMaterial : standardMaterial)({
           color: hasVertexColors
             ? '#ffffff'
             : e.landcover
@@ -485,7 +500,7 @@ export class SceneView {
     }
     for (const entity of entities) {
       if (!entity.surface) continue
-      const material = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 })
+      const material = matteGroundMaterial({ color: '#ffffff' })
       const plane = new THREE.Mesh(
         new THREE.PlaneGeometry(entity.size[0], entity.size[2]),
         material,

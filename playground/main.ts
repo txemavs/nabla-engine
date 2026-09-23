@@ -165,13 +165,15 @@ renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
 scene.background = new THREE.Color('#a6bbd5')
 scene.fog = new THREE.Fog('#a6bbd5', 70, 160)
-// The astronomical sun is the only global illumination source.
+// A small diffuse fill lifts shadows without adding an environment reflection.
 scene.environment = null
 scene.environmentIntensity = 0
 const sun = new THREE.DirectionalLight('#ffe1b1', 3.2)
 sun.position.set(-25, 45, 25)
 sun.castShadow = false
 scene.add(sun)
+const ambientFill = new THREE.AmbientLight('#dce7f5', 0.22)
+scene.add(ambientFill)
 
 const grid = new THREE.GridHelper(100, 100, '#9eb9ae', '#829b93')
 grid.position.y = 0.035
@@ -1878,6 +1880,7 @@ function frame(now: number): void {
       height > 100000 ? 'space' : height > 250 ? 'map' : 'local'
     scene.background = null
     const air = geography.atmosphere
+    ambientFill.intensity = 0.22 * air.day * (1 - air.space)
     water?.setSun(geography.sunDirection, air.day)
     scene.fog = air.space >= 1 ? null : new THREE.Fog(air.color, air.near, air.far)
     const lightDirection = geography.sunDirection
@@ -1899,6 +1902,7 @@ function frame(now: number): void {
     camera.updateProjectionMatrix()
   } else {
     scene.background = new THREE.Color('#a6bbd5')
+    ambientFill.intensity = 0.22
     const mapView = sim?.player.vehicleId && cameraMode === 'map'
     camera.far = mapView ? mapHeight * 4 : 300
     camera.updateProjectionMatrix()
