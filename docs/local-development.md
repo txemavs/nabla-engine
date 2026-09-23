@@ -225,9 +225,10 @@ volume set or deliberately reset your local generated data, preserving projects.
 ### City and village labels
 
 Native tile manifests include a small `places` list (OSM ID, name, category and
-position in the tile frame). The viewer uses these for the ship windshield HUD and GPS locality readouts,
-without adding world labels, editor entities or physics bodies. The active
-non-overlapping tile cover owns the metadata. Older manifests without this optional field still load normally.
+position in the tile frame). The viewer uses these for world labels and GPS locality readouts without adding
+editor entities or physics bodies. Labels are displayed 1,000m above terrain and
+release their textures when tiles are evicted. The active non-overlapping tile
+cover owns the metadata. Older manifests without this optional field still load normally.
 
 After upgrading the generator, restore names on already prepared tiles without
 regenerating GLBs or fetching OSM again:

@@ -1,6 +1,6 @@
 import { test, expect } from './studio-test.js'
 import { nativeMap } from './native-map.js'
-test('native tiles expose HUD metadata without world labels', async ({ page }) => {
+test('native city signs float 1km above ground at half size', async ({ page }) => {
   await nativeMap(page)
   await page.goto('/')
   const result = await page.evaluate(async (root) => {
@@ -23,11 +23,17 @@ test('native tiles expose HUD metadata without world labels', async ({ page }) =
     world.install(key, manifest, payload)
     world.visible = [key]
     const labels = world.navigationPlaces
-    const worldLabel = !!world.root.getObjectByName('Irún')
+    const label = world.root.getObjectByName('Irún')
+    const worldLabel = !!label
+    const y = label.position.y
+    const scale = label.scale.x
     world.dispose()
-    return { worldLabel, text: labels[0].text, altitude: labels[0].position.y }
+    return { worldLabel, text: labels[0].text, y, scale }
   }, process.cwd())
-  expect(result).toEqual({ worldLabel: false, text: 'Irún', altitude: 720 })
+  expect(result.worldLabel).toBe(true)
+  expect(result.text).toBe('Irún')
+  expect(result.y).toBeCloseTo(1600, 4)
+  expect(result.scale).toBe(0.16)
 })
 test('ship HUD is a transparent glass surface and switches off outside', async ({ page }) => {
   await nativeMap(page)

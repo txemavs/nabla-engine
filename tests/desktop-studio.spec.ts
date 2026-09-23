@@ -38,7 +38,7 @@ test('desktop retains the live viewport, edits and layout across panel moves', a
     .getByRole('button', { name: 'Flotar panel' })
     .click()
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-retained-test', 'original')
-  await page.getByRole('button', { name: 'Ventanas', exact: true }).click()
+  await page.getByRole('button', { name: 'Ver', exact: true }).click()
   await page.getByRole('menuitem', { name: 'Restablecer distribución' }).click()
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-retained-test', 'original')
   await page.getByRole('button', { name: 'Ejecutar', exact: true }).click()
@@ -97,4 +97,26 @@ test('the root URL and old style parameters always open the gray Desktop workspa
       'rgb(40, 40, 40)',
     )
   }
+})
+
+test('closed panels stay hidden and can be recovered through View', async ({ page }) => {
+  await page.goto('/?scene=circuit')
+  for (const group of ['properties-tabs', 'scene-tabs']) {
+    const panel = page.locator(`[data-group="${group}"]`)
+    await panel.locator('.nd-tabs').hover()
+    await panel.getByRole('button', { name: 'Cerrar panel', exact: true }).click()
+  }
+  await expect(page.locator('.inspector')).toBeHidden()
+  await expect(page.locator('.outliner')).toBeHidden()
+  await page.getByRole('button', { name: 'Ver', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Propiedades', exact: true }).click()
+  await expect(page.locator('.inspector')).toBeVisible()
+  await page.getByRole('button', { name: 'Ver', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Escena', exact: true }).click()
+  await expect(page.locator('.outliner')).toBeVisible()
+  await page.getByRole('button', { name: 'Ver', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Restablecer distribución', exact: true }).click()
+  await expect(page.locator('.inspector')).toBeVisible()
+  await expect(page.locator('.outliner')).toBeVisible()
+  await expect(page.locator('#viewport > canvas')).toBeVisible()
 })

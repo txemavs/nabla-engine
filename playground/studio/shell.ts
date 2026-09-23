@@ -58,6 +58,10 @@ export function mountStudio(host: StudioHost): void {
     { id: 'scene', title: 'Escena', selector: '.outliner' },
     { id: 'properties', title: 'Propiedades', selector: '.inspector' },
   ]
+  const parkedPanels = document.createElement('div')
+  parkedPanels.hidden = true
+  parkedPanels.style.display = 'none'
+  app.append(parkedPanels)
   const factories = new Map<string, ContentFactory>()
   for (const panel of definitions) {
     const element = app.querySelector<HTMLElement>(panel.selector)!
@@ -69,7 +73,7 @@ export function mountStudio(host: StudioHost): void {
         setVisible: panel.id === 'world' ? (value) => host.input.setVisible(value) : undefined,
         // The existing application owns this DOM, its renderer and its listeners.
         dispose: () => {
-          app.append(element)
+          parkedPanels.append(element)
         },
       }
     })
@@ -145,7 +149,7 @@ export function mountStudio(host: StudioHost): void {
           { id: 'run', label: 'Ejecutar', items: [{ command: 'play' }] },
           {
             id: 'workspace',
-            label: 'Ventanas',
+            label: 'Ver',
             items: [
               ...definitions.map((p) => ({ command: p.id })),
               { separator: true },

@@ -141,11 +141,13 @@ The browser still requires a click to capture the mouse for looking around.
 
 ### Ship navigation HUD
 
-Settlement names are confined to the inside of the ship's forward glass. Their
-virtual signs sit 120 meters above sampled terrain, projected from the current eye
-position onto the glass. They do not appear in exterior views or as world labels.
-The green attitude indicator, speed and absolute altitude update at 10 Hz only
-while the HUD is visible. GPS screens show the nearest loaded settlement; beyond
-2 km it is explicitly described as nearby, not as an administrative municipality.
-No geocoding service is called. Street names are not inferred from rendered GLBs.
-This does not change the `play` entry height.
+Settlement names appear as white camera-facing world labels at 1,000 meters above
+sampled terrain, at half the original display size. They are not drawn on the HUD.
+The ship's forward glass retains its green attitude indicator, speed and absolute
+altitude, updating at 10 Hz only while visible from inside. GPS screens show the
+nearest loaded settlement; beyond 2 km it is described as nearby rather than as
+an administrative municipality. No geocoding service is called. Street names are
+not inferred from rendered GLBs. This does not change the `play` entry height.
+
+Use **Ver → Escena / Propiedades / Vista 3D** to reopen closed panels, or
+**Ver → Restablecer distribución** to recover the default editor layout.
