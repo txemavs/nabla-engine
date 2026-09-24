@@ -36,7 +36,8 @@ import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src
 import { SelectionOutline } from './selection-outline.js'
 import {
   readPerformance,
-  shadowTiers,
+  resolveShadowTier,
+  SHADOW_MATCH_DISTANCE,
   performancePresets,
   performanceProfile,
 } from './performance.js'
@@ -218,7 +219,7 @@ camera.position.set(10, 5, 12)
 
 const shadowManager = new ShadowManager()
 const sunDirection = new THREE.Vector3(25, -45, -25).normalize()
-const shadowTier = shadowTiers[performanceSettings.shadows]
+const shadowTier = resolveShadowTier(performanceSettings.shadows, performanceSettings.distance)
 if (shadowTier) {
   shadowManager.init({
     camera,
@@ -1498,13 +1499,15 @@ for (const [id, key] of [
     sim?.setCollisionDistance(performanceSettings.collisions)
     renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
     renderer.setSize(viewport.clientWidth, viewport.clientHeight)
-    renderer.shadowMap.enabled = performanceSettings.shadows > 0
+    renderer.shadowMap.enabled =
+      performanceSettings.shadows > 0 || performanceSettings.shadows === SHADOW_MATCH_DISTANCE
     shadowManager.reconfigure(
       performanceSettings.shadows,
       camera,
       scene,
       sunDirection,
       sun.intensity,
+      performanceSettings.distance,
     )
     needsRender = true
   }
@@ -2278,7 +2281,8 @@ function frame(now: number): void {
   )
   // Cascade reach is already camera-relative. Geographic elevation must not
   // disable shadows on high ground or after traveling to another origin.
-  const shadowsActive = performanceSettings.shadows > 0
+  const shadowsActive =
+    performanceSettings.shadows > 0 || performanceSettings.shadows === SHADOW_MATCH_DISTANCE
   sun.visible = !shadowsActive
   for (const light of shadowManager.lights) light.visible = shadowsActive
   renderer.domElement.dataset.shadowCascades = String(

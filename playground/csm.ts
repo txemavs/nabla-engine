@@ -10,7 +10,7 @@
  */
 import { CSM } from 'three/addons/csm/CSM.js'
 import * as THREE from 'three'
-import { shadowTiers, type ShadowTier } from './performance.js'
+import { resolveShadowTier, type ShadowTier } from './performance.js'
 
 // The addon ships an older full lighting chunk. Replacing it wholesale drops
 // r186's DFG lookup and multi-scattering initialization, turning metals black.
@@ -43,6 +43,7 @@ export interface CSMConfig {
 export class ShadowManager {
   private csm: CSM | null = null
   private tier: ShadowTier | null = null
+  private qualityValue = 0
   private readonly projectionCamera = new THREE.PerspectiveCamera()
   private projectionKey = ''
   private readonly originals = new Map<THREE.Material, THREE.Material['onBeforeCompile']>()
@@ -178,25 +179,29 @@ export class ShadowManager {
     this.csm?.updateFrustums()
   }
 
-  /** Reconfigure CSM when quality setting changes. */
+  /** Reconfigure CSM when quality setting or draw distance changes. */
   reconfigure(
     qualityValue: number,
     camera: THREE.PerspectiveCamera,
     scene: THREE.Scene,
     lightDirection: THREE.Vector3,
     lightIntensity: number,
+    drawDistanceMetres = 4000,
   ): void {
-    const newTier = shadowTiers[qualityValue]
+    const newTier = resolveShadowTier(qualityValue, drawDistanceMetres)
     if (!newTier) {
+      this.qualityValue = qualityValue
       this.dispose()
       return
     }
     const sameConfig =
+      this.qualityValue === qualityValue &&
       this.tier &&
       this.tier.cascades === newTier.cascades &&
       this.tier.mapSize === newTier.mapSize &&
       this.tier.maxFar === newTier.maxFar
     if (sameConfig) return
+    this.qualityValue = qualityValue
     this.init({
       camera,
       scene,

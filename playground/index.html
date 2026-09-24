@@ -135,10 +135,9 @@
               <option value="custom" disabled>Personalizado</option>
             </select>
             <p>
-              Ultra (20 km) y Extremo (50 km) conservan y dibujan todo el detalle ya cargado
-              dentro de su radio, sin límite de entidades. No descargan de golpe todo el círculo.
-              Los demás modos conservan sus límites habituales. La caché de disco se ajusta por
-              separado.
+              Ultra (20 km) y Extremo (50 km) conservan y dibujan todo el detalle ya cargado dentro
+              de su radio, sin límite de entidades. No descargan de golpe todo el círculo. Los demás
+              modos conservan sus límites habituales. La caché de disco se ajusta por separado.
             </p>
             <label class="field-label" for="map-cache-budget">Caché de mapas · MB</label>
             <select id="map-cache-budget">
@@ -207,6 +206,8 @@
               <option value="512">Bajas · cerca · menor consumo</option>
               <option value="1024">Medias · hasta 200 m</option>
               <option value="2048">Altas · hasta 500 m</option>
+              <option value="4096">Ultra · hasta 4 km</option>
+              <option value="-1">A tope · = distancia de dibujado</option>
             </select>
             <p>
               En altura se retiran las colisiones lejanas. El suelo, los vehículos y los portales

@@ -25,6 +25,33 @@ export const shadowTiers: Record<number, ShadowTier | null> = {
   512: { cascades: 1, mapSize: 512, maxFar: 40, radius: 2.5, normalBias: 0.08 },
   1024: { cascades: 2, mapSize: 1024, maxFar: 200, radius: 2, normalBias: 0.06 },
   2048: { cascades: 3, mapSize: 2048, maxFar: 500, radius: 1.5, normalBias: 0.04 },
+  4096: { cascades: 4, mapSize: 4096, maxFar: 4000, radius: 1.2, normalBias: 0.03 },
+}
+
+/** Sentinel value for "A tope" shadow mode (distance = draw distance). */
+export const SHADOW_MATCH_DISTANCE = -1
+
+/** Template tier for "A tope" mode; maxFar is resolved at runtime from draw distance. */
+const aTopeTierTemplate: ShadowTier = {
+  cascades: 4,
+  mapSize: 4096,
+  maxFar: 0, // placeholder, resolved via resolveShadowTier
+  radius: 1.2,
+  normalBias: 0.03,
+}
+
+/**
+ * Resolve the effective shadow tier for a given quality value and draw distance.
+ * For the "A tope" sentinel (-1), maxFar is derived from the current draw distance (metres).
+ */
+export function resolveShadowTier(
+  shadowsValue: number,
+  drawDistanceMetres: number,
+): ShadowTier | null {
+  if (shadowsValue === SHADOW_MATCH_DISTANCE) {
+    return { ...aTopeTierTemplate, maxFar: drawDistanceMetres }
+  }
+  return shadowTiers[shadowsValue] ?? null
 }
 
 export const performanceDefaults: PerformanceSettings = {
@@ -48,7 +75,7 @@ export function readPerformance(): PerformanceSettings {
       distance: choose(s.distance, [1000, 2000, 4000, 6000, 10000, 20000, 50000], 4000),
       collisions: choose(s.collisions, [200, 400, 800, 2000], 400),
       resolution: choose(s.resolution, [0.75, 1, 1.25, 2], 1.25),
-      shadows: choose(s.shadows, [0, 512, 1024, 2048], 512),
+      shadows: choose(s.shadows, [0, 512, 1024, 2048, 4096, SHADOW_MATCH_DISTANCE], 512),
     }
   } catch {
     return { ...performanceDefaults }
