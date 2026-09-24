@@ -40,6 +40,10 @@ import {
   performancePresets,
   performanceProfile,
 } from './performance.js'
+
+function isLargeScenePreset(preset: string): boolean {
+  return preset === 'ultra' || preset === 'extreme'
+}
 import { ShadowManager } from './csm.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { SolidEditor } from './solid-editor.js'
@@ -342,7 +346,7 @@ const outline = new SelectionOutline()
 scene.add(outline)
 const lastWorldInstallMs = 0
 let water: SeaWater | undefined
-let view = new SceneView(editor.document, performanceSettings.preset === 'ultra', true)
+let view = new SceneView(editor.document, isLargeScenePreset(performanceSettings.preset), true)
 view.setupMaterials((material) => shadowManager.setupMaterial(material))
 scene.add(view.root)
 let geography = new GeographicView(
@@ -439,7 +443,7 @@ function rebuild(prepared?: PreparedMapGeometry): void {
   }
   view.dispose()
   if (prepared) receiveMapGeometry(document.entities, prepared)
-  view = new SceneView(document, performanceSettings.preset === 'ultra', true)
+  view = new SceneView(document, isLargeScenePreset(performanceSettings.preset), true)
   view.setupMaterials((material) => shadowManager.setupMaterial(material))
   renderer.domElement.dataset.impacts = '0'
   scene.add(view.root)
@@ -1299,10 +1303,10 @@ $('file').onchange = async () => {
     const raw = JSON.parse(await file.text())
     const opened =
       raw?.format === 'nabla-project'
-        ? parseProject(raw, performanceSettings.preset === 'ultra')
+        ? parseProject(raw, isLargeScenePreset(performanceSettings.preset))
         : createProject(upgradeReferenceScene(raw))
     const scene = opened.locations.find((p) => p.id === opened.activeLocation)!.scene
-    editor = new SceneEditor(scene, performanceSettings.preset === 'ultra')
+    editor = new SceneEditor(scene, isLargeScenePreset(performanceSettings.preset))
     project = opened
     savedDocument = editor.serialize()
     $('welcome').hidden = true
@@ -1423,7 +1427,7 @@ function togglePlayNow(startFlight = false): void {
       sim = new Simulation(entry?.scene ?? editor.document, {
         playerMode: 'hover',
         planetaryTerrain: !!editor.document.geography?.planetary,
-        experimentalLargeScene: performanceSettings.preset === 'ultra',
+        experimentalLargeScene: isLargeScenePreset(performanceSettings.preset),
         mapBuildingsEnabled: !!performanceSettings.buildings,
       })
       sim.setMapBuildingsEnabled(!!performanceSettings.buildings)
@@ -1488,7 +1492,7 @@ for (const [id, key] of [
     worldStream?.setQuality(
       performanceProfile(performanceSettings).concurrent,
       performanceProfile(performanceSettings).ahead,
-      performanceSettings.preset === 'ultra',
+      isLargeScenePreset(performanceSettings.preset),
     )
     try {
       localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
@@ -1531,14 +1535,14 @@ $('performance-preset').onchange = async () => {
     $<HTMLSelectElement>(control).value = String(performanceSettings[key])
   $('draw-distance').dispatchEvent(new Event('change'))
   performanceSettings.preset = id
-  editor.experimentalLargeScene = id === 'ultra'
+  editor.experimentalLargeScene = isLargeScenePreset(id)
   $<HTMLSelectElement>('performance-preset').value = id
   try {
     localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
   } catch {
     /* Optional persistence. */
   }
-  worldStream?.setQuality(preset.concurrent, preset.ahead, id === 'ultra')
+  worldStream?.setQuality(preset.concurrent, preset.ahead, isLargeScenePreset(id))
   try {
     await setMapCacheBudget(Math.max(preset.cache, (await mapCacheStats()).budget / 1_000_000))
     await refreshMapCacheUi()
@@ -2225,8 +2229,9 @@ function frame(now: number): void {
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
   water?.update(worldCamera, renderOrigin, performanceSettings.distance, now)
   renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
-  view.buildingDistance =
-    performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
+  view.buildingDistance = isLargeScenePreset(performanceSettings.preset)
+    ? performanceSettings.distance
+    : Math.min(3000, performanceSettings.distance)
   geography.viewDistance = worldStream
     ? Math.max(10000, performanceSettings.distance)
     : performanceSettings.distance
@@ -2299,8 +2304,8 @@ function frame(now: number): void {
         performanceSettings.distance,
         !!sim,
         !!performanceSettings.buildings,
-        performanceSettings.preset === 'ultra'
-          ? 20000
+        isLargeScenePreset(performanceSettings.preset)
+          ? performanceSettings.distance
           : Math.min(performanceSettings.distance, performanceSettings.roads),
       )
     const portalLive = [...view.portals.values()].map((p) => p.mesh.material.uniforms.live.value)
@@ -2341,8 +2346,8 @@ function frame(now: number): void {
           performanceSettings.distance,
           !!sim,
           !!performanceSettings.buildings,
-          performanceSettings.preset === 'ultra'
-            ? 20000
+          isLargeScenePreset(performanceSettings.preset)
+            ? performanceSettings.distance
             : Math.min(performanceSettings.distance, performanceSettings.roads),
         )
         if (geography.enabled) {
@@ -2377,8 +2382,8 @@ function frame(now: number): void {
       performanceSettings.distance,
       !!sim,
       !!performanceSettings.buildings,
-      performanceSettings.preset === 'ultra'
-        ? 20000
+      isLargeScenePreset(performanceSettings.preset)
+        ? performanceSettings.distance
         : Math.min(performanceSettings.distance, performanceSettings.roads),
     )
     renderer.autoClear = true
@@ -2730,7 +2735,7 @@ async function restoreStartup(): Promise<void> {
     const result = await prepareStartup(
       storedProject,
       initialScene,
-      performanceSettings.preset === 'ultra',
+      isLargeScenePreset(performanceSettings.preset),
       (message) => {
         label.textContent = message
       },
@@ -2787,7 +2792,7 @@ async function restoreStartup(): Promise<void> {
         )
       }
     }
-    editor = SceneEditor.fromValidated(result.scene, performanceSettings.preset === 'ultra')
+    editor = SceneEditor.fromValidated(result.scene, isLargeScenePreset(performanceSettings.preset))
     savedDocument = result.saved
     selectedId =
       result.scene.entities.find((e) => e.kind === 'vehicle')?.id ??

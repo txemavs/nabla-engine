@@ -43,9 +43,9 @@ export function readPerformance(): PerformanceSettings {
       allowed.includes(value) ? value : fallback
     return {
       preset: typeof s.preset === 'string' && s.preset in performancePresets ? s.preset : 'custom',
-      roads: choose(s.roads, [0, 250, 500, 1000, 2000, 4000, 6000, 20000], 1000),
+      roads: choose(s.roads, [0, 250, 500, 1000, 2000, 4000, 6000, 20000, 50000], 1000),
       buildings: choose(s.buildings, [0, 1], 1),
-      distance: choose(s.distance, [1000, 2000, 4000, 6000, 10000, 20000], 4000),
+      distance: choose(s.distance, [1000, 2000, 4000, 6000, 10000, 20000, 50000], 4000),
       collisions: choose(s.collisions, [200, 400, 800, 2000], 400),
       resolution: choose(s.resolution, [0.75, 1, 1.25, 2], 1.25),
       shadows: choose(s.shadows, [0, 512, 1024, 2048], 512),
@@ -126,14 +126,30 @@ export const performancePresets = {
     concurrent: 3,
     ahead: 45,
   },
+  extreme: {
+    label: 'Extremo · retención experimental 50 km',
+    settings: {
+      roads: 50000,
+      buildings: 1,
+      distance: 50000,
+      collisions: 800,
+      resolution: 2,
+      shadows: 2048,
+    },
+    cache: 250,
+    concurrent: 4,
+    ahead: 60,
+  },
 } as const
 export function performanceProfile(settings: PerformanceSettings) {
   return (
     performancePresets[settings.preset as keyof typeof performancePresets] ??
-    (settings.distance >= 20000
-      ? performancePresets.ultra
-      : settings.distance >= 10000
-        ? performancePresets.high
-        : performancePresets.balanced)
+    (settings.distance >= 50000
+      ? performancePresets.extreme
+      : settings.distance >= 20000
+        ? performancePresets.ultra
+        : settings.distance >= 10000
+          ? performancePresets.high
+          : performancePresets.balanced)
   )
 }
