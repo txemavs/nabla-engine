@@ -72,6 +72,7 @@ self.onmessage = async (event: MessageEvent<{ tile: MapTile }>) => {
         transfer: [
           data.position.buffer,
           data.normal.buffer,
+          data.uv.buffer,
           ...data.blocks.flatMap((b) => [
             b.index.buffer,
             ...b.chunks.map((c) => c.triangles.buffer),

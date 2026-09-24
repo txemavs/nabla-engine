@@ -474,6 +474,7 @@ function setupWorldStream(): void {
     (material) => shadowManager.setupMaterial(material),
   )
   worldStream.setDistance(performanceSettings.distance)
+  worldStream.setRelief(performanceSettings.relief)
   scene.add(worldStream.root)
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
@@ -1473,6 +1474,7 @@ function togglePlayNow(startFlight = false): void {
 for (const [id, key] of [
   ['map-buildings', 'buildings'],
   ['draw-distance', 'distance'],
+  ['relief-span', 'relief'],
   ['road-distance', 'roads'],
   ['collision-distance', 'collisions'],
   ['render-resolution', 'resolution'],
@@ -1496,6 +1498,7 @@ for (const [id, key] of [
       /* Current session remains usable. */
     }
     worldStream?.setDistance(performanceSettings.distance)
+    worldStream?.setRelief(performanceSettings.relief)
     if (worldStream)
       $('world-note').textContent =
         `${editor.document.name} · OSM + ESRI · Vista ≈ ${performanceSettings.distance / 1000} km`
@@ -1523,6 +1526,7 @@ $('performance-preset').onchange = async () => {
   for (const [control, key] of [
     ['map-buildings', 'buildings'],
     ['draw-distance', 'distance'],
+    ['relief-span', 'relief'],
     ['road-distance', 'roads'],
     ['collision-distance', 'collisions'],
     ['render-resolution', 'resolution'],
@@ -2012,6 +2016,8 @@ function frame(now: number): void {
       ? geoPoint.altitude - view.document.geography!.altitude
       : p.position[1]
     const info = p.vehicleId ? sim.vehicleInfo(p.vehicleId, true) : null
+    if (overhead && info?.flightMode)
+      document.querySelector('.caption-tag')!.textContent = 'CENITAL · proa ↑'
     drivingTelemetry.update(p.vehicleId, p.speed, info?.turnRate ?? 0, dt)
     const fov = (cockpit && info) || (!p.vehicleId && firstPerson) ? 70 : 48
     if (camera.fov !== fov) {
@@ -2056,7 +2062,11 @@ function frame(now: number): void {
         .copy(playerFrameQ)
         .multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ')))
     } else if (overhead) {
-      camera.up.set(0, 0, -1)
+      const nose = info?.flightMode
+        ? new THREE.Vector3(vehicleForward.x, 0, vehicleForward.z)
+        : new THREE.Vector3(0, 0, -1)
+      if (nose.lengthSq() < 1e-6) nose.set(0, 0, -1)
+      camera.up.copy(nose.normalize())
       camera.position.set(p.position[0], p.position[1] + mapHeight, p.position[2])
       camera.lookAt(...p.position)
       renderer.domElement.dataset.mapHeight = String(Math.round(mapHeight))
@@ -2260,7 +2270,10 @@ function frame(now: number): void {
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
     camera.far = worldStream
-      ? Math.hypot(Math.max(12000, performanceSettings.distance + 500), Math.max(0, height))
+      ? Math.hypot(
+          Math.max(height >= 2000 ? 80000 : 12000, performanceSettings.distance + 500),
+          Math.max(0, height),
+        )
       : Math.max(300, Math.min(100000000, height * 15))
     renderer.domElement.dataset.viewDistance = String(camera.far)
     camera.updateProjectionMatrix()

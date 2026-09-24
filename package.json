@@ -12,6 +12,17 @@
       "import": "./dist/index.js"
     }
   },
+  "imports": {
+    "#src/*": {
+      "nabla-prepare": "./prepare-dist/src/*",
+      "default": "./src/*"
+    },
+    "#playground/*": {
+      "nabla-prepare": "./prepare-dist/playground/*",
+      "default": "./playground/*"
+    },
+    "#world-cache/*": "./services/world-cache/*"
+  },
   "files": [
     "dist",
     "assets",

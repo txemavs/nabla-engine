@@ -3,7 +3,7 @@ import {
   clipTriangle,
   clusterTriangles,
   type Vertex,
-} from '../services/world-cache/zoom-geometry.js'
+} from '#world-cache/export/zoom-geometry.js'
 const v = (x: number, z: number): Vertex => [x, 0, z, 0, 1, 0, 0.2, 0.4, 0.2]
 test('clipping creates shared boundary coordinates and interpolates attributes', () => {
   const triangles = clipTriangle([v(-1, 0), v(2, 0), v(0, 2)], {

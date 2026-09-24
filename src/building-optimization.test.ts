@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { createEntity } from './scene.js'
-import { optimizePreparedBuildings } from '../services/world-cache/optimize-buildings.js'
+import { optimizePreparedBuildings } from '#world-cache/prepare/optimize-buildings.js'
 import type { PreparedMapGeometry } from '../playground/map-geometry.js'
 
 it('removes exact repeated triangles while preserving winding and roof color boundaries', () => {

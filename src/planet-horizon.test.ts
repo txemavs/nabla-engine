@@ -5,6 +5,8 @@ import { planetTileFrame } from './planet-tile.js'
 it('builds real curved relief with independently replaceable XYZ children and collision triangles', () => {
   const tile = mapTileAt(43.32969, -1.819606, 13),
     data = horizonGeometry(tile, Array(33 * 33).fill(120))
+  expect(data.uv).toHaveLength(33 * 33 * 2)
+  expect(data.uv[1]).toBe(1)
   expect(data.blocks).toHaveLength(16)
   expect(data.blocks.every((b) => coversTile(tile, b.tile))).toBe(true)
   expect(data.blocks.reduce((n, b) => n + b.index.length, 0)).toBe(32 * 32 * 6)

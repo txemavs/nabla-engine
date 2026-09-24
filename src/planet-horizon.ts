@@ -9,8 +9,11 @@ export function horizonGeometry(tile: MapTile, heights: number[]) {
   if (tile.z !== 13 || heights.length !== 33 * 33 || !heights.every(Number.isFinite))
     throw Error('Invalid relief grid')
   const position = new Float32Array(heights.length * 3)
+  const uv = new Float32Array(heights.length * 2)
   for (let row = 0; row <= segments; row++)
-    for (let col = 0; col <= segments; col++)
+    for (let col = 0; col <= segments; col++) {
+      uv[(row * 33 + col) * 2] = col / segments
+      uv[(row * 33 + col) * 2 + 1] = 1 - row / segments
       position.set(
         frame.local([
           (col / segments - 0.5) * frame.width,
@@ -19,6 +22,7 @@ export function horizonGeometry(tile: MapTile, heights: number[]) {
         ]),
         (row * 33 + col) * 3,
       )
+    }
   const blocks = []
   for (let y = 0; y < 4; y++)
     for (let x = 0; x < 4; x++) {
@@ -53,7 +57,7 @@ export function horizonGeometry(tile: MapTile, heights: number[]) {
   geometry.computeVertexNormals()
   const normal = new Float32Array(geometry.getAttribute('normal').array)
   geometry.dispose()
-  return { tile, position, normal, blocks }
+  return { tile, position, normal, uv, blocks }
 }
 export type HorizonGeometry = ReturnType<typeof horizonGeometry>
 export function coversTile(parent: MapTile, child: MapTile): boolean {

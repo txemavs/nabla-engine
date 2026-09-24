@@ -195,10 +195,10 @@ volume set or deliberately reset your local generated data, preserving projects.
 1. [Architecture](architecture.md): library, editor, simulation and rendering.
 2. [Native planetary generation](architecture/native-planet-generation.md): XYZ,
    terrain meshes, GLBs, collisions and the elevation-only horizon.
-3. `services/world-cache/server.py`, `queue_store.py`, `prepare_worker.py`:
+3. `services/world-cache/cache/server.py`, `cache/queue_store.py`, `planet/prepare_worker.py`:
    cache endpoints, authorization, durable queue and publication loop.
-4. `services/world-cache/prepare_planet.py`, `prepare-planet.ts`,
-   `planet-geometry.ts`, `planet-batches.ts`: OSM → scene geometry → batched GLBs.
+4. `services/world-cache/planet/prepare_planet.py`, `planet/prepare-planet.ts`,
+   `planet/planet-geometry.ts`, `planet/planet-batches.ts`: OSM → scene geometry → batched GLBs.
 5. `playground/planet-worker.ts`, `planet-world.ts`, `planet-horizon.ts`:
    browser loading, coverage, eviction, collision support and fallback terrain.
 6. [Studio projects](studio-projects.md), [planetary world](planetary-world.md)
@@ -234,7 +234,7 @@ After upgrading the generator, restore names on already prepared tiles without
 regenerating GLBs or fetching OSM again:
 
 ```sh
-docker compose -f compose.dev.yaml exec world-cache node /app/prepare-dist/services/world-cache/backfill-places.js /publish
+docker compose -f compose.dev.yaml exec world-cache node --conditions=nabla-prepare /app/prepare-dist/services/world-cache/planet/backfill-places.js /publish
 ```
 
 The migration reads checksum-verified cached sources, samples their terrain height,

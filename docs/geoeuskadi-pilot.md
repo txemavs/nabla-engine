@@ -39,10 +39,10 @@ BTA layer 59 is not a substitute for all OSM residential streets and footpaths.
 From the repository root, using Python 3 and the project's Node version:
 
 ```sh
-python3 services/world-cache/import_geoeuskadi.py \
+PYTHONPATH=services/world-cache python3 -m geoeuskadi.import_geoeuskadi \
   --output assets/geography/geoeuskadi-ventas.json
 npm run build:prepare
-node prepare-dist/services/world-cache/prepare-pilot.js \
+node --conditions=nabla-prepare prepare-dist/services/world-cache/prepare/prepare-pilot.js \
   assets/geography/irun-ventas.json \
   assets/geography/geoeuskadi-ventas.json \
   assets/geography/geoeuskadi-pilot assets/geography/ventas-combined.pack
@@ -168,7 +168,7 @@ Rebuild on the preparation machine/server:
 ```sh
 npm ci
 npm run build:prepare
-node prepare-dist/services/world-cache/prepare-driving-pilot.js \
+node --conditions=nabla-prepare prepare-dist/services/world-cache/prepare/prepare-driving-pilot.js \
   assets/geography/irun-ventas.json \
   assets/geography/geoeuskadi-ventas.json \
   assets/geography/ventas-combined.pack
@@ -198,7 +198,7 @@ docker run --rm --network none --cpus=1 --memory=1g \
   -v "$PWD/assets/geography:/input:ro" \
   -v "$PWD/pilot-output:/output" \
   nabla-geoeuskadi-pilot \
-  node prepare-dist/services/world-cache/prepare-driving-pilot.js \
+  node --conditions=nabla-prepare prepare-dist/services/world-cache/prepare/prepare-driving-pilot.js \
   /input/irun-ventas.json /input/geoeuskadi-ventas.json /output/ventas-combined.pack
 ```
 
@@ -239,13 +239,13 @@ limitations. Centerline physics is unchanged.
 Rebuild the current version in this order:
 
 ```sh
-python3 services/world-cache/import_geoeuskadi_landcover.py \
+PYTHONPATH=services/world-cache python3 -m geoeuskadi.import_geoeuskadi_landcover \
   --output assets/geography/geoeuskadi-landcover.json
 npm run build:prepare
-node prepare-dist/services/world-cache/prepare-driving-pilot.js \
+node --conditions=nabla-prepare prepare-dist/services/world-cache/prepare/prepare-driving-pilot.js \
   assets/geography/irun-ventas.json assets/geography/geoeuskadi-ventas.json \
   assets/geography/ventas-combined.pack assets/geography/geoeuskadi-landcover.json
-node prepare-dist/services/world-cache/prepare-pilot.js \
+node --conditions=nabla-prepare prepare-dist/services/world-cache/prepare/prepare-pilot.js \
   assets/geography/irun-ventas.json assets/geography/geoeuskadi-ventas.json \
   assets/geography/geoeuskadi-pilot assets/geography/ventas-combined.pack
 npm run build:demo

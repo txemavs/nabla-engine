@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { Vector3 } from 'three'
-import { planetTileAsset } from '../services/world-cache/planet-geometry.js'
+import { planetTileAsset } from '#world-cache/planet/planet-geometry.js'
 import { mapTileAt, mapTileBounds } from './map-tiles.js'
 import type { PlanetTileSource } from './planet-tile.js'
 

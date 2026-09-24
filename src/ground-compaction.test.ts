@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { createEntity } from './scene.js'
-import { compactGround } from '../services/world-cache/compact-ground.js'
+import { compactGround } from '#world-cache/export/compact-ground.js'
 
 test('ground compaction snaps, welds, removes collapsed and duplicate faces without mutating sources', () => {
   const entity = createEntity('ground', 'solid')

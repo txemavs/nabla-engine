@@ -86,9 +86,9 @@ generated parent is removed. Existing scene files remain user data.
 
 ```sh
 npm run build:prepare
-python3 services/world-cache/prepare_planet.py z/15/16218/11999 /path/to/planet-cache \
+PYTHONPATH=services/world-cache python3 -m planet.prepare_planet z/15/16218/11999 /path/to/planet-cache \
   --cache-base http://127.0.0.1:8080 \
-  --publisher prepare-dist/services/world-cache/prepare-planet.js
+  --publisher prepare-dist/services/world-cache/planet/prepare-planet.js
 
 VITE_WORLD_PREPARED_URL=/prepared VITE_WORLD_PREPARE_API=/prepare npm run build:demo
 ```

@@ -271,9 +271,9 @@ Bind-mounted cache, queue and prepared files survive image replacement. A fronte
 release alone does not update the worker's bundled geometry code. Keep both builds
 on compatible revisions. For an incompatible geometry change update together:
 
-- `VERSION` in `services/world-cache/queue_store.py`;
+- `VERSION` in `services/world-cache/cache/queue_store.py`;
 - `PREPARED_VERSION` and browser cache namespace in `playground/prepared-world.ts`;
-- the emitted wire version in `services/world-cache/prepare.ts`.
+- the emitted wire version in `services/world-cache/prepare/prepare.ts`.
 
 Build the frontend with the existing public routes:
 
@@ -438,7 +438,7 @@ npm ci
 npm run build:prepare
 # Use the prepared directory mounted by your cache service; adjust the path.
 find /data/prepared/5 -type f -name '*.json' -exec \
-  node prepare-dist/services/world-cache/convert-prepared.js {} \;
+  node --conditions=nabla-prepare prepare-dist/services/world-cache/prepare/convert-prepared.js {} \;
 ```
 
 Run conversion with the service's filesystem ownership. It preserves JSON and atomically replaces each binary sidecar. Check available disk space first: keeping both formats uses more server storage. The preparation worker's existing output budget now counts both extensions. Rebuild/restart the preparation image to make future jobs produce both files; deploy the client afterward. Keep JSON for older clients and rollback. For a rollback, restore the previous frontend and worker image; existing JSON remains usable.

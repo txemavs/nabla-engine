@@ -21,7 +21,7 @@ services:
       setup:
         condition: service_completed_successfully
     command:
-      [sh, -c, 'export PREPARE_TOKEN="$$(cat /secrets/prepare-token)"; exec python3 -u server.py']
+      [sh, -c, 'export PREPARE_TOKEN="$$(cat /secrets/prepare-token)"; exec python3 -u -m cache.server']
     environment:
       CACHE_MAX_BYTES: '5368709120'
       PREPARE_MAX_BYTES: '5368709120'

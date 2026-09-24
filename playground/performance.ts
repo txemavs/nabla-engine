@@ -3,6 +3,7 @@ export interface PerformanceSettings {
   roads: number
   buildings: number
   distance: number
+  relief: number
   collisions: number
   resolution: number
   shadows: number
@@ -32,6 +33,7 @@ export const performanceDefaults: PerformanceSettings = {
   roads: 1000,
   buildings: 1,
   distance: 4000,
+  relief: 2,
   collisions: 400,
   resolution: 1.25,
   shadows: 512,
@@ -46,6 +48,7 @@ export function readPerformance(): PerformanceSettings {
       roads: choose(s.roads, [0, 250, 500, 1000, 2000, 4000, 6000, 20000], 1000),
       buildings: choose(s.buildings, [0, 1], 1),
       distance: choose(s.distance, [1000, 2000, 4000, 6000, 10000, 20000], 4000),
+      relief: choose(s.relief, [2, 4, 8, 12], 2),
       collisions: choose(s.collisions, [200, 400, 800, 2000], 400),
       resolution: choose(s.resolution, [0.75, 1, 1.25, 2], 1.25),
       shadows: choose(s.shadows, [0, 512, 1024, 2048], 512),
@@ -62,6 +65,7 @@ export const performancePresets = {
       roads: 250,
       buildings: 0,
       distance: 1000,
+      relief: 2,
       collisions: 200,
       resolution: 0.75,
       shadows: 0,
@@ -76,6 +80,7 @@ export const performancePresets = {
       roads: 500,
       buildings: 1,
       distance: 2000,
+      relief: 2,
       collisions: 200,
       resolution: 1,
       shadows: 512,
@@ -90,6 +95,7 @@ export const performancePresets = {
       roads: 1000,
       buildings: 1,
       distance: 4000,
+      relief: 2,
       collisions: 400,
       resolution: 1.25,
       shadows: 512,
@@ -103,7 +109,8 @@ export const performancePresets = {
     settings: {
       roads: 4000,
       buildings: 1,
-      distance: 10000,
+      distance: 20000,
+      relief: 8,
       collisions: 800,
       resolution: 1.25,
       shadows: 1024,
@@ -118,6 +125,7 @@ export const performancePresets = {
       roads: 20000,
       buildings: 1,
       distance: 20000,
+      relief: 8,
       collisions: 800,
       resolution: 2,
       shadows: 2048,

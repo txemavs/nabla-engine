@@ -94,6 +94,8 @@ export class PlanetWorld {
   private discoveryOffset = 0
   private next = 0
   private distance = 4000
+  private relief = 2
+  private aerial = false
   private originOffset = new THREE.Vector3()
   private controller = new AbortController()
   private protectedPositions: Vec3Tuple[] = []
@@ -106,7 +108,7 @@ export class PlanetWorld {
     private base = import.meta.env.VITE_WORLD_PREPARED_URL || '/prepared',
     private api = import.meta.env.VITE_WORLD_PREPARE_API || '/prepare',
   ) {
-    this.horizon = new PlanetHorizon(origin, changed)
+    this.horizon = new PlanetHorizon(origin, changed, undefined, setupMaterial)
     this.root.add(this.horizon.root)
     this.worker.onmessage = (
       event: MessageEvent<{ id: number; payload?: PlanetPayload; error?: string }>,
@@ -143,12 +145,23 @@ export class PlanetWorld {
   setDistance(distance: number) {
     this.distance = distance
   }
+  setRelief(span: number) {
+    this.relief = span
+  }
   update(position: Vec3Tuple, velocity: Vec3Tuple, _protected: Vec3Tuple[] = []): void {
     if (this.disposed) return
     this.protectedPositions = _protected
     const gps = localToGeo(this.origin, position)
-    this.horizon.update(gps.latitude, gps.longitude, Math.max(8000, this.distance))
     const height = Math.max(0, gps.altitude - this.groundAltitude(position))
+    this.aerial = height >= 2000
+    const width = (40075016 * Math.cos((gps.latitude * Math.PI) / 180)) / 2 ** 13
+    const flight = Math.ceil(Math.max(this.distance, 40000) / width)
+    this.horizon.update(
+      gps.latitude,
+      gps.longitude,
+      this.aerial ? Math.max(this.relief, flight) : this.relief,
+    )
+    this.horizon.setFocus(this.aerial ? mapTileAt(gps.latitude, gps.longitude, 15) : null)
     this.plan = planMapZooms({
       latitude: gps.latitude,
       longitude: gps.longitude,
@@ -366,8 +379,10 @@ export class PlanetWorld {
   }
   private cover() {
     if (!this.plan) return
-    const cover = planetReadyCover(this.plan, new Set(this.resident.keys())).map(mapTileId)
-    this.visible = cover.length ? cover : this.visible
+    const cover = this.aerial
+      ? []
+      : planetReadyCover(this.plan, new Set(this.resident.keys())).map(mapTileId)
+    this.visible = this.aerial ? [] : cover.length ? cover : this.visible
     this.horizon.setCoverage(this.visible.map((key) => this.ready.get(key)!.tile))
     const active = new Set(this.visible)
     for (const [key, r] of this.resident) {
