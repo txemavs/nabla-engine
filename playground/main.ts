@@ -188,7 +188,8 @@ const renderer = new THREE.WebGLRenderer({
   alpha: true,
 })
 renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
-renderer.shadowMap.enabled = performanceSettings.shadows > 0
+renderer.shadowMap.enabled =
+  performanceSettings.shadows > 0 || performanceSettings.shadows === SHADOW_MATCH_DISTANCE
 renderer.shadowMap.type = THREE.PCFShadowMap
 // Refresh once for the main view; auxiliary cameras reuse that map.
 renderer.shadowMap.autoUpdate = false
