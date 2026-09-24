@@ -131,12 +131,14 @@
               <option value="balanced">Equilibrado</option>
               <option value="high">Alto</option>
               <option value="ultra">Ultra · retención experimental 20 km</option>
+              <option value="extreme">Extremo · retención experimental 50 km</option>
               <option value="custom" disabled>Personalizado</option>
             </select>
             <p>
-              Ultra conserva y dibuja todo el detalle ya cargado hasta 20 km, sin límite de
-              entidades dentro de ese radio. No descarga de golpe todo el círculo. Los demás modos
-              conservan sus límites habituales. La caché de disco se ajusta por separado.
+              Ultra (20 km) y Extremo (50 km) conservan y dibujan todo el detalle ya cargado
+              dentro de su radio, sin límite de entidades. No descargan de golpe todo el círculo.
+              Los demás modos conservan sus límites habituales. La caché de disco se ajusta por
+              separado.
             </p>
             <label class="field-label" for="map-cache-budget">Caché de mapas · MB</label>
             <select id="map-cache-budget">
@@ -169,6 +171,7 @@
               <option value="6000">6 km</option>
               <option value="10000">10 km · relieve</option>
               <option value="20000">20 km · relieve</option>
+              <option value="50000">50 km · relieve</option>
             </select>
             <label class="field-label" for="road-distance">Detalle de carreteras</label>
             <select id="road-distance">
@@ -180,6 +183,7 @@
               <option value="4000">4 km</option>
               <option value="6000">6 km</option>
               <option value="20000">20 km · detalle cargado</option>
+              <option value="50000">50 km · detalle cargado</option>
             </select>
             <label class="field-label" for="collision-distance"
               >Colisiones de edificios cercanos</label
