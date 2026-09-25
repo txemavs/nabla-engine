@@ -58,15 +58,15 @@ export function emitFurniture(d: District, f: MapFeature): boolean {
   p[1] = d.height(p[0], p[2])
   const lamp = tags.highway === 'street_lamp'
   const id = 'osm-' + f.id.replace('/', '-')
-  const pole = createEntity(id + '-pole', 'solid', [p[0], p[1] + (lamp ? 2.2 : 1.6), p[2]])
+  const pole = createEntity(id + '-pole', 'solid', [p[0], p[1] + (lamp ? 2.5 : 1.6), p[2]])
   pole.name = lamp ? 'Farola' : 'Semáforo'
-  pole.geometry = boxSolid(lamp ? [0.12, 4.4, 0.12] : [0.14, 3.2, 0.14])
+  pole.geometry = boxSolid(lamp ? [0.12, 5, 0.12] : [0.14, 3.2, 0.14])
   pole.color = '#6d7680'
   pole.source = d.source(f)
   d.entities.push(pole)
-  const head = createEntity(id + '-head', 'solid', [p[0], p[1] + (lamp ? 5.05 : 3.5), p[2]])
+  const head = createEntity(id + '-head', 'solid', [p[0], p[1] + (lamp ? 5.75 : 3.5), p[2]])
   head.name = pole.name
-  head.geometry = lamp ? sphereSolid(1.05) : boxSolid([0.32, 0.9, 0.28])
+  head.geometry = lamp ? sphereSolid(0.75) : boxSolid([0.32, 0.9, 0.28])
   head.color = lamp ? '#fff1d2' : '#1c1c1c'
   head.source = d.source(f)
   d.entities.push(head)

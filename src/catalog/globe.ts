@@ -7,7 +7,7 @@ export function createGlobeLamp(id: string, position: Vec3Tuple, name: string): 
     ...createEntity(id, 'box', position),
     name,
     color: '#6d7680',
-    size: [0.12, 4.4, 0.12],
+    size: [0.12, 5, 0.12],
     light: {
       color: '#fff1d2',
       intensity: 280,

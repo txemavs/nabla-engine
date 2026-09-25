@@ -1,13 +1,13 @@
 import { test, expect } from './studio-test.js'
 import { nativeMap } from './native-map.js'
-test('starts in Ventas, saves authored content without generated entities and drives on native GLBs', async ({
+test('starts in Boston, saves authored content without generated entities and drives on native GLBs', async ({
   page,
 }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await nativeMap(page)
   await page.goto('/')
-  await expect(page.locator('#scene-name')).toHaveText('Irún · Ventas')
+  await expect(page.locator('#scene-name')).toHaveText('Boston')
   await expect(page.locator('#world-note')).toContainText(/GLB planetarios · [1-9]/)
   await expect(page.locator('[data-entity-id="world-buildings"]')).toHaveCount(0)
   await page.locator('#name').fill('Mi A3')

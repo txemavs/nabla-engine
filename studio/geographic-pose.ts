@@ -1,4 +1,4 @@
-import { fromWorldPose, toWorldPose, worldPoseGeography } from '../src/math/geo/sphere/pose.js'
+import { fromWorldPose, toWorldPose, worldPoseGeography } from '../src/math/geo/pose.js'
 import type { GeoPoint } from '../src/math/geo/sphere.js'
 import type { Transform } from '../src/stage/scene.js'
 

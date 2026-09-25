@@ -252,3 +252,20 @@ it('raises the settled A3 chassis by five centimetres while keeping tyres on the
   raised.dispose()
   previous.dispose()
 })
+
+it('pitches the nose down when forward is positive', () => {
+  const doc = document()
+  doc.entities.find((e) => e.id === 'spawn')!.transform.position = [0, 0.1, -15]
+  const sim = new Simulation(doc)
+  step(sim, 30)
+  sim.interact()
+  sim.toggleFlight()
+  sim.setInput({ ...idleInput(), lift: 1 })
+  step(sim, 120)
+  sim.setInput({ ...idleInput(), forward: 1 })
+  step(sim, 90)
+  const q = sim.entityTransform('carrier').rotation
+  const nose = new Quaternion().set(...q).vmult(new Vec3(0, 0, -1))
+  expect(nose.y).toBeLessThan(-0.05)
+  sim.dispose()
+})

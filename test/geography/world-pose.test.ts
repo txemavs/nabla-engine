@@ -6,7 +6,7 @@ import {
   reframeVector,
   toWorldPose,
   worldPoseGeography,
-} from '../../src/math/geo/sphere/pose.js'
+} from '../../src/math/geo/pose.js'
 import { rotationDegrees, type Transform } from '../../src/stage/scene.js'
 const sydney = { latitude: -33.8688, longitude: 151.2093, altitude: 20 }
 

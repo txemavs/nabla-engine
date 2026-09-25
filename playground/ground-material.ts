@@ -15,6 +15,12 @@ export function matteGroundMaterial(
 }
 
 const firstTransportLayer = Math.max(...Object.values(SURFACE_LAYERS)) + 1
+const footHighways = ['path', 'footway', 'pedestrian', 'cycleway', 'steps', 'track']
+
+/** Paths sit above the carriageway. Published tiles still store the old lower layer. */
+export function liftFootLayer(layer: number): number {
+  return layer === firstTransportLayer ? firstTransportLayer + 5 : layer
+}
 
 /** Order only coplanar transport surfaces; physical bridge/tunnel heights still apply. */
 export function transportLayer(entity: {
@@ -23,12 +29,7 @@ export function transportLayer(entity: {
 }): number {
   if (entity.railway) return firstTransportLayer + (entity.railway.part === 'ballast' ? 2 : 3)
   const highway = entity.source?.tags?.highway
-  return (
-    firstTransportLayer +
-    (highway && ['path', 'footway', 'pedestrian', 'cycleway', 'steps', 'track'].includes(highway)
-      ? 0
-      : 1)
-  )
+  return firstTransportLayer + (highway && footHighways.includes(highway) ? 5 : 1)
 }
 
 export function groundDepthBias(layer: number) {

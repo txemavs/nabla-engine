@@ -11,9 +11,7 @@
   full validation. Undo history shares one detached incoming batch.
 - Physics catches up at most four fixed steps per frame. Long pauses cannot trigger
   a fifteen-step burst; dropped time is reported explicitly.
-- Contact history uses Cannon's sparse body-ID matrix through a typed adapter.
-  Reset/storage scales with recorded contacts, rather than all possible body pairs.
-  This does not change collision geometry, broadphase, solver or collision distance.
+- Rapier keeps its own contact pairs. There is no dense body-pair matrix.
 - Cockpit charts share projected road data for each scene revision. Cached bounds
   reject off-chart paths without scanning their vertices, using each screen's zoom.
 - Ocean decoding runs in a separate worker with bounded caches and concurrency.
@@ -47,9 +45,8 @@ streaming stalls.
 
 `npm run check` verifies formatting, types, unit/physics tests and both builds.
 Targeted browser tests exercise road rendering, ocean/solar shaders and streaming
-at the origin and 12 km away. Contact-matrix tests compare collision events and
-motion against Cannon's default matrix and verify zero dense storage at 18,000
-bodies. Chart tests cover shared projections and long segments crossing the view.
+at the origin and 12 km away. A drop test checks a dynamic body resting on a
+static one. Chart tests cover shared projections and long segments crossing the view.
 
 ## Flight presentation
 

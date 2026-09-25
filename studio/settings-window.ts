@@ -22,6 +22,7 @@ export function mountSettingsWindow(input: StudioInputOwner): void {
     { id: 'sky-section', title: 'Sol y luna' },
     { id: 'geography-section', title: 'Ubicación' },
     { id: 'portal-registry', title: 'Portales' },
+    { id: 'options-panel-layers', title: 'Capas' },
   ]
   const factories = new Map<string, ContentFactory>()
   for (const tab of tabs) {

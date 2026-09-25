@@ -111,12 +111,12 @@ export class FieldLights {
         group.add(pole, head)
       } else if (placed.kind === 'lamp') {
         const pole = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.05, 0.07, 4.4, 5),
+          new THREE.CylinderGeometry(0.05, 0.07, 5, 5),
           new THREE.MeshBasicMaterial({ color: '#6d7680' }),
         )
-        pole.position.y = 2.2
-        const ball = new THREE.Mesh(new THREE.SphereGeometry(1.05, 8, 6), glow)
-        ball.position.y = 5.05
+        pole.position.y = 2.5
+        const ball = new THREE.Mesh(new THREE.SphereGeometry(0.75, 8, 6), glow)
+        ball.position.y = 5.75
         group.add(pole, ball)
       } else {
         const ball = new THREE.Mesh(new THREE.SphereGeometry(0.8, 10, 8), glow)

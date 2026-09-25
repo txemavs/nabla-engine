@@ -1,11 +1,7 @@
 import { planetChart } from './planet-chart.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, Mesh, MeshStandardMaterial, Matrix3, Vector3 } from 'three'
-import {
-  planetCollisionChunks,
-  type PlanetManifest,
-  type PlanetMesh,
-} from '../src/planet/index.js'
+import { planetCollisionChunks, type PlanetManifest, type PlanetMesh } from '../src/planet/index.js'
 import { mapCache } from './map-cache.js'
 const controllers = new Map<number, AbortController>()
 self.onmessage = async (
@@ -25,6 +21,7 @@ self.onmessage = async (
   const controller = new AbortController()
   controllers.set(id, controller)
   const meshes: PlanetMesh[] = []
+  const photos: { mesh: PlanetMesh; image: CanvasImageSource }[] = []
   let vegetation: { position: [number, number, number]; size: [number, number] }[] = []
   let bytesTotal = 0
   try {
@@ -55,6 +52,7 @@ self.onmessage = async (
       const gltf = await loader.parseAsync(bytes, '')
       gltf.scene.updateMatrixWorld(true)
       try {
+        photos.length = 0
         gltf.scene.traverse((node) => {
           if (name === 'terrain' && Array.isArray(node.userData.nablaTile?.vegetation))
             vegetation = node.userData.nablaTile.vegetation
@@ -73,11 +71,13 @@ self.onmessage = async (
           const g = mesh.geometry,
             position = g.getAttribute('position'),
             normal = g.getAttribute('normal'),
-            color = g.getAttribute('color')
+            color = g.getAttribute('color'),
+            uvAttr = g.getAttribute('uv')
           if (!position || !normal || position.count > 4000000) throw Error('Invalid planet mesh')
           const p = new Float32Array(position.count * 3),
             n = new Float32Array(position.count * 3),
-            c = color ? new Float32Array(position.count * 3) : undefined
+            c = color ? new Float32Array(position.count * 3) : undefined,
+            uv = uvAttr ? new Float32Array(uvAttr.count * 2) : undefined
           const nm = new Matrix3().getNormalMatrix(mesh.matrixWorld)
           for (let i = 0; i < position.count; i++) {
             p.set(
@@ -92,6 +92,7 @@ self.onmessage = async (
               i * 3,
             )
             if (c && color) c.set([color.getX(i), color.getY(i), color.getZ(i)], i * 3)
+            if (uv && uvAttr) uv.set([uvAttr.getX(i), uvAttr.getY(i)], i * 2)
           }
           if (!p.every(Number.isFinite) || !n.every(Number.isFinite))
             throw Error('Invalid GLB coordinates')
@@ -103,12 +104,23 @@ self.onmessage = async (
             position: p,
             normal: n,
             color: c,
+            uv,
             index: g.index ? new Uint32Array(g.index.array) : undefined,
             tint: '#' + material.color.getHexString(),
             side: material.side,
             metadata: mesh.userData,
           })
+          const image = material.map?.image
+          if (uv && image)
+            photos.push({
+              mesh: meshes[meshes.length - 1],
+              image: image as CanvasImageSource,
+            })
         })
+        for (const photo of photos) {
+          photo.mesh.map =
+            photo.image instanceof ImageBitmap ? photo.image : await createImageBitmap(photo.image)
+        }
       } finally {
         gltf.scene.traverse((node) => {
           const m = node as Mesh
@@ -129,9 +141,11 @@ self.onmessage = async (
         m.normal.buffer,
         ...(m.color ? [m.color.buffer] : []),
         ...(m.index ? [m.index.buffer] : []),
+        ...(m.uv ? [m.uv.buffer] : []),
       ]),
       ...chunks.map((c) => c.triangles.buffer),
-    ] as ArrayBuffer[]
+      ...meshes.flatMap((m) => (m.map ? [m.map] : [])),
+    ] as Transferable[]
     self.postMessage(
       {
         id,

@@ -1,7 +1,12 @@
 import * as THREE from 'three'
 
 /** Interior trim follows the existing carrier collision shell; dimensions are metres. */
-export function carrierInterior(): { room: THREE.Group; screens: THREE.Mesh[]; touch: THREE.Mesh } {
+export function carrierInterior(): {
+  room: THREE.Group
+  screens: THREE.Mesh[]
+  door: THREE.Mesh[]
+  touch: THREE.Mesh
+} {
   const room = new THREE.Group()
   room.name = 'Carrier interior lining'
   const panel = (
@@ -42,17 +47,6 @@ export function carrierInterior(): { room: THREE.Group; screens: THREE.Mesh[]; t
   skin(panel([4.77, 0.018, 9.8], [0, -0.889, 0], '#384553'), [145, 146, 370, 222])
   skin(panel([4.77, 0.025, 9.8], [0, 2.035, 0], '#39434f'), [660, 150, 360, 214])
   for (const x of [-2.385, 2.385]) {
-    // Two openings line up with the hull shutters. The rest of the skin stays.
-    const band: [number, number, number, number, number][] = [
-      [0.025, 0.98, 9.8, -0.4, 0],
-      [0.025, 1.42, 9.8, 1.32, 0],
-      [0.025, 0.52, 1.55, 0.35, -4.125],
-      [0.025, 0.52, 3.3, 0.35, 0],
-      [0.025, 0.52, 1.55, 0.35, 4.125],
-    ]
-    for (const [w, h, d, y, z] of band)
-      skin(panel([w, h, d], [x, y, z], '#35404d'), [147, 2, 365, 137])
-    for (const z of [-4.2, -1.5, 0, 1.5, 4.2]) panel([0.055, 2.88, 0.055], [x, 0.57, z], '#283949')
     const light = panel([0.035, 0.045, 9.5], [x * 0.985, 1.82, 0], '#8ebaff')
     light.name = 'Cabin strip'
     ;(light.material as THREE.MeshStandardMaterial).emissive.set('#8ebaff')
@@ -62,12 +56,12 @@ export function carrierInterior(): { room: THREE.Group; screens: THREE.Mesh[]; t
   for (const x of [-1.5, 1.5]) panel([1.75, 2.82, 0.065], [x, 0.58, 0], '#303b48')
   panel([1.2, 0.72, 0.065], [0, 1.65, 0], '#303b48')
   const screens = [-0.78, 0, 0.78].map((x) => {
-    panel([0.66, 0.38, 0.008], [x, 0.175, -3.711], '#050608')
+    panel([0.66, 0.38, 0.008], [x, 0.28, -3.711], '#050608')
     const screen = new THREE.Mesh(
       new THREE.PlaneGeometry(0.62, 0.34),
       new THREE.MeshBasicMaterial({ color: '#030405' }),
     )
-    screen.position.set(x, 0.175, -3.706)
+    screen.position.set(x, 0.28, -3.706)
     room.add(screen)
     return screen
   })
@@ -86,6 +80,18 @@ export function carrierInterior(): { room: THREE.Group; screens: THREE.Mesh[]; t
   glass.position.set(0, 0.55, -5.05)
   room.add(glass)
   panel([2.49, 0.008, 0.44], [0, 0.016, -3.34], '#050608')
+  // Same screens as the helm row, on the cabin face of the door. +X is the sitter's right.
+  const door = [-1.05, 1.05].map((x) => {
+    panel([0.66, 0.38, 0.008], [x, 0.28, -0.05], '#050608')
+    const screen = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.62, 0.34),
+      new THREE.MeshBasicMaterial({ color: '#030405' }),
+    )
+    screen.position.set(x, 0.28, -0.056)
+    screen.rotation.y = Math.PI
+    room.add(screen)
+    return screen
+  })
   const touch = new THREE.Mesh(
     new THREE.PlaneGeometry(2.43, 0.4),
     new THREE.MeshBasicMaterial({ color: '#030405' }),
@@ -93,5 +99,5 @@ export function carrierInterior(): { room: THREE.Group; screens: THREE.Mesh[]; t
   touch.rotation.x = -Math.PI / 2
   touch.position.set(0, 0.0202, -3.34)
   room.add(touch)
-  return { room, screens, touch }
+  return { room, screens, door, touch }
 }

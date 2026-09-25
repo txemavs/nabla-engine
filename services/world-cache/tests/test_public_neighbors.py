@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from cache.queue_store import Queue, has_ready_neighbor
+from cache.queue_store import GEOMETRY_REVISION, Queue, has_ready_neighbor
 
 
 class PublicNeighborsTests(unittest.TestCase):
@@ -27,7 +27,7 @@ class PublicNeighborsTests(unittest.TestCase):
             files[layer] = {'path': name, 'bytes': 7}
         (directory / 'manifest.json').write_text(json.dumps({
             'format': 'nabla-planet-tile-v1', 'generator': 'native-xyz-v2',
-            'geometryRevision': 'native-surfaces-v2',
+            'geometryRevision': GEOMETRY_REVISION,
             'id': key.replace('z/', 'WebMercatorQuad/', 1), 'files': files,
         }))
 

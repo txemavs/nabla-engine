@@ -1,4 +1,5 @@
 import { addSunDisc } from './sun-disc.js'
+import { createLensFlare } from './lens-flare.js'
 import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../src/planet/sky.js'
 import * as THREE from 'three'
 import {
@@ -61,6 +62,8 @@ export class GeographicView {
   private failed = 0
   private key = ''
   private earthTexture?: THREE.Texture
+  private readonly sunDisc: { value: THREE.Color }
+  private readonly flare: ReturnType<typeof createLensFlare>
   private readonly daylight = new THREE.DirectionalLight('#ffffff', 2.5)
   private readonly backdrop = new THREE.Mesh(
     new THREE.SphereGeometry(190000, 16, 12),
@@ -93,7 +96,8 @@ export class GeographicView {
     )
     this.space.add(this.earth)
     this.moon = new THREE.Mesh(new THREE.SphereGeometry(1.7374, 32, 24), moonMaterial(this.moonSun))
-    addSunDisc(this.backdrop.material, this.sunDirection)
+    this.sunDisc = addSunDisc(this.backdrop.material, this.sunDirection)
+    this.flare = createLensFlare(this.sunDirection)
     this.space.add(this.moon)
     const rotation = this.origin ? localFrame(this.origin).invert() : new THREE.Quaternion()
     this.space.add(this.daylight, this.backdrop)
@@ -313,6 +317,14 @@ export class GeographicView {
         })
     }
   }
+  setLayers(layers: { sky: boolean; planets: boolean; sun: boolean }) {
+    this.backdrop.visible = layers.sky
+    this.earth.visible = layers.planets
+    this.moon.visible = layers.planets
+    this.stars.visible = layers.planets
+    this.sunDisc.value.set(layers.sun ? '#ffffff' : '#000000')
+    this.flare.mesh.visible = layers.sun
+  }
   render(
     renderer: THREE.WebGLRenderer,
     camera: THREE.PerspectiveCamera,
@@ -325,7 +337,15 @@ export class GeographicView {
     this.camera.position.copy(worldPosition).multiplyScalar(SCALE)
     this.camera.quaternion.copy(camera.quaternion)
     this.backdrop.position.copy(this.camera.position)
+    this.flare.aspect.value = camera.aspect
     renderer.render(this.space, this.camera)
+  }
+  /** Fullscreen pass. Parent it to the world scene so it composites with the city. */
+  get lensFlare() {
+    return this.flare.mesh
+  }
+  setViewAspect(aspect: number) {
+    this.flare.aspect.value = aspect
   }
   dispose() {
     this.disposed = true
@@ -337,6 +357,8 @@ export class GeographicView {
     }
     this.cache.clear()
     this.tiles.removeFromParent()
+    this.flare.mesh.removeFromParent()
+    this.flare.dispose()
     this.earthTexture?.dispose()
     this.space.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points) {

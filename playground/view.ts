@@ -68,12 +68,33 @@ export class SceneView {
   readonly touchScreens = new Map<string, THREE.Mesh>()
   readonly flightScreens = new Map<string, THREE.Mesh>()
   readonly portalTablets = new Map<string, THREE.Mesh[]>()
+  readonly placeScreens = new Map<string, THREE.Mesh>()
+  readonly systemScreens = new Map<string, THREE.Mesh>()
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   night = false
   pressShipSwitch(id: string, kind: ShipSwitch): void {
     this.shipLights.get(id)?.press(kind)
+  }
+  /** Chrome trim in the Audi GLB is stored with metalness 0. Lights do the shine. */
+  private shineVehicle(model: THREE.Object3D): void {
+    model.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      const materials = Array.isArray(object.material) ? object.material : [object.material]
+      for (const material of materials) {
+        if (!(material instanceof THREE.MeshStandardMaterial)) continue
+        if (/^llanta/i.test(material.name) && material.metalness > 0.5) {
+          material.metalness = 0.35
+          material.needsUpdate = true
+        }
+        if (!/^cromo/i.test(material.name)) continue
+        material.metalness = 1
+        material.roughness = Math.min(material.roughness, 0.32)
+        material.envMap = null
+        material.needsUpdate = true
+      }
+    })
   }
   private readonly roads = new RoadBatches()
   private readonly buildings = new BuildingBatches()
@@ -529,11 +550,13 @@ export class SceneView {
           const hud = new ShipHud()
           interior.room.add(hud.mesh)
           this.shipHuds.set(e.id, hud)
-          this.helmScreens.set(e.id, interior.screens[1])
+          this.systemScreens.set(e.id, interior.screens[0])
+          this.flightScreens.set(e.id, interior.screens[1])
+          this.helmScreens.set(e.id, interior.screens[2])
           this.touchScreens.set(e.id, interior.touch)
-          this.flightScreens.set(e.id, interior.screens[0])
+          this.placeScreens.set(e.id, interior.door[1])
           for (const mouth of this.document.entities.filter((m) => m.parentId === e.id && m.portal))
-            this.portalTablets.set(mouth.id, [interior.screens[mouth.portal!.clearsRamp ? 2 : 0]])
+            this.portalTablets.set(mouth.id, [interior.door[0]])
         }
         if (e.visual) this.assetVehicle(e, group)
         else this.car(e, group)
@@ -596,6 +619,7 @@ export class SceneView {
         applyPose(model, part.transform)
         parent.add(model)
         prepare?.(model)
+        if (part.url.includes('car.audi')) this.shineVehicle(model)
         if (this.materialSetup) this.setupMaterials(this.materialSetup)
         if (fallback) {
           fallback.removeFromParent()
@@ -611,6 +635,25 @@ export class SceneView {
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
       if (visual.body.url === '/world/car.audi.a3.cabrio.glb') {
+        model.traverse((object) => {
+          if (!(object instanceof THREE.Mesh)) return
+          const materials = Array.isArray(object.material) ? object.material : [object.material]
+          const next = materials.map((material) => {
+            if (
+              !(material instanceof THREE.MeshStandardMaterial) ||
+              !/^pintura/i.test(material.name)
+            )
+              return material
+            const paint = material.clone()
+            paint.map = null
+            paint.color.set(e.color)
+            paint.metalness = 0.5
+            paint.roughness = 0.32
+            paint.envMap = null
+            return paint
+          })
+          object.material = Array.isArray(object.material) ? next : next[0]
+        })
         this.carLights.set(e.id, new CarLights(model))
         this.carMirrors.set(e.id, new CarMirrors(model))
         const interior = model.getObjectByName('Interior')
@@ -635,6 +678,7 @@ export class SceneView {
         hinge.attach(part)
       }
       this.ramps.set(e.id, hinge)
+      this.shipLights.get(e.id)?.attachStern(hinge)
     })
     if (visual.wheel) {
       const wheels = definition.hubs.map((hub, i) => {
@@ -818,14 +862,14 @@ export class SceneView {
       applyPose(object, sim.entityTransform(e.id, true))
       if (e.portal) {
         e.portal = sim.portalState(e.id)
-        this.portals.get(e.id)!.mesh.visible =
-          !e.parentId ||
-          e.portal.mode !== 'closed' ||
-          (!!e.portal.clearsRamp && sim.vehicleInfo(e.parentId).rampClosed)
+        const surface = this.portals.get(e.id)!
+        // A closed carrier mouth is the ramp. The black quad only shows once the gate is linked.
+        surface.mesh.visible = !e.parentId || e.portal.mode !== 'closed'
         const light = this.objects.get(e.id)!.getObjectByName('Portal status') as THREE.Mesh<
           THREE.BoxGeometry,
           THREE.MeshStandardMaterial
         >
+        if (e.parentId) light.visible = surface.mesh.visible
         light.material.color.set(e.portal.mode === 'open' ? '#5bacff' : '#354254')
       }
     }

@@ -59,14 +59,14 @@ test('native zoom viewer refines, coarsens and exposes global downloads', async 
     r.fulfill({ status: 503, body: 'Not used in this test' }),
   )
   await page.goto('/zoom-lab.html')
-  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', /15/)
+  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '15')
   await expect(page.locator('#files a').first()).toHaveAttribute(
     'download',
-    /^nabla-earth-WebMercatorQuad-/,
+    /^nabla-earth-WebMercatorQuad-z15-/,
   )
   await page.click('#far')
-  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '13')
+  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '')
   await page.click('#middle')
-  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', /14/)
+  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '')
   expect(errors).toEqual([])
 })

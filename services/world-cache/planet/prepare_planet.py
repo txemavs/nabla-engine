@@ -62,8 +62,8 @@ def prepare(address, output, cache_base, publisher):
     with tempfile.TemporaryDirectory(prefix='nabla-planet-') as temporary:
         path = Path(temporary) / 'source.json'
         atomic_write(path, source)
-        subprocess.run(['node', '--conditions=nabla-prepare', '--max-old-space-size=768', str(publisher), str(path), str(output),
-                        cache_base.rstrip('/') + '/elevation'], check=True, timeout=600)
+        subprocess.run(['node', '--conditions=nabla-prepare', '--max-old-space-size=1024', str(publisher), str(path), str(output),
+                        cache_base.rstrip('/') + '/elevation'], check=True, timeout=1200)
 
 
 if __name__ == '__main__':

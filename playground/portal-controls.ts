@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { HelmMap } from './helm-map.js'
 import { localToGeo } from '../src/math/geo/sphere.js'
+import { mapTileAt, mapTileFilename, mapTilePath } from '../src/scene/mercator.js'
 import { CSS3DObject, CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js'
 import type { SceneDocument } from '../src/stage/scene.js'
 import type { Simulation } from '../src/simulation/simulation.js'
@@ -35,7 +36,7 @@ export class PortalControls {
     string,
     {
       carrier: string
-      kind: 'touch' | 'telemetry' | 'map'
+      kind: 'touch' | 'telemetry' | 'map' | 'where' | 'systems'
       panel: HTMLDivElement
       object: CSS3DObject
       chart?: HelmMap
@@ -181,7 +182,7 @@ export class PortalControls {
       this.entries.set(mouth.id, { panel, select, status, object })
     }
     for (const carrier of document.entities.filter((e) => e.vehicle?.interior)) {
-      for (const kind of ['touch', 'telemetry', 'map'] as const) {
+      for (const kind of ['touch', 'telemetry', 'map', 'where', 'systems'] as const) {
         const panel = window.document.createElement('div')
         panel.className = `helm-console ${kind}-console`
         panel.dataset.carrier = carrier.id
@@ -191,12 +192,53 @@ export class PortalControls {
         if (kind === 'map')
           panel.innerHTML =
             '<strong>NAVEGACIÓN</strong><canvas aria-label="Mapa cenital de carreteras"></canvas><small>Norte arriba · mapa local</small>'
+        if (kind === 'where')
+          panel.innerHTML =
+            '<strong>DÓNDE</strong><output></output><small class="where-detail"></small>'
+        if (kind === 'systems') {
+          panel.innerHTML =
+            '<strong>SISTEMAS</strong><div class="systems-board"><button type="button" data-helm="off">POWER</button><button type="button" data-ship="nav">NAV</button><button type="button" data-ship="spots">FOCOS</button><button type="button" data-helm="space">SPACE</button><button type="button" data-ship="beacon">FLASH</button><output class="sys-time">--:--</output><output class="sys-rumbo">---°</output><button type="button" data-helm="plane">PLANE</button><button type="button" data-door>PUERTA</button><span></span><span></span><button type="button" data-helm="drone">DRONE</button><button type="button" data-helm="car">LAND</button><button type="button" data-ship="shutters">PERSIANA</button><button type="button" data-helm="auto">AUTO</button><button type="button" data-helm="drone">HOVER</button></div>'
+          for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-ship]'))
+            button.onclick = () => {
+              if (panel.dataset.active !== 'true') return
+              button.classList.toggle('is-on')
+              this.onShipSwitch?.(
+                carrier.id,
+                button.dataset.ship as 'nav' | 'beacon' | 'spots' | 'cabin' | 'shutters',
+              )
+            }
+          for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-helm]'))
+            button.onclick = () => {
+              if (panel.dataset.active !== 'true' || !this.simulation) return
+              this.report(
+                this.simulation.setHelmMode(
+                  button.dataset.helm as 'off' | 'auto' | 'car' | 'drone' | 'plane' | 'space',
+                ),
+              )
+            }
+          panel.querySelector<HTMLButtonElement>('[data-door]')!.onclick = () => {
+            if (!this.simulation || panel.dataset.active !== 'true') return
+            try {
+              this.report(
+                this.simulation.setGarageDoor(
+                  carrier.id,
+                  !this.simulation.vehicleInfo(carrier.id).rampClosed,
+                ),
+              )
+            } catch (error) {
+              this.report((error as Error).message)
+            }
+          }
+        }
         if (kind === 'touch') {
           panel.innerHTML =
             '<div class="helm-indicators">NABLA · CONTROL DE VUELO</div><div class="hand-controls"><div class="ship-switches"><button type="button" data-ship="nav">NAV</button><button type="button" data-ship="beacon">FLASH</button><button type="button" data-ship="spots">FOCOS</button><button type="button" data-ship="cabin" class="is-on">CABINA</button></div><div class="dpad" data-hand="left"><span>WASD</span></div><div class="helm-desk"><button type="button" data-helm="off">Apagada</button><button type="button" data-helm="auto">Auto</button><button type="button" data-helm="car">Coche</button><output class="helm-mode">Modo coche</output><button type="button" data-helm="drone">Dron</button><button type="button" data-helm="plane">Avión</button><button type="button" data-helm="space">Espacio</button><button type="button" data-door>Cerrar garaje</button><button type="button" data-brake>Frenar</button></div><div class="dpad" data-hand="right"><span>CURSORES</span></div><div class="ship-switches"><button type="button" data-ship="shutters">PERSIANAS</button></div></div>'
           for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-ship]'))
             button.onclick = () => {
-              if (this.simulation?.player.vehicleId !== carrier.id || panel.dataset.active !== 'true')
+              if (
+                this.simulation?.player.vehicleId !== carrier.id ||
+                panel.dataset.active !== 'true'
+              )
                 return
               button.classList.toggle('is-on')
               this.onShipSwitch?.(
@@ -206,10 +248,15 @@ export class PortalControls {
             }
           for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-helm]'))
             button.onclick = () => {
-              if (this.simulation?.player.vehicleId !== carrier.id || panel.dataset.active !== 'true')
+              if (
+                this.simulation?.player.vehicleId !== carrier.id ||
+                panel.dataset.active !== 'true'
+              )
                 return
               this.report(
-                this.simulation.setHelmMode(button.dataset.helm as 'off' | 'auto' | 'car' | 'drone' | 'plane' | 'space'),
+                this.simulation.setHelmMode(
+                  button.dataset.helm as 'off' | 'auto' | 'car' | 'drone' | 'plane' | 'space',
+                ),
               )
             }
           panel.querySelector<HTMLButtonElement>('[data-door]')!.onclick = () => {
@@ -285,6 +332,8 @@ export class PortalControls {
     helmScreens: Map<string, THREE.Mesh>,
     touchScreens: Map<string, THREE.Mesh>,
     flightScreens: Map<string, THREE.Mesh>,
+    placeScreens: Map<string, THREE.Mesh>,
+    systemScreens: Map<string, THREE.Mesh>,
     renderOrigin: THREE.Vector3,
     cockpit = false,
   ): void {
@@ -346,7 +395,11 @@ export class PortalControls {
           ? touchScreens
           : entry.kind === 'telemetry'
             ? flightScreens
-            : helmScreens
+            : entry.kind === 'where'
+              ? placeScreens
+              : entry.kind === 'systems'
+                ? systemScreens
+                : helmScreens
       ).get(entry.carrier)
       const anchor = helmScreens.get(entry.carrier)
       if (!sim || !mesh || !anchor) continue
@@ -387,6 +440,40 @@ export class PortalControls {
           `${info.speedKmh.toFixed(0)} km/h · Altitud ${altitude}`
         entry.panel.querySelector('small')!.textContent =
           `${info.flightMode ? 'VUELO · altura asistida' : 'TIERRA'}\nCabeceo ${((euler.x * 180) / Math.PI).toFixed(0)}° · Alabeo ${((euler.z * 180) / Math.PI).toFixed(0)}°\nLímite ${info.cruiseSpeed} km/h`
+      }
+      if (readout && entry.kind === 'where') {
+        const pose = sim.entityTransform(entry.carrier)
+        const [x, , z] = pose.position
+        const under = underfoot(document, x, z)
+        const output = entry.panel.querySelector('output')!
+        const detail = entry.panel.querySelector('.where-detail')!
+        if (document.geography) {
+          const gps = localToGeo(document.geography, pose.position)
+          const tile = mapTileAt(gps.latitude, gps.longitude, 15)
+          output.textContent = `${mapTilePath(tile)}\nzoom ${tile.z} · x ${tile.x} · y ${tile.y}`
+          detail.textContent = `${mapTileFilename(tile, 'terrain')}\n${mapTileFilename(tile, 'buildings-osm')}\n${under}`
+        } else {
+          output.textContent = 'sin geografía'
+          detail.textContent = under
+        }
+      }
+      if (entry.kind === 'systems') {
+        const clock = entry.panel.querySelector<HTMLOutputElement>('.sys-time')
+        const course = entry.panel.querySelector<HTMLOutputElement>('.sys-rumbo')
+        const door = entry.panel.querySelector<HTMLButtonElement>('[data-door]')
+        if (clock)
+          clock.textContent = new Date().toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        if (course) {
+          const yaw = new THREE.Euler().setFromQuaternion(
+            new THREE.Quaternion(...sim.entityTransform(entry.carrier).rotation),
+          ).y
+          const deg = (Math.round(((-yaw * 180) / Math.PI) % 360) + 360) % 360
+          course.textContent = `${String(deg).padStart(3, '0')}°`
+        }
+        door?.classList.toggle('is-on', !info.rampClosed)
       }
       if (entry.chart) {
         const pose = sim.entityTransform(entry.carrier)
@@ -499,4 +586,46 @@ export class PortalControls {
   finish(): void {
     for (const entry of this.active) entry.mesh.material = entry.material
   }
+}
+
+function underfoot(document: SceneDocument, x: number, z: number): string {
+  let building: string | undefined
+  let street: string | undefined
+  let streetDist = Infinity
+  for (const e of document.entities) {
+    if (e.vehicle || e.portal || e.parentId) continue
+    const tags = e.source?.tags
+    const [px, , pz] = e.transform.position
+    if (tags?.building && e.size) {
+      if (Math.abs(x - px) <= e.size[0] / 2 && Math.abs(z - pz) <= e.size[2] / 2) building = e.name
+    }
+    if (!e.road || !tags?.highway) continue
+    for (const path of e.road.paths)
+      for (let i = 1; i < path.length; i++) {
+        const d = segmentDistance(x, z, path[i - 1][0], path[i - 1][2], path[i][0], path[i][2])
+        if (d <= e.road.width / 2 && d < streetDist) {
+          streetDist = d
+          street = e.name
+        }
+      }
+  }
+  return [
+    building ? `Edificio · ${building}` : 'Edificio · ninguno',
+    street ? `Calle · ${street}` : 'Calle · ninguna',
+  ].join('\n')
+}
+
+function segmentDistance(
+  x: number,
+  z: number,
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+): number {
+  const dx = bx - ax
+  const dz = bz - az
+  const length = dx * dx + dz * dz
+  const t = length === 0 ? 0 : Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / length))
+  return Math.hypot(x - (ax + dx * t), z - (az + dz * t))
 }

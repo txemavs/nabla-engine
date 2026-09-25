@@ -1,9 +1,8 @@
 /**
- * Convex prisms from nearby GLB triangles.
- * Cannon's Trimesh cannot collide with all vehicle box shapes; these prisms can.
+ * Nearby GLB triangles as static trimeshes.
  * The old set stays until the replacement is built.
  */
-import { Body, ConvexPolyhedron, Material, Quaternion, Vec3, World } from '../../simulation/physics.js'
+import { Body, Material, Quaternion, Trimesh, Vec3, World } from '../../simulation/physics.js'
 import type { QuatTuple, Transform, Vec3Tuple } from '../../math/frame/vectors.js'
 import type { PlanetCollisionChunk } from '../contract.js'
 
@@ -13,11 +12,10 @@ export interface PlanetCollisionTile {
   chunks: PlanetCollisionChunk[]
 }
 
-/** Nearby convex triangle prisms use the GLB vertices, including roads and the curved ground. */
+/** Nearby trimeshes use the GLB vertices, including roads and the curved ground. */
 export class PlanetCollisions {
   private tiles: PlanetCollisionTile[] = []
   private built = new Map<string, Body>()
-  private pending?: { key: string; body: Body; chunk: PlanetCollisionChunk; cursor: number }
   private wanted = new Set<string>()
   private selectionKey = ''
   private tileKey = ''
@@ -103,62 +101,22 @@ export class PlanetCollisions {
       this.wanted = new Set(candidates.map((c) => c.key))
     }
     const candidates = this.candidates
-    if (this.pending && !this.wanted.has(this.pending.key)) this.pending = undefined
     const end = performance.now() + budgetMs
     do {
-      if (!this.pending) {
-        const next = candidates.find((c) => !this.built.has(c.key))
-        if (!next) break
-        const body = new Body({ mass: 0, material: this.material })
-        body.position.set(...(next.tile.pose.position as Vec3Tuple))
-        body.quaternion.set(...(next.tile.pose.rotation as QuatTuple))
-        this.pending = { key: next.key, body, chunk: next.chunk, cursor: 0 }
+      const next = candidates.find((c) => !this.built.has(c.key))
+      if (!next) break
+      const body = new Body({ mass: 0, material: this.material })
+      body.position.set(...(next.tile.pose.position as Vec3Tuple))
+      body.quaternion.set(...(next.tile.pose.rotation as QuatTuple))
+      const count = next.chunk.triangles.length / 3
+      if (count < 3) {
+        this.built.set(next.key, body)
+        continue
       }
-      const job = this.pending
-      for (
-        let count = 0;
-        count < 24 && job.cursor < job.chunk.triangles.length;
-        count++, job.cursor += 9
-      ) {
-        const a = job.chunk.triangles
-        const p = [0, 3, 6].map(
-          (offset) =>
-            new Vec3(
-              a[job.cursor + offset],
-              a[job.cursor + offset + 1],
-              a[job.cursor + offset + 2],
-            ),
-        )
-        const normal = p[1].vsub(p[0]).cross(p[2].vsub(p[0]))
-        if (normal.lengthSquared() < 1e-12) continue
-        normal.normalize()
-        // Top is exactly the rendered face; thickness extends inward only.
-        const center = p[0]
-          .vadd(p[1])
-          .vadd(p[2])
-          .scale(1 / 3)
-          .vsub(normal.scale(0.025))
-        const vertices = [...p, ...p.map((v) => v.vsub(normal.scale(0.05)))].map((v) =>
-          v.vsub(center),
-        )
-        job.body.addShape(
-          new ConvexPolyhedron({
-            vertices,
-            faces: [
-              [0, 1, 2],
-              [5, 4, 3],
-              [0, 3, 4, 1],
-              [1, 4, 5, 2],
-              [2, 5, 3, 0],
-            ],
-          }),
-          center,
-        )
-      }
-      if (job.cursor >= job.chunk.triangles.length) {
-        this.built.set(job.key, job.body)
-        this.pending = undefined
-      }
+      const indices = new Uint32Array(count)
+      for (let i = 0; i < count; i++) indices[i] = i
+      body.addShape(new Trimesh(next.chunk.triangles, indices))
+      this.built.set(next.key, body)
     } while (performance.now() < end)
     this.ready = candidates.every((c) => this.built.has(c.key))
     // Swap complete nearby coverage atomically; never collide with both LODs.
@@ -174,7 +132,6 @@ export class PlanetCollisions {
   dispose() {
     for (const body of this.built.values()) if (body.world) this.world.removeBody(body)
     this.built.clear()
-    this.pending = undefined
     this.tiles = []
   }
 }

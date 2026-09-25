@@ -6,6 +6,9 @@ import time
 from pathlib import Path
 from planet.prepare_planet import tile_bounds
 
+# Keep in step with PLANET_GEOMETRY_REVISION. Older manifests are regenerated.
+GEOMETRY_REVISION = 'native-surfaces-v3'
+
 
 def normalize(key):
     tile_bounds(key)
@@ -101,14 +104,14 @@ class Queue:
                         accepted += 1
                         continue
                     manifest = ready_manifest(self.output, tile) if self.output else None
-                    present = self.output is None or bool(manifest and manifest.get('geometryRevision') == 'native-surfaces-v2')
+                    present = self.output is None or bool(manifest and manifest.get('geometryRevision') == GEOMETRY_REVISION)
                     if (row['state'] != 'ready' or present) and now-row['updated'] < (86400 if row['state']=='ready' else 3600):
                         accepted += 1
                         continue
                 # Owner-side prewarming can publish a cell before it has a queue row.
                 # Adopt that manifest rather than regenerating the same source again.
                 manifest = ready_manifest(self.output, tile) if self.output else None
-                if not row and manifest and manifest.get('geometryRevision') == 'native-surfaces-v2':
+                if not row and manifest and manifest.get('geometryRevision') == GEOMETRY_REVISION:
                     db.execute('INSERT INTO planet_jobs (id,path,tile,state,priority,attempts,next,updated) VALUES (?,?,?,?,?,0,0,?)', (identity,path,tile,'ready',priority,now))
                     accepted += 1
                     continue

@@ -61,6 +61,7 @@
             <option value="52.5163,13.3777">Berlín · Puerta de Brandeburgo</option>
             <option value="40.7580,-73.9855">Nueva York · Times Square</option>
             <option value="35.6595,139.7005">Tokio · Shibuya</option>
+            <option value="42.3601,-71.0589">Boston</option>
             <option value="43.32969,-1.819606">Irún · Ventas</option>
           </select>
           <form id="travel-form">
@@ -121,7 +122,67 @@
         </div>
         <input id="file" type="file" accept=".json,application/json" hidden />
         <div id="options-menu" class="app-menu" popover aria-label="Opciones">
+          <div class="options-tabs" role="tablist">
+            <button type="button" id="options-tab-layers" role="tab" aria-controls="options-panel-layers">
+              Capas
+            </button>
+            <button
+              type="button"
+              id="options-tab-settings"
+              role="tab"
+              aria-selected="true"
+              aria-controls="options-panel-settings"
+            >
+              Ajustes
+            </button>
+          </div>
+          <div id="options-panel-layers" role="tabpanel" hidden>
+            <p>Apaga piezas hasta dejar el escenario vacío y ver qué queda.</p>
+            <div>
+              <button type="button" id="layers-all">Todo</button>
+              <button type="button" id="layers-none">Nada</button>
+            </div>
+            <span class="eyebrow">GLB</span>
+            <label><input id="layer-glb" type="checkbox" checked /> GLB z15</label>
+            <span class="eyebrow">TESELAS</span>
+            <label><input id="layer-relief" type="checkbox" checked /> Horizonte z13</label>
+            <label><input id="layer-z14" type="checkbox" checked /> Fotos z14</label>
+            <label><input id="layer-z15" type="checkbox" checked /> Fotos z15</label>
+            <label><input id="layer-horizon-water" type="checkbox" checked /> Agua del horizonte</label>
+            <label><input id="layer-sea" type="checkbox" checked /> Mar</label>
+            <label><input id="layer-maps" type="checkbox" checked /> Mapas</label>
+            <span class="eyebrow">CIELO</span>
+            <label><input id="layer-sky" type="checkbox" checked /> Cielo y niebla</label>
+            <label><input id="layer-sun" type="checkbox" checked /> Sol</label>
+            <label><input id="layer-planets" type="checkbox" checked /> Tierra, Luna y estrellas</label>
+            <span class="eyebrow">ESCENA</span>
+            <label><input id="layer-entities" type="checkbox" checked /> Objetos</label>
+            <label><input id="layer-grid" type="checkbox" checked /> Rejilla</label>
+          </div>
+          <div id="options-panel-settings" role="tabpanel">
           <button id="css-screen-demo">Consola de la nave</button>
+          <details id="drape-section" class="help">
+            <summary>CAPAS DE PROYECCIÓN</summary>
+            <p>
+              El satélite se pinta encima del color. Por defecto solo los tejados. El terreno queda
+              debajo; huertas y bosque, encima.
+            </p>
+            <div id="drape-layers">
+              <label><input type="checkbox" data-drape="roofs" checked /> Tejados</label>
+              <label><input type="checkbox" data-drape="farmland" /> Huertas</label>
+              <label><input type="checkbox" data-drape="forest" /> Bosque</label>
+              <label><input type="checkbox" data-drape="grass" /> Pradera</label>
+              <label><input type="checkbox" data-drape="scrub" /> Matorral</label>
+              <label><input type="checkbox" data-drape="terrain" /> Terreno</label>
+              <label><input type="checkbox" data-drape="residential" /> Residencial</label>
+              <label><input type="checkbox" data-drape="industrial" /> Industrial</label>
+              <label><input type="checkbox" data-drape="sand" /> Arena</label>
+              <label><input type="checkbox" data-drape="rock" /> Roca</label>
+              <label><input type="checkbox" data-drape="wetland" /> Humedal</label>
+              <label><input type="checkbox" data-drape="water" /> Agua</label>
+              <label><input type="checkbox" data-drape="roads" /> Carreteras</label>
+            </div>
+          </details>
           <details id="performance-section" class="help">
             <summary>RENDIMIENTO</summary>
             <label class="field-label" for="performance-preset">Calidad general</label>
@@ -248,6 +309,7 @@
               Suelo y Tierra disponibles sin conexión.
             </p>
           </details>
+          </div>
         </div>
         <div id="help-menu" class="app-menu" popover aria-label="Ayuda">
           <details id="controls-section" class="help">
@@ -321,8 +383,8 @@
             ><button id="add-car">Audi A3 Cabrio</button
             ><button id="add-carrier">Contenedor volador</button
             ><button id="add-streetlight">Farola de autopista</button
-            ><button id="add-globe">Farola de barrio</button>
-            <button id="add-sprite">Sprite</button><button id="add-group">Grupo</button>
+            ><button id="add-globe">Farola de barrio</button> <button id="add-sprite">Sprite</button
+            ><button id="add-group">Grupo</button>
             <hr />
             <button id="sample-portals">Portal</button
             ><button id="sample-gallery">Galería 2.5D</button>

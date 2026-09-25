@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { SceneGraph, type Entity } from '../src/stage/scene.js'
 import { mapSurfaceColor, SURFACE_LAYERS } from '../src/planet/land/surface.js'
-import { transportLayer, matteGroundMaterial } from './ground-material.js'
+import { liftFootLayer, transportLayer, matteGroundMaterial } from './ground-material.js'
 
 export interface TileArtifact {
   version: number
@@ -145,15 +145,16 @@ export function restoreTileLayers(root: THREE.Object3D): void {
                 : {}),
             })
           : Number(object.userData.groundLayer || 0)
+    const depth = category === 'Roads' ? liftFootLayer(layer) : layer
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
       // Land-use polygons are overlapping paint on terrain, not separate solids.
       // Their fixed render order resolves nesting; writing depth here causes
       // draped/curved triangles to fight with the next surface on mountain slopes.
       // Keep depth testing against terrain/buildings and normal depth for water.
-      material.depthWrite = !(category === 'Surfaces' && layer !== SURFACE_LAYERS.water)
-      material.polygonOffset = layer > 0
-      material.polygonOffsetFactor = material.polygonOffsetUnits = -layer
+      material.depthWrite = !(category === 'Surfaces' && depth !== SURFACE_LAYERS.water)
+      material.polygonOffset = depth > 0
+      material.polygonOffsetFactor = material.polygonOffsetUnits = -depth
     }
-    object.renderOrder = layer
+    object.renderOrder = depth
   })
 }

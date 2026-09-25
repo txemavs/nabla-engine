@@ -13,7 +13,6 @@ Metres, Y-up, −Z forward. Rotations are unit quaternions.
 | `planar/` | Point in polygon and axis-aligned segment clip. |
 | `solid/` | Local mesh topology: box, extrude, validate, triangulate. |
 | `terrain/` | Heightfield sample and the matching triangle grid. |
-| `contact/` | Sparse Cannon contact matrix. Not a numeric kernel. It lives here because it is the collision filter the simulation installs. |
 
 Left outside on purpose. Mercator tile identity and zoom cover stay in `scene/`. OSM rings, roofs, draped roads and multipolygon assembly stay in `planet/`: they encode map rules and then call these kernels. `planet/land/terrain.ts` re-exports the heightfield so existing land imports keep working.
 
@@ -23,4 +22,4 @@ Nothing here is worth a WASM port. A call per point loses to the boundary, and t
 
 Measured on a 121×121 grid at 10 m, the same clip-and-sample loop as `drapeRoad`: a land-cover polygon covering the tile is 8 ms (86 400 samples), a 400×12 m road is 0.2 ms, and `terrainHeight` alone is about 22 ns. A district of roads and cover stays in the tens of milliseconds. Fusing that loop into WASM might cut the worst polygon from 8 ms to a few. That does not show up in import time.
 
-`pointInPolygon` and `clipSegment` are smaller than that. Sphere, pose, quaternions and solids go through Three.js and run at tile load or in the editor, not per triangle. The contact matrix is object identity, not arithmetic.
+`pointInPolygon` and `clipSegment` are smaller than that. Sphere, pose, quaternions and solids go through Three.js and run at tile load or in the editor, not per triangle.

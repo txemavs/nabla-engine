@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { Vector3 } from 'three'
 import { planetTileAsset } from '#world-cache/planet/planet-geometry.js'
+import { roofCell, roofUv } from '#world-cache/planet/roof-imagery.js'
 import { mapTileAt, mapTileBounds } from '../../../src/scene/mercator.js'
 import type { PlanetTileSource } from '../../../src/planet/index.js'
 
@@ -75,4 +76,16 @@ it('drapes landcover across fractional XYZ tile borders without treating roundin
   const result = planetTileAsset(source)
   expect(Object.values(result.geometry).every((g) => g.position.every(Number.isFinite))).toBe(true)
   expect(Object.keys(result.geometry).some((k) => k.includes('land'))).toBe(true)
+})
+it('maps a zoom-13 roof onto the zoom-15 cell under it, north at the top of the photo', () => {
+  const tile = { z: 13, x: 100, y: 200 }
+  const northWest = roofCell(tile, 0.1, 0.9)
+  expect(northWest.tile).toEqual({ z: 15, x: 400, y: 800 })
+  expect(roofUv(northWest.n, northWest.col, northWest.row, 0.1, 0.9)[0]).toBeCloseTo(0.4)
+  expect(roofUv(northWest.n, northWest.col, northWest.row, 0.1, 0.9)[1]).toBeCloseTo(0.4)
+  const southEast = roofCell(tile, 0.99, 0.01)
+  expect(southEast.tile).toEqual({ z: 15, x: 403, y: 803 })
+  const same = roofUv(1, 0, 0, 0.3, 0.7)
+  expect(same[0]).toBeCloseTo(0.3)
+  expect(same[1]).toBeCloseTo(0.3)
 })

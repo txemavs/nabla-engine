@@ -62,10 +62,10 @@ export class Streetlights {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, entity.size[1], 8), metal)
     group.add(pole)
     const lens = new THREE.Mesh(
-      new THREE.SphereGeometry(0.22, 16, 12),
+      new THREE.SphereGeometry(0.165, 16, 12),
       new THREE.MeshBasicMaterial({ color: '#1a1a1a', toneMapped: false }),
     )
-    lens.position.y = entity.size[1] / 2 + 0.16
+    lens.position.y = entity.size[1] / 2 + 0.12
     group.add(lens)
     const source = new THREE.Object3D()
     source.position.copy(lens.position)

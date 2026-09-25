@@ -1,5 +1,6 @@
 import { placeLabel } from './place-label.js'
 import {
+  PLANET_GEOMETRY_REVISION,
   validPlanetPlaces,
   validatePlanetManifest,
   type PlanetManifest,
@@ -14,17 +15,171 @@ import {
   mapTileAt,
   mapTileId,
   mapTilePath,
-  mapTileParent,
-  mapTileChildren,
   planMapZooms,
   planetReadyCover,
   type MapTile,
   type MapZoomPlan,
 } from '../src/scene/mercator.js'
 import { geoToLocal, localFrame, localToGeo, type GeoPoint } from '../src/math/geo/sphere.js'
+import { planetTileFrame } from '../src/planet/tiles.js'
+import { SURFACE_LAYERS } from '../src/planet/land/surface.js'
 import type { Simulation } from '../src/simulation/simulation.js'
 import type { Vec3Tuple } from '../src/stage/scene.js'
 import { restoreTileLayers } from './tile-asset.js'
+/** Satellite painted over the z15 GLB. Roofs on by default. */
+export const projectedLayers = new Set(['roofs'])
+const drapeLayers: { id: string; ground?: number; roads?: boolean; terrain?: boolean }[] = [
+  { id: 'farmland', ground: 4 },
+  { id: 'forest', ground: 5 },
+  { id: 'scrub', ground: 6 },
+  { id: 'wetland', ground: 7 },
+  { id: 'rock', ground: 8 },
+  { id: 'sand', ground: 9 },
+  { id: 'grass', ground: 10 },
+  { id: 'water', ground: 11 },
+  { id: 'residential', ground: 2 },
+  { id: 'industrial', ground: 3 },
+  { id: 'terrain', terrain: true },
+  { id: 'roads', roads: true },
+]
+function inlandWater(metadata: { category?: string; groundLayer?: number }) {
+  return metadata.category === 'Surfaces' && metadata.groundLayer === SURFACE_LAYERS.water
+}
+function drapeBias(id: string): number {
+  if (id === 'roofs') return -30
+  if (id === 'roads') return -20
+  return -(drapeLayers.find((layer) => layer.id === id)?.ground ?? 1)
+}
+function dressSatelliteRoofs(
+  group: THREE.Group,
+  manifest: PlanetManifest,
+  changed: () => void,
+  setupMaterial: (material: THREE.Material) => void,
+) {
+  const tile = manifest.tile
+  if (tile.z !== 15) return
+  const baked = new Set(
+    group.children
+      .filter((node) => node.name === 'Drape')
+      .map((node) => String(node.userData.drape)),
+  )
+  const width = planetTileFrame(tile).width
+  const buckets = new Map<string, number[]>()
+  const take = (id: string, mesh: THREE.Mesh, roofs: boolean) => {
+    if (baked.has(id)) return
+    const position = mesh.geometry.getAttribute('position')
+    const normal = mesh.geometry.getAttribute('normal')
+    const index = mesh.geometry.index
+    const xyz = buckets.get(id) ?? []
+    const triCount = (index ? index.count : position.count) / 3
+    for (let t = 0; t < triCount; t++) {
+      const ids = [0, 1, 2].map((k) => (index ? index.getX(t * 3 + k) : t * 3 + k))
+      if (roofs && (normal.getY(ids[0]) + normal.getY(ids[1]) + normal.getY(ids[2])) / 3 < 0.55)
+        continue
+      for (const i of ids) {
+        xyz.push(
+          position.getX(i),
+          position.getY(i) + 0.15,
+          position.getZ(i),
+          0.5 + position.getX(i) / width,
+          0.5 - position.getZ(i) / width,
+        )
+      }
+    }
+    if (xyz.length) buckets.set(id, xyz)
+  }
+  for (const node of group.children) {
+    const mesh = node as THREE.Mesh
+    if (!mesh.isMesh || mesh.userData.skirt || mesh.name === 'Drape') continue
+    if (mesh.userData.category === 'Buildings') take('roofs', mesh, true)
+    else if (mesh.userData.category === 'Roads') take('roads', mesh, false)
+    else if (mesh.userData.category === 'Terrain') take('terrain', mesh, false)
+    else {
+      const layer = drapeLayers.find((item) => item.ground === mesh.userData.groundLayer)
+      if (layer) take(layer.id, mesh, false)
+    }
+  }
+  if (!buckets.size) return
+  const zoom = tile.z + 3
+  const span = 2 ** (zoom - tile.z)
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = span * 256
+  const ctx = canvas.getContext('2d')!
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  const draped: THREE.Mesh[] = []
+  for (const [id, xyz] of buckets) {
+    const geometry = new THREE.BufferGeometry()
+    const position = new Float32Array((xyz.length / 5) * 3)
+    const uv = new Float32Array((xyz.length / 5) * 2)
+    for (let i = 0, v = 0; i < xyz.length; i += 5, v++) {
+      position.set(xyz.slice(i, i + 3), v * 3)
+      uv.set(xyz.slice(i + 3, i + 5), v * 2)
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+    const mesh = new THREE.Mesh(
+      geometry,
+      new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 1,
+        metalness: 0,
+        polygonOffset: true,
+        polygonOffsetFactor: drapeBias(id),
+        polygonOffsetUnits: drapeBias(id),
+        depthWrite: false,
+      }),
+    )
+    setupMaterial(mesh.material)
+    mesh.name = 'Drape'
+    mesh.userData.drape = id
+    mesh.userData.ready = false
+    mesh.visible = false
+    mesh.castShadow = false
+    mesh.receiveShadow = true
+    group.add(mesh)
+    draped.push(mesh)
+  }
+  const show = () => {
+    for (const mesh of draped) {
+      mesh.userData.ready = true
+      mesh.visible = projectedLayers.has(mesh.userData.drape)
+    }
+    changed()
+  }
+  let pending = span * span
+  for (let row = 0; row < span; row++) {
+    for (let col = 0; col < span; col++) {
+      const image = new Image()
+      image.crossOrigin = 'anonymous'
+      image.onload = () => {
+        ctx.drawImage(image, col * 256, row * 256)
+        if (--pending === 0) {
+          texture.needsUpdate = true
+          show()
+        }
+      }
+      image.onerror = () => {
+        if (--pending === 0) show()
+      }
+      image.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tile.y * span + row}/${tile.x * span + col}`
+    }
+  }
+}
+
+function tileRevision(manifest: PlanetManifest) {
+  return manifest.files.terrain.sha256 + ':' + manifest.files['buildings-osm'].sha256
+}
+
+function roofTexture(bitmap: ImageBitmap) {
+  const texture = new THREE.Texture(bitmap)
+  texture.flipY = false
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
+  texture.needsUpdate = true
+  return texture
+}
+
 interface Resident {
   chart?: PlanetPayload['chart']
   group: THREE.Group
@@ -101,6 +256,13 @@ export class PlanetWorld {
   private protectedPositions: Vec3Tuple[] = []
   private buildings = true
   private access = true
+  private createSea: () => THREE.Material = () =>
+    new THREE.MeshStandardMaterial({
+      color: '#102f43',
+      roughness: 0.3,
+      metalness: 0.03,
+      envMapIntensity: 0,
+    })
   constructor(
     private origin: GeoPoint,
     private changed: () => void,
@@ -148,6 +310,76 @@ export class PlanetWorld {
   setRelief(span: number) {
     this.relief = span
   }
+  setOcean(blocks: MapTile[]) {
+    this.horizon.setOcean(blocks)
+  }
+  /** Applied after streaming, which turns groups back on every frame. */
+  applyViewLayers(layers: {
+    glb: boolean
+    relief: boolean
+    photo14: boolean
+    photo15: boolean
+    paintedWater: boolean
+  }) {
+    for (const child of this.root.children) {
+      if (child === this.horizon.root) continue
+      if (!layers.glb) child.visible = false
+    }
+    const showHorizon = layers.relief || layers.photo14 || layers.photo15 || layers.paintedWater
+    this.horizon.root.visible = showHorizon
+    if (!showHorizon) return
+    this.horizon.root.traverse((node) => {
+      const mesh = node as THREE.Mesh
+      if (mesh.name === 'Distant planetary relief' && !layers.relief) mesh.visible = false
+      if (mesh.name === 'Flight photo') {
+        const zoom = mesh.userData.zoom === 15
+        if (zoom ? !layers.photo15 : !layers.photo14) mesh.visible = false
+      }
+      if (mesh.name === 'Open water' && !layers.paintedWater) mesh.visible = false
+    })
+  }
+  useSea(create: () => THREE.Material) {
+    this.createSea = create
+    this.horizon.setSeaMaterial(create)
+    for (const resident of this.resident.values())
+      for (const child of resident.group.children) {
+        const mesh = child as THREE.Mesh
+        if (!inlandWater(mesh.userData)) continue
+        const previous = mesh.material as THREE.MeshStandardMaterial
+        mesh.material = this.riverMaterial(previous.side)
+        mesh.receiveShadow = false
+        restoreTileLayers(mesh)
+        previous.dispose()
+      }
+  }
+  /** Same sea shader. The glint stays; the wave also tints the body so it reads from above. */
+  private riverMaterial(side: THREE.Side) {
+    const material = this.createSea() as THREE.MeshStandardMaterial
+    const compile = material.onBeforeCompile
+    material.onBeforeCompile = (shader, renderer) => {
+      compile.call(material, shader, renderer)
+      shader.vertexShader = shader.vertexShader.replace(
+        'waterXZ = transformed.xz;',
+        'waterXZ = (modelMatrix * vec4(transformed, 1.0)).xz;',
+      )
+      shader.fragmentShader = shader.fragmentShader.replace(
+        'outgoingLight = diffuseColor.rgb * waterSunStrength * 0.8 + vec3(glint * waterSunStrength);',
+        'float ripple = (waves.x + waves.z) * 2.0;\n        outgoingLight = diffuseColor.rgb * waterSunStrength * (0.9 + ripple) + vec3(glint * waterSunStrength);',
+      )
+    }
+    material.color.set('#102f43')
+    material.vertexColors = false
+    material.side = side
+    return material
+  }
+  applyProjection() {
+    this.root.traverse((node) => {
+      const mesh = node as THREE.Mesh
+      if (mesh.name === 'Drape' && mesh.userData.ready)
+        mesh.visible = projectedLayers.has(mesh.userData.drape)
+    })
+    this.changed()
+  }
   update(position: Vec3Tuple, velocity: Vec3Tuple, _protected: Vec3Tuple[] = []): void {
     if (this.disposed) return
     this.protectedPositions = _protected
@@ -161,32 +393,27 @@ export class PlanetWorld {
       gps.longitude,
       this.aerial ? Math.max(this.relief, flight) : this.relief,
     )
-    this.horizon.setFocus(this.aerial ? mapTileAt(gps.latitude, gps.longitude, 15) : null)
+    this.horizon.setFocus(mapTileAt(gps.latitude, gps.longitude, 15))
     this.plan = planMapZooms({
       latitude: gps.latitude,
       longitude: gps.longitude,
       heightAboveGround: height,
       viewDistance: this.distance,
-      maxTiles: 48,
+      maxTiles: 160,
     })
-    const close = mapTileAt(gps.latitude, gps.longitude, 15)
-    const priority = height < 1500 ? [close, ...mapTileChildren(mapTileParent(close)!)] : []
     const ahead = localToGeo(this.origin, [
       position[0] + velocity[0] * this.ahead,
       position[1],
       position[2] + velocity[2] * this.ahead,
     ])
-    const future = mapTileAt(ahead.latitude, ahead.longitude, height < 1500 ? 15 : 13)
+    const future = mapTileAt(ahead.latitude, ahead.longitude, 15)
     const protectedTiles = _protected
       .map((p) => localToGeo(this.origin, p))
       .filter((p) => p.altitude < 12000)
       .map((p) => mapTileAt(p.latitude, p.longitude, 15))
     this.wanted = [
       ...new Map(
-        [...priority, ...this.plan.requests, future, ...protectedTiles].map((t) => [
-          mapTileId(t),
-          t,
-        ]),
+        [...this.plan.requests, future, ...protectedTiles].map((t) => [mapTileId(t), t]),
       ).values(),
     ]
     const needed = new Set(this.wanted.map(mapTileId))
@@ -207,7 +434,7 @@ export class PlanetWorld {
     const missing = this.wanted.filter(
       (t) =>
         (!this.resident.has(mapTileId(t)) && !this.ready.has(mapTileId(t))) ||
-        this.ready.get(mapTileId(t))?.geometryRevision !== 'native-surfaces-v2',
+        this.ready.get(mapTileId(t))?.geometryRevision !== PLANET_GEOMETRY_REVISION,
     )
     if (!missing.length) return
     // Public requests may be ineligible; do not let the first rejected batch
@@ -254,7 +481,7 @@ export class PlanetWorld {
       if (
         !manifest ||
         (this.resident.has(key) &&
-          this.resident.get(key)!.revision === manifest.files.terrain.sha256 &&
+          this.resident.get(key)!.revision === tileRevision(manifest) &&
           (!this.buildings || this.resident.get(key)!.buildings)) ||
         [...this.requests.values()].some((r) => r.key === key) ||
         Date.now() < (this.retry.get(key) ?? 0)
@@ -284,28 +511,41 @@ export class PlanetWorld {
       geometry.setAttribute('position', new THREE.BufferAttribute(data.position, 3))
       geometry.setAttribute('normal', new THREE.BufferAttribute(data.normal, 3))
       if (data.color) geometry.setAttribute('color', new THREE.BufferAttribute(data.color, 3))
+      if (data.uv) geometry.setAttribute('uv', new THREE.BufferAttribute(data.uv, 2))
       if (data.index) geometry.setIndex(new THREE.BufferAttribute(data.index, 1))
       geometry.computeBoundingSphere()
-      const makeMaterial =
-        data.metadata.category === 'Buildings'
-          ? (p: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(p)
-          : matteGroundMaterial
-      const material = makeMaterial({
-        color: data.tint,
-        vertexColors: !!data.color,
-        roughness: 1,
-        side: data.side as THREE.Side,
-      })
+      const photo = data.map ? roofTexture(data.map) : undefined
+      const material = inlandWater(data.metadata)
+        ? this.riverMaterial(data.side as THREE.Side)
+        : (data.metadata.category === 'Buildings' || data.metadata.drape
+            ? (p: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(p)
+            : matteGroundMaterial)({
+            color: data.tint,
+            map: photo,
+            vertexColors: !!data.color,
+            roughness: 1,
+            side: data.side as THREE.Side,
+          })
+      if (data.metadata.drape) {
+        material.depthWrite = false
+        material.polygonOffset = true
+        material.polygonOffsetFactor = -30
+        material.polygonOffsetUnits = -30
+      }
       const mesh = new THREE.Mesh(geometry, material)
       mesh.name = data.name
+      mesh.visible = !data.metadata.drape || projectedLayers.has(String(data.metadata.drape))
       mesh.userData = data.metadata
       mesh.castShadow =
         !data.metadata.skirt && ['Terrain', 'Buildings'].includes(data.metadata.category)
-      mesh.receiveShadow = true
+      mesh.receiveShadow = !inlandWater(data.metadata)
       group.add(mesh)
       restoreTileLayers(mesh)
-      this.setupMaterial(material)
+      if (!inlandWater(data.metadata)) this.setupMaterial(material)
     }
+    dressSatelliteRoofs(group, manifest, () => this.changed(), (material) =>
+      this.setupMaterial(material),
+    )
     group.userData.planetTile = {
       key,
       manifest,
@@ -370,7 +610,7 @@ export class PlanetWorld {
         validPlanetPlaces(manifest.places).length * 512 * 64 * 4 +
         (payload.chart ? 1024 * 1024 * 4 : 0) +
         payload.chunks.reduce((n, c) => n + c.triangles.byteLength, 0),
-      revision: manifest.files.terrain.sha256,
+      revision: tileRevision(manifest),
       buildings: payload.buildings,
     })
     this.cover()
@@ -387,8 +627,13 @@ export class PlanetWorld {
     const active = new Set(this.visible)
     for (const [key, r] of this.resident) {
       r.group.visible = active.has(key)
-      for (const child of r.group.children)
+      for (const child of r.group.children) {
+        if (child.name === 'Drape') {
+          child.visible = !!child.userData.ready && projectedLayers.has(child.userData.drape)
+          continue
+        }
         child.visible = this.buildings || child.userData.category !== 'Buildings'
+      }
     }
     const wanted = new Set(this.wanted.map(mapTileId))
     let bytes = [...this.resident.values()].reduce((n, r) => n + r.bytes, 0)

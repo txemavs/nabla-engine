@@ -1,7 +1,7 @@
 import { portalRegistry, type PortalConnection } from './portal-registry.js'
 import { z } from 'zod'
 import { parseScene, type SceneDocument } from '../src/stage/scene.js'
-import { toWorldPose, fromWorldPose, type WorldPose } from '../src/math/geo/sphere/pose.js'
+import { toWorldPose, fromWorldPose, type WorldPose } from '../src/math/geo/pose.js'
 
 /** Places retain payloads and working frames; planet poses address root objects globally. */
 export interface StudioProject {

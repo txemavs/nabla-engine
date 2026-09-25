@@ -55,8 +55,11 @@ self.onmessage = async (event: MessageEvent<{ key: string; origin: GeoPoint }>) 
       .replace(/%7Bz%7D/gi, String(z))
       .replace(/%7Bx%7D/gi, String(x))
       .replace(/%7By%7D/gi, String(y))
-    const positions = decodeSea(await (await cached(url)).arrayBuffer(), x, y, z, origin)
-    self.postMessage({ key, positions }, { transfer: [positions.buffer] })
+    const sea = decodeSea(await (await cached(url)).arrayBuffer(), x, y, z, origin)
+    self.postMessage(
+      { key, positions: sea.positions, cells: sea.cells },
+      { transfer: [sea.positions.buffer, sea.cells.buffer] },
+    )
   } catch (e) {
     self.postMessage({ key, error: e instanceof Error ? e.message : String(e) })
   }

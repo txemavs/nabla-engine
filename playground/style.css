@@ -1181,9 +1181,22 @@ body.playing #footer-mode {
   z-index: 10;
   pointer-events: none;
 }
-#drape-layers label {
+#drape-layers label,
+#options-panel-layers label {
   display: flex;
   gap: 8px;
   align-items: center;
   margin: 4px 0;
+}
+.options-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.options-tabs button[aria-selected='true'] {
+  background: #243e62;
+}
+#options-panel-layers .eyebrow {
+  display: block;
+  margin-top: 12px;
 }

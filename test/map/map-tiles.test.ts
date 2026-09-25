@@ -71,9 +71,11 @@ const ancestor = (a: ReturnType<typeof mapTileAt>, b: ReturnType<typeof mapTileA
   Math.floor(b.x / 2 ** (b.z - a.z)) === a.x &&
   Math.floor(b.y / 2 ** (b.z - a.z)) === a.y
 
-test('three zooms cover one neighborhood without overlapping parents', () => {
+test('zoom 15 covers the draw distance', () => {
   const plan = planMapZooms(options)
-  expect(new Set(plan.leaves.map((t) => t.z))).toEqual(new Set([13, 14, 15]))
+  expect(new Set(plan.leaves.map((t) => t.z))).toEqual(new Set([15]))
+  expect(plan.roots).toEqual(plan.leaves)
+  expect(plan.requests).toEqual(plan.leaves)
   expect(plan.leaves.length).toBeLessThanOrEqual(96)
   for (const a of plan.leaves) for (const b of plan.leaves) expect(ancestor(a, b)).toBe(false)
   expect(readyMapCover(plan, new Set(plan.requests.map(mapTileId)))).toEqual(plan.leaves)
@@ -102,13 +104,13 @@ test('an incomplete child set keeps its parent; completed refinement switches at
 test('flight height reduces detail; budgets and antimeridian stay bounded', () => {
   expect(
     new Set(planMapZooms({ ...options, heightAboveGround: 4000 }).leaves.map((t) => t.z)),
-  ).toEqual(new Set([13]))
+  ).toEqual(new Set([15]))
   const small = planMapZooms({ ...options, maxTiles: 4 })
   expect(small.budgetLimited).toBe(true)
   expect(small.leaves.length).toBeLessThanOrEqual(4)
   const dateline = planMapZooms({ ...options, longitude: 179.999 })
   expect(dateline.roots.some((t) => t.x === 0)).toBe(true)
-  expect(dateline.roots.some((t) => t.x === 8191)).toBe(true)
+  expect(dateline.roots.some((t) => t.x === 2 ** 15 - 1)).toBe(true)
   expect(new Set(dateline.requests.map(mapTileId)).size).toBe(dateline.requests.length)
   const polar = planMapZooms({ ...options, latitude: MERCATOR_LIMIT, viewDistance: 1e9 })
   expect(polar.budgetLimited).toBe(true)

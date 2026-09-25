@@ -6,11 +6,14 @@ import type { GeoPoint } from '../math/geo/sphere.js'
 import { mapTileBounds, mapTileId, mapTileSample, type MapTile } from '../scene/mercator.js'
 import type { PlanetPlace } from './places.js'
 
+/** Bump when a published GLB must be regenerated. v3 bakes zoom-15 roof photos. */
+export const PLANET_GEOMETRY_REVISION = 'native-surfaces-v3'
+
 export interface PlanetManifest {
   places?: PlanetPlace[]
   format: 'nabla-planet-tile-v1'
   generator: 'native-xyz-v2'
-  geometryRevision?: 'native-surfaces-v2'
+  geometryRevision?: typeof PLANET_GEOMETRY_REVISION
   id: string
   tile: MapTile
   anchor: GeoPoint
@@ -26,6 +29,8 @@ export interface PlanetMesh {
   normal: Float32Array
   color?: Float32Array
   index?: Uint32Array
+  uv?: Float32Array
+  map?: ImageBitmap
   tint: string
   side: number
   metadata: Record<string, any>

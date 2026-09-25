@@ -1,9 +1,13 @@
 /**
- * Rapier, with the Cannon call shape the simulation already uses.
- * WASM has to be ready first: `await initPhysics()`.
+ * Rapier world. WASM has to be ready first: `await initPhysics()`.
  */
 import RAPIER from '@dimforge/rapier3d-compat/rapier.es.js'
-import type { Collider, ImpulseJoint, RigidBody, World as RapierWorld } from '@dimforge/rapier3d-compat'
+import type {
+  Collider,
+  ImpulseJoint,
+  RigidBody,
+  World as RapierWorld,
+} from '@dimforge/rapier3d-compat'
 
 let ready: Promise<void> | null = null
 let live = false
@@ -105,7 +109,9 @@ export class Vec3 {
     return Math.hypot(this._x - v._x, this._y - v._y, this._z - v._z)
   }
   almostEquals(v: Vec3, p = 1e-6) {
-    return Math.abs(this._x - v._x) < p && Math.abs(this._y - v._y) < p && Math.abs(this._z - v._z) < p
+    return (
+      Math.abs(this._x - v._x) < p && Math.abs(this._y - v._y) < p && Math.abs(this._z - v._z) < p
+    )
   }
   setZero() {
     return this.set(0, 0, 0)
@@ -122,6 +128,12 @@ export class Quaternion {
   w = 1
   silent = false
   notify?: () => void
+  constructor(x = 0, y = 0, z = 0, w = 1) {
+    this.x = x
+    this.y = y
+    this.z = z
+    this.w = w
+  }
   private touch() {
     if (!this.silent) this.notify?.()
   }
@@ -175,7 +187,7 @@ export class Quaternion {
     const s = Math.sin(angle / 2)
     return this.set(axis.x * s, axis.y * s, axis.z * s, Math.cos(angle / 2))
   }
-  /** XYZ, matching Cannon's default. */
+  /** XYZ Euler. */
   setFromEuler(x: number, y: number, z: number) {
     const c1 = Math.cos(x / 2),
       c2 = Math.cos(y / 2),
@@ -238,25 +250,6 @@ export class Box {
     this.halfExtents = halfExtents.clone()
     this.boundingSphereRadius = halfExtents.length()
   }
-  get convexPolyhedronRepresentation() {
-    const half = this.halfExtents
-    return {
-      findSeparatingAxis(
-        hullB: ConvexPolyhedron,
-        posA: Vec3,
-        _quatA: Quaternion,
-        posB: Vec3,
-        quatB: Quaternion,
-      ) {
-        const min = new Vec3()
-        const max = new Vec3()
-        hullB.calculateWorldAABB(posB, quatB, min, max)
-        const lo = new Vec3(posA.x - half.x, posA.y - half.y, posA.z - half.z)
-        const hi = new Vec3(posA.x + half.x, posA.y + half.y, posA.z + half.z)
-        return !(max.x < lo.x || min.x > hi.x || max.y < lo.y || min.y > hi.y || max.z < lo.z || min.z > hi.z)
-      },
-    }
-  }
 }
 
 export class Heightfield {
@@ -273,39 +266,31 @@ export class Heightfield {
   }
 }
 
-export class ConvexPolyhedron {
-  vertices: Vec3[]
-  faces: number[][]
+/** Static triangle mesh. One collider for a whole surface, not a hull per face. */
+export class Trimesh {
+  vertices: Float32Array
+  indices: Uint32Array
   collisionResponse = true
   boundingSphereRadius: number
-  constructor(options: { vertices: Vec3[]; faces: number[][] }) {
-    this.vertices = options.vertices.map((v) => v.clone())
-    this.faces = options.faces
-    this.boundingSphereRadius = Math.max(...this.vertices.map((v) => v.length()), 0.01)
-  }
-  calculateWorldAABB(pos: Vec3, quat: Quaternion, min: Vec3, max: Vec3) {
-    let lx = Infinity,
-      ly = Infinity,
-      lz = Infinity,
-      hx = -Infinity,
-      hy = -Infinity,
-      hz = -Infinity
-    for (const v of this.vertices) {
-      const w = quat.vmult(v)
-      w.vadd(pos, w)
-      lx = Math.min(lx, w.x)
-      ly = Math.min(ly, w.y)
-      lz = Math.min(lz, w.z)
-      hx = Math.max(hx, w.x)
-      hy = Math.max(hy, w.y)
-      hz = Math.max(hz, w.z)
+  constructor(vertices: Float32Array, indices: Uint32Array) {
+    this.vertices = new Float32Array(vertices)
+    const forward = new Uint32Array(indices)
+    const both = new Uint32Array(forward.length * 2)
+    both.set(forward)
+    for (let i = 0; i < forward.length; i += 3) {
+      both[forward.length + i] = forward[i]
+      both[forward.length + i + 1] = forward[i + 2]
+      both[forward.length + i + 2] = forward[i + 1]
     }
-    min.set(lx, ly, lz)
-    max.set(hx, hy, hz)
+    this.indices = both
+    let radius = 0.01
+    for (let i = 0; i < vertices.length; i += 3)
+      radius = Math.max(radius, Math.hypot(vertices[i], vertices[i + 1], vertices[i + 2]))
+    this.boundingSphereRadius = radius
   }
 }
 
-type Shape = Sphere | Box | Heightfield | ConvexPolyhedron
+type Shape = Sphere | Box | Heightfield | Trimesh
 
 export class RaycastResult {
   body: Body | null = null
@@ -332,6 +317,7 @@ export class Body {
   velocity = new Vec3()
   angularVelocity = new Vec3()
   torque = new Vec3()
+  inertia = new Vec3(1, 1, 1)
   shapes: Shape[] = []
   shapeOffsets: Vec3[] = []
   shapeOrientations: Quaternion[] = []
@@ -365,6 +351,7 @@ export class Body {
   get boundingRadius() {
     return Math.max(...this.shapes.map((s) => s.boundingSphereRadius), 0.5)
   }
+  updateBoundingRadius() {}
   addShape(shape: Shape, offset?: Vec3, orientation?: Quaternion) {
     this.shapes.push(shape)
     this.shapeOffsets.push(offset?.clone() ?? new Vec3())
@@ -404,7 +391,11 @@ export class Body {
     if (relative)
       this.raw.addForceAtPoint(
         force,
-        { x: this.position.x + relative.x, y: this.position.y + relative.y, z: this.position.z + relative.z },
+        {
+          x: this.position.x + relative.x,
+          y: this.position.y + relative.y,
+          z: this.position.z + relative.z,
+        },
         true,
       )
     else this.raw.addForce(force, true)
@@ -414,7 +405,11 @@ export class Body {
     if (relative)
       this.raw.applyImpulseAtPoint(
         impulse,
-        { x: this.position.x + relative.x, y: this.position.y + relative.y, z: this.position.z + relative.z },
+        {
+          x: this.position.x + relative.x,
+          y: this.position.y + relative.y,
+          z: this.position.z + relative.z,
+        },
         true,
       )
     else this.raw.applyImpulse(impulse, true)
@@ -454,12 +449,22 @@ export class Body {
     const q = this.raw.rotation()
     const v = this.raw.linvel()
     const w = this.raw.angvel()
-    this.position.silent = this.quaternion.silent = this.velocity.silent = this.angularVelocity.silent = true
+    this.position.silent =
+      this.quaternion.silent =
+      this.velocity.silent =
+      this.angularVelocity.silent =
+        true
     this.position.set(t.x, t.y, t.z)
     this.quaternion.set(q.x, q.y, q.z, q.w)
     this.velocity.set(v.x, v.y, v.z)
     this.angularVelocity.set(w.x, w.y, w.z)
-    this.position.silent = this.quaternion.silent = this.velocity.silent = this.angularVelocity.silent = false
+    const inertia = this.raw.principalInertia()
+    if (inertia.x > 0) this.inertia.set(inertia.x, inertia.y, inertia.z)
+    this.position.silent =
+      this.quaternion.silent =
+      this.velocity.silent =
+      this.angularVelocity.silent =
+        false
     this.mass = this.raw.isFixed() ? 0 : this.raw.mass()
     this.updateAABB()
   }
@@ -473,12 +478,39 @@ export class Body {
       .setLinearDamping(this.linearDamping)
       .setAngularDamping(this.angularDamping)
       .setAdditionalMass(Math.max(this.mass, 0))
+    // A trimesh has no thickness. Look ahead so a driving step cannot cross it.
+    if (this.mass > 0) desc.setCcdEnabled(true).setSoftCcdPrediction(2)
     if (this.fixedRotation) desc.lockRotations()
     this.raw = world.raw.createRigidBody(desc)
     this.world = world
     this.colliders = []
     this.shapes.forEach((_, i) => this.attach(i))
     if (this.mass > 0) this.raw.setAdditionalMass(this.mass, true)
+    this.applyInertia()
+  }
+  /** Density-0 colliders contribute nothing, so mass and inertia are set explicitly. */
+  applyInertia() {
+    if (!this.raw || this.mass <= 0) return
+    const boxes = this.shapes.filter((shape): shape is Box => shape instanceof Box)
+    const share = this.mass / Math.max(boxes.length, 1)
+    let ix = 0,
+      iy = 0,
+      iz = 0
+    for (const shape of boxes) {
+      const { x: hx, y: hy, z: hz } = shape.halfExtents
+      ix += (share * (hy * hy + hz * hz)) / 3
+      iy += (share * (hx * hx + hz * hz)) / 3
+      iz += (share * (hx * hx + hy * hy)) / 3
+    }
+    if (iy === 0) iy = ix = iz = this.mass
+    this.inertia.set(ix, iy, iz)
+    this.raw.setAdditionalMassProperties(
+      this.mass,
+      { x: 0, y: 0, z: 0 },
+      { x: ix, y: iy, z: iz },
+      { x: 0, y: 0, z: 0, w: 1 },
+      true,
+    )
   }
   private attach(i: number) {
     if (!this.raw || !this.world) return
@@ -490,15 +522,9 @@ export class Body {
     if (shape instanceof Sphere) desc = api.ColliderDesc.ball(shape.radius)
     else if (shape instanceof Box)
       desc = api.ColliderDesc.cuboid(shape.halfExtents.x, shape.halfExtents.y, shape.halfExtents.z)
-    else if (shape instanceof ConvexPolyhedron) {
-      const flat = new Float32Array(shape.vertices.length * 3)
-      shape.vertices.forEach((v, k) => {
-        flat[k * 3] = v.x
-        flat[k * 3 + 1] = v.y
-        flat[k * 3 + 2] = v.z
-      })
-      desc = api.ColliderDesc.convexHull(flat)
-    } else if (shape instanceof Heightfield) {
+    else if (shape instanceof Trimesh)
+      desc = api.ColliderDesc.trimesh(shape.vertices, shape.indices)
+    else if (shape instanceof Heightfield) {
       const columns = shape.data.length
       const rows = shape.data[0]?.length ?? 0
       if (columns < 2 || rows < 2) return
@@ -514,7 +540,11 @@ export class Body {
     if (!desc) return
     const friction = this.material.friction
     desc
-      .setTranslation(shape instanceof Heightfield ? 0 : offset.x, shape instanceof Heightfield ? 0 : offset.y, shape instanceof Heightfield ? 0 : offset.z)
+      .setTranslation(
+        shape instanceof Heightfield ? 0 : offset.x,
+        shape instanceof Heightfield ? 0 : offset.y,
+        shape instanceof Heightfield ? 0 : offset.z,
+      )
       .setRotation(shape instanceof Heightfield ? { x: 0, y: 0, z: 0, w: 1 } : orientation)
       .setFriction(friction)
       .setRestitution(this.material.restitution)
@@ -553,7 +583,12 @@ export class RaycastVehicle {
   indexForwardAxis = 2
   controller: ReturnType<RapierWorld['createVehicleController']> | null = null
   private world: World | null = null
-  constructor(options: { chassisBody: Body; indexRightAxis?: number; indexUpAxis?: number; indexForwardAxis?: number }) {
+  constructor(options: {
+    chassisBody: Body
+    indexRightAxis?: number
+    indexUpAxis?: number
+    indexForwardAxis?: number
+  }) {
     this.chassisBody = options.chassisBody
     this.indexRightAxis = options.indexRightAxis ?? 0
     this.indexUpAxis = options.indexUpAxis ?? 1
@@ -616,8 +651,7 @@ export class RaycastVehicle {
     const wheel = this.wheelInfos[index]
     if (!wheel) return
     wheel.engineForce = force
-    // Rapier's forward axis is +Z. The chassis nose is -Z.
-    this.controller?.setWheelEngineForce(index, -force)
+    this.controller?.setWheelEngineForce(index, force)
   }
   setBrake(force: number, index: number) {
     const wheel = this.wheelInfos[index]
@@ -629,15 +663,17 @@ export class RaycastVehicle {
     const wheel = this.wheelInfos[index]
     const body = this.chassisBody
     if (!wheel) return
-    const hard = this.controller?.wheelHardPoint(index)
+    // Rapier's hard point is from the last vehicle update, before this step moved the chassis.
     const length = this.controller?.wheelSuspensionLength(index) ?? wheel.suspensionRestLength
     const dir = body.quaternion.vmult(wheel.direction)
-    const origin = hard
-      ? new Vec3(hard.x, hard.y, hard.z)
-      : body.pointToWorldFrame(wheel.connection)
-    wheel.worldTransform.position.copy(origin).vadd(dir.scale(length, new Vec3()))
+    const origin = body.pointToWorldFrame(wheel.connection)
+    const dropped = dir.scale(length, new Vec3())
+    origin.vadd(dropped, wheel.worldTransform.position)
     const steer = new Quaternion().setFromAxisAngle(new Vec3(0, 1, 0), wheel.steering)
-    const spin = new Quaternion().setFromAxisAngle(new Vec3(1, 0, 0), this.controller?.wheelRotation(index) ?? 0)
+    const spin = new Quaternion().setFromAxisAngle(
+      new Vec3(1, 0, 0),
+      this.controller?.wheelRotation(index) ?? 0,
+    )
     wheel.worldTransform.quaternion.copy(body.quaternion.mult(steer).mult(spin))
     wheel.suspensionLength = length
     wheel.isInContact = this.controller?.wheelIsInContact(index) ?? false
@@ -648,10 +684,16 @@ export class RaycastVehicle {
     if (!this.controller || !this.chassisBody.raw) return
     this.wheelInfos.forEach((wheel, i) => {
       this.controller!.setWheelSteering(i, wheel.steering)
-      this.controller!.setWheelEngineForce(i, -wheel.engineForce)
+      this.controller!.setWheelEngineForce(i, wheel.engineForce)
       this.controller!.setWheelBrake(i, wheel.brake)
     })
-    this.controller.updateVehicle(dt)
+    const chassis = this.chassisBody.raw
+    this.controller.updateVehicle(
+      dt,
+      undefined,
+      undefined,
+      (collider) => collider.parent() !== chassis,
+    )
   }
   private rebuild() {
     const body = this.chassisBody
@@ -661,7 +703,13 @@ export class RaycastVehicle {
     this.controller.setIndexForwardAxis = this.indexForwardAxis
     for (const wheel of this.wheelInfos) {
       const i = this.wheelInfos.indexOf(wheel)
-      this.controller.addWheel(wheel.connection, wheel.direction, wheel.axle, wheel.suspensionRestLength, wheel.radius)
+      this.controller.addWheel(
+        wheel.connection,
+        wheel.direction,
+        wheel.axle,
+        wheel.suspensionRestLength,
+        wheel.radius,
+      )
       this.controller.setWheelSuspensionStiffness(i, wheel.suspensionStiffness)
       this.controller.setWheelSuspensionRelaxation(i, wheel.dampingRelaxation)
       this.controller.setWheelSuspensionCompression(i, wheel.dampingCompression)
@@ -683,14 +731,6 @@ export class LockConstraint {
   }
 }
 
-export class GSSolver {
-  iterations = 10
-}
-export class SAPBroadphase {
-  dirty = false
-  constructor(_world?: World) {}
-}
-
 export class World {
   raw: RapierWorld
   bodies: Body[] = []
@@ -698,10 +738,6 @@ export class World {
   vehicles = new Set<RaycastVehicle>()
   constraints = new Map<LockConstraint, ImpulseJoint>()
   gravity: Vec3
-  solver = new GSSolver()
-  broadphase = new SAPBroadphase(this)
-  collisionMatrix: unknown = null
-  collisionMatrixPrevious: unknown = null
   defaultContactMaterial = { friction: 0.3, restitution: 0 }
   stepping = false
   constructor(options?: { gravity?: Vec3 }) {
@@ -714,6 +750,7 @@ export class World {
     if (body.world === this) return
     body.mount(this)
     this.bodies.push(body)
+    this.raw.updateSceneQueries()
   }
   removeBody(body: Body) {
     if (body.world !== this || !body.raw) return
@@ -721,6 +758,7 @@ export class World {
     body.raw = null
     body.colliders = []
     body.world = null
+    this.raw.updateSceneQueries()
     this.bodies = this.bodies.filter((b) => b !== body)
   }
   addConstraint(constraint: LockConstraint) {
@@ -744,7 +782,25 @@ export class World {
     this.constraints.delete(constraint)
     constraint.joint = null
   }
-  raycastClosest(from: Vec3, to: Vec3, options: { skipBackfaces?: boolean }, result: RaycastResult) {
+  intersectsCuboid(center: Vec3, half: Vec3): boolean {
+    let hit = false
+    this.raw.intersectionsWithShape(
+      center,
+      { x: 0, y: 0, z: 0, w: 1 },
+      new (R().Cuboid)(half.x, half.y, half.z),
+      () => {
+        hit = true
+        return false
+      },
+    )
+    return hit
+  }
+  raycastClosest(
+    from: Vec3,
+    to: Vec3,
+    options: { skipBackfaces?: boolean },
+    result: RaycastResult,
+  ) {
     let best: RaycastResult | null = null
     this.raycastAll(from, to, options, (hit) => {
       if (!best || hit.distance < best.distance) best = hit
@@ -784,7 +840,6 @@ export class World {
     })
   }
   step(dt: number) {
-    this.solver.iterations && (this.raw.integrationParameters.numSolverIterations = this.solver.iterations)
     this.raw.gravity = this.gravity
     for (const body of this.bodies) {
       body.previousPosition.copy(body.position)
@@ -797,6 +852,10 @@ export class World {
     this.raw.timestep = dt
     this.raw.step()
     this.stepping = false
+    for (const body of this.bodies) {
+      body.raw?.resetForces(false)
+      body.raw?.resetTorques(false)
+    }
     for (const body of this.bodies) body.pull()
     this.contacts = []
     const seen = new Set<string>()
@@ -805,14 +864,19 @@ export class World {
         this.raw.contactPairsWith(collider, (other) => {
           const otherBody = this.bodies.find((b) => b.colliders.includes(other))
           if (!otherBody || otherBody === body) return
-          const key = body.id < otherBody.id ? `${body.id}:${otherBody.id}` : `${otherBody.id}:${body.id}`
+          const key =
+            body.id < otherBody.id ? `${body.id}:${otherBody.id}` : `${otherBody.id}:${body.id}`
           if (seen.has(key)) return
           seen.add(key)
           this.raw.contactPair(collider, other, (manifold, flipped) => {
             if (!manifold.numContacts()) return
             const n = manifold.normal()
             const ni = new Vec3(flipped ? -n.x : n.x, flipped ? -n.y : n.y, flipped ? -n.z : n.z)
-            this.contacts.push({ bi: flipped ? otherBody : body, bj: flipped ? body : otherBody, ni })
+            this.contacts.push({
+              bi: flipped ? otherBody : body,
+              bj: flipped ? body : otherBody,
+              ni,
+            })
           })
         })
       }

@@ -360,7 +360,7 @@ let geography = new GeographicView(
   },
   false,
 )
-scene.add(geography.tiles)
+scene.add(geography.tiles, geography.lensFlare)
 let skyClock: SkyClock = editor.document.sky ?? { mode: 'live' }
 const renderOrigin = new THREE.Vector3()
 watchAssets(view)
@@ -443,7 +443,7 @@ function rebuild(prepared?: PreparedMapGeometry): void {
       },
       false,
     )
-    scene.add(geography.tiles)
+    scene.add(geography.tiles, geography.lensFlare)
   }
   view.dispose()
   if (prepared) receiveMapGeometry(document.entities, prepared)
@@ -465,7 +465,10 @@ function setupWorldStream(): void {
   if (water) scene.add(water.root)
   $('stream-status').textContent = ''
   const identity = doc.geography?.planetary ? JSON.stringify(doc.geography) : ''
-  if (worldStream && streamGeography === identity) return
+  if (worldStream && streamGeography === identity) {
+    if (water) worldStream.useSea(() => water!.surface())
+    return
+  }
   worldStream?.dispose()
   worldStream = null
   setPlanetCharts(() => worldStream?.chartTiles ?? [])
@@ -484,6 +487,7 @@ function setupWorldStream(): void {
   worldStream.setDistance(performanceSettings.distance)
   worldStream.setRelief(performanceSettings.relief)
   scene.add(worldStream.root)
+  if (water) worldStream.useSea(() => water!.surface())
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
 function select(id: string): void {
@@ -1255,7 +1259,7 @@ $('new-planet').onclick = async () => {
     await writeScene(PROJECT_KEY + '.backup.' + Date.now(), JSON.stringify(backup))
     const fresh = createProject(
       upgradeReferenceScene(
-        createPlanetScene({ latitude: 43.32969, longitude: -1.819606, altitude: 0 }, 'Mi planeta'),
+        createPlanetScene({ latitude: 42.3601, longitude: -71.0589, altitude: 0 }, 'Boston'),
       ),
     )
     await writeScene(PROJECT_KEY, JSON.stringify(fresh))
@@ -1527,6 +1531,55 @@ for (const [id, key] of [
   }
 }
 $<HTMLSelectElement>('performance-preset').value = performanceSettings.preset
+function showOptionsPanel(layers: boolean) {
+  $('options-panel-layers').hidden = !layers
+  $('options-panel-settings').hidden = layers
+  $('options-tab-layers').setAttribute('aria-selected', String(layers))
+  $('options-tab-settings').setAttribute('aria-selected', String(!layers))
+}
+$('options-tab-layers').onclick = () => showOptionsPanel(true)
+$('options-tab-settings').onclick = () => showOptionsPanel(false)
+function sceneLayer(id: string) {
+  return $<HTMLInputElement>(id).checked
+}
+function applySceneLayers() {
+  const sky = sceneLayer('layer-sky')
+  const sunOn = sceneLayer('layer-sun')
+  const planets = sceneLayer('layer-planets')
+  geography.setLayers({ sky, planets, sun: sunOn })
+  geography.tiles.visible = sceneLayer('layer-maps')
+  if (!sky) scene.fog = null
+  if (!sunOn) {
+    sun.intensity = 0
+    sun.visible = false
+    ambientFill.intensity = 0
+    for (const light of shadowManager.lights) light.visible = false
+  }
+  if (water) water.root.visible = sceneLayer('layer-sea')
+  worldStream?.applyViewLayers({
+    glb: sceneLayer('layer-glb'),
+    relief: sceneLayer('layer-relief'),
+    photo14: sceneLayer('layer-z14'),
+    photo15: sceneLayer('layer-z15'),
+    paintedWater: sceneLayer('layer-horizon-water'),
+  })
+  view.root.visible = sceneLayer('layer-entities')
+  fieldLights.root.visible = sceneLayer('layer-entities')
+  if (!sceneLayer('layer-grid')) grid.visible = false
+}
+for (const box of document.querySelectorAll<HTMLInputElement>('#options-panel-layers input'))
+  box.onchange = () => {
+    needsRender = true
+  }
+for (const [id, on] of [
+  ['layers-all', true],
+  ['layers-none', false],
+] as const)
+  $(id).onclick = () => {
+    for (const box of document.querySelectorAll<HTMLInputElement>('#options-panel-layers input'))
+      box.checked = on
+    needsRender = true
+  }
 for (const box of document.querySelectorAll<HTMLInputElement>('#drape-layers input')) {
   const id = box.dataset.drape ?? ''
   box.checked = projectedLayers.has(id)
@@ -2240,6 +2293,8 @@ function frame(now: number): void {
     view.helmScreens,
     view.touchScreens,
     view.flightScreens,
+    view.placeScreens,
+    view.systemScreens,
     renderOrigin,
     cameraMode === 'cockpit',
   )
@@ -2294,7 +2349,14 @@ function frame(now: number): void {
   const position = sim?.player.position ?? camera.position.toArray()
   renderOrigin.set(0, 0, 0)
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
-  water?.update(worldCamera, renderOrigin, performanceSettings.distance, now)
+  water?.update(
+    worldCamera,
+    renderOrigin,
+    performanceSettings.distance,
+    now,
+    performanceSettings.relief,
+  )
+  worldStream?.setOcean(water?.oceanBlocks() ?? [])
   renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
   view.buildingDistance =
     performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
@@ -2479,8 +2541,10 @@ function frame(now: number): void {
         ? 20000
         : Math.min(performanceSettings.distance, performanceSettings.roads),
     )
+    applySceneLayers()
+    geography.setViewAspect(camera.aspect)
     renderer.autoClear = true
-    if (geography.enabled) {
+    if (geography.enabled && (sceneLayer('layer-sky') || sceneLayer('layer-planets'))) {
       geography.render(renderer, camera, worldCamera)
       renderer.autoClear = false
       renderer.clearDepth()
@@ -2818,10 +2882,10 @@ async function restoreStartup(): Promise<void> {
       initialScene = JSON.stringify(
         upgradeReferenceScene(
           createPlanetScene(
-            { ...(urlDestination ?? { latitude: 43.32969, longitude: -1.819606 }), altitude: 0 },
+            { ...(urlDestination ?? { latitude: 42.3601, longitude: -71.0589 }), altitude: 0 },
             urlDestination
               ? `${urlDestination.latitude.toFixed(5)}, ${urlDestination.longitude.toFixed(5)}`
-              : 'Irún · Ventas',
+              : 'Boston',
           ),
         ),
       )

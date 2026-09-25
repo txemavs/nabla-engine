@@ -1,8 +1,42 @@
 import { ShapeUtils, Vector2 } from 'three'
 import { VectorTile, classifyRings } from '@mapbox/vector-tile'
 import Pbf from 'pbf'
+import { pointInPolygon } from '../src/math/planar/polygon.js'
 import { geoToLocal, tilePoint, type GeoPoint } from '../src/math/geo/sphere.js'
 
+/**
+ * Which of the 64 z15 cells inside a z12 tile are ocean.
+ * Bit `row * 8 + col` is set, row 0 at the north edge. Islands stay clear.
+ */
+export function oceanCells(polygons: { x: number; y: number }[][][], extent = 4096): Uint8Array {
+  const mask = new Uint8Array(8)
+  for (let row = 0; row < 8; row++)
+    for (let col = 0; col < 8; col++) {
+      const p: [number, number] = [((col + 0.5) / 8) * extent, ((row + 0.5) / 8) * extent]
+      const sea = polygons.some((polygon) => {
+        const outer = polygon[0]
+        if (!outer || outer.length < 3) return false
+        return (
+          pointInPolygon(
+            p,
+            outer.map((q) => [q.x, q.y]),
+          ) &&
+          !polygon
+            .slice(1)
+            .some((ring) =>
+              pointInPolygon(
+                p,
+                ring.map((q) => [q.x, q.y]),
+              ),
+            )
+        )
+      })
+      if (!sea) continue
+      const bit = row * 8 + col
+      mask[bit >> 3] |= 1 << (bit & 7)
+    }
+  return mask
+}
 /** Preserve polygon holes (islands); never infer sea from elevation alone. */
 export function waterPolygon(
   rings: { x: number; y: number; z?: number }[][],
@@ -27,14 +61,20 @@ export function decodeSea(
   y: number,
   zoom: number,
   origin: GeoPoint,
-): Float32Array {
+): { positions: Float32Array; cells: Uint8Array } {
   const layer = new VectorTile(new Pbf(data)).layers.water
   const positions: number[] = []
+  const polygons: { x: number; y: number }[][][] = []
   if (layer)
     for (let i = 0; i < layer.length; i++) {
       const feature = layer.feature(i)
       if (feature.type !== 3 || feature.properties.class !== 'ocean') continue
       for (const polygon of classifyRings(feature.loadGeometry())) {
+        polygons.push(
+          polygon.map((ring) =>
+            ring.map((p) => ({ x: (p.x / feature.extent) * 4096, y: (p.y / feature.extent) * 4096 })),
+          ),
+        )
         const rings = polygon.map((ring) =>
           ring.map((p) => {
             const sea = tilePoint(x + p.x / feature.extent, y + p.y / feature.extent, zoom)
@@ -46,5 +86,5 @@ export function decodeSea(
         for (const value of waterPolygon(rings, 0)) positions.push(value)
       }
     }
-  return new Float32Array(positions)
+  return { positions: new Float32Array(positions), cells: oceanCells(polygons) }
 }

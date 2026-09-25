@@ -19,6 +19,7 @@ COPY --from=build /build/node_modules/three ./node_modules/three
 COPY --from=build /build/node_modules/zod ./node_modules/zod
 COPY --from=build /build/node_modules/cannon-es ./node_modules/cannon-es
 COPY --from=build /build/node_modules/lerc ./node_modules/lerc
+COPY --from=build /build/node_modules/jpeg-js ./node_modules/jpeg-js
 COPY --from=build /build/node_modules/polygon-clipping ./node_modules/polygon-clipping
 COPY --from=build /build/node_modules/robust-predicates ./node_modules/robust-predicates
 COPY --from=build /build/node_modules/splaytree ./node_modules/splaytree

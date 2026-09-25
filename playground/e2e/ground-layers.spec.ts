@@ -85,6 +85,6 @@ test('transport crossings retain separate depth layers after GLB restoration', a
       restored: group.children.map((mesh: any) => -mesh.material.polygonOffsetFactor),
     }
   }, process.cwd())
-  expect(result.expected).toEqual([12, 13, 14, 15])
+  expect(result.expected).toEqual([17, 13, 14, 15])
   expect(result.restored).toEqual(result.expected)
 })

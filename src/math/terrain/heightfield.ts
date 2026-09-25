@@ -8,7 +8,7 @@ export interface TerrainData {
   heights: number[]
 }
 
-/** Exact triangular interpolation matching the Cannon heightfield and render mesh. */
+/** Exact triangular interpolation matching the render mesh. */
 export function terrainHeight(t: TerrainData, x: number, z: number): number {
   let u = x / t.spacing + (t.columns - 1) / 2,
     v = z / t.spacing + (t.rows - 1) / 2

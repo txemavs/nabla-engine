@@ -1,5 +1,11 @@
-import { planetPlaces, validatePlanetTileSource, type PlanetTileSource } from '#src/planet/index.js'
+import {
+  PLANET_GEOMETRY_REVISION,
+  planetPlaces,
+  validatePlanetTileSource,
+  type PlanetTileSource,
+} from '#src/planet/index.js'
 import { batchPlanetMeshes } from './planet-batches.js'
+import { bakeRoofImagery } from './roof-imagery.js'
 /** Native planet publisher: source features -> elevation -> independent terrain/building GLBs. */
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
@@ -94,6 +100,11 @@ if (pending) {
 validatePlanetTileSource(source)
 const { root, frame } = planetTileAsset(source)
 batchPlanetMeshes(root)
+try {
+  await bakeRoofImagery(root, source.tile)
+} catch (error) {
+  console.warn(`Roof imagery skipped: ${error}`)
+}
 const directory = join(output, mapTilePath(source.tile))
 await mkdir(directory, { recursive: true })
 const sha = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex')
@@ -112,9 +123,19 @@ try {
     const layer = root.clone(true)
     for (const child of [...layer.children])
       if ((child.name === 'Buildings') !== (name === 'buildings-osm')) layer.remove(child)
-    const bytes = new Uint8Array(
+    let bytes = new Uint8Array(
       (await new GLTFExporter().parseAsync(layer, { binary: true })) as ArrayBuffer,
     )
+    if (name === 'buildings-osm' && bytes.byteLength > 64 * 1024 * 1024) {
+      const draped = [] as import('three').Object3D[]
+      layer.traverse((node) => {
+        if (node.name === 'Drape') draped.push(node)
+      })
+      for (const node of draped) node.parent?.remove(node)
+      bytes = new Uint8Array(
+        (await new GLTFExporter().parseAsync(layer, { binary: true })) as ArrayBuffer,
+      )
+    }
     if (bytes.byteLength > 64 * 1024 * 1024) throw Error('Planet GLB exceeds budget')
     const hash = sha(bytes)
     const path = `${name}-${hash.slice(0, 16)}.glb`
@@ -143,7 +164,7 @@ try {
         units: 'metres',
         axes: '+X east, +Y up, +Z south',
         generator: 'native-xyz-v2',
-        geometryRevision: 'native-surfaces-v2',
+        geometryRevision: PLANET_GEOMETRY_REVISION,
         places: planetPlaces(source),
         retrievedAt: source.retrievedAt,
         source: { path: sourcePath, sha256: sourceHash },

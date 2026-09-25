@@ -1,5 +1,4 @@
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
-import { SparseContactMatrix } from '../math/contact/matrix.js'
 import { terrainHeight } from '../planet/land/terrain.js'
 import { triangles } from '../math/solid/mesh.js'
 import { SceneEditor } from '../stage/editor.js'
@@ -11,16 +10,14 @@ import { vehicleDefinition, type Vehicle } from '../entity/vehicle/vehicle.js'
 import { roadGeometry, nearestRoadCenterline } from '../planet/land/roads/draped-road.js'
 import {
   Heightfield,
-  ConvexPolyhedron,
+  Trimesh,
   AABB,
   Body,
   Box,
-  GSSolver,
   Material,
   LockConstraint,
   Quaternion,
   RaycastVehicle,
-  SAPBroadphase,
   Sphere,
   Vec3,
   World,
@@ -191,10 +188,7 @@ export class Simulation {
       .filter((e) => e.terrain)
       .map((e) => ({ e, pose: this.graph.worldTransform(e.id) }))
     this.portalEntities = this.document.entities.filter((e) => e.portal)
-    this.world.collisionMatrix = new SparseContactMatrix()
-    this.world.collisionMatrixPrevious = new SparseContactMatrix()
-    this.world.broadphase = new SAPBroadphase(this.world)
-    ;(this.world.solver as GSSolver).iterations = 15
+    this.world.raw.integrationParameters.numSolverIterations = 15
     this.world.defaultContactMaterial.friction = 0.55
     this.world.defaultContactMaterial.restitution = 0
     for (const e of this.document.entities) this.addEntityBody(e)
@@ -211,12 +205,9 @@ export class Simulation {
     if (this.document.geography) {
       const terrain = new Body({ mass: 0, material: this.solidMaterial })
       const radius = EARTH_RADIUS + this.document.geography.altitude
-      terrain.addShape(
-        new Sphere(
-          radius -
-            (options.planetaryTerrain || this.document.entities.some((e) => e.terrain) ? 200 : 0),
-        ),
-      )
+      const sink =
+        options.planetaryTerrain || this.document.entities.some((e) => e.terrain) ? 200 : 0
+      terrain.addShape(new Sphere(radius - sink))
       terrain.position.set(0, -radius, 0)
       this.world.addBody(terrain)
     }
@@ -315,7 +306,6 @@ export class Simulation {
     host.updateMassProperties()
     host.aabbNeedsUpdate = true
     host.wakeUp()
-    this.world.broadphase.dirty = true
   }
 
   /** Add/remove only static map entities without touching actor state or the physics clock. */
@@ -354,7 +344,6 @@ export class Simulation {
         e.terrain ? [Math.min(...e.terrain.heights) - 10] : [],
       ),
     )
-    this.world.broadphase.dirty = true
   }
   private addEntityBody(e: Entity): void {
     const roadSurface =
@@ -400,41 +389,20 @@ export class Simulation {
         ? roadGeometry(bridgeTerrain, e.road!.paths, e.road!.width, e.road)
         : undefined)
     if (geometry) {
-      // Thin convex triangle prisms support Cannon sphere, box and ray contacts.
-      // Open faces remain openings; no hidden bounding-box collider.
-      for (const indices of triangles(geometry)) {
-        const points = indices.map((i) => new Vector3(...geometry.vertices[i]))
-        const n = points[1]
-          .clone()
-          .sub(points[0])
-          .cross(points[2].clone().sub(points[0]))
-          .normalize()
-          .multiplyScalar(0.025)
-        if (roadSurface) for (const p of points) p.addScaledVector(n, -2)
-        const center = points
-          .reduce((a, p) => a.add(p), new Vector3())
-          .multiplyScalar(1 / 3)
-          .add(n)
-        const vertices = [
-          ...points.map((p) => p.clone().addScaledVector(n, 2)),
-          ...points.map((p) => p.clone()),
-        ]
-          .map((p) => p.sub(center))
-          .map((p) => new Vec3(p.x, p.y, p.z))
-        body.addShape(
-          new ConvexPolyhedron({
-            vertices,
-            faces: [
-              [0, 1, 2],
-              [5, 4, 3],
-              [0, 3, 4, 1],
-              [1, 4, 5, 2],
-              [2, 5, 3, 0],
-            ],
-          }),
-          new Vec3(center.x, center.y, center.z),
-        )
-      }
+      const vertices = new Float32Array(geometry.vertices.length * 3)
+      geometry.vertices.forEach((vertex, i) => {
+        vertices[i * 3] = vertex[0]
+        vertices[i * 3 + 1] = vertex[1]
+        vertices[i * 3 + 2] = vertex[2]
+      })
+      const faces = triangles(geometry)
+      const indices = new Uint32Array(faces.length * 3)
+      faces.forEach((face, i) => {
+        indices[i * 3] = face[0]
+        indices[i * 3 + 1] = face[1]
+        indices[i * 3 + 2] = face[2]
+      })
+      if (indices.length >= 3) body.addShape(new Trimesh(vertices, indices))
     }
     for (const collider of geometry || e.terrain || e.road ? [] : colliders)
       body.addShape(
@@ -614,7 +582,7 @@ export class Simulation {
       car.addWheel({
         chassisConnectionPointLocal: new Vec3(x, y + definition.suspensionRest, z),
         directionLocal: new Vec3(0, -1, 0),
-        axleLocal: new Vec3(-1, 0, 0),
+        axleLocal: new Vec3(1, 0, 0),
         radius: definition.wheelRadius,
         suspensionRestLength: definition.suspensionRest,
         suspensionStiffness: definition.stiffness,
@@ -724,7 +692,7 @@ export class Simulation {
     const current: Transform[] = v.raycast.wheelInfos.map((_, i) => {
       const inContact = v.raycast.wheelInfos[i].isInContact
       v.raycast.updateWheelTransform(i)
-      // Cannon updates render transforms by clearing this physics flag; a read must preserve it.
+      // Updating the wheel pose clears the contact flag; a read must preserve it.
       v.raycast.wheelInfos[i].isInContact = inContact
       const t = v.raycast.wheelInfos[i].worldTransform
       return {
@@ -943,7 +911,6 @@ export class Simulation {
         body.interpolatedQuaternion.copy(body.quaternion)
         body.aabbNeedsUpdate = true
         body.wakeUp()
-        this.world.broadphase.dirty = true
         const forward = new Vector3(0, 0, -1).applyQuaternion(rotation)
         const yawDelta = blocked ? 0 : Math.atan2(-forward.x, -forward.z)
         if (body === this.playerBody && !blocked) {
@@ -1222,9 +1189,8 @@ export class Simulation {
         continue
       }
       const powered = v.helm !== 'off'
-      const target = active && powered
-        ? (-this.input.right * 0.45) / (1 + v.body.velocity.length() * 0.035)
-        : 0
+      const target =
+        active && powered ? (-this.input.right * 0.45) / (1 + v.body.velocity.length() * 0.035) : 0
       v.steer += clamp(target - v.steer, -FIXED_STEP * 1.8, FIXED_STEP * 1.8)
       const forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
       const speed = v.body.velocity.dot(forward)
@@ -1399,13 +1365,22 @@ export class Simulation {
   private fly(v: Vehicle, active: boolean): void {
     const flight = v.flight!,
       body = v.body
+    const inv = body.raw?.invPrincipalInertiaSqrt()
+    if (!inv || inv.x === 0) body.applyInertia()
     const helm = v.helm
-    const hands = active && helm !== 'off' && helm !== 'auto'
+    const auto = helm === 'auto'
+    const hands = active && !auto
     const space = helm === 'space'
     const height = this.height(body),
       radial = this.radialUp(body)
-    const lift = hands ? (space ? (height < 80000 ? 1 : (this.input.lift ?? 0)) : (this.input.lift ?? 0)) : 0
-    const turn = hands ? (this.input.turn ?? 0) : 0
+    const lift = hands
+      ? space
+        ? height < 80000
+          ? 1
+          : (this.input.lift ?? 0)
+        : (this.input.lift ?? 0)
+      : 0
+    const turn = active ? (this.input.turn ?? 0) : 0
     const forward = hands && !this.input.brake ? (space ? 1 : this.input.forward) : 0
     const right = hands && !this.input.brake ? this.input.right : 0
     // Assisted travel is explicitly accelerated with Shift, while ordinary vertical speed stays 3 m/s.
@@ -1413,10 +1388,11 @@ export class Simulation {
       (space || (active && this.input.sprint)) && this.document.geography
         ? Math.min(2000000, Math.max(30, height * 0.8))
         : 3
-    const lead = Math.max(1.5, travelSpeed * 0.8)
+    const climb = Math.abs(lift) > 0 && travelSpeed <= 3 ? 24 : travelSpeed
+    const lead = Math.max(1.5, climb * 0.8)
     if (helm !== 'plane')
       flight.altitude = clamp(
-        flight.altitude + lift * travelSpeed * FIXED_STEP,
+        flight.altitude + lift * climb * FIXED_STEP,
         Math.max(this.minimumFlightAltitude, height - lead),
         height + lead,
       )
@@ -1451,7 +1427,7 @@ export class Simulation {
       const nose = body.quaternion.vmult(new Vec3(0, 0, -1))
       const air = Math.max(0, body.velocity.dot(nose))
       const wings = clamp(air / 42, 0, 1)
-      const throttle = hands ? (this.input.lift ?? 0) : 0
+      const throttle = lift
       const along = body.velocity.dot(nose)
       const push =
         throttle > 0 ? clamp(680 - along, 0, 80) : throttle < 0 ? clamp(-40 - along, -80, 0) : 0
@@ -1462,10 +1438,11 @@ export class Simulation {
       return
     }
     const verticalSpeed = body.velocity.dot(radial)
+    const accelCap = Math.max(6, travelSpeed * 4, Math.abs(verticalSpeed) * 4)
     const acceleration = clamp(
       (flight.altitude - height) * 5 - verticalSpeed * 4,
-      -Math.max(6, travelSpeed * 4, Math.abs(verticalSpeed) * 4),
-      Math.max(6, travelSpeed * 4, Math.abs(verticalSpeed) * 4),
+      -accelCap,
+      accelCap,
     )
     // Distribute assisted lift over the rigid assembly: same net force/moment at its
     // combined centre of mass, without forcing the solver to transmit cruise-scale impulses.
@@ -1601,34 +1578,7 @@ export class Simulation {
   private overlapsBody(bounds: AABB): boolean {
     const center = bounds.lowerBound.vadd(bounds.upperBound).scale(0.5)
     const half = bounds.upperBound.vsub(bounds.lowerBound).scale(0.5)
-    const candidate = new OBB(new Vector3(...vec(center)), new Vector3(...vec(half)))
-    return this.world.bodies.some((body) =>
-      body.shapes.some((shape, i) => {
-        if (!(shape instanceof Box) && !(shape instanceof ConvexPolyhedron)) return false
-        const p = body.pointToWorldFrame(body.shapeOffsets[i])
-        const q = body.quaternion.mult(body.shapeOrientations[i])
-        if (shape instanceof ConvexPolyhedron) {
-          const min = new Vec3(),
-            max = new Vec3()
-          shape.calculateWorldAABB(p, q, min, max)
-          if (!bounds.overlaps(new AABB({ lowerBound: min, upperBound: max }))) return false
-          return new Box(half).convexPolyhedronRepresentation.findSeparatingAxis(
-            shape,
-            center,
-            new Quaternion(),
-            p,
-            q,
-            new Vec3(),
-          )
-        }
-        const rotation = new Matrix3().setFromMatrix4(
-          new Matrix4().makeRotationFromQuaternion(new RenderQuaternion(q.x, q.y, q.z, q.w)),
-        )
-        return candidate.intersectsOBB(
-          new OBB(new Vector3(...vec(p)), new Vector3(...vec(shape.halfExtents)), rotation),
-        )
-      }),
-    )
+    return this.world.intersectsCuboid(center, half)
   }
 
   vehicleInfo(

@@ -9,14 +9,28 @@ export const entityCatalog = [
   { id: 'car', label: 'Audi A3 Cabrio', clearance: 0.62 },
   { id: 'carrier', label: 'Contenedor volador', clearance: 1.2 },
   { id: 'streetlight', label: 'Farola de autopista', clearance: 4.5 },
-  { id: 'globe', label: 'Farola de barrio', clearance: 2.2 },
+  { id: 'globe', label: 'Farola de barrio', clearance: 2.5 },
 ] as const
 export type CatalogId = (typeof entityCatalog)[number]['id']
 /** Position is the ground contact, not the model's centre of mass. IDs belong to the host. */
 export function createCatalogEntities(kind: CatalogId, id: string, ground: Vec3Tuple): Entity[] {
   const entry = entityCatalog.find((e) => e.id === kind)!
   const position: Vec3Tuple = [ground[0], ground[1] + entry.clearance, ground[2]]
-  if (kind === 'car') return [createA3(id, position)]
+  if (kind === 'car') {
+    const car = createA3(id, position)
+    const paints = [
+      '#c23b3b',
+      '#e2b23a',
+      '#3d7edb',
+      '#2f9e6b',
+      '#ece7df',
+      '#1c1f24',
+      '#d4762c',
+      '#7a4ea3',
+    ]
+    car.color = paints[Math.floor(Math.random() * paints.length)]
+    return [car]
+  }
   if (kind === 'carrier')
     return [createCarrier(id, position), ...createCarrierPortals(id, `${id}-bow`, `${id}-stern`)]
   if (kind === 'globe') return [createGlobeLamp(id, position, entry.label)]

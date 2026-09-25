@@ -95,6 +95,9 @@
   width: 100%;
   font-size: 14px;
 }
+.studio-settings-content #options-panel-layers input {
+  width: auto;
+}
 .studio-settings-tabs {
   display: flex;
   flex: 0 0 36px;

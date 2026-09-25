@@ -71,8 +71,7 @@ GLBs. Buildings can be disabled independently, avoiding their download and colli
 work. Resident cache retention and fetch concurrency follow performance settings.
 
 Collision chunks are made from the GLB triangles, not a parallel legacy heightfield.
-Only chunks within 65 m of an actor become convex triangle prisms; Cannon's box
-vehicles cannot use Trimesh for all required contacts. Construction has a per-frame
+Only chunks within 65 m of an actor become static trimeshes. Construction has a per-frame
 budget and coverage swaps atomically. The chunk working set is reused within an 8 m
 movement cell. High flight does not instantiate distant ground colliders.
 

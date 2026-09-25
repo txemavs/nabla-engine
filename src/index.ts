@@ -64,8 +64,8 @@ export {
   type AssemblyResult,
 } from './planet/extract/multipolygon.js'
 
-export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from './math/geo/sphere/pose.js'
-export type { WorldPose } from './math/geo/sphere/pose.js'
+export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from './math/geo/pose.js'
+export type { WorldPose } from './math/geo/pose.js'
 
 export {
   MAP_TILE_MATRIX,

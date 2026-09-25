@@ -6,7 +6,7 @@
 SceneDocument (validated JSON v1)
   ├─ SceneEditor ─ transactions and undo/redo
   ├─ SceneGraph  ─ authored transform hierarchy
-  └─ Simulation ─ one Cannon World ─ snapshots
+  └─ Simulation ─ one Rapier world ─ snapshots
                                       └─ host renderer and UI
 ```
 
@@ -29,7 +29,7 @@ SceneDocument (validated JSON v1)
 | `studio/`         | Studio application. Depends on the engine; will move to its own repo            |
 
 Runtime engine modules do not import the playground or Studio, and they do not access `window`, `document`,
-`localStorage`, Vue or Agency services. The engine uses Three.js math and Cannon-es
+`localStorage`, Vue or Agency services. The engine uses Three.js math and Rapier
 physics; it does not own a renderer or install global input handlers.
 
 ## Spatial contract
@@ -65,7 +65,7 @@ compatibility with earlier scene-v1 documents.
 
 ## Physics and time
 
-Each `Simulation` owns exactly one Cannon `World`. Controllers apply input before
+Each `Simulation` owns exactly one Rapier world. Controllers apply input before
 each fixed 1/60-second tick. Accepted elapsed time is capped at 0.25 seconds per
 call; excess is observable through `stats.droppedSeconds`. A fixed step does not
 guarantee cross-platform or cross-library-version determinism.

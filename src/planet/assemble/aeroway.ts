@@ -20,7 +20,7 @@ export function emitAeroway(d: District, f: MapFeature): boolean {
   const color = tags.aeroway === 'runway' ? '#2c3034' : tags.aeroway === 'taxiway' ? '#3c4146' : '#4a4f54'
   if (closed) {
     const rings = f.rings.map((r) => ({ ...r, points: r.coordinates.map(d.project) }))
-    if (rings.some((r) => r.points.length < 4)) continue
+    if (rings.some((r) => r.points.length < 4)) return true
     const geometry = drapeLandcoverPolygon(rings, d.data.terrain, 0.08)
     for (let first = 0; first < geometry.faces.length; first += 600) {
       const vertices: Vec3Tuple[] = []
@@ -58,7 +58,7 @@ export function emitAeroway(d: District, f: MapFeature): boolean {
         if (segment) paths.push(segment)
       }
     }
-    if (!paths.length) continue
+    if (!paths.length) return true
     const e = createEntity('osm-' + f.id.replace('/', '-') + d.suffix, 'group')
     e.name = tags.name ?? tags.aeroway
     e.road = { paths, width, terrainId: d.terrain.id }

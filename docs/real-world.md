@@ -157,7 +157,7 @@ tile streaming or full visual parity with its materials and roof generation.
 No map-service request is needed to play the bundled district.
 
 Each physical terrain zone covers **1,200 × 1,200 metres**, sampled on a 121 × 121 grid.
-The visible mesh, road draping and Cannon heightfield share the same triangulation.
+The visible mesh, road draping and heightfield share the same triangulation.
 Road outlines are clipped against terrain triangles before rendering, so asphalt
 does not cut through a differently tessellated slope. Near the ground, a boundary
 constraint stops vehicles and the monitor before an unloaded edge. Shared edges

@@ -137,11 +137,11 @@ export function mapTileGroundWidth(latitude: number, z: number): number {
 export interface MapZoomPlan {
   roots: MapTile[]
   leaves: MapTile[]
-  /** Parents first: a complete coarse cover must be available before refinement. */
+  /** Zoom 15 only. Zoom 14 and 13 are photos, not meshes. */
   requests: MapTile[]
   budgetLimited: boolean
 }
-/** Three spatial zooms with a bounded quadtree, not three qualities of the same footprint. */
+/** z15 GLBs inside the draw distance. Coarser zooms are photographs of those meshes. */
 export function planMapZooms(options: {
   latitude: number
   longitude: number
@@ -149,10 +149,10 @@ export function planMapZooms(options: {
   viewDistance: number
   maxTiles?: number
 }): MapZoomPlan {
-  const { latitude, longitude, heightAboveGround, viewDistance } = options
+  const { latitude, longitude, viewDistance } = options
   const budget = options.maxTiles ?? 96
   if (
-    !Number.isFinite(heightAboveGround) ||
+    !Number.isFinite(options.heightAboveGround) ||
     !Number.isFinite(viewDistance) ||
     viewDistance <= 0 ||
     !Number.isInteger(budget) ||
@@ -160,56 +160,33 @@ export function planMapZooms(options: {
     budget > 512
   )
     throw Error('Invalid map streaming budget')
-  const center = mapTileAt(latitude, longitude, 13)
-  const width = mapTileGroundWidth(latitude, 13)
-  const n = 2 ** 13
+  const center = mapTileAt(latitude, longitude, 15)
+  const width = mapTileGroundWidth(latitude, 15)
+  const n = 2 ** 15
   const px = (((((longitude + 180) % 360) + 360) % 360) / 360) * n
   const py = ((1 - Math.asinh(Math.tan(latitude * radians)) / Math.PI) / 2) * n
   const distance = (tile: MapTile) => {
-    const scale = 2 ** (tile.z - 13)
-    const cx = (tile.x + 0.5) / scale
-    const dx = Math.min(Math.abs(cx - px), n - Math.abs(cx - px))
-    return (
-      Math.hypot(
-        Math.max(0, dx - 0.5 / scale),
-        Math.max(0, Math.abs((tile.y + 0.5) / scale - py) - 0.5 / scale),
-      ) * width
-    )
+    const dx = Math.min(Math.abs(tile.x + 0.5 - px), n - Math.abs(tile.x + 0.5 - px))
+    return Math.hypot(Math.max(0, dx - 0.5), Math.max(0, Math.abs(tile.y + 0.5 - py) - 0.5)) * width
   }
   // Bound candidate enumeration even with an accidentally planetary draw distance.
-  const span = Math.min(32, Math.ceil(viewDistance / width) + 1)
+  const span = Math.min(48, Math.ceil(viewDistance / width) + 1)
   const candidates: MapTile[] = []
   for (let dy = -span; dy <= span; dy++)
     for (let dx = -span; dx <= span; dx++) {
       const y = center.y + dy
       if (y < 0 || y >= n) continue
-      const tile = { z: 13, x: (center.x + dx + n) % n, y }
+      const tile = { z: 15, x: (center.x + dx + n) % n, y }
       if (distance(tile) <= viewDistance) candidates.push(tile)
     }
   candidates.sort((a, b) => distance(a) - distance(b) || a.y - b.y || a.x - b.x)
-  // Reserve room for refinement, but retain at least one coarse tile.
-  const roots = candidates.slice(0, Math.max(1, Math.floor(budget / 4)))
-  const leaves = [...roots]
-  const requests = [...roots]
-  let budgetLimited = roots.length < candidates.length || viewDistance / width > 31
-  while (true) {
-    const refinable = leaves.filter(
-      (t) =>
-        t.z < 15 &&
-        Math.hypot(distance(t), Math.max(0, heightAboveGround)) < (t.z === 13 ? 3000 : 1000),
-    )
-    refinable.sort((a, b) => a.z - b.z || distance(a) - distance(b))
-    if (!refinable.length) break
-    if (leaves.length + 3 > budget) {
-      budgetLimited = true
-      break
-    }
-    const tile = refinable[0]
-    const children = mapTileChildren(tile)
-    leaves.splice(leaves.indexOf(tile), 1, ...children)
-    requests.push(...children)
+  const roots = candidates.slice(0, budget)
+  return {
+    roots,
+    leaves: roots,
+    requests: roots,
+    budgetLimited: roots.length < candidates.length || viewDistance / width > 31,
   }
-  return { roots, leaves, requests, budgetLimited }
 }
 /** Atomic parent replacement. Never display a parent and descendants together. */
 export function readyMapCover(plan: MapZoomPlan, ready: ReadonlySet<string>): MapTile[] {

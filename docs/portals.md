@@ -112,7 +112,7 @@ and moving rear ramp: matching the outer frame alone does not prove a car route.
 
 ## Data and ownership
 
-Keep one `Simulation` and one Cannon world for the first implementation. Every
+Keep one `Simulation` and one Rapier world. Every
 physical actor has exactly one authoritative body. CSS elements, remote views and
 clipped visual copies never create a second controller or body.
 
@@ -276,7 +276,7 @@ a physical regression test, including continued unpiloted altitude hold. The ful
 A3/CSS-office scenario still requires precision and broadphase validation at
 altitude with both destinations active. If that requires bounded
 physics cells, design them under one simulation coordinator with transactional
-actor migration and shared time. Do not silently add a Cannon world per renderer.
+actor migration and shared time. Do not silently add a physics world per renderer.
 An unrelated authored world or pocket dimension would use an explicit space ID
 and loading/transfer contract; a CSS room does not itself require a separate space.
 
