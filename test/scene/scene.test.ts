@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Quaternion, Vec3 } from 'cannon-es'
+import { Quaternion, Vec3 } from '../../src/simulation/physics.js'
 import {
   createEntity,
   parseScene,

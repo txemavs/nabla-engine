@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Quaternion, Vec3 } from 'cannon-es'
+import { Quaternion, Vec3 } from '../../src/simulation/physics.js'
 import { createA3 } from '../../src/catalog/a3.js'
 import { createCarrier } from '../../src/catalog/carrier.js'
 import { createEntity, type SceneDocument } from '../../src/stage/scene.js'

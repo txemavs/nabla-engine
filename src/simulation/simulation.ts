@@ -24,7 +24,7 @@ import {
   Sphere,
   Vec3,
   World,
-} from 'cannon-es'
+} from './physics.js'
 import {
   parseScene,
   isMapBuilding,

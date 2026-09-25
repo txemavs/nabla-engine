@@ -1,3 +1,4 @@
+import { initPhysics } from '../src/simulation/physics.js'
 import { setNavigationPlaces } from './navigation-places.js'
 import { flightEntry, urlPlay } from '../studio/flight-entry.js'
 import { geoToLocal } from '../src/math/geo/sphere.js'
@@ -170,11 +171,14 @@ function toast(message: string): void {
     $('toast').style.display = 'none'
   }, 3500)
 }
-function action(fn: () => void): void {
-  try {
-    fn()
-  } catch (error) {
+function action(fn: () => void | Promise<void>): void {
+  const fail = (error: unknown) =>
     toast(error instanceof Error ? error.message : 'No se pudo completar la acción')
+  try {
+    const result = fn()
+    if (result) result.catch(fail)
+  } catch (error) {
+    fail(error)
   }
 }
 const viewport = $('viewport')
@@ -1401,7 +1405,7 @@ async function togglePlay(startFlight = false): Promise<void> {
   }
 }
 function togglePlayNow(startFlight = false): void {
-  action(() => {
+  action(async () => {
     keys.clear()
     if (sim) {
       sim.dispose()
@@ -1425,6 +1429,7 @@ function togglePlayNow(startFlight = false): void {
       project = retainLocation(project!, editor.document)
       portalControls.rebuild(editor.document)
       const entry = startFlight ? flightEntry(editor.document) : null
+      await initPhysics()
       sim = new Simulation(entry?.scene ?? editor.document, {
         playerMode: 'hover',
         planetaryTerrain: !!editor.document.geography?.planetary,

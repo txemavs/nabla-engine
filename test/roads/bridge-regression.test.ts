@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { Body, RaycastResult, Vec3, World } from 'cannon-es'
+import { Body, RaycastResult, Vec3, World } from '../../src/simulation/physics.js'
 import { createRealWorld, IRUN_VENTAS } from '../../src/planet/assemble/world.js'
 import { Simulation } from '../../src/simulation/simulation.js'
 import { nearestRoadCenterline, roadGeometry } from '../../src/planet/land/roads/draped-road.js'

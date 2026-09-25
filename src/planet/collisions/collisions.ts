@@ -3,7 +3,7 @@
  * Cannon's Trimesh cannot collide with all vehicle box shapes; these prisms can.
  * The old set stays until the replacement is built.
  */
-import { Body, ConvexPolyhedron, Material, Quaternion, Vec3, World } from 'cannon-es'
+import { Body, ConvexPolyhedron, Material, Quaternion, Vec3, World } from '../../simulation/physics.js'
 import type { QuatTuple, Transform, Vec3Tuple } from '../../math/frame/vectors.js'
 import type { PlanetCollisionChunk } from '../contract.js'
 

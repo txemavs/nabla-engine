@@ -2,7 +2,7 @@
  * Planet, in the same order as the module: frame, places, horizon, then collisions.
  */
 import { describe, expect, it } from 'vitest'
-import { Body, Box, Material, Vec3, World } from 'cannon-es'
+import { Body, Box, Material, Vec3, World } from '../../src/simulation/physics.js'
 import { Vector3 } from 'three'
 import { ecef, localFrame, localToGeo } from '../../src/math/geo/sphere.js'
 import {

@@ -2,6 +2,7 @@ export { parseScene, createEntity, rotationDegrees, toDegrees, SceneGraph } from
 export type { Entity, SceneDocument, Transform, Vec3Tuple, QuatTuple } from './stage/scene.js'
 export { SceneEditor } from './stage/editor.js'
 export { Simulation, FIXED_STEP, idleInput } from './simulation/simulation.js'
+export { initPhysics } from './simulation/physics.js'
 export type { PlayerInput, PlayerSnapshot } from './simulation/simulation.js'
 export { createSampleScene } from './stage/sample.js'
 

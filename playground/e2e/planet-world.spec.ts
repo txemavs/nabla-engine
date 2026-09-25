@@ -64,9 +64,10 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
       const path = '/planet-world.ts'
       const { PlanetWorld } = await import(path)
       const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-      const { Simulation, createEntity, createA3, idleInput } = await import(
+      const { Simulation, createEntity, createA3, idleInput, initPhysics } = await import(
         `/@fs${root}/src/index.ts`
       )
+      await initPhysics()
       const stream = new PlanetWorld(
         anchor,
         () => {},

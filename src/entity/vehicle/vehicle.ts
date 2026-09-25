@@ -1,4 +1,4 @@
-import type { Body, RaycastVehicle } from 'cannon-es'
+import type { Body, RaycastVehicle } from '../../simulation/physics.js'
 import type { Entity } from '../schema.js'
 import type { VehicleDefinition } from './field.js'
 

@@ -8,5 +8,6 @@ export default defineConfig({
       'services/world-cache/**/*.test.ts',
     ],
     environment: 'node',
+    setupFiles: ['test/setup-physics.ts'],
   },
 })

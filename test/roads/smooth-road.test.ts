@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { Body, Box, Vec3, RaycastResult, World } from 'cannon-es'
+import { Body, Box, Vec3, RaycastResult, World } from '../../src/simulation/physics.js'
 import { roadGeometry, smoothFloatRoadGeometry } from '../../src/planet/land/roads/draped-road.js'
 import { terrainHeight } from '../../src/planet/land/terrain.js'
 import { createEntity } from '../../src/stage/scene.js'
