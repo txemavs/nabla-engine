@@ -6,8 +6,8 @@ playground with `npm run dev`. Do not commit dependency folders or build/test ou
 ## Development workflow
 
 1. Keep changes focused and preserve the current edit/play behavior.
-2. Put engine contracts/controllers in `src/`; browser-only code belongs in `playground/`.
-3. Keep unit/physics tests beside their modules and browser journeys in `tests/`.
+2. Put engine contracts/controllers in `src/`. The reference browser host is `playground/`. Studio lives in `studio/` and depends on the engine; it is leaving this repo.
+3. Engine unit tests live in `test/`. Playground unit tests live in `playground/test/` and browser journeys in `playground/e2e/`. Studio unit tests live in `studio/test/`.
 4. Update the relevant English documentation when contracts or controls change.
 5. Format and run the checks appropriate to the change.
 

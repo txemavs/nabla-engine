@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { SkyClock } from '../src/sky.js'
+import type { SkyClock } from '../src/planet/sky.js'
 import type { GeographicView } from './geography.js'
 
 /** Destination state lasts through the remote scene render, then restores the main view.

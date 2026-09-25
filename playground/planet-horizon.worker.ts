@@ -1,8 +1,8 @@
 import * as Lerc from 'lerc'
 import wasm from 'lerc/lerc-wasm.wasm?url'
-import { mapTileSample, type MapTile } from '../src/map-tiles.js'
-import { tileCoordinate } from '../src/geography.js'
-import { horizonGeometry } from '../src/planet-horizon.js'
+import { mapTileSample, type MapTile } from '../src/scene/mercator.js'
+import { tileCoordinate } from '../src/math/geo/sphere.js'
+import { horizonGeometry } from '../src/planet/index.js'
 import { mapCache } from './map-cache.js'
 const base =
   import.meta.env.VITE_WORLD_ELEVATION_URL ||

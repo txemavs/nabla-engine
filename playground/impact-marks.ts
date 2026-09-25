@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { Transform, Vec3Tuple } from '../src/scene.js'
+import type { Transform, Vec3Tuple } from '../src/stage/scene.js'
 
 /** Bounded, surface-aligned shot marks, attached in the hit entity's local frame. */
 export class ImpactMarks {

@@ -5,14 +5,14 @@ import { createHash } from 'node:crypto'
 import * as THREE from 'three'
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import { decodePreparedBinary } from '#src/prepared-binary.js'
+import { decodePreparedBinary } from '../prepare/prepared-binary.js'
 import {
   mapTileAt,
   mapTileBounds,
   mapTileId,
   MAP_ZOOMS,
   type MapTile,
-} from '#src/map-tiles.js'
+} from '#src/scene/mercator.js'
 import { tileAsset, type TileArtifact } from '#playground/tile-asset.js'
 import { clipTriangle, clusterTriangles, type Vertex } from './zoom-geometry.js'
 class BlobReader {

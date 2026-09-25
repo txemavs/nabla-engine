@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { Entity } from '../src/scene.js'
+import type { Entity } from '../src/stage/scene.js'
 
 export interface PortalSurface {
   entity: Entity

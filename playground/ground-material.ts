@@ -1,4 +1,4 @@
-import { SURFACE_LAYERS } from '../src/landcover.js'
+import { SURFACE_LAYERS } from '../src/planet/land/surface.js'
 import * as THREE from 'three'
 
 /** Diffuse ground: roughness alone still leaves a broad dielectric sun highlight. */

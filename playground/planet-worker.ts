@@ -5,7 +5,7 @@ import {
   planetCollisionChunks,
   type PlanetManifest,
   type PlanetMesh,
-} from '../src/planet-artifact.js'
+} from '../src/planet/index.js'
 import { mapCache } from './map-cache.js'
 const controllers = new Map<number, AbortController>()
 self.onmessage = async (

@@ -1,10 +1,10 @@
-import { planetaryScene } from './studio/planet-scene.js'
-import { createRealWorld } from '../src/real-world.js'
-import { createProject, parseProject } from './studio/project.js'
+import { planetaryScene } from '../studio/planet-scene.js'
+import { createRealWorld } from '../src/planet/assemble/world.js'
+import { createProject, parseProject } from '../studio/project.js'
 import { upgradeReferenceScene } from './scene-upgrades.js'
-import { createSampleScene } from '../src/sample.js'
-import { parseScene } from '../src/scene.js'
-import { alignCircuitPlan } from '../src/circuit-plan.js'
+import { createSampleScene } from '../src/stage/sample.js'
+import { parseScene } from '../src/stage/scene.js'
+import { alignCircuitPlan } from '../src/stage/circuit-plan.js'
 self.onmessage = (
   event: MessageEvent<{
     project: string | null

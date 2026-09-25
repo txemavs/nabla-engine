@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { SceneGraph, type Entity } from '../src/scene.js'
-import { mapSurfaceColor, SURFACE_LAYERS } from '../src/landcover.js'
+import { SceneGraph, type Entity } from '../src/stage/scene.js'
+import { mapSurfaceColor, SURFACE_LAYERS } from '../src/planet/land/surface.js'
 import { transportLayer, matteGroundMaterial } from './ground-material.js'
 
 export interface TileArtifact {

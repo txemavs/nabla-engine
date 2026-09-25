@@ -1,4 +1,4 @@
-import type { GeoPoint } from '../src/geography.js'
+import type { GeoPoint } from '../src/math/geo/sphere.js'
 import { preparedPath } from './prepared-world.js'
 import type { MapArtifact } from './map-artifact.js'
 const requests = new Map<string, { at: number; promise: Promise<any> }>()

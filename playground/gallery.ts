@@ -1,8 +1,8 @@
-import { treeSprite } from '../src/vegetation.js'
+import { treeSprite } from '../src/entity/sprite/sprite.js'
 import * as THREE from 'three'
-import { createEntity, type Entity, type SceneDocument } from '../src/scene.js'
-import { createPortalPair, portalMapping, portalLocal } from '../src/portal.js'
-import type { Simulation } from '../src/simulation.js'
+import { createEntity, type Entity, type SceneDocument } from '../src/stage/scene.js'
+import { createPortalPair, portalMapping, portalLocal } from '../src/entity/portal/portal.js'
+import type { Simulation } from '../src/simulation/simulation.js'
 import type { SceneView } from './view.js'
 
 export function createGallery(prefix: string): Entity[] {

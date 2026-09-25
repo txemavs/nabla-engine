@@ -1,7 +1,7 @@
-import { decodePreparedBinary, PREPARED_BINARY_LIMIT } from '../src/prepared-binary.js'
+import { decodePreparedBinary, PREPARED_BINARY_LIMIT } from '#world-cache/prepare/prepared-binary.js'
 import { mapCache, mapCacheStats, type MapCache } from './map-cache.js'
-import { parseScene, createEntity, type Entity } from '../src/scene.js'
-import type { GeoPoint } from '../src/geography.js'
+import { parseScene, createEntity, type Entity } from '../src/stage/scene.js'
+import type { GeoPoint } from '../src/math/geo/sphere.js'
 import type { PreparedMapGeometry } from './map-geometry.js'
 
 export const PREPARED_VERSION = 5

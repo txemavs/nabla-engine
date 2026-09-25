@@ -1,7 +1,7 @@
 import * as THREE from 'three'
-import type { Entity } from '../src/scene.js'
-import type { SurfaceType } from '../src/landcover.js'
-import { SURFACE_COLORS, SURFACE_LAYERS } from '../src/landcover.js'
+import type { Entity } from '../src/stage/scene.js'
+import type { SurfaceType } from '../src/planet/land/surface.js'
+import { SURFACE_COLORS, SURFACE_LAYERS } from '../src/planet/land/surface.js'
 import { withinMapDistance } from './map-visibility.js'
 
 type LandcoverCell = {

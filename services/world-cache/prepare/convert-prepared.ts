@@ -1,6 +1,6 @@
 /** Add binary sidecars to existing JSON artifacts without contacting a provider. */
 import { readFile, writeFile, rename, unlink } from 'node:fs/promises'
-import { encodePreparedBinary } from '#src/prepared-binary.js'
+import { encodePreparedBinary } from './prepared-binary.js'
 const paths = process.argv.slice(2)
 if (!paths.length) throw Error('Usage: convert-prepared.js <zone.json> ...')
 for (const path of paths) {

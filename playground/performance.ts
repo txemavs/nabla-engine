@@ -25,7 +25,8 @@ export const shadowTiers: Record<number, ShadowTier | null> = {
   0: null, // disabled
   512: { cascades: 1, mapSize: 512, maxFar: 40, radius: 2.5, normalBias: 0.08 },
   1024: { cascades: 2, mapSize: 1024, maxFar: 200, radius: 2, normalBias: 0.06 },
-  2048: { cascades: 3, mapSize: 2048, maxFar: 500, radius: 1.5, normalBias: 0.04 },
+  2048: { cascades: 3, mapSize: 2048, maxFar: 1000, radius: 1.5, normalBias: 0.04 },
+  4096: { cascades: 4, mapSize: 2048, maxFar: 4000, radius: 1.5, normalBias: 0.04 },
 }
 
 export const performanceDefaults: PerformanceSettings = {
@@ -51,7 +52,7 @@ export function readPerformance(): PerformanceSettings {
       relief: choose(s.relief, [2, 4, 8, 12], 2),
       collisions: choose(s.collisions, [200, 400, 800, 2000], 400),
       resolution: choose(s.resolution, [0.75, 1, 1.25, 2], 1.25),
-      shadows: choose(s.shadows, [0, 512, 1024, 2048], 512),
+      shadows: choose(s.shadows, [0, 512, 1024, 2048, 4096], 512),
     }
   } catch {
     return { ...performanceDefaults }

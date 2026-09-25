@@ -2,7 +2,7 @@ import { matteGroundMaterial, groundDepthBias, transportLayer } from './ground-m
 import { withinMapDistance } from './map-visibility.js'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import type { Entity } from '../src/scene.js'
+import type { Entity } from '../src/stage/scene.js'
 
 type Part = { mesh: THREE.Mesh; matrix: THREE.Matrix4 }
 type Road = { entity: Entity; group: THREE.Group; parts: Map<string, Part[]> }

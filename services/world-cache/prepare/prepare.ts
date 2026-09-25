@@ -1,12 +1,12 @@
 import { optimizePreparedBuildings } from './optimize-buildings.js'
-import { encodePreparedBinary } from '#src/prepared-binary.js'
+import { encodePreparedBinary } from './prepared-binary.js'
 /** Server CLI: uses the same scene and mesh generation as the map worker. */
 import { readFile, mkdir, rename, writeFile, unlink } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { createRequire } from 'node:module'
 import * as Lerc from 'lerc'
-import { createRealWorld, type WorldExtract } from '#src/real-world.js'
-import { tileCoordinate, EARTH_RADIUS } from '#src/geography.js'
+import { createRealWorld, type WorldExtract } from '#src/planet/assemble/world.js'
+import { tileCoordinate, EARTH_RADIUS } from '#src/math/geo/sphere.js'
 import { prepareMapGeometry } from '#playground/map-geometry.js'
 const [input, output, key, base] = process.argv.slice(2)
 if (!input || !output || !/^-?\d+_-?\d+$/.test(key) || !base)

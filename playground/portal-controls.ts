@@ -1,12 +1,14 @@
 import * as THREE from 'three'
 import { HelmMap } from './helm-map.js'
-import { localToGeo } from '../src/geography.js'
+import { localToGeo } from '../src/math/geo/sphere.js'
 import { CSS3DObject, CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js'
-import type { SceneDocument } from '../src/scene.js'
-import type { Simulation } from '../src/simulation.js'
+import type { SceneDocument } from '../src/stage/scene.js'
+import type { Simulation } from '../src/simulation/simulation.js'
 
 /** Native DOM tablets share the portal pose; activation is limited to one metre. */
 export class PortalControls {
+  onJump?: (carrier: string, latitude: number, longitude: number) => void
+  onShipSwitch?: (carrier: string, kind: 'nav' | 'beacon' | 'spots' | 'cabin' | 'shutters') => void
   projectRegistry?: {
     entries: () => { id: string; name: string; place: string; size: number[] }[]
     selected: (source: string) => string | undefined
@@ -146,6 +148,32 @@ export class PortalControls {
         buttons.append(button)
       }
       panel.append(title, select, buttons, status)
+      if (mouth.parentId) {
+        const jump = window.document.createElement('form')
+        jump.className = 'portal-jump'
+        jump.innerHTML =
+          '<label>Lat<input name="lat" type="number" step="any" required /></label><label>Lon<input name="lon" type="number" step="any" required /></label><button type="submit">Ir</button>'
+        jump.onsubmit = (event) => {
+          event.preventDefault()
+          if (!this.simulation || panel.dataset.active !== 'true') return
+          const data = new FormData(jump)
+          const latitude = Number(data.get('lat'))
+          const longitude = Number(data.get('lon'))
+          if (
+            !Number.isFinite(latitude) ||
+            latitude < -85 ||
+            latitude > 85 ||
+            !Number.isFinite(longitude) ||
+            longitude < -180 ||
+            longitude > 180
+          ) {
+            this.report('Coordenadas fuera de rango')
+            return
+          }
+          this.onJump?.(mouth.parentId!, latitude, longitude)
+        }
+        panel.append(jump)
+      }
       const object = new CSS3DObject(panel)
       this.renderer.domElement.append(panel)
       object.matrixAutoUpdate = false
@@ -165,18 +193,25 @@ export class PortalControls {
             '<strong>NAVEGACIÓN</strong><canvas aria-label="Mapa cenital de carreteras"></canvas><small>Norte arriba · mapa local</small>'
         if (kind === 'touch') {
           panel.innerHTML =
-            '<div class="helm-indicators">NABLA · CONTROL DE VUELO</div><div class="hand-controls"><div class="dpad" data-hand="left"><span>WASD</span></div><div class="desk-switches"><button data-flight>Activar vuelo</button><button data-door>Cerrar garaje</button><label>Límite <select aria-label="Velocidad máxima"><option value="0">Parado</option><option value="100">100 km/h</option><option value="300">300 km/h</option><option value="600">600 km/h</option><option value="1000" selected>1000 km/h</option></select></label><button data-brake>Frenar</button></div><div class="dpad" data-hand="right"><span>CURSORES</span></div></div>'
-          panel.querySelector<HTMLSelectElement>('select')!.onchange = (event) => {
-            if (this.simulation && panel.dataset.active === 'true')
-              this.simulation.setCruiseSpeed(
+            '<div class="helm-indicators">NABLA · CONTROL DE VUELO</div><div class="hand-controls"><div class="ship-switches"><button type="button" data-ship="nav">NAV</button><button type="button" data-ship="beacon">FLASH</button><button type="button" data-ship="spots">FOCOS</button><button type="button" data-ship="cabin" class="is-on">CABINA</button></div><div class="dpad" data-hand="left"><span>WASD</span></div><div class="helm-desk"><button type="button" data-helm="off">Apagada</button><button type="button" data-helm="auto">Auto</button><button type="button" data-helm="car">Coche</button><output class="helm-mode">Modo coche</output><button type="button" data-helm="drone">Dron</button><button type="button" data-helm="plane">Avión</button><button type="button" data-helm="space">Espacio</button><button type="button" data-door>Cerrar garaje</button><button type="button" data-brake>Frenar</button></div><div class="dpad" data-hand="right"><span>CURSORES</span></div><div class="ship-switches"><button type="button" data-ship="shutters">PERSIANAS</button></div></div>'
+          for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-ship]'))
+            button.onclick = () => {
+              if (this.simulation?.player.vehicleId !== carrier.id || panel.dataset.active !== 'true')
+                return
+              button.classList.toggle('is-on')
+              this.onShipSwitch?.(
                 carrier.id,
-                Number((event.target as HTMLSelectElement).value),
+                button.dataset.ship as 'nav' | 'beacon' | 'spots' | 'cabin' | 'shutters',
               )
-          }
-          panel.querySelector<HTMLButtonElement>('[data-flight]')!.onclick = () => {
-            if (this.simulation?.player.vehicleId === carrier.id && panel.dataset.active === 'true')
-              this.report(this.simulation.toggleFlight())
-          }
+            }
+          for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-helm]'))
+            button.onclick = () => {
+              if (this.simulation?.player.vehicleId !== carrier.id || panel.dataset.active !== 'true')
+                return
+              this.report(
+                this.simulation.setHelmMode(button.dataset.helm as 'off' | 'auto' | 'car' | 'drone' | 'plane' | 'space'),
+              )
+            }
           panel.querySelector<HTMLButtonElement>('[data-door]')!.onclick = () => {
             if (!this.simulation || panel.dataset.active !== 'true') return
             try {
@@ -364,19 +399,58 @@ export class PortalControls {
       }
       if (entry.kind === 'touch') {
         const door = entry.panel.querySelector<HTMLButtonElement>('[data-door]')!
-        const flight = entry.panel.querySelector<HTMLButtonElement>('[data-flight]')!
-        if (readout) {
+        const readoutMode = entry.panel.querySelector<HTMLOutputElement>('.helm-mode')
+        if (readout && readoutMode) {
           const label = info.rampMoving
             ? 'Puerta en movimiento…'
             : info.rampClosed
               ? 'Abrir garaje'
               : 'Cerrar garaje'
           if (door.textContent !== label) door.textContent = label
-          const mode = info.flightMode ? 'Activar tierra' : 'Activar vuelo'
-          if (flight.textContent !== mode) flight.textContent = mode
+          const names = {
+            off: 'Nave apagada',
+            auto: 'Piloto automático',
+            car: 'Modo coche',
+            drone: 'Modo dron',
+            plane: 'Modo avión',
+            space: 'Modo nave espacial',
+          } as const
+          readoutMode.textContent = names[info.helm]
+          const plane = info.helm === 'plane'
+          const stick: Record<string, string> = plane
+            ? {
+                'lift:1': 'Impulso',
+                'lift:-1': 'Frenar',
+                'turn:-1': 'Guiñada izquierda',
+                'turn:1': 'Guiñada derecha',
+                'forward:1': 'Morro arriba',
+                'forward:-1': 'Morro abajo',
+                'right:-1': 'Alabeo izquierda',
+                'right:1': 'Alabeo derecha',
+              }
+            : {
+                'lift:1': 'Subir',
+                'lift:-1': 'Bajar',
+                'turn:-1': 'Girar izquierda',
+                'turn:1': 'Girar derecha',
+                'forward:1': 'Avanzar',
+                'forward:-1': 'Retroceder',
+                'right:-1': 'Izquierda',
+                'right:1': 'Derecha',
+              }
+          for (const button of entry.panel.querySelectorAll<HTMLButtonElement>('[data-helm]')) {
+            button.classList.toggle('is-on', button.dataset.helm === info.helm)
+            button.disabled = button.dataset.helm === 'car' && info.flightMode
+          }
+          for (const button of entry.panel.querySelectorAll<HTMLButtonElement>('[data-action]')) {
+            const label = stick[button.dataset.action ?? '']
+            if (label && button.title !== label) {
+              button.title = label
+              button.setAttribute('aria-label', label)
+            }
+          }
         }
         door.disabled = info.rampMoving
-        flight.disabled = sim.player.vehicleId !== entry.carrier
         for (const button of entry.panel.querySelectorAll<HTMLButtonElement>('[data-action]'))
           button.disabled = !piloting || !info.flightMode
       }

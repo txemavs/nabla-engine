@@ -1,12 +1,13 @@
 import { ShipHud } from './ship-hud.js'
 import { entityMapArtifact } from './map-artifact.js'
-import { isMapEnvironment } from './studio/outliner.js'
+import { isMapEnvironment } from '../studio/outliner.js'
 import { matteGroundMaterial, groundDepthBias, transportLayer } from './ground-material.js'
 import { BuildingBatches } from './building-batches.js'
-import { isMapBuilding } from '../src/scene.js'
-import { SURFACE_LAYERS, mapSurfaceColor } from '../src/landcover.js'
+import { isMapBuilding } from '../src/stage/scene.js'
+import { SURFACE_LAYERS, mapSurfaceColor } from '../src/planet/land/surface.js'
 import { withinMapDistance } from './map-visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
+import { ShipLights, type ShipSwitch } from './ship-lights.js'
 import { takeMapGeometry } from './map-geometry.js'
 import { Streetlights } from './streetlights.js'
 import { CarLights } from './car-lights.js'
@@ -16,14 +17,14 @@ import { RoadBatches } from './road-batches.js'
 import { LandcoverBatches } from './landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
-import { roadGeometry } from '../src/draped-road.js'
-import { terrainVertices, terrainIndices } from '../src/terrain.js'
-import { triangles, trianglesWithRoofInfo } from '../src/solid.js'
+import { roadGeometry } from '../src/planet/land/roads/draped-road.js'
+import { terrainVertices, terrainIndices } from '../src/planet/land/terrain.js'
+import { triangles, trianglesWithRoofInfo } from '../src/math/solid/mesh.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
 import { createPortalSurface, type PortalSurface } from './portals.js'
-import { PORTAL_BAR } from '../src/portal.js'
+import { PORTAL_BAR } from '../src/entity/portal/portal.js'
 import { assets, disposeObject } from './assets.js'
 import { vehicleDefinition, type VisualDefinition } from '../src/index.js'
 import * as THREE from 'three'
@@ -58,6 +59,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
 }
 export class SceneView {
   private readonly thrusters = new Map<string, CarrierThrusters>()
+  private readonly shipLights = new Map<string, ShipLights>()
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
@@ -69,6 +71,10 @@ export class SceneView {
   readonly impacts = new ImpactMarks()
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
+  night = false
+  pressShipSwitch(id: string, kind: ShipSwitch): void {
+    this.shipLights.get(id)?.press(kind)
+  }
   private readonly roads = new RoadBatches()
   private readonly buildings = new BuildingBatches()
   batchBuildings = true
@@ -519,6 +525,7 @@ export class SceneView {
           this.thrusters.set(e.id, thrusters)
           const interior = carrierInterior()
           group.add(interior.room)
+          this.shipLights.set(e.id, new ShipLights(interior.room, group))
           const hud = new ShipHud()
           interior.room.add(hud.mesh)
           this.shipHuds.set(e.id, hud)
@@ -617,6 +624,7 @@ export class SceneView {
         const original = model.getObjectByName(name)
         if (original) original.visible = false
       }
+      this.shipLights.get(e.id)?.mountHull(model)
       if (!visual.ramp) return
       const hinge = new THREE.Group()
       hinge.position.fromArray(visual.ramp.hinge)
@@ -831,8 +839,9 @@ export class SceneView {
     }
     for (const [id, thrusters] of this.thrusters) {
       const info = sim.vehicleInfo(id)
-      thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now())
+      thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now(), this.night)
     }
+    for (const lights of this.shipLights.values()) lights.update(performance.now())
     for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
     for (const [id, wheel] of this.steering)
       wheel.rotation.z =

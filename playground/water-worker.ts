@@ -1,6 +1,6 @@
 import { mapCache, type MapCache } from './map-cache.js'
 import { decodeSea } from './water-geometry.js'
-import type { GeoPoint } from '../src/geography.js'
+import type { GeoPoint } from '../src/math/geo/sphere.js'
 const endpoint =
   import.meta.env.VITE_WATER_TILEJSON_URL || 'https://tiles.openfreemap.org/planet/latest'
 let template: Promise<string> | undefined

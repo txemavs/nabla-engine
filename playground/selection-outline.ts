@@ -1,4 +1,4 @@
-import type { SolidGeometry } from '../src/solid.js'
+import type { SolidGeometry } from '../src/math/solid/mesh.js'
 import * as THREE from 'three'
 
 /** Bounds measured in the selected object's axes, then moved with that object. */

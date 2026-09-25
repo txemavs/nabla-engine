@@ -1,6 +1,6 @@
 import { nearestLocality } from './navigation-places.js'
 import { Matrix4, Quaternion, Vector3 } from 'three'
-import { SceneGraph, type SceneDocument, type Entity, type Transform } from '../src/scene.js'
+import { SceneGraph, type SceneDocument, type Entity, type Transform } from '../src/stage/scene.js'
 type ChartTile = { bitmap: ImageBitmap; bounds: [number, number, number, number]; matrix: Matrix4 }
 let planetCharts: () => ChartTile[] = () => []
 export function setPlanetCharts(provider: () => ChartTile[]) {

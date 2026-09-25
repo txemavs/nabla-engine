@@ -1,4 +1,4 @@
-import { planetPlaces } from '#src/planet-places.js'
+import { planetPlaces, validatePlanetTileSource, type PlanetTileSource } from '#src/planet/index.js'
 import { batchPlanetMeshes } from './planet-batches.js'
 /** Native planet publisher: source features -> elevation -> independent terrain/building GLBs. */
 import { createHash } from 'node:crypto'
@@ -13,9 +13,8 @@ import {
   mapTileId,
   mapTilePath,
   mapTileSample,
-} from '#src/map-tiles.js'
-import { tileCoordinate } from '#src/geography.js'
-import { validatePlanetTileSource, type PlanetTileSource } from '#src/planet-tile.js'
+} from '#src/scene/mercator.js'
+import { tileCoordinate } from '#src/math/geo/sphere.js'
 import { planetTileAsset } from './planet-geometry.js'
 
 class BlobReader {

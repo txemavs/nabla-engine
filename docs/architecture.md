@@ -10,17 +10,25 @@ SceneDocument (validated JSON v1)
                                       └─ host renderer and UI
 ```
 
-| Module                            | Owns                                                                            |
-| --------------------------------- | ------------------------------------------------------------------------------- |
-| `src/scene.ts`                    | Schema, validation, entity factories and rigid transforms                       |
-| `src/editor.ts`                   | Atomic editing transactions and bounded history                                 |
-| `src/simulation.ts`               | Physics, character/vehicle controllers and interactions                         |
-| `src/vehicle.ts`                  | Default procedural vehicle definition                                           |
-| `src/presets.ts`, `src/sample.ts` | Optional authored content                                                       |
-| `src/geography.ts`, `src/sky.ts`  | Geographic conversions, approximate astronomy and clock/atmosphere helpers      |
-| `playground/`                     | Rendering, browser events, map fetching, location permissions and local storage |
+| Module            | Owns                                                                            |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `src/stage/`      | Transform graph, editor, catalog and sample content                            |
+| `src/scene/`      | Scene document: parse, validate and tile streaming                              |
+| `src/entity/`     | Entity schema, capability, portal, vehicle, road, terrain, landcover and source |
+| `src/simulation/` | Physics and character/vehicle controllers                                       |
+| `src/entity/vehicle/` | Chassis and GLB fields, validation and procedural defaults             |
+| `src/catalog/`    | Concrete exemplars: A3, carrier, highway lamp and globe lamp               |
+| `src/entity/portal/` | Portal pairs, mapping and crossing                                         |
+| `src/math/`       | Numeric kernels: frame, geo, planar tests, solids, heightfield. See `src/math/README.md` |
+| `src/planet/buildings/` | Rings, footprints and OSM roofs                                          |
+| `src/planet/land/` | Heightfield, surfaces, draped cover, official land cover, GeoEuskadi road areas, and roads in `roads/` |
+| `src/planet/` | Tile frame, places, sky, GLB contract, and collisions                   |
+| `src/planet/extract/` | Downloaded district and tile source: features, tags, colours and multipolygons |
+| `src/planet/assemble/` | District assembler: buildings, ways, cover, water and the sample spawn |
+| `playground/`     | Rendering, browser events, map fetching, location permissions and local storage |
+| `studio/`         | Studio application. Depends on the engine; will move to its own repo            |
 
-Runtime engine modules do not import the playground or access `window`, `document`,
+Runtime engine modules do not import the playground or Studio, and they do not access `window`, `document`,
 `localStorage`, Vue or Agency services. The engine uses Three.js math and Cannon-es
 physics; it does not own a renderer or install global input handlers.
 

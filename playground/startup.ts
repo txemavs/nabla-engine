@@ -1,5 +1,5 @@
-import type { SceneDocument } from '../src/scene.js'
-import type { StudioProject } from './studio/project.js'
+import type { SceneDocument } from '../src/stage/scene.js'
+import type { StudioProject } from '../studio/project.js'
 export interface StartupResult {
   project: StudioProject
   scene: SceneDocument

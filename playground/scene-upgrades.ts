@@ -1,8 +1,8 @@
-import { boxSolid } from '../src/solid.js'
-import { circuitEntities } from '../src/circuit-plan.js'
-import { treeSprite } from '../src/vegetation.js'
-import { rotationDegrees } from '../src/scene.js'
-import { createA3 } from '../src/presets.js'
+import { boxSolid } from '../src/math/solid/mesh.js'
+import { circuitEntities } from '../src/stage/circuit-plan.js'
+import { treeSprite } from '../src/entity/sprite/sprite.js'
+import { rotationDegrees } from '../src/stage/scene.js'
+import { createA3 } from '../src/catalog/a3.js'
 import { installCarrierPortals } from './carrier-portals.js'
 
 /** Upgrade only recognised reference presets; preserve authored placements and custom mounts. */

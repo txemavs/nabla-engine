@@ -16,7 +16,7 @@ const host = document.querySelector<HTMLElement>('#viewport')!
 const status = document.querySelector<HTMLElement>('#status')!
 const buttons = ['osm', 'official', 'combined'] as const
 async function start() {
-  const base = './geography/geoeuskadi-pilot/'
+  const base = './geography/geoeuskadi-pilot'
   const response = await fetch(base + 'manifest.json', { cache: 'no-cache' })
   if (!response.ok) throw new Error(`Manifest HTTP ${response.status}`)
   const manifest = (await response.json()) as Manifest

@@ -1,4 +1,4 @@
-import type { PlanetMesh } from '../src/planet-artifact.js'
+import type { PlanetMesh } from '../src/planet/index.js'
 /** Rasterize once in the loader worker; cockpit charts never redraw the 3D scene. */
 export function planetChart(meshes: PlanetMesh[]) {
   const roads = meshes.filter((m) => m.metadata.category === 'Roads')

@@ -42,9 +42,19 @@ export function carrierInterior(): { room: THREE.Group; screens: THREE.Mesh[]; t
   skin(panel([4.77, 0.018, 9.8], [0, -0.889, 0], '#384553'), [145, 146, 370, 222])
   skin(panel([4.77, 0.025, 9.8], [0, 2.035, 0], '#39434f'), [660, 150, 360, 214])
   for (const x of [-2.385, 2.385]) {
-    skin(panel([0.025, 2.91, 9.8], [x, 0.57, 0], '#35404d'), [147, 2, 365, 137])
-    for (const z of [-4, -2, 0, 2, 4]) panel([0.055, 2.88, 0.055], [x, 0.57, z], '#283949')
+    // Two openings line up with the hull shutters. The rest of the skin stays.
+    const band: [number, number, number, number, number][] = [
+      [0.025, 0.98, 9.8, -0.4, 0],
+      [0.025, 1.42, 9.8, 1.32, 0],
+      [0.025, 0.52, 1.55, 0.35, -4.125],
+      [0.025, 0.52, 3.3, 0.35, 0],
+      [0.025, 0.52, 1.55, 0.35, 4.125],
+    ]
+    for (const [w, h, d, y, z] of band)
+      skin(panel([w, h, d], [x, y, z], '#35404d'), [147, 2, 365, 137])
+    for (const z of [-4.2, -1.5, 0, 1.5, 4.2]) panel([0.055, 2.88, 0.055], [x, 0.57, z], '#283949')
     const light = panel([0.035, 0.045, 9.5], [x * 0.985, 1.82, 0], '#8ebaff')
+    light.name = 'Cabin strip'
     ;(light.material as THREE.MeshStandardMaterial).emissive.set('#8ebaff')
     ;(light.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.8
   }

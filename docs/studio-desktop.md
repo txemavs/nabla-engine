@@ -57,7 +57,7 @@ actuators or sensors. This slice adds no Isaac integration or new physical model
 ## Verification
 
 `npm run check` includes the input ownership and frame scheduling unit tests.
-`npm run test:e2e -- tests/desktop-studio.spec.ts tests/studio.spec.ts` exercises
+`npm run test:e2e -- playground/e2e/desktop-studio.spec.ts playground/e2e/studio.spec.ts` exercises
 real editing, undo/redo, play/stop, retained canvas identity, layout recovery and
 the existing editor. Set `NABLA_TEST_PORT=5187` to test in isolation while another
 local demo occupies the default port.

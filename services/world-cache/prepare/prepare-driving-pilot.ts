@@ -1,11 +1,11 @@
-import { applyOfficialLandcover } from '#src/official-landcover.js'
+import { applyOfficialLandcover } from '#src/planet/land/cover.js'
 import { gzipSync } from 'node:zlib'
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { createRealWorld, type WorldExtract } from '#src/real-world.js'
-import { combineRoadSurfaces } from '#src/combined-roads.js'
-import { roadAreaSnapshotSchema } from '#src/map-provider.js'
-import { parseScene } from '#src/scene.js'
+import { createRealWorld, type WorldExtract } from '#src/planet/assemble/world.js'
+import { combineRoadSurfaces } from '#src/planet/land/roads/combined-roads.js'
+import { roadAreaSnapshotSchema } from '#src/planet/land/provider.js'
+import { parseScene } from '#src/stage/scene.js'
 import { prepareMapGeometry } from '#playground/map-geometry.js'
 const [input, snapshotPath, output, landcoverPath] = process.argv.slice(2)
 if (!output) throw Error('Usage: prepare-driving-pilot.js <OSM extract> <BTA snapshot> <output>')

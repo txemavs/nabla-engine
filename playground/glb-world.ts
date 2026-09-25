@@ -1,6 +1,6 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, type Mesh, type BufferAttribute } from 'three'
-import type { GeoPoint } from '../src/geography.js'
+import type { GeoPoint } from '../src/math/geo/sphere.js'
 import { decodePrepared, preparedPath } from './prepared-world.js'
 
 /** Optional generated, texture-free GLBs. Preserve normal batching, selection and physics. */

@@ -121,7 +121,7 @@ Still required before the main-world enhancement preset:
    streets, bridges and outside coverage. Clip replacement masks to avoid duplicates.
 3. Make rendering and driving support agree through road junctions and layer changes.
 4. Extend persistent scene provenance, feature classification, recipe/cache identity
-   and authored override reconciliation. `src/map-provider.ts` currently defines
+   and authored override reconciliation. `src/planet/land/provider.ts` currently defines
    normalized **import** provenance; it does not change the saved scene schema.
 5. Plug preparation into the durable queue and benchmark the real Irún–Hendaye flight
    route before regional rollout. No LiDAR mirror, automatic provider switch or new

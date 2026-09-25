@@ -1,5 +1,5 @@
 import { addSunDisc } from './sun-disc.js'
-import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../src/sky.js'
+import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../src/planet/sky.js'
 import * as THREE from 'three'
 import {
   celestialDirections,
@@ -10,9 +10,30 @@ import {
   tileCoordinate,
   tilePoint,
   tileUrl,
-} from '../src/geography.js'
-import type { SceneDocument, Vec3Tuple } from '../src/scene.js'
+} from '../src/math/geo/sphere.js'
+import type { SceneDocument, Vec3Tuple } from '../src/stage/scene.js'
 const SCALE = 1e-6
+function moonMaterial(sun: THREE.Vector3): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: { sun: { value: sun } },
+    fog: false,
+    vertexShader: `
+      varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 sun;
+      varying vec3 vNormal;
+      void main() {
+        float lit = smoothstep(-0.04, 0.28, dot(normalize(vNormal), normalize(sun)));
+        gl_FragColor = vec4(mix(vec3(0.035, 0.038, 0.045), vec3(1.05, 1.02, 0.9), lit), 1.0);
+      }
+    `,
+  })
+}
 interface Tile {
   mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>
   url: string
@@ -53,6 +74,7 @@ export class GeographicView {
   )
   readonly sunDirection = new THREE.Vector3()
   readonly moonDirection = new THREE.Vector3()
+  private readonly moonSun = new THREE.Vector3(0, 1, 0)
   atmosphere = atmosphere(0, 1)
   private lastClockSecond = -Infinity
   constructor(
@@ -70,10 +92,7 @@ export class GeographicView {
       new THREE.MeshLambertMaterial({ color: '#c4d8e9' }),
     )
     this.space.add(this.earth)
-    this.moon = new THREE.Mesh(
-      new THREE.SphereGeometry(1.7374, 32, 24),
-      new THREE.MeshLambertMaterial({ color: '#c5c4bd', fog: false }),
-    )
+    this.moon = new THREE.Mesh(new THREE.SphereGeometry(1.7374, 32, 24), moonMaterial(this.moonSun))
     addSunDisc(this.backdrop.material, this.sunDirection)
     this.space.add(this.moon)
     const rotation = this.origin ? localFrame(this.origin).invert() : new THREE.Quaternion()
@@ -151,6 +170,7 @@ export class GeographicView {
         rotation = localFrame(this.origin).invert()
       this.sunDirection.copy(dirs.sun).applyQuaternion(rotation)
       this.moonDirection.copy(dirs.moon).applyQuaternion(rotation)
+      this.moonSun.copy(this.sunDirection)
       this.daylight.position.copy(this.sunDirection)
       this.moon.position.copy(this.moonDirection).multiplyScalar(384.4).add(this.earth.position)
       this.changed()

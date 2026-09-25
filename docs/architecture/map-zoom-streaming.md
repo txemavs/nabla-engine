@@ -28,7 +28,7 @@ bulk downloads.
 
 ## Implemented foundation
 
-`src/map-tiles.ts`, exported by the engine, provides canonical identifiers,
+`src/scene/mercator.ts`, exported by the engine, provides canonical identifiers,
 geographic bounds, parent/child relationships, latitude-dependent scale, and a
 bounded three-zoom selection plan. It supersedes the proposed `earth-bands-v1`
 custom grid for future artifacts; that API remains readable for compatibility.

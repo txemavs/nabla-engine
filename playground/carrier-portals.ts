@@ -1,6 +1,6 @@
-import { createCarrier } from '../src/presets.js'
-import { parseScene, type SceneDocument } from '../src/scene.js'
-import { createCarrierPortals } from '../src/portal.js'
+import { createCarrier } from '../src/catalog/carrier.js'
+import { parseScene, type SceneDocument } from '../src/stage/scene.js'
+import { createCarrierPortals } from '../src/entity/portal/portal.js'
 
 export function installCarrierPortals(raw: unknown, experimentalLargeScene = false): SceneDocument {
   const doc = parseScene(raw, experimentalLargeScene)

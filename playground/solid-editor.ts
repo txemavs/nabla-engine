@@ -5,8 +5,8 @@ import {
   removeVertex,
   triangles,
   type SolidGeometry,
-} from '../src/solid.js'
-import type { Entity, Vec3Tuple } from '../src/scene.js'
+} from '../src/math/solid/mesh.js'
+import type { Entity, Vec3Tuple } from '../src/stage/scene.js'
 
 /** Host adapter: every completed operation is one SceneEditor transaction. */
 export class SolidEditor {

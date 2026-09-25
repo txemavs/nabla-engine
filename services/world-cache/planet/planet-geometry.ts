@@ -7,16 +7,16 @@ import {
   Mesh,
   MeshStandardMaterial,
 } from 'three'
-import { createRealWorld } from '#src/real-world.js'
-import { SceneGraph } from '#src/scene.js'
+import { createRealWorld } from '#src/planet/assemble/world.js'
+import { SceneGraph } from '#src/stage/scene.js'
 import { prepareMapGeometry } from '#playground/map-geometry.js'
 import { entityTileAsset } from '#playground/tile-asset.js'
-import { mapTileId } from '#src/map-tiles.js'
+import { mapTileId } from '#src/scene/mercator.js'
 import {
   planetTileFrame,
   validatePlanetTileSource,
   type PlanetTileSource,
-} from '#src/planet-tile.js'
+} from '#src/planet/index.js'
 
 /** Native XYZ generation. No old prepared tile, local grid or scene origin is an input. */
 export function planetTileAsset(source: PlanetTileSource) {

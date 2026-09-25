@@ -1,5 +1,11 @@
 import { placeLabel } from './place-label.js'
-import { validPlanetPlaces } from '../src/planet-places.js'
+import {
+  validPlanetPlaces,
+  validatePlanetManifest,
+  type PlanetManifest,
+  type PlanetPayload,
+  type PlanetCollisionTile,
+} from '../src/planet/index.js'
 import { PlanetHorizon } from './planet-horizon.js'
 import { matteGroundMaterial } from './ground-material.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
@@ -14,16 +20,10 @@ import {
   planetReadyCover,
   type MapTile,
   type MapZoomPlan,
-} from '../src/map-tiles.js'
-import { geoToLocal, localFrame, localToGeo, type GeoPoint } from '../src/geography.js'
-import {
-  validatePlanetManifest,
-  type PlanetManifest,
-  type PlanetPayload,
-} from '../src/planet-artifact.js'
-import type { PlanetCollisionTile } from '../src/planet-collisions.js'
-import type { Simulation } from '../src/simulation.js'
-import type { Vec3Tuple } from '../src/scene.js'
+} from '../src/scene/mercator.js'
+import { geoToLocal, localFrame, localToGeo, type GeoPoint } from '../src/math/geo/sphere.js'
+import type { Simulation } from '../src/simulation/simulation.js'
+import type { Vec3Tuple } from '../src/stage/scene.js'
 import { restoreTileLayers } from './tile-asset.js'
 interface Resident {
   chart?: PlanetPayload['chart']

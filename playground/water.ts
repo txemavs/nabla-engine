@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { localToGeo, tileCoordinate, type GeoPoint } from '../src/geography.js'
+import { localToGeo, tileCoordinate, type GeoPoint } from '../src/math/geo/sphere.js'
 /** Coastline tiles render independently of building/road arrivals. */
 export class SeaWater {
   readonly root = new THREE.Group()
@@ -105,15 +105,14 @@ export class SeaWater {
   ): void {
     if (this.disposed) return
     this.root.position.copy(renderOrigin).negate()
-    this.root.visible = position.y < 12000
-    if (!this.root.visible) return
+    this.root.visible = true
     this.time.value = now / 1000
     if (now < this.next) return
     this.next = now + 500
     const point = localToGeo(this.origin, position.toArray())
     const center = tileCoordinate(point.latitude, point.longitude, 12)
     const tileMeters = (40075016 * Math.cos((point.latitude * Math.PI) / 180)) / 4096
-    const radius = Math.min(3, Math.max(1, Math.ceil(distance / tileMeters)))
+    const radius = Math.min(6, Math.max(1, Math.ceil(Math.max(distance, position.y) / tileMeters)))
     this.wanted = []
     for (let dx = -radius; dx <= radius; dx++)
       for (let dy = -radius; dy <= radius; dy++) {

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { SceneDocument, Transform } from '../src/scene.js'
+import type { SceneDocument, Transform } from '../src/stage/scene.js'
 import { HelmMap } from './helm-map.js'
 
 /** Displays measured in the original A3 Interior node's local coordinates. */

@@ -4,8 +4,8 @@ import { createHash } from 'node:crypto'
 import { resolve, join } from 'node:path'
 import { gzipSync, gunzipSync } from 'node:zlib'
 import { BufferGeometry, Float32BufferAttribute, Color, Matrix4, Vector3, Quaternion } from 'three'
-import { roadAreaSnapshotSchema, groundRoadAreas } from '#src/map-provider.js'
-import { createRealWorld, type WorldExtract } from '#src/real-world.js'
+import { roadAreaSnapshotSchema, groundRoadAreas } from '#src/planet/land/provider.js'
+import { createRealWorld, type WorldExtract } from '#src/planet/assemble/world.js'
 import { prepareMapGeometry, geometryFromBuffers } from '#playground/map-geometry.js'
 
 const [extractPath, snapshotPath, output, combinedPath] = process.argv.slice(2)

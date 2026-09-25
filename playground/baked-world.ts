@@ -1,5 +1,5 @@
-import type { WorldExtract } from '../src/real-world.js'
-import type { GeoPoint } from '../src/geography.js'
+import type { WorldExtract } from '../src/planet/extract/contract.js'
+import type { GeoPoint } from '../src/math/geo/sphere.js'
 
 export function validBakedExtract(
   value: unknown,

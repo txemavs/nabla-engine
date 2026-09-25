@@ -1,17 +1,18 @@
 import { setNavigationPlaces } from './navigation-places.js'
-import { flightEntry, urlPlay } from './studio/flight-entry.js'
-import { geoToLocal } from '../src/geography.js'
-import { urlLocation } from './studio/url-location.js'
-import { settleGroundPlacement } from './studio/ground-placement.js'
-import { mountStudio } from './studio/shell.js'
+import { flightEntry, urlPlay } from '../studio/flight-entry.js'
+import { geoToLocal } from '../src/math/geo/sphere.js'
+import { urlLocation } from '../studio/url-location.js'
+import { settleGroundPlacement } from '../studio/ground-placement.js'
+import { mountStudio } from '../studio/shell.js'
 import { setPlanetCharts } from './helm-map.js'
-import { PlanetWorld } from './planet-world.js'
-import { planetaryScene, createPlanetScene } from './studio/planet-scene.js'
-import { geographicPose, anchoredWorldPose } from './studio/geographic-pose.js'
+import { PlanetWorld, projectedLayers } from './planet-world.js'
+import { FieldLights, fieldLayers } from './field-lights.js'
+import { planetaryScene, createPlanetScene } from '../studio/planet-scene.js'
+import { geographicPose, anchoredWorldPose } from '../studio/geographic-pose.js'
 import { prepareStartup } from './startup.js'
-import { authoredTree, isMapEnvironment } from './studio/outliner.js'
+import { authoredTree, isMapEnvironment } from '../studio/outliner.js'
 import { RemotePortalViews } from './remote-portals.js'
-import { portalRegistry, setPortalConnection } from './studio/portal-registry.js'
+import { portalRegistry, setPortalConnection } from '../studio/portal-registry.js'
 import { portalEnvironment } from './portal-environment.js'
 import {
   createProject,
@@ -22,12 +23,12 @@ import {
   visitLocation,
   projectFilename,
   type StudioProject,
-} from './studio/project.js'
-import { FrameLoop } from './studio/frame-loop.js'
-import { StudioInputOwner } from './studio/input-owner.js'
+} from '../studio/project.js'
+import { FrameLoop } from '../studio/frame-loop.js'
+import { StudioInputOwner } from '../studio/input-owner.js'
 import { mapCacheStats, setMapCacheBudget, clearMapCache } from './map-cache.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from './map-geometry.js'
-import { roadGeometry } from '../src/draped-road.js'
+import { roadGeometry } from '../src/planet/land/roads/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
@@ -43,18 +44,18 @@ import {
 import { ShadowManager } from './csm.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { SolidEditor } from './solid-editor.js'
-import { treeSprite } from '../src/vegetation.js'
+import { treeSprite } from '../src/entity/sprite/sprite.js'
 import { createGallery, Gallery } from './gallery.js'
 import { PortalControls } from './portal-controls.js'
 import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
 import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from './driving-camera.js'
 import { WheelDebugOverlay } from './wheel-debug.js'
-import { createPortal } from '../src/portal.js'
+import { createPortal } from '../src/entity/portal/portal.js'
 import { renderPortals, type ExternalPortalView } from './portals.js'
-import { skyTime, localTimeInput, type SkyClock } from '../src/sky.js'
+import { skyTime, localTimeInput, type SkyClock } from '../src/planet/sky.js'
 import { GeographicView } from './geography.js'
-import { localToGeo, MADRID } from '../src/geography.js'
+import { localToGeo, MADRID } from '../src/math/geo/sphere.js'
 import { gamepadAxes } from './input.js'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
@@ -192,6 +193,9 @@ renderer.toneMappingExposure = 1.08
 viewport.prepend(renderer.domElement)
 renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
+const fieldLights = new FieldLights()
+scene.add(fieldLights.root)
+let fieldFollow = true
 scene.background = new THREE.Color('#a6bbd5')
 scene.fog = new THREE.Fog('#a6bbd5', 70, 160)
 // A small diffuse fill lifts shadows without adding an environment reflection.
@@ -1518,6 +1522,23 @@ for (const [id, key] of [
   }
 }
 $<HTMLSelectElement>('performance-preset').value = performanceSettings.preset
+for (const box of document.querySelectorAll<HTMLInputElement>('#drape-layers input')) {
+  const id = box.dataset.drape ?? ''
+  box.checked = projectedLayers.has(id)
+  box.onchange = () => {
+    if (box.checked) projectedLayers.add(id)
+    else projectedLayers.delete(id)
+    worldStream?.applyProjection()
+  }
+}
+for (const box of document.querySelectorAll<HTMLInputElement>('#light-layers input')) {
+  const key = box.dataset.field as 'lamps' | 'navigation'
+  box.checked = fieldLayers[key]
+  box.onchange = () => {
+    fieldFollow = false
+    fieldLayers[key] = box.checked
+  }
+}
 $('performance-preset').onchange = async () => {
   const id = $<HTMLSelectElement>('performance-preset').value as keyof typeof performancePresets
   const preset = performancePresets[id]
@@ -1579,6 +1600,7 @@ remotePortalViews = new RemotePortalViews(() => {
   needsRender = true
 }, toast)
 const portalControls = new PortalControls(viewport, toast)
+portalControls.onShipSwitch = (id, kind) => view.pressShipSwitch(id, kind)
 portalControls.projectRegistry = {
   entries: () => projectPortalEntries().filter((p) => p.locationId !== project!.activeLocation),
   selected: (id) =>
@@ -1598,6 +1620,35 @@ const wheelDebug = new WheelDebugOverlay()
 scene.add(wheelDebug.root)
 const raycaster = new THREE.Raycaster()
 let down = new THREE.Vector2()
+function pressShipSwitch(e: PointerEvent): boolean {
+  if (document.pointerLockElement) return false
+  const bounds = renderer.domElement.getBoundingClientRect()
+  const pickCamera = camera.clone()
+  pickCamera.position.sub(renderOrigin)
+  pickCamera.updateMatrixWorld(true)
+  raycaster.setFromCamera(
+    new THREE.Vector2(
+      ((e.clientX - bounds.left) / bounds.width) * 2 - 1,
+      (-(e.clientY - bounds.top) / bounds.height) * 2 + 1,
+    ),
+    pickCamera,
+  )
+  for (const hit of raycaster.intersectObjects([...view.objects.values()], true)) {
+    let node: THREE.Object3D | null = hit.object
+    let kind = node.userData.shipSwitch as string | undefined
+    let id: string | undefined
+    while (node) {
+      kind ??= node.userData.shipSwitch as string | undefined
+      id ??= node.userData.entityId as string | undefined
+      node = node.parent
+    }
+    if (kind && id) {
+      view.pressShipSwitch(id, kind as 'nav' | 'beacon' | 'spots' | 'cabin' | 'shutters')
+      return true
+    }
+  }
+  return false
+}
 renderer.domElement.addEventListener('pointerdown', (e) => {
   down.set(e.clientX, e.clientY)
   if (
@@ -1610,19 +1661,19 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
     fireRequested = true
 })
 renderer.domElement.addEventListener('pointerup', (e) => {
+  const click =
+    e.button === 0 &&
+    !dragging &&
+    !gizmo.axis &&
+    down.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) <= 4
+  if (click && pressShipSwitch(e)) return
   if (sim) {
     renderer.domElement
       .requestPointerLock()
       ?.catch(() => toast('No se pudo capturar el ratón. Puedes seguir jugando con el teclado.'))
     return
   }
-  if (
-    e.button !== 0 ||
-    dragging ||
-    gizmo.axis ||
-    down.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) > 4
-  )
-    return
+  if (!click) return
   const bounds = renderer.domElement.getBoundingClientRect()
   // The camera is restored to world coordinates after rendering, while scene roots
   // remain relative to the floating origin. Pick in the same frame as those roots.
@@ -1777,6 +1828,10 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyV' && !e.repeat) {
     toast(sim.toggleFlight())
+    return
+  }
+  if (e.code === 'KeyM' && !e.repeat) {
+    toast(sim.cycleHelmMode())
     return
   }
   if (e.code === 'KeyF' && !e.repeat) {
@@ -1961,6 +2016,7 @@ function frame(now: number): void {
       headYaw = 0
       headPitch = 0.05
     }
+    view.night = !!view.document.geography && geography.atmosphere.day < 0.15
     view.sync(
       sim,
       document.hidden ? 0 : dt,
@@ -2244,6 +2300,22 @@ function frame(now: number): void {
   worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
   if (worldStream) $('world-note').textContent = worldStream.status
   view.root.position.copy(renderOrigin).negate()
+  fieldLights.root.position.copy(renderOrigin).negate()
+  const nightLights = !!view.document.geography && geography.atmosphere.day < 0.15
+  if (fieldFollow && nightLights) {
+    fieldLayers.navigation = true
+    const box = document.querySelector<HTMLInputElement>('#light-layers [data-field="navigation"]')
+    if (box) box.checked = true
+    fieldFollow = false
+  }
+  fieldLights.update(
+    view.document.geography,
+    worldCamera.toArray(),
+    nightLights,
+    performance.now(),
+    (p) => worldStream?.groundHeight(p),
+    worldStream?.activeTiles.map((tile) => tile.manifest.tile) ?? [],
+  )
   camera.position.sub(renderOrigin)
   if (view.document.geography) {
     const gps = localToGeo(view.document.geography, position)
@@ -2254,13 +2326,20 @@ function frame(now: number): void {
       height > 100000 ? 'space' : height > 250 ? 'map' : 'local'
     scene.background = null
     const air = geography.atmosphere
-    ambientFill.intensity = 0.22 * air.day * (1 - air.space)
+    const night = 1 - Math.min(1, Math.max(0, air.day))
+    ambientFill.intensity = (0.22 * air.day + 0.04 * night) * (1 - air.space)
     water?.setSun(geography.sunDirection, air.day)
     scene.fog = air.space >= 1 ? null : new THREE.Fog(air.color, air.near, air.far)
-    const lightDirection = geography.sunDirection
+    const moonUp = Math.max(0, geography.moonDirection.y)
+    const useMoon = geography.sunDirection.y <= 0 && moonUp > 0
+    const lightDirection = useMoon ? geography.moonDirection : geography.sunDirection
     sun.position.copy(lightDirection).multiplyScalar(65)
-    sun.intensity = geography.sunDirection.y > 0 ? 3.2 * air.day : 0
-    sun.color.set(air.day > 0.05 ? '#fff0d8' : '#b8ccff')
+    sun.intensity = useMoon
+      ? 0.35 * Math.min(1, moonUp * 2)
+      : geography.sunDirection.y > 0
+        ? 3.2 * air.day
+        : 0
+    sun.color.set(useMoon ? '#d5def2' : air.day > 0.05 ? '#fff0d8' : '#b8ccff')
     sunDirection.copy(lightDirection).negate()
     shadowManager.setLightDirection(sunDirection)
     shadowManager.setLightIntensity(sun.intensity)
@@ -2292,6 +2371,7 @@ function frame(now: number): void {
   view.streetlights.update(
     camera.position,
     !!view.document.geography && geography.atmosphere.day < 0.15,
+    performanceSettings.distance,
   )
   // Cascade reach is already camera-relative. Geographic elevation must not
   // disable shadows on high ground or after traveling to another origin.

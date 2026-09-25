@@ -1,8 +1,7 @@
 import * as THREE from 'three'
-import { coversTile, type HorizonGeometry } from '../src/planet-horizon.js'
-import { geoToLocal, localFrame, type GeoPoint } from '../src/geography.js'
-import { mapTileAt, mapTileId, mapTileSample, type MapTile } from '../src/map-tiles.js'
-import type { PlanetCollisionTile } from '../src/planet-collisions.js'
+import { coversTile, type HorizonGeometry, type PlanetCollisionTile } from '../src/planet/index.js'
+import { geoToLocal, localFrame, type GeoPoint } from '../src/math/geo/sphere.js'
+import { mapTileAt, mapTileId, mapTileSample, type MapTile } from '../src/scene/mercator.js'
 import { matteGroundMaterial } from './ground-material.js'
 /** Independent elevation-only coverage: no OSM jobs or old metric grid required. */
 export class PlanetHorizon {
@@ -143,13 +142,7 @@ export class PlanetHorizon {
     material.map?.dispose()
     material.dispose()
   }
-  private dress(
-    cell: {
-      mesh: THREE.Mesh
-      data: HorizonGeometry
-      fine: THREE.Mesh[]
-    },
-  ) {
+  private dress(cell: { mesh: THREE.Mesh; data: HorizonGeometry; fine: THREE.Mesh[] }) {
     for (const mesh of cell.fine) this.dropFine(mesh)
     cell.fine = []
     const focus = this.focus

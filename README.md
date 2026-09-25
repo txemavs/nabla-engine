@@ -52,15 +52,15 @@ browser. Loading the example is undoable and does not overwrite the saved copy.
 
 ## Repository layout
 
-| Path                       | Responsibility                                                        |
-| -------------------------- | --------------------------------------------------------------------- |
-| `src/`                     | Scene contracts, editing, physics, geographic/sky helpers and presets |
-| `src/*.test.ts`            | Unit and physical interaction tests, alongside the implementation     |
-| `playground/`              | Reference browser host: rendering, UI, assets and input               |
-| `tests/`                   | Playwright browser journeys                                           |
-| `assets/`                  | Original vehicle models, ground/Earth images and official logo        |
-| `docs/`                    | Controls, architecture, asset conventions and integration guide       |
-| `.github/workflows/ci.yml` | Checks, production builds and browser tests                           |
+| Path                       | Responsibility                                                                          |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| `src/`                     | Engine. This is what stays in the nabla-engine repo                                     |
+| `test/`                    | Engine unit and physics tests                                                           |
+| `playground/`              | Browser host. `test/` is its unit suite, `e2e/` the browser journeys. Leaving this repo |
+| `studio/`                  | Studio application. `test/` is its unit suite. Leaving this repo                        |
+| `assets/`                  | Original vehicle models, ground/Earth images and official logo                          |
+| `docs/`                    | Controls, architecture, asset conventions and integration guide                         |
+| `.github/workflows/ci.yml` | Checks, production builds and browser tests                                             |
 
 `dist/`, `demo-dist/`, `test-results/` and `node_modules/` are generated and ignored.
 

@@ -1,4 +1,4 @@
-import { isMapBuilding, type Entity } from '#src/scene.js'
+import { isMapBuilding, type Entity } from '#src/stage/scene.js'
 import type { MapGeometryBuffers, PreparedMapGeometry } from '#playground/map-geometry.js'
 
 const bytes = (g: MapGeometryBuffers) =>

@@ -71,10 +71,11 @@ export class ShadowManager {
       lightMargin: 200,
       mode: 'practical',
     })
-    THREE.ShaderChunk.lights_fragment_begin = cascadedLighting(
-      standardLighting,
-      THREE.ShaderChunk.lights_fragment_begin,
-    )
+    if (THREE.ShaderChunk.lights_fragment_begin === standardLighting)
+      THREE.ShaderChunk.lights_fragment_begin = cascadedLighting(
+        standardLighting,
+        THREE.ShaderChunk.lights_fragment_begin,
+      )
     this.csm.fade = true
     for (const light of this.csm.lights) {
       light.shadow.normalBias = config.tier.normalBias

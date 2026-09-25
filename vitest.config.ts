@@ -1,4 +1,12 @@
 import { defineConfig } from 'vitest/config'
 export default defineConfig({
-  test: { include: ['src/**/*.test.ts', 'playground/studio/**/*.test.ts'], environment: 'node' },
+  test: {
+    include: [
+      'test/**/*.test.ts',
+      'playground/test/**/*.test.ts',
+      'studio/test/**/*.test.ts',
+      'services/world-cache/**/*.test.ts',
+    ],
+    environment: 'node',
+  },
 })

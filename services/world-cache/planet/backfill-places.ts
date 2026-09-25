@@ -2,8 +2,7 @@
 import { glob, readFile, writeFile, rename } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { planetPlaces } from '#src/planet-places.js'
-import { validatePlanetTileSource } from '#src/planet-tile.js'
+import { planetPlaces, validatePlanetTileSource } from '#src/planet/index.js'
 const root = process.argv[2]
 if (!root) throw Error('Usage: backfill-places.js prepared-root')
 let updated = 0,
