@@ -31,6 +31,7 @@ preserves the edit/play contract and a single physics owner.
 ## Regional data pilots
 
 - [geoEuskadi road-area comparison: import, preparation and remaining integration gates](geoeuskadi-pilot.md)
+- [Ground-texture upscaling](upscaling.md): optional, off-by-default Real-ESRGAN x2plus stage between the nabla-ways v1 texture and cell `groundImagery` packaging, with the evaluation and known limitations.
 
 - [Studio Desktop foundation](studio-desktop.md): experimental dockable workspace, runtime boundaries and the migration sequence.
 
