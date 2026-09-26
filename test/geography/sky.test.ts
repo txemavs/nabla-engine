@@ -28,16 +28,13 @@ it('shares day/night atmosphere and removes ground haze continuously in space', 
   expect(atmosphere(100, midnight.y).day).toBe(0)
   expect(atmosphere(100, midnight.y).stars).toBe(1)
   expect(atmosphere(100000, noon.y).space).toBe(1)
-  expect(atmosphere(100, noon.y).far).toBe(1200)
+  expect(atmosphere(100, noon.y).far).toBe(220)
+  expect(atmosphere(100, noon.y).fog).toBe(true)
+  expect(atmosphere(5000, noon.y, 2000).fog).toBe(false)
 })
 
-it('keeps loaded ground visible when hovering above the selected horizontal detail range', () => {
-  expect(mapFogRange(0, 1000)).toEqual({ near: 750, far: 1000 })
-  for (const height of [100, 650, 1200, 5000]) {
-    const range = mapFogRange(height, 1000)
-    // Ground directly below, and within the clear horizontal footprint, stays before fog.
-    expect(Math.hypot(height, 500)).toBeLessThan(range.near)
-    expect(Math.hypot(height, 1000)).toBeCloseTo(range.far)
-    expect(range.far).toBeLessThan(Math.hypot(height, 1500))
-  }
+it('keeps the chosen fade below one kilometre and drops it above', () => {
+  expect(mapFogRange(1000)).toEqual({ near: 750, far: 1000 })
+  expect(atmosphere(999, 1, 500).fog).toBe(true)
+  expect(atmosphere(1000, 1, 16000).fog).toBe(false)
 })

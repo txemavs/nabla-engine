@@ -5,7 +5,7 @@
  * first emitter that accepts it. Roots are shifted back by the tile offset after parenting.
  */
 import type { WorldExtract } from '../extract/contract.js'
-import { parseScene, type SceneDocument } from '../../stage/scene.js'
+import { parseScene, type SceneDocument } from '../../scene/document.js'
 import { validateSolid } from '../../math/solid/mesh.js'
 import { mapFingerprint } from '../../scene/fingerprint.js'
 import { mapTileEntities } from '../../scene/tiles.js'

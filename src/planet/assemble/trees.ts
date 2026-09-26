@@ -1,8 +1,8 @@
 /** OSM trees as upright sprites on the heightfield. */
 import type { MapFeature } from '../extract/contract.js'
-import { createEntity } from '../../stage/scene.js'
+import { createEntity } from '../../entity/schema.js'
 import { treeSprite } from '../../entity/sprite/sprite.js'
-import { type District } from './district.js' 
+import { type District } from './district.js'
 
 export function emitTree(d: District, f: MapFeature): boolean {
   const tags = f.tags

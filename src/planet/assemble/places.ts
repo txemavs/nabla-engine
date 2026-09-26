@@ -1,7 +1,7 @@
 /** OSM city, town and village labels. The point sits 20 m above the heightfield. */
 import type { MapFeature } from '../extract/contract.js'
-import { createEntity } from '../../stage/scene.js'
-import { type District } from './district.js' 
+import { createEntity } from '../../entity/schema.js'
+import { type District } from './district.js'
 
 export function emitPlace(d: District, f: MapFeature): boolean {
   const tags = f.tags

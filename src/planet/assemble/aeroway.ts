@@ -1,14 +1,15 @@
 /** Runways, taxiways and aprons. A closed ring is draped; a centerline becomes a road group. */
 import type { MapFeature } from '../extract/contract.js'
 import { clipSegment } from '../../math/planar/polygon.js'
-import { createEntity } from '../../stage/scene.js'
+import { createEntity } from '../../entity/schema.js'
 import type { Vec3Tuple } from '../../math/frame/vectors.js'
 import { drapeLandcoverPolygon } from '../land/drape.js'
-import { type District, metric } from './district.js' 
+import { type District, metric } from './district.js'
 
 export function emitAeroway(d: District, f: MapFeature): boolean {
   const tags = f.tags
-  if (!(tags.aeroway === 'runway' || tags.aeroway === 'taxiway' || tags.aeroway === 'apron')) return false
+  if (!(tags.aeroway === 'runway' || tags.aeroway === 'taxiway' || tags.aeroway === 'apron'))
+    return false
   const ring = f.rings[0]
   if (!ring) return true
   const closed =
@@ -17,7 +18,8 @@ export function emitAeroway(d: District, f: MapFeature): boolean {
       ring.coordinates[0][0] - ring.coordinates.at(-1)![0],
       ring.coordinates[0][1] - ring.coordinates.at(-1)![1],
     ) < 1e-5
-  const color = tags.aeroway === 'runway' ? '#2c3034' : tags.aeroway === 'taxiway' ? '#3c4146' : '#4a4f54'
+  const color =
+    tags.aeroway === 'runway' ? '#2c3034' : tags.aeroway === 'taxiway' ? '#3c4146' : '#4a4f54'
   if (closed) {
     const rings = f.rings.map((r) => ({ ...r, points: r.coordinates.map(d.project) }))
     if (rings.some((r) => r.points.length < 4)) return true
@@ -38,10 +40,7 @@ export function emitAeroway(d: District, f: MapFeature): boolean {
           return local
         }),
       )
-      const e = createEntity(
-        'osm-' + f.id.replace('/', '-') + '-aeroway-' + first / 600,
-        'solid',
-      )
+      const e = createEntity('osm-' + f.id.replace('/', '-') + '-aeroway-' + first / 600, 'solid')
       e.name = tags.name ?? tags.aeroway
       e.geometry = { vertices, edges: [], faces }
       e.color = color

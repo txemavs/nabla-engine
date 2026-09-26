@@ -6,7 +6,7 @@ import { gzipSync, gunzipSync } from 'node:zlib'
 import { BufferGeometry, Float32BufferAttribute, Color, Matrix4, Vector3, Quaternion } from 'three'
 import { roadAreaSnapshotSchema, groundRoadAreas } from '#src/planet/land/provider.js'
 import { createRealWorld, type WorldExtract } from '#src/planet/assemble/world.js'
-import { prepareMapGeometry, geometryFromBuffers } from '#playground/map-geometry.js'
+import { prepareMapGeometry, geometryFromBuffers } from '#src/render/planet/geometry.js'
 
 const [extractPath, snapshotPath, output, combinedPath] = process.argv.slice(2)
 if (!extractPath || !snapshotPath || !output || !combinedPath)

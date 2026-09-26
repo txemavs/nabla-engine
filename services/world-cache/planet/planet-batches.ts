@@ -1,4 +1,4 @@
-import { matteGroundMaterial } from '#playground/ground-material.js'
+import { matteGroundMaterial } from '#src/render/planet/ground-material.js'
 import { BufferAttribute, BufferGeometry, Group, Mesh, MeshStandardMaterial } from 'three'
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js'
 /** Merge by render state with linear vertex colours; no per-building draw call at runtime. */

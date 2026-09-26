@@ -17,12 +17,12 @@ export function mountSettingsWindow(input: StudioInputOwner): void {
     keepAlive: true,
   })
   const tabs = [
-    { id: 'performance-section', title: 'Rendimiento' },
+    { id: 'options-panel-layers', title: 'Capas' },
     { id: 'drape-section', title: 'Proyección' },
+    { id: 'performance-section', title: 'Rendimiento' },
     { id: 'sky-section', title: 'Sol y luna' },
     { id: 'geography-section', title: 'Ubicación' },
     { id: 'portal-registry', title: 'Portales' },
-    { id: 'options-panel-layers', title: 'Capas' },
   ]
   const factories = new Map<string, ContentFactory>()
   for (const tab of tabs) {
@@ -43,7 +43,7 @@ export function mountSettingsWindow(input: StudioInputOwner): void {
   document.body.append(root)
   createApp({
     setup() {
-      const selected = ref(tabs[0].id)
+      const selected = ref('performance-section')
       document.getElementById('portal-registry-button')!.hidden = false
       document.getElementById('portal-registry-button')!.onclick = () => {
         window.dispatchEvent(new Event('portal-registry-request'))

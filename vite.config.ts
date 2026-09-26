@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
-    root: 'playground',
+    root: 'studio',
     define: {
       __VUE_OPTIONS_API__: true,
       __VUE_PROD_DEVTOOLS__: false,
@@ -15,10 +15,10 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         input: {
-          main: 'playground/index.html',
-          geoeuskadi: 'playground/geoeuskadi.html',
-          tileLab: 'playground/tile-lab.html',
-          zoomLab: 'playground/zoom-lab.html',
+          main: 'studio/index.html',
+          geoeuskadi: 'studio/geoeuskadi.html',
+          tileLab: 'studio/tile-lab.html',
+          zoomLab: 'studio/zoom-lab.html',
         },
       },
     },

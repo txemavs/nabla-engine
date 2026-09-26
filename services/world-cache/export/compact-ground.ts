@@ -1,4 +1,4 @@
-import type { TileArtifact } from '#playground/tile-asset.js'
+import type { TileArtifact } from '#src/render/planet/tile-asset.js'
 
 /** Render-only ground compaction. Never quantize thin rails or modify collision metadata. */
 export function compactGround(data: TileArtifact, step: number): TileArtifact {

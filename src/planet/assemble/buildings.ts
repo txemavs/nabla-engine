@@ -7,9 +7,9 @@ import { ShapeUtils, Vector2, Vector3 } from 'three'
 import type { MapFeature } from '../extract/contract.js'
 import { normalizeColor } from '../extract/tags.js'
 import { buildingRoofWithFaces } from '../buildings/buildings.js'
-import { createEntity } from '../../stage/scene.js'
+import { createEntity } from '../../entity/schema.js'
 import type { SolidGeometry } from '../../math/solid/mesh.js'
-import { type District, metric } from './district.js' 
+import { type District, metric } from './district.js'
 
 export function emitBuilding(d: District, f: MapFeature): boolean {
   const tags = f.tags

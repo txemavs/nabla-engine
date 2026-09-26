@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import { gzipSync } from 'node:zlib'
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js'
 import { decodePreparedBinary } from '../prepare/prepared-binary.js'
-import { tileAsset, type TileArtifact } from '#playground/tile-asset.js'
+import { tileAsset, type TileArtifact } from '#src/render/planet/tile-asset.js'
 
 // Exporter only needs asynchronous Blob -> ArrayBuffer for this texture-free binary export.
 class BlobReader {

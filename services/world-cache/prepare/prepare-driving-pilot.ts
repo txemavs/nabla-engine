@@ -6,7 +6,7 @@ import { createRealWorld, type WorldExtract } from '#src/planet/assemble/world.j
 import { combineRoadSurfaces } from '#src/planet/land/roads/combined-roads.js'
 import { roadAreaSnapshotSchema } from '#src/planet/land/provider.js'
 import { parseScene } from '#src/stage/scene.js'
-import { prepareMapGeometry } from '#playground/map-geometry.js'
+import { prepareMapGeometry } from '#src/render/planet/geometry.js'
 const [input, snapshotPath, output, landcoverPath] = process.argv.slice(2)
 if (!output) throw Error('Usage: prepare-driving-pilot.js <OSM extract> <BTA snapshot> <output>')
 const extract = JSON.parse(readFileSync(input, 'utf8')) as WorldExtract

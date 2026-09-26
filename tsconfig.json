@@ -18,7 +18,6 @@
   "include": [
     "src",
     "test",
-    "playground",
     "studio",
     "services/world-cache/**/*.test.ts",
     "*.config.ts"

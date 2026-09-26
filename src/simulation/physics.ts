@@ -488,15 +488,23 @@ export class Body {
     if (this.mass > 0) this.raw.setAdditionalMass(this.mass, true)
     this.applyInertia()
   }
-  /** Density-0 colliders contribute nothing, so mass and inertia are set explicitly. */
+  /**
+   * Density-0 colliders contribute nothing, so mass and inertia are set explicitly.
+   * Volume splits the mass, so a thin slab does not take half the chassis.
+   */
   applyInertia() {
     if (!this.raw || this.mass <= 0) return
     const boxes = this.shapes.filter((shape): shape is Box => shape instanceof Box)
-    const share = this.mass / Math.max(boxes.length, 1)
+    const volume = (shape: Box) => {
+      const { x, y, z } = shape.halfExtents
+      return x * y * z
+    }
+    const total = boxes.reduce((sum, shape) => sum + volume(shape), 0)
     let ix = 0,
       iy = 0,
       iz = 0
     for (const shape of boxes) {
+      const share = total > 0 ? (this.mass * volume(shape)) / total : this.mass
       const { x: hx, y: hy, z: hz } = shape.halfExtents
       ix += (share * (hy * hy + hz * hz)) / 3
       iy += (share * (hx * hx + hz * hz)) / 3

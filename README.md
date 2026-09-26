@@ -3,8 +3,8 @@
 # Nabla Engine
 
 An independent foundation for **editing a scene and playing in the same world**.
-The TypeScript engine owns scene data and physics. The browser playground connects
-it to rendering, input and persistence. Agency integration is a future consumer,
+The TypeScript engine owns scene data, physics, and rendering. Studio connects
+that to input, persistence, and the editor. Agency integration is a future consumer,
 not a dependency of the engine.
 
 ## Run locally
@@ -22,7 +22,7 @@ Earth texture and branding are bundled. Connected maps use Esri or CARTO;
 exploration separately fetches OSM features and Esri elevation as you travel.
 No account is required.
 
-The playground UI remains in Spanish. Documentation is in English; the
+The Studio UI remains in Spanish. Documentation is in English; the
 [controls guide](docs/controls.md) includes the corresponding UI labels.
 
 ## Current working tree: 0.2.0 baseline + Stargate prototype
@@ -52,15 +52,14 @@ browser. Loading the example is undoable and does not overwrite the saved copy.
 
 ## Repository layout
 
-| Path                       | Responsibility                                                                          |
-| -------------------------- | --------------------------------------------------------------------------------------- |
-| `src/`                     | Engine. This is what stays in the nabla-engine repo                                     |
-| `test/`                    | Engine unit and physics tests                                                           |
-| `playground/`              | Browser host. `test/` is its unit suite, `e2e/` the browser journeys. Leaving this repo |
-| `studio/`                  | Studio application. `test/` is its unit suite. Leaving this repo                        |
-| `assets/`                  | Original vehicle models, ground/Earth images and official logo                          |
-| `docs/`                    | Controls, architecture, asset conventions and integration guide                         |
-| `.github/workflows/ci.yml` | Checks, production builds and browser tests                                             |
+| Path                       | Responsibility                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/`                     | Engine. This is what stays in the nabla-engine repo                                        |
+| `test/`                    | Engine unit and physics tests                                                              |
+| `studio/`                  | Playable editor. `test/` is its unit suite, `e2e/` the browser journeys. Leaving this repo |
+| `assets/`                  | Original vehicle models, ground/Earth images and official logo                             |
+| `docs/`                    | Controls, architecture, asset conventions and integration guide                            |
+| `.github/workflows/ci.yml` | Checks, production builds and browser tests                                                |
 
 `dist/`, `demo-dist/`, `test-results/` and `node_modules/` are generated and ignored.
 

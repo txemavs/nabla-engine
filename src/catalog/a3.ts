@@ -1,4 +1,10 @@
-import { createEntity, rotationDegrees, type Entity, type Transform, type Vec3Tuple } from '../entity/schema.js'
+import {
+  createEntity,
+  rotationDegrees,
+  type Entity,
+  type Transform,
+  type Vec3Tuple,
+} from '../entity/schema.js'
 
 const posed = (position: Vec3Tuple = [0, 0, 0], angles: Vec3Tuple = [0, 0, 0]): Transform => ({
   position,
@@ -18,7 +24,13 @@ export function createA3(id: string, position: Vec3Tuple = [4, 0.62, 6]): Entity
     size: [1.994, 1.332, 4.407],
     mass: 1400,
     vehicle: {
-      colliders: [{ size: [1.75, 0.48, 4.25], transform: posed([0, -0.1, 0]) }],
+      colliders: [
+        { size: [1.75, 0.48, 4.25], transform: posed([0, -0.1, 0]) },
+        // Parabrisas glass, raked 28°. Clears the chassis so it only meets the ground in a rollover.
+        { size: [1.4, 0.08, 0.78], transform: posed([0, 0.555, -0.625], [-28.3, 0, 0]) },
+        // Trunk lid. Same idea at the tail: the bumper stops sinking when the car is on its back.
+        { size: [1.6, 0.08, 0.8], transform: posed([0, 0.45, 1.72]) },
+      ],
       hubs: [
         [-0.7622195, hubY, -1.291815],
         [0.7622195, hubY, -1.291815],

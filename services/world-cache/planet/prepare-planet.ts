@@ -6,6 +6,7 @@ import {
 } from '#src/planet/index.js'
 import { batchPlanetMeshes } from './planet-batches.js'
 import { bakeRoofImagery } from './roof-imagery.js'
+import { composeAncestors } from './compose-photo.js'
 /** Native planet publisher: source features -> elevation -> independent terrain/building GLBs. */
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
@@ -177,6 +178,10 @@ try {
     ),
   )
   console.log(JSON.stringify({ id: mapTileId(source.tile), directory, files }))
+  if (source.tile.z === 15)
+    await composeAncestors(output, source.tile).catch((error) => {
+      console.warn(`Photo pyramid skipped: ${error}`)
+    })
 } finally {
   root.traverse((node) => {
     const mesh = node as import('three').Mesh

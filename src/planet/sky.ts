@@ -7,6 +7,8 @@ export function skyTime(clock: SkyClock | undefined, now = Date.now()): Date {
 export function localTimeInput(at: Date): string {
   return new Date(at.getTime() - at.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 }
+const FOG_CEILING = 1000
+
 export function atmosphere(height: number, sunElevation: number, visibility = 220) {
   const day = MathUtils.smoothstep(sunElevation, -0.12, 0.12)
   const space = MathUtils.smoothstep(height, 12000, 100000)
@@ -19,14 +21,14 @@ export function atmosphere(height: number, sunElevation: number, visibility = 22
     color,
     day,
     stars: Math.max(1 - day, space),
-    near: Math.max(visibility === 220 ? 80 : visibility * 0.7, height * 4),
-    far: Math.max(visibility, height * 12),
+    near: visibility === 220 ? 80 : visibility * 0.75,
+    far: visibility,
+    fog: height < FOG_CEILING,
     space,
   }
 }
 
-/** Match aerial fog to the horizontal map footprint, like the camera far plane. */
-export function mapFogRange(height: number, distance: number): { near: number; far: number } {
-  const altitude = Math.max(0, height)
-  return { near: Math.hypot(distance * 0.75, altitude), far: Math.hypot(distance, altitude) }
+/** Camera distance. Altitude must not push the fade out. */
+export function mapFogRange(distance: number): { near: number; far: number } {
+  return { near: distance * 0.75, far: distance }
 }

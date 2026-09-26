@@ -3,7 +3,7 @@ import { geoToLocal } from '../../math/geo/sphere.js'
 import { terrainVertices } from './terrain.js'
 import { classifySurface, isLandcoverFeature, SURFACE_COLORS } from './surface.js'
 import type { WorldExtract } from '../../planet/extract/contract.js'
-import type { SceneDocument } from '../../stage/scene.js'
+import type { SceneDocument } from '../../scene/document.js'
 import { z } from 'zod'
 const point = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)])
 const ring = z.array(point).min(4)

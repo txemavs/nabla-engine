@@ -7,7 +7,7 @@ import { createRequire } from 'node:module'
 import * as Lerc from 'lerc'
 import { createRealWorld, type WorldExtract } from '#src/planet/assemble/world.js'
 import { tileCoordinate, EARTH_RADIUS } from '#src/math/geo/sphere.js'
-import { prepareMapGeometry } from '#playground/map-geometry.js'
+import { prepareMapGeometry } from '#src/render/planet/geometry.js'
 const [input, output, key, base] = process.argv.slice(2)
 if (!input || !output || !/^-?\d+_-?\d+$/.test(key) || !base)
   throw Error('Expected input output key cache-base')

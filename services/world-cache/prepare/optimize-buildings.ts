@@ -1,5 +1,5 @@
 import { isMapBuilding, type Entity } from '#src/stage/scene.js'
-import type { MapGeometryBuffers, PreparedMapGeometry } from '#playground/map-geometry.js'
+import type { MapGeometryBuffers, PreparedMapGeometry } from '#src/render/planet/geometry.js'
 
 const bytes = (g: MapGeometryBuffers) =>
   g.position.byteLength +

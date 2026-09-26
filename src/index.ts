@@ -1,15 +1,18 @@
-export { parseScene, createEntity, rotationDegrees, toDegrees, SceneGraph } from './stage/scene.js'
-export type { Entity, SceneDocument, Transform, Vec3Tuple, QuatTuple } from './stage/scene.js'
-export { SceneEditor } from './stage/editor.js'
+export { parseScene } from './scene/document.js'
+export type { SceneDocument } from './scene/document.js'
+export { SceneGraph } from './scene/graph.js'
+export { SceneEditor } from './scene/history.js'
+export { createEntity, rotationDegrees, toDegrees } from './entity/schema.js'
+export type { Entity, Transform, Vec3Tuple, QuatTuple } from './entity/schema.js'
 export { Simulation, FIXED_STEP, idleInput } from './simulation/simulation.js'
 export { initPhysics } from './simulation/physics.js'
 export type { PlayerInput, PlayerSnapshot } from './simulation/simulation.js'
-export { createSampleScene } from './stage/sample.js'
+export { createSampleScene } from './scene/sample.js'
 
 export { vehicleDefinition } from './entity/vehicle/vehicle.js'
 export { createA3 } from './catalog/a3.js'
 export { createCarrier } from './catalog/carrier.js'
-export type { VehicleDefinition, VisualDefinition } from './stage/scene.js'
+export type { VehicleDefinition, VisualDefinition } from './entity/schema.js'
 
 export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './math/geo/sphere.js'
 
@@ -21,7 +24,13 @@ export {
   portalCrossing,
 } from './entity/portal/portal.js'
 
-export { boxSolid, extrudeElement, extrudeFace, removeVertex, validateSolid } from './math/solid/mesh.js'
+export {
+  boxSolid,
+  extrudeElement,
+  extrudeFace,
+  removeVertex,
+  validateSolid,
+} from './math/solid/mesh.js'
 export type { SolidGeometry } from './math/solid/mesh.js'
 
 export { createRealWorld } from './planet/assemble/world.js'
@@ -40,10 +49,14 @@ export {
   nearestRoadCenterline,
   LAYER_HEIGHT,
 } from './planet/land/roads/draped-road.js'
-export type { RoadElevation, RoadGeometryOptions, RoadCollider } from './planet/land/roads/draped-road.js'
+export type {
+  RoadElevation,
+  RoadGeometryOptions,
+  RoadCollider,
+} from './planet/land/roads/draped-road.js'
 
 export { entityCapabilities, type EntityCapability } from './entity/capability.js'
-export { entityCatalog, createCatalogEntities, type CatalogId } from './stage/catalog.js'
+export { entityCatalog, createCatalogEntities, type CatalogId } from './catalog/palette.js'
 
 export {
   classifySurface,
@@ -85,3 +98,9 @@ export {
 } from './scene/mercator.js'
 
 export { mapTilePath, parseMapTilePath, mapTileFilename, mapTileSample } from './scene/mercator.js'
+
+export { PlanetWorld } from './render/planet/world.js'
+export { GeographicView } from './render/planet/sky.js'
+export { SeaWater } from './render/planet/water.js'
+export { SceneView } from './render/entity/view.js'
+export { ShadowManager } from './render/shadows.js'

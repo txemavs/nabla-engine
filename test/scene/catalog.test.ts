@@ -4,7 +4,7 @@ import { createCatalogEntities } from '../../src/stage/catalog.js'
 import { entityCapabilities } from '../../src/entity/capability.js'
 import { createEntity, parseScene } from '../../src/stage/scene.js'
 import { SceneEditor } from '../../src/stage/editor.js'
-import { Streetlights } from '../../playground/streetlights.js'
+import { Streetlights } from '../../src/render/entity/streetlights.js'
 
 it('creates independently editable vehicles with remapped portals when cloned', () => {
   const entities = createCatalogEntities('carrier', 'ship', [10, 20, 30])

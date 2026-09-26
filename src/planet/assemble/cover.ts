@@ -1,10 +1,16 @@
 /** Landcover and water areas, draped on the heightfield and parented to their group. */
 import type { MapFeature } from '../extract/contract.js'
-import { createEntity } from '../../stage/scene.js'
+import { createEntity } from '../../entity/schema.js'
 import type { Vec3Tuple } from '../../math/frame/vectors.js'
 import { drapeLandcoverPolygon } from '../land/drape.js'
-import { classifySurface, isLandcoverFeature, isWaterFeature, SURFACE_COLORS, SURFACE_LAYERS } from '../land/surface.js'
-import { type District } from './district.js' 
+import {
+  classifySurface,
+  isLandcoverFeature,
+  isWaterFeature,
+  SURFACE_COLORS,
+  SURFACE_LAYERS,
+} from '../land/surface.js'
+import { type District } from './district.js'
 
 export function emitCover(d: District, f: MapFeature): boolean {
   const tags = f.tags
@@ -15,7 +21,11 @@ export function emitCover(d: District, f: MapFeature): boolean {
   if (!rings.length || rings.some((r) => r.points.length < 4)) return true
   // Clip into each tile, rather than assigning a whole polygon to its centroid.
   // Chunk the result to retain the editor's bounded solid topology.
-  const geometry = drapeLandcoverPolygon(rings, d.data.terrain, 0.005 + SURFACE_LAYERS[surface] * 0.002)
+  const geometry = drapeLandcoverPolygon(
+    rings,
+    d.data.terrain,
+    0.005 + SURFACE_LAYERS[surface] * 0.002,
+  )
   for (let first = 0; first < geometry.faces.length; first += 600) {
     const faces = geometry.faces.slice(first, first + 600)
     const vertices: Vec3Tuple[] = [],
@@ -35,10 +45,7 @@ export function emitCover(d: District, f: MapFeature): boolean {
           return index
         }),
       )
-    const e = createEntity(
-      `osm-${f.id.replace('/', '-')}-land${d.suffix}-${first / 600}`,
-      'solid',
-    )
+    const e = createEntity(`osm-${f.id.replace('/', '-')}-land${d.suffix}-${first / 600}`, 'solid')
     e.motion = 'none'
     e.geometry = { vertices, edges: [], faces: indices }
     e.name = tags.name ?? `${surface} · ${f.id}`

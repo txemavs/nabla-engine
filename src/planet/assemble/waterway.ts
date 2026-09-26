@@ -4,7 +4,7 @@ import { clipSegment } from '../../math/planar/polygon.js'
 import type { Vec3Tuple } from '../../math/frame/vectors.js'
 import { roadGeometry } from '../land/roads/draped-road.js'
 import { getWaterwayWidth, isWaterwayCenterline, SURFACE_COLORS } from '../land/surface.js'
-import { type District } from './district.js' 
+import { type District } from './district.js'
 
 export function emitWaterway(d: District, f: MapFeature): boolean {
   const tags = f.tags

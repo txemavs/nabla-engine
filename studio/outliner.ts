@@ -1,13 +1,7 @@
-import type { Entity } from '../src/stage/scene.js'
+import type { Entity } from '../src/entity/schema.js'
+import { isMapEnvironment } from '../src/scene/map-content.js'
 
-/** Generated context stays in the renderer, not in the authored-object tree. */
-export function isMapEnvironment(entity: Entity): boolean {
-  return (
-    !!entity.source ||
-    !!entity.terrain ||
-    /^world-(terrain|buildings|roads|trees|landcover|water|railways|places)(-|$)/.test(entity.id)
-  )
-}
+export { isMapEnvironment }
 export function authoredTree(entities: Entity[]): Map<string | null, Entity[]> {
   const visible = entities.filter((e) => !isMapEnvironment(e) || e.mapEditable)
   const ids = new Set(visible.map((e) => e.id))

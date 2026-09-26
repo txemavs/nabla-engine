@@ -3,7 +3,7 @@
  *
  * Coordinates are metres, Y-up, −Z forward. Rotations persist as unit quaternions [x, y, z, w].
  * UI angles are degrees. A name never selects behavior; `kind` does.
- * Document limits, hierarchy checks and the transform graph stay in `stage/scene.ts`.
+ * Document limits stay in `scene/document.ts`. The transform graph is `scene/graph.ts`.
  */
 import { boxSolid } from '../math/solid/mesh.js'
 import { finite, size, transform, vector } from './coords.js'
@@ -27,7 +27,7 @@ export {
 } from '../math/frame/vectors.js'
 
 // --- Record ------------------------------------------------------------------
-// `kind` chooses which of the optional payloads below are legal. Checks live in `stage/scene.ts`.
+// `kind` chooses which of the optional payloads below are legal. Checks live next to each kind.
 export const entitySchema = z
   .object({
     id: z.string().min(1).max(128),

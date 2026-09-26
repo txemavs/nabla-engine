@@ -13,7 +13,7 @@ import {
   MAP_ZOOMS,
   type MapTile,
 } from '#src/scene/mercator.js'
-import { tileAsset, type TileArtifact } from '#playground/tile-asset.js'
+import { tileAsset, type TileArtifact } from '#src/render/planet/tile-asset.js'
 import { clipTriangle, clusterTriangles, type Vertex } from './zoom-geometry.js'
 class BlobReader {
   result: ArrayBuffer | null = null

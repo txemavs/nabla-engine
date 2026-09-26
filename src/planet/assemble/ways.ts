@@ -5,10 +5,14 @@
  */
 import type { MapFeature } from '../extract/contract.js'
 import { clipSegment } from '../../math/planar/polygon.js'
-import { createEntity } from '../../stage/scene.js'
+import { createEntity } from '../../entity/schema.js'
 import type { Vec3Tuple } from '../../math/frame/vectors.js'
-import { roadGeometry, roadHeightOffset, type RoadGeometryOptions } from '../land/roads/draped-road.js'
-import { type District, metric } from './district.js' 
+import {
+  roadGeometry,
+  roadHeightOffset,
+  type RoadGeometryOptions,
+} from '../land/roads/draped-road.js'
+import { type District, metric } from './district.js'
 
 export function emitWay(d: District, f: MapFeature): boolean {
   const tags = f.tags
@@ -27,9 +31,7 @@ export function emitWay(d: District, f: MapFeature): boolean {
         ? 'tunnel'
         : undefined
   const parsedLayer = Number.parseInt(tags.layer ?? '', 10)
-  const layer = Number.isFinite(parsedLayer)
-    ? Math.max(-5, Math.min(5, parsedLayer))
-    : undefined
+  const layer = Number.isFinite(parsedLayer) ? Math.max(-5, Math.min(5, parsedLayer)) : undefined
   const paths: Vec3Tuple[][] = []
   for (const ring of f.rings) {
     const points = ring.coordinates.map(d.project)
@@ -47,8 +49,7 @@ export function emitWay(d: District, f: MapFeature): boolean {
         if (!segment) continue
         const [a, b] = segment,
           length = Math.hypot(b[0] - a[0], b[2] - a[2]),
-          start =
-            distances[i - 1] + Math.hypot(a[0] - points[i - 1][0], a[2] - points[i - 1][2]),
+          start = distances[i - 1] + Math.hypot(a[0] - points[i - 1][0], a[2] - points[i - 1][2]),
           steps = Math.max(1, Math.ceil(length / 5))
         const profile: Vec3Tuple[] = []
         for (let k = 0; k <= steps; k++) {
@@ -71,7 +72,7 @@ export function emitWay(d: District, f: MapFeature): boolean {
       }
       continue
     }
-  
+
     for (let i = 1; i < points.length; i++) {
       const segment = clipSegment(points[i - 1], points[i], d.half, d.depth)
       if (segment) paths.push(segment)
@@ -84,7 +85,13 @@ export function emitWay(d: District, f: MapFeature): boolean {
       ...((elevation === 'bridge' || elevation === 'tunnel') && { profiled: true }),
       ...(layer !== undefined && { layer }),
     }
-    d.addSurface(f, roadGeometry(d.data.terrain, paths, gauge + 1.4, options), 'ballast', '#68655d', d.groups[5])
+    d.addSurface(
+      f,
+      roadGeometry(d.data.terrain, paths, gauge + 1.4, options),
+      'ballast',
+      '#68655d',
+      d.groups[5],
+    )
     for (const [side, offset] of [
       [0, -gauge / 2],
       [1, gauge / 2],

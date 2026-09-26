@@ -4,7 +4,7 @@ import { createEntity, parseScene, type SceneDocument } from '../../src/stage/sc
 import { SceneEditor } from '../../src/stage/editor.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { createSampleScene } from '../../src/stage/sample.js'
-import { upgradeReferenceScene } from '../../playground/scene-upgrades.js'
+import { upgradeReferenceScene } from '../../studio/scene-upgrades.js'
 
 function document(): SceneDocument {
   const solid = createEntity('building', 'solid', [0, 2, 0])

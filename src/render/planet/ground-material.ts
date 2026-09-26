@@ -1,0 +1,47 @@
+import { SURFACE_LAYERS } from '../../planet/land/surface.js'
+import * as THREE from 'three'
+
+/** Diffuse ground: roughness alone still leaves a broad dielectric sun highlight. */
+export function matteGroundMaterial(
+  parameters: THREE.MeshStandardMaterialParameters,
+): THREE.MeshPhysicalMaterial {
+  return new THREE.MeshPhysicalMaterial({
+    ...parameters,
+    roughness: 1,
+    metalness: 0,
+    specularIntensity: 0,
+    envMapIntensity: 0,
+  })
+}
+
+const firstTransportLayer = Math.max(...Object.values(SURFACE_LAYERS)) + 1
+const footHighways = ['path', 'footway', 'pedestrian', 'cycleway', 'steps', 'track']
+
+/** Feet stay under the carriageway and the rails. 17 is the layer that briefly drew them on top. */
+export function liftFootLayer(layer: number): number {
+  return layer === firstTransportLayer || layer === firstTransportLayer + 5
+    ? firstTransportLayer
+    : layer
+}
+
+export function footBuried(layer: number): boolean {
+  return layer === firstTransportLayer
+}
+
+/** Order only coplanar transport surfaces; physical bridge/tunnel heights still apply. */
+export function transportLayer(entity: {
+  railway?: { part: string }
+  source?: { tags?: Record<string, string> }
+}): number {
+  if (entity.railway) return firstTransportLayer + (entity.railway.part === 'ballast' ? 2 : 3)
+  const highway = entity.source?.tags?.highway
+  return firstTransportLayer + (highway && footHighways.includes(highway) ? 0 : 1)
+}
+
+export function groundDepthBias(layer: number) {
+  return {
+    polygonOffset: true,
+    polygonOffsetFactor: -layer,
+    polygonOffsetUnits: -layer,
+  }
+}

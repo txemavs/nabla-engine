@@ -1,7 +1,7 @@
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
 import { terrainHeight } from '../planet/land/terrain.js'
 import { triangles } from '../math/solid/mesh.js'
-import { SceneEditor } from '../stage/editor.js'
+import { SceneEditor } from '../scene/history.js'
 import { portalColliders, portalLocal, portalMapping } from '../entity/portal/portal.js'
 import { EARTH_RADIUS, geoToLocal, localFrame, localToGeo } from '../math/geo/sphere.js'
 import { OBB } from 'three/addons/math/OBB.js'
@@ -22,16 +22,9 @@ import {
   Vec3,
   World,
 } from './physics.js'
-import {
-  parseScene,
-  isMapBuilding,
-  replaceMapScene,
-  SceneGraph,
-  type Entity,
-  type SceneDocument,
-  type Transform,
-  type Vec3Tuple,
-} from '../stage/scene.js'
+import { isMapBuilding, type Entity, type Transform, type Vec3Tuple } from '../entity/schema.js'
+import { parseScene, replaceMapScene, type SceneDocument } from '../scene/document.js'
+import { SceneGraph } from '../scene/graph.js'
 
 export const FIXED_STEP = 1 / 60
 const PLAYER_HALF_HEIGHT = 0.9
@@ -1383,12 +1376,12 @@ export class Simulation {
     const turn = active ? (this.input.turn ?? 0) : 0
     const forward = hands && !this.input.brake ? (space ? 1 : this.input.forward) : 0
     const right = hands && !this.input.brake ? this.input.right : 0
-    // Assisted travel is explicitly accelerated with Shift, while ordinary vertical speed stays 3 m/s.
+    // Shift still scales travel with altitude. Plain climb is the container's own vertical rate.
     const travelSpeed =
       (space || (active && this.input.sprint)) && this.document.geography
         ? Math.min(2000000, Math.max(30, height * 0.8))
         : 3
-    const climb = Math.abs(lift) > 0 && travelSpeed <= 3 ? 24 : travelSpeed
+    const climb = Math.abs(lift) > 0 && travelSpeed <= 3 ? 100 : travelSpeed
     const lead = Math.max(1.5, climb * 0.8)
     if (helm !== 'plane')
       flight.altitude = clamp(
@@ -1438,7 +1431,12 @@ export class Simulation {
       return
     }
     const verticalSpeed = body.velocity.dot(radial)
-    const accelCap = Math.max(6, travelSpeed * 4, Math.abs(verticalSpeed) * 4)
+    const accelCap = Math.max(
+      6,
+      travelSpeed * 4,
+      Math.abs(lift) > 0 && travelSpeed <= 3 ? 50 : 0,
+      Math.abs(verticalSpeed) * 4,
+    )
     const acceleration = clamp(
       (flight.altitude - height) * 5 - verticalSpeed * 4,
       -accelCap,
@@ -1801,10 +1799,13 @@ export class Simulation {
       const overlaps = (axis: 'x' | 'y' | 'z', low: number, high: number) =>
         Math.min(...points.map((p) => p[axis])) < high &&
         Math.max(...points.map((p) => p[axis])) > low
+      // The bay ends at z=4.95 and the hinge is at 5.1. A body still inside that
+      // mouth is leaving, not standing on the ramp the door sweeps.
+      const rampZ = (carrier.definition.garage.ramp?.hinge[2] ?? 5.1) + 0.3
       if (
         points.length &&
         overlaps('x', -2.7, 2.7) &&
-        overlaps('z', 4.9, 8.3) &&
+        overlaps('z', rampZ, 8.3) &&
         overlaps('y', -1.6, 2.5)
       )
         throw new Error('Despeja la puerta del garaje antes de moverla')

@@ -95,8 +95,24 @@
   width: 100%;
   font-size: 14px;
 }
-.studio-settings-content #options-panel-layers input {
+.studio-settings-content input[type='checkbox'] {
   width: auto;
+}
+.studio-settings-content .option-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.studio-settings-content .option-row label {
+  flex: 1;
+  margin: 0;
+}
+.studio-settings-content .option-row select,
+.studio-settings-content .option-row input {
+  width: 200px;
+  flex: 0 0 200px;
+  margin: 0;
 }
 .studio-settings-tabs {
   display: flex;

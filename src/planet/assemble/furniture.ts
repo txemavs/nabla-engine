@@ -5,7 +5,7 @@
 import type { MapFeature } from '../extract/contract.js'
 import { clipSegment } from '../../math/planar/polygon.js'
 import { rotationDegrees, type Vec3Tuple } from '../../math/frame/vectors.js'
-import { createEntity } from '../../stage/scene.js'
+import { createEntity } from '../../entity/schema.js'
 import { boxSolid, type SolidGeometry } from '../../math/solid/mesh.js'
 import { type District, metric } from './district.js'
 
@@ -47,62 +47,64 @@ function sphereSolid(radius: number): SolidGeometry {
   return { vertices, edges: [], faces }
 }
 
-
 export function emitFurniture(d: District, f: MapFeature): boolean {
   const tags = f.tags
   if (tags.highway === 'street_lamp' || tags.highway === 'traffic_signals') {
-  const coordinate = f.rings[0]?.coordinates[0]
-  if (!coordinate) return true
-  const p = d.project(coordinate)
-  if (!d.inside(p)) return true
-  p[1] = d.height(p[0], p[2])
-  const lamp = tags.highway === 'street_lamp'
-  const id = 'osm-' + f.id.replace('/', '-')
-  const pole = createEntity(id + '-pole', 'solid', [p[0], p[1] + (lamp ? 2.5 : 1.6), p[2]])
-  pole.name = lamp ? 'Farola' : 'Semáforo'
-  pole.geometry = boxSolid(lamp ? [0.12, 5, 0.12] : [0.14, 3.2, 0.14])
-  pole.color = '#6d7680'
-  pole.source = d.source(f)
-  d.entities.push(pole)
-  const head = createEntity(id + '-head', 'solid', [p[0], p[1] + (lamp ? 5.75 : 3.5), p[2]])
-  head.name = pole.name
-  head.geometry = lamp ? sphereSolid(0.75) : boxSolid([0.32, 0.9, 0.28])
-  head.color = lamp ? '#fff1d2' : '#1c1c1c'
-  head.source = d.source(f)
-  d.entities.push(head)
+    const coordinate = f.rings[0]?.coordinates[0]
+    if (!coordinate) return true
+    const p = d.project(coordinate)
+    if (!d.inside(p)) return true
+    p[1] = d.height(p[0], p[2])
+    const lamp = tags.highway === 'street_lamp'
+    const id = 'osm-' + f.id.replace('/', '-')
+    const pole = createEntity(id + '-pole', 'solid', [p[0], p[1] + (lamp ? 2.5 : 1.6), p[2]])
+    pole.name = lamp ? 'Farola' : 'Semáforo'
+    pole.geometry = boxSolid(lamp ? [0.12, 5, 0.12] : [0.14, 3.2, 0.14])
+    pole.color = '#6d7680'
+    pole.source = d.source(f)
+    d.entities.push(pole)
+    const head = createEntity(id + '-head', 'solid', [p[0], p[1] + (lamp ? 5.75 : 3.5), p[2]])
+    head.name = pole.name
+    head.geometry = lamp ? sphereSolid(0.75) : boxSolid([0.32, 0.9, 0.28])
+    head.color = lamp ? '#fff1d2' : '#1c1c1c'
+    head.source = d.source(f)
+    d.entities.push(head)
     return true
   }
-  if (tags.power === 'tower' || (tags.power === 'generator' && tags['generator:source'] === 'wind')) {
-  const coordinate = f.rings[0]?.coordinates[0]
-  if (!coordinate) return true
-  const p = d.project(coordinate)
-  if (!d.inside(p)) return true
-  p[1] = d.height(p[0], p[2])
-  const wind = tags['generator:source'] === 'wind'
-  const id = 'osm-' + f.id.replace('/', '-')
-  const mast = metric(tags.height, wind ? 80 : 42)
-  const pole = createEntity(id + '-mast', 'solid', [p[0], p[1] + mast / 2, p[2]])
-  pole.name = wind ? 'Aerogenerador' : 'Torre eléctrica'
-  pole.geometry = boxSolid(wind ? [3.2, mast, 3.2] : [6, mast, 6])
-  pole.color = '#9aa0a6'
-  pole.source = d.source(f)
-  d.entities.push(pole)
-  if (wind) {
-    const hub = createEntity(id + '-hub', 'solid', [p[0], p[1] + mast, p[2]])
-    hub.geometry = sphereSolid(2.4)
-    hub.color = '#d5d8dc'
-    hub.source = d.source(f)
-    d.entities.push(hub)
-    for (const turn of [0, 120, 240]) {
-      const blade = createEntity(id + '-blade-' + turn, 'solid', [p[0], p[1] + mast, p[2]])
-      blade.geometry = boxSolid([2.2, 28, 0.6])
-      blade.color = '#f4f6f8'
-      blade.transform.rotation = rotationDegrees(0, 0, turn)
-      blade.source = d.source(f)
-      d.entities.push(blade)
+  if (
+    tags.power === 'tower' ||
+    (tags.power === 'generator' && tags['generator:source'] === 'wind')
+  ) {
+    const coordinate = f.rings[0]?.coordinates[0]
+    if (!coordinate) return true
+    const p = d.project(coordinate)
+    if (!d.inside(p)) return true
+    p[1] = d.height(p[0], p[2])
+    const wind = tags['generator:source'] === 'wind'
+    const id = 'osm-' + f.id.replace('/', '-')
+    const mast = metric(tags.height, wind ? 80 : 42)
+    const pole = createEntity(id + '-mast', 'solid', [p[0], p[1] + mast / 2, p[2]])
+    pole.name = wind ? 'Aerogenerador' : 'Torre eléctrica'
+    pole.geometry = boxSolid(wind ? [3.2, mast, 3.2] : [6, mast, 6])
+    pole.color = '#9aa0a6'
+    pole.source = d.source(f)
+    d.entities.push(pole)
+    if (wind) {
+      const hub = createEntity(id + '-hub', 'solid', [p[0], p[1] + mast, p[2]])
+      hub.geometry = sphereSolid(2.4)
+      hub.color = '#d5d8dc'
+      hub.source = d.source(f)
+      d.entities.push(hub)
+      for (const turn of [0, 120, 240]) {
+        const blade = createEntity(id + '-blade-' + turn, 'solid', [p[0], p[1] + mast, p[2]])
+        blade.geometry = boxSolid([2.2, 28, 0.6])
+        blade.color = '#f4f6f8'
+        blade.transform.rotation = rotationDegrees(0, 0, turn)
+        blade.source = d.source(f)
+        d.entities.push(blade)
+      }
     }
-  }
-      
+
     return true
   }
   if (tags.power === 'line') {
