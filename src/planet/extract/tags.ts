@@ -75,6 +75,7 @@ const structural = new Set([
   'leisure',
   'water',
   'waterway',
+  'aeroway',
   'place',
   'surface',
   'oneway',

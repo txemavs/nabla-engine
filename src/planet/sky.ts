@@ -7,7 +7,7 @@ export function skyTime(clock: SkyClock | undefined, now = Date.now()): Date {
 export function localTimeInput(at: Date): string {
   return new Date(at.getTime() - at.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 }
-const FOG_CEILING = 1000
+const FOG_CEILING = 100
 
 export function atmosphere(height: number, sunElevation: number, visibility = 220) {
   const day = MathUtils.smoothstep(sunElevation, -0.12, 0.12)

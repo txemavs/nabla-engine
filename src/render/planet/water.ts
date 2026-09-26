@@ -30,6 +30,7 @@ export class SeaWater {
   private readonly solarStrength = { value: 0 }
   private readonly time = { value: 0 }
   private readonly texture = new THREE.TextureLoader().load('/geography/water-normal.png')
+  private shadowSetup: (material: THREE.Material) => void = () => {}
   private readonly material = new THREE.MeshStandardMaterial({
     color: '#102f43',
     roughness: 0.3,
@@ -44,48 +45,12 @@ export class SeaWater {
     this.texture.wrapS = this.texture.wrapT = THREE.RepeatWrapping
     // Adapted from Streets GL (StrandedKitty, MIT): three drifting normal samples.
     // License: assets/licenses/streets-gl-MIT.txt. No reflection camera or wave physics.
-    this.material.onBeforeCompile = (shader) => {
-      shader.uniforms.waterSunDirection = this.solarDirection
-      shader.uniforms.waterSunStrength = this.solarStrength
-      shader.uniforms.waterTime = this.time
-      shader.uniforms.waterNormal = { value: this.texture }
-      shader.vertexShader =
-        'varying vec2 waterXZ;\n' +
-        shader.vertexShader.replace(
-          '#include <begin_vertex>',
-          '#include <begin_vertex>\nwaterXZ = transformed.xz;',
-        )
-      shader.fragmentShader =
-        'varying vec2 waterXZ; uniform float waterTime; uniform sampler2D waterNormal; uniform vec3 waterSunDirection; uniform float waterSunStrength;\n' +
-        shader.fragmentShader
-          .replace(
-            '#include <normal_fragment_maps>',
-            `#include <normal_fragment_maps>
-        vec2 waveUV = waterXZ / 256.0;
-        float waveTime = waterTime / 256.0;
-        vec3 waves = (texture2D(waterNormal, (waveUV+waveTime)*3.0).xyz * 0.25
-          + texture2D(waterNormal, (waveUV+waveTime)*16.0).xyz * 0.25
-          + texture2D(waterNormal, (waveUV-waveTime)*8.0).xyz * 0.5) * 2.0 - 1.0;
-        waves = normalize(mix(waves, vec3(0.0,0.0,1.0),0.9).xzy);
-        normal = normalize(mat3(viewMatrix) * waves);`,
-          )
-          .replace(
-            '#include <opaque_fragment>',
-            `
-        vec3 reflectedEye = reflect(-normalize(vViewPosition), normal);
-        vec3 solarView = normalize(mat3(viewMatrix) * waterSunDirection);
-        float alignment = max(0.0, dot(reflectedEye, solarView));
-        float glint = pow(alignment, 350.0) * 8.0 + pow(alignment, 35.0) * 0.12;
-        // This material does not use the cascade shader: suppress its repeated
-        // directional specular lobes and keep one astronomical solar reflection.
-        outgoingLight = diffuseColor.rgb * waterSunStrength * 0.8 + vec3(glint * waterSunStrength);
-        #include <opaque_fragment>`,
-          )
-    }
+    this.material.onBeforeCompile = (shader) => this.shade(shader)
     this.plane.rotateX(-Math.PI / 2)
     this.sea = new THREE.InstancedMesh(this.plane, this.material, 441)
     this.sea.count = 0
     this.sea.frustumCulled = false
+    this.sea.receiveShadow = true
     this.sea.name = 'Sea'
     this.root.add(this.sea)
     this.worker.onmessage = (
@@ -121,10 +86,17 @@ export class SeaWater {
   /** Same surface as the loaded sea, including the shared solar shader. */
   surface(): THREE.MeshStandardMaterial {
     const material = this.material.clone()
-    material.onBeforeCompile = this.material.onBeforeCompile
+    material.defines = {}
+    material.onBeforeCompile = (shader) => this.shade(shader)
     return material
   }
-  /** z15 cells known to be ocean. The horizon drops these so the relief never covers the sea. */
+  /** Cascades darken the flat colour. The solar glint stays out of the shadow. */
+  bindShadows(setup: (material: THREE.Material) => void): void {
+    this.shadowSetup = setup
+    setup(this.material)
+    for (const mesh of this.coast.values()) setup(mesh.material as THREE.Material)
+  }
+  /** z15 cells known to be ocean. The horizon drops these from collision only. */
   oceanBlocks(): MapTile[] {
     const stamp = [...this.cells.keys()].sort().join('|')
     if (stamp === this.oceanStamp) return this.ocean
@@ -203,10 +175,11 @@ export class SeaWater {
     const normals = new Float32Array(positions.length)
     for (let i = 1; i < normals.length; i += 3) normals[i] = 1
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
-    const material = this.material.clone()
-    material.onBeforeCompile = this.material.onBeforeCompile
+    const material = this.surface()
+    this.shadowSetup(material)
     const mesh = new THREE.Mesh(geometry, material)
     mesh.matrixAutoUpdate = false
+    mesh.receiveShadow = true
     mesh.name = 'Coast'
     this.coast.set(key, mesh)
     this.root.add(mesh)
@@ -231,6 +204,61 @@ export class SeaWater {
       this.sea.setMatrixAt(index, matrix)
     })
     this.sea.instanceMatrix.needsUpdate = true
+  }
+  private shade(shader: {
+    vertexShader: string
+    fragmentShader: string
+    uniforms: Record<string, { value: unknown }>
+  }): void {
+    shader.uniforms.waterSunDirection = this.solarDirection
+    shader.uniforms.waterSunStrength = this.solarStrength
+    shader.uniforms.waterTime = this.time
+    shader.uniforms.waterNormal = { value: this.texture }
+    shader.vertexShader =
+      'varying vec2 waterXZ;\n' +
+      shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nwaterXZ = transformed.xz;',
+      )
+    shader.fragmentShader =
+      'varying vec2 waterXZ; uniform float waterTime; uniform sampler2D waterNormal; uniform vec3 waterSunDirection; uniform float waterSunStrength;\n' +
+      shader.fragmentShader
+        .replace(
+          '#include <normal_fragment_maps>',
+          `#include <normal_fragment_maps>
+        vec2 waveUV = waterXZ / 256.0;
+        float waveTime = waterTime / 256.0;
+        vec3 waves = (texture2D(waterNormal, (waveUV+waveTime)*3.0).xyz * 0.25
+          + texture2D(waterNormal, (waveUV+waveTime)*16.0).xyz * 0.25
+          + texture2D(waterNormal, (waveUV-waveTime)*8.0).xyz * 0.5) * 2.0 - 1.0;
+        waves = normalize(mix(waves, vec3(0.0,0.0,1.0),0.9).xzy);
+        normal = normalize(mat3(viewMatrix) * waves);`,
+        )
+        .replace(
+          '#include <opaque_fragment>',
+          `
+        vec3 reflectedEye = reflect(-normalize(vViewPosition), normal);
+        vec3 solarView = normalize(mat3(viewMatrix) * waterSunDirection);
+        float alignment = max(0.0, dot(reflectedEye, solarView));
+        float glint = pow(alignment, 350.0) * 8.0 + pow(alignment, 35.0) * 0.12;
+        // One solar glint. The body keeps the cascade shadow already in directDiffuse.
+        float waterShadow = 1.0;
+        #if ( NUM_DIR_LIGHTS > 0 ) && defined( USE_SHADOWMAP )
+          DirectionalLight waterSunLight = directionalLights[ 0 ];
+          IncidentLight waterDirect;
+          getDirectionalLightInfo( waterSunLight, waterDirect );
+          float waterDotNL = saturate( dot( geometryNormal, waterDirect.direction ) );
+          vec3 waterHalf = normalize( waterDirect.direction + geometryViewDir );
+          float waterDotVH = saturate( dot( geometryViewDir, waterHalf ) );
+          vec3 waterFresnel = F_Schlick( material.specularColor, material.specularF90, waterDotVH );
+          vec3 waterUnshadowed = waterDotNL * waterDirect.color * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - waterFresnel );
+          float waterEnergy = dot( waterUnshadowed, waterUnshadowed );
+          if ( waterEnergy > 1e-6 )
+            waterShadow = clamp( dot( reflectedLight.directDiffuse, waterUnshadowed ) / waterEnergy, 0.0, 1.0 );
+        #endif
+        outgoingLight = diffuseColor.rgb * waterSunStrength * 0.8 * mix( 0.4, 1.0, waterShadow ) + vec3(glint * waterSunStrength);
+        #include <opaque_fragment>`,
+        )
   }
   dispose(): void {
     this.disposed = true

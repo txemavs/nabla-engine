@@ -59,6 +59,31 @@ export function mapTileFilename(tile: MapTile, layer: 'terrain' | 'buildings-osm
   validate(tile)
   return `earth-WebMercatorQuad-z${tile.z}-x${tile.x}-y${tile.y}-${layer}.glb`
 }
+
+const publishedStem = { terrain: 'terra', 'buildings-osm': 'build' } as const
+
+/** Stored GLB name. The stamp is UTC, to the minute, so a later publish is a different file. */
+export function publishedGlbName(
+  tile: MapTile,
+  layer: 'terrain' | 'buildings-osm',
+  at: Date,
+): string {
+  validate(tile)
+  if (Number.isNaN(at.getTime())) throw Error('Invalid publish time')
+  const stamp = at.toISOString().replace(/\D/g, '').slice(0, 12)
+  return `${publishedStem[layer]}-${tile.z}-${tile.x}-${tile.y}-${stamp}.glb`
+}
+/** A stored GLB: the readable stamp, or a hash name from before that stamp existed. */
+export function isPublishedGlbPath(
+  tile: MapTile,
+  layer: 'terrain' | 'buildings-osm',
+  path: string,
+): boolean {
+  return (
+    new RegExp(`^${layer}-[a-f0-9]{16}\\.glb$`).test(path) ||
+    new RegExp(`^${publishedStem[layer]}-${tile.z}-${tile.x}-${tile.y}-\\d{12}\\.glb$`).test(path)
+  )
+}
 /** Exact shared sample lattice, including parent/child edges and the antimeridian. */
 export function mapTileSample(tile: MapTile, column: number, row: number, segments: number) {
   validate(tile)

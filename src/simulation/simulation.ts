@@ -78,6 +78,9 @@ export class Simulation {
   setPlanetTiles(tiles: PlanetCollisionTile[]): void {
     this.planetCollisions.setTiles(tiles)
   }
+  setPoles(poles: { position: Vec3Tuple; half: Vec3Tuple }[]): void {
+    this.planetCollisions.setPoles(poles)
+  }
   /** Keep resting actors above newly refined ground while collision coverage swaps. */
   capturePlanetSupport(sample: (position: Vec3Tuple) => number | undefined): () => void {
     const bodies = [...this.vehicles.values()].map((v) => v.body)
@@ -342,7 +345,9 @@ export class Simulation {
     const roadSurface =
       e.road?.elevation === 'bridge' ||
       (e.road?.mode === 'smooth-float' && (!e.road.elevation || e.road.elevation === 'terrain'))
-    if ((e.motion === 'none' && !e.portal && !roadSurface) || (e.portal && e.parentId)) return
+    const trunk = !!e.sprite
+    if ((e.motion === 'none' && !e.portal && !roadSurface && !trunk) || (e.portal && e.parentId))
+      return
     if (isMapBuilding(e) && e.motion === 'static' && !this.mapBuildingsEnabled) return
     const transform = this.graph.worldTransform(e.id)
     const body = new Body({
@@ -355,13 +360,19 @@ export class Simulation {
         ? vehicleDefinition(e).colliders
         : [
             {
-              size: e.size,
+              size: (e.light && e.light.shape !== 'globe'
+                ? [Math.max(e.size[0], 0.44), e.size[1], Math.max(e.size[2], 0.44)]
+                : e.size) as Vec3Tuple,
               transform: {
                 position: [0, 0, 0] as Vec3Tuple,
                 rotation: [0, 0, 0, 1] as [number, number, number, number],
               },
             },
           ]
+    if (e.sprite) {
+      const height = Math.max(1, e.size[1])
+      body.addShape(new Box(new Vec3(0.35, height / 2, 0.35)), new Vec3(0, height / 2, 0))
+    }
     if (e.terrain) {
       const t = e.terrain
       const data = Array.from({ length: t.columns }, (_, x) =>
@@ -397,12 +408,22 @@ export class Simulation {
       })
       if (indices.length >= 3) body.addShape(new Trimesh(vertices, indices))
     }
-    for (const collider of geometry || e.terrain || e.road ? [] : colliders)
+    const hull = e.vehicle?.plane
+      ? colliders.filter((c) => c.transform.position[1] - c.size[1] / 2 > -0.5)
+      : colliders
+    for (const collider of geometry || e.terrain || e.road || e.sprite ? [] : hull)
       body.addShape(
         new Box(new Vec3(...(collider.size.map((n) => n / 2) as Vec3Tuple))),
         new Vec3(...collider.transform.position),
         new Quaternion(...collider.transform.rotation),
       )
+    // Slightly above the tyre, so the wheels still drive. The ball only meets a road lip.
+    if (e.vehicle?.plane)
+      for (const hub of vehicleDefinition(e).hubs) {
+        const gear = new Sphere(Math.max(0.08, vehicleDefinition(e).wheelRadius - 0.05))
+        gear.friction = 0
+        body.addShape(gear, new Vec3(...hub))
+      }
     body.position.set(...transform.position)
     body.quaternion.set(...transform.rotation)
     body.previousPosition.copy(body.position)
@@ -587,12 +608,17 @@ export class Simulation {
         maxSuspensionTravel: 0.3,
       })
     }
-    car.addToWorld(this.world)
+    if (definition.boat) {
+      body.linearDamping = 0.01
+      body.angularDamping = 0.35
+      this.world.addBody(body)
+    } else car.addToWorld(this.world)
     this.vehicles.set(entity.id, {
       body,
       raycast: car,
       entity,
       steer: 0,
+      prop: 0,
       definition,
       flight: null,
       rampClosed: false,
@@ -1177,8 +1203,13 @@ export class Simulation {
     for (const [id, v] of this.vehicles) {
       if (this.docks.has(id)) continue
       const active = id === this.vehicleId
+      if (v.definition.plane) this.spoolEngine(v, active)
       if (v.flight) {
         this.fly(v, active)
+        continue
+      }
+      if (v.definition.boat) {
+        this.pilotBoat(v, active)
         continue
       }
       const powered = v.helm !== 'off'
@@ -1244,12 +1275,95 @@ export class Simulation {
     return p
   }
   private height(body: Body): number {
+    return this.altitude(body.position)
+  }
+  private altitude(point: Vec3): number {
     const geo = this.document.geography
     return geo
-      ? body.position.vadd(new Vec3(0, EARTH_RADIUS + geo.altitude, 0)).length() -
+      ? point.vadd(new Vec3(0, EARTH_RADIUS + geo.altitude, 0)).length() -
           EARTH_RADIUS -
           geo.altitude
-      : body.position.y
+      : point.y
+  }
+  /** 0 is stopped, 1 is full prop. Idles while occupied and windmills in the slipstream. */
+  private spoolEngine(v: Vehicle, active: boolean): void {
+    const running = active && v.helm !== 'off'
+    const throttle = running
+      ? v.flight
+        ? Math.max(0, this.input.lift)
+        : Math.abs(this.input.forward)
+      : 0
+    const wind = clamp(v.body.velocity.length() / 55, 0, 0.35)
+    const target = running ? 0.22 + Math.min(1, throttle) * 0.78 : wind
+    const rate = target > v.prop ? 0.7 : 0.28
+    v.prop += clamp(target - v.prop, -FIXED_STEP * rate, FIXED_STEP * rate)
+  }
+  /**
+   * 400 CV on a 6 m planing hull. Thrust is applied at the stern, along the
+   * outboard, so the boat pivots and the stern steps out. The helm and the
+   * prop both lag the stick.
+   */
+  private pilotBoat(v: Vehicle, active: boolean): void {
+    const body = v.body
+    const up = this.radialUp(body)
+    const keel = body.pointToWorldFrame(new Vec3(0, -0.45, 0.2))
+    const sea = this.document.geography ? 0.08 - this.document.geography.altitude : 0
+    const depth = sea - this.altitude(keel)
+    const wet = clamp(depth / 0.55, 0, 1.6)
+    body.applyForce(up.scale(wet * body.mass * 9.81 * 1.22))
+    const vertical = body.velocity.dot(up)
+    if (wet > 0) body.applyForce(up.scale(-vertical * body.mass * 2.2))
+    const forward = body.quaternion.vmult(new Vec3(0, 0, -1))
+    const right = body.quaternion.vmult(new Vec3(1, 0, 0))
+    const speed = body.velocity.dot(forward)
+    const powered = active && v.helm !== 'off' && wet > 0.12
+    const braking = active && this.input.brake
+    const lock = 0.62 / (1 + Math.max(0, speed) / 16)
+    const helmTarget = powered && !braking ? -this.input.right * lock : 0
+    v.steer += clamp(helmTarget - v.steer, -FIXED_STEP * 0.28, FIXED_STEP * 0.28)
+    const throttle = powered && !braking ? this.input.forward : 0
+    const spool = braking ? 1.4 : throttle === 0 ? 0.35 : 0.55
+    v.prop += clamp(throttle - v.prop, -FIXED_STEP * spool, FIXED_STEP * spool)
+    const thrust = v.prop * v.definition.engineForce * (v.prop < 0 ? 0.35 : 1) * clamp(wet, 0, 1)
+    const motor = body.pointToWorldFrame(new Vec3(0, 0, 2.35))
+    body.applyForce(
+      body.quaternion.vmult(new Vec3(Math.sin(v.steer) * thrust, 0, -Math.cos(v.steer) * thrust)),
+      motor.vsub(body.position),
+    )
+    if (wet > 0.05) {
+      const flatRight = right.vsub(up.scale(right.dot(up)))
+      if (flatRight.lengthSquared() > 1e-6) flatRight.normalize()
+      const bite = 0.5 + clamp(Math.abs(speed) / 14, 0, 1)
+      const hydro = (localZ: number, gain: number) => {
+        const at = body.quaternion.vmult(new Vec3(0, -0.15, localZ))
+        const vel = new Vec3()
+        body.getVelocityAtWorldPoint(body.position.vadd(at), vel)
+        body.applyForce(flatRight.scale(-vel.dot(flatRight) * body.mass * gain), at)
+      }
+      hydro(-2.05, bite * 0.28)
+      hydro(1.9, bite * 0.62)
+      const plane = clamp((Math.abs(speed) - 7) / 7, 0, 1)
+      const quad = (24 - 16 * plane) * speed * Math.abs(speed)
+      const wall = Math.sign(speed) * 0.01 * speed ** 4
+      const hump =
+        Math.sign(speed || 1) *
+        7500 *
+        Math.exp(-((Math.abs(speed) - 6) ** 2) / 16) *
+        clamp(Math.abs(speed) / 1.5, 0, 1)
+      const drag = (quad + wall + hump) * clamp(wet, 0, 1)
+      const keel = body.quaternion.vmult(new Vec3(0, -0.06, 0.4))
+      body.applyForce(forward.scale(-drag), keel)
+      const yawRate = body.angularVelocity.dot(up)
+      body.torque.vadd(up.scale(-yawRate * (700 + Math.abs(speed) * 110)), body.torque)
+      const hullUp = body.quaternion.vmult(new Vec3(0, 1, 0))
+      body.torque.vadd(hullUp.cross(up).scale(body.mass * 10), body.torque)
+      const pitchAxis = body.quaternion.vmult(new Vec3(1, 0, 0))
+      body.torque.vadd(pitchAxis.scale(-body.angularVelocity.dot(pitchAxis) * 2800), body.torque)
+      const rollAxis = body.quaternion.vmult(new Vec3(0, 0, 1))
+      body.torque.vadd(rollAxis.scale(-body.angularVelocity.dot(rollAxis) * 1800), body.torque)
+      if (braking && Math.abs(speed) > 0.4) body.applyForce(forward.scale(-Math.sign(speed) * 1600))
+    }
+    body.wakeUp()
   }
   /** Flight keeps the same collision body and cargo constraints; only wheel forces are disabled. */
   toggleFlight(): string {
@@ -1389,7 +1503,11 @@ export class Simulation {
         Math.max(this.minimumFlightAltitude, height - lead),
         height + lead,
       )
-    flight.yaw -= turn * 1.2 * FIXED_STEP
+    if (helm === 'plane' && v.definition.plane) {
+      const noseNow = body.quaternion.vmult(new Vec3(0, 0, -1))
+      const airNow = Math.max(0, body.velocity.dot(noseNow))
+      flight.yaw -= (turn * 0.55 + right * 0.4 * clamp(airNow / 26, 0, 1)) * FIXED_STEP
+    } else flight.yaw -= turn * 1.2 * FIXED_STEP
     let tangent = new Quaternion()
     if (this.document.geography) {
       const point = localToGeo(this.document.geography, vec(body.position))
@@ -1402,10 +1520,13 @@ export class Simulation {
         ? -1.05
         : -0.15
       : helm === 'plane'
-        ? -forward * 0.9
+        ? forward * (v.definition.plane ? 0.42 : -0.9)
         : -forward * 0.35
     const pitch = new Quaternion().setFromAxisAngle(new Vec3(1, 0, 0), pitchAngle)
-    const roll = new Quaternion().setFromAxisAngle(new Vec3(0, 0, 1), -right * 0.35)
+    const roll = new Quaternion().setFromAxisAngle(
+      new Vec3(0, 0, 1),
+      -right * (helm === 'plane' && v.definition.plane ? 0.62 : 0.35),
+    )
     const desired = heading.mult(pitch).mult(roll)
     const error = body.quaternion.inverse().mult(desired)
     const sign = error.w < 0 ? -1 : 1
@@ -1418,15 +1539,33 @@ export class Simulation {
     body.torque.vadd(body.vectorToWorldFrame(torque), body.torque)
     if (helm === 'plane') {
       const nose = body.quaternion.vmult(new Vec3(0, 0, -1))
-      const air = Math.max(0, body.velocity.dot(nose))
-      const wings = clamp(air / 42, 0, 1)
-      const throttle = lift
       const along = body.velocity.dot(nose)
-      const push =
-        throttle > 0 ? clamp(680 - along, 0, 80) : throttle < 0 ? clamp(-40 - along, -80, 0) : 0
-      const thrust = nose.scale(push)
-      const lift = radial.scale(9.81 * wings)
-      for (const assisted of [body]) assisted.applyForce(lift.vadd(thrust).scale(assisted.mass))
+      const air = Math.max(0, along)
+      if (v.definition.plane) {
+        const wing = body.quaternion.vmult(new Vec3(0, 1, 0))
+        const wings = clamp(air / 28, 0, 1)
+        const thrust = lift > 0 ? clamp(68 - along, 0, 8) : 0
+        const drag = 0.0011 * along * Math.abs(along)
+        const flightDir = body.velocity.length() > 4 ? body.velocity.clone().normalize() : nose
+        const aoa = clamp(wing.dot(flightDir), -0.45, 0.5)
+        const liftAccel = 9.81 * wings * clamp(1 + aoa * 2.4, 0, 1.65)
+        body.applyForce(
+          wing
+            .scale(liftAccel)
+            .vadd(nose.scale(thrust - drag))
+            .scale(body.mass),
+        )
+      } else {
+        const wings = clamp(air / 42, 0, 1)
+        const push =
+          lift > 0 ? clamp(680 - along, 0, 80) : lift < 0 ? clamp(-40 - along, -80, 0) : 0
+        body.applyForce(
+          radial
+            .scale(9.81 * wings)
+            .vadd(nose.scale(push))
+            .scale(body.mass),
+        )
+      }
       body.wakeUp()
       return
     }
@@ -1601,6 +1740,7 @@ export class Simulation {
     helm: Vehicle['helm']
     canFly: boolean
     targetAltitude: number | null
+    engine: number
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
@@ -1630,6 +1770,7 @@ export class Simulation {
       helm: v.helm,
       canFly: Boolean(v.definition.flight),
       targetAltitude: v.flight?.altitude ?? null,
+      engine: v.definition.plane ? v.prop : 0,
     }
   }
 

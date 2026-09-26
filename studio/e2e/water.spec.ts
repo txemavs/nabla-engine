@@ -1,52 +1,13 @@
 import { test, expect } from './studio-test.js'
-import Pbf from 'pbf'
 import { createEntity } from '../../src/stage/scene.js'
 
-function oceanTile(): Buffer {
-  const pbf = new Pbf()
-  pbf.writeMessage(
-    3,
-    (_, layer) => {
-      layer.writeStringField(1, 'water')
-      layer.writeMessage(
-        2,
-        (_, feature) => {
-          feature.writePackedVarint(2, [0, 0])
-          feature.writeVarintField(3, 3)
-          feature.writePackedVarint(4, [9, 0, 0, 26, 8192, 0, 0, 8192, 8191, 0, 15])
-        },
-        null,
-      )
-      layer.writeStringField(3, 'class')
-      layer.writeMessage(4, (_, value) => value.writeStringField(1, 'ocean'), null)
-      layer.writeVarintField(5, 4096)
-      layer.writeVarintField(15, 2)
-    },
-    null,
-  )
-  return Buffer.from(pbf.finish())
-}
-
-test('renders cached vector ocean and solar shader without shader errors', async ({ page }) => {
-  const errors: string[] = []
-  page.on('pageerror', (e) => errors.push(e.message))
-  page.on('console', (m) => {
-    if (m.type() === 'error' && /shader|WebGLProgram/i.test(m.text())) errors.push(m.text())
+test('fills the published sea hole with one sheet and does not fetch ocean tiles', async ({
+  page,
+}) => {
+  const ocean: string[] = []
+  page.on('request', (request) => {
+    if (request.url().includes('openfreemap.org')) ocean.push(request.url())
   })
-  await page.route('https://tiles.openfreemap.org/**', (route) =>
-    route.fulfill(
-      route.request().url().endsWith('../../tests/.pbf')
-        ? {
-            body: oceanTile(),
-            contentType: 'application/x-protobuf',
-            headers: { 'access-control-allow-origin': '*' },
-          }
-        : {
-            json: { tiles: ['https://tiles.openfreemap.org/test/{z}/{x}/{y}.pbf'] },
-            headers: { 'access-control-allow-origin': '*' },
-          },
-    ),
-  )
   await page.goto('/?scene=circuit')
   await page.locator('#file').setInputFiles({
     name: 'ocean.json',
@@ -61,13 +22,6 @@ test('renders cached vector ocean and solar shader without shader errors', async
       }),
     ),
   })
-  await expect
-    .poll(
-      async () => Number(await page.locator('#viewport > canvas').getAttribute('data-water-tiles')),
-      { timeout: 30000 },
-    )
-    .toBeGreaterThan(0)
-  await page.waitForTimeout(1200)
-  await page.screenshot({ path: 'test-results/vector-ocean.png' })
-  expect(errors).toEqual([])
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-sea', 'sheet')
+  expect(ocean).toEqual([])
 })

@@ -42,16 +42,20 @@ export const SURFACE_COLORS: Record<SurfaceType, string> = {
   water: '#102f43',
   wetland: '#315740',
   rock: '#787a6b',
-  residential: '#b0a28e',
+  residential: '#8c8a86',
   industrial: '#929386',
   default: '#416629',
 }
 
 /** Update generated defaults at render time, including old baked/cached zones.
  * Authored colors remain authored data; no cache invalidation or geometry rebuild is needed. */
+const retiredResidential = new Set(['#d0c8b8', '#c4b8a4', '#b0a28e'])
+
 export function mapSurfaceColor(surface: SurfaceType, color: string): string {
-  return (surface === 'water' && color.toLowerCase() === '#296b83') ||
-    color.toLowerCase() === LEGACY_SURFACE_COLORS[surface]
+  const hex = color.toLowerCase()
+  return (surface === 'water' && hex === '#296b83') ||
+    hex === LEGACY_SURFACE_COLORS[surface] ||
+    (surface === 'residential' && retiredResidential.has(hex))
     ? SURFACE_COLORS[surface]
     : color
 }

@@ -18,6 +18,7 @@ import { Streetlights } from './streetlights.js'
 import { CarLights } from './car-lights.js'
 import { CarMirrors } from './car-mirrors.js'
 import { CarInstruments } from './car-instruments.js'
+import { mountPropeller } from './propeller.js'
 import { RoadBatches } from '../planet/road-batches.js'
 import { LandcoverBatches } from '../planet/landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
@@ -64,6 +65,7 @@ export class SceneView {
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
+  private readonly propellers = new Map<string, THREE.Object3D>()
   readonly shipHuds = new Map<string, ShipHud>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
   readonly touchScreens = new Map<string, THREE.Mesh>()
@@ -564,6 +566,7 @@ export class SceneView {
             this.portalTablets.set(mouth.id, [interior.door[0]])
         }
         if (e.visual) this.assetVehicle(e, group)
+        else if (e.vehicle?.boat) this.outboard(e, group)
         else this.car(e, group)
       }
       if (e.kind === 'spawn') {
@@ -672,6 +675,10 @@ export class SceneView {
           this.instruments.set(e.id, instruments)
         }
       }
+      if (visual.body.url === '/world/cessna.172.glb') {
+        const propeller = mountPropeller(model)
+        if (propeller) this.propellers.set(e.id, propeller)
+      }
       for (const name of ['Helm_Screen_1', 'Helm_Screen_2', 'Helm_Screen_3']) {
         const original = model.getObjectByName(name)
         if (original) original.visible = false
@@ -724,6 +731,26 @@ export class SceneView {
       )
       this.steering.set(e.id, spin)
     }
+  }
+  private outboard(e: Entity, group: THREE.Group): void {
+    const hull = box([2.05, 0.48, 5.35], e.color)
+    hull.position.y = -0.16
+    const bow = box([1.15, 0.36, 1.15], e.color)
+    bow.position.set(0, -0.08, -2.55)
+    const tube = (x: number) => {
+      const side = box([0.28, 0.32, 5.7], '#f7f8f6')
+      side.position.set(x, 0.02, 0)
+      return side
+    }
+    const console = box([1.15, 0.62, 0.85], '#24343c')
+    console.position.set(0, 0.42, -0.15)
+    const screen = box([0.7, 0.28, 0.06], '#1a2830')
+    screen.position.set(0, 0.78, -0.5)
+    const motor = box([0.32, 0.72, 0.42], '#1c242b')
+    motor.position.set(0, 0.05, 2.72)
+    const leg = box([0.12, 0.55, 0.12], '#2a343c')
+    leg.position.set(0, -0.35, 2.72)
+    group.add(hull, bow, tube(-1.02), tube(1.02), console, screen, motor, leg)
   }
   private car(e: Entity, group: THREE.Group): void {
     const [w, h, l] = e.size
@@ -899,6 +926,8 @@ export class SceneView {
     for (const [id, wheel] of this.steering)
       wheel.rotation.z =
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
+    for (const [id, propeller] of this.propellers)
+      propeller.rotation.z += sim.vehicleInfo(id).engine * 78 * Math.min(elapsed, 0.05)
     for (const [id, lights] of this.carLights) {
       const info = sim.vehicleInfo(id)
       lights.update(

@@ -6,6 +6,8 @@ export interface TerrainData {
   rows: number
   spacing: number
   heights: number[]
+  /** False: Esri had no ground here. Those vertices are not a triangle. */
+  measured?: boolean[]
 }
 
 /** Exact triangular interpolation matching the render mesh. */
@@ -45,7 +47,10 @@ export function terrainIndices(t: TerrainData): number[] {
         b = a + 1,
         c = a + t.columns,
         d = c + 1
-      indices.push(a, c, d, a, d, b)
+      // Sea fill (NoData, 0 m, −1.5 m) is not ground. One missing corner and the quad is a hole.
+      const ground = (i: number) => t.measured?.[i] !== false
+      if (ground(a) && ground(c) && ground(d)) indices.push(a, c, d)
+      if (ground(a) && ground(d) && ground(b)) indices.push(a, d, b)
     }
   return indices
 }

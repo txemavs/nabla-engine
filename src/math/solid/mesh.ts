@@ -9,6 +9,50 @@ export interface SolidGeometry {
   /** Indices of faces that belong to the roof (for separate roof coloring). */
   roofFaces?: number[]
 }
+/** A thin box from `a` at height `ay` to `b` at height `by`. Used for power lines. */
+export function spanSolid(
+  a: Vec3Tuple,
+  ay: number,
+  b: Vec3Tuple,
+  by: number,
+  thickness: number,
+): SolidGeometry {
+  const start = new Vector3(a[0], ay, a[2])
+  const end = new Vector3(b[0], by, b[2])
+  const axis = end.clone().sub(start)
+  if (axis.lengthSq() < 1e-8) {
+    const stub = boxSolid([thickness, thickness, thickness])
+    stub.vertices = stub.vertices.map((v) => [v[0] + a[0], v[1] + ay, v[2] + a[2]])
+    return stub
+  }
+  axis.normalize()
+  const up = Math.abs(axis.y) > 0.9 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0)
+  const side = new Vector3()
+    .crossVectors(axis, up)
+    .normalize()
+    .multiplyScalar(thickness / 2)
+  const vert = new Vector3()
+    .crossVectors(axis, side)
+    .normalize()
+    .multiplyScalar(thickness / 2)
+  const corner = (origin: Vector3, sx: number, sy: number): Vec3Tuple => [
+    origin.x + side.x * sx + vert.x * sy,
+    origin.y + side.y * sx + vert.y * sy,
+    origin.z + side.z * sx + vert.z * sy,
+  ]
+  const box = boxSolid([1, 1, 1])
+  box.vertices = [
+    corner(start, -1, -1),
+    corner(start, 1, -1),
+    corner(start, 1, 1),
+    corner(start, -1, 1),
+    corner(end, -1, -1),
+    corner(end, 1, -1),
+    corner(end, 1, 1),
+    corner(end, -1, 1),
+  ]
+  return box
+}
 export function boxSolid(size: Vec3Tuple): SolidGeometry {
   const [x, y, z] = size.map((n) => n / 2)
   return {

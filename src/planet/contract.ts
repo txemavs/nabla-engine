@@ -3,11 +3,17 @@
  * Labels live in `places.ts`. The metre frame and the source grid live in `tiles.ts`.
  */
 import type { GeoPoint } from '../math/geo/sphere.js'
-import { mapTileBounds, mapTileId, mapTileSample, type MapTile } from '../scene/mercator.js'
+import {
+  isPublishedGlbPath,
+  mapTileBounds,
+  mapTileId,
+  mapTileSample,
+  type MapTile,
+} from '../scene/mercator.js'
 import type { PlanetPlace } from './places.js'
 
-/** Bump when a published GLB must be regenerated. v3 bakes zoom-15 roof photos. */
-export const PLANET_GEOMETRY_REVISION = 'native-surfaces-v3'
+/** Bump when a published GLB must be regenerated. v5 drapes pitch photos. */
+export const PLANET_GEOMETRY_REVISION = 'native-surfaces-v5'
 
 export interface PlanetManifest {
   places?: PlanetPlace[]
@@ -72,7 +78,7 @@ export function validatePlanetManifest(value: unknown, tile: MapTile): PlanetMan
     const f = m.files?.[name]
     if (
       !f ||
-      !new RegExp(`^${name}-[a-f0-9]{16}\\.glb$`).test(f.path) ||
+      !isPublishedGlbPath(tile, name, f.path) ||
       !/^[a-f0-9]{64}$/.test(f.sha256) ||
       !Number.isInteger(f.bytes) ||
       f.bytes < 20 ||

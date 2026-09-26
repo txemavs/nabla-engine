@@ -168,10 +168,12 @@
             </div>
             <span class="eyebrow">GLB</span>
             <label><input id="layer-glb" type="checkbox" checked /> GLB z15</label>
+            <label><input id="layer-trees" type="checkbox" checked /> Árboles</label>
+            <label><input id="layer-lamps" type="checkbox" checked /> Farolas</label>
             <span class="eyebrow">TESELAS</span>
             <label><input id="layer-relief" type="checkbox" checked /> Horizonte z13</label>
             <label><input id="layer-z14" type="checkbox" checked /> Fotos z14</label>
-            <label><input id="layer-z15" type="checkbox" checked /> Fotos z15</label>
+            <label><input id="layer-z12" type="checkbox" checked /> Fotos z12</label>
             <label><input id="layer-sea" type="checkbox" checked /> Mar</label>
             <label><input id="layer-maps" type="checkbox" checked /> Mapas</label>
             <span class="eyebrow">CIELO</span>
@@ -188,11 +190,13 @@
             <details id="drape-section" class="help">
               <summary>PROYECCIÓN</summary>
               <p>
-                El satélite se pinta encima del color. Por defecto solo los tejados. El terreno
-                queda debajo; huertas y bosque, encima.
+                El satélite se pinta encima del color. Por defecto tejados, pistas y campos. El
+                terreno queda debajo; huertas y bosque, encima.
               </p>
               <div id="drape-layers">
                 <label><input type="checkbox" data-drape="roofs" checked /> Tejados</label>
+                <label><input type="checkbox" data-drape="runways" checked /> Pistas</label>
+                <label><input type="checkbox" data-drape="pitches" checked /> Campos</label>
                 <label><input type="checkbox" data-drape="farmland" /> Huertas</label>
                 <label><input type="checkbox" data-drape="forest" /> Bosque</label>
                 <label><input type="checkbox" data-drape="grass" /> Pradera</label>
@@ -233,6 +237,13 @@
                   <option value="1">Normal · 1×</option>
                   <option value="1.25">Nítida · 1,25×</option>
                   <option value="2">Alta · 2×</option>
+                </select>
+              </div>
+              <div class="option-row">
+                <label for="depth-of-field">Desenfoque</label>
+                <select id="depth-of-field">
+                  <option value="0">Desactivado</option>
+                  <option value="1" selected>Ligero</option>
                 </select>
               </div>
               <div class="option-row">
@@ -442,7 +453,9 @@
           <div id="add-menu" role="group" aria-label="Crear en la escena" hidden>
             <button id="add-solid">Edificio</button><button id="add-box">Bloque</button
             ><button id="add-car">Audi A3 Cabrio</button
+            ><button id="add-boat">Fueraborda 6 m</button
             ><button id="add-carrier">Contenedor volador</button
+            ><button id="add-cessna">Cessna 172</button
             ><button id="add-streetlight">Farola de autopista</button
             ><button id="add-globe">Farola de barrio</button> <button id="add-sprite">Sprite</button
             ><button id="add-group">Grupo</button>

@@ -13,5 +13,6 @@ export const terrainField = z
       .min(4)
       .max(16641)
       .optional(),
+    measured: z.array(z.boolean()).min(4).max(16641).optional(),
   })
   .strict()

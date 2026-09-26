@@ -41,8 +41,31 @@ is standard; accurate geodetic/vertical datum conversion remains future work.
 Meshes are batched by rendering category/layer. Linear vertex colours preserve
 surface and roof colours. Shared render vertices are indexed without changing their
 positions. Feature ranges and source metadata remain in GLB extras. Terrain-edge
-skirts hide mixed-resolution cracks; they do not participate in collisions. OSM
+skirts hide mixed-resolution cracks on z13 and z14; a z15 cell is published without them. They do not participate in collisions. OSM
 trees are metadata instances rendered as crossed, upright, alpha-tested planes.
+
+## Sea
+
+The publisher decides what is land. A client does not download an ocean vector
+tile and does not triangulate a coastline.
+
+`prepare-planet.ts` samples Esri Terrain3D on the shared lattice. A sample is
+land only when it is finite, unmasked, not the raster NoData value, and strictly
+above 0 m. On this coast Esri does not mark the open sea as NoData. It sends a
+flat 0 m or about −1.5 m with no mask. That constant is the green sheet. It is
+not a measured seabed and it is not stored as a triangle. A quad is written only
+when all four corners are land. The omitted quads are a hole in `terra-*.glb`.
+
+OSM water polygons in that same GLB are the coast and the inland water. They are
+meshed once, at publish time, and the client draws those vertices as they are.
+
+The browser fills a hole with one flat sheet, colour `#03374c`. That sheet is not
+a mesh of the ocean. The z13 horizon samples the same elevation and drops the
+same `h <= 0` quads. It does not consult a second ocean mask and it does not
+call OpenFreeMap.
+
+A cell published before this rule still contains the green sheet until that cell
+is generated again. Publishing does not replace an object that is already stored.
 
 ## Discovery and private preparation
 
@@ -115,7 +138,9 @@ are separate future work.
 
 The native stream also requests a lightweight, independent elevation-only horizon.
 It uses z13 XYZ cells, a 32-segment lattice, the same z12 Esri rasters and tile-local
-planetary frame as the detailed GLBs. It does not wait for OSM or private generation.
+planetary frame as the detailed GLBs. Samples at or below 0 m are omitted, the same
+rule the publisher uses, so the far sheet does not paint Esri's flat sea fill.
+It does not wait for OSM or private generation.
 Up to 25 nearby cells are retained, with two requests in flight and raster caching.
 The default fog/clip range leaves this broad valley silhouette visible independently
 of the detailed-map draw distance.

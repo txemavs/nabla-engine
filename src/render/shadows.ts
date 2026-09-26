@@ -32,6 +32,18 @@ export function cascadedLighting(standard: string, cascaded: string): string {
 }
 const standardLighting = THREE.ShaderChunk.lights_fragment_begin
 
+// Three rotates the PCF kernel with screen-space noise. The pattern changes
+// every frame the camera moves, so shadows and the light they gate shimmer.
+let shadowKernelFrozen = false
+function freezeShadowKernel(): void {
+  if (shadowKernelFrozen) return
+  shadowKernelFrozen = true
+  THREE.ShaderChunk.shadowmap_pars_fragment = THREE.ShaderChunk.shadowmap_pars_fragment.replaceAll(
+    'interleavedGradientNoise( gl_FragCoord.xy )',
+    '0.0',
+  )
+}
+
 export interface CSMConfig {
   camera: THREE.PerspectiveCamera
   scene: THREE.Scene
@@ -49,10 +61,15 @@ export class ShadowManager {
   private readonly disposedMaterial = (event: { target: THREE.Material }) =>
     this.removeMaterial(event.target)
   private readonly registeredMaterials = new Set<THREE.Material>()
+  private readonly shadowHold = new Map<
+    THREE.DirectionalLight,
+    { position: THREE.Vector3; target: THREE.Vector3 }
+  >()
 
   /** Create CSM instance if tier is non-null. */
   init(config: CSMConfig): void {
     this.dispose()
+    freezeShadowKernel()
     this.tier = config.tier
     this.projectionCamera.copy(config.camera)
     this.projectionKey = ''
@@ -76,7 +93,7 @@ export class ShadowManager {
         standardLighting,
         THREE.ShaderChunk.lights_fragment_begin,
       )
-    this.csm.fade = true
+    this.csm.fade = false
     for (const light of this.csm.lights) {
       light.shadow.normalBias = config.tier.normalBias
       light.shadow.radius = config.tier.radius
@@ -169,6 +186,17 @@ export class ShadowManager {
     }
     this.csm.update()
     for (const light of this.csm.lights) {
+      const texel = (light.shadow.camera.right - light.shadow.camera.left) / this.csm.shadowMapSize
+      let hold = this.shadowHold.get(light)
+      if (hold && light.position.distanceTo(hold.position) < texel * 1.25) {
+        light.position.copy(hold.position)
+        light.target.position.copy(hold.target)
+      } else {
+        hold ??= { position: new THREE.Vector3(), target: new THREE.Vector3() }
+        hold.position.copy(light.position)
+        hold.target.copy(light.target.position)
+        this.shadowHold.set(light, hold)
+      }
       light.position.sub(origin)
       light.target.position.sub(origin)
     }
@@ -215,6 +243,7 @@ export class ShadowManager {
       for (const [material, original] of this.originals) material.onBeforeCompile = original
       this.csm = null
     }
+    this.shadowHold.clear()
     this.tier = null
   }
 }

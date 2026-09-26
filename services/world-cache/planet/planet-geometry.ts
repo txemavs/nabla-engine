@@ -45,6 +45,11 @@ export function planetTileAsset(source: PlanetTileSource) {
     },
   )
   const entities = document.entities.filter((e) => e.kind !== 'vehicle' && e.kind !== 'spawn')
+  const measured = source.elevation.measured
+  if (measured) {
+    const terrain = entities.find((e) => e.terrain)
+    if (terrain?.terrain) terrain.terrain.measured = measured
+  }
   const geometry = prepareMapGeometry(entities)
   const graph = SceneGraph.fromValidated({ version: 1, name: document.name, entities })
   const vegetation = entities
@@ -106,8 +111,9 @@ export function planetTileAsset(source: PlanetTileSource) {
     },
   )
   // Vertical edge skirts hide coarse/fine T-junctions. They never enter physics.
+  // z15 is published without them. Existing cells keep whatever they already have.
   const terrain = Object.entries(geometry).find(([id]) => id.startsWith('world-terrain'))?.[1]
-  if (terrain) {
+  if (terrain && source.tile.z !== 15) {
     const count = segments + 1,
       edge: number[] = []
     for (let x = 0; x < segments; x++) edge.push(x)

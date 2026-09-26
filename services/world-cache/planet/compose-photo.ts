@@ -174,7 +174,7 @@ export async function composePhoto(publishRoot: string, tile: MapTile): Promise<
   if (tile.z >= 15 || tile.z < MAX_ZOOM) return false
   const size = childSize(tile)
   const parent = size * 2
-  const pixels = new Uint8ClampedArray(parent * parent * 4)
+  const pixels = new Uint8Array(parent * parent * 4)
   for (let dy = 0; dy < 2; dy++)
     for (let dx = 0; dx < 2; dx++) {
       const child = { z: tile.z + 1, x: tile.x * 2 + dx, y: tile.y * 2 + dy }

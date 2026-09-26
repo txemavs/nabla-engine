@@ -4,34 +4,35 @@ import Pbf from 'pbf'
 import { pointInPolygon } from '../../math/planar/polygon.js'
 import { geoToLocal, tilePoint, type GeoPoint } from '../../math/geo/sphere.js'
 
+type SeaPolygon = { x: number; y: number }[][]
+
+function seaAt(polygons: SeaPolygon[], p: [number, number]) {
+  return polygons.some((polygon) => {
+    const outer = polygon[0]
+    if (!outer || outer.length < 3) return false
+    return (
+      pointInPolygon(
+        p,
+        outer.map((q) => [q.x, q.y]),
+      ) &&
+      !polygon.slice(1).some((ring) =>
+        pointInPolygon(
+          p,
+          ring.map((q) => [q.x, q.y]),
+        ),
+      )
+    )
+  })
+}
 /**
  * Which of the 64 z15 cells inside a z12 tile are ocean.
  * Bit `row * 8 + col` is set, row 0 at the north edge. Islands stay clear.
  */
-export function oceanCells(polygons: { x: number; y: number }[][][], extent = 4096): Uint8Array {
+export function oceanCells(polygons: SeaPolygon[], extent = 4096): Uint8Array {
   const mask = new Uint8Array(8)
   for (let row = 0; row < 8; row++)
     for (let col = 0; col < 8; col++) {
-      const p: [number, number] = [((col + 0.5) / 8) * extent, ((row + 0.5) / 8) * extent]
-      const sea = polygons.some((polygon) => {
-        const outer = polygon[0]
-        if (!outer || outer.length < 3) return false
-        return (
-          pointInPolygon(
-            p,
-            outer.map((q) => [q.x, q.y]),
-          ) &&
-          !polygon
-            .slice(1)
-            .some((ring) =>
-              pointInPolygon(
-                p,
-                ring.map((q) => [q.x, q.y]),
-              ),
-            )
-        )
-      })
-      if (!sea) continue
+      if (!seaAt(polygons, [((col + 0.5) / 8) * extent, ((row + 0.5) / 8) * extent])) continue
       const bit = row * 8 + col
       mask[bit >> 3] |= 1 << (bit & 7)
     }
@@ -72,7 +73,10 @@ export function decodeSea(
       for (const polygon of classifyRings(feature.loadGeometry())) {
         polygons.push(
           polygon.map((ring) =>
-            ring.map((p) => ({ x: (p.x / feature.extent) * 4096, y: (p.y / feature.extent) * 4096 })),
+            ring.map((p) => ({
+              x: (p.x / feature.extent) * 4096,
+              y: (p.y / feature.extent) * 4096,
+            })),
           ),
         )
         const rings = polygon.map((ring) =>

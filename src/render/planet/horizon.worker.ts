@@ -54,15 +54,18 @@ self.onmessage = async (event: MessageEvent<{ tile: MapTile }>) => {
         const pixel = (dx: number, dy: number) => {
           const i = Math.min(d.height - 1, iy + dy) * d.width + Math.min(d.width - 1, ix + dx),
             h = d.pixels[0][i]
-          if ((d.mask && !d.mask[i]) || !Number.isFinite(h) || h === d.noDataValues?.[0])
-            throw Error('Incomplete relief')
+          if ((d.mask && !d.mask[i]) || !Number.isFinite(h) || h === d.noDataValues?.[0] || h <= 0)
+            return null
           return h
         }
+        const taps = [pixel(0, 0), pixel(1, 0), pixel(0, 1), pixel(1, 1)]
         heights.push(
-          (1 - fx) * (1 - fy) * pixel(0, 0) +
-            fx * (1 - fy) * pixel(1, 0) +
-            (1 - fx) * fy * pixel(0, 1) +
-            fx * fy * pixel(1, 1),
+          taps.every((h) => h !== null)
+            ? (1 - fx) * (1 - fy) * taps[0]! +
+                fx * (1 - fy) * taps[1]! +
+                (1 - fx) * fy * taps[2]! +
+                fx * fy * taps[3]!
+            : 0,
         )
       }
     const data = horizonGeometry(tile, heights)

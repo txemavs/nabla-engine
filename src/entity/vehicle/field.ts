@@ -21,6 +21,9 @@ export const vehicleField = z
     driver: vector,
     cameraDistance: finite.min(2).max(30),
     flight: z.boolean().optional(),
+    /** Light airplane: plane-helm uses wing lift instead of the carrier's cruise. */
+    plane: z.boolean().optional(),
+    boat: z.boolean().optional(),
     interior: z.object({ min: vector, max: vector, exit: vector }).strict().optional(),
     garage: z
       .object({

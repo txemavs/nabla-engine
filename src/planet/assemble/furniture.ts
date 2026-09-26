@@ -6,7 +6,7 @@ import type { MapFeature } from '../extract/contract.js'
 import { clipSegment } from '../../math/planar/polygon.js'
 import { rotationDegrees, type Vec3Tuple } from '../../math/frame/vectors.js'
 import { createEntity } from '../../entity/schema.js'
-import { boxSolid, type SolidGeometry } from '../../math/solid/mesh.js'
+import { boxSolid, spanSolid, type SolidGeometry } from '../../math/solid/mesh.js'
 import { type District, metric } from './district.js'
 
 /** Low-poly head for a street lamp. Faces only; the publisher welds the mesh. */

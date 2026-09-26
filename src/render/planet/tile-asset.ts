@@ -57,13 +57,19 @@ export function entityTileAsset(
   for (const e of data.entities) {
     const buffers = data.geometry[e.id]
     if (!buffers) continue
-    const category = e.terrain
-      ? 'Terrain'
-      : e.road || e.railway
-        ? 'Roads'
-        : e.landcover
-          ? 'Surfaces'
-          : 'Buildings'
+    const aeroway = e.source?.tags?.aeroway
+    const category =
+      aeroway === 'runway' || aeroway === 'taxiway' || aeroway === 'apron'
+        ? 'Aeroway'
+        : e.source?.tags?.leisure === 'pitch'
+          ? 'Pitch'
+          : e.terrain
+            ? 'Terrain'
+            : e.road || e.railway
+              ? 'Roads'
+              : e.landcover
+                ? 'Surfaces'
+                : 'Buildings'
     let group = groups.get(category)
     if (!group) {
       group = new THREE.Group()

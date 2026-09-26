@@ -236,6 +236,8 @@ export class Sphere {
   radius: number
   collisionResponse = true
   boundingSphereRadius: number
+  /** Overrides the body material when set. Gear uses 0 so it does not brake the wheels. */
+  friction?: number
   constructor(radius: number) {
     this.radius = radius
     this.boundingSphereRadius = radius
@@ -546,7 +548,8 @@ export class Body {
       })
     }
     if (!desc) return
-    const friction = this.material.friction
+    const friction =
+      shape instanceof Sphere && shape.friction != null ? shape.friction : this.material.friction
     desc
       .setTranslation(
         shape instanceof Heightfield ? 0 : offset.x,
@@ -809,15 +812,15 @@ export class World {
     options: { skipBackfaces?: boolean },
     result: RaycastResult,
   ) {
-    let best: RaycastResult | null = null
+    const closest = { hit: null as RaycastResult | null }
     this.raycastAll(from, to, options, (hit) => {
-      if (!best || hit.distance < best.distance) best = hit
+      if (!closest.hit || hit.distance < closest.hit.distance) closest.hit = hit
     })
-    if (!best) return false
-    result.body = best.body
-    result.distance = best.distance
-    result.hitPointWorld.copy(best.hitPointWorld)
-    result.hitNormalWorld.copy(best.hitNormalWorld)
+    if (!closest.hit) return false
+    result.body = closest.hit.body
+    result.distance = closest.hit.distance
+    result.hitPointWorld.copy(closest.hit.hitPointWorld)
+    result.hitNormalWorld.copy(closest.hit.hitNormalWorld)
     return true
   }
   raycastAll(

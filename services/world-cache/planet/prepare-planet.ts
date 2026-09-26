@@ -17,6 +17,7 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js'
 import {
   mapTileBounds,
   mapTileFilename,
+  publishedGlbName,
   mapTileId,
   mapTilePath,
   mapTileSample,
@@ -59,6 +60,7 @@ if (pending) {
   const zoom = 12
   const rasters = new Map<string, Lerc.LercData>()
   source.elevation.heights = []
+  source.elevation.measured = []
   for (let row = 0; row <= segments; row++)
     for (let col = 0; col <= segments; col++) {
       const geo = mapTileSample(source.tile, col, row, segments)
@@ -83,18 +85,25 @@ if (pending) {
         iy = Math.floor(v),
         fx = u - ix,
         fy = v - iy
-      const pixel = (dx: number, dy: number) => {
+      // Esri's open sea here is not NoData. It is a flat 0 m or −1.5 m with no mask.
+      // That constant is the green sheet. It is not a seabed and it is not a triangle.
+      const pixel = (dx: number, dy: number): number | null => {
         const i = Math.min(d.height - 1, iy + dy) * d.width + Math.min(d.width - 1, ix + dx)
         const h = d.pixels[0][i]
-        if ((d.mask && !d.mask[i]) || !Number.isFinite(h) || h === d.noDataValues?.[0])
-          throw Error('Incomplete elevation')
+        if ((d.mask && !d.mask[i]) || !Number.isFinite(h) || h === d.noDataValues?.[0] || h <= 0)
+          return null
         return h
       }
+      const taps = [pixel(0, 0), pixel(1, 0), pixel(0, 1), pixel(1, 1)]
+      const known = taps.every((h) => h !== null)
+      source.elevation.measured.push(known)
       source.elevation.heights.push(
-        (1 - fx) * (1 - fy) * pixel(0, 0) +
-          fx * (1 - fy) * pixel(1, 0) +
-          (1 - fx) * fy * pixel(0, 1) +
-          fx * fy * pixel(1, 1),
+        known
+          ? (1 - fx) * (1 - fy) * taps[0]! +
+              fx * (1 - fy) * taps[1]! +
+              (1 - fx) * fy * taps[2]! +
+              fx * fy * taps[3]!
+          : 0,
       )
     }
 }
@@ -139,7 +148,7 @@ try {
     }
     if (bytes.byteLength > 64 * 1024 * 1024) throw Error('Planet GLB exceeds budget')
     const hash = sha(bytes)
-    const path = `${name}-${hash.slice(0, 16)}.glb`
+    const path = publishedGlbName(source.tile, name, new Date(source.retrievedAt))
     await publish(path, bytes)
     files[name] = {
       path,

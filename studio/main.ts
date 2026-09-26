@@ -33,7 +33,6 @@ import { roadGeometry } from '../src/planet/land/roads/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
-import { SeaWater } from '../src/render/planet/water.js'
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
 import {
@@ -42,6 +41,7 @@ import {
   performancePresets,
   performanceProfile,
 } from './performance.js'
+import { DepthOfField } from './depth-of-field.js'
 import { ShadowManager } from '../src/render/shadows.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { SolidEditor } from './solid-editor.js'
@@ -199,6 +199,7 @@ renderer.shadowMap.autoUpdate = false
 renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.08
 viewport.prepend(renderer.domElement)
+const depthOfField = new DepthOfField()
 renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
 const fieldLights = new FieldLights()
@@ -353,7 +354,18 @@ $('transform-exact').onclick = () =>
 const outline = new SelectionOutline()
 scene.add(outline)
 const lastWorldInstallMs = 0
-let water: SeaWater | undefined
+const sea = new THREE.Mesh(
+  new THREE.CircleGeometry(400000, 48),
+  new THREE.MeshBasicMaterial({ color: '#03374c' }),
+)
+sea.rotation.x = -Math.PI / 2
+sea.position.y = 0.05
+sea.name = 'Sea'
+sea.frustumCulled = false
+sea.renderOrder = -1
+const seaRoot = new THREE.Group()
+seaRoot.add(sea)
+scene.add(seaRoot)
 let view = new SceneView(editor.document, performanceSettings.preset === 'ultra', true)
 view.setupMaterials((material) => shadowManager.setupMaterial(material))
 scene.add(view.root)
@@ -464,15 +476,10 @@ function rebuild(prepared?: PreparedMapGeometry): void {
 function setupWorldStream(): void {
   streamSample = null
   const doc = editor.document
-  water?.dispose()
-  water = doc.geography ? new SeaWater(doc.geography) : undefined
-  if (water) scene.add(water.root)
+  seaRoot.visible = !!doc.geography && sceneLayer('layer-sea')
   $('stream-status').textContent = ''
   const identity = doc.geography?.planetary ? JSON.stringify(doc.geography) : ''
-  if (worldStream && streamGeography === identity) {
-    if (water) worldStream.useSea(() => water!.surface())
-    return
-  }
+  if (worldStream && streamGeography === identity) return
   worldStream?.dispose()
   worldStream = null
   setPlanetCharts(() => worldStream?.chartTiles ?? [])
@@ -491,7 +498,6 @@ function setupWorldStream(): void {
   worldStream.setDistance(performanceSettings.distance)
   worldStream.setRelief(performanceSettings.relief)
   scene.add(worldStream.root)
-  if (water) worldStream.useSea(() => water!.surface())
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
 function select(id: string): void {
@@ -987,7 +993,9 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
     'add-solid',
     'add-box',
     'add-car',
+    'add-boat',
     'add-carrier',
+    'add-cessna',
     'add-streetlight',
     'add-group',
     'add-sprite',
@@ -1535,6 +1543,18 @@ for (const [id, key] of [
     needsRender = true
   }
 }
+const dofControl = $<HTMLSelectElement>('depth-of-field')
+dofControl.value = String(performanceSettings.dof)
+dofControl.onchange = () => {
+  performanceSettings.dof = Number(dofControl.value)
+  if (!performanceSettings.dof) depthOfField.release()
+  try {
+    localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
+  } catch {
+    /* Current session remains usable. */
+  }
+  needsRender = true
+}
 $<HTMLSelectElement>('performance-preset').value = performanceSettings.preset
 const optionTabs = [
   ['options-tab-layers', 'options-panel-layers'],
@@ -1567,19 +1587,22 @@ function applySceneLayers() {
     ambientFill.intensity = 0
     for (const light of shadowManager.lights) light.visible = false
   }
-  if (water) water.root.visible = sceneLayer('layer-sea')
+  seaRoot.visible = !!view.document.geography && sceneLayer('layer-sea')
+  fieldLayers.lamps = sceneLayer('layer-lamps')
   worldStream?.applyViewLayers({
     glb: sceneLayer('layer-glb'),
     relief: sceneLayer('layer-relief'),
     photo14: sceneLayer('layer-z14'),
-    photo15: sceneLayer('layer-z15'),
+    photo12: sceneLayer('layer-z12'),
+    trees: sceneLayer('layer-trees'),
   })
   view.root.visible = sceneLayer('layer-entities')
-  fieldLights.root.visible = sceneLayer('layer-entities')
+  fieldLights.root.visible = sceneLayer('layer-entities') || sceneLayer('layer-lamps')
   if (!sceneLayer('layer-grid')) grid.visible = false
 }
 for (const box of document.querySelectorAll<HTMLInputElement>('#options-panel-layers input'))
   box.onchange = () => {
+    if (box.id === 'layer-lamps') fieldLayers.lamps = box.checked
     needsRender = true
   }
 for (const [id, on] of [
@@ -2351,7 +2374,7 @@ function frame(now: number): void {
     flightSpeed = 0
   if (sim)
     for (const e of view.document.entities) {
-      if (!e.vehicle?.flight) continue
+      if (!e.vehicle?.flight || e.vehicle.plane) continue
       const info = sim.vehicleInfo(e.id)
       if (!info.flightMode) continue
       const p = sim.entityTransform(e.id, true).position
@@ -2366,20 +2389,17 @@ function frame(now: number): void {
       }
     }
   flightAudio.update(flightLevel, flightSpeed)
+  const pilot = sim?.player.vehicleId
+  const piloted = pilot ? view.document.entities.find((e) => e.id === pilot) : undefined
+  flightAudio.engine(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
   fireRequested = false
   const worldCamera = camera.position.clone()
   const position = sim?.player.position ?? camera.position.toArray()
   renderOrigin.set(0, 0, 0)
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
-  water?.update(
-    worldCamera,
-    renderOrigin,
-    performanceSettings.distance,
-    now,
-    performanceSettings.relief,
-  )
-  worldStream?.setOcean(water?.oceanBlocks() ?? [])
-  renderer.domElement.dataset.waterTiles = String(water?.tiles ?? 0)
+  seaRoot.position.copy(renderOrigin).negate()
+  seaRoot.visible = !!view.document.geography && sceneLayer('layer-sea')
+  renderer.domElement.dataset.sea = seaRoot.visible ? 'sheet' : 'off'
   view.buildingDistance =
     performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
   // Fog is a horizontal fade, independent of how far geometry is drawn.
@@ -2396,6 +2416,7 @@ function frame(now: number): void {
     if (box) box.checked = true
     fieldFollow = false
   }
+  fieldLayers.lamps = sceneLayer('layer-lamps')
   fieldLights.update(
     view.document.geography,
     worldCamera.toArray(),
@@ -2404,6 +2425,7 @@ function frame(now: number): void {
     (p) => worldStream?.groundHeight(p),
     worldStream?.activeTiles.map((tile) => tile.manifest.tile) ?? [],
   )
+  sim?.setPoles(fieldLights.poles())
   camera.position.sub(renderOrigin)
   if (view.document.geography) {
     const gps = localToGeo(view.document.geography, position)
@@ -2416,7 +2438,6 @@ function frame(now: number): void {
     const air = geography.atmosphere
     const night = 1 - Math.min(1, Math.max(0, air.day))
     ambientFill.intensity = (0.22 * air.day + 0.04 * night) * (1 - air.space)
-    water?.setSun(geography.sunDirection, air.day)
     scene.fog = air.fog ? new THREE.Fog(air.color, air.near, air.far) : null
     const moonUp = Math.max(0, geography.moonDirection.y)
     const useMoon = geography.sunDirection.y <= 0 && moonUp > 0
@@ -2469,6 +2490,7 @@ function frame(now: number): void {
   renderer.domElement.dataset.shadowCascades = String(
     shadowsActive ? shadowManager.lights.length : 0,
   )
+  renderer.domElement.dataset.depthOfField = performanceSettings.dof > 0 ? '1' : '0'
   if (sim || needsRender) {
     const outlineVisible = outline.visible
     outline.visible = false
@@ -2565,16 +2587,22 @@ function frame(now: number): void {
     applySceneLayers()
     geography.setViewAspect(camera.aspect)
     renderer.autoClear = true
-    if (geography.enabled && (sceneLayer('layer-sky') || sceneLayer('layer-planets'))) {
-      geography.render(renderer, camera, worldCamera)
-      renderer.autoClear = false
-      renderer.clearDepth()
+    const dof = performanceSettings.dof > 0
+    if (dof) depthOfField.begin(renderer)
+    try {
+      if (geography.enabled && (sceneLayer('layer-sky') || sceneLayer('layer-planets'))) {
+        geography.render(renderer, camera, worldCamera)
+        renderer.autoClear = false
+        renderer.clearDepth()
+      }
+      shadowManager.update(camera, renderOrigin)
+      portalControls.prepare(camera)
+      renderer.shadowMap.needsUpdate = shadowsActive
+      renderer.render(scene, camera)
+      portalControls.finish()
+    } finally {
+      if (dof) depthOfField.present(renderer, camera)
     }
-    shadowManager.update(camera, renderOrigin)
-    portalControls.prepare(camera)
-    renderer.shadowMap.needsUpdate = shadowsActive
-    renderer.render(scene, camera)
-    portalControls.finish()
     sidearm.render(renderer, now, camera.aspect, firstPerson)
     needsRender = view.pendingBuildingBatches || !!remotePortalViews?.pending
   }

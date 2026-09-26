@@ -70,6 +70,8 @@ export function horizonGeometry(tile: MapTile, heights: number[]) {
             b = a + 1,
             c = a + 33,
             d = c + 1
+          // Same cut as the publisher: Esri's flat sea fill is h <= 0, not a triangle.
+          if (heights[a] <= 0 || heights[b] <= 0 || heights[c] <= 0 || heights[d] <= 0) continue
           indices.push(a, c, d, a, d, b)
         }
       const index = new Uint32Array(indices)

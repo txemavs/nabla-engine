@@ -4,14 +4,18 @@
  */
 import { type Entity, type Vec3Tuple } from '../entity/schema.js'
 import { createA3 } from './a3.js'
+import { createOutboard } from './boat.js'
 import { createCarrier } from './carrier.js'
+import { createCessna } from './cessna.js'
 import { createCarrierPortals } from '../entity/portal/portal.js'
 import { createGlobeLamp } from './globe.js'
 import { createHighwayLamp } from './highway.js'
 
 export const entityCatalog = [
   { id: 'car', label: 'Audi A3 Cabrio', clearance: 0.62 },
+  { id: 'boat', label: 'Fueraborda 6 m', clearance: 0.45 },
   { id: 'carrier', label: 'Contenedor volador', clearance: 1.2 },
+  { id: 'cessna', label: 'Cessna 172', clearance: 0.95 },
   { id: 'streetlight', label: 'Farola de autopista', clearance: 4.5 },
   { id: 'globe', label: 'Farola de barrio', clearance: 2.5 },
 ] as const
@@ -35,6 +39,8 @@ export function createCatalogEntities(kind: CatalogId, id: string, ground: Vec3T
     car.color = paints[Math.floor(Math.random() * paints.length)]
     return [car]
   }
+  if (kind === 'boat') return [createOutboard(id, position)]
+  if (kind === 'cessna') return [createCessna(id, position)]
   if (kind === 'carrier')
     return [createCarrier(id, position), ...createCarrierPortals(id, `${id}-bow`, `${id}-stern`)]
   if (kind === 'globe') return [createGlobeLamp(id, position, entry.label)]

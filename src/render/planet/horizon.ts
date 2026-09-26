@@ -34,7 +34,6 @@ function blockIndices(blocks: { index: Uint32Array }[]) {
     for (let i = 0; i < block.index.length; i++) values.push(block.index[i])
   return new Uint32Array(values)
 }
-
 /** Independent elevation-only coverage: no OSM jobs or old metric grid required. */
 export class PlanetHorizon {
   readonly root = new THREE.Group()
@@ -62,6 +61,7 @@ export class PlanetHorizon {
   private span = 2
   private focus: MapTile | null = null
   private focusKey = ''
+  private layers = { relief: true, photo14: true, photo12: true }
   constructor(
     private origin: GeoPoint,
     private changed: () => void,
@@ -296,10 +296,11 @@ export class PlanetHorizon {
     loaded.anisotropy = 8
     material.map = loaded
     material.needsUpdate = true
-    mesh.visible = true
+    mesh.userData.ready = true
+    mesh.visible = this.photoVisible(mesh)
     this.changed()
   }
-  /** Ocean cells keep the green. Flight photos stay off them so they do not paint over the sea. */
+  /** When every block still open is ocean, the sea mesh already covers it and this z13 goes. */
   setOcean(blocks: MapTile[]) {
     const next = new Set(blocks.map(mapTileId))
     if (next.size === this.ocean.size && [...next].every((id) => this.ocean.has(id))) return
@@ -312,13 +313,15 @@ export class PlanetHorizon {
     for (const [key, c] of this.cells) {
       const uncovered = c.data.blocks.filter((b) => !coverage.some((t) => coversTile(t, b.tile)))
       const solid = uncovered.filter((b) => !this.ocean.has(mapTileId(b.tile)))
-      const mask = uncovered.map((b) => mapTileId(b.tile)).join('|')
+      const finished = solid.length === 0
+      const mask = (finished ? 'sea:' : '') + uncovered.map((b) => mapTileId(b.tile)).join('|')
       if (mask === c.mask) continue
       c.mask = mask
-      const land = blockIndices(uncovered)
+      const land = finished ? new Uint32Array(0) : blockIndices(uncovered)
       c.mesh.geometry.setIndex(new THREE.BufferAttribute(land, 1))
       c.mesh.geometry.computeBoundingSphere()
-      c.mesh.visible = land.length > 0
+      c.mesh.userData.land = land.length > 0
+      c.mesh.visible = c.mesh.userData.land && this.layers.relief
       c.physics = {
         ...c.physics,
         id: 'relief:' + key + ':' + mask,
@@ -336,6 +339,19 @@ export class PlanetHorizon {
       }
       this.dress(c)
     }
+  }
+  applyViewLayers(layers: { relief: boolean; photo14: boolean; photo12: boolean }) {
+    this.layers = layers
+    for (const cell of this.cells.values()) {
+      cell.mesh.visible = !!cell.mesh.userData.land && layers.relief
+      for (const mesh of cell.fine) mesh.visible = !!mesh.userData.ready && this.photoVisible(mesh)
+    }
+  }
+  private photoVisible(mesh: THREE.Mesh) {
+    const zoom = mesh.userData.zoom
+    if (zoom === 14) return this.layers.photo14
+    if (zoom === 12) return this.layers.photo12
+    return this.layers.relief
   }
   dispose() {
     this.worker.terminate()

@@ -439,26 +439,15 @@ precomputed geographic tiles and progressive terrain LOD remain separate improve
 
 ### Sea and sunlight
 
-The sea is a separate visual layer of OpenFreeMap/OpenMapTiles `water` polygons
-with `class=ocean`, including coastline cutouts and island holes. It loads zoom-12
-vector tiles through a dedicated worker, transfers triangles and renders at sea
-level relative to the geographic origin. It is not inferred from a terrain height
-threshold. The ocean layer excludes inland rivers/lakes; those now use the separate OSM
-landcover layer described above. No swimming, buoyancy or water collision is added.
+Open sea is a hole in the published terrain GLB, not a client-side vector mesh.
+The publisher drops Esri samples at or below 0 m. See
+[native planetary generation](architecture/native-planet-generation.md#sea).
+The view fills that hole with one flat sheet. Coast and inland water are the OSM
+polygons already baked into the GLB. The browser does not request OpenFreeMap.
 
-OpenFreeMap requests disclose the explored tile coordinates to that provider.
-The provider was explicitly authorized for this installation. Set
-`VITE_WATER_TILEJSON_URL` to use another compatible TileJSON endpoint, including
-an operator's own mirror; no private URL or Mapbox key is committed. The browser
-cache holds up to 96 responses for seven days. Only one request is active at a
-time, failed tiles back off for a minute, and up to 25 nearby tile meshes are
-retained. Loading stops above 12 km. Existing OSM/Esri server cache is unchanged.
-Attribution remains visible with the geographic HUD.
-
-The angular sun disc and Gaussian halo, and three scrolling water-normal samples,
-are adapted from Streets GL. The normal texture and MIT notice are included in
-`assets/geography/water-normal.png` and `assets/licenses/streets-gl-MIT.txt`.
-These effects use no reflection camera, screen-space reflection or bloom pass.
+The angular sun disc and Gaussian halo are adapted from Streets GL. The MIT
+notice is in `assets/licenses/streets-gl-MIT.txt`. These effects use no
+reflection camera, screen-space reflection or bloom pass.
 Existing geographic time, moon and directional lighting remain in control.
 
 ### Long-frame recovery

@@ -26,7 +26,9 @@ self.onmessage = async (
   let bytesTotal = 0
   try {
     const manager = new LoadingManager()
-    manager.setURLModifier(() => {
+    manager.setURLModifier((url) => {
+      // Embedded roof photos are blob URLs created from the GLB buffer.
+      if (url.startsWith('blob:') || url.startsWith('data:')) return url
       throw Error('Planet GLBs must be self-contained')
     })
     const loader = new GLTFLoader(manager)
@@ -118,8 +120,8 @@ self.onmessage = async (
             })
         })
         for (const photo of photos) {
-          photo.mesh.map =
-            photo.image instanceof ImageBitmap ? photo.image : await createImageBitmap(photo.image)
+          // Copy before the source material is disposed. That dispose closes the original bitmap.
+          photo.mesh.map = await createImageBitmap(photo.image)
         }
       } finally {
         gltf.scene.traverse((node) => {

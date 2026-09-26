@@ -9,7 +9,9 @@ import {
   mapTileAt,
   mapTileBounds,
   mapTileChildren,
+  isPublishedGlbPath,
   mapTileFilename,
+  publishedGlbName,
   mapTilePath,
   mapTileSample,
   parseMapTilePath,
@@ -33,6 +35,18 @@ describe('frame', () => {
     expect(mapTileFilename(tile, 'terrain')).toBe(
       `earth-WebMercatorQuad-z15-x${tile.x}-y${tile.y}-terrain.glb`,
     )
+    const at = new Date('2025-09-26T14:00:00Z')
+    expect(publishedGlbName(tile, 'terrain', at)).toBe(
+      `terra-15-${tile.x}-${tile.y}-202509261400.glb`,
+    )
+    expect(publishedGlbName(tile, 'buildings-osm', at)).toBe(
+      `build-15-${tile.x}-${tile.y}-202509261400.glb`,
+    )
+    expect(isPublishedGlbPath(tile, 'terrain', publishedGlbName(tile, 'terrain', at))).toBe(true)
+    expect(isPublishedGlbPath(tile, 'terrain', 'terrain-0123456789abcdef.glb')).toBe(true)
+    expect(
+      isPublishedGlbPath(tile, 'terrain', `terra-15-${tile.x}-${tile.y + 1}-202509261400.glb`),
+    ).toBe(false)
     for (const bad of ['0_0', 'z/15/01/2', 'z/15/32768/0', 'z/15/1/-1', 'z/15/1/2/../source'])
       expect(() => parseMapTilePath(bad)).toThrow()
   })
@@ -141,6 +155,11 @@ describe('horizon', () => {
     expect(data.blocks).toHaveLength(16)
     expect(data.blocks.every((b) => coversTile(tile, b.tile))).toBe(true)
     expect(data.blocks.reduce((n, b) => n + b.index.length, 0)).toBe(32 * 32 * 6)
+    const sea = Array(33 * 33).fill(120)
+    for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) sea[row * 33 + col] = -1.5
+    const opened = horizonGeometry(tile, sea)
+    expect(opened.blocks[0].index).toHaveLength(0)
+    expect(opened.blocks.slice(1).every((b) => b.index.length > 0)).toBe(true)
     expect(
       data.blocks.reduce((n, b) => n + b.chunks.reduce((k, c) => k + c.triangles.length / 9, 0), 0),
     ).toBe(32 * 32 * 2)
@@ -211,5 +230,41 @@ describe('collisions', () => {
     expect(world.bodies.every((b) => !old.includes(b))).toBe(true)
     colliders.update([[0, 1000, 0]], true)
     expect(world.bodies).toHaveLength(0)
+  })
+  it('stops a moving body on a trunk pole', () => {
+    const world = new World({ gravity: new Vec3(0, 0, 0) })
+    const colliders = new PlanetCollisions(world, new Material())
+    const pose = {
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0, 1] as [number, number, number, number],
+    }
+    colliders.setTiles([
+      {
+        id: 'trees',
+        pose,
+        chunks: [],
+        poles: [
+          {
+            key: 't0',
+            center: [0, 3, 0],
+            half: [0.35, 3, 0.35],
+            bounds: [-0.35, 0, -0.35, 0.35, 6, 0.35],
+          },
+        ],
+      },
+    ])
+    for (let i = 0; i < 5 && !colliders.ready; i++) colliders.update([[0, 1, -2]], true, 100)
+    expect(colliders.ready).toBe(true)
+    const car = new Body({
+      mass: 50,
+      position: new Vec3(0, 1, -3),
+      shape: new Box(new Vec3(0.4, 0.4, 0.9)),
+    })
+    car.velocity.set(0, 0, 8)
+    world.addBody(car)
+    for (let i = 0; i < 180; i++) world.step(1 / 60)
+    expect(car.position.z).toBeLessThan(-1)
+    expect(car.position.z).toBeGreaterThan(-3)
+    colliders.dispose()
   })
 })

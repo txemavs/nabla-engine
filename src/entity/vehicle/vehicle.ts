@@ -8,6 +8,8 @@ export interface Vehicle {
   raycast: RaycastVehicle
   entity: Entity
   steer: number
+  /** Outboard throttle, −1..1. Lags the stick so the hull carries speed. */
+  prop: number
   definition: VehicleDefinition
   flight: { altitude: number; yaw: number } | null
   rampClosed: boolean

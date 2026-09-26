@@ -29,12 +29,12 @@ it('shares day/night atmosphere and removes ground haze continuously in space', 
   expect(atmosphere(100, midnight.y).stars).toBe(1)
   expect(atmosphere(100000, noon.y).space).toBe(1)
   expect(atmosphere(100, noon.y).far).toBe(220)
-  expect(atmosphere(100, noon.y).fog).toBe(true)
+  expect(atmosphere(50, noon.y).fog).toBe(true)
   expect(atmosphere(5000, noon.y, 2000).fog).toBe(false)
 })
 
-it('keeps the chosen fade below one kilometre and drops it above', () => {
+it('keeps the chosen fade below one hundred metres and drops it above', () => {
   expect(mapFogRange(1000)).toEqual({ near: 750, far: 1000 })
-  expect(atmosphere(999, 1, 500).fog).toBe(true)
-  expect(atmosphere(1000, 1, 16000).fog).toBe(false)
+  expect(atmosphere(99, 1, 500).fog).toBe(true)
+  expect(atmosphere(100, 1, 16000).fog).toBe(false)
 })

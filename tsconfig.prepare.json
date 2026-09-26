@@ -7,6 +7,6 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["services/world-cache/**/*.ts"],
+  "include": ["services/world-cache/**/*.ts", "src/simulation/rapier-es.d.ts"],
   "exclude": ["**/*.test.ts"]
 }

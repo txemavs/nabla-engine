@@ -47,8 +47,9 @@ cause direct browser provider requests. The server worker itself uses the privat
 cache for OSM and elevation. A private installation can additionally configure
 `VITE_WORLD_CACHE_URL` behind an authenticated proxy or development SSH tunnel.
 
-Satellite/street imagery, distant horizon and OpenFreeMap water follow separate
-pipelines. This service does not bulk-cache all those providers. User-authored
+Satellite/street imagery and the distant horizon follow separate pipelines.
+Open sea is a hole in the published terrain GLB, not a second vector layer.
+This service does not bulk-cache all those providers. User-authored
 objects, portals and scene edits are not written into public prepared map files.
 
 ## Current server layout

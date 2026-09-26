@@ -10,7 +10,13 @@ export interface PlanetTileSource {
   format: 'nabla-planet-source-v1'
   tile: MapTile
   retrievedAt: string
-  elevation: { segments: number; heights: number[]; provider: 'esri-terrain-3d' }
+  elevation: {
+    segments: number
+    heights: number[]
+    provider: 'esri-terrain-3d'
+    /** Parallel to heights. False where Esri had no ground, including the flat sea fill. */
+    measured?: boolean[]
+  }
   features: MapFeature[]
 }
 

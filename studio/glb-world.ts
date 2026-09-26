@@ -24,7 +24,8 @@ export async function loadGlbWorld(
       throw Error('Obsolete ground quantization')
     decodePrepared({ ...data, geometry: {} }, origin, key)
     const manager = new LoadingManager()
-    manager.setURLModifier(() => {
+    manager.setURLModifier((url) => {
+      if (url.startsWith('blob:') || url.startsWith('data:')) return url
       throw Error('Generated world GLBs must be self-contained')
     })
     const loader = new GLTFLoader(manager)

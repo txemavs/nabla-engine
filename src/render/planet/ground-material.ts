@@ -38,6 +38,23 @@ export function transportLayer(entity: {
   return firstTransportLayer + (highway && footHighways.includes(highway) ? 0 : 1)
 }
 
+const carriagewayLayer = firstTransportLayer + 1
+
+/** Delete after the next GLB regen. Bake carriageway `#33393c` (`#525c60` × 0.62) into COLOR_0. */
+export function carriagewayTint(
+  metadata: { category?: string; groundLayer?: number; transport?: string },
+  tint: string,
+): string {
+  if (
+    metadata.category !== 'Roads' ||
+    metadata.transport === 'rail' ||
+    metadata.transport === 'ballast' ||
+    metadata.groundLayer !== carriagewayLayer
+  )
+    return tint
+  return '#' + new THREE.Color(tint).multiplyScalar(0.62).getHexString()
+}
+
 export function groundDepthBias(layer: number) {
   return {
     polygonOffset: true,

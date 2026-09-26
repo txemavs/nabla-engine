@@ -9,6 +9,8 @@ export interface PerformanceSettings {
   collisions: number
   resolution: number
   shadows: number
+  /** 0 off, 1 slight far-field blur. Quality presets do not change it. */
+  dof: number
 }
 
 export { shadowTiers, type ShadowTier } from '../src/render/shadow-tiers.js'
@@ -23,6 +25,7 @@ export const performanceDefaults: PerformanceSettings = {
   collisions: 400,
   resolution: 1.25,
   shadows: 512,
+  dof: 1,
 }
 export function readPerformance(): PerformanceSettings {
   try {
@@ -45,6 +48,7 @@ export function readPerformance(): PerformanceSettings {
       collisions: choose(s.collisions, [200, 400, 800, 2000], 400),
       resolution: choose(s.resolution, [0.75, 1, 1.25, 2], 1.25),
       shadows: choose(s.shadows, [0, 512, 1024, 2048, 4096], 512),
+      dof: choose(s.dof, [0, 1], 1),
     }
   } catch {
     return { ...performanceDefaults }

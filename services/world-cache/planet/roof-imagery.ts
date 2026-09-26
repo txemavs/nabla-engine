@@ -136,73 +136,95 @@ async function mosaic(tile: MapTile, zoom: number) {
   return loaded ? pixels : undefined
 }
 
-export async function bakeRoofImagery(root: Group, tile: MapTile) {
-  installExportCanvas()
-  let buildings: Mesh | undefined
+async function drapeCategory(
+  root: Group,
+  tile: MapTile,
+  category: string,
+  drape: string,
+  upward: boolean,
+  photos: Map<string, Promise<Uint8Array | undefined>>,
+) {
+  const sources: Mesh[] = []
   root.traverse((node) => {
     const mesh = node as Mesh
-    if (mesh.isMesh && mesh.userData.category === 'Buildings' && !mesh.userData.skirt)
-      buildings = mesh
+    if (mesh.isMesh && mesh.userData.category === category && !mesh.userData.skirt)
+      sources.push(mesh)
   })
-  const source = buildings
-  if (!source?.parent) return
   const width = planetTileFrame(tile).width
-  const position = source.geometry.getAttribute('position')
-  const normal = source.geometry.getAttribute('normal')
-  const index = source.geometry.index
-  const triCount = (index ? index.count : position.count) / 3
-  const cells = new Map<
-    string,
-    { tile: MapTile; n: number; col: number; row: number; xyz: number[] }
-  >()
-  for (let t = 0; t < triCount; t++) {
-    const ids = [0, 1, 2].map((k) => (index ? index.getX(t * 3 + k) : t * 3 + k))
-    if ((normal.getY(ids[0]) + normal.getY(ids[1]) + normal.getY(ids[2])) / 3 < 0.55) continue
-    const uv = ids.map((i) => [0.5 + position.getX(i) / width, 0.5 - position.getZ(i) / width])
-    const cell = roofCell(
-      tile,
-      (uv[0][0] + uv[1][0] + uv[2][0]) / 3,
-      (uv[0][1] + uv[1][1] + uv[2][1]) / 3,
-    )
-    const key = `${cell.col}/${cell.row}`
-    const bucket = cells.get(key) ?? { ...cell, xyz: [] }
-    for (let k = 0; k < ids.length; k++) {
-      const i = ids[k]
-      const [s, tuv] = roofUv(cell.n, cell.col, cell.row, uv[k][0], uv[k][1])
-      bucket.xyz.push(position.getX(i), position.getY(i) + 0.15, position.getZ(i), s, tuv)
+  for (const source of sources) {
+    if (!source.parent) continue
+    const position = source.geometry.getAttribute('position')
+    const normal = source.geometry.getAttribute('normal')
+    const index = source.geometry.index
+    const triCount = (index ? index.count : position.count) / 3
+    const cells = new Map<
+      string,
+      { tile: MapTile; n: number; col: number; row: number; xyz: number[] }
+    >()
+    for (let t = 0; t < triCount; t++) {
+      const ids = [0, 1, 2].map((k) => (index ? index.getX(t * 3 + k) : t * 3 + k))
+      if (upward && (normal.getY(ids[0]) + normal.getY(ids[1]) + normal.getY(ids[2])) / 3 < 0.55)
+        continue
+      const uv = ids.map((i) => [0.5 + position.getX(i) / width, 0.5 - position.getZ(i) / width])
+      const cell = roofCell(
+        tile,
+        (uv[0][0] + uv[1][0] + uv[2][0]) / 3,
+        (uv[0][1] + uv[1][1] + uv[2][1]) / 3,
+      )
+      const key = `${cell.col}/${cell.row}`
+      const bucket = cells.get(key) ?? { ...cell, xyz: [] }
+      for (let k = 0; k < ids.length; k++) {
+        const i = ids[k]
+        const [s, tuv] = roofUv(cell.n, cell.col, cell.row, uv[k][0], uv[k][1])
+        bucket.xyz.push(position.getX(i), position.getY(i) + 0.15, position.getZ(i), s, tuv)
+      }
+      cells.set(key, bucket)
     }
-    cells.set(key, bucket)
-  }
-  for (const cell of cells.values()) {
-    const zoom = cell.tile.z + 3
-    const pixels = await mosaic(cell.tile, zoom)
-    if (!pixels) continue
-    const span = 2 ** (zoom - cell.tile.z)
-    const texture = new DataTexture(pixels, span * 256, span * 256)
-    texture.colorSpace = SRGBColorSpace
-    texture.flipY = false
-    texture.wrapS = texture.wrapT = ClampToEdgeWrapping
-    texture.userData.mimeType = 'image/jpeg'
-    texture.needsUpdate = true
-    const count = cell.xyz.length / 5
-    const xyz = new Float32Array(count * 3)
-    const uv = new Float32Array(count * 2)
-    const normals = new Float32Array(count * 3)
-    for (let i = 0, v = 0; i < cell.xyz.length; i += 5, v++) {
-      xyz.set(cell.xyz.slice(i, i + 3), v * 3)
-      uv.set(cell.xyz.slice(i + 3, i + 5), v * 2)
-      normals.set([0, 1, 0], v * 3)
+    for (const cell of cells.values()) {
+      const zoom = cell.tile.z + 3
+      const photoKey = `${zoom}/${cell.tile.z}/${cell.tile.x}/${cell.tile.y}`
+      let pixels = photos.get(photoKey)
+      if (!pixels) {
+        pixels = mosaic(cell.tile, zoom)
+        photos.set(photoKey, pixels)
+      }
+      const bitmap = await pixels
+      if (!bitmap) continue
+      const span = 2 ** (zoom - cell.tile.z)
+      const texture = new DataTexture(bitmap, span * 256, span * 256)
+      texture.colorSpace = SRGBColorSpace
+      texture.flipY = false
+      texture.wrapS = texture.wrapT = ClampToEdgeWrapping
+      texture.userData.mimeType = 'image/jpeg'
+      texture.needsUpdate = true
+      const count = cell.xyz.length / 5
+      const xyz = new Float32Array(count * 3)
+      const uv = new Float32Array(count * 2)
+      const normals = new Float32Array(count * 3)
+      for (let i = 0, v = 0; i < cell.xyz.length; i += 5, v++) {
+        xyz.set(cell.xyz.slice(i, i + 3), v * 3)
+        uv.set(cell.xyz.slice(i + 3, i + 5), v * 2)
+        normals.set([0, 1, 0], v * 3)
+      }
+      const geometry = new BufferGeometry()
+      geometry.setAttribute('position', new BufferAttribute(xyz, 3))
+      geometry.setAttribute('normal', new BufferAttribute(normals, 3))
+      geometry.setAttribute('uv', new BufferAttribute(uv, 2))
+      const draped = new Mesh(
+        geometry,
+        new MeshStandardMaterial({ map: texture, roughness: 1, metalness: 0 }),
+      )
+      draped.name = 'Drape'
+      draped.userData = { drape, ready: true, category: 'Drape' }
+      source.parent.add(draped)
     }
-    const geometry = new BufferGeometry()
-    geometry.setAttribute('position', new BufferAttribute(xyz, 3))
-    geometry.setAttribute('normal', new BufferAttribute(normals, 3))
-    geometry.setAttribute('uv', new BufferAttribute(uv, 2))
-    const draped = new Mesh(
-      geometry,
-      new MeshStandardMaterial({ map: texture, roughness: 1, metalness: 0 }),
-    )
-    draped.name = 'Drape'
-    draped.userData = { drape: 'roofs', ready: true, category: 'Drape' }
-    source.parent.add(draped)
   }
+}
+
+export async function bakeRoofImagery(root: Group, tile: MapTile) {
+  installExportCanvas()
+  const photos = new Map<string, Promise<Uint8Array | undefined>>()
+  await drapeCategory(root, tile, 'Buildings', 'roofs', true, photos)
+  await drapeCategory(root, tile, 'Aeroway', 'runways', false, photos)
+  await drapeCategory(root, tile, 'Pitch', 'pitches', false, photos)
 }

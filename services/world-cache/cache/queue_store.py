@@ -7,7 +7,7 @@ from pathlib import Path
 from planet.prepare_planet import tile_bounds
 
 # Keep in step with PLANET_GEOMETRY_REVISION. Older manifests are regenerated.
-GEOMETRY_REVISION = 'native-surfaces-v3'
+GEOMETRY_REVISION = 'native-surfaces-v5'
 
 
 def normalize(key):
@@ -27,7 +27,10 @@ def ready_manifest(output, key):
         import re
         for name in ('terrain', 'buildings-osm'):
             file = manifest['files'][name]
-            if not re.fullmatch(name + r'-[a-f0-9]{16}\.glb', file['path']):
+            stem = {'terrain': 'terra', 'buildings-osm': 'build'}[name]
+            hashed = re.fullmatch(name + r'-[a-f0-9]{16}\.glb', file['path'])
+            stamped = re.fullmatch(stem + r'-\d+-\d+-\d+-\d{12}\.glb', file['path'])
+            if not hashed and not stamped:
                 return None
             if (Path(output) / key / file['path']).stat().st_size != file['bytes']:
                 return None

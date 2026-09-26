@@ -8,7 +8,7 @@ import {
   type PlanetCollisionTile,
 } from '../../planet/index.js'
 import { PlanetHorizon } from './horizon.js'
-import { matteGroundMaterial } from './ground-material.js'
+import { carriagewayTint, matteGroundMaterial } from './ground-material.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import * as THREE from 'three'
 import {
@@ -26,8 +26,8 @@ import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import type { Simulation } from '../../simulation/simulation.js'
 import type { Vec3Tuple } from '../../stage/scene.js'
 import { restoreTileLayers } from './tile-asset.js'
-/** Satellite painted over the z15 GLB. Roofs on by default. */
-export const projectedLayers = new Set(['roofs'])
+/** Satellite painted over the z15 GLB. Roofs, runways and pitches on by default. */
+export const projectedLayers = new Set(['roofs', 'runways', 'pitches'])
 const drapeLayers: { id: string; ground?: number; roads?: boolean; terrain?: boolean }[] = [
   { id: 'farmland', ground: 4 },
   { id: 'forest', ground: 5 },
@@ -42,11 +42,33 @@ const drapeLayers: { id: string; ground?: number; roads?: boolean; terrain?: boo
   { id: 'terrain', terrain: true },
   { id: 'roads', roads: true },
 ]
+// Delete after the next GLB regen. Published cells still carry the old beige;
+// the publisher palette is already #8c8a86. See nabla-world landcover.ts.
+const retiredResidential = ['#d0c8b8', '#c4b8a4', '#b0a28e'].map((hex) => new THREE.Color(hex))
+const residentialGray = new THREE.Color('#8c8a86')
+
+function washResidential(colors: Float32Array): void {
+  for (let i = 0; i < colors.length; i += 3) {
+    const known = retiredResidential.some(
+      (color) =>
+        Math.abs(colors[i] - color.r) < 0.02 &&
+        Math.abs(colors[i + 1] - color.g) < 0.02 &&
+        Math.abs(colors[i + 2] - color.b) < 0.02,
+    )
+    if (!known) continue
+    colors[i] = residentialGray.r
+    colors[i + 1] = residentialGray.g
+    colors[i + 2] = residentialGray.b
+  }
+}
+
 function inlandWater(metadata: { category?: string; groundLayer?: number }) {
   return metadata.category === 'Surfaces' && metadata.groundLayer === SURFACE_LAYERS.water
 }
 function drapeBias(id: string): number {
   if (id === 'roofs') return -30
+  if (id === 'runways') return -24
+  if (id === 'pitches') return -16
   if (id === 'roads') return -20
   return -(drapeLayers.find((layer) => layer.id === id)?.ground ?? 1)
 }
@@ -58,11 +80,18 @@ function dressSatelliteRoofs(
 ) {
   const tile = manifest.tile
   if (tile.z !== 15) return
-  const baked = new Set(
-    group.children
-      .filter((node) => node.name === 'Drape')
-      .map((node) => String(node.userData.drape)),
-  )
+  const baked = new Set<string>()
+  for (const node of group.children) {
+    const mesh = node as THREE.Mesh
+    if (!mesh.isMesh || mesh.name !== 'Drape') continue
+    const id = String(mesh.userData.drape ?? '')
+    const material = mesh.material as THREE.MeshStandardMaterial
+    if (id && material.map) baked.add(id)
+    else {
+      mesh.visible = false
+      mesh.userData.ready = false
+    }
+  }
   const width = planetTileFrame(tile).width
   const buckets = new Map<string, number[]>()
   const take = (id: string, mesh: THREE.Mesh, roofs: boolean) => {
@@ -92,6 +121,8 @@ function dressSatelliteRoofs(
     const mesh = node as THREE.Mesh
     if (!mesh.isMesh || mesh.userData.skirt || mesh.name === 'Drape') continue
     if (mesh.userData.category === 'Buildings') take('roofs', mesh, true)
+    else if (mesh.userData.category === 'Aeroway') take('runways', mesh, false)
+    else if (mesh.userData.category === 'Pitch') take('pitches', mesh, false)
     else if (mesh.userData.category === 'Roads') take('roads', mesh, false)
     else if (mesh.userData.category === 'Terrain') take('terrain', mesh, false)
     else {
@@ -314,23 +345,22 @@ export class PlanetWorld {
     this.horizon.setOcean(blocks)
   }
   /** Applied after streaming, which turns groups back on every frame. */
-  applyViewLayers(layers: { glb: boolean; relief: boolean; photo14: boolean; photo15: boolean }) {
-    for (const child of this.root.children) {
-      if (child === this.horizon.root) continue
-      if (!layers.glb) child.visible = false
+  applyViewLayers(layers: {
+    glb: boolean
+    relief: boolean
+    photo14: boolean
+    photo12: boolean
+    trees: boolean
+  }) {
+    const active = new Set(this.visible)
+    for (const [key, resident] of this.resident) {
+      resident.group.visible = layers.glb && active.has(key)
+      for (const child of resident.group.children)
+        if (child.userData.category === 'Trees') child.visible = layers.trees
     }
-    const showHorizon = layers.relief || layers.photo14 || layers.photo15
+    const showHorizon = layers.relief || layers.photo14 || layers.photo12
     this.horizon.root.visible = showHorizon
-    if (!showHorizon) return
-    this.horizon.root.traverse((node) => {
-      const mesh = node as THREE.Mesh
-      if (mesh.name === 'Distant planetary relief' && !layers.relief) mesh.visible = false
-      if (mesh.name === 'Flight photo') {
-        const zoom = mesh.userData.zoom
-        if (zoom === 15 && !layers.photo15) mesh.visible = false
-        if (zoom === 14 && !layers.photo14) mesh.visible = false
-      }
-    })
+    if (showHorizon) this.horizon.applyViewLayers(layers)
   }
   useSea(create: () => THREE.Material) {
     this.createSea = create
@@ -340,7 +370,8 @@ export class PlanetWorld {
         if (!inlandWater(mesh.userData)) continue
         const previous = mesh.material as THREE.MeshStandardMaterial
         mesh.material = this.riverMaterial(previous.side)
-        mesh.receiveShadow = false
+        mesh.receiveShadow = true
+        this.setupMaterial(mesh.material as THREE.Material)
         restoreTileLayers(mesh)
         previous.dispose()
       }
@@ -356,8 +387,8 @@ export class PlanetWorld {
         'waterXZ = (modelMatrix * vec4(transformed, 1.0)).xz;',
       )
       shader.fragmentShader = shader.fragmentShader.replace(
-        'outgoingLight = diffuseColor.rgb * waterSunStrength * 0.8 + vec3(glint * waterSunStrength);',
-        'float ripple = (waves.x + waves.z) * 2.0;\n        outgoingLight = diffuseColor.rgb * waterSunStrength * (0.9 + ripple) + vec3(glint * waterSunStrength);',
+        'outgoingLight = diffuseColor.rgb * waterSunStrength * 0.8 * mix( 0.4, 1.0, waterShadow ) + vec3(glint * waterSunStrength);',
+        'float ripple = (waves.x + waves.z) * 2.0;\n        outgoingLight = diffuseColor.rgb * waterSunStrength * (0.9 + ripple) * mix( 0.4, 1.0, waterShadow ) + vec3(glint * waterSunStrength);',
       )
     }
     material.color.set('#102f43')
@@ -503,7 +534,10 @@ export class PlanetWorld {
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute('position', new THREE.BufferAttribute(data.position, 3))
       geometry.setAttribute('normal', new THREE.BufferAttribute(data.normal, 3))
-      if (data.color) geometry.setAttribute('color', new THREE.BufferAttribute(data.color, 3))
+      if (data.color) {
+        if (data.metadata.groundLayer === SURFACE_LAYERS.residential) washResidential(data.color)
+        geometry.setAttribute('color', new THREE.BufferAttribute(data.color, 3))
+      }
       if (data.uv) geometry.setAttribute('uv', new THREE.BufferAttribute(data.uv, 2))
       if (data.index) geometry.setIndex(new THREE.BufferAttribute(data.index, 1))
       geometry.computeBoundingSphere()
@@ -513,7 +547,7 @@ export class PlanetWorld {
         : (data.metadata.category === 'Buildings' || data.metadata.drape
             ? (p: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(p)
             : matteGroundMaterial)({
-            color: data.tint,
+            color: carriagewayTint(data.metadata, data.tint),
             map: photo,
             vertexColors: !!data.color,
             roughness: 1,
@@ -531,10 +565,10 @@ export class PlanetWorld {
       mesh.userData = data.metadata
       mesh.castShadow =
         !data.metadata.skirt && ['Terrain', 'Buildings'].includes(data.metadata.category)
-      mesh.receiveShadow = !inlandWater(data.metadata)
+      mesh.receiveShadow = true
       group.add(mesh)
       restoreTileLayers(mesh)
-      if (!inlandWater(data.metadata)) this.setupMaterial(material)
+      this.setupMaterial(material)
     }
     dressSatelliteRoofs(
       group,
@@ -600,6 +634,29 @@ export class PlanetWorld {
         id: key + '@' + manifest.files.terrain.sha256,
         pose: { position, rotation },
         chunks: payload.chunks,
+        poles: payload.vegetation.flatMap((v, i) => {
+          const height = v.size[1]
+          if (!(height > 0.5)) return []
+          const radius = 0.35
+          const x = v.position[0],
+            y = v.position[1],
+            z = v.position[2]
+          return [
+            {
+              key: `t${i}`,
+              center: [x, y + height / 2, z] as [number, number, number],
+              half: [radius, height / 2, radius] as [number, number, number],
+              bounds: [x - radius, y, z - radius, x + radius, y + height, z + radius] as [
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+              ],
+            },
+          ]
+        }),
       },
       bytes:
         payload.bytes +

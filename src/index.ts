@@ -11,7 +11,9 @@ export { createSampleScene } from './scene/sample.js'
 
 export { vehicleDefinition } from './entity/vehicle/vehicle.js'
 export { createA3 } from './catalog/a3.js'
+export { createOutboard } from './catalog/boat.js'
 export { createCarrier } from './catalog/carrier.js'
+export { createCessna } from './catalog/cessna.js'
 export type { VehicleDefinition, VisualDefinition } from './entity/schema.js'
 
 export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './math/geo/sphere.js'
