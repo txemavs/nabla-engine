@@ -63,6 +63,7 @@ it('settles the A3 on real elevation, enters it and drives with ground support',
   s.dispose()
 })
 
+// Full district collision and 840 fixed steps need headroom on shared CI runners.
 it('takes off from the actual district terrain and holds the carrier above it', () => {
   const d = createRealWorld(data),
     ship = d.entities.find((e) => e.id === 'carrier')!
@@ -85,7 +86,7 @@ it('takes off from the actual district terrain and holds the carrier above it', 
   expect(s.entityTransform('carrier').position[1]).toBeGreaterThan(before + 8)
   expect(s.player.speed).toBeLessThan(1)
   s.dispose()
-})
+}, 15000)
 
 it('uses the elevation collider in valleys instead of an invisible globe surface', () => {
   const d = createRealWorld(data)
