@@ -11,66 +11,49 @@ const posed = (position: Vec3Tuple = [0, 0, 0], angles: Vec3Tuple = [0, 0, 0]): 
   rotation: rotationDegrees(...angles),
 })
 
-/**
- * 2020 Jeep Gladiator. Body, wheel and steering GLBs are metres, Y-up, −Z forward.
- * The steering rim is already centred on its local Z axis.
- * Spawn sits above the unloaded tire contact: Rapier NaNs if a wheel starts in the ground.
- * Soft springs sag about 10 cm and still have travel left for rocks.
- * 3400 N on each wheel is about 400 hp at 80 km/h.
+/** Wrangler: shared low-poly wheels; metres, Y-up, -Z forward.
+ * COM, hubs and simple colliders match the prepared model, not the retired Gladiator.
  */
-export function createJeep(id: string, position: Vec3Tuple = [9, 0.92, 6]): Entity {
-  const radius = 0.415691,
-    com = 0.85,
-    frontHubY = 0.414993 - com,
-    rearHubY = 0.417 - com
+export function createJeep(id: string, position: Vec3Tuple = [9, 0.86, 6]): Entity {
+  const radius = 0.406473,
+    com = 0.78
   return {
     ...createEntity(id, 'vehicle', position),
-    name: 'Jeep Gladiator',
-    color: '#c01518',
-    size: [2.007, 2.032, 5.541],
-    mass: 2200,
+    name: 'Jeep Wrangler',
+    color: '#cc0000',
+    size: [1.95, 1.974, 4.197],
+    mass: 1800,
     vehicle: {
       colliders: [
-        { size: [1.88, 0.58, 5.35], transform: posed([0, -0.22, 0.28]) },
-        { size: [1.62, 0.78, 1.55], transform: posed([0, 0.48, -0.95]) },
-        { size: [1.55, 0.12, 0.9], transform: posed([0, 0.22, -2.02]) },
+        { size: [1.64, 0.42, 3.94], transform: posed([0, -0.14, -0.06]) },
+        { size: [1.48, 0.92, 2.32], transform: posed([0, 0.59, 0.55]) },
+        { size: [1.48, 0.36, 1.1], transform: posed([0, 0.35, -1.18]) },
       ],
       hubs: [
-        [-0.8404, frontHubY, -1.733],
-        [0.846628, frontHubY, -1.733],
-        [-0.8414, rearHubY, 1.768],
-        [0.8486, rearHubY, 1.768],
+        [-0.81, radius - com, -1.3627255],
+        [0.81, radius - com, -1.3627255],
+        [-0.81, radius - com, 1.1172745],
+        [0.81, radius - com, 1.1172745],
       ],
       wheelRadius: radius,
-      suspensionRest: 0.42,
-      suspensionTravel: 0.48,
+      suspensionRest: 0.3,
+      suspensionTravel: 0.35,
       stiffness: 24,
-      engineForce: 3400,
+      engineForce: 2600,
       drivenWheels: 'all',
-      brakeForce: 80,
-      // Eyes land on the windshield center: head pose adds (0, −0.15, −0.26).
-      driver: [0, 0.56, -0.64],
-      cameraDistance: 9,
+      brakeForce: 65,
+      driver: [-0.38, 0.8, -0.03],
+      cameraDistance: 7,
     },
     visual: {
-      body: {
-        url: '/world/car.jeep.gladiator.glb',
-        transform: posed([0, -com, 0]),
-      },
-      wheel: { url: '/world/car.jeep.gladiator.wheel.glb', transform: posed() },
+      body: { url: '/world/car.jeep.wrangler.glb', transform: posed([0, -com, 0]) },
+      wheel: { url: '/world/car.jeep.wrangler.wheel.glb', transform: posed() },
       wheelRotations: [
-        rotationDegrees(0, 180, 0),
         rotationDegrees(0, 0, 0),
         rotationDegrees(0, 180, 0),
         rotationDegrees(0, 0, 0),
+        rotationDegrees(0, 180, 0),
       ],
-      steering: {
-        url: '/world/car.jeep.gladiator.steering.glb',
-        transform: {
-          position: [-0.5849, 1.208615 - com, -1.2482],
-          rotation: [0.129534, 0.848141, 0.452769, -0.242647],
-        },
-      },
     },
   }
 }

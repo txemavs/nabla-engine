@@ -688,27 +688,23 @@ export class SceneView {
           this.instruments.set(e.id, instruments)
         }
       }
-      if (visual.body.url === '/world/car.jeep.gladiator.glb') {
+      if (visual.body.url === '/world/car.jeep.wrangler.glb') {
         model.traverse((object) => {
           if (!(object instanceof THREE.Mesh)) return
           const materials = Array.isArray(object.material) ? object.material : [object.material]
-          const next = materials.map((material) => {
-            if (
-              !(material instanceof THREE.MeshStandardMaterial) ||
-              !material.name.endsWith('Paint_Material')
-            )
-              return material
-            return new THREE.MeshPhysicalMaterial({
-              name: material.name,
-              color: e.color,
-              metalness: 0.4,
-              roughness: 0.34,
-              clearcoat: 0.4,
-              clearcoatRoughness: 0.22,
-              envMapIntensity: 0,
-            })
-          })
-          object.material = Array.isArray(object.material) ? next : next[0]
+          for (const material of materials) {
+            if (!(material instanceof THREE.MeshStandardMaterial)) continue
+            if (material.name === 'fh_paint') material.color.set(e.color)
+            if (material.name === 'fh_glass') {
+              // The source has opaque white windows. Simple tinted glass keeps the driver's view open.
+              material.color.set('#40566b')
+              material.transparent = true
+              material.opacity = 0.28
+              material.depthWrite = false
+              material.side = THREE.FrontSide
+              object.castShadow = false
+            }
+          }
         })
       }
       if (visual.body.url === '/world/cessna.172.glb') {

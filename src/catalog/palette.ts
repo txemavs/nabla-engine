@@ -14,7 +14,7 @@ import { createHighwayLamp } from './highway.js'
 
 export const entityCatalog = [
   { id: 'car', label: 'Audi A3 Cabrio', clearance: 0.62 },
-  { id: 'jeep', label: 'Jeep Gladiator', clearance: 0.92 },
+  { id: 'jeep', label: 'Jeep Wrangler', clearance: 0.86 },
   { id: 'boat', label: 'Fueraborda 6 m', clearance: 0.45 },
   { id: 'carrier', label: 'Contenedor volador', clearance: 1.2 },
   { id: 'cessna', label: 'Cessna 172', clearance: 0.95 },

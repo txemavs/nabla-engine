@@ -22,8 +22,9 @@ describe('jeep pose', () => {
     for (let i = 0; i < 180; i++) sim.step(1 / 60)
     const p = sim.entityTransform('car').position
     expect(p.every(Number.isFinite)).toBe(true)
-    expect(p[1]).toBeGreaterThan(0.7)
-    expect(p[1]).toBeLessThan(0.92)
+    expect(p[1]).toBeGreaterThan(0.6)
+    expect(p[1]).toBeLessThan(0.86)
+    sim.dispose()
   })
 
   it('pulls with all four wheels and drops upright from 3 m', () => {
@@ -55,7 +56,7 @@ describe('jeep pose', () => {
       }
     ).vehicles.get('car')!
     expect(vehicle.raycast.wheelInfos.map((wheel) => wheel.engineForce)).toEqual([
-      3400, 3400, 3400, 3400,
+      2600, 2600, 2600, 2600,
     ])
     const before = vehicle.body.position.clone()
     vehicle.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI)
@@ -65,5 +66,14 @@ describe('jeep pose', () => {
     expect(vehicle.body.position.y).toBeCloseTo(before.y + 3)
     expect(vehicle.body.quaternion.vmult(new Vec3(0, 1, 0)).y).toBeGreaterThan(0.99)
     expect(vehicle.body.velocity.length()).toBe(0)
+    sim.setInput(idleInput())
+    for (let i = 0; i < 180; i++) sim.step(1 / 60)
+    const start = sim.entityTransform('car').position
+    sim.setInput({ ...idleInput(), forward: 1 })
+    for (let i = 0; i < 180; i++) sim.step(1 / 60)
+    const end = sim.entityTransform('car').position
+    expect(Math.hypot(end[0] - start[0], end[2] - start[2])).toBeGreaterThan(3)
+    expect(end[1]).toBeGreaterThan(0.5)
+    sim.dispose()
   })
 })

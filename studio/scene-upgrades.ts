@@ -1,3 +1,4 @@
+import { replaceLegacyJeeps } from '../src/scene/migrations/jeep.js'
 import { boxSolid } from '../src/math/solid/mesh.js'
 import { circuitEntities } from '../src/stage/circuit-plan.js'
 import { treeSprite } from '../src/entity/sprite/sprite.js'
@@ -8,6 +9,7 @@ import { installCarrierPortals } from '../src/render/portal/carrier.js'
 /** Upgrade only recognised reference presets; preserve authored placements and custom mounts. */
 export function upgradeReferenceScene(raw: unknown, experimentalLargeScene = false) {
   const doc = installCarrierPortals(raw, experimentalLargeScene)
+  replaceLegacyJeeps(doc)
   // Recognised baseline buildings become independent topology components.
   // Preserve edited windows and anything with children.
   const baseline = circuitEntities()

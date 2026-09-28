@@ -21,7 +21,7 @@ simulation.setWaterLevel(0)
 | Vehicle         | Definition | Model in assets/world                                 |
 | --------------- | ---------- | ----------------------------------------------------- |
 | Audi A3         | a3.ts      | car.audi.a3.cabrio.glb, wheel and steering companions |
-| Jeep            | jeep.ts    | car.jeep.gladiator.glb, wheel and steering companions |
+| Jeep            | jeep.ts    | car.jeep.wrangler.glb and shared wheel companion      |
 | Outboard        | boat.ts    | boat.outboard.glb                                     |
 | Container craft | carrier.ts | ship.container.5x10.glb                               |
 | Cessna          | cessna.ts  | cessna.172.glb                                        |

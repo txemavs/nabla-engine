@@ -116,3 +116,5 @@ export { PerformanceMonitor, type FrameSample } from './diagnostics/performance-
 export { FlightAudio } from './audio/flight.js'
 
 export { capturePng } from './render/capture.js'
+
+export { replaceLegacyJeeps } from './scene/migrations/jeep.js'
