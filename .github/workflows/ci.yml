@@ -20,6 +20,10 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build:prepare
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Pillow
       - name: Test cache and baked delivery
         run: CACHE_DIR="$RUNNER_TEMP/nabla-cache-tests" python3 -m unittest discover -s services/world-cache
       - run: npx playwright install --with-deps chromium
