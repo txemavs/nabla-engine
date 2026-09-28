@@ -10,7 +10,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./vehicles": {
+      "types": "./dist/catalog/vehicles/index.d.ts",
+      "import": "./dist/catalog/vehicles/index.js"
     }
+  },
+  "imports": {
+    "#src/*": {
+      "nabla-prepare": "./prepare-dist/src/*",
+      "default": "./src/*"
+    },
+    "#world-cache/*": "./services/world-cache/*"
   },
   "files": [
     "dist",
@@ -32,7 +43,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build:prepare": "tsc -p tsconfig.prepare.json",
-    "prebuild:prepare": "node -e \"require('node:fs').rmSync('prepare-dist', { recursive: true, force: true })\""
+    "prebuild:prepare": "node -e \"require('node:fs').rmSync('prepare-dist', { recursive: true, force: true })\"",
+    "test:atlas": "python3 -m unittest discover -s services/world-cache/atlas_tests -t services/world-cache"
   },
   "keywords": [
     "3d",
@@ -53,8 +65,10 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.17.3",
     "@mapbox/vector-tile": "^2.0.4",
-    "cannon-es": "^0.20.0",
+    "jpeg-js": "^0.4.4",
+    "meshoptimizer": "1.1.1",
     "pbf": "^4.0.1",
     "polygon-clipping": "^0.15.7",
     "three": "^0.186.0",

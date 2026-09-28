@@ -1,0 +1,204 @@
+/**
+ * Nearby GLB triangles as static trimeshes.
+ * The old set stays until the replacement is built.
+ */
+import { Body, Box, Material, Quaternion, Trimesh, Vec3, World } from '../../simulation/physics.js'
+import type { QuatTuple, Transform, Vec3Tuple } from '../../math/frame/vectors.js'
+import type { PlanetCollisionChunk } from '../contract.js'
+
+export interface PlanetPole {
+  key: string
+  bounds: PlanetCollisionChunk['bounds']
+  center: Vec3Tuple
+  half: Vec3Tuple
+}
+export interface PlanetCollisionTile {
+  id: string
+  pose: Transform
+  chunks: PlanetCollisionChunk[]
+  poles?: PlanetPole[]
+}
+
+/** Nearby trimeshes use the GLB vertices, including roads and the curved ground. */
+export class PlanetCollisions {
+  private tiles: PlanetCollisionTile[] = []
+  private built = new Map<string, Body>()
+  private wanted = new Set<string>()
+  private selectionKey = ''
+  private tileKey = ''
+  private bounds = new WeakMap<PlanetCollisionChunk[], number[]>()
+  private poleTile: PlanetCollisionTile | null = null
+  private poleKey = ''
+  private candidates: {
+    key: string
+    tile: PlanetCollisionTile
+    chunk?: PlanetCollisionChunk
+    pole?: PlanetPole
+    distance: number
+  }[] = []
+  ready = false
+  constructor(
+    private world: World,
+    private material: Material,
+  ) {}
+  setTiles(tiles: PlanetCollisionTile[]) {
+    const key = tiles
+      .map((t) => t.id + ':' + t.pose.position.join(',') + ':' + t.pose.rotation.join(','))
+      .join('|')
+    if (key !== this.tileKey) {
+      this.tileKey = key
+      this.selectionKey = ''
+      this.tiles = tiles
+      for (const tile of tiles)
+        if (!this.bounds.has(tile.chunks)) {
+          const b = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]
+          for (const c of [...tile.chunks, ...(tile.poles ?? [])])
+            for (let i = 0; i < 3; i++) {
+              b[i] = Math.min(b[i], c.bounds[i])
+              b[i + 3] = Math.max(b[i + 3], c.bounds[i + 3])
+            }
+          this.bounds.set(tile.chunks, b)
+        }
+    }
+  }
+  /** Trunks for trees and lamp posts. Positions are in the simulation frame. */
+  setPoles(poles: { position: Vec3Tuple; half: Vec3Tuple }[]): void {
+    const key = poles.map((p) => p.position.map((n) => Math.round(n * 50) / 50).join(',')).join('|')
+    if (key === this.poleKey) return
+    this.poleKey = key
+    this.selectionKey = ''
+    this.poleTile = poles.length
+      ? {
+          id: 'poles',
+          pose: { position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+          chunks: [],
+          poles: poles.map((p, i) => ({
+            key: `${i}:${p.position.map((n) => n.toFixed(2)).join(',')}`,
+            center: p.position,
+            half: p.half,
+            bounds: [
+              p.position[0] - p.half[0],
+              p.position[1] - p.half[1],
+              p.position[2] - p.half[2],
+              p.position[0] + p.half[0],
+              p.position[1] + p.half[1],
+              p.position[2] + p.half[2],
+            ],
+          })),
+        }
+      : null
+    if (this.poleTile) this.remember(this.poleTile)
+  }
+  private remember(tile: PlanetCollisionTile): void {
+    if (this.bounds.has(tile.chunks)) return
+    const b = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]
+    for (const c of [...tile.chunks, ...(tile.poles ?? [])])
+      for (let i = 0; i < 3; i++) {
+        b[i] = Math.min(b[i], c.bounds[i])
+        b[i + 3] = Math.max(b[i + 3], c.bounds[i + 3])
+      }
+    this.bounds.set(tile.chunks, b[0] === Infinity ? [0, 0, 0, 0, 0, 0] : b)
+  }
+  update(positions: Vec3Tuple[], buildings: boolean, budgetMs = 3): void {
+    // A 65 m working set has ample margin for an 8 m selection grid. Reuse it
+    // between movements instead of scanning every triangle chunk every frame.
+    const selectionKey =
+      String(buildings) +
+      ':' +
+      positions.map((p) => p.map((n) => Math.floor(n / 8)).join(',')).join('|')
+    if (selectionKey !== this.selectionKey) {
+      this.selectionKey = selectionKey
+      const candidates: typeof this.candidates = []
+      for (const tile of this.poleTile ? [...this.tiles, this.poleTile] : this.tiles) {
+        const inverse = new Quaternion(...tile.pose.rotation).inverse()
+        const origin = new Vec3(...tile.pose.position)
+        const local = positions.map((p) => inverse.vmult(new Vec3(...p).vsub(origin)))
+        const bounds = this.bounds.get(tile.chunks)!
+        if (
+          !local.some(
+            (p) =>
+              Math.max(
+                bounds[0] - p.x,
+                p.x - bounds[3],
+                bounds[1] - p.y,
+                p.y - bounds[4],
+                bounds[2] - p.z,
+                p.z - bounds[5],
+              ) < 65,
+          )
+        )
+          continue
+        for (const chunk of tile.chunks) {
+          if (chunk.buildings && !buildings) continue
+          const b = chunk.bounds
+          const distance = Math.min(
+            ...local.map((p) =>
+              Math.hypot(
+                Math.max(b[0] - p.x, 0, p.x - b[3]),
+                Math.max(b[1] - p.y, 0, p.y - b[4]),
+                Math.max(b[2] - p.z, 0, p.z - b[5]),
+              ),
+            ),
+          )
+          if (distance < 65)
+            candidates.push({ key: tile.id + ':' + chunk.key, tile, chunk, distance })
+        }
+        for (const pole of tile.poles ?? []) {
+          const b = pole.bounds
+          const distance = Math.min(
+            ...local.map((p) =>
+              Math.hypot(
+                Math.max(b[0] - p.x, 0, p.x - b[3]),
+                Math.max(b[1] - p.y, 0, p.y - b[4]),
+                Math.max(b[2] - p.z, 0, p.z - b[5]),
+              ),
+            ),
+          )
+          if (distance < 65)
+            candidates.push({ key: tile.id + ':pole:' + pole.key, tile, pole, distance })
+        }
+      }
+      candidates.sort((a, b) => a.distance - b.distance)
+      this.candidates = candidates
+      this.wanted = new Set(candidates.map((c) => c.key))
+    }
+    const candidates = this.candidates
+    const end = performance.now() + budgetMs
+    do {
+      const next = candidates.find((c) => !this.built.has(c.key))
+      if (!next) break
+      const body = new Body({ mass: 0, material: this.material })
+      body.position.set(...(next.tile.pose.position as Vec3Tuple))
+      body.quaternion.set(...(next.tile.pose.rotation as QuatTuple))
+      if (next.pole) {
+        body.addShape(new Box(new Vec3(...next.pole.half)), new Vec3(...next.pole.center))
+        this.built.set(next.key, body)
+        continue
+      }
+      const count = next.chunk!.triangles.length / 3
+      if (count < 3) {
+        this.built.set(next.key, body)
+        continue
+      }
+      const indices = new Uint32Array(count)
+      for (let i = 0; i < count; i++) indices[i] = i
+      body.addShape(new Trimesh(next.chunk!.triangles, indices))
+      this.built.set(next.key, body)
+    } while (performance.now() < end)
+    this.ready = candidates.every((c) => this.built.has(c.key))
+    // Swap complete nearby coverage atomically; never collide with both LODs.
+    if (this.ready) {
+      for (const [key, body] of this.built) {
+        if (!this.wanted.has(key)) {
+          if (body.world) this.world.removeBody(body)
+          this.built.delete(key)
+        } else if (!body.world) this.world.addBody(body)
+      }
+    }
+  }
+  dispose() {
+    for (const body of this.built.values()) if (body.world) this.world.removeBody(body)
+    this.built.clear()
+    this.tiles = []
+  }
+}

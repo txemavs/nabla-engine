@@ -47,8 +47,9 @@ cause direct browser provider requests. The server worker itself uses the privat
 cache for OSM and elevation. A private installation can additionally configure
 `VITE_WORLD_CACHE_URL` behind an authenticated proxy or development SSH tunnel.
 
-Satellite/street imagery, distant horizon and OpenFreeMap water follow separate
-pipelines. This service does not bulk-cache all those providers. User-authored
+Satellite/street imagery and the distant horizon follow separate pipelines.
+Open sea is a hole in the published terrain GLB, not a second vector layer.
+This service does not bulk-cache all those providers. User-authored
 objects, portals and scene edits are not written into public prepared map files.
 
 ## Current server layout
@@ -271,9 +272,9 @@ Bind-mounted cache, queue and prepared files survive image replacement. A fronte
 release alone does not update the worker's bundled geometry code. Keep both builds
 on compatible revisions. For an incompatible geometry change update together:
 
-- `VERSION` in `services/world-cache/queue_store.py`;
+- `VERSION` in `services/world-cache/cache/queue_store.py`;
 - `PREPARED_VERSION` and browser cache namespace in `playground/prepared-world.ts`;
-- the emitted wire version in `services/world-cache/prepare.ts`.
+- the emitted wire version in `services/world-cache/prepare/prepare.ts`.
 
 Build the frontend with the existing public routes:
 
@@ -438,7 +439,7 @@ npm ci
 npm run build:prepare
 # Use the prepared directory mounted by your cache service; adjust the path.
 find /data/prepared/5 -type f -name '*.json' -exec \
-  node prepare-dist/services/world-cache/convert-prepared.js {} \;
+  node --conditions=nabla-prepare prepare-dist/services/world-cache/prepare/convert-prepared.js {} \;
 ```
 
 Run conversion with the service's filesystem ownership. It preserves JSON and atomically replaces each binary sidecar. Check available disk space first: keeping both formats uses more server storage. The preparation worker's existing output budget now counts both extensions. Rebuild/restart the preparation image to make future jobs produce both files; deploy the client afterward. Keep JSON for older clients and rollback. For a rollback, restore the previous frontend and worker image; existing JSON remains usable.

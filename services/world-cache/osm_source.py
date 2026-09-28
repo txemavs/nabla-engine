@@ -3,7 +3,7 @@
 def overpass_query(bounds):
     """Generate Overpass query for a zone."""
     s, w, n, e = bounds
-    return f'[out:json][timeout:25];(way[building]({s},{w},{n},{e});way["building:part"]({s},{w},{n},{e});way[highway]({s},{w},{n},{e});relation[building]({s},{w},{n},{e});node[natural=tree]({s},{w},{n},{e});node[place~"^(city|town|village)$"][name]({s},{w},{n},{e});way[railway~"^(rail|light_rail|tram|narrow_gauge)$"]({s},{w},{n},{e});way[landuse]({s},{w},{n},{e});way[leisure]({s},{w},{n},{e});way["natural"~"water|wood|beach|sand|scrub|heath|wetland|marsh|grassland"]({s},{w},{n},{e});way[water]({s},{w},{n},{e});way[waterway~"riverbank|dock|river|stream"]({s},{w},{n},{e});relation[landuse]({s},{w},{n},{e});relation[leisure]({s},{w},{n},{e});relation["natural"~"water|wood"]({s},{w},{n},{e});relation[water]({s},{w},{n},{e});relation[waterway~"riverbank"]({s},{w},{n},{e}););out geom;'
+    return f'[out:json][timeout:25];(way[building]({s},{w},{n},{e});way["building:part"]({s},{w},{n},{e});way[highway]({s},{w},{n},{e});relation[building]({s},{w},{n},{e});node[natural=tree]({s},{w},{n},{e});node["highway"="street_lamp"]({s},{w},{n},{e});node["highway"="traffic_signals"]({s},{w},{n},{e});node["power"="tower"]({s},{w},{n},{e});node["power"="generator"]["generator:source"="wind"]({s},{w},{n},{e});way["power"="line"]({s},{w},{n},{e});way["aeroway"~"^(runway|taxiway|apron)$"]({s},{w},{n},{e});relation["aeroway"~"^(runway|taxiway|apron)$"]({s},{w},{n},{e});node[place~"^(city|town|village)$"][name]({s},{w},{n},{e});way[railway~"^(rail|light_rail|tram|narrow_gauge)$"]({s},{w},{n},{e});way[landuse]({s},{w},{n},{e});way[leisure]({s},{w},{n},{e});way["natural"~"water|wood|beach|sand|scrub|heath|wetland|marsh|grassland"]({s},{w},{n},{e});way[water]({s},{w},{n},{e});way[waterway~"riverbank|dock|river|stream"]({s},{w},{n},{e});relation[landuse]({s},{w},{n},{e});relation[leisure]({s},{w},{n},{e});relation["natural"~"water|wood"]({s},{w},{n},{e});relation[water]({s},{w},{n},{e});relation[waterway~"riverbank"]({s},{w},{n},{e}););out geom;'
 
 def coords_equal(a, b, tolerance=1e-7):
     """Check if two coordinate points are equal within tolerance."""
@@ -156,7 +156,11 @@ def overpass_features(elements):
                 'tags': tags,
                 'rings': [{'role': 'outer', 'coordinates': coordinates(e['geometry'])}]
             })
-        elif e.get('type') == 'node' and (e.get('tags', {}).get('natural') == 'tree' or e.get('tags', {}).get('place')):
+        elif e.get('type') == 'node' and e.get('lat') is not None and e.get('lon') is not None and (
+            e.get('tags', {}).get('natural') == 'tree' or e.get('tags', {}).get('place')
+            or e.get('tags', {}).get('highway') in ('street_lamp', 'traffic_signals')
+            or e.get('tags', {}).get('power') == 'tower'
+            or (e.get('tags', {}).get('power') == 'generator' and e.get('tags', {}).get('generator:source') == 'wind')):
             if e.get('lat') is not None and e.get('lon') is not None:
                 result.append({
                     'id': f"node/{e['id']}",

@@ -18,7 +18,7 @@ Color and Duplicate act on the entire building. Duplicates own deep copies of to
 
 Polygon faces must be convex, planar, nondegenerate and ordered around their perimeter. JSON validation rejects invalid indices, crossed loops, concavity and nonplanar faces before changing the scene. Split a concave outline into convex faces. Vertices use metres in entity-local coordinates; `size` remains preset metadata, while topology controls the actual surface.
 
-Rendering triangulates faces, with double-sided surfaces. Static collision uses thin outward convex triangle prisms, rather than a hidden bounding box or convex hull, so deleted faces are real openings. This supports concave arrangements of individually convex faces and Cannon character, vehicle and ray contacts. Points and explicit lines do not collide. Solids can be static or visual-only, not dynamic rigid bodies in this release.
+Rendering triangulates faces, with double-sided surfaces. Static collision is one trimesh of those triangles, not a hidden bounding box or convex hull, so deleted faces are real openings. Points and explicit lines do not collide. Solids can be static or visual-only, not dynamic rigid bodies in this release.
 
 This is a first topology editor, not a boolean/CSG modeler. It does not guarantee watertight manifolds or detect intersections between different faces, weld coincident topology, unwrap UVs, bevel edges or perform boolean subtraction. Extrusion needs sensible distances and outward perimeter winding; intersecting extrusions remain authoring errors. Closed volumes are assembled from faces. Very complex meshes increase draw, validation and collision cost; the document limits topology size.
 

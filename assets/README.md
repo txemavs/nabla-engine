@@ -137,3 +137,25 @@ does not relicense the elevation data.
 `world/room-skin.jpg` was supplied by the repository owner from Agency
 (`agency-ui/src/assets/stage/room-skin.jpg`). It is copied unchanged. The demo
 samples its metal panel regions with UVs for the floor, ceiling and walls.
+
+## Jeep Wrangler
+
+`world/car.jeep.wrangler.glb` and `world/car.jeep.wrangler.wheel.glb` are derived
+from the user-provided `jeep_wrangler.glb`. Its embedded attribution identifies
+[Nieve5677](https://sketchfab.com/niev),
+[Jeep Wrangler](https://sketchfab.com/3d-models/jeep-wrangler-7577286d79954f9f85cfe0bd97e211a3),
+CC BY 4.0. The original remains unchanged at the user's source location.
+
+`scripts/prepare-wrangler.py` converts axes, recentres the body, separates the
+wheel template, merges equal materials and removes unused UV channels. No
+triangles are decimated. The body has 24,004 triangles and 24 material groups;
+one shared wheel has 2,916 triangles and five groups. With four wheels the vehicle
+has 35,668 triangles. Browser measurement including transparent passes is 46 draw
+calls / 35,820 submitted triangles, excluding ground, shadows and other views.
+The two runtime files total approximately 1.14 MiB. Windows use simple tinted
+transparency in Engine; there are no dynamic mirror views or extra vehicle lights.
+
+The retired Gladiator binaries and its special clearcoat/steering setup are
+removed. Saved Studio scenes migrate that exact old body URL to the Wrangler,
+retaining entity identity, placement, colour and custom names. Engine clients can
+call `replaceLegacyJeeps` on their privately owned parsed document.

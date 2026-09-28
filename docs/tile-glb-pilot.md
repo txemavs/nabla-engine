@@ -9,7 +9,7 @@ available on the deployment when it was built.
 
 ```sh
 npm run build:prepare
-node prepare-dist/services/world-cache/export-tile-glb.js /path/to/prepared.bin /path/to/output
+node --conditions=nabla-prepare prepare-dist/services/world-cache/export/export-tile-glb.js /path/to/prepared.bin /path/to/output
 ```
 
 The CLI reads an existing v5 prepared binary, without requesting OSM or elevation.

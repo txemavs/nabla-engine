@@ -1,9 +1,9 @@
 """Private, disk-backed OSM/Esri cache. Bind behind an authenticated/private transport."""
 import hashlib, hmac, json, os, re, threading, time, urllib.request, urllib.error
 from http.cookies import SimpleCookie
-from queue_store import Queue, ready_manifest
+from world.queue.store import Queue, ready_manifest
 from pathlib import Path
-from baked_format import valid_bake
+from world.bake.format import valid_bake
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 ROOT = Path(os.environ.get('CACHE_DIR', '/data'))
 ROOT.mkdir(parents=True, exist_ok=True)
@@ -19,6 +19,12 @@ PREPARE_TOKEN = os.environ.get('PREPARE_TOKEN', '')
 PUBLIC_NEIGHBOR_LIMIT = max(0, int(os.environ.get('PREPARE_PUBLIC_NEIGHBORS_PER_HOUR', '0')))
 PREPARE_ROOT = Path(os.environ.get('PREPARE_ROOT', str(ROOT / 'prepared')))
 PREPARE_QUEUE = Queue(ROOT / 'prepare.sqlite', output=PREPARE_ROOT) if PREPARE_TOKEN else None
+
+
+def snapshot():
+    """Operator view: requests, published coverage, queue depth and disk use."""
+    from world.status.page import service_snapshot
+    return service_snapshot(ROOT, PREPARE_ROOT, PREPARE_QUEUE)
 
 
 def get_baked(lat, lon, key):
@@ -70,7 +76,7 @@ def cached(key, url, body=None):
 
 def download(url, body):
     request = urllib.request.Request(url, data=body, headers={
-        'User-Agent': 'NablaWorldCache/1.0 (https://github.com/txemavs/nabla-engine)',
+        'User-Agent': 'NablaWorldCache/1.0 (https://github.com/txemavs/nabla-world)',
         'Content-Type': 'application/x-www-form-urlencoded',
     })
     with urllib.request.urlopen(request, timeout=40) as response:
@@ -96,6 +102,7 @@ class Handler(BaseHTTPRequestHandler):
     def respond(self, code, data, mime='application/json', state=None, etag=None):
         self.send_response(code)
         self.send_header('Content-Type', mime)
+        self.send_header('Access-Control-Allow-Origin', '*')
         if code != 304: self.send_header('Content-Length', str(len(data)))
         if etag: self.send_header('ETag', etag)
         self.send_header('Cache-Control', 'private, max-age=0')
@@ -104,6 +111,8 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
     def authorized(self):
+        if os.environ.get('ATLAS_STUDIO') == '1' and self.headers.get('X-Nabla-Studio') == 'local':
+            return True
         if not PREPARE_TOKEN:
             return False
         try:
@@ -116,6 +125,58 @@ class Handler(BaseHTTPRequestHandler):
             return False
 
     def do_GET(self):
+        if self.path == '/health':
+            self.respond(200, b'{"ok":true,"service":"nabla-planet"}')
+            return
+        if self.path in ('/', '/status'):
+            from world.status.page import render_status_page
+            page = render_status_page(snapshot())
+            self.respond(200, page.encode(), 'text/html; charset=utf-8')
+            return
+        if self.path == '/map':
+            from world.map.page import render_map_page
+            self.respond(200, render_map_page().encode(), 'text/html; charset=utf-8')
+            return
+        if self.path.split('?', 1)[0] == '/map/3d':
+            import importlib
+            from world.map import view3d
+            importlib.reload(view3d)
+            self.respond(200, view3d.render_map3d_page().encode(), 'text/html; charset=utf-8')
+            return
+        tile_image = re.fullmatch(r'/(?:tiles/|photos/z/)(10|11|12|13|14|15)/(\d+)/(\d+)\.jpg', self.path.split('?', 1)[0])
+        if tile_image:
+            z, x, y = tile_image.groups()
+            path = PREPARE_ROOT / 'photos' / 'z' / z / x / (y + '.jpg')
+            if not path.is_file():
+                path = PREPARE_ROOT / 'z' / z / x / y / 'preview.jpg'
+            if not path.is_file():
+                from world.archive.store import pull
+                pull(path.parent, {'manifest.json', 'preview.jpg'})
+            if not path.is_file():
+                self.respond(404, b'')
+                return
+            self.respond(200, path.read_bytes(), 'image/jpeg')
+            return
+        cell_file = re.fullmatch(r'/z/(13|14|15)/(\d+)/(\d+)/([A-Za-z0-9._-]+)', self.path.split('?', 1)[0])
+        if cell_file:
+            z, x, y, name = cell_file.groups()
+            path = PREPARE_ROOT / 'z' / z / x / y / name
+            if path.is_file():
+                body = path.read_bytes()
+            else:
+                from world.archive.store import content_type, read
+                body = read(f'z/{z}/{x}/{y}/{name}')
+                if body is None:
+                    self.respond(404, b'')
+                    return
+                self.respond(200, body, content_type(name))
+                return
+            from world.archive.store import content_type
+            self.respond(200, body, content_type(name))
+            return
+        if self.path == '/status.json':
+            self.respond(200, json.dumps(snapshot()).encode())
+            return
         if self.path == '/prepare/status':
             if not self.authorized():
                 self.respond(401, b'{"error":"Preparation access required"}')
@@ -145,6 +206,23 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(404, b'{"error":"Unknown tile"}'); return
         self.fetch('elevation:' + self.path, ESRI + self.path.removeprefix('/elevation/'), None, 'application/octet-stream')
     def do_POST(self):
+        if self.path == '/map/request':
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 256:
+                    raise ValueError('Invalid request size')
+                tile = json.loads(self.rfile.read(length))['tile']
+                from world.planet.prepare import tile_bounds
+                tile_bounds(tile)
+            except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+                self.respond(400, b'{"error":"Expected one z/13|14|15/x/y cell"}')
+                return
+            if not PREPARE_QUEUE:
+                self.respond(403, b'{"error":"Generation is off"}')
+                return
+            accepted = PREPARE_QUEUE.enqueue([tile])
+            self.respond(200, json.dumps({'tile': tile, 'accepted': accepted}).encode())
+            return
         if self.path == '/prepare/session':
             supplied = self.headers.get('Authorization', '').removeprefix('Bearer ')
             if not PREPARE_TOKEN or not hmac.compare_digest(supplied, PREPARE_TOKEN):
@@ -169,7 +247,7 @@ class Handler(BaseHTTPRequestHandler):
                 keys = data['keys']
                 if not isinstance(keys, list) or not 1 <= len(keys) <= 24:
                     raise ValueError('Expected 1-24 canonical tiles')
-                from queue_store import normalize
+                from world.queue.store import normalize
                 tiles = [normalize(key) for key in keys]
                 authorized = self.authorized()
                 access = 'owner' if authorized else 'neighbors' if PUBLIC_NEIGHBOR_LIMIT and PREPARE_QUEUE else 'read-only'
@@ -200,9 +278,36 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             self.respond(502, b'{"error":"Provider unavailable; retry later"}')
 
+def photograph_pending():
+    from world.photo.shot import compose_above, compose_ready, pending, shoot
+    while True:
+        # A photo regen writes this file and owns the previews until it finishes.
+        if Path('/tmp/photo-regen.json').is_file():
+            time.sleep(5)
+            continue
+        for cell in pending(PREPARE_ROOT):
+            try:
+                if shoot(cell):
+                    compose_above(cell)
+            except (OSError, ValueError):
+                pass
+        try:
+            compose_ready(PREPARE_ROOT)
+        except (OSError, ValueError):
+            pass
+        time.sleep(5)
+
+
+def restore_colours():
+    from world.photo.shot import restore_published
+    restore_published(PREPARE_ROOT)
+
+
 if __name__ == '__main__':
     threading.Thread(target=prune, daemon=True).start()
+    if os.environ.get('ATLAS_BACKFILL_PHOTOS') == '1':
+        threading.Thread(target=photograph_pending, daemon=True).start()
     if PREPARE_QUEUE:
-        from prepare_worker import run
+        from world.planet.worker import run
         threading.Thread(target=run, args=(PREPARE_QUEUE, ROOT, PREPARE_ROOT, int(os.environ.get('PREPARE_MAX_BYTES', '5368709120'))), daemon=True).start()
     ThreadingHTTPServer(('0.0.0.0', 8080), Handler).serve_forever()

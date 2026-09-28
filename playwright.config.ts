@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test'
 const port = Number(process.env.NABLA_TEST_PORT || 5173)
 export default defineConfig({
-  testDir: './tests',
+  testDir: './studio/e2e',
   timeout: 90000,
   fullyParallel: false,
   workers: 1,

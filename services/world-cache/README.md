@@ -1,3 +1,8 @@
+# Planetary publisher
+
+The active service is the unified publisher described in
+[the architecture document](../../docs/architecture/unified-planet-publisher.md).
+
 # Private shared world cache
 
 For the complete local Studio + generator stack, start with the
@@ -74,16 +79,16 @@ of live Overpass. Run this on the server where the cache service is deployed.
 
 ```sh
 # Default: 11×11 grid around Irun Ventas (121 zones, ~13.2 km per side)
-python3 prefill.py --cache-url http://127.0.0.1:8080
+python3 -m cache.prefill --cache-url http://127.0.0.1:8080
 
 # Larger region: 21×21 grid (441 zones, ~25.2 km per side)
-python3 prefill.py --radius 10
+python3 -m cache.prefill --radius 10
 
 # Custom location (Madrid)
-python3 prefill.py --lat 40.4168 --lon -3.7038 --radius 5
+python3 -m cache.prefill --lat 40.4168 --lon -3.7038 --radius 5
 
 # Dry run to see what would be fetched
-python3 prefill.py --dry-run
+python3 -m cache.prefill --dry-run
 ```
 
 The script respects the cache's 30-second Overpass pacing. A cold 11×11 grid takes
@@ -109,16 +114,16 @@ the scene from the baked JSON.
 
 ```sh
 # Bake Irun region (default 11×11 grid)
-python3 bake.py --output /data/baked
+python3 -m cache.bake --output /data/baked
 
 # Use the running cache service for faster bake (optional)
-python3 bake.py --output /data/baked --cache-url http://127.0.0.1:8080
+python3 -m cache.bake --output /data/baked --cache-url http://127.0.0.1:8080
 
 # Bake a custom region
-python3 bake.py --lat 40.4168 --lon -3.7038 --name "Madrid" --radius 10 --output /data/baked
+python3 -m cache.bake --lat 40.4168 --lon -3.7038 --name "Madrid" --radius 10 --output /data/baked
 
 # Skip zones that already exist (incremental bake)
-python3 bake.py --output /data/baked --skip-existing
+python3 -m cache.bake --output /data/baked --skip-existing
 ```
 
 The baked files are placed in:
@@ -174,7 +179,7 @@ hitting live Overpass:
 ## Tests
 
 ```sh
-CACHE_DIR=/tmp/nabla-cache-test python3 test_cache.py
+CACHE_DIR=/tmp/nabla-cache-test python3 -m unittest tests.test_cache
 ```
 
 These tests mock upstream traffic and exercise persistent hits, incomplete data,
@@ -183,7 +188,7 @@ stale fallback and rate coordination.
 ### Safe publication and updates
 
 Start with `--radius 1` (nine zones) through the existing cache. The Docker image
-includes the tools: `docker compose exec world-cache python /app/bake.py --radius 1
+includes the tools: `docker compose exec world-cache python -m cache.bake --radius 1
 --output /data/baked --cache-url http://127.0.0.1:8080` (one command).
 Only OSM is warmed by prefill; neither tool precomputes mesh geometry or elevation.
 

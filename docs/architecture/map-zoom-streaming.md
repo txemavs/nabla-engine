@@ -28,7 +28,7 @@ bulk downloads.
 
 ## Implemented foundation
 
-`src/map-tiles.ts`, exported by the engine, provides canonical identifiers,
+`src/scene/mercator.ts`, exported by the engine, provides canonical identifiers,
 geographic bounds, parent/child relationships, latitude-dependent scale, and a
 bounded three-zoom selection plan. It supersedes the proposed `earth-bands-v1`
 custom grid for future artifacts; that API remains readable for compatibility.
@@ -49,10 +49,13 @@ for that root: the renderer must retain its separate globe fallback. The caller
 must retain prior visible resources when camera movement changes the plan; this
 function does not own network requests, GPU memory or the previous frame.
 
-Tests cover canonical IDs, shared boundaries, longitude wrapping, all three
-levels, readiness transitions, height and budgets. **This is not yet wired into
-the production renderer or server generator.** Existing 1,200 m GLBs continue to
-use their original addressing and transforms. No cache or saved scene is relabelled.
+Tests cover canonical IDs, shared boundaries, longitude wrapping, readiness
+transitions and budgets. The live viewer is `PlanetWorld`: it asks
+`planMapZooms` only for zoom-15 city GLBs, capped by the quality preset
+(`streamBudget` in `studio/performance.ts`). Zooms 12–14 are photographs on the
+z13 relief, not simplified meshes. Height does not switch zoom. A parent/child
+cover remains in `planetReadyCover`, but the current plan's roots are already
+leaves, so that quadtree does not change what is drawn.
 
 ## End-to-end migration contract
 

@@ -1,31 +1,47 @@
-export { parseScene, createEntity, rotationDegrees, toDegrees, SceneGraph } from './scene.js'
-export type { Entity, SceneDocument, Transform, Vec3Tuple, QuatTuple } from './scene.js'
-export { SceneEditor } from './editor.js'
-export { Simulation, FIXED_STEP, idleInput } from './simulation.js'
-export type { PlayerInput, PlayerSnapshot } from './simulation.js'
-export { createSampleScene } from './sample.js'
+export { parseScene } from './scene/document.js'
+export type { SceneDocument } from './scene/document.js'
+export { SceneGraph } from './scene/graph.js'
+export { SceneEditor } from './scene/history.js'
+export { createEntity, rotationDegrees, toDegrees } from './entity/schema.js'
+export type { Entity, Transform, Vec3Tuple, QuatTuple } from './entity/schema.js'
+export { Simulation, FIXED_STEP, idleInput } from './simulation/simulation.js'
+export { initPhysics } from './simulation/physics.js'
+export type { PlayerInput, PlayerSnapshot } from './simulation/simulation.js'
+export { createSampleScene } from './scene/sample.js'
 
-export { vehicleDefinition } from './vehicle.js'
-export { createA3, createCarrier } from './presets.js'
-export type { VehicleDefinition, VisualDefinition } from './scene.js'
+export { vehicleDefinition } from './entity/vehicle/vehicle.js'
+export { createA3 } from './catalog/vehicles/a3.js'
+export { createJeep } from './catalog/vehicles/jeep.js'
+export { createOutboard } from './catalog/vehicles/boat.js'
+export { createCarrier } from './catalog/vehicles/carrier.js'
+export { createCessna } from './catalog/vehicles/cessna.js'
+export type { VehicleDefinition, VisualDefinition } from './entity/schema.js'
 
-export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './geography.js'
+export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './math/geo/sphere.js'
 
 export {
+  createCarrierPortal,
   createCarrierPortals,
   createPortal,
   createPortalPair,
   portalMapping,
   portalCrossing,
-} from './portal.js'
+} from './entity/portal/portal.js'
 
-export { boxSolid, extrudeElement, extrudeFace, removeVertex, validateSolid } from './solid.js'
-export type { SolidGeometry } from './solid.js'
+export {
+  boxSolid,
+  extrudeElement,
+  extrudeFace,
+  removeVertex,
+  validateSolid,
+} from './math/solid/mesh.js'
+export type { SolidGeometry } from './math/solid/mesh.js'
 
-export { createRealWorld, IRUN_VENTAS } from './real-world.js'
-export type { WorldExtract, MapFeature } from './real-world.js'
-export { terrainHeight, terrainVertices, terrainIndices } from './terrain.js'
-export type { TerrainData } from './terrain.js'
+export { createRealWorld } from './planet/assemble/world.js'
+export { IRUN_VENTAS } from './planet/extract/contract.js'
+export type { WorldExtract, MapFeature } from './planet/extract/contract.js'
+export { terrainHeight, terrainVertices, terrainIndices } from './planet/land/terrain.js'
+export type { TerrainData } from './planet/land/terrain.js'
 export {
   roadGeometry,
   smoothFloatRoadGeometry,
@@ -36,11 +52,15 @@ export {
   roadColliders,
   nearestRoadCenterline,
   LAYER_HEIGHT,
-} from './draped-road.js'
-export type { RoadElevation, RoadGeometryOptions, RoadCollider } from './draped-road.js'
+} from './planet/land/roads/draped-road.js'
+export type {
+  RoadElevation,
+  RoadGeometryOptions,
+  RoadCollider,
+} from './planet/land/roads/draped-road.js'
 
-export { entityCapabilities, type EntityCapability } from './capabilities.js'
-export { entityCatalog, createCatalogEntities, type CatalogId } from './catalog.js'
+export { entityCapabilities, type EntityCapability } from './entity/capability.js'
+export { entityCatalog, createCatalogEntities, type CatalogId } from './catalog/palette.js'
 
 export {
   classifySurface,
@@ -50,19 +70,19 @@ export {
   getWaterwayWidth,
   SURFACE_COLORS,
   type SurfaceType,
-} from './landcover.js'
+} from './planet/land/surface.js'
 
+export { clipSegment, pointInPolygon } from './math/planar/polygon.js'
 export {
   assembleMultipolygonRings,
-  pointInPolygon,
   associateHoles,
   type WayGeometry,
   type AssembledRing,
   type AssemblyResult,
-} from './multipolygon.js'
+} from './planet/extract/multipolygon.js'
 
-export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from './world-pose.js'
-export type { WorldPose } from './world-pose.js'
+export { toWorldPose, fromWorldPose, worldPoseGeography, reframeVector } from './math/geo/pose.js'
+export type { WorldPose } from './math/geo/pose.js'
 
 export {
   MAP_TILE_MATRIX,
@@ -79,6 +99,22 @@ export {
   readyMapCover,
   type MapTile,
   type MapZoomPlan,
-} from './map-tiles.js'
+} from './scene/mercator.js'
 
-export { mapTilePath, parseMapTilePath, mapTileFilename, mapTileSample } from './map-tiles.js'
+export { mapTilePath, parseMapTilePath, mapTileFilename, mapTileSample } from './scene/mercator.js'
+
+export { PlanetWorld } from './render/planet/world.js'
+export { GeographicView } from './render/planet/sky.js'
+export { SeaWater } from './render/planet/water.js'
+export { SceneView } from './render/entity/view.js'
+export { ShadowManager } from './render/shadows.js'
+
+export { OceanSheet } from './render/planet/ocean-sheet.js'
+export { simplifiedTide } from './planet/tide.js'
+export { DepthOfField } from './render/effects/depth-of-field.js'
+export { PerformanceMonitor, type FrameSample } from './diagnostics/performance-monitor.js'
+export { FlightAudio } from './audio/flight.js'
+
+export { capturePng } from './render/capture.js'
+
+export { replaceLegacyJeeps } from './scene/migrations/jeep.js'

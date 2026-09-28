@@ -1,0 +1,183 @@
+"""Bounded durable queue addressed only by canonical planetary XYZ cells."""
+from contextlib import contextmanager
+import hashlib
+import json
+import sqlite3
+import time
+from pathlib import Path
+from world.planet.prepare import tile_bounds
+
+GEOMETRY_REVISION = 'native-surfaces-v5'
+
+
+def normalize(key):
+    tile_bounds(key)
+    path = key + '/manifest.json'
+    return hashlib.sha256(path.encode()).hexdigest(), path, key
+
+
+def ready_manifest(output, key):
+    _, path, _ = normalize(key)
+    try:
+        manifest = json.loads((Path(output) / path).read_text())
+        if (manifest.get('format') != 'nabla-planet-tile-v1' or
+                manifest.get('generator') != 'native-xyz-v2' or
+                manifest.get('id') != key.replace('z/', 'WebMercatorQuad/', 1)):
+            return None
+        import re
+        for name in ('terrain', 'buildings-osm'):
+            file = manifest['files'][name]
+            stem = {'terrain': 'terra', 'buildings-osm': 'build'}[name]
+            hashed = re.fullmatch(name + r'-[a-f0-9]{16}\.glb', file['path'])
+            stamped = re.fullmatch(stem + r'-\d+-\d+-\d+-\d{12}\.glb', file['path'])
+            if not hashed and not stamped:
+                return None
+            local = Path(output) / key / file['path']
+            # Missing locally is fine: the GLB is in the bucket and the studio fetches it.
+            if not local.is_file():
+                from world.archive.store import archived
+                if not archived(local.parent):
+                    return None
+            elif local.stat().st_size != file['bytes']:
+                return None
+        return manifest
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def current_manifest(manifest):
+    if not manifest or manifest.get('geometryRevision') != GEOMETRY_REVISION:
+        return False
+    zoom = manifest.get('tile', {}).get('z', int(manifest['id'].split('/')[1]))
+    return zoom == 15 or manifest.get('lod', {}).get('revision') == 'mesh-lod-v1'
+
+
+def has_ready_neighbor(output, key):
+    if not output:
+        return False
+    normalize(key)
+    _, z, x, y = key.split('/')
+    z, x, y = int(z), int(x), int(y)
+    size = 2 ** z
+    return any(ready_manifest(output, f'z/{z}/{(x+dx) % size}/{y+dy}')
+               for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+               if (dx or dy) and 0 <= y+dy < size)
+
+
+def has_ready_context(output, key):
+    if has_ready_neighbor(output, key):
+        return True
+    if not output:
+        return False
+    _, z, x, y = key.split('/')
+    z, x, y = int(z), int(x), int(y)
+    for other in (13, 14, 15):
+        if other < z:
+            scale = 2 ** (z-other)
+            if ready_manifest(output, f'z/{other}/{x//scale}/{y//scale}'):
+                return True
+        elif other > z:
+            scale = 2 ** (other-z)
+            if any(ready_manifest(output, f'z/{other}/{x*scale+dx}/{y*scale+dy}')
+                   for dx in range(scale) for dy in range(scale)):
+                return True
+    return False
+
+
+class Queue:
+    def __init__(self, path, capacity=256, output=None):
+        self.path = str(path)
+        self.capacity = capacity
+        self.output = Path(output) if output else None
+        with self.connect() as db:
+            db.execute('CREATE TABLE IF NOT EXISTS planet_jobs (id TEXT PRIMARY KEY, path TEXT, tile TEXT, state TEXT, priority INTEGER, attempts INTEGER DEFAULT 0, next REAL DEFAULT 0, updated REAL)')
+            db.execute('CREATE TABLE IF NOT EXISTS public_admissions (tile TEXT, admitted REAL)')
+            db.execute("UPDATE planet_jobs SET state='queued' WHERE state='running'")
+
+    @contextmanager
+    def connect(self):
+        db = sqlite3.connect(self.path, timeout=10)
+        db.row_factory = sqlite3.Row
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
+
+    def enqueue(self, keys, *, public_limit=None):
+        if not isinstance(keys, list) or not 1 <= len(keys) <= 24:
+            raise ValueError('Expected 1–24 tile keys')
+        cells = [normalize(key) for key in keys]
+        now = time.time()
+        accepted = 0
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            db.execute("DELETE FROM planet_jobs WHERE state='queued' AND updated < ?", (now-600,))
+            db.execute('DELETE FROM public_admissions WHERE admitted <= ?', (now-3600,))
+            public_count = db.execute('SELECT count(*) FROM public_admissions').fetchone()[0]
+            pending = db.execute("SELECT count(*) FROM planet_jobs WHERE state IN ('queued','running')").fetchone()[0]
+            for priority, (identity, path, tile) in enumerate(cells):
+                row = db.execute('SELECT * FROM planet_jobs WHERE id=?', (identity,)).fetchone()
+                if row:
+                    if row['state'] in ('queued', 'running'):
+                        if public_limit is None:
+                            db.execute('UPDATE planet_jobs SET priority=?,updated=? WHERE id=?', (priority, now, identity))
+                        accepted += 1
+                        continue
+                    manifest = ready_manifest(self.output, tile) if self.output else None
+                    present = self.output is None or current_manifest(manifest)
+                    if (row['state'] != 'ready' or present) and now-row['updated'] < (86400 if row['state']=='ready' else 3600):
+                        accepted += 1
+                        continue
+                # Owner-side prewarming can publish a cell before it has a queue row.
+                # Adopt that manifest rather than regenerating the same source again.
+                manifest = ready_manifest(self.output, tile) if self.output else None
+                if not row and current_manifest(manifest):
+                    db.execute('INSERT INTO planet_jobs (id,path,tile,state,priority,attempts,next,updated) VALUES (?,?,?,?,?,0,0,?)', (identity,path,tile,'ready',priority,now))
+                    accepted += 1
+                    continue
+                if public_limit is not None:
+                    if public_count >= public_limit or not has_ready_context(self.output, tile):
+                        continue
+                    priority += 100  # Owner requests keep priority over public expansion.
+                if pending >= self.capacity:
+                    continue
+                if public_limit is not None:
+                    db.execute('INSERT INTO public_admissions VALUES (?,?)', (tile, now))
+                    public_count += 1
+                db.execute('INSERT OR REPLACE INTO planet_jobs (id,path,tile,state,priority,attempts,next,updated) VALUES (?,?,?,?,?,0,0,?)', (identity,path,tile,'queued',priority,now))
+                pending += 1
+                accepted += 1
+            db.execute("DELETE FROM planet_jobs WHERE id IN (SELECT id FROM planet_jobs WHERE state IN ('ready','failed') ORDER BY updated DESC LIMIT -1 OFFSET 4096)")
+        return accepted
+
+    def claim(self):
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            row = db.execute("SELECT * FROM planet_jobs WHERE state='queued' AND next<=? ORDER BY priority,updated DESC LIMIT 1", (time.time(),)).fetchone()
+            if row:
+                db.execute("UPDATE planet_jobs SET state='running', attempts=attempts+1 WHERE id=?", (row['id'],))
+                return dict(row)
+        return None
+
+    def finish(self, identity, success):
+        with self.connect() as db:
+            row = db.execute('SELECT attempts FROM planet_jobs WHERE id=?', (identity,)).fetchone()
+            if not row:
+                return
+            attempts = row['attempts']
+            state = 'ready' if success else ('failed' if attempts >= 3 else 'queued')
+            db.execute('UPDATE planet_jobs SET state=?, next=?, updated=? WHERE id=?', (state,time.time()+min(900,60*2**attempts),time.time(),identity))
+
+    def stats(self):
+        with self.connect() as db:
+            return {r['state']:r['count'] for r in db.execute('SELECT state,count(*) AS count FROM planet_jobs GROUP BY state')}
+
+    def recent(self, limit=40):
+        """Newest requests first: what the service was asked to generate."""
+        with self.connect() as db:
+            rows = db.execute(
+                'SELECT tile, state, attempts, priority, updated FROM planet_jobs ORDER BY updated DESC LIMIT ?',
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]

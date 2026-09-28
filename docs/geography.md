@@ -100,7 +100,7 @@ Changing it during play preserves physics and does not reload the models.
 ## Circuit plan alignment
 
 The local Agency JPEG is a 1024 × 682 authored plan, not a georeferenced satellite
-survey. `src/circuit-plan.ts` records 18 measured grey building footprints in image
+survey. `src/stage/circuit-plan.ts` records 18 measured grey building footprints in image
 pixels and converts them to the ground plane's 189.737 × 126.368 metres. Buildings
 retain the existing block/window style. The image's main street is aligned with
 the A3 and carrier spawn line; asphalt, curves, markings and sidewalks remain

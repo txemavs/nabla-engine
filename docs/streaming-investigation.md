@@ -244,7 +244,7 @@ Currently, missing zones appear as void/boundary. Adding a visual "loading" indi
 
 ### Current world-cache Architecture
 
-**Location:** `services/world-cache/server.py`
+**Location:** `services/world-cache/cache/server.py`
 
 The Docker cache stores:
 
@@ -661,7 +661,7 @@ This proves the architecture by extending the existing playground, not building 
 - `src/real-world.ts` - OSM feature parsing, bridge/tunnel exclusion (L154-156)
 - `src/scene.ts` - Entity schema including `source` field
 - `docs/real-world.md` - Streaming architecture documentation
-- `services/world-cache/server.py` - Docker cache implementation
+- `services/world-cache/cache/server.py` - Docker cache implementation
 
 ### Preserve the installed world during pose edits
 
