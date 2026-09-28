@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { Euler, Group, Quaternion, Vector3 } from 'three'
-import { driverHeadPose, followDrivingHeading, DrivingTelemetry } from '../../src/render/entity/driving-camera.js'
+import {
+  driverHeadPose,
+  followDrivingHeading,
+  DrivingTelemetry,
+} from '../../src/render/entity/driving-camera.js'
 import { MonitorMotion } from '../../src/render/entity/avatar.js'
 
 describe('driving and monitor presentation', () => {

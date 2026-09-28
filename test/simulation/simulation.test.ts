@@ -212,7 +212,7 @@ describe('vehicle reach', () => {
     const sim = new Simulation(scene([car(), wall], [2.8, 0.05, 0]))
     advance(sim, 1)
     expect(sim.nearestVehicle()).toBeNull()
-    expect(sim.interact()).toBe('Acércate a un coche detenido')
+    expect(sim.interact()).toBe('Acércate a un vehículo detenido y pulsa E para entrar')
     expect(sim.player.vehicleId).toBeNull()
     sim.dispose()
   })

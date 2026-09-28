@@ -295,6 +295,15 @@ export class Trimesh {
 type Shape = Sphere | Box | Heightfield | Trimesh
 
 export class RaycastResult {
+  get hasHit(): boolean {
+    return this.body !== null
+  }
+  reset(): void {
+    this.body = null
+    this.distance = 0
+    this.hitPointWorld.set(0, 0, 0)
+    this.hitNormalWorld.set(0, 0, 0)
+  }
   body: Body | null = null
   distance = 0
   hitPointWorld = new Vec3()
@@ -374,7 +383,14 @@ export class Body {
     this.aabbNeedsUpdate = true
   }
   updateMassProperties() {
-    if (this.raw && this.mass > 0) this.raw.setAdditionalMass(this.mass, true)
+    this.applyInertia()
+    this.raw?.recomputeMassPropertiesFromColliders()
+  }
+  updateShapeTransform(index: number): void {
+    const collider = this.colliders[index]
+    if (!collider) return
+    collider.setTranslationWrtParent(this.shapeOffsets[index])
+    collider.setRotationWrtParent(this.shapeOrientations[index])
   }
   updateAABB() {
     const r = this.boundingRadius
@@ -394,9 +410,9 @@ export class Body {
       this.raw.addForceAtPoint(
         force,
         {
-          x: this.position.x + relative.x,
-          y: this.position.y + relative.y,
-          z: this.position.z + relative.z,
+          x: this.position.x + relative.x - (this.world?.origin.x ?? 0),
+          y: this.position.y + relative.y - (this.world?.origin.y ?? 0),
+          z: this.position.z + relative.z - (this.world?.origin.z ?? 0),
         },
         true,
       )
@@ -408,13 +424,20 @@ export class Body {
       this.raw.applyImpulseAtPoint(
         impulse,
         {
-          x: this.position.x + relative.x,
-          y: this.position.y + relative.y,
-          z: this.position.z + relative.z,
+          x: this.position.x + relative.x - (this.world?.origin.x ?? 0),
+          y: this.position.y + relative.y - (this.world?.origin.y ?? 0),
+          z: this.position.z + relative.z - (this.world?.origin.z ?? 0),
         },
         true,
       )
     else this.raw.applyImpulse(impulse, true)
+    // The next step pushes cached velocity; retain the impulse in that cache.
+    const velocity = this.raw.linvel(),
+      angular = this.raw.angvel()
+    this.velocity.silent = this.angularVelocity.silent = true
+    this.velocity.set(velocity.x, velocity.y, velocity.z)
+    this.angularVelocity.set(angular.x, angular.y, angular.z)
+    this.velocity.silent = this.angularVelocity.silent = false
   }
   pointToLocalFrame(worldPoint: Vec3, target = new Vec3()) {
     return this.quaternion.inverse().vmult(worldPoint.vsub(this.position, new Vec3()), target)
@@ -434,7 +457,7 @@ export class Body {
   }
   push() {
     if (!this.raw || this.world?.stepping) return
-    this.raw.setTranslation(this.position, true)
+    this.raw.setTranslation(this.position.vsub(this.world?.origin ?? new Vec3()), true)
     this.raw.setRotation(this.quaternion, true)
     this.raw.setLinvel(this.velocity, true)
     this.raw.setAngvel(this.angularVelocity, true)
@@ -456,7 +479,11 @@ export class Body {
       this.velocity.silent =
       this.angularVelocity.silent =
         true
-    this.position.set(t.x, t.y, t.z)
+    this.position.set(
+      t.x + (this.world?.origin.x ?? 0),
+      t.y + (this.world?.origin.y ?? 0),
+      t.z + (this.world?.origin.z ?? 0),
+    )
     this.quaternion.set(q.x, q.y, q.z, q.w)
     this.velocity.set(v.x, v.y, v.z)
     this.angularVelocity.set(w.x, w.y, w.z)
@@ -473,7 +500,11 @@ export class Body {
   mount(world: World) {
     const api = R()
     const desc = (this.mass > 0 ? api.RigidBodyDesc.dynamic() : api.RigidBodyDesc.fixed())
-      .setTranslation(this.position.x, this.position.y, this.position.z)
+      .setTranslation(
+        this.position.x - world.origin.x,
+        this.position.y - world.origin.y,
+        this.position.z - world.origin.z,
+      )
       .setRotation(this.quaternion)
       .setLinvel(this.velocity.x, this.velocity.y, this.velocity.z)
       .setAngvel(this.angularVelocity)
@@ -481,7 +512,7 @@ export class Body {
       .setAngularDamping(this.angularDamping)
       .setAdditionalMass(Math.max(this.mass, 0))
     // A trimesh has no thickness. Look ahead so a driving step cannot cross it.
-    if (this.mass > 0) desc.setCcdEnabled(true).setSoftCcdPrediction(2)
+    if (this.mass > 0) desc.setCcdEnabled(true).setSoftCcdPrediction(0.02)
     if (this.fixedRotation) desc.lockRotations()
     this.raw = world.raw.createRigidBody(desc)
     this.world = world
@@ -489,6 +520,8 @@ export class Body {
     this.shapes.forEach((_, i) => this.attach(i))
     if (this.mass > 0) this.raw.setAdditionalMass(this.mass, true)
     this.applyInertia()
+    // Rapier otherwise defers mass properties until its first step.
+    this.raw.recomputeMassPropertiesFromColliders()
   }
   /**
    * Density-0 colliders contribute nothing, so mass and inertia are set explicitly.
@@ -647,9 +680,9 @@ export class RaycastVehicle {
     world.vehicles.add(this)
   }
   removeFromWorld(world: World) {
+    if (this.controller) world.raw.removeVehicleController(this.controller)
     this.controller = null
     world.vehicles.delete(this)
-    if (this.chassisBody.world === world) world.removeBody(this.chassisBody)
     this.world = null
   }
   setSteeringValue(value: number, index: number) {
@@ -689,7 +722,17 @@ export class RaycastVehicle {
     wheel.suspensionLength = length
     wheel.isInContact = this.controller?.wheelIsInContact(index) ?? false
     const hit = this.controller?.wheelContactPoint(index)
-    if (hit) wheel.raycastResult.hitPointWorld.set(hit.x, hit.y, hit.z)
+    wheel.raycastResult.reset()
+    const ground = this.controller?.wheelGroundObject(index)
+    if (wheel.isInContact && ground)
+      wheel.raycastResult.body =
+        this.world?.bodies.find((b) => b.colliders.some((c) => c.handle === ground.handle)) ?? null
+    if (hit)
+      wheel.raycastResult.hitPointWorld.set(
+        hit.x + (this.world?.origin.x ?? 0),
+        hit.y + (this.world?.origin.y ?? 0),
+        hit.z + (this.world?.origin.z ?? 0),
+      )
   }
   preStep(dt: number) {
     if (!this.controller || !this.chassisBody.raw) return
@@ -699,11 +742,13 @@ export class RaycastVehicle {
       this.controller!.setWheelBrake(i, wheel.brake)
     })
     const chassis = this.chassisBody.raw
+    if (this.wheelInfos.some((wheel) => wheel.engineForce !== 0)) chassis.wakeUp()
+    else if (chassis.isSleeping()) return // Do not inject suspension velocity into a sleeping island.
     this.controller.updateVehicle(
       dt,
       undefined,
       undefined,
-      (collider) => collider.parent() !== chassis,
+      (collider) => collider.parent()?.handle !== chassis.handle,
     )
   }
   private rebuild() {
@@ -744,6 +789,20 @@ export class LockConstraint {
 
 export class World {
   raw: RapierWorld
+  /** Double-precision scene position of Rapier's local origin. */
+  readonly origin = new Vec3()
+  rebase(near: Vec3): void {
+    if (near.distanceTo(this.origin) < 2048) return
+    this.origin.set(
+      Math.round(near.x / 256) * 256,
+      Math.round(near.y / 256) * 256,
+      Math.round(near.z / 256) * 256,
+    )
+    for (const body of this.bodies) body.push()
+    this.raw.propagateModifiedBodyPositionsToColliders()
+    this.raw.updateSceneQueries()
+    this.contacts = []
+  }
   bodies: Body[] = []
   contacts: { bi: Body; bj: Body; ni: Vec3 }[] = []
   vehicles = new Set<RaycastVehicle>()
@@ -784,6 +843,7 @@ export class World {
       b,
       true,
     )
+    joint.setContactsEnabled(constraint.collideConnected)
     constraint.joint = joint
     this.constraints.set(constraint, joint)
   }
@@ -796,7 +856,7 @@ export class World {
   intersectsCuboid(center: Vec3, half: Vec3): boolean {
     let hit = false
     this.raw.intersectionsWithShape(
-      center,
+      center.vsub(this.origin),
       { x: 0, y: 0, z: 0, w: 1 },
       new (R().Cuboid)(half.x, half.y, half.z),
       () => {
@@ -833,9 +893,11 @@ export class World {
     const max = delta.length()
     if (max < 1e-8) return
     delta.scale(1 / max, delta)
-    const ray = new (R().Ray)(from, delta)
+    const ray = new (R().Ray)(from.vsub(this.origin), delta)
     this.raw.intersectionsWithRay(ray, max, true, (hit) => {
-      const body = this.bodies.find((b) => b.colliders.includes(hit.collider))
+      const body = this.bodies.find((b) =>
+        b.colliders.some((collider) => collider.handle === hit.collider.handle),
+      )
       if (!body) return true
       const result = new RaycastResult()
       result.body = body
@@ -873,7 +935,9 @@ export class World {
     for (const body of this.bodies) {
       for (const collider of body.colliders) {
         this.raw.contactPairsWith(collider, (other) => {
-          const otherBody = this.bodies.find((b) => b.colliders.includes(other))
+          const otherBody = this.bodies.find((b) =>
+            b.colliders.some((c) => c.handle === other.handle),
+          )
           if (!otherBody || otherBody === body) return
           const key =
             body.id < otherBody.id ? `${body.id}:${otherBody.id}` : `${otherBody.id}:${body.id}`
@@ -884,8 +948,8 @@ export class World {
             const n = manifold.normal()
             const ni = new Vec3(flipped ? -n.x : n.x, flipped ? -n.y : n.y, flipped ? -n.z : n.z)
             this.contacts.push({
-              bi: flipped ? otherBody : body,
-              bj: flipped ? body : otherBody,
+              bi: body,
+              bj: otherBody,
               ni,
             })
           })

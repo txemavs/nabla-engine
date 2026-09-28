@@ -295,8 +295,9 @@ function buildBuoy(group: THREE.Group, tags: Record<string, string>, glow: THREE
   const category = typedValue(tags, ':category')
   const topShape =
     tags['seamark:topmark:shape'] || (type.includes('cardinal') ? cardinalTopmark(category) : '')
-  const topColour = (tags['seamark:topmark:colour'] || (type.includes('cardinal') ? 'black' : names[0] || 'black'))
-    .split(';')[0]
+  const topColour = (
+    tags['seamark:topmark:colour'] || (type.includes('cardinal') ? 'black' : names[0] || 'black')
+  ).split(';')[0]
   const crown = addTopmark(group, topShape, topColour, top)
   const lit = !!(
     tags['seamark:light:character'] ||
@@ -459,7 +460,11 @@ function bodySize(shape: string, lightH: number): { radius: number; height: numb
 
 function bodyColourNames(tags: Record<string, string>, type: string): string[] {
   for (const [key, value] of Object.entries(tags)) {
-    if ((!key.endsWith(':colour') && !key.endsWith(':color')) || key.includes('light') || key.includes('topmark'))
+    if (
+      (!key.endsWith(':colour') && !key.endsWith(':color')) ||
+      key.includes('light') ||
+      key.includes('topmark')
+    )
       continue
     const names = value
       .split(';')
@@ -479,7 +484,8 @@ function bodyColourNames(tags: Record<string, string>, type: string): string[] {
 
 function typedValue(tags: Record<string, string>, suffix: string): string {
   for (const [key, value] of Object.entries(tags)) {
-    if (key.endsWith(suffix) && !key.includes('topmark') && !key.includes('light')) return value.toLowerCase()
+    if (key.endsWith(suffix) && !key.includes('topmark') && !key.includes('light'))
+      return value.toLowerCase()
   }
   return ''
 }

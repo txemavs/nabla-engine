@@ -46,13 +46,20 @@ export function portalColliders(entity: Entity): { size: Vec3Tuple; transform: T
     parts.push(part([w, h, depth], [0, 0, 0]))
   return parts
 }
-export function validatePortal(entity: Entity, byId: Map<string, Entity>, planetary: boolean): void {
+export function validatePortal(
+  entity: Entity,
+  byId: Map<string, Entity>,
+  planetary: boolean,
+): void {
   if (!entity.portal) return
   if (entity.kind !== 'group' || entity.motion !== 'none')
     throw new Error('Portals must be nonphysical groups')
   if (entity.parentId && byId.get(entity.parentId)?.kind !== 'vehicle')
     throw new Error('Hosted portals require a vehicle parent')
-  if (entity.portal.clearsRamp && (!entity.parentId || !byId.get(entity.parentId)?.vehicle?.garage?.ramp))
+  if (
+    entity.portal.clearsRamp &&
+    (!entity.parentId || !byId.get(entity.parentId)?.vehicle?.garage?.ramp)
+  )
     throw new Error('Ramp clearance requires a carrier ramp')
   const up = new Vector3(0, 1, 0).applyQuaternion(new Quaternion(...entity.transform.rotation))
   if (!planetary && !entity.parentId && up.distanceTo(new Vector3(0, 1, 0)) > 1e-5)
@@ -97,17 +104,19 @@ export function createPortalPair(
   }))
 }
 
-/** The stern is the only portal; the bow is an armoured window.
- * The legacy bow ID argument is retained for scene-authoring API compatibility. */
+/** The stern is the only stock carrier portal; the bow is an armoured window. */
+export function createCarrierPortal(hostId: string, sternId: string): Entity {
+  return {
+    ...createEntity(sternId, 'group', [0, 0.55, 5.05]),
+    name: 'Nave · popa',
+    parentId: hostId,
+    transform: { position: [0, 0.55, 5.05], rotation: rotationDegrees(0, 180, 0) },
+    size: [4.71, 2.91, 0.145],
+    portal: { pairId: null, mode: 'closed', clearsRamp: true },
+  }
+}
+
+/** @deprecated Use createCarrierPortal(hostId, sternId). Kept for older consumers. */
 export function createCarrierPortals(hostId: string, _bowId: string, sternId: string): Entity[] {
-  return [
-    {
-      ...createEntity(sternId, 'group', [0, 0.55, 5.05]),
-      name: 'Nave · popa',
-      parentId: hostId,
-      transform: { position: [0, 0.55, 5.05], rotation: rotationDegrees(0, 180, 0) },
-      size: [4.71, 2.91, 0.145],
-      portal: { pairId: null, mode: 'closed', clearsRamp: true },
-    },
-  ]
+  return [createCarrierPortal(hostId, sternId)]
 }

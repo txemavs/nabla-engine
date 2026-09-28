@@ -10,16 +10,17 @@ export type { PlayerInput, PlayerSnapshot } from './simulation/simulation.js'
 export { createSampleScene } from './scene/sample.js'
 
 export { vehicleDefinition } from './entity/vehicle/vehicle.js'
-export { createA3 } from './catalog/a3.js'
-export { createJeep } from './catalog/jeep.js'
-export { createOutboard } from './catalog/boat.js'
-export { createCarrier } from './catalog/carrier.js'
-export { createCessna } from './catalog/cessna.js'
+export { createA3 } from './catalog/vehicles/a3.js'
+export { createJeep } from './catalog/vehicles/jeep.js'
+export { createOutboard } from './catalog/vehicles/boat.js'
+export { createCarrier } from './catalog/vehicles/carrier.js'
+export { createCessna } from './catalog/vehicles/cessna.js'
 export type { VehicleDefinition, VisualDefinition } from './entity/schema.js'
 
 export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './math/geo/sphere.js'
 
 export {
+  createCarrierPortal,
   createCarrierPortals,
   createPortal,
   createPortalPair,
@@ -107,3 +108,11 @@ export { GeographicView } from './render/planet/sky.js'
 export { SeaWater } from './render/planet/water.js'
 export { SceneView } from './render/entity/view.js'
 export { ShadowManager } from './render/shadows.js'
+
+export { OceanSheet } from './render/planet/ocean-sheet.js'
+export { simplifiedTide } from './planet/tide.js'
+export { DepthOfField } from './render/effects/depth-of-field.js'
+export { PerformanceMonitor, type FrameSample } from './diagnostics/performance-monitor.js'
+export { FlightAudio } from './audio/flight.js'
+
+export { capturePng } from './render/capture.js'

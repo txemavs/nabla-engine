@@ -8,7 +8,7 @@ import { createJeep } from './jeep.js'
 import { createOutboard } from './boat.js'
 import { createCarrier } from './carrier.js'
 import { createCessna } from './cessna.js'
-import { createCarrierPortals } from '../entity/portal/portal.js'
+import { createCarrierPortal } from '../entity/portal/portal.js'
 import { createGlobeLamp } from './globe.js'
 import { createHighwayLamp } from './highway.js'
 
@@ -45,7 +45,7 @@ export function createCatalogEntities(kind: CatalogId, id: string, ground: Vec3T
   if (kind === 'boat') return [createOutboard(id, position)]
   if (kind === 'cessna') return [createCessna(id, position)]
   if (kind === 'carrier')
-    return [createCarrier(id, position), ...createCarrierPortals(id, `${id}-bow`, `${id}-stern`)]
+    return [createCarrier(id, position), createCarrierPortal(id, `${id}-stern`)]
   if (kind === 'globe') return [createGlobeLamp(id, position, entry.label)]
   return [createHighwayLamp(id, position, entry.label)]
 }

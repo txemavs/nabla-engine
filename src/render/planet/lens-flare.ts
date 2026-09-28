@@ -6,6 +6,8 @@ import {
   Scene,
   ShaderMaterial,
   Vector3,
+  Vector4,
+  type PerspectiveCamera,
 } from 'three'
 /** Screen-space ghosts along the sun, drawn after the world. No extra render target. */
 export function createLensFlare(direction: Vector3) {
@@ -13,7 +15,11 @@ export function createLensFlare(direction: Vector3) {
   geometry.setAttribute('position', new Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3))
   geometry.setAttribute('uv', new Float32BufferAttribute([0, 0, 2, 0, 0, 2], 2))
   const material = new ShaderMaterial({
-    uniforms: { sunDirection: { value: direction }, aspect: { value: 1 } },
+    uniforms: {
+      sunDirection: { value: direction },
+      aspect: { value: 1 },
+      tileRect: { value: new Vector4(0, 0, 1, 1) },
+    },
     transparent: true,
     depthTest: true,
     depthWrite: false,
@@ -30,6 +36,7 @@ export function createLensFlare(direction: Vector3) {
     fragmentShader: `
       uniform vec3 sunDirection;
       uniform float aspect;
+      uniform vec4 tileRect;
       uniform mat4 projectionMatrix;
       varying vec2 vUv;
       float blob(vec2 uv, vec2 at, float sharp) {
@@ -37,11 +44,12 @@ export function createLensFlare(direction: Vector3) {
         return exp(-dot(d, d) * sharp);
       }
       void main() {
+        vec2 fullUv = tileRect.xy + vUv * tileRect.zw;
         vec3 viewDir = mat3(viewMatrix) * normalize(sunDirection);
         if (viewDir.z > -0.001 || sunDirection.y < -0.02) discard;
         vec2 ndc = vec2(
-          viewDir.x / -viewDir.z * projectionMatrix[0][0],
-          viewDir.y / -viewDir.z * projectionMatrix[1][1]
+          viewDir.x / -viewDir.z * projectionMatrix[0][0] * tileRect.z,
+          viewDir.y / -viewDir.z * projectionMatrix[1][1] * tileRect.w
         );
         float radial = length(ndc);
         if (radial > 1.4) discard;
@@ -50,15 +58,28 @@ export function createLensFlare(direction: Vector3) {
         float cover = (1.0 - smoothstep(0.95, 1.3, radial)) * mix(0.35, 1.0, aimed);
         vec2 axis = sun - vec2(0.5);
         vec2 across = normalize(vec2(-axis.y, axis.x) * vec2(aspect, 1.0) + vec2(0.0001));
-        vec2 rel = (vUv - sun) * vec2(aspect, 1.0);
+        vec2 rel = (fullUv - sun) * vec2(aspect, 1.0);
         float side = dot(rel, across);
         float streak = exp(-side * side * 900.0) * exp(-dot(rel, rel) * 22.0);
-        vec3 color = vec3(1.0, 0.94, 0.8) * (blob(vUv, sun, 18.0) * 0.42 + blob(vUv, sun, 5.5) * 0.1 + streak * 0.08);
+        vec3 color = vec3(1.0, 0.94, 0.8) * (blob(fullUv, sun, 18.0) * 0.42 + blob(fullUv, sun, 5.5) * 0.1 + streak * 0.08);
         gl_FragColor = vec4(color * cover, 1.0);
       }
     `,
   })
   const mesh = new Mesh(geometry, material)
+  mesh.onBeforeRender = (_renderer, _scene, camera) => {
+    const view = (camera as PerspectiveCamera).view
+    const rect = material.uniforms.tileRect.value
+    if (view?.enabled)
+      rect.set(
+        view.offsetX / view.fullWidth,
+        1 - (view.offsetY + view.height) / view.fullHeight,
+        view.width / view.fullWidth,
+        view.height / view.fullHeight,
+      )
+    else rect.set(0, 0, 1, 1)
+    material.uniformsNeedUpdate = true
+  }
   mesh.frustumCulled = false
   mesh.renderOrder = 1000
   const scene = new Scene()

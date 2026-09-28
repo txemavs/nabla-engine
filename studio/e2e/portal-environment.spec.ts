@@ -5,10 +5,12 @@ test('a ground portal renders orbital atmosphere and restores the main camera en
 }) => {
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-    const { GeographicView } = await import(String('/geography.ts'))
-    const { portalEnvironment } = await import(String('/portal-environment.ts'))
-    const { createPortalSurface, renderPortals } = await import(String('/portals.ts'))
+    const T = await import(String('/e2e/render-fixture.ts'))
+    const { GeographicView } = await import(`/@fs${root}/src/render/planet/sky.ts`)
+    const { portalEnvironment } = await import(`/@fs${root}/src/render/portal/environment.ts`)
+    const { createPortalSurface, renderPortals } = await import(
+      `/@fs${root}/src/render/portal/portals.ts`
+    )
     const { createPortalPair } = await import(`/@fs${root}/src/entity/portal/portal.ts`)
     const { createSampleScene } = await import(`/@fs${root}/src/stage/sample.ts`)
     const document = createSampleScene()

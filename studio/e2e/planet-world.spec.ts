@@ -61,9 +61,9 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
   page.on('pageerror', (e) => errors.push(e.message))
   const result = await page.evaluate(
     async ({ anchor, root }) => {
-      const path = '/planet-world.ts'
+      const path = `/@fs${root}/src/render/planet/world.ts`
       const { PlanetWorld } = await import(path)
-      const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+      const T = await import(String('/e2e/render-fixture.ts'))
       const { Simulation, createEntity, createA3, idleInput, initPhysics } = await import(
         `/@fs${root}/src/index.ts`
       )
@@ -126,9 +126,9 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
 test('picks a visible building inside a GLB batch and ignores hidden layers', async ({ page }) => {
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
-    const module = '/planet-world.ts'
+    const module = `/@fs${root}/src/render/planet/world.ts`
     const { PlanetWorld } = await import(module)
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const T = await import(String('/e2e/render-fixture.ts'))
     const stream = new PlanetWorld(
       { latitude: 43, longitude: -1, altitude: 0 },
       () => {},

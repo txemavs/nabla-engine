@@ -1,5 +1,7 @@
+import { composeChildMeshes, simplifyTile } from './lod.js'
 import {
   PLANET_GEOMETRY_REVISION,
+  planetTileFrame,
   planetPlaces,
   validatePlanetTileSource,
   type PlanetTileSource,
@@ -108,10 +110,18 @@ if (pending) {
     }
 }
 validatePlanetTileSource(source)
-const { root, frame } = planetTileAsset(source)
+const composed = await composeChildMeshes(output, source.tile)
+const generated = composed ? undefined : planetTileAsset(source)
+const root = composed?.root ?? generated!.root
+const frame = generated?.frame ?? planetTileFrame(source.tile)
+const lod = await simplifyTile(root, source.tile.z)
+if (lod && composed) {
+  lod.sources = composed.sources
+  lod.maxErrorMeters += composed.inheritedError
+}
 batchPlanetMeshes(root)
 try {
-  await bakeRoofImagery(root, source.tile)
+  if (source.tile.z === 15) await bakeRoofImagery(root, source.tile)
 } catch (error) {
   console.warn(`Roof imagery skipped: ${error}`)
 }
@@ -175,6 +185,14 @@ try {
         axes: '+X east, +Y up, +Z south',
         generator: 'native-xyz-v2',
         geometryRevision: PLANET_GEOMETRY_REVISION,
+        ...(lod ? { lod } : {}),
+        surface: source.elevation.measured
+          ? source.elevation.measured.every(Boolean)
+            ? 'land'
+            : source.elevation.measured.some(Boolean)
+              ? 'coast'
+              : 'sea'
+          : 'land',
         places: planetPlaces(source),
         retrievedAt: source.retrievedAt,
         source: { path: sourcePath, sha256: sourceHash },

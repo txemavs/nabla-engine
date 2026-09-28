@@ -249,3 +249,23 @@ body.playing .studio-viewport-tools {
   top: calc(var(--studio-panel-top) - 35px) !important;
   height: calc(var(--studio-panel-height) + 35px) !important;
 }
+
+@media (max-width: 700px) {
+  #app.studio-desktop {
+    height: 100dvh;
+  }
+  #app.studio-desktop > header {
+    overflow-x: auto;
+    gap: 8px;
+  }
+  .studio-settings-tabs {
+    flex-wrap: wrap;
+  }
+  .studio-workspace .outliner,
+  .studio-workspace .inspector {
+    display: flex;
+  }
+  .studio-viewport-tools {
+    display: none;
+  }
+}

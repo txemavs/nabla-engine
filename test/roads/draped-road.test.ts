@@ -66,10 +66,10 @@ describe('elevated road geometry', () => {
     expect(avgY).toBeLessThan(10 + LAYER_HEIGHT + 1)
   })
 
-  it('does not render tunnels through uncut terrain', () => {
-    expect(roadGeometry(terrain, paths, 6, { elevation: 'tunnel', layer: -1 }).faces).toHaveLength(
-      0,
-    )
+  it('keeps tunnel geometry below the terrain surface', () => {
+    const tunnel = roadGeometry(terrain, paths, 6, { elevation: 'tunnel', layer: -1 })
+    expect(tunnel.faces.length).toBeGreaterThan(0)
+    for (const vertex of tunnel.vertices) expect(vertex[1]).toBeLessThan(10)
   })
 })
 

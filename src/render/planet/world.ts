@@ -1,3 +1,4 @@
+import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
 import { placeLabel } from './place-label.js'
 import {
   PLANET_GEOMETRY_REVISION,
@@ -95,7 +96,7 @@ function dressSatelliteRoofs(
   const width = planetTileFrame(tile).width
   const buckets = new Map<string, number[]>()
   const take = (id: string, mesh: THREE.Mesh, roofs: boolean) => {
-    if (baked.has(id)) return
+    if (!projectedLayers.has(id) || baked.has(id)) return
     const position = mesh.geometry.getAttribute('position')
     const normal = mesh.geometry.getAttribute('normal')
     const index = mesh.geometry.index
@@ -315,7 +316,11 @@ export class PlanetWorld {
       }
       this.requests.delete(event.data.id)
       if (event.data.payload && !this.disposed)
-        this.install(request.key, request.manifest, event.data.payload)
+        this.installQueue.push({
+          key: request.key,
+          manifest: request.manifest,
+          payload: event.data.payload,
+        })
       else {
         this.retry.set(request.key, Date.now() + 15000)
         this.status = 'GLB pendiente · ' + (event.data.error ?? 'sin datos')
@@ -328,6 +333,73 @@ export class PlanetWorld {
       this.requests.clear()
       this.changed()
     }
+  }
+  private installQueue: { key: string; manifest: PlanetManifest; payload: PlanetPayload }[] = []
+  private installing: { key: string; steps: Generator<void> } | undefined
+  private lastInstallMs = 0
+  private maxInstallMs = 0
+  private staging = new Set<THREE.Group>()
+  private streamMode: 'ground' | 'flight' | 'model' = 'ground'
+  setStreamMode(mode: 'ground' | 'flight' | 'model'): void {
+    this.streamMode = mode
+    this.planKey = ''
+  }
+  get installMilliseconds(): number {
+    return this.lastInstallMs
+  }
+  get diagnostics(): StreamDiagnostics {
+    const ids = new Map(this.wanted.map((tile) => [mapTileId(tile), tile]))
+    for (const [key] of this.resident) {
+      const tile = this.ready.get(key)?.tile
+      if (tile) ids.set(key, tile)
+    }
+    const loading = new Set([...this.requests.values()].map((r) => r.key))
+    const queued = new Set(this.installQueue.map((r) => r.key))
+    if (this.installing) queued.add(this.installing.key)
+    const visible = new Set(this.visible)
+    const tiles: TileDiagnostic[] = [...ids].map(([key, tile]) => ({
+      tile,
+      kind: 'mesh',
+      state: visible.has(key)
+        ? 'visible'
+        : queued.has(key)
+          ? 'installing'
+          : loading.has(key)
+            ? 'downloading'
+            : this.resident.has(key)
+              ? 'resident'
+              : this.retry.has(key)
+                ? 'retry'
+                : 'planned',
+    }))
+    return {
+      tiles: [...tiles, ...this.horizon.diagnostics],
+      residentBytes: [...this.resident.values()].reduce((sum, r) => sum + r.bytes, 0),
+      budgetBytes: this.memoryBudget,
+      pending: this.requests.size + queued.size,
+      installMs: this.lastInstallMs,
+      maxInstallMs: this.maxInstallMs,
+      distance: this.distance,
+    }
+  }
+  /** Time-sliced mesh staging; publication remains atomic. A single mesh is an indivisible task. */
+  flushInstall(budgetMs = 1.5): boolean {
+    const started = performance.now()
+    let worked = false
+    do {
+      if (!this.installing) {
+        const job = this.installQueue.shift()
+        if (!job) break
+        this.installing = { key: job.key, steps: this.install(job.key, job.manifest, job.payload) }
+      }
+      const done = this.installing.steps.next().done
+      worked = true
+      if (done) this.installing = undefined
+    } while (performance.now() - started < budgetMs)
+    this.lastInstallMs = performance.now() - started
+    this.maxInstallMs = Math.max(this.maxInstallMs, this.lastInstallMs)
+    if (worked) this.pump()
+    return worked
   }
   private concurrency = 2
   private ahead = 8
@@ -382,18 +454,9 @@ export class PlanetWorld {
   /** Same sea shader. The glint stays; the wave also tints the body so it reads from above. */
   private riverMaterial(side: THREE.Side) {
     const material = this.createSea() as THREE.MeshStandardMaterial
-    const compile = material.onBeforeCompile
-    material.onBeforeCompile = (shader, renderer) => {
-      compile.call(material, shader, renderer)
-      shader.vertexShader = shader.vertexShader.replace(
-        'waterXZ = transformed.xz;',
-        'waterXZ = (modelMatrix * vec4(transformed, 1.0)).xz;',
-      )
-      shader.fragmentShader = shader.fragmentShader.replace(
-        'outgoingLight = diffuseColor.rgb * waterSunStrength * 0.8 * mix( 0.4, 1.0, waterShadow ) + vec3(glint * waterSunStrength);',
-        'float ripple = (waves.x + waves.z) * 2.0;\n        outgoingLight = diffuseColor.rgb * waterSunStrength * (0.9 + ripple) * mix( 0.4, 1.0, waterShadow ) + vec3(glint * waterSunStrength);',
-      )
-    }
+    material.polygonOffset = true
+    material.polygonOffsetFactor = -1
+    material.polygonOffsetUnits = -1
     material.color.set('#102f43')
     material.vertexColors = false
     material.side = side
@@ -407,17 +470,25 @@ export class PlanetWorld {
     })
     this.changed()
   }
-  update(position: Vec3Tuple, velocity: Vec3Tuple, _protected: Vec3Tuple[] = []): void {
+  update(
+    position: Vec3Tuple,
+    velocity: Vec3Tuple,
+    _protected: Vec3Tuple[] = [],
+    eye?: Vec3Tuple,
+  ): void {
     if (this.disposed) return
     this.protectedPositions = _protected
     const gps = localToGeo(this.origin, position)
-    const height = Math.max(0, gps.altitude - this.groundAltitude(position))
+    const height = Math.max(
+      0,
+      (eye ? localToGeo(this.origin, eye).altitude : gps.altitude) - this.groundAltitude(position),
+    )
     // Relief span is the quality control. Do not inflate it with altitude:
     // a hidden 40 km ring was rebuilding hundreds of photo meshes in flight.
     this.horizon.update(gps.latitude, gps.longitude, this.relief)
     this.horizon.setFocus(mapTileAt(gps.latitude, gps.longitude, 15))
     const center = mapTileAt(gps.latitude, gps.longitude, 15)
-    const planKey = `${mapTileId(center)}:${this.distance}:${this.maxTiles}`
+    const planKey = `${mapTileId(center)}:${this.distance}:${this.maxTiles}:${this.streamMode}:${Math.floor(height / 500)}`
     if (!this.plan || planKey !== this.planKey) {
       this.planKey = planKey
       this.plan = planMapZooms({
@@ -426,6 +497,7 @@ export class PlanetWorld {
         heightAboveGround: height,
         viewDistance: this.distance,
         maxTiles: this.maxTiles,
+        adaptive: this.streamMode !== 'ground',
       })
     }
     const plan = this.plan
@@ -440,12 +512,30 @@ export class PlanetWorld {
       .map((p) => localToGeo(this.origin, p))
       .filter((p) => p.altitude < 12000)
       .map((p) => mapTileAt(p.latitude, p.longitude, 15))
+    const corridor: MapTile[] = []
+    for (let step = 0; step <= 8; step++) {
+      const p = localToGeo(this.origin, [
+        position[0] + (velocity[0] * this.ahead * step) / 8,
+        position[1],
+        position[2] + (velocity[2] * this.ahead * step) / 8,
+      ])
+      corridor.push(mapTileAt(p.latitude, p.longitude, 15))
+    }
     this.wanted = [
       ...new Map(
-        [...plan.requests, future, ...protectedTiles].map((t) => [mapTileId(t), t]),
+        [center, ...protectedTiles, ...corridor, ...plan.requests, future].map((t) => [
+          mapTileId(t),
+          t,
+        ]),
       ).values(),
     ]
     const needed = new Set(this.wanted.map(mapTileId))
+    this.installQueue = this.installQueue.filter((job) => {
+      if (needed.has(job.key)) return true
+      job.payload.chart?.bitmap.close()
+      for (const mesh of job.payload.meshes) mesh.map?.close()
+      return false
+    })
     for (const [id, r] of this.requests)
       if (!needed.has(r.key)) {
         this.worker.postMessage({ id, cancel: true })
@@ -463,7 +553,8 @@ export class PlanetWorld {
     const missing = this.wanted.filter(
       (t) =>
         (!this.resident.has(mapTileId(t)) && !this.ready.has(mapTileId(t))) ||
-        this.ready.get(mapTileId(t))?.geometryRevision !== PLANET_GEOMETRY_REVISION,
+        this.ready.get(mapTileId(t))?.geometryRevision !== PLANET_GEOMETRY_REVISION ||
+        (t.z < 15 && this.ready.get(mapTileId(t))?.lod?.revision !== 'mesh-lod-v1'),
     )
     if (!missing.length) return
     // Public requests may be ineligible; do not let the first rejected batch
@@ -504,11 +595,17 @@ export class PlanetWorld {
   private pump() {
     if (this.disposed) return
     for (const tile of this.wanted) {
-      if (this.requests.size >= this.concurrency) break
+      if (
+        this.requests.size + this.installQueue.length + Number(!!this.installing) >=
+        this.concurrency
+      )
+        break
       const key = mapTileId(tile),
         manifest = this.ready.get(key)
       if (
         !manifest ||
+        this.installing?.key === key ||
+        this.installQueue.some((job) => job.key === key) ||
         (this.resident.has(key) &&
           this.resident.get(key)!.revision === tileRevision(manifest) &&
           (!this.buildings || this.resident.get(key)!.buildings)) ||
@@ -526,8 +623,9 @@ export class PlanetWorld {
       })
     }
   }
-  private install(key: string, manifest: PlanetManifest, payload: PlanetPayload) {
+  private *install(key: string, manifest: PlanetManifest, payload: PlanetPayload): Generator<void> {
     const group = new THREE.Group()
+    this.staging.add(group)
     const position = geoToLocal(this.origin, manifest.anchor)
     const rotation = localFrame(this.origin)
       .invert()
@@ -574,6 +672,7 @@ export class PlanetWorld {
       group.add(mesh)
       restoreTileLayers(mesh)
       this.setupMaterial(material)
+      yield
     }
     dressSatelliteRoofs(
       group,
@@ -628,10 +727,12 @@ export class PlanetWorld {
       trees.userData.category = 'Trees'
       group.add(trees)
     }
+    yield
     const restoreSupport = this.simulation?.capturePlanetSupport((p) => this.groundHeight(p))
     this.remove(key)
     group.visible = false
     this.root.add(group)
+    this.staging.delete(group)
     this.resident.set(key, {
       group,
       chart: payload.chart,
@@ -664,7 +765,19 @@ export class PlanetWorld {
         }),
       },
       bytes:
-        payload.bytes +
+        // CPU arrays plus a matching GPU copy; driver allocations are not directly observable.
+        payload.meshes.reduce(
+          (n, m) =>
+            n +
+            2 *
+              (m.position.byteLength +
+                m.normal.byteLength +
+                (m.color?.byteLength ?? 0) +
+                (m.index?.byteLength ?? 0) +
+                (m.uv?.byteLength ?? 0)) +
+            (m.map ? m.map.width * m.map.height * 4 * 2 : 0),
+          0,
+        ) +
         validPlanetPlaces(manifest.places).length * 512 * 64 * 4 +
         (payload.chart ? 1024 * 1024 * 4 : 0) +
         payload.chunks.reduce((n, c) => n + c.triangles.byteLength, 0),
@@ -799,6 +912,7 @@ export class PlanetWorld {
       if (this.disposed) throw Error('Carga cancelada')
       if (Date.now() - started > 120000)
         throw Error('El terreno todavía se está preparando. Espera a que aparezca antes de jugar.')
+      this.flushInstall(1.5)
       this.update(position, [0, 0, 0])
       await new Promise((r) => setTimeout(r, 200))
     }
@@ -907,6 +1021,22 @@ export class PlanetWorld {
     this.disposed = true
     this.controller.abort()
     this.worker.terminate()
+    this.installing?.steps.return(undefined)
+    for (const job of this.installQueue) {
+      job.payload.chart?.bitmap.close()
+      for (const mesh of job.payload.meshes) mesh.map?.close()
+    }
+    this.installQueue = []
+    for (const group of this.staging)
+      group.traverse((node) => {
+        const mesh = node as THREE.Mesh
+        if (mesh.isMesh) {
+          mesh.geometry.dispose()
+          for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+            material.dispose()
+        }
+      })
+    this.staging.clear()
     this.horizon.dispose()
     for (const key of this.resident.keys()) this.remove(key)
     this.treeTexture?.dispose()

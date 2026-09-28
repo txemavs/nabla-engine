@@ -26,4 +26,3 @@ export interface WorldExtract {
 
 /** Irún · Ventas. The example district and the default origin for real-world tests. */
 export const IRUN_VENTAS: GeoPoint = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
-

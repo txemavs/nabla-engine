@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import type { TileDiagnostic } from './debug.js'
 import {
   coversTile,
   planetCollisionChunks,
@@ -82,6 +83,26 @@ export class PlanetHorizon {
       this.changed()
     }
   }
+  get diagnostics(): TileDiagnostic[] {
+    const items: TileDiagnostic[] = this.wanted.map((tile) => ({
+      tile,
+      kind: 'relief',
+      state: this.cells.has(mapTileId(tile))
+        ? 'visible'
+        : this.pending.has(mapTileId(tile))
+          ? 'downloading'
+          : 'planned',
+    }))
+    for (const cell of this.cells.values())
+      for (const mesh of cell.fine)
+        if (mesh.userData.tile)
+          items.push({
+            tile: mesh.userData.tile,
+            kind: 'photo',
+            state: mesh.visible ? 'visible' : mesh.userData.ready ? 'resident' : 'downloading',
+          })
+    return items
+  }
   get collisionTiles() {
     return [...this.cells.values()].filter((c) => c.mesh.visible).map((c) => c.physics)
   }
@@ -156,6 +177,7 @@ export class PlanetHorizon {
       fine: [],
     })
     this.root.add(mesh)
+    this.coverageKey = ''
     this.setCoverage(this.coverage)
   }
   private async wear(key: string, photo: string, material: THREE.MeshPhysicalMaterial) {
@@ -173,6 +195,7 @@ export class PlanetHorizon {
     cell.texture = loaded
     cell.textured = true
     cell.mask = ''
+    this.coverageKey = ''
     this.setCoverage(this.coverage)
     this.changed()
   }
@@ -281,6 +304,7 @@ export class PlanetHorizon {
       mesh.visible = false
       mesh.name = 'Flight photo'
       mesh.userData.zoom = group.tile.z
+      mesh.userData.tile = group.tile
       const photo = `${this.photos.replace(/\/$/, '')}/z/${group.tile.z}/${group.tile.x}/${group.tile.y}.jpg`
       void this.wearFlight(cell, mesh, material, photo)
       cell.mesh.parent?.add(mesh)

@@ -1,5 +1,9 @@
 import { expect, it } from 'vitest'
-import { createRealWorld, type MapFeature, type WorldExtract } from '../../src/planet/assemble/world.js'
+import {
+  createRealWorld,
+  type MapFeature,
+  type WorldExtract,
+} from '../../src/planet/assemble/world.js'
 import { localToGeo } from '../../src/math/geo/sphere.js'
 import { isMapBuilding } from '../../src/stage/scene.js'
 import { mapTileEntities } from '../../src/scene/tiles.js'

@@ -1,3 +1,4 @@
+import { seaCoverageIndex } from '../../planet/sea-coverage.js'
 import { planetChart } from './chart.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, Mesh, MeshStandardMaterial, Matrix3, Vector3 } from 'three'
@@ -101,16 +102,21 @@ self.onmessage = async (
           const material = (
             Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
           ) as MeshStandardMaterial
+          const originalIndex = g.index ? new Uint32Array(g.index.array) : undefined
+          const index = seaCoverageIndex(p, originalIndex, mesh.userData, manifest.anchor.altitude)
+          if (index?.length === 0) return
+          const metadata = { ...mesh.userData }
+          if (index !== originalIndex) delete metadata.parts
           meshes.push({
             name: mesh.name,
             position: p,
             normal: n,
             color: c,
             uv,
-            index: g.index ? new Uint32Array(g.index.array) : undefined,
+            index,
             tint: '#' + material.color.getHexString(),
             side: material.side,
-            metadata: mesh.userData,
+            metadata,
           })
           const image = material.map?.image
           if (uv && image)

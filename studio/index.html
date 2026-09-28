@@ -175,6 +175,37 @@
             <label><input id="layer-z14" type="checkbox" checked /> Fotos z14</label>
             <label><input id="layer-z12" type="checkbox" checked /> Fotos z12</label>
             <label><input id="layer-sea" type="checkbox" checked /> Mar</label>
+            <label for="water-mode">Nivel del agua</label>
+            <select id="water-mode">
+              <option value="tide" selected>Marea simplificada</option>
+              <option value="manual">Manual · inundación</option>
+            </select>
+            <label for="tide-amplitude">Amplitud de marea · ± metros</label>
+            <input id="tide-amplitude" type="number" min="0" max="3" step="0.1" value="1" />
+            <p id="tide-status" role="status"></p>
+            <p>
+              Ciclo aproximado de 12 h 25 min, siguiendo la fecha y hora de Sol y luna. No es una
+              predicción local. Escribir un nivel o volver a cero activa el modo manual.
+            </p>
+            <label for="water-level">Nivel del mar · metros respecto a cota 0</label>
+            <input id="water-level" type="range" min="-5" max="50" step="0.1" value="0" />
+            <div class="option-row">
+              <input
+                id="water-level-number"
+                aria-label="Nivel del mar en metros"
+                type="number"
+                min="-5"
+                max="50"
+                step="0.1"
+                value="0"
+              />
+              <button id="water-level-reset" type="button">Volver a 0 m</button>
+            </div>
+            <p>
+              −5 a +50 m. Sube el agua para explorar las cotas del valle. Los ríos conservan la
+              altura de su cauce; el barco flota al nivel seleccionado. No calcula caudales ni
+              barreras hidráulicas.
+            </p>
             <label><input id="layer-maps" type="checkbox" checked /> Mapas</label>
             <span class="eyebrow">CIELO</span>
             <label><input id="layer-sky" type="checkbox" checked /> Cielo y niebla</label>
@@ -213,6 +244,52 @@
             </details>
           </div>
           <div id="options-panel-performance" role="tabpanel">
+            <details id="diagnostics-section" class="help">
+              <summary>LABORATORIO DE RENDIMIENTO</summary>
+              <div class="option-row">
+                <label for="tile-debug">Vista de teselas</label
+                ><select id="tile-debug">
+                  <option value="off">Imagen normal</option>
+                  <option value="zoom">Colores por zoom</option>
+                  <option value="state">Colores por estado de carga</option>
+                  <option value="wire">Límites sobre el paisaje</option>
+                </select>
+              </div>
+              <label
+                ><input id="tile-debug-labels" type="checkbox" checked /> Identificador y estado
+                (hasta 48 etiquetas)</label
+              >
+              <p class="option-note">
+                Z12 violeta · Z13 azul · Z14 verde · Z15 naranja. Borde blanco: dibujada; gris:
+                prevista. Fotografías y mallas se identifican por separado. El círculo marca la
+                distancia solicitada, no una garantía de cobertura.
+              </p>
+              <div class="option-row">
+                <label for="stream-mode">Uso del mundo</label
+                ><select id="stream-mode">
+                  <option value="ground">Conducción · detalle cercano Z15</option>
+                  <option value="flight">Vuelo · detalle según distancia y altura</option>
+                  <option value="model">Maqueta · cobertura amplia y física pausada</option>
+                </select>
+              </div>
+              <label
+                ><input id="performance-hud-toggle" type="checkbox" /> Mostrar monitor sobre la
+                vista</label
+              >
+              <output id="diagnostics-readout" class="diagnostics-readout"
+                >Esperando muestras…</output
+              >
+              <div class="diagnostics-actions">
+                <button id="performance-reset">Reiniciar medición</button
+                ><button id="performance-export">Descargar medición CSV</button>
+              </div>
+              <p class="option-note">
+                CPU es tiempo del hilo principal, no tiempo de GPU. La vista de colores y las
+                etiquetas tienen un coste propio. Compara recorridos iguales con diagnóstico
+                activado o desactivado.
+              </p>
+              <div id="tile-counts" class="diagnostics-readout"></div>
+            </details>
             <details id="performance-section" class="help">
               <summary>RENDIMIENTO</summary>
               <span class="eyebrow">IMAGEN</span>
@@ -223,16 +300,19 @@
                   <option value="low">Bajo</option>
                   <option value="balanced">Equilibrado</option>
                   <option value="high">Alto</option>
-                  <option value="ultra">Ultra · 20 km</option>
+                  <option value="ultra">Ultra</option>
                   <option value="custom" disabled>Personalizado</option>
                 </select>
               </div>
               <p class="option-note">
-                La calidad limita cuántas baldosas de ciudad (z15) se piden. El horizonte lejano es foto, no malla. La caché se ajusta aparte.
+                La calidad limita cuántas baldosas de ciudad se piden. El diagnóstico distingue
+                mallas y fotografías. La caché de disco se ajusta aparte.
               </p>
               <div class="option-row">
-                <label for="render-resolution">Resolución</label>
+                <label for="render-resolution">Escala de renderizado</label>
                 <select id="render-resolution">
+                  <option value="0.35">Mínima · 0,35×</option>
+                  <option value="0.5">Muy baja · 0,5×</option>
                   <option value="0.75">Ligera · 0,75×</option>
                   <option value="1">Normal · 1×</option>
                   <option value="1.25">Nítida · 1,25×</option>
@@ -255,6 +335,24 @@
                   <option value="2048">Altas · 4 km</option>
                 </select>
               </div>
+              <div class="option-row">
+                <label for="vehicle-shadows">Sombras en carrocería</label
+                ><select id="vehicle-shadows">
+                  <option value="0">Estables · solo proyectar al suelo</option>
+                  <option value="1">Completas · recibir y proyectar</option>
+                </select>
+              </div>
+              <div class="option-row">
+                <label for="mirror-quality">Retrovisores</label
+                ><select id="mirror-quality">
+                  <option value="0">Desactivados</option>
+                  <option value="1">Activados</option>
+                </select>
+              </div>
+              <p class="option-note">
+                La opción estable mantiene la sombra del coche sobre el suelo y evita el sombreado
+                vibrante sobre su carrocería. Aviones, naves y edificios conservan sus sombras.
+              </p>
               <span class="eyebrow">ALCANCE</span>
               <div class="option-row">
                 <label for="draw-distance">Dibujado</label>
@@ -433,6 +531,9 @@
           <span class="divider"></span><button id="undo" title="Deshacer (Ctrl Z)">↶</button
           ><button id="redo" title="Rehacer (Ctrl Shift Z)">↷</button>
         </div>
+        <button id="photo" title="Descargar foto PNG de 16K" aria-label="Descargar foto de 16K">
+          📷
+        </button>
         <button id="play" class="primary">▶ Jugar <kbd>F8</kbd></button>
       </nav>
       <aside class="outliner">
@@ -526,6 +627,12 @@
         ><span>NABLA ENGINE <b>0.2</b></span>
       </footer>
     </div>
+    <dialog id="photo-progress" aria-labelledby="photo-title">
+      <h2 id="photo-title">Foto de 16K</h2>
+      <p id="photo-status" role="status">Preparando la imagen…</p>
+      <progress id="photo-bar" max="1" value="0"></progress>
+      <p><button id="photo-cancel">Cancelar</button></p>
+    </dialog>
     <section id="portal-registry" hidden>
       <h3>Registro de portales</h3>
       <p>

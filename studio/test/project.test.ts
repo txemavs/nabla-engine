@@ -37,7 +37,7 @@ test('invalid location references and duplicate IDs are rejected', () => {
 })
 test('file names remain portable and receive one project extension', () => {
   expect(projectFilename('My world.nabla.json')).toBe('My world.nabla.json')
-  expect(projectFilename('../../World: demo')).toBe('../..-World- demo.nabla.json')
+  expect(projectFilename('../../World: demo')).toBe('..-..-World- demo.nabla.json')
 })
 
 test('v1 migrates to stable global root identities and v2 treats planet poses as authoritative', () => {

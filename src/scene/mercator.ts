@@ -173,6 +173,7 @@ export function planMapZooms(options: {
   heightAboveGround: number
   viewDistance: number
   maxTiles?: number
+  adaptive?: boolean
 }): MapZoomPlan {
   const { latitude, longitude, viewDistance } = options
   const budget = options.maxTiles ?? 96
@@ -185,6 +186,14 @@ export function planMapZooms(options: {
     budget > 512
   )
     throw Error('Invalid map streaming budget')
+  if (options.adaptive)
+    return adaptiveMapPlan(
+      options.latitude,
+      options.longitude,
+      options.heightAboveGround,
+      viewDistance,
+      budget,
+    )
   const center = mapTileAt(latitude, longitude, 15)
   const width = mapTileGroundWidth(latitude, 15)
   const n = 2 ** 15
@@ -240,4 +249,62 @@ export function planetReadyCover(plan: MapZoomPlan, ready: ReadonlySet<string>):
     return { tiles: covers.flatMap((c) => c.tiles), complete: false }
   }
   return plan.roots.flatMap((t) => visit(t).tiles)
+}
+
+/** Mixed visual coverage. Ancestors remain requested until complete children can replace them. */
+function adaptiveMapPlan(
+  latitude: number,
+  longitude: number,
+  height: number,
+  distance: number,
+  budget: number,
+): MapZoomPlan {
+  const center = mapTileAt(latitude, longitude, 13),
+    width = mapTileGroundWidth(latitude, 13),
+    n = 2 ** 13
+  const candidates: MapTile[] = []
+  const span = Math.min(24, Math.ceil(distance / width) + 1)
+  const groundDistance = (tile: MapTile) => {
+    const b = mapTileBounds(tile),
+      lon = (b.west + b.east) / 2,
+      lat = (b.north + b.south) / 2
+    const dx =
+      ((Math.min(Math.abs(lon - longitude), 360 - Math.abs(lon - longitude)) * Math.PI) / 180) *
+      radius *
+      Math.cos((latitude * Math.PI) / 180)
+    const dy = (((lat - latitude) * Math.PI) / 180) * radius
+    return Math.max(0, Math.hypot(dx, dy) - mapTileGroundWidth(latitude, tile.z) * 0.71)
+  }
+  for (let dy = -span; dy <= span; dy++)
+    for (let dx = -span; dx <= span; dx++) {
+      const y = center.y + dy
+      if (y < 0 || y >= n) continue
+      const tile = { z: 13, x: (center.x + dx + n) % n, y }
+      if (groundDistance(tile) <= distance) candidates.push(tile)
+    }
+  candidates.sort((a, b) => groundDistance(a) - groundDistance(b))
+  const roots = candidates.slice(0, Math.max(1, Math.floor(budget / 3)))
+  const requests = [...roots],
+    leaves = [...roots]
+  const near = Math.max(500, Math.min(2000, distance * 0.3))
+  while (requests.length + 4 <= budget) {
+    const next = leaves
+      .filter(
+        (tile) =>
+          tile.z < 15 &&
+          Math.hypot(groundDistance(tile), height) <
+            (tile.z === 13 ? Math.max(near * 2, distance * 0.65) : near),
+      )
+      .sort((a, b) => groundDistance(a) - groundDistance(b))[0]
+    if (!next) break
+    const children = mapTileChildren(next)
+    leaves.splice(leaves.indexOf(next), 1, ...children)
+    requests.push(...children)
+  }
+  return {
+    roots,
+    leaves,
+    requests,
+    budgetLimited: roots.length < candidates.length || requests.length + 4 > budget,
+  }
 }

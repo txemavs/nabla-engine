@@ -15,11 +15,5 @@
     "isolatedModules": true,
     "types": ["vite/client"]
   },
-  "include": [
-    "src",
-    "test",
-    "studio",
-    "services/world-cache/**/*.test.ts",
-    "*.config.ts"
-  ]
+  "include": ["src", "test", "studio", "services/world-cache/**/*.test.ts", "*.config.ts"]
 }

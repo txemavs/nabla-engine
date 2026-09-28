@@ -1,3 +1,4 @@
+import { waterWaves } from './water-material.js'
 import * as THREE from 'three'
 import type { Entity } from '../../stage/scene.js'
 import type { SurfaceType } from '../../planet/land/surface.js'
@@ -41,29 +42,7 @@ export class LandcoverBatches {
       polygonOffsetUnits: -0.5,
     })
 
-    this.waterMaterial.onBeforeCompile = (shader) => {
-      shader.uniforms.waterTime = this.time
-      shader.uniforms.waterNormal = { value: this.waterTexture }
-      shader.vertexShader =
-        'varying vec2 waterXZ;\n' +
-        shader.vertexShader.replace(
-          '#include <begin_vertex>',
-          '#include <begin_vertex>\nwaterXZ = position.xz;',
-        )
-      shader.fragmentShader =
-        'varying vec2 waterXZ; uniform float waterTime; uniform sampler2D waterNormal;\n' +
-        shader.fragmentShader.replace(
-          '#include <normal_fragment_maps>',
-          `#include <normal_fragment_maps>
-          vec2 waveUV = waterXZ / 256.0;
-          float waveTime = waterTime / 256.0;
-          vec3 waves = (texture2D(waterNormal, (waveUV+waveTime)*3.0).xyz * 0.25
-            + texture2D(waterNormal, (waveUV+waveTime)*16.0).xyz * 0.25
-            + texture2D(waterNormal, (waveUV-waveTime)*8.0).xyz * 0.5) * 2.0 - 1.0;
-          waves = normalize(mix(waves, vec3(0.0,0.0,1.0),0.9).xzy);
-          normal = normalize(mat3(viewMatrix) * waves);`,
-        )
-    }
+    waterWaves(this.waterMaterial, this.waterTexture, this.time)
   }
 
   private getMaterial(surfaceType: SurfaceType): THREE.MeshStandardMaterial {

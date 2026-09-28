@@ -1247,3 +1247,93 @@ body.playing #footer-mode {
   line-height: 1.4;
   color: var(--muted);
 }
+/* Performance lab and mobile driving. Values remain readable over bright terrain. */
+.diagnostics-readout {
+  display: block;
+  white-space: pre-line;
+  font: 12px/1.6 monospace;
+  padding: 12px;
+  background: #111827;
+  color: #dbeafe;
+  border-radius: 6px;
+  margin: 10px 0;
+}
+.diagnostics-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.performance-hud {
+  position: absolute;
+  top: 54px;
+  left: 12px;
+  z-index: 40;
+  pointer-events: none;
+  max-width: calc(100% - 24px);
+  background: #101827dd;
+  color: #e0f2fe;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font: 12px/1.5 monospace;
+  white-space: pre-line;
+}
+.touch-driving {
+  display: none;
+  position: absolute;
+  inset: auto 10px 16px;
+  z-index: 45;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  pointer-events: none;
+}
+.touch-driving button {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  min-height: 52px;
+  background: #111827dd;
+  color: #fff;
+  border: 1px solid #66758d;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.touch-driving button:active {
+  background: #2563eb;
+}
+@media (pointer: coarse) {
+  .touch-driving {
+    display: grid;
+  }
+  .performance-hud {
+    font-size: 10px;
+  }
+}
+@media (max-width: 700px) {
+  .studio-settings-host [role='dialog'] {
+    max-width: 96vw !important;
+    max-height: 90dvh !important;
+  }
+  .studio-settings-tabs {
+    flex-wrap: wrap;
+  }
+}
+
+#photo {
+  flex: 0 0 auto;
+  font-size: 18px;
+}
+#photo-progress {
+  color: var(--text);
+  background: #1f2d43;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 280px;
+}
+#photo-progress::backdrop {
+  background: #0009;
+}
+#photo-bar {
+  width: 100%;
+  accent-color: var(--accent);
+}

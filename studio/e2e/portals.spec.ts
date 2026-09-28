@@ -1,5 +1,15 @@
 import { test, expect } from './studio-test.js'
 
+// Functional portal journeys use modest raster quality on software Chromium.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'nabla.performance.v1',
+      JSON.stringify({ resolution: 0.35, shadows: 0, mirrors: 0, dof: 0 }),
+    ),
+  )
+})
+
 test('adds original Stargates, persists modes and drives the A3 through a live view', async ({
   page,
 }) => {

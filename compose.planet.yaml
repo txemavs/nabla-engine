@@ -1,0 +1,52 @@
+name: nabla-development
+services:
+  planet-setup:
+    image: python:3.12-alpine
+    volumes:
+      - cache:/data
+      - prepared:/publish
+      - secrets:/secrets
+      - ./services/world-cache/init.py:/init.py:ro
+    command: [python3, /init.py]
+  world-cache:
+    build:
+      context: .
+      dockerfile: services/world-cache/Dockerfile.prepare
+    depends_on:
+      planet-setup:
+        condition: service_completed_successfully
+    command:
+      [sh, -c, 'export PREPARE_TOKEN="$$(cat /secrets/prepare-token)"; exec python3 -u server.py']
+    environment:
+      CACHE_MAX_BYTES: '5368709120'
+      PREPARE_MAX_BYTES: '17179869184'
+      PREPARE_ROOT: /publish
+    ports: ['127.0.0.1:8787:8080']
+    volumes:
+      - cache:/data
+      - prepared:/publish
+      - secrets:/secrets:ro
+    read_only: true
+    tmpfs: ['/tmp:size=128m']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1536m
+    cpus: 1
+    healthcheck:
+      test:
+        [
+          CMD,
+          python3,
+          -c,
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=3)",
+        ]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+volumes:
+  cache:
+    name: nabla-planet_cache
+  prepared:
+    name: nabla-planet_prepared
+  secrets:
+    name: nabla-planet_secrets

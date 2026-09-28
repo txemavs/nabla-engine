@@ -335,6 +335,8 @@ export class GeographicView {
     if (!this.origin) return
     this.camera.fov = camera.fov
     this.camera.aspect = camera.aspect
+    this.camera.zoom = camera.zoom
+    this.camera.view = camera.view ? { ...camera.view } : null
     this.camera.updateProjectionMatrix()
     this.camera.position.copy(worldPosition).multiplyScalar(SCALE)
     this.camera.quaternion.copy(camera.quaternion)

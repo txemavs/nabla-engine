@@ -1,3 +1,4 @@
+import { seaCoverageIndex } from '#src/planet/sea-coverage.js'
 import {
   BufferAttribute,
   BufferGeometry,
@@ -110,6 +111,27 @@ export function planetTileAsset(source: PlanetTileSource) {
       vegetation,
     },
   )
+  const emptyWater: Mesh[] = []
+  root.traverse((node) => {
+    if (!(node instanceof Mesh)) return
+    const g = node.geometry
+    const originalIndex = g.index ? new Uint32Array(g.index.array) : undefined
+    const index = seaCoverageIndex(
+      new Float32Array(g.getAttribute('position').array),
+      originalIndex,
+      node.userData,
+      frame.anchor.altitude,
+    )
+    if (index !== originalIndex) delete node.userData.parts
+    if (index) g.setIndex(new BufferAttribute(index, 1))
+    if (index?.length === 0) emptyWater.push(node)
+  })
+  for (const mesh of emptyWater) {
+    mesh.removeFromParent()
+    mesh.geometry.dispose()
+    for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+      material.dispose()
+  }
   // Vertical edge skirts hide coarse/fine T-junctions. They never enter physics.
   // z15 is published without them. Existing cells keep whatever they already have.
   const terrain = Object.entries(geometry).find(([id]) => id.startsWith('world-terrain'))?.[1]

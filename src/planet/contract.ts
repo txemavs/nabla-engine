@@ -16,6 +16,13 @@ import type { PlanetPlace } from './places.js'
 export const PLANET_GEOMETRY_REVISION = 'native-surfaces-v5'
 
 export interface PlanetManifest {
+  lod?: {
+    revision: string
+    inputTriangles: number
+    outputTriangles: number
+    maxErrorMeters: number
+    sources?: string[]
+  }
   places?: PlanetPlace[]
   format: 'nabla-planet-tile-v1'
   generator: 'native-xyz-v2'

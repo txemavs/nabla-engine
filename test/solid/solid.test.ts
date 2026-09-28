@@ -77,7 +77,7 @@ it('collides with authored walls and passes through a deleted face', () => {
   const run = (open: boolean) => {
     const doc = document()
     if (open) doc.entities[2].geometry!.faces.splice(1, 1)
-    const sim = new Simulation(doc)
+    const sim = new Simulation(doc, { playerMode: 'hover' })
     for (let i = 0; i < 60; i++) sim.step(1 / 60)
     sim.setInput({ ...idleInput(), forward: 1 })
     for (let i = 0; i < 80; i++) sim.step(1 / 60)

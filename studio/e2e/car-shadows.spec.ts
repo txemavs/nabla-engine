@@ -3,9 +3,9 @@ import { test, expect } from './studio-test.js'
 test('the A3 casts a visible ground shadow at every enabled quality', async ({ page }) => {
   await page.goto('/?scene=circuit')
   const results = await page.evaluate(async (root) => {
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-    const csmPath = '/csm.ts',
-      assetsPath = '/assets.ts'
+    const T = await import(String('/e2e/render-fixture.ts'))
+    const csmPath = `/@fs${root}/src/render/shadows.ts`,
+      assetsPath = `/@fs${root}/src/render/entity/assets.ts`
     const { ShadowManager } = await import(csmPath)
     const { assets } = await import(assetsPath)
     const renderer = new T.WebGLRenderer({ logarithmicDepthBuffer: true })

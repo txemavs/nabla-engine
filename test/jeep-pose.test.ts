@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createJeep } from '../src/catalog/jeep.js'
-import { createEntity, type SceneDocument } from '../src/entity/schema.js'
+import { createEntity } from '../src/entity/schema.js'
+import type { SceneDocument } from '../src/stage/scene.js'
 import { Vec3, type Quaternion } from '../src/simulation/physics.js'
 import { idleInput, Simulation } from '../src/simulation/simulation.js'
 

@@ -11,11 +11,14 @@ it('keeps nearby ground detail visible in flight without extending horizontal ra
 })
 it('mounts four downward exhausts and extinguishes them after flight stops', () => {
   const effect = new CarrierThrusters()
-  expect(effect.root.children).toHaveLength(4)
+  const jets = effect.root.children.filter((child) =>
+    child.children.some((part) => part instanceof Mesh),
+  )
+  expect(jets).toHaveLength(4)
   expect(effect.root.visible).toBe(false)
   effect.update(true, 500, 0.1, 0)
   expect(effect.root.visible).toBe(true)
-  for (const jet of effect.root.children) {
+  for (const jet of jets) {
     expect(jet.position.y).toBeCloseTo(-1.085)
     for (const flame of jet.children) {
       expect(flame.position.y).toBeLessThan(0)

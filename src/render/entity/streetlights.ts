@@ -100,7 +100,8 @@ export class Streetlights {
       const material = e.lens.material
       if (material instanceof THREE.MeshBasicMaterial)
         material.color.set(on ? e.entity.light!.color : '#1a1a1a')
-      else if (material instanceof THREE.MeshStandardMaterial) material.emissiveIntensity = on ? 2 : 0
+      else if (material instanceof THREE.MeshStandardMaterial)
+        material.emissiveIntensity = on ? 2 : 0
       if (!e.point) continue
       const position = e.source.getWorldPosition(new THREE.Vector3())
       const near = on && position.distanceTo(camera) < drawDistance

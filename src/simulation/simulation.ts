@@ -1,5 +1,6 @@
+import { stepBoat } from './vehicles/boat.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
-import { terrainHeight } from '../planet/land/terrain.js'
+import { terrainHeight, terrainVertices, terrainIndices } from '../planet/land/terrain.js'
 import { triangles } from '../math/solid/mesh.js'
 import { SceneEditor } from '../scene/history.js'
 import { portalColliders, portalLocal, portalMapping } from '../entity/portal/portal.js'
@@ -9,7 +10,6 @@ import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three
 import { vehicleDefinition, type Vehicle } from '../entity/vehicle/vehicle.js'
 import { roadGeometry, nearestRoadCenterline } from '../planet/land/roads/draped-road.js'
 import {
-  Heightfield,
   Trimesh,
   AABB,
   Body,
@@ -67,6 +67,10 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 export class Simulation {
   private readonly document: SceneDocument
   private readonly terrainEntity: Entity | undefined
+  private waterLevel = 0
+  setWaterLevel(metres: number): void {
+    if (Number.isFinite(metres)) this.waterLevel = clamp(metres, -5, 50)
+  }
   private minimumFlightAltitude: number
   private graph: SceneGraph
   private entitiesById = new Map<string, Entity>()
@@ -375,14 +379,10 @@ export class Simulation {
     }
     if (e.terrain) {
       const t = e.terrain
-      const data = Array.from({ length: t.columns }, (_, x) =>
-        Array.from({ length: t.rows }, (_, z) => t.heights[(t.rows - 1 - z) * t.columns + x]),
-      )
-      body.addShape(
-        new Heightfield(data, { elementSize: t.spacing }),
-        new Vec3((-(t.columns - 1) * t.spacing) / 2, 0, ((t.rows - 1) * t.spacing) / 2),
-        new Quaternion().setFromEuler(-Math.PI / 2, 0, 0),
-      )
+      // Share the exact rendered triangle grid, including missing-data holes.
+      const index = new Uint32Array(terrainIndices(t))
+      if (index.length)
+        body.addShape(new Trimesh(new Float32Array(terrainVertices(t).flat()), index))
     }
     const bridgeTerrain = roadSurface
       ? this.entitiesById.get(e.road!.terrainId)?.terrain
@@ -759,6 +759,9 @@ export class Simulation {
     this.lostTime += elapsed - accepted
     this.accumulator += accepted
     while (this.accumulator + 1e-10 >= FIXED_STEP) {
+      this.world.rebase(
+        (this.vehicleId ? this.vehicles.get(this.vehicleId)!.body : this.playerBody).position,
+      )
       const before = this.portalEntities.length
         ? this.world.bodies
             .filter((b) => b.mass > 0)
@@ -912,9 +915,6 @@ export class Simulation {
           this.portalLocks.set(body.id, destination.id)
           // A solved contact belongs to the old location; do not expose it at the exit.
           this.world.contacts = this.world.contacts.filter((c) => c.bi !== body && c.bj !== body)
-          this.world.frictionEquations = this.world.frictionEquations.filter(
-            (c) => c.bi !== body && c.bj !== body,
-          )
           if (vehicle) {
             this.previousWheels.delete(actor)
             vehicle.raycast.wheelInfos.forEach((w) => {
@@ -927,7 +927,6 @@ export class Simulation {
         body.previousPosition.copy(body.position)
         body.interpolatedPosition.copy(body.position)
         body.previousQuaternion.copy(body.quaternion)
-        body.interpolatedQuaternion.copy(body.quaternion)
         body.aabbNeedsUpdate = true
         body.wakeUp()
         const forward = new Vector3(0, 0, -1).applyQuaternion(rotation)
@@ -1291,7 +1290,7 @@ export class Simulation {
     const running = active && v.helm !== 'off'
     const throttle = running
       ? v.flight
-        ? Math.max(0, this.input.lift)
+        ? Math.max(0, this.input.lift ?? 0)
         : Math.abs(this.input.forward)
       : 0
     const wind = clamp(v.body.velocity.length() / 55, 0, 0.35)
@@ -1308,63 +1307,9 @@ export class Simulation {
     const body = v.body
     const up = this.radialUp(body)
     const keel = body.pointToWorldFrame(new Vec3(0, -0.45, 0.2))
-    const sea = this.document.geography ? 0.08 - this.document.geography.altitude : 0
+    const sea = this.waterLevel - (this.document.geography?.altitude ?? 0)
     const depth = sea - this.altitude(keel)
-    const wet = clamp(depth / 0.55, 0, 1.6)
-    body.applyForce(up.scale(wet * body.mass * 9.81 * 1.22))
-    const vertical = body.velocity.dot(up)
-    if (wet > 0) body.applyForce(up.scale(-vertical * body.mass * 2.2))
-    const forward = body.quaternion.vmult(new Vec3(0, 0, -1))
-    const right = body.quaternion.vmult(new Vec3(1, 0, 0))
-    const speed = body.velocity.dot(forward)
-    const powered = active && v.helm !== 'off' && wet > 0.12
-    const braking = active && this.input.brake
-    const lock = 0.62 / (1 + Math.max(0, speed) / 16)
-    const helmTarget = powered && !braking ? -this.input.right * lock : 0
-    v.steer += clamp(helmTarget - v.steer, -FIXED_STEP * 0.28, FIXED_STEP * 0.28)
-    const throttle = powered && !braking ? this.input.forward : 0
-    const spool = braking ? 1.4 : throttle === 0 ? 0.35 : 0.55
-    v.prop += clamp(throttle - v.prop, -FIXED_STEP * spool, FIXED_STEP * spool)
-    const thrust = v.prop * v.definition.engineForce * (v.prop < 0 ? 0.35 : 1) * clamp(wet, 0, 1)
-    const motor = body.pointToWorldFrame(new Vec3(0, 0, 2.35))
-    body.applyForce(
-      body.quaternion.vmult(new Vec3(Math.sin(v.steer) * thrust, 0, -Math.cos(v.steer) * thrust)),
-      motor.vsub(body.position),
-    )
-    if (wet > 0.05) {
-      const flatRight = right.vsub(up.scale(right.dot(up)))
-      if (flatRight.lengthSquared() > 1e-6) flatRight.normalize()
-      const bite = 0.5 + clamp(Math.abs(speed) / 14, 0, 1)
-      const hydro = (localZ: number, gain: number) => {
-        const at = body.quaternion.vmult(new Vec3(0, -0.15, localZ))
-        const vel = new Vec3()
-        body.getVelocityAtWorldPoint(body.position.vadd(at), vel)
-        body.applyForce(flatRight.scale(-vel.dot(flatRight) * body.mass * gain), at)
-      }
-      hydro(-2.05, bite * 0.28)
-      hydro(1.9, bite * 0.62)
-      const plane = clamp((Math.abs(speed) - 7) / 7, 0, 1)
-      const quad = (24 - 16 * plane) * speed * Math.abs(speed)
-      const wall = Math.sign(speed) * 0.01 * speed ** 4
-      const hump =
-        Math.sign(speed || 1) *
-        7500 *
-        Math.exp(-((Math.abs(speed) - 6) ** 2) / 16) *
-        clamp(Math.abs(speed) / 1.5, 0, 1)
-      const drag = (quad + wall + hump) * clamp(wet, 0, 1)
-      const keel = body.quaternion.vmult(new Vec3(0, -0.06, 0.4))
-      body.applyForce(forward.scale(-drag), keel)
-      const yawRate = body.angularVelocity.dot(up)
-      body.torque.vadd(up.scale(-yawRate * (700 + Math.abs(speed) * 110)), body.torque)
-      const hullUp = body.quaternion.vmult(new Vec3(0, 1, 0))
-      body.torque.vadd(hullUp.cross(up).scale(body.mass * 10), body.torque)
-      const pitchAxis = body.quaternion.vmult(new Vec3(1, 0, 0))
-      body.torque.vadd(pitchAxis.scale(-body.angularVelocity.dot(pitchAxis) * 2800), body.torque)
-      const rollAxis = body.quaternion.vmult(new Vec3(0, 0, 1))
-      body.torque.vadd(rollAxis.scale(-body.angularVelocity.dot(rollAxis) * 1800), body.torque)
-      if (braking && Math.abs(speed) > 0.4) body.applyForce(forward.scale(-Math.sign(speed) * 1600))
-    }
-    body.wakeUp()
+    stepBoat(v, active, this.input, up, depth, FIXED_STEP)
   }
   /** Flight keeps the same collision body and cargo constraints; only wheel forces are disabled. */
   toggleFlight(): string {
@@ -1389,7 +1334,6 @@ export class Simulation {
       if (!supported || v.body.velocity.length() > 1.5 || up.dot(this.radialUp(v.body)) < 0.96)
         return 'Desciende hasta el suelo y estabiliza la nave antes de activar tierra'
       v.flight = null
-      this.world.removeBody(v.body)
       v.raycast.addToWorld(this.world)
       this.setRamp(
         v,
@@ -1630,13 +1574,34 @@ export class Simulation {
   nearestVehicle(): string | null {
     if (this.vehicleId) return null
     let nearest: string | null = null,
-      distance = 3.5
+      distance = Infinity
     for (const [id, v] of this.vehicles) {
-      const target = v.definition.garage
-        ? v.body.pointToWorldFrame(new Vec3(...v.definition.driver))
-        : v.body.position
-      const d = target.distanceTo(this.playerBody.position)
-      if (d < distance && v.body.velocity.length() < 1.5) {
+      // Reach the hull/doors, not an arbitrary model origin or distant pilot seat.
+      const local = v.body.pointToLocalFrame(this.playerBody.position)
+      const half = v.entity.size.map((size) => Math.max(0.1, size / 2))
+      const target = v.body.pointToWorldFrame(
+        new Vec3(
+          clamp(local.x, -half[0], half[0]),
+          clamp(local.y, -half[1], half[1]),
+          clamp(local.z, -half[2], half[2]),
+        ),
+      )
+      const reach = target.distanceTo(this.playerBody.position)
+      // A carrier hull encloses its cargo: prefer the car beside the monitor,
+      // while keeping the helm reachable around the hull when no car is nearer.
+      const d =
+        reach +
+        (v.definition.interior
+          ? Math.min(2, local.distanceTo(new Vec3(...v.definition.driver)) * 0.25)
+          : 0)
+      const platformVelocity = new Vec3()
+      v.body.getVelocityAtWorldPoint(this.playerBody.position, platformVelocity)
+      const relativeSpeed = this.playerBody.velocity.vsub(platformVelocity).length()
+      if (
+        reach < 2.75 &&
+        d < distance &&
+        (v.body.velocity.length() < 1.5 || (this.interiorId === id && relativeSpeed < 2))
+      ) {
         let blocked = false
         this.world.raycastAll(this.playerBody.position, target, { skipBackfaces: true }, (hit) => {
           if (hit.body !== this.playerBody && hit.body !== v.body) blocked = true
@@ -1653,7 +1618,7 @@ export class Simulation {
     if (this.disposed) throw new Error('Simulation is disposed')
     if (this.vehicleId) return this.exitVehicle()
     const id = this.nearestVehicle()
-    if (!id) return 'Acércate a un coche detenido'
+    if (!id) return 'Acércate a un vehículo detenido y pulsa E para entrar'
     this.startInVehicle(id)
     return 'Conduciendo ' + this.vehicles.get(id)!.entity.name
   }
@@ -1671,6 +1636,34 @@ export class Simulation {
   private exitVehicle(): string {
     const v = this.vehicles.get(this.vehicleId!)!
     if (v.body.velocity.length() > 1.5) return 'Detén el vehículo antes de salir'
+    if (v.definition.boat) {
+      const top = Math.max(
+        0,
+        ...(v.definition.colliders ?? []).map((c) => c.transform.position[1] + c.size[1] / 2),
+      )
+      for (const z of [1.6, -1.6]) {
+        const candidate = v.body.pointToWorldFrame(
+          new Vec3(0, top + this.playerHalfHeight + 0.08, z),
+        )
+        const half = new Vec3(PLAYER_RADIUS, this.playerHalfHeight, PLAYER_RADIUS)
+        if (
+          this.overlapsBody(
+            new AABB({ lowerBound: candidate.vsub(half), upperBound: candidate.vadd(half) }),
+          )
+        )
+          continue
+        this.playerBody.position.copy(candidate)
+        this.playerBody.previousPosition.copy(candidate)
+        v.body.getVelocityAtWorldPoint(candidate, this.playerBody.velocity)
+        this.playerBody.angularVelocity.setZero()
+        this.playerBody.aabbNeedsUpdate = true
+        this.vehicleId = null
+        this.world.addBody(this.playerBody)
+        this.playerBody.wakeUp()
+        return 'A bordo · E para volver al mando'
+      }
+      return 'La cubierta está ocupada'
+    }
     if (v.definition.interior) {
       const exit = v.definition.interior.exit
       for (const x of [exit[0], -exit[0]]) {
@@ -1733,7 +1726,7 @@ export class Simulation {
       this.world.addBody(this.playerBody)
       this.playerBody.wakeUp()
       this.vehicleId = null
-      return 'A pie'
+      return this.options.playerMode === 'hover' ? 'Monitor volante' : 'A pie'
     }
     return 'Las salidas están bloqueadas'
   }
@@ -1854,7 +1847,6 @@ export class Simulation {
       this.setRamp(this.vehicles.get(dock.carrierId)!, false)
       this.world.removeConstraint(dock.constraint)
       this.docks.delete(this.vehicleId)
-      this.world.removeBody(car.body)
       car.raycast.addToWorld(this.world)
       car.body.wakeUp()
       return 'Coche libre · sal marcha atrás por la rampa'
@@ -2030,7 +2022,7 @@ export class Simulation {
       rotation.mult(new Quaternion(...collider.transform.rotation)),
     )
     carrier.body.updateBoundingRadius()
-    carrier.body.updateMassProperties()
+    carrier.body.updateShapeTransform(ramp.colliderIndex)
     carrier.body.aabbNeedsUpdate = true
     carrier.body.wakeUp()
   }
@@ -2074,6 +2066,7 @@ export class Simulation {
     this.bodies.clear()
     this.mapBodies.clear()
     this.deferredMapBodies.clear()
+    this.world.raw.free()
     this.disposed = true
   }
 }

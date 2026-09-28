@@ -59,11 +59,12 @@ function flightScene(): SceneDocument {
 function ticks(sim: Simulation, count: number) {
   for (let i = 0; i < count; i++) sim.step(1 / 60)
 }
-it('supports walking beyond the authored ground and assisted ascent to space, braking and returning', () => {
+it('supports hovering beyond the authored ground and assisted ascent to space, braking and returning', () => {
   const doc = flightScene(),
-    sim = new Simulation(doc)
+    sim = new Simulation(doc, { playerMode: 'hover' })
   ticks(sim, 120)
-  expect(sim.player.grounded).toBe(true)
+  expect(sim.player.grounded).toBe(false)
+  expect(sim.player.position[1]).toBeGreaterThan(1)
   expect(sim.interact()).toContain('Container')
   expect(sim.toggleFlight()).toContain('Modo vuelo')
   sim.setInput({ ...idleInput(), lift: 1, sprint: true })
@@ -88,8 +89,10 @@ it('supports walking beyond the authored ground and assisted ascent to space, br
   sim.dispose()
   const walk = flightScene()
   walk.entities.find((e) => e.kind === 'spawn')!.transform.position = [150, 0.1, 0]
-  const outside = new Simulation(walk)
+  const outside = new Simulation(walk, { playerMode: 'hover' })
   ticks(outside, 120)
-  expect(outside.player.grounded).toBe(true)
+  expect(outside.player.grounded).toBe(false)
+  expect(outside.player.position[1]).toBeGreaterThan(1)
+  expect(outside.player.position[1]).toBeLessThan(1.6)
   outside.dispose()
 })

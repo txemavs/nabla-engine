@@ -9,17 +9,18 @@ export function mountSettingsWindow(input: StudioInputOwner): void {
   const store = defineWindowsStore('studio-settings')(createPinia())
   store.register('settings', {
     title: 'Opciones del proyecto',
-    width: 600,
-    height: 650,
-    x: 280,
-    y: 110,
+    width: Math.min(600, window.innerWidth - 16),
+    height: Math.min(650, window.innerHeight - 80),
+    x: window.innerWidth < 700 ? 8 : 280,
+    y: window.innerWidth < 700 ? 56 : 110,
     open: false,
     keepAlive: true,
   })
   const tabs = [
     { id: 'options-panel-layers', title: 'Capas' },
     { id: 'drape-section', title: 'Proyección' },
-    { id: 'performance-section', title: 'Rendimiento' },
+    { id: 'performance-section', title: 'Calidad' },
+    { id: 'diagnostics-section', title: 'Diagnóstico' },
     { id: 'sky-section', title: 'Sol y luna' },
     { id: 'geography-section', title: 'Ubicación' },
     { id: 'portal-registry', title: 'Portales' },

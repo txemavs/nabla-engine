@@ -52,7 +52,7 @@ describe('A3 and mobile garage', () => {
   it('drives up the real ramp, locks, travels with the carrier, releases and reverses out', () => {
     const doc = document(),
       original = JSON.stringify(doc),
-      sim = new Simulation(doc)
+      sim = new Simulation(doc, { playerMode: 'hover' })
     expect(sim.dockingCandidate('car')).toBeNull()
     park(sim)
     expect(sim.toggleDock()).toContain('sujeto')
@@ -82,19 +82,19 @@ describe('A3 and mobile garage', () => {
     sim.dispose()
   })
   it('can dismount into the hollow garage instead of treating it as one solid box', () => {
-    const sim = new Simulation(document())
+    const sim = new Simulation(document(), { playerMode: 'hover' })
     park(sim)
     expect(sim.toggleDock()).toContain('sujeto')
-    expect(sim.interact()).toBe('A pie')
+    expect(sim.interact()).toBe('Monitor volante')
     step(sim, 60)
-    expect(sim.player.grounded).toBe(true)
+    expect(sim.player.grounded).toBe(false) // The monitor floats above the garage floor.
     expect(sim.player.position[1]).toBeGreaterThan(1)
     expect(sim.interact()).toContain('Audi')
     expect(sim.vehicleInfo('car').dockedTo).toBe('carrier')
     sim.dispose()
   })
   it('retains the relative car transform while the loaded carrier turns', () => {
-    const sim = new Simulation(document())
+    const sim = new Simulation(document(), { playerMode: 'hover' })
     park(sim)
     sim.toggleDock()
     sim.transferControls()
@@ -113,7 +113,7 @@ it('flies the loaded garage, holds altitude, tilts and lands without releasing c
   const doc = document()
   // Cruise flight now travels beyond the old 100 m test platform.
   doc.entities[0]!.size = [2000, 1, 2000]
-  const sim = new Simulation(doc)
+  const sim = new Simulation(doc, { playerMode: 'hover' })
   park(sim)
   sim.toggleDock()
   sim.transferControls()
@@ -165,7 +165,7 @@ it('flies the loaded garage, holds altitude, tilts and lands without releasing c
 it('supports empty flight and rejects flight commands on ordinary cars', () => {
   const doc = document()
   doc.entities.find((e) => e.id === 'spawn')!.transform.position = [0, 0.1, -15]
-  const sim = new Simulation(doc)
+  const sim = new Simulation(doc, { playerMode: 'hover' })
   step(sim, 120)
   expect(sim.interact()).toContain('Container')
   expect(sim.toggleFlight()).toContain('Modo vuelo')
@@ -176,7 +176,7 @@ it('supports empty flight and rejects flight commands on ordinary cars', () => {
   expect(sim.entityTransform('carrier').position[1]).toBeGreaterThan(5)
   expect(sim.player.speed).toBeLessThan(0.1)
   sim.dispose()
-  const car = new Simulation(document())
+  const car = new Simulation(document(), { playerMode: 'hover' })
   step(car, 120)
   car.interact()
   expect(car.toggleFlight()).toContain('Ponte al mando')
@@ -187,7 +187,9 @@ it('supports empty flight and rejects flight commands on ordinary cars', () => {
 it('keeps the A3 attached during accelerated geographic ascent and braking', () => {
   const doc = document()
   doc.geography = { latitude: 40.4166, longitude: -3.70384, altitude: 0, imagery: 'offline' }
-  const sim = new Simulation(doc)
+  // Use the authored platform as terrain, as Studio's streamed-world mode does;
+  // a coincident fallback globe would introduce a second competing ground.
+  const sim = new Simulation(doc, { playerMode: 'hover', planetaryTerrain: true })
   park(sim)
   sim.toggleDock()
   sim.transferControls()
@@ -212,7 +214,7 @@ it('reaches 1000 km/h in drone flight, holds altitude and brakes on release', ()
   const doc = document()
   doc.entities[0]!.size = [10000, 1, 10000]
   doc.entities.find((e) => e.id === 'spawn')!.transform.position = [0, 0.1, -15]
-  const sim = new Simulation(doc)
+  const sim = new Simulation(doc, { playerMode: 'hover' })
   step(sim, 120)
   sim.interact()
   sim.toggleFlight()
@@ -256,7 +258,7 @@ it('raises the settled A3 chassis by five centimetres while keeping tyres on the
 it('pitches the nose down when forward is positive', () => {
   const doc = document()
   doc.entities.find((e) => e.id === 'spawn')!.transform.position = [0, 0.1, -15]
-  const sim = new Simulation(doc)
+  const sim = new Simulation(doc, { playerMode: 'hover' })
   step(sim, 30)
   sim.interact()
   sim.toggleFlight()

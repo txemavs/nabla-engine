@@ -10,7 +10,7 @@ import {
   type SceneDocument,
 } from '../../src/stage/scene.js'
 import {
-  createCarrierPortals,
+  createCarrierPortal,
   createPortalPair,
   portalMapping,
   portalMatrix,
@@ -73,10 +73,10 @@ describe('portal contract and journeys', () => {
     editor.undo()
     expect(editor.document.entities.find((e) => e.id === 'a')).toBeDefined()
   })
-  it('walks through once without changing authored state or duplicating bodies', () => {
+  it('floats through once without changing authored state or duplicating bodies', () => {
     const doc = scene(),
       before = JSON.stringify(doc),
-      sim = new Simulation(doc)
+      sim = new Simulation(doc, { playerMode: 'hover' })
     const count = sim.stats.bodies
     drive(sim)
     expect(sim.portalEvent?.blocked).toBe(false)
@@ -87,7 +87,7 @@ describe('portal contract and journeys', () => {
     sim.dispose()
   })
   it('transfers the A3 without unseating the driver or dropping speed', () => {
-    const sim = new Simulation(scene(true))
+    const sim = new Simulation(scene(true), { playerMode: 'hover' })
     for (let i = 0; i < 120; i++) sim.step(1 / 60)
     expect(sim.interact()).toContain('Conduciendo')
     drive(sim, 240)
@@ -100,7 +100,7 @@ describe('portal contract and journeys', () => {
   it('rotates the exit direction and returns through the same pair', () => {
     const doc = scene()
     doc.entities.find((e) => e.id === 'b')!.transform.rotation = rotationDegrees(0, 90, 0)
-    const sim = new Simulation(doc)
+    const sim = new Simulation(doc, { playerMode: 'hover' })
     drive(sim, 180)
     expect(sim.portalEvent?.blocked).toBe(false)
     expect(sim.player.position[0]).toBeGreaterThan(21)
@@ -118,7 +118,7 @@ describe('portal contract and journeys', () => {
   it('rejects a car that is wider than the aperture', () => {
     const doc = scene(true)
     for (const e of doc.entities) if (e.portal) e.size[0] = 1.3
-    const sim = new Simulation(doc)
+    const sim = new Simulation(doc, { playerMode: 'hover' })
     for (let i = 0; i < 120; i++) sim.step(1 / 60)
     sim.interact()
     drive(sim)
@@ -143,7 +143,7 @@ describe('portal contract and journeys', () => {
   it('does not keep the source floor contact when emerging above the destination floor', () => {
     const doc = scene()
     doc.entities.find((e) => e.id === 'b')!.transform.position[1] += 8
-    const sim = new Simulation(doc)
+    const sim = new Simulation(doc, { playerMode: 'hover' })
     for (let i = 0; i < 240 && !sim.portalEvent; i++) drive(sim, 1)
     expect(sim.portalEvent?.blocked).toBe(false)
     expect(sim.player.position[1]).toBeGreaterThan(8)
@@ -153,7 +153,7 @@ describe('portal contract and journeys', () => {
   it('blocks windows and occupied exits', () => {
     const editor = new SceneEditor(scene())
     editor.setPortalMode('a', 'window')
-    const window = new Simulation(editor.document)
+    const window = new Simulation(editor.document, { playerMode: 'hover' })
     drive(window)
     expect(window.player.position[0]).toBeLessThan(1)
     expect(window.player.position[2]).toBeGreaterThan(0)
@@ -161,7 +161,7 @@ describe('portal contract and journeys', () => {
     window.dispose()
     const doc = scene()
     doc.entities.push({ ...createEntity('block', 'box', [20, 1, -1]), size: [5, 2, 1] })
-    const blocked = new Simulation(doc)
+    const blocked = new Simulation(doc, { playerMode: 'hover' })
     drive(blocked)
     expect(blocked.portalEvent?.blocked).toBe(true)
     expect(blocked.player.position[0]).toBeLessThan(1)
@@ -174,7 +174,7 @@ describe('hosted portals and runtime addresses', () => {
     const doc = scene()
     doc.entities.push(...createPortalPair('c', 'd', [30, 1.455, 10], [40, 1.455, 10]))
     const before = JSON.stringify(doc),
-      sim = new Simulation(doc)
+      sim = new Simulation(doc, { playerMode: 'hover' })
     sim.configurePortal('a', 'c', 'open')
     expect(sim.portalState('a')).toMatchObject({ pairId: 'c', mode: 'open' })
     expect(sim.portalState('c')).toMatchObject({ pairId: 'a', mode: 'open' })
@@ -190,7 +190,7 @@ describe('hosted portals and runtime addresses', () => {
   it('refuses closure through an actor without partially changing the link', () => {
     const doc = scene()
     doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [0, 0.02, 0.1]
-    const sim = new Simulation(doc)
+    const sim = new Simulation(doc, { playerMode: 'hover' })
     expect(() => sim.configurePortal('a', 'b', 'closed')).toThrow(/ocupado/)
     expect(sim.portalState('a').mode).toBe('open')
     expect(sim.portalState('b').mode).toBe('open')
@@ -204,12 +204,12 @@ it('backs the A3 from the carrier through its mounted stern gate without changin
   doc.entities.push(
     createCarrier('ship', [0, 1.2, 0]),
     createA3('car', [0, 0.85, 2.5]),
-    ...createCarrierPortals('ship', 'bow', 'stern'),
+    createCarrierPortal('ship', 'stern'),
   )
   // Keep both road gates well clear of the ship.
   doc.entities.find((e) => e.id === 'a')!.transform.position = [20, 1.455, 0]
   doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
-  const sim = new Simulation(doc)
+  const sim = new Simulation(doc, { playerMode: 'hover' })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
   sim.setGarageDoor('ship', true)
   for (let i = 0; i < 150; i++) sim.step(1 / 60)
@@ -233,11 +233,8 @@ it('keeps hosted mouths rigidly attached during flight, including pitch and roll
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.6, 0.35, -2.8]
   doc.entities.find((e) => e.id === 'a')!.transform.position = [20, 1.455, 0]
   doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
-  doc.entities.push(
-    createCarrier('ship', [0, 1.2, 0]),
-    ...createCarrierPortals('ship', 'bow', 'stern'),
-  )
-  const sim = new Simulation(doc)
+  doc.entities.push(createCarrier('ship', [0, 1.2, 0]), createCarrierPortal('ship', 'stern'))
+  const sim = new Simulation(doc, { playerMode: 'hover' })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
   sim.interact()
   expect(sim.player.vehicleId).toBe('ship')
@@ -268,12 +265,8 @@ it('transfers a moving prop through the stern gate while its carrier is moving',
   prop.size = [0.4, 0.4, 0.4]
   prop.motion = 'dynamic'
   prop.mass = 1
-  doc.entities.push(
-    createCarrier('ship', [0, 1.2, 0]),
-    prop,
-    ...createCarrierPortals('ship', 'bow', 'stern'),
-  )
-  const sim = new Simulation(doc)
+  doc.entities.push(createCarrier('ship', [0, 1.2, 0]), prop, createCarrierPortal('ship', 'stern'))
+  const sim = new Simulation(doc, { playerMode: 'hover' })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
   sim.setGarageDoor('ship', true)
   for (let i = 0; i < 150; i++) sim.step(1 / 60)
@@ -295,10 +288,7 @@ it('transfers a moving prop through the stern gate while its carrier is moving',
 it('stops the hovering monitor at the armoured bow window', () => {
   const doc = scene()
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.9, 0.35, -2.6]
-  doc.entities.push(
-    createCarrier('ship', [0, 1.2, 0]),
-    ...createCarrierPortals('ship', 'bow', 'stern'),
-  )
+  doc.entities.push(createCarrier('ship', [0, 1.2, 0]), createCarrierPortal('ship', 'stern'))
   const sim = new Simulation(doc, { playerMode: 'hover' })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
   for (let i = 0; i < 240; i++) {
@@ -314,16 +304,13 @@ it('stops the hovering monitor at the armoured bow window', () => {
   sim.dispose()
 })
 
-it('leaves the helm at orbital height, walks to Earth and returns to the same carrier interior', () => {
+it('leaves the helm at orbital height, floats to Earth and returns to the same carrier interior', () => {
   const doc = scene()
   doc.geography = { latitude: 40.4166, longitude: -3.70384, altitude: 0, imagery: 'offline' }
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.85, 90000.35, -2.8]
   doc.entities.find((e) => e.id === 'a')!.transform.position = [20, 1.455, 0]
   doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
-  doc.entities.push(
-    createCarrier('ship', [0, 90000, 0]),
-    ...createCarrierPortals('ship', 'stern', 'stern'),
-  )
+  doc.entities.push(createCarrier('ship', [0, 90000, 0]), createCarrierPortal('ship', 'stern'))
   const sim = new Simulation(doc, { playerMode: 'hover' })
   expect(sim.interact()).toContain('Conduciendo')
   sim.toggleFlight()
@@ -375,7 +362,7 @@ it('checks a distant portal exit against suspended map colliders', () => {
   block.size = [5, 2, 1]
   block.source = { provider: 'openstreetmap', id: 'way/123', retrievedAt: '2026-09-21', tags: {} }
   doc.entities.push(block)
-  const sim = new Simulation(doc)
+  const sim = new Simulation(doc, { playerMode: 'hover' })
   sim.setCollisionDistance(200)
   expect(sim.collisionStats.active).toBe(0)
   drive(sim)

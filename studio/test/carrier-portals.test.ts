@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { installCarrierPortals } from '../../src/render/portal/carrier.js'
+import { installCarrierPortals } from '../../src/scene/migrations/carrier-portals.js'
 import { createSampleScene } from '../../src/stage/sample.js'
 import { SceneEditor } from '../../src/stage/editor.js'
 import { createPortalPair } from '../../src/entity/portal/portal.js'
@@ -61,5 +61,21 @@ it('retires saved bow portals, disconnects partners and installs glass only once
   })
   expect(result.entities.filter((e) => e.parentId === host.id && e.portal)).toHaveLength(1)
   expect(result.entities.find((e) => e.id === host.id)!.vehicle!.colliders).toHaveLength(10)
+  expect(installCarrierPortals(result)).toEqual(result)
+})
+
+it('preserves an authored side portal while retiring a legacy bow and installing the stock stern', () => {
+  const doc = createSampleScene()
+  const host = doc.entities.find((e) => e.vehicle?.interior)!
+  const [side, destination] = createPortalPair('side', 'outside')
+  side.parentId = host.id
+  side.transform.position = [2.45, 0.55, 0]
+  doc.entities.push(side, destination)
+  const result = installCarrierPortals(doc)
+  expect(result.entities.find((e) => e.id === side.id)).toEqual(side)
+  expect(result.entities.find((e) => e.id === destination.id)).toEqual(destination)
+  expect(
+    result.entities.filter((e) => e.parentId === host.id && e.portal?.clearsRamp),
+  ).toHaveLength(1)
   expect(installCarrierPortals(result)).toEqual(result)
 })

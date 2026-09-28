@@ -99,6 +99,19 @@ export class SceneView {
       }
     })
   }
+  /** Cars can cast onto the ground without unstable self-shadowing on thin GLB panels. */
+  setVehicleShadowReceiving(enabled: boolean): void {
+    for (const entity of this.document.entities) {
+      if (!entity.vehicle || entity.vehicle.plane || entity.vehicle.boat || entity.vehicle.interior)
+        continue
+      this.objects.get(entity.id)?.traverse((node) => {
+        if (!(node instanceof THREE.Mesh)) return
+        if (node.userData.originalShadowReceiver === undefined)
+          node.userData.originalShadowReceiver = node.receiveShadow
+        node.receiveShadow = enabled && node.userData.originalShadowReceiver
+      })
+    }
+  }
   private readonly roads = new RoadBatches()
   private readonly buildings = new BuildingBatches()
   batchBuildings = true

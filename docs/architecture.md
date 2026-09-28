@@ -10,23 +10,23 @@ SceneDocument (validated JSON v1)
                                       └─ host renderer and UI
 ```
 
-| Module            | Owns                                                                            |
-| ----------------- | ------------------------------------------------------------------------------- |
-| `src/stage/`      | Transform graph, editor, catalog and sample content                            |
-| `src/scene/`      | Scene document: parse, validate and tile streaming                              |
-| `src/entity/`     | Entity schema, capability, portal, vehicle, road, terrain, landcover and source |
-| `src/simulation/` | Physics and character/vehicle controllers                                       |
-| `src/entity/vehicle/` | Chassis and GLB fields, validation and procedural defaults             |
-| `src/catalog/`    | Concrete exemplars: A3, carrier, highway lamp and globe lamp               |
-| `src/entity/portal/` | Portal pairs, mapping and crossing                                         |
-| `src/math/`       | Numeric kernels: frame, geo, planar tests, solids, heightfield. See `src/math/README.md` |
-| `src/planet/buildings/` | Rings, footprints and OSM roofs                                          |
-| `src/planet/land/` | Heightfield, surfaces, draped cover, official land cover, GeoEuskadi road areas, and roads in `roads/` |
-| `src/planet/` | Tile frame, places, sky, GLB contract, and collisions                   |
-| `src/planet/extract/` | Downloaded district and tile source: features, tags, colours and multipolygons |
-| `src/planet/assemble/` | District assembler: buildings, ways, cover, water and the sample spawn |
-| `playground/`     | Rendering, browser events, map fetching, location permissions and local storage |
-| `studio/`         | Studio application. Depends on the engine; will move to its own repo            |
+| Module                  | Owns                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------ |
+| `src/stage/`            | Transform graph, editor, catalog and sample content                                                    |
+| `src/scene/`            | Scene document: parse, validate and tile streaming                                                     |
+| `src/entity/`           | Entity schema, capability, portal, vehicle, road, terrain, landcover and source                        |
+| `src/simulation/`       | Physics and character/vehicle controllers                                                              |
+| `src/entity/vehicle/`   | Chassis and GLB fields, validation and procedural defaults                                             |
+| `src/catalog/`          | Concrete exemplars: A3, carrier, highway lamp and globe lamp                                           |
+| `src/entity/portal/`    | Portal pairs, mapping and crossing                                                                     |
+| `src/math/`             | Numeric kernels: frame, geo, planar tests, solids, heightfield. See `src/math/README.md`               |
+| `src/planet/buildings/` | Rings, footprints and OSM roofs                                                                        |
+| `src/planet/land/`      | Heightfield, surfaces, draped cover, official land cover, GeoEuskadi road areas, and roads in `roads/` |
+| `src/planet/`           | Tile frame, places, sky, GLB contract, and collisions                                                  |
+| `src/planet/extract/`   | Downloaded district and tile source: features, tags, colours and multipolygons                         |
+| `src/planet/assemble/`  | District assembler: buildings, ways, cover, water and the sample spawn                                 |
+| `playground/`           | Rendering, browser events, map fetching, location permissions and local storage                        |
+| `studio/`               | Studio application. Depends on the engine; will move to its own repo                                   |
 
 Runtime engine modules do not import the playground or Studio, and they do not access `window`, `document`,
 `localStorage`, Vue or Agency services. The engine uses Three.js math and Rapier

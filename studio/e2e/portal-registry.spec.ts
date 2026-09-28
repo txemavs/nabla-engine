@@ -3,6 +3,16 @@ import { createSampleScene } from '../../src/stage/sample.js'
 import { createPortal } from '../../src/entity/portal/portal.js'
 import { createProject, visitLocation } from '../project.js'
 
+// Functional portal journeys use modest raster quality on software Chromium.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'nabla.performance.v1',
+      JSON.stringify({ resolution: 0.35, shadows: 0, mirrors: 0, dof: 0 }),
+    ),
+  )
+})
+
 test('registry locates individual portals and saves a named remote window', async ({ page }) => {
   const madrid = createSampleScene()
   madrid.name = 'Madrid'
@@ -53,8 +63,10 @@ test('remote view renders another scene in its own frame and restores renderer s
 }) => {
   await page.goto('/?scene=circuit')
   const pixel = await page.evaluate(async (root) => {
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-    const { createPortalSurface, renderPortals } = await import(String('/portals.ts'))
+    const T = await import(String('/e2e/render-fixture.ts'))
+    const { createPortalSurface, renderPortals } = await import(
+      `/@fs${root}/src/render/portal/portals.ts`
+    )
     const { createPortal } = await import(`/@fs${root}/src/entity/portal/portal.ts`)
     const scene = new T.Scene(),
       other = new T.Scene()

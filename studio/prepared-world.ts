@@ -1,4 +1,7 @@
-import { decodePreparedBinary, PREPARED_BINARY_LIMIT } from '#world-cache/prepare/prepared-binary.js'
+import {
+  decodePreparedBinary,
+  PREPARED_BINARY_LIMIT,
+} from '#world-cache/prepare/prepared-binary.js'
 import { mapCache, mapCacheStats, type MapCache } from '../src/render/planet/cache.js'
 import { parseScene, createEntity, type Entity } from '../src/stage/scene.js'
 import type { GeoPoint } from '../src/math/geo/sphere.js'

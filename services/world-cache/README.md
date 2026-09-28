@@ -1,3 +1,8 @@
+# Planetary publisher
+
+The active service is the unified publisher described in
+[the architecture document](../../docs/architecture/unified-planet-publisher.md).
+
 # Private shared world cache
 
 For the complete local Studio + generator stack, start with the

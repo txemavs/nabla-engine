@@ -23,7 +23,8 @@ export interface StudioHost {
   input: StudioInputOwner
   reportError: (error: unknown) => void
 }
-const layoutKey = 'nabla.studio.layout.v2'
+const compact = matchMedia('(max-width: 700px)').matches
+const layoutKey = compact ? 'nabla.studio.layout.mobile.v1' : 'nabla.studio.layout.v2'
 export function mountStudio(host: StudioHost): void {
   document.getElementById('welcome')!.hidden = true
   mountSettingsWindow(host.input)
@@ -106,6 +107,13 @@ export function mountStudio(host: StudioHost): void {
       },
     },
   }
+  if (compact)
+    defaults.root = {
+      kind: 'tabs',
+      id: 'mobile-tabs',
+      tabs: ['world', 'scene', 'properties'],
+      active: 'world',
+    }
   workspace.restore(defaults)
   try {
     const saved = localStorage.getItem(layoutKey)

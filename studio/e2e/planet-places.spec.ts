@@ -5,7 +5,9 @@ test('native city signs float 1km above ground at half size', async ({ page }) =
   await page.goto('/')
   const result = await page.evaluate(async (root) => {
     const { PlanetWorld } = await import(`/@fs${root}/src/render/planet/world.ts`)
-    const { mapTileAt, mapTileId, mapTileSample } = await import(`/@fs${root}/src/scene/mercator.ts`)
+    const { mapTileAt, mapTileId, mapTileSample } = await import(
+      `/@fs${root}/src/scene/mercator.ts`
+    )
     const tile = mapTileAt(43.33, -1.82, 15)
     const world = new PlanetWorld(
       mapTileSample(tile, 1, 1, 2),
@@ -40,7 +42,9 @@ test('ship HUD is a transparent glass surface and switches off outside', async (
   await page.goto('/')
   const result = await page.evaluate(async (root) => {
     const { ShipHud } = await import(`/@fs${root}/src/render/entity/ship-hud.ts`)
-    const { setNavigationPlaces } = await import(`/@fs${root}/src/render/entity/navigation-places.ts`)
+    const { setNavigationPlaces } = await import(
+      `/@fs${root}/src/render/entity/navigation-places.ts`
+    )
     const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
     const hud = new ShipHud(),
       camera = new T.PerspectiveCamera()

@@ -18,7 +18,9 @@ test('elevation-only relief loads without GLBs and supplies ground collisions be
     const module = '/planet-world.ts'
     const { PlanetWorld } = await import(module)
     const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-    const { Simulation, createEntity, createA3, initPhysics } = await import(`/@fs${root}/src/index.ts`)
+    const { Simulation, createEntity, createA3, initPhysics } = await import(
+      `/@fs${root}/src/index.ts`
+    )
     await initPhysics()
     const origin = { latitude: 43.32969, longitude: -1.819606, altitude: 0 }
     const world = new PlanetWorld(

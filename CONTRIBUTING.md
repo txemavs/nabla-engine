@@ -41,9 +41,9 @@ through the environment's normal tooling rather than committing local runtime pa
 Use the original `assets/brand/source.svg` for branding. Keep source artwork
 unchanged; adapt presentation through layout/CSS. Record provenance for new assets.
 
-The next planned capability is portals. Specify their transform and interaction
-contracts before adding cross-boundary behavior; retain the current regression
-journeys for walking, transport, flight and geographic continuity.
+Portals are implemented. Read [the current portal contract](docs/portals.md)
+before changing crossings or saved-scene migration. Retain the regression
+journeys for monitor movement, transport, flight and geographic continuity.
 
 Browser checks use Playwright's `chromium` channel (full Chromium in headless
 mode), including on CI. Avoid silently switching to Headless Shell: the WebGL

@@ -1,3 +1,9 @@
+import { capturePng } from '../src/render/capture.js'
+import { simplifiedTide } from '../src/planet/tide.js'
+import { OceanSheet } from '../src/render/planet/ocean-sheet.js'
+import { TileDebugView, type TileDebugMode } from '../src/render/planet/debug.js'
+import { PerformanceMonitor } from '../src/diagnostics/performance-monitor.js'
+import { TouchDriving } from './touch-driving.js'
 import { initPhysics } from '../src/simulation/physics.js'
 import { setNavigationPlaces } from '../src/render/entity/navigation-places.js'
 import { flightEntry, urlPlay } from './flight-entry.js'
@@ -36,7 +42,7 @@ void activatePreparation()
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
 import { readPerformance, shadowTiers, performancePresets, streamBudget } from './performance.js'
-import { DepthOfField } from './depth-of-field.js'
+import { DepthOfField } from '../src/render/effects/depth-of-field.js'
 import { ShadowManager } from '../src/render/shadows.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { SolidEditor } from './solid-editor.js'
@@ -101,6 +107,9 @@ let loadingWorld = true
 const flightAudio = new FlightAudio()
 let groundPlacementDirty = true
 let worldStream: PlanetWorld | null = null
+let tileDebug: TileDebugView | null = null
+let streamMode: 'ground' | 'flight' | 'model' = 'ground'
+const performanceMonitor = new PerformanceMonitor()
 let streamGeography = ''
 let streamSample: { at: number; position: Vec3Tuple } | null = null
 let editor = new SceneEditor({
@@ -195,6 +204,18 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.08
 viewport.prepend(renderer.domElement)
 const depthOfField = new DepthOfField()
+const performanceHud = document.createElement('output')
+performanceHud.className = 'performance-hud'
+performanceHud.hidden = true
+viewport.append(performanceHud)
+const touchDriving = new TouchDriving(viewport, {
+  play: () => $('play').click(),
+  interact: () => {
+    if (sim) toast(sim.interact())
+  },
+  camera: () => cycleCamera(),
+})
+
 renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
 const fieldLights = new FieldLights()
@@ -349,17 +370,15 @@ $('transform-exact').onclick = () =>
 const outline = new SelectionOutline()
 scene.add(outline)
 const lastWorldInstallMs = 0
-const sea = new THREE.Mesh(
-  new THREE.CircleGeometry(400000, 48),
-  new THREE.MeshBasicMaterial({ color: '#03374c' }),
-)
-sea.rotation.x = -Math.PI / 2
-sea.position.y = 0.05
-sea.name = 'Sea'
-sea.frustumCulled = false
-sea.renderOrder = -1
-const seaRoot = new THREE.Group()
-seaRoot.add(sea)
+const ocean = new OceanSheet(() => {
+  needsRender = true
+})
+let waterLevel = 0
+let waterMode: 'manual' | 'tide' = 'tide'
+let tideAmplitude = 1
+let nextTideReadout = 0
+const seaRoot = ocean.mesh
+shadowManager.setupMaterial(seaRoot.material)
 scene.add(seaRoot)
 let view = new SceneView(editor.document, performanceSettings.preset === 'ultra', true)
 view.setupMaterials((material) => shadowManager.setupMaterial(material))
@@ -475,6 +494,8 @@ function setupWorldStream(): void {
   $('stream-status').textContent = ''
   const identity = doc.geography?.planetary ? JSON.stringify(doc.geography) : ''
   if (worldStream && streamGeography === identity) return
+  tileDebug?.dispose()
+  tileDebug = null
   worldStream?.dispose()
   worldStream = null
   setPlanetCharts(() => worldStream?.chartTiles ?? [])
@@ -490,10 +511,14 @@ function setupWorldStream(): void {
     },
     (material) => shadowManager.setupMaterial(material),
   )
+  worldStream.useSea(() => ocean.surface())
   worldStream.setDistance(performanceSettings.distance)
   worldStream.setRelief(performanceSettings.relief)
   const budget = streamBudget(performanceSettings)
   worldStream.setQuality(budget.concurrent, budget.ahead, budget.retain, budget.tiles)
+  tileDebug = new TileDebugView(doc.geography)
+  worldStream.root.add(tileDebug.root)
+  worldStream.setStreamMode(streamMode)
   scene.add(worldStream.root)
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
@@ -1402,7 +1427,7 @@ async function togglePlay(startFlight = false): Promise<void> {
                   ? 1.5
                   : e.vehicle
                     ? 0.06 -
-                      Math.min(...e.vehicle.hubs.map((hub) => hub[1] - e.vehicle.wheelRadius))
+                      Math.min(...e.vehicle.hubs.map((hub) => hub[1] - e.vehicle!.wheelRadius))
                     : 0.85
             e.transform.position[1] = Math.max(e.transform.position[1], ground + ride)
           }
@@ -1433,6 +1458,7 @@ function togglePlayNow(startFlight = false): void {
       sim = null
       view.setPlaying(false)
       renderer.domElement.dataset.impacts = '0'
+      renderer.domElement.dataset.vehicle = ''
       document.exitPointerLock()
       camera.up.set(0, 1, 0)
       document.querySelector('.caption-tag')!.textContent = 'PERSPECTIVA'
@@ -1455,9 +1481,9 @@ function togglePlayNow(startFlight = false): void {
         playerMode: 'hover',
         planetaryTerrain: !!editor.document.geography?.planetary,
         experimentalLargeScene: performanceSettings.preset === 'ultra',
-        mapBuildingsEnabled: !!performanceSettings.buildings,
+        mapBuildingsEnabled: true,
       })
-      sim.setMapBuildingsEnabled(!!performanceSettings.buildings)
+      sim.setMapBuildingsEnabled(true)
       sim.setCollisionDistance(performanceSettings.collisions)
       firstPerson = true
       fireRequested = false
@@ -1510,6 +1536,8 @@ for (const [id, key] of [
   ['collision-distance', 'collisions'],
   ['render-resolution', 'resolution'],
   ['shadow-quality', 'shadows'],
+  ['vehicle-shadows', 'vehicleShadows'],
+  ['mirror-quality', 'mirrors'],
 ] as const) {
   const control = $<HTMLSelectElement>(id)
   control.value = String(performanceSettings[key])
@@ -1530,7 +1558,7 @@ for (const [id, key] of [
     if (worldStream)
       $('world-note').textContent =
         `${editor.document.name} · OSM + ESRI · Vista ≈ ${performanceSettings.distance / 1000} km`
-    sim?.setMapBuildingsEnabled(!!performanceSettings.buildings)
+    sim?.setMapBuildingsEnabled(true)
     sim?.setCollisionDistance(performanceSettings.collisions)
     renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
     renderer.setSize(viewport.clientWidth, viewport.clientHeight)
@@ -1544,6 +1572,78 @@ for (const [id, key] of [
     )
     needsRender = true
   }
+}
+function setWaterLevel(value: number): void {
+  if (!Number.isFinite(value)) return
+  waterMode = 'manual'
+  $<HTMLSelectElement>('water-mode').value = waterMode
+  $('tide-status').textContent = 'Nivel manual'
+  waterLevel = Math.round(Math.max(-5, Math.min(50, value)) * 10) / 10
+  ocean.setLevel(waterLevel)
+  sim?.setWaterLevel(waterLevel)
+  $<HTMLInputElement>('water-level').value = String(waterLevel)
+  $<HTMLInputElement>('water-level-number').value = String(waterLevel)
+  renderer.domElement.dataset.waterLevel = String(waterLevel)
+  needsRender = true
+}
+$<HTMLInputElement>('water-level').oninput = (event) =>
+  setWaterLevel((event.target as HTMLInputElement).valueAsNumber)
+$<HTMLInputElement>('water-level-number').oninput = (event) =>
+  setWaterLevel((event.target as HTMLInputElement).valueAsNumber)
+$('water-level-reset').onclick = () => setWaterLevel(0)
+$('water-mode').onchange = () => {
+  waterMode = $<HTMLSelectElement>('water-mode').value as typeof waterMode
+  if (waterMode === 'manual') setWaterLevel(waterLevel)
+  nextTideReadout = 0
+  needsRender = true
+}
+$<HTMLInputElement>('tide-amplitude').oninput = (event) => {
+  const value = (event.target as HTMLInputElement).valueAsNumber
+  if (Number.isFinite(value)) tideAmplitude = Math.max(0, Math.min(3, value))
+  nextTideReadout = 0
+}
+function updateTide(now: number): void {
+  if (waterMode !== 'tide') return
+  const tide = simplifiedTide(skyTime(skyClock).getTime(), tideAmplitude)
+  waterLevel = tide.level
+  ocean.setLevel(waterLevel)
+  if (now >= nextTideReadout) {
+    nextTideReadout = now + 500
+    const value = String(Number(waterLevel.toFixed(2)))
+    $<HTMLInputElement>('water-level').value = value
+    $<HTMLInputElement>('water-level-number').value = value
+    $('tide-status').textContent =
+      `${tide.state} · ${waterLevel.toFixed(2)} m · ±${tideAmplitude.toFixed(1)} m${skyClock.mode === 'fixed' ? ' · hora fija' : ''}`
+    renderer.domElement.dataset.waterLevel = value
+  }
+}
+
+$('tile-debug').onchange = () => {
+  needsRender = true
+}
+$('tile-debug-labels').onchange = () => {
+  needsRender = true
+}
+$('stream-mode').onchange = () => {
+  streamMode = $<HTMLSelectElement>('stream-mode').value as typeof streamMode
+  worldStream?.setStreamMode(streamMode)
+  streamSample = null
+  needsRender = true
+  if (streamMode === 'model')
+    toast('Maqueta: física pausada. Vuelve a conducción o vuelo para reanudar.')
+}
+$('performance-hud-toggle').onchange = () => {
+  performanceHud.hidden = !$<HTMLInputElement>('performance-hud-toggle').checked
+  needsRender = true
+}
+$('performance-reset').onclick = () => performanceMonitor.reset()
+$('performance-export').onclick = () => {
+  const url = URL.createObjectURL(new Blob([performanceMonitor.csv()], { type: 'text/csv' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'nabla-performance.csv'
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 const dofControl = $<HTMLSelectElement>('depth-of-field')
 dofControl.value = String(performanceSettings.dof)
@@ -1602,7 +1702,9 @@ function applySceneLayers() {
   fieldLights.root.visible = sceneLayer('layer-entities') || sceneLayer('layer-lamps')
   if (!sceneLayer('layer-grid')) grid.visible = false
 }
-for (const box of document.querySelectorAll<HTMLInputElement>('#options-panel-layers input'))
+for (const box of document.querySelectorAll<HTMLInputElement>(
+  '#options-panel-layers input[type=checkbox]',
+))
   box.onchange = () => {
     if (box.id === 'layer-lamps') fieldLayers.lamps = box.checked
     needsRender = true
@@ -1612,7 +1714,9 @@ for (const [id, on] of [
   ['layers-none', false],
 ] as const)
   $(id).onclick = () => {
-    for (const box of document.querySelectorAll<HTMLInputElement>('#options-panel-layers input'))
+    for (const box of document.querySelectorAll<HTMLInputElement>(
+      '#options-panel-layers input[type=checkbox]',
+    ))
       box.checked = on
     needsRender = true
   }
@@ -1638,6 +1742,8 @@ $('performance-preset').onchange = async () => {
   const preset = performancePresets[id]
   if (!preset) return
   Object.assign(performanceSettings, preset.settings)
+  dofControl.value = String(performanceSettings.dof)
+  if (!performanceSettings.dof) depthOfField.release()
   for (const [control, key] of [
     ['map-buildings', 'buildings'],
     ['draw-distance', 'distance'],
@@ -1647,6 +1753,8 @@ $('performance-preset').onchange = async () => {
     ['collision-distance', 'collisions'],
     ['render-resolution', 'resolution'],
     ['shadow-quality', 'shadows'],
+    ['vehicle-shadows', 'vehicleShadows'],
+    ['mirror-quality', 'mirrors'],
   ] as const)
     $<HTMLSelectElement>(control).value = String(performanceSettings[key])
   $('draw-distance').dispatchEvent(new Event('change'))
@@ -1773,6 +1881,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     down.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) <= 4
   if (click && pressShipSwitch(e)) return
   if (sim) {
+    if (e.pointerType === 'touch') return
     renderer.domElement
       .requestPointerLock()
       ?.catch(() => toast('No se pudo capturar el ratón. Puedes seguir jugando con el teclado.'))
@@ -1887,6 +1996,10 @@ window.addEventListener('keydown', (e) => {
     return
   }
   if (!sim) {
+    if (e.code === 'KeyE' && !e.repeat) {
+      toast('Estás en edición: pulsa Jugar (F8), acércate al vehículo y pulsa E')
+      return
+    }
     if (e.code === 'Escape' && solidEditor.active) {
       solidEditor.close()
       refreshUi()
@@ -2017,25 +2130,28 @@ function currentInput(pad: Gamepad | null = null) {
     ? gamepadAxes(pad, flight)
     : { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
   const touch = portalControls.flightInput()
+  const driving = touchDriving.input()
   return {
     forward:
       (flight
         ? axis('ArrowUp', 'ArrowDown')
         : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) +
       analog.forward +
-      touch.forward,
+      touch.forward +
+      driving.forward,
     right:
       (flight
         ? axis('ArrowRight', 'ArrowLeft')
         : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')) +
       analog.right +
-      touch.right,
+      touch.right +
+      driving.right,
     lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
     turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
     yaw,
     sprint: keys.has('ShiftLeft') || keys.has('ShiftRight') || Boolean(pad?.buttons[10]?.pressed),
     jump: false,
-    brake: keys.has('Space') || analog.brake || touch.brake,
+    brake: keys.has('Space') || analog.brake || touch.brake || driving.brake,
   }
 }
 new ResizeObserver(() => {
@@ -2054,8 +2170,130 @@ const frameTimes: number[] = []
 let performanceText = ''
 let nextPerformanceReadout = 0
 renderer.info.autoReset = false
+let photoBusy = false
+let photoExternalViews = new Map<string, ExternalPortalView>()
+$('photo').onclick = async () => {
+  if (photoBusy || startupPending || loadingWorld || playTransition) return
+  photoBusy = true
+  const dialog = $<HTMLDialogElement>('photo-progress')
+  const controller = new AbortController()
+  const cancel = () => controller.abort(new DOMException('Foto cancelada', 'AbortError'))
+  const onCancel = (event: Event) => {
+    event.preventDefault()
+    cancel()
+  }
+  dialog.addEventListener('cancel', onCancel)
+  $('photo-cancel').onclick = cancel
+  $<HTMLProgressElement>('photo-bar').value = 0
+  $('photo-status').textContent = 'Preparando la imagen…'
+  dialog.showModal()
+  const photoCamera = camera.clone()
+  photoCamera.position.sub(renderOrigin)
+  photoCamera.updateMatrixWorld(true)
+  const longest = 15360
+  const width = Math.round(camera.aspect >= 1 ? longest : longest * camera.aspect)
+  const height = Math.round(camera.aspect >= 1 ? longest / camera.aspect : longest)
+  const helpers = [grid, outline, worldCursor, gizmo.getHelper()]
+  const visible = helpers.map((object) => object.visible)
+  helpers.forEach((object) => (object.visible = false))
+  const shadows = shadowManager.lights.map((light) => ({
+    light,
+    size: light.shadow.mapSize.clone(),
+  }))
+  const shadowsActive = renderer.shadowMap.enabled
+  const shadowUpdate = renderer.shadowMap.needsUpdate
+  try {
+    for (const { light } of shadows) {
+      light.shadow.mapSize.set(2048, 2048)
+      light.shadow.map?.dispose()
+      light.shadow.map = null
+    }
+    let first = true
+    const blob = await capturePng(
+      renderer,
+      photoCamera,
+      (tile) => {
+        renderPortals(
+          view.portals,
+          renderer,
+          scene,
+          tile,
+          (remote) => {
+            if (!geography.enabled) return
+            const position = remote.position.clone().add(renderOrigin)
+            const restore = portalEnvironment(
+              geography,
+              scene,
+              position,
+              camera.position,
+              renderOrigin,
+              skyClock,
+              ambientFill,
+              [sun, ...shadowManager.lights],
+            )
+            geography.render(renderer, remote, position)
+            renderer.autoClear = false
+            return restore
+          },
+          photoExternalViews,
+        )
+        renderer.autoClear = true
+        if (geography.enabled && (sceneLayer('layer-sky') || sceneLayer('layer-planets'))) {
+          geography.render(renderer, tile, camera.position)
+          renderer.autoClear = false
+          renderer.clearDepth()
+        }
+        renderer.shadowMap.needsUpdate = first && shadowsActive
+        renderer.render(scene, tile)
+        first = false
+      },
+      {
+        width,
+        height,
+        signal: controller.signal,
+        progress: (fraction) => {
+          $<HTMLProgressElement>('photo-bar').value = fraction
+          $('photo-status').textContent = `${width} × ${height} · ${Math.round(fraction * 100)} %`
+        },
+      },
+    )
+    const url = URL.createObjectURL(blob),
+      link = document.createElement('a')
+    link.href = url
+    link.download = `nabla-${new Date().toISOString().replace(/[:.]/g, '-')}-${width}x${height}.png`
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
+    toast(`Foto descargada · ${width} × ${height}`)
+  } catch (error) {
+    toast(
+      controller.signal.aborted ? 'Foto cancelada' : `No se pudo guardar la foto: ${String(error)}`,
+    )
+  } finally {
+    for (const { light, size } of shadows) {
+      light.shadow.mapSize.copy(size)
+      light.shadow.map?.dispose()
+      light.shadow.map = null
+    }
+    renderer.shadowMap.needsUpdate = shadowUpdate || shadowsActive
+    helpers.forEach((object, i) => (object.visible = visible[i]))
+    dialog.removeEventListener('cancel', onCancel)
+    dialog.close()
+    photoBusy = false
+    previous = performance.now()
+    needsRender = true
+  }
+}
+
 function frame(now: number): void {
+  if (photoBusy) {
+    previous = now
+    return
+  }
   const frameStart = performance.now()
+  updateTide(now)
+  touchDriving.setActive(!!sim && studioInput.acceptsInput && streamMode !== 'model')
+  if (worldStream?.flushInstall(performanceSettings.preset === 'mobile' ? 1 : 1.5))
+    needsRender = true
   settlePendingGround()
   if (view.flushMapInstall(4, 24, camera.position)) needsRender = true
   renderer.domElement.dataset.worldInstallPending = String(view.pendingMapInstall)
@@ -2079,7 +2317,8 @@ function frame(now: number): void {
     }
     sim.setInput(currentInput(pad))
     const physicsStart = performance.now()
-    sim.step(document.hidden || playTransition ? 0 : dt)
+    sim.setWaterLevel(waterLevel)
+    sim.step(document.hidden || playTransition || streamMode === 'model' ? 0 : dt)
     physicsMs = performance.now() - physicsStart
     if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       const c = sim.collisionStats
@@ -2154,6 +2393,7 @@ function frame(now: number): void {
     const playerFrame = sim.playerFrame
     const playerFrameQ = new THREE.Quaternion(...(playerFrame?.rotation ?? ([0, 0, 0, 1] as const)))
     camera.up.set(0, 1, 0).applyQuaternion(playerFrameQ)
+    renderer.domElement.dataset.vehicle = p.vehicleId ?? ''
     renderer.domElement.dataset.interior = p.interiorId ?? ''
     renderer.domElement.dataset.cameraMode = p.vehicleId
       ? cameraMode
@@ -2290,19 +2530,22 @@ function frame(now: number): void {
     $('wheel-debug-hud').hidden = !wheelDebugText
     $('wheel-debug-hud').textContent = wheelDebugText
     const near = sim.nearestVehicle()
-    $('interaction').textContent = p.vehicleId
-      ? info?.dockedTo
-        ? 'F soltar · T conducir container · C cámara'
-        : info?.isCarrier
-          ? info.flightMode
-            ? 'W/S altura · A/D giro · Flechas inclinar · Shift viaje'
-            : 'V vuelo · T volver al A3 · C cámara · E salir'
-          : sim.dockingCandidate()
-            ? 'F sujetar al suelo del garaje · C cámara'
-            : 'E salir · C cámara · F sujetar dentro del garaje'
-      : near
-        ? 'E para entrar en ' + view.document.entities.find((e) => e.id === near)!.name
-        : 'WASD volar · Espacio saltar · C cámara · Clic disparar'
+    $('interaction').textContent =
+      streamMode === 'model'
+        ? 'Física pausada: cambia Maqueta por Conducción o Vuelo en Diagnóstico'
+        : p.vehicleId
+          ? info?.dockedTo
+            ? 'E salir · F soltar · T conducir container · C cámara'
+            : info?.isCarrier
+              ? info.flightMode
+                ? 'E salir · W/S altura · A/D giro · Flechas inclinar · Shift viaje'
+                : 'V vuelo · T volver al A3 · C cámara · E salir'
+              : sim.dockingCandidate()
+                ? 'E salir · F sujetar al suelo del garaje · C cámara'
+                : 'E salir · C cámara · F sujetar dentro del garaje'
+          : near
+            ? 'E para entrar en ' + view.document.entities.find((e) => e.id === near)!.name
+            : 'WASD caminar · Espacio saltar · E entrar en vehículo · C cámara'
   } else {
     orbit.update()
     if (
@@ -2317,6 +2560,7 @@ function frame(now: number): void {
         position,
         [0, 0, 0],
         [view.objects.get(selectedId)?.getWorldPosition(new THREE.Vector3()).toArray() ?? position],
+        camera.position.toArray(),
       )
       streamSample = { at: now, position }
     }
@@ -2396,7 +2640,16 @@ function frame(now: number): void {
   const position = sim?.player.position ?? camera.position.toArray()
   renderOrigin.set(0, 0, 0)
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
-  seaRoot.position.copy(renderOrigin).negate()
+  if (view.document.geography && sceneLayer('layer-sea')) {
+    ocean.update(
+      view.document.geography,
+      worldCamera,
+      renderOrigin,
+      Math.max(performanceSettings.distance, performanceSettings.fog * 2),
+      now,
+    )
+    needsRender = true
+  }
   seaRoot.visible = !!view.document.geography && sceneLayer('layer-sea')
   renderer.domElement.dataset.sea = seaRoot.visible ? 'sheet' : 'off'
   view.buildingDistance =
@@ -2494,7 +2747,9 @@ function frame(now: number): void {
     const outlineVisible = outline.visible
     outline.visible = false
     const mirrorVehicle =
-      cameraMode === 'cockpit' && !document.hidden ? (sim?.player.vehicleId ?? null) : null
+      performanceSettings.mirrors && cameraMode === 'cockpit' && !document.hidden
+        ? (sim?.player.vehicleId ?? null)
+        : null
     if (mirrorVehicle)
       view.limitDrawDistance(
         worldCamera,
@@ -2532,6 +2787,7 @@ function frame(now: number): void {
       )
       if (remote) externalViews.set(source.entityId, remote)
     }
+    photoExternalViews = externalViews
     renderPortals(
       view.portals,
       renderer,
@@ -2606,8 +2862,40 @@ function frame(now: number): void {
     needsRender = view.pendingBuildingBatches || !!remotePortalViews?.pending
   }
   camera.position.copy(worldCamera)
+  performanceMonitor.add({
+    time: now,
+    frame: dt * 1000,
+    cpu: performance.now() - frameStart,
+    physics: physicsMs,
+    calls: renderer.info.render.calls,
+    triangles: renderer.info.render.triangles,
+    install: worldStream?.installMilliseconds ?? 0,
+  })
   if (now >= nextPerformanceReadout) {
     nextPerformanceReadout = now + 500
+    view.setVehicleShadowReceiving(!!performanceSettings.vehicleShadows)
+    const summary = performanceMonitor.summary()
+    performanceHud.textContent = summary
+    $('diagnostics-readout').textContent = summary
+    if (worldStream) {
+      const diagnostics = worldStream.diagnostics
+      const mode = $<HTMLSelectElement>('tile-debug').value as TileDebugMode
+      tileDebug?.update(
+        diagnostics,
+        mode,
+        $<HTMLInputElement>('tile-debug-labels').checked,
+        new THREE.Vector3(...(streamSample?.position ?? worldCamera.toArray())),
+      )
+      const rows = [12, 13, 14, 15].map((z) => {
+        const tiles = diagnostics.tiles.filter((t) => t.tile.z === z)
+        return `Z${z}: ${tiles.filter((t) => t.state === 'visible').length} visibles / ${tiles.length} registradas · ${tiles.filter((t) => t.kind === 'mesh').length} mallas`
+      })
+      $('tile-counts').textContent =
+        rows.join('\n') +
+        `\n${diagnostics.pending} trabajos pendientes · ${(diagnostics.residentBytes / 1048576).toFixed(1)} MiB estimados de ciudad / ${(diagnostics.budgetBytes / 1048576).toFixed(0)} MiB de retención\nPico de instalación: ${diagnostics.maxInstallMs.toFixed(1)} ms`
+      renderer.domElement.dataset.tileDebug = mode
+      needsRender = true
+    }
     if (sim && view.document.geography && $('properties').querySelector('#entity-geography')) {
       const entity = view.document.entities.find((e) => e.id === selectedId)
       if (entity && (!entity.geoAnchor || entity.parentId)) {

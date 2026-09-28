@@ -86,13 +86,20 @@ export class ShadowManager {
       lightNear: 0.1,
       lightFar: config.tier.maxFar + 500,
       lightMargin: 200,
-      mode: 'practical',
+      // Reserve the near cascade for vehicles; kilometre-wide practical splits
+      // make a higher quality tier lose the car's contact shadow.
+      mode: 'custom',
+      customSplitsCallback: (count, _near, far, breaks) => {
+        const distances = count === 4 ? [40, 200, 1000] : count === 3 ? [40, 300] : [40]
+        for (let i = 0; i < count - 1; i++)
+          breaks.push(Math.min(distances[i] / far, (i + 1) / count))
+        breaks.push(1)
+      },
     })
-    if (THREE.ShaderChunk.lights_fragment_begin === standardLighting)
-      THREE.ShaderChunk.lights_fragment_begin = cascadedLighting(
-        standardLighting,
-        THREE.ShaderChunk.lights_fragment_begin,
-      )
+    THREE.ShaderChunk.lights_fragment_begin = cascadedLighting(
+      standardLighting,
+      THREE.ShaderChunk.lights_fragment_begin,
+    )
     this.csm.fade = false
     for (const light of this.csm.lights) {
       light.shadow.normalBias = config.tier.normalBias
