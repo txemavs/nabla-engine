@@ -4,6 +4,7 @@
  */
 import { type Entity, type Vec3Tuple } from '../entity/schema.js'
 import { createA3 } from './a3.js'
+import { createPoliceCar } from './vehicles/police.js'
 import { createJeep } from './jeep.js'
 import { createOutboard } from './boat.js'
 import { createCarrier } from './carrier.js'
@@ -13,7 +14,8 @@ import { createGlobeLamp } from './globe.js'
 import { createHighwayLamp } from './highway.js'
 
 export const entityCatalog = [
-  { id: 'car', label: 'Audi A3 Cabrio', clearance: 0.62 },
+  { id: 'car', label: 'S3 Nabla · 400 CV', clearance: 0.62 },
+  { id: 'police', label: 'Policía Municipal · Bilbao', clearance: 0.69 },
   { id: 'jeep', label: 'Jeep Wrangler', clearance: 0.86 },
   { id: 'boat', label: 'Fueraborda 6 m', clearance: 0.45 },
   { id: 'carrier', label: 'Contenedor volador', clearance: 1.2 },
@@ -26,22 +28,9 @@ export type CatalogId = (typeof entityCatalog)[number]['id']
 export function createCatalogEntities(kind: CatalogId, id: string, ground: Vec3Tuple): Entity[] {
   const entry = entityCatalog.find((e) => e.id === kind)!
   const position: Vec3Tuple = [ground[0], ground[1] + entry.clearance, ground[2]]
+  if (kind === 'police') return [createPoliceCar(id, position)]
   if (kind === 'jeep') return [createJeep(id, position)]
-  if (kind === 'car') {
-    const car = createA3(id, position)
-    const paints = [
-      '#c23b3b',
-      '#e2b23a',
-      '#3d7edb',
-      '#2f9e6b',
-      '#ece7df',
-      '#1c1f24',
-      '#d4762c',
-      '#7a4ea3',
-    ]
-    car.color = paints[Math.floor(Math.random() * paints.length)]
-    return [car]
-  }
+  if (kind === 'car') return [createA3(id, position)]
   if (kind === 'boat') return [createOutboard(id, position)]
   if (kind === 'cessna') return [createCessna(id, position)]
   if (kind === 'carrier')

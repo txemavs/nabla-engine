@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { Euler, Group, Quaternion, Vector3 } from 'three'
+import { Euler, Group, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import {
   driverHeadPose,
+  overheadDrivingPose,
+  overheadDrivingHeight,
   followDrivingHeading,
   DrivingTelemetry,
 } from '../../src/render/entity/driving-camera.js'
@@ -82,4 +84,55 @@ describe('rigid driver head', () => {
     expect(head.position.distanceTo(expected)).toBeLessThan(1e-7)
     expect(head.quaternion.angleTo(body)).toBeLessThan(1e-7)
   })
+})
+
+describe('vehicle-up overhead camera', () => {
+  it('keeps the nose at screen top through turns and on a tilted planet frame', () => {
+    for (const tilt of [0, 0.7]) {
+      const frame = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), tilt)
+      const normal = new Vector3(0, 1, 0).applyQuaternion(frame)
+      for (const yaw of [0, 0.8, Math.PI, -2.9]) {
+        const rotation = frame
+          .clone()
+          .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), yaw))
+        const pose = overheadDrivingPose([10, 20, 30], rotation.toArray(), 80, normal)
+        const forward = new Vector3(0, 0, -1).applyQuaternion(rotation)
+        expect(pose.up.dot(forward)).toBeCloseTo(1, 8)
+        expect(
+          pose.position
+            .clone()
+            .sub(new Vector3(10, 20, 30))
+            .distanceTo(normal.clone().multiplyScalar(80)),
+        ).toBeLessThan(1e-8)
+      }
+    }
+  })
+  it('has a finite heading even when an aircraft points straight upward', () => {
+    const rotation = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2)
+    const pose = overheadDrivingPose([0, 0, 0], rotation.toArray(), 50)
+    expect(pose.up.length()).toBeCloseTo(1)
+    expect(pose.up.y).toBeCloseTo(0)
+  })
+})
+
+it('frames the car at the lower quarter with a useful stopped view and speed-dependent range', () => {
+  const stopped = overheadDrivingHeight(0)
+  expect(stopped).toBe(45)
+  expect(overheadDrivingHeight(0, 0.75)).toBe(45)
+  expect(overheadDrivingHeight(250 / 3.6)).toBeGreaterThan(180)
+  expect(overheadDrivingHeight(30, 2)).toBeGreaterThan(overheadDrivingHeight(30))
+  for (const speed of [0, 30, 70]) {
+    const height = overheadDrivingHeight(speed)
+    const ahead = height * Math.tan((48 * Math.PI) / 360) * 0.5
+    const pose = overheadDrivingPose([0, 0, 0], [0, 0, 0, 1], height, undefined, ahead)
+    const camera = new PerspectiveCamera(48, 16 / 9, 0.1, 2000)
+    camera.position.copy(pose.position)
+    camera.up.copy(pose.up)
+    camera.lookAt(pose.target)
+    camera.updateMatrixWorld(true)
+    const screen = new Vector3().project(camera)
+    expect(screen.x).toBeCloseTo(0)
+    expect(screen.y).toBeCloseTo(-0.5)
+    if (!speed) expect(ahead * 3).toBeCloseTo(30, 0)
+  }
 })

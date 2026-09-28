@@ -136,20 +136,23 @@ speed and turn telemetry are filtered to avoid projection/framing vibration.
 
 The on-foot avatar uses Agency's floating CRT monitor. It leans with movement and
 acceleration, levels after braking and hovers gently. While driving, the monitor
-sits at the same eye anchor as the cockpit camera, at its native 0.34 m size,
+sits at the same eye anchor as the cockpit camera, at a head-sized 0.238 m width,
 without hovering or banking independently. It is visible from exterior and overhead
 views and hidden in cockpit view to keep the view clear. Portal transfers reset
 visual motion history rather than producing a large tilt.
 
 Press **C** (gamepad **B**) to cycle **exterior → cockpit → overhead**. The overhead
-view stays north-up, follows the car from 350 m, and keeps the vehicle small on
-the surrounding map. Use the mouse wheel over the viewport to adjust its height
-from 80 to 2,500 m. Driving controls remain the same. Connected map tiles supply
+view follows the vehicle heading: its nose stays at the top while the map rotates.
+At rest it sits 45 m above the vehicle, showing about 30 m of road ahead. The car
+stays at 75% of screen height. Camera height grows with speed and eases back after
+braking or a collision. The mouse wheel adjusts the automatic distance (0.75–3×),
+with a 45 m minimum and 600 m maximum height. Driving controls remain the same. Connected map tiles supply
 road imagery, not extra road collisions or terrain elevation.
 
 Rendering interpolates the physics snapshots: chassis, wheels, driver anchor and
-player share the same render time. The cockpit eye height remains 0.10 m below the
-authored driver anchor. The monitor screen faces forward (−Z), restoring Agency's
+player share the same render time. The cockpit eye is 0.15 m below and 0.26 m ahead of the authored car driver
+anchor (the carrier keeps its separate helm offset). The Wrangler head is centred
+at 1.58 m above the model ground, just ahead of the driver headrest. The monitor screen faces forward (−Z), restoring Agency's
 original orientation.
 
 ## Monitor flight and sidearm
@@ -337,3 +340,32 @@ flight from repeatedly aborting cold sectors, but does not guarantee that public
 map providers can deliver unseen terrain ahead of a vehicle at 1000 km/h.
 
 Carrier screens stay active throughout the occupied interior, without a proximity requirement. Use **G** to release the mouse for native CSS clicks. Driving controls still require the pilot seat. The carrier eye and monitor anchor sit 10 cm lower and 20 cm behind the authored pilot reference.
+
+### Nabla S3 custom preset
+
+The grey cabrio keeps its lightweight body and Nabla emblems, with a custom 400 CV
+(294.2 kW crank power), 520 N·m AWD powertrain and seven-speed DSG-style automatic.
+These are game tuning values, not a certified Audi specification. Drive with W/S
+and A/D; the HUD shows D1–D7 or R and engine RPM. Opposite throttle brakes before
+reverse engages. Space briefly loosens the rear axle to initiate a slide; release
+it to recover grip. Hold W + Space near rest for a rear-tire burnout (front brakes
+hold the car, the AWD coupling sends torque rearward). Smoke is contact-gated and
+limited to 96 particles. The sound button also mutes the synthesized car exhaust.
+The Bilbao police Focus drives only its front wheels. Saved stock presets upgrade
+on load while preserving their paint, placement and custom names/tuning.
+
+### Retractable S3 GPS
+
+Press **H** while driving the S3 to lower or raise its GPS screen and casing.
+Travel takes 1.8 seconds; another press reverses the motion from its current position.
+Lowering immediately turns the screen black and stops map redraws/texture uploads.
+Raising refreshes the map and restores it. The speedometer stays active.
+
+### Layered car menu
+
+Press **J** in the S3 to open its GPS console menu in cockpit view. Use **Up/Down**
+and **Enter** to choose a paint colour; **J** or **Escape** closes it. Driving input
+is held neutral with the brake applied while the menu has focus. The colour change
+is a normal scene edit; use **Save** to persist it. Retracting GPS with **H** closes
+the menu. Its layers and actions live in `src/catalog/monitors/car.ts`; the reusable
+monitor contract is documented in `src/render/monitors/README.md`.

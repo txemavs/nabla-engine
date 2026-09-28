@@ -20,3 +20,14 @@ it('replaces the retired Jeep without moving it or changing authored identity', 
   replaceLegacyJeeps(doc)
   expect(doc).toEqual(once)
 })
+
+it('updates the initial Wrangler seat but preserves a customised anchor', () => {
+  const jeep = createJeep('jeep')
+  jeep.vehicle!.driver = [-0.38, 0.8, -0.03]
+  const doc: SceneDocument = { version: 1, name: 'saved', entities: [jeep] }
+  replaceLegacyJeeps(doc)
+  expect(jeep.vehicle!.driver).toEqual(createJeep('reference').vehicle!.driver)
+  jeep.vehicle!.driver = [0, 1, 0.5]
+  replaceLegacyJeeps(doc)
+  expect(jeep.vehicle!.driver).toEqual([0, 1, 0.5])
+})

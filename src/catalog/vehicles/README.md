@@ -41,3 +41,7 @@ Old `src/catalog/a3.ts` and sibling imports are compatibility re-exports.
 New code should import this folder or the public package. A new vehicle starts
 with a definition here, references its assets, and reuses shared physics; avoid
 adding a second vehicle simulation to Studio.
+
+`police.ts` adds the Bilbao police Focus as its own palette entry, with shared
+wheels and its own collider/suspension/driver settings. The host offers insertion;
+Engine owns the definition and visual equipment (`render/entity/police.ts`).

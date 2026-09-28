@@ -118,3 +118,18 @@ export { FlightAudio } from './audio/flight.js'
 export { capturePng } from './render/capture.js'
 
 export { replaceLegacyJeeps } from './scene/migrations/jeep.js'
+
+export { createPoliceCar } from './catalog/vehicles/police.js'
+
+export {
+  HtmlMonitor,
+  type MonitorData,
+  type MonitorOptions,
+} from './render/monitors/html-monitor.js'
+
+export {
+  LayeredMonitor,
+  type MonitorDefinition,
+  type MonitorLayer,
+} from './render/monitors/layered-monitor.js'
+export { MonitorMenu, type MonitorMenuItem, type MonitorAction } from './render/monitors/menu.js'

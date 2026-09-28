@@ -1,3 +1,4 @@
+import type { DrivetrainState } from '../../simulation/vehicles/drivetrain.js'
 import type { Body, RaycastVehicle } from '../../simulation/physics.js'
 import type { Entity } from '../schema.js'
 import type { VehicleDefinition } from './field.js'
@@ -9,6 +10,7 @@ export interface Vehicle {
   entity: Entity
   steer: number
   /** Outboard throttle, −1..1. Lags the stick so the hull carries speed. */
+  drivetrain: DrivetrainState
   prop: number
   definition: VehicleDefinition
   flight: { altitude: number; yaw: number } | null

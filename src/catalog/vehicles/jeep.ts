@@ -42,7 +42,8 @@ export function createJeep(id: string, position: Vec3Tuple = [9, 0.86, 6]): Enti
       engineForce: 2600,
       drivenWheels: 'all',
       brakeForce: 65,
-      driver: [-0.38, 0.8, -0.03],
+      // Head centre: 1.58 m above ground, just ahead of the front headrest.
+      driver: [-0.39, 0.95, -0.03],
       cameraDistance: 7,
     },
     visual: {

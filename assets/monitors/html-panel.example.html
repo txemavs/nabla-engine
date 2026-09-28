@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <title>Nabla · Plantilla del velocímetro</title>
+    <style>
+      /* This block also styles the in-world monitor. Keep assets and fonts inline. */
+      .monitor {
+        width: 640px;
+        height: 320px;
+        box-sizing: border-box;
+        padding: 20px 28px;
+        background: #080b10;
+        color: #f6f7fa;
+        font-family: Arial, sans-serif;
+        border-radius: 18px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        color: #abb2bf;
+        font-size: 18px;
+        letter-spacing: 3px;
+      }
+      .cluster {
+        display: flex;
+        align-items: center;
+        height: 246px;
+      }
+      .gauge {
+        position: relative;
+        width: 132px;
+        height: 240px;
+        flex-shrink: 0;
+        text-align: center;
+      }
+      .label {
+        color: #aab0bc;
+        font-size: 16px;
+        letter-spacing: 2px;
+      }
+      .track {
+        position: absolute;
+        width: 176px;
+        height: 32px;
+        left: -22px;
+        top: 112px;
+        transform: rotate(-90deg);
+        background: #28232b;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .fill {
+        height: 100%;
+        width: 0%;
+        background: repeating-linear-gradient(
+          90deg,
+          #ff3344 0px,
+          #ff3344 12px,
+          #731827 12px,
+          #731827 15px
+        );
+      }
+      .limit {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        color: #aab0bc;
+        font-size: 16px;
+      }
+      .readout {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .speed {
+        font-size: 116px;
+        font-weight: 700;
+        letter-spacing: -5px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      .unit {
+        color: #aab0bc;
+        font-size: 22px;
+        margin-top: 8px;
+      }
+      .gear {
+        font-size: 28px;
+        color: #ff4149;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body style="background: #242832; color: white; font-family: Arial, sans-serif; padding: 24px">
+    <!-- Only this element and the styles above are rendered in the car. -->
+    <main class="monitor" data-monitor="speedometer" data-update-ms="150">
+      <div class="header"><span>NABLA S3</span><span>400 CV · DSG</span></div>
+      <div class="cluster">
+        <div class="gauge" aria-label="Revoluciones">
+          <span class="label">RPM</span>
+          <div class="track"><div class="fill" data-bar="rpm"></div></div>
+          <span class="limit">0 — 7.000</span>
+        </div>
+        <div class="readout">
+          <span class="speed" data-value="speed">0</span>
+          <span class="unit">km/h</span>
+          <span class="gear" data-value="gear">D1</span>
+        </div>
+        <div class="gauge" aria-label="Velocidad">
+          <span class="label">KM/H</span>
+          <div class="track"><div class="fill" data-bar="speed"></div></div>
+          <span class="limit">0 — 320</span>
+        </div>
+      </div>
+    </main>
+    <section style="max-width: 640px; margin-top: 24px">
+      <h1>Plantilla editable del cuadro</h1>
+      <p>
+        Edita este HTML y su CSS. El coche usa exactamente el bloque marcado con
+        <code>data-monitor</code>. Estos controles solo sirven para probarlo aquí.
+      </p>
+      <label>Velocidad <input id="demo-speed" type="range" min="0" max="320" value="0" /></label>
+      <label>RPM <input id="demo-rpm" type="range" min="900" max="7000" value="900" /></label>
+    </section>
+    <script>
+      function preview() {
+        const speed = +document.getElementById('demo-speed').value
+        const rpm = +document.getElementById('demo-rpm').value
+        const values = {
+          speed,
+          rpm,
+          gear: 'D' + Math.min(7, 1 + Math.floor(speed / 45)),
+        }
+        const bars = { speed: speed / 320, rpm: rpm / 7000 }
+        document
+          .querySelectorAll('[data-value]')
+          .forEach((el) => (el.textContent = values[el.dataset.value] ?? ''))
+        document
+          .querySelectorAll('[data-bar]')
+          .forEach((el) => (el.style.width = bars[el.dataset.bar] * 100 + '%'))
+      }
+      document.addEventListener('input', preview)
+      preview()
+    </script>
+  </body>
+</html>

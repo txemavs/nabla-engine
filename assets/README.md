@@ -159,3 +159,72 @@ The retired Gladiator binaries and its special clearcoat/steering setup are
 removed. Saved Studio scenes migrate that exact old body URL to the Wrangler,
 retaining entity identity, placement, colour and custom names. Engine clients can
 call `replaceLegacyJeeps` on their privately owned parsed document.
+
+## Bilbao police Focus
+
+`world/car.ford.focus.police.glb` and `world/car.ford.focus.wheel.glb` derive from
+the user-supplied `2016_ford_focus_rs.glb`. Embedded attribution identifies
+[Ddiaz Design](https://sketchfab.com/ddiaz-design),
+[2016 Ford Focus RS](https://sketchfab.com/3d-models/2016-ford-focus-rs-27e25fcead154e62a1dd8e92ccedb691),
+CC BY-NC-SA 4.0. Source attribution is preserved in both GLBs.
+
+Run `node scripts/prepare-focus.mjs /path/to/2016_ford_focus_rs.glb` to reproduce
+axis/scale conversion, material grouping and wheel extraction. The original
+source remains unchanged. Prepared paint is white; retained materials/textures
+preserve the interior and exterior detail. Four wheels share one template.
+
+`src/render/entity/police.ts` adds vector/canvas lettering, projected stripes and
+a rounded emissive lightbar inspired by the two user-provided Bilbao fleet
+photographs. This is a Focus RS adaptation, not a scan of the pictured vehicles.
+No photograph pixels are bundled. The lightbar flashes while occupied in play;
+it adds no shadow lights, reflection passes or siren audio. The isolated browser
+view measures 32 calls / 106,340 triangles including transparent passes and trim.
+These counts exclude scene shadows, portals and other world objects.
+
+Police markings sit 3 mm above the body and use alpha cutouts with depth writing,
+avoiding coplanar blending with the logarithmic depth buffer. Lightbar feet are
+ray-fitted to the roof at the rearward mounting position.
+
+## A3 Nabla lightweight edition
+
+The current A3 body, wheel and steering files are derived from the recovered A3
+sources above. `scripts/prepare-a3.mjs` accepts a directory containing the three
+untouched source GLBs; the local pre-edit copy is
+`/home/txema/backups/nabla-a3-20260928/`. The original files also remain in Git
+history at `b11cc97`. Rebuild with Node 22 and the repository dependencies.
+
+The paint, glazing, lights and mirror-lens triangle positions are preserved
+exactly (a source-derived SHA-256 regression guards 25,941 protected triangles).
+Node transforms and functional names are retained. Meshoptimizer simplifies
+other details with locked boundaries and absolute error limits of 1 mm for body
+and steering detail and 1.5 mm for wheels. These are simplifier error settings,
+not a measured physical manufacturing tolerance. Normals/UVs are compacted with
+the selected vertices. No physics mass or collider settings change.
+
+The assembled vehicle falls from 215,865 to 98,875 triangles (54% reduction).
+The three files fall from 4,235,924 to 2,907,136 bytes (31% reduction). The isolated
+browser view submits 103,892 triangles including transparent passes. This does
+not predict FPS in a populated world. Both physics wheel animation and cockpit
+mirror/instrument mount names remain available.
+
+The front/rear ring components and central steering decoration are replaced by
+silver chrome copies of the container's actual `Brand_Nabla_Proa` geometry. The
+wheel cap texture with rings is removed, and each hub receives the same emblem.
+The source logo SVG is unchanged. Thin inner floor and wheel-arch liners block
+light through the open underside; the convertible cabin remains open. Runtime
+paint explicitly renders/casts shadows from both faces, preserving thin panels
+that disappeared when the old replacement paint reverted to front-face culling.
+Newly inserted A3s use their defined grey paint rather than random colours;
+previously authored colours remain editable.
+
+The A3 underfloor is narrowed at both axles, with wider sections only between
+and beyond the tires. Inboard wheel-well seals have a regression against the
+tire steering envelope. Opaque, shaped headlamp back bowls and black housings
+close the front optics while retaining the clear lenses and lit details.
+
+### S3 monitor artwork
+
+`monitors/s3-cluster.svg` and `monitors/red-needle.svg` are project-authored vector
+artwork inspired by the user-provided instrument-layout reference. The reference
+photograph is not embedded or redistributed. See [the monitor editing guide](../docs/monitors.md)
+for the layered definition, preview page, retained HTML example and performance model.

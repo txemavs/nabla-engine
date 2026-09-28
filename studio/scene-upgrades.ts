@@ -1,3 +1,4 @@
+import { upgradeSportPresets } from '../src/scene/migrations/sport.js'
 import { replaceLegacyJeeps } from '../src/scene/migrations/jeep.js'
 import { boxSolid } from '../src/math/solid/mesh.js'
 import { circuitEntities } from '../src/stage/circuit-plan.js'
@@ -10,6 +11,7 @@ import { installCarrierPortals } from '../src/render/portal/carrier.js'
 export function upgradeReferenceScene(raw: unknown, experimentalLargeScene = false) {
   const doc = installCarrierPortals(raw, experimentalLargeScene)
   replaceLegacyJeeps(doc)
+  upgradeSportPresets(doc)
   // Recognised baseline buildings become independent topology components.
   // Preserve edited windows and anything with children.
   const baseline = circuitEntities()

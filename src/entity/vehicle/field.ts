@@ -19,8 +19,19 @@ export const vehicleField = z
     suspensionTravel: finite.min(0.05).max(1.2).optional(),
     stiffness: finite.min(5).max(200),
     engineForce: finite.positive().max(100000),
-    /** `all` drives every hub. Omitted keeps the rear axle. */
-    drivenWheels: z.enum(['rear', 'all']).optional(),
+    /** Front hubs are 0/1; rear hubs 2/3. Omitted keeps rear-wheel drive. */
+    drivenWheels: z.enum(['front', 'rear', 'all']).optional(),
+    /** Optional automatic powertrain. Power is metric horsepower (CV), torque is N·m. */
+    powertrain: z
+      .object({
+        powerCv: finite.min(20).max(2000),
+        torqueNm: finite.min(20).max(3000),
+        ratios: z.array(finite.min(0.2).max(6)).min(1).max(10),
+        finalDrive: finite.min(1).max(8),
+        grip: finite.min(0.5).max(8),
+      })
+      .strict()
+      .optional(),
     brakeForce: finite.positive().max(1000),
     driver: vector,
     cameraDistance: finite.min(2).max(30),

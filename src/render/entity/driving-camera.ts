@@ -55,3 +55,29 @@ export class DrivingTelemetry {
     this.turnRate += (turnRate - this.turnRate) * alpha
   }
 }
+
+/** Overhead view: local ground normal below the camera, vehicle nose toward screen top. */
+export function overheadDrivingPose(
+  position: readonly number[],
+  rotation: readonly number[],
+  height: number,
+  groundUp = new Vector3(0, 1, 0),
+  lookAhead = 0,
+): { position: Vector3; up: Vector3; target: Vector3 } {
+  const body = new Quaternion().fromArray(rotation)
+  const normal = groundUp.clone().normalize()
+  const up = new Vector3(0, 0, -1).applyQuaternion(body).projectOnPlane(normal)
+  if (up.lengthSq() < 1e-6) up.crossVectors(normal, new Vector3(1, 0, 0).applyQuaternion(body))
+  up.normalize()
+  const target = new Vector3().fromArray(position).addScaledVector(up, lookAhead)
+  return {
+    position: target.clone().addScaledVector(normal, height),
+    target,
+    up,
+  }
+}
+
+/** Driving map: roughly 30 m ahead at rest, with two seconds of extra road at speed. */
+export function overheadDrivingHeight(speed: number, zoom = 1): number {
+  return MathUtils.clamp((45 + Math.max(0, speed) * 2) * MathUtils.clamp(zoom, 0.75, 3), 45, 600)
+}

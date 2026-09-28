@@ -1,3 +1,4 @@
+import { PoliceEquipment } from './police.js'
 import { ShipHud } from './ship-hud.js'
 import { entityMapArtifact } from '../planet/map-artifact.js'
 import { isMapEnvironment } from '../../scene/map-content.js'
@@ -62,6 +63,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
 export class SceneView {
   private readonly thrusters = new Map<string, CarrierThrusters>()
   private readonly shipLights = new Map<string, ShipLights>()
+  private readonly policeEquipment = new Map<string, PoliceEquipment>()
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
@@ -100,6 +102,26 @@ export class SceneView {
     })
   }
   /** Cars can cast onto the ground without unstable self-shadowing on thin GLB panels. */
+  vehicleMenu(id: string) {
+    return this.instruments.get(id)?.menu
+  }
+  toggleVehicleMenu(id: string): boolean | null {
+    return this.instruments.get(id)?.toggleMenu() ?? null
+  }
+  setVehiclePaint(id: string, color: string): void {
+    if (!/^#[0-9a-f]{6}$/i.test(color)) return
+    const entity = this.document.entities.find((e) => e.id === id)
+    if (entity) entity.color = color
+    this.objects.get(id)?.traverse((node) => {
+      if (!(node instanceof THREE.Mesh)) return
+      for (const material of Array.isArray(node.material) ? node.material : [node.material])
+        if (material instanceof THREE.MeshStandardMaterial && /^Pintura/.test(material.name))
+          material.color.set(color)
+    })
+  }
+  toggleVehicleGps(id: string): boolean | null {
+    return this.instruments.get(id)?.toggleGps() ?? null
+  }
   setVehicleShadowReceiving(enabled: boolean): void {
     for (const entity of this.document.entities) {
       if (!entity.vehicle || entity.vehicle.plane || entity.vehicle.boat || entity.vehicle.interior)
@@ -668,6 +690,9 @@ export class SceneView {
             // Black paint stays dark if the specular tint is the base colour. The coat is the shine.
             const paint = new THREE.MeshPhysicalMaterial({
               name: material.name,
+              // Thin authored body panels need both faces for interior visibility and shadows.
+              side: THREE.DoubleSide,
+              shadowSide: THREE.DoubleSide,
               color: e.color,
               metalness: 0.72,
               roughness: 0.22,
@@ -706,6 +731,11 @@ export class SceneView {
             }
           }
         })
+      }
+      if (visual.body.url === '/world/car.ford.focus.police.glb') {
+        const equipment = new PoliceEquipment(model)
+        this.policeEquipment.set(e.id, equipment)
+        this.surfaceTextures.push(...equipment.textures)
       }
       if (visual.body.url === '/world/cessna.172.glb') {
         const propeller = mountPropeller(model)
@@ -960,6 +990,8 @@ export class SceneView {
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
     for (const [id, propeller] of this.propellers)
       propeller.rotation.z += sim.vehicleInfo(id).engine * 78 * Math.min(elapsed, 0.05)
+    for (const [id, equipment] of this.policeEquipment)
+      equipment.update(performance.now(), sim.player.vehicleId === id)
     for (const [id, lights] of this.carLights) {
       const info = sim.vehicleInfo(id)
       lights.update(
@@ -969,12 +1001,16 @@ export class SceneView {
     }
     for (const [id, instruments] of this.instruments) {
       instruments.setPowered(sim.player.vehicleId === id)
+      instruments.setSecondary(!cockpit)
       if (sim.player.vehicleId === id)
         instruments.update(
           this.document,
           sim.entityTransform(id, true),
           sim.vehicleInfo(id, true).speedKmh,
           performance.now(),
+          sim.vehicleInfo(id).rpm,
+          sim.vehicleInfo(id).gear,
+          sim.vehicleInfo(id).engineLoad,
         )
     }
     const vehicleId = sim.player.vehicleId
@@ -991,7 +1027,7 @@ export class SceneView {
       this.avatar.quaternion.copy(head.quaternion)
       this.monitor.position.set(0, 0, 0)
       this.monitor.quaternion.identity()
-      this.monitor.scale.setScalar(0.5)
+      this.monitor.scale.setScalar(0.7)
       this.monitorMotion.reset()
       this.avatar.visible = !cockpit
     } else {

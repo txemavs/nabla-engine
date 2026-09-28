@@ -17,7 +17,7 @@ export class FlightAudio extends EngineFlightAudio {
       this.button.setAttribute('aria-pressed', String(enabled))
     }
     label()
-    this.button.title = 'Activar o silenciar los propulsores'
+    this.button.title = 'Activar o silenciar los motores'
     document.querySelector('footer')?.append(this.button)
     const options = { signal: this.events.signal }
     this.button.addEventListener(

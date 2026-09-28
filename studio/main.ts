@@ -1,3 +1,4 @@
+import { TireSmoke } from '../src/render/entity/tire-smoke.js'
 import { capturePng } from '../src/render/capture.js'
 import { simplifiedTide } from '../src/planet/tide.js'
 import { OceanSheet } from '../src/render/planet/ocean-sheet.js'
@@ -53,6 +54,8 @@ import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
 import {
   driverHeadPose,
+  overheadDrivingPose,
+  overheadDrivingHeight,
   followDrivingHeading,
   DrivingTelemetry,
 } from '../src/render/entity/driving-camera.js'
@@ -139,7 +142,8 @@ let cameraMode: 'chase' | 'cockpit' | 'map' = 'chase'
 let headYaw = 0
 let headPitch = 0.05
 let headVehicle: string | null = null
-let mapHeight = 350
+let mapHeight = 45
+let mapZoom = 1
 const drivingTelemetry = new DrivingTelemetry()
 function cycleCamera(): void {
   if (!sim) return
@@ -218,6 +222,8 @@ const touchDriving = new TouchDriving(viewport, {
 
 renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
+const tireSmoke = new TireSmoke()
+scene.add(tireSmoke.root)
 const fieldLights = new FieldLights()
 scene.add(fieldLights.root)
 let fieldFollow = true
@@ -1016,6 +1022,7 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
     'add-box',
     'add-car',
     'add-jeep',
+    'add-police',
     'add-boat',
     'add-carrier',
     'add-cessna',
@@ -1944,7 +1951,7 @@ renderer.domElement.addEventListener(
   (e) => {
     if (!sim?.player.vehicleId || cameraMode !== 'map') return
     e.preventDefault()
-    mapHeight = THREE.MathUtils.clamp(mapHeight * Math.exp(e.deltaY * 0.001), 80, 2500)
+    mapZoom = THREE.MathUtils.clamp(mapZoom * Math.exp(e.deltaY * 0.001), 0.75, 3)
   },
   { passive: false },
 )
@@ -1968,6 +1975,34 @@ window.addEventListener('keydown', (e) => {
   if (e.defaultPrevented || !studioInput.acceptsInput) return
   if (document.querySelector('.app-menu:popover-open, dialog[open]')) return
   if ((e.target as HTMLElement)?.matches('input,select,textarea,[contenteditable]')) return
+  const menuVehicle = sim?.player.vehicleId
+  if (menuVehicle && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (e.code === 'KeyJ') {
+      e.preventDefault()
+      if (!e.repeat) {
+        const opened = view.toggleVehicleMenu(menuVehicle)
+        if (opened !== null) {
+          keys.clear()
+          if (opened) cameraMode = 'cockpit'
+          toast(opened ? 'Menú del coche · flechas y Enter · J para salir' : 'Menú cerrado')
+        }
+      }
+      return
+    }
+    const menu = view.vehicleMenu(menuVehicle)
+    if (menu?.open) {
+      const result = menu.key(e.code)
+      if (result.handled) {
+        e.preventDefault()
+        if (result.action?.type === 'vehicle.paint' && result.action.value) {
+          editor.update(menuVehicle, { color: result.action.value })
+          view.setVehiclePaint(menuVehicle, result.action.value)
+          toast('Color aplicado · Guardar conserva el cambio')
+        }
+        return
+      }
+    }
+  }
   if (e.code === 'Tab' && sim) {
     e.preventDefault()
     if (!e.repeat && !sim.player.vehicleId) {
@@ -2027,6 +2062,14 @@ window.addEventListener('keydown', (e) => {
   }
   if ((e.code === 'Comma' || e.code === 'Period') && !e.repeat && sim?.player.vehicleId) {
     view.signal(sim.player.vehicleId, e.code === 'Comma' ? -1 : 1)
+    return
+  }
+  if (e.code === 'KeyH' && sim.player.vehicleId) {
+    e.preventDefault()
+    if (!e.repeat) {
+      const open = view.toggleVehicleGps(sim.player.vehicleId)
+      if (open !== null) toast(open ? 'GPS encendido · desplegando' : 'GPS apagado · recogiendo')
+    }
     return
   }
   if (e.code === 'KeyN' && !e.repeat) {
@@ -2115,6 +2158,9 @@ function pollGamepad(): Gamepad | null {
   return pad
 }
 function currentInput(pad: Gamepad | null = null) {
+  if (sim?.player.vehicleId && view.vehicleMenu(sim.player.vehicleId)?.open)
+    return { ...idleInput(), brake: true }
+
   if (
     !studioInput.acceptsInput ||
     !document.hasFocus() ||
@@ -2401,7 +2447,7 @@ function frame(now: number): void {
         ? 'first-person'
         : 'chase'
     document.querySelector('.caption-tag')!.textContent = overhead
-      ? 'CENITAL · N ↑'
+      ? 'CENITAL · proa ↑'
       : cockpit && p.vehicleId
         ? 'CONDUCTOR'
         : !p.vehicleId && firstPerson
@@ -2414,8 +2460,7 @@ function frame(now: number): void {
       ? geoPoint.altitude - view.document.geography!.altitude
       : p.position[1]
     const info = p.vehicleId ? sim.vehicleInfo(p.vehicleId, true) : null
-    if (overhead && info?.flightMode)
-      document.querySelector('.caption-tag')!.textContent = 'CENITAL · proa ↑'
+    if (overhead && info) document.querySelector('.caption-tag')!.textContent = 'CENITAL · proa ↑'
     drivingTelemetry.update(p.vehicleId, p.speed, info?.turnRate ?? 0, dt)
     const fov = (cockpit && info) || (!p.vehicleId && firstPerson) ? 70 : 48
     if (camera.fov !== fov) {
@@ -2460,13 +2505,20 @@ function frame(now: number): void {
         .copy(playerFrameQ)
         .multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ')))
     } else if (overhead) {
-      const nose = info?.flightMode
-        ? new THREE.Vector3(vehicleForward.x, 0, vehicleForward.z)
-        : new THREE.Vector3(0, 0, -1)
-      if (nose.lengthSq() < 1e-6) nose.set(0, 0, -1)
-      camera.up.copy(nose.normalize())
-      camera.position.set(p.position[0], p.position[1] + mapHeight, p.position[2])
-      camera.lookAt(...p.position)
+      const wantedHeight = overheadDrivingHeight(drivingTelemetry.speed, mapZoom)
+      mapHeight += (wantedHeight - mapHeight) * (1 - Math.exp(-3 * Math.min(dt, 0.1)))
+      // Offset half a vertical half-frustum: the car projects to 75% screen height.
+      const lookAhead = mapHeight * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.5
+      const map = overheadDrivingPose(
+        p.position,
+        sim.entityTransform(p.vehicleId!, true).rotation,
+        mapHeight,
+        new THREE.Vector3(0, 1, 0).applyQuaternion(playerFrameQ),
+        lookAhead,
+      )
+      camera.up.copy(map.up)
+      camera.position.copy(map.position)
+      camera.lookAt(map.target)
       renderer.domElement.dataset.mapHeight = String(Math.round(mapHeight))
     } else if (cockpit && info) {
       const head = driverHeadPose(
@@ -2518,7 +2570,10 @@ function frame(now: number): void {
         ? 'MONITOR · INTERIOR DE LA NAVE'
         : 'MONITOR · VUELO'
     $('speed').textContent = p.vehicleId
-      ? `${Math.round(p.speed * 3.6)} km/h`
+      ? `${Math.round(p.speed * 3.6)} km/h` +
+        (info && view.document.entities.find((e) => e.id === p.vehicleId)?.vehicle?.powertrain
+          ? ` · ${info.gear < 0 ? 'R' : 'D' + info.gear} · ${Math.round(info.rpm)} rpm`
+          : '')
       : 'Explora el distrito'
     $('flight-status').textContent = info?.canFly
       ? (info.flightMode
@@ -2635,6 +2690,8 @@ function frame(now: number): void {
   const pilot = sim?.player.vehicleId
   const piloted = pilot ? view.document.entities.find((e) => e.id === pilot) : undefined
   flightAudio.engine(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
+  const carInfo = pilot && piloted?.vehicle?.powertrain ? sim!.vehicleInfo(pilot) : null
+  flightAudio.car(carInfo?.helm !== 'off' ? (carInfo?.rpm ?? 0) : 0, carInfo?.engineLoad ?? 0)
   fireRequested = false
   const worldCamera = camera.position.clone()
   const position = sim?.player.position ?? camera.position.toArray()
@@ -2659,6 +2716,15 @@ function frame(now: number): void {
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
   worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
   if (worldStream) $('world-note').textContent = worldStream.status
+  if (!sim) tireSmoke.clear()
+  const smokeContacts =
+    carInfo && pilot
+      ? sim!
+          .wheelContactInfo(pilot)
+          .slice(2)
+          .flatMap((w) => (w.contactPoint ? [w.contactPoint] : []))
+      : []
+  tireSmoke.update(dt, smokeContacts, carInfo?.tireSlip ?? 0, renderOrigin)
   view.root.position.copy(renderOrigin).negate()
   fieldLights.root.position.copy(renderOrigin).negate()
   const nightLights = !!view.document.geography && geography.atmosphere.day < 0.15

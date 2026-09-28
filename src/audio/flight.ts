@@ -7,6 +7,16 @@ export class FlightAudio {
   private propGain?: GainNode
   private propOsc?: OscillatorNode
   private propFilter?: BiquadFilterNode
+  private carGain?: GainNode
+  private carOsc?: OscillatorNode
+  private carFilter?: BiquadFilterNode
+  private turboGain?: GainNode
+  private turboOsc?: OscillatorNode
+  private turboAir?: GainNode
+  private turboBoost = 0
+  private turboRelease = 0
+  private previousCarLoad = 0
+  private carTime = 0
   private enabled = true
   private suspended = false
   constructor(enabled = true) {
@@ -25,6 +35,10 @@ export class FlightAudio {
     if (!this.context) return
     this.gain?.gain.setTargetAtTime(0, this.context.currentTime, 0.05)
     this.propGain?.gain.setTargetAtTime(0, this.context.currentTime, 0.05)
+    this.carGain?.gain.setTargetAtTime(0, this.context.currentTime, 0.05)
+    this.turboGain?.gain.setTargetAtTime(0, this.context.currentTime, 0.03)
+    this.turboAir?.gain.setTargetAtTime(0, this.context.currentTime, 0.03)
+    this.turboBoost = this.turboRelease = this.previousCarLoad = 0
   }
   dispose(): void {
     if (this.context) void this.context.close().catch(() => {})
@@ -84,6 +98,34 @@ export class FlightAudio {
         exhaustGain.gain.value = 0.22
         exhaustSource.connect(exhaustGain).connect(propFilter)
         exhaustSource.start()
+        this.carGain = ctx.createGain()
+        this.carGain.gain.value = 0
+        this.carGain.connect(ctx.destination)
+        this.carFilter = ctx.createBiquadFilter()
+        this.carFilter.type = 'lowpass'
+        this.carFilter.Q.value = 0.7
+        this.carFilter.connect(this.carGain)
+        this.carOsc = ctx.createOscillator()
+        this.carOsc.type = 'sawtooth'
+        this.carOsc.connect(this.carFilter)
+        this.carOsc.start()
+        // A shared, quiet whistle and filtered air; no new nodes per gear change.
+        this.turboGain = ctx.createGain()
+        this.turboGain.gain.value = 0
+        this.turboGain.connect(ctx.destination)
+        this.turboOsc = ctx.createOscillator()
+        this.turboOsc.type = 'sine'
+        this.turboOsc.frequency.value = 1100
+        this.turboOsc.connect(this.turboGain)
+        this.turboOsc.start()
+        this.turboAir = ctx.createGain()
+        this.turboAir.gain.value = 0
+        this.turboAir.connect(ctx.destination)
+        const airFilter = ctx.createBiquadFilter()
+        airFilter.type = 'bandpass'
+        airFilter.frequency.value = 2400
+        airFilter.Q.value = 0.8
+        source.connect(airFilter).connect(this.turboAir)
       }
       if (this.context.state === 'suspended') void this.context.resume().catch(() => {})
     } catch {
@@ -100,6 +142,38 @@ export class FlightAudio {
     )
     this.filter?.frequency.setTargetAtTime(400 + Math.min(1000, speed) * 0.8, time, 0.2)
     this.oscillator?.frequency.setTargetAtTime(65 + Math.min(1000, speed) * 0.06, time, 0.2)
+  }
+  /** Four-cylinder firing frequency, with shift cuts supplied by the drivetrain load. */
+  car(rpm: number, load: number): void {
+    if (!this.context || !this.carGain) return
+    const time = this.context.currentTime
+    rpm = Number.isFinite(rpm) ? Math.max(0, Math.min(10000, rpm)) : 0
+    load = Number.isFinite(load) ? Math.max(0, Math.min(1, load)) : 0
+    const audible = this.enabled && !this.suspended && rpm > 0
+    const dt = Math.min(0.1, Math.max(0, time - this.carTime))
+    this.carTime = time
+    const targetBoost = audible ? load * Math.max(0, Math.min(1, (rpm - 1600) / 3600)) : 0
+    // A load cut vents the stored boost once, including the DSG's short shift cut.
+    if (audible && this.previousCarLoad > 0.5 && load < 0.25)
+      this.turboRelease = Math.max(this.turboRelease, this.turboBoost)
+    if (!audible) this.turboRelease = this.turboBoost = 0
+    this.turboBoost +=
+      (targetBoost - this.turboBoost) *
+      (1 - Math.exp(-dt / (targetBoost > this.turboBoost ? 0.3 : 0.12)))
+    this.turboRelease *= Math.exp(-dt / 0.14)
+    this.previousCarLoad = audible ? load : 0
+    // A hint while the turbo spools; fade the whistle out as the engine revs rise.
+    const whistleFade = Math.max(0, Math.min(1, (3800 - rpm) / 1400))
+    this.turboGain?.gain.setTargetAtTime(this.turboBoost * whistleFade * 0.006, time, 0.06)
+    this.turboOsc?.frequency.setTargetAtTime(1100 + this.turboBoost * 1900, time, 0.08)
+    this.turboAir?.gain.setTargetAtTime(
+      this.turboBoost * whistleFade * 0.003 + this.turboRelease * 0.04,
+      time,
+      0.025,
+    )
+    this.carGain.gain.setTargetAtTime(audible ? 0.025 + load * 0.055 : 0, time, 0.035)
+    this.carOsc?.frequency.setTargetAtTime(Math.max(30, rpm / 30), time, 0.035)
+    this.carFilter?.frequency.setTargetAtTime(180 + rpm * 0.1 + load * 700, time, 0.04)
   }
   /** Quiet piston idle. `level` is 0..1 from the occupied Cessna. */
   engine(level: number): void {

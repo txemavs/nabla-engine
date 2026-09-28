@@ -737,6 +737,7 @@ export class RaycastVehicle {
   preStep(dt: number) {
     if (!this.controller || !this.chassisBody.raw) return
     this.wheelInfos.forEach((wheel, i) => {
+      this.controller!.setWheelFrictionSlip(i, wheel.frictionSlip)
       this.controller!.setWheelSteering(i, wheel.steering)
       this.controller!.setWheelEngineForce(i, wheel.engineForce)
       this.controller!.setWheelBrake(i, wheel.brake)

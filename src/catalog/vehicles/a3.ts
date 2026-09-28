@@ -19,7 +19,7 @@ export function createA3(id: string, position: Vec3Tuple = [4, 0.62, 6]): Entity
     hubY = radius - com - 0.05
   return {
     ...createEntity(id, 'vehicle', position),
-    name: 'Audi A3 Cabrio',
+    name: 'Audi S3 Nabla · 400 CV DSG',
     color: '#dadde1',
     size: [1.994, 1.332, 4.407],
     mass: 1400,
@@ -41,7 +41,15 @@ export function createA3(id: string, position: Vec3Tuple = [4, 0.62, 6]): Entity
       suspensionRest: 0.21,
       stiffness: 65,
       engineForce: 2600,
-      brakeForce: 36,
+      drivenWheels: 'all',
+      powertrain: {
+        powerCv: 400,
+        torqueNm: 520,
+        ratios: [3.4, 2.75, 1.77, 1.13, 0.92, 0.76, 0.64],
+        finalDrive: 4.06,
+        grip: 4.8,
+      },
+      brakeForce: 65,
       driver: [-0.356, 0.7, 0.32],
       cameraDistance: 6.5,
     },

@@ -1,3 +1,4 @@
+import { createDrivetrain, isDriven, stepDrivetrain } from './vehicles/drivetrain.js'
 import { stepBoat } from './vehicles/boat.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
 import { terrainHeight, terrainVertices, terrainIndices } from '../planet/land/terrain.js'
@@ -591,6 +592,9 @@ export class Simulation {
       indexForwardAxis: 2,
     })
     const definition = vehicleDefinition(entity)
+    // Tuned road cars already model aerodynamic drag below. Generic rigid-body
+    // damping adds a large speed-proportional brake and hides the engine power.
+    if (definition.powertrain) body.linearDamping = 0
     // Front is -Z; all hubs and suspension dimensions are body-local metres.
     for (const [x, y, z] of definition.hubs) {
       car.addWheel({
@@ -619,6 +623,7 @@ export class Simulation {
       entity,
       steer: 0,
       prop: 0,
+      drivetrain: createDrivetrain(),
       definition,
       flight: null,
       rampClosed: false,
@@ -980,7 +985,33 @@ export class Simulation {
             vehicle.raycast.wheelInfos[i].suspensionLength,
         ),
       )
-      addBox(new Vec3(w / 2, h / 2, l / 2), new Vec3(0, floor + h / 2, 0), new Quaternion())
+      const radius = vehicle.definition.wheelRadius
+      // Bodywork starts above the tire bottoms. Extending the lowest spring height
+      // over the full car length invents corners below the road under pitch.
+      addBox(
+        new Vec3(w / 2, (h - radius) / 2, l / 2),
+        new Vec3(0, floor + (h + radius) / 2, 0),
+        new Quaternion(),
+      )
+      vehicle.definition.hubs.forEach((hub, i) => {
+        const wheel = vehicle.raycast.wheelInfos[i]
+        const centre = new Vec3(
+          hub[0],
+          hub[1] + vehicle.definition.suspensionRest - wheel.suspensionLength,
+          hub[2],
+        )
+        const steering = new Quaternion().setFromAxisAngle(new Vec3(0, 1, 0), wheel.steering)
+        for (const side of [-1, 1])
+          for (let j = 0; j < 16; j++) {
+            const angle = (j * Math.PI) / 8
+            const rim = steering
+              .vmult(
+                new Vec3(side * radius * 0.37, Math.cos(angle) * radius, Math.sin(angle) * radius),
+              )
+              .vadd(centre)
+            points.push(vec(body.pointToWorldFrame(rim)))
+          }
+      })
     }
     return points
   }
@@ -1200,7 +1231,15 @@ export class Simulation {
       this.playerBody.quaternion.copy(interior.quaternion)
     }
     for (const [id, v] of this.vehicles) {
-      if (this.docks.has(id)) continue
+      const dock = this.docks.get(id)
+      if (v.definition.powertrain) {
+        // Cargo must share the host damping so the joint does not fight a
+        // different deceleration during the carrier's high-speed flight.
+        v.body.linearDamping = dock
+          ? (this.vehicles.get(dock.carrierId)?.body.linearDamping ?? 0.05)
+          : 0
+      }
+      if (dock) continue
       const active = id === this.vehicleId
       if (v.definition.plane) this.spoolEngine(v, active)
       if (v.flight) {
@@ -1218,15 +1257,41 @@ export class Simulation {
       const forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
       const speed = v.body.velocity.dot(forward)
       const opposing = active && this.input.forward * speed < -0.8
-      const driven = (i: number) => v.definition.drivenWheels === 'all' || i >= 2
+      const driven = (i: number) => isDriven(v.definition.drivenWheels, i)
+      const tune = v.definition.powertrain
+      const throttle = active && powered && !opposing ? this.input.forward : 0
+      if (tune) {
+        stepDrivetrain(
+          v.drivetrain,
+          tune,
+          v.definition.wheelRadius,
+          speed,
+          throttle,
+          active && this.input.brake,
+          FIXED_STEP,
+        )
+        // Aerodynamic drag in the direction of travel; zero extra force on parked cars.
+        const velocity = v.body.velocity
+        const magnitude = velocity.length()
+        const rolling = v.raycast.wheelInfos.some((wheel) => wheel.isInContact)
+          ? 0.012 * v.body.mass * 9.81
+          : 0
+        v.body.applyForce(velocity.scale(-0.42 * magnitude - rolling / Math.max(1, magnitude)))
+      }
       for (let i = 0; i < 4; i++) {
         v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
+        const rearShare = v.drivetrain.burnout ? 1 : active && this.input.brake ? 0.7 : 0.55
+        const share =
+          v.definition.drivenWheels === 'all' ? (i < 2 ? 1 - rearShare : rearShare) / 2 : 0.5
         v.raycast.applyEngineForce(
-          active && powered && driven(i) && !opposing
-            ? this.input.forward * v.definition.engineForce
-            : 0,
+          driven(i) ? (tune ? v.drivetrain.force * share : throttle * v.definition.engineForce) : 0,
           i,
         )
+        if (tune) {
+          const desiredGrip = active && this.input.brake && i >= 2 ? 0.7 : tune.grip
+          const wheel = v.raycast.wheelInfos[i]
+          wheel.frictionSlip += (desiredGrip - wheel.frictionSlip) * Math.min(1, FIXED_STEP * 8)
+        }
         const brake = !active
           ? v.definition.brakeForce * 0.4
           : this.input.brake
@@ -1234,7 +1299,10 @@ export class Simulation {
             : opposing
               ? v.definition.brakeForce
               : 0
-        v.raycast.setBrake(brake, i)
+        v.raycast.setBrake(
+          tune && v.drivetrain.burnout ? (i < 2 ? v.definition.brakeForce * 4 : 0) : brake,
+          i,
+        )
       }
       if (active && this.roadAssistEnabled) this.applyRoadAssist(v)
     }
@@ -1759,6 +1827,10 @@ export class Simulation {
     canFly: boolean
     targetAltitude: number | null
     engine: number
+    rpm: number
+    gear: number
+    engineLoad: number
+    tireSlip: number
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
@@ -1789,6 +1861,18 @@ export class Simulation {
       canFly: Boolean(v.definition.flight),
       targetAltitude: v.flight?.altitude ?? null,
       engine: v.definition.plane ? v.prop : 0,
+      rpm: v.drivetrain.rpm,
+      gear: v.drivetrain.gear,
+      engineLoad: v.drivetrain.load,
+      tireSlip:
+        v.definition.powertrain && this.vehicleId === id
+          ? v.drivetrain.burnout
+            ? 1
+            : Math.min(
+                1,
+                Math.abs(v.body.velocity.dot(v.body.quaternion.vmult(new Vec3(1, 0, 0)))) / 6,
+              )
+          : 0,
     }
   }
 

@@ -3,3 +3,5 @@ export * from './jeep.js'
 export * from './boat.js'
 export * from './carrier.js'
 export * from './cessna.js'
+
+export { createPoliceCar } from './police.js'

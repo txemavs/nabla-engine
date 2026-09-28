@@ -7,6 +7,11 @@ The TypeScript engine owns scene data, physics, and rendering. Studio connects
 that to input, persistence, and the editor. Agency integration is a future consumer,
 not a dependency of the engine.
 
+## Monitors and the S3
+
+Start with the [monitor editing guide](docs/monitors.md) for preview links, artwork,
+layer definitions, keyboard menus, refresh settings and future ship/portal integration.
+
 ## Run locally
 
 Requires **Node.js 22.12 or later** and npm.

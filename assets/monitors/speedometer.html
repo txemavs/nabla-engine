@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <title>Nabla S3 · Cuadro de instrumentos</title>
+    <style>
+      body {
+        background: #242832;
+        color: #eef3fa;
+        font-family: Arial, sans-serif;
+        padding: 24px;
+      }
+      .cluster {
+        position: relative;
+        width: 640px;
+        height: 320px;
+      }
+      .face {
+        position: absolute;
+        inset: 0;
+        width: 640px;
+        height: 320px;
+      }
+      .needle {
+        position: absolute;
+        width: 204.8px;
+        height: 204.8px;
+        top: 63.6px;
+        transform-origin: 102.4px 102.4px;
+      }
+      .rpm {
+        left: 27.6px;
+      }
+      .velocity {
+        left: 407.6px;
+      }
+      .speed {
+        position: absolute;
+        left: 236px;
+        top: 132px;
+        width: 168px;
+        text-align: center;
+        font:
+          700 55px Arial,
+          sans-serif;
+        letter-spacing: -1px;
+      }
+      .gear {
+        position: absolute;
+        left: 236px;
+        top: 222px;
+        width: 168px;
+        text-align: center;
+        color: #ff3548;
+        font: bold 25px monospace;
+      }
+      section {
+        max-width: 640px;
+        line-height: 1.6;
+      }
+      label {
+        display: block;
+      }
+      input {
+        width: 320px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cluster" aria-label="Cuadro de instrumentos">
+      <img class="face" src="./s3-cluster.svg" alt="RPM a la izquierda y velocidad a la derecha" />
+      <img class="needle rpm" src="./red-needle.svg" alt="Aguja de revoluciones" />
+      <img class="needle velocity" src="./red-needle.svg" alt="Aguja de velocidad" />
+      <span class="speed" data-value="speed">0</span><span class="gear">D1</span>
+    </div>
+    <section>
+      <h1>Cuadro S3 · dos esferas y velocidad central</h1>
+      <label>Velocidad <input id="demo-speed" type="range" min="0" max="320" value="0" /></label>
+      <label>RPM <input id="demo-rpm" type="range" min="900" max="8000" value="900" /></label>
+      <p>
+        Fondo: <a href="./s3-cluster.svg">s3-cluster.svg</a>. Agujas:
+        <a href="./red-needle.svg">red-needle.svg</a>. El coche usa estas mismas imágenes y mueve
+        las agujas en la GPU. Los dígitos usan una textura de caracteres, sin repintar el HTML.
+      </p>
+      <p>
+        La distribución del coche se edita en <code>src/catalog/monitors/s3-cluster.ts</code>. Esta
+        página sirve de vista previa. El
+        <a href="./html-panel.example.html">ejemplo de panel HTML</a> sigue disponible.
+      </p>
+    </section>
+    <script>
+      function preview() {
+        const speed = +document.getElementById('demo-speed').value,
+          rpm = +document.getElementById('demo-rpm').value
+        document.querySelector('.speed').textContent = String(speed)
+        document.querySelector('.gear').textContent = 'D' + Math.min(7, 1 + Math.floor(speed / 45))
+        document.querySelector('.rpm').style.transform = `rotate(${-140 + (rpm / 8000) * 280}deg)`
+        document.querySelector('.velocity').style.transform =
+          `rotate(${-140 + (speed / 320) * 280}deg)`
+      }
+      document.addEventListener('input', preview)
+      preview()
+    </script>
+  </body>
+</html>
