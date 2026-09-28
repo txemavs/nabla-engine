@@ -71,6 +71,7 @@ export const performancePresets = {
     cache: 25,
     concurrent: 1,
     ahead: 0,
+    tiles: 12,
   },
   low: {
     label: 'Bajo',
@@ -87,6 +88,7 @@ export const performancePresets = {
     cache: 50,
     concurrent: 1,
     ahead: 15,
+    tiles: 24,
   },
   balanced: {
     label: 'Equilibrado',
@@ -103,6 +105,7 @@ export const performancePresets = {
     cache: 100,
     concurrent: 2,
     ahead: 30,
+    tiles: 64,
   },
   high: {
     label: 'Alto',
@@ -119,6 +122,7 @@ export const performancePresets = {
     cache: 100,
     concurrent: 3,
     ahead: 45,
+    tiles: 160,
   },
   ultra: {
     label: 'Ultra',
@@ -135,8 +139,28 @@ export const performancePresets = {
     cache: 100,
     concurrent: 3,
     ahead: 45,
+    tiles: 240,
   },
 } as const
+/** z15 meshes for a custom draw distance. Named presets carry their own cap. */
+export function tileBudget(distance: number): number {
+  if (distance <= 1000) return 12
+  if (distance <= 2000) return 24
+  if (distance <= 4000) return 64
+  if (distance <= 6000) return 96
+  if (distance <= 10000) return 140
+  return 240
+}
+export function streamBudget(settings: PerformanceSettings) {
+  const named = performancePresets[settings.preset as keyof typeof performancePresets]
+  const profile = named ?? performanceProfile(settings)
+  return {
+    concurrent: profile.concurrent,
+    ahead: profile.ahead,
+    retain: settings.preset === 'ultra',
+    tiles: named?.tiles ?? tileBudget(settings.distance),
+  }
+}
 export function performanceProfile(settings: PerformanceSettings) {
   return (
     performancePresets[settings.preset as keyof typeof performancePresets] ??

@@ -15,8 +15,12 @@ export const vehicleField = z
     hubs: z.tuple([vector, vector, vector, vector]),
     wheelRadius: finite.min(0.05).max(1.5),
     suspensionRest: finite.min(0.02).max(1),
+    /** Metres of travel each side of the rest length. Default 0.3. */
+    suspensionTravel: finite.min(0.05).max(1.2).optional(),
     stiffness: finite.min(5).max(200),
     engineForce: finite.positive().max(100000),
+    /** `all` drives every hub. Omitted keeps the rear axle. */
+    drivenWheels: z.enum(['rear', 'all']).optional(),
     brakeForce: finite.positive().max(1000),
     driver: vector,
     cameraDistance: finite.min(2).max(30),

@@ -281,7 +281,9 @@ export class PlanetWorld {
   private next = 0
   private distance = 4000
   private relief = 2
-  private aerial = false
+  /** z15 city meshes kept in memory. Quality sets this; the horizon is separate. */
+  private maxTiles = 64
+  private planKey = ''
   private originOffset = new THREE.Vector3()
   private controller = new AbortController()
   private protectedPositions: Vec3Tuple[] = []
@@ -330,10 +332,11 @@ export class PlanetWorld {
   private concurrency = 2
   private ahead = 8
   private memoryBudget = 160 * 1024 * 1024
-  setQuality(concurrent: number, ahead: number, retain = false) {
+  setQuality(concurrent: number, ahead: number, retain = false, maxTiles = 64) {
     this.concurrency = Math.max(1, Math.min(3, concurrent))
-    this.ahead = Math.min(15, Math.max(0, ahead))
+    this.ahead = Math.min(45, Math.max(0, ahead))
     this.memoryBudget = (retain ? 320 : 160) * 1024 * 1024
+    this.maxTiles = Math.max(8, Math.min(240, Math.round(maxTiles)))
   }
   setDistance(distance: number) {
     this.distance = distance
@@ -409,22 +412,24 @@ export class PlanetWorld {
     this.protectedPositions = _protected
     const gps = localToGeo(this.origin, position)
     const height = Math.max(0, gps.altitude - this.groundAltitude(position))
-    this.aerial = height >= 2000
-    const width = (40075016 * Math.cos((gps.latitude * Math.PI) / 180)) / 2 ** 13
-    const flight = Math.ceil(Math.max(this.distance, 40000) / width)
-    this.horizon.update(
-      gps.latitude,
-      gps.longitude,
-      this.aerial ? Math.max(this.relief, flight) : this.relief,
-    )
+    // Relief span is the quality control. Do not inflate it with altitude:
+    // a hidden 40 km ring was rebuilding hundreds of photo meshes in flight.
+    this.horizon.update(gps.latitude, gps.longitude, this.relief)
     this.horizon.setFocus(mapTileAt(gps.latitude, gps.longitude, 15))
-    this.plan = planMapZooms({
-      latitude: gps.latitude,
-      longitude: gps.longitude,
-      heightAboveGround: height,
-      viewDistance: this.distance,
-      maxTiles: 160,
-    })
+    const center = mapTileAt(gps.latitude, gps.longitude, 15)
+    const planKey = `${mapTileId(center)}:${this.distance}:${this.maxTiles}`
+    if (!this.plan || planKey !== this.planKey) {
+      this.planKey = planKey
+      this.plan = planMapZooms({
+        latitude: gps.latitude,
+        longitude: gps.longitude,
+        heightAboveGround: height,
+        viewDistance: this.distance,
+        maxTiles: this.maxTiles,
+      })
+    }
+    const plan = this.plan
+    if (!plan) return
     const ahead = localToGeo(this.origin, [
       position[0] + velocity[0] * this.ahead,
       position[1],
@@ -437,7 +442,7 @@ export class PlanetWorld {
       .map((p) => mapTileAt(p.latitude, p.longitude, 15))
     this.wanted = [
       ...new Map(
-        [...this.plan.requests, future, ...protectedTiles].map((t) => [mapTileId(t), t]),
+        [...plan.requests, future, ...protectedTiles].map((t) => [mapTileId(t), t]),
       ).values(),
     ]
     const needed = new Set(this.wanted.map(mapTileId))
@@ -672,10 +677,9 @@ export class PlanetWorld {
   }
   private cover() {
     if (!this.plan) return
-    const cover = this.aerial
-      ? []
-      : planetReadyCover(this.plan, new Set(this.resident.keys())).map(mapTileId)
-    this.visible = this.aerial ? [] : cover.length ? cover : this.visible
+    const cover = planetReadyCover(this.plan, new Set(this.resident.keys())).map(mapTileId)
+    // Keep the last city cover if the new plan has nothing ready yet.
+    this.visible = cover.length ? cover : this.visible
     this.horizon.setCoverage(this.visible.map((key) => this.ready.get(key)!.tile))
     const active = new Set(this.visible)
     for (const [key, r] of this.resident) {
@@ -710,7 +714,13 @@ export class PlanetWorld {
     const physics = new Set(this.visible)
     for (const position of this.protectedPositions) {
       const p = localToGeo(this.origin, position)
-      if (p.altitude > 12000) continue
+      if (
+        p.altitude > 12000 ||
+        !Number.isFinite(p.latitude) ||
+        !Number.isFinite(p.longitude) ||
+        Math.abs(p.latitude) > 85
+      )
+        continue
       if (
         [...physics].some((key) => {
           const t = this.ready.get(key)?.tile

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { HelmMap } from '../src/render/entity/helm-map.js'
 import { localToGeo } from '../src/math/geo/sphere.js'
-import { mapTileAt, mapTileFilename, mapTilePath } from '../src/scene/mercator.js'
+import { mapTileAt, mapTileFilename, mapTilePath, MERCATOR_LIMIT } from '../src/scene/mercator.js'
 import { CSS3DObject, CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js'
 import type { SceneDocument } from '../src/stage/scene.js'
 import type { Simulation } from '../src/simulation/simulation.js'
@@ -449,6 +449,12 @@ export class PortalControls {
         const detail = entry.panel.querySelector('.where-detail')!
         if (document.geography) {
           const gps = localToGeo(document.geography, pose.position)
+          if (
+            !Number.isFinite(gps.latitude) ||
+            !Number.isFinite(gps.longitude) ||
+            Math.abs(gps.latitude) > MERCATOR_LIMIT
+          )
+            continue
           const tile = mapTileAt(gps.latitude, gps.longitude, 15)
           output.textContent = `${mapTilePath(tile)}\nzoom ${tile.z} · x ${tile.x} · y ${tile.y}`
           detail.textContent = `${mapTileFilename(tile, 'terrain')}\n${mapTileFilename(tile, 'buildings-osm')}\n${under}`
@@ -506,12 +512,12 @@ export class PortalControls {
           const plane = info.helm === 'plane'
           const stick: Record<string, string> = plane
             ? {
-                'lift:1': 'Impulso',
-                'lift:-1': 'Frenar',
-                'turn:-1': 'Guiñada izquierda',
-                'turn:1': 'Guiñada derecha',
-                'forward:1': 'Morro arriba',
-                'forward:-1': 'Morro abajo',
+                'lift:1': 'Motor',
+                'lift:-1': 'Quitar motor',
+                'turn:-1': 'Timón izquierda',
+                'turn:1': 'Timón derecha',
+                'forward:1': 'Picar',
+                'forward:-1': 'Encabritar',
                 'right:-1': 'Alabeo izquierda',
                 'right:1': 'Alabeo derecha',
               }

@@ -3,15 +3,18 @@
 Bundled artwork is kept separate from engine code and served by the reference
 host. Do not regenerate or recolor original source files to adjust presentation.
 
-| Files                            | Source                                                                                                                 | Use                                                                      |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `brand/source.svg`               | [txemavs/nabla-hacs](https://github.com/txemavs/nabla-hacs/blob/main/custom_components/nabla_control/brand/source.svg) | Official metallic blue hollow Nabla mark; app header, favicon and README |
-| `world/car.audi.a3.cabrio.glb`   | This repository, commit `6a22576`                                                                                      | Original body and interior                                               |
-| `world/car.audi.a3.wheel.glb`    | This repository, commit `6a22576`                                                                                      | Four wheel instances                                                     |
-| `world/car.audi.a3.steering.glb` | This repository, commit `6a22576`                                                                                      | Steering wheel                                                           |
-| `world/ship.container.5x10.glb`  | This repository, commit `6a22576`                                                                                      | Carrier, cabin, garage and ramp                                          |
-| `geography/agency-ground.jpg`    | Agency UI, commit `89b0907`, `src/assets/stage/ground.jpg`                                                             | Authored road/ground image                                               |
-| `geography/earth.jpg`            | Agency UI, commit `89b0907`, `src/assets/stage/earth.jpg`                                                              | Local globe texture                                                      |
+| Files                                   | Source                                                                                                                 | Use                                                                      |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `brand/source.svg`                      | [txemavs/nabla-hacs](https://github.com/txemavs/nabla-hacs/blob/main/custom_components/nabla_control/brand/source.svg) | Official metallic blue hollow Nabla mark; app header, favicon and README |
+| `world/car.audi.a3.cabrio.glb`          | This repository, commit `6a22576`                                                                                      | Original body and interior                                               |
+| `world/car.audi.a3.wheel.glb`           | This repository, commit `6a22576`                                                                                      | Four wheel instances                                                     |
+| `world/car.audi.a3.steering.glb`        | This repository, commit `6a22576`                                                                                      | Steering wheel                                                           |
+| `world/car.jeep.gladiator.glb`          | [Ddiaz Design](https://sketchfab.com/3d-models/2020-jeep-gladiator-98bc399af1e948eda5db6d75c5bb649d), CC BY-NC-SA 4.0  | Body with wheels and steering wheel removed                              |
+| `world/car.jeep.gladiator.wheel.glb`    | Same source                                                                                                            | One wheel, instanced on four hubs                                        |
+| `world/car.jeep.gladiator.steering.glb` | Same source                                                                                                            | Steering wheel, spun on its local Z axis                                 |
+| `world/ship.container.5x10.glb`         | This repository, commit `6a22576`                                                                                      | Carrier, cabin, garage and ramp                                          |
+| `geography/agency-ground.jpg`           | Agency UI, commit `89b0907`, `src/assets/stage/ground.jpg`                                                             | Authored road/ground image                                               |
+| `geography/earth.jpg`                   | Agency UI, commit `89b0907`, `src/assets/stage/earth.jpg`                                                              | Local globe texture                                                      |
 
 Vehicle files were recovered from branch
 `cursor/drive-playground-boxcar-ship5x10-7b21` without changing their bytes.

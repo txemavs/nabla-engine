@@ -33,7 +33,7 @@ test('arrivals, cursor and catalog vehicles use elevated terrain before Play', a
   const authored = await page.evaluate(() => JSON.parse(localStorage.getItem('nabla.scene.v1')!))
   const added = authored.entities.find(
     (e: { kind: string; id: string }) =>
-      e.kind === 'vehicle' && !['car-a', 'carrier'].includes(e.id),
+      e.kind === 'vehicle' && !['car-a', 'jeep', 'carrier'].includes(e.id),
   )
   expect(added.groundOffset).toBeUndefined()
   await page.reload()

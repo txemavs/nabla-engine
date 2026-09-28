@@ -7,7 +7,8 @@ const posed = (position: Vec3Tuple) => ({
 
 /**
  * Cessna 172, 11 m span. Nose is −Z, tyre contact is 0.84 m under the origin.
- * Plane helm lifts off near 28 m/s and levels around 60 m/s.
+ * W is the engine, A/D the rudder. Stick forward (↑) dives, stick back (↓) raises the nose.
+ * Wings lift off near 28 m/s.
  */
 export function createCessna(id: string, position: Vec3Tuple = [0, 0.95, 0]): Entity {
   return {

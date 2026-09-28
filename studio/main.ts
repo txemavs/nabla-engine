@@ -35,12 +35,7 @@ import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
 import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
-import {
-  readPerformance,
-  shadowTiers,
-  performancePresets,
-  performanceProfile,
-} from './performance.js'
+import { readPerformance, shadowTiers, performancePresets, streamBudget } from './performance.js'
 import { DepthOfField } from './depth-of-field.js'
 import { ShadowManager } from '../src/render/shadows.js'
 import { readScene, writeScene } from './scene-storage.js'
@@ -497,6 +492,8 @@ function setupWorldStream(): void {
   )
   worldStream.setDistance(performanceSettings.distance)
   worldStream.setRelief(performanceSettings.relief)
+  const budget = streamBudget(performanceSettings)
+  worldStream.setQuality(budget.concurrent, budget.ahead, budget.retain, budget.tiles)
   scene.add(worldStream.root)
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
@@ -993,6 +990,7 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
     'add-solid',
     'add-box',
     'add-car',
+    'add-jeep',
     'add-boat',
     'add-carrier',
     'add-cessna',
@@ -1396,11 +1394,18 @@ async function togglePlay(startFlight = false): Promise<void> {
       for (const e of adjusted.entities)
         if (e.kind === 'vehicle' || e.kind === 'spawn') {
           const ground = worldStream.groundHeight(e.transform.position)
-          if (ground !== undefined)
-            e.transform.position[1] = Math.max(
-              e.transform.position[1],
-              ground + (e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.5 : 0.85),
-            )
+          if (ground !== undefined) {
+            const ride =
+              e.kind === 'spawn'
+                ? 0.2
+                : e.vehicle?.flight
+                  ? 1.5
+                  : e.vehicle
+                    ? 0.06 -
+                      Math.min(...e.vehicle.hubs.map((hub) => hub[1] - e.vehicle.wheelRadius))
+                    : 0.85
+            e.transform.position[1] = Math.max(e.transform.position[1], ground + ride)
+          }
         }
       editor.load(adjusted)
     }
@@ -1513,11 +1518,8 @@ for (const [id, key] of [
     performanceSettings.preset = 'custom'
     editor.experimentalLargeScene = false
     $<HTMLSelectElement>('performance-preset').value = 'custom'
-    worldStream?.setQuality(
-      performanceProfile(performanceSettings).concurrent,
-      performanceProfile(performanceSettings).ahead,
-      performanceSettings.preset === 'ultra',
-    )
+    const budget = streamBudget(performanceSettings)
+    worldStream?.setQuality(budget.concurrent, budget.ahead, budget.retain, budget.tiles)
     try {
       localStorage.setItem('nabla.performance.v1', JSON.stringify(performanceSettings))
     } catch {
@@ -1656,7 +1658,7 @@ $('performance-preset').onchange = async () => {
   } catch {
     /* Optional persistence. */
   }
-  worldStream?.setQuality(preset.concurrent, preset.ahead, id === 'ultra')
+  worldStream?.setQuality(preset.concurrent, preset.ahead, id === 'ultra', preset.tiles)
   try {
     await setMapCacheBudget(Math.max(preset.cache, (await mapCacheStats()).budget / 1_000_000))
     await refreshMapCacheUi()
@@ -1907,10 +1909,7 @@ window.addEventListener('keydown', (e) => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code))
     e.preventDefault()
   if (e.code === 'KeyR' && !e.repeat) {
-    if (!playTransition)
-      void togglePlay()
-        .then(() => togglePlay())
-        .then(() => toast('Partida reiniciada'))
+    if (sim) toast(sim.recoverVehicle())
     return
   }
   if ((e.code === 'Comma' || e.code === 'Period') && !e.repeat && sim?.player.vehicleId) {

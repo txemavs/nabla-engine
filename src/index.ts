@@ -11,6 +11,7 @@ export { createSampleScene } from './scene/sample.js'
 
 export { vehicleDefinition } from './entity/vehicle/vehicle.js'
 export { createA3 } from './catalog/a3.js'
+export { createJeep } from './catalog/jeep.js'
 export { createOutboard } from './catalog/boat.js'
 export { createCarrier } from './catalog/carrier.js'
 export { createCessna } from './catalog/cessna.js'

@@ -24,8 +24,8 @@ it('lifts a Cessna off the runway in plane mode', () => {
   expect(parked).toBeGreaterThan(0.5)
   expect(parked).toBeLessThan(1.3)
   sim.startInVehicle('hull')
-  expect(sim.setHelmMode('plane')).toBe('Modo avión')
-  sim.setInput({ ...idleInput(), lift: 1, forward: -0.35 })
+  expect(sim.vehicleInfo('hull').helm).toBe('plane')
+  sim.setInput({ ...idleInput(), lift: 1, forward: -1 })
   for (let i = 0; i < 12 * 60; i++) sim.step(1 / 60)
   const flying = sim.entityTransform('hull').position
   expect(sim.player.speed).toBeGreaterThan(25)

@@ -59,6 +59,8 @@ export class PlanetHorizon {
   private coverage: MapTile[] = []
   private ocean = new Set<string>()
   private span = 2
+  private wantedKey = ''
+  private coverageKey = ''
   private focus: MapTile | null = null
   private focusKey = ''
   private layers = { relief: true, photo14: true, photo12: true }
@@ -85,8 +87,14 @@ export class PlanetHorizon {
   }
   update(latitude: number, longitude: number, span = this.span) {
     this.span = Math.max(1, Math.min(16, Math.round(span)))
-    const center = mapTileAt(latitude, longitude, 13),
-      n = 2 ** 13
+    const center = mapTileAt(latitude, longitude, 13)
+    const stamp = `${this.span}:${center.x}:${center.y}`
+    if (stamp === this.wantedKey) {
+      this.pump()
+      return
+    }
+    this.wantedKey = stamp
+    const n = 2 ** 13
     const radius = this.span
     const tiles: MapTile[] = []
     for (let y = -radius; y <= radius; y++)
@@ -305,10 +313,14 @@ export class PlanetHorizon {
     const next = new Set(blocks.map(mapTileId))
     if (next.size === this.ocean.size && [...next].every((id) => this.ocean.has(id))) return
     this.ocean = next
+    this.coverageKey = ''
     for (const cell of this.cells.values()) cell.mask = ''
     this.setCoverage(this.coverage)
   }
   setCoverage(coverage: MapTile[]) {
+    const key = coverage.map(mapTileId).sort().join('|')
+    if (key === this.coverageKey) return
+    this.coverageKey = key
     this.coverage = coverage
     for (const [key, c] of this.cells) {
       const uncovered = c.data.blocks.filter((b) => !coverage.some((t) => coversTile(t, b.tile)))

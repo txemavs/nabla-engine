@@ -605,7 +605,7 @@ export class Simulation {
         frictionSlip: 4.5,
         rollInfluence: 0.04,
         maxSuspensionForce: 100000,
-        maxSuspensionTravel: 0.3,
+        maxSuspensionTravel: definition.suspensionTravel ?? 0.3,
       })
     }
     if (definition.boat) {
@@ -1219,10 +1219,11 @@ export class Simulation {
       const forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
       const speed = v.body.velocity.dot(forward)
       const opposing = active && this.input.forward * speed < -0.8
+      const driven = (i: number) => v.definition.drivenWheels === 'all' || i >= 2
       for (let i = 0; i < 4; i++) {
         v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
         v.raycast.applyEngineForce(
-          active && powered && i >= 2 && !opposing
+          active && powered && driven(i) && !opposing
             ? this.input.forward * v.definition.engineForce
             : 0,
           i,
@@ -1423,6 +1424,31 @@ export class Simulation {
     v.body.wakeUp()
     return 'En destino'
   }
+
+  /** Upright the occupied car and drop it from 3 m. Keeps yaw and the XZ spot. */
+  recoverVehicle(): string {
+    const id = this.vehicleId
+    const v = id ? this.vehicles.get(id) : undefined
+    if (!v) return 'Monta en un coche'
+    if (this.docks.has(id!)) return 'Desengancha antes de enderezar'
+    const up = new Vec3(0, 1, 0)
+    let forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
+    forward = forward.vsub(up.scale(forward.dot(up)))
+    if (forward.lengthSquared() < 1e-4) {
+      const right = v.body.quaternion.vmult(new Vec3(1, 0, 0))
+      forward = up.cross(right).negate()
+    }
+    forward.normalize()
+    v.body.quaternion.setFromAxisAngle(up, Math.atan2(-forward.x, -forward.z))
+    v.body.previousQuaternion.copy(v.body.quaternion)
+    v.body.position.y += 3
+    v.body.previousPosition.copy(v.body.position)
+    v.body.interpolatedPosition.copy(v.body.position)
+    v.body.velocity.setZero()
+    v.body.angularVelocity.setZero()
+    v.body.wakeUp()
+    return 'Coche enderezado'
+  }
   setHelmMode(mode: Vehicle['helm']): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
     if (!v?.definition.flight) return 'Ponte al mando de la nave para cambiar de modo'
@@ -1503,11 +1529,8 @@ export class Simulation {
         Math.max(this.minimumFlightAltitude, height - lead),
         height + lead,
       )
-    if (helm === 'plane' && v.definition.plane) {
-      const noseNow = body.quaternion.vmult(new Vec3(0, 0, -1))
-      const airNow = Math.max(0, body.velocity.dot(noseNow))
-      flight.yaw -= (turn * 0.55 + right * 0.4 * clamp(airNow / 26, 0, 1)) * FIXED_STEP
-    } else flight.yaw -= turn * 1.2 * FIXED_STEP
+    if (helm === 'plane' && v.definition.plane) flight.yaw -= turn * 0.9 * FIXED_STEP
+    else flight.yaw -= turn * 1.2 * FIXED_STEP
     let tangent = new Quaternion()
     if (this.document.geography) {
       const point = localToGeo(this.document.geography, vec(body.position))
@@ -1520,7 +1543,7 @@ export class Simulation {
         ? -1.05
         : -0.15
       : helm === 'plane'
-        ? forward * (v.definition.plane ? 0.42 : -0.9)
+        ? -forward * (v.definition.plane ? 0.55 : 0.9)
         : -forward * 0.35
     const pitch = new Quaternion().setFromAxisAngle(new Vec3(1, 0, 0), pitchAngle)
     const roll = new Quaternion().setFromAxisAngle(
@@ -1547,7 +1570,8 @@ export class Simulation {
         const thrust = lift > 0 ? clamp(68 - along, 0, 8) : 0
         const drag = 0.0011 * along * Math.abs(along)
         const flightDir = body.velocity.length() > 4 ? body.velocity.clone().normalize() : nose
-        const aoa = clamp(wing.dot(flightDir), -0.45, 0.5)
+        // Nose above the flight path is positive. The old sign rewarded diving.
+        const aoa = clamp(-wing.dot(flightDir), -0.45, 0.5)
         const liftAccel = 9.81 * wings * clamp(1 + aoa * 2.4, 0, 1.65)
         body.applyForce(
           wing
@@ -1642,6 +1666,7 @@ export class Simulation {
     this.world.removeBody(this.playerBody)
     this.playerBody.velocity.setZero()
     this.grounded = false
+    if (this.vehicles.get(id)!.definition.plane) this.setHelmMode('plane')
   }
   private exitVehicle(): string {
     const v = this.vehicles.get(this.vehicleId!)!

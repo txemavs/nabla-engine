@@ -675,6 +675,29 @@ export class SceneView {
           this.instruments.set(e.id, instruments)
         }
       }
+      if (visual.body.url === '/world/car.jeep.gladiator.glb') {
+        model.traverse((object) => {
+          if (!(object instanceof THREE.Mesh)) return
+          const materials = Array.isArray(object.material) ? object.material : [object.material]
+          const next = materials.map((material) => {
+            if (
+              !(material instanceof THREE.MeshStandardMaterial) ||
+              !material.name.endsWith('Paint_Material')
+            )
+              return material
+            return new THREE.MeshPhysicalMaterial({
+              name: material.name,
+              color: e.color,
+              metalness: 0.4,
+              roughness: 0.34,
+              clearcoat: 0.4,
+              clearcoatRoughness: 0.22,
+              envMapIntensity: 0,
+            })
+          })
+          object.material = Array.isArray(object.material) ? next : next[0]
+        })
+      }
       if (visual.body.url === '/world/cessna.172.glb') {
         const propeller = mountPropeller(model)
         if (propeller) this.propellers.set(e.id, propeller)

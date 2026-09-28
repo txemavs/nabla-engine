@@ -4,6 +4,7 @@
  */
 import { type Entity, type Vec3Tuple } from '../entity/schema.js'
 import { createA3 } from './a3.js'
+import { createJeep } from './jeep.js'
 import { createOutboard } from './boat.js'
 import { createCarrier } from './carrier.js'
 import { createCessna } from './cessna.js'
@@ -13,6 +14,7 @@ import { createHighwayLamp } from './highway.js'
 
 export const entityCatalog = [
   { id: 'car', label: 'Audi A3 Cabrio', clearance: 0.62 },
+  { id: 'jeep', label: 'Jeep Gladiator', clearance: 0.92 },
   { id: 'boat', label: 'Fueraborda 6 m', clearance: 0.45 },
   { id: 'carrier', label: 'Contenedor volador', clearance: 1.2 },
   { id: 'cessna', label: 'Cessna 172', clearance: 0.95 },
@@ -24,6 +26,7 @@ export type CatalogId = (typeof entityCatalog)[number]['id']
 export function createCatalogEntities(kind: CatalogId, id: string, ground: Vec3Tuple): Entity[] {
   const entry = entityCatalog.find((e) => e.id === kind)!
   const position: Vec3Tuple = [ground[0], ground[1] + entry.clearance, ground[2]]
+  if (kind === 'jeep') return [createJeep(id, position)]
   if (kind === 'car') {
     const car = createA3(id, position)
     const paints = [
