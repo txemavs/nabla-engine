@@ -10,7 +10,8 @@ import {
   Texture,
   TextureLoader,
 } from 'three'
-import { HtmlMonitor, type MonitorData, type MonitorOptions } from './html-monitor.js'
+import type { HtmlMonitor } from './html-monitor.js'
+import type { MonitorData, MonitorOptions } from './data.js'
 
 type Rect = { id: string; x: number; y: number; width: number; height: number }
 export type MonitorLayer = Rect &
@@ -55,6 +56,7 @@ export class LayeredMonitor {
   private readonly html: HtmlMonitor[] = []
   private readonly textures = new Set<Texture>()
   private disposed = false
+  private secondary?: boolean
   private readonly meshes: Mesh<BufferGeometry, MeshBasicMaterial>[] = []
   constructor(readonly definition: MonitorDefinition) {
     const { width, height, layers } = definition
@@ -214,13 +216,6 @@ export class LayeredMonitor {
       }
       let texture: Texture | undefined
       if (layer.kind === 'image' || layer.kind === 'needle') texture = load(layer.url)
-      if (layer.kind === 'html') {
-        const monitor = new HtmlMonitor(layer.url, layer.width, layer.height, layer.refresh)
-        this.html.push(monitor)
-        pending.push(monitor.ready)
-        texture = monitor.texture
-        this.updates.push((data, now) => monitor.update(data, now))
-      }
       const mesh = make(
         layer.width,
         layer.height,
@@ -229,6 +224,33 @@ export class LayeredMonitor {
       )
       mesh.renderOrder = order + 1
       group.add(mesh)
+      if (layer.kind === 'html') {
+        // Optional backend: layered PNG/glyph/needle screens never fetch this module.
+        // Keep the plane invisible until it has a texture (no white startup flash).
+        mesh.visible = false
+        let monitor: HtmlMonitor | undefined
+        let latest: { data: MonitorData; now: number } | undefined
+        this.updates.push((data, now) => {
+          if (monitor) monitor.update(data, now)
+          else latest = { data: { values: { ...data.values }, bars: { ...data.bars } }, now }
+        })
+        pending.push(
+          import('./html-monitor.js').then(async ({ HtmlMonitor }) => {
+            if (this.disposed) return
+            const surface = new HtmlMonitor(layer.url, layer.width, layer.height, layer.refresh)
+            this.html.push(surface)
+            if (this.secondary !== undefined) surface.setSecondary(this.secondary)
+            await surface.ready
+            if (this.disposed) return // dispose() already released the in-flight surface.
+            monitor = surface
+            mesh.material.map = surface.texture
+            mesh.material.needsUpdate = true
+            mesh.visible = true
+            if (latest && this.root.visible) surface.update(latest.data, latest.now)
+            latest = undefined
+          }),
+        )
+      }
       if (layer.kind === 'needle') {
         group.position.x = layer.x - width / 2 + layer.pivot[0]
         group.position.y = height / 2 - layer.y - layer.pivot[1]
@@ -252,6 +274,7 @@ export class LayeredMonitor {
     this.ready = Promise.all(pending).then(() => {})
   }
   setSecondary(value: boolean): void {
+    this.secondary = value
     this.html.forEach((m) => m.setSecondary(value))
   }
   update(data: MonitorData, now: number): void {

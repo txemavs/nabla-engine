@@ -15,9 +15,9 @@ test('elevation-only relief loads without GLBs and supplies ground collisions be
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   const result = await page.evaluate(async (root) => {
-    const module = '/planet-world.ts'
+    const module = '/@fs' + root + '/src/render/planet/world.ts'
     const { PlanetWorld } = await import(module)
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const T = await import(String('/e2e/render-fixture.ts'))
     const { Simulation, createEntity, createA3, initPhysics } = await import(
       `/@fs${root}/src/index.ts`
     )

@@ -1,8 +1,31 @@
 import { defineConfig, loadEnv } from 'vite'
+import { fileURLToPath } from 'node:url'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     root: 'studio',
+    resolve: {
+      alias: {
+        '@nabla/engine/vehicle-presentation/presets': fileURLToPath(
+          new URL('./src/catalog/presentation/road-vehicles.ts', import.meta.url),
+        ),
+        '@nabla/engine/vehicle-presentation': fileURLToPath(
+          new URL('./src/render/vehicle-presentation/index.ts', import.meta.url),
+        ),
+        '@nabla/engine/monitors/html': fileURLToPath(
+          new URL('./src/render/monitors/html-monitor.ts', import.meta.url),
+        ),
+        '@nabla/engine/monitors/presets': fileURLToPath(
+          new URL('./src/catalog/monitors/index.ts', import.meta.url),
+        ),
+        '@nabla/engine/monitors': fileURLToPath(
+          new URL('./src/render/monitors/index.ts', import.meta.url),
+        ),
+        '@nabla/engine/menus': fileURLToPath(
+          new URL('./src/render/monitors/menu.ts', import.meta.url),
+        ),
+      },
+    },
     define: {
       __VUE_OPTIONS_API__: true,
       __VUE_PROD_DEVTOOLS__: false,
@@ -19,6 +42,9 @@ export default defineConfig(({ mode }) => {
           geoeuskadi: 'studio/geoeuskadi.html',
           tileLab: 'studio/tile-lab.html',
           zoomLab: 'studio/zoom-lab.html',
+          modularMonitor: 'studio/examples/modular-monitor.html',
+          s3Monitor: 'studio/examples/s3-monitor.html',
+          equipment: 'studio/examples/equipment.html',
         },
       },
     },

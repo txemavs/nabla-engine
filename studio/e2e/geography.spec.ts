@@ -24,7 +24,7 @@ test('requests location, saves the GPS pin and preserves it on reload', async ({
   await page.reload()
   await expect(page.locator('#latitude')).toHaveValue('41.38', { timeout: 30000 })
   await page.locator('#options-menu-button').click()
-  await page.locator('#options-tab-place').click()
+  await page.getByRole('tab', { name: 'Ubicación', exact: true }).click()
   await page.locator('#latitude').fill('95')
   await page.locator('#apply-location').click()
   await expect(page.locator('#toast')).toBeVisible()

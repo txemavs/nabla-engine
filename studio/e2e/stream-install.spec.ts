@@ -15,8 +15,8 @@ test('streams mesh construction in bounded slices, including cancellation and ba
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(
     async ({ root, buildings }) => {
-      const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-      const module = '/view.ts'
+      const T = await import(String('/e2e/render-fixture.ts'))
+      const module = '/@fs' + root + '/src/presentation/scene-view.ts'
       const { SceneView } = await import(module)
       const sceneModule = `/@fs${root}/src/stage/scene.ts`
       const { createEntity } = await import(sceneModule)
@@ -75,8 +75,8 @@ test('pose edits preserve installed map meshes, batches and unfinished installat
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(
     async ({ root, buildings }) => {
-      const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-      const viewModule = '/view.ts'
+      const T = await import(String('/e2e/render-fixture.ts'))
+      const viewModule = '/@fs' + root + '/src/presentation/scene-view.ts'
       const { SceneView } = await import(viewModule)
       const { createEntity } = await import(`/@fs${root}/src/stage/scene.ts`)
       const parent = createEntity('parent', 'group')

@@ -9,7 +9,7 @@ test('Bilbao police Focus shares four wheel geometries and stays within its draw
   await page.goto('/police-preview')
   const result = await page.evaluate(async (root) => {
     const T = await import(String('/e2e/render-fixture.ts'))
-    const { SceneView } = await import(`/@fs${root}/src/render/entity/view.ts`)
+    const { SceneView } = await import(`/@fs${root}/src/presentation/scene-view.ts`)
     const { createPoliceCar } = await import(`/@fs${root}/src/catalog/vehicles/police.ts`)
     const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
     const jeep = createPoliceCar('jeep', [0, 0.62, 0])

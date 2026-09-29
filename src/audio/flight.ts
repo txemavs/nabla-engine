@@ -7,6 +7,8 @@ export class FlightAudio {
   private propGain?: GainNode
   private propOsc?: OscillatorNode
   private propFilter?: BiquadFilterNode
+  private tireGain?: GainNode
+  private tireFilter?: BiquadFilterNode
   private carGain?: GainNode
   private carOsc?: OscillatorNode
   private carFilter?: BiquadFilterNode
@@ -33,6 +35,7 @@ export class FlightAudio {
   }
   private silence(): void {
     if (!this.context) return
+    this.tireGain?.gain.setTargetAtTime(0, this.context.currentTime, 0.05)
     this.gain?.gain.setTargetAtTime(0, this.context.currentTime, 0.05)
     this.propGain?.gain.setTargetAtTime(0, this.context.currentTime, 0.05)
     this.carGain?.gain.setTargetAtTime(0, this.context.currentTime, 0.05)
@@ -66,6 +69,13 @@ export class FlightAudio {
         source.loop = true
         source.connect(filter)
         source.start()
+        this.tireGain = ctx.createGain()
+        this.tireGain.gain.value = 0
+        this.tireGain.connect(ctx.destination)
+        this.tireFilter = ctx.createBiquadFilter()
+        this.tireFilter.type = 'bandpass'
+        this.tireFilter.Q.value = 7
+        source.connect(this.tireFilter).connect(this.tireGain)
         const oscillator = (this.oscillator = ctx.createOscillator())
         oscillator.type = 'sine'
         oscillator.frequency.value = 65
@@ -174,6 +184,24 @@ export class FlightAudio {
     this.carGain.gain.setTargetAtTime(audible ? 0.025 + load * 0.055 : 0, time, 0.035)
     this.carOsc?.frequency.setTargetAtTime(Math.max(30, rpm / 30), time, 0.035)
     this.carFilter?.frequency.setTargetAtTime(180 + rpm * 0.1 + load * 700, time, 0.04)
+  }
+  get tireSoundLevel(): number {
+    return this.tireGain?.gain.value ?? 0
+  }
+  /** Quiet friction squeal, reusing the shared noise source; no nodes per skid. */
+  tires(slip: number, speedKmh: number): void {
+    if (!this.context || !this.tireGain) return
+    const amount =
+      this.enabled && !this.suspended && Number.isFinite(slip)
+        ? Math.max(0, Math.min(1, (slip - 0.2) / 0.8))
+        : 0
+    const time = this.context.currentTime
+    this.tireGain.gain.setTargetAtTime(amount * 0.085, time, 0.08)
+    this.tireFilter?.frequency.setTargetAtTime(
+      950 + Math.min(160, Math.max(0, speedKmh || 0)) * 3 + amount * 280,
+      time,
+      0.12,
+    )
   }
   /** Quiet piston idle. `level` is 0..1 from the occupied Cessna. */
   engine(level: number): void {

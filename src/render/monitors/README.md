@@ -1,5 +1,24 @@
 # Layered monitor library
 
+Use the dedicated package entry points:
+
+```ts
+import { LayeredMonitor, type MonitorDefinition, type MonitorData } from '@nabla/engine/monitors'
+import { MonitorMenu, type MonitorMenuItem } from '@nabla/engine/menus'
+// Optional browser-only backend, loaded only if needed:
+import { HtmlMonitor } from '@nabla/engine/monitors/html'
+// Optional stock layouts and pure data bindings:
+import { s3Instruments } from '@nabla/engine/monitors/presets'
+```
+
+Root imports remain compatible, but pull the broad engine graph. A menu needs no
+DOM, Three.js or physics. A layered monitor needs Three.js and browser canvas for
+text atlases. HTML code is dynamically loaded only for `kind: 'html'`; `ready`
+includes its loading. Calling `dispose()` while loading cancels/releases the
+surface and cannot attach a late result. The host calls `update(data, nowMs)`;
+monitors create no independent animation loop. `setSecondary()` before loading
+is respected and never mutates a shared definition's refresh options.
+
 Public exports: `LayeredMonitor`, `MonitorDefinition`, `MonitorLayer`, `MonitorMenu`,
 `MonitorMenuItem`, `MonitorAction`, `HtmlMonitor`, `MonitorData`, `MonitorOptions`.
 

@@ -187,8 +187,8 @@ ray-fitted to the roof at the rearward mounting position.
 
 ## A3 Nabla lightweight edition
 
-The current A3 body, wheel and steering files are derived from the recovered A3
-sources above. `scripts/prepare-a3.mjs` accepts a directory containing the three
+The A3 body and steering files are derived from the recovered A3 sources above.
+The wheel is now generated from a ten-spoke design inspired by the user’s reference photo. `scripts/prepare-a3.mjs` accepts a directory containing the three
 untouched source GLBs; the local pre-edit copy is
 `/home/txema/backups/nabla-a3-20260928/`. The original files also remain in Git
 history at `b11cc97`. Rebuild with Node 22 and the repository dependencies.
@@ -197,13 +197,12 @@ The paint, glazing, lights and mirror-lens triangle positions are preserved
 exactly (a source-derived SHA-256 regression guards 25,941 protected triangles).
 Node transforms and functional names are retained. Meshoptimizer simplifies
 other details with locked boundaries and absolute error limits of 1 mm for body
-and steering detail and 1.5 mm for wheels. These are simplifier error settings,
+and steering detail. These are simplifier error settings,
 not a measured physical manufacturing tolerance. Normals/UVs are compacted with
 the selected vertices. No physics mass or collider settings change.
 
-The assembled vehicle falls from 215,865 to 98,875 triangles (54% reduction).
-The three files fall from 4,235,924 to 2,907,136 bytes (31% reduction). The isolated
-browser view submits 103,892 triangles including transparent passes. This does
+The assembled vehicle has 86,115 triangles, versus 215,865 before optimization.
+The isolated browser fixture submits 91,070 triangles with the GPS lowered. This does
 not predict FPS in a populated world. Both physics wheel animation and cockpit
 mirror/instrument mount names remain available.
 
@@ -228,3 +227,23 @@ close the front optics while retaining the clear lenses and lit details.
 artwork inspired by the user-provided instrument-layout reference. The reference
 photograph is not embedded or redistributed. See [the monitor editing guide](../docs/monitors.md)
 for the layered definition, preview page, retained HTML example and performance model.
+
+### Photo-inspired chrome wheels
+
+[`scripts/lib/a3-wheel.mjs`](../scripts/lib/a3-wheel.mjs) builds five V-shaped
+pairs of bevelled spokes, a star-shaped hub, lug recesses, a dark centre cap and
+the small container emblem. Chrome, rubber, recesses and the brake disc form four
+merged material batches; all four vehicle wheels share the loaded geometries.
+The tyre keeps its 0.315 m radius, rounded shoulders and two shallow grooves,
+using 2,048 triangles instead of 5,916. The whole wheel uses 4,596 instead of
+7,786 triangles and the GLB is 117,516 instead of 230,476 bytes. Physics is unchanged.
+
+Regenerate only this asset with:
+
+```sh
+node scripts/prepare-a3.mjs /path/to/original-a3-backup --wheel-only
+```
+
+The previous wheel is also backed up locally at
+`/home/txema/backups/nabla-wheel-20260929/car.audi.a3.wheel.glb`.
+The reference photo is not embedded or redistributed as a texture.

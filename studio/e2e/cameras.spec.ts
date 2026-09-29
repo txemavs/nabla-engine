@@ -21,8 +21,14 @@ test('cycles chase, cockpit and vehicle-up overhead map with adjustable height',
   await page.waitForTimeout(700)
   await page.keyboard.press('KeyE')
   await expect(page.locator('#player-mode')).toContainText('AUDI')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-camera-mode', 'cockpit')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute(
+    'data-vehicle-entrance',
+    'complete',
+  )
   await page.keyboard.press('KeyJ')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-camera-mode', 'cockpit')
+  await page.keyboard.press('Enter') // Color submenu
   await page.keyboard.press('ArrowDown')
   await page.keyboard.press('ArrowDown')
   await page.keyboard.press('Enter')

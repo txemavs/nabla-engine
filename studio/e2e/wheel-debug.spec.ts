@@ -3,8 +3,8 @@ test('wheel diagnostics compare render-space GLBs with physics after an origin s
   page,
 }) => {
   await page.goto('/?scene=circuit')
-  const result = await page.evaluate(async (root) => {
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+  const result = await page.evaluate(async () => {
+    const T = await import(String('/e2e/render-fixture.ts'))
     const module = '/wheel-debug.ts'
     const { WheelDebugOverlay } = await import(module)
     const overlay = new WheelDebugOverlay()
@@ -28,7 +28,7 @@ test('wheel diagnostics compare render-space GLBs with physics after an origin s
     plane.geometry.dispose()
     plane.material.dispose()
     return { delta, hidden }
-  }, process.cwd())
+  })
   expect(result.delta).toBeCloseTo(0.25)
   expect(result.hidden).toBe(true)
 })

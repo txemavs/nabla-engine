@@ -89,15 +89,20 @@ export function shotView(
     sim.entityTransform(gate.id, true),
     sim.entityTransform(destination, true),
   )
-  const remote = camera.clone()
-  const point = camera.position
+  // Rapier reports a hit at distance zero when a ray begins inside the window's
+  // solid barrier. Start beyond the destination thickness, including oblique rays.
+  const exit = document.entities.find((e) => e.id === destination)!
+  const localDirection = direction
     .clone()
-    .addScaledVector(direction, closest + 0.02)
-    .applyMatrix4(mapping)
+    .applyQuaternion(new THREE.Quaternion(...sim.entityTransform(gate.id, true).rotation).invert())
+  const travel = closest + (exit.size[2] / 2 + 0.02) / Math.abs(localDirection.z)
+  if (travel >= range) return { camera, range, throughPortal: false }
+  const remote = camera.clone()
+  const point = camera.position.clone().addScaledVector(direction, travel).applyMatrix4(mapping)
   remote.position.copy(point)
   remote.quaternion.premultiply(new THREE.Quaternion().setFromRotationMatrix(mapping))
   remote.updateMatrixWorld(true)
-  return { camera: remote, range: range - closest, throughPortal: true }
+  return { camera: remote, range: range - travel, throughPortal: true }
 }
 
 export class Gallery {

@@ -4,9 +4,9 @@ test('overlapping land paint stays stable while terrain and roads retain depth',
 }) => {
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
-    const module = '/tile-asset.ts'
+    const module = '/@fs' + root + '/src/render/planet/tile-asset.ts'
     const { restoreTileLayers } = await import(module)
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const T = await import(String('/e2e/render-fixture.ts'))
     const renderer = new T.WebGLRenderer({ antialias: false })
     renderer.setSize(64, 64)
     const target = new T.WebGLRenderTarget(64, 64)

@@ -4,8 +4,8 @@ test('paths remain above grass in both individual and batched rendering', async 
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
     const sceneModule = `/@fs${root}/src/stage/scene.ts`
-    const viewModule = '/view.ts'
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const viewModule = '/@fs' + root + '/src/presentation/scene-view.ts'
+    const T = await import(String('/e2e/render-fixture.ts'))
     const { createEntity } = await import(sceneModule)
     const { SceneView } = await import(viewModule)
     const terrain = {
@@ -56,9 +56,9 @@ test('paths remain above grass in both individual and batched rendering', async 
 test('transport crossings retain separate depth layers after GLB restoration', async ({ page }) => {
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-    const groundModule = '/ground-material.ts'
-    const tileModule = '/tile-asset.ts'
+    const T = await import(String('/e2e/render-fixture.ts'))
+    const groundModule = '/@fs' + root + '/src/render/planet/ground-material.ts'
+    const tileModule = '/@fs' + root + '/src/render/planet/tile-asset.ts'
     const { transportLayer } = await import(groundModule)
     const { restoreTileLayers } = await import(tileModule)
     const entities = [

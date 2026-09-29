@@ -1,11 +1,44 @@
 import * as THREE from 'three'
-/** One transparent canvas on the inside of the bow glass; no world-space labels. */
+import { LayeredMonitor } from '../monitors/layered-monitor.js'
+/** Layered navigation readings with an optional canvas artificial horizon. */
 export class ShipHud {
   readonly mesh: THREE.Mesh
   private canvas = document.createElement('canvas')
   private texture: THREE.CanvasTexture
+  private readonly readings: LayeredMonitor
+  private disposed = false
   private next = 0
-  constructor() {
+  constructor(private readonly navigationOnly = false) {
+    this.readings = new LayeredMonitor({
+      width: 1024,
+      height: 600,
+      layers: [
+        {
+          id: 'speed',
+          kind: 'text',
+          binding: 'speed',
+          x: 30,
+          y: navigationOnly ? 100 : 530,
+          width: navigationOnly ? 900 : 280,
+          height: navigationOnly ? 150 : 30,
+          columns: 12,
+          color: '#79ff9c',
+          align: 'center',
+        },
+        {
+          id: 'altitude',
+          kind: 'text',
+          binding: 'altitude',
+          x: navigationOnly ? 30 : 700,
+          y: navigationOnly ? 350 : 530,
+          width: navigationOnly ? 900 : 300,
+          height: navigationOnly ? 130 : 30,
+          columns: 16,
+          color: '#79ff9c',
+          align: 'center',
+        },
+      ],
+    })
     this.canvas.width = 1024
     this.canvas.height = 600
     this.texture = new THREE.CanvasTexture(this.canvas)
@@ -22,6 +55,9 @@ export class ShipHud {
       }),
     )
     this.mesh.position.set(0, 0.55, -4.999)
+    this.readings.root.scale.set(4.65 / 1024, 2.85 / 600, 1)
+    this.readings.root.position.z = 0.002
+    this.mesh.add(this.readings.root)
     this.mesh.name = 'Ship navigation HUD'
     this.mesh.visible = false
     this.mesh.raycast = () => undefined
@@ -32,14 +68,27 @@ export class ShipHud {
     now: number,
     telemetry: { speedKmh: number; altitude: number } | null,
   ) {
+    if (this.disposed) return
     this.mesh.visible = !!telemetry
     if (!telemetry || now < this.next) return
     this.next = now + 100
     this.mesh.updateWorldMatrix(true, false)
     const inverse = this.mesh.matrixWorld.clone().invert()
     const eye = camera.getWorldPosition(new THREE.Vector3()).applyMatrix4(inverse)
+    this.readings.update(
+      {
+        values: {
+          speed: `${Math.round(telemetry.speedKmh)} km/h`,
+          altitude: `ALT ${Math.round(telemetry.altitude)} m`,
+        },
+        bars: {},
+      },
+      now,
+    )
+    if (this.navigationOnly) return
     const ctx = this.canvas.getContext('2d')!
     ctx.clearRect(0, 0, 1024, 600)
+    this.readings.root.visible = eye.z > 0
     if (eye.z <= 0) {
       this.texture.needsUpdate = true
       return
@@ -67,11 +116,15 @@ export class ShipHud {
     ctx.lineTo(115, pitch)
     ctx.stroke()
     ctx.restore()
-    ctx.fillText(`${Math.round(telemetry.speedKmh)} km/h`, 160, 560)
-    ctx.fillText(`ALT ${Math.round(telemetry.altitude)} m`, 850, 560)
     this.texture.needsUpdate = true
   }
   dispose() {
+    if (this.disposed) return
+    this.disposed = true
+    this.mesh.removeFromParent()
+    this.readings.dispose()
     this.texture.dispose()
+    this.mesh.geometry.dispose()
+    ;(this.mesh.material as THREE.Material).dispose()
   }
 }

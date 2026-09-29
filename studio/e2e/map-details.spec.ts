@@ -1,11 +1,19 @@
 import { test, expect } from './studio-test.js'
 test('shows settlement labels and batched railway ribbons above terrain', async ({ page }) => {
-  await page.goto('/?scene=circuit')
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.route('**/map-details-preview', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><body></body>',
+    }),
+  )
+  await page.goto('/map-details-preview')
   const result = await page.evaluate(async (root) => {
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const T = await import(String('/e2e/render-fixture.ts'))
     const { createRealWorld } = await import('/@fs' + root + '/src/planet/assemble/world.ts')
     const { localToGeo } = await import('/@fs' + root + '/src/math/geo/sphere.ts')
-    const viewModule = '/view.ts'
+    const viewModule = '/@fs' + root + '/src/presentation/scene-view.ts'
     const { SceneView } = await import(viewModule)
     const origin = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
     const coords = (points: number[][]) =>
@@ -89,5 +97,6 @@ test('shows settlement labels and batched railway ribbons above terrain', async 
   expect(result.railOriginals.length).toBeGreaterThan(0)
   expect(result.railOriginals.every((v: boolean) => !v)).toBe(true)
   expect(result.calls).toBeLessThan(25)
-  await page.screenshot({ path: '/tmp/map-details.png' })
+  await page.screenshot({ path: 'test-results/map-details.png' })
+  expect(errors).toEqual([])
 })

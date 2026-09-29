@@ -14,6 +14,46 @@
     "./vehicles": {
       "types": "./dist/catalog/vehicles/index.d.ts",
       "import": "./dist/catalog/vehicles/index.js"
+    },
+    "./monitors": {
+      "types": "./dist/render/monitors/index.d.ts",
+      "import": "./dist/render/monitors/index.js"
+    },
+    "./monitors/html": {
+      "types": "./dist/render/monitors/html-monitor.d.ts",
+      "import": "./dist/render/monitors/html-monitor.js"
+    },
+    "./monitors/presets": {
+      "types": "./dist/catalog/monitors/index.d.ts",
+      "import": "./dist/catalog/monitors/index.js"
+    },
+    "./menus": {
+      "types": "./dist/render/monitors/menu.d.ts",
+      "import": "./dist/render/monitors/menu.js"
+    },
+    "./vehicle-presentation": {
+      "types": "./dist/render/vehicle-presentation/index.d.ts",
+      "import": "./dist/render/vehicle-presentation/index.js"
+    },
+    "./vehicle-presentation/presets": {
+      "types": "./dist/catalog/presentation/road-vehicles.d.ts",
+      "import": "./dist/catalog/presentation/road-vehicles.js"
+    },
+    "./vehicles/wheeled": {
+      "types": "./dist/simulation/vehicles/wheeled/index.d.ts",
+      "import": "./dist/simulation/vehicles/wheeled/index.js"
+    },
+    "./physics": {
+      "types": "./dist/simulation/physics-api.d.ts",
+      "import": "./dist/simulation/physics-api.js"
+    },
+    "./vehicles/boat": {
+      "types": "./dist/simulation/vehicles/boat.d.ts",
+      "import": "./dist/simulation/vehicles/boat.js"
+    },
+    "./vehicles/flight": {
+      "types": "./dist/simulation/vehicles/flight.d.ts",
+      "import": "./dist/simulation/vehicles/flight.js"
     }
   },
   "imports": {
@@ -75,6 +115,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@babel/parser": "7.29.9",
     "@nabla/desktop": "file:vendor/nabla-desktop-0cc33a8.tgz",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",

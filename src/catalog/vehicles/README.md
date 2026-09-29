@@ -44,4 +44,7 @@ adding a second vehicle simulation to Studio.
 
 `police.ts` adds the Bilbao police Focus as its own palette entry, with shared
 wheels and its own collider/suspension/driver settings. The host offers insertion;
-Engine owns the definition and visual equipment (`render/entity/police.ts`).
+Engine owns the definition and visual equipment (`catalog/presentation/police-equipment.ts`).
+
+See [create a vehicle](../../../docs/creating-a-vehicle.md) for the public APIs,
+custom adapters and standalone wheeled/boat/flight hosts.

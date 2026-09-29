@@ -106,7 +106,12 @@ export { mapTilePath, parseMapTilePath, mapTileFilename, mapTileSample } from '.
 export { PlanetWorld } from './render/planet/world.js'
 export { GeographicView } from './render/planet/sky.js'
 export { SeaWater } from './render/planet/water.js'
-export { SceneView } from './render/entity/view.js'
+export {
+  SceneView,
+  type SceneViewOptions,
+  type CarInstrumentDefinition,
+  type CarInstrumentTelemetry,
+} from './presentation/scene-view.js'
 export { ShadowManager } from './render/shadows.js'
 
 export { OceanSheet } from './render/planet/ocean-sheet.js'

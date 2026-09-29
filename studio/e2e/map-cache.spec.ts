@@ -4,7 +4,9 @@ test.beforeEach(async ({ page }) => {
 })
 test('shares a byte budget, touches LRU reads and persists settings', async ({ page }) => {
   const result = await page.evaluate(async () => {
-    const { mapCache, setMapCacheBudget, mapCacheStats } = await import(String('/map-cache.ts'))
+    const { mapCache, setMapCacheBudget, mapCacheStats } = await import(
+      String('/e2e/cache-fixture.ts')
+    )
     await setMapCacheBudget(0.0001)
     const a = mapCache('extract'),
       b = mapCache('prepared')
@@ -30,7 +32,7 @@ test('shares a byte budget, touches LRU reads and persists settings', async ({ p
   await page.reload()
   expect(
     await page.evaluate(async () => {
-      const m = await import(String('/map-cache.ts'))
+      const m = await import(String('/e2e/cache-fixture.ts'))
       return (await m.mapCacheStats()).budget
     }),
   ).toBe(100)
@@ -39,7 +41,7 @@ test('migrates usable legacy responses and removes old cache stores', async ({ p
   const result = await page.evaluate(async () => {
     const old = await caches.open('nabla-prepared-v5')
     await old.put('/legacy', new Response('prepared', { headers: { etag: 'test' } }))
-    const m = await import(String('/map-cache.ts'))
+    const m = await import(String('/e2e/cache-fixture.ts'))
     const hit = await m.mapCache('nabla-prepared-v5').match('/legacy')
     return {
       text: await hit?.text(),
@@ -57,12 +59,12 @@ test('migrates usable legacy responses and removes old cache stores', async ({ p
 })
 test('serializes concurrent workers and applies lower/disabled budgets', async ({ page }) => {
   const result = await page.evaluate(async () => {
-    const m = await import(String('/map-cache.ts'))
+    const m = await import(String('/e2e/cache-fixture.ts'))
     await m.setMapCacheBudget(0.0001)
     const url = URL.createObjectURL(
       new Blob(
         [
-          `import {mapCache} from '${location.origin}/map-cache.ts';onmessage=async e=>{await mapCache('worker').put('/'+e.data,new Response('x'.repeat(60)));postMessage('done')}`,
+          `import {mapCache} from '${location.origin}/e2e/cache-fixture.ts';onmessage=async e=>{await mapCache('worker').put('/'+e.data,new Response('x'.repeat(60)));postMessage('done')}`,
         ],
         { type: 'text/javascript' },
       ),
@@ -95,7 +97,9 @@ test('speculative writes cannot evict useful zones when concurrent writers fill 
   page,
 }) => {
   const result = await page.evaluate(async () => {
-    const { mapCache, setMapCacheBudget, mapCacheStats } = await import(String('/map-cache.ts'))
+    const { mapCache, setMapCacheBudget, mapCacheStats } = await import(
+      String('/e2e/cache-fixture.ts')
+    )
     await setMapCacheBudget(0.0001)
     const cache = mapCache('prepared')
     await cache.put('/near', new Response('n'.repeat(60)))
@@ -114,7 +118,7 @@ test('persists a 10 GB budget without allocating it and rejects excessive values
   page,
 }) => {
   const result = await page.evaluate(async () => {
-    const m = await import(String('/map-cache.ts'))
+    const m = await import(String('/e2e/cache-fixture.ts'))
     await m.setMapCacheBudget(10000)
     let rejected = false
     try {
@@ -128,7 +132,7 @@ test('persists a 10 GB budget without allocating it and rejects excessive values
   await page.reload()
   expect(
     await page.evaluate(
-      async () => (await (await import(String('/map-cache.ts'))).mapCacheStats()).budget,
+      async () => (await (await import(String('/e2e/cache-fixture.ts'))).mapCacheStats()).budget,
     ),
   ).toBe(10_000_000_000)
 })

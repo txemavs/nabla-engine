@@ -1,3 +1,5 @@
+import { KeyboardSteering } from '../src/simulation/vehicles/keyboard-steering.js'
+import { TireMarks } from '../src/render/entity/tire-marks.js'
 import { TireSmoke } from '../src/render/entity/tire-smoke.js'
 import { capturePng } from '../src/render/capture.js'
 import { simplifiedTide } from '../src/planet/tide.js'
@@ -82,7 +84,7 @@ import {
   type Entity,
   type Vec3Tuple,
 } from '../src/index.js'
-import { SceneView } from '../src/render/entity/view.js'
+import { SceneView } from '../src/presentation/scene-view.js'
 import './style.css'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
@@ -142,10 +144,13 @@ let cameraMode: 'chase' | 'cockpit' | 'map' = 'chase'
 let headYaw = 0
 let headPitch = 0.05
 let headVehicle: string | null = null
+let vehicleEntrance: { id: string; started: number } | null = null
+const preparedVehicles = new WeakSet<THREE.Object3D>()
 let mapHeight = 45
 let mapZoom = 1
 const drivingTelemetry = new DrivingTelemetry()
 function cycleCamera(): void {
+  vehicleEntrance = null
   if (!sim) return
   if (!sim.player.vehicleId) {
     firstPerson = !firstPerson
@@ -224,6 +229,8 @@ renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
 const tireSmoke = new TireSmoke()
 scene.add(tireSmoke.root)
+const tireMarks = new TireMarks()
+scene.add(tireMarks.root)
 const fieldLights = new FieldLights()
 scene.add(fieldLights.root)
 let fieldFollow = true
@@ -1500,6 +1507,8 @@ function togglePlayNow(startFlight = false): void {
       portalSequence = 0
       drivingTelemetry.update(null, 0, 0, 0, true)
       delete renderer.domElement.dataset.portalCrossings
+      headVehicle = null
+      vehicleEntrance = null
       cameraMode = entry ? 'cockpit' : 'chase'
       if (entry) {
         sim.startInVehicle(entry.vehicleId)
@@ -1816,9 +1825,13 @@ $('file-menu').addEventListener('click', (event) => {
   if ((event.target as HTMLElement).closest('button')) $('file-menu').hidePopover()
 })
 $('play').onclick = () => void togglePlay()
-remotePortalViews = new RemotePortalViews(() => {
-  needsRender = true
-}, toast)
+remotePortalViews = new RemotePortalViews(
+  () => {
+    needsRender = true
+  },
+  toast,
+  (doc) => new SceneView(doc),
+)
 const portalControls = new PortalControls(viewport, toast)
 portalControls.onShipSwitch = (id, kind) => view.pressShipSwitch(id, kind)
 portalControls.projectRegistry = {
@@ -1994,6 +2007,19 @@ window.addEventListener('keydown', (e) => {
       const result = menu.key(e.code)
       if (result.handled) {
         e.preventDefault()
+        if (result.action?.type === 'vehicle.mirror') {
+          const vehicle = editor.document.entities.find((e) => e.id === menuVehicle)?.vehicle
+          if (vehicle) {
+            const tilt = THREE.MathUtils.clamp(
+              (vehicle.mirrorTilt ?? -2) + Number(result.action.value),
+              -5,
+              12,
+            )
+            editor.update(menuVehicle, { vehicle: { ...vehicle, mirrorTilt: tilt } })
+            view.setVehicleMirrorTilt(menuVehicle, tilt)
+            toast(`Espejos: ${tilt} grados · Guardar conserva el ajuste`)
+          }
+        }
         if (result.action?.type === 'vehicle.paint' && result.action.value) {
           editor.update(menuVehicle, { color: result.action.value })
           view.setVehiclePaint(menuVehicle, result.action.value)
@@ -2056,6 +2082,15 @@ window.addEventListener('keydown', (e) => {
   }
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code))
     e.preventDefault()
+  if (e.code === 'PageUp' || e.code === 'PageDown') {
+    e.preventDefault()
+    if (!e.repeat) toast(sim.shiftVehicle(e.code === 'PageUp' ? 1 : -1))
+    return
+  }
+  if (e.code === 'KeyB' && !e.repeat) {
+    toast(sim.automaticTransmission())
+    return
+  }
   if (e.code === 'KeyR' && !e.repeat) {
     if (sim) toast(sim.recoverVehicle())
     return
@@ -2157,17 +2192,22 @@ function pollGamepad(): Gamepad | null {
   previousButtons = pad.buttons.map((b) => b.pressed)
   return pad
 }
-function currentInput(pad: Gamepad | null = null) {
-  if (sim?.player.vehicleId && view.vehicleMenu(sim.player.vehicleId)?.open)
+const keyboardSteering = new KeyboardSteering()
+function currentInput(pad: Gamepad | null = null, elapsed = 0) {
+  if (sim?.player.vehicleId && view.vehicleMenu(sim.player.vehicleId)?.open) {
+    keyboardSteering.reset()
     return { ...idleInput(), brake: true }
+  }
 
   if (
     !studioInput.acceptsInput ||
     !document.hasFocus() ||
     document.hidden ||
     document.querySelector('.app-menu:popover-open, dialog[open]')
-  )
+  ) {
+    keyboardSteering.reset()
     return idleInput()
+  }
   const id = sim?.player.vehicleId
   const flight = Boolean(id && sim?.vehicleInfo(id).flightMode)
   const axis = (positive: string, negative: string) =>
@@ -2177,6 +2217,12 @@ function currentInput(pad: Gamepad | null = null) {
     : { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
   const touch = portalControls.flightInput()
   const driving = touchDriving.input()
+  const keyboardRight = flight
+    ? axis('ArrowRight', 'ArrowLeft')
+    : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')
+  const vehicle = id ? view.document.entities.find((e) => e.id === id)?.vehicle : null
+  const roadCar = id && vehicle && !flight && !vehicle.boat && !vehicle.plane && !vehicle.interior
+  const steering = keyboardSteering.update(roadCar ? id : null, keyboardRight, elapsed)
   return {
     forward:
       (flight
@@ -2185,13 +2231,7 @@ function currentInput(pad: Gamepad | null = null) {
       analog.forward +
       touch.forward +
       driving.forward,
-    right:
-      (flight
-        ? axis('ArrowRight', 'ArrowLeft')
-        : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')) +
-      analog.right +
-      touch.right +
-      driving.right,
+    right: steering + analog.right + touch.right + driving.right,
     lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
     turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
     yaw,
@@ -2361,7 +2401,9 @@ function frame(now: number): void {
       playerInterior = sim.player.interiorId
       yaw = sim.player.yaw
     }
-    sim.setInput(currentInput(pad))
+    const input = currentInput(pad, dt)
+    if (input.forward || input.right || input.brake || input.sprint) vehicleEntrance = null
+    sim.setInput(input)
     const physicsStart = performance.now()
     sim.setWaterLevel(waterLevel)
     sim.step(document.hidden || playTransition || streamMode === 'model' ? 0 : dt)
@@ -2400,6 +2442,13 @@ function frame(now: number): void {
     }
     if (headVehicle !== sim.player.vehicleId) {
       headVehicle = sim.player.vehicleId
+      vehicleEntrance = null
+      const vehicle = view.document.entities.find((e) => e.id === headVehicle)?.vehicle
+      if (headVehicle && vehicle && !vehicle.boat && !vehicle.plane && !vehicle.interior) {
+        cameraMode = 'cockpit'
+        mapHeight = overheadDrivingHeight(0, mapZoom)
+        vehicleEntrance = { id: headVehicle, started: now }
+      }
       headYaw = 0
       headPitch = 0.05
     }
@@ -2527,12 +2576,16 @@ function frame(now: number): void {
         info.isCarrier,
         headYaw,
         headPitch,
+        view.vehicleHeadOffset(p.vehicleId!),
       )
       camera.position.copy(head.position)
       camera.quaternion.copy(head.quaternion)
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(head.quaternion)
       yaw = Math.atan2(-forward.x, -forward.z)
     } else {
+      // Look farther along the road without moving the camera toward the bonnet.
+      // Manual orbit and automatic heading recovery share the same car-relative radius.
+      const cameraAnchor = [...target]
       if (info && !info.isCarrier) {
         const ahead =
           Math.min(3.5, drivingTelemetry.speed * 0.14) *
@@ -2548,9 +2601,9 @@ function frame(now: number): void {
           ? Math.max(pitch, THREE.MathUtils.smoothstep(altitude, 1000, 500000) * 1.56)
           : pitch
       const desired: Vec3Tuple = [
-        target[0] + Math.sin(yaw) * distance * Math.cos(travelPitch),
-        target[1] + 0.8 + Math.sin(travelPitch) * distance,
-        target[2] + Math.cos(yaw) * distance * Math.cos(travelPitch),
+        cameraAnchor[0] + Math.sin(yaw) * distance * Math.cos(travelPitch),
+        cameraAnchor[1] + 0.8 + Math.sin(travelPitch) * distance,
+        cameraAnchor[2] + Math.cos(yaw) * distance * Math.cos(travelPitch),
       ]
       if (p.interiorId) {
         const offset = new THREE.Vector3(...desired)
@@ -2562,6 +2615,35 @@ function frame(now: number): void {
       camera.position.fromArray(sim.cameraPosition(target, desired))
       camera.lookAt(...target)
     }
+    if (vehicleEntrance && vehicleEntrance.id === p.vehicleId && cockpit && info) {
+      const elapsed = now - vehicleEntrance.started
+      const t = THREE.MathUtils.smoothstep(elapsed, 150, 1200)
+      const seatPosition = camera.position.clone()
+      const seatRotation = camera.quaternion.clone()
+      const top = overheadDrivingPose(
+        p.position,
+        sim.entityTransform(p.vehicleId!, true).rotation,
+        mapHeight,
+        new THREE.Vector3(0, 1, 0).applyQuaternion(playerFrameQ),
+        0,
+      )
+      camera.position.copy(top.position)
+      camera.up.copy(top.up)
+      camera.lookAt(top.target)
+      camera.position.lerp(seatPosition, t)
+      camera.quaternion.slerp(seatRotation, t)
+      const body = view.objects.get(p.vehicleId!)
+      if (body && !preparedVehicles.has(body)) {
+        preparedVehicles.add(body)
+        // Compile the occupied car with scene lighting before its first close-up.
+        void renderer.compileAsync(body, camera, scene).catch((error) => {
+          preparedVehicles.delete(body)
+          console.warn('Vehicle material preparation failed', error)
+        })
+      }
+      if (elapsed >= 1200) vehicleEntrance = null
+    } else vehicleEntrance = null
+    renderer.domElement.dataset.vehicleEntrance = vehicleEntrance ? 'active' : 'complete'
     $('player-mode').textContent = p.vehicleId
       ? view.document.entities.find((e) => e.id === p.vehicleId)!.name.toUpperCase() +
         (info?.dockedTo ? ' · SUJETO' : '') +
@@ -2572,7 +2654,7 @@ function frame(now: number): void {
     $('speed').textContent = p.vehicleId
       ? `${Math.round(p.speed * 3.6)} km/h` +
         (info && view.document.entities.find((e) => e.id === p.vehicleId)?.vehicle?.powertrain
-          ? ` · ${info.gear < 0 ? 'R' : 'D' + info.gear} · ${Math.round(info.rpm)} rpm`
+          ? ` · ${info.gear < 0 ? 'R' : (info.manualTransmission ? 'M' : 'D') + info.gear} · ${Math.round(info.rpm)} rpm`
           : '')
       : 'Explora el distrito'
     $('flight-status').textContent = info?.canFly
@@ -2716,15 +2798,24 @@ function frame(now: number): void {
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
   worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
   if (worldStream) $('world-note').textContent = worldStream.status
-  if (!sim) tireSmoke.clear()
-  const smokeContacts =
-    carInfo && pilot
-      ? sim!
-          .wheelContactInfo(pilot)
-          .slice(2)
-          .flatMap((w) => (w.contactPoint ? [w.contactPoint] : []))
-      : []
-  tireSmoke.update(dt, smokeContacts, carInfo?.tireSlip ?? 0, renderOrigin)
+  if (!sim) {
+    tireSmoke.clear()
+    tireMarks.clear()
+  }
+  const tireContacts = pilot ? sim!.wheelContactInfo(pilot) : []
+  const slip = Math.max(0, ...tireContacts.map((w) => w.slip))
+  tireSmoke.update(
+    dt,
+    tireContacts
+      .filter((w) => w.slip > 0.22)
+      .flatMap((w) => (w.contactPoint ? [w.contactPoint] : [])),
+    slip,
+    renderOrigin,
+  )
+  tireMarks.update(document.hidden ? 0 : dt, pilot ?? null, tireContacts, renderOrigin)
+  flightAudio.tires(slip, pilot ? sim!.vehicleInfo(pilot).speedKmh : 0)
+  renderer.domElement.dataset.tireMarks = String(tireMarks.root.geometry.drawRange.count / 6)
+  renderer.domElement.dataset.tireSound = String(flightAudio.tireSoundLevel)
   view.root.position.copy(renderOrigin).negate()
   fieldLights.root.position.copy(renderOrigin).negate()
   const nightLights = !!view.document.geography && geography.atmosphere.day < 0.15

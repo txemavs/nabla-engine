@@ -6,17 +6,34 @@ export interface MonitorAction {
 export interface MonitorMenuItem {
   id: string
   label: string
-  action: MonitorAction
+  action?: MonitorAction
+  children?: readonly MonitorMenuItem[]
+  back?: boolean
   disabled?: boolean
 }
 export class MonitorMenu {
   selected = 0
   open = false
-  constructor(readonly items: readonly MonitorMenuItem[]) {}
+  private stack: { items: readonly MonitorMenuItem[]; selected: number; title: string }[] = []
+  constructor(
+    public items: readonly MonitorMenuItem[],
+    public title = '',
+  ) {}
+  get depth(): number {
+    return this.stack.length
+  }
+  private back(): void {
+    const parent = this.stack.pop()
+    if (parent) {
+      this.items = parent.items
+      this.selected = parent.selected
+      this.title = parent.title
+    } else this.open = false
+  }
   key(key: string): { handled: boolean; action?: MonitorAction } {
     if (!this.open) return { handled: false }
     if (key === 'Escape') {
-      this.open = false
+      this.back()
       return { handled: true }
     }
     if (key === 'ArrowUp' || key === 'ArrowDown') {
@@ -29,7 +46,16 @@ export class MonitorMenu {
     }
     if (key === 'Enter') {
       const item = this.items[this.selected]
-      return { handled: true, action: item && !item.disabled ? item.action : undefined }
+      if (item && !item.disabled) {
+        if (item.back) this.back()
+        else if (item.children) {
+          this.stack.push({ items: this.items, selected: this.selected, title: this.title })
+          this.items = item.children
+          this.selected = 0
+          this.title = item.label
+        } else return { handled: true, action: item.action }
+      }
+      return { handled: true }
     }
     return { handled: false }
   }

@@ -5,12 +5,15 @@ import {
   mapTileBounds,
   mapTileChildren,
   mapTileId,
+  mapTileFilename,
   mapTilePath,
   mapTileSample,
 } from '../../src/scene/mercator.js'
 import { groundGlb } from './planet-fixture.js'
 
-test('native zoom viewer refines, coarsens and exposes global downloads', async ({ page }) => {
+test('native zoom viewer keeps Z15 cells across viewing distances and exposes global downloads', async ({
+  page,
+}) => {
   const bytes = groundGlb(),
     empty = groundGlb(true)
   const parent = mapTileAt(43.32969, -1.819606, 13)
@@ -36,7 +39,7 @@ test('native zoom viewer refines, coarsens and exposes global downloads', async 
                 path: `${name}-${sha256.slice(0, 16)}.glb`,
                 sha256,
                 bytes: b.length,
-                download: `nabla-earth-WebMercatorQuad-${tile.z}-${tile.x}-${tile.y}-${name}.glb`,
+                download: mapTileFilename(tile, name as 'terrain' | 'buildings-osm'),
               },
             ]
           }),
@@ -62,11 +65,14 @@ test('native zoom viewer refines, coarsens and exposes global downloads', async 
   await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '15')
   await expect(page.locator('#files a').first()).toHaveAttribute(
     'download',
-    /^nabla-earth-WebMercatorQuad-z15-/,
+    /^earth-WebMercatorQuad-z15-/,
   )
+  // Parent tiles still contain composed Z15 geometry: retain native Z15 at every distance.
   await page.click('#far')
-  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '')
+  await page.waitForTimeout(700)
+  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '15')
   await page.click('#middle')
-  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '')
+  await page.waitForTimeout(700)
+  await expect(page.locator('canvas')).toHaveAttribute('data-zooms', '15')
   expect(errors).toEqual([])
 })

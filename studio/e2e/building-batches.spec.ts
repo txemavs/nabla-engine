@@ -25,8 +25,8 @@ test('100 unmodified buildings use fewer draw calls with the same visible image'
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(
     async ({ root, doc }) => {
-      const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-      const module = '/view.ts'
+      const T = await import(String('/e2e/render-fixture.ts'))
+      const module = '/@fs' + root + '/src/presentation/scene-view.ts'
       const { SceneView } = await import(module)
       const view = new SceneView(doc)
       while (view.pendingMapInstall) view.flushMapInstall(1000, 1000)

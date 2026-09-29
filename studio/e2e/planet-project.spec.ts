@@ -39,7 +39,7 @@ test('travel and downloads retain one planet, new planet is explicit and backed 
   if (!(await page.locator('#new-planet').isVisible()))
     await page.locator('#file-menu-button').click()
   await page.locator('#new-planet').click()
-  await expect(page.locator('#scene-name')).toHaveText('Mi planeta')
+  await expect(page.locator('#scene-name')).toHaveText('Boston')
   const fresh = await downloadPlanet(page)
   expect(fresh.planetId).not.toBe(first.planetId)
 })

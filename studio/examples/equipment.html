@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Equipamiento independiente</title>
+    <style>
+      body {
+        margin: 24px;
+        color: #edf3fa;
+        background: #101820;
+        font: 17px system-ui;
+      }
+      canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      button {
+        font: inherit;
+        padding: 10px 20px;
+        color: #fff;
+        background: #30475e;
+        border: 0;
+        border-radius: 6px;
+      }
+      p {
+        max-width: 800px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pantalla retráctil y luces, sin coche</h1>
+    <p>
+      H: subir/bajar · B: freno · R: marcha atrás · ← / →: intermitente. La pantalla deja de
+      actualizarse al bajarla.
+    </p>
+    <button id="toggle">Subir / bajar pantalla</button>
+    <p id="status" aria-live="polite"></p>
+    <script type="module" src="./equipment.ts"></script>
+  </body>
+</html>

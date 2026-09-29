@@ -5,8 +5,8 @@ test('GLB road chart draws without scene road entities and HUD sits above the wo
   await page.goto('/?scene=circuit')
   await page.locator('#viewport > canvas').waitFor()
   const result = await page.evaluate(async () => {
-    const chartModule = '/planet-chart.ts',
-      helmModule = '/helm-map.ts'
+    const chartModule = '/e2e/navigation-fixture.ts',
+      helmModule = '/e2e/navigation-fixture.ts'
     const { planetChart } = await import(chartModule)
     const { HelmMap, setPlanetCharts } = await import(helmModule)
     const chart = planetChart([

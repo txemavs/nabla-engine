@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import * as THREE from 'three'
-import { CarLights } from '../../src/render/entity/car-lights.js'
+import { createA3Lights } from '../../src/catalog/presentation/a3-lamps.js'
 
 it('switches off all lamps when unoccupied and separates braking from reversing', () => {
   const model = new THREE.Group()
@@ -18,7 +18,7 @@ it('switches off all lamps when unoccupied and separates braking from reversing'
   position.emissiveIntensity = 2
   const brake = lens('Luz_izquierda', 'Rojo 6')
   const reverse = lens('Luces_Maletero', 'PilotoRojo')
-  const lights = new CarLights(model)
+  const lights = createA3Lights(model)
   expect(position.emissiveIntensity).toBe(0)
   lights.update({ powered: true, braking: true, reversing: false }, 0)
   expect(position.emissiveIntensity).toBeGreaterThan(0)

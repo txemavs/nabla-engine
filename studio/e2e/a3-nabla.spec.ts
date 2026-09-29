@@ -7,7 +7,7 @@ test('A3 Nabla shares four wheel geometries and stays within its draw budget', a
   await page.goto('/a3-preview')
   const result = await page.evaluate(async (root) => {
     const T = await import(String('/e2e/render-fixture.ts'))
-    const { SceneView } = await import(`/@fs${root}/src/render/entity/view.ts`)
+    const { SceneView } = await import(`/@fs${root}/src/presentation/scene-view.ts`)
     const { createA3 } = await import(`/@fs${root}/src/catalog/vehicles/a3.ts`)
     const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
     const car = createA3('a3', [0, 0.55, 0])

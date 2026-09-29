@@ -13,7 +13,13 @@ import { matteGroundMaterial } from './ground-material.js'
 async function fetchJpeg(url: string) {
   const response = await fetch(url).catch(() => undefined)
   if (!response?.ok) return
-  const bitmap = await createImageBitmap(await response.blob())
+  // A proxy can return HTML or an incomplete body with HTTP 200. Imagery is optional;
+  // keep the elevation mesh/collisions when decoding fails.
+  const bitmap = await response
+    .blob()
+    .then((blob) => createImageBitmap(blob))
+    .catch(() => undefined)
+  if (!bitmap) return
   const canvas = document.createElement('canvas')
   canvas.width = bitmap.width
   canvas.height = bitmap.height
@@ -61,7 +67,7 @@ export class PlanetHorizon {
   private ocean = new Set<string>()
   private span = 2
   private wantedKey = ''
-  private coverageKey = ''
+  private coverageKey: string | undefined
   private focus: MapTile | null = null
   private focusKey = ''
   private layers = { relief: true, photo14: true, photo12: true }
@@ -177,7 +183,8 @@ export class PlanetHorizon {
       fine: [],
     })
     this.root.add(mesh)
-    this.coverageKey = ''
+    // Empty coverage is a valid calculated key, distinct from an uninitialized cell.
+    this.coverageKey = undefined
     this.setCoverage(this.coverage)
   }
   private async wear(key: string, photo: string, material: THREE.MeshPhysicalMaterial) {
@@ -195,7 +202,7 @@ export class PlanetHorizon {
     cell.texture = loaded
     cell.textured = true
     cell.mask = ''
-    this.coverageKey = ''
+    this.coverageKey = undefined
     this.setCoverage(this.coverage)
     this.changed()
   }
@@ -337,7 +344,7 @@ export class PlanetHorizon {
     const next = new Set(blocks.map(mapTileId))
     if (next.size === this.ocean.size && [...next].every((id) => this.ocean.has(id))) return
     this.ocean = next
-    this.coverageKey = ''
+    this.coverageKey = undefined
     for (const cell of this.cells.values()) cell.mask = ''
     this.setCoverage(this.coverage)
   }

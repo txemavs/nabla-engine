@@ -28,6 +28,13 @@ preserves the edit/play contract and a single physics owner.
 
 - [World cache operations](world-cache-operations.md): deployed cache layers, preparation queue, regeneration, publishing, backups and troubleshooting.
 
+## Composable engine modules
+
+- [Module map and compatibility](architecture/module-map.md)
+- [Create a vehicle](creating-a-vehicle.md)
+- [Create a monitor](creating-a-monitor.md)
+- [Migration history](architecture/vehicle-modularity.md)
+
 ## Regional data pilots
 
 - [geoEuskadi road-area comparison: import, preparation and remaining integration gates](geoeuskadi-pilot.md)

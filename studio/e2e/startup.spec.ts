@@ -12,14 +12,14 @@ test('loading message paints before the engine arrives', async ({ page }) => {
   await expect(page.locator('#boot-status')).toBeVisible()
   await expect(page.locator('#boot-message')).toContainText(/Cargando|Abriendo/)
   release()
-  await expect(page.locator('../../tests/.studio-workspace')).toBeVisible({ timeout: 30000 })
+  await expect(page.locator('.studio-workspace')).toBeVisible({ timeout: 30000 })
   await expect(page.locator('#boot-status')).toBeHidden()
 })
 
 test('initial map geometry is queued and installed incrementally', async ({ page }) => {
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
-    const { SceneView } = await import(String('/view.ts'))
+    const { SceneView } = await import(String('/@fs' + root + '/src/presentation/scene-view.ts'))
     const { createEntity } = await import(`/@fs${root}/src/stage/scene.ts`)
     const entities = [
       createEntity('spawn', 'spawn'),

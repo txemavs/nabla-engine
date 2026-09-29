@@ -8,7 +8,7 @@ test('loads the original GLBs, shows the interior and keeps models after editing
   const models = new Set<string>()
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('response', (response) => {
-    if (response.url().endsWith('../../tests/.glb') && response.ok())
+    if (response.url().endsWith('.glb') && response.ok())
       models.add(response.url().split('/').pop()!)
   })
   await page.goto('/?scene=circuit')
@@ -29,9 +29,12 @@ test('loads the original GLBs, shows the interior and keeps models after editing
   await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(700)
   await page.keyboard.press('KeyE')
-  await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
+  await expect(page.locator('#player-mode')).toHaveText('AUDI S3 NABLA · 400 CV DSG')
   await page.screenshot({ path: 'test-results/a3-seated-driver.png' })
-  await page.keyboard.press('KeyC')
+  await expect(page.locator('#viewport > canvas')).toHaveAttribute(
+    'data-vehicle-entrance',
+    'complete',
+  )
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-camera-mode', 'cockpit')
   await page.screenshot({ path: 'test-results/a3-cockpit.png' })
   await page.keyboard.down('KeyD')
@@ -66,7 +69,7 @@ test('operates the garage latch and carrier controls in the browser', async ({ p
   await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(1200)
   await page.keyboard.press('KeyE')
-  await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
+  await expect(page.locator('#player-mode')).toHaveText('AUDI S3 NABLA · 400 CV DSG')
   await page.keyboard.down('Space')
   await expect(page.locator('#interaction')).toContainText('F sujetar al suelo', { timeout: 10000 })
   await page.keyboard.up('Space')
@@ -85,7 +88,7 @@ test('operates the garage latch and carrier controls in the browser', async ({ p
   await page.keyboard.press('KeyT')
   await expect(page.locator('#player-mode')).toContainText('SUJETO')
   await page.keyboard.press('KeyF')
-  await expect(page.locator('#player-mode')).toHaveText('AUDI A3 CABRIO')
+  await expect(page.locator('#player-mode')).toHaveText('AUDI S3 NABLA · 400 CV DSG')
   await page.keyboard.press('KeyC')
   await page.screenshot({ path: 'test-results/garage-cockpit.png' })
   expect(errors).toEqual([])

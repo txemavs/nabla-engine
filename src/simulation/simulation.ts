@@ -1,5 +1,15 @@
-import { createDrivetrain, isDriven, stepDrivetrain } from './vehicles/drivetrain.js'
-import { stepBoat } from './vehicles/boat.js'
+import {
+  createWheeledVehicle,
+  stepWheeledVehicle,
+  syncWheeledDamping,
+  wheeledTelemetry,
+  wheelContacts,
+  shiftWheeledVehicle,
+  automaticWheeledTransmission,
+} from './vehicles/wheeled/runtime.js'
+import type { WheeledInput, WheelContactSnapshot } from './vehicles/wheeled/contracts.js'
+import { stepBoatInWater } from './vehicles/boat.js'
+import { stepFlight } from './vehicles/flight.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
 import { terrainHeight, terrainVertices, terrainIndices } from '../planet/land/terrain.js'
 import { triangles } from '../math/solid/mesh.js'
@@ -18,7 +28,6 @@ import {
   Material,
   LockConstraint,
   Quaternion,
-  RaycastVehicle,
   Sphere,
   Vec3,
   World,
@@ -350,7 +359,8 @@ export class Simulation {
     const roadSurface =
       e.road?.elevation === 'bridge' ||
       (e.road?.mode === 'smooth-float' && (!e.road.elevation || e.road.elevation === 'terrain'))
-    const trunk = !!e.sprite
+    // Gallery targets are animated billboards, not trees with stationary trunks.
+    const trunk = !!e.sprite && !e.sprite.target
     if ((e.motion === 'none' && !e.portal && !roadSurface && !trunk) || (e.portal && e.parentId))
       return
     if (isMapBuilding(e) && e.motion === 'static' && !this.mapBuildingsEnabled) return
@@ -585,45 +595,18 @@ export class Simulation {
   }
 
   private createVehicle(entity: Entity, body: Body): void {
-    const car = new RaycastVehicle({
-      chassisBody: body,
-      indexRightAxis: 0,
-      indexUpAxis: 1,
-      indexForwardAxis: 2,
-    })
     const definition = vehicleDefinition(entity)
-    // Tuned road cars already model aerodynamic drag below. Generic rigid-body
-    // damping adds a large speed-proportional brake and hides the engine power.
-    if (definition.powertrain) body.linearDamping = 0
-    // Front is -Z; all hubs and suspension dimensions are body-local metres.
-    for (const [x, y, z] of definition.hubs) {
-      car.addWheel({
-        chassisConnectionPointLocal: new Vec3(x, y + definition.suspensionRest, z),
-        directionLocal: new Vec3(0, -1, 0),
-        axleLocal: new Vec3(1, 0, 0),
-        radius: definition.wheelRadius,
-        suspensionRestLength: definition.suspensionRest,
-        suspensionStiffness: definition.stiffness,
-        dampingRelaxation: 2.3,
-        dampingCompression: 4.4,
-        frictionSlip: 4.5,
-        rollInfluence: 0.04,
-        maxSuspensionForce: 100000,
-        maxSuspensionTravel: definition.suspensionTravel ?? 0.3,
-      })
-    }
+    const wheeled = createWheeledVehicle(body, definition)
+    const car = wheeled.raycast
     if (definition.boat) {
       body.linearDamping = 0.01
       body.angularDamping = 0.35
       this.world.addBody(body)
     } else car.addToWorld(this.world)
     this.vehicles.set(entity.id, {
-      body,
-      raycast: car,
+      ...wheeled,
       entity,
-      steer: 0,
       prop: 0,
-      drivetrain: createDrivetrain(),
       definition,
       flight: null,
       rampClosed: false,
@@ -714,10 +697,7 @@ export class Simulation {
     const v = this.vehicles.get(id)
     if (!v) return []
     const current: Transform[] = v.raycast.wheelInfos.map((_, i) => {
-      const inContact = v.raycast.wheelInfos[i].isInContact
       v.raycast.updateWheelTransform(i)
-      // Updating the wheel pose clears the contact flag; a read must preserve it.
-      v.raycast.wheelInfos[i].isInContact = inContact
       const t = v.raycast.wheelInfos[i].worldTransform
       return {
         position: vec(t.position),
@@ -737,21 +717,20 @@ export class Simulation {
     }))
   }
 
-  /** Per-wheel physics contact info for debug diagnostics. */
-  wheelContactInfo(id: string): {
-    wheelCenter: Vec3Tuple
-    contactPoint: Vec3Tuple | null
-    suspensionLength: number
-    isInContact: boolean
-  }[] {
+  private wheeledInput(): WheeledInput {
+    return {
+      throttle: this.input.forward,
+      steering: this.input.right,
+      handbrake: this.input.brake,
+      launch: this.input.sprint,
+    }
+  }
+  /** Per-wheel absolute-world contact snapshots for any tyre effect or diagnostic. */
+  wheelContactInfo(
+    id: string,
+  ): { -readonly [K in keyof WheelContactSnapshot]: WheelContactSnapshot[K] }[] {
     const v = this.vehicles.get(id)
-    if (!v) return []
-    return v.raycast.wheelInfos.map((wheel) => ({
-      wheelCenter: vec(wheel.worldTransform.position),
-      contactPoint: wheel.isInContact ? vec(wheel.raycastResult.hitPointWorld) : null,
-      suspensionLength: wheel.suspensionLength,
-      isInContact: wheel.isInContact,
-    }))
+    return v ? wheelContacts(v, this.wheeledInput(), id === this.vehicleId, !v.definition.boat) : []
   }
 
   step(elapsed: number): void {
@@ -1230,15 +1209,13 @@ export class Simulation {
       this.playerBody.applyForce(gravityUp.vsub(up).scale(9.81 * this.playerBody.mass))
       this.playerBody.quaternion.copy(interior.quaternion)
     }
+    const drivingInput = this.wheeledInput()
     for (const [id, v] of this.vehicles) {
       const dock = this.docks.get(id)
-      if (v.definition.powertrain) {
-        // Cargo must share the host damping so the joint does not fight a
-        // different deceleration during the carrier's high-speed flight.
-        v.body.linearDamping = dock
-          ? (this.vehicles.get(dock.carrierId)?.body.linearDamping ?? 0.05)
-          : 0
-      }
+      syncWheeledDamping(
+        v,
+        dock ? (this.vehicles.get(dock.carrierId)?.body.linearDamping ?? 0.05) : undefined,
+      )
       if (dock) continue
       const active = id === this.vehicleId
       if (v.definition.plane) this.spoolEngine(v, active)
@@ -1250,60 +1227,7 @@ export class Simulation {
         this.pilotBoat(v, active)
         continue
       }
-      const powered = v.helm !== 'off'
-      const target =
-        active && powered ? (-this.input.right * 0.45) / (1 + v.body.velocity.length() * 0.035) : 0
-      v.steer += clamp(target - v.steer, -FIXED_STEP * 1.8, FIXED_STEP * 1.8)
-      const forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
-      const speed = v.body.velocity.dot(forward)
-      const opposing = active && this.input.forward * speed < -0.8
-      const driven = (i: number) => isDriven(v.definition.drivenWheels, i)
-      const tune = v.definition.powertrain
-      const throttle = active && powered && !opposing ? this.input.forward : 0
-      if (tune) {
-        stepDrivetrain(
-          v.drivetrain,
-          tune,
-          v.definition.wheelRadius,
-          speed,
-          throttle,
-          active && this.input.brake,
-          FIXED_STEP,
-        )
-        // Aerodynamic drag in the direction of travel; zero extra force on parked cars.
-        const velocity = v.body.velocity
-        const magnitude = velocity.length()
-        const rolling = v.raycast.wheelInfos.some((wheel) => wheel.isInContact)
-          ? 0.012 * v.body.mass * 9.81
-          : 0
-        v.body.applyForce(velocity.scale(-0.42 * magnitude - rolling / Math.max(1, magnitude)))
-      }
-      for (let i = 0; i < 4; i++) {
-        v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
-        const rearShare = v.drivetrain.burnout ? 1 : active && this.input.brake ? 0.7 : 0.55
-        const share =
-          v.definition.drivenWheels === 'all' ? (i < 2 ? 1 - rearShare : rearShare) / 2 : 0.5
-        v.raycast.applyEngineForce(
-          driven(i) ? (tune ? v.drivetrain.force * share : throttle * v.definition.engineForce) : 0,
-          i,
-        )
-        if (tune) {
-          const desiredGrip = active && this.input.brake && i >= 2 ? 0.7 : tune.grip
-          const wheel = v.raycast.wheelInfos[i]
-          wheel.frictionSlip += (desiredGrip - wheel.frictionSlip) * Math.min(1, FIXED_STEP * 8)
-        }
-        const brake = !active
-          ? v.definition.brakeForce * 0.4
-          : this.input.brake
-            ? v.definition.brakeForce * (i >= 2 ? 1.5 : 0.4)
-            : opposing
-              ? v.definition.brakeForce
-              : 0
-        v.raycast.setBrake(
-          tune && v.drivetrain.burnout ? (i < 2 ? v.definition.brakeForce * 4 : 0) : brake,
-          i,
-        )
-      }
+      stepWheeledVehicle(v, drivingInput, FIXED_STEP, active, v.helm !== 'off')
       if (active && this.roadAssistEnabled) this.applyRoadAssist(v)
     }
     if (!this.vehicleId) {
@@ -1372,12 +1296,18 @@ export class Simulation {
    * prop both lag the stick.
    */
   private pilotBoat(v: Vehicle, active: boolean): void {
-    const body = v.body
-    const up = this.radialUp(body)
-    const keel = body.pointToWorldFrame(new Vec3(0, -0.45, 0.2))
-    const sea = this.waterLevel - (this.document.geography?.altitude ?? 0)
-    const depth = sea - this.altitude(keel)
-    stepBoat(v, active, this.input, up, depth, FIXED_STEP)
+    stepBoatInWater(
+      v,
+      this.input,
+      {
+        sample: (keel, body) => ({
+          up: this.radialUp(body),
+          depth: this.waterLevel - (this.document.geography?.altitude ?? 0) - this.altitude(keel),
+        }),
+      },
+      FIXED_STEP,
+      active,
+    )
   }
   /** Flight keeps the same collision body and cargo constraints; only wheel forces are disabled. */
   toggleFlight(): string {
@@ -1508,135 +1438,29 @@ export class Simulation {
   }
 
   private fly(v: Vehicle, active: boolean): void {
-    const flight = v.flight!,
-      body = v.body
-    const inv = body.raw?.invPrincipalInertiaSqrt()
-    if (!inv || inv.x === 0) body.applyInertia()
-    const helm = v.helm
-    const auto = helm === 'auto'
-    const hands = active && !auto
-    const space = helm === 'space'
-    const height = this.height(body),
-      radial = this.radialUp(body)
-    const lift = hands
-      ? space
-        ? height < 80000
-          ? 1
-          : (this.input.lift ?? 0)
-        : (this.input.lift ?? 0)
-      : 0
-    const turn = active ? (this.input.turn ?? 0) : 0
-    const forward = hands && !this.input.brake ? (space ? 1 : this.input.forward) : 0
-    const right = hands && !this.input.brake ? this.input.right : 0
-    // Shift still scales travel with altitude. Plain climb is the container's own vertical rate.
-    const travelSpeed =
-      (space || (active && this.input.sprint)) && this.document.geography
-        ? Math.min(2000000, Math.max(30, height * 0.8))
-        : 3
-    const climb = Math.abs(lift) > 0 && travelSpeed <= 3 ? 100 : travelSpeed
-    const lead = Math.max(1.5, climb * 0.8)
-    if (helm !== 'plane')
-      flight.altitude = clamp(
-        flight.altitude + lift * climb * FIXED_STEP,
-        Math.max(this.minimumFlightAltitude, height - lead),
-        height + lead,
-      )
-    if (helm === 'plane' && v.definition.plane) flight.yaw -= turn * 0.9 * FIXED_STEP
-    else flight.yaw -= turn * 1.2 * FIXED_STEP
     let tangent = new Quaternion()
     if (this.document.geography) {
-      const point = localToGeo(this.document.geography, vec(body.position))
+      const point = localToGeo(this.document.geography, vec(v.body.position))
       const q = localFrame(this.document.geography).invert().multiply(localFrame(point))
       tangent = new Quaternion(q.x, q.y, q.z, q.w)
     }
-    const heading = tangent.mult(new Quaternion().setFromAxisAngle(new Vec3(0, 1, 0), flight.yaw))
-    const pitchAngle = space
-      ? height < 80000
-        ? -1.05
-        : -0.15
-      : helm === 'plane'
-        ? -forward * (v.definition.plane ? 0.55 : 0.9)
-        : -forward * 0.35
-    const pitch = new Quaternion().setFromAxisAngle(new Vec3(1, 0, 0), pitchAngle)
-    const roll = new Quaternion().setFromAxisAngle(
-      new Vec3(0, 0, 1),
-      -right * (helm === 'plane' && v.definition.plane ? 0.62 : 0.35),
-    )
-    const desired = heading.mult(pitch).mult(roll)
-    const error = body.quaternion.inverse().mult(desired)
-    const sign = error.w < 0 ? -1 : 1
-    const rate = body.vectorToLocalFrame(body.angularVelocity)
-    const torque = new Vec3(
-      body.inertia.x * (error.x * sign * 24 - rate.x * 7),
-      body.inertia.y * (error.y * sign * 24 - rate.y * 7),
-      body.inertia.z * (error.z * sign * 24 - rate.z * 7),
-    )
-    body.torque.vadd(body.vectorToWorldFrame(torque), body.torque)
-    if (helm === 'plane') {
-      const nose = body.quaternion.vmult(new Vec3(0, 0, -1))
-      const along = body.velocity.dot(nose)
-      const air = Math.max(0, along)
-      if (v.definition.plane) {
-        const wing = body.quaternion.vmult(new Vec3(0, 1, 0))
-        const wings = clamp(air / 28, 0, 1)
-        const thrust = lift > 0 ? clamp(68 - along, 0, 8) : 0
-        const drag = 0.0011 * along * Math.abs(along)
-        const flightDir = body.velocity.length() > 4 ? body.velocity.clone().normalize() : nose
-        // Nose above the flight path is positive. The old sign rewarded diving.
-        const aoa = clamp(-wing.dot(flightDir), -0.45, 0.5)
-        const liftAccel = 9.81 * wings * clamp(1 + aoa * 2.4, 0, 1.65)
-        body.applyForce(
-          wing
-            .scale(liftAccel)
-            .vadd(nose.scale(thrust - drag))
-            .scale(body.mass),
-        )
-      } else {
-        const wings = clamp(air / 42, 0, 1)
-        const push =
-          lift > 0 ? clamp(680 - along, 0, 80) : lift < 0 ? clamp(-40 - along, -80, 0) : 0
-        body.applyForce(
-          radial
-            .scale(9.81 * wings)
-            .vadd(nose.scale(push))
-            .scale(body.mass),
-        )
-      }
-      body.wakeUp()
-      return
-    }
-    const verticalSpeed = body.velocity.dot(radial)
-    const accelCap = Math.max(
-      6,
-      travelSpeed * 4,
-      Math.abs(lift) > 0 && travelSpeed <= 3 ? 50 : 0,
-      Math.abs(verticalSpeed) * 4,
-    )
-    const acceleration = clamp(
-      (flight.altitude - height) * 5 - verticalSpeed * 4,
-      -accelCap,
-      accelCap,
-    )
-    // Distribute assisted lift over the rigid assembly: same net force/moment at its
-    // combined centre of mass, without forcing the solver to transmit cruise-scale impulses.
-    const accelerationVector = radial.scale(9.81 + acceleration)
-    const direction = new Vec3(right, 0, -forward)
-    if (direction.length() > 1) direction.normalize()
-    const pace = space ? travelSpeed : v.cruiseSpeed / 3.6
-    const target = heading.vmult(direction).scale(pace) // Includes diagonal input.
-    const horizontal = body.velocity.vsub(radial.scale(verticalSpeed))
-    const drive = target.vsub(horizontal).scale(1.8)
-    // Compensate body drag so cruise speed reaches the commanded speed.
-    if (forward || right) drive.vadd(horizontal.scale(-Math.log(1 - body.linearDamping)), drive)
-    const maximum = space ? travelSpeed : forward || right ? 60 : 90
-    if (drive.length() > maximum) drive.scale(maximum / drive.length(), drive)
-    const assistedBodies = [body]
+    const cargo: Body[] = []
     for (const [id, dock] of this.docks)
-      if (dock.carrierId === v.entity.id) assistedBodies.push(this.vehicles.get(id)!.body)
-    for (const assisted of assistedBodies) {
-      assisted.applyForce(accelerationVector.vadd(drive).scale(assisted.mass))
-    }
-    body.wakeUp()
+      if (dock.carrierId === v.entity.id) cargo.push(this.vehicles.get(id)!.body)
+    stepFlight(
+      v,
+      this.input,
+      {
+        height: this.height(v.body),
+        up: this.radialUp(v.body),
+        tangent,
+        minimumAltitude: this.minimumFlightAltitude,
+        planetary: !!this.document.geography,
+        cargo,
+      },
+      FIXED_STEP,
+      active,
+    )
   }
 
   nearestVehicle(): string | null {
@@ -1829,12 +1653,18 @@ export class Simulation {
     engine: number
     rpm: number
     gear: number
+    manualTransmission: boolean
     engineLoad: number
     tireSlip: number
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
-    const signedSpeed = v.body.velocity.dot(v.body.quaternion.vmult(new Vec3(0, 0, -1)))
+    const ground = wheeledTelemetry(
+      v,
+      this.wheeledInput(),
+      this.vehicleId === id,
+      !v.definition.boat,
+    )
     return {
       steer: v.steer,
       driver: new Vector3(...v.definition.driver)
@@ -1848,12 +1678,9 @@ export class Simulation {
       rampClosed: v.rampClosed,
       rampAngle: v.rampAngle,
       rampMoving: Math.abs(v.rampTarget - v.rampAngle) > 0.001,
-      speedKmh: v.body.velocity.length() * 3.6,
-      braking:
-        this.vehicleId === id && (this.input.brake || this.input.forward * signedSpeed < -0.8),
-      reversing:
-        this.vehicleId === id &&
-        (signedSpeed < -0.15 || (this.input.forward < 0 && Math.abs(signedSpeed) <= 0.15)),
+      speedKmh: ground.speedMps * 3.6,
+      braking: ground.braking,
+      reversing: ground.reversing,
       altitude: this.height(v.body),
       cruiseSpeed: v.cruiseSpeed,
       flightMode: Boolean(v.flight),
@@ -1861,19 +1688,28 @@ export class Simulation {
       canFly: Boolean(v.definition.flight),
       targetAltitude: v.flight?.altitude ?? null,
       engine: v.definition.plane ? v.prop : 0,
-      rpm: v.drivetrain.rpm,
-      gear: v.drivetrain.gear,
-      engineLoad: v.drivetrain.load,
-      tireSlip:
-        v.definition.powertrain && this.vehicleId === id
-          ? v.drivetrain.burnout
-            ? 1
-            : Math.min(
-                1,
-                Math.abs(v.body.velocity.dot(v.body.quaternion.vmult(new Vec3(1, 0, 0)))) / 6,
-              )
-          : 0,
+      rpm: ground.rpm,
+      gear: ground.gear,
+      manualTransmission: ground.manualTransmission,
+      engineLoad: ground.engineLoad,
+      tireSlip: ground.tireSlip,
     }
+  }
+
+  shiftVehicle(direction: -1 | 1): string {
+    const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : null
+    if (!v) return 'Este vehículo no tiene cambio secuencial'
+    const result = shiftWheeledVehicle(v, direction)
+    if (result === 'unavailable') return 'Este vehículo no tiene cambio secuencial'
+    return result === 'shifted'
+      ? `Manual · M${v.drivetrain.gear}`
+      : 'Cambio protegido · marcha no disponible'
+  }
+  automaticTransmission(): string {
+    const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : null
+    return v && automaticWheeledTransmission(v)
+      ? 'Cambio automático · D'
+      : 'Este vehículo no tiene cambio secuencial'
   }
 
   dockingCandidate(id = this.vehicleId): string | null {

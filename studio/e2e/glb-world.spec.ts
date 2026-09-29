@@ -6,7 +6,7 @@ test('split GLBs preserve buffers and fail safely on missing or mismatched layer
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
     const sceneModule = `/@fs${root}/src/stage/scene.ts`
-    const tileModule = '/tile-asset.ts',
+    const tileModule = '/@fs' + root + '/src/render/planet/tile-asset.ts',
       worldModule = '/glb-world.ts'
     const { createEntity } = await import(sceneModule)
     const { tileAsset } = await import(tileModule)

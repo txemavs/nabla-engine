@@ -22,3 +22,34 @@ it('routes focused keys, skips disabled items and emits declarative actions', ()
   empty.open = true
   expect(empty.key('Enter').action).toBeUndefined()
 })
+it('opens submenus and restores the parent selection when going back', () => {
+  const menu = new MonitorMenu(
+    [
+      {
+        id: 'paint',
+        label: 'COLOR',
+        children: [
+          { id: 'red', label: 'ROJO', action: { type: 'paint' } },
+          { id: 'back', label: 'VOLVER', back: true },
+        ],
+      },
+      { id: 'mirrors', label: 'ESPEJOS', children: [] },
+    ],
+    'COCHE',
+  )
+  menu.open = true
+  menu.key('Enter')
+  expect(menu.title).toBe('COLOR')
+  expect(menu.key('Enter').action?.type).toBe('paint')
+  menu.key('ArrowDown')
+  menu.key('Enter')
+  expect(menu.title).toBe('COCHE')
+  expect(menu.selected).toBe(0)
+  menu.key('ArrowDown')
+  menu.key('Enter')
+  menu.key('Escape')
+  expect(menu.selected).toBe(1)
+  expect(menu.open).toBe(true)
+  menu.key('Escape')
+  expect(menu.open).toBe(false)
+})

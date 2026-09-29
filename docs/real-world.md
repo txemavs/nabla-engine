@@ -573,3 +573,15 @@ not as a road; mapped areas take precedence over covered centerline triangles.
 The shore transition remains approximate at terrain-triangle resolution. Missing
 inner relation rings are not filled, and incomplete building relations are not
 salvaged into invented footprints. Named streams in tunnels are omitted.
+
+### Lightweight tree crowns
+
+Streamed trees use two crossed, correctly scaled foliage cards plus a horizontal
+12-triangle crown 2.5 metres above the base (capped at half-height for short trees).
+Its diameter is about 61% of the tree width, two thirds of the initial crown.
+Colour and shadow shaders use the instance height to place it without extra buffers. The crown samples a leafy patch of the
+existing tree texture through UVs: no new image or texture allocation is required.
+All three surfaces remain in one instanced mesh/material per batch (16 triangles
+per tree). The crown fades out at grazing camera angles to avoid a visible shelf
+from the road, and fills the silhouette in overhead views. Cutouts cast shadows
+but do not receive shadows, avoiding cross-shaped self-shadow artifacts.

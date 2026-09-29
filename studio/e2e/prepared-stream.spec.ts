@@ -4,7 +4,7 @@ test('speculative binary download is reused and validates when installed', async
   await page.goto('/geography/geoeuskadi-pilot/manifest.json')
   const result = await page.evaluate(async () => {
     const { prefetchPrepared, loadPrepared } = await import(String('/prepared-world.ts'))
-    const { mapCacheStats } = await import(String('/map-cache.ts'))
+    const { mapCacheStats } = await import(String('/e2e/cache-fixture.ts'))
     const origin = { latitude: 43, longitude: -1, altitude: 0 }
     const header = new TextEncoder().encode(
       JSON.stringify({ version: 5, origin, key: '0_0', entities: [], geometry: {} }),
@@ -57,7 +57,7 @@ test('missing binary uses legacy JSON and aborted speculation stops before fallb
     const requests: string[] = []
     window.fetch = async (url) => {
       requests.push(String(url))
-      return String(url).endsWith('../../tests/.bin')
+      return String(url).endsWith('.bin')
         ? new Response('', { status: 404 })
         : Response.json({ version: 5, origin, key: '1_0', entities: [], geometry: {} })
     }
@@ -93,7 +93,9 @@ test('installs even scene placeholders in bounded batches with terrain first', a
   const result = await page.evaluate(
     async (sceneModule) => {
       const { createEntity } = await import(sceneModule)
-      const { SceneView } = await import(String('/view.ts'))
+      const { SceneView } = await import(
+        sceneModule.replace('/src/stage/scene.ts', '/src/presentation/scene-view.ts')
+      )
       const view = new SceneView({
         version: 1,
         name: 'Batched',

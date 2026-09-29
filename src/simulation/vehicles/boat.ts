@@ -1,9 +1,43 @@
-import type { Vehicle } from '../../entity/vehicle/vehicle.js'
+import type { Body } from '../physics.js'
 import { Vec3 } from '../physics.js'
+
+/** Borrowed physics body; no wheels, scene entity or world ownership. */
+export interface BoatRuntime {
+  body: Body
+  definition: { engineForce: number }
+  steer: number
+  prop: number
+  helm: string
+}
+export interface BoatWater {
+  /** Sample the supplied world-space keel point; depth is metres, up is unit length. */
+  sample(keel: Vec3, body: Body): { up: Vec3; depth: number }
+}
+export function createBoat(body: Body, engineForce = 16000): BoatRuntime {
+  if (!Number.isFinite(engineForce) || engineForce <= 0 || body.mass <= 0)
+    throw new RangeError('Boat needs a dynamic body and positive thrust')
+  return { body, definition: { engineForce }, steer: 0, prop: 0, helm: 'on' }
+}
+export function stepBoatInWater(
+  boat: BoatRuntime,
+  input: { forward: number; right: number; brake: boolean },
+  water: BoatWater,
+  dt: number,
+  active = true,
+): void {
+  if (!Number.isFinite(dt) || dt < 0) throw new RangeError('Invalid boat step')
+  if (dt === 0) return
+  const { up, depth } = water.sample(
+    boat.body.pointToWorldFrame(new Vec3(0, -0.45, 0.2)),
+    boat.body,
+  )
+  stepBoat(boat, active, input, up, depth, dt)
+}
+
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
 /** One fixed step of buoyancy, propulsion and hull damping. Depth is relative to the keel. */
 export function stepBoat(
-  v: Vehicle,
+  v: BoatRuntime,
   active: boolean,
   input: { forward: number; right: number; brake: boolean },
   up: Vec3,

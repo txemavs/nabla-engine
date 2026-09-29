@@ -1,4 +1,5 @@
-import { PoliceEquipment } from './police.js'
+import type { VehiclePresentationResolver } from '../vehicle-presentation/adapter.js'
+import type { BeaconEquipment } from '../vehicle-presentation/adapter.js'
 import { ShipHud } from './ship-hud.js'
 import { entityMapArtifact } from '../planet/map-artifact.js'
 import { isMapEnvironment } from '../../scene/map-content.js'
@@ -16,9 +17,10 @@ import { CarrierThrusters } from './carrier-thrusters.js'
 import { ShipLights, type ShipSwitch } from './ship-lights.js'
 import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
-import { CarLights } from './car-lights.js'
-import { CarMirrors } from './car-mirrors.js'
-import { CarInstruments } from './car-instruments.js'
+import type { CarLights } from './car-lights.js'
+import type { CarMirrors } from './car-mirrors.js'
+import type { CarInstruments } from './car-instruments.js'
+import type { CarInstrumentDefinition } from './car-instrument-definition.js'
 import { mountPropeller } from './propeller.js'
 import { RoadBatches } from '../planet/road-batches.js'
 import { LandcoverBatches } from '../planet/landcover-batches.js'
@@ -60,10 +62,17 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.position.fromArray(pose.position)
   object.quaternion.fromArray(pose.rotation)
 }
+export interface SceneViewOptions {
+  vehiclePresentation?: VehiclePresentationResolver
+  /** Stock A3 mount recipe. Null/omitted disables instruments in the bare renderer. */
+  carInstruments?: CarInstrumentDefinition | null
+}
+
+/** Bare renderer. The public package SceneView supplies stock presentation recipes. */
 export class SceneView {
   private readonly thrusters = new Map<string, CarrierThrusters>()
   private readonly shipLights = new Map<string, ShipLights>()
-  private readonly policeEquipment = new Map<string, PoliceEquipment>()
+  private readonly beacons = new Map<string, BeaconEquipment>()
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
@@ -79,27 +88,12 @@ export class SceneView {
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   night = false
+  private readonly headOffsets = new Map<string, readonly number[]>()
+  vehicleHeadOffset(id: string): readonly number[] | undefined {
+    return this.headOffsets.get(id)
+  }
   pressShipSwitch(id: string, kind: ShipSwitch): void {
     this.shipLights.get(id)?.press(kind)
-  }
-  /** Chrome trim in the Audi GLB is stored with metalness 0. Lights do the shine. */
-  private shineVehicle(model: THREE.Object3D): void {
-    model.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return
-      const materials = Array.isArray(object.material) ? object.material : [object.material]
-      for (const material of materials) {
-        if (!(material instanceof THREE.MeshStandardMaterial)) continue
-        if (/^llanta/i.test(material.name) && material.metalness > 0.5) {
-          material.metalness = 0.35
-          material.needsUpdate = true
-        }
-        if (!/^cromo/i.test(material.name)) continue
-        material.metalness = 1
-        material.roughness = Math.min(material.roughness, 0.32)
-        material.envMap = null
-        material.needsUpdate = true
-      }
-    })
   }
   /** Cars can cast onto the ground without unstable self-shadowing on thin GLB panels. */
   vehicleMenu(id: string) {
@@ -112,12 +106,16 @@ export class SceneView {
     if (!/^#[0-9a-f]{6}$/i.test(color)) return
     const entity = this.document.entities.find((e) => e.id === id)
     if (entity) entity.color = color
-    this.objects.get(id)?.traverse((node) => {
-      if (!(node instanceof THREE.Mesh)) return
-      for (const material of Array.isArray(node.material) ? node.material : [node.material])
-        if (material instanceof THREE.MeshStandardMaterial && /^Pintura/.test(material.name))
-          material.color.set(color)
-    })
+    const model = this.objects.get(id)
+    if (entity && model) this.options.vehiclePresentation?.(entity)?.paint?.(model, color)
+  }
+  setVehicleMirrorTilt(id: string, degrees: number): void {
+    const entity = this.document.entities.find((e) => e.id === id)
+    const tilt = THREE.MathUtils.clamp(degrees, -5, 12)
+    if (entity?.vehicle) entity.vehicle.mirrorTilt = tilt
+    this.carMirrors.get(id)?.setTilt(tilt)
+    const instruments = this.instruments.get(id)
+    if (instruments) instruments.mirrorTilt = tilt
   }
   toggleVehicleGps(id: string): boolean | null {
     return this.instruments.get(id)?.toggleGps() ?? null
@@ -167,6 +165,7 @@ export class SceneView {
     readonly document: SceneDocument,
     experimentalLargeScene = false,
     validated = false,
+    private readonly options: SceneViewOptions = {},
   ) {
     this.graph = SceneGraph.fromValidated(
       validated ? document : parseScene(document, experimentalLargeScene),
@@ -582,6 +581,7 @@ export class SceneView {
       if (e.kind === 'box' && !e.light) group.add(box(e.size, e.color))
       if (e.light) this.streetlights.add(e, group)
       if (e.kind === 'vehicle') {
+        if (e.vehicle?.headOffset) this.headOffsets.set(e.id, e.vehicle.headOffset)
         if (e.vehicle?.interior && e.visual?.body.url.includes('ship.container')) {
           const thrusters = new CarrierThrusters()
           group.add(thrusters.root)
@@ -599,6 +599,13 @@ export class SceneView {
           this.placeScreens.set(e.id, interior.door[1])
           for (const mouth of this.document.entities.filter((m) => m.parentId === e.id && m.portal))
             this.portalTablets.set(mouth.id, [interior.door[0]])
+        }
+        if (e.vehicle?.boat) {
+          const hud = new ShipHud(true)
+          hud.mesh.scale.set(0.7 / 4.65, 0.28 / 2.85, 1)
+          hud.mesh.position.set(0, 0.78, -0.465)
+          group.add(hud.mesh)
+          this.shipHuds.set(e.id, hud)
         }
         if (e.visual) this.assetVehicle(e, group)
         else if (e.vehicle?.boat) this.outboard(e, group)
@@ -662,7 +669,6 @@ export class SceneView {
         applyPose(model, part.transform)
         parent.add(model)
         prepare?.(model)
-        if (part.url.includes('car.audi')) this.shineVehicle(model)
         if (this.materialSetup) this.setupMaterials(this.materialSetup)
         if (fallback) {
           fallback.removeFromParent()
@@ -674,68 +680,18 @@ export class SceneView {
   private assetVehicle(e: Entity, group: THREE.Group): void {
     const visual = e.visual!,
       definition = vehicleDefinition(e)
+    const adapter = this.options.vehiclePresentation?.(e)
     const fallback = box(e.size, e.color)
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
-      if (visual.body.url === '/world/car.audi.a3.cabrio.glb') {
-        model.traverse((object) => {
-          if (!(object instanceof THREE.Mesh)) return
-          const materials = Array.isArray(object.material) ? object.material : [object.material]
-          const next = materials.map((material) => {
-            if (
-              !(material instanceof THREE.MeshStandardMaterial) ||
-              !/^pintura/i.test(material.name)
-            )
-              return material
-            // Black paint stays dark if the specular tint is the base colour. The coat is the shine.
-            const paint = new THREE.MeshPhysicalMaterial({
-              name: material.name,
-              // Thin authored body panels need both faces for interior visibility and shadows.
-              side: THREE.DoubleSide,
-              shadowSide: THREE.DoubleSide,
-              color: e.color,
-              metalness: 0.72,
-              roughness: 0.22,
-              clearcoat: 0.8,
-              clearcoatRoughness: 0.14,
-              envMapIntensity: 0,
-            })
-            return paint
-          })
-          object.material = Array.isArray(object.material) ? next : next[0]
-        })
-        this.carLights.set(e.id, new CarLights(model))
-        this.carMirrors.set(e.id, new CarMirrors(model))
-        const interior = model.getObjectByName('Interior')
-        if (interior) {
-          const instruments = new CarInstruments(interior)
-          instruments.update(this.document, this.graph.worldTransform(e.id), 0, performance.now())
-          this.instruments.set(e.id, instruments)
-        }
-      }
-      if (visual.body.url === '/world/car.jeep.wrangler.glb') {
-        model.traverse((object) => {
-          if (!(object instanceof THREE.Mesh)) return
-          const materials = Array.isArray(object.material) ? object.material : [object.material]
-          for (const material of materials) {
-            if (!(material instanceof THREE.MeshStandardMaterial)) continue
-            if (material.name === 'fh_paint') material.color.set(e.color)
-            if (material.name === 'fh_glass') {
-              // The source has opaque white windows. Simple tinted glass keeps the driver's view open.
-              material.color.set('#40566b')
-              material.transparent = true
-              material.opacity = 0.28
-              material.depthWrite = false
-              material.side = THREE.FrontSide
-              object.castShadow = false
-            }
-          }
-        })
-      }
-      if (visual.body.url === '/world/car.ford.focus.police.glb') {
-        const equipment = new PoliceEquipment(model)
-        this.policeEquipment.set(e.id, equipment)
-        this.surfaceTextures.push(...equipment.textures)
+      const equipment = adapter?.mount(model, e, this.options.carInstruments)
+      adapter?.preparePart?.(model, 'body')
+      if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
+      if (equipment?.mirrors) this.carMirrors.set(e.id, equipment.mirrors)
+      if (equipment?.instruments) this.instruments.set(e.id, equipment.instruments)
+      if (equipment?.beacons) {
+        this.beacons.set(e.id, equipment.beacons)
+        this.surfaceTextures.push(...equipment.beacons.textures)
       }
       if (visual.body.url === '/world/cessna.172.glb') {
         const propeller = mountPropeller(model)
@@ -766,7 +722,9 @@ export class SceneView {
         const orientation = new THREE.Group()
         if (visual.wheelRotations) orientation.quaternion.fromArray(visual.wheelRotations[i])
         wheel.add(orientation)
-        this.addAsset(orientation, visual.wheel!)
+        this.addAsset(orientation, visual.wheel!, undefined, (model) =>
+          adapter?.preparePart?.(model, 'wheel'),
+        )
         return wheel
       })
       this.wheels.set(e.id, wheels)
@@ -785,10 +743,7 @@ export class SceneView {
         },
         undefined,
         (model) => {
-          if (visual.steering!.url !== '/world/car.audi.a3.steering.glb') return
-          // Undo the baked 2.8° tilt and centre the rim on the Z spin axis.
-          model.rotation.x = THREE.MathUtils.degToRad(2.8)
-          model.position.y = -0.0275568
+          adapter?.preparePart?.(model, 'steering')
         },
       )
       this.steering.set(e.id, spin)
@@ -990,7 +945,7 @@ export class SceneView {
         -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
     for (const [id, propeller] of this.propellers)
       propeller.rotation.z += sim.vehicleInfo(id).engine * 78 * Math.min(elapsed, 0.05)
-    for (const [id, equipment] of this.policeEquipment)
+    for (const [id, equipment] of this.beacons)
       equipment.update(performance.now(), sim.player.vehicleId === id)
     for (const [id, lights] of this.carLights) {
       const info = sim.vehicleInfo(id)
@@ -1011,6 +966,7 @@ export class SceneView {
           sim.vehicleInfo(id).rpm,
           sim.vehicleInfo(id).gear,
           sim.vehicleInfo(id).engineLoad,
+          sim.vehicleInfo(id).manualTransmission,
         )
     }
     const vehicleId = sim.player.vehicleId
@@ -1022,6 +978,7 @@ export class SceneView {
         info.isCarrier,
         headYaw,
         headPitch,
+        this.vehicleHeadOffset(vehicleId),
       )
       this.avatar.position.copy(head.position)
       this.avatar.quaternion.copy(head.quaternion)
@@ -1107,6 +1064,7 @@ export class SceneView {
     })
   }
   dispose(): void {
+    if (this.disposed) return
     for (const hud of this.shipHuds.values()) hud.dispose()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()

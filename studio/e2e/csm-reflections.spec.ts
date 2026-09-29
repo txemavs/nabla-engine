@@ -3,11 +3,9 @@ import { test, expect } from './studio-test.js'
 test('metal reflections survive every shadow tier without changing materials', async ({ page }) => {
   await page.goto('/?scene=circuit')
   const measurements = await page.evaluate(async (root) => {
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-    const { RoomEnvironment } = await import(
-      `/@fs${root}/node_modules/three/examples/jsm/environments/RoomEnvironment.js`
-    )
-    const csmPath = '/csm.ts'
+    const T = await import(String('/e2e/render-fixture.ts'))
+    const { RoomEnvironment } = await import(String('/e2e/render-fixture.ts'))
+    const csmPath = '/@fs' + root + '/src/render/shadows.ts'
     const { ShadowManager } = await import(csmPath)
     const renderer = new T.WebGLRenderer()
     renderer.setSize(96, 96)

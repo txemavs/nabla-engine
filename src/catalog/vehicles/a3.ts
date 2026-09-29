@@ -51,9 +51,11 @@ export function createA3(id: string, position: Vec3Tuple = [4, 0.62, 6]): Entity
       },
       brakeForce: 65,
       driver: [-0.356, 0.7, 0.32],
+      headOffset: [0, -0.15, -0.26],
       cameraDistance: 6.5,
     },
     visual: {
+      presentation: 'nabla.s3',
       body: {
         url: '/world/car.audi.a3.cabrio.glb',
         transform: posed([0, -com, 0], [0, 180, 0]),

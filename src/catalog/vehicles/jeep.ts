@@ -44,9 +44,11 @@ export function createJeep(id: string, position: Vec3Tuple = [9, 0.86, 6]): Enti
       brakeForce: 65,
       // Head centre: 1.58 m above ground, just ahead of the front headrest.
       driver: [-0.39, 0.95, -0.03],
+      headOffset: [0, -0.15, -0.26],
       cameraDistance: 7,
     },
     visual: {
+      presentation: 'nabla.wrangler',
       body: { url: '/world/car.jeep.wrangler.glb', transform: posed([0, -com, 0]) },
       wheel: { url: '/world/car.jeep.wrangler.wheel.glb', transform: posed() },
       wheelRotations: [

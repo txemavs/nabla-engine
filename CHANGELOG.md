@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Fix Rapier gallery shots through window portals and remove invisible tree-trunk colliders from animated targets.
+- Initialize fallback relief collisions even with no detailed-tile coverage, and tolerate unavailable/corrupt optional photos. Restore the geoEuskadi comparison URL and flush incremental tile installation in the zoom viewer.
+
+- Expose composable wheeled, boat and flight runtimes, physics, monitors, menus and vehicle equipment through public package subpaths; retain version-1 scenes and existing root/catalog imports.
+- Move stock road-model selection, S3 mounts and lamp selectors into catalogue adapters; reuse layered navigation readings on the boat and carrier.
+- Add creation guides, dependency-boundary tests and an installed-package consumer check for independent hosts.
+- Repair browser fixtures left behind by the source reorganization: dynamic module paths, CSS selectors, asset suffix checks and a shared Three.js instance.
+- Smooth keyboard steering, retain manual DSG shifts and engine braking, add launch/tire feedback, adjustable mirrors and vehicle-following cameras.
+- Simplify the custom wheel mesh, add vegetation crown caps, and retain bounded secondary-screen/mirror refresh and shared-resource disposal checks.
+
 - Use sparse collision-contact history instead of resetting a quadratic dense matrix every physics tick.
 - Share cockpit road-chart projections and cull paths by cached bounds at the current zoom.
 - Document remaining performance work and measurement limits in docs/performance.md.

@@ -18,11 +18,11 @@ test('native city signs float 1km above ground at half size', async ({ page }) =
     const manifest = {
       tile,
       anchor: mapTileSample(tile, 1, 1, 2),
-      files: { terrain: { sha256: 'test' } },
+      files: { terrain: { sha256: 'test' }, 'buildings-osm': { sha256: 'test' } },
       places: [{ id: 'node/1', text: 'Irún', category: 'city', position: [0, 620, 0] }],
     }
     const payload = { meshes: [], chunks: [], vegetation: [], bytes: 0, buildings: false }
-    world.install(key, manifest, payload)
+    Array.from(world.install(key, manifest, payload))
     world.visible = [key]
     const labels = world.navigationPlaces
     const label = world.root.getObjectByName('Irún')
@@ -45,7 +45,7 @@ test('ship HUD is a transparent glass surface and switches off outside', async (
     const { setNavigationPlaces } = await import(
       `/@fs${root}/src/render/entity/navigation-places.ts`
     )
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const T = await import(String('/e2e/render-fixture.ts'))
     const hud = new ShipHud(),
       camera = new T.PerspectiveCamera()
     setNavigationPlaces(() => [{ id: '1', text: 'Irún', position: new T.Vector3(0, 0, -500) }])
@@ -57,8 +57,6 @@ test('ship HUD is a transparent glass surface and switches off outside', async (
     hud.update(camera, new T.Vector3(), 1001, null)
     const outside = hud.mesh.visible
     hud.dispose()
-    hud.mesh.geometry.dispose()
-    hud.mesh.material.dispose()
     return { inside, outside, drawn }
   }, process.cwd())
   expect(result).toEqual({ inside: true, outside: false, drawn: true })

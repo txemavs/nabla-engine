@@ -1,16 +1,7 @@
 import { CanvasTexture, LinearFilter, SRGBColorSpace } from 'three'
 
-export interface MonitorData {
-  values: Record<string, string | number>
-  /** Normalised bar fill, 0..1. */
-  bars: Record<string, number>
-}
-export interface MonitorOptions {
-  /** Base refresh interval; template data-update-ms is used when omitted. */
-  intervalMs?: number
-  adaptive?: boolean
-  secondary?: boolean
-}
+import type { MonitorData, MonitorOptions } from './data.js'
+export type { MonitorData, MonitorOptions } from './data.js'
 
 /** Trusted local HTML/CSS templates, rasterised on demand into a depth-tested WebGL surface.
  * Scripts are never executed. Inline styles/fonts only; external resources are not supported.
@@ -56,13 +47,15 @@ export class HtmlMonitor {
   private nextFrame = 0
   private lastPayload = ''
   private readonly abort = new AbortController()
+  private readonly options: MonitorOptions
   readonly ready: Promise<void>
   constructor(
     url: string,
     readonly width = 640,
     readonly height = 320,
-    private readonly options: MonitorOptions = {},
+    options: MonitorOptions = {},
   ) {
+    this.options = { ...options }
     this.canvas.width = width
     this.canvas.height = height
     this.texture = new CanvasTexture(this.canvas)

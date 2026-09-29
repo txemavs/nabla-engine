@@ -1,5 +1,6 @@
 /** Rebuild from the untouched backup directory. Paint/glass/light primitives stay exact. */
 import path from 'node:path'
+import { writeA3Wheel } from './lib/a3-wheel.mjs'
 import { MeshoptSimplifier } from 'meshoptimizer'
 import {
   BufferGeometry,
@@ -26,7 +27,16 @@ badge.computeBoundingBox()
 const centre = badge.boundingBox.getCenter(new Vector3())
 badge.translate(-centre.x, -centre.y, -centre.z)
 badge.computeVertexNormals()
-for (const part of ['cabrio', 'wheel', 'steering']) {
+for (const part of process.argv.includes('--wheel-only')
+  ? ['wheel']
+  : ['cabrio', 'wheel', 'steering']) {
+  if (part === 'wheel') {
+    console.log(
+      'wheel',
+      writeA3Wheel(new URL('../assets/world/car.audi.a3.wheel.glb', import.meta.url), badge),
+    )
+    continue
+  }
   const filename = `car.audi.a3.${part}.glb`,
     { json: j, bin, read: oldRead } = readGlb(path.join(sourceDir, filename)),
     data = new Map()
@@ -69,7 +79,7 @@ for (const part of ['cabrio', 'wheel', 'steering']) {
       const protectedSurface =
         part === 'cabrio' && (/Pintura|Foco|Piloto|Parabrisas/.test(name) || name === 'Llanta 2')
       if (!protectedSurface && ix.length > 300) {
-        const ratio = part === 'wheel' ? (name === 'Llanta 7' ? 0.16 : 0.55) : 0.5
+        const ratio = 0.5
         const attributes = Float32Array.from(read(p.attributes.NORMAL).flat())
         const result = MeshoptSimplifier.simplifyWithAttributes(
           Uint32Array.from(ix),
@@ -80,7 +90,7 @@ for (const part of ['cabrio', 'wheel', 'steering']) {
           [0.02, 0.02, 0.02],
           null,
           Math.max(30, Math.floor((ix.length * ratio) / 3) * 3),
-          part === 'wheel' ? 0.0015 : 0.001,
+          0.001,
           ['LockBorder', 'ErrorAbsolute', 'Permissive'],
         )
         ix = Array.from(result[0])
@@ -215,19 +225,6 @@ for (const part of ['cabrio', 'wheel', 'steering']) {
     housing.pbrMetallicRoughness.baseColorFactor = [0.018, 0.022, 0.028, 1]
     housing.pbrMetallicRoughness.roughnessFactor = 0.55
     housing.pbrMetallicRoughness.metallicFactor = 0
-  } else if (part === 'wheel') {
-    const cap = j.materials.find((m) => m.name === 'AudiCap')
-    cap.name = 'Nabla wheel cap'
-    cap.pbrMetallicRoughness = {
-      baseColorFactor: [0.055, 0.065, 0.08, 1],
-      metallicFactor: 0.5,
-      roughnessFactor: 0.32,
-    }
-    emblem('Nabla wheel centre', 0.041, -Math.PI / 2, [0.106, 0, 0])
-    // The old Audi-cap image is no longer referenced by any material.
-    delete j.images
-    delete j.textures
-    delete j.samplers
   } else emblem('Nabla steering centre', 0.065, -Math.PI / 2, [0.129, 0.0064, 0])
   j.asset.generator =
     'Nabla prepare-a3.mjs; protected body and optical surfaces; simplified small details'

@@ -29,9 +29,11 @@ export function createPoliceCar(id: string, position: Vec3Tuple = [5, 0.69, 5]):
       drivenWheels: 'front' as const,
       brakeForce: 65,
       driver: [-0.35, 0.79, 0.3] as Vec3Tuple,
+      headOffset: [0, -0.15, -0.26],
       cameraDistance: 7,
     },
     visual: {
+      presentation: 'nabla.police',
       body: { url: '/world/car.ford.focus.police.glb', transform: pose([0, -com, 0]) },
       wheel: { url: '/world/car.ford.focus.wheel.glb', transform: pose([0, 0, 0]) },
       wheelRotations: [

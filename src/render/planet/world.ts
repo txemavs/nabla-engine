@@ -10,7 +10,7 @@ import {
 } from '../../planet/index.js'
 import { PlanetHorizon } from './horizon.js'
 import { carriagewayTint, matteGroundMaterial } from './ground-material.js'
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
+import { treeInstances } from './vegetation.js'
 import * as THREE from 'three'
 import {
   mapTileAt,
@@ -698,12 +698,6 @@ export class PlanetWorld {
     if (payload.vegetation.length) {
       this.treeTexture ??= new THREE.TextureLoader().load('/sprites/tree.png', () => this.changed())
       this.treeTexture.colorSpace = THREE.SRGBColorSpace
-      const a = new THREE.PlaneGeometry(1, 1),
-        b = new THREE.PlaneGeometry(1, 1)
-      b.rotateY(Math.PI / 2)
-      const geometry = mergeGeometries([a, b])
-      a.dispose()
-      b.dispose()
       const material = new THREE.MeshStandardMaterial({
         map: this.treeTexture,
         alphaTest: 0.4,
@@ -711,20 +705,7 @@ export class PlanetWorld {
         roughness: 1,
       })
       this.setupMaterial(material)
-      const trees = new THREE.InstancedMesh(geometry, material, payload.vegetation.length)
-      const matrix = new THREE.Matrix4(),
-        q = new THREE.Quaternion()
-      payload.vegetation.forEach((v, i) => {
-        matrix.compose(
-          new THREE.Vector3(v.position[0], v.position[1] + v.size[1] / 2, v.position[2]),
-          q,
-          new THREE.Vector3(v.size[0], v.size[1], 1),
-        )
-        trees.setMatrixAt(i, matrix)
-      })
-      trees.castShadow = true
-      trees.receiveShadow = true
-      trees.userData.category = 'Trees'
+      const trees = treeInstances(payload.vegetation, material)
       group.add(trees)
     }
     yield

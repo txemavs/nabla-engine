@@ -23,6 +23,8 @@ export class RemotePortalViews {
   constructor(
     private readonly changed: () => void,
     private readonly report: (message: string) => void,
+    private readonly createView: (document: SceneDocument) => SceneView = (doc) =>
+      new SceneView(doc),
   ) {}
   resolve(key: string, document: SceneDocument, entityId: string): ExternalPortalView | undefined {
     let entry = this.views.get(key)
@@ -30,7 +32,7 @@ export class RemotePortalViews {
       // Limit simultaneous destination render resources. Closed connections are disposed by the host.
       if (this.views.size >= 2) return undefined
       const scene = new THREE.Scene(),
-        view = new SceneView(document)
+        view = this.createView(document)
       const geography = new GeographicView(document, this.changed)
       const ambient = new THREE.AmbientLight('#dce7f5', 0.22),
         sun = new THREE.DirectionalLight('#fff0d8', 3.2)

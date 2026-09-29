@@ -7,10 +7,12 @@ export function driverHeadPose(
   isCarrier: boolean,
   yaw = 0,
   pitch = 0.05,
+  offset?: readonly number[],
 ): { position: Vector3; quaternion: Quaternion } {
   const body = new Quaternion().fromArray(rotation)
   return {
-    position: new Vector3(0, isCarrier ? -0.1 : -0.15, isCarrier ? 0.2 : -0.26)
+    position: new Vector3()
+      .fromArray(offset ?? [0, isCarrier ? -0.1 : -0.15, isCarrier ? 0.2 : -0.26])
       .applyQuaternion(body)
       .add(new Vector3().fromArray(driver)),
     quaternion: body.multiply(new Quaternion().setFromEuler(new Euler(-pitch, yaw, 0, 'YXZ'))),

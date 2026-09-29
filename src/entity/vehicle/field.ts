@@ -35,6 +35,10 @@ export const vehicleField = z
     brakeForce: finite.positive().max(1000),
     driver: vector,
     cameraDistance: finite.min(2).max(30),
+    /** Driver-local eye offset; old scenes use their existing car/carrier defaults. */
+    headOffset: vector.optional(),
+    /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
+    mirrorTilt: finite.min(-5).max(12).optional(),
     flight: z.boolean().optional(),
     /** Light airplane: plane-helm uses wing lift instead of the carrier's cruise. */
     plane: z.boolean().optional(),
@@ -62,6 +66,11 @@ export const vehicleField = z
 export const visualField = z
   .object({
     body: assetPart,
+    /** Host-registered presentation adapter; old scenes may omit it. */
+    presentation: z
+      .string()
+      .regex(/^[a-zA-Z0-9._-]{1,80}$/)
+      .optional(),
     ramp: z
       .object({
         nodes: z.array(z.string()).min(1).max(8),

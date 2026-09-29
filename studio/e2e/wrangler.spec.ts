@@ -7,7 +7,7 @@ test('Wrangler shares four wheel geometries and stays within its draw budget', a
   await page.goto('/wrangler-preview')
   const result = await page.evaluate(async (root) => {
     const T = await import(String('/e2e/render-fixture.ts'))
-    const { SceneView } = await import(`/@fs${root}/src/render/entity/view.ts`)
+    const { SceneView } = await import(`/@fs${root}/src/presentation/scene-view.ts`)
     const { createJeep } = await import(`/@fs${root}/src/catalog/vehicles/jeep.ts`)
     const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
     const jeep = createJeep('jeep', [0, 0.78, 0])

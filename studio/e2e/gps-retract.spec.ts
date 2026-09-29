@@ -8,7 +8,7 @@ test('S3 GPS casing retracts and stops map uploads while the speedometer remains
   )
   await page.goto('/gps-preview')
   const result = await page.evaluate(async (root) => {
-    const { SceneView } = await import(`/@fs${root}/src/render/entity/view.ts`)
+    const { SceneView } = await import(`/@fs${root}/src/presentation/scene-view.ts`)
     const { createA3 } = await import(`/@fs${root}/src/catalog/vehicles/a3.ts`)
     const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
     const car = createA3('car')
@@ -24,6 +24,9 @@ test('S3 GPS casing retracts and stops map uploads while the speedometer remains
       0,
     )
     instruments.setPowered(true)
+    instruments.update(doc, car.transform, 50, 0)
+    const initiallyClosed = !instruments.gpsState.open && !mount.visible
+    instruments.toggleGps(-1800)
     instruments.update(doc, car.transform, 50, 0)
     instruments.toggleGps(100)
     const version = instruments.gpsState.mapVersion
@@ -42,9 +45,27 @@ test('S3 GPS casing retracts and stops map uploads while the speedometer remains
     const digits = body.getObjectByName('A3 speed readout').visible
     const black = body.getObjectByName('A3 navigator').material.color.getHex() === 0
     const refreshed = offVersion > version
+    instruments.toggleGps(16000)
+    instruments.update(doc, car.transform, 0, 18000)
+    instruments.setPowered(false)
+    instruments.setPowered(true)
+    const closedOnReentry = !instruments.gpsState.open && !mount.visible
     view.dispose()
-    return { triangles, middle, raised, hidden, quiet, digits, black, refreshed }
+    return {
+      closedOnReentry,
+      initiallyClosed,
+      triangles,
+      middle,
+      raised,
+      hidden,
+      quiet,
+      digits,
+      black,
+      refreshed,
+    }
   }, process.cwd())
+  expect(result.closedOnReentry).toBe(true)
+  expect(result.initiallyClosed).toBe(true)
   expect(result.triangles).toBe(62)
   expect(result.middle).toBeCloseTo(0.5)
   expect(result.raised).toBe(1)

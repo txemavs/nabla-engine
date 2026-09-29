@@ -19,6 +19,8 @@ jobs:
       - run: docker compose -f compose.dev.yaml config --quiet
       - run: npm ci
       - run: npm run check
+      - name: Verify public API from an installed package
+        run: node scripts/check-package.mjs
       - run: npm run build:prepare
       - uses: actions/setup-python@v5
         with:

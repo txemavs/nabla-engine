@@ -17,6 +17,7 @@ npm run check
 npx playwright install --with-deps chromium
 npm run test:e2e
 npm pack --dry-run
+node scripts/check-package.mjs
 ```
 
 `check` covers formatting, TypeScript, unit/physics tests, package build and demo
@@ -51,4 +52,4 @@ rendering path must match the locally validated browser.
 
 For the full local Studio/cache/generator environment, follow
 [Local development](docs/local-development.md). Browser test readiness and fixture
-conventions are documented in [tests/README.md](tests/README.md).
+conventions are documented in [studio/e2e/README.md](studio/e2e/README.md).

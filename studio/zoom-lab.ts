@@ -46,6 +46,7 @@ function frame(now: number) {
     lastPlan = now
     world.update(camera.position.toArray(), [0, 0, 0])
   }
+  world.flushInstall(1.5)
   world.renderUpdate(new THREE.Vector3(), (element('buildings') as HTMLInputElement).checked, null)
   element('status').textContent = world.status
   const tiles = world.activeTiles,

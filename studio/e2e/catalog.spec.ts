@@ -24,7 +24,7 @@ test('adds complete catalogue entities and saves editable lamp settings', async 
     await page.locator('#add-entity').click()
     await page.locator(`#add-${kind}`).click()
     await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
-    await expect(page.locator('../../tests/.entity-capabilities')).toContainText(
+    await expect(page.locator('.entity-capabilities')).toContainText(
       kind === 'streetlight' ? 'light' : 'drive',
     )
   }

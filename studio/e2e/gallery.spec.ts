@@ -9,7 +9,7 @@ test('renders PNG targets through a window and registers a shot from first perso
   page.on('pageerror', (e) => errors.push(e.message))
   const entities = createGallery('test').filter((e) => !e.sprite || e.id === 'test-target-0')
   const target = entities.find((e) => e.sprite?.target)!
-  target.transform.position = [-140, 0.2, -8]
+  target.transform.position = [-140, -0.25, -8]
   target.size = [6, 3, 0.1]
   const floor = createEntity('floor', 'box', [-1, -0.1, -1])
   floor.size = [20, 0.2, 20]
@@ -32,16 +32,27 @@ test('renders PNG targets through a window and registers a shot from first perso
   await page.keyboard.press('Tab')
   await page.waitForTimeout(700)
   const canvas = page.locator('#viewport > canvas')
+  const bounds = (await canvas.boundingBox())!
   await canvas.click()
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(true)
   // Pitch upward from the default downward gaze, leaving the target in the reticle.
-  await page.mouse.move(720, 360)
-  await page.mouse.click(720, 360)
-  await expect(page.locator('../../tests/.gallery-score')).toHaveAttribute('data-hits', '1')
+  // Pointer-lock movement is relative: cancel the 0.24 rad pitch at 0.002 rad/pixel.
+  // The docked viewport is narrower than the browser window.
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2 - 120)
+  // Let the render loop apply the new gaze before firing from that camera.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  )
+  await page.mouse.down()
+  await page.mouse.up()
+  await expect(page.locator('.gallery-score')).toHaveAttribute('data-hits', '1')
   await page.waitForTimeout(1800)
   await page.screenshot({ path: 'test-results/gallery-window.png' })
   await page.keyboard.press('KeyN')
-  await expect(page.locator('../../tests/.gallery-score')).toHaveAttribute('data-hits', '0')
+  await expect(page.locator('.gallery-score')).toHaveAttribute('data-hits', '0')
   await page.keyboard.press('F8')
   expect(errors).toEqual([])
 })

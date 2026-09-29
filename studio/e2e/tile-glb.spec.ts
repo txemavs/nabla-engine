@@ -5,7 +5,7 @@ test('tile GLB round-trip preserves mesh identity, bounds, triangles and vertex 
 }) => {
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
-    const module = '/tile-asset.ts'
+    const module = '/@fs' + root + '/src/render/planet/tile-asset.ts'
     const sceneModule = `/@fs${root}/src/stage/scene.ts`
     const { tileAsset, restoreTileLayers } = await import(module)
     const { createEntity } = await import(sceneModule)
@@ -15,7 +15,7 @@ test('tile GLB round-trip preserves mesh identity, bounds, triangles and vertex 
     const { GLTFLoader } = await import(
       `/@fs${root}/node_modules/three/examples/jsm/loaders/GLTFLoader.js`
     )
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
+    const T = await import(String('/e2e/render-fixture.ts'))
     const entity = createEntity('building-42', 'solid', [1210, 20, -1195])
     const tile = tileAsset({
       version: 5,

@@ -123,3 +123,80 @@ test('layers keep textures unchanged when needles, bars and batched digits chang
   expect(result.menuCalls).toBeLessThanOrEqual(9)
   await page.screenshot({ path: 'test-results/layered-car-menu.png' })
 })
+
+test('optional HTML backend loads on demand and keeps secondary refresh settings per surface', async ({
+  page,
+}) => {
+  const requests: string[] = []
+  const errors: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.route('**/lazy-html-preview', (r) =>
+    r.fulfill({ contentType: 'text/html', body: '<!doctype html><body></body>' }),
+  )
+  await page.goto('/lazy-html-preview')
+  await page.evaluate(async (root) => {
+    const { LayeredMonitor } = await import(`/@fs${root}/src/render/monitors/index.ts`)
+    const panel = new LayeredMonitor({
+      width: 100,
+      height: 100,
+      layers: [{ id: 'bg', kind: 'panel', x: 0, y: 0, width: 100, height: 100, color: '#000000' }],
+    })
+    await panel.ready
+    panel.dispose()
+  }, process.cwd())
+  expect(requests.filter((url) => url.includes('html-monitor'))).toEqual([])
+  const result = await page.evaluate(async (root) => {
+    const { LayeredMonitor } = await import(`/@fs${root}/src/render/monitors/index.ts`)
+    const refresh = { intervalMs: 150, adaptive: false, secondary: false }
+    const definition = {
+      width: 640,
+      height: 320,
+      layers: [
+        {
+          id: 'web',
+          kind: 'html',
+          x: 0,
+          y: 0,
+          width: 640,
+          height: 320,
+          url: '/monitors/html-panel.example.html',
+          refresh,
+        },
+      ],
+    }
+    const secondary = new LayeredMonitor(definition)
+    secondary.setSecondary(true)
+    secondary.update(
+      { values: { speed: 150, rpm: 3200, gear: 'D3', throttle: '50 %' }, bars: { rpm: 0.5 } },
+      performance.now(),
+    )
+    await secondary.ready
+    const surface = secondary.html[0]
+    for (let i = 0; i < 100 && !surface.diagnostics.renders; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    const primary = new LayeredMonitor(definition)
+    await primary.ready
+    const result = {
+      renders: surface.diagnostics.renders,
+      secondaryMs: surface.effectiveInterval,
+      primaryMs: primary.html[0].effectiveInterval,
+      unchangedOptions: refresh.secondary === false,
+      visible: secondary.root.getObjectByName('web').children[0].visible,
+      map: secondary.root.getObjectByName('web').children[0].material.map === surface.texture,
+    }
+    secondary.dispose()
+    primary.dispose()
+    return result
+  }, process.cwd())
+  expect(requests.some((url) => url.includes('html-monitor'))).toBe(true)
+  expect(result).toEqual({
+    renders: 1,
+    secondaryMs: 600,
+    primaryMs: 150,
+    unchangedOptions: true,
+    visible: true,
+    map: true,
+  })
+  expect(errors).toEqual([])
+})

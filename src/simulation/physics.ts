@@ -723,6 +723,9 @@ export class RaycastVehicle {
     wheel.isInContact = this.controller?.wheelIsInContact(index) ?? false
     const hit = this.controller?.wheelContactPoint(index)
     wheel.raycastResult.reset()
+    const normal = this.controller?.wheelContactNormal(index)
+    if (wheel.isInContact && normal)
+      wheel.raycastResult.hitNormalWorld.set(normal.x, normal.y, normal.z)
     const ground = this.controller?.wheelGroundObject(index)
     if (wheel.isInContact && ground)
       wheel.raycastResult.body =

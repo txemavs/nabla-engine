@@ -3,8 +3,8 @@ import { test, expect } from './studio-test.js'
 test('fog drops out from one kilometre up', async ({ page }) => {
   await page.goto('/?scene=circuit')
   const samples = await page.evaluate(async (root) => {
-    const T = await import(`/@fs${root}/node_modules/three/build/three.module.js`)
-    const path = '/geography.ts'
+    const T = await import(String('/e2e/render-fixture.ts'))
+    const path = '/@fs' + root + '/src/render/planet/sky.ts'
     const { GeographicView } = await import(path)
     const geography = new GeographicView(
       {
