@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Treat OSM building outlines with contained 3D parts as non-rendered envelopes, preserving explicit parts and neighboring buildings. Add a regression for the detailed JFK building in Boston.
+- Open Desktop utility windows at their final viewport position with a neutral dark titlebar and monochrome SVG controls.
+
+- Fix Studio Play commands accidentally selecting flight entry; await physics before completing the transition. Rebuild simulated views on Stop so wheels and equipment return to authored poses.
+- Use local planetary up and a consistent floating origin for the carrier horizon; correct its pitch direction. Expose explicit vehicle equipment and paint in the new inspector, preserving saved tuning and poses.
+
 - Remove obsolete compatibility import paths, preset/portal/placement/palette upgrades and filename-based vehicle equipment lookup. Current factories explicitly compose the carrier stern portal.
 - Accept only current version-3 Studio projects; remove v1/v2 conversion and old CacheStorage migration. Remove unused Studio prepared BIN/JSON and anchored-GLB loaders, their inspector, and proposal-only contracts. Update callers, documentation and current-system regressions.
 
@@ -187,3 +193,11 @@ and reference browser playground. It is a breaking API revision, not an npm rele
 Portals, Agency integration, physical terrain/buildings from map data, NPCs,
 multiplayer, interactive model import, nonstandard radio calibration and orbital
 mechanics. Earlier implementation details remain available in Git history.
+
+### Studio desktop UI
+
+- Adopt Vue UI components and `@nabla/desktop` 0.2 for shared menus, tools,
+  inspector fields, scene categories, sidebar windows and the information console.
+- Add the agreed workspace layout, object-class scene view, entity portal
+  properties and capability configuration, keeping the current engine APIs.
+- Persist water settings in scene/project documents alongside sky and location.

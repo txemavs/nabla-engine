@@ -38,6 +38,14 @@ const documentSchema = z
         z.object({ mode: z.literal('fixed'), at: z.iso.datetime({ offset: true }) }).strict(),
       ])
       .optional(),
+    water: z
+      .object({
+        mode: z.enum(['manual', 'tide']),
+        level: finite.min(-5).max(50),
+        amplitude: finite.min(0).max(3),
+      })
+      .strict()
+      .optional(),
     entities: z.array(entitySchema).min(1).max(20000),
   })
   .strict()

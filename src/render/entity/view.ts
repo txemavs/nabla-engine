@@ -209,9 +209,12 @@ export class SceneView {
       affected.has(e.id) ? entities.get(e.id)! : e,
     )
   }
+  private simulated = false
   /** Keep installed meshes and the streaming queue for pose-only editor changes. */
   updateEditorPoses(next: SceneDocument): boolean {
-    if (this.avatar.visible) return false
+    // Simulation reparents wheels and mutates runtime equipment/portal state.
+    // Hiding the avatar (cockpit or Stop) does not restore the authored scene.
+    if (this.simulated) return false
     const { entities: previousEntities, ...previousSettings } = this.document
     const { entities: nextEntities, ...nextSettings } = next
     if (
@@ -891,6 +894,7 @@ export class SceneView {
     }
   }
   setPlaying(playing: boolean): void {
+    if (playing) this.simulated = true
     this.avatar.visible = playing
     if (!playing) this.impacts.clear()
     if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
@@ -904,6 +908,7 @@ export class SceneView {
       }
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
+    this.simulated = true
     for (const e of this.document.entities) {
       if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue
       const object = this.objects.get(e.id)

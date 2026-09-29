@@ -154,7 +154,7 @@ test('orbiting and a transform edit do not restart the scene asset lifecycle', a
   })
   await page.mouse.up({ button: 'middle' })
   await page.mouse.wheel(0, 120)
-  const x = page.locator('[data-vector=position][data-axis="0"]')
+  const x = page.locator('#position-0')
   await page.evaluate(() => {
     const clone = window.structuredClone
     const canvas = document.querySelector('#viewport > canvas')!

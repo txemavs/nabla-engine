@@ -2,9 +2,9 @@
  * Building footprints for one map tile.
  *
  * Ways tagged `building` or `building:part` are projected into local XZ polygons.
- * A part that sits entirely inside a generic outline is cut out of that outline, so the
- * part and the leftover shell do not stack two roofs. A part that crosses the outline, or
- * belongs to a neighbour, is left alone. Invalid polygons are skipped so one bad way cannot
+ * A generic outline with contained parts is only a 2D envelope (OSM Simple 3D Buildings),
+ * not another solid, even when the parts leave gaps. Explicit building:part outlines remain
+ * solids. Crossing parts alone do not establish ownership of a neighbouring outline. Invalid polygons are skipped so one bad way cannot
  * drop the rest of the tile. The input features are not mutated.
  */
 import polygonClipping, { type MultiPolygon } from 'polygon-clipping'
@@ -59,11 +59,10 @@ export function buildingFootprints(
           p.bounds[3] <= b.bounds[3] + 0.001,
       )
       try {
-        const contained = candidates.filter(
+        const hasParts = candidates.some(
           (p) => polygonClipping.difference(p.polygons, polygons).length === 0,
         )
-        if (contained.length)
-          polygons = polygonClipping.difference(polygons, ...contained.map((p) => p.polygons))
+        if (hasParts) polygons = []
       } catch {
         // Invalid upstream polygons must not prevent the rest of the tile loading.
       }

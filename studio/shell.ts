@@ -1,21 +1,41 @@
-import { mountSettingsWindow } from './settings-window.js'
-import { createApp, h } from 'vue'
-import { ExternalContent, MenuBar, WorkspaceHost } from '@nabla/desktop'
+import { createApp, h, ref } from 'vue'
 import {
-  createCommandRegistry,
-  createWorkspace,
-  type ContentFactory,
-  type WorkspaceSnapshot,
-} from '@nabla/desktop/core'
+  ExternalContent,
+  MenuBar,
+  CommandToolbar,
+  WorkspaceHost,
+  DesktopDialog,
+  SidebarTabs,
+} from '@nabla/desktop'
+import { createWorkspace, type ContentFactory, type WorkspaceSnapshot } from '@nabla/desktop/core'
 import type { StudioInputOwner } from './input-owner.js'
+import {
+  commands,
+  preferencesOpen,
+  helpOpen,
+  cursorTool,
+  inspectCapability,
+  transformSelection,
+  objectMode,
+  log,
+} from './ui/state.js'
+import { preparePanels } from './ui/panels.js'
+import { mainMenus, viewMenus, toolCommands } from './ui/menus.js'
+import Inspector from './ui/Inspector.vue'
+import ScenePanel from './ui/ScenePanel.vue'
+import InformationPanel from './ui/InformationPanel.vue'
+import PreferencesWindow from './ui/PreferencesWindow.vue'
+import CapabilityWindow from './ui/CapabilityWindow.vue'
+import ContentSections from './ui/ContentSections.vue'
+import HostContent from './ui/HostContent.vue'
 import '@nabla/desktop/style.css'
 import './shell.css'
-
+import './ui/studio.css'
 export interface StudioHost {
   refresh: () => void
   undo: () => void
   redo: () => void
-  togglePlay: () => void
+  togglePlay: () => void | Promise<void>
   canUndo: () => boolean
   canRedo: () => boolean
   canPlay: () => boolean
@@ -23,47 +43,225 @@ export interface StudioHost {
   input: StudioInputOwner
   reportError: (error: unknown) => void
 }
-const compact = matchMedia('(max-width: 700px)').matches
-const layoutKey = compact ? 'nabla.studio.layout.mobile.v1' : 'nabla.studio.layout.v2'
 export function mountStudio(host: StudioHost): void {
+  const app = document.getElementById('app')!,
+    viewport = document.getElementById('viewport')!
   document.getElementById('welcome')!.hidden = true
-  mountSettingsWindow(host.input)
-  const app = document.getElementById('app')!
-  const viewport = document.getElementById('viewport')!
+  const contents = preparePanels()
+  const interactions = {
+    onInteractionStart: () => {
+      commands.notify()
+      host.input.beginInteraction()
+    },
+    onInteractionEnd: () => host.input.endInteraction(),
+    onError: host.reportError,
+  }
+  const register = (
+    id: string,
+    label: string,
+    run: () => void | Promise<void>,
+    enabled?: () => boolean,
+  ) => {
+    // Desktop supplies a command context. Host actions take no arguments; passing
+    // that object to togglePlay would accidentally enable its startFlight option.
+    const execute = () => run()
+    if (commands.get(id)) {
+      Object.assign(commands.get(id)!, { label, execute, enabled })
+      return
+    }
+    commands.register({ id, label, execute, enabled })
+  }
+  register('undo', 'Deshacer', host.undo, host.canUndo)
+  register('redo', 'Rehacer', host.redo, host.canRedo)
+  register('play', 'Iniciar / detener prueba', host.togglePlay, host.canPlay)
+  commands.get('play')!.checked = host.isPlaying
+  register('preferences', 'Preferencias…', () => {
+    preferencesOpen.value = true
+    window.dispatchEvent(new Event('studio-preferences-open'))
+  })
+  register('help-controls', 'Controles', () => {
+    helpOpen.value = true
+  })
+  register(
+    'capability',
+    'Editar capacidad…',
+    () => inspectCapability.value(),
+    () => !host.isPlaying(),
+  )
+  register(
+    'exact-transform',
+    'Transformar…',
+    () => transformSelection.value(),
+    () => !host.isPlaying(),
+  )
+  register(
+    'cursor-select',
+    'Cursor',
+    () => {
+      cursorTool.value = true
+      host.refresh()
+    },
+    () => !host.isPlaying(),
+  )
+  register(
+    'select',
+    'Seleccionar',
+    () => {
+      cursorTool.value = false
+      host.refresh()
+    },
+    () => !host.isPlaying(),
+  )
+  commands.get('cursor-select')!.checked = () => cursorTool.value
+  const mode = (value: string) => {
+    const input = document.getElementById('studio-object-mode') as HTMLSelectElement
+    if (input.disabled) return
+    input.value = value
+    input.dispatchEvent(new Event('change'))
+  }
+  register(
+    'mode-object',
+    'Objeto',
+    () => mode('object'),
+    () => !host.isPlaying(),
+  )
+  register(
+    'mode-edit',
+    'Edición',
+    () => mode('edit'),
+    () =>
+      !(document.querySelector('#studio-object-mode option[value=edit]') as HTMLOptionElement)
+        ?.disabled && !host.isPlaying(),
+  )
+  commands.get('mode-object')!.checked = () => objectMode.value === 'object'
+  commands.get('mode-edit')!.checked = () => objectMode.value === 'edit'
+  for (const [id, icon] of Object.entries({
+    'cursor-select': 'cursor',
+    'cursor-selection': 'target',
+    'cursor-view': 'cursor',
+    'selection-cursor': 'toCursor',
+    'origin-cursor': 'origin',
+    select: 'select',
+    duplicate: 'copy',
+    delete: 'trash',
+    translate: 'move',
+    rotate: 'rotate',
+    play: 'play',
+    photo: 'camera',
+    undo: 'undo',
+    redo: 'redo',
+  })) {
+    if (commands.get(id)) commands.get(id)!.icon = icon
+  }
+  for (const id of ['cursor-selection', 'cursor-view', 'selection-cursor', 'origin-cursor'])
+    if (commands.get(id)) commands.get(id)!.iconOnly = true
+  for (const [id, label] of Object.entries({
+    translate: 'Mover',
+    rotate: 'Rotar',
+    focus: 'Enfocar',
+    photo: 'Capturar imagen',
+    save: 'Guardar en este navegador',
+    export: 'Descargar planeta JSON…',
+  }))
+    if (commands.get(id)) commands.get(id)!.label = label
+  for (const [id, shortcut] of Object.entries({
+    undo: 'Mod+Z',
+    redo: 'Mod+Shift+Z',
+    save: 'Mod+S',
+    translate: 'G',
+    rotate: 'R',
+    focus: 'F',
+    play: 'F8',
+  }))
+    if (commands.get(id)) commands.get(id)!.shortcut = shortcut
   const viewportPanel = document.createElement('section')
   viewportPanel.id = 'studio-viewport-panel'
   app.append(viewportPanel)
-  viewportPanel.append(app.querySelector('.toolbar')!, viewport)
-  const tools = document.createElement('nav')
+  const toolbar = document.querySelector('.toolbar')!
+  viewportPanel.append(toolbar, viewport)
+  const toolbarRoot = document.createElement('div')
+  toolbarRoot.className = 'studio-view-header'
+  toolbar.append(toolbarRoot)
+  createApp({
+    render: () =>
+      h('div', { class: 'studio-view-header' }, [
+        h(MenuBar, { registry: commands, menus: viewMenus, ...interactions }),
+        h(CommandToolbar, {
+          registry: commands,
+          commands: ['play', 'photo'],
+          iconOnly: true,
+          label: 'Prueba y captura',
+          onError: host.reportError,
+        }),
+      ]),
+  }).mount(toolbarRoot)
+  const tools = document.createElement('div')
   tools.className = 'studio-viewport-tools'
-  tools.setAttribute('aria-label', 'Herramientas 3D')
-  for (const id of ['translate', 'rotate', 'focus']) tools.append(document.getElementById(id)!)
   viewport.append(tools)
-  document.getElementById('studio-object-mode')!.hidden = false
-  const locations = document.createElement('div')
-  locations.id = 'studio-locations'
-  document.getElementById('tree')!.before(locations)
-  const workspace = createWorkspace()
-  const registry = createCommandRegistry()
-  registry.register({ id: 'undo', label: 'Deshacer', enabled: host.canUndo, execute: host.undo })
-  registry.register({ id: 'redo', label: 'Rehacer', enabled: host.canRedo, execute: host.redo })
-  registry.register({
-    id: 'play',
-    label: 'Iniciar / detener prueba',
-    enabled: host.canPlay,
-    checked: host.isPlaying,
-    execute: host.togglePlay,
-  })
+  createApp({
+    render: () =>
+      h(CommandToolbar, {
+        registry: commands,
+        commands: toolCommands,
+        label: 'Herramientas 3D',
+        onError: host.reportError,
+      }),
+  }).mount(tools)
+  document.querySelector('.view-caption')?.setAttribute('hidden', '')
+  const clock = document.createElement('time')
+  clock.id = 'studio-clock'
+  const badge = document.querySelector('.project .badge')!
+  badge.textContent = 'UTC'
+  badge.before(clock)
+  const header = document.createElement('div')
+  header.className = 'studio-main-menu'
+  document.querySelector('header .brand')!.after(header)
+  createApp({
+    render: () => h(MenuBar, { registry: commands, menus: mainMenus, ...interactions }),
+  }).mount(header)
+  const tree = document.getElementById('tree')!
+  tree.replaceChildren()
+  createApp(ScenePanel).mount(tree)
+  const properties = document.getElementById('properties')!
+  let native = document.getElementById('properties-extras')
+  if (!native) {
+    native = document.createElement('div')
+    native.id = 'properties-extras'
+    properties.append(native)
+  }
+  const inspectorRoot = document.createElement('div')
+  inspectorRoot.id = 'studio-property-sheet'
+  properties.prepend(inspectorRoot)
+  createApp(Inspector).mount(inspectorRoot)
+  document.querySelector('.outliner-footer')?.remove()
+  const workspace = createWorkspace(),
+    factories = new Map<string, ContentFactory>()
   const definitions = [
     { id: 'world', title: 'Vista 3D', selector: '#studio-viewport-panel' },
     { id: 'scene', title: 'Escena', selector: '.outliner' },
     { id: 'properties', title: 'Propiedades', selector: '.inspector' },
+    ...['layers', 'generation', 'information', 'sequences'].map((id, i) => ({
+      id,
+      title: ['Capas', 'Generación', 'Información', 'Secuencias'][i],
+      selector: '#studio-' + id,
+    })),
   ]
-  const parkedPanels = document.createElement('div')
-  parkedPanels.hidden = true
-  parkedPanels.style.display = 'none'
-  app.append(parkedPanels)
-  const factories = new Map<string, ContentFactory>()
+  for (const panel of definitions.slice(3)) {
+    const node = document.createElement('section')
+    node.id = 'studio-' + panel.id
+    node.className = 'studio-content-panel'
+    app.append(node)
+    if (panel.id === 'layers')
+      createApp({
+        render: () =>
+          h('div', [
+            h(HostContent, { node: contents.layerActions }),
+            h(ContentSections, { sections: contents.layers }),
+          ]),
+      }).mount(node)
+    else if (panel.id === 'information') createApp(InformationPanel).mount(node)
+    else node.textContent = panel.title + ' · siguiente fase'
+  }
   for (const panel of definitions) {
     const element = app.querySelector<HTMLElement>(panel.selector)!
     workspace.register({ id: panel.id, title: panel.title })
@@ -72,19 +270,12 @@ export function mountStudio(host: StudioHost): void {
       return {
         setActive: panel.id === 'world' ? (value) => host.input.setActive(value) : undefined,
         setVisible: panel.id === 'world' ? (value) => host.input.setVisible(value) : undefined,
-        // The existing application owns this DOM, its renderer and its listeners.
-        dispose: () => {
-          parkedPanels.append(element)
-        },
+        dispose: () => contents.parking.append(element),
       }
     })
-    registry.register({
-      id: panel.id,
-      label: panel.title,
-      execute: () => {
-        workspace.open(panel.id)
-        workspace.activate(panel.id)
-      },
+    register(panel.id, panel.title, () => {
+      workspace.open(panel.id)
+      workspace.activate(panel.id)
     })
   }
   const defaults: WorkspaceSnapshot = {
@@ -96,85 +287,68 @@ export function mountStudio(host: StudioHost): void {
       id: 'main',
       axis: 'horizontal',
       ratio: 0.76,
-      first: { kind: 'tabs', id: 'world-tabs', tabs: ['world'], active: 'world' },
+      first: {
+        kind: 'split',
+        id: 'work',
+        axis: 'vertical',
+        ratio: 0.8,
+        first: { kind: 'tabs', id: 'world-tabs', tabs: ['world'], active: 'world' },
+        second: {
+          kind: 'tabs',
+          id: 'bottom-tabs',
+          tabs: ['information', 'sequences'],
+          active: 'information',
+        },
+      },
       second: {
         kind: 'split',
         id: 'sidebar',
         axis: 'vertical',
-        ratio: 0.38,
-        first: { kind: 'tabs', id: 'scene-tabs', tabs: ['scene'], active: 'scene' },
+        ratio: 0.43,
+        first: {
+          kind: 'tabs',
+          id: 'scene-tabs',
+          tabs: ['scene', 'layers', 'generation'],
+          active: 'scene',
+        },
         second: { kind: 'tabs', id: 'properties-tabs', tabs: ['properties'], active: 'properties' },
       },
     },
   }
+  const compact = matchMedia('(max-width:700px)').matches
   if (compact)
     defaults.root = {
       kind: 'tabs',
       id: 'mobile-tabs',
-      tabs: ['world', 'scene', 'properties'],
+      tabs: definitions.map((p) => p.id),
       active: 'world',
     }
+  const layoutKey = compact ? 'nabla.studio.layout.mobile.v2' : 'nabla.studio.layout.v3'
   workspace.restore(defaults)
   try {
     const saved = localStorage.getItem(layoutKey)
     if (saved) workspace.restore(JSON.parse(saved))
   } catch {
-    /* Invalid or unavailable storage falls back to the default workspace. */
+    /* Use the default layout. */
   }
   workspace.subscribe(() => {
     try {
       localStorage.setItem(layoutKey, JSON.stringify(workspace.snapshot()))
     } catch {
-      /* Restricted storage must not prevent editing. */
+      /* Storage can be unavailable. */
     }
   })
-  registry.register({
-    id: 'reset-layout',
-    label: 'Restablecer distribución',
-    execute: () => workspace.restore(defaults),
-  })
-  const menuRoot = document.createElement('div')
-  app.querySelector('header')!.append(menuRoot)
+  register('reset-layout', 'Restablecer distribución', () => workspace.restore(defaults))
   const root = document.createElement('section')
   root.className = 'studio-workspace'
-  root.setAttribute('aria-label', 'Espacio de trabajo de Studio')
   app.append(root)
-  app.classList.add('studio-desktop')
-  const interaction = {
-    onInteractionStart: () => {
-      registry.notify()
-      host.input.beginInteraction()
-    },
-    onInteractionEnd: () => host.input.endInteraction(),
-    onError: host.reportError,
-  }
-  createApp({
-    render: () =>
-      h(MenuBar, {
-        registry,
-        menus: [
-          { id: 'edit', label: 'Editar', items: [{ command: 'undo' }, { command: 'redo' }] },
-          { id: 'run', label: 'Ejecutar', items: [{ command: 'play' }] },
-          {
-            id: 'workspace',
-            label: 'Ver',
-            items: [
-              ...definitions.map((p) => ({ command: p.id })),
-              { separator: true },
-              { command: 'reset-layout' },
-            ],
-          },
-        ],
-        ...interaction,
-      }),
-  }).mount(menuRoot)
   createApp({
     render: () =>
       h(
         WorkspaceHost,
         {
           workspace,
-          ...interaction,
+          ...interactions,
           labels: {
             float: 'Flotar panel',
             dock: 'Acoplar panel',
@@ -209,16 +383,47 @@ export function mountStudio(host: StudioHost): void {
         },
       ),
   }).mount(root)
-  // Desktop currently reserves 72px for tabs + actions. Studio overlays actions
-  // on the 36px tab strip; keep its 1px border and reclaim the unused row.
+  const windows = document.createElement('div')
+  document.body.append(windows)
+  const helpTab = ref('controls')
+  createApp({
+    render: () => [
+      h(PreferencesWindow, { tabs: contents.preferences, input: host.input }),
+      h(CapabilityWindow, { input: host.input }),
+      h(
+        DesktopDialog,
+        {
+          open: helpOpen.value,
+          'onUpdate:open': (value: boolean) => {
+            helpOpen.value = value
+          },
+          title: 'Ayuda',
+          icon: 'help',
+          closeLabel: 'Cerrar ayuda',
+          modal: false,
+          draggable: true,
+          registry: commands,
+          class: 'studio-utility',
+          ...interactions,
+        },
+        {
+          default: () =>
+            h(
+              SidebarTabs,
+              { modelValue: helpTab.value, tabs: [{ id: 'controls', label: 'Controles' }] },
+              { controls: () => h(ContentSections, { sections: contents.help }) },
+            ),
+        },
+      ),
+    ],
+  }).mount(windows)
   const compactPanels = () => {
-    for (const panel of root.querySelectorAll<HTMLElement>('.nd-panel-content, .nd-drop-grid')) {
+    for (const panel of root.querySelectorAll<HTMLElement>('.nd-panel-content,.nd-drop-grid'))
       for (const dimension of ['top', 'height'] as const) {
-        const key = `--studio-panel-${dimension}`
+        const key = '--studio-panel-' + dimension
         if (panel.style.getPropertyValue(key) !== panel.style[dimension])
           panel.style.setProperty(key, panel.style[dimension])
       }
-    }
   }
   new MutationObserver(compactPanels).observe(root, {
     subtree: true,
@@ -227,5 +432,8 @@ export function mountStudio(host: StudioHost): void {
     attributeFilter: ['style'],
   })
   compactPanels()
+  window.addEventListener('error', (event) => log(event.message, 'error'))
+  log('Studio preparado. Información muestra la actividad del editor.')
   host.refresh()
+  commands.notify()
 }

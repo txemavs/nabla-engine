@@ -59,8 +59,16 @@ export function entityTileAsset(
     const buffers = data.geometry[e.id]
     if (!buffers) continue
     const aeroway = e.source?.tags?.aeroway
-    const category =
-      aeroway === 'runway' || aeroway === 'taxiway' || aeroway === 'apron'
+    const tags = e.source?.tags
+    const building =
+      !!e.geometry &&
+      ((tags?.building && tags.building !== 'no') ||
+        (tags?.['building:part'] && tags['building:part'] !== 'no'))
+    // A building may also describe its use (pitch, parking, etc.). Its volume
+    // remains a building for roof projection, layers, export and inspection.
+    const category = building
+      ? 'Buildings'
+      : aeroway === 'runway' || aeroway === 'taxiway' || aeroway === 'apron'
         ? 'Aeroway'
         : e.source?.tags?.leisure === 'pitch'
           ? 'Pitch'

@@ -134,8 +134,8 @@ describe('footprints', () => {
     expect(area(result.get('right')!)).toBe(100)
   })
 
-  // A part that sticks out of the outline is a neighbour and must not cut this building.
-  it('preserves uncovered outline and ignores a neighboring part crossing its boundary', () => {
+  // In S3DB, gaps between parts do not imply another solid made from the envelope.
+  it('hides the complete envelope even when its parts leave gaps', () => {
     const features = [
       box('outline', 0, 20, { building: 'yes' }),
       box('part', 0, 5, { 'building:part': 'yes' }),
@@ -143,8 +143,49 @@ describe('footprints', () => {
     ]
     const before = JSON.stringify(features)
     const result = buildingFootprints(features, project)
-    expect(area(result.get('outline')!)).toBe(150)
+    expect(result.get('outline')).toEqual([])
     expect(JSON.stringify(features)).toBe(before)
+  })
+
+  it('keeps a neighboring outline when the only part crosses its boundary', () => {
+    const result = buildingFootprints(
+      [
+        box('outline', 0, 20, { building: 'yes' }),
+        box('neighbor', 15, 10, { 'building:part': 'yes' }),
+      ],
+      project,
+    )
+    expect(area(result.get('outline')!)).toBe(200)
+  })
+
+  it('keeps an explicit building part even when it contains smaller parts', () => {
+    const result = buildingFootprints(
+      [
+        box('base', 0, 20, { building: 'yes', 'building:part': 'yes', height: '20' }),
+        box('tower', 0, 5, { 'building:part': 'yes', height: '23' }),
+      ],
+      project,
+    )
+    expect(area(result.get('base')!)).toBe(200)
+    expect(area(result.get('tower')!)).toBe(50)
+  })
+
+  it('does not extrude the JFK multipolygon envelope alongside its detailed Boston parts', () => {
+    const features: MapFeature[] = JSON.parse(
+      readFileSync(new URL('./fixtures/boston-jfk-parts.json', import.meta.url), 'utf8'),
+    )
+    const projectBoston = ([lon, lat]: [number, number]): [number, number, number] => [
+      (lon + 71.059) * 82000,
+      0,
+      (42.3615 - lat) * 111000,
+    ]
+    const result = buildingFootprints(features, projectBoston)
+    expect(result.get('relation/7135674')).toEqual([])
+    for (const part of features.filter((f) => f.tags['building:part'])) {
+      const alone = buildingFootprints([part], projectBoston)
+      expect(result.get(part.id)).toEqual(alone.get(part.id))
+      expect(area(result.get(part.id)!)).toBeGreaterThan(0)
+    }
   })
 })
 

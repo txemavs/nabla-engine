@@ -11,6 +11,7 @@ export interface StudioProject {
   bookmarks?: { name: string; latitude: number; longitude: number }[]
   objects: PlanetObject[]
   connections?: PortalConnection[]
+  editorState?: { axisLocks: Record<string, Record<string, number[]>> }
   name: string
   activeLocation: string
   locations: { id: string; scene: SceneDocument }[]
@@ -54,6 +55,15 @@ const schema = z
           .strict(),
       )
       .max(10000)
+      .optional(),
+    editorState: z
+      .object({
+        axisLocks: z.record(
+          z.string().max(160),
+          z.record(z.string().max(128), z.array(z.number().int().min(0).max(2)).max(3)),
+        ),
+      })
+      .strict()
       .optional(),
     objects: z.array(planetObjectSchema).max(100000),
     connections: z

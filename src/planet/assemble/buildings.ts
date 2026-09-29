@@ -1,6 +1,6 @@
 /**
  * OSM building solids for one district.
- * A `building:part` footprint is already cut out of the parent outline.
+ * Generic outlines with detailed parts are excluded by buildingFootprints.
  * The flat cap is replaced when the roof tag is one this engine can build.
  */
 import { ShapeUtils, Vector2, Vector3 } from 'three'

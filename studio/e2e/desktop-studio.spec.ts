@@ -1,4 +1,8 @@
-import { expect, test } from './studio-test.js'
+import { expect, test, localCircuit } from './studio-test.js'
+
+test.beforeEach(async ({ page }) => {
+  await localCircuit(page)
+})
 
 test('desktop retains the live viewport, edits and layout across panel moves', async ({ page }) => {
   const errors: string[] = []
@@ -11,11 +15,8 @@ test('desktop retains the live viewport, edits and layout across panel moves', a
   expect(world!.x).toBeLessThan(sceneTree!.x)
   expect(sceneTree!.x).toBeCloseTo(properties!.x, 0)
   expect(sceneTree!.y + sceneTree!.height).toBeLessThanOrEqual(properties!.y)
-  await expect(page.locator('#studio-viewport-panel > .toolbar #studio-object-mode')).toHaveValue(
-    'object',
-  )
-  await expect(page.locator('.studio-viewport-tools #translate')).toBeVisible()
-  await expect(page.locator('#studio-locations #tree')).toBeVisible()
+  await expect(page.locator('.studio-viewport-tools [data-command=translate]')).toBeVisible()
+  await expect(page.locator('#tree')).toBeVisible()
   await page.evaluate(() => {
     const canvas = document.querySelector('#viewport > canvas')!
     canvas.setAttribute('data-retained-test', 'original')
@@ -41,10 +42,10 @@ test('desktop retains the live viewport, edits and layout across panel moves', a
   await page.getByRole('button', { name: 'Ver', exact: true }).click()
   await page.getByRole('menuitem', { name: 'Restablecer distribución' }).click()
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-retained-test', 'original')
-  await page.getByRole('button', { name: 'Ejecutar', exact: true }).click()
+  await page.getByRole('button', { name: 'Archivo', exact: true }).click()
   await page.getByRole('menuitemcheckbox', { name: 'Iniciar / detener prueba' }).click()
   await expect(page.locator('#mode-label')).toHaveText('Jugando')
-  await page.getByRole('button', { name: 'Ejecutar', exact: true }).click()
+  await page.getByRole('button', { name: 'Archivo', exact: true }).click()
   await page.getByRole('menuitemcheckbox', { name: 'Iniciar / detener prueba' }).click()
   await expect(page.locator('#name')).toHaveValue('Desktop car')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
@@ -55,35 +56,25 @@ test('desktop retains the live viewport, edits and layout across panel moves', a
 })
 
 test('invalid desktop layout cannot prevent opening the real editor', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('nabla.studio.layout.v2', '{broken'))
+  await page.addInitScript(() => localStorage.setItem('nabla.studio.layout.v3', '{broken'))
   await page.goto('/?scene=circuit&studio=desktop')
   await expect(page.locator('.studio-workspace #viewport > canvas')).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Propiedades', exact: true })).toBeVisible()
 })
 
-test('project settings keep flat tabs fixed and scroll only their content', async ({ page }) => {
-  await page.goto('/?scene=circuit&studio=desktop')
-  await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-startup', 'ready')
-  await page.getByRole('button', { name: 'Opciones', exact: true }).click()
-  const tab = page.getByRole('tab', { name: 'Calidad', exact: true })
-  await expect(tab).toBeVisible()
-  expect(await tab.evaluate((el) => getComputedStyle(el).borderRadius)).toBe('0px')
-  const body = page.locator('.studio-settings-host .window-frame__body')
-  expect(
-    await body.evaluate((el) => ({
-      overflow: getComputedStyle(el).overflowY,
-      fits: el.scrollHeight <= el.clientHeight + 1,
-    })),
-  ).toEqual({ overflow: 'hidden', fits: true })
-  await page.getByRole('tab', { name: 'Portales', exact: true }).click()
-  await expect(page.locator('#settings-panel-portal-registry')).toBeVisible()
-  await expect(page.locator('#portal-registry-list .portal-place h4').first()).toContainText(
-    'Lugar actual',
-  )
-  expect(await body.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true)
-  await page.getByRole('tab', { name: 'Ubicación', exact: true }).click()
-  await expect(page.locator('#settings-panel-geography-section')).toBeVisible()
-  await expect(page.locator('#settings-panel-portal-registry')).toBeHidden()
+test('preferences keep sidebar sections and portals belong to the scene', async ({ page }) => {
+  await page.goto('/?scene=circuit')
+  await page.getByRole('button', { name: 'Editar', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Preferencias…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Preferencias' })
+  await dialog.getByRole('tab', { name: 'Rendimiento', exact: true }).click()
+  await expect(dialog.locator('#stream-mode')).toBeVisible()
+  await expect(dialog.getByRole('tab', { name: 'Portales', exact: true })).toHaveCount(0)
+  await dialog.getByRole('tab', { name: 'Planeta', exact: true }).click()
+  await expect(dialog.locator('#sky-time')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Cerrar preferencias' }).click()
+  await page.getByRole('combobox', { name: 'Organización de Escena' }).selectOption('class')
+  await expect(page.locator('#tree')).toContainText('Portales')
 })
 
 test('the root URL and old style parameters always open the gray Desktop workspace', async ({
@@ -119,4 +110,48 @@ test('closed panels stay hidden and can be recovered through View', async ({ pag
   await expect(page.locator('.inspector')).toBeVisible()
   await expect(page.locator('.outliner')).toBeVisible()
   await expect(page.locator('#viewport > canvas')).toBeVisible()
+})
+
+test('preferences opens inside the viewport on its first frame with a neutral titlebar', async ({
+  page,
+}) => {
+  await page.goto('/?scene=circuit')
+  await page.evaluate(() => {
+    const frames: { top: number; bottom: number; position: string }[] = []
+    ;(window as any).__dialogFrames = frames
+    const sample = () => {
+      const dialog = document.querySelector('.studio-utility[open]')
+      if (dialog) {
+        const r = dialog.getBoundingClientRect()
+        frames.push({ top: r.top, bottom: r.bottom, position: getComputedStyle(dialog).position })
+      }
+      if (frames.length < 12) requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+  })
+  await page.getByRole('button', { name: 'Editar', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Preferencias…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Preferencias', exact: true })
+  await expect(dialog).toBeVisible()
+  await expect.poll(() => page.evaluate(() => (window as any).__dialogFrames.length)).toBe(12)
+  const valid = await page.evaluate(() =>
+    (window as any).__dialogFrames.every(
+      (f: any) => f.position === 'fixed' && f.top >= 0 && f.bottom <= innerHeight,
+    ),
+  )
+  expect(valid).toBe(true)
+  const header = dialog.locator(':scope > header')
+  await expect(header).toHaveCSS('background-color', 'rgb(32, 32, 32)')
+  await expect(header.locator('svg')).toHaveCount(2)
+  const before = await dialog.boundingBox(),
+    handle = await header.boundingBox()
+  await page.mouse.move(handle!.x + 70, handle!.y + 18)
+  await page.mouse.down()
+  await page.mouse.move(handle!.x + 130, handle!.y + 48, { steps: 5 })
+  await page.mouse.up()
+  const after = await dialog.boundingBox()
+  expect(after!.x).toBeCloseTo(before!.x + 60, 0)
+  expect(after!.y).toBeCloseTo(before!.y + 30, 0)
+  await dialog.getByRole('button', { name: 'Cerrar preferencias' }).click()
+  await expect(dialog).toHaveCount(0)
 })

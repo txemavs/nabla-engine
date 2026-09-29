@@ -1,3 +1,20 @@
+import {
+  commands,
+  bindAction,
+  inspector,
+  sceneNodes,
+  hierarchyNodes,
+  transformSelection,
+  selection,
+  selectEntity,
+  inspectCapability,
+  cursorTool,
+  objectMode,
+  log,
+} from './ui/state.js'
+import { objectProperties, chooseCapability, axisLocked, axisLocks } from './ui/properties.js'
+import { sceneTree, sceneHierarchy } from './ui/scene-tree.js'
+import { openExactTransform } from './ui/exact-transform.js'
 import { parseScene } from '../src/scene/document.js'
 import { KeyboardSteering } from '../src/simulation/vehicles/keyboard-steering.js'
 import { TireMarks } from '../src/render/entity/tire-marks.js'
@@ -19,7 +36,7 @@ import { setPlanetCharts } from '../src/render/entity/helm-map.js'
 import { PlanetWorld, projectedLayers } from '../src/render/planet/world.js'
 import { FieldLights, fieldLayers } from '../src/render/entity/field-lights.js'
 import { planetaryScene, createPlanetScene } from './planet-scene.js'
-import { geographicPose, anchoredWorldPose } from './geographic-pose.js'
+import { geographicPose } from './geographic-pose.js'
 import { prepareStartup } from './startup.js'
 import { authoredTree, isMapEnvironment } from './outliner.js'
 import { RemotePortalViews } from '../src/render/portal/remote.js'
@@ -43,8 +60,9 @@ import { roadGeometry } from '../src/planet/land/roads/draped-road.js'
 import { FlightAudio } from './flight-audio.js'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
-import { createCatalogEntities, entityCatalog, entityCapabilities } from '../src/index.js'
+import { createCatalogEntities, entityCatalog } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
+import { SelectionSilhouette } from './selection-silhouette.js'
 import { readPerformance, shadowTiers, performancePresets, streamBudget } from './performance.js'
 import { DepthOfField } from '../src/render/effects/depth-of-field.js'
 import { ShadowManager } from '../src/render/shadows.js'
@@ -79,8 +97,6 @@ import {
   Simulation,
   createEntity,
   idleInput,
-  rotationDegrees,
-  toDegrees,
   type Entity,
   type Vec3Tuple,
 } from '../src/index.js'
@@ -92,11 +108,6 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
   if (!element) throw new Error('Missing element: ' + id)
   return element as T
 }
-const escape = (s: string): string =>
-  s.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
-  )
 const performanceSettings = readPerformance()
 const STORAGE_KEY = 'nabla.scene.v1'
 const PROJECT_KEY = 'nabla.project.v1'
@@ -129,6 +140,9 @@ const startupDone = new Promise<void>((resolve) => {
 })
 project = createProject(editor.document)
 let savedDocument = editor.serialize()
+let editorMetadataDirty = false
+let restoredLockState: StudioProject['editorState']
+let restoredLockLocation = ''
 const collapsed = new Set(
   editor.document.entities.filter((e) => e.kind === 'group').map((e) => e.id),
 )
@@ -181,6 +195,7 @@ const studioInput = new StudioInputOwner(() => {
 let toastTimer: ReturnType<typeof setTimeout>
 let remotePortalViews: RemotePortalViews | undefined
 function toast(message: string): void {
+  log(message)
   $('toast').textContent = message
   $('toast').style.display = 'block'
   clearTimeout(toastTimer)
@@ -316,43 +331,48 @@ function placeCursor(position: Vec3Tuple): void {
   syncCursor()
   focusCursor()
   $('status').textContent = 'Cambios sin guardar'
+  if (cursorTool.value) refreshUi()
 }
-$('cursor-apply').onclick = () =>
+bindAction('cursor-apply', () =>
   action(() =>
     placeCursor(
       ['x', 'y', 'z'].map((a) => $<HTMLInputElement>(`cursor-${a}`).valueAsNumber) as Vec3Tuple,
     ),
-  )
-$('cursor-selection').onclick = () =>
+  ),
+)
+bindAction('cursor-selection', () =>
   action(() =>
     placeCursor(SceneGraph.fromValidated(editor.document).worldTransform(selectedId).position),
-  )
-$('cursor-view').onclick = () => action(() => placeCursor(orbit.target.toArray()))
-$('selection-cursor').onclick = () =>
+  ),
+)
+bindAction('cursor-view', () => action(() => placeCursor(orbit.target.toArray())))
+bindAction('selection-cursor', () =>
   action(() => {
     const entity = editor.document.entities.find((e) => e.id === selectedId)!
     if (isMapEnvironment(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
     editor.moveToCursor(selectedId)
     rebuild()
-  })
-$('origin-cursor').onclick = () =>
+  }),
+)
+bindAction('origin-cursor', () =>
   action(() => {
     const entity = editor.document.entities.find((e) => e.id === selectedId)!
     if (isMapEnvironment(entity) && !entity.mapEditable)
       throw new Error('Pulsa Crear modificación antes de editar el edificio')
     editor.originToCursor(selectedId)
     rebuild()
-  })
+  }),
+)
 function lockAxis(axis: string): void {
   $<HTMLSelectElement>('transform-axis').value = axis
-  gizmo.showX = axis === 'all' || axis === 'X'
-  gizmo.showY = axis === 'all' || axis === 'Y'
-  gizmo.showZ = axis === 'all' || axis === 'Z'
+  gizmo.showX = (axis === 'all' || axis === 'X') && !axisLocked(selectedId, 0)
+  gizmo.showY = (axis === 'all' || axis === 'Y') && !axisLocked(selectedId, 1)
+  gizmo.showZ = (axis === 'all' || axis === 'Z') && !axisLocked(selectedId, 2)
   needsRender = true
 }
 $('transform-axis').onchange = () => lockAxis($<HTMLSelectElement>('transform-axis').value)
-$('transform-exact').onclick = () =>
+bindAction('transform-exact', () =>
   action(() => {
     const axis = $<HTMLSelectElement>('transform-axis').value,
       amount = $<HTMLInputElement>('transform-amount').valueAsNumber
@@ -379,7 +399,9 @@ $('transform-exact').onclick = () =>
     }
     editor.update(selectedId, { transform: graph.localFromWorld(entity.parentId, pose) })
     finishPoseEdit(selectedId)
-  })
+  }),
+)
+const silhouette = new SelectionSilhouette()
 const outline = new SelectionOutline()
 scene.add(outline)
 const lastWorldInstallMs = 0
@@ -535,12 +557,27 @@ function setupWorldStream(): void {
   scene.add(worldStream.root)
   $('stream-status').textContent = 'Exploración conectada · editor y juego'
 }
+let mapInspection = false
 function select(id: string): void {
+  mapInspection = false
   worldStream?.clearSelection()
   selectedId = id
+  cursorTool.value = false
   refreshUi()
 }
 function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): void {
+  if (
+    restoredLockState !== project?.editorState ||
+    restoredLockLocation !== project?.activeLocation
+  ) {
+    axisLocks.clear()
+    for (const [id, axes] of Object.entries(
+      project?.editorState?.axisLocks[project.activeLocation] ?? {},
+    ))
+      axisLocks.set(id, new Set(axes))
+    restoredLockState = project?.editorState
+    restoredLockLocation = project?.activeLocation ?? ''
+  }
   refreshPortalEntries(doc)
   const places = $<HTMLSelectElement>('project-places')
   places.replaceChildren(
@@ -579,6 +616,19 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
   $('view-subtitle').textContent = doc.name
   grid.visible = !sim && !doc.geography?.planetary && !doc.entities.some((e) => e.terrain)
   $('world-note').hidden = !doc.geography?.planetary && !doc.entities.some((e) => e.terrain)
+  const water = doc.water ?? { mode: 'tide' as const, level: 0, amplitude: 1 }
+  waterMode = water.mode
+  tideAmplitude = water.amplitude
+  $<HTMLSelectElement>('water-mode').value = waterMode
+  $<HTMLInputElement>('tide-amplitude').value = String(tideAmplitude)
+  if (waterMode === 'manual') {
+    waterLevel = water.level
+    ocean.setLevel(waterLevel)
+    sim?.setWaterLevel(waterLevel)
+  }
+  $<HTMLInputElement>('water-level').value = String(waterLevel)
+  $<HTMLInputElement>('water-level-number').value = String(waterLevel)
+  nextTideReadout = 0
   skyClock = doc.sky ?? { mode: 'live' }
   $<HTMLInputElement>('sky-time').value = localTimeInput(skyTime(skyClock))
   $('sky-live').classList.toggle('active', skyClock.mode === 'live')
@@ -591,166 +641,51 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
     $<HTMLInputElement>(id).disabled = Boolean(sim) || loadingWorld || id === 'imagery'
   $('entity-count').textContent = String(doc.entities.length)
   $('status').textContent =
-    !poseEdited && editor.serialize() === savedDocument ? 'Guardado local' : 'Cambios sin guardar'
-  const tree = $('tree')
-  tree.replaceChildren()
-  const treeChildren = authoredTree(doc.entities)
-  const authoredCount = [...treeChildren.values()].reduce((n, list) => n + list.length, 0)
-  $('entity-count').textContent = String(authoredCount)
-  $('entity-count').title = 'Objetos propios y modificaciones; el mapa se carga aparte'
-  const icons = { terrain: '▧', solid: '⬡', box: '◇', vehicle: '▰', spawn: '◎', group: '▱' }
-  function append(parent: string | null, depth: number): void {
-    for (const e of treeChildren.get(parent) ?? []) {
-      const button = document.createElement('button')
-      button.className = 'tree-item' + (e.id === selectedId ? ' selected' : '')
-      button.dataset.entityId = e.id
-      button.setAttribute('role', 'treeitem')
-      if (treeChildren.has(e.id)) button.setAttribute('aria-expanded', String(!collapsed.has(e.id)))
-      button.setAttribute('aria-selected', String(e.id === selectedId))
-      button.style.paddingLeft = `${10 + depth * 14}px`
-      button.innerHTML = `<span class="kind-icon">${e.kind === 'group' ? (collapsed.has(e.id) ? '›' : '⌄') : icons[e.kind]}</span><span class="name">${escape(e.name)}</span>${e.motion === 'dynamic' ? '<span class="motion">●</span>' : ''}`
-      button.disabled = sim !== null
-      button.onclick = () => {
-        if (e.kind === 'group') {
-          if (collapsed.has(e.id)) collapsed.delete(e.id)
-          else collapsed.add(e.id)
-        }
-        select(e.id)
-      }
-      tree.append(button)
-      if (!collapsed.has(e.id)) append(e.id, depth + 1)
-    }
-  }
-  append(null, 0)
-  const locationsTree = document.getElementById('studio-locations')
-  if (locationsTree) {
-    locationsTree.replaceChildren()
-    for (const place of project!.locations) {
-      const active = place.id === project!.activeLocation
-      const section = document.createElement('details')
-      section.open = active
-      const label = document.createElement('summary')
-      label.textContent = active ? doc.name : place.scene.name
-      section.append(label)
-      if (active) section.append(tree)
-      else {
-        const visit = document.createElement('button')
-        visit.textContent = 'Abrir lugar · ' + place.scene.entities.length + ' objetos'
-        visit.disabled = !!sim || loadingWorld
-        visit.onclick = () => void openProjectPlace(place.id)
-        section.append(visit)
-      }
-      locationsTree.append(section)
-    }
-  }
-  if (tree.dataset.selection !== selectedId) {
-    tree.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' })
-    tree.dataset.selection = selectedId
-  }
+    !editorMetadataDirty && !poseEdited && editor.serialize() === savedDocument
+      ? 'Guardado local'
+      : 'Cambios sin guardar'
+  sceneNodes.value = sceneTree(doc.entities, !!sim)
+  hierarchyNodes.value = sceneHierarchy(doc.entities, !!sim)
+  selection.value = selectedId
+  selectEntity.value = select
+  $('entity-count').textContent = String([...authoredTree(doc.entities).values()].flat().length)
   const e = doc.entities.find((item) => item.id === selectedId)!
-  const props = $('properties')
   selectedGeometry = e.geometry
-  // Only the selected ancestry is needed here; avoid allocating a graph for the entire map.
-  const ancestry = [e]
-  const byId = new Map(doc.entities.map((entity) => [entity.id, entity]))
-  let ancestor = e
-  while (ancestor.parentId) {
-    ancestor = byId.get(ancestor.parentId)!
-    ancestry.push(ancestor)
+  const context = {
+    doc,
+    entity: e,
+    editor,
+    disabled: !!sim || loadingWorld,
+    canEdit: () => !sim && !loadingWorld,
+    refresh: refreshUi,
+    rebuild,
+    finishPose: finishPoseEdit,
+    locksChanged: () => {
+      if (project) {
+        project.editorState = {
+          axisLocks: {
+            ...project.editorState?.axisLocks,
+            [project.activeLocation]: Object.fromEntries(
+              [...axisLocks].map(([id, axes]) => [id, [...axes]]),
+            ),
+          },
+        }
+      }
+      restoredLockState = project?.editorState
+      editorMetadataDirty = true
+      lockAxis('all')
+    },
   }
-  const graph = SceneGraph.fromValidated({ ...doc, entities: ancestry })
-  const parent = doc.entities.find((p) => p.id === e.parentId)
-  const geographic =
-    doc.geography && (!parent || (isMapEnvironment(parent) && !parent.mapEditable))
-      ? geographicPose(doc.geography, graph.worldTransform(e.id), e.geoAnchor)
-      : undefined
-  const displayedPose = geographic?.pose ?? e.transform
-  const angles = toDegrees(displayedPose.rotation)
-  function row(label: string, key: string, values: number[]): string {
-    return `<label class="field-label">${label}</label><div class="axis-row">${values.map((n, i) => `<label><span>${'XYZ'[i]}</span><input aria-label="${label} ${'XYZ'[i]}" data-vector="${key}" data-axis="${i}" type="number" step="${key === 'rotation' ? '1' : '0.1'}" value="${Number(n.toFixed(3))}"></label>`).join('')}</div>`
+  inspector.value = objectProperties(context)
+  inspectCapability.value = () => chooseCapability(context)
+  transformSelection.value = () => openExactTransform(context)
+  let props = document.getElementById('properties-extras')
+  if (!props) {
+    props = document.createElement('div')
+    props.id = 'properties-extras'
+    $('properties').append(props)
   }
-  props.innerHTML = `<div class="entity-title">${escape(e.name)}</div><div class="entity-type">${e.light ? 'Farola · iluminación' : { terrain: 'Relieve · Esri Terrain 3D', solid: 'Edificio · sólido editable', box: 'Geometría · bloque', vehicle: 'Vehículo · cuatro ruedas', spawn: 'Inicio del jugador', group: 'Grupo de objetos' }[e.kind]}</div>
-    <label class="field-label">Capacidades</label><div class="entity-capabilities">${entityCapabilities(e).map(escape).join(' · ')}</div>
-    <label class="field-label" for="name">Nombre</label><input id="name" value="${escape(e.name)}" maxlength="100">
-    ${row(geographic ? 'Pose desde ancla · m' : 'Posición respecto al padre · m', 'position', displayedPose.position)}${row('Rotación local · °', 'rotation', angles)}
-    ${e.kind === 'box' || e.kind === 'vehicle' || e.sprite ? row('Dimensiones · m', 'size', e.size) : ''}
-    <label class="field-label" for="color">Color</label><input id="color" type="color" value="${e.color}">
-    <label class="field-label" for="parent">Padre</label><select id="parent"><option value="">Mundo</option>${doc.entities
-      .filter(
-        (item) =>
-          item.id !== e.id &&
-          item.kind !== 'spawn' &&
-          (!isMapEnvironment(item) || item.mapEditable || item.id === e.parentId),
-      )
-      .map(
-        (item) =>
-          `<option value="${escape(item.id)}" ${e.parentId === item.id ? 'selected' : ''}>${escape(item.name)}</option>`,
-      )
-      .join('')}</select>
-    ${e.kind === 'box' ? `<label class="field-label" for="motion">Física</label><select id="motion"><option value="static">Fijo</option><option value="dynamic">Móvil</option><option value="none">Solo visual</option></select>` : ''}
-    ${e.motion === 'dynamic' ? `<label class="field-label" for="mass">Masa · kg</label><input id="mass" type="number" min="0.1" step="1" value="${e.mass}">` : ''}
-    <div class="property-actions"><button id="duplicate">Duplicar</button><button id="delete">Eliminar</button></div>`
-  if (geographic) {
-    const geo = document.createElement('section')
-    geo.id = 'entity-geography'
-    geo.innerHTML =
-      '<label class="field-label">Ancla geográfica · altitud sobre el modelo terrestre</label>'
-    for (const [key, title] of [
-      ['longitude', 'Longitud'],
-      ['latitude', 'Latitud'],
-      ['altitude', 'Altitud · m'],
-    ] as const) {
-      const label = document.createElement('label')
-      label.textContent = title
-      const input = document.createElement('input')
-      input.type = 'number'
-      input.step = key === 'altitude' ? '0.1' : '0.000001'
-      input.id = 'entity-' + key
-      input.value = String(Number(geographic.anchor[key].toFixed(key === 'altitude' ? 3 : 8)))
-      input.onchange = () =>
-        action(() => {
-          const anchor = { ...geographic.anchor, [key]: input.valueAsNumber }
-          const world = anchoredWorldPose(doc.geography!, anchor, geographic.pose)
-          editor.update(e.id, {
-            ...(e.geoAnchor ? { geoAnchor: anchor } : {}),
-            transform: graph.localFromWorld(e.parentId, world),
-          })
-          finishPoseEdit(e.id)
-        })
-      label.append(input)
-      geo.append(label)
-    }
-    const reset = document.createElement('button')
-    reset.textContent = 'Ancla en la posición actual · XYZ a cero'
-    reset.onclick = () =>
-      action(() => {
-        editor.update(e.id, { geoAnchor: undefined })
-        finishPoseEdit(e.id)
-      })
-    geo.append(reset)
-    props.querySelector('#name')!.after(geo)
-  }
-  if (doc.geography && !geographic) {
-    const geo = geographicPose(doc.geography, graph.worldTransform(e.id)).anchor
-    const section = document.createElement('section')
-    section.id = 'entity-geography'
-    section.innerHTML = '<label class="field-label">GPS del objeto · pose relativa al padre</label>'
-    for (const [key, title] of [
-      ['longitude', 'Longitud'],
-      ['latitude', 'Latitud'],
-      ['altitude', 'Altitud · m'],
-    ] as const) {
-      const label = document.createElement('label')
-      label.textContent = title
-      const input = document.createElement('input')
-      input.id = 'entity-' + key
-      input.disabled = true
-      input.value = String(Number(geo[key].toFixed(key === 'altitude' ? 3 : 8)))
-      label.append(input)
-      section.append(label)
-    }
-    props.querySelector('#name')!.after(section)
-  }
+  props.replaceChildren()
   if (e.road && !sim && (!e.road.elevation || e.road.elevation === 'terrain')) {
     const label = document.createElement('label')
     label.className = 'field-label'
@@ -793,234 +728,160 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
   const mapReadOnly = isMapEnvironment(e) && !e.mapEditable
   if (mapReadOnly) solidEditor.close()
   else solidEditor.mount(e, view.objects.get(e.id)!, props, !!sim)
-  const objectMode = $<HTMLSelectElement>('studio-object-mode')
-  objectMode.value = solidEditor.active ? 'edit' : 'object'
-  objectMode.disabled = !!sim || loadingWorld
-  objectMode.querySelector<HTMLOptionElement>('[value=edit]')!.disabled = !e.geometry || mapReadOnly
-  objectMode.title = e.geometry
+  const modeControl = $<HTMLSelectElement>('studio-object-mode')
+  modeControl.value = solidEditor.active ? 'edit' : 'object'
+  modeControl.disabled = !!sim || loadingWorld
+  modeControl.querySelector<HTMLOptionElement>('[value=edit]')!.disabled =
+    !e.geometry || mapReadOnly
+  modeControl.title = e.geometry
     ? 'Editar el objeto o su geometría'
     : 'Este objeto no contiene un sólido editable'
-  objectMode.onchange = () => {
-    if ((objectMode.value === 'edit') !== solidEditor.active)
+  modeControl.onchange = () => {
+    if ((modeControl.value === 'edit') !== solidEditor.active)
       document.getElementById('edit-solid')?.click()
   }
-  if (e.light) {
-    const controls = document.createElement('div')
-    controls.innerHTML = `<label class="field-label">Farola</label><label><input id="light-enabled" type="checkbox" ${e.light.enabled ? 'checked' : ''}> Encendida</label><label><input id="light-night" type="checkbox" ${e.light.nightOnly ? 'checked' : ''}> Solo de noche</label><label class="field-label" for="light-color">Color de luz</label><input id="light-color" type="color" value="${e.light.color}"><label class="field-label" for="light-intensity">Intensidad · cd</label><input id="light-intensity" type="number" min="0" max="10000" value="${e.light.intensity}"><label class="field-label" for="light-distance">Alcance · m</label><input id="light-distance" type="number" min="1" max="100" value="${e.light.distance}">`
-    props.append(controls)
-    for (const id of [
-      'light-enabled',
-      'light-night',
-      'light-color',
-      'light-intensity',
-      'light-distance',
-    ])
-      $(id).onchange = () =>
-        action(() => {
-          editor.update(e.id, {
-            light: {
-              enabled: $<HTMLInputElement>('light-enabled').checked,
-              nightOnly: $<HTMLInputElement>('light-night').checked,
-              color: $<HTMLInputElement>('light-color').value,
-              intensity: $<HTMLInputElement>('light-intensity').valueAsNumber,
-              distance: $<HTMLInputElement>('light-distance').valueAsNumber,
-            },
-          })
-          rebuild()
-        })
-  }
-  if (e.sprite) {
-    const controls = document.createElement('div')
-    controls.innerHTML = `<label class="field-label" for="sprite-url">PNG transparente</label><input id="sprite-url" value="${escape(e.sprite.url)}">`
-    props.append(controls)
-    $('sprite-url').onchange = () =>
-      action(() => {
-        editor.update(e.id, {
-          sprite: { ...e.sprite!, url: $<HTMLInputElement>('sprite-url').value },
-        })
-        rebuild()
-      })
-  }
   if (e.portal) {
-    const controls = document.createElement('div')
-    controls.innerHTML = `<label class="field-label" for="portal-mode">Stargate · conexión</label><select id="portal-mode"><option value="closed">Cerrado</option><option value="window">Ventana</option><option value="open">Paso abierto</option></select><p>Todos los portales de este planeta comparten el mismo registro y se pueden enlazar.</p>`
-    controls.insertAdjacentHTML(
-      'afterbegin',
-      `<label class="field-label" for="portal-destination">Destino del Stargate</label><select id="portal-destination"><option value="">Sin enlace</option>${doc.entities
-        .filter((item) => item.portal && item.id !== e.id)
-        .map((item) => `<option value="${escape(item.id)}">${escape(item.name)}</option>`)
-        .join('')}</select>`,
-    )
-    props.append(controls)
     const sourceEntry = registrySource(e.id)
-    const remoteEntries = projectPortalEntries().filter(
-      (p) =>
-        (p.locationId !== project!.activeLocation ||
-          project!.connections?.some(
-            (c) => c.source === sourceEntry?.id && c.destination === p.id,
-          )) &&
-        p.size.every((n, i) => Math.abs(n - e.size[i]) < 1e-6),
-    )
-    for (const target of remoteEntries)
-      $<HTMLSelectElement>('portal-destination').add(
-        new Option(`${target.name} · ${target.place}`, `global:${target.id}`),
-      )
-    const remoteConnection = project!.connections?.find((c) => c.source === sourceEntry?.id)
-    $<HTMLSelectElement>('portal-destination').value = remoteConnection
-      ? `global:${remoteConnection.destination}`
-      : (e.portal.pairId ?? '')
-    $('portal-destination').onchange = () =>
-      action(() => {
-        const target = $<HTMLSelectElement>('portal-destination').value
-        if (target.startsWith('global:')) {
-          editor.linkPortals(e.id, null)
-          configureProjectPortal(e.id, target.slice(7), false)
-        } else {
-          if (remoteConnection) configureProjectPortal(e.id, null, false)
-          editor.linkPortals(e.id, target || null)
-        }
-        rebuild()
-      })
-    $<HTMLSelectElement>('portal-mode').value = remoteConnection?.mode ?? e.portal.mode
-    if (remoteConnection)
-      $<HTMLSelectElement>('portal-mode').querySelector<HTMLOptionElement>(
-        'option[value=open]',
-      )!.disabled = true
-    $('portal-mode').onchange = () =>
-      action(() => {
-        if (remoteConnection) {
-          configureProjectPortal(
-            e.id,
-            remoteConnection.destination,
-            $<HTMLSelectElement>('portal-mode').value === 'window',
-          )
-          refreshUi()
-          return
-        }
-        editor.setPortalMode(
-          e.id,
-          $<HTMLSelectElement>('portal-mode').value as 'open' | 'closed' | 'window',
+    const connection = project!.connections?.find((c) => c.source === sourceEntry?.id)
+    const options = [
+      { value: '', label: 'Sin enlace' },
+      ...doc.entities
+        .filter(
+          (x) =>
+            x.portal && x.id !== e.id && x.size.every((n, i) => Math.abs(n - e.size[i]) < 1e-6),
         )
-        rebuild()
-      })
-  }
-  props.querySelectorAll<HTMLInputElement>('[data-vector]').forEach((input) => {
-    input.onchange = () =>
-      action(() => {
-        const axis = Number(input.dataset.axis),
-          key = input.dataset.vector!
-        const values = [
-          ...(key === 'rotation' ? angles : key === 'size' ? e.size : displayedPose.position),
-        ] as Vec3Tuple
-        values[axis] = input.valueAsNumber
-        if (key === 'size') editor.update(e.id, { size: values })
-        else if (geographic) {
-          const pose = {
-            ...displayedPose,
-            [key]: key === 'rotation' ? rotationDegrees(...values) : values,
-          }
-          editor.update(e.id, {
-            ...(key === 'position' ? { geoAnchor: geographic.anchor } : {}),
-            transform: graph.localFromWorld(
-              e.parentId,
-              anchoredWorldPose(doc.geography!, geographic.anchor, pose),
-            ),
-          })
-        } else
-          editor.update(e.id, {
-            transform: {
-              ...e.transform,
-              [key]: key === 'rotation' ? rotationDegrees(...values) : values,
+        .map((x) => ({ value: x.id, label: x.name })),
+      ...projectPortalEntries()
+        .filter(
+          (p) =>
+            (p.locationId !== project!.activeLocation ||
+              project!.connections?.some(
+                (c) => c.source === sourceEntry?.id && c.destination === p.id,
+              )) &&
+            p.size.every((n, i) => Math.abs(n - e.size[i]) < 1e-6),
+        )
+        .map((p) => ({ value: 'global:' + p.id, label: p.name + ' · ' + p.place })),
+    ]
+    inspector.value = [
+      ...inspector.value,
+      {
+        id: 'portal',
+        label: 'Portal',
+        note:
+          !connection && !e.portal.pairId
+            ? 'Elige un destino para activar la ventana o el paso.'
+            : undefined,
+        fields: [
+          {
+            id: 'portal-destination',
+            label: 'Destino',
+            type: 'select',
+            value: connection ? 'global:' + connection.destination : (e.portal.pairId ?? ''),
+            options,
+            disabled: !!sim || loadingWorld,
+            change: (value) => {
+              const target = String(value)
+              if (target.startsWith('global:')) {
+                editor.linkPortals(e.id, null)
+                configureProjectPortal(e.id, target.slice(7), false)
+              } else {
+                if (connection) configureProjectPortal(e.id, null, false)
+                editor.linkPortals(e.id, target || null)
+              }
+              rebuild()
             },
-          })
-        if (key === 'size') rebuild()
-        else finishPoseEdit(e.id)
-      })
-  })
-  $('name').onchange = () =>
-    action(() => {
-      editor.update(e.id, { name: $<HTMLInputElement>('name').value })
-      rebuild()
-    })
-  if (e.visual) {
-    props.querySelectorAll<HTMLInputElement>('[data-vector="size"]').forEach((input) => {
-      input.readOnly = true
-      input.title = 'Dimensiones del modelo original'
-    })
+          },
+          {
+            id: 'portal-mode',
+            label: 'Conexión',
+            type: 'select',
+            value: connection?.mode ?? e.portal.mode,
+            disabled: !!sim || loadingWorld || (!connection && !e.portal.pairId),
+            options: [
+              { value: 'closed', label: 'Cerrado' },
+              { value: 'window', label: 'Ventana' },
+              ...(!connection ? [{ value: 'open', label: 'Paso abierto' }] : []),
+            ],
+            change: (value) => {
+              if (connection) {
+                configureProjectPortal(e.id, connection.destination, value === 'window')
+                refreshUi()
+              } else {
+                editor.setPortalMode(e.id, value as 'open' | 'closed' | 'window')
+                rebuild()
+              }
+            },
+          },
+        ],
+      },
+    ]
   }
-  $('color').onchange = () =>
-    action(() => {
-      editor.update(e.id, { color: $<HTMLInputElement>('color').value })
-      rebuild()
-    })
-  $('parent').onchange = () =>
-    action(() => {
-      editor.reparent(e.id, $<HTMLSelectElement>('parent').value || null)
-      rebuild()
-    })
-  if (e.kind === 'box') {
-    $<HTMLSelectElement>('motion').value = e.motion
-    $('motion').onchange = () =>
-      action(() => {
-        editor.update(e.id, { motion: $<HTMLSelectElement>('motion').value as Entity['motion'] })
-        rebuild()
-      })
-  }
-  if (e.motion === 'dynamic')
-    $('mass').onchange = () =>
-      action(() => {
-        editor.update(e.id, { mass: $<HTMLInputElement>('mass').valueAsNumber })
-        rebuild()
-      })
-  $('duplicate').onclick = () =>
-    action(() => {
-      selectedId = editor.duplicate(e.id)
-      rebuild()
-    })
-  $('delete').onclick = () =>
-    action(() => {
-      editor.remove(e.id)
-      rebuild()
-    })
-  props
-    .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
-      'input,button,select',
-    )
-    .forEach((el) => {
-      if (sim || loadingWorld) el.disabled = true
-    })
+  objectMode.value = solidEditor.active ? 'edit' : 'object'
   if (!sim) {
-    $<HTMLInputElement>('color').disabled = !!e.visual
-    $<HTMLButtonElement>('duplicate').disabled = e.kind === 'spawn'
-    $<HTMLButtonElement>('delete').disabled = e.kind === 'spawn'
-    $<HTMLSelectElement>('parent').disabled =
-      e.kind === 'spawn' || e.motion === 'dynamic' || !!e.portal
-    if (solidEditor.active || mapReadOnly) gizmo.detach()
+    if (solidEditor.active || mapReadOnly || cursorTool.value) gizmo.detach()
     else if (view.objects.has(e.id)) gizmo.attach(view.objects.get(e.id)!)
     else gizmo.detach()
   }
-  if (mapReadOnly && !sim) {
-    props
-      .querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
-        'input,button,select',
-      )
-      .forEach((control) => {
-        control.disabled = true
-      })
-    const button = document.createElement('button')
-    button.id = 'make-building-editable'
-    button.textContent = 'Crear modificación'
-    button.disabled = loadingWorld
-    button.onclick = () =>
+  bindAction(
+    'duplicate',
+    () =>
       action(() => {
-        editor.update(e.id, { mapEditable: true })
+        selectedId = editor.duplicate(e.id)
         rebuild()
-      })
-    const note = document.createElement('p')
-    note.textContent =
-      'Elemento del mapa. Crea una modificación para incorporarlo al árbol y editarlo.'
-    props.append(note, button)
+      }),
+    'Duplicar',
+  )
+  bindAction(
+    'delete',
+    () =>
+      action(() => {
+        editor.remove(e.id)
+        rebuild()
+      }),
+    'Eliminar',
+  )
+  for (const id of ['duplicate', 'delete'])
+    commands.get(id)!.enabled = () =>
+      !sim && !loadingWorld && !mapReadOnly && e.kind !== 'spawn' && !cursorTool.value
+  if (cursorTool.value) {
+    const cursor = doc.cursor ?? [0, 0, 0]
+    inspector.value = [
+      {
+        id: 'information',
+        label: 'Información',
+        fields: [
+          {
+            id: 'cursor-name',
+            label: 'Nombre',
+            value: 'Cursor 3D',
+            readonly: true,
+            change: () => {},
+          },
+        ],
+      },
+      {
+        id: 'position',
+        label: 'Situación',
+        fields: cursor.map((value, i) => ({
+          id: 'cursor-position-' + i,
+          label: 'Posición ' + 'XYZ'[i],
+          type: 'number' as const,
+          value,
+          unit: 'm',
+          disabled: !!sim || loadingWorld,
+          change: (value: string | number | boolean) => {
+            const next = [...cursor] as Vec3Tuple
+            next[i] = Number(value)
+            placeCursor(next)
+            refreshUi()
+          },
+        })),
+      },
+    ]
   }
+  lockAxis($<HTMLSelectElement>('transform-axis').value)
+  if (commands.get('play')) commands.get('play')!.icon = sim ? 'stop' : 'play'
+  commands.notify()
   $<HTMLButtonElement>('undo').disabled = !!sim || loadingWorld || !editor.canUndo
   $<HTMLButtonElement>('redo').disabled = !!sim || loadingWorld || !editor.canRedo
   for (const id of [
@@ -1051,6 +912,10 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
 }
 function setTool(mode: 'translate' | 'rotate'): void {
   if (sim) return
+  if (cursorTool.value) {
+    cursorTool.value = false
+    refreshUi()
+  }
   if (solidEditor.active) {
     solidEditor.close()
     refreshUi()
@@ -1058,14 +923,17 @@ function setTool(mode: 'translate' | 'rotate'): void {
   gizmo.setMode(mode)
   $('translate').classList.toggle('active', mode === 'translate')
   $('rotate').classList.toggle('active', mode === 'rotate')
+  commands.notify()
 }
-$('translate').onclick = () => setTool('translate')
-$('rotate').onclick = () => setTool('rotate')
+bindAction('translate', () => setTool('translate'))
+bindAction('rotate', () => setTool('rotate'))
+commands.get('translate')!.checked = () => !cursorTool.value && gizmo.mode === 'translate'
+commands.get('rotate')!.checked = () => !cursorTool.value && gizmo.mode === 'rotate'
 function setAddMenu(open: boolean): void {
   $('add-menu').hidden = !open
   $('add-entity').setAttribute('aria-expanded', String(open))
 }
-$('add-entity').onclick = () => setAddMenu(Boolean($('add-menu').hidden))
+bindAction('add-entity', () => setAddMenu(Boolean($('add-menu').hidden)))
 document.addEventListener('click', (event) => {
   const target = event.target as Node
   if (!$('add-menu').contains(target) && !$('add-entity').contains(target)) setAddMenu(false)
@@ -1084,14 +952,14 @@ function redoScene(): void {
   editor.redo()
   rebuild()
 }
-$('undo').onclick = undoScene
-$('redo').onclick = redoScene
+bindAction('undo', undoScene)
+bindAction('redo', redoScene)
 for (const [id, kind] of [
   ['add-solid', 'solid'],
   ['add-box', 'box'],
   ['add-group', 'group'],
 ] as const) {
-  $(id).onclick = () =>
+  bindAction(id, () =>
     action(() => {
       selectedId = editor.add(kind)
       if (worldStream && editor.document.cursorOnGround) {
@@ -1100,10 +968,11 @@ for (const [id, kind] of [
       }
       setAddMenu(false)
       rebuild()
-    })
+    }),
+  )
 }
 for (const entry of entityCatalog) {
-  $(`add-${entry.id}`).onclick = () =>
+  bindAction(`add-${entry.id}`, () =>
     action(() => {
       const ground = new THREE.Vector3(...(editor.document.cursor ?? [0, 0, 0]))
       const terrain = worldStream?.groundHeight(ground.toArray())
@@ -1121,7 +990,8 @@ for (const entry of entityCatalog) {
       rebuild()
       view.ready.then(focusSelection).catch(() => undefined)
       toast(`${entry.label} añadido · G mover · R girar`)
-    })
+    }),
+  )
 }
 function focusSelection(): void {
   if (sim) return
@@ -1137,8 +1007,8 @@ function focusSelection(): void {
     .add(new THREE.Vector3(1, 0.6, 1.1).normalize().multiplyScalar(Math.max(4, extent * 1.3)))
   orbit.update()
 }
-$('focus').onclick = focusSelection
-$('sample-assets').onclick = () =>
+bindAction('focus', focusSelection)
+bindAction('sample-assets', () =>
   action(() => {
     project = retainLocation(project!, editor.document)
     const sample = parseScene(createSampleScene())
@@ -1148,8 +1018,9 @@ $('sample-assets').onclick = () =>
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
     toast('A3 y container listos. Puedes deshacer para volver a tu escena.')
-  })
-$('add-sprite').onclick = () =>
+  }),
+)
+bindAction('add-sprite', () =>
   action(() => {
     const doc = editor.document
     const sprite = createEntity(crypto.randomUUID(), 'group', doc.cursor ?? [0, 0, 0])
@@ -1161,8 +1032,9 @@ $('add-sprite').onclick = () =>
     editor.load(doc)
     selectedId = sprite.id
     rebuild()
-  })
-$('sample-gallery').onclick = () =>
+  }),
+)
+bindAction('sample-gallery', () =>
   action(() => {
     const doc = editor.document
     const entities = createGallery(crypto.randomUUID())
@@ -1176,8 +1048,9 @@ $('sample-gallery').onclick = () =>
     selectedId = entities[0].id
     rebuild()
     toast('Galería añadida · dispara por la ventana · N reinicia la ronda')
-  })
-$('sample-portals').onclick = () =>
+  }),
+)
+bindAction('sample-portals', () =>
   action(() => {
     const next = editor.document
     const id = crypto.randomUUID()
@@ -1191,7 +1064,8 @@ $('sample-portals').onclick = () =>
     rebuild()
     view.ready.then(focusSelection).catch(() => undefined)
     toast('Portal colocado en el cursor 3D · dale un nombre y elige su destino.')
-  })
+  }),
+)
 async function loadIrun(_combined = false): Promise<void> {
   if (sim || loadingWorld) return
   $<HTMLSelectElement>('travel-city').value = '43.32969,-1.819606'
@@ -1217,7 +1091,7 @@ for (const id of ['travel-latitude', 'travel-longitude']) {
     $<HTMLSelectElement>('travel-city').value = ''
   })
 }
-$('travel-cancel').onclick = () => travelController?.abort()
+bindAction('travel-cancel', () => travelController?.abort())
 $('travel-form').onsubmit = (event) => {
   event.preventDefault()
   void travelTo()
@@ -1287,13 +1161,13 @@ async function travelTo(): Promise<void> {
     $('world-loading').hidden = true
   }
 }
-$('world-irun').onclick = () => void loadIrun()
+bindAction('world-irun', () => void loadIrun())
 $('world-irun-official').hidden = true
 
-$('welcome-close').onclick = () => {
+bindAction('welcome-close', () => {
   $('welcome').hidden = true
-}
-$('new-planet').onclick = async () => {
+})
+bindAction('new-planet', async () => {
   await startupDone
   if (loadingWorld || playTransition) return
   if (
@@ -1319,21 +1193,23 @@ $('new-planet').onclick = async () => {
   } catch (error) {
     toast(`No se pudo crear el planeta: ${String(error)}`)
   }
-}
-$('save').onclick = async () => {
+})
+bindAction('save', async () => {
   const snapshot = editor.serialize()
   try {
     await writeScene(STORAGE_KEY, snapshot)
     project = retainLocation(project!, editor.document)
+    const metadataSnapshot = JSON.stringify(project.editorState)
     await writeScene(PROJECT_KEY, JSON.stringify(project))
+    editorMetadataDirty = JSON.stringify(project.editorState) !== metadataSnapshot
     savedDocument = snapshot
     $('status').textContent = 'Guardado local'
     toast('Planeta guardado en este navegador')
   } catch (error) {
     toast(error instanceof Error ? error.message : 'No se pudo guardar; puedes exportar la escena')
   }
-}
-$('export').onclick = () => {
+})
+bindAction('export', () => {
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(retainLocation(project!, editor.document))], {
       type: 'application/json',
@@ -1344,8 +1220,8 @@ $('export').onclick = () => {
   a.download = projectFilename(project!.name)
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
-$('import').onclick = () => $<HTMLInputElement>('file').click()
+})
+bindAction('import', () => $<HTMLInputElement>('file').click())
 $('file').onchange = async () => {
   await startupDone
   const file = $<HTMLInputElement>('file').files?.[0]
@@ -1367,6 +1243,7 @@ $('file').onchange = async () => {
     editor = new SceneEditor(scene, performanceSettings.preset === 'ultra')
     project = opened
     savedDocument = editor.serialize()
+    editorMetadataDirty = false
     $('welcome').hidden = true
     rebuild()
     focusCursor(true)
@@ -1416,6 +1293,7 @@ async function togglePlay(startFlight = false): Promise<void> {
   button.disabled = true
   button.textContent = sim ? 'Saliendo…' : 'Loading…'
   button.setAttribute('aria-busy', 'true')
+  commands.notify()
   try {
     // Yield through a paint before constructing or disposing the synchronous simulation.
     await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
@@ -1448,7 +1326,7 @@ async function togglePlay(startFlight = false): Promise<void> {
         }
       editor.load(adjusted)
     }
-    togglePlayNow(startFlight)
+    await togglePlayNow(startFlight)
     if (sim && worldStream) {
       worldStream.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
       while (!sim.preparePlanetCollisions())
@@ -1462,86 +1340,85 @@ async function togglePlay(startFlight = false): Promise<void> {
     button.disabled = loadingWorld
     button.removeAttribute('aria-busy')
     button.innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
+    commands.notify()
   }
 }
-function togglePlayNow(startFlight = false): void {
-  action(async () => {
-    keys.clear()
-    if (sim) {
-      sim.dispose()
-      sim = null
-      view.setPlaying(false)
-      renderer.domElement.dataset.impacts = '0'
-      renderer.domElement.dataset.vehicle = ''
-      document.exitPointerLock()
-      camera.up.set(0, 1, 0)
-      document.querySelector('.caption-tag')!.textContent = 'PERSPECTIVA'
-      camera.fov = 48
-      camera.updateProjectionMatrix()
-      camera.position.copy(orbitStartPosition)
-      orbit.target.copy(orbitStartTarget)
-      orbit.enabled = true
-      if (wheelDebug.isEnabled) wheelDebug.toggle()
-      $('wheel-debug-hud').hidden = true
-      rebuild()
-    } else {
-      orbitStartPosition = camera.position.clone()
-      orbitStartTarget = orbit.target.clone()
-      project = retainLocation(project!, editor.document)
-      portalControls.rebuild(editor.document)
-      const entry = startFlight ? flightEntry(editor.document) : null
-      await initPhysics()
-      sim = new Simulation(entry?.scene ?? editor.document, {
-        playerMode: 'hover',
-        planetaryTerrain: !!editor.document.geography?.planetary,
-        experimentalLargeScene: performanceSettings.preset === 'ultra',
-        mapBuildingsEnabled: true,
-      })
-      sim.setMapBuildingsEnabled(true)
-      sim.setCollisionDistance(performanceSettings.collisions)
-      firstPerson = true
-      fireRequested = false
-      weaponDrawn = false
-      sidearm.reset()
-      gallery.reset()
-      portalSequence = 0
-      drivingTelemetry.update(null, 0, 0, 0, true)
-      delete renderer.domElement.dataset.portalCrossings
-      headVehicle = null
-      vehicleEntrance = null
-      cameraMode = entry ? 'cockpit' : 'chase'
-      if (entry) {
-        sim.startInVehicle(entry.vehicleId)
-        sim.toggleFlight()
-      }
-      const spawn = editor.document.entities.find((e) => e.kind === 'spawn')!
-      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
-        new THREE.Quaternion(...spawn.transform.rotation),
-      )
-      yaw = Math.atan2(-forward.x, -forward.z)
-      pitch = 0.24
-      orbit.enabled = false
-      gizmo.detach()
-      view.setPlaying(true)
-      refreshUi()
+async function togglePlayNow(startFlight = false): Promise<void> {
+  keys.clear()
+  if (sim) {
+    sim.dispose()
+    sim = null
+    view.setPlaying(false)
+    renderer.domElement.dataset.impacts = '0'
+    renderer.domElement.dataset.vehicle = ''
+    document.exitPointerLock()
+    camera.up.set(0, 1, 0)
+    document.querySelector('.caption-tag')!.textContent = 'PERSPECTIVA'
+    camera.fov = 48
+    camera.updateProjectionMatrix()
+    camera.position.copy(orbitStartPosition)
+    orbit.target.copy(orbitStartTarget)
+    orbit.enabled = true
+    if (wheelDebug.isEnabled) wheelDebug.toggle()
+    $('wheel-debug-hud').hidden = true
+    rebuild()
+  } else {
+    orbitStartPosition = camera.position.clone()
+    orbitStartTarget = orbit.target.clone()
+    project = retainLocation(project!, editor.document)
+    portalControls.rebuild(editor.document)
+    const entry = startFlight ? flightEntry(editor.document) : null
+    await initPhysics()
+    sim = new Simulation(entry?.scene ?? editor.document, {
+      playerMode: 'hover',
+      planetaryTerrain: !!editor.document.geography?.planetary,
+      experimentalLargeScene: performanceSettings.preset === 'ultra',
+      mapBuildingsEnabled: true,
+    })
+    sim.setMapBuildingsEnabled(true)
+    sim.setCollisionDistance(performanceSettings.collisions)
+    firstPerson = true
+    fireRequested = false
+    weaponDrawn = false
+    sidearm.reset()
+    gallery.reset()
+    portalSequence = 0
+    drivingTelemetry.update(null, 0, 0, 0, true)
+    delete renderer.domElement.dataset.portalCrossings
+    headVehicle = null
+    vehicleEntrance = null
+    cameraMode = entry ? 'cockpit' : 'chase'
+    if (entry) {
+      sim.startInVehicle(entry.vehicleId)
+      sim.toggleFlight()
     }
-    document.body.classList.toggle('playing', !!sim)
-    if (!playTransition)
-      $('play').innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
-    $('mode-label').textContent = sim ? 'Jugando' : 'Edición'
-    $('game-hud').hidden = !sim
-    $('view-hint').textContent = sim
-      ? 'Clic para mirar con el ratón · E entrar / salir · Tab sacar / guardar arma · F8 detener'
-      : 'Arrastra para orbitar · Rueda para acercar · Clic para seleccionar'
-    $('footer-mode').textContent = sim
-      ? 'Simulación compartida · 60 Hz'
-      : 'Edición · metros · Y arriba'
-    grid.visible =
-      !sim &&
-      !editor.document.geography?.planetary &&
-      !editor.document.entities.some((e) => e.terrain)
-    outline.visible = !sim
-  })
+    const spawn = editor.document.entities.find((e) => e.kind === 'spawn')!
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
+      new THREE.Quaternion(...spawn.transform.rotation),
+    )
+    yaw = Math.atan2(-forward.x, -forward.z)
+    pitch = 0.24
+    orbit.enabled = false
+    gizmo.detach()
+    view.setPlaying(true)
+    refreshUi()
+  }
+  document.body.classList.toggle('playing', !!sim)
+  if (!playTransition)
+    $('play').innerHTML = sim ? '■ Detener <kbd>F8</kbd>' : '▶ Jugar <kbd>F8</kbd>'
+  $('mode-label').textContent = sim ? 'Jugando' : 'Edición'
+  $('game-hud').hidden = !sim
+  $('view-hint').textContent = sim
+    ? 'Clic para mirar con el ratón · E entrar / salir · Tab sacar / guardar arma · F8 detener'
+    : 'Arrastra para orbitar · Rueda para acercar · Clic para seleccionar'
+  $('footer-mode').textContent = sim
+    ? 'Simulación compartida · 60 Hz'
+    : 'Edición · metros · Y arriba'
+  grid.visible =
+    !sim &&
+    !editor.document.geography?.planetary &&
+    !editor.document.entities.some((e) => e.terrain)
+  outline.visible = !sim
 }
 for (const [id, key] of [
   ['map-buildings', 'buildings'],
@@ -1589,7 +1466,7 @@ for (const [id, key] of [
     needsRender = true
   }
 }
-function setWaterLevel(value: number): void {
+function setWaterLevel(value: number, persist = true): void {
   if (!Number.isFinite(value)) return
   waterMode = 'manual'
   $<HTMLSelectElement>('water-mode').value = waterMode
@@ -1601,15 +1478,17 @@ function setWaterLevel(value: number): void {
   $<HTMLInputElement>('water-level-number').value = String(waterLevel)
   renderer.domElement.dataset.waterLevel = String(waterLevel)
   needsRender = true
+  if (persist) saveWater()
 }
 $<HTMLInputElement>('water-level').oninput = (event) =>
-  setWaterLevel((event.target as HTMLInputElement).valueAsNumber)
+  setWaterLevel((event.target as HTMLInputElement).valueAsNumber, false)
 $<HTMLInputElement>('water-level-number').oninput = (event) =>
-  setWaterLevel((event.target as HTMLInputElement).valueAsNumber)
-$('water-level-reset').onclick = () => setWaterLevel(0)
+  setWaterLevel((event.target as HTMLInputElement).valueAsNumber, false)
+bindAction('water-level-reset', () => setWaterLevel(0))
 $('water-mode').onchange = () => {
   waterMode = $<HTMLSelectElement>('water-mode').value as typeof waterMode
-  if (waterMode === 'manual') setWaterLevel(waterLevel)
+  if (waterMode === 'manual') setWaterLevel(waterLevel, false)
+  saveWater()
   nextTideReadout = 0
   needsRender = true
 }
@@ -1618,6 +1497,15 @@ $<HTMLInputElement>('tide-amplitude').oninput = (event) => {
   if (Number.isFinite(value)) tideAmplitude = Math.max(0, Math.min(3, value))
   nextTideReadout = 0
 }
+function saveWater(): void {
+  editor.load({
+    ...editor.document,
+    water: { mode: waterMode, level: waterLevel, amplitude: tideAmplitude },
+  })
+  refreshUi()
+}
+for (const id of ['water-level', 'water-level-number', 'tide-amplitude'])
+  $(id).onchange = () => action(saveWater)
 function updateTide(now: number): void {
   if (waterMode !== 'tide') return
   const tide = simplifiedTide(skyTime(skyClock).getTime(), tideAmplitude)
@@ -1652,15 +1540,15 @@ $('performance-hud-toggle').onchange = () => {
   performanceHud.hidden = !$<HTMLInputElement>('performance-hud-toggle').checked
   needsRender = true
 }
-$('performance-reset').onclick = () => performanceMonitor.reset()
-$('performance-export').onclick = () => {
+bindAction('performance-reset', () => performanceMonitor.reset())
+bindAction('performance-export', () => {
   const url = URL.createObjectURL(new Blob([performanceMonitor.csv()], { type: 'text/csv' }))
   const link = document.createElement('a')
   link.href = url
   link.download = 'nabla-performance.csv'
   link.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
+})
 const dofControl = $<HTMLSelectElement>('depth-of-field')
 dofControl.value = String(performanceSettings.dof)
 dofControl.onchange = () => {
@@ -1688,7 +1576,7 @@ function showOptionsPanel(panelId: string) {
     $(tab).setAttribute('aria-selected', String(on))
   }
 }
-for (const [tab, panel] of optionTabs) $(tab).onclick = () => showOptionsPanel(panel)
+for (const [tab, panel] of optionTabs) bindAction(tab, () => showOptionsPanel(panel))
 function sceneLayer(id: string) {
   return $<HTMLInputElement>(id).checked
 }
@@ -1729,13 +1617,13 @@ for (const [id, on] of [
   ['layers-all', true],
   ['layers-none', false],
 ] as const)
-  $(id).onclick = () => {
+  bindAction(id, () => {
     for (const box of document.querySelectorAll<HTMLInputElement>(
       '#options-panel-layers input[type=checkbox]',
     ))
       box.checked = on
     needsRender = true
-  }
+  })
 for (const box of document.querySelectorAll<HTMLInputElement>('#drape-layers input')) {
   const id = box.dataset.drape ?? ''
   box.checked = projectedLayers.has(id)
@@ -1824,7 +1712,7 @@ for (const menu of document.querySelectorAll<HTMLElement>('.app-menu')) {
 $('file-menu').addEventListener('click', (event) => {
   if ((event.target as HTMLElement).closest('button')) $('file-menu').hidePopover()
 })
-$('play').onclick = () => void togglePlay()
+bindAction('play', () => void togglePlay())
 remotePortalViews = new RemotePortalViews(
   () => {
     needsRender = true
@@ -1921,7 +1809,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     ),
     pickCamera,
   )
-  if (e.shiftKey) {
+  if (e.shiftKey || cursorTool.value) {
     const hit = raycaster.intersectObjects(
       [...view.objects.values(), ...(worldStream ? [worldStream.root] : [])],
       true,
@@ -1949,7 +1837,13 @@ renderer.domElement.addEventListener('pointerup', (e) => {
       if (!node.visible) return false
     return true
   })
-  if (worldStream?.inspect(raycaster, $('properties'), hits[0]?.distance)) return
+  if (worldStream?.inspect(raycaster, $('properties-extras'), hits[0]?.distance)) {
+    mapInspection = true
+    gizmo.detach()
+    needsRender = true
+    inspector.value = []
+    return
+  }
   for (const hit of hits) {
     let object: THREE.Object3D | null = hit.object
     while (object && !object.userData.entityId) object = object.parent
@@ -2258,7 +2152,7 @@ let nextPerformanceReadout = 0
 renderer.info.autoReset = false
 let photoBusy = false
 let photoExternalViews = new Map<string, ExternalPortalView>()
-$('photo').onclick = async () => {
+bindAction('photo', async () => {
   if (photoBusy || startupPending || loadingWorld || playTransition) return
   photoBusy = true
   const dialog = $<HTMLDialogElement>('photo-progress')
@@ -2368,7 +2262,7 @@ $('photo').onclick = async () => {
     previous = performance.now()
     needsRender = true
   }
-}
+})
 
 function frame(now: number): void {
   if (photoBusy) {
@@ -2702,7 +2596,7 @@ function frame(now: number): void {
       streamSample = { at: now, position }
     }
     const object = view.objects.get(selectedId)
-    outline.update(object, selectedGeometry)
+    outline.update(solidEditor.active ? object : undefined, selectedGeometry)
   }
   cursorRing.quaternion.copy(camera.quaternion)
   worldCursor.visible = !sim
@@ -2723,13 +2617,6 @@ function frame(now: number): void {
     renderOrigin,
     cameraMode === 'cockpit',
   )
-  for (const [id, hud] of view.shipHuds) {
-    const inside =
-      sim &&
-      ((sim.player.interiorId === id && firstPerson) ||
-        (sim.player.vehicleId === id && cameraMode === 'cockpit'))
-    hud.update(camera, renderOrigin, now, inside ? sim!.vehicleInfo(id) : null)
-  }
   sidearm.visible = !!sim && !sim.player.vehicleId && weaponDrawn
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
@@ -2836,6 +2723,13 @@ function frame(now: number): void {
   )
   sim?.setPoles(fieldLights.poles())
   camera.position.sub(renderOrigin)
+  for (const [id, hud] of view.shipHuds) {
+    const inside =
+      sim &&
+      ((sim.player.interiorId === id && firstPerson) ||
+        (sim.player.vehicleId === id && cameraMode === 'cockpit'))
+    hud.update(camera, renderOrigin, now, inside ? sim!.vehicleInfo(id) : null)
+  }
   if (view.document.geography) {
     const gps = localToGeo(view.document.geography, position)
     $('gps-status').textContent =
@@ -3015,6 +2909,16 @@ function frame(now: number): void {
     } finally {
       if (dof) depthOfField.present(renderer, camera)
     }
+    silhouette.render(
+      renderer,
+      camera,
+      !sim && !solidEditor.active && !cursorTool.value
+        ? mapInspection
+          ? worldStream?.selectedSurface
+          : view.objects.get(selectedId)
+        : undefined,
+      !!selectedGeometry,
+    )
     sidearm.render(renderer, now, camera.aspect, firstPerson)
     needsRender = view.pendingBuildingBatches || !!remotePortalViews?.pending
   }
@@ -3053,7 +2957,7 @@ function frame(now: number): void {
       renderer.domElement.dataset.tileDebug = mode
       needsRender = true
     }
-    if (sim && view.document.geography && $('properties').querySelector('#entity-geography')) {
+    if (sim && view.document.geography && $('properties').querySelector('#entity-latitude')) {
       const entity = view.document.entities.find((e) => e.id === selectedId)
       if (entity && (!entity.geoAnchor || entity.parentId)) {
         const live = geographicPose(
@@ -3066,6 +2970,9 @@ function frame(now: number): void {
         }
       }
     }
+    const clockLabel = document.getElementById('studio-clock')
+    if (clockLabel)
+      clockLabel.textContent = skyTime(skyClock).toLocaleTimeString('es-ES', { timeZone: 'UTC' })
     const sorted = [...frameTimes].sort((a, b) => a - b)
     const p95 = sorted[Math.floor((sorted.length - 1) * 0.95)] || 0
     const cpu = performance.now() - frameStart
@@ -3088,20 +2995,21 @@ function setSkyClock(clock: SkyClock): void {
     needsRender = true
   })
 }
-$('sky-apply').onclick = () => {
+bindAction('sky-apply', () => {
   const time = new Date($<HTMLInputElement>('sky-time').value)
   if (!Number.isFinite(time.getTime())) {
     toast('Introduce una fecha y hora válidas')
     return
   }
   setSkyClock({ mode: 'fixed', at: time.toISOString() })
-}
-$('sky-live').onclick = () => setSkyClock({ mode: 'live' })
-$('apply-location').onclick = () =>
+})
+bindAction('sky-live', () => setSkyClock({ mode: 'live' }))
+bindAction('apply-location', () =>
   applyLocation(
     Number($<HTMLInputElement>('latitude').value),
     Number($<HTMLInputElement>('longitude').value),
-  )
+  ),
+)
 function locate(): void {
   if (!navigator.geolocation) {
     toast('Ubicación no disponible · se conserva el punto actual')
@@ -3114,7 +3022,7 @@ function locate(): void {
     { timeout: 10000, maximumAge: 60000 },
   )
 }
-$('locate').onclick = locate
+bindAction('locate', locate)
 setupWorldStream()
 refreshUi()
 if (circuitMode && !requestedLocation && !localStorage.getItem('nabla.location.requested')) {
@@ -3129,7 +3037,7 @@ window.addEventListener('pageshow', () => {
   frameLoop.start()
 })
 
-$('css-screen-demo').onclick = () => {
+bindAction('css-screen-demo', () => {
   $('options-menu').hidePopover()
   if (sim) {
     toast('Detén la partida para encuadrar la pantalla CSS.')
@@ -3154,7 +3062,7 @@ $('css-screen-demo').onclick = () => {
   toast(
     'Consola de mando: juega y acércate para usar las pantallas, o entra en el puesto de conducción.',
   )
-}
+})
 
 async function refreshMapCacheUi() {
   try {
@@ -3178,7 +3086,7 @@ $('map-cache-budget').onchange = async () => {
     $('map-cache-usage').textContent = 'No se pudo ajustar la caché'
   }
 }
-$('map-cache-persist').onclick = async () => {
+bindAction('map-cache-persist', async () => {
   try {
     const granted = await navigator.storage.persist()
     $('map-cache-storage').textContent = granted
@@ -3187,15 +3095,15 @@ $('map-cache-persist').onclick = async () => {
   } catch {
     $('map-cache-storage').textContent = 'Persistencia no disponible en este navegador.'
   }
-}
-$('map-cache-clear').onclick = async () => {
+})
+bindAction('map-cache-clear', async () => {
   try {
     await clearMapCache()
     await refreshMapCacheUi()
   } catch {
     toast('No se pudo vaciar la caché')
   }
-}
+})
 $('options-menu').addEventListener('toggle', () => {
   if ($('options-menu').matches(':popover-open')) void refreshMapCacheUi()
 })
@@ -3214,14 +3122,14 @@ mountStudio({
   isPlaying: () => !!sim,
 })
 
-$('save-as').onclick = () => {
+bindAction('save-as', () => {
   $<HTMLInputElement>('project-filename').value = projectFilename(project!.name)
   $('file-menu').hidePopover()
   keys.clear()
   if (document.pointerLockElement) document.exitPointerLock()
   $<HTMLDialogElement>('save-project-dialog').showModal()
-}
-$('save-project-cancel').onclick = () => $<HTMLDialogElement>('save-project-dialog').close()
+})
+bindAction('save-project-cancel', () => $<HTMLDialogElement>('save-project-dialog').close())
 $('save-project-form').onsubmit = (event) => {
   event.preventDefault()
   action(() => {
@@ -3243,7 +3151,7 @@ $('save-project-form').onsubmit = (event) => {
   })
 }
 
-$('project-place-open').onclick = () => {
+bindAction('project-place-open', () => {
   const value = $<HTMLSelectElement>('project-places').value
   if (value.startsWith('bookmark:')) {
     const place = project!.bookmarks?.[Number(value.slice(9))]
@@ -3253,7 +3161,7 @@ $('project-place-open').onclick = () => {
     $<HTMLSelectElement>('travel-city').value = ''
     void travelTo()
   } else void openProjectPlace(value)
-}
+})
 async function openProjectPlace(id: string, entityId?: string): Promise<void> {
   if (loadingWorld || playTransition) return
   const place = project!.locations.find((p) => p.id === id)
@@ -3356,6 +3264,7 @@ function refreshPortalRegistry(): void {
   }
 }
 window.addEventListener('portal-registry-request', refreshPortalRegistry)
+window.addEventListener('studio-preferences-open', () => void refreshMapCacheUi())
 
 // The actual empty viewport and its animation loop exist before any saved project is parsed.
 setTimeout(() => void restoreStartup(), 0)
@@ -3440,6 +3349,7 @@ async function restoreStartup(): Promise<void> {
     }
     editor = SceneEditor.fromValidated(result.scene, performanceSettings.preset === 'ultra')
     savedDocument = result.saved
+    editorMetadataDirty = false
     selectedId =
       result.scene.entities.find((e) => e.kind === 'vehicle')?.id ??
       result.scene.entities.find((e) => !isMapEnvironment(e))!.id

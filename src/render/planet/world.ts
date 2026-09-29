@@ -878,17 +878,34 @@ export class PlanetWorld {
     }
   }
   private selection?: THREE.Mesh
+  private selectionSource?: THREE.Mesh
+  /** Geometry-only selection for the host overlay; never drawn into world or portal views. */
+  get selectedSurface(): THREE.Mesh | undefined {
+    if (!this.selection || !this.selectionSource) return undefined
+    let attached = false
+    for (let node: THREE.Object3D | null = this.selectionSource; node; node = node.parent) {
+      if (!node.visible) return undefined
+      if (node === this.root) attached = true
+    }
+    if (!attached) return undefined
+    this.selectionSource.updateWorldMatrix(true, false)
+    this.selection.matrix.copy(this.selectionSource.matrixWorld)
+    this.selection.matrixWorldNeedsUpdate = true
+    return this.selection
+  }
   clearSelection(): void {
     if (!this.selection) return
     this.selection.removeFromParent()
     this.selection.geometry.dispose()
     ;(this.selection.material as THREE.Material).dispose()
     this.selection = undefined
+    this.selectionSource = undefined
   }
   inspect(ray: THREE.Raycaster, host: HTMLElement, otherDistance = Infinity): boolean {
     this.root.updateMatrixWorld(true)
     const hit = ray.intersectObject(this.root, true).find((h) => {
-      if (h.object === this.selection || h.object.userData.skirt) return false
+      if (h.object === this.selection || h.object.userData.skirt || h.object.userData.drape)
+        return false
       for (let node: THREE.Object3D | null = h.object; node; node = node.parent)
         if (!node.visible) return false
       return true
@@ -917,16 +934,10 @@ export class PlanetWorld {
       if (part) geometry.setDrawRange(part.start, part.count)
       this.selection = new THREE.Mesh(
         geometry,
-        new THREE.MeshBasicMaterial({
-          color: '#ffd54f',
-          wireframe: true,
-          depthTest: false,
-          transparent: true,
-          opacity: 0.65,
-        }),
+        new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
       )
-      this.selection.renderOrder = 1000
-      mesh.add(this.selection)
+      this.selection.matrixAutoUpdate = false
+      this.selectionSource = mesh
     }
     host.replaceChildren()
     const title = document.createElement('h3')

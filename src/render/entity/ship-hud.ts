@@ -66,7 +66,11 @@ export class ShipHud {
     camera: THREE.Camera,
     _origin: THREE.Vector3,
     now: number,
-    telemetry: { speedKmh: number; altitude: number } | null,
+    telemetry: {
+      speedKmh: number
+      altitude: number
+      up?: readonly [number, number, number]
+    } | null,
   ) {
     if (this.disposed) return
     this.mesh.visible = !!telemetry
@@ -98,12 +102,12 @@ export class ShipHud {
     ctx.fillStyle = '#79ff9c'
     ctx.strokeStyle = '#102a18'
     ctx.lineWidth = 4
-    const up = new THREE.Vector3(0, 1, 0).transformDirection(inverse)
+    const up = new THREE.Vector3(...(telemetry.up ?? [0, 1, 0])).transformDirection(inverse)
     ctx.save()
     ctx.translate(512, 300)
     ctx.rotate(Math.atan2(up.x, up.y))
     const pitch = THREE.MathUtils.clamp(
-      Math.asin(THREE.MathUtils.clamp(up.z, -1, 1)) * 150,
+      -Math.asin(THREE.MathUtils.clamp(up.z, -1, 1)) * 150,
       -100,
       100,
     )

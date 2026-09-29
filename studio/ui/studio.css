@@ -1,0 +1,238 @@
+:root {
+  --nd-surface: #303030;
+  --nd-header: #373737;
+  --nd-border: #484848;
+  --nd-text: #ddd;
+  --nd-muted: #aaa;
+  --nd-input: #242424;
+  --nd-selection: #38516a;
+  --nd-accent: #77a4cf;
+  --nd-font-size: 13px;
+  --nd-radius: 3px;
+}
+[hidden] {
+  display: none !important;
+}
+#app.studio-desktop > header {
+  min-height: 42px;
+  flex-wrap: nowrap;
+}
+.studio-main-menu {
+  margin-right: auto;
+}
+.studio-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.studio-viewport-tools {
+  top: 8px;
+  left: 8px;
+  right: auto;
+  flex-direction: row;
+  max-width: calc(100% - 16px);
+  overflow: auto;
+  border-radius: 3px;
+}
+.desktop-command-toolbar {
+  display: flex;
+  gap: 3px;
+}
+.desktop-command-toolbar button {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  white-space: nowrap;
+  padding: 5px 7px;
+  font-size: 12px;
+  border-radius: 3px;
+  background: #393939;
+  color: #ddd;
+  border: 1px solid #505050;
+}
+.desktop-command-toolbar button[aria-pressed='true'] {
+  background: #485766;
+  border-color: #7da5c4;
+}
+.studio-view-header .desktop-command-toolbar button {
+  min-width: 32px;
+  justify-content: center;
+}
+.studio-workspace .inspector {
+  padding: 0;
+  overflow: auto;
+}
+.inspector > .panel-heading {
+  display: none;
+}
+#properties {
+  padding: 0;
+}
+.studio-content-panel {
+  height: 100%;
+  overflow: auto;
+  background: #303030;
+  font-size: 12px;
+}
+.studio-content-panel .nd-settings,
+#tree .nd-settings {
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid #252525;
+  border-radius: 0;
+}
+#tree {
+  overflow: auto;
+}
+#tree .nd-settings > div {
+  padding: 0;
+}
+#tree .nd-tree {
+  overflow: visible;
+}
+.studio-utility {
+  width: min(760px, 95vw);
+  height: min(580px, 85vh);
+  resize: both;
+  z-index: 1000;
+  margin: auto;
+}
+.studio-utility > .nd-dialog-body {
+  padding: 0;
+  height: calc(100% - 36px);
+  overflow: auto;
+}
+.studio-utility label {
+  font-size: 12px;
+}
+.studio-utility .option-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) minmax(120px, 1.2fr);
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0;
+}
+.studio-utility .option-row label {
+  text-align: right;
+}
+.studio-utility .option-row input,
+.studio-utility .option-row select {
+  width: 100%;
+  min-width: 0;
+}
+.studio-utility input,
+.studio-utility select,
+.studio-utility textarea {
+  background: #242424;
+  color: #ddd;
+  border: 1px solid #484848;
+  border-radius: 3px;
+}
+.studio-utility .option-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #aaa;
+}
+.studio-utility button {
+  background: #3b3b3b;
+  color: #ddd;
+  border-color: #505050;
+}
+.studio-host-content > label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 0;
+}
+#drape-layers {
+  display: flex;
+  flex-direction: column;
+}
+.studio-information {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  background: #262626;
+}
+.studio-information > div:first-child {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.studio-information [role='log'] {
+  overflow: auto;
+  font:
+    12px/1.6 ui-monospace,
+    monospace;
+}
+.studio-information time {
+  color: #888;
+  margin-right: 10px;
+}
+.log-error {
+  color: #e6a39a;
+}
+.log-warning {
+  color: #d7be8a;
+}
+.studio-information select,
+.studio-information button {
+  font-size: 12px;
+  background: #333;
+  color: #ddd;
+  border: 1px solid #484848;
+  border-radius: 3px;
+}
+#properties .nd-settings > summary {
+  color: #ddd;
+  font-size: 12px;
+  letter-spacing: 0;
+  margin: 0;
+}
+#properties-extras {
+  padding: 8px;
+}
+#properties-extras:empty {
+  display: none;
+}
+.nd-property-control > input,
+.nd-property-control > select {
+  font-size: 12px !important;
+}
+.desktop-menu-popup,
+.desktop-command-menu {
+  font-size: 13px;
+}
+.desktop-command-menu button {
+  border-radius: 2px;
+}
+#studio-layers input[type='checkbox'] {
+  accent-color: #999;
+}
+.studio-host-content > .eyebrow {
+  display: block;
+  margin-top: 12px;
+}
+body .desktop-menu-bar {
+  background: transparent;
+}
+body .desktop-menu-bar button {
+  font-size: 13px;
+}
+.nd-tree button:disabled {
+  opacity: 0.45;
+}
+
+.studio-utility.nd-dialog > header button {
+  background: transparent;
+  color: #c8c8c8;
+  border: 0;
+  border-radius: 2px;
+}
+.studio-utility.nd-dialog > header button:hover {
+  background: #383838;
+  color: #fff;
+}

@@ -1,9 +1,11 @@
+import vue from '@vitejs/plugin-vue'
 import { defineConfig, loadEnv } from 'vite'
 import { fileURLToPath } from 'node:url'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     root: 'studio',
+    plugins: [vue()],
     resolve: {
       alias: {
         '@nabla/engine/vehicle-presentation/presets': fileURLToPath(
@@ -52,14 +54,21 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       watch: { usePolling: true, interval: 300 },
-      proxy: env.NABLA_CACHE_UPSTREAM
-        ? {
-            '/world-cache': {
-              target: env.NABLA_CACHE_UPSTREAM,
-              rewrite: (path: string) => path.replace(/^\/world-cache/, ''),
-            },
-          }
-        : undefined,
+      proxy: env.NABLA_STUDIO_UPSTREAM
+        ? Object.fromEntries(
+            ['/world-cache', '/prepare', '/prepared'].map((path) => [
+              path,
+              { target: env.NABLA_STUDIO_UPSTREAM, changeOrigin: true },
+            ]),
+          )
+        : env.NABLA_CACHE_UPSTREAM
+          ? {
+              '/world-cache': {
+                target: env.NABLA_CACHE_UPSTREAM,
+                rewrite: (path: string) => path.replace(/^\/world-cache/, ''),
+              },
+            }
+          : undefined,
     },
   }
 })

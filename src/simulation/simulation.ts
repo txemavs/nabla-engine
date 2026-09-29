@@ -1633,6 +1633,7 @@ export class Simulation {
     interpolated = false,
   ): {
     steer: number
+    up: Vec3Tuple
     driver: Vec3Tuple
     cameraDistance: number
     turnRate: number
@@ -1665,8 +1666,10 @@ export class Simulation {
       this.vehicleId === id,
       !v.definition.boat,
     )
+    const up = this.radialUp(v.body)
     return {
       steer: v.steer,
+      up: [up.x, up.y, up.z],
       driver: new Vector3(...v.definition.driver)
         .applyQuaternion(new RenderQuaternion(...this.entityTransform(id, interpolated).rotation))
         .add(new Vector3(...this.entityTransform(id, interpolated).position))
