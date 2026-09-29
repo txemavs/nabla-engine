@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest'
 import * as THREE from 'three'
 import { LandcoverBatches } from '../../src/render/planet/landcover-batches.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 it('reuses unchanged buffers, applies parents, updates edited cells and evicts removed cells', () => {
   const loader = vi
     .spyOn(THREE.TextureLoader.prototype, 'load')

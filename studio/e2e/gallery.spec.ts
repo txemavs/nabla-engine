@@ -1,6 +1,7 @@
 import { test, expect } from './studio-test.js'
 import { createGallery } from '../gallery.js'
-import { createEntity, parseScene } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene } from '../../src/scene/document.js'
 
 test('renders PNG targets through a window and registers a shot from first person', async ({
   page,

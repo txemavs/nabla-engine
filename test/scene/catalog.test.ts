@@ -1,9 +1,10 @@
 import { expect, it } from 'vitest'
 import * as THREE from 'three'
-import { createCatalogEntities } from '../../src/stage/catalog.js'
+import { createCatalogEntities } from '../../src/catalog/palette.js'
 import { entityCapabilities } from '../../src/entity/capability.js'
-import { createEntity, parseScene } from '../../src/stage/scene.js'
-import { SceneEditor } from '../../src/stage/editor.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene } from '../../src/scene/document.js'
+import { SceneEditor } from '../../src/scene/history.js'
 import { Streetlights } from '../../src/render/entity/streetlights.js'
 
 it('creates independently editable vehicles with remapped portals when cloned', () => {

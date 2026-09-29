@@ -4,7 +4,7 @@ import * as Lerc from 'lerc'
 import lercWasm from 'lerc/lerc-wasm.wasm?url'
 import { createRealWorld, type MapFeature, type WorldExtract } from '../../planet/assemble/world.js'
 import { tileCoordinate, EARTH_RADIUS, type GeoPoint } from '../../math/geo/sphere.js'
-import type { Entity } from '../../stage/scene.js'
+import type { Entity } from '../../entity/schema.js'
 import { assembleMultipolygonRings } from '../../planet/extract/multipolygon.js'
 
 const CACHE_BASE = import.meta.env.VITE_WORLD_CACHE_URL || ''

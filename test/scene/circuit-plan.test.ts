@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest'
-import { alignCircuitPlan, CIRCUIT_PLOTS, circuitPoint } from '../../src/stage/circuit-plan.js'
-import { createSampleScene } from '../../src/stage/sample.js'
-import { createEntity, parseScene } from '../../src/stage/scene.js'
+import { CIRCUIT_PLOTS, circuitPoint } from '../../src/scene/circuit-plan.js'
+import { createSampleScene } from '../../src/scene/sample.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene } from '../../src/scene/document.js'
 
 it('fits the building footprints to all surveyed JPEG parcels and preserves user additions', () => {
   const doc = createSampleScene()
@@ -16,8 +17,7 @@ it('fits the building footprints to all surveyed JPEG parcels and preserves user
   expect(doc.entities.some((e) => e.id === 'road')).toBe(false)
   const custom = createEntity('my-building', 'box', [40, 3, 40])
   doc.entities.push(custom)
-  expect(alignCircuitPlan(doc).entities.find((e) => e.id === 'my-building')).toEqual(custom)
-  expect(alignCircuitPlan(alignCircuitPlan(doc))).toEqual(alignCircuitPlan(doc))
+  expect(parseScene(doc).entities.find((e) => e.id === 'my-building')).toEqual(custom)
 })
 it('validates transparent sprite data independently from physical entities', () => {
   const doc = createSampleScene(),

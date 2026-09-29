@@ -21,7 +21,6 @@ export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './m
 
 export {
   createCarrierPortal,
-  createCarrierPortals,
   createPortal,
   createPortalPair,
   portalMapping,
@@ -121,8 +120,6 @@ export { PerformanceMonitor, type FrameSample } from './diagnostics/performance-
 export { FlightAudio } from './audio/flight.js'
 
 export { capturePng } from './render/capture.js'
-
-export { replaceLegacyJeeps } from './scene/migrations/jeep.js'
 
 export { createPoliceCar } from './catalog/vehicles/police.js'
 

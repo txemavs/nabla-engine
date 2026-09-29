@@ -1,8 +1,8 @@
 # Engine module map — start here
 
 Issue #63 is implemented incrementally within one npm package. Public imports
-below are available now; `composition-contracts.ts` is a design sketch, not an
-exported runtime. Do not implement that sketch by copying it into a second engine.
+below are the implemented APIs. There are no compatibility import paths or
+parallel proposal-only contracts.
 
 | Public import (`@nabla/engine` + suffix) | Owner / entry                                    | Use for                                                                 |
 | ---------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
@@ -38,30 +38,34 @@ apply forces before the fixed world step; presentation reads the resulting state
 No module creates its own render loop. Physics can run without WebGL/Audio. Use
 narrow subpaths to avoid the broad root dependency graph.
 
-## Compatibility policy
+## Current-format policy
 
-Scene JSON remains **version 1**. Optional `visual.presentation` and
-`vehicle.headOffset` require no migration or rewrite. Saved colour and mirror
-settings win over prefab defaults. Missing presentation IDs resolve through the
-catalogue's legacy URL table; explicit IDs always win. Unknown IDs warn and omit
-optional equipment. `parseScene` rejects unknown scene versions; future breaking
-formats need an explicit migration before validation, never silently treating a
-new version as version 1. Existing portal/preset migrations remain in place.
+This foundation has no backward-compatibility commitment. Scene JSON uses version 1;
+Studio projects use version 3 with an explicit planet ID. Project versions 1/2 are
+rejected, not converted. A scene is validated as authored: parsing never upgrades
+stock tuning, wheel/seat mounts, colors, buildings, placement or carrier portals.
 
-Old root exports, `/vehicles`, and `src/catalog/*.ts` / `src/stage/*.ts`
-compatibility barrels remain. Deep internal renderer constructors are not public
-package contracts; their injected signatures are described in the equipment guide.
-The old internal `render/entity/police.ts` implementation moved to
-`catalog/presentation/police-equipment.ts`; no public export was removed.
+Stock road equipment requires an explicit `visual.presentation` ID. An omitted ID
+means a plain model; it does not trigger filename-based guessing. Unknown IDs warn
+and omit optional equipment. Factories compose current defaults; scene settings
+remain authoritative after creation. The carrier palette, sample and planet factories
+explicitly include the stern portal.
+
+Import from the public package or canonical `scene/`, `entity/`, `catalog/vehicles/`,
+`render/effects/` and `diagnostics/` owners. The old `stage/`, catalogue sibling,
+Studio effect/metrics and portal migration wrappers have been deleted. The singular
+`createCarrierPortal` is the only carrier-mouth factory. The native XYZ loader is
+the active world loader; unused browser BIN/JSON and anchored-GLB loaders are gone.
+Map cache storage uses IndexedDB directly, without importing historical CacheStorage.
 
 ## Remaining boundaries (not hidden by the refactor)
 
-- The serialized scene vehicle schema and Simulation facade still carry legacy
-  wheel fields. Standalone boat/flight runtimes require no wheels. A breaking
-  serialized capability schema is a separate migration.
+- The serialized scene vehicle schema and Simulation facade currently share
+  wheel fields in their active vehicle container. Standalone boat/flight runtimes require no wheels. Splitting that active
+  container is a separate runtime/schema change, not an obsolete compatibility layer.
 - Boarding, portal transitions and dock ownership stay in Simulation; there is
   no exported universal `vehicle-core.spawn` or ECS API.
-- Ship/Cessna mounting and the artificial horizon retain legacy presentation
+- Ship/Cessna mounting and the artificial horizon retain model-specific presentation
   code. Road-model selection has moved to adapters. Do not claim every asset
   selector is gone.
 - Tire effects/audio are reusable source modules, but have no dedicated public

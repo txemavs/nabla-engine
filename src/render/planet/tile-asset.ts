@@ -1,6 +1,7 @@
 import * as THREE from 'three'
-import { SceneGraph, type Entity } from '../../stage/scene.js'
-import { mapSurfaceColor, SURFACE_LAYERS } from '../../planet/land/surface.js'
+import { SceneGraph } from '../../scene/graph.js'
+import { type Entity } from '../../entity/schema.js'
+import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import {
   footBuried,
   liftFootLayer,
@@ -93,13 +94,7 @@ export function entityTileAsset(
         : (parameters: THREE.MeshStandardMaterialParameters) =>
             new THREE.MeshStandardMaterial(parameters)
     )({
-      color: buffers.color
-        ? '#ffffff'
-        : e.landcover
-          ? mapSurfaceColor(e.landcover.surface, e.color)
-          : e.terrain
-            ? mapSurfaceColor('default', e.color)
-            : e.color,
+      color: buffers.color ? '#ffffff' : e.color,
       vertexColors: !!buffers.color,
       roughness: 1,
       metalness: 0,

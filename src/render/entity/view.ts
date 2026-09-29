@@ -10,8 +10,8 @@ import {
   footBuried,
 } from '../planet/ground-material.js'
 import { BuildingBatches } from '../planet/building-batches.js'
-import { isMapBuilding } from '../../stage/scene.js'
-import { SURFACE_LAYERS, mapSurfaceColor } from '../../planet/land/surface.js'
+import { isMapBuilding } from '../../entity/schema.js'
+import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import { withinMapDistance } from '../planet/visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
 import { ShipLights, type ShipSwitch } from './ship-lights.js'
@@ -507,7 +507,7 @@ export class SceneView {
         const surface = new THREE.Mesh(
           g,
           matteGroundMaterial({
-            color: e.terrain.colors ? '#ffffff' : mapSurfaceColor('default', e.color),
+            color: e.terrain.colors ? '#ffffff' : e.color,
           }),
         )
         surface.castShadow = true
@@ -556,11 +556,7 @@ export class SceneView {
           geometry.computeVertexNormals()
         }
         const material = (e.landcover || e.railway ? matteGroundMaterial : standardMaterial)({
-          color: hasVertexColors
-            ? '#ffffff'
-            : e.landcover
-              ? mapSurfaceColor(e.landcover.surface, e.color)
-              : e.color,
+          color: hasVertexColors ? '#ffffff' : e.color,
           roughness: 0.72,
           vertexColors: hasVertexColors,
           side: e.source ? THREE.FrontSide : THREE.DoubleSide,

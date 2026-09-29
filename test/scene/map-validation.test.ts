@@ -1,5 +1,6 @@
 import { expect, it, vi } from 'vitest'
-import { createEntity, parseScene, replaceMapScene } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene, replaceMapScene } from '../../src/scene/document.js'
 import * as solid from '../../src/math/solid/mesh.js'
 
 it('checks incoming topology once and preserves validated resident geometry', () => {

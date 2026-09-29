@@ -1,5 +1,5 @@
 import { expect, test } from './studio-test.js'
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 test('changes daylight, freezes time, restores real time and saves the selected clock', async ({
   page,
 }) => {

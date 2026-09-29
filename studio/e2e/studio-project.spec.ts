@@ -1,6 +1,6 @@
 import { test, expect } from './studio-test.js'
 import { readFile } from 'node:fs/promises'
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 import { createProject, visitLocation } from '../project.js'
 
 test('named project files preserve multiple places and reopen the active place', async ({

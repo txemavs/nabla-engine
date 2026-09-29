@@ -1,6 +1,6 @@
 import { fromWorldPose, toWorldPose, worldPoseGeography } from '../src/math/geo/pose.js'
 import type { GeoPoint } from '../src/math/geo/sphere.js'
-import type { Transform } from '../src/stage/scene.js'
+import type { Transform } from '../src/entity/schema.js'
 
 /** The implicit anchor follows the object's position; explicit anchors retain local offsets. */
 export function geographicPose(origin: GeoPoint, world: Transform, fixed?: GeoPoint) {

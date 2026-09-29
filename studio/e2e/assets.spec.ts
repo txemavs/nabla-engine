@@ -1,4 +1,4 @@
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 import { test, expect } from './studio-test.js'
 
 test('loads the original GLBs, shows the interior and keeps models after editing', async ({

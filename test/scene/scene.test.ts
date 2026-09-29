@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vec3 } from '../../src/simulation/physics.js'
-import {
-  createEntity,
-  parseScene,
-  rotationDegrees,
-  SceneGraph,
-  type SceneDocument,
-} from '../../src/stage/scene.js'
-import { SceneEditor } from '../../src/stage/editor.js'
+import { createEntity, rotationDegrees } from '../../src/entity/schema.js'
+import { parseScene, type SceneDocument } from '../../src/scene/document.js'
+import { SceneGraph } from '../../src/scene/graph.js'
+import { SceneEditor } from '../../src/scene/history.js'
 
 function document(): SceneDocument {
   return {

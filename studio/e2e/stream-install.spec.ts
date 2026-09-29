@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 const buildings = Array.from({ length: 200 }, (_, i) => ({
   ...createEntity(`building-${i}`, 'solid', [(i % 20) * 5, 0, Math.floor(i / 20) * 5]),
   source: {
@@ -18,7 +18,7 @@ test('streams mesh construction in bounded slices, including cancellation and ba
       const T = await import(String('/e2e/render-fixture.ts'))
       const module = '/@fs' + root + '/src/presentation/scene-view.ts'
       const { SceneView } = await import(module)
-      const sceneModule = `/@fs${root}/src/stage/scene.ts`
+      const sceneModule = `/@fs${root}/src/index.ts`
       const { createEntity } = await import(sceneModule)
       const view = new SceneView({
         version: 1,
@@ -78,7 +78,7 @@ test('pose edits preserve installed map meshes, batches and unfinished installat
       const T = await import(String('/e2e/render-fixture.ts'))
       const viewModule = '/@fs' + root + '/src/presentation/scene-view.ts'
       const { SceneView } = await import(viewModule)
-      const { createEntity } = await import(`/@fs${root}/src/stage/scene.ts`)
+      const { createEntity } = await import(`/@fs${root}/src/index.ts`)
       const parent = createEntity('parent', 'group')
       const child = { ...createEntity('child', 'box'), parentId: parent.id }
       const view = new SceneView({

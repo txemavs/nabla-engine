@@ -1,3 +1,4 @@
+import { parseScene } from '../src/scene/document.js'
 import { KeyboardSteering } from '../src/simulation/vehicles/keyboard-steering.js'
 import { TireMarks } from '../src/render/entity/tire-marks.js'
 import { TireSmoke } from '../src/render/entity/tire-smoke.js'
@@ -52,7 +53,6 @@ import { SolidEditor } from './solid-editor.js'
 import { treeSprite } from '../src/entity/sprite/sprite.js'
 import { createGallery, Gallery } from './gallery.js'
 import { PortalControls } from './portal-controls.js'
-import { upgradeReferenceScene } from './scene-upgrades.js'
 import { Sidearm } from './sidearm.js'
 import {
   driverHeadPose,
@@ -1141,7 +1141,7 @@ $('focus').onclick = focusSelection
 $('sample-assets').onclick = () =>
   action(() => {
     project = retainLocation(project!, editor.document)
-    const sample = upgradeReferenceScene(createSampleScene())
+    const sample = parseScene(createSampleScene())
     project = visitLocation(project, sample)
     editor.load(sample)
     selectedId = 'car-a'
@@ -1307,7 +1307,7 @@ $('new-planet').onclick = async () => {
     const backup = retainLocation(project!, editor.document)
     await writeScene(PROJECT_KEY + '.backup.' + Date.now(), JSON.stringify(backup))
     const fresh = createProject(
-      upgradeReferenceScene(
+      parseScene(
         createPlanetScene({ latitude: 42.3601, longitude: -71.0589, altitude: 0 }, 'Boston'),
       ),
     )
@@ -1362,7 +1362,7 @@ $('file').onchange = async () => {
     const opened =
       raw?.format === 'nabla-project'
         ? parseProject(raw, performanceSettings.preset === 'ultra')
-        : createProject(upgradeReferenceScene(raw))
+        : createProject(parseScene(raw))
     const scene = opened.locations.find((p) => p.id === opened.activeLocation)!.scene
     editor = new SceneEditor(scene, performanceSettings.preset === 'ultra')
     project = opened
@@ -3366,14 +3366,12 @@ async function restoreStartup(): Promise<void> {
   renderer.domElement.dataset.startup = 'loading'
   try {
     const storedProject = await readScene(PROJECT_KEY)
-    if (storedProject && !(await readScene(PROJECT_KEY + '.before-planet-v3')))
-      await writeScene(PROJECT_KEY + '.before-planet-v3', storedProject)
     const storedScene = storedProject ? null : await readScene(STORAGE_KEY)
     const freshWorld = !circuitMode && !storedProject && !storedScene
     let initialScene = storedScene
     if (freshWorld)
       initialScene = JSON.stringify(
-        upgradeReferenceScene(
+        parseScene(
           createPlanetScene(
             { ...(urlDestination ?? { latitude: 42.3601, longitude: -71.0589 }), altitude: 0 },
             urlDestination
@@ -3403,7 +3401,7 @@ async function restoreStartup(): Promise<void> {
         )
       const destination =
         result.project.locations.find((place) => place.id === 'planet')?.scene ??
-        upgradeReferenceScene(
+        parseScene(
           createPlanetScene(
             { latitude, longitude, altitude: 0 },
             `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
@@ -3433,14 +3431,12 @@ async function restoreStartup(): Promise<void> {
       result.saved = JSON.stringify(result.scene)
     }
     project = retainLocation(result.project, result.scene)
-    if (project.version === 3) {
-      try {
-        await writeScene(PROJECT_KEY, JSON.stringify(project))
-      } catch {
-        toast(
-          'El planeta está abierto, pero no se pudo guardar en este navegador. Descarga el JSON para conservarlo.',
-        )
-      }
+    try {
+      await writeScene(PROJECT_KEY, JSON.stringify(project))
+    } catch {
+      toast(
+        'El planeta está abierto, pero no se pudo guardar en este navegador. Descarga el JSON para conservarlo.',
+      )
     }
     editor = SceneEditor.fromValidated(result.scene, performanceSettings.preset === 'ultra')
     savedDocument = result.saved
@@ -3472,15 +3468,7 @@ async function restoreStartup(): Promise<void> {
       )
     } else if (requestedLocation && 'error' in requestedLocation) {
       toast(requestedLocation.error)
-    } else if (new URLSearchParams(location.search).get('world') === 'geoeuskadi')
-      void loadIrun(true)
-    else if (
-      !freshWorld &&
-      !circuitMode &&
-      !storedProject &&
-      (!storedScene || !localStorage.getItem('nabla.irun.introduced'))
-    )
-      void loadIrun()
+    }
     if (urlPlay(location.search)) await togglePlay(true)
   } catch (error) {
     startupPending = false

@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest'
 import { atmosphere, localTimeInput, skyTime, mapFogRange } from '../../src/planet/sky.js'
 import { celestialDirections, localFrame, MADRID } from '../../src/math/geo/sphere.js'
-import { createSampleScene } from '../../src/stage/sample.js'
-import { SceneEditor } from '../../src/stage/editor.js'
-import { parseScene } from '../../src/stage/scene.js'
+import { createSampleScene } from '../../src/scene/sample.js'
+import { SceneEditor } from '../../src/scene/history.js'
+import { parseScene } from '../../src/scene/document.js'
 it('uses a frozen UTC instant or the live clock and round-trips local input', () => {
   const at = '2026-09-21T12:30:00.000Z'
   expect(skyTime({ mode: 'fixed', at }, 0).toISOString()).toBe(at)

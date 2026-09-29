@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { SceneEditor } from '../../src/stage/editor.js'
-import { createEntity, parseScene } from '../../src/stage/scene.js'
+import { SceneEditor } from '../../src/scene/history.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene } from '../../src/scene/document.js'
 
 describe('incremental entity transactions', () => {
   it('does not read unrelated topology when moving an object, and preserves undo ownership', () => {

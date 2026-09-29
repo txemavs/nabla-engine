@@ -37,8 +37,7 @@ saved scenes keep working. Do not duplicate the binary models into Studio.
 - `src/audio/flight.ts`: synthesized turbine/piston sound without editor UI.
 - `studio/flight-audio.ts`: Studio sound button, preference and browser activation.
 
-Old `src/catalog/a3.ts` and sibling imports are compatibility re-exports.
-New code should import this folder or the public package. A new vehicle starts
+Import this folder or the public package; old catalogue sibling paths are removed. A new vehicle starts
 with a definition here, references its assets, and reuses shared physics; avoid
 adding a second vehicle simulation to Studio.
 

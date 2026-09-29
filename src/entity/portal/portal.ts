@@ -115,8 +115,3 @@ export function createCarrierPortal(hostId: string, sternId: string): Entity {
     portal: { pairId: null, mode: 'closed', clearsRamp: true },
   }
 }
-
-/** @deprecated Use createCarrierPortal(hostId, sternId). Kept for older consumers. */
-export function createCarrierPortals(hostId: string, _bowId: string, sternId: string): Entity[] {
-  return [createCarrierPortal(hostId, sternId)]
-}

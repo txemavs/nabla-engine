@@ -37,26 +37,7 @@ test('shares a byte budget, touches LRU reads and persists settings', async ({ p
     }),
   ).toBe(100)
 })
-test('migrates usable legacy responses and removes old cache stores', async ({ page }) => {
-  const result = await page.evaluate(async () => {
-    const old = await caches.open('nabla-prepared-v5')
-    await old.put('/legacy', new Response('prepared', { headers: { etag: 'test' } }))
-    const m = await import(String('/e2e/cache-fixture.ts'))
-    const hit = await m.mapCache('nabla-prepared-v5').match('/legacy')
-    return {
-      text: await hit?.text(),
-      etag: hit?.headers.get('etag'),
-      old: await caches.has('nabla-prepared-v5'),
-      stats: await m.mapCacheStats(),
-    }
-  })
-  expect(result).toMatchObject({
-    text: 'prepared',
-    etag: 'test',
-    old: false,
-    stats: { bytes: 8, budget: 100_000_000 },
-  })
-})
+
 test('serializes concurrent workers and applies lower/disabled budgets', async ({ page }) => {
   const result = await page.evaluate(async () => {
     const m = await import(String('/e2e/cache-fixture.ts'))

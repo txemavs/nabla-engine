@@ -12,7 +12,7 @@ SceneDocument (validated JSON v1)
 
 | Module                  | Owns                                                                                                   |
 | ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| `src/stage/`            | Transform graph, editor, catalog and sample content                                                    |
+| `src/scene/`            | Transform graph, editor, catalog and sample content                                                    |
 | `src/scene/`            | Scene document: parse, validate and tile streaming                                                     |
 | `src/entity/`           | Entity schema, capability, portal, vehicle, road, terrain, landcover and source                        |
 | `src/simulation/`       | Physics and character/vehicle controllers                                                              |
@@ -185,9 +185,8 @@ Billboard cutouts use alpha testing with opaque depth writes, rather than blende
 transparent sorting. Both visible cutouts and shot tests use the same 0.1 alpha
 threshold. Gallery target rows sit at Z −11/−14/−17, between the near tree row
 (Z −7) and the far row (Z −20); targets no longer share the near tree plane.
-`playground/scene-upgrades.ts` updates recognised old reference mounts, generated
-tree instances and untouched gallery target placements on load. It preserves
-custom steering transforms and target positions.
+Current catalogue factories provide reference mounts, tree definitions and target
+placements. Loading validates saved scenes without updating their contents.
 
 Tree sprites opt into `upright`, `saturation` and `groundShadow`. Upright trees use
 vertical cutout meshes that turn only in yaw, separately for each main/portal

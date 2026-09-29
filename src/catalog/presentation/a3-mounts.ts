@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import type { InstrumentMounts } from '../../render/vehicle-presentation/mounts.js'
 
-/** Legacy asset coordinates stay here. New assets should provide named mount nodes. */
+/** Measured stock asset coordinates stay here. New assets should provide named mount nodes. */
 export function createA3Mounts(model: THREE.Object3D): InstrumentMounts | undefined {
   const interior = model.getObjectByName('Interior')
   if (!interior) {

@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { chartRoads } from '../../src/render/entity/helm-map.js'
-import { createEntity, parseScene } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene } from '../../src/scene/document.js'
 it('shares charts between screens and keeps bounds of a road crossing the complete viewport', () => {
   const group = createEntity('group', 'group', [100, 0, 50])
   const road = {

@@ -1,4 +1,4 @@
-import type { Entity } from '../../stage/scene.js'
+import type { Entity } from '../../entity/schema.js'
 export interface MapArtifact {
   format: 'glb' | 'prepared' | 'generated'
   key: string

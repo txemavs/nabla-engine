@@ -12,7 +12,7 @@ export type EntityCapability =
   | 'portal'
   | 'sprite'
   | 'light'
-/** Derived from components, so old scenes and edited entities cannot have stale flags. */
+/** Derived from components, so edited entities cannot have stale flags. */
 export function entityCapabilities(entity: Entity): EntityCapability[] {
   const result: EntityCapability[] = ['transform']
   if (!entity.visual && ['box', 'solid', 'terrain'].includes(entity.kind)) result.push('appearance')

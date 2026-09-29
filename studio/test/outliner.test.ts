@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 import { authoredTree } from '../outliner.js'
 
 test('generated context stays out; a customized child appears without changing its parent', () => {

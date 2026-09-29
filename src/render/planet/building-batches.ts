@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import { isMapBuilding, type Entity } from '../../stage/scene.js'
+import { isMapBuilding, type Entity } from '../../entity/schema.js'
 import { withinMapDistance } from './visibility.js'
 
 type Building = { entity: Entity; object: THREE.Group; cell: string }

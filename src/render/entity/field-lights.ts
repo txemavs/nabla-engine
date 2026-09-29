@@ -8,7 +8,7 @@ import {
   type MapTile,
 } from '../../scene/mercator.js'
 import type { GeoPoint } from '../../math/geo/sphere.js'
-import type { Vec3Tuple } from '../../stage/scene.js'
+import type { Vec3Tuple } from '../../entity/schema.js'
 
 const MAP = 'https://api.openstreetmap.org/api/0.6/map'
 const CACHE = 'nabla-lamps-z15:'

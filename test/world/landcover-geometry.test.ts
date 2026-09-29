@@ -5,7 +5,7 @@ import { createRealWorld } from '../../src/planet/assemble/world.js'
 import { terrainHeight } from '../../src/planet/land/terrain.js'
 import { mapTileEntities } from '../../src/scene/tiles.js'
 import { geoToLocal } from '../../src/math/geo/sphere.js'
-import type { Vec3Tuple } from '../../src/stage/scene.js'
+import type { Vec3Tuple } from '../../src/entity/schema.js'
 const ring = (x0: number, z0: number, x1: number, z1: number, role = 'outer') => ({
   role,
   points: [

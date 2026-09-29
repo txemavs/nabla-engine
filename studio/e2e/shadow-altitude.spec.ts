@@ -1,6 +1,6 @@
 import { test, expect } from './studio-test.js'
-import { createA3 } from '../../src/catalog/a3.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { createEntity } from '../../src/entity/schema.js'
 
 test('changing to elevated coordinates does not disable vehicle shadows', async ({ page }) => {
   const errors: string[] = []

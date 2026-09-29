@@ -25,7 +25,7 @@ import { geoToLocal, localFrame, localToGeo, type GeoPoint } from '../../math/ge
 import { planetTileFrame } from '../../planet/tiles.js'
 import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import type { Simulation } from '../../simulation/simulation.js'
-import type { Vec3Tuple } from '../../stage/scene.js'
+import type { Vec3Tuple } from '../../entity/schema.js'
 import { restoreTileLayers } from './tile-asset.js'
 /** Satellite painted over the z15 GLB. Roofs, runways and pitches on by default. */
 export const projectedLayers = new Set(['roofs', 'runways', 'pitches'])
@@ -43,26 +43,6 @@ const drapeLayers: { id: string; ground?: number; roads?: boolean; terrain?: boo
   { id: 'terrain', terrain: true },
   { id: 'roads', roads: true },
 ]
-// Delete after the next GLB regen. Published cells still carry the old beige;
-// the publisher palette is already #8c8a86. See nabla-world landcover.ts.
-const retiredResidential = ['#d0c8b8', '#c4b8a4', '#b0a28e'].map((hex) => new THREE.Color(hex))
-const residentialGray = new THREE.Color('#8c8a86')
-
-function washResidential(colors: Float32Array): void {
-  for (let i = 0; i < colors.length; i += 3) {
-    const known = retiredResidential.some(
-      (color) =>
-        Math.abs(colors[i] - color.r) < 0.02 &&
-        Math.abs(colors[i + 1] - color.g) < 0.02 &&
-        Math.abs(colors[i + 2] - color.b) < 0.02,
-    )
-    if (!known) continue
-    colors[i] = residentialGray.r
-    colors[i + 1] = residentialGray.g
-    colors[i + 2] = residentialGray.b
-  }
-}
-
 function inlandWater(metadata: { category?: string; groundLayer?: number }) {
   return metadata.category === 'Surfaces' && metadata.groundLayer === SURFACE_LAYERS.water
 }
@@ -638,7 +618,6 @@ export class PlanetWorld {
       geometry.setAttribute('position', new THREE.BufferAttribute(data.position, 3))
       geometry.setAttribute('normal', new THREE.BufferAttribute(data.normal, 3))
       if (data.color) {
-        if (data.metadata.groundLayer === SURFACE_LAYERS.residential) washResidential(data.color)
         geometry.setAttribute('color', new THREE.BufferAttribute(data.color, 3))
       }
       if (data.uv) geometry.setAttribute('uv', new THREE.BufferAttribute(data.uv, 2))

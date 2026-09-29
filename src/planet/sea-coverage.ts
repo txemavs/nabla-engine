@@ -1,8 +1,8 @@
 import { EARTH_RADIUS } from '../math/geo/sphere.js'
 import { SURFACE_LAYERS } from './land/surface.js'
-/** Remove legacy sea fill BEFORE rendering, chart creation or collision extraction.
- * Elevated inland water and negative measured terrain remain. Near-zero water is
- * a coastal approximation for legacy publications without ocean classification.
+/** Keep the active ocean surface separate from published tile fill BEFORE rendering,
+ * chart creation or collision extraction. Elevated inland water and negative measured
+ * terrain remain. Near-zero water provides the current coastal mask.
  */
 export function seaCoverageIndex(
   position: Float32Array,

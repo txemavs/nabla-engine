@@ -1,4 +1,4 @@
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 import { test, expect } from './studio-test.js'
 
 test('adds complete catalogue entities and saves editable lamp settings', async ({ page }) => {

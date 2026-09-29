@@ -133,14 +133,8 @@ const stock = new Map<string, VehiclePresentationAdapter>([
   ['nabla.wrangler', wranglerPresentation],
   ['nabla.police', policePresentation],
 ])
-// Compatibility for saved scenes predating explicit presentation IDs. No URL branching in the renderer.
-const legacy: Record<string, string> = {
-  '/world/car.audi.a3.cabrio.glb': 'nabla.s3',
-  '/world/car.jeep.wrangler.glb': 'nabla.wrangler',
-  '/world/car.ford.focus.police.glb': 'nabla.police',
-}
 export const stockVehiclePresentation: VehiclePresentationResolver = (entity) => {
-  const id = entity.visual?.presentation ?? legacy[entity.visual?.body.url ?? '']
+  const id = entity.visual?.presentation
   if (!id) return undefined
   const adapter = stock.get(id)
   if (!adapter) console.warn(`Unknown vehicle presentation: ${id}`)

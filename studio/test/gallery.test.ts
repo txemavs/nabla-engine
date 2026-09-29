@@ -2,7 +2,8 @@ import { expect, it } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'
 import { createGallery, shotView } from '../gallery.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
-import { createEntity, parseScene } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene } from '../../src/scene/document.js'
 
 it('transports the shooter ray through a window with parallax while keeping the player outside', () => {
   const entities = createGallery('g')

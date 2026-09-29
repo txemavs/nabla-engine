@@ -1,6 +1,6 @@
 import { test, expect } from './studio-test.js'
-import { createOutboard } from '../../src/catalog/boat.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createOutboard } from '../../src/catalog/vehicles/boat.js'
+import { createEntity } from '../../src/entity/schema.js'
 test('F8 runs gravity and E boards, leaves and reboards the boat', async ({ page }) => {
   const scene = {
     version: 1,

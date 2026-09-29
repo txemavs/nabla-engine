@@ -13,9 +13,8 @@ A game loads this package and a scene JSON. Studio is the editor that writes tha
 | `planet/`     | Map rules that turn a tile into geometry, collisions and published files. | Streaming, the sky dome, the sea shader.             |
 | `simulation/` | The fixed step: bodies, vehicles, flight, walking, portal crossing.       | Cameras, audio, HUD.                                 |
 | `render/`     | What a canvas needs to show a document. See `render/README.md`.           | The editor shell.                                    |
-| `stage/`      | Old import paths. Do not add files.                                       | —                                                    |
 
-`stage` used to mean "the live scene". That mixed the document, the graph and undo. Those now live in `scene/`. Callers that still import `stage/` keep working.
+`stage` used to mean "the live scene". That mixed the document, the graph and undo. Those now live in `scene/`. The `stage/` compatibility folder is removed; callers import the actual owners.
 
 A finished game does not need Studio. It needs `render/`, `simulation/`, and a `SceneDocument`.
 
@@ -28,7 +27,7 @@ vehicle definitions, physics and rendering belong to this package.
 Reusable post-processing lives in `render/effects/`, bounded frame measurements
 in `diagnostics/`, and synthesized sound in `audio/`. Studio supplies DOM controls,
 preferences, user activation and the frame loop. Engine does not read Studio DOM
-or local storage. Studio compatibility files only re-export moved implementations.
+or local storage. Studio imports these implementations directly.
 
 See [sea surface](../docs/architecture/sea-surface.md) for the single ocean cap,
 tile-water filtering, manual flood level and simplified tide. See

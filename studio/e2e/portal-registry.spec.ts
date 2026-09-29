@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 import { createPortal } from '../../src/entity/portal/portal.js'
 import { createProject, visitLocation } from '../project.js'
 

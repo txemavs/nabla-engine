@@ -1,6 +1,6 @@
 import { test, expect } from './studio-test.js'
-import { createCarrier } from '../../src/catalog/carrier.js'
-import { createEntity, type Entity } from '../../src/stage/scene.js'
+import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { createEntity, type Entity } from '../../src/entity/schema.js'
 
 test('bounds draw calls for 800 roads and can hide their detail', async ({ page }) => {
   const terrain = {

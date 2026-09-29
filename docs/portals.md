@@ -7,7 +7,6 @@ portal simulation to activate.
 ## Source map
 
 - `src/entity/portal/portal.ts`: mouths, reciprocal links, validation and rigid transforms.
-- `src/scene/migrations/carrier-portals.ts`: migration of saved reference carriers.
 - `src/simulation/simulation.ts`: swept crossing, clearance, host-relative velocity,
   boarding, ramp coordination and the exit lock.
 - `src/render/portal/portals.ts`: remote projection and clipping.
@@ -16,17 +15,14 @@ portal simulation to activate.
 - `studio/portal-registry.ts`: project-wide addresses and remote windows.
 
 `createCarrierPortal(hostId, sternId)` creates the single stock stern mouth.
-The old plural factory and `src/render/portal/carrier.ts` remain compatibility
-re-exports/wrappers only. New code uses the singular factory and scene migration.
+Use it explicitly when composing a carrier scene. The palette, sample and planet
+factories already include the stern mouth. The plural factory and saved-scene
+migration have been removed: loading never rewrites authored portals or glass.
 
 ## Carrier and saved scenes
 
-The stock carrier has a stern portal and armoured bow glass. Loading an old
-reference carrier removes its old bow mouths and their children, disconnects
-partners, and installs missing bow glass and a stern mouth once. Existing stern
-IDs, placements and links are preserved. Authored side mouths are preserved.
-Migration operates on a parsed copy and is idempotent; saved data changes only
-through the normal host save/export action.
+The stock carrier has armoured bow glass. Its scene assembly adds one stern portal;
+custom side mouths and links remain ordinary authored entities.
 
 The garage door must finish closing before its portal opens. During a connection,
 the closed visual door uses a horizontal collision apron. Its collider transform

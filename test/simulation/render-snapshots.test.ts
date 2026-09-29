@@ -1,8 +1,9 @@
 import { expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
-import { createEntity, type SceneDocument } from '../../src/stage/scene.js'
-import { createA3 } from '../../src/catalog/a3.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { type SceneDocument } from '../../src/scene/document.js'
+import { createA3 } from '../../src/catalog/vehicles/a3.js'
 
 function scene(): SceneDocument {
   return {

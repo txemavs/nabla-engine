@@ -1,4 +1,5 @@
-import type { SceneDocument, Vec3Tuple } from '../src/stage/scene.js'
+import type { SceneDocument } from '../src/scene/document.js'
+import type { Vec3Tuple } from '../src/entity/schema.js'
 
 /** Surface placement is persistent while terrain streams; explicit pose edits clear it. */
 export function settleGroundPlacement(
@@ -29,37 +30,4 @@ export function settleGroundPlacement(
     }
   }
   return changed
-}
-
-/** Recover only the exact unplaced reference trio saved by previous versions. */
-export function recoverUnplacedDefaults(document: SceneDocument): SceneDocument {
-  if (!document.geography?.planetary || document.cursorOnGround !== undefined) return document
-  const defaults = [
-    ['spawn', [-2, 1, 0]],
-    ['car-a', [0, 1, 0]],
-    ['carrier', [20, 2, 0]],
-  ] as const
-  if (
-    !defaults.every(([id, position]) => {
-      const e = document.entities.find((e) => e.id === id)
-      return (
-        e &&
-        !e.parentId &&
-        !e.geoAnchor &&
-        e.groundOffset === undefined &&
-        e.transform.position.every((v, i) => v === position[i])
-      )
-    })
-  )
-    return document
-  const result = structuredClone(document)
-  for (const [id] of defaults) {
-    const e = result.entities.find((e) => e.id === id)!
-    e.groundOffset = e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.2 : 0.62
-  }
-  if (!result.cursor || result.cursor.every((v) => v === 0)) {
-    result.cursor = [0, 0, 0]
-    result.cursorOnGround = true
-  }
-  return result
 }

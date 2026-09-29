@@ -9,7 +9,7 @@ export interface FlightRuntime {
   flight: FlightState | null
   helm: 'off' | 'auto' | 'car' | 'drone' | 'plane' | 'space'
   definition: { plane?: boolean }
-  /** Compatibility cruise setting, km/h. */
+  /** Cruise target, km/h. */
   cruiseSpeed: number
 }
 export interface FlightInput {

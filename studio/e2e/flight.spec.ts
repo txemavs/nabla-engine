@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 
 test('flies with a mode 2 gamepad, releases sticks to hover and disconnects safely', async ({
   page,

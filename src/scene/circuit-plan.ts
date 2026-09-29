@@ -1,7 +1,6 @@
 import { boxSolid } from '../math/solid/mesh.js'
 import { treeSprite } from '../entity/sprite/sprite.js'
 import { createEntity, type Entity, type Vec3Tuple } from '../entity/schema.js'
-import type { SceneDocument } from './document.js'
 
 // Surveyed rectangles in the original 1024 × 682 Agency JPEG, not inferred at runtime.
 export const CIRCUIT_PLOTS = [
@@ -88,17 +87,3 @@ export function circuitEntities(): Entity[] {
   return result
 }
 /** Replaces only the baseline plan-owned entities, keeping vehicles, portals and user additions. */
-export function alignCircuitPlan(document: SceneDocument): SceneDocument {
-  const doc = structuredClone(document)
-  const owned = (id: string) =>
-    ['ground', 'road', 'west-path', 'east-path'].includes(id) ||
-    /^(building-\d+|window-\d+-\d+|line--?\d+|tree-\d+)$/.test(id)
-  for (const e of doc.entities)
-    if (['crate-a', 'crate-b', 'barrier', 'ramp'].includes(e.id) && e.transform.position[0] === -4)
-      e.transform.position[0] = -45
-  doc.entities = doc.entities.filter((e) => !owned(e.id))
-  for (const id of ['streets', 'architecture', 'details'])
-    if (!doc.entities.some((e) => e.id === id)) doc.entities.push(createEntity(id, 'group'))
-  doc.entities.push(...circuitEntities())
-  return doc
-}

@@ -3,7 +3,6 @@
  *
  * Priority is natural, then landuse, then leisure. Water wins over a tag that would
  * otherwise be grass. `SURFACE_LAYERS` is the nesting order shared by the editor and batches.
- * `mapSurfaceColor` rewrites old baked defaults at render time; an authored colour stays.
  */
 export type SurfaceType =
   | 'grass'
@@ -18,21 +17,6 @@ export type SurfaceType =
   | 'industrial'
   | 'default'
 
-/** Previous defaults, recognised so a saved zone can be recoloured without a rebuild. */
-const LEGACY_SURFACE_COLORS: Record<SurfaceType, string> = {
-  grass: '#7cb868',
-  forest: '#4a8c3a',
-  farmland: '#c5b87a',
-  sand: '#e8dca8',
-  scrub: '#8ba86a',
-  water: '#4a90a8',
-  wetland: '#6a9878',
-  rock: '#9a9a8a',
-  residential: '#d0c8b8',
-  industrial: '#b8b0a0',
-  default: '#7c927b',
-}
-
 export const SURFACE_COLORS: Record<SurfaceType, string> = {
   grass: '#416629',
   forest: '#234828',
@@ -45,19 +29,6 @@ export const SURFACE_COLORS: Record<SurfaceType, string> = {
   residential: '#8c8a86',
   industrial: '#929386',
   default: '#416629',
-}
-
-/** Update generated defaults at render time, including old baked/cached zones.
- * Authored colors remain authored data; no cache invalidation or geometry rebuild is needed. */
-const retiredResidential = new Set(['#d0c8b8', '#c4b8a4', '#b0a28e'])
-
-export function mapSurfaceColor(surface: SurfaceType, color: string): string {
-  const hex = color.toLowerCase()
-  return (surface === 'water' && hex === '#296b83') ||
-    hex === LEGACY_SURFACE_COLORS[surface] ||
-    (surface === 'residential' && retiredResidential.has(hex))
-    ? SURFACE_COLORS[surface]
-    : color
 }
 
 /** Classify OSM tags into a surface type. Priority: natural, then landuse, then leisure. */

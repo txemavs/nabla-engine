@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 
 test('restored cursor and cursor placement become the editor orbit center', async ({ page }) => {
   const scene = createSampleScene()

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { createEntity, type Entity } from '../../src/stage/scene.js'
+import { createEntity, type Entity } from '../../src/entity/schema.js'
 import { roadGeometry } from '../../src/planet/land/roads/draped-road.js'
 import { terrainVertices, terrainIndices } from '../../src/planet/land/terrain.js'
 import {

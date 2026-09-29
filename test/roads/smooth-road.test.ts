@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { Body, Box, Vec3, RaycastResult, World } from '../../src/simulation/physics.js'
 import { roadGeometry, smoothFloatRoadGeometry } from '../../src/planet/land/roads/draped-road.js'
 import { terrainHeight } from '../../src/planet/land/terrain.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 import { Simulation } from '../../src/simulation/simulation.js'
 
 it('clears terrain under the interior of every triangle, including a bump between OSM endpoints', () => {

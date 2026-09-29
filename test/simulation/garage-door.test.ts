@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest'
-import { createA3 } from '../../src/catalog/a3.js'
-import { createCarrier } from '../../src/catalog/carrier.js'
+import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
 import { createCarrierPortal, createPortalPair } from '../../src/entity/portal/portal.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 import { Simulation } from '../../src/simulation/simulation.js'
 const make = (spawn: [number, number, number] = [0, 0.35, -2.8]) =>
   new Simulation({

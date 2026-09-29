@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest'
 import { Simulation } from '../../src/simulation/simulation.js'
-import { createEntity } from '../../src/stage/scene.js'
-import { createOutboard } from '../../src/catalog/boat.js'
-import { createCarrier } from '../../src/catalog/carrier.js'
-import { createA3 } from '../../src/catalog/a3.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { createOutboard } from '../../src/catalog/vehicles/boat.js'
+import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { createA3 } from '../../src/catalog/vehicles/a3.js'
 
 it.each([
   ['boat', () => createOutboard('vehicle', [0, 0, 0]), [0, 1, 4.5]],

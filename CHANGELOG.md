@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Remove obsolete compatibility import paths, preset/portal/placement/palette upgrades and filename-based vehicle equipment lookup. Current factories explicitly compose the carrier stern portal.
+- Accept only current version-3 Studio projects; remove v1/v2 conversion and old CacheStorage migration. Remove unused Studio prepared BIN/JSON and anchored-GLB loaders, their inspector, and proposal-only contracts. Update callers, documentation and current-system regressions.
+
 - Fix Rapier gallery shots through window portals and remove invisible tree-trunk colliders from animated targets.
 - Initialize fallback relief collisions even with no detailed-tile coverage, and tolerate unavailable/corrupt optional photos. Restore the geoEuskadi comparison URL and flush incremental tile installation in the zoom viewer.
 

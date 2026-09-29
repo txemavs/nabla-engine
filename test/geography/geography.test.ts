@@ -9,8 +9,9 @@ import {
   tilePoint,
   tileUrl,
 } from '../../src/math/geo/sphere.js'
-import { createEntity, parseScene, type SceneDocument } from '../../src/stage/scene.js'
-import { createCarrier } from '../../src/catalog/carrier.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene, type SceneDocument } from '../../src/scene/document.js'
+import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
 
 describe('geographic frame', () => {

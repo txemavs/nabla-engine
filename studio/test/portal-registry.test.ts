@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest'
 import { createPortal } from '../../src/entity/portal/portal.js'
-import { createSampleScene } from '../../src/stage/sample.js'
-import { createEntity, parseScene } from '../../src/stage/scene.js'
+import { createSampleScene } from '../../src/scene/sample.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene } from '../../src/scene/document.js'
 import { createProject, parseProject, retainLocation, visitLocation } from '../project.js'
 import { portalRegistry, setPortalConnection } from '../portal-registry.js'
 

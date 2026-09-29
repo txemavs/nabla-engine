@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 
 test('opaque PNG pixels occlude deeper sprites regardless of draw order and match shot hits', async ({
   page,

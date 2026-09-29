@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { PerformanceMonitor } from '../performance-monitor.js'
+import { PerformanceMonitor } from '../../src/diagnostics/performance-monitor.js'
 import { planMapZooms, mapTileId, planetReadyCover } from '../../src/scene/mercator.js'
 it('bounds telemetry, excludes suspended frames and resets exports', () => {
   const monitor = new PerformanceMonitor()

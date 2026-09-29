@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
-import { createCessna } from '../../src/catalog/cessna.js'
+import { createCessna } from '../../src/catalog/vehicles/cessna.js'
 import { createCatalogEntities } from '../../src/catalog/palette.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
 
 it('lifts a Cessna off the runway in plane mode', () => {

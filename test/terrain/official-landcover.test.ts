@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { applyOfficialLandcover } from '../../src/planet/land/cover.js'
 import { createRealWorld, type WorldExtract } from '../../src/planet/assemble/world.js'
 import { localToGeo } from '../../src/math/geo/sphere.js'
-import { parseScene } from '../../src/stage/scene.js'
+import { parseScene } from '../../src/scene/document.js'
 const origin = { latitude: 43.33, longitude: -1.82, altitude: 0 }
 it('uses official legend colours on existing terrain vertices and validates their count', () => {
   const extract: WorldExtract = {

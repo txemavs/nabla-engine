@@ -3,7 +3,7 @@ import { combineRoadSurfaces } from '../../src/planet/land/roads/combined-roads.
 import { createRealWorld } from '../../src/planet/assemble/world.js'
 import { localToGeo } from '../../src/math/geo/sphere.js'
 import { roadAreaSnapshotSchema } from '../../src/planet/land/provider.js'
-import { parseScene } from '../../src/stage/scene.js'
+import { parseScene } from '../../src/scene/document.js'
 import fixture from '../../assets/geography/geoeuskadi-ventas.json'
 const origin = { latitude: 43.33, longitude: -1.82, altitude: 0 }
 const coordinate = (x: number, z: number): [number, number] => {

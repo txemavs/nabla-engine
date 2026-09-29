@@ -72,7 +72,7 @@ browser. Loading the example is undoable and does not overwrite the saved copy.
 
 - [Module map and public API](docs/architecture/module-map.md)
 - [Create a vehicle](docs/creating-a-vehicle.md) · [Create a monitor](docs/creating-a-monitor.md)
-- [Vehicle modularity: phase history and acceptance evidence](docs/architecture/vehicle-modularity.md)
+- [Vehicle modularity: modular architecture and acceptance evidence](docs/architecture/vehicle-modularity.md)
 
 Start with the [documentation index](docs/README.md).
 

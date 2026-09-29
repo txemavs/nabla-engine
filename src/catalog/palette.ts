@@ -3,12 +3,12 @@
  * Position arguments are the ground contact, not the centre of mass.
  */
 import { type Entity, type Vec3Tuple } from '../entity/schema.js'
-import { createA3 } from './a3.js'
+import { createA3 } from './vehicles/a3.js'
 import { createPoliceCar } from './vehicles/police.js'
-import { createJeep } from './jeep.js'
-import { createOutboard } from './boat.js'
-import { createCarrier } from './carrier.js'
-import { createCessna } from './cessna.js'
+import { createJeep } from './vehicles/jeep.js'
+import { createOutboard } from './vehicles/boat.js'
+import { createCarrier } from './vehicles/carrier.js'
+import { createCessna } from './vehicles/cessna.js'
 import { createCarrierPortal } from '../entity/portal/portal.js'
 import { createGlobeLamp } from './globe.js'
 import { createHighwayLamp } from './highway.js'

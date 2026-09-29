@@ -5,7 +5,7 @@ planet-fixed object identities and poses, portal relationships, and navigation
 bookmarks. Each browser profile/origin owns its local copy. This is not yet account
 synchronization: opening another person's file opens that file's planet.
 
-The `locations` field remains an internal compatibility envelope. A native planet
+The `locations` field remains an current scene collection. A native planet
 has exactly one `planet` scene, whose geographic origin is a **working frame**, not
 a world boundary. Bookmarks are destinations, not independent scene payloads.
 Changing the working frame re-expresses root transforms from their planet-fixed
@@ -18,19 +18,17 @@ were placed. The editor cursor and player entry point move to the destination.
 - **Guardar como…** and **Descargar planeta JSON…** export the complete project,
   including objects outside the current view. Asset files and generated OSM/terrain
   tiles are referenced, not bundled: the JSON is not a copy of Earth's map data.
-- **Abrir planeta o archivo anterior…** validates the file before replacing the
-  current in-memory project. Older v1/v2 native city scenes merge on import.
+- **Abrir planeta o escena…** validates the file before replacing the
+  current in-memory project. Only project version 3 is accepted; current scene documents can also be imported.
 - **Nuevo planeta…** is an explicit confirmed action. It archives the current
   project under `nabla.project.v1.backup.<timestamp>` in the browser scene store,
   creates a fresh planet ID and default vehicles, and clears entry URL switches.
   Use **Guardar como…** first for a portable backup. Shared map caches remain intact.
 
-Before the first startup migration, the original project is also retained under
-`nabla.project.v1.before-planet-v3`. Migration preserves global UUIDs and positions,
-renames colliding entity IDs, and remaps parent, road and portal references.
-Legacy directed window routes retain their endpoints and modes, including
-many-to-one connections. Nonplanetary legacy local scenes remain compatibility documents; new native
-travel does not create them. Maximum imported file size remains 40 MB.
+There is no startup or import migration. Unsupported project versions fail validation
+without replacing the open project. Local scenes remain available for test circuits
+and authored locations; planet travel changes one working frame. Maximum imported
+file size remains 40 MB.
 
 ## Travel
 

@@ -57,17 +57,16 @@ it('camera and avatar accept the same driver-local mount under body rotation', (
   const head = driverHeadPose([1, 2, 3], q.toArray(), false, 0, 0, [0, 0.25, -0.5])
   expect(head.position.distanceTo(new Vector3(0.5, 2.25, 3))).toBeLessThan(1e-8)
 })
-it('resolves explicit IDs independent of filenames, and preserves old scenes and authored properties', () => {
+it('resolves explicit IDs independent of filenames, requires IDs and preserves authored properties', () => {
   for (const factory of [createA3, createJeep, createPoliceCar]) {
     const entity = factory('car')
     entity.vehicle!.mirrorTilt = 5
     entity.vehicle!.headOffset = [0.1, 0.2, -0.4]
-    const current = stockVehiclePresentation(entity)
     delete entity.visual!.presentation
-    expect(stockVehiclePresentation(entity)).toBe(current)
+    expect(stockVehiclePresentation(entity)).toBeUndefined()
     const parsed = parseScene({
       version: 1,
-      name: 'Legacy',
+      name: 'Current',
       entities: [entity, createEntity('spawn', 'spawn')],
     }).entities[0]
     expect(parsed.vehicle!.mirrorTilt).toBe(5)

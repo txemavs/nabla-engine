@@ -5,7 +5,7 @@ import {
   type WorldExtract,
 } from '../../src/planet/assemble/world.js'
 import { localToGeo } from '../../src/math/geo/sphere.js'
-import { isMapBuilding } from '../../src/stage/scene.js'
+import { isMapBuilding } from '../../src/entity/schema.js'
 import { mapTileEntities } from '../../src/scene/tiles.js'
 const origin = { latitude: 43.32969, longitude: -1.819606, altitude: 28.253 }
 const ring = (points: [number, number][]) => [

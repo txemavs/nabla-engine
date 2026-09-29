@@ -1,5 +1,5 @@
 import { createProject, visitLocation } from '../project.js'
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 import { expect, test, localCircuit } from './studio-test.js'
 
 test('places objects and portals at a persistent cursor with exact axis movement', async ({

@@ -1,6 +1,6 @@
 import { test, expect } from './studio-test.js'
 import { createPortalPair } from '../../src/entity/portal/portal.js'
-import { createEntity, rotationDegrees } from '../../src/stage/scene.js'
+import { createEntity, rotationDegrees } from '../../src/entity/schema.js'
 async function openScene(page: import('@playwright/test').Page, z: number) {
   const spawn = createEntity('spawn', 'spawn', [0, 0.35, z])
   spawn.transform.rotation = rotationDegrees(0, 180, 0)
@@ -41,12 +41,13 @@ test('activates a rear tablet only nearby and disables it on departure', async (
   const panel = page.locator('.portal-console[data-portal-id="near"]')
   await page.waitForTimeout(1000)
   await expect(panel).toBeHidden()
-  for (let i = 0; i < 15 && (await panel.getAttribute('data-active')) !== 'true'; i++) {
-    await page.keyboard.down('KeyW')
-    await page.waitForTimeout(80)
-    await page.keyboard.up('KeyW')
-    await page.waitForTimeout(80)
-  }
+  await page.keyboard.down('KeyW')
+  await page.waitForFunction(
+    () =>
+      document.querySelector<HTMLElement>('.portal-console[data-portal-id="near"]')?.dataset
+        .active === 'true',
+  )
+  await page.keyboard.up('KeyW')
   await expect(panel).toBeVisible()
   await page.keyboard.down('KeyS')
   await expect(panel).toHaveAttribute('data-active', 'false')

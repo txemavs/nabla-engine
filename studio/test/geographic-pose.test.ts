@@ -1,7 +1,7 @@
 import { test, expect } from 'vitest'
 import { geographicPose, anchoredWorldPose } from '../geographic-pose.js'
 import { MADRID } from '../../src/math/geo/sphere.js'
-import { rotationDegrees } from '../../src/stage/scene.js'
+import { rotationDegrees } from '../../src/entity/schema.js'
 
 test('implicit GPS anchors have zero offsets and preserve a rotated world pose', () => {
   const world = {

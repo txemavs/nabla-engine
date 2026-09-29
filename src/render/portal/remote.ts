@@ -2,7 +2,7 @@ import { PlanetWorld } from '../planet/world.js'
 import * as THREE from 'three'
 import { SceneView } from '../entity/view.js'
 import { GeographicView } from '../planet/sky.js'
-import type { SceneDocument } from '../../stage/scene.js'
+import type { SceneDocument } from '../../scene/document.js'
 import type { ExternalPortalView } from './portals.js'
 
 /** Small cache of visited destination scenes, independent of the main view's working frame. */

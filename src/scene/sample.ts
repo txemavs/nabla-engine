@@ -1,7 +1,8 @@
+import { createCarrierPortal } from '../entity/portal/portal.js'
 import { circuitEntities } from './circuit-plan.js'
-import { createA3 } from '../catalog/a3.js'
-import { createJeep } from '../catalog/jeep.js'
-import { createCarrier } from '../catalog/carrier.js'
+import { createA3 } from '../catalog/vehicles/a3.js'
+import { createJeep } from '../catalog/vehicles/jeep.js'
+import { createCarrier } from '../catalog/vehicles/carrier.js'
 import { createEntity, rotationDegrees, type Entity, type Vec3Tuple } from '../entity/schema.js'
 import { parseScene, type SceneDocument } from './document.js'
 
@@ -25,7 +26,12 @@ export function createSampleScene(): SceneDocument {
   box('crate-b', 'Caja móvil B', [-45, 1.9, -10], [1.2, 1.2, 1.2], '#b18561', 'dynamic')
   const ramp = box('ramp', 'Rampa', [-45, 0.7, -34], [4.5, 0.4, 6], '#85948b')
   ramp.transform.rotation = rotationDegrees(12, 0, 0)
-  entities.push(createA3('car-a'), createJeep('jeep'), createCarrier('carrier'))
+  entities.push(
+    createA3('car-a'),
+    createJeep('jeep'),
+    createCarrier('carrier'),
+    createCarrierPortal('carrier', 'carrier-stern'),
+  )
   entities.push({
     ...createEntity('car-b', 'vehicle', [-4, 1.05, -1]),
     name: 'Brisa',

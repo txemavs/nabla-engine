@@ -1,5 +1,5 @@
 import type { StudioProject } from './project.js'
-import type { Vec3Tuple } from '../src/stage/scene.js'
+import type { Vec3Tuple } from '../src/entity/schema.js'
 export interface RegisteredPortal {
   id: string
   locationId: string

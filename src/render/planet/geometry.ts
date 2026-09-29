@@ -2,7 +2,7 @@ import { BufferAttribute, BufferGeometry, Color } from 'three'
 import { roadGeometry } from '../../planet/land/roads/draped-road.js'
 import { terrainVertices, terrainIndices } from '../../planet/land/terrain.js'
 import { triangles, trianglesWithRoofInfo } from '../../math/solid/mesh.js'
-import type { Entity } from '../../stage/scene.js'
+import type { Entity } from '../../entity/schema.js'
 
 /** Ephemeral render data: never part of scene JSON, history or the persistent cache. */
 export interface MapGeometryBuffers {

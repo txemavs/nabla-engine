@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { createEntity } from '../../../src/stage/scene.js'
+import { createEntity } from '../../../src/entity/schema.js'
 import { optimizePreparedBuildings } from '#world-cache/prepare/optimize-buildings.js'
 import type { PreparedMapGeometry } from '#src/render/planet/geometry.js'
 

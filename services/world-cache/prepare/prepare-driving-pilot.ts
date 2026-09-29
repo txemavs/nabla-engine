@@ -5,7 +5,7 @@ import { dirname } from 'node:path'
 import { createRealWorld, type WorldExtract } from '#src/planet/assemble/world.js'
 import { combineRoadSurfaces } from '#src/planet/land/roads/combined-roads.js'
 import { roadAreaSnapshotSchema } from '#src/planet/land/provider.js'
-import { parseScene } from '#src/stage/scene.js'
+import { parseScene } from '#src/scene/document.js'
 import { prepareMapGeometry } from '#src/render/planet/geometry.js'
 const [input, snapshotPath, output, landcoverPath] = process.argv.slice(2)
 if (!output) throw Error('Usage: prepare-driving-pilot.js <OSM extract> <BTA snapshot> <output>')

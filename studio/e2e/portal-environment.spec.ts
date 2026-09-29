@@ -12,7 +12,7 @@ test('a ground portal renders orbital atmosphere and restores the main camera en
       `/@fs${root}/src/render/portal/portals.ts`
     )
     const { createPortalPair } = await import(`/@fs${root}/src/entity/portal/portal.ts`)
-    const { createSampleScene } = await import(`/@fs${root}/src/stage/sample.ts`)
+    const { createSampleScene } = await import(`/@fs${root}/src/scene/sample.ts`)
     const document = createSampleScene()
     const geography = new GeographicView(document, () => {})
     const clock = { mode: 'fixed', at: '2026-09-23T12:00:00Z' }

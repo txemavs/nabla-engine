@@ -9,7 +9,7 @@ import {
   MeshStandardMaterial,
 } from 'three'
 import { createRealWorld } from '#src/planet/assemble/world.js'
-import { SceneGraph } from '#src/stage/scene.js'
+import { SceneGraph } from '#src/scene/graph.js'
 import { prepareMapGeometry } from '#src/render/planet/geometry.js'
 import { entityTileAsset } from '#src/render/planet/tile-asset.js'
 import { mapTileId } from '#src/scene/mercator.js'

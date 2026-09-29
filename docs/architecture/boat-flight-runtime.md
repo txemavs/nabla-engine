@@ -29,7 +29,7 @@ local tangent quaternion, minimum altitude, planetary travel flag, and optional
 rigidly docked cargo bodies. Cargo receives assisted hover/cruise acceleration
 once per body, preserving the existing assembly behaviour. Aircraft lift and
 container-assisted flight retain their previous equations. Cruise configuration
-remains km/h for compatibility; height, depth, body velocity and forces use SI.
+uses km/h; height, depth, body velocity and forces use SI.
 The `off` helm mode retains the existing assisted-flight behaviour; this refactor
 does not redefine a power cutoff or release cargo.
 
@@ -46,9 +46,9 @@ timesteps are rejected by the new entry points.
 `Simulation.pilotBoat` now supplies the current water level and planetary height.
 `Simulation.fly` supplies the tangent frame and its dock registry. Boarding,
 ramps, portals, ground/flight transitions and serialized vehicle definitions stay
-in the coordinator. Existing scene records still contain legacy wheel fields;
-new standalone boat/flight clients need none. Changing the stored scene schema
-is a separate migration, not a prerequisite for using these modules.
+in the coordinator. The active scene vehicle container still shares wheel fields; standalone
+boat/flight clients need none. Splitting that container is a separate runtime
+and schema change; it is not a compatibility path.
 
 The ship HUD and boat console share `LayeredMonitor` for speed/altitude glyphs:
 values update at 100 ms only while visible. The boat uses navigation-only mode

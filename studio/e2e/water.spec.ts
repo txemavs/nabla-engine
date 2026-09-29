@@ -1,7 +1,7 @@
 import { simplifiedTide } from '../../src/planet/tide.js'
 import { test, expect, localCircuit } from './studio-test.js'
-import { createOutboard } from '../../src/catalog/boat.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createOutboard } from '../../src/catalog/vehicles/boat.js'
+import { createEntity } from '../../src/entity/schema.js'
 
 test('fills the published sea hole with one sheet and does not fetch ocean tiles', async ({
   page,

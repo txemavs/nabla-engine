@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { Vector3 } from 'three'
-import { SceneEditor } from '../../src/stage/editor.js'
-import { createA3 } from '../../src/catalog/a3.js'
-import { createCarrier } from '../../src/catalog/carrier.js'
-import {
-  createEntity,
-  parseScene,
-  rotationDegrees,
-  type SceneDocument,
-} from '../../src/stage/scene.js'
+import { SceneEditor } from '../../src/scene/history.js'
+import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { createEntity, rotationDegrees } from '../../src/entity/schema.js'
+import { parseScene, type SceneDocument } from '../../src/scene/document.js'
 import {
   createCarrierPortal,
   createPortalPair,

@@ -1,8 +1,9 @@
 import { Simulation } from '../../src/simulation/simulation.js'
 import { expect, it } from 'vitest'
 import { Vector3, Quaternion } from 'three'
-import { SceneEditor } from '../../src/stage/editor.js'
-import { createEntity, rotationDegrees, SceneGraph } from '../../src/stage/scene.js'
+import { SceneEditor } from '../../src/scene/history.js'
+import { createEntity, rotationDegrees } from '../../src/entity/schema.js'
+import { SceneGraph } from '../../src/scene/graph.js'
 import { boxSolid, extrudeElement, extrudeFace, validateSolid } from '../../src/math/solid/mesh.js'
 it('inserts at a persistent cursor and undoes both independently', () => {
   const editor = new SceneEditor({

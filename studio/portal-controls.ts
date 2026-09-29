@@ -3,7 +3,7 @@ import { HelmMap } from '../src/render/entity/helm-map.js'
 import { localToGeo } from '../src/math/geo/sphere.js'
 import { mapTileAt, mapTileFilename, mapTilePath, MERCATOR_LIMIT } from '../src/scene/mercator.js'
 import { CSS3DObject, CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js'
-import type { SceneDocument } from '../src/stage/scene.js'
+import type { SceneDocument } from '../src/scene/document.js'
 import type { Simulation } from '../src/simulation/simulation.js'
 
 /** Native DOM tablets share the portal pose; activation is limited to one metre. */

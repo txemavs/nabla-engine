@@ -1,4 +1,5 @@
-import { SceneGraph, type SceneDocument } from '../src/stage/scene.js'
+import { SceneGraph } from '../src/scene/graph.js'
+import { type SceneDocument } from '../src/scene/document.js'
 import { geoToLocal, localToGeo } from '../src/math/geo/sphere.js'
 export function urlPlay(search: string): boolean {
   const value = new URLSearchParams(search).get('play')

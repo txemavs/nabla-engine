@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 
 test('requests location, saves the GPS pin and preserves it on reload', async ({
   page,

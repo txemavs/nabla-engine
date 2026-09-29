@@ -1,8 +1,8 @@
 /** The sample car, carrier and player spawn that every generated district includes. */
 import { createEntity } from '../../entity/schema.js'
 import { rotationDegrees } from '../../math/frame/vectors.js'
-import { createA3 } from '../../catalog/a3.js'
-import { createCarrier } from '../../catalog/carrier.js'
+import { createA3 } from '../../catalog/vehicles/a3.js'
+import { createCarrier } from '../../catalog/vehicles/carrier.js'
 import type { District } from './district.js'
 
 export function emitSpawn(d: District): void {

@@ -64,8 +64,8 @@ and do not advance the world. Rendering can read less frequently than physics.
 A docked vehicle skips terrestrial stepping. `syncWheeledDamping` copies the
 carrier's damping for tuned cargo while docked and restores zero body damping
 when released; the powertrain models its own rolling/aerodynamic resistance.
-Boat and flight branches continue to use their current implementation. Their
-legacy shared vehicle/wheel container is explicitly left for phase 5.
+Boat and flight branches delegate to their independent runtimes. The active
+Simulation container still shares wheel state for ground/flight coordination.
 
 ## Commands and telemetry
 
@@ -80,7 +80,7 @@ legacy shared vehicle/wheel container is explicitly left for phase 5.
 - Shift commands return `shifted`, `protected` or `unavailable`. The facade keeps
   existing Spanish UI messages. Automatic/manual gears, overrev protection, DSG
   interruption, retention, AWD launch and handbrake burnout use the same formulas.
-- `WheeledTelemetry` reports `speedMps` and signed forward speed in m/s. The legacy
+- `WheeledTelemetry` reports `speedMps` and signed forward speed in m/s. The facade
   facade still reports km/h. It also exposes gear, RPM, engine load, brake/reverse
   state and tyre slip. Presentation bindings decide units and labels.
 - `WheelContactSnapshot` contains detached position arrays in absolute physics
@@ -91,7 +91,7 @@ legacy shared vehicle/wheel container is explicitly left for phase 5.
 
 The existing tyre marks, smoke and sound consume the same per-wheel snapshots
 through `Simulation.wheelContactInfo`. The low-level `tireEffects` argument permits
-the legacy boat facade to suppress tyre feedback. It does not enable boat physics.
+the boat facade to suppress tyre feedback. It does not enable boat physics.
 
 ## Runnable independent host
 
@@ -115,7 +115,7 @@ performance/FPS claim.
 Before extraction, recorded nine states each for S3, Wrangler and police:
 acceleration, steering, handbrake, coast, reverse, launch, burnout, manual and
 automatic. After extraction, **all 27 snapshots match exactly**, including poses,
-legacy telemetry and per-wheel contacts. This is evidence for these runs, not a
+facade telemetry and per-wheel contacts. This is evidence for these runs, not a
 claim that a finite test suite covers every terrain or maneuver.
 
 New tests cover two custom vehicles sharing a real Rapier world, removing one

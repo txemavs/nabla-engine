@@ -7,7 +7,7 @@ import {
   toWorldPose,
   worldPoseGeography,
 } from '../../src/math/geo/pose.js'
-import { rotationDegrees, type Transform } from '../../src/stage/scene.js'
+import { rotationDegrees, type Transform } from '../../src/entity/schema.js'
 const sydney = { latitude: -33.8688, longitude: 151.2093, altitude: 20 }
 
 test('one planet-fixed object survives changing the working frame across hemispheres', () => {

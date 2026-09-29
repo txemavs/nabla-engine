@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
-import { createOutboard } from '../../src/catalog/boat.js'
+import { createOutboard } from '../../src/catalog/vehicles/boat.js'
 import { createCatalogEntities } from '../../src/catalog/palette.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
 
 it('floats a 6 m outboard and planes ahead under 400 CV', () => {

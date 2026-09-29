@@ -1,12 +1,8 @@
 import { boxSolid } from '../../src/math/solid/mesh.js'
 import { describe, expect, it } from 'vitest'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
-import {
-  createEntity,
-  type SceneDocument,
-  type Entity,
-  rotationDegrees,
-} from '../../src/stage/scene.js'
+import { createEntity, type Entity, rotationDegrees } from '../../src/entity/schema.js'
+import { type SceneDocument } from '../../src/scene/document.js'
 
 function scene(
   extra: Entity[] = [],

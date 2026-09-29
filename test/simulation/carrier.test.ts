@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vec3 } from '../../src/simulation/physics.js'
-import { createA3 } from '../../src/catalog/a3.js'
-import { createCarrier } from '../../src/catalog/carrier.js'
-import { createEntity, type SceneDocument } from '../../src/stage/scene.js'
+import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { type SceneDocument } from '../../src/scene/document.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
 
 function document(): SceneDocument {

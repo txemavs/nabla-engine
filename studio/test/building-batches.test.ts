@@ -1,8 +1,9 @@
 import { expect, it } from 'vitest'
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Vector3, Raycaster, Color } from 'three'
 import { BuildingBatches } from '../../src/render/planet/building-batches.js'
-import { createEntity, parseScene } from '../../src/stage/scene.js'
-import { SceneEditor } from '../../src/stage/editor.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene } from '../../src/scene/document.js'
+import { SceneEditor } from '../../src/scene/history.js'
 
 function fixture() {
   const entities = Array.from({ length: 8 }, (_, i) => ({

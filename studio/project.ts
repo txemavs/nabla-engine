@@ -1,13 +1,13 @@
 import { portalRegistry, type PortalConnection } from './portal-registry.js'
 import { z } from 'zod'
-import { parseScene, type SceneDocument } from '../src/stage/scene.js'
+import { parseScene, type SceneDocument } from '../src/scene/document.js'
 import { toWorldPose, fromWorldPose, type WorldPose } from '../src/math/geo/pose.js'
 
 /** Places retain payloads and working frames; planet poses address root objects globally. */
 export interface StudioProject {
   format: 'nabla-project'
-  version: 2 | 3
-  planetId?: string
+  version: 3
+  planetId: string
   bookmarks?: { name: string; latitude: number; longitude: number }[]
   objects: PlanetObject[]
   connections?: PortalConnection[]
@@ -41,8 +41,8 @@ const planetObjectSchema = z
 const schema = z
   .object({
     format: z.literal('nabla-project'),
-    version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-    planetId: z.string().uuid().optional(),
+    version: z.literal(3),
+    planetId: z.string().uuid(),
     bookmarks: z
       .array(
         z
@@ -55,7 +55,7 @@ const schema = z
       )
       .max(10000)
       .optional(),
-    objects: z.array(planetObjectSchema).max(100000).optional(),
+    objects: z.array(planetObjectSchema).max(100000),
     connections: z
       .array(
         z
@@ -85,16 +85,24 @@ export function locationId(scene: SceneDocument): string {
 }
 export function createProject(scene: SceneDocument): StudioProject {
   const id = locationId(scene)
-  return unifyPlanet(
-    synchronizeWorldObjects({
-      format: 'nabla-project',
-      version: 2,
-      objects: [],
-      name: scene.name,
-      activeLocation: id,
-      locations: [{ id, scene: structuredClone(scene) }],
-    }),
-  )
+  return synchronizeWorldObjects({
+    format: 'nabla-project',
+    version: 3,
+    planetId: crypto.randomUUID(),
+    objects: [],
+    bookmarks: scene.geography?.planetary
+      ? [
+          {
+            name: scene.name,
+            latitude: scene.geography.latitude,
+            longitude: scene.geography.longitude,
+          },
+        ]
+      : [],
+    name: scene.name,
+    activeLocation: id,
+    locations: [{ id, scene: structuredClone(scene) }],
+  })
 }
 export function parseProject(raw: unknown, large = false): StudioProject {
   const value = schema.parse(raw)
@@ -105,10 +113,9 @@ export function parseProject(raw: unknown, large = false): StudioProject {
   if (new Set(locations.map((p) => p.id)).size !== locations.length)
     throw Error('Duplicate location ID')
   if (!locations.some((p) => p.id === value.activeLocation)) throw Error('Unknown active location')
-  if (value.version === 1)
-    return unifyPlanet(synchronizeWorldObjects({ ...value, version: 2, objects: [], locations }))
-  if (value.version === 3 && !value.planetId) throw Error('Missing planet identity')
-  if (!value.objects) throw Error('Missing planetary objects')
+  const planets = locations.filter((p) => p.scene.geography?.planetary)
+  if (planets.length > 1 || planets.some((p) => p.id !== 'planet'))
+    throw Error('Expected one planet location with id "planet"')
   const ids = new Set<string>(),
     references = new Set<string>()
   for (const object of value.objects) {
@@ -134,7 +141,7 @@ export function parseProject(raw: unknown, large = false): StudioProject {
   }
   const project: StudioProject = {
     ...value,
-    version: value.version === 3 ? 3 : 2,
+    version: 3,
     objects: value.objects,
     locations,
   }
@@ -153,7 +160,7 @@ export function parseProject(raw: unknown, large = false): StudioProject {
       throw Error('Invalid project portal connection')
     sources.add(source.id)
   }
-  return unifyPlanet(project)
+  return project
 }
 export function retainLocation(project: StudioProject, scene: SceneDocument): StudioProject {
   return visitLocation(project, scene)
@@ -210,88 +217,6 @@ function synchronizeWorldObjects(project: StudioProject): StudioProject {
   return next
 }
 
-/** Collapse historical city scenes once, preserving world poses and object identities. */
-export function unifyPlanet(project: StudioProject): StudioProject {
-  const places = project.locations.filter((p) => p.scene.geography?.planetary)
-  if (!places.length || (project.version === 3 && places.length === 1 && places[0].id === 'planet'))
-    return project
-  const active = places.find((p) => p.id === project.activeLocation) ?? places[0]
-  const scene = structuredClone(active.scene)
-  scene.entities = []
-  const registry = portalRegistry(project)
-  const remap = new Map<string, Map<string, string>>()
-  const used = new Set<string>()
-  // Keep the active scene's IDs where possible, rename colliding imports deterministically.
-  for (const place of [active, ...places.filter((p) => p !== active)]) {
-    const ids = new Map<string, string>()
-    remap.set(place.id, ids)
-    for (const e of place.scene.entities) {
-      let id = e.id,
-        suffix = 1
-      while (used.has(id)) id = `${e.id.slice(0, 110)}-import-${suffix++}`
-      used.add(id)
-      ids.set(e.id, id)
-    }
-    for (const original of place.scene.entities) {
-      // One player spawn per planet. Other owned objects must never be discarded.
-      if (original.kind === 'spawn' && place !== active) continue
-      const e = structuredClone(original)
-      e.id = ids.get(e.id)!
-      if (e.parentId) e.parentId = ids.get(e.parentId)!
-      else
-        e.transform = fromWorldPose(
-          scene.geography!,
-          toWorldPose(place.scene.geography!, e.transform),
-        )
-      if (e.portal?.pairId) e.portal.pairId = ids.get(e.portal.pairId)!
-      if (e.road) e.road.terrainId = ids.get(e.road.terrainId)!
-      scene.entities.push(e)
-    }
-  }
-  const roots = project.objects
-    .filter((o) => remap.has(o.locationId))
-    .flatMap((o) => {
-      const entityId = remap.get(o.locationId)!.get(o.entityId)!
-      return scene.entities.some((e) => e.id === entityId)
-        ? [{ ...o, locationId: 'planet', entityId }]
-        : []
-    })
-  const idsForPortal = new Map(
-    registry.map((p) => {
-      const entityId = remap.get(p.locationId)?.get(p.entityId)
-      if (!entityId) return [p.id, p.id]
-      let entity = scene.entities.find((e) => e.id === entityId)!
-      while (entity.parentId) entity = scene.entities.find((e) => e.id === entity.parentId)!
-      const root = roots.find((o) => o.entityId === entity.id)!
-      return [p.id, `${root.id}/${encodeURIComponent(entityId)}`]
-    }),
-  )
-  // Legacy directed windows may be many-to-one. Preserve their topology rather
-  // than silently forcing them into the reciprocal physical-pair contract.
-  const remaining = (project.connections ?? []).map((c) => ({
-    ...c,
-    source: idsForPortal.get(c.source)!,
-    destination: idsForPortal.get(c.destination)!,
-  }))
-  const bookmarks = places.map((p) => ({
-    name: p.scene.name,
-    latitude: p.scene.geography!.latitude,
-    longitude: p.scene.geography!.longitude,
-  }))
-  return synchronizeWorldObjects({
-    ...project,
-    version: 3,
-    planetId: project.planetId ?? crypto.randomUUID(),
-    bookmarks,
-    activeLocation: places.some((p) => p.id === project.activeLocation)
-      ? 'planet'
-      : project.activeLocation,
-    locations: [{ id: 'planet', scene }, ...project.locations.filter((p) => !remap.has(p.id))],
-    objects: [...roots, ...project.objects.filter((o) => !remap.has(o.locationId))],
-    connections: remaining,
-  })
-}
-
 /** Travel changes the working frame, never the planet or its authored world poses. */
 export function travelPlanet(
   project: StudioProject,
@@ -299,14 +224,17 @@ export function travelPlanet(
   longitude: number,
   name: string,
 ): StudioProject {
-  let source = project
-  if (!project.locations.some((p) => p.scene.geography?.planetary)) {
-    source = structuredClone(project)
-    const active = source.locations.find((p) => p.id === source.activeLocation)!
+  const next = structuredClone(project)
+  if (!next.locations.some((p) => p.scene.geography?.planetary)) {
+    const active = next.locations.find((p) => p.id === next.activeLocation)!
     if (!active.scene.geography) throw Error('This local scene has no geographic anchor')
+    const previousId = active.id
     active.scene.geography.planetary = true
+    active.id = 'planet'
+    next.activeLocation = 'planet'
+    for (const object of next.objects)
+      if (object.locationId === previousId) object.locationId = 'planet'
   }
-  const next = structuredClone(unifyPlanet(source))
   const place = next.locations.find((p) => p.id === 'planet')
   if (!place) throw Error('This document has no planet; create a new planet from File')
   const scene = place.scene,

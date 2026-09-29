@@ -1,10 +1,9 @@
 import { expect, it } from 'vitest'
 import { boxSolid, extrudeFace, removeVertex, validateSolid } from '../../src/math/solid/mesh.js'
-import { createEntity, parseScene, type SceneDocument } from '../../src/stage/scene.js'
-import { SceneEditor } from '../../src/stage/editor.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { parseScene, type SceneDocument } from '../../src/scene/document.js'
+import { SceneEditor } from '../../src/scene/history.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
-import { createSampleScene } from '../../src/stage/sample.js'
-import { upgradeReferenceScene } from '../../studio/scene-upgrades.js'
 
 function document(): SceneDocument {
   const solid = createEntity('building', 'solid', [0, 2, 0])
@@ -87,17 +86,4 @@ it('collides with authored walls and passes through a deleted face', () => {
   }
   expect(run(false)).toBeGreaterThan(2)
   expect(run(true)).toBeLessThan(1)
-})
-it('uses a single topology entity per plot and upgrades old buildings without changing placements', () => {
-  const doc = createSampleScene()
-  expect(doc.entities.filter((e) => e.kind === 'solid')).toHaveLength(18)
-  expect(doc.entities.some((e) => e.id.startsWith('window-'))).toBe(false)
-  const e = doc.entities.find((e) => e.id === 'building-0')!
-  e.kind = 'box'
-  delete e.geometry
-  e.transform.position[0] += 3
-  const upgraded = upgradeReferenceScene(doc)
-  expect(upgraded.entities.find((n) => n.id === e.id)!.geometry).toEqual(boxSolid(e.size))
-  expect(upgraded.entities.find((n) => n.id === e.id)!.transform).toEqual(e.transform)
-  expect(upgradeReferenceScene(upgraded)).toEqual(upgraded)
 })

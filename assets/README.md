@@ -156,9 +156,8 @@ The two runtime files total approximately 1.14 MiB. Windows use simple tinted
 transparency in Engine; there are no dynamic mirror views or extra vehicle lights.
 
 The retired Gladiator binaries and its special clearcoat/steering setup are
-removed. Saved Studio scenes migrate that exact old body URL to the Wrangler,
-retaining entity identity, placement, colour and custom names. Engine clients can
-call `replaceLegacyJeeps` on their privately owned parsed document.
+removed. The current catalogue creates the Wrangler directly; there is no
+retired-model migration or filename-based replacement when loading scenes.
 
 ## Bilbao police Focus
 

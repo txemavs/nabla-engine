@@ -7,7 +7,7 @@ import {
 import { withinMapDistance } from './visibility.js'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import type { Entity } from '../../stage/scene.js'
+import type { Entity } from '../../entity/schema.js'
 
 type Part = { mesh: THREE.Mesh; matrix: THREE.Matrix4 }
 type Road = { entity: Entity; group: THREE.Group; parts: Map<string, Part[]> }

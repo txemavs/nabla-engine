@@ -13,7 +13,8 @@ import {
   tilePoint,
   tileUrl,
 } from '../../math/geo/sphere.js'
-import type { SceneDocument, Vec3Tuple } from '../../stage/scene.js'
+import type { SceneDocument } from '../../scene/document.js'
+import type { Vec3Tuple } from '../../entity/schema.js'
 const SCALE = 1e-6
 function moonMaterial(sun: THREE.Vector3): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({

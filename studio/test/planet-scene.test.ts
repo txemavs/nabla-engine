@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { createEntity, SceneGraph } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { SceneGraph } from '../../src/scene/graph.js'
 import { createPlanetScene, planetaryScene } from '../planet-scene.js'
 it('removes generated context without losing authored children or their world poses', () => {
   const scene = createPlanetScene({ latitude: 43, longitude: -1, altitude: 0 }, 'Test')

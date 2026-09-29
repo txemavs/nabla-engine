@@ -1,5 +1,5 @@
 import { expect, test } from './studio-test.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 
 test('selects, saves and renders a smooth road with buildings disabled', async ({ page }) => {
   const errors: string[] = []

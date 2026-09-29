@@ -20,7 +20,7 @@ test('initial map geometry is queued and installed incrementally', async ({ page
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
     const { SceneView } = await import(String('/@fs' + root + '/src/presentation/scene-view.ts'))
-    const { createEntity } = await import(`/@fs${root}/src/stage/scene.ts`)
+    const { createEntity } = await import(`/@fs${root}/src/index.ts`)
     const entities = [
       createEntity('spawn', 'spawn'),
       ...Array.from({ length: 1000 }, (_, i) => {

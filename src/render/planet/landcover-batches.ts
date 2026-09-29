@@ -1,6 +1,6 @@
 import { waterWaves } from './water-material.js'
 import * as THREE from 'three'
-import type { Entity } from '../../stage/scene.js'
+import type { Entity } from '../../entity/schema.js'
 import type { SurfaceType } from '../../planet/land/surface.js'
 import { SURFACE_COLORS, SURFACE_LAYERS } from '../../planet/land/surface.js'
 import { withinMapDistance } from './visibility.js'

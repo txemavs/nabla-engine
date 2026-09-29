@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Vector3 } from 'three'
 import { RoadBatches } from '../../src/render/planet/road-batches.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 
 it('batches immutable authored roads, preserves offsets, culls and returns to edit mode', () => {
   const entities = [0, 1].map((i) => ({

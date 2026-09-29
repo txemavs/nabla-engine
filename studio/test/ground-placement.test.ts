@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest'
-import { SceneEditor } from '../../src/stage/editor.js'
-import { parseScene } from '../../src/stage/scene.js'
+import { SceneEditor } from '../../src/scene/history.js'
+import { parseScene } from '../../src/scene/document.js'
 import { createPlanetScene } from '../planet-scene.js'
-import { settleGroundPlacement, recoverUnplacedDefaults } from '../ground-placement.js'
+import { settleGroundPlacement } from '../ground-placement.js'
 const scene = () => createPlanetScene({ latitude: 40, longitude: -3, altitude: 0 }, 'High ground')
 it('places each root and cursor on its own terrain and refines late heights', () => {
   const doc = scene()
@@ -28,19 +28,7 @@ it('explicit pose and cursor edits stop automatic placement', () => {
   expect(doc.cursor).toEqual([0, 900, 0])
   expect(doc.entities.find((e) => e.id === car.id)!.groundOffset).toBeUndefined()
 })
-it('recovers only the exact old unplaced defaults and preserves authored positions', () => {
-  const old = scene()
-  delete old.cursor
-  delete old.cursorOnGround
-  for (const e of old.entities) delete e.groundOffset
-  const moved = structuredClone(old)
-  moved.entities.find((e) => e.id === 'car-a')!.transform.position[1] = 42
-  expect(recoverUnplacedDefaults(moved)).toBe(moved)
-  const recovered = recoverUnplacedDefaults(old)
-  expect(recovered).not.toBe(old)
-  settleGroundPlacement(recovered, () => 700)
-  expect(recovered.cursor).toEqual([0, 700, 0])
-})
+
 it('leaves attached children untouched and accepts terrain below sea level', () => {
   const doc = scene()
   doc.entities[1].parentId = 'carrier'

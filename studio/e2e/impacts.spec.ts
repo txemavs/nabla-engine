@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createEntity } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
 
 test('leaves visible persistent surface marks and clears them when play stops', async ({
   page,

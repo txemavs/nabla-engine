@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { createEntity, type SceneDocument } from '../../src/stage/scene.js'
+import { createEntity } from '../../src/entity/schema.js'
+import { type SceneDocument } from '../../src/scene/document.js'
 import { Simulation } from '../../src/simulation/simulation.js'
 
 it('hover on a planet does not accumulate lift into a launch', () => {

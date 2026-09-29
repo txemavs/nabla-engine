@@ -129,7 +129,7 @@ Still required before the main-world enhancement preset:
 
 ## Drivable combined pilot (second slice)
 
-Open `/?world=geoeuskadi`, or **Archivo → Irún · Ventas · OSM + geoEuskadi**.
+Use **Archivo → Irún · Ventas · OSM + geoEuskadi**. The retired `world=geoeuskadi` URL shortcut has been removed.
 This opens a new starter scene, like the existing OSM starter; save/export any
 current work first. It is not a hot provider toggle on an authored scene.
 The launch parameter is consumed after loading so a later reload can restore the

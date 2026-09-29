@@ -1,4 +1,4 @@
-import { createSampleScene } from '../../src/stage/sample.js'
+import { createSampleScene } from '../../src/scene/sample.js'
 import type { Page } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 /** HTML can arrive before Vite has attached import/play handlers. Wait for Studio's

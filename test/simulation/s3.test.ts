@@ -9,7 +9,6 @@ import {
   isDriven,
   stepDrivetrain,
 } from '../../src/simulation/vehicles/drivetrain.js'
-import { upgradeSportPresets } from '../../src/scene/migrations/sport.js'
 
 it('limits delivered power, selects seven gears and reverses without gear hunting', () => {
   const v = createA3('s3').vehicle!
@@ -68,31 +67,6 @@ it('accelerates, shifts, brakes and holds a burnout on Rapier ground', () => {
   } finally {
     sim.dispose()
   }
-})
-
-it('upgrades stock cars once while preserving custom tuning and placements', () => {
-  const car = createA3('s3', [1, 2, 3])
-  car.name = 'My car'
-  delete car.vehicle!.powertrain
-  delete car.vehicle!.drivenWheels
-  car.vehicle!.brakeForce = 36
-  const custom = structuredClone(car)
-  custom.id = 'custom'
-  custom.vehicle!.engineForce = 2700
-  const police = createPoliceCar('police')
-  police.vehicle!.drivenWheels = 'all'
-  const doc = parseScene({
-    version: 1,
-    name: 'old',
-    entities: [car, custom, police, createEntity('spawn', 'spawn', [0, 1, 4])],
-  })
-  upgradeSportPresets(doc)
-  upgradeSportPresets(doc)
-  expect(doc.entities[0].vehicle!.powertrain!.powerCv).toBe(400)
-  expect(doc.entities[0].name).toBe('My car')
-  expect(doc.entities[0].transform.position).toEqual([1, 2, 3])
-  expect(doc.entities[1].vehicle!.powertrain).toBeUndefined()
-  expect(doc.entities[2].vehicle!.drivenWheels).toBe('front')
 })
 
 it('keeps reverse while coasting backwards fast and never selects gear zero', () => {

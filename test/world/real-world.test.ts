@@ -9,8 +9,8 @@ import {
 } from '../../src/planet/assemble/world.js'
 import { terrainHeight } from '../../src/planet/land/terrain.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
-import { SceneEditor } from '../../src/stage/editor.js'
-import { parseScene } from '../../src/stage/scene.js'
+import { SceneEditor } from '../../src/scene/history.js'
+import { parseScene } from '../../src/scene/document.js'
 const data = JSON.parse(
   readFileSync(new URL('../../assets/geography/irun-ventas.json', import.meta.url), 'utf8'),
 ) as WorldExtract

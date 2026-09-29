@@ -10,9 +10,9 @@ not drivetrain tuning, contacts or input mappings.
 | Responsibility                                            | Location                                                |
 | --------------------------------------------------------- | ------------------------------------------------------- |
 | Public equipment API                                      | `@nabla/engine/vehicle-presentation`                    |
-| Stock adapters and legacy lookup                          | `@nabla/engine/vehicle-presentation/presets`            |
+| Stock adapters and explicit IDs                           | `@nabla/engine/vehicle-presentation/presets`            |
 | Stock S3, Wrangler and police assembly/material treatment | `src/catalog/presentation/road-vehicles.ts`             |
-| Legacy S3 casing cut and display mounts                   | `src/catalog/presentation/a3-mounts.ts`                 |
+| Measured S3 casing cut and display mounts                 | `src/catalog/presentation/a3-mounts.ts`                 |
 | S3 lamp selectors and authored shader masks               | `src/catalog/presentation/a3-lamps.ts`                  |
 | Bilbao decals and lightbar                                | `src/catalog/presentation/police-equipment.ts`          |
 | Generic support movement and surface geometry             | `src/render/vehicle-presentation/`                      |
@@ -85,8 +85,7 @@ selected adapter. Do not assign an S3 adapter to an unrelated model.
   separately without this car/GPS controller.
 - Camera helpers are also public. `vehicle.headOffset` is an optional three-number
   driver-local eye offset, shared by camera and visible avatar. Stock road presets
-  explicitly use `[0, -0.15, -0.26]`; legacy scenes retain their prior car/carrier
-  defaults. Existing `vehicle.driver` and `cameraDistance` still define seat and
+  explicitly use `[0, -0.15, -0.26]`; procedural vehicles use the camera helper defaults. Existing `vehicle.driver` and `cameraDistance` still define seat and
   chase distance. Per-vehicle mirror elevation remains `vehicle.mirrorTilt`.
 
 See `/examples/equipment.html` for a monitor support and lamp controller on a
@@ -107,12 +106,10 @@ releases attached overlay meshes and materials with the model. Beacon textures
 returned in `VehicleEquipment.beacons.textures` are released by `SceneView`.
 The host disposes the complete view; components do not start background loops.
 
-The compatibility URL table exists only in the stock resolver for scenes that
-omit `visual.presentation`; explicit IDs always win, including unknown IDs (which
-warn and omit equipment rather than guessing). This lookup does not rewrite saved
-scenes or override paint, mirror elevation or authored camera offsets. These two
-optional schema fields do not require a scene version bump. Existing simulation
-preset migrations remain unchanged.
+Stock adapters resolve only explicit `visual.presentation` IDs. Missing IDs mean
+plain models; unknown IDs warn and omit optional equipment. There is no filename
+fallback or saved-preset migration. Authored tuning, paint, mirror elevation and
+camera offsets are used as saved.
 
 The first browser regression run retains the S3's 161 draw calls / 91,070 triangles
 in the same unoccupied-car fixture. This is a geometry/draw-count comparison, not

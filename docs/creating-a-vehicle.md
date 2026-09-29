@@ -95,8 +95,8 @@ feeding steering, clearing held controls when focus changes.
 
 For an independent hull or airframe, use the [boat/flight example](../examples/modularity/boat-flight.mjs).
 These APIs borrow a body and require no wheels. The existing scene serialization
-still has legacy wheel fields; use stock scene factories for compatibility rather
-than inventing a new JSON version. A plane may combine wheeled and flight control
+currently shares wheel fields in the active vehicle container. Use the current
+scene factories; this is an active implementation boundary, not a compatibility API. A plane may combine wheeled and flight control
 on the same body; enable only the intended force controller at a time.
 
 ## Verify a new prefab

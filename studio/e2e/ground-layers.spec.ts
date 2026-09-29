@@ -3,7 +3,7 @@ import { expect, test } from './studio-test.js'
 test('paths remain above grass in both individual and batched rendering', async ({ page }) => {
   await page.goto('/?scene=circuit')
   const result = await page.evaluate(async (root) => {
-    const sceneModule = `/@fs${root}/src/stage/scene.ts`
+    const sceneModule = `/@fs${root}/src/index.ts`
     const viewModule = '/@fs' + root + '/src/presentation/scene-view.ts'
     const T = await import(String('/e2e/render-fixture.ts'))
     const { createEntity } = await import(sceneModule)
