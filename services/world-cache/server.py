@@ -10,7 +10,8 @@ ROOT.mkdir(parents=True, exist_ok=True)
 BAKED = ROOT / 'baked'
 TTL = int(os.environ.get('CACHE_TTL_SECONDS', '2592000'))
 LIMIT = int(os.environ.get('CACHE_MAX_BYTES', '10737418240'))
-OSM = 'https://overpass-api.de/api/interpreter'
+OSM_PUBLIC = 'https://overpass-api.de/api/interpreter'
+OSM = os.environ.get('OVERPASS_URL') or OSM_PUBLIC  # Optional local Overpass; the public server stays the fallback.
 ESRI = 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/tile/'
 locks = [threading.Lock() for _ in range(64)]
 osm_lock = threading.Lock()
@@ -75,6 +76,20 @@ def cached(key, url, body=None):
             raise
 
 def download(url, body):
+    if url == OSM and OSM != OSM_PUBLIC:
+        if os.environ.get('OVERPASS_FALLBACK', '1') == '0':
+            return fetch_bytes(url, body)  # local Overpass only: never contact the public server
+        try:
+            data = fetch_bytes(url, body)
+            result = json.loads(data)
+            if 'remark' not in result and isinstance(result.get('elements'), list):
+                return data
+        except Exception:
+            pass
+        url = OSM_PUBLIC
+    return fetch_bytes(url, body)
+
+def fetch_bytes(url, body):
     request = urllib.request.Request(url, data=body, headers={
         'User-Agent': 'NablaWorldCache/1.0 (https://github.com/txemavs/nabla-world)',
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -222,6 +237,19 @@ class Handler(BaseHTTPRequestHandler):
                 return
             accepted = PREPARE_QUEUE.enqueue([tile])
             self.respond(200, json.dumps({'tile': tile, 'accepted': accepted}).encode())
+            return
+        if self.path == '/map/delete':
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 256:
+                    raise ValueError('Invalid request size')
+                tile = json.loads(self.rfile.read(length))['tile']
+                from world.planet.forget import forget_zone
+                removed = forget_zone(PREPARE_ROOT, PREPARE_QUEUE, tile)
+            except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+                self.respond(400, b'{"error":"Expected one z/zoom/x/y zone"}')
+                return
+            self.respond(200, json.dumps({'removed': removed}).encode())
             return
         if self.path == '/prepare/session':
             supplied = self.headers.get('Authorization', '').removeprefix('Bearer ')

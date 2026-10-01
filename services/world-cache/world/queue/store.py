@@ -169,6 +169,14 @@ class Queue:
             state = 'ready' if success else ('failed' if attempts >= 3 else 'queued')
             db.execute('UPDATE planet_jobs SET state=?, next=?, updated=? WHERE id=?', (state,time.time()+min(900,60*2**attempts),time.time(),identity))
 
+    def forget(self, tiles):
+        if not tiles:
+            return
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            for tile in tiles:
+                db.execute('DELETE FROM planet_jobs WHERE tile=?', (tile,))
+
     def stats(self):
         with self.connect() as db:
             return {r['state']:r['count'] for r in db.execute('SELECT state,count(*) AS count FROM planet_jobs GROUP BY state')}
