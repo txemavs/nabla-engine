@@ -1,6 +1,9 @@
 import { test, expect } from './studio-test.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
+import { hasLocalPreset } from '../../test/local-presets.js'
+test.skip(!hasLocalPreset('boat'), 'Needs the git-ignored assets/custom boat preset')
+
 test('F8 runs gravity and E boards, leaves and reboards the boat', async ({ page }) => {
   const scene = {
     version: 1,

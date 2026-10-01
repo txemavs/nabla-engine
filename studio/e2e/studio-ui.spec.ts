@@ -1,6 +1,7 @@
 import { test, expect, localCircuit } from './studio-test.js'
 import type { Page } from '@playwright/test'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
+import { hasLocalPreset } from '../../test/local-presets.js'
 async function command(page: Page, menu: string, id: string) {
   await page.locator('.studio-main-menu').getByRole('button', { name: menu, exact: true }).click()
   await page.locator('.desktop-menu-popup:popover-open [data-command="' + id + '"]').click()
@@ -149,6 +150,7 @@ test('Play toolbar starts on foot at the saved spawn and stops cleanly on the fi
 test('saved police equipment can be explicitly restored and saved without replacing its tuning', async ({
   page,
 }) => {
+  test.skip(!hasLocalPreset('police'), 'Needs the git-ignored assets/custom police preset')
   const car = presetVehicle('police', 'saved-police', [16, 1, -22])
   delete car.visual!.presentation
   car.vehicle!.engineForce = 7654

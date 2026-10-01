@@ -1,6 +1,9 @@
 import { test, expect } from './studio-test.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
+import { hasLocalPreset } from '../../test/local-presets.js'
+
+test.skip(!hasLocalPreset('police'), 'Needs the git-ignored assets/custom police preset')
 
 test('police car handbrake emits marks and audible tyre feedback through Studio', async ({
   page,

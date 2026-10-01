@@ -2,10 +2,12 @@ import { simplifiedTide } from '../../src/planet/tide.js'
 import { test, expect, localCircuit } from './studio-test.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
+import { hasLocalPreset } from '../../test/local-presets.js'
 
 test('fills the published sea hole with one sheet and does not fetch ocean tiles', async ({
   page,
 }) => {
+  test.skip(!hasLocalPreset('boat'), 'Needs the git-ignored assets/custom boat preset')
   await localCircuit(page)
   const ocean: string[] = []
   page.on('request', (request) => {

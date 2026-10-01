@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test'
+import { hasLocalPreset } from '../../test/local-presets.js'
+
+test.skip(!hasLocalPreset('police'), 'Needs the git-ignored assets/custom police preset')
 
 test('Bilbao police Focus shares four wheel geometries and stays within its draw budget', async ({
   page,

@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test'
+import { hasLocalPreset } from '../../test/local-presets.js'
+
+test.skip(!hasLocalPreset('jeep'), 'Needs the git-ignored assets/custom jeep preset')
 
 test('Wrangler shares four wheel geometries and stays within its draw budget', async ({ page }) => {
   await page.route('**/wrangler-preview', (route) =>
