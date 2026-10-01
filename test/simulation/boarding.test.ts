@@ -1,17 +1,19 @@
 import { expect, it } from 'vitest'
 import { Simulation } from '../../src/simulation/simulation.js'
-import { createEntity } from '../../src/entity/schema.js'
+import { createEntity, type Entity } from '../../src/entity/schema.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { hasLocalPreset } from '../local-presets.js'
 
-it.each(
-  (
-    [
-      ['boat', () => presetVehicle('boat', 'vehicle', [0, 0, 0]), [0, 1, 4.5]],
-      ['ship', () => presetVehicle('carrier', 'vehicle', [0, 0, 0]), [0, 0, 6]],
-      ['car', () => presetVehicle('car', 'vehicle', [0, 0, 0]), [2.5, 0, 0]],
-    ] as const
-  ).filter(([name]) => name !== 'boat' || hasLocalPreset('boat')),
+type Row = readonly [string, () => Entity, readonly [number, number, number]]
+const rows: Row[] = (
+  [
+    ['boat', () => presetVehicle('boat', 'vehicle', [0, 0, 0]), [0, 1, 4.5]],
+    ['ship', () => presetVehicle('carrier', 'vehicle', [0, 0, 0]), [0, 0, 6]],
+    ['car', () => presetVehicle('car', 'vehicle', [0, 0, 0]), [2.5, 0, 0]],
+  ] as Row[]
+).filter(([name]) => name !== 'boat' || hasLocalPreset('boat'))
+
+it.each(rows)(
   'boards %s from its perimeter using ordinary interaction',
   (_name, create, position) => {
     const sim = new Simulation({
