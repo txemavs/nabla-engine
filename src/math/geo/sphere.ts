@@ -71,12 +71,40 @@ export function tileUrl(
     ? `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${wrapped}`
     : `https://a.basemaps.cartocdn.com/dark_all/${zoom}/${wrapped}/${y}.png`
 }
+function julianDays(at: Date) {
+  return at.getTime() / 86400000 + 2440587.5 - 2451545
+}
+function greenwichSidereal(n: number) {
+  const t = n / 36525
+  return 280.46061837 + 360.98564736629 * n + 0.000387933 * t * t
+}
+/** Equatorial coordinates, same Greenwich rotation as the Sun and Moon. */
+export function equatorialDirection(at: Date, raHours: number, decDegrees: number): Vector3 {
+  const n = julianDays(at)
+  return ecef({
+    latitude: decDegrees,
+    longitude: raHours * 15 - greenwichSidereal(n),
+    altitude: 0,
+  }).normalize()
+}
+/** Ecliptic longitude on the equator of the ecliptic, same frame as the Sun. */
+export function eclipticDirection(at: Date, longitudeDegrees: number): Vector3 {
+  const n = julianDays(at)
+  const eps = (23.439 - 4e-7 * n) * rad
+  const lambda = longitudeDegrees * rad
+  const dec = Math.asin(Math.sin(eps) * Math.sin(lambda))
+  const ra = Math.atan2(Math.cos(eps) * Math.sin(lambda), Math.cos(lambda))
+  return ecef({
+    latitude: dec / rad,
+    longitude: ra / rad - greenwichSidereal(n),
+    altitude: 0,
+  }).normalize()
+}
 /** Approximate apparent Sun/Moon adapted from Agency sunPosition (not navigation ephemerides). */
 export function celestialDirections(at: Date): { sun: Vector3; moon: Vector3 } {
-  const n = at.getTime() / 86400000 + 2440587.5 - 2451545,
-    t = n / 36525
-  const gmst = 280.46061837 + 360.98564736629 * n + 0.000387933 * t * t
+  const n = julianDays(at)
   const eps = (23.439 - 4e-7 * n) * rad
+  const gmst = greenwichSidereal(n)
   const direction = (lambda: number, beta: number) => {
     const dec = Math.asin(
       Math.sin(beta) * Math.cos(eps) + Math.cos(beta) * Math.sin(eps) * Math.sin(lambda),

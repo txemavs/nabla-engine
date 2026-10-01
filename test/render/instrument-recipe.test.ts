@@ -32,4 +32,12 @@ it('each menu owns its navigation while the shared recipe formats three rows and
   expect(data.values.row2).not.toBe('')
   expect(b.depth).toBe(0)
   expect(b.selected).toBe(0)
+  b.open = true
+  b.key('ArrowDown')
+  b.key('ArrowDown')
+  b.key('Enter')
+  expect(s3Instruments.menuData(b, { mirrorTilt: 0 }).values.title).toBe('SIGUE AL COCHE')
+  expect(s3Instruments.menuData(b, { mirrorTilt: 0, mapFollow: false }).values.title).toBe(
+    'CLAVADO AL NORTE',
+  )
 })

@@ -1,4 +1,5 @@
 import { nearestLocality } from './navigation-places.js'
+import { isChartCarriageway } from '../planet/ground-material.js'
 import { Matrix4, Quaternion, Vector3 } from 'three'
 import { SceneGraph } from '../../scene/graph.js'
 import { type SceneDocument } from '../../scene/document.js'
@@ -15,6 +16,7 @@ type ChartRoad = {
   maxX: number
   minZ: number
   maxZ: number
+  carriageway: boolean
 }
 const chartCache = new WeakMap<Entity[], ChartRoad[]>()
 /** All cockpit screens share one immutable projection per scene revision. */
@@ -43,7 +45,15 @@ export function chartRoads(doc: SceneDocument): ChartRoad[] {
           minZ = Math.min(minZ, p.z)
           maxZ = Math.max(maxZ, p.z)
         }
-        return { points, width: e.road!.width, minX, maxX, minZ, maxZ }
+        return {
+          points,
+          width: e.road!.width,
+          minX,
+          maxX,
+          minZ,
+          maxZ,
+          carriageway: isChartCarriageway({ source: e.source, transport: 'road' }),
+        }
       })
     })
   chartCache.set(doc.entities, roads)
@@ -54,13 +64,25 @@ export class HelmMap {
   private entities: Entity[] | null = null
   private roads: ChartRoad[] = []
   private next = 0
+  private followHeading = false
   constructor(
     readonly canvas: HTMLCanvasElement,
     private readonly clean = false,
     private readonly zoom = 1,
+    headingUp = false,
   ) {
     canvas.width = 580
     canvas.height = clean ? 384 : 230
+    this.followHeading = headingUp
+  }
+  /** Heading-up keeps the car pointing up. North-up leaves the chart fixed. */
+  set headingUp(value: boolean) {
+    if (this.followHeading === value) return
+    this.followHeading = value
+    this.next = 0
+  }
+  get headingUp(): boolean {
+    return this.followHeading
   }
   update(doc: SceneDocument, pose: Transform, now: number): void {
     if (now < this.next) return
@@ -73,8 +95,16 @@ export class HelmMap {
     const scale = 0.23 * this.zoom,
       cx = 290,
       cy = this.canvas.height / 2
+    const forward = new Vector3(0, 0, -1).applyQuaternion(new Quaternion(...pose.rotation))
+    const heading = Math.atan2(forward.x, -forward.z)
     ctx.fillStyle = '#07172c'
     ctx.fillRect(0, 0, 580, this.canvas.height)
+    ctx.save()
+    if (this.followHeading) {
+      ctx.translate(cx, cy)
+      ctx.rotate(-heading)
+      ctx.translate(-cx, -cy)
+    }
     ctx.strokeStyle = '#123253'
     ctx.lineWidth = 1
     for (let x = 0; x < 580; x += 46) {
@@ -106,8 +136,8 @@ export class HelmMap {
       ctx.drawImage(tile.bitmap, x, z, maxX - x, maxZ - z)
       ctx.restore()
     }
-    ctx.strokeStyle = '#549bd3'
-    for (const road of this.roads) {
+    const roads = [...this.roads].sort((a, b) => Number(a.carriageway) - Number(b.carriageway))
+    for (const road of roads) {
       const pad = road.width / 2
       if (
         road.maxX + pad < pose.position[0] - cx / scale ||
@@ -116,6 +146,7 @@ export class HelmMap {
         road.minZ - pad > pose.position[2] + cy / scale
       )
         continue
+      ctx.strokeStyle = road.carriageway ? '#ffffff' : '#549bd3'
       ctx.lineWidth = Math.max(1, road.width * scale)
       ctx.beginPath()
       road.points.forEach((p, i) => {
@@ -126,11 +157,11 @@ export class HelmMap {
       })
       ctx.stroke()
     }
-    const forward = new Vector3(0, 0, -1).applyQuaternion(new Quaternion(...pose.rotation))
+    ctx.restore()
     ctx.save()
     ctx.translate(cx, cy)
-    ctx.rotate(Math.atan2(forward.x, -forward.z))
-    ctx.fillStyle = '#63d8ff'
+    if (!this.followHeading) ctx.rotate(heading)
+    ctx.fillStyle = '#ff3548'
     ctx.beginPath()
     ctx.moveTo(0, -15)
     ctx.lineTo(10, 11)

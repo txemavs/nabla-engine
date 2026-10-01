@@ -10,6 +10,7 @@ import {
 import type { WheeledInput, WheelContactSnapshot } from './vehicles/wheeled/contracts.js'
 import { stepBoatInWater } from './vehicles/boat.js'
 import { stepFlight } from './vehicles/flight.js'
+import { CATCH_FLOOR_DEPTH, CATCH_FLOOR_RADIUS } from '../planet/catch-floor.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
 import { terrainHeight, terrainVertices, terrainIndices } from '../planet/land/terrain.js'
 import { triangles } from '../math/solid/mesh.js'
@@ -71,6 +72,14 @@ const pose = (b: Body): Transform => ({
   rotation: [b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w],
 })
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
+function alignUp(up: Vec3): Quaternion {
+  const dot = clamp(up.y, -1, 1)
+  if (dot > 0.999999) return new Quaternion(0, 0, 0, 1)
+  if (dot < -0.999999) return new Quaternion(1, 0, 0, 0)
+  const axis = new Vec3(up.z, 0, -up.x)
+  axis.normalize()
+  return new Quaternion().setFromAxisAngle(axis, Math.acos(dot))
+}
 
 /** Owns exactly one physics world. Scene data is copied and never mutated.
  * The host supplies elapsed seconds and input, and reads snapshots after step(). */
@@ -78,8 +87,23 @@ export class Simulation {
   private readonly document: SceneDocument
   private readonly terrainEntity: Entity | undefined
   private waterLevel = 0
+  private catchFloor: Body | null = null
   setWaterLevel(metres: number): void {
     if (Number.isFinite(metres)) this.waterLevel = clamp(metres, -5, 50)
+  }
+  /** Top face of the gray disk, once the occupied actor has dropped under the sea. */
+  catchDisk(): Transform | null {
+    if (!this.catchFloor) return null
+    const up = this.catchFloor.quaternion.vmult(new Vec3(0, 1, 0))
+    return {
+      position: vec(this.catchFloor.position.vadd(up.scale(0.5))),
+      rotation: [
+        this.catchFloor.quaternion.x,
+        this.catchFloor.quaternion.y,
+        this.catchFloor.quaternion.z,
+        this.catchFloor.quaternion.w,
+      ],
+    }
   }
   private minimumFlightAltitude: number
   private graph: SceneGraph
@@ -770,6 +794,7 @@ export class Simulation {
       if (this.ticks % 15 === 0) this.updateMapCollisions()
       for (const vehicle of this.vehicles.values()) this.updateRamp(vehicle, FIXED_STEP)
       this.beforeTick()
+      this.updateCatchFloor()
       this.world.step(FIXED_STEP)
       this.constrainTerrainBoundary()
       if (carry && host) {
@@ -1276,6 +1301,57 @@ export class Simulation {
           EARTH_RADIUS -
           geo.altitude
       : point.y
+  }
+  /** Flat slab 30 m under the sea. Tracks the occupied body so a hole cannot drop it forever. */
+  private updateCatchFloor(): void {
+    const geo = this.document.geography
+    if (!geo) return
+    const actor = this.vehicleId
+      ? this.vehicles.get(this.vehicleId)!.body
+      : (this.interiorBody() ?? this.playerBody)
+    const sea = this.waterLevel - geo.altitude
+    // A floating hull sits just under the surface. Wait until the fall is real,
+    // then keep the disk until the actor climbs back out.
+    const sunk = this.catchFloor ? 0 : 2
+    if (this.altitude(actor.position) >= sea - sunk) {
+      this.dropCatchFloor()
+      return
+    }
+    const center = new Vec3(0, -(EARTH_RADIUS + geo.altitude), 0)
+    const radial = actor.position.vsub(center)
+    const span = radial.length()
+    if (span < 1) return
+    radial.scale(1 / span, radial)
+    const top = center.vadd(radial.scale(EARTH_RADIUS + this.waterLevel - CATCH_FLOOR_DEPTH))
+    if (!this.catchFloor) {
+      this.catchFloor = new Body({ mass: 0, material: this.solidMaterial })
+      this.catchFloor.addShape(new Box(new Vec3(CATCH_FLOOR_RADIUS, 0.5, CATCH_FLOOR_RADIUS)))
+      this.seatCatchFloor(top, radial)
+      this.world.addBody(this.catchFloor)
+      return
+    }
+    const up = this.catchFloor.quaternion.vmult(new Vec3(0, 1, 0))
+    const current = this.catchFloor.position.vadd(up.scale(0.5))
+    const offset = top.vsub(current)
+    const rise = Math.abs(offset.dot(up))
+    const drift = offset.vsub(up.scale(offset.dot(up))).length()
+    if (drift > CATCH_FLOOR_RADIUS * 0.45 || rise > 0.05) this.seatCatchFloor(top, radial)
+  }
+  private seatCatchFloor(top: Vec3, up: Vec3): void {
+    const body = this.catchFloor!
+    const rotation = alignUp(up)
+    const position = top.vsub(rotation.vmult(new Vec3(0, 0.5, 0)))
+    body.quaternion.copy(rotation)
+    body.position.copy(position)
+    body.previousPosition.copy(position)
+    body.previousQuaternion.copy(rotation)
+    body.velocity.setZero()
+    body.angularVelocity.setZero()
+  }
+  private dropCatchFloor(): void {
+    if (!this.catchFloor) return
+    this.world.removeBody(this.catchFloor)
+    this.catchFloor = null
   }
   /** 0 is stopped, 1 is full prop. Idles while occupied and windmills in the slipstream. */
   private spoolEngine(v: Vehicle, active: boolean): void {
@@ -1979,6 +2055,7 @@ export class Simulation {
   }
   dispose(): void {
     if (this.disposed) return
+    this.dropCatchFloor()
     for (const dock of this.docks.values()) this.world.removeConstraint(dock.constraint)
     this.docks.clear()
     this.planetCollisions.dispose()

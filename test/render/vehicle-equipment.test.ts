@@ -4,9 +4,7 @@ import { RetractableMount } from '../../src/render/vehicle-presentation/retracta
 import { CarLights } from '../../src/render/entity/car-lights.js'
 import { CarMirrors } from '../../src/render/entity/car-mirrors.js'
 import { driverHeadPose } from '../../src/render/entity/driving-camera.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
-import { createJeep } from '../../src/catalog/vehicles/jeep.js'
-import { createPoliceCar } from '../../src/catalog/vehicles/police.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createA3Mounts } from '../../src/catalog/presentation/a3-mounts.js'
 import {
   stockVehiclePresentation,
@@ -58,8 +56,8 @@ it('camera and avatar accept the same driver-local mount under body rotation', (
   expect(head.position.distanceTo(new Vector3(0.5, 2.25, 3))).toBeLessThan(1e-8)
 })
 it('resolves explicit IDs independent of filenames, requires IDs and preserves authored properties', () => {
-  for (const factory of [createA3, createJeep, createPoliceCar]) {
-    const entity = factory('car')
+  for (const catalogId of ['car', 'jeep', 'police'] as const) {
+    const entity = presetVehicle(catalogId, 'car')
     entity.vehicle!.mirrorTilt = 5
     entity.vehicle!.headOffset = [0.1, 0.2, -0.4]
     delete entity.visual!.presentation
@@ -72,7 +70,7 @@ it('resolves explicit IDs independent of filenames, requires IDs and preserves a
     expect(parsed.vehicle!.mirrorTilt).toBe(5)
     expect(parsed.vehicle!.headOffset).toEqual([0.1, 0.2, -0.4])
   }
-  const car = createA3('car')
+  const car = presetVehicle('car', 'car')
   car.visual!.body.url = '/world/renamed.glb'
   expect(stockVehiclePresentation(car)).toBe(s3Presentation)
   car.visual!.presentation = 'custom.other'

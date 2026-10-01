@@ -11,6 +11,7 @@
 import { CSM } from 'three/addons/csm/CSM.js'
 import * as THREE from 'three'
 import { shadowTiers, type ShadowTier } from './shadow-tiers.js'
+import { patchGroundCloudShadow } from './planet/artistic-clouds.js'
 
 // The addon ships an older full lighting chunk. Replacing it wholesale drops
 // r186's DFG lookup and multi-scattering initialization, turning metals black.
@@ -86,11 +87,11 @@ export class ShadowManager {
       lightNear: 0.1,
       lightFar: config.tier.maxFar + 500,
       lightMargin: 200,
-      // Reserve the near cascade for vehicles; kilometre-wide practical splits
-      // make a higher quality tier lose the car's contact shadow.
+      // The first split has to hold the car and the façade that shades it.
+      // A 40 m cut follows the view, so turning drops the building out of the map.
       mode: 'custom',
       customSplitsCallback: (count, _near, far, breaks) => {
-        const distances = count === 4 ? [40, 200, 1000] : count === 3 ? [40, 300] : [40]
+        const distances = count >= 4 ? [140, 420, 1200] : count === 3 ? [140, 500] : [160]
         for (let i = 0; i < count - 1; i++)
           breaks.push(Math.min(distances[i] / far, (i + 1) / count))
         breaks.push(1)
@@ -100,7 +101,9 @@ export class ShadowManager {
       standardLighting,
       THREE.ShaderChunk.lights_fragment_begin,
     )
-    this.csm.fade = false
+    this.csm.fade = true
+    this.csm.updateFrustums()
+    this.padShadowBounds()
     for (const light of this.csm.lights) {
       light.shadow.normalBias = config.tier.normalBias
       light.shadow.radius = config.tier.radius
@@ -144,6 +147,7 @@ export class ShadowManager {
     material.onBeforeCompile = (shader, renderer) => {
       original?.call(material, shader, renderer)
       setup.call(material, shader, renderer)
+      patchGroundCloudShadow(shader)
     }
     material.needsUpdate = true
   }
@@ -190,6 +194,7 @@ export class ShadowManager {
     if (key !== this.projectionKey) {
       this.projectionKey = key
       this.csm.updateFrustums()
+      this.padShadowBounds()
     }
     this.csm.update()
     for (const light of this.csm.lights) {
@@ -207,6 +212,21 @@ export class ShadowManager {
       light.position.sub(origin)
       light.target.position.sub(origin)
     }
+  }
+
+  /** Keep façades just outside the frustum casting onto the car. */
+  private padShadowBounds(): void {
+    const margins = [48, 24]
+    this.csm?.lights.forEach((light, index) => {
+      const margin = margins[index] ?? 0
+      if (!margin) return
+      const cam = light.shadow.camera
+      cam.left -= margin
+      cam.right += margin
+      cam.bottom -= margin
+      cam.top += margin
+      cam.updateProjectionMatrix()
+    })
   }
 
   /** Call when camera projection changes. */

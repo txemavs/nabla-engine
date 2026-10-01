@@ -10,17 +10,27 @@ export interface LampBinding {
   side: number
   mesh?: THREE.Mesh
 }
+export interface CourtesyWell {
+  lamp: THREE.PointLight
+  lens: THREE.MeshStandardMaterial
+}
 /** Prepared lens bindings; no model names, lights, shadows or extra scene passes. */
 export class CarLights {
   private signal = 0
   constructor(
     private readonly lamps: readonly LampBinding[],
     private readonly flashMs = 450,
+    private readonly courtesy: readonly CourtesyWell[] = [],
   ) {}
   toggle(side: number): void {
     this.signal = this.signal === side ? 0 : side
   }
-  update(state: CarLampState, now: number): void {
+  update(state: CarLampState, now: number, night = false): void {
+    const footwell = state.powered && night
+    for (const well of this.courtesy) {
+      well.lamp.intensity = footwell ? 6 : 0
+      well.lens.emissiveIntensity = footwell ? 0.45 : 0
+    }
     if (!state.powered) this.signal = 0
     const flash = Math.floor(now / this.flashMs) % 2 === 0
     for (const lamp of this.lamps) {

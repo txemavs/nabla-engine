@@ -5,7 +5,7 @@ import { mountPropeller } from '../../src/render/entity/propeller.js'
 
 it('cuts the Cessna propeller off the cowling', async () => {
   Object.assign(globalThis, { self: globalThis })
-  const buf = readFileSync('assets/world/cessna.172.glb')
+  const buf = readFileSync('assets/custom/planes/cessna/cessna.172.glb')
   const loader = new GLTFLoader()
   const gltf = await new Promise<import('three/addons/loaders/GLTFLoader.js').GLTF>(
     (resolve, reject) =>

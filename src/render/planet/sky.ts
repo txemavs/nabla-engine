@@ -1,4 +1,6 @@
-import { createCloudLayer } from './clouds.js'
+import { createArtisticClouds, createGlobeClouds, shadeEarthWithClouds } from './artistic-clouds.js'
+import { NightSky } from './night-sky.js'
+import { cloudHours, createCloudLayer } from './clouds.js'
 import { addSunDisc } from './sun-disc.js'
 import { createLensFlare } from './lens-flare.js'
 import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../../planet/sky.js'
@@ -17,26 +19,79 @@ import type { SceneDocument } from '../../scene/document.js'
 import type { Vec3Tuple } from '../../entity/schema.js'
 const SCALE = 1e-6
 function moonMaterial(sun: THREE.Vector3): THREE.ShaderMaterial {
+  const placeholder = new THREE.DataTexture(new Uint8Array([255, 248, 236]), 1, 1)
+  placeholder.colorSpace = THREE.SRGBColorSpace
+  placeholder.needsUpdate = true
   return new THREE.ShaderMaterial({
-    uniforms: { sun: { value: sun } },
+    uniforms: { sun: { value: sun }, map: { value: placeholder } },
     fog: false,
     vertexShader: `
       varying vec3 vNormal;
+      varying vec2 vUv;
       void main() {
+        vUv = uv;
         vNormal = normalize(mat3(modelMatrix) * normal);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: `
       uniform vec3 sun;
+      uniform sampler2D map;
       varying vec3 vNormal;
+      varying vec2 vUv;
       void main() {
+        vec3 albedo = texture2D(map, vUv).rgb;
         float lit = smoothstep(-0.04, 0.28, dot(normalize(vNormal), normalize(sun)));
-        gl_FragColor = vec4(mix(vec3(0.035, 0.038, 0.045), vec3(1.05, 1.02, 0.9), lit), 1.0);
+        gl_FragColor = vec4(albedo * (0.05 + 0.95 * lit), 1.0);
       }
     `,
   })
 }
+function createAirGlow(sun: THREE.Vector3, radius: number) {
+  const material = new THREE.ShaderMaterial({
+    uniforms: { sunDirection: { value: sun } },
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    blending: THREE.AdditiveBlending,
+    fog: false,
+    toneMapped: false,
+    side: THREE.DoubleSide,
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vWorld;
+      void main() {
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vWorld = world.xyz;
+        vNormal = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * world;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 sunDirection;
+      varying vec3 vNormal;
+      varying vec3 vWorld;
+      void main() {
+        vec3 N = normalize(vNormal);
+        vec3 V = normalize(cameraPosition - vWorld);
+        vec3 sun = normalize(sunDirection);
+        float graz = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), 3.1);
+        float day = smoothstep(-0.4, 0.28, dot(N, sun));
+        float intoSun = smoothstep(0.15, 0.92, dot(sun, -V));
+        vec3 col = mix(vec3(0.32, 0.52, 1.0), vec3(1.0, 0.68, 0.38), intoSun);
+        float glow = graz * (0.045 + day * 0.42) * (0.38 + intoSun);
+        if (glow < 0.012) discard;
+        gl_FragColor = vec4(col * glow, 1.0);
+      }
+    `,
+  })
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 128, 96), material)
+  mesh.name = 'Air'
+  mesh.frustumCulled = false
+  mesh.renderOrder = 2
+  return mesh
+}
+
 interface Tile {
   mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>
   url: string
@@ -55,7 +110,7 @@ export class GeographicView {
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 1e-8, 200000)
   private readonly earth: THREE.Mesh
   private readonly moon: THREE.Mesh
-  private readonly stars: THREE.Points
+  private readonly night: NightSky
   private readonly cache = new Map<string, Tile>()
   private readonly hasTerrain: boolean
   private origin: SceneDocument['geography']
@@ -64,8 +119,16 @@ export class GeographicView {
   private failed = 0
   private key = ''
   private earthTexture?: THREE.Texture
+  private moonTexture?: THREE.Texture
   private readonly sunDisc: { value: THREE.Color }
   private readonly clouds: ReturnType<typeof createCloudLayer>
+  private readonly artistic: ReturnType<typeof createArtisticClouds>
+  private readonly globe: ReturnType<typeof createGlobeClouds>
+  private readonly air: THREE.Mesh
+  private readonly cloudPass = new THREE.Scene()
+  private moonSize = 9
+  private cloudStyle: 'low' | 'artistic' = 'artistic'
+  private cloudsWanted = true
   private readonly flare: ReturnType<typeof createLensFlare>
   private readonly daylight = new THREE.DirectionalLight('#ffffff', 2.5)
   private readonly backdrop = new THREE.Mesh(
@@ -98,42 +161,57 @@ export class GeographicView {
       new THREE.MeshLambertMaterial({ color: '#c4d8e9' }),
     )
     this.space.add(this.earth)
-    this.moon = new THREE.Mesh(new THREE.SphereGeometry(1.7374, 32, 24), moonMaterial(this.moonSun))
+    this.moon = new THREE.Mesh(
+      new THREE.SphereGeometry(1.7374, 48, 36),
+      moonMaterial(this.moonSun),
+    )
+    this.moon.scale.setScalar(this.moonSize)
     this.sunDisc = addSunDisc(this.backdrop.material, this.sunDirection)
     this.clouds = createCloudLayer(this.sunDirection)
+    this.artistic = createArtisticClouds(this.sunDirection)
+    this.cloudPass.add(this.artistic.deck)
+    const earthRadius = EARTH_RADIUS * SCALE
+    this.globe = createGlobeClouds(this.sunDirection, earthRadius + 0.02)
+    shadeEarthWithClouds(
+      this.earth.material as THREE.MeshLambertMaterial,
+      this.sunDirection,
+      this.globe.coverage,
+      this.globe.dayHours,
+      this.globe.amount,
+    )
+    this.air = createAirGlow(this.sunDirection, earthRadius + 0.14)
     this.flare = createLensFlare(this.sunDirection)
     this.space.add(this.moon)
+    this.night = new NightSky()
+    this.space.add(this.night.root)
     const rotation = this.origin ? localFrame(this.origin).invert() : new THREE.Quaternion()
-    this.space.add(this.daylight, this.backdrop, this.clouds.mesh)
+    this.space.add(this.daylight, this.backdrop, this.clouds.mesh, this.globe.mesh, this.air)
+    new THREE.TextureLoader().load(
+      '/geography/moon.jpg',
+      (texture) => {
+        if (this.disposed) {
+          texture.dispose()
+          return
+        }
+        texture.colorSpace = THREE.SRGBColorSpace
+        texture.anisotropy = 8
+        const material = this.moon.material as THREE.ShaderMaterial
+        const previous = material.uniforms.map.value as THREE.Texture
+        material.uniforms.map.value = texture
+        previous.dispose()
+        this.moonTexture = texture
+        this.changed()
+      },
+      undefined,
+      () => this.changed(),
+    )
+    this.syncClouds()
     this.backdrop.renderOrder = -100
     this.earth.quaternion.copy(rotation)
     this.earth.position.set(0, -(EARTH_RADIUS + (this.origin?.altitude ?? 0)) * SCALE, 0)
-    const points: number[] = []
-    for (let i = 0; i < 1600; i++) {
-      const y = 1 - (2 * (i + 0.5)) / 1600,
-        a = i * 2.3999632297
-      points.push(
-        Math.cos(a) * Math.sqrt(1 - y * y) * 80000,
-        y * 80000,
-        Math.sin(a) * Math.sqrt(1 - y * y) * 80000,
-      )
-    }
-    const geometry = new THREE.BufferGeometry().setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(points, 3),
-    )
-    this.stars = new THREE.Points(
-      geometry,
-      new THREE.PointsMaterial({
-        size: 1.2,
-        sizeAttenuation: false,
-        color: '#c3d5ff',
-        transparent: true,
-        depthWrite: false,
-        fog: false,
-      }),
-    )
-    this.space.add(this.stars)
+    this.globe.mesh.position.copy(this.earth.position)
+    this.globe.mesh.quaternion.copy(rotation)
+    this.air.position.copy(this.earth.position)
     new THREE.TextureLoader().load(
       '/geography/earth.jpg',
       (texture) => {
@@ -181,6 +259,8 @@ export class GeographicView {
       this.moonSun.copy(this.sunDirection)
       this.daylight.position.copy(this.sunDirection)
       this.moon.position.copy(this.moonDirection).multiplyScalar(384.4).add(this.earth.position)
+      this.aimMoon(rotation)
+      this.night.place(at, rotation)
       this.changed()
     }
     const radial = new THREE.Vector3(...position)
@@ -197,8 +277,22 @@ export class GeographicView {
     this.space.background = null
     // Same fog in local metres and planetary units prevents the remote globe forming a second horizon.
     this.space.fog = air.fog ? new THREE.Fog(air.color, air.near * SCALE, air.far * SCALE) : null
-    ;(this.stars.material as THREE.PointsMaterial).opacity = air.stars
-    this.clouds.coverage.value = air.day * (1 - air.space)
+    this.night.opacity = air.stars
+    const hours = cloudHours(at)
+    const sunElev = this.sunDirection.dot(radial)
+    const golden =
+      (1 - THREE.MathUtils.smoothstep(sunElev, 0.05, 0.42)) *
+      THREE.MathUtils.smoothstep(sunElev, -0.15, 0.02)
+    this.clouds.dayHours.value = hours
+    this.clouds.coverage.value = 1 - air.space
+    this.artistic.dayHours.value = hours
+    this.artistic.golden.value = golden
+    this.artistic.day.value = air.day
+    this.artistic.coverage.value = 1 - air.space
+    this.artistic.cloudOrigin.value.copy(renderOrigin)
+    this.globe.dayHours.value = hours
+    this.globe.coverage.value = this.artistic.deck.visible ? air.space : 0
+    this.applyMoonScale()
     for (const tile of this.cache.values())
       tile.mesh.material.color.setScalar(0.12 + air.day * 0.88)
     this.tiles.position.copy(renderOrigin).negate()
@@ -319,12 +413,41 @@ export class GeographicView {
         })
     }
   }
-  setLayers(layers: { sky: boolean; planets: boolean; sun: boolean }) {
+  setCloudStyle(style: 'low' | 'artistic') {
+    this.cloudStyle = style
+    this.syncClouds()
+  }
+  setCloudWeather(amount: number, storm: number) {
+    this.artistic.setWeather(amount, storm)
+    this.globe.amount.value = amount
+  }
+  /** Horizon magnification. High in the sky, and out in space, the moon stays at real size. */
+  setMoonSize(size: number) {
+    this.moonSize = Math.min(16, Math.max(1, size))
+    this.applyMoonScale()
+  }
+  private applyMoonScale() {
+    const high = THREE.MathUtils.smoothstep(this.moonDirection.y, 0, 0.5)
+    const illusion = (1 - high) * (1 - this.atmosphere.space)
+    this.moon.scale.setScalar(1 + (this.moonSize - 1) * illusion)
+  }
+  get animatingClouds() {
+    return this.artistic.deck.visible && this.artistic.coverage.value > 0.04
+  }
+  private syncClouds() {
+    const artistic = this.cloudsWanted && this.cloudStyle === 'artistic'
+    this.clouds.mesh.visible = this.cloudsWanted && this.cloudStyle === 'low'
+    this.artistic.deck.visible = artistic
+    this.globe.mesh.visible = artistic
+  }
+  setLayers(layers: { sky: boolean; planets: boolean; sun: boolean; clouds?: boolean }) {
     this.backdrop.visible = layers.sky
-    this.clouds.mesh.visible = layers.sky
+    this.cloudsWanted = layers.sky && layers.clouds !== false && !!this.origin
+    this.syncClouds()
     this.earth.visible = layers.planets
+    this.air.visible = layers.sky
     this.moon.visible = layers.planets
-    this.stars.visible = layers.planets
+    this.night.root.visible = layers.planets
     this.sunDisc.value.set(layers.sun ? '#ffffff' : '#000000')
     this.flare.mesh.visible = layers.sun
   }
@@ -343,8 +466,32 @@ export class GeographicView {
     this.camera.quaternion.copy(camera.quaternion)
     this.backdrop.position.copy(this.camera.position)
     this.clouds.mesh.position.copy(this.camera.position)
+    this.globe.mesh.position.copy(this.earth.position)
+    this.globe.mesh.quaternion.copy(this.earth.quaternion)
+    this.air.position.copy(this.earth.position)
     this.flare.aspect.value = camera.aspect
     renderer.render(this.space, this.camera)
+  }
+  /** After the world, so the sheets composite over terrain and sea. */
+  renderClouds(renderer: THREE.WebGLRenderer, camera: THREE.Camera) {
+    if (!this.artistic.deck.visible || this.artistic.coverage.value < 0.02) return
+    const clear = renderer.autoClear
+    renderer.autoClear = false
+    renderer.render(this.cloudPass, camera)
+    renderer.autoClear = clear
+  }
+  private aimMoon(rotation: THREE.Quaternion) {
+    const towardEarth = this.moonDirection.clone().negate()
+    if (towardEarth.lengthSq() < 1e-6) return
+    towardEarth.normalize()
+    const north = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation)
+    north.addScaledVector(towardEarth, -north.dot(towardEarth))
+    if (north.lengthSq() < 1e-6) return
+    north.normalize()
+    const east = new THREE.Vector3().crossVectors(towardEarth, north).normalize()
+    this.moon.quaternion.setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(towardEarth, north, east),
+    )
   }
   /** Fullscreen pass. Parent it to the world scene so it composites with the city. */
   get lensFlare() {
@@ -365,9 +512,12 @@ export class GeographicView {
     this.tiles.removeFromParent()
     this.flare.mesh.removeFromParent()
     this.flare.dispose()
+    this.artistic.deck.geometry.dispose()
+    this.artistic.deck.material.dispose()
     this.earthTexture?.dispose()
+    this.moonTexture?.dispose()
     this.space.traverse((o) => {
-      if (o instanceof THREE.Mesh || o instanceof THREE.Points) {
+      if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line) {
         o.geometry.dispose()
         o.material.dispose()
       }

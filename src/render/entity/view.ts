@@ -117,6 +117,9 @@ export class SceneView {
     const instruments = this.instruments.get(id)
     if (instruments) instruments.mirrorTilt = tilt
   }
+  setVehicleMapFollow(id: string, follow: boolean): void {
+    this.instruments.get(id)?.setMapFollow(follow)
+  }
   toggleVehicleGps(id: string): boolean | null {
     return this.instruments.get(id)?.toggleGps() ?? null
   }
@@ -342,7 +345,7 @@ export class SceneView {
           this.addAsset(
             group,
             {
-              url: '/world/portal.frame.glb',
+              url: '/studio/portals/portal.frame.glb',
               transform: { position: [0, -(h + 2 * PORTAL_BAR) / 2, 0], rotation: [0, 0, 0, 1] },
             },
             undefined,
@@ -692,7 +695,7 @@ export class SceneView {
         this.beacons.set(e.id, equipment.beacons)
         this.surfaceTextures.push(...equipment.beacons.textures)
       }
-      if (visual.body.url === '/world/cessna.172.glb') {
+      if (e.vehicle?.plane) {
         const propeller = mountPropeller(model)
         if (propeller) this.propellers.set(e.id, propeller)
       }
@@ -953,6 +956,7 @@ export class SceneView {
       lights.update(
         { powered: sim.player.vehicleId === id, braking: info.braking, reversing: info.reversing },
         performance.now(),
+        this.night,
       )
     }
     for (const [id, instruments] of this.instruments) {

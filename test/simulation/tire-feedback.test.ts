@@ -1,14 +1,13 @@
 import { expect, it } from 'vitest'
 import { Vector3 } from 'three'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
-import { createPoliceCar } from '../../src/catalog/vehicles/police.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { TireMarks } from '../../src/render/entity/tire-marks.js'
 
-for (const factory of [createA3, createPoliceCar])
-  it(`produces nondegenerate marks from Rapier handbrake contacts: ${factory.name}`, () => {
-    const car = factory('car', [0, 0.7, 0])
+for (const catalogId of ['car', 'police'] as const)
+  it(`produces nondegenerate marks from Rapier handbrake contacts: ${catalogId}`, () => {
+    const car = presetVehicle(catalogId, 'car', [0, 0.7, 0])
     const floor = createEntity('floor', 'box', [0, -0.5, 0])
     floor.size = [2000, 1, 2000]
     const sim = new Simulation({
@@ -46,7 +45,7 @@ for (const factory of [createA3, createPoliceCar])
   })
 
 it('Shift launches the S3 without holding the front brakes and releases wheelspin', () => {
-  const car = createA3('car', [0, 0.7, 0])
+  const car = presetVehicle('car', 'car', [0, 0.7, 0])
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
   floor.size = [2000, 1, 2000]
   const sim = new Simulation({

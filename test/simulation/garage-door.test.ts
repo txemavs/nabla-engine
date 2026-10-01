@@ -1,6 +1,5 @@
 import { expect, it } from 'vitest'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
-import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createCarrierPortal, createPortalPair } from '../../src/entity/portal/portal.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation } from '../../src/simulation/simulation.js'
@@ -11,7 +10,7 @@ const make = (spawn: [number, number, number] = [0, 0.35, -2.8]) =>
     entities: [
       { ...createEntity('ground', 'box', [0, -0.5, 0]), size: [100, 1, 100] },
       createEntity('spawn', 'spawn', spawn),
-      createCarrier('ship', [0, 1.2, 0]),
+      presetVehicle('carrier', 'ship', [0, 1.2, 0]),
       createCarrierPortal('ship', 'stern'),
       ...createPortalPair('a', 'b', [20, 1.455, 0], [40, 1.455, 0]),
     ],
@@ -66,8 +65,8 @@ it('lets a parked car and someone in the doorway open the garage door', () => {
     entities: [
       { ...createEntity('ground', 'box', [0, -0.5, 0]), size: [100, 1, 100] },
       createEntity('spawn', 'spawn', [0, 0.35, 4.7]),
-      createCarrier('ship', [0, 1.2, 0]),
-      createA3('car', [0, 0.9, 2.75]),
+      presetVehicle('carrier', 'ship', [0, 1.2, 0]),
+      presetVehicle('car', 'car', [0, 0.9, 2.75]),
       createCarrierPortal('ship', 'stern'),
     ],
   })

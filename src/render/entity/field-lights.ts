@@ -14,6 +14,12 @@ const MAP = 'https://api.openstreetmap.org/api/0.6/map'
 const CACHE = 'nabla-lamps-z15:'
 
 export const fieldLayers = { lamps: true, navigation: true }
+/** 0 off, 1–10 glow only, 11–20 also casts. Reach is metres. `armed` is the layer checkbox. */
+export const lampLook = { level: 10, reach: 28, armed: true }
+
+function lampLevel() {
+  return lampLook.armed ? lampLook.level : 0
+}
 
 type Kind = 'lamp' | 'nav' | 'buoy'
 type LampCell = {
@@ -46,8 +52,16 @@ export class FieldLights {
     toneMapped: false,
   })
   private readonly lampMatrix = new THREE.Matrix4()
+  private readonly beams: THREE.SpotLight[] = []
+  private readonly nearest: { x: number; y: number; z: number; d2: number }[] = []
   constructor() {
     this.root.name = 'Field lights'
+    for (let i = 0; i < 8; i++) {
+      const beam = new THREE.SpotLight('#fff1d2', 0, lampLook.reach, Math.PI / 3, 0.55, 2)
+      beam.castShadow = false
+      this.root.add(beam, beam.target)
+      this.beams.push(beam)
+    }
   }
   update(
     origin: GeoPoint | undefined,
@@ -57,10 +71,11 @@ export class FieldLights {
     heightAt: (position: Vec3Tuple) => number | undefined,
     tiles: MapTile[] = [],
   ): void {
-    const showLamps = fieldLayers.lamps
+    const showLamps = lampLevel() > 0
     const showNav = fieldLayers.navigation
-    this.root.visible = !!(origin && (showLamps || showNav))
-    if (!origin || !this.root.visible) return
+    this.paintHeads()
+    this.root.visible = !!origin
+    if (!origin) return
     const wanted = new Set(tiles.filter((tile) => tile.z === 15).map(mapTilePath))
     if (!wanted.size) {
       const here = localToGeo(origin, camera)
@@ -70,8 +85,8 @@ export class FieldLights {
     for (const path of this.cells.keys()) if (!wanted.has(path)) this.drop(path)
     let groundBudget = 12
     for (const cell of this.lampCells.values()) {
-      cell.poles.visible = cell.heads.visible = showLamps
-      if (!showLamps) continue
+      cell.poles.visible = true
+      cell.heads.visible = showLamps
       let moved = false
       for (let i = 0; i < cell.spots.length && groundBudget > 0; i++) {
         const spot = cell.spots[i]
@@ -89,6 +104,7 @@ export class FieldLights {
         cell.heads.instanceMatrix.needsUpdate = true
       }
     }
+    this.lightNearest(camera)
     for (const marks of this.cells.values()) {
       for (const mark of marks) {
         const layer = mark.kind === 'lamp' ? showLamps : showNav
@@ -189,6 +205,47 @@ export class FieldLights {
         })
       }
     return poles
+  }
+  private paintHeads(): void {
+    const glow = lampLevel() <= 0 ? 0 : Math.min(1, lampLevel() / 10)
+    this.headMaterial.color.setRGB(0.1 + 0.9 * glow, 0.1 + 0.845 * glow, 0.1 + 0.724 * glow)
+  }
+  private lightNearest(camera: Vec3Tuple): void {
+    const cast = Math.max(0, lampLevel() - 10) / 10
+    const found = this.nearest
+    found.length = 0
+    if (cast > 0) {
+      const [cx, cy, cz] = camera
+      for (const cell of this.lampCells.values()) {
+        if (!cell.heads.visible) continue
+        for (const spot of cell.spots) {
+          const y = spot.y + 5.75
+          const dx = spot.x - cx,
+            dy = y - cy,
+            dz = spot.z - cz
+          const d2 = dx * dx + dy * dy + dz * dz
+          if (found.length < this.beams.length) {
+            found.push({ x: spot.x, y, z: spot.z, d2 })
+            found.sort((a, b) => a.d2 - b.d2)
+          } else if (d2 < found[found.length - 1].d2) {
+            found[found.length - 1] = { x: spot.x, y, z: spot.z, d2 }
+            found.sort((a, b) => a.d2 - b.d2)
+          }
+        }
+      }
+    }
+    for (let i = 0; i < this.beams.length; i++) {
+      const beam = this.beams[i]
+      const item = found[i]
+      if (!item || cast <= 0) {
+        beam.intensity = 0
+        continue
+      }
+      beam.intensity = cast * 700
+      beam.distance = lampLook.reach
+      beam.position.set(item.x, item.y, item.z)
+      beam.target.position.set(item.x, item.y - 8, item.z)
+    }
   }
   private placeLamp(cell: LampCell, index: number): void {
     const spot = cell.spots[index]

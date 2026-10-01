@@ -1,5 +1,7 @@
 import { Euler, MathUtils, Quaternion, Vector3 } from 'three'
 
+const carEyes: readonly number[] = [0, -0.15, -0.36]
+
 /** One rigid seat anchor for the driver's eyes and visible monitor. */
 export function driverHeadPose(
   driver: readonly number[],
@@ -10,9 +12,14 @@ export function driverHeadPose(
   offset?: readonly number[],
 ): { position: Vector3; quaternion: Quaternion } {
   const body = new Quaternion().fromArray(rotation)
+  // Cars saved before the 10 cm forward shift still store the old eye.
+  const eyes =
+    !isCarrier && offset?.[0] === 0 && offset[1] === -0.15 && offset[2] === -0.26
+      ? carEyes
+      : (offset ?? (isCarrier ? [0, -0.1, 0.2] : carEyes))
   return {
     position: new Vector3()
-      .fromArray(offset ?? [0, isCarrier ? -0.1 : -0.15, isCarrier ? 0.2 : -0.26])
+      .fromArray(eyes)
       .applyQuaternion(body)
       .add(new Vector3().fromArray(driver)),
     quaternion: body.multiply(new Quaternion().setFromEuler(new Euler(-pitch, yaw, 0, 'YXZ'))),

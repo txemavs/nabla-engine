@@ -13,10 +13,10 @@ export function atmosphere(height: number, sunElevation: number, visibility = 22
   const day = MathUtils.smoothstep(sunElevation, -0.12, 0.12)
   const space = MathUtils.smoothstep(height, 12000, 100000)
   const twilight = (1 - MathUtils.smoothstep(Math.abs(sunElevation), 0, 0.2)) * (1 - space)
-  const color = new Color('#101a32')
+  const color = new Color('#000000')
     .lerp(new Color('#a6bbd5'), day)
     .lerp(new Color('#c28c7e'), twilight * 0.35)
-    .lerp(new Color('#02040c'), space)
+    .lerp(new Color('#000000'), space)
   return {
     color,
     day,

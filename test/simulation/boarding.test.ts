@@ -1,14 +1,12 @@
 import { expect, it } from 'vitest'
 import { Simulation } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
-import { createOutboard } from '../../src/catalog/vehicles/boat.js'
-import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 
 it.each([
-  ['boat', () => createOutboard('vehicle', [0, 0, 0]), [0, 1, 4.5]],
-  ['ship', () => createCarrier('vehicle', [0, 0, 0]), [0, 0, 6]],
-  ['car', () => createA3('vehicle', [0, 0, 0]), [2.5, 0, 0]],
+  ['boat', () => presetVehicle('boat', 'vehicle', [0, 0, 0]), [0, 1, 4.5]],
+  ['ship', () => presetVehicle('carrier', 'vehicle', [0, 0, 0]), [0, 0, 6]],
+  ['car', () => presetVehicle('car', 'vehicle', [0, 0, 0]), [2.5, 0, 0]],
 ] as const)(
   'boards %s from its perimeter using ordinary interaction',
   (_name, create, position) => {
@@ -28,7 +26,10 @@ it('falls under gravity onto a floating boat, boards, dismounts onto the deck an
     {
       version: 1,
       name: 'Boat',
-      entities: [createEntity('spawn', 'spawn', [0, 5, 1.6]), createOutboard('boat', [0, 0.2, 0])],
+      entities: [
+        createEntity('spawn', 'spawn', [0, 5, 1.6]),
+        presetVehicle('boat', 'boat', [0, 0.2, 0]),
+      ],
     },
     { playerMode: 'walk', planetaryTerrain: true },
   )
@@ -53,7 +54,7 @@ it('does not board a vehicle through a wall', () => {
     name: 'Wall',
     entities: [
       createEntity('spawn', 'spawn', [3.5, 0, 0]),
-      createOutboard('boat', [0, 0, 0]),
+      presetVehicle('boat', 'boat', [0, 0, 0]),
       { ...createEntity('wall', 'box', [2, 1, 0]), size: [0.3, 4, 10] },
     ],
   })
@@ -66,7 +67,10 @@ it('does not reach a remote vehicle', () => {
   const sim = new Simulation({
     version: 1,
     name: 'Far',
-    entities: [createEntity('spawn', 'spawn', [0, 15, 0]), createOutboard('boat', [0, 0, 0])],
+    entities: [
+      createEntity('spawn', 'spawn', [0, 15, 0]),
+      presetVehicle('boat', 'boat', [0, 0, 0]),
+    ],
   })
   expect(sim.nearestVehicle()).toBeNull()
   sim.dispose()

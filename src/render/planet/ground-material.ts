@@ -17,6 +17,19 @@ export function matteGroundMaterial(
 const firstTransportLayer = Math.max(...Object.values(SURFACE_LAYERS)) + 1
 const footHighways = ['path', 'footway', 'pedestrian', 'cycleway', 'steps', 'track']
 
+/** Carriageways paint white on the GPS. Paths, tracks and rails stay blue. */
+export function isChartCarriageway(metadata: {
+  groundLayer?: number
+  transport?: string
+  source?: { tags?: Record<string, string> }
+}): boolean {
+  if (metadata.transport === 'rail' || metadata.transport === 'ballast') return false
+  const highway = metadata.source?.tags?.highway
+  if (highway && footHighways.includes(highway)) return false
+  if (metadata.groundLayer === firstTransportLayer) return false
+  return true
+}
+
 /** Feet stay under the carriageway and the rails. 17 is the layer that briefly drew them on top. */
 export function liftFootLayer(layer: number): number {
   return layer === firstTransportLayer || layer === firstTransportLayer + 5

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vec3 } from '../../src/simulation/physics.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
-import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { type SceneDocument } from '../../src/scene/document.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
@@ -15,8 +14,8 @@ function document(): SceneDocument {
     entities: [
       floor,
       createEntity('spawn', 'spawn', [-2.5, 0.05, 6]),
-      createA3('car', [0, 0.62, 6]),
-      createCarrier('carrier', [0, 1.2, -12]),
+      presetVehicle('car', 'car', [0, 0.62, 6]),
+      presetVehicle('carrier', 'carrier', [0, 1.2, -12]),
     ],
   }
 }
@@ -72,7 +71,7 @@ describe('A3 and mobile garage', () => {
     expect(sim.transferControls()).toContain('Detén')
     sim.setInput({ ...idleInput(), brake: true })
     step(sim, 240)
-    expect(sim.transferControls()).toContain('Audi')
+    expect(sim.transferControls()).toContain('S3')
     expect(sim.toggleDock()).toContain('libre')
     expect(sim.vehicleInfo('carrier').rampClosed).toBe(false)
     sim.setInput({ ...idleInput(), forward: -0.3 })
@@ -90,7 +89,7 @@ describe('A3 and mobile garage', () => {
     step(sim, 60)
     expect(sim.player.grounded).toBe(false) // The monitor floats above the garage floor.
     expect(sim.player.position[1]).toBeGreaterThan(1)
-    expect(sim.interact()).toContain('Audi')
+    expect(sim.interact()).toContain('S3')
     expect(sim.vehicleInfo('car').dockedTo).toBe('carrier')
     sim.dispose()
   })
@@ -132,7 +131,7 @@ it('flies the loaded garage, holds altitude, tilts and lands without releasing c
   const held = sim.entityTransform('carrier').position[1]
   expect(Math.abs(held - sim.vehicleInfo('carrier').targetAltitude!)).toBeLessThan(0.2)
   expect(sim.toggleFlight()).toContain('Desciende')
-  expect(sim.transferControls()).toContain('Audi')
+  expect(sim.transferControls()).toContain('S3')
   expect(sim.toggleDock()).toContain('Aterriza')
   expect(sim.transferControls()).toContain('Container')
   const before = sim.entityTransform('carrier').position
@@ -158,7 +157,7 @@ it('flies the loaded garage, holds altitude, tilts and lands without releasing c
   sim.setInput(idleInput())
   step(sim, 120)
   expect(sim.toggleFlight()).toBe('Modo tierra')
-  expect(sim.transferControls()).toContain('Audi')
+  expect(sim.transferControls()).toContain('S3')
   expect(sim.toggleDock()).toContain('libre')
   sim.dispose()
 })

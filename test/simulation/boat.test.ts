@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { createOutboard } from '../../src/catalog/vehicles/boat.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createCatalogEntities } from '../../src/catalog/palette.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
@@ -16,7 +16,7 @@ it('floats a 6 m outboard and planes ahead under 400 CV', () => {
     entities: [
       { ...createEntity('ground', 'box', [0, -8, 0]), size: [400, 1, 400] },
       createEntity('spawn', 'spawn', [0, 1, -20]),
-      createOutboard('hull', [0, 2, 0]),
+      presetVehicle('boat', 'hull', [0, 2, 0]),
     ],
   })
   for (let i = 0; i < 240; i++) sim.step(1 / 60)
@@ -39,7 +39,7 @@ it('turns the outboard to the right when the helm is right', () => {
     entities: [
       { ...createEntity('ground', 'box', [0, -8, 0]), size: [400, 1, 400] },
       createEntity('spawn', 'spawn', [0, 1, -20]),
-      createOutboard('hull', [0, 2, 0]),
+      presetVehicle('boat', 'hull', [0, 2, 0]),
     ],
   })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
@@ -62,7 +62,7 @@ it('floats and drives at spherical sea level far from an elevated map origin', (
       geography: { latitude: 43.4, longitude: -1.8, altitude, imagery: 'offline', planetary: true },
       entities: [
         createEntity('spawn', 'spawn', [x, seaY + 5, 8]),
-        createOutboard('hull', [x, seaY + 2, 0]),
+        presetVehicle('boat', 'hull', [x, seaY + 2, 0]),
       ],
     },
     { planetaryTerrain: true },
@@ -95,7 +95,7 @@ it('buoyancy follows the selected flood level', () => {
         },
         entities: [
           createEntity('spawn', 'spawn', [0, level + 5, 8]),
-          createOutboard('hull', [0, level + 2, 0]),
+          presetVehicle('boat', 'hull', [0, level + 2, 0]),
         ],
       },
       { planetaryTerrain: true },

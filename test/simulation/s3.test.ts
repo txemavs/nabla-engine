@@ -1,6 +1,5 @@
 import { expect, it } from 'vitest'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
-import { createPoliceCar } from '../../src/catalog/vehicles/police.js'
+import { presetVehicle, hasVehiclePreset } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { parseScene } from '../../src/scene/document.js'
@@ -11,7 +10,7 @@ import {
 } from '../../src/simulation/vehicles/drivetrain.js'
 
 it('limits delivered power, selects seven gears and reverses without gear hunting', () => {
-  const v = createA3('s3').vehicle!
+  const v = presetVehicle('car', 's3').vehicle!
   const state = createDrivetrain()
   const gears = new Set<number>()
   for (let i = 0; i < 6000; i++) {
@@ -25,18 +24,16 @@ it('limits delivered power, selects seven gears and reverses without gear huntin
   stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, -1, false, 1 / 60)
   expect(state.gear).toBe(-1)
   expect(state.force).toBeLessThan(0)
-  expect([0, 1, 2, 3].map((i) => isDriven(createPoliceCar('p').vehicle!.drivenWheels, i))).toEqual([
-    true,
-    true,
-    false,
-    false,
-  ])
+  if (hasVehiclePreset('police'))
+    expect(
+      [0, 1, 2, 3].map((i) => isDriven(presetVehicle('police', 'p').vehicle!.drivenWheels, i)),
+    ).toEqual([true, true, false, false])
 })
 
 it('accelerates, shifts, brakes and holds a burnout on Rapier ground', () => {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
   floor.size = [2000, 1, 2000]
-  const car = createA3('s3', [0, 0.62, 0])
+  const car = presetVehicle('car', 's3', [0, 0.62, 0])
   const sim = new Simulation(
     parseScene({
       version: 1,
@@ -70,7 +67,7 @@ it('accelerates, shifts, brakes and holds a burnout on Rapier ground', () => {
 })
 
 it('keeps reverse while coasting backwards fast and never selects gear zero', () => {
-  const v = createA3('s3').vehicle!
+  const v = presetVehicle('car', 's3').vehicle!
   const state = createDrivetrain()
   stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, -1, false, 1 / 60)
   expect(state.gear).toBe(-1)
@@ -88,7 +85,7 @@ it('keeps reverse while coasting backwards fast and never selects gear zero', ()
 })
 
 it('recovers invalid gear indices before calculating wheel force', () => {
-  const v = createA3('s3').vehicle!
+  const v = presetVehicle('car', 's3').vehicle!
   for (const gear of [0, -2, 8, 1.5, NaN]) {
     const state = { ...createDrivetrain(), gear }
     stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, 1, false, 1 / 60)

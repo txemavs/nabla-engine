@@ -1,12 +1,12 @@
 import { expect, it } from 'vitest'
-import { createPoliceCar } from '../../src/catalog/vehicles/police.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { parseScene } from '../../src/scene/document.js'
 it('settles the police Focus and drives with its own wheels and chassis', () => {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
   floor.size = [100, 1, 100]
-  const car = createPoliceCar('police', [0, 0.69, 0])
+  const car = presetVehicle('police', 'police', [0, 0.69, 0])
   const doc = parseScene({
     version: 1,
     name: 'Police',

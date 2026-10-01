@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import {
@@ -9,7 +9,7 @@ import {
   engineBrakingForce,
 } from '../../src/simulation/vehicles/drivetrain.js'
 it('holds manual gears, rejects overrev reductions and increases retention in lower gears', () => {
-  const v = createA3('s3').vehicle!,
+  const v = presetVehicle('car', 's3').vehicle!,
     spec = v.powertrain!,
     state = createDrivetrain()
   state.gear = 3
@@ -30,7 +30,11 @@ it('loses speed after throttle release, exposes manual mode and can resume autom
   const sim = new Simulation({
     version: 1,
     name: 'Retention',
-    entities: [floor, createA3('s3', [0, 0.7, 0]), createEntity('spawn', 'spawn', [0, 1, 4])],
+    entities: [
+      floor,
+      presetVehicle('car', 's3', [0, 0.7, 0]),
+      createEntity('spawn', 'spawn', [0, 1, 4]),
+    ],
   })
   const ticks = (n: number) => {
     for (let i = 0; i < n; i++) sim.step(1 / 60)
