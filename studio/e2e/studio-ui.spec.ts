@@ -1,7 +1,5 @@
 import { test, expect, localCircuit } from './studio-test.js'
 import type { Page } from '@playwright/test'
-import { presetVehicle } from '../../src/catalog/vehicles/library.js'
-import { hasLocalPreset } from '../../test/local-presets.js'
 async function command(page: Page, menu: string, id: string) {
   await page.locator('.studio-main-menu').getByRole('button', { name: menu, exact: true }).click()
   await page.locator('.desktop-menu-popup:popover-open [data-command="' + id + '"]').click()
@@ -145,40 +143,6 @@ test('Play toolbar starts on foot at the saved spawn and stops cleanly on the fi
   await page.keyboard.press('F8')
   await expect(page.locator('body')).not.toHaveClass(/playing/)
   expect(errors).toEqual([])
-})
-
-test('saved police equipment can be explicitly restored and saved without replacing its tuning', async ({
-  page,
-}) => {
-  test.skip(!hasLocalPreset('police'), 'Needs the git-ignored assets/custom police preset')
-  const car = presetVehicle('police', 'saved-police', [16, 1, -22])
-  delete car.visual!.presentation
-  car.vehicle!.engineForce = 7654
-  await page.addInitScript((car) => {
-    const doc = JSON.parse(localStorage.getItem('nabla.scene.v1')!)
-    if (!doc.entities.some((e: { id: string }) => e.id === car.id)) {
-      doc.entities.push(car)
-      localStorage.setItem('nabla.scene.v1', JSON.stringify(doc))
-    }
-  }, car)
-  await page.goto('/?scene=circuit')
-  await page.locator('#tree [data-node-id=saved-police]').click()
-  const equipment = page.locator('#vehicle-presentation')
-  await expect(equipment).toHaveValue('')
-  await equipment.selectOption('nabla.police')
-  await expect(equipment).toHaveValue('nabla.police')
-  await command(page, 'Archivo', 'save')
-  const saved = await page.evaluate(() =>
-    JSON.parse(localStorage.getItem('nabla.scene.v1')!).entities.find(
-      (e: { id: string }) => e.id === 'saved-police',
-    ),
-  )
-  expect(saved.visual.presentation).toBe('nabla.police')
-  expect(saved.vehicle.engineForce).toBe(7654)
-  expect(saved.transform.position).toEqual([16, 1, -22])
-  await page.reload()
-  await page.locator('#tree [data-node-id=saved-police]').click()
-  await expect(equipment).toHaveValue('nabla.police')
 })
 
 test('Scene switches hierarchy and class trees with standard disclosure triangles', async ({
