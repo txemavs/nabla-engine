@@ -322,10 +322,7 @@ export function patchGroundCloudShadow(shader: {
 
 function screenTriangle(): BufferGeometry {
   const geometry = new BufferGeometry()
-  geometry.setAttribute(
-    'position',
-    new Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3),
-  )
+  geometry.setAttribute('position', new Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3))
   geometry.computeBoundingSphere()
   return geometry
 }
@@ -490,7 +487,10 @@ export function shadeEarthWithClouds(
     shader.uniforms.nablaCloudAmount = amount
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 cloudLocal;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\ncloudLocal = normalize(position);')
+      .replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\ncloudLocal = normalize(position);',
+      )
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',

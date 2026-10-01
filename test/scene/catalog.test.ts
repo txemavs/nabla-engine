@@ -20,9 +20,7 @@ it('loads the previous A3 and the current S3 as separate presets', () => {
   expect(a3.vehicle.powertrain).toBeUndefined()
   expect(a3.vehicle.brakeForce).toBe(36)
   expect(a3.visual.presentation).toBeUndefined()
-  expect(createCatalogEntities('a3', 'old', [0, 0, 0])[0].transform.position[1]).toBeCloseTo(
-    0.62,
-  )
+  expect(createCatalogEntities('a3', 'old', [0, 0, 0])[0].transform.position[1]).toBeCloseTo(0.62)
 })
 
 it('creates independently editable vehicles with remapped portals when cloned', () => {

@@ -346,7 +346,12 @@ export function mountCoverageMap(host: HTMLElement) {
     drag = { x: event.clientX, y: event.clientY, cx, cy, moved: false }
     if (hit) {
       const at = latLonAt(event.clientX, event.clientY)
-      hold = { kind: hit === 'view' ? 'view' : 'object', id: hit, latitude: at.latitude, longitude: at.longitude }
+      hold = {
+        kind: hit === 'view' ? 'view' : 'object',
+        id: hit,
+        latitude: at.latitude,
+        longitude: at.longitude,
+      }
       if (hit !== 'view') bridge?.selectPin?.(hit)
     }
     canvas.setPointerCapture(event.pointerId)
@@ -409,17 +414,22 @@ export function mountCoverageMap(host: HTMLElement) {
           accepted?: number
         }
         if (!response.ok) {
-          note.textContent = body.error || (erase ? 'Este servicio aún no borra.' : 'No se ha podido pedir.')
+          note.textContent =
+            body.error || (erase ? 'Este servicio aún no borra.' : 'No se ha podido pedir.')
           return
         }
         if (erase) {
           const gone = new Set(body.removed ?? [])
           cells = cells.filter((cell) => !gone.has(`z/${cell.z}/${cell.x}/${cell.y}`))
           for (const key of gone) images.delete(`ours/${key.replace('z/', '')}`)
-          note.textContent = gone.size ? `Fuera ${gone.size} celda${gone.size === 1 ? '' : 's'}.` : 'Ahí no había nada.'
+          note.textContent = gone.size
+            ? `Fuera ${gone.size} celda${gone.size === 1 ? '' : 's'}.`
+            : 'Ahí no había nada.'
         } else {
           note.textContent =
-            body.accepted === 0 ? `${tile} ya estaba hecha o la cola no la admite.` : `${tile} en cola.`
+            body.accepted === 0
+              ? `${tile} ya estaba hecha o la cola no la admite.`
+              : `${tile} en cola.`
         }
         draw()
       })

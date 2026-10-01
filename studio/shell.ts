@@ -289,8 +289,7 @@ export function mountStudio(host: StudioHost): void {
       createApp({
         render: () => h(ContentSections, { sections: contents.planetSections }),
       }).mount(node)
-    }
-    else if (panel.id === 'information') createApp(InformationPanel).mount(node)
+    } else if (panel.id === 'information') createApp(InformationPanel).mount(node)
     else if (panel.id === 'map') coverage = mountCoverageMap(node)
     else node.textContent = panel.title + ' · siguiente fase'
   }

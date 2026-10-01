@@ -161,10 +161,7 @@ export class GeographicView {
       new THREE.MeshLambertMaterial({ color: '#c4d8e9' }),
     )
     this.space.add(this.earth)
-    this.moon = new THREE.Mesh(
-      new THREE.SphereGeometry(1.7374, 48, 36),
-      moonMaterial(this.moonSun),
-    )
+    this.moon = new THREE.Mesh(new THREE.SphereGeometry(1.7374, 48, 36), moonMaterial(this.moonSun))
     this.moon.scale.setScalar(this.moonSize)
     this.sunDisc = addSunDisc(this.backdrop.material, this.sunDirection)
     this.clouds = createCloudLayer(this.sunDirection)

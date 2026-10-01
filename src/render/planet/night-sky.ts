@@ -281,7 +281,8 @@ export class NightSky {
     })
     this.materials = []
     this.root.traverse((node) => {
-      const material = (node as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined
+      const material = (node as THREE.Mesh).material as
+        THREE.Material | THREE.Material[] | undefined
       if (!material) return
       for (const item of Array.isArray(material) ? material : [material]) this.materials.push(item)
     })

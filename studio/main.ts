@@ -1627,9 +1627,7 @@ function applySceneLayers() {
   })
   view.root.visible = sceneLayer('layer-entities')
   fieldLights.root.visible =
-    sceneLayer('layer-entities') ||
-    (lampLook.armed && lampLook.level > 0) ||
-    fieldLayers.navigation
+    sceneLayer('layer-entities') || (lampLook.armed && lampLook.level > 0) || fieldLayers.navigation
   if (!sceneLayer('layer-grid')) grid.visible = false
 }
 $<HTMLSelectElement>('cloud-style').value =
@@ -2401,10 +2399,7 @@ function renderDrone() {
   }
   const row = DRONE_W * 4
   for (let y = 0; y < DRONE_H; y++) {
-    droneImage.data.set(
-      dronePixels.subarray((DRONE_H - 1 - y) * row, (DRONE_H - y) * row),
-      y * row,
-    )
+    droneImage.data.set(dronePixels.subarray((DRONE_H - 1 - y) * row, (DRONE_H - y) * row), y * row)
   }
   ctx.putImageData(droneImage, 0, 0)
 }
@@ -3456,10 +3451,18 @@ bindCoverageMap({
     if (!origin) return []
     const graph = SceneGraph.fromValidated(editor.document)
     return editor.document.entities
-      .filter((entity) => !isMapEnvironment(entity) && entity.kind !== 'spawn' && entity.kind !== 'terrain')
+      .filter(
+        (entity) =>
+          !isMapEnvironment(entity) && entity.kind !== 'spawn' && entity.kind !== 'terrain',
+      )
       .map((entity) => {
         const geo = geographicPose(origin, graph.worldTransform(entity.id), entity.geoAnchor).anchor
-        return { id: entity.id, name: entity.name, latitude: geo.latitude, longitude: geo.longitude }
+        return {
+          id: entity.id,
+          name: entity.name,
+          latitude: geo.latitude,
+          longitude: geo.longitude,
+        }
       })
   },
   selectPin: (id) => {

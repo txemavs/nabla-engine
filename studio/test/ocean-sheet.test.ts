@@ -1,6 +1,10 @@
 import { expect, it } from 'vitest'
 import { Vector3 } from 'three'
-import { SEA_ALTITUDE, seaRayDistance, seaSeenFromBelow } from '../../src/render/planet/ocean-sheet.js'
+import {
+  SEA_ALTITUDE,
+  seaRayDistance,
+  seaSeenFromBelow,
+} from '../../src/render/planet/ocean-sheet.js'
 import { EARTH_RADIUS } from '../../src/math/geo/sphere.js'
 it('hits the sea sphere out to the horizon and misses the sky', () => {
   expect(seaRayDistance(8, -1)).toBeCloseTo(8, 2)

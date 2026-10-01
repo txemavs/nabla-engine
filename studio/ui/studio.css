@@ -309,7 +309,9 @@
   position: absolute;
   inset: 0;
   color: #fff;
-  font: 700 11px/1.2 ui-monospace, monospace;
+  font:
+    700 11px/1.2 ui-monospace,
+    monospace;
   text-shadow: 0 0 3px #000;
   padding: 5px 6px;
 }
@@ -370,11 +372,21 @@
   border-left-style: solid;
   border-left-color: var(--branch, #666);
 }
-#studio-layers .nd-settings:has(#models) { --branch: #c9845a; }
-#studio-layers .nd-settings:has(#tiles) { --branch: #7aa2ff; }
-#studio-layers .nd-settings:has(#planet-layers) { --branch: #8ec5ff; }
-#studio-layers .nd-settings:has(#interface-layers) { --branch: #b7bdc7; }
-#studio-layers .nd-settings:has(#projection) { --branch: #c9b6ff; }
+#studio-layers .nd-settings:has(#models) {
+  --branch: #c9845a;
+}
+#studio-layers .nd-settings:has(#tiles) {
+  --branch: #7aa2ff;
+}
+#studio-layers .nd-settings:has(#planet-layers) {
+  --branch: #8ec5ff;
+}
+#studio-layers .nd-settings:has(#interface-layers) {
+  --branch: #b7bdc7;
+}
+#studio-layers .nd-settings:has(#projection) {
+  --branch: #c9b6ff;
+}
 #studio-layers .nd-settings > summary::before {
   content: '';
   display: inline-block;
