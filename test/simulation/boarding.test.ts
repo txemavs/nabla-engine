@@ -2,12 +2,16 @@ import { expect, it } from 'vitest'
 import { Simulation } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
+import { hasLocalPreset } from '../local-presets.js'
 
-it.each([
-  ['boat', () => presetVehicle('boat', 'vehicle', [0, 0, 0]), [0, 1, 4.5]],
-  ['ship', () => presetVehicle('carrier', 'vehicle', [0, 0, 0]), [0, 0, 6]],
-  ['car', () => presetVehicle('car', 'vehicle', [0, 0, 0]), [2.5, 0, 0]],
-] as const)(
+it.each(
+  (
+    [
+      ['boat', () => presetVehicle('boat', 'vehicle', [0, 0, 0]), [0, 1, 4.5]],
+      ['ship', () => presetVehicle('carrier', 'vehicle', [0, 0, 0]), [0, 0, 6]],
+      ['car', () => presetVehicle('car', 'vehicle', [0, 0, 0]), [2.5, 0, 0]],
+    ] as const
+  ).filter(([name]) => name !== 'boat' || hasLocalPreset('boat')),
   'boards %s from its perimeter using ordinary interaction',
   (_name, create, position) => {
     const sim = new Simulation({
@@ -21,34 +25,37 @@ it.each([
     sim.dispose()
   },
 )
-it('falls under gravity onto a floating boat, boards, dismounts onto the deck and boards again', () => {
-  const sim = new Simulation(
-    {
-      version: 1,
-      name: 'Boat',
-      entities: [
-        createEntity('spawn', 'spawn', [0, 5, 1.6]),
-        presetVehicle('boat', 'boat', [0, 0.2, 0]),
-      ],
-    },
-    { playerMode: 'walk', planetaryTerrain: true },
-  )
-  const initial = sim.player.position[1]
-  for (let i = 0; i < 180; i++) sim.step(1 / 60)
-  expect(sim.player.position[1]).toBeLessThan(initial - 2)
-  expect(sim.player.position[1]).toBeGreaterThan(-1)
-  expect(sim.nearestVehicle()).toBe('boat')
-  sim.interact()
-  expect(sim.player.vehicleId).toBe('boat')
-  expect(sim.interact()).toContain('A bordo')
-  expect(sim.player.vehicleId).toBeNull()
-  for (let i = 0; i < 30; i++) sim.step(1 / 60)
-  expect(sim.nearestVehicle()).toBe('boat')
-  sim.interact()
-  expect(sim.player.vehicleId).toBe('boat')
-  sim.dispose()
-})
-it('does not board a vehicle through a wall', () => {
+it.skipIf(!hasLocalPreset('boat'))(
+  'falls under gravity onto a floating boat, boards, dismounts onto the deck and boards again',
+  () => {
+    const sim = new Simulation(
+      {
+        version: 1,
+        name: 'Boat',
+        entities: [
+          createEntity('spawn', 'spawn', [0, 5, 1.6]),
+          presetVehicle('boat', 'boat', [0, 0.2, 0]),
+        ],
+      },
+      { playerMode: 'walk', planetaryTerrain: true },
+    )
+    const initial = sim.player.position[1]
+    for (let i = 0; i < 180; i++) sim.step(1 / 60)
+    expect(sim.player.position[1]).toBeLessThan(initial - 2)
+    expect(sim.player.position[1]).toBeGreaterThan(-1)
+    expect(sim.nearestVehicle()).toBe('boat')
+    sim.interact()
+    expect(sim.player.vehicleId).toBe('boat')
+    expect(sim.interact()).toContain('A bordo')
+    expect(sim.player.vehicleId).toBeNull()
+    for (let i = 0; i < 30; i++) sim.step(1 / 60)
+    expect(sim.nearestVehicle()).toBe('boat')
+    sim.interact()
+    expect(sim.player.vehicleId).toBe('boat')
+    sim.dispose()
+  },
+)
+it.skipIf(!hasLocalPreset('boat'))('does not board a vehicle through a wall', () => {
   const sim = new Simulation({
     version: 1,
     name: 'Wall',
@@ -63,7 +70,7 @@ it('does not board a vehicle through a wall', () => {
   expect(sim.interact()).toContain('Acércate')
   sim.dispose()
 })
-it('does not reach a remote vehicle', () => {
+it.skipIf(!hasLocalPreset('boat'))('does not reach a remote vehicle', () => {
   const sim = new Simulation({
     version: 1,
     name: 'Far',

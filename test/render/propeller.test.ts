@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs'
 import { expect, it } from 'vitest'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { mountPropeller } from '../../src/render/entity/propeller.js'
+import { hasLocalPreset } from '../local-presets.js'
 
-it('cuts the Cessna propeller off the cowling', async () => {
+it.skipIf(!hasLocalPreset('cessna'))('cuts the Cessna propeller off the cowling', async () => {
   Object.assign(globalThis, { self: globalThis })
   const buf = readFileSync('assets/custom/planes/cessna/cessna.172.glb')
   const loader = new GLTFLoader()

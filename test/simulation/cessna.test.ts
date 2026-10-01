@@ -3,8 +3,9 @@ import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createCatalogEntities } from '../../src/catalog/palette.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
+import { hasLocalPreset } from '../local-presets.js'
 
-it('lifts a Cessna off the runway in plane mode', () => {
+it.skipIf(!hasLocalPreset('cessna'))('lifts a Cessna off the runway in plane mode', () => {
   const plane = createCatalogEntities('cessna', 'cessna', [0, 0, 8])[0]
   expect(plane.vehicle?.flight).toBe(true)
   expect(plane.vehicle?.plane).toBe(true)

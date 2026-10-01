@@ -5,6 +5,7 @@ import { parseScene } from '../../src/scene/document.js'
 import { objectProperties, axisLocks, axisLocked } from '../ui/properties.js'
 import { sceneTree } from '../ui/scene-tree.js'
 import { createProject, parseProject } from '../project.js'
+import { hasLocalPreset } from '../../test/local-presets.js'
 function context() {
   const doc = createSampleScene()
   delete doc.geography
@@ -78,31 +79,34 @@ test('project editor locks round-trip without changing engine entities', () => {
   ).toThrow()
 })
 
-test('assigning police equipment preserves saved poses, wheel definitions and tuning, and is undoable', async () => {
-  const { presetVehicle } = await import('../../src/catalog/vehicles/library.js')
-  const c = context()
-  const car = presetVehicle('police', 'police', [27, 4, -33])
-  delete car.visual!.presentation
-  car.vehicle!.engineForce = 7654
-  const doc = { ...c.doc, entities: [...c.doc.entities, car] }
-  const editor = new SceneEditor(doc)
-  const fields = objectProperties({
-    ...c,
-    doc: editor.document,
-    editor,
-    entity: editor.entity(car.id),
-  }).find((section) => section.id === 'vehicle-presentation')!.fields!
-  expect(fields[0].value).toBe('')
-  fields[0].change('nabla.police')
-  expect(editor.entity(car.id)).toEqual({
-    ...car,
-    visual: { ...car.visual, presentation: 'nabla.police' },
-  })
-  const parsed = parseScene(JSON.parse(editor.serialize()))
-  expect(parsed.entities.find((e) => e.id === car.id)!.visual!.presentation).toBe('nabla.police')
-  editor.undo()
-  expect(editor.entity(car.id)).toEqual(car)
-})
+test.skipIf(!hasLocalPreset('police'))(
+  'assigning police equipment preserves saved poses, wheel definitions and tuning, and is undoable',
+  async () => {
+    const { presetVehicle } = await import('../../src/catalog/vehicles/library.js')
+    const c = context()
+    const car = presetVehicle('police', 'police', [27, 4, -33])
+    delete car.visual!.presentation
+    car.vehicle!.engineForce = 7654
+    const doc = { ...c.doc, entities: [...c.doc.entities, car] }
+    const editor = new SceneEditor(doc)
+    const fields = objectProperties({
+      ...c,
+      doc: editor.document,
+      editor,
+      entity: editor.entity(car.id),
+    }).find((section) => section.id === 'vehicle-presentation')!.fields!
+    expect(fields[0].value).toBe('')
+    fields[0].change('nabla.police')
+    expect(editor.entity(car.id)).toEqual({
+      ...car,
+      visual: { ...car.visual, presentation: 'nabla.police' },
+    })
+    const parsed = parseScene(JSON.parse(editor.serialize()))
+    expect(parsed.entities.find((e) => e.id === car.id)!.visual!.presentation).toBe('nabla.police')
+    editor.undo()
+    expect(editor.entity(car.id)).toEqual(car)
+  },
+)
 
 test('hierarchy preserves authored parents without turning categories into groups', async () => {
   const { sceneHierarchy } = await import('../ui/scene-tree.js')

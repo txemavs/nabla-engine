@@ -4,8 +4,9 @@ import { createEntity } from '../src/entity/schema.js'
 import type { SceneDocument } from '../src/scene/document.js'
 import { Vec3, type Quaternion } from '../src/simulation/physics.js'
 import { idleInput, Simulation } from '../src/simulation/simulation.js'
+import { hasLocalPreset } from './local-presets.js'
 
-describe('jeep pose', () => {
+describe.skipIf(!hasLocalPreset('jeep'))('jeep pose', () => {
   it('settles on its tires', () => {
     const floor = createEntity('floor', 'box', [0, -0.5, 0])
     floor.size = [80, 1, 80]
