@@ -1,4 +1,5 @@
 import type { DesktopMenu } from '@nabla/desktop/core'
+import { entityCatalog } from '../../src/catalog/palette.js'
 export const commandItems = (...ids: string[]) => ids.map((command) => ({ command }))
 export const mainMenus: DesktopMenu[] = [
   {
@@ -26,10 +27,12 @@ export const mainMenus: DesktopMenu[] = [
     items: [
       ...commandItems(
         'world',
+        'map',
         'scene',
         'layers',
         'generation',
         'properties',
+        'planet',
         'information',
         'sequences',
       ),
@@ -59,14 +62,7 @@ export const viewMenus: DesktopMenu[] = [
     items: commandItems(
       'add-solid',
       'add-box',
-      'add-car',
-      'add-police',
-      'add-jeep',
-      'add-boat',
-      'add-carrier',
-      'add-cessna',
-      'add-streetlight',
-      'add-globe',
+      ...entityCatalog.map((entry) => `add-${entry.id}`),
       'add-sprite',
       'add-group',
       'sample-portals',

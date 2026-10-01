@@ -20,7 +20,7 @@ test('cycles chase, cockpit and vehicle-up overhead map with adjustable height',
   await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(700)
   await page.keyboard.press('KeyE')
-  await expect(page.locator('#player-mode')).toContainText('AUDI')
+  await expect(page.locator('#player-mode')).toContainText('S3')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-camera-mode', 'cockpit')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute(
     'data-vehicle-entrance',

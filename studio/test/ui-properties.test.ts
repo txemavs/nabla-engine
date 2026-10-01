@@ -79,9 +79,9 @@ test('project editor locks round-trip without changing engine entities', () => {
 })
 
 test('assigning police equipment preserves saved poses, wheel definitions and tuning, and is undoable', async () => {
-  const { createPoliceCar } = await import('../../src/catalog/vehicles/police.js')
+  const { presetVehicle } = await import('../../src/catalog/vehicles/library.js')
   const c = context()
-  const car = createPoliceCar('police', [27, 4, -33])
+  const car = presetVehicle('police', 'police', [27, 4, -33])
   delete car.visual!.presentation
   car.vehicle!.engineForce = 7654
   const doc = { ...c.doc, entities: [...c.doc.entities, car] }

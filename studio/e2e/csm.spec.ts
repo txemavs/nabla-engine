@@ -19,10 +19,10 @@ test('switches shadow quality without shader errors and renders the circuit', as
   await page.mouse.move(750, 400)
   await page.mouse.wheel(0, 700)
   await page.waitForTimeout(500)
-  await page.locator('#options-menu-button').click()
-  await page.getByRole('tab', { name: 'Sol y luna', exact: true }).click()
+  await page.getByRole('tab', { name: 'Planeta', exact: true }).click()
   await page.locator('#sky-time').fill('2026-09-21T17:30')
   await page.locator('#sky-apply').click()
+  await page.locator('#options-menu-button').click()
   await page.getByRole('tab', { name: 'Calidad', exact: true }).click()
   // Options are global, independent of the selected entity.
   for (const [quality, count] of [

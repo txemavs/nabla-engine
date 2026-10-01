@@ -35,7 +35,7 @@ test('GLB road chart draws without scene road entities and HUD sits above the wo
       pointer: getComputedStyle(document.querySelector('#game-hud')!).pointerEvents,
     }
   })
-  expect(result.pixel).toEqual([84, 155, 211, 255])
+  expect(result.pixel).toEqual([255, 255, 255, 255])
   expect(Number(result.hud)).toBeGreaterThan(Number(result.canvas))
   expect(result.pointer).toBe('none')
 })

@@ -38,17 +38,17 @@ test('explicit adapter survives a renamed asset and disposal preserves another i
   await page.route('**/world/custom-body.glb', async (r) =>
     r.fulfill({
       contentType: 'model/gltf-binary',
-      body: await readFile('assets/world/car.audi.a3.cabrio.glb'),
+      body: await readFile('assets/studio/cars/a3/a3.cabrio.glb'),
     }),
   )
   await page.goto('/equipment-assets')
   const result = await page.evaluate(async (root) => {
     const { SceneView } = await import(`/@fs${root}/src/presentation/scene-view.ts`)
-    const { createA3 } = await import(`/@fs${root}/src/catalog/vehicles/a3.ts`)
+    const { presetVehicle } = await import(`/@fs${root}/src/catalog/vehicles/library.ts`)
     const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
     const { assets, disposeObject } = await import(`/@fs${root}/src/render/entity/assets.ts`)
     const { createA3Mounts } = await import(`/@fs${root}/src/catalog/presentation/a3-mounts.ts`)
-    const car = createA3('car')
+    const car = presetVehicle('car', 'car')
     car.visual.body.url = '/world/custom-body.glb'
     const view = new SceneView({
       version: 1,
@@ -61,8 +61,8 @@ test('explicit adapter survives a renamed asset and disposal preserves another i
     view.dispose()
     view.dispose()
     const [a, b] = await Promise.all([
-      assets.instantiate('/world/car.audi.a3.cabrio.glb'),
-      assets.instantiate('/world/car.audi.a3.cabrio.glb'),
+      assets.instantiate('/studio/cars/a3/a3.cabrio.glb'),
+      assets.instantiate('/studio/cars/a3/a3.cabrio.glb'),
     ])
     const refs: { mesh: import('three').Mesh; geometry: import('three').BufferGeometry }[] = []
     let sharedDisposals = 0
@@ -101,7 +101,7 @@ test('explicit adapter survives a renamed asset and disposal preserves another i
     }
   }, process.cwd())
   expect(result.equipped).toBe(true)
-  expect(result.offset).toEqual([0, -0.15, -0.26])
+  expect(result.offset).toEqual([0, -0.15, -0.36])
   expect(result.changed).toBeGreaterThan(0)
   expect(result.cutsDisposed).toBe(result.changed)
   expect(result.restored).toBe(true)

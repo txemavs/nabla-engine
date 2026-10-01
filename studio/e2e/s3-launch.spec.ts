@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 
 test('S3 Shift launch accelerates from rest with marks and tyre sound', async ({ page }) => {
@@ -8,7 +8,11 @@ test('S3 Shift launch accelerates from rest with marks and tyre sound', async ({
   const scene = {
     version: 1,
     name: 'Driving tyre test',
-    entities: [floor, createA3('car', [0, 0.7, 0]), createEntity('spawn', 'spawn', [0, 1, 2.7])],
+    entities: [
+      floor,
+      presetVehicle('car', 'car', [0, 0.7, 0]),
+      createEntity('spawn', 'spawn', [0, 1, 2.7]),
+    ],
   }
   await page.addInitScript((doc) => {
     localStorage.setItem('nabla.scene.v1', doc)
@@ -26,7 +30,7 @@ test('S3 Shift launch accelerates from rest with marks and tyre sound', async ({
   await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(700)
   await page.keyboard.press('KeyE')
-  await expect(page.locator('#player-mode')).toContainText('AUDI')
+  await expect(page.locator('#player-mode')).toContainText('S3')
   await page.keyboard.down('ShiftLeft')
   await expect
     .poll(async () => Number(await canvas.getAttribute('data-tire-marks')))

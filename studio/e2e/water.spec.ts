@@ -1,6 +1,6 @@
 import { simplifiedTide } from '../../src/planet/tide.js'
 import { test, expect, localCircuit } from './studio-test.js'
-import { createOutboard } from '../../src/catalog/vehicles/boat.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 
 test('fills the published sea hole with one sheet and does not fetch ocean tiles', async ({
@@ -21,15 +21,21 @@ test('fills the published sea hole with one sheet and does not fetch ocean tiles
         name: 'Coast',
         geography: { latitude: 43.37, longitude: -1.8, altitude: 0, imagery: 'offline' },
         sky: { mode: 'fixed', at: '2026-06-21T12:00:00Z' },
-        entities: [createEntity('spawn', 'spawn', [0, 2, 8]), createOutboard('boat', [0, 0.1, 0])],
+        entities: [
+          createEntity('spawn', 'spawn', [0, 2, 8]),
+          presetVehicle('boat', 'boat', [0, 0.1, 0]),
+        ],
       }),
     ),
   })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-sea', 'sheet')
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded')
   await page.screenshot({ path: 'test-results/restored-sea.png' })
-  await page.locator('#options-menu-button').click()
-  await page.getByRole('tab', { name: 'Capas', exact: true }).click()
+  await page
+    .locator('[data-group=properties-tabs]')
+    .getByRole('tab', { name: 'Planeta', exact: true })
+    .click()
+  await page.locator('summary').filter({ hasText: /^Mar$/ }).click()
   await expect(page.locator('#water-mode')).toHaveValue('tide')
   await page.locator('#tide-amplitude').fill('2')
   const expected = String(

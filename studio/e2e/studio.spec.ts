@@ -10,7 +10,7 @@ test('edits, undoes, saves, reloads and runs the same scene', async ({ page }) =
   await expect(page.locator('#viewport > canvas')).toHaveAttribute('data-assets', 'loaded', {
     timeout: 20000,
   })
-  await expect(page.locator('#name')).toHaveValue('Audi S3 Nabla · 400 CV DSG')
+  await expect(page.locator('#name')).toHaveValue('S3 Nabla · 400 CV DSG')
   await page.locator('#name').fill('Mi coche')
   await page.locator('#name').press('Tab')
   await expect(page.locator('.entity-title')).toHaveText('Mi coche')
@@ -76,7 +76,7 @@ test('imports validated data and preserves the scene after invalid input', async
   await expect(page.locator('#toast')).toContainText('Archivo no válido')
   await expect(page.locator('#entity-count')).toHaveText(before!)
   await page.locator('#duplicate').click()
-  await expect(page.locator('#name')).toHaveValue('Audi S3 Nabla · 400 CV DSG · copia')
+  await expect(page.locator('#name')).toHaveValue('S3 Nabla · 400 CV DSG · copia')
   await page.locator('#delete').click()
   await expect(page.locator('#entity-count')).toHaveText(before!)
 })

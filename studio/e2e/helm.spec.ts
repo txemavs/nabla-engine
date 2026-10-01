@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createPortalPair, createCarrierPortal } from '../../src/entity/portal/portal.js'
 import { createEntity } from '../../src/entity/schema.js'
 test('uses the horizontal desk to animate the garage door and displays telemetry', async ({
@@ -13,7 +13,7 @@ test('uses the horizontal desk to animate the garage door and displays telemetry
     entities: [
       { ...createEntity('ground', 'box', [0, -0.5, 0]), size: [100, 1, 100] },
       createEntity('spawn', 'spawn', [0, 0.35, -2.85]),
-      createCarrier('ship', [0, 1.2, 0]),
+      presetVehicle('carrier', 'ship', [0, 1.2, 0]),
       createCarrierPortal('ship', 'ship-stern'),
       ...createPortalPair('road-a', 'road-b', [20, 1.455, 0], [35, 1.455, 0]),
     ],
@@ -66,7 +66,7 @@ test('flies using the horizontal CSS desk and releases held input', async ({ pag
         entities: [
           { ...createEntity('ground', 'box', [0, -0.5, 0]), size: [1000, 1, 1000] },
           createEntity('spawn', 'spawn', [0, 0.35, -2.85]),
-          createCarrier('ship', [0, 1.2, 0]),
+          presetVehicle('carrier', 'ship', [0, 1.2, 0]),
           createCarrierPortal('ship', 'ship-stern'),
         ],
       }),
@@ -120,7 +120,7 @@ test('keeps CSS screens active and clickable from the rear of the occupied inter
         entities: [
           { ...createEntity('ground', 'box', [0, -0.5, 0]), size: [100, 1, 100] },
           createEntity('spawn', 'spawn', [0, 1, 2]),
-          createCarrier('ship', [0, 1.2, 0]),
+          presetVehicle('carrier', 'ship', [0, 1.2, 0]),
           createCarrierPortal('ship', 'ship-stern'),
         ],
       }),

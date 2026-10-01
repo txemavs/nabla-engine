@@ -1,11 +1,14 @@
 import { test, expect } from './studio-test.js'
-import { createOutboard } from '../../src/catalog/vehicles/boat.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 test('F8 runs gravity and E boards, leaves and reboards the boat', async ({ page }) => {
   const scene = {
     version: 1,
     name: 'Boat boarding',
-    entities: [createEntity('spawn', 'spawn', [0, 5, 1.6]), createOutboard('boat', [0, 0.2, 0])],
+    entities: [
+      createEntity('spawn', 'spawn', [0, 5, 1.6]),
+      presetVehicle('boat', 'boat', [0, 0.2, 0]),
+    ],
   }
   await page.addInitScript(
     (scene) => localStorage.setItem('nabla.scene.v1', JSON.stringify(scene)),

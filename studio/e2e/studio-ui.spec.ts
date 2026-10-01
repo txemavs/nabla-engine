@@ -1,6 +1,6 @@
 import { test, expect, localCircuit } from './studio-test.js'
 import type { Page } from '@playwright/test'
-import { createPoliceCar } from '../../src/catalog/vehicles/police.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 async function command(page: Page, menu: string, id: string) {
   await page.locator('.studio-main-menu').getByRole('button', { name: menu, exact: true }).click()
   await page.locator('.desktop-menu-popup:popover-open [data-command="' + id + '"]').click()
@@ -35,13 +35,17 @@ test('Vue properties, capabilities and planet settings persist through save and 
   await page.locator('#apply-capability').click()
   await command(page, 'Editar', 'preferences')
   const preferences = page.getByRole('dialog', { name: 'Preferencias' })
-  await preferences.getByRole('tab', { name: 'Planeta', exact: true }).click()
-  await preferences.locator('summary').filter({ hasText: /^Mar$/ }).click()
-  await preferences.locator('#water-level-number').fill('3.5')
-  await preferences.locator('#water-level-number').press('Tab')
-  await preferences.locator('#sky-time').fill('2026-09-29T12:00')
-  await preferences.locator('#sky-apply').click()
+  await expect(preferences.getByRole('tab', { name: 'Planeta', exact: true })).toHaveCount(0)
   await preferences.getByRole('button', { name: 'Cerrar preferencias' }).click()
+  await page
+    .locator('[data-group=properties-tabs]')
+    .getByRole('tab', { name: 'Planeta', exact: true })
+    .click()
+  await page.locator('summary').filter({ hasText: /^Mar$/ }).click()
+  await page.locator('#water-level-number').fill('3.5')
+  await page.locator('#water-level-number').press('Tab')
+  await page.locator('#sky-time').fill('2026-09-29T12:00')
+  await page.locator('#sky-apply').click()
   await page.getByRole('button', { name: 'Posición X · lock', exact: true }).click()
   await command(page, 'Archivo', 'save')
   await expect
@@ -63,11 +67,12 @@ test('Vue properties, capabilities and planet settings persist through save and 
   await expect(page.locator('#name')).toHaveValue('Vehículo de prueba')
   await expect(page.locator('#position-0')).toHaveValue('6')
   await expect(page.locator('#position-0')).toHaveAttribute('readonly', '')
-  await command(page, 'Editar', 'preferences')
-  await preferences.getByRole('tab', { name: 'Planeta', exact: true }).click()
-  await preferences.locator('summary').filter({ hasText: /^Mar$/ }).click()
-  await expect(preferences.locator('#water-level-number')).toHaveValue('3.5')
-  await preferences.getByRole('button', { name: 'Cerrar preferencias' }).click()
+  await page
+    .locator('[data-group=properties-tabs]')
+    .getByRole('tab', { name: 'Planeta', exact: true })
+    .click()
+  await page.locator('summary').filter({ hasText: /^Mar$/ }).click()
+  await expect(page.locator('#water-level-number')).toHaveValue('3.5')
   expect(errors).toEqual([])
 })
 test('portals are selected from Scene and expose their connection properties', async ({ page }) => {
@@ -144,7 +149,7 @@ test('Play toolbar starts on foot at the saved spawn and stops cleanly on the fi
 test('saved police equipment can be explicitly restored and saved without replacing its tuning', async ({
   page,
 }) => {
-  const car = createPoliceCar('saved-police', [16, 1, -22])
+  const car = presetVehicle('police', 'saved-police', [16, 1, -22])
   delete car.visual!.presentation
   car.vehicle!.engineForce = 7654
   await page.addInitScript((car) => {

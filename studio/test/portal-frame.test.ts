@@ -5,7 +5,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { repairPortalFrame } from '../../src/render/portal/frame.js'
 
 it('repairs every face of the actual Agency frame without changing its bounds or source', async () => {
-  const file = readFileSync(new URL('../../assets/world/portal.frame.glb', import.meta.url))
+  const file = readFileSync(
+    new URL('../../assets/studio/portals/portal.frame.glb', import.meta.url),
+  )
   const gltf = await new GLTFLoader().parseAsync(
     file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength),
     '',

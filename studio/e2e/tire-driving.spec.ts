@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createPoliceCar } from '../../src/catalog/vehicles/police.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 
 test('police car handbrake emits marks and audible tyre feedback through Studio', async ({
@@ -12,7 +12,7 @@ test('police car handbrake emits marks and audible tyre feedback through Studio'
     name: 'Driving tyre test',
     entities: [
       floor,
-      createPoliceCar('car', [0, 0.7, 0]),
+      presetVehicle('police', 'car', [0, 0.7, 0]),
       createEntity('spawn', 'spawn', [0, 1, 2.7]),
     ],
   }

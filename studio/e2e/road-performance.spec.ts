@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity, type Entity } from '../../src/entity/schema.js'
 
 test('bounds draw calls for 800 roads and can hide their detail', async ({ page }) => {
@@ -9,7 +9,7 @@ test('bounds draw calls for 800 roads and can hide their detail', async ({ page 
   }
   const entities: Entity[] = [
     terrain,
-    createCarrier('ship', [0, 1.2, 0]),
+    presetVehicle('carrier', 'ship', [0, 1.2, 0]),
     createEntity('spawn', 'spawn', [0, 0.35, -2.85]),
   ]
   for (let i = 0; i < 800; i++)

@@ -141,13 +141,19 @@ export class Gallery {
     this.hud.textContent = `Galería · ${this.hits}/${this.shots} · ${Math.ceil(this.remaining)} s · N reiniciar`
     this.hud.dataset.hits = String(this.hits)
   }
-  shoot(sim: Simulation, view: SceneView, camera: THREE.PerspectiveCamera): boolean {
-    let rayView = shotView(sim, view.document, camera)
+  shoot(
+    sim: Simulation,
+    view: SceneView,
+    camera: THREE.PerspectiveCamera,
+    range = 150,
+    impulse = 12,
+  ): boolean {
+    let rayView = shotView(sim, view.document, camera, range)
     const foreground = new THREE.Raycaster()
     foreground.setFromCamera(new THREE.Vector2(), camera)
     const obstruction = view.hitSprite(foreground)
-    if (rayView.throughPortal && obstruction && obstruction.distance < 150 - rayView.range)
-      rayView = { camera, range: 150, throughPortal: false }
+    if (rayView.throughPortal && obstruction && obstruction.distance < range - rayView.range)
+      rayView = { camera, range, throughPortal: false }
     const ray = new THREE.Raycaster()
     ray.setFromCamera(new THREE.Vector2(), rayView.camera)
     ray.far = rayView.range
@@ -177,7 +183,12 @@ export class Gallery {
       }
       return true
     }
-    const hit = sim.shoot(ray.ray.origin.toArray(), ray.ray.direction.toArray(), rayView.range)
+    const hit = sim.shoot(
+      ray.ray.origin.toArray(),
+      ray.ray.direction.toArray(),
+      rayView.range,
+      impulse,
+    )
     if (hit?.entityId) {
       const object = view.objects.get(hit.entityId)
       if (object) view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)

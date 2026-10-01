@@ -10,9 +10,9 @@ test('Bilbao police Focus shares four wheel geometries and stays within its draw
   const result = await page.evaluate(async (root) => {
     const T = await import(String('/e2e/render-fixture.ts'))
     const { SceneView } = await import(`/@fs${root}/src/presentation/scene-view.ts`)
-    const { createPoliceCar } = await import(`/@fs${root}/src/catalog/vehicles/police.ts`)
+    const { presetVehicle } = await import(`/@fs${root}/src/catalog/vehicles/library.ts`)
     const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
-    const jeep = createPoliceCar('jeep', [0, 0.62, 0])
+    const jeep = presetVehicle('police', 'jeep', [0, 0.62, 0])
     const renderer = new T.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true })
     renderer.setSize(1100, 750)
     renderer.setClearColor('#b9cfdf')
@@ -69,12 +69,12 @@ test('simulation poses cannot be reused as editor poses after Stop or in cockpit
   const result = await page.evaluate(async (root) => {
     const T = await import(String('/e2e/render-fixture.ts'))
     const { SceneView } = await import(`/@fs${root}/src/presentation/scene-view.ts`)
-    const { createPoliceCar } = await import(`/@fs${root}/src/catalog/vehicles/police.ts`)
+    const { presetVehicle } = await import(`/@fs${root}/src/catalog/vehicles/library.ts`)
     const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
     const { Simulation } = await import(`/@fs${root}/src/simulation/simulation.ts`)
     const { initPhysics } = await import(`/@fs${root}/src/simulation/physics.ts`)
     await initPhysics()
-    const car = createPoliceCar('police', [12, 1, -20])
+    const car = presetVehicle('police', 'police', [12, 1, -20])
     const doc = { version: 1, name: 'Lifecycle', entities: [car, createEntity('spawn', 'spawn')] }
     const view = new SceneView(doc)
     await view.ready

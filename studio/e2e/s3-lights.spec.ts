@@ -10,7 +10,7 @@ test('S3 front strips blink with rear signals and reverse uses its opaque insert
     const T = await import(String('/e2e/render-fixture.ts'))
     const { assets } = await import(`/@fs${root}/src/render/entity/assets.ts`)
     const { createA3Lights } = await import(`/@fs${root}/src/catalog/presentation/a3-lamps.ts`)
-    const model = await assets.instantiate('/world/car.audi.a3.cabrio.glb')
+    const model = await assets.instantiate('/studio/cars/a3/a3.cabrio.glb')
     const lights = createA3Lights(model)
     const materials = (group: string, name: string) => {
       const found: import('three').MeshStandardMaterial[] = []

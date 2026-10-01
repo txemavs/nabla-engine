@@ -167,14 +167,29 @@
               <button type="button" id="layers-none">Nada</button>
             </div>
             <span class="eyebrow">GLB</span>
-            <label><input id="layer-glb" type="checkbox" checked /> GLB z15</label>
-            <label><input id="layer-trees" type="checkbox" checked /> Árboles</label>
-            <label><input id="layer-lamps" type="checkbox" checked /> Farolas</label>
+            <label class="layer-row"><span>Terreno</span><input id="layer-terrain" type="checkbox" checked /></label>
+            <label class="layer-row"><span>Árboles</span><input id="layer-trees" type="checkbox" checked /></label>
+            <label class="layer-row"><span>Edificios</span><input id="layer-buildings" type="checkbox" checked /></label>
+            <label class="layer-row"
+              ><input id="layer-lamps" type="checkbox" checked /><span>Farolas</span
+              ><input id="lamp-level" type="range" min="0" max="20" step="1" value="10"
+            /></label>
+            <label class="layer-row"
+              ><span class="layer-gap"></span><span>Alcance</span
+              ><input id="lamp-reach" type="range" min="4" max="80" step="1" value="28"
+            /></label>
             <span class="eyebrow">TESELAS</span>
-            <label><input id="layer-relief" type="checkbox" checked /> Horizonte z13</label>
-            <label><input id="layer-z14" type="checkbox" checked /> Fotos z14</label>
-            <label><input id="layer-z12" type="checkbox" checked /> Fotos z12</label>
+            <label class="layer-row"
+              ><span>Horizonte z13</span><input id="layer-relief" type="checkbox" checked
+            /></label>
+            <label class="layer-row"
+              ><span>Fotos z14</span><input id="layer-z14" type="checkbox" checked
+            /></label>
+            <label class="layer-row"
+              ><span>Fotos z12</span><input id="layer-z12" type="checkbox" checked
+            /></label>
             <label><input id="layer-sea" type="checkbox" checked /> Mar</label>
+            <label><input id="layer-catch" type="checkbox" checked /> Suelo de seguridad</label>
             <label for="water-mode">Nivel del agua</label>
             <select id="water-mode">
               <option value="tide" selected>Marea simplificada</option>
@@ -206,12 +221,26 @@
               altura de su cauce; el barco flota al nivel seleccionado. No calcula caudales ni
               barreras hidráulicas.
             </p>
-            <label><input id="layer-maps" type="checkbox" checked /> Mapas</label>
+            <label class="layer-row"
+              ><span>Mapas</span><input id="layer-maps" type="checkbox" checked
+            /></label>
             <span class="eyebrow">CIELO</span>
+            <label><input id="layer-clouds" type="checkbox" checked /> Nubes</label>
+            <label for="cloud-style">Estilo</label>
+            <select id="cloud-style">
+              <option value="low">Bajo</option>
+              <option value="artistic" selected>Artístico</option>
+            </select>
+            <label for="cloud-amount">Cantidad</label>
+            <input id="cloud-amount" type="range" min="0" max="100" step="1" value="40" />
+            <label for="cloud-storm">Presión</label>
+            <input id="cloud-storm" type="range" min="0" max="100" step="1" value="88" />
+            <label for="moon-size">Efecto luna</label>
+            <input id="moon-size" type="range" min="1" max="16" step="0.5" value="9" />
             <label><input id="layer-sky" type="checkbox" checked /> Cielo y niebla</label>
             <label><input id="layer-sun" type="checkbox" checked /> Sol</label>
             <label
-              ><input id="layer-planets" type="checkbox" checked /> Tierra, Luna y estrellas</label
+              ><input id="layer-planets" type="checkbox" checked /> Tierra, Luna y constelaciones</label
             >
             <span class="eyebrow">ESCENA</span>
             <label><input id="layer-entities" type="checkbox" checked /> Objetos</label>
@@ -444,13 +473,24 @@
           <div id="options-panel-sky" role="tabpanel" hidden>
             <details id="sky-section" class="help sky-controls">
               <summary>SOL Y LUNA</summary>
-              <div class="option-row">
-                <label id="sky-zone" for="sky-time">Hora local</label>
-                <input id="sky-time" type="datetime-local" />
+              <div class="sky-zone-line">
+                <span id="sky-zone">Hora local</span>
+                <span id="sky-timezone"></span>
               </div>
-              <div>
-                <button id="sky-apply">Aplicar hora</button
-                ><button id="sky-live">Tiempo real</button>
+              <button id="sky-live" type="button">Tiempo real</button>
+              <input id="sky-time" type="datetime-local" aria-label="Hora" />
+              <input
+                id="sky-hour"
+                type="range"
+                min="0"
+                max="1439"
+                step="1"
+                value="0"
+                aria-label="Hora del día"
+              />
+              <div class="sky-hour-actions">
+                <button id="sky-apply" type="button">Aplicar hora</button>
+                <button id="sky-cycle" type="button">Ciclo</button>
               </div>
               <p id="sky-status" role="status"></p>
             </details>
@@ -553,15 +593,7 @@
           </div>
           <div id="add-menu" role="group" aria-label="Crear en la escena" hidden>
             <button id="add-solid">Edificio</button><button id="add-box">Bloque</button
-            ><button id="add-car">S3 Nabla · 400 CV</button
-            ><button id="add-police">Policía Municipal · Bilbao</button
-            ><button id="add-jeep">Jeep Wrangler</button
-            ><button id="add-boat">Fueraborda 6 m</button
-            ><button id="add-carrier">Contenedor volador</button
-            ><button id="add-cessna">Cessna 172</button
-            ><button id="add-streetlight">Farola de autopista</button
-            ><button id="add-globe">Farola de barrio</button> <button id="add-sprite">Sprite</button
-            ><button id="add-group">Grupo</button>
+            ><button id="add-sprite">Sprite</button><button id="add-group">Grupo</button>
             <hr />
             <button id="sample-portals">Portal</button
             ><button id="sample-gallery">Galería 2.5D</button>

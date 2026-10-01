@@ -13,7 +13,7 @@ test('burnout smoke compiles with logarithmic depth and motor audio can mute', a
   const result = await page.evaluate(async (root) => {
     const T = await import(String('/e2e/render-fixture.ts'))
     const { TireSmoke } = await import(`/@fs${root}/src/render/entity/tire-smoke.ts`)
-    const { FlightAudio } = await import(`/@fs${root}/src/audio/flight.ts`)
+    const { VehicleAudio } = await import(`/@fs${root}/src/audio/vehicle.ts`)
     const smoke = new TireSmoke()
     const renderer = new T.WebGLRenderer({ logarithmicDepthBuffer: true })
     renderer.setSize(300, 200)
@@ -32,10 +32,10 @@ test('burnout smoke compiles with logarithmic depth and motor audio can mute', a
     const cleared = !smoke.root.visible
     smoke.dispose()
     renderer.dispose()
-    const audio = new FlightAudio()
+    const audio = new VehicleAudio()
     document.querySelector('button')!.onclick = () => {
       audio.unlock()
-      audio.car(5500, 1)
+      audio.powertrain(5500, 1)
       audio.setEnabled(false)
       audio.dispose()
     }
