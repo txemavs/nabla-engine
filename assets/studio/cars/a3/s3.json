@@ -1,0 +1,90 @@
+{
+  "id": "car",
+  "label": "S3 Nabla \u00b7 400 CV",
+  "clearance": 0.62,
+  "placement": [4, 0.62, 6],
+  "order": 0,
+  "name": "S3 Nabla \u00b7 400 CV DSG",
+  "color": "#dadde1",
+  "size": [1.994, 1.332, 4.407],
+  "mass": 1400,
+  "vehicle": {
+    "colliders": [
+      {
+        "size": [1.75, 0.48, 4.25],
+        "transform": {
+          "position": [0, -0.1, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "size": [1.4, 0.08, 0.78],
+        "transform": {
+          "position": [0, 0.555, -0.625],
+          "rotation": [-0.24446129191636662, 0, 0, 0.9696590518087175]
+        }
+      },
+      {
+        "size": [1.6, 0.08, 0.8],
+        "transform": {
+          "position": [0, 0.45, 1.72],
+          "rotation": [0, 0, 0, 1]
+        }
+      }
+    ],
+    "hubs": [
+      [-0.7622195, -0.28462600000000005, -1.291815],
+      [0.7622195, -0.28462600000000005, -1.291815],
+      [-0.7547195, -0.28462600000000005, 1.291815],
+      [0.7547195, -0.28462600000000005, 1.291815]
+    ],
+    "wheelRadius": 0.315374,
+    "suspensionRest": 0.21,
+    "stiffness": 65,
+    "engineForce": 2600,
+    "drivenWheels": "all",
+    "powertrain": {
+      "powerCv": 400,
+      "torqueNm": 520,
+      "ratios": [3.4, 2.75, 1.77, 1.13, 0.92, 0.76, 0.64],
+      "finalDrive": 4.06,
+      "grip": 4.8
+    },
+    "brakeForce": 65,
+    "driver": [-0.356, 0.7, 0.32],
+    "headOffset": [0, -0.15, -0.36],
+    "cameraDistance": 6.5
+  },
+  "visual": {
+    "presentation": "nabla.s3",
+    "body": {
+      "url": "/studio/cars/a3/a3.cabrio.glb",
+      "transform": {
+        "position": [0, -0.55, 0],
+        "rotation": [0, 1, 0, 6.123233995736766e-17]
+      }
+    },
+    "wheel": {
+      "url": "/studio/cars/a3/a3.wheel.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    "wheelRotations": [
+      [0, 1, 0, 6.123233995736766e-17],
+      [0, 0, 0, 1],
+      [0, 1, 0, 6.123233995736766e-17],
+      [0, 0, 0, 1]
+    ],
+    "steering": {
+      "url": "/studio/cars/a3/a3.steering.glb",
+      "transform": {
+        "position": [-0.355606, 0.266521, -0.408524],
+        "rotation": [
+          1.1715151792891248e-17, 0.9815271415365469, -0.19132294798872285, 6.010120360794916e-17
+        ]
+      }
+    }
+  }
+}

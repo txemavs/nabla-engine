@@ -1,0 +1,21 @@
+{
+  "id": "hk-compact",
+  "name": "HK Compact 9mm",
+  "order": 0,
+  "body": "/studio/weapons/hk-compact/hk-compact.body.glb",
+  "slide": "/studio/weapons/hk-compact/hk-compact.slide.glb",
+  "scale": 0.001,
+  "assembly": [0, -0.107, 0.025],
+  "slideTravel": 12,
+  "intervalMs": 220,
+  "range": 150,
+  "impulse": 12,
+  "view": {
+    "position": [0.13, -0.105, -0.3],
+    "kick": 0.025,
+    "pitch": 0.06
+  },
+  "flash": {
+    "position": [0, 0, -0.135]
+  }
+}
