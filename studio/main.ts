@@ -1,3 +1,4 @@
+import { randomUUID } from '../src/util/uuid.js'
 import {
   commands,
   bindAction,
@@ -999,7 +1000,7 @@ for (const entry of entityCatalog) {
         !!worldStream &&
         (editor.document.cursorOnGround || terrain === undefined || ground.y <= terrain + 0.05)
       if (onSurface && terrain !== undefined) ground.y = terrain
-      const entities = createCatalogEntities(entry.id, crypto.randomUUID(), ground.toArray())
+      const entities = createCatalogEntities(entry.id, randomUUID(), ground.toArray())
       if (onSurface) entities[0].groundOffset = entry.clearance
       const doc = editor.document
       doc.entities.push(...entities)
@@ -1042,7 +1043,7 @@ bindAction('sample-assets', () =>
 bindAction('add-sprite', () =>
   action(() => {
     const doc = editor.document
-    const sprite = createEntity(crypto.randomUUID(), 'group', doc.cursor ?? [0, 0, 0])
+    const sprite = createEntity(randomUUID(), 'group', doc.cursor ?? [0, 0, 0])
     sprite.name = 'Sprite · árbol'
     sprite.size = [7, 7, 0.1]
     sprite.sprite = treeSprite(0)
@@ -1056,7 +1057,7 @@ bindAction('add-sprite', () =>
 bindAction('sample-gallery', () =>
   action(() => {
     const doc = editor.document
-    const entities = createGallery(crypto.randomUUID())
+    const entities = createGallery(randomUUID())
     for (const e of entities)
       if (!e.parentId)
         e.transform.position = e.transform.position.map(
@@ -1072,7 +1073,7 @@ bindAction('sample-gallery', () =>
 bindAction('sample-portals', () =>
   action(() => {
     const next = editor.document
-    const id = crypto.randomUUID()
+    const id = randomUUID()
     const portal = createPortal(id, next.cursor ?? [0, 0, 0])
     if (worldStream && next.cursorOnGround) portal.groundOffset = 0
     next.entities.push(portal)

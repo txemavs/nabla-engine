@@ -1,3 +1,4 @@
+import { randomUUID } from '../util/uuid.js'
 /**
  * Undo history for a scene document.
  * Play uses it too: linking a portal is a document edit, not a physics write.
@@ -78,7 +79,7 @@ export class SceneEditor {
 
   add(kind: Entity['kind']): string {
     const next = this.document,
-      id = crypto.randomUUID()
+      id = randomUUID()
     next.entities.push(createEntity(id, kind, next.cursor ?? [0, 0, 0]))
     this.commit(next)
     return id
@@ -134,7 +135,7 @@ export class SceneEditor {
           changed = true
         }
     }
-    const remap = new Map([...ids].map((old) => [old, crypto.randomUUID()]))
+    const remap = new Map([...ids].map((old) => [old, randomUUID()]))
     const copies = next.entities
       .filter((e) => ids.has(e.id))
       .map((e) => ({

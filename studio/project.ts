@@ -1,3 +1,4 @@
+import { randomUUID } from '../src/util/uuid.js'
 import { portalRegistry, type PortalConnection } from './portal-registry.js'
 import { z } from 'zod'
 import { parseScene, type SceneDocument } from '../src/scene/document.js'
@@ -98,7 +99,7 @@ export function createProject(scene: SceneDocument): StudioProject {
   return synchronizeWorldObjects({
     format: 'nabla-project',
     version: 3,
-    planetId: crypto.randomUUID(),
+    planetId: randomUUID(),
     objects: [],
     bookmarks: scene.geography?.planetary
       ? [
@@ -208,7 +209,7 @@ function synchronizeWorldObjects(project: StudioProject): StudioProject {
       if (entity.parentId) continue
       const key = JSON.stringify([place.id, entity.id])
       objects.push({
-        id: previous.get(key) ?? crypto.randomUUID(),
+        id: previous.get(key) ?? randomUUID(),
         locationId: place.id,
         entityId: entity.id,
         pose: toWorldPose(place.scene.geography, entity.transform),
