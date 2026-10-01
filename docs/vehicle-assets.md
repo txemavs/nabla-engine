@@ -1,9 +1,10 @@
 # Vehicles and mobile garage
 
-The four original GLBs in `assets/world/` were recovered unchanged from this
+The four original GLBs were recovered unchanged from this
 repository's experimental branch, commit `6a22576`. See [provenance](../assets/README.md).
+The published copies live under `assets/studio`.
 
-## Audi A3 Cabrio
+## A3 Cabrio
 
 The body is authored in metres with Y up and +Z forward. Its explicit import
 rotation is 180° around Y to match the engine's −Z forward. The physics origin is

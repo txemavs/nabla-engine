@@ -13,7 +13,7 @@ This change does not migrate Agency or implement its full capability registry.
 `entityCatalog` exposes the available presets. `createCatalogEntities(kind, id,
 groundPosition)` instantiates one complete bundle with host-supplied unique IDs:
 
-- `car`: original A3 model, suspension, steering and driving configuration.
+- `car`: S3 preset (`assets/studio/cars/a3/s3.json`). `a3` is the previous cabrio, same folder.
 - `carrier`: flying container, walkable interior, garage and one attached stern portal.
 - `streetlight`: nine-metre highway pole with an overhanging luminaire and editable light component.
 

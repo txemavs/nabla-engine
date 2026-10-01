@@ -42,7 +42,7 @@ The Studio UI remains in Spanish. Documentation is in English; the
 - Carrier-local walking at altitude, with ground-portal departure and return.
 - PNG billboards and an optional 2.5D window shooting gallery with viewpoint parallax.
 - First-person monitor exploration with a third-person toggle and provisional hitscan sidearm.
-- Original Audi A3 Cabrio body, wheels and steering wheel, with interior camera.
+- Original A3 cabrio body, wheels and steering wheel, with interior camera.
 - A 5 × 10 m carrier: drive into its garage, latch the car, travel and release it.
 - Ground and assisted drone flight modes, altitude hold and mode 2 gamepad input.
 - A real-data starting district in Irun Ventas/Katea, with OSM buildings/streets and Esri elevation.

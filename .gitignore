@@ -20,3 +20,7 @@ services/world-cache/prepared/
 !vendor/*.tgz
 
 local-backup/
+
+# Per-user vehicles. Publish one by moving it under assets/studio.
+assets/custom/**
+!assets/custom/README.md

@@ -1,5 +1,6 @@
 /** Rebuild from the untouched backup directory. Paint/glass/light primitives stay exact. */
 import path from 'node:path'
+import { readdirSync } from 'node:fs'
 import { writeA3Wheel } from './lib/a3-wheel.mjs'
 import { MeshoptSimplifier } from 'meshoptimizer'
 import {
@@ -15,7 +16,9 @@ import { readGlb, writeGlb, components } from './lib/glb.mjs'
 await MeshoptSimplifier.ready
 const sourceDir = process.argv[2]
 if (!sourceDir) throw Error('Pass the directory containing the three original A3 GLBs')
-const brand = readGlb(new URL('../assets/world/ship.container.5x10.glb', import.meta.url))
+const brand = readGlb(
+  new URL('../assets/studio/ships/container/ship.container.5x10.glb', import.meta.url),
+)
 const bp =
   brand.json.meshes[brand.json.nodes.find((n) => n.name === 'Brand_Nabla_Proa').mesh].primitives[0]
 const badge = new BufferGeometry().setAttribute(
@@ -33,12 +36,13 @@ for (const part of process.argv.includes('--wheel-only')
   if (part === 'wheel') {
     console.log(
       'wheel',
-      writeA3Wheel(new URL('../assets/world/car.audi.a3.wheel.glb', import.meta.url), badge),
+      writeA3Wheel(new URL('../assets/studio/cars/a3/a3.wheel.glb', import.meta.url), badge),
     )
     continue
   }
-  const filename = `car.audi.a3.${part}.glb`,
-    { json: j, bin, read: oldRead } = readGlb(path.join(sourceDir, filename)),
+  const filename = readdirSync(sourceDir).find((name) => name.endsWith(`.${part}.glb`))
+  if (!filename) throw new Error(`No ${part} model in ${sourceDir}`)
+  const { json: j, bin, read: oldRead } = readGlb(path.join(sourceDir, filename)),
     data = new Map()
   const read = (i) => data.get(i) || oldRead(i)
   const add = (vs, type) => {
@@ -228,6 +232,6 @@ for (const part of process.argv.includes('--wheel-only')
   } else emblem('Nabla steering centre', 0.065, -Math.PI / 2, [0.129, 0.0064, 0])
   j.asset.generator =
     'Nabla prepare-a3.mjs; protected body and optical surfaces; simplified small details'
-  writeGlb(new URL('../assets/world/' + filename, import.meta.url), j, read, bin)
+  writeGlb(new URL(`../assets/studio/cars/a3/a3.${part}.glb`, import.meta.url), j, read, bin)
   console.log(part, { before, after, removed })
 }

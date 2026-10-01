@@ -166,13 +166,14 @@ impulse followed by a fall; it does not select a permanent height. The library's
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
 The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Click the viewport once to capture the mouse, then left-click to fire with the weapon drawn. The centre
-reticle shows aim and briefly changes to a cross on impact. The supplied HK USP Compact body and separate slide
-have muzzle flash, recoil and a visual slide cycle, with a 220 ms shot interval. Shots stop at the first
+reticle shows aim and briefly changes to a cross on impact. Studio equips the first weapon preset
+(`assets/studio/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
+220 ms interval, 150 m range and impulse 12. Another pistol is another JSON file. Shots stop at the first
 physical solid and push dynamic props. In third person, a second ray from the
 monitor prevents shooting through an obstruction between the monitor and the aim
 point. Firing is disabled while driving or editing. Shots can cross one open/window portal, with opaque PNG pixels participating in
-aim and hit detection. There is no damage, ammunition or multiplayer yet. `playground/sidearm.ts` assembles the two original GLBs without changing aiming
-or physics; the procedural model is retained as a loading/error fallback.
+aim and hit detection. There is no damage, ammunition or multiplayer yet. `studio/sidearm.ts` draws the preset
+and keeps the procedural model as a loading/error fallback.
 
 ## Carrier Stargate controls
 
@@ -345,7 +346,7 @@ Carrier screens stay active throughout the occupied interior, without a proximit
 
 The grey cabrio keeps its lightweight body and Nabla emblems, with a custom 400 CV
 (294.2 kW crank power), 520 N·m AWD powertrain and seven-speed DSG-style automatic.
-These are game tuning values, not a certified Audi specification. Drive with W/S
+These are game tuning values, not a manufacturer specification. Drive with W/S
 and A/D; the HUD shows D1–D7 or R and engine RPM. Opposite throttle brakes before
 reverse engages. Space briefly loosens the rear axle to initiate a slide; release
 it to recover grip. Hold W + Space near rest for a rear-tire burnout (front brakes
