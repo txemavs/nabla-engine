@@ -10,11 +10,6 @@ export type { PlayerInput, PlayerSnapshot } from './simulation/simulation.js'
 export { createSampleScene } from './scene/sample.js'
 
 export { vehicleDefinition } from './entity/vehicle/vehicle.js'
-export { createA3 } from './catalog/vehicles/a3.js'
-export { createJeep } from './catalog/vehicles/jeep.js'
-export { createOutboard } from './catalog/vehicles/boat.js'
-export { createCarrier } from './catalog/vehicles/carrier.js'
-export { createCessna } from './catalog/vehicles/cessna.js'
 export type { VehicleDefinition, VisualDefinition } from './entity/schema.js'
 
 export { EARTH_RADIUS, MADRID, geoToLocal, localToGeo, type GeoPoint } from './math/geo/sphere.js'
@@ -117,11 +112,25 @@ export { OceanSheet } from './render/planet/ocean-sheet.js'
 export { simplifiedTide } from './planet/tide.js'
 export { DepthOfField } from './render/effects/depth-of-field.js'
 export { PerformanceMonitor, type FrameSample } from './diagnostics/performance-monitor.js'
-export { FlightAudio } from './audio/flight.js'
+export { VehicleAudio } from './audio/vehicle.js'
 
 export { capturePng } from './render/capture.js'
 
-export { createPoliceCar } from './catalog/vehicles/police.js'
+export {
+  hasVehiclePreset,
+  presetEntities,
+  presetVehicle,
+  vehiclePreset,
+  vehiclePresets,
+  type VehiclePreset,
+} from './catalog/vehicles/library.js'
+
+export {
+  hasWeaponPreset,
+  weaponPreset,
+  weaponPresets,
+  type WeaponPreset,
+} from './catalog/weapons/library.js'
 
 export {
   HtmlMonitor,

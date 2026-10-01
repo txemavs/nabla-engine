@@ -1,49 +1,53 @@
 # Vehicles: start here
 
-This folder owns the stock vehicle definitions. Each factory creates an ordinary
-Entity: dimensions, mass, collider shapes, seats/helm, engine settings and visual
-asset references. A game can use these without importing Studio:
+Stock vehicle definitions are JSON files next to their models, not code.
+
+`assets/studio` is what this repo publishes. `assets/custom` is this machine only
+and is gitignored. Both use `cars`, `planes`, `ships` and `boats`. Studio loads
+both. To publish a vehicle, move its folder into `assets/studio`.
+
+| Published now   | Folder                          |
+| --------------- | ------------------------------- |
+| S3 and A3       | `assets/studio/cars/a3`         |
+| Container craft | `assets/studio/ships/container` |
+| Portal frame    | `assets/studio/portals`         |
+
+Jeep, police Focus, Cessna and the outboard stay in `assets/custom` until one is
+ready to publish. `presentation` still names a code adapter (`nabla.s3`,
+`nabla.wrangler`, `nabla.police`) for lights, mirrors and paint. A plain model
+omits that field.
+
+Spawn one by the `id` in its JSON. The folder name is not the catalog id.
 
 ```ts
-import { createA3, createOutboard, createCarrier, createCessna } from '@nabla/engine/vehicles'
+import { presetVehicle } from '@nabla/engine/vehicles'
 import { Simulation, initPhysics, createEntity } from '@nabla/engine'
 
 await initPhysics()
 const simulation = new Simulation({
   version: 1,
   name: 'Harbour',
-  entities: [createEntity('spawn', 'spawn', [4, 2, 0]), createOutboard('boat', [0, 0.45, 0])],
+  entities: [createEntity('spawn', 'spawn', [4, 2, 0]), presetVehicle('car', 'car', [0, 0.62, 0])],
 })
-simulation.setWaterLevel(0)
 // Feed input and call simulation.step(elapsedSeconds) from the host loop.
 ```
 
-| Vehicle         | Definition | Model in assets/world                                 |
-| --------------- | ---------- | ----------------------------------------------------- |
-| Audi A3         | a3.ts      | car.audi.a3.cabrio.glb, wheel and steering companions |
-| Jeep            | jeep.ts    | car.jeep.wrangler.glb and shared wheel companion      |
-| Outboard        | boat.ts    | boat.outboard.glb                                     |
-| Container craft | carrier.ts | ship.container.5x10.glb                               |
-| Cessna          | cessna.ts  | cessna.172.glb                                        |
-
-The host serves `assets/world` at `/world`. Existing asset URLs stay stable so
-saved scenes keep working. Do not duplicate the binary models into Studio.
+The host serves `assets/` at the site root, so a file's URL is its path under
+that folder. Do not duplicate the binary models into Studio.
 
 - `src/entity/vehicle/vehicle.ts`: vehicle contract and runtime state.
 - `src/simulation/vehicles/boat.ts`: buoyancy, motor, steering and hull damping.
 - `src/simulation/simulation.ts`: shared fixed step, boarding, driving and flight.
 - `src/simulation/physics.ts`: Rapier adapter; all games use this same implementation.
 - `src/render/entity/view.ts`: model presentation, wheels, steering and propellers.
-- `src/audio/flight.ts`: synthesized turbine/piston sound without editor UI.
-- `studio/flight-audio.ts`: Studio sound button, preference and browser activation.
+- `src/audio/vehicle.ts`: shared audio context. Each voice is its own file beside it (turbine, propeller, powertrain, tires).
+- `studio/vehicle-audio.ts`: Studio sound button, preference and browser activation.
 
-Import this folder or the public package; old catalogue sibling paths are removed. A new vehicle starts
-with a definition here, references its assets, and reuses shared physics; avoid
-adding a second vehicle simulation to Studio.
+Import this folder or the public package. A new vehicle is a JSON preset plus its GLB.
+Reuse the shared physics; do not add a second vehicle simulation to Studio.
 
-`police.ts` adds the Bilbao police Focus as its own palette entry, with shared
-wheels and its own collider/suspension/driver settings. The host offers insertion;
-Engine owns the definition and visual equipment (`catalog/presentation/police-equipment.ts`).
+The police Focus definition is `assets/custom/cars/police/police-focus.json`. Its light bar stays
+in code (`catalog/presentation/police-equipment.ts`) because it walks the mesh.
 
 See [create a vehicle](../../../docs/creating-a-vehicle.md) for the public APIs,
 custom adapters and standalone wheeled/boat/flight hosts.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createJeep } from '../src/catalog/vehicles/jeep.js'
+import { presetVehicle } from '../src/catalog/vehicles/library.js'
 import { createEntity } from '../src/entity/schema.js'
 import type { SceneDocument } from '../src/scene/document.js'
 import { Vec3, type Quaternion } from '../src/simulation/physics.js'
@@ -15,7 +15,7 @@ describe('jeep pose', () => {
       entities: [
         floor,
         createEntity('spawn', 'spawn', [0, 0.05, 8]),
-        createJeep('car', [0, 0.92, 0]),
+        presetVehicle('jeep', 'car', [0, 0.92, 0]),
       ],
     }
     const sim = new Simulation(doc, { playerMode: 'hover' })
@@ -36,7 +36,7 @@ describe('jeep pose', () => {
       entities: [
         floor,
         createEntity('spawn', 'spawn', [0, 0.05, 8]),
-        createJeep('car', [0, 0.92, 0]),
+        presetVehicle('jeep', 'car', [0, 0.92, 0]),
       ],
     }
     const sim = new Simulation(doc, { playerMode: 'hover' })

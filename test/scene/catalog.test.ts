@@ -1,11 +1,29 @@
 import { expect, it } from 'vitest'
 import * as THREE from 'three'
-import { createCatalogEntities } from '../../src/catalog/palette.js'
+import { createCatalogEntities, entityCatalog } from '../../src/catalog/palette.js'
+import { vehiclePreset } from '../../src/catalog/vehicles/library.js'
 import { entityCapabilities } from '../../src/entity/capability.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { parseScene } from '../../src/scene/document.js'
 import { SceneEditor } from '../../src/scene/history.js'
 import { Streetlights } from '../../src/render/entity/streetlights.js'
+
+it('loads the previous A3 and the current S3 as separate presets', () => {
+  const ids = entityCatalog.map((entry) => entry.id)
+  for (const id of ['car', 'a3', 'carrier', 'streetlight', 'globe']) expect(ids).toContain(id)
+  expect(ids.indexOf('car')).toBeLessThan(ids.indexOf('a3'))
+  const s3 = vehiclePreset('car')
+  const a3 = vehiclePreset('a3')
+  expect(s3.vehicle.powertrain?.powerCv).toBe(400)
+  expect(s3.visual.presentation).toBe('nabla.s3')
+  expect(a3.name).toBe('A3 Cabrio')
+  expect(a3.vehicle.powertrain).toBeUndefined()
+  expect(a3.vehicle.brakeForce).toBe(36)
+  expect(a3.visual.presentation).toBeUndefined()
+  expect(createCatalogEntities('a3', 'old', [0, 0, 0])[0].transform.position[1]).toBeCloseTo(
+    0.62,
+  )
+})
 
 it('creates independently editable vehicles with remapped portals when cloned', () => {
   const entities = createCatalogEntities('carrier', 'ship', [10, 20, 30])

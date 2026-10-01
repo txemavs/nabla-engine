@@ -24,6 +24,15 @@ export const carMenuItems: MonitorMenuItem[] = [
       back,
     ],
   },
+  {
+    id: 'map',
+    label: 'MAPA',
+    children: [
+      { id: 'map-car', label: 'SIGUE COCHE', action: { type: 'vehicle.map', value: 'heading' } },
+      { id: 'map-north', label: 'NORTE FIJO', action: { type: 'vehicle.map', value: 'north' } },
+      back,
+    ],
+  },
 ]
 /** Edit the panel, positions and bindings here; no keyboard or game logic in the layout. */
 export const carMenuDefinition: MonitorDefinition = {
@@ -41,6 +50,7 @@ export const carMenuDefinition: MonitorDefinition = {
       height: 50,
       columns: 18,
       binding: 'title',
+      tracking: 0.58,
     },
     ...[0, 1, 2].map((i) => ({
       id: `row${i}`,
@@ -51,6 +61,7 @@ export const carMenuDefinition: MonitorDefinition = {
       height: 80,
       columns: 11,
       binding: `row${i}`,
+      tracking: 0.58,
     })),
     { id: 'selection', kind: 'panel', x: 12, y: 98, width: 8, height: 65, color: '#ff3344' },
     {
@@ -63,6 +74,7 @@ export const carMenuDefinition: MonitorDefinition = {
       columns: 36,
       binding: 'help',
       color: '#9daac2',
+      tracking: 0.58,
     },
   ],
 }

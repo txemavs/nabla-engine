@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Vector3 } from 'three'
 import { SceneEditor } from '../../src/scene/history.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
-import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity, rotationDegrees } from '../../src/entity/schema.js'
 import { parseScene, type SceneDocument } from '../../src/scene/document.js'
 import {
@@ -21,7 +20,7 @@ function scene(car = false): SceneDocument {
       { ...createEntity('floor', 'box', [0, -0.3, 0]), size: [100, 0.6, 100] },
       createEntity('spawn', 'spawn', car ? [1.4, 0.03, 5] : [0, 0.03, 5]),
       ...createPortalPair('a', 'b', [0, 1.455, 0], [20, 1.455, 0]),
-      ...(car ? [createA3('car', [0, 0.7, 5])] : []),
+      ...(car ? [presetVehicle('car', 'car', [0, 0.7, 5])] : []),
     ],
   })
 }
@@ -198,8 +197,8 @@ it('backs the A3 from the carrier through its mounted stern gate without changin
   const doc = scene()
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.7, 0.35, 2.5]
   doc.entities.push(
-    createCarrier('ship', [0, 1.2, 0]),
-    createA3('car', [0, 0.85, 2.5]),
+    presetVehicle('carrier', 'ship', [0, 1.2, 0]),
+    presetVehicle('car', 'car', [0, 0.85, 2.5]),
     createCarrierPortal('ship', 'stern'),
   )
   // Keep both road gates well clear of the ship.
@@ -229,7 +228,10 @@ it('keeps hosted mouths rigidly attached during flight, including pitch and roll
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.6, 0.35, -2.8]
   doc.entities.find((e) => e.id === 'a')!.transform.position = [20, 1.455, 0]
   doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
-  doc.entities.push(createCarrier('ship', [0, 1.2, 0]), createCarrierPortal('ship', 'stern'))
+  doc.entities.push(
+    presetVehicle('carrier', 'ship', [0, 1.2, 0]),
+    createCarrierPortal('ship', 'stern'),
+  )
   const sim = new Simulation(doc, { playerMode: 'hover' })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
   sim.interact()
@@ -261,7 +263,11 @@ it('transfers a moving prop through the stern gate while its carrier is moving',
   prop.size = [0.4, 0.4, 0.4]
   prop.motion = 'dynamic'
   prop.mass = 1
-  doc.entities.push(createCarrier('ship', [0, 1.2, 0]), prop, createCarrierPortal('ship', 'stern'))
+  doc.entities.push(
+    presetVehicle('carrier', 'ship', [0, 1.2, 0]),
+    prop,
+    createCarrierPortal('ship', 'stern'),
+  )
   const sim = new Simulation(doc, { playerMode: 'hover' })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
   sim.setGarageDoor('ship', true)
@@ -284,7 +290,10 @@ it('transfers a moving prop through the stern gate while its carrier is moving',
 it('stops the hovering monitor at the armoured bow window', () => {
   const doc = scene()
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.9, 0.35, -2.6]
-  doc.entities.push(createCarrier('ship', [0, 1.2, 0]), createCarrierPortal('ship', 'stern'))
+  doc.entities.push(
+    presetVehicle('carrier', 'ship', [0, 1.2, 0]),
+    createCarrierPortal('ship', 'stern'),
+  )
   const sim = new Simulation(doc, { playerMode: 'hover' })
   for (let i = 0; i < 120; i++) sim.step(1 / 60)
   for (let i = 0; i < 240; i++) {
@@ -306,7 +315,10 @@ it('leaves the helm at orbital height, floats to Earth and returns to the same c
   doc.entities.find((e) => e.kind === 'spawn')!.transform.position = [1.85, 90000.35, -2.8]
   doc.entities.find((e) => e.id === 'a')!.transform.position = [20, 1.455, 0]
   doc.entities.find((e) => e.id === 'b')!.transform.position = [40, 1.455, 0]
-  doc.entities.push(createCarrier('ship', [0, 90000, 0]), createCarrierPortal('ship', 'stern'))
+  doc.entities.push(
+    presetVehicle('carrier', 'ship', [0, 90000, 0]),
+    createCarrierPortal('ship', 'stern'),
+  )
   const sim = new Simulation(doc, { playerMode: 'hover' })
   expect(sim.interact()).toContain('Conduciendo')
   sim.toggleFlight()
