@@ -21,10 +21,7 @@ services:
       CACHE_MAX_BYTES: '5368709120'
       PREPARE_MAX_BYTES: '17179869184'
       PREPARE_ROOT: /publish
-      OVERPASS_URL: http://host.docker.internal:8768/api/interpreter
-      OVERPASS_FALLBACK: '0'
     ports: ['127.0.0.1:8787:8080']
-    extra_hosts: ['host.docker.internal:host-gateway']
     volumes:
       - cache:/data
       - prepared:/publish
