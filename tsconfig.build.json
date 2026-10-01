@@ -5,7 +5,8 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["vite/client", "node"]
   },
   "include": ["src"],
   "exclude": ["src/**/*.test.ts"]

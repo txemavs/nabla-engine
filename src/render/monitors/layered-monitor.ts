@@ -35,6 +35,8 @@ export type MonitorLayer = Rect &
         color?: string
         font?: 'mono' | 'sans'
         align?: 'left' | 'center'
+        /** 1 keeps the atlas cell. Lower crops side padding so letters sit closer. */
+        tracking?: number
       }
     | { kind: 'bar'; binding: string; color: string }
     | { kind: 'html'; url: string; refresh?: MonitorOptions }
@@ -73,7 +75,11 @@ export class LayeredMonitor {
         throw Error('Invalid monitor layer: ' + layer.id)
       if (
         layer.kind === 'text' &&
-        (!Number.isInteger(layer.columns) || layer.columns < 1 || layer.columns > 128)
+        (!Number.isInteger(layer.columns) ||
+          layer.columns < 1 ||
+          layer.columns > 128 ||
+          (layer.tracking !== undefined &&
+            (!Number.isFinite(layer.tracking) || layer.tracking <= 0 || layer.tracking > 1)))
       )
         throw Error('Invalid text columns')
       if (
@@ -163,8 +169,13 @@ export class LayeredMonitor {
           atlases.set(font, atlas)
         }
         // Batch a full text row in one mesh, instead of one draw call per digit.
+        // Tracking crops the same fraction it removes from the advance, so the
+        // glyph stays the same size and only the gap shrinks.
+        const tracking = layer.tracking ?? 1
         const textWidth =
-          font === 'sans' ? Math.min(layer.width, (layer.columns * layer.height) / 2) : layer.width
+          (font === 'sans'
+            ? Math.min(layer.width, (layer.columns * layer.height) / 2)
+            : layer.width) * tracking
         const geometry = new PlaneGeometry(textWidth, layer.height, layer.columns, 1).toNonIndexed()
         const baseUv = geometry.getAttribute('uv').array.slice()
         const textMesh = new Mesh(
@@ -190,8 +201,12 @@ export class LayeredMonitor {
           textMesh.position.x =
             layer.align === 'center'
               ? ((layer.columns - value.length) * textWidth) / layer.columns / 2
-              : 0
+              : layer.tracking !== undefined
+                ? (textWidth - layer.width) / 2
+                : 0
           const uv = geometry.getAttribute('uv')
+          const span = font === 'sans' ? 0.5 : 1
+          const origin = font === 'sans' ? 0.25 : 0
           for (let i = 0; i < layer.columns; i++) {
             const code = i < value.length ? value.charCodeAt(i) : 32
             const glyph = code >= 32 && code < 128 ? code - 32 : 31
@@ -199,13 +214,10 @@ export class LayeredMonitor {
               y = 1 - (Math.floor(glyph / 16) + 1) / 8
             for (let v = 0; v < 6; v++) {
               const index = i * 6 + v
+              const local = baseUv[index * 2] * layer.columns - i
               uv.setXY(
                 index,
-                x +
-                  (font === 'sans'
-                    ? 0.25 + (baseUv[index * 2] * layer.columns - i) * 0.5
-                    : baseUv[index * 2] * layer.columns - i) /
-                    16,
+                x + (origin + ((1 - tracking) / 2 + local * tracking) * span) / 16,
                 y + baseUv[index * 2 + 1] / 8,
               )
             }

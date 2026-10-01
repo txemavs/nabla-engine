@@ -145,6 +145,26 @@ Expect JSON, an ETag, `Cache-Control: no-cache` and `X-Nabla-Cache: BAKED` or
 means revalidate before reuse, not “never store”. Private query responses instead
 report `HIT`, `MISS` or `STALE`.
 
+## Local Overpass upstream (`OVERPASS_URL`)
+
+`/osm` cache misses go to `$OVERPASS_URL` when set, otherwise to the public
+`https://overpass-api.de/api/interpreter`. In `compose.planet.yaml` the dev stack
+sets `OVERPASS_URL: http://host.docker.internal:8768/api/interpreter` (plus
+`extra_hosts: host.docker.internal:host-gateway`), i.e. the local `nabla-ways`
+Overpass published on the host's 127.0.0.1:8768. The world-cache stays on its own
+network; nothing joins `nabla-ways_default`. If the local server errors, times out
+or returns invalid/incomplete JSON, the same request is retried once against the
+public server. Only the demand `/osm` path is affected; `bake.py` still uses the
+public URL. Cached (`HIT`) responses never contact any Overpass.
+
+Rollback: remove the `OVERPASS_URL` and `extra_hosts` lines from
+`compose.planet.yaml` and recreate the service, or restore the previous image:
+
+```sh
+docker tag nabla-development-world-cache:rollback-preoverpass nabla-development-world-cache:latest
+docker compose -f compose.dev.yaml up -d --no-deps --no-build world-cache
+```
+
 ## Warm OSM or rebuild static bakes
 
 Run inside the deployed container so paths and port numbers are unambiguous:

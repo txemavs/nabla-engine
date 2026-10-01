@@ -7,9 +7,10 @@ records the actual owners and public entries.
 
 ## Composition
 
-- **Catalogue**: current car, boat, aircraft and carrier definitions live in
-  `src/catalog/vehicles/`. Stock road presentation adapters live in
-  `src/catalog/presentation/`; monitors and S3 recipes live in `catalog/monitors/`.
+- **Catalogue**: `src/catalog/vehicles/` loads JSON presets. Definitions live
+  under `assets/studio` and `assets/custom`, not as one file per vehicle. Stock
+  road presentation adapters live in `src/catalog/presentation/`; monitors and
+  S3 recipes live in `catalog/monitors/`.
 - **Simulation**: wheeled, boat and flight controllers borrow bodies in a shared
   Rapier world. They receive inputs/environment from the host and apply forces
   before its fixed world step. They do not start a second loop or own the world.

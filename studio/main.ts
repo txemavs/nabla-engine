@@ -1,3 +1,4 @@
+import { randomUUID } from '../src/util/uuid.js'
 import {
   commands,
   bindAction,
@@ -21,7 +22,8 @@ import { TireMarks } from '../src/render/entity/tire-marks.js'
 import { TireSmoke } from '../src/render/entity/tire-smoke.js'
 import { capturePng } from '../src/render/capture.js'
 import { simplifiedTide } from '../src/planet/tide.js'
-import { OceanSheet } from '../src/render/planet/ocean-sheet.js'
+import { CatchFloor } from '../src/render/planet/catch-floor.js'
+import { OceanSheet, seaSeenFromBelow } from '../src/render/planet/ocean-sheet.js'
 import { TileDebugView, type TileDebugMode } from '../src/render/planet/debug.js'
 import { PerformanceMonitor } from '../src/diagnostics/performance-monitor.js'
 import { TouchDriving } from './touch-driving.js'
@@ -34,9 +36,10 @@ import { settleGroundPlacement } from './ground-placement.js'
 import { mountStudio } from './shell.js'
 import { setPlanetCharts } from '../src/render/entity/helm-map.js'
 import { PlanetWorld, projectedLayers } from '../src/render/planet/world.js'
-import { FieldLights, fieldLayers } from '../src/render/entity/field-lights.js'
+import { FieldLights, fieldLayers, lampLook } from '../src/render/entity/field-lights.js'
 import { planetaryScene, createPlanetScene } from './planet-scene.js'
-import { geographicPose } from './geographic-pose.js'
+import { geographicPose, anchoredWorldPose } from './geographic-pose.js'
+import { bindCoverageMap } from './ui/coverage-map.js'
 import { prepareStartup } from './startup.js'
 import { authoredTree, isMapEnvironment } from './outliner.js'
 import { RemotePortalViews } from '../src/render/portal/remote.js'
@@ -57,7 +60,7 @@ import { StudioInputOwner } from './input-owner.js'
 import { mapCacheStats, setMapCacheBudget, clearMapCache } from '../src/render/planet/cache.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from '../src/render/planet/geometry.js'
 import { roadGeometry } from '../src/planet/land/roads/draped-road.js'
-import { FlightAudio } from './flight-audio.js'
+import { VehicleAudio } from './vehicle-audio.js'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
 import { createCatalogEntities, entityCatalog } from '../src/index.js'
@@ -120,7 +123,7 @@ const urlDestination =
 const circuitMode =
   !urlDestination && new URLSearchParams(location.search).get('scene') === 'circuit'
 let loadingWorld = true
-const flightAudio = new FlightAudio()
+const vehicleAudio = new VehicleAudio()
 let groundPlacementDirty = true
 let worldStream: PlanetWorld | null = null
 let tileDebug: TileDebugView | null = null
@@ -226,6 +229,17 @@ renderer.shadowMap.type = THREE.PCFShadowMap
 renderer.shadowMap.autoUpdate = false
 renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.08
+const DRONE_W = 320
+const DRONE_H = 180
+const droneTarget = new THREE.WebGLRenderTarget(DRONE_W, DRONE_H)
+const droneCamera = new THREE.PerspectiveCamera(68, DRONE_W / DRONE_H, 0.35, 8000)
+const dronePixels = new Uint8Array(DRONE_W * DRONE_H * 4)
+const droneImage = new ImageData(DRONE_W, DRONE_H)
+const droneClear = new THREE.Color()
+let droneOn = false
+let droneLat = Number.NaN
+let droneLon = Number.NaN
+let dronePreview = ''
 viewport.prepend(renderer.domElement)
 const depthOfField = new DepthOfField()
 const performanceHud = document.createElement('output')
@@ -415,6 +429,9 @@ let nextTideReadout = 0
 const seaRoot = ocean.mesh
 shadowManager.setupMaterial(seaRoot.material)
 scene.add(seaRoot)
+const catchFloor = new CatchFloor()
+shadowManager.setupMaterial(catchFloor.mesh.material)
+scene.add(catchFloor.mesh)
 let view = new SceneView(editor.document, performanceSettings.preset === 'ultra', true)
 view.setupMaterials((material) => shadowManager.setupMaterial(material))
 scene.add(view.root)
@@ -425,7 +442,7 @@ let geography = new GeographicView(
   },
   false,
 )
-scene.add(geography.tiles, geography.lensFlare)
+attachGeography(geography)
 let skyClock: SkyClock = editor.document.sky ?? { mode: 'live' }
 const renderOrigin = new THREE.Vector3()
 watchAssets(view)
@@ -508,7 +525,7 @@ function rebuild(prepared?: PreparedMapGeometry): void {
       },
       false,
     )
-    scene.add(geography.tiles, geography.lensFlare)
+    attachGeography(geography)
   }
   view.dispose()
   if (prepared) receiveMapGeometry(document.entities, prepared)
@@ -631,8 +648,9 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
   nextTideReadout = 0
   skyClock = doc.sky ?? { mode: 'live' }
   $<HTMLInputElement>('sky-time').value = localTimeInput(skyTime(skyClock))
+  syncSkyHour()
   $('sky-live').classList.toggle('active', skyClock.mode === 'live')
-  $('sky-zone').textContent = 'Hora local · ' + Intl.DateTimeFormat().resolvedOptions().timeZone
+  $('sky-timezone').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone
   const geo = doc.geography ?? MADRID
   $<HTMLInputElement>('latitude').value = String(geo.latitude)
   $<HTMLInputElement>('longitude').value = String(geo.longitude)
@@ -888,13 +906,7 @@ function refreshUi(doc: SceneDocument = editor.document, poseEdited = false): vo
     'add-entity',
     'add-solid',
     'add-box',
-    'add-car',
-    'add-jeep',
-    'add-police',
-    'add-boat',
-    'add-carrier',
-    'add-cessna',
-    'add-streetlight',
+    ...entityCatalog.map((entry) => `add-${entry.id}`),
     'add-group',
     'add-sprite',
     'sample-gallery',
@@ -971,6 +983,14 @@ for (const [id, kind] of [
     }),
   )
 }
+const catalogAnchor = document.getElementById('add-box')
+if (catalogAnchor)
+  for (const entry of [...entityCatalog].reverse()) {
+    const button = document.createElement('button')
+    button.id = `add-${entry.id}`
+    button.textContent = entry.label
+    catalogAnchor.after(button)
+  }
 for (const entry of entityCatalog) {
   bindAction(`add-${entry.id}`, () =>
     action(() => {
@@ -980,7 +1000,7 @@ for (const entry of entityCatalog) {
         !!worldStream &&
         (editor.document.cursorOnGround || terrain === undefined || ground.y <= terrain + 0.05)
       if (onSurface && terrain !== undefined) ground.y = terrain
-      const entities = createCatalogEntities(entry.id, crypto.randomUUID(), ground.toArray())
+      const entities = createCatalogEntities(entry.id, randomUUID(), ground.toArray())
       if (onSurface) entities[0].groundOffset = entry.clearance
       const doc = editor.document
       doc.entities.push(...entities)
@@ -1023,7 +1043,7 @@ bindAction('sample-assets', () =>
 bindAction('add-sprite', () =>
   action(() => {
     const doc = editor.document
-    const sprite = createEntity(crypto.randomUUID(), 'group', doc.cursor ?? [0, 0, 0])
+    const sprite = createEntity(randomUUID(), 'group', doc.cursor ?? [0, 0, 0])
     sprite.name = 'Sprite · árbol'
     sprite.size = [7, 7, 0.1]
     sprite.sprite = treeSprite(0)
@@ -1037,7 +1057,7 @@ bindAction('add-sprite', () =>
 bindAction('sample-gallery', () =>
   action(() => {
     const doc = editor.document
-    const entities = createGallery(crypto.randomUUID())
+    const entities = createGallery(randomUUID())
     for (const e of entities)
       if (!e.parentId)
         e.transform.position = e.transform.position.map(
@@ -1053,7 +1073,7 @@ bindAction('sample-gallery', () =>
 bindAction('sample-portals', () =>
   action(() => {
     const next = editor.document
-    const id = crypto.randomUUID()
+    const id = randomUUID()
     const portal = createPortal(id, next.cursor ?? [0, 0, 0])
     if (worldStream && next.cursorOnGround) portal.groundOffset = 0
     next.entities.push(portal)
@@ -1456,6 +1476,8 @@ for (const [id, key] of [
     renderer.setPixelRatio(Math.min(devicePixelRatio, performanceSettings.resolution))
     renderer.setSize(viewport.clientWidth, viewport.clientHeight)
     renderer.shadowMap.enabled = performanceSettings.shadows > 0
+    if (id === 'map-buildings')
+      $<HTMLInputElement>('layer-buildings').checked = control.value !== '0'
     shadowManager.reconfigure(
       performanceSettings.shadows,
       camera,
@@ -1584,7 +1606,7 @@ function applySceneLayers() {
   const sky = sceneLayer('layer-sky')
   const sunOn = sceneLayer('layer-sun')
   const planets = sceneLayer('layer-planets')
-  geography.setLayers({ sky, planets, sun: sunOn })
+  geography.setLayers({ sky, planets, sun: sunOn, clouds: sceneLayer('layer-clouds') })
   geography.tiles.visible = sceneLayer('layer-maps')
   if (!sky) scene.fog = null
   if (!sunOn) {
@@ -1594,34 +1616,99 @@ function applySceneLayers() {
     for (const light of shadowManager.lights) light.visible = false
   }
   seaRoot.visible = !!view.document.geography && sceneLayer('layer-sea')
-  fieldLayers.lamps = sceneLayer('layer-lamps')
+  fieldLayers.lamps = lampLook.armed && lampLook.level > 0
   worldStream?.applyViewLayers({
-    glb: sceneLayer('layer-glb'),
+    glb: true,
     relief: sceneLayer('layer-relief'),
     photo14: sceneLayer('layer-z14'),
     photo12: sceneLayer('layer-z12'),
     trees: sceneLayer('layer-trees'),
+    terrain: sceneLayer('layer-terrain'),
+    buildings: sceneLayer('layer-buildings'),
   })
   view.root.visible = sceneLayer('layer-entities')
-  fieldLights.root.visible = sceneLayer('layer-entities') || sceneLayer('layer-lamps')
+  fieldLights.root.visible =
+    sceneLayer('layer-entities') || (lampLook.armed && lampLook.level > 0) || fieldLayers.navigation
   if (!sceneLayer('layer-grid')) grid.visible = false
 }
+$<HTMLSelectElement>('cloud-style').value =
+  localStorage.getItem('nabla.cloud-style') === 'low' ? 'low' : 'artistic'
+geography.setCloudStyle(readCloudStyle())
+$('cloud-style').onchange = () => {
+  const style = readCloudStyle()
+  localStorage.setItem('nabla.cloud-style', style)
+  geography.setCloudStyle(style)
+  syncCloudWeatherEnabled()
+  needsRender = true
+}
+bindCloudWeather()
+bindMoonSize()
+syncCloudWeatherEnabled()
 for (const box of document.querySelectorAll<HTMLInputElement>(
-  '#options-panel-layers input[type=checkbox]',
+  '#options-panel-layers input[type=checkbox], #layer-clouds',
 ))
   box.onchange = () => {
-    if (box.id === 'layer-lamps') fieldLayers.lamps = box.checked
     needsRender = true
   }
+const buildingsLayer = $<HTMLInputElement>('layer-buildings')
+buildingsLayer.checked = $<HTMLSelectElement>('map-buildings').value !== '0'
+buildingsLayer.onchange = () => {
+  const select = $<HTMLSelectElement>('map-buildings')
+  const next = buildingsLayer.checked ? '1' : '0'
+  if (select.value !== next) {
+    select.value = next
+    select.dispatchEvent(new Event('change'))
+  }
+  needsRender = true
+}
+function bindLampSlider(id: 'lamp-level' | 'lamp-reach', key: 'level' | 'reach', fallback: number) {
+  const input = $<HTMLInputElement>(id)
+  const stored = localStorage.getItem('nabla.' + id)
+  const value = stored == null || stored === '' ? fallback : Number(stored)
+  input.value = String(Number.isFinite(value) ? value : fallback)
+  lampLook[key] = Number(input.value)
+  input.oninput = () => {
+    lampLook[key] = Number(input.value)
+    localStorage.setItem('nabla.' + id, input.value)
+    needsRender = true
+  }
+}
+bindLampSlider('lamp-level', 'level', 10)
+bindLampSlider('lamp-reach', 'reach', 28)
+const lampToggle = $<HTMLInputElement>('layer-lamps')
+lampToggle.checked = localStorage.getItem('nabla.layer-lamps') !== '0'
+lampLook.armed = lampToggle.checked
+$<HTMLInputElement>('lamp-level').disabled = !lampToggle.checked
+$<HTMLInputElement>('lamp-reach').disabled = !lampToggle.checked
+lampToggle.onchange = () => {
+  lampLook.armed = lampToggle.checked
+  localStorage.setItem('nabla.layer-lamps', lampToggle.checked ? '1' : '0')
+  $<HTMLInputElement>('lamp-level').disabled = !lampToggle.checked
+  $<HTMLInputElement>('lamp-reach').disabled = !lampToggle.checked
+  needsRender = true
+}
 for (const [id, on] of [
   ['layers-all', true],
   ['layers-none', false],
 ] as const)
   bindAction(id, () => {
     for (const box of document.querySelectorAll<HTMLInputElement>(
-      '#options-panel-layers input[type=checkbox]',
+      '#models input[type=checkbox], #tiles input[type=checkbox], #planet-layers input[type=checkbox], #interface-layers input[type=checkbox], #layer-clouds',
     ))
       box.checked = on
+    lampLook.armed = on
+    localStorage.setItem('nabla.layer-lamps', on ? '1' : '0')
+    $<HTMLInputElement>('lamp-level').disabled = !on
+    $<HTMLInputElement>('lamp-reach').disabled = !on
+    const level = $<HTMLInputElement>('lamp-level')
+    level.value = on ? '10' : '0'
+    level.dispatchEvent(new Event('input'))
+    const buildings = $<HTMLSelectElement>('map-buildings')
+    const wanted = on ? '1' : '0'
+    if (buildings.value !== wanted) {
+      buildings.value = wanted
+      buildings.dispatchEvent(new Event('change'))
+    }
     needsRender = true
   })
 for (const box of document.querySelectorAll<HTMLInputElement>('#drape-layers input')) {
@@ -1661,6 +1748,7 @@ $('performance-preset').onchange = async () => {
     ['mirror-quality', 'mirrors'],
   ] as const)
     $<HTMLSelectElement>(control).value = String(performanceSettings[key])
+  $<HTMLInputElement>('layer-buildings').checked = performanceSettings.buildings > 0
   $('draw-distance').dispatchEvent(new Event('change'))
   performanceSettings.preset = id
   editor.experimentalLargeScene = id === 'ultra'
@@ -1913,6 +2001,11 @@ window.addEventListener('keydown', (e) => {
             view.setVehicleMirrorTilt(menuVehicle, tilt)
             toast(`Espejos: ${tilt} grados · Guardar conserva el ajuste`)
           }
+        }
+        if (result.action?.type === 'vehicle.map') {
+          const follow = result.action.value !== 'north'
+          view.setVehicleMapFollow(menuVehicle, follow)
+          toast(follow ? 'Mapa sigue al coche' : 'Mapa clavado al norte')
         }
         if (result.action?.type === 'vehicle.paint' && result.action.value) {
           editor.update(menuVehicle, { color: result.action.value })
@@ -2225,6 +2318,7 @@ bindAction('photo', async () => {
         }
         renderer.shadowMap.needsUpdate = first && shadowsActive
         renderer.render(scene, tile)
+        if (geography.enabled) geography.renderClouds(renderer, tile)
         first = false
       },
       {
@@ -2264,6 +2358,52 @@ bindAction('photo', async () => {
   }
 })
 
+function renderDrone() {
+  if (!droneOn || !view.document.geography) return
+  const picture = document.querySelector<HTMLCanvasElement>('#studio-map .drone canvas')
+  const ctx = picture?.getContext('2d')
+  if (!picture || !ctx) return
+  const flat = geoToLocal(view.document.geography, {
+    latitude: droneLat,
+    longitude: droneLon,
+    altitude: 0,
+  })
+  const ground = worldStream?.groundHeight([flat[0], 0, flat[2]])
+  const floor = ground !== undefined && Number.isFinite(ground) ? ground : 0
+  const eye = new THREE.Vector3(flat[0], floor + 55, flat[2] + 40)
+  const look = new THREE.Vector3(flat[0], floor + 4, flat[2])
+  droneCamera.position.copy(eye).sub(renderOrigin)
+  droneCamera.up.set(0, 1, 0)
+  droneCamera.lookAt(look.clone().sub(renderOrigin))
+  droneCamera.updateProjectionMatrix()
+  const previous = renderer.getRenderTarget()
+  const previousClear = renderer.autoClear
+  renderer.getClearColor(droneClear)
+  const previousAlpha = renderer.getClearAlpha()
+  try {
+    renderer.setRenderTarget(droneTarget)
+    renderer.setClearColor('#070b10', 1)
+    renderer.clear()
+    if (geography.enabled && (sceneLayer('layer-sky') || sceneLayer('layer-planets'))) {
+      geography.render(renderer, droneCamera, eye)
+      renderer.autoClear = false
+      renderer.clearDepth()
+    }
+    renderer.shadowMap.needsUpdate = false
+    renderer.render(scene, droneCamera)
+    if (geography.enabled) geography.renderClouds(renderer, droneCamera)
+    renderer.readRenderTargetPixels(droneTarget, 0, 0, DRONE_W, DRONE_H, dronePixels)
+  } finally {
+    renderer.setClearColor(droneClear, previousAlpha)
+    renderer.autoClear = previousClear
+    renderer.setRenderTarget(previous)
+  }
+  const row = DRONE_W * 4
+  for (let y = 0; y < DRONE_H; y++) {
+    droneImage.data.set(dronePixels.subarray((DRONE_H - 1 - y) * row, (DRONE_H - y) * row), y * row)
+  }
+  ctx.putImageData(droneImage, 0, 0)
+}
 function frame(now: number): void {
   if (photoBusy) {
     previous = now
@@ -2289,6 +2429,7 @@ function frame(now: number): void {
   if (frameTimes.length > 120) frameTimes.shift()
   const dt = (now - previous) / 1000
   previous = now
+  tickSkyCycle(dt)
   if (sim) {
     const pad = pollGamepad()
     if (playerInterior !== sim.player.interiorId) {
@@ -2622,18 +2763,18 @@ function frame(now: number): void {
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
     if (sidearm.fire(now)) {
       // Preserve camera-to-monitor obstruction checks before transporting a shot through a window.
-      const aimed = sim.shoot(camera.position.toArray(), direction.toArray(), 150, 0)
+      const aimed = sim.shoot(camera.position.toArray(), direction.toArray(), sidearm.range, 0)
       const origin = new THREE.Vector3(...sim.renderPlayerPosition)
       const destination = aimed
         ? new THREE.Vector3(...aimed.point)
-        : camera.position.clone().addScaledVector(direction, 150)
+        : camera.position.clone().addScaledVector(direction, sidearm.range)
       const firing = camera.clone()
       if (!firstPerson) {
         firing.position.copy(origin)
         firing.lookAt(destination)
       }
       firing.updateMatrixWorld(true)
-      sidearm.impact(gallery.shoot(sim, view, firing))
+      sidearm.impact(gallery.shoot(sim, view, firing, sidearm.range, sidearm.impulse))
       renderer.domElement.dataset.impacts = String(view.impacts.count)
     }
   }
@@ -2655,17 +2796,23 @@ function frame(now: number): void {
         flightSpeed = info.speedKmh
       }
     }
-  flightAudio.update(flightLevel, flightSpeed)
+  vehicleAudio.turbine(flightLevel, flightSpeed)
   const pilot = sim?.player.vehicleId
   const piloted = pilot ? view.document.entities.find((e) => e.id === pilot) : undefined
-  flightAudio.engine(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
+  vehicleAudio.propeller(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
   const carInfo = pilot && piloted?.vehicle?.powertrain ? sim!.vehicleInfo(pilot) : null
-  flightAudio.car(carInfo?.helm !== 'off' ? (carInfo?.rpm ?? 0) : 0, carInfo?.engineLoad ?? 0)
+  vehicleAudio.powertrain(
+    carInfo?.helm !== 'off' ? (carInfo?.rpm ?? 0) : 0,
+    carInfo?.engineLoad ?? 0,
+  )
   fireRequested = false
   const worldCamera = camera.position.clone()
   const position = sim?.player.position ?? camera.position.toArray()
   renderOrigin.set(0, 0, 0)
   if (sim && new THREE.Vector3(...position).length() > 10000) renderOrigin.fromArray(position)
+  const underSea =
+    !!view.document.geography &&
+    seaSeenFromBelow(worldCamera, view.document.geography.altitude, waterLevel)
   if (view.document.geography && sceneLayer('layer-sea')) {
     ocean.update(
       view.document.geography,
@@ -2673,16 +2820,27 @@ function frame(now: number): void {
       renderOrigin,
       Math.max(performanceSettings.distance, performanceSettings.fog * 2),
       now,
+      !sim && sceneLayer('layer-catch') && underSea,
     )
     needsRender = true
   }
   seaRoot.visible = !!view.document.geography && sceneLayer('layer-sea')
   renderer.domElement.dataset.sea = seaRoot.visible ? 'sheet' : 'off'
+  const disk = sim?.catchDisk()
+  const catchOn = sceneLayer('layer-catch')
+  if (!catchOn || !view.document.geography) catchFloor.hide()
+  else if (disk) catchFloor.show(disk.position, disk.rotation, renderOrigin)
+  else if (!sim && underSea)
+    catchFloor.showUnder(view.document.geography, worldCamera, waterLevel, renderOrigin)
+  else catchFloor.hide()
+  renderer.domElement.dataset.catchFloor = catchFloor.mesh.visible ? 'on' : 'off'
   view.buildingDistance =
     performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
   // Fog is a horizontal fade, independent of how far geometry is drawn.
   geography.viewDistance = performanceSettings.fog
   const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
+  if (seaRoot.visible) ocean.fadeWithSky(geography.atmosphere.space)
+  if (geography.animatingClouds) needsRender = true
   worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
   if (worldStream) $('world-note').textContent = worldStream.status
   if (!sim) {
@@ -2700,9 +2858,9 @@ function frame(now: number): void {
     renderOrigin,
   )
   tireMarks.update(document.hidden ? 0 : dt, pilot ?? null, tireContacts, renderOrigin)
-  flightAudio.tires(slip, pilot ? sim!.vehicleInfo(pilot).speedKmh : 0)
+  vehicleAudio.tires(slip, pilot ? sim!.vehicleInfo(pilot).speedKmh : 0)
   renderer.domElement.dataset.tireMarks = String(tireMarks.root.geometry.drawRange.count / 6)
-  renderer.domElement.dataset.tireSound = String(flightAudio.tireSoundLevel)
+  renderer.domElement.dataset.tireSound = String(vehicleAudio.tireSoundLevel)
   view.root.position.copy(renderOrigin).negate()
   fieldLights.root.position.copy(renderOrigin).negate()
   const nightLights = !!view.document.geography && geography.atmosphere.day < 0.15
@@ -2712,7 +2870,7 @@ function frame(now: number): void {
     if (box) box.checked = true
     fieldFollow = false
   }
-  fieldLayers.lamps = sceneLayer('layer-lamps')
+  fieldLayers.lamps = lampLook.armed && lampLook.level > 0
   fieldLights.update(
     view.document.geography,
     worldCamera.toArray(),
@@ -2752,6 +2910,7 @@ function frame(now: number): void {
         ? 3.2 * air.day
         : 0
     sun.color.set(useMoon ? '#d5def2' : air.day > 0.05 ? '#fff0d8' : '#b8ccff')
+    ocean.setLight(lightDirection, sun.intensity, sun.color, ambientFill.intensity)
     sunDirection.copy(lightDirection).negate()
     shadowManager.setLightDirection(sunDirection)
     shadowManager.setLightIntensity(sun.intensity)
@@ -2760,6 +2919,7 @@ function frame(now: number): void {
       air.day > 0.8 ? 'day' : air.day < 0.1 ? 'night' : 'twilight'
     $('sky-status').textContent =
       `${skyClock.mode === 'live' ? 'Tiempo real' : 'Hora fija'} · ${skyTime(skyClock).toLocaleString()}`
+    syncSkyHour()
     camera.far = worldStream
       ? Math.hypot(
           Math.max(height >= 2000 ? 80000 : 12000, performanceSettings.distance + 500),
@@ -2780,6 +2940,7 @@ function frame(now: number): void {
     $('gps-status').textContent = 'Sin ubicación · configura el punto GPS'
     $('map-status').textContent = ''
   }
+  ocean.followFog(scene.fog instanceof THREE.Fog ? scene.fog : null)
   view.streetlights.update(
     camera.position,
     !!view.document.geography && geography.atmosphere.day < 0.15,
@@ -2905,6 +3066,7 @@ function frame(now: number): void {
       portalControls.prepare(camera)
       renderer.shadowMap.needsUpdate = shadowsActive
       renderer.render(scene, camera)
+      if (geography.enabled) geography.renderClouds(renderer, camera)
       portalControls.finish()
     } finally {
       if (dof) depthOfField.present(renderer, camera)
@@ -2920,6 +3082,7 @@ function frame(now: number): void {
       !!selectedGeometry,
     )
     sidearm.render(renderer, now, camera.aspect, firstPerson)
+    renderDrone()
     needsRender = view.pendingBuildingBatches || !!remotePortalViews?.pending
   }
   camera.position.copy(worldCamera)
@@ -2981,6 +3144,66 @@ function frame(now: number): void {
     renderer.domElement.dataset.frameP95 = p95.toFixed(1)
   }
 }
+function readCloudStyle(): 'low' | 'artistic' {
+  return $<HTMLSelectElement>('cloud-style').value === 'low' ? 'low' : 'artistic'
+}
+function storedUnit(key: string, fallback: number) {
+  const raw = localStorage.getItem(key)
+  if (raw == null || raw === '') return fallback
+  const n = Number(raw)
+  return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : fallback
+}
+function storedCloudAmount() {
+  return storedUnit('nabla.cloud-amount', 0.4)
+}
+function storedCloudStorm() {
+  return storedUnit('nabla.cloud-storm', 0.12)
+}
+function storedMoonSize() {
+  const raw = localStorage.getItem('nabla.moon-size')
+  if (raw == null || raw === '') return 9
+  const n = Number(raw)
+  return Number.isFinite(n) ? Math.min(16, Math.max(1, n)) : 9
+}
+function syncCloudWeatherEnabled() {
+  const low = readCloudStyle() === 'low'
+  for (const id of ['cloud-amount', 'cloud-storm']) {
+    $<HTMLInputElement>(id).disabled = low
+    document.querySelector(`label[for="${id}"]`)?.classList.toggle('is-off', low)
+  }
+}
+function bindCloudWeather() {
+  const amount = $<HTMLInputElement>('cloud-amount')
+  const storm = $<HTMLInputElement>('cloud-storm')
+  amount.value = String(Math.round(storedCloudAmount() * 100))
+  storm.value = String(Math.round((1 - storedCloudStorm()) * 100))
+  const apply = () => {
+    const nextAmount = Number(amount.value) / 100
+    const nextStorm = 1 - Number(storm.value) / 100
+    localStorage.setItem('nabla.cloud-amount', String(nextAmount))
+    localStorage.setItem('nabla.cloud-storm', String(nextStorm))
+    geography.setCloudWeather(nextAmount, nextStorm)
+    needsRender = true
+  }
+  amount.oninput = apply
+  storm.oninput = apply
+}
+function bindMoonSize() {
+  const input = $<HTMLInputElement>('moon-size')
+  input.value = String(storedMoonSize())
+  input.oninput = () => {
+    const size = Number(input.value)
+    localStorage.setItem('nabla.moon-size', String(size))
+    geography.setMoonSize(size)
+    needsRender = true
+  }
+}
+function attachGeography(next: GeographicView) {
+  next.setCloudStyle(readCloudStyle())
+  next.setCloudWeather(storedCloudAmount(), storedCloudStorm())
+  next.setMoonSize(storedMoonSize())
+  scene.add(next.tiles, next.lensFlare)
+}
 function applyLocation(latitude: number, longitude: number): void {
   $<HTMLSelectElement>('travel-city').value = ''
   $<HTMLInputElement>('travel-latitude').value = String(latitude)
@@ -2988,6 +3211,27 @@ function applyLocation(latitude: number, longitude: number): void {
   void travelTo()
 }
 
+function skyMinute(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes()
+}
+function syncSkyHour(): void {
+  const hour = $<HTMLInputElement>('sky-hour')
+  if (document.activeElement === hour) return
+  hour.value = String(skyMinute(skyTime(skyClock)))
+}
+function clockFromMinute(minutes: number): SkyClock {
+  const typed = new Date($<HTMLInputElement>('sky-time').value)
+  const next = Number.isFinite(typed.getTime()) ? new Date(typed) : new Date()
+  next.setHours(0, 0, 0, 0)
+  next.setMinutes(minutes)
+  return { mode: 'fixed', at: next.toISOString() }
+}
+function previewSkyClock(clock: SkyClock): void {
+  skyClock = clock
+  $<HTMLInputElement>('sky-time').value = localTimeInput(skyTime(clock))
+  $('sky-live').classList.remove('active')
+  needsRender = true
+}
 function setSkyClock(clock: SkyClock): void {
   action(() => {
     editor.load({ ...editor.document, sky: clock })
@@ -2996,6 +3240,7 @@ function setSkyClock(clock: SkyClock): void {
   })
 }
 bindAction('sky-apply', () => {
+  stopSkyCycle(false)
   const time = new Date($<HTMLInputElement>('sky-time').value)
   if (!Number.isFinite(time.getTime())) {
     toast('Introduce una fecha y hora válidas')
@@ -3003,7 +3248,47 @@ bindAction('sky-apply', () => {
   }
   setSkyClock({ mode: 'fixed', at: time.toISOString() })
 })
-bindAction('sky-live', () => setSkyClock({ mode: 'live' }))
+const skyHour = $<HTMLInputElement>('sky-hour')
+skyHour.addEventListener('input', () => {
+  stopSkyCycle(false)
+  previewSkyClock(clockFromMinute(skyHour.valueAsNumber))
+})
+skyHour.addEventListener('change', () => setSkyClock(clockFromMinute(skyHour.valueAsNumber)))
+bindAction('sky-live', () => {
+  stopSkyCycle(false)
+  setSkyClock({ mode: 'live' })
+})
+let skyCycle: { from: number; elapsed: number } | null = null
+function stopSkyCycle(commit: boolean) {
+  const cycle = skyCycle
+  if (!cycle) return
+  skyCycle = null
+  $('sky-cycle').classList.remove('active')
+  if (!commit) return
+  const at = new Date(cycle.from + cycle.elapsed * 3600000)
+  setSkyClock({ mode: 'fixed', at: at.toISOString() })
+}
+function tickSkyCycle(dt: number) {
+  if (!skyCycle) return
+  if (document.activeElement?.id === 'sky-time') {
+    stopSkyCycle(true)
+    return
+  }
+  skyCycle.elapsed += dt
+  const at = new Date(skyCycle.from + skyCycle.elapsed * 3600000)
+  previewSkyClock({ mode: 'fixed', at: at.toISOString() })
+}
+bindAction('sky-cycle', () => {
+  if (skyCycle) {
+    stopSkyCycle(true)
+    return
+  }
+  const typed = new Date($<HTMLInputElement>('sky-time').value)
+  const from = Number.isFinite(typed.getTime()) ? typed.getTime() : skyTime(skyClock).getTime()
+  skyCycle = { from, elapsed: 0 }
+  $('sky-cycle').classList.add('active')
+  previewSkyClock({ mode: 'fixed', at: new Date(from).toISOString() })
+})
 bindAction('apply-location', () =>
   applyLocation(
     Number($<HTMLInputElement>('latitude').value),
@@ -3108,6 +3393,117 @@ $('options-menu').addEventListener('toggle', () => {
   if ($('options-menu').matches(':popover-open')) void refreshMapCacheUi()
 })
 void refreshMapCacheUi()
+
+function placeOnMap(id: string, latitude: number, longitude: number, commit: boolean) {
+  const origin = editor.document.geography
+  const entity = editor.document.entities.find((item) => item.id === id)
+  if (!origin || !entity || isMapEnvironment(entity)) return
+  const graph = SceneGraph.fromValidated(editor.document)
+  const world = graph.worldTransform(id)
+  const geographic = geographicPose(origin, world, entity.geoAnchor)
+  const groundHere = worldStream?.groundHeight(world.position)
+  const clearance = Math.min(
+    10000,
+    Math.max(
+      0,
+      groundHere !== undefined && Number.isFinite(groundHere)
+        ? world.position[1] - groundHere
+        : (entity.groundOffset ?? 0),
+    ),
+  )
+  const flat = geoToLocal(origin, { latitude, longitude, altitude: 0 })
+  const groundThere = worldStream?.groundHeight([flat[0], 0, flat[2]])
+  const altitude =
+    groundThere !== undefined && Number.isFinite(groundThere)
+      ? localToGeo(origin, [flat[0], groundThere + clearance, flat[2]]).altitude
+      : geographic.anchor.altitude
+  const next = { ...geographic.anchor, latitude, longitude, altitude }
+  const transform = graph.localFromWorld(
+    entity.parentId,
+    anchoredWorldPose(origin, next, geographic.pose),
+  )
+  if (!commit) {
+    const key = `${id}:${latitude.toFixed(5)}:${longitude.toFixed(5)}`
+    if (key === dronePreview) return
+    dronePreview = key
+    view.updateEntityPose({
+      ...editor.entity(id),
+      geoAnchor: next,
+      ...(entity.parentId ? {} : { groundOffset: clearance }),
+      transform,
+    })
+    needsRender = true
+    return
+  }
+  dronePreview = ''
+  editor.update(id, {
+    geoAnchor: next,
+    ...(entity.parentId ? {} : { groundOffset: clearance }),
+    transform,
+  })
+  selectedId = id
+  finishPoseEdit(id)
+  groundPlacementDirty = true
+  needsRender = true
+}
+bindCoverageMap({
+  pins: () => {
+    const origin = editor.document.geography
+    if (!origin) return []
+    const graph = SceneGraph.fromValidated(editor.document)
+    return editor.document.entities
+      .filter(
+        (entity) =>
+          !isMapEnvironment(entity) && entity.kind !== 'spawn' && entity.kind !== 'terrain',
+      )
+      .map((entity) => {
+        const geo = geographicPose(origin, graph.worldTransform(entity.id), entity.geoAnchor).anchor
+        return {
+          id: entity.id,
+          name: entity.name,
+          latitude: geo.latitude,
+          longitude: geo.longitude,
+        }
+      })
+  },
+  selectPin: (id) => {
+    selectedId = id
+    refreshUi()
+  },
+  movePin: (id, latitude, longitude) => placeOnMap(id, latitude, longitude, true),
+  previewPin: (id, latitude, longitude) => placeOnMap(id, latitude, longitude, false),
+  glance: (latitude, longitude) => {
+    if (!droneOn) return
+    if (Math.abs(latitude - droneLat) < 1e-5 && Math.abs(longitude - droneLon) < 1e-5) return
+    droneLat = latitude
+    droneLon = longitude
+    needsRender = true
+  },
+  setDrone: (on) => {
+    droneOn = on
+    if (!on) return
+    droneLat = Number.NaN
+    needsRender = true
+  },
+  moveView: (latitude, longitude) => {
+    const origin = view.document.geography
+    if (!origin || sim) return
+    const flat = geoToLocal(origin, { latitude, longitude, altitude: 0 })
+    const here = worldStream?.groundHeight(orbit.target.toArray())
+    const there = worldStream?.groundHeight([flat[0], orbit.target.y, flat[2]])
+    const clearance =
+      here === undefined ? Math.max(orbit.target.y, 2) : Math.max(2, orbit.target.y - here)
+    const target = new THREE.Vector3(
+      flat[0],
+      there === undefined ? orbit.target.y : there + clearance,
+      flat[2],
+    )
+    camera.position.add(target.clone().sub(orbit.target))
+    orbit.target.copy(target)
+    orbit.update()
+    needsRender = true
+  },
+})
 
 mountStudio({
   refresh: refreshUi,

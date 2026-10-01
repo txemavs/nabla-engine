@@ -35,13 +35,62 @@ export function preparePanels() {
   ]
   const layerActions = section('layer-actions', 'Visibilidad').node
   move(layerActions, 'layers-all', 'layers-none')
-  for (const id of ['layer-glb', 'layer-trees', 'layer-lamps']) leaf(layers[0].node, id)
+  for (const id of ['layer-terrain', 'layer-trees', 'layer-buildings', 'lamp-level', 'lamp-reach'])
+    leaf(layers[0].node, id)
   for (const id of ['layer-relief', 'layer-z14', 'layer-z12', 'layer-maps'])
     leaf(layers[1].node, id)
-  for (const id of ['layer-sky', 'layer-sun', 'layer-planets', 'layer-sea'])
+  for (const id of ['layer-sky', 'layer-sun', 'layer-planets', 'layer-sea', 'layer-catch'])
     leaf(layers[2].node, id)
   leaf(layers[3].node, 'layer-grid')
   move(layers[4].node, 'drape-layers')
+  const tint = (id: string, color: string, child = false) => {
+    const label = get(id).closest('label')
+    if (!label) return
+    label.classList.add('layer-leaf')
+    label.classList.toggle('layer-child', child)
+    label.style.setProperty('--layer', color)
+    const box = label.querySelector<HTMLInputElement>('input[type=checkbox]')
+    if (box) label.prepend(box)
+  }
+  tint('layer-terrain', '#b08968')
+  tint('layer-trees', '#3c9a55')
+  tint('layer-buildings', '#c9845a')
+  tint('layer-lamps', '#f0d080')
+  tint('lamp-reach', '#f0d080', true)
+  tint('layer-relief', '#7aa2ff')
+  tint('layer-z14', '#d5d8e0')
+  tint('layer-z12', '#9aa3b5')
+  tint('layer-maps', '#6eb7e0')
+  tint('layer-sky', '#8ec5ff')
+  tint('layer-sun', '#ffd27a')
+  tint('layer-planets', '#c9b6ff')
+  tint('layer-sea', '#1f8a9a')
+  tint('layer-catch', '#8b8e91')
+  tint('layer-grid', '#b7bdc7')
+  const drapeColor: Record<string, string> = {
+    roofs: '#c9845a',
+    runways: '#d0d4dc',
+    pitches: '#6f9e4e',
+    farmland: '#c6b15a',
+    forest: '#2f7a45',
+    grass: '#8fbf6a',
+    scrub: '#a3a05a',
+    terrain: '#b08968',
+    residential: '#d07a8a',
+    industrial: '#c47a9a',
+    sand: '#e4d2a4',
+    rock: '#9a9590',
+    wetland: '#6a9a8a',
+    water: '#3a8eb0',
+    roads: '#f4f4f4',
+  }
+  for (const box of layers[4].node.querySelectorAll<HTMLInputElement>('input[data-drape]')) {
+    const label = box.closest('label')
+    if (!label) continue
+    label.classList.add('layer-leaf')
+    label.style.setProperty('--layer', drapeColor[box.dataset.drape ?? ''] ?? '#aaa')
+    label.prepend(box)
+  }
   const interfaceTab = {
     id: 'interface',
     label: 'Interfaz',
@@ -49,36 +98,49 @@ export function preparePanels() {
   }
   interfaceTab.sections[0].node.textContent =
     'Arrastra las pestañas para organizar los paneles. Ver permite recuperarlos y restablecer la distribución.'
-  const planet = {
-    id: 'planet',
-    label: 'Planeta',
-    sections: [
-      section('planet-time', 'Sol y luna'),
-      section('destinations', 'Destinos del planeta', false),
-      section('location', 'Ubicación', false),
-      section('sea', 'Mar', false),
-    ],
-  }
   const content = (source: string, target: HTMLElement) => {
     for (const child of [...get(source).children])
       if (child.tagName !== 'SUMMARY') target.append(child)
   }
-  content('sky-section', planet.sections[0].node)
-  move(planet.sections[1].node, 'project-places', 'project-place-open', 'travel-city')
-  move(
-    planet.sections[2].node,
+  const planetClock = section('planet-clock', 'Reloj')
+  const skyLayers = section('planet-sky', 'Cielo')
+  const place = section('location', 'Ubicación', false)
+  const sea = section('sea', 'Mar', false)
+  content('sky-section', planetClock.node)
+  leaf(skyLayers.node, 'layer-clouds')
+  const cloudStyleLabel = document.querySelector('label[for="cloud-style"]')
+  if (cloudStyleLabel) skyLayers.node.append(cloudStyleLabel)
+  skyLayers.node.append(get('cloud-style'))
+  const cloudAmountLabel = document.querySelector('label[for="cloud-amount"]')
+  if (cloudAmountLabel) skyLayers.node.append(cloudAmountLabel)
+  skyLayers.node.append(get('cloud-amount'))
+  const cloudStormLabel = document.querySelector('label[for="cloud-storm"]')
+  if (cloudStormLabel) skyLayers.node.append(cloudStormLabel)
+  skyLayers.node.append(get('cloud-storm'))
+  const moonSizeLabel = document.querySelector('label[for="moon-size"]')
+  if (moonSizeLabel) skyLayers.node.append(moonSizeLabel)
+  skyLayers.node.append(get('moon-size'))
+  for (const id of [
+    'project-places',
+    'project-place-open',
+    'travel-city',
     'travel-form',
     'travel-status',
     'travel-cancel',
     'locate',
     'css-screen-demo',
-  )
+  ]) {
+    const node = get(id)
+    const label = document.querySelector(`label[for="${id}"]`)
+    if (label) place.node.append(label)
+    place.node.append(node)
+  }
   const layerSource = get('options-panel-layers')
   let moving = false
   for (const child of [...layerSource.children]) {
     if (child instanceof HTMLLabelElement && child.htmlFor === 'water-mode') moving = true
     if (child.classList.contains('eyebrow')) moving = false
-    if (moving) planet.sections[3].node.append(child)
+    if (moving) sea.node.append(child)
   }
   const performance = {
     id: 'performance',
@@ -127,7 +189,8 @@ export function preparePanels() {
   return {
     layers,
     layerActions,
-    preferences: [interfaceTab, planet, performance, storage, development],
+    planetSections: [planetClock, skyLayers, place, sea],
+    preferences: [interfaceTab, performance, storage, development],
     help,
     parking,
   }

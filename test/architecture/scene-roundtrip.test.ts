@@ -2,14 +2,14 @@ import { expect, it } from 'vitest'
 import { parseScene } from '../../src/scene/document.js'
 import { SceneEditor } from '../../src/scene/history.js'
 import { createEntity } from '../../src/entity/schema.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import {
   stockVehiclePresentation,
   s3Presentation,
 } from '../../src/catalog/presentation/road-vehicles.js'
 
 it('preserves current vehicle settings through edit, undo and JSON roundtrip', () => {
-  const car = createA3('current', [0, 1, 0])
+  const car = presetVehicle('car', 'current', [0, 1, 0])
   car.vehicle!.mirrorTilt = 5
   car.color = '#374859'
   const document = parseScene({

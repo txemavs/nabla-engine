@@ -10,7 +10,7 @@ export class AssetLibrary {
     let pending = this.cache.get(url)
     if (!pending) {
       pending = this.loader.loadAsync(url).then((gltf) => {
-        if (url === '/world/portal.frame.glb') {
+        if (url === '/studio/portals/portal.frame.glb') {
           gltf.scene.traverse((object) => {
             if (!(object instanceof THREE.Mesh)) return
             const source = object.geometry

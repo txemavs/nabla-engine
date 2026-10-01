@@ -2,8 +2,7 @@ import { createCarrierPortal } from '../src/entity/portal/portal.js'
 import { createEntity } from '../src/entity/schema.js'
 import { SceneGraph } from '../src/scene/graph.js'
 import { type SceneDocument } from '../src/scene/document.js'
-import { createA3 } from '../src/catalog/vehicles/a3.js'
-import { createCarrier } from '../src/catalog/vehicles/carrier.js'
+import { presetVehicle } from '../src/catalog/vehicles/library.js'
 import type { GeoPoint } from '../src/math/geo/sphere.js'
 /** User-owned content survives removal of generated context, with its world pose intact. */
 export function planetaryScene(document: SceneDocument): SceneDocument {
@@ -55,8 +54,8 @@ export function createPlanetScene(origin: GeoPoint, name: string): SceneDocument
     entities: [
       ...[
         createEntity('spawn', 'spawn', [-2, 1, 0]),
-        createA3('car-a', [0, 1, 0]),
-        createCarrier('carrier', [20, 2, 0]),
+        presetVehicle('car', 'car-a', [0, 1, 0]),
+        presetVehicle('carrier', 'carrier', [20, 2, 0]),
       ].map((e) => ({
         ...e,
         groundOffset: e.kind === 'spawn' ? 0.2 : e.vehicle?.flight ? 1.2 : 0.62,

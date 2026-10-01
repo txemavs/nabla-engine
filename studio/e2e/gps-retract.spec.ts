@@ -9,9 +9,9 @@ test('S3 GPS casing retracts and stops map uploads while the speedometer remains
   await page.goto('/gps-preview')
   const result = await page.evaluate(async (root) => {
     const { SceneView } = await import(`/@fs${root}/src/presentation/scene-view.ts`)
-    const { createA3 } = await import(`/@fs${root}/src/catalog/vehicles/a3.ts`)
+    const { presetVehicle } = await import(`/@fs${root}/src/catalog/vehicles/library.ts`)
     const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
-    const car = createA3('car')
+    const car = presetVehicle('car', 'car')
     const doc = { version: 1, name: 'GPS', entities: [car, createEntity('spawn', 'spawn')] }
     const view = new SceneView(doc)
     await view.ready

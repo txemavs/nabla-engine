@@ -69,7 +69,7 @@ def fetch_osm(origin, x, z, cache_url=None):
     if cache_url:
         url = f"{cache_url}/osm"
     else:
-        url = "https://overpass-api.de/api/interpreter"
+        url = os.environ.get("OVERPASS_URL") or "https://overpass-api.de/api/interpreter"
 
     data = urllib.parse.urlencode({'data': query}).encode()
     request = urllib.request.Request(url, data=data, method='POST')

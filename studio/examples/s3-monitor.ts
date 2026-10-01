@@ -8,7 +8,7 @@ const cluster = new LayeredMonitor(s3Instruments.cluster)
 const menuDisplay = new LayeredMonitor(s3Instruments.menu)
 const menu = new MonitorMenu(s3Instruments.menuItems, s3Instruments.menuTitle)
 menu.open = true
-const properties = { mirrorTilt: -2, color: '#8b9098' }
+const properties = { mirrorTilt: -2, color: '#8b9098', mapFollow: true }
 const scene = new Scene()
 cluster.root.position.x = -330
 menuDisplay.root.position.x = 330
@@ -31,6 +31,7 @@ const keys = (event: KeyboardEvent) => {
   if (action?.type === 'vehicle.mirror')
     properties.mirrorTilt = Math.max(-5, Math.min(12, properties.mirrorTilt + Number(action.value)))
   if (action?.type === 'vehicle.paint') properties.color = action.value!
+  if (action?.type === 'vehicle.map') properties.mapFollow = action.value !== 'north'
 }
 window.addEventListener('keydown', keys)
 let previous = -Infinity,

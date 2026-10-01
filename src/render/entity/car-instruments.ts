@@ -16,11 +16,12 @@ import {
 export class CarInstruments {
   private readonly speedMonitor: LayeredMonitor
   mirrorTilt = -2
+  mapFollow = true
   private gpsSecondary = false
   private frameMs = 16.7
   private lastUpdate?: number
   private readonly mapCanvas = document.createElement('canvas')
-  private readonly chart = new HelmMap(this.mapCanvas, true, 4)
+  private readonly chart = new HelmMap(this.mapCanvas, true, 4, true)
   private readonly mapTexture = new THREE.CanvasTexture(this.mapCanvas)
   readonly menu: MonitorMenu
   private menuDisplay?: LayeredMonitor
@@ -67,6 +68,12 @@ export class CarInstruments {
   private readonly displays: THREE.Mesh[] = []
   private nextMap = 0
   private lastMapPose = ''
+  setMapFollow(follow: boolean): void {
+    this.mapFollow = follow
+    this.chart.headingUp = follow
+    this.lastMapPose = ''
+    this.nextMap = 0
+  }
   setSecondary(secondary: boolean): void {
     this.gpsSecondary = secondary
     this.speedMonitor.setSecondary(secondary)

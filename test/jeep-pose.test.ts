@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createJeep } from '../src/catalog/vehicles/jeep.js'
+import { presetVehicle } from '../src/catalog/vehicles/library.js'
 import { createEntity } from '../src/entity/schema.js'
 import type { SceneDocument } from '../src/scene/document.js'
 import { Vec3, type Quaternion } from '../src/simulation/physics.js'
 import { idleInput, Simulation } from '../src/simulation/simulation.js'
+import { hasLocalPreset } from './local-presets.js'
 
-describe('jeep pose', () => {
+describe.skipIf(!hasLocalPreset('jeep'))('jeep pose', () => {
   it('settles on its tires', () => {
     const floor = createEntity('floor', 'box', [0, -0.5, 0])
     floor.size = [80, 1, 80]
@@ -15,7 +16,7 @@ describe('jeep pose', () => {
       entities: [
         floor,
         createEntity('spawn', 'spawn', [0, 0.05, 8]),
-        createJeep('car', [0, 0.92, 0]),
+        presetVehicle('jeep', 'car', [0, 0.92, 0]),
       ],
     }
     const sim = new Simulation(doc, { playerMode: 'hover' })
@@ -36,7 +37,7 @@ describe('jeep pose', () => {
       entities: [
         floor,
         createEntity('spawn', 'spawn', [0, 0.05, 8]),
-        createJeep('car', [0, 0.92, 0]),
+        presetVehicle('jeep', 'car', [0, 0.92, 0]),
       ],
     }
     const sim = new Simulation(doc, { playerMode: 'hover' })

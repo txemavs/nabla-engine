@@ -24,7 +24,7 @@ test('ten-spoke wheel retains tyre dimensions with a lower shared draw budget', 
     const sun = new T.DirectionalLight(0xffffff, 3)
     sun.position.set(3, 4, 2)
     scene.add(sun)
-    const wheel = (await new GLTFLoader().loadAsync('/world/car.audi.a3.wheel.glb')).scene
+    const wheel = (await new GLTFLoader().loadAsync('/studio/cars/a3/a3.wheel.glb')).scene
     scene.add(wheel)
     const camera = new T.PerspectiveCamera(36, 900 / 700, 0.01, 10)
     camera.position.set(1.35, 0.12, 0.23)

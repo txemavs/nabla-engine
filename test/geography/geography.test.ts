@@ -11,7 +11,7 @@ import {
 } from '../../src/math/geo/sphere.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { parseScene, type SceneDocument } from '../../src/scene/document.js'
-import { createCarrier } from '../../src/catalog/vehicles/carrier.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
 
 describe('geographic frame', () => {
@@ -54,7 +54,10 @@ function flightScene(): SceneDocument {
     version: 1,
     name: 'Planet',
     geography: { ...MADRID, imagery: 'offline' },
-    entities: [createEntity('spawn', 'spawn', [0, 0.1, -3]), createCarrier('ship', [0, 1.2, 0])],
+    entities: [
+      createEntity('spawn', 'spawn', [0, 0.1, -3]),
+      presetVehicle('carrier', 'ship', [0, 1.2, 0]),
+    ],
   }
 }
 function ticks(sim: Simulation, count: number) {

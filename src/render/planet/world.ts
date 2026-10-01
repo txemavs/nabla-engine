@@ -406,12 +406,18 @@ export class PlanetWorld {
     photo14: boolean
     photo12: boolean
     trees: boolean
+    terrain: boolean
+    buildings: boolean
   }) {
     const active = new Set(this.visible)
     for (const [key, resident] of this.resident) {
       resident.group.visible = layers.glb && active.has(key)
-      for (const child of resident.group.children)
-        if (child.userData.category === 'Trees') child.visible = layers.trees
+      for (const child of resident.group.children) {
+        const category = child.userData.category
+        if (category === 'Trees') child.visible = layers.trees
+        else if (category === 'Terrain') child.visible = layers.terrain
+        else if (category === 'Buildings') child.visible = layers.buildings
+      }
     }
     const showHorizon = layers.relief || layers.photo14 || layers.photo12
     this.horizon.root.visible = showHorizon

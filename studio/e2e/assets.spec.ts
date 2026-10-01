@@ -17,9 +17,9 @@ test('loads the original GLBs, shows the interior and keeps models after editing
   })
   expect([...models]).toEqual(
     expect.arrayContaining([
-      'car.audi.a3.cabrio.glb',
-      'car.audi.a3.wheel.glb',
-      'car.audi.a3.steering.glb',
+      'a3.cabrio.glb',
+      'a3.wheel.glb',
+      'a3.steering.glb',
       'ship.container.5x10.glb',
     ]),
   )
@@ -29,7 +29,7 @@ test('loads the original GLBs, shows the interior and keeps models after editing
   await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(700)
   await page.keyboard.press('KeyE')
-  await expect(page.locator('#player-mode')).toHaveText('AUDI S3 NABLA · 400 CV DSG')
+  await expect(page.locator('#player-mode')).toHaveText('S3 NABLA · 400 CV DSG')
   await page.screenshot({ path: 'test-results/a3-seated-driver.png' })
   await expect(page.locator('#viewport > canvas')).toHaveAttribute(
     'data-vehicle-entrance',
@@ -69,7 +69,7 @@ test('operates the garage latch and carrier controls in the browser', async ({ p
   await expect(page.locator('#play')).toBeEnabled()
   await page.waitForTimeout(1200)
   await page.keyboard.press('KeyE')
-  await expect(page.locator('#player-mode')).toHaveText('AUDI S3 NABLA · 400 CV DSG')
+  await expect(page.locator('#player-mode')).toHaveText('S3 NABLA · 400 CV DSG')
   await page.keyboard.down('Space')
   await expect(page.locator('#interaction')).toContainText('F sujetar al suelo', { timeout: 10000 })
   await page.keyboard.up('Space')
@@ -88,7 +88,7 @@ test('operates the garage latch and carrier controls in the browser', async ({ p
   await page.keyboard.press('KeyT')
   await expect(page.locator('#player-mode')).toContainText('SUJETO')
   await page.keyboard.press('KeyF')
-  await expect(page.locator('#player-mode')).toHaveText('AUDI S3 NABLA · 400 CV DSG')
+  await expect(page.locator('#player-mode')).toHaveText('S3 NABLA · 400 CV DSG')
   await page.keyboard.press('KeyC')
   await page.screenshot({ path: 'test-results/garage-cockpit.png' })
   expect(errors).toEqual([])

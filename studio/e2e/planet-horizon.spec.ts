@@ -18,7 +18,7 @@ test('elevation-only relief loads without GLBs and supplies ground collisions be
     const module = '/@fs' + root + '/src/render/planet/world.ts'
     const { PlanetWorld } = await import(module)
     const T = await import(String('/e2e/render-fixture.ts'))
-    const { Simulation, createEntity, createA3, initPhysics } = await import(
+    const { Simulation, createEntity, presetVehicle, initPhysics } = await import(
       `/@fs${root}/src/index.ts`
     )
     await initPhysics()
@@ -38,7 +38,7 @@ test('elevation-only relief loads without GLBs and supplies ground collisions be
         geography: { ...origin, imagery: 'offline', planetary: true },
         entities: [
           createEntity('spawn', 'spawn', [0, height + 0.2, 0]),
-          createA3('car', [4, height + 1, 0]),
+          presetVehicle('car', 'car', [4, height + 1, 0]),
         ],
       },
       { planetaryTerrain: true },

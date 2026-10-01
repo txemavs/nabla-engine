@@ -4,9 +4,7 @@ import { RetractableMount } from '../../src/render/vehicle-presentation/retracta
 import { CarLights } from '../../src/render/entity/car-lights.js'
 import { CarMirrors } from '../../src/render/entity/car-mirrors.js'
 import { driverHeadPose } from '../../src/render/entity/driving-camera.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
-import { createJeep } from '../../src/catalog/vehicles/jeep.js'
-import { createPoliceCar } from '../../src/catalog/vehicles/police.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createA3Mounts } from '../../src/catalog/presentation/a3-mounts.js'
 import {
   stockVehiclePresentation,
@@ -14,6 +12,7 @@ import {
 } from '../../src/catalog/presentation/road-vehicles.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { parseScene } from '../../src/scene/document.js'
+import { hasLocalPreset } from '../local-presets.js'
 
 it('moves any support relative to its authored pose and reverses continuously between frames', () => {
   const root = new Group()
@@ -57,30 +56,33 @@ it('camera and avatar accept the same driver-local mount under body rotation', (
   const head = driverHeadPose([1, 2, 3], q.toArray(), false, 0, 0, [0, 0.25, -0.5])
   expect(head.position.distanceTo(new Vector3(0.5, 2.25, 3))).toBeLessThan(1e-8)
 })
-it('resolves explicit IDs independent of filenames, requires IDs and preserves authored properties', () => {
-  for (const factory of [createA3, createJeep, createPoliceCar]) {
-    const entity = factory('car')
-    entity.vehicle!.mirrorTilt = 5
-    entity.vehicle!.headOffset = [0.1, 0.2, -0.4]
-    delete entity.visual!.presentation
-    expect(stockVehiclePresentation(entity)).toBeUndefined()
-    const parsed = parseScene({
-      version: 1,
-      name: 'Current',
-      entities: [entity, createEntity('spawn', 'spawn')],
-    }).entities[0]
-    expect(parsed.vehicle!.mirrorTilt).toBe(5)
-    expect(parsed.vehicle!.headOffset).toEqual([0.1, 0.2, -0.4])
-  }
-  const car = createA3('car')
-  car.visual!.body.url = '/world/renamed.glb'
-  expect(stockVehiclePresentation(car)).toBe(s3Presentation)
-  car.visual!.presentation = 'custom.other'
-  const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  expect(stockVehiclePresentation(car)).toBeUndefined()
-  expect(warning).toHaveBeenCalledWith('Unknown vehicle presentation: custom.other')
-  warning.mockRestore()
-})
+it.skipIf(!['jeep', 'police'].every(hasLocalPreset))(
+  'resolves explicit IDs independent of filenames, requires IDs and preserves authored properties',
+  () => {
+    for (const catalogId of ['car', 'jeep', 'police'] as const) {
+      const entity = presetVehicle(catalogId, 'car')
+      entity.vehicle!.mirrorTilt = 5
+      entity.vehicle!.headOffset = [0.1, 0.2, -0.4]
+      delete entity.visual!.presentation
+      expect(stockVehiclePresentation(entity)).toBeUndefined()
+      const parsed = parseScene({
+        version: 1,
+        name: 'Current',
+        entities: [entity, createEntity('spawn', 'spawn')],
+      }).entities[0]
+      expect(parsed.vehicle!.mirrorTilt).toBe(5)
+      expect(parsed.vehicle!.headOffset).toEqual([0.1, 0.2, -0.4])
+    }
+    const car = presetVehicle('car', 'car')
+    car.visual!.body.url = '/world/renamed.glb'
+    expect(stockVehiclePresentation(car)).toBe(s3Presentation)
+    car.visual!.presentation = 'custom.other'
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(stockVehiclePresentation(car)).toBeUndefined()
+    expect(warning).toHaveBeenCalledWith('Unknown vehicle presentation: custom.other')
+    warning.mockRestore()
+  },
+)
 it('detaches owned mirror targets once and retains shared source geometry', () => {
   const parent = new Group()
   const geometry = new PlaneGeometry(1, 0.5)

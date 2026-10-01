@@ -7,7 +7,12 @@ import {
   DesktopDialog,
   SidebarTabs,
 } from '@nabla/desktop'
-import { createWorkspace, type ContentFactory, type WorkspaceSnapshot } from '@nabla/desktop/core'
+import {
+  createWorkspace,
+  type ContentFactory,
+  type LayoutNode,
+  type WorkspaceSnapshot,
+} from '@nabla/desktop/core'
 import type { StudioInputOwner } from './input-owner.js'
 import {
   commands,
@@ -28,6 +33,7 @@ import PreferencesWindow from './ui/PreferencesWindow.vue'
 import CapabilityWindow from './ui/CapabilityWindow.vue'
 import ContentSections from './ui/ContentSections.vue'
 import HostContent from './ui/HostContent.vue'
+import { mountCoverageMap } from './ui/coverage-map.js'
 import '@nabla/desktop/style.css'
 import './shell.css'
 import './ui/studio.css'
@@ -42,6 +48,17 @@ export interface StudioHost {
   isPlaying: () => boolean
   input: StudioInputOwner
   reportError: (error: unknown) => void
+}
+function tabGroup(node: LayoutNode | null, panelId: string): string | null {
+  if (!node) return null
+  if (node.kind === 'tabs') return node.tabs.includes(panelId) ? node.id : null
+  return tabGroup(node.first, panelId) ?? tabGroup(node.second, panelId)
+}
+function layoutHas(snapshot: WorkspaceSnapshot, panelId: string) {
+  return (
+    !!tabGroup(snapshot.root, panelId) ||
+    snapshot.floating.some((group) => group.group.tabs.includes(panelId))
+  )
 }
 export function mountStudio(host: StudioHost): void {
   const app = document.getElementById('app')!,
@@ -240,12 +257,20 @@ export function mountStudio(host: StudioHost): void {
     { id: 'world', title: 'Vista 3D', selector: '#studio-viewport-panel' },
     { id: 'scene', title: 'Escena', selector: '.outliner' },
     { id: 'properties', title: 'Propiedades', selector: '.inspector' },
-    ...['layers', 'generation', 'information', 'sequences'].map((id, i) => ({
+    ...[
+      ['layers', 'Capas'],
+      ['generation', 'Generación'],
+      ['planet', 'Planeta'],
+      ['information', 'Información'],
+      ['sequences', 'Secuencias'],
+      ['map', 'Mapa'],
+    ].map(([id, title]) => ({
       id,
-      title: ['Capas', 'Generación', 'Información', 'Secuencias'][i],
+      title,
       selector: '#studio-' + id,
     })),
   ]
+  let coverage: ReturnType<typeof mountCoverageMap> | undefined
   for (const panel of definitions.slice(3)) {
     const node = document.createElement('section')
     node.id = 'studio-' + panel.id
@@ -259,7 +284,13 @@ export function mountStudio(host: StudioHost): void {
             h(ContentSections, { sections: contents.layers }),
           ]),
       }).mount(node)
-    else if (panel.id === 'information') createApp(InformationPanel).mount(node)
+    else if (panel.id === 'planet') {
+      node.classList.add('studio-planet')
+      createApp({
+        render: () => h(ContentSections, { sections: contents.planetSections }),
+      }).mount(node)
+    } else if (panel.id === 'information') createApp(InformationPanel).mount(node)
+    else if (panel.id === 'map') coverage = mountCoverageMap(node)
     else node.textContent = panel.title + ' · siguiente fase'
   }
   for (const panel of definitions) {
@@ -269,7 +300,12 @@ export function mountStudio(host: StudioHost): void {
       container.append(element)
       return {
         setActive: panel.id === 'world' ? (value) => host.input.setActive(value) : undefined,
-        setVisible: panel.id === 'world' ? (value) => host.input.setVisible(value) : undefined,
+        setVisible:
+          panel.id === 'world'
+            ? (value) => host.input.setVisible(value)
+            : panel.id === 'map'
+              ? (value) => coverage?.setVisible(value)
+              : undefined,
         dispose: () => contents.parking.append(element),
       }
     })
@@ -292,7 +328,7 @@ export function mountStudio(host: StudioHost): void {
         id: 'work',
         axis: 'vertical',
         ratio: 0.8,
-        first: { kind: 'tabs', id: 'world-tabs', tabs: ['world'], active: 'world' },
+        first: { kind: 'tabs', id: 'world-tabs', tabs: ['world', 'map'], active: 'world' },
         second: {
           kind: 'tabs',
           id: 'bottom-tabs',
@@ -311,7 +347,12 @@ export function mountStudio(host: StudioHost): void {
           tabs: ['scene', 'layers', 'generation'],
           active: 'scene',
         },
-        second: { kind: 'tabs', id: 'properties-tabs', tabs: ['properties'], active: 'properties' },
+        second: {
+          kind: 'tabs',
+          id: 'properties-tabs',
+          tabs: ['properties', 'planet'],
+          active: 'properties',
+        },
       },
     },
   }
@@ -323,13 +364,22 @@ export function mountStudio(host: StudioHost): void {
       tabs: definitions.map((p) => p.id),
       active: 'world',
     }
-  const layoutKey = compact ? 'nabla.studio.layout.mobile.v2' : 'nabla.studio.layout.v3'
+  const layoutKey = compact ? 'nabla.studio.layout.mobile.v4' : 'nabla.studio.layout.v5'
   workspace.restore(defaults)
   try {
     const saved = localStorage.getItem(layoutKey)
     if (saved) workspace.restore(JSON.parse(saved))
   } catch {
     /* Use the default layout. */
+  }
+  const placed = workspace.snapshot()
+  if (!layoutHas(placed, 'map')) {
+    const group =
+      tabGroup(placed.root, 'world') ??
+      placed.floating.find((item) => item.group.tabs.includes('world'))?.group.id
+    const keep = placed.active
+    if (!group || !workspace.dock('map', group, 'center')) workspace.open('map')
+    if (keep) workspace.activate(keep)
   }
   workspace.subscribe(() => {
     try {

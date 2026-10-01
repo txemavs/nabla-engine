@@ -3,7 +3,7 @@ import { Quaternion, Vector3 } from 'three'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { type SceneDocument } from '../../src/scene/document.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 
 function scene(): SceneDocument {
   return {
@@ -12,7 +12,7 @@ function scene(): SceneDocument {
     entities: [
       { ...createEntity('floor', 'box', [0, -0.5, 0]), size: [100, 1, 100] },
       createEntity('spawn', 'spawn', [2, 0.05, 3]),
-      createA3('car', [0, 0.62, 3]),
+      presetVehicle('car', 'car', [0, 0.62, 3]),
     ],
   }
 }

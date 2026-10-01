@@ -1,5 +1,5 @@
 import { test, expect } from './studio-test.js'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 
 test('changing to elevated coordinates does not disable vehicle shadows', async ({ page }) => {
@@ -19,7 +19,7 @@ test('changing to elevated coordinates does not disable vehicle shadows', async 
           entities: [
             { ...createEntity('ground', 'box', [0, elevation - 0.5, 0]), size: [100, 1, 100] },
             createEntity('spawn', 'spawn', [-2, elevation + 0.35, 0]),
-            createA3('car', [0, elevation + 0.62, 0]),
+            presetVehicle('car', 'car', [0, elevation + 0.62, 0]),
           ],
         }),
       ),

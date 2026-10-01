@@ -1,7 +1,11 @@
-import { FlightAudio as EngineFlightAudio } from '../src/audio/flight.js'
+import { VehicleAudio as EngineVehicleAudio } from '../src/audio/vehicle.js'
 
-/** Studio owns preferences, activation events and the sound button. */
-export class FlightAudio extends EngineFlightAudio {
+/**
+ * Studio wrapper: footer mute button, the `nabla.flight-sound` preference,
+ * and browser activation. The storage key keeps its original name so an
+ * existing mute choice still applies. The engine class owns the graph.
+ */
+export class VehicleAudio extends EngineVehicleAudio {
   private readonly events = new AbortController()
   private readonly button = document.createElement('button')
   constructor() {

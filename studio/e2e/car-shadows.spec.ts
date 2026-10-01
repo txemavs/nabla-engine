@@ -21,7 +21,7 @@ test('the A3 casts a visible ground shadow at every enabled quality', async ({ p
     ground.rotation.x = -Math.PI / 2
     ground.receiveShadow = true
     scene.add(ground, new T.HemisphereLight('#ffffff', '#888888', 0.5))
-    const car = await assets.instantiate('/world/car.audi.a3.cabrio.glb')
+    const car = await assets.instantiate('/studio/cars/a3/a3.cabrio.glb')
     scene.add(car)
     const casters: import('three').Mesh[] = []
     car.traverse((node: import('three').Object3D) => {

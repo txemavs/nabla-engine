@@ -64,7 +64,7 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
       const path = `/@fs${root}/src/render/planet/world.ts`
       const { PlanetWorld } = await import(path)
       const T = await import(String('/e2e/render-fixture.ts'))
-      const { Simulation, createEntity, createA3, idleInput, initPhysics } = await import(
+      const { Simulation, createEntity, presetVehicle, idleInput, initPhysics } = await import(
         `/@fs${root}/src/index.ts`
       )
       await initPhysics()
@@ -80,7 +80,10 @@ test('native GLB stream loads global cells, exposes downloads and supplies playa
           version: 1,
           name: 'Native GLB',
           geography: { ...anchor, imagery: 'offline', planetary: true },
-          entities: [createEntity('spawn', 'spawn', [-2, 1, 0]), createA3('car', [0, 1, 0])],
+          entities: [
+            createEntity('spawn', 'spawn', [-2, 1, 0]),
+            presetVehicle('car', 'car', [0, 1, 0]),
+          ],
         },
         { planetaryTerrain: true },
       )

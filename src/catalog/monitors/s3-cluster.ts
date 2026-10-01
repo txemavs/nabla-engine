@@ -46,9 +46,9 @@ export const s3ClusterDefinition: MonitorDefinition = {
     {
       id: 'speed',
       kind: 'text',
-      x: 232,
+      x: 250,
       y: 118,
-      width: 176,
+      width: 140,
       height: 80,
       columns: 3,
       binding: 'speedDisplay',

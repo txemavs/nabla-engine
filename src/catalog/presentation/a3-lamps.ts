@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { CarLights, type LampBinding } from '../../render/entity/car-lights.js'
+import { CarLights, type CourtesyWell, type LampBinding } from '../../render/entity/car-lights.js'
 
 export function createA3Lights(model: THREE.Object3D): CarLights {
   const lamps: LampBinding[] = []
@@ -116,5 +116,27 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
   })
 
   if (!lamps.length) console.warn('S3 lamps omitted: no matching lens nodes')
-  return new CarLights(lamps)
+  return new CarLights(lamps, 450, footwells(model))
+}
+
+/** Soft cabin fill from each footwell up to the seat. Model +X is the driver. */
+function footwells(model: THREE.Object3D): CourtesyWell[] {
+  return [0.32, -0.32].map((x) => {
+    const lamp = new THREE.PointLight('#ffd7a8', 0, 2.6, 2)
+    lamp.name = 'Courtesy light'
+    lamp.position.set(x, 0.46, 0.02)
+    lamp.castShadow = false
+    const lens = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.01, 0.04),
+      new THREE.MeshStandardMaterial({
+        name: 'Courtesy light',
+        color: '#2a241c',
+        emissive: '#ffd7a8',
+        emissiveIntensity: 0,
+      }),
+    )
+    lens.position.set(x, 0.5, 0.42)
+    model.add(lamp, lens)
+    return { lamp, lens: lens.material }
+  })
 }

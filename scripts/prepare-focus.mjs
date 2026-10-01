@@ -194,7 +194,7 @@ function output(name, meshes, origin) {
   bh.writeUInt32LE(data.length)
   bh.writeUInt32LE(0x004e4942, 4)
   fs.writeFileSync(
-    new URL('../assets/world/' + name, import.meta.url),
+    new URL('../assets/custom/cars/police/' + name, import.meta.url),
     Buffer.concat([header, json, bh, data]),
   )
   console.log(

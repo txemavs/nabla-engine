@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { createA3 } from '../../src/catalog/vehicles/a3.js'
+import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { parseScene } from '../../src/scene/document.js'
@@ -11,7 +11,11 @@ it('delivers strong launch and reaches 250 km/h on a level straight', () => {
     parseScene({
       version: 1,
       name: 'Speed benchmark',
-      entities: [floor, createA3('s3', [0, 0.62, 0]), createEntity('spawn', 'spawn', [0, 1, 4])],
+      entities: [
+        floor,
+        presetVehicle('car', 's3', [0, 0.62, 0]),
+        createEntity('spawn', 'spawn', [0, 1, 4]),
+      ],
     }),
   )
   try {

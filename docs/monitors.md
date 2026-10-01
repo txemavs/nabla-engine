@@ -145,7 +145,7 @@ for the public modules, lifecycle and camera/mirror configuration.
 ## Other work included in this delivery
 
 - Lighter, repaired A3 body/wheels, dark headlamp backing and wheel-well clearance;
-  chrome Nabla emblems replace Audi rings. See [asset provenance and rebuild notes](../assets/README.md).
+  chrome Nabla emblems replace the original rings. See [asset provenance and rebuild notes](../assets/README.md).
 - Custom S3: 400 CV, AWD, seven-speed automatic, reversible transmission safeguards,
   drift/burnout handling, bounded tire smoke, RPM-linked exhaust and discreet turbo.
 - Removed duplicate drag that capped high-speed acceleration; regression benchmark
@@ -166,7 +166,7 @@ lateral slip control their intensity. Trails break on lost contact, vehicle chan
 and jumps over six metres. The fixed ring holds 2,048 segments, emits at most at
 20 Hz, and fades after 20 seconds using a shader clock (one draw, no textures).
 Positions are relative to a local anchor to retain precision with floating origins.
-`FlightAudio.tires()` reuses the existing noise source for a quiet filtered squeal;
+`VehicleAudio.tires()` reuses the existing noise source for a quiet filtered squeal;
 it respects sound-off and background-tab suspension. No physical grip is changed.
 
 The effect is independent of the optional engine/powertrain preset. Rapier contact

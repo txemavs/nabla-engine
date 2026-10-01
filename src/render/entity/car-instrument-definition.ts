@@ -18,5 +18,5 @@ export interface CarInstrumentDefinition {
   menuItems: readonly MonitorMenuItem[]
   menuTitle: string
   clusterData(telemetry: CarInstrumentTelemetry): MonitorData
-  menuData(menu: MonitorMenu, properties: { mirrorTilt: number }): MonitorData
+  menuData(menu: MonitorMenu, properties: { mirrorTilt: number; mapFollow?: boolean }): MonitorData
 }

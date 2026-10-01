@@ -21,13 +21,20 @@ export const s3Instruments: CarInstrumentDefinition = {
       bars: { speed: speed / 320, rpm: rpm / 7000, throttle: load },
     }
   },
-  menuData(menu, { mirrorTilt }) {
+  menuData(menu, { mirrorTilt, mapFollow = true }) {
     return {
       values: {
         row0: menu.items[menu.selected]?.label ?? '',
         row1: menu.items[menu.selected + 1]?.label ?? '',
         row2: menu.items[menu.selected + 2]?.label ?? '',
-        title: menu.title === 'ESPEJOS' ? `ESPEJOS ${mirrorTilt} GRADOS` : menu.title,
+        title:
+          menu.title === 'ESPEJOS'
+            ? `ESPEJOS ${mirrorTilt} GRADOS`
+            : menu.title === 'MAPA'
+              ? mapFollow
+                ? 'SIGUE AL COCHE'
+                : 'CLAVADO AL NORTE'
+              : menu.title,
         help: 'FLECHAS  ENTER  ESC: ATRAS  J: SALIR',
       },
       bars: {},

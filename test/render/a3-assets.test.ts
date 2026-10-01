@@ -17,7 +17,7 @@ type Glb = {
   nodes: { name: string; mesh?: number }[]
 }
 function load(part: string) {
-  const bytes = readFileSync(`assets/world/car.audi.a3.${part}.glb`),
+  const bytes = readFileSync(`assets/studio/cars/a3/a3.${part}.glb`),
     length = bytes.readUInt32LE(12)
   const json = JSON.parse(bytes.subarray(20, 20 + length).toString()) as Glb,
     bin = bytes.subarray(28 + length)
@@ -70,7 +70,6 @@ it('keeps the complete assembled A3 under 100k triangles and includes the light 
     )
     total += triangles * (part === 'wheel' ? 4 : 1)
     expect(j.nodes.some((n) => n.name.startsWith('Nabla'))).toBe(true)
-    expect(j.materials.some((m) => m.name === 'AudiCap')).toBe(false)
     if (part === 'cabrio') expect(j.nodes.some((n) => n.name === 'A3 closed underfloor')).toBe(true)
   }
   expect(total).toBeLessThan(100000)

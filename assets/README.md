@@ -6,9 +6,9 @@ host. Do not regenerate or recolor original source files to adjust presentation.
 | Files                            | Source                                                                                                                 | Use                                                                      |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `brand/source.svg`               | [txemavs/nabla-hacs](https://github.com/txemavs/nabla-hacs/blob/main/custom_components/nabla_control/brand/source.svg) | Official metallic blue hollow Nabla mark; app header, favicon and README |
-| `world/car.audi.a3.cabrio.glb`   | This repository, commit `6a22576`                                                                                      | Original body and interior                                               |
-| `world/car.audi.a3.wheel.glb`    | This repository, commit `6a22576`                                                                                      | Four wheel instances                                                     |
-| `world/car.audi.a3.steering.glb` | This repository, commit `6a22576`                                                                                      | Steering wheel                                                           |
+| `studio/cars/a3/a3.cabrio.glb`   | This repository, commit `6a22576`                                                                                      | Original body and interior                                               |
+| `studio/cars/a3/a3.wheel.glb`    | This repository, commit `6a22576`                                                                                      | Four wheel instances                                                     |
+| `studio/cars/a3/a3.steering.glb` | This repository, commit `6a22576`                                                                                      | Steering wheel                                                           |
 | `world/ship.container.5x10.glb`  | This repository, commit `6a22576`                                                                                      | Carrier, cabin, garage and ramp                                          |
 | `geography/agency-ground.jpg`    | Agency UI, commit `89b0907`, `src/assets/stage/ground.jpg`                                                             | Authored road/ground image                                               |
 | `geography/earth.jpg`            | Agency UI, commit `89b0907`, `src/assets/stage/earth.jpg`                                                              | Local globe texture                                                      |
@@ -67,11 +67,13 @@ image editing. Final prompt:
 background, blue/white rings, orange centre and a grey stand. It was generated
 from geometric shapes for the gallery, without an external image source.
 
-## User-supplied HK USP Compact
+## HK Compact 9mm
 
-`weapons/hk_usp_compact_9mm.glb` (body) and
-`weapons/hk_usp_compact_9mm_c.glb` (slide) were supplied by the user from
+`studio/weapons/hk-compact/hk-compact.body.glb` and
+`studio/weapons/hk-compact/hk-compact.slide.glb` were supplied by the user from
 `A:\Descargas\hk_usp_compact_9` on 2026-09-21 and copied without modification.
+They now sit next to `hk-compact.json`. The previous paths were
+`weapons/hk_usp_compact_9mm.glb` and `weapons/hk_usp_compact_9mm_c.glb`.
 Their shared authored coordinates are treated as millimetres, with a common
 0.001 presentation scale. Original node transforms, alignment and materials are
 preserved. A shared view offset places the barrel near the first-person anchor;

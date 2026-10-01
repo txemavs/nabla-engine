@@ -1,7 +1,8 @@
 import * as THREE from 'three'
+import { weaponPresets, type WeaponPreset } from '../src/catalog/weapons/library.js'
 import { assets } from '../src/render/entity/assets.js'
 
-/** User-supplied body and slide; input and hits remain owned by the host/simulation. */
+/** Viewmodel, reticle and shot cadence. The equipped preset comes from assets. */
 export class Sidearm {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(55, 1, 0.01, 5)
@@ -12,8 +13,22 @@ export class Sidearm {
   private lastShot = -Infinity
   private hit = false
   private enabled = false
+  readonly range: number
+  readonly impulse: number
+  private readonly intervalMs: number
+  private readonly slideTravel: number
+  private readonly viewPosition: [number, number, number]
+  private readonly kick: number
+  private readonly pitch: number
 
-  constructor(viewport: HTMLElement) {
+  constructor(viewport: HTMLElement, preset: WeaponPreset | undefined = weaponPresets()[0]) {
+    this.range = preset?.range ?? 150
+    this.impulse = preset?.impulse ?? 12
+    this.intervalMs = preset?.intervalMs ?? 220
+    this.slideTravel = preset?.slideTravel ?? 0
+    this.viewPosition = preset?.view.position ?? [0.13, -0.105, -0.3]
+    this.kick = preset?.view.kick ?? 0.025
+    this.pitch = preset?.view.pitch ?? 0.06
     const metal = new THREE.MeshStandardMaterial({
       color: '#354359',
       metalness: 0.7,
@@ -34,38 +49,42 @@ export class Sidearm {
     part([0.065, 0.16, 0.09], [0, -0.09, 0.07], grip).rotation.x = -0.18
     part([0.02, 0.02, 0.035], [0, 0.052, -0.1], grip)
     const fallback = [...this.model.children]
-    this.reticle.dataset.weapon = 'loading'
-    Promise.all([
-      assets.instantiate('/weapons/hk_usp_compact_9mm.glb'),
-      assets.instantiate('/weapons/hk_usp_compact_9mm_c.glb'),
-    ])
-      .then(([body, slide]) => {
-        // Both files share their authored millimetre coordinates; preserve their relative origins.
-        const assembly = new THREE.Group()
-        assembly.scale.setScalar(0.001)
-        assembly.position.set(0, -0.107, 0.025)
-        assembly.add(body, slide)
-        this.slide = slide
-        this.model.add(assembly)
-        for (const object of fallback) {
-          this.model.remove(object)
-          const mesh = object as THREE.Mesh
-          mesh.geometry.dispose()
-        }
-        metal.dispose()
-        grip.dispose()
-        this.reticle.dataset.weapon = 'loaded'
-      })
-      .catch(() => {
-        this.reticle.dataset.weapon = 'fallback'
-        this.reticle.title = 'No se pudo cargar la pistola; se muestra el modelo provisional'
-      })
+    this.reticle.dataset.weapon = preset ? 'loading' : 'fallback'
+    if (preset)
+      Promise.all([
+        assets.instantiate(preset.body),
+        preset.slide ? assets.instantiate(preset.slide) : Promise.resolve(null),
+      ])
+        .then(([body, slide]) => {
+          const assembly = new THREE.Group()
+          assembly.scale.setScalar(preset.scale)
+          assembly.position.set(...preset.assembly)
+          assembly.add(body)
+          if (slide) {
+            assembly.add(slide)
+            this.slide = slide
+          }
+          this.model.add(assembly)
+          for (const object of fallback) {
+            this.model.remove(object)
+            const mesh = object as THREE.Mesh
+            mesh.geometry.dispose()
+          }
+          metal.dispose()
+          grip.dispose()
+          this.reticle.dataset.weapon = 'loaded'
+        })
+        .catch(() => {
+          this.reticle.dataset.weapon = 'fallback'
+          this.reticle.title = 'No se pudo cargar la pistola; se muestra el modelo provisional'
+        })
     this.flash = new THREE.Mesh(
       new THREE.ConeGeometry(0.035, 0.13, 6),
       new THREE.MeshBasicMaterial({ color: '#ffe7ac' }),
     )
     this.flash.rotation.x = -Math.PI / 2
-    this.flash.position.set(0, 0, -0.135)
+    const flashAt = preset?.flash.position ?? [0, 0, -0.135]
+    this.flash.position.set(...flashAt)
     this.model.add(this.flash)
     const key = new THREE.DirectionalLight('#ffffff', 2)
     key.position.set(-1, 2, 1)
@@ -100,7 +119,7 @@ export class Sidearm {
     this.reticle.dataset.shots = '0'
   }
   fire(now: number): boolean {
-    if (now - this.lastShot < 220) return false
+    if (now - this.lastShot < this.intervalMs) return false
     this.lastShot = now
     this.reticle.dataset.shots = String(Number(this.reticle.dataset.shots) + 1)
     return true
@@ -116,11 +135,14 @@ export class Sidearm {
     this.camera.aspect = aspect
     this.camera.updateProjectionMatrix()
     const kick = Math.max(0, 1 - age / 160)
-    this.model.position.set(0.13, -0.105, -0.3 + kick * 0.025)
-    this.model.rotation.x = kick * 0.06
-    // Presentation-only slide cycle, in the original asset units (millimetres).
+    this.model.position.set(
+      this.viewPosition[0],
+      this.viewPosition[1],
+      this.viewPosition[2] + kick * this.kick,
+    )
+    this.model.rotation.x = kick * this.pitch
     const slideCycle = age < 100 ? Math.sin((Math.PI * Math.max(0, age)) / 100) : 0
-    if (this.slide) this.slide.position.z = slideCycle * 12
+    if (this.slide) this.slide.position.z = slideCycle * this.slideTravel
     this.flash.visible = age < 65
     const autoClear = renderer.autoClear
     renderer.autoClear = false
