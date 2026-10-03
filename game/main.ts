@@ -16,7 +16,12 @@ import {
   type PlayerInput,
   type Vec3Tuple,
 } from '../src/index.js'
-import { presetVehicle, hasVehiclePreset } from '../src/catalog/vehicles/library.js'
+import {
+  presetVehicle,
+  hasVehiclePreset,
+  hasTrailerPreset,
+  presetTractorTrailer,
+} from '../src/catalog/vehicles/library.js'
 import { PlanetWorld } from '../src/render/planet/world.js'
 import { mapTileAt, mapTileId } from '../src/scene/mercator.js'
 import { geoToLocal, localToGeo, type GeoPoint } from '../src/math/geo/sphere.js'
@@ -168,8 +173,27 @@ class Game {
       this.config.vehicle = 'car'
     }
 
-    const vehicle = presetVehicle(this.config.vehicle, 'player-vehicle', [0, 2, 0])
-    vehicle.groundOffset = 0.62
+    const entities = [{ ...createEntity('spawn', 'spawn', [-4, 1, 0]), groundOffset: 0.2 }]
+
+    if (hasTrailerPreset(this.config.vehicle)) {
+      const { tractor, trailer } = presetTractorTrailer(
+        this.config.vehicle,
+        'player-vehicle',
+        'player-trailer',
+        [0, 2, 0],
+      )
+      tractor.groundOffset = 0.62
+      entities.push(tractor)
+      if (trailer) {
+        trailer.groundOffset = 0.62
+        entities.push(trailer)
+        console.log('Spawning tractor and trailer:', tractor.id, trailer.id)
+      }
+    } else {
+      const vehicle = presetVehicle(this.config.vehicle, 'player-vehicle', [0, 2, 0])
+      vehicle.groundOffset = 0.62
+      entities.push(vehicle)
+    }
 
     return {
       version: 1,
@@ -182,7 +206,7 @@ class Game {
       },
       cursor: [0, 0, 0],
       cursorOnGround: true,
-      entities: [{ ...createEntity('spawn', 'spawn', [-4, 1, 0]), groundOffset: 0.2 }, vehicle],
+      entities,
     }
   }
 

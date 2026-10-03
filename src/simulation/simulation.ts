@@ -1286,6 +1286,13 @@ export class Simulation {
         dock ? (this.vehicles.get(dock.carrierId)?.body.linearDamping ?? 0.05) : undefined,
       )
       if (dock) continue
+
+      const isTrailer = Boolean(v.definition.trailerBody?.isTrailer)
+      if (isTrailer) {
+        this.stepTrailerVehicle(v)
+        continue
+      }
+
       const active = id === this.vehicleId
       if (v.definition.plane) this.spoolEngine(v, active)
       if (v.flight) {
@@ -1429,6 +1436,21 @@ export class Simulation {
       active,
     )
   }
+
+  /** Step a passive trailer vehicle (no engine force, only brakes). */
+  private stepTrailerVehicle(v: Vehicle): void {
+    const numWheels = v.raycast.wheelInfos.length
+    const coupledToTractor = this.isTrailer(v.entity.id)
+    const tractorBraking = coupledToTractor ? this.input.brake : false
+
+    for (let i = 0; i < numWheels; i++) {
+      v.raycast.setSteeringValue(0, i)
+      v.raycast.applyEngineForce(0, i)
+      const brakeForce = tractorBraking ? v.definition.brakeForce : 0
+      v.raycast.setBrake(brakeForce, i)
+    }
+  }
+
   /** Flight keeps the same collision body and cargo constraints; only wheel forces are disabled. */
   toggleFlight(): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
@@ -1953,12 +1975,13 @@ export class Simulation {
     for (const [trailerId, trailer] of this.vehicles) {
       if (trailerId === id) continue
       if (this.isTrailer(trailerId)) continue
-      const trailerCfg = trailer.definition.trailer
-      if (!trailerCfg?.kingpin) continue
+
+      const kingpin = trailer.definition.trailerBody?.kingpin ?? trailer.definition.trailer?.kingpin
+      if (!kingpin) continue
 
       if (trailer.body.velocity.length() > 1.5 || tractor.body.velocity.length() > 1.5) continue
 
-      const kingpinWorld = trailer.body.pointToWorldFrame(new Vec3(...trailerCfg.kingpin))
+      const kingpinWorld = trailer.body.pointToWorldFrame(new Vec3(...kingpin))
       const distance = anchorWorld.distanceTo(kingpinWorld)
 
       if (distance < 1.5) return trailerId
@@ -1992,7 +2015,8 @@ export class Simulation {
     if (!trailerId) return 'Acerca la quinta rueda al kingpin del remolque'
 
     const trailer = this.vehicles.get(trailerId)!
-    const trailerKingpin = trailer.definition.trailer?.kingpin
+    const trailerKingpin =
+      trailer.definition.trailerBody?.kingpin ?? trailer.definition.trailer?.kingpin
     if (!trailerKingpin) return 'El remolque no tiene kingpin definido'
 
     const anchorLocal = new Vec3(...trailerCfg.anchor)
@@ -2016,16 +2040,26 @@ export class Simulation {
     coupledTrailerId: string | null
     isActingAsTrailer: boolean
     couplingCandidate: string | null
+    trailerAvailable: boolean
   } {
     const v = id ? this.vehicles.get(id) : null
     const trailerCfg = v?.definition.trailer
+    const trailerBody = v?.definition.trailerBody
     const coupling = id ? this.fifthWheelCouplings.get(id) : null
+    const hasKingpin = Boolean(trailerCfg?.kingpin) || Boolean(trailerBody?.kingpin)
+
+    const trailerAvailable =
+      id !== null &&
+      !this.fifthWheelCouplings.has(id) &&
+      this.trailerCouplingCandidate(id) !== null
+
     return {
       hasFifthWheel: Boolean(trailerCfg?.anchor),
-      hasKingpin: Boolean(trailerCfg?.kingpin),
+      hasKingpin,
       coupledTrailerId: coupling?.trailerId ?? null,
       isActingAsTrailer: id ? this.isTrailer(id) : false,
       couplingCandidate: id ? this.trailerCouplingCandidate(id) : null,
+      trailerAvailable,
     }
   }
 

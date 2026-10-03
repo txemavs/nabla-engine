@@ -30,6 +30,16 @@ const trailerCoupling = z
   })
   .strict()
 
+/** Configuration for vehicles that act as trailers (passive towed units). */
+const trailerBodyConfig = z
+  .object({
+    /** Kingpin position on this trailer (where it couples to a tractor's fifth wheel). */
+    kingpin: vector,
+    /** Whether this vehicle is a trailer (passive, no engine). */
+    isTrailer: z.literal(true),
+  })
+  .strict()
+
 /** Chassis, hubs, and the optional cabin, garage and flight flag. */
 export const vehicleField = z
   .object({
@@ -88,6 +98,8 @@ export const vehicleField = z
       .optional(),
     /** Trailer coupling for tractor vehicles. */
     trailer: trailerCoupling.optional(),
+    /** Mark this vehicle as a passive trailer (towed, no engine). */
+    trailerBody: trailerBodyConfig.optional(),
   })
   .strict()
   .refine((data) => data.hubs || data.hubConfigs, {

@@ -102,5 +102,97 @@
         "rotation": [0, 0, 0, 1]
       }
     }
+  },
+  "trailerPreset": {
+    "name": "White Trailer",
+    "color": "#ffffff",
+    "size": [2.48, 2.45, 13.45],
+    "mass": 6500,
+    "spawnOffset": [0, 0, 0],
+    "vehicle": {
+      "colliders": [
+        {
+          "size": [2.48, 2.45, 13.45],
+          "transform": {
+            "position": [0, 1.55, 0],
+            "rotation": [0, 0, 0, 1]
+          }
+        }
+      ],
+      "hubConfigs": [
+        {
+          "position": [-0.892075, -0.6276177, 1.775093],
+          "steered": false,
+          "driven": false,
+          "radius": 0.5723822
+        },
+        {
+          "position": [0.9086138, -0.6276177, 1.790873],
+          "steered": false,
+          "driven": false,
+          "radius": 0.5723822
+        },
+        {
+          "position": [-0.8920751, -0.6276177, 3.07269],
+          "steered": false,
+          "driven": false,
+          "radius": 0.5723822
+        },
+        {
+          "position": [0.9086138, -0.6276177, 3.087616],
+          "steered": false,
+          "driven": false,
+          "radius": 0.5723822
+        },
+        {
+          "position": [-0.892075, -0.6276177, 4.395842],
+          "steered": false,
+          "driven": false,
+          "radius": 0.5723822
+        },
+        {
+          "position": [0.9086138, -0.6276177, 4.410768],
+          "steered": false,
+          "driven": false,
+          "radius": 0.5723822
+        }
+      ],
+      "wheelRadius": 0.5723822,
+      "suspensionRest": 0.22,
+      "suspensionTravel": 0.35,
+      "stiffness": 110,
+      "engineForce": 1,
+      "brakeForce": 120,
+      "driver": [0, 0, 0],
+      "cameraDistance": 14,
+      "trailerBody": {
+        "kingpin": [0, 0, -5.565219856],
+        "isTrailer": true
+      }
+    },
+    "visual": {
+      "body": {
+        "url": "/studio/trucks/white-truck-studio/assets/trailer.body.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      "wheel": {
+        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      "hubRotations": [
+        [0, 0, 0, 1],
+        [0, 1, 0, 0],
+        [0, 0, 0, 1],
+        [0, 1, 0, 0],
+        [0, 0, 0, 1],
+        [0, 1, 0, 0]
+      ]
+    }
   }
 }
