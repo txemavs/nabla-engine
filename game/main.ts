@@ -459,13 +459,15 @@ class Game {
 
     const ground = this.world.groundHeight(position)
 
-    // Safety check: if vehicle falls below a threshold, ensure fallback ground exists
-    // This catches cases where terrain tiles exist but collision isn't built yet
-    if (position[1] < -3 && !this.sim.hasFallbackGround()) {
-      console.warn(
-        `Vehicle falling (Y=${position[1].toFixed(2)}), adding emergency fallback ground`,
-      )
-      this.sim.setFallbackGround(0)
+    // Safety check: if vehicle falls below ground, reset it
+    // This catches cases where terrain collision isn't ready yet
+    if (position[1] < -2) {
+      console.warn(`Vehicle fell below ground (Y=${position[1].toFixed(2)}), recovering...`)
+      if (!this.sim.hasFallbackGround()) {
+        this.sim.setFallbackGround(0)
+      }
+      // Use recoverVehicle to reset position and velocity
+      this.sim.recoverVehicle()
     }
 
     // Only remove fallback ground when:
