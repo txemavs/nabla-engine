@@ -131,6 +131,8 @@ class Game {
     this.renderer.toneMappingExposure = 1.0
 
     this.scene = new THREE.Scene()
+    this.scene.background = new THREE.Color('#87CEEB') // Sky blue background
+
     this.camera = new THREE.PerspectiveCamera(
       60,
       window.innerWidth / window.innerHeight,
@@ -151,12 +153,19 @@ class Game {
     this.geography.setLayers({ sky: true, planets: true, sun: true, clouds: true })
     this.scene.add(this.geography.tiles)
 
+    // Main directional light (sun) - always visible with minimum intensity
     this.sun = new THREE.DirectionalLight('#ffffff', 3.2)
     this.sun.castShadow = true
+    this.sun.position.set(50, 100, 30) // Default position for visibility
     this.scene.add(this.sun)
 
-    this.ambient = new THREE.AmbientLight('#dce7f5', 0.22)
+    // Increased ambient light for visibility even when sun is low
+    this.ambient = new THREE.AmbientLight('#dce7f5', 0.5)
     this.scene.add(this.ambient)
+
+    // Add hemisphere light for better fill lighting
+    const hemi = new THREE.HemisphereLight('#b1e1ff', '#b97a20', 0.6)
+    this.scene.add(hemi)
   }
 
   private setupInput(): void {
@@ -424,16 +433,13 @@ class Game {
       ]
     }
 
-    if (useFallback) {
-      // Show visual CatchFloor at spawn height (not 30m under)
-      this.catchFloor?.show(
-        [spawnLocalPos[0], effectiveGround, spawnLocalPos[2]],
-        [0, 0, 0, 1],
-        this.renderOrigin,
-      )
-    } else {
-      this.catchFloor?.hide()
-    }
+    // Always show visual CatchFloor - it provides a visible ground reference
+    // even when terrain tiles are loading or unavailable
+    this.catchFloor?.show(
+      [spawnLocalPos[0], effectiveGround, spawnLocalPos[2]],
+      [0, 0, 0, 1],
+      this.renderOrigin,
+    )
 
     console.log(
       `Vehicle spawn position: [${vehicleEntity?.transform.position.map((n) => n.toFixed(2)).join(', ')}]`,
