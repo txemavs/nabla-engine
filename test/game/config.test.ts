@@ -13,6 +13,9 @@ describe('game config', () => {
       expect(config.vehicle).toBe('car')
       expect(config.tilesBaseUrl).toBe('https://atlas.chained.world/euskadi')
       expect(config.staticTiles).toBe(true)
+      expect(config.viewDistance).toBe(4000)
+      expect(config.tileConcurrency).toBe(2)
+      expect(config.prefetchAhead).toBe(30)
     })
 
     it('defaults to the Euskadi base, which never produces /z/z/ manifest URLs', () => {
@@ -94,6 +97,44 @@ describe('game config', () => {
       expect(config.staticTiles).toBe(true)
     })
 
+    it('parses view distance', () => {
+      const config = parseGameConfig('?distance=10000')
+
+      expect(config.viewDistance).toBe(10000)
+    })
+
+    it('clamps view distance to valid range', () => {
+      expect(parseGameConfig('?distance=500').viewDistance).toBe(1000)
+      expect(parseGameConfig('?distance=30000').viewDistance).toBe(20000)
+      expect(parseGameConfig('?distance=invalid').viewDistance).toBe(4000)
+    })
+
+    it('parses tile concurrency', () => {
+      const config = parseGameConfig('?concurrency=3')
+
+      expect(config.tileConcurrency).toBe(3)
+    })
+
+    it('clamps tile concurrency to valid range', () => {
+      expect(parseGameConfig('?concurrency=0').tileConcurrency).toBe(1)
+      expect(parseGameConfig('?concurrency=1').tileConcurrency).toBe(1)
+      expect(parseGameConfig('?concurrency=3').tileConcurrency).toBe(3)
+      expect(parseGameConfig('?concurrency=5').tileConcurrency).toBe(3)
+    })
+
+    it('parses prefetch ahead', () => {
+      const config = parseGameConfig('?ahead=45')
+
+      expect(config.prefetchAhead).toBe(45)
+    })
+
+    it('clamps prefetch ahead to valid range', () => {
+      expect(parseGameConfig('?ahead=0').prefetchAhead).toBe(0)
+      expect(parseGameConfig('?ahead=-5').prefetchAhead).toBe(0)
+      expect(parseGameConfig('?ahead=60').prefetchAhead).toBe(45)
+      expect(parseGameConfig('?ahead=invalid').prefetchAhead).toBe(30)
+    })
+
     it('clamps latitude to valid range', () => {
       const tooHigh = parseGameConfig('?lat=100')
       expect(tooHigh.spawn.latitude).toBe(85)
@@ -126,6 +167,9 @@ describe('game config', () => {
         vehicle: 'police',
         tilesBaseUrl: 'https://cdn.example.com/tiles',
         staticTiles: true,
+        viewDistance: 10000,
+        tileConcurrency: 3,
+        prefetchAhead: 45,
       }
 
       const url = configToUrl(config)
@@ -135,6 +179,9 @@ describe('game config', () => {
       expect(url).toContain('alt=700.0')
       expect(url).toContain('vehicle=police')
       expect(url).toContain('tiles=https')
+      expect(url).toContain('distance=10000')
+      expect(url).toContain('concurrency=3')
+      expect(url).toContain('ahead=45')
     })
 
     it('omits default values', () => {
@@ -143,6 +190,9 @@ describe('game config', () => {
         vehicle: 'car',
         tilesBaseUrl: DEFAULT_TILES_BASE_URL,
         staticTiles: true,
+        viewDistance: 4000,
+        tileConcurrency: 2,
+        prefetchAhead: 30,
       }
 
       const url = configToUrl(config)
@@ -151,6 +201,9 @@ describe('game config', () => {
       expect(url).not.toContain('vehicle=')
       expect(url).not.toContain('tiles=')
       expect(url).not.toContain('static=')
+      expect(url).not.toContain('distance=')
+      expect(url).not.toContain('concurrency=')
+      expect(url).not.toContain('ahead=')
     })
 
     it('includes static=false when disabled', () => {
@@ -159,11 +212,32 @@ describe('game config', () => {
         vehicle: 'car',
         tilesBaseUrl: DEFAULT_TILES_BASE_URL,
         staticTiles: false,
+        viewDistance: 4000,
+        tileConcurrency: 2,
+        prefetchAhead: 30,
       }
 
       const url = configToUrl(config)
 
       expect(url).toContain('static=false')
+    })
+
+    it('includes non-default streaming options', () => {
+      const config: GameConfig = {
+        spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 50 },
+        vehicle: 'car',
+        tilesBaseUrl: DEFAULT_TILES_BASE_URL,
+        staticTiles: true,
+        viewDistance: 10000,
+        tileConcurrency: 3,
+        prefetchAhead: 45,
+      }
+
+      const url = configToUrl(config)
+
+      expect(url).toContain('distance=10000')
+      expect(url).toContain('concurrency=3')
+      expect(url).toContain('ahead=45')
     })
   })
 })

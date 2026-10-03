@@ -3,10 +3,15 @@
  *
  * This module provides a library mode for running games without the Studio UI.
  * It loads terrain tiles statically and spawns the player in a vehicle.
+ *
+ * Press F12 or the gear icon to open the options panel with cache settings,
+ * streaming controls, and other runtime configuration.
  */
 
 import { parseGameConfig, type GameConfig } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
+import { OptionsPanel } from './options-panel.js'
+import { readGameOptions, setCacheBudget, type GameOptions } from './options.js'
 import { initPhysics } from '../src/simulation/physics.js'
 import {
   Simulation,
@@ -29,7 +34,9 @@ import * as THREE from 'three'
 
 class Game {
   private config: GameConfig
+  private gameOptions: GameOptions
   private loading: LoadingScreen
+  private optionsPanel: OptionsPanel | null = null
   private origin: GeoPoint
   private scene!: THREE.Scene
   private renderer!: THREE.WebGLRenderer
@@ -48,26 +55,39 @@ class Game {
   private cameraMode: 'chase' | 'cockpit' = 'cockpit'
   private yaw = 0
   private pitch = 0.15
+  private viewDistance = 4000
 
   constructor() {
     this.config = parseGameConfig()
+    this.gameOptions = readGameOptions()
     this.loading = new LoadingScreen()
     this.origin = {
       latitude: this.config.spawn.latitude,
       longitude: this.config.spawn.longitude,
       altitude: this.config.spawn.altitude,
     }
+    this.viewDistance = this.config.viewDistance || this.gameOptions.viewDistance || 4000
+    if (this.gameOptions.vehicle && hasVehiclePreset(this.gameOptions.vehicle)) {
+      this.config.vehicle = this.gameOptions.vehicle
+    }
+    if (this.gameOptions.tilesBaseUrl) {
+      this.config.tilesBaseUrl = this.gameOptions.tilesBaseUrl
+    }
   }
 
   async start(): Promise<void> {
     try {
       this.loading.setSpawn(this.config.spawn.latitude, this.config.spawn.longitude)
+      this.loading.setStatus('Initializing cache...')
+      await this.initializeCache()
+
       this.loading.setStatus('Initializing physics...')
       await initPhysics()
 
       this.loading.setStatus('Setting up renderer...')
       this.setupRenderer()
       this.setupInput()
+      this.setupOptionsPanel()
 
       this.loading.setStatus('Creating scene...')
       const document = this.createGameDocument()
@@ -92,6 +112,42 @@ class Game {
       console.error('Game initialization failed:', error)
       showError(error instanceof Error ? error.message : String(error))
     }
+  }
+
+  private async initializeCache(): Promise<void> {
+    try {
+      await setCacheBudget(this.gameOptions.cacheBudgetMb)
+    } catch (error) {
+      console.warn('Cache initialization failed, continuing without cache:', error)
+    }
+  }
+
+  private setupOptionsPanel(): void {
+    this.optionsPanel = new OptionsPanel({
+      onViewDistanceChange: (distance) => {
+        this.viewDistance = distance
+        this.world?.setDistance(distance)
+      },
+      onTileConcurrencyChange: (concurrency, ahead) => {
+        const maxTiles = this.tileBudget(this.viewDistance)
+        this.world?.setQuality(concurrency, ahead, false, maxTiles)
+      },
+      onTilesBaseUrlChange: () => {
+        /* Requires page reload - just save the option for next load. */
+      },
+      onVehicleChange: () => {
+        /* Requires page reload - just save the option for next load. */
+      },
+    })
+  }
+
+  private tileBudget(distance: number): number {
+    if (distance <= 1000) return 12
+    if (distance <= 2000) return 24
+    if (distance <= 4000) return 64
+    if (distance <= 6000) return 96
+    if (distance <= 10000) return 140
+    return 240
   }
 
   private setupRenderer(): void {
@@ -181,8 +237,11 @@ class Game {
       apiUrl,
       this.config.staticTiles ? 'static' : 'dynamic',
     )
-    this.world.setQuality(2, 8, false, 32)
-    this.world.setDistance(4000)
+    const concurrency = this.config.tileConcurrency || this.gameOptions.tileConcurrency || 2
+    const ahead = this.config.prefetchAhead ?? this.gameOptions.prefetchAhead ?? 30
+    const maxTiles = this.tileBudget(this.viewDistance)
+    this.world.setQuality(concurrency, ahead, false, maxTiles)
+    this.world.setDistance(this.viewDistance)
     this.scene.add(this.world.root)
 
     this.catchFloor = new CatchFloor(
