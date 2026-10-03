@@ -634,6 +634,41 @@ export class PlanetWorld {
     return this.tileTracker
   }
 
+  /**
+   * Check if a tile is installed (resident) and available for collision/rendering.
+   * Use this instead of activeTiles for loading checks, as activeTiles requires
+   * the plan and visibility computation.
+   */
+  isTileInstalled(tileId: string): boolean {
+    return this.resident.has(tileId)
+  }
+
+  /**
+   * Check if a tile's manifest is ready (fetched and validated).
+   * The tile may still be loading (GLB download) or installing.
+   */
+  isTileReady(tileId: string): boolean {
+    return this.ready.has(tileId)
+  }
+
+  /**
+   * Get the loading state of a tile for the loading screen.
+   * Returns: 'installed' | 'ready' | 'loading' | 'absent' | 'failed' | 'pending'
+   */
+  getTileLoadingState(
+    tileId: string,
+  ): 'installed' | 'ready' | 'loading' | 'absent' | 'failed' | 'pending' {
+    if (this.resident.has(tileId)) return 'installed'
+    if (this.installQueue.some((job) => job.key === tileId)) return 'loading'
+    if (this.installing?.key === tileId) return 'loading'
+    if ([...this.requests.values()].some((r) => r.key === tileId)) return 'loading'
+    if (this.ready.has(tileId)) return 'ready'
+    const trackerState = this.tileTracker.getState(tileId)
+    if (trackerState === 'absent') return 'absent'
+    if (trackerState === 'failed') return 'failed'
+    return 'pending'
+  }
+
   /** Log a summary of tile loading results (call once when loading completes). */
   logLoadingSummary(): void {
     if (this.loadSummaryLogged) return

@@ -62,6 +62,16 @@ export class LoadingScreen {
     return [...this.grid3x3]
   }
 
+  /** Get the center/spawn tile. */
+  getSpawnTile(): MapTile | null {
+    return this.centerTile
+  }
+
+  /** Check if a specific tile is loaded. */
+  isTileLoaded(tileId: string): boolean {
+    return this.loadedTiles.has(tileId)
+  }
+
   markTileLoaded(tileId: string): void {
     this.loadedTiles.add(tileId)
     this.absentTiles.delete(tileId)

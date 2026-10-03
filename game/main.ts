@@ -211,52 +211,84 @@ class Game {
     if (!this.world) return
 
     const requiredTiles = this.loading.getRequiredTiles()
-    const position: Vec3Tuple = [0, 100, 0]
-    const tracker = this.world.getTileTracker()
+    const spawnTile = this.loading.getSpawnTile()
+    const spawnTileId = spawnTile ? mapTileId(spawnTile) : null
 
-    const checkComplete = () => {
+    // Use the spawn position for world.update(), not a fixed position
+    const spawnPosition = geoToLocal(this.origin, {
+      latitude: this.config.spawn.latitude,
+      longitude: this.config.spawn.longitude,
+      altitude: this.config.spawn.altitude,
+    })
+
+    const updateTileStates = () => {
       for (const tile of requiredTiles) {
         const key = mapTileId(tile)
-        if (this.world!.activeTiles.some((t) => t.key === key)) {
+        const state = this.world!.getTileLoadingState(key)
+        if (state === 'installed') {
           this.loading.markTileLoaded(key)
-        } else {
-          const state = tracker.getState(key)
-          if (state === 'absent') {
-            this.loading.markTileAbsent(key)
-          } else if (state === 'failed') {
-            this.loading.markTileFailed(key)
-          }
+        } else if (state === 'absent') {
+          this.loading.markTileAbsent(key)
+        } else if (state === 'failed') {
+          this.loading.markTileFailed(key)
         }
+        // 'loading', 'ready', 'pending' remain as pending in loading screen
       }
-      return this.loading.isComplete()
     }
 
-    const maxWait = 120000
+    // Game can start when:
+    // 1. All tiles are resolved (loaded, absent, or failed), OR
+    // 2. The spawn tile is loaded (at least one ground tile), OR
+    // 3. At least one tile loaded and some tiles are absent/failed, OR
+    // 4. Timeout expires (we'll use CatchFloor)
+    const canStart = () => {
+      const progress = this.loading.getProgress()
+      // All tiles resolved
+      if (this.loading.isComplete()) return true
+      // At least the spawn tile loaded
+      if (spawnTileId && this.loading.isTileLoaded(spawnTileId)) return true
+      // At least one tile loaded and we've resolved most of the grid
+      if (progress.loaded > 0 && progress.loaded + progress.absent + progress.failed >= 5)
+        return true
+      // All tiles either absent or failed - no point waiting
+      if (progress.absent + progress.failed === progress.total) return true
+      return false
+    }
+
+    const maxWait = 30000 // 30s max, not 120s
     const started = Date.now()
 
-    while (!checkComplete()) {
+    // Initial discovery pass - call update to start tile requests
+    this.world.update(spawnPosition, [0, 0, 0])
+
+    while (!canStart()) {
       if (Date.now() - started > maxWait) {
-        console.warn('Tile loading timeout, proceeding anyway')
+        console.warn('Tile loading timeout after 30s, proceeding with available tiles')
         break
       }
-      this.world.update(position, [0, 0, 0])
+
+      // Request tile updates and process installs
+      this.world.update(spawnPosition, [0, 0, 0])
       this.world.flushInstall(5)
 
-      const progress = this.loading.getProgress()
-      const available = progress.loaded
-      const resolved = progress.loaded + progress.absent + progress.failed
+      // Update loading screen states
+      updateTileStates()
 
-      if (progress.absent > 0 || progress.failed > 0) {
-        this.loading.setStatus(
-          `Loading tiles: ${available}/${resolved - progress.absent - progress.failed} available (${progress.absent} absent, ${progress.failed} failed)`,
-        )
-      } else {
-        this.loading.setStatus(`Loading tiles: ${progress.loaded}/${progress.total}`)
-      }
+      // Show progress with proper counts
+      const progress = this.loading.getProgress()
+      const pending = progress.total - progress.loaded - progress.absent - progress.failed
+      const statusParts: string[] = []
+      if (progress.loaded > 0) statusParts.push(`${progress.loaded} loaded`)
+      if (pending > 0) statusParts.push(`${pending} pending`)
+      if (progress.absent > 0) statusParts.push(`${progress.absent} absent`)
+      if (progress.failed > 0) statusParts.push(`${progress.failed} failed`)
+      this.loading.setStatus(`Loading tiles: ${statusParts.join(', ')}`)
 
       await new Promise((r) => setTimeout(r, 100))
     }
 
+    // Final state update
+    updateTileStates()
     this.world.logLoadingSummary()
 
     const progress = this.loading.getProgress()
@@ -264,6 +296,9 @@ class Game {
       console.log(
         `Game starting with ${progress.loaded} tiles (${progress.absent} absent, ${progress.failed} failed)`,
       )
+    }
+    if (progress.loaded === 0) {
+      console.warn('No tiles loaded, game will use CatchFloor as ground')
     }
   }
 
