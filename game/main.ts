@@ -405,10 +405,11 @@ class Game {
       planetaryTerrain: true,
     })
 
-    // If no ground from tiles, add a physics fallback ground to the simulation
-    if (ground === undefined) {
-      this.sim.setFallbackGround(0)
-    }
+    // ALWAYS add fallback ground at start - terrain collision may not be built yet
+    // even if groundHeight() returned a value (that's just raycast against chunks,
+    // not physics bodies). Remove it later when physics collision is confirmed working.
+    const fallbackY = ground ?? 0
+    this.sim.setFallbackGround(fallbackY)
 
     const vehicleId = vehicleEntity?.id
     if (vehicleId) {
@@ -458,7 +459,7 @@ class Game {
 
     // Safety check: if vehicle falls below a threshold, ensure fallback ground exists
     // This catches cases where terrain tiles exist but collision isn't built yet
-    if (position[1] < -5 && !this.sim.hasFallbackGround()) {
+    if (position[1] < -3 && !this.sim.hasFallbackGround()) {
       console.warn(
         `Vehicle falling (Y=${position[1].toFixed(2)}), adding emergency fallback ground`,
       )
@@ -466,13 +467,15 @@ class Game {
     }
 
     // Only remove fallback ground when:
-    // 1. We have ground height from tiles, AND
-    // 2. Vehicle is above ground (not still falling), AND
-    // 3. Vehicle velocity is stable (not bouncing high)
-    const vehicleStable = position[1] > 0 && Math.abs(player.speed) < 50
-    if (ground !== undefined && vehicleStable) {
+    // 1. Terrain collision physics is actually ready (preparePlanetCollisions returns true)
+    // 2. Vehicle is above ground (not falling)
+    // 3. Vehicle has positive Y position (resting on something)
+    const collisionReady = this.sim.preparePlanetCollisions()
+    const vehicleStable = position[1] > 0 && position[1] < 50
+    if (ground !== undefined && collisionReady && vehicleStable) {
       this.catchFloor?.hide()
       if (this.sim.hasFallbackGround()) {
+        console.log('Terrain collision ready, removing fallback ground')
         this.sim.clearFallbackGround()
       }
     }
