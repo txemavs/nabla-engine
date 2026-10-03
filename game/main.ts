@@ -24,7 +24,6 @@ import { KeyboardSteering } from '../src/simulation/vehicles/keyboard-steering.j
 import { SceneView } from '../src/presentation/scene-view.js'
 import { GeographicView } from '../src/render/planet/sky.js'
 import { ShadowManager } from '../src/render/shadows.js'
-import { CatchFloor } from '../src/render/planet/catch-floor.js'
 import * as THREE from 'three'
 
 class Game {
@@ -39,7 +38,9 @@ class Game {
   private view: SceneView | null = null
   private geography: GeographicView | null = null
   private shadowManager: ShadowManager | null = null
-  private catchFloor: CatchFloor | null = null
+  private sun: THREE.DirectionalLight | null = null
+  private ambient: THREE.AmbientLight | null = null
+  private renderOrigin = new THREE.Vector3()
   private keyboardSteering = new KeyboardSteering()
   private disposed = false
   private animationFrame = 0
@@ -129,8 +130,16 @@ class Game {
 
   private setupGeography(document: SceneDocument): void {
     this.geography = new GeographicView(document, () => {})
-    this.scene.add(this.geography.sky)
-    this.scene.add(this.geography.sun)
+    this.geography.viewDistance = 4000
+    this.geography.setLayers({ sky: true, planets: true, sun: true, clouds: true })
+    this.scene.add(this.geography.tiles)
+
+    this.sun = new THREE.DirectionalLight('#ffffff', 3.2)
+    this.sun.castShadow = true
+    this.scene.add(this.sun)
+
+    this.ambient = new THREE.AmbientLight('#dce7f5', 0.22)
+    this.scene.add(this.ambient)
   }
 
   private setupInput(): void {
@@ -190,13 +199,6 @@ class Game {
     this.world.setQuality(2, 8, false, 32)
     this.world.setDistance(4000)
     this.scene.add(this.world.root)
-
-    this.catchFloor = new CatchFloor(
-      this.origin,
-      () => {},
-      (m) => this.shadowManager?.setupMaterial(m),
-    )
-    this.scene.add(this.catchFloor.root)
   }
 
   private async loadInitialTiles(): Promise<void> {
@@ -286,13 +288,11 @@ class Game {
     this.world.flushInstall(2)
     this.world.renderUpdate(new THREE.Vector3(...position), true, this.sim)
 
-    this.catchFloor?.update(position, this.world.groundHeight(position))
-
     this.updateCamera(player)
     this.updateHud(player)
     this.view.update(this.sim, elapsed)
 
-    this.geography?.update(new Date())
+    this.updateGeography(position)
     this.shadowManager?.update(this.camera, this.scene)
   }
 
@@ -350,6 +350,33 @@ class Game {
     }
   }
 
+  private updateGeography(position: Vec3Tuple): void {
+    if (!this.geography) return
+
+    this.geography.update(position, this.renderOrigin, { mode: 'live' })
+
+    const air = this.geography.atmosphere
+    const night = 1 - Math.min(1, Math.max(0, air.day))
+
+    if (this.ambient) {
+      this.ambient.intensity = 0.22 * air.day + 0.04 * night
+    }
+
+    if (this.sun) {
+      const moonUp = Math.max(0, this.geography.moonDirection.y)
+      const useMoon = this.geography.sunDirection.y <= 0 && moonUp > 0
+      const lightDirection = useMoon ? this.geography.moonDirection : this.geography.sunDirection
+      this.sun.position.copy(lightDirection).multiplyScalar(65)
+      this.sun.intensity = useMoon
+        ? 0.35 * Math.min(1, moonUp * 2)
+        : this.geography.sunDirection.y > 0
+          ? 3.2 * air.day
+          : 0
+    }
+
+    this.scene.fog = air.fog ? new THREE.Fog(air.color, air.near, air.far) : null
+  }
+
   private cycleCamera(): void {
     this.cameraMode = this.cameraMode === 'chase' ? 'cockpit' : 'chase'
   }
@@ -367,7 +394,21 @@ class Game {
   }
 
   private render(): void {
+    const worldCamera = this.camera.position.clone()
+
+    if (this.geography?.enabled) {
+      this.geography.render(this.renderer, this.camera, worldCamera)
+      this.renderer.autoClear = false
+      this.renderer.clearDepth()
+    }
+
     this.renderer.render(this.scene, this.camera)
+
+    if (this.geography?.enabled) {
+      this.geography.renderClouds(this.renderer, this.camera)
+    }
+
+    this.renderer.autoClear = true
   }
 
   private updateHud(player: { speed: number; vehicleId: string | null }): void {
