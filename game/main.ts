@@ -408,8 +408,8 @@ class Game {
     // ALWAYS add fallback ground at start - terrain collision may not be built yet
     // even if groundHeight() returned a value (that's just raycast against chunks,
     // not physics bodies). Remove it later when physics collision is confirmed working.
-    const fallbackY = ground ?? 0
-    this.sim.setFallbackGround(fallbackY)
+    // Always use Y=0 for fallback (vehicle spawn height is already adjusted above).
+    this.sim.setFallbackGround(0)
 
     const vehicleId = vehicleEntity?.id
     if (vehicleId) {
