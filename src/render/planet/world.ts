@@ -8,7 +8,7 @@ import {
   type PlanetPayload,
   type PlanetCollisionTile,
 } from '../../planet/index.js'
-import { fetchTileManifest } from './static-tiles.js'
+import { fetchTileManifestsRobust, logTileLoadSummary, TileLoadTracker } from './static-tiles.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 import { PlanetHorizon } from './horizon.js'
@@ -273,6 +273,8 @@ export class PlanetWorld {
   private protectedPositions: Vec3Tuple[] = []
   private buildings = true
   private access = true
+  private tileTracker = new TileLoadTracker(3, 2000)
+  private loadSummaryLogged = false
   private createSea: () => THREE.Material = () =>
     new THREE.MeshStandardMaterial({
       color: '#102f43',
@@ -596,31 +598,47 @@ export class PlanetWorld {
   }
 
   private async discoverStatic(batch: MapTile[]) {
-    let missing = 0
-    const failures: Error[] = []
-    await Promise.all(
-      batch.map(async (tile) => {
-        try {
-          const manifest = await fetchTileManifest(tile, {
-            baseUrl: this.base,
-            signal: this.controller.signal,
-            cors: true,
-          })
-          if (manifest) this.ready.set(mapTileId(tile), manifest)
-          else missing++
-        } catch (error) {
-          if (this.controller.signal.aborted) return
-          failures.push(error instanceof Error ? error : new Error(String(error)))
-        }
-      }),
+    const result = await fetchTileManifestsRobust(
+      batch,
+      {
+        baseUrl: this.base,
+        signal: this.controller.signal,
+        cors: true,
+      },
+      this.tileTracker,
     )
+
+    for (const [tileId, manifest] of result.manifests) {
+      this.ready.set(tileId, manifest)
+    }
+
     const loaded = batch.filter((t) => this.ready.has(mapTileId(t))).length
+    const absentCount = result.absent.length
+    const failedCount = result.failed.size
+
     let status = `Static tiles · ${loaded}/${batch.length} loaded · ${this.visible.length} visible`
-    if (missing) status += ` · ${missing} not published (404)`
-    // Show the real cause of the first failure (HTTP status, CORS/network, mixed content, invalid manifest), not just a count.
-    if (failures.length) status += ` · ${failures.length} failed: ${failures[0].message}`
+    if (absentCount) status += ` · ${absentCount} absent`
+    if (failedCount) status += ` · ${failedCount} failed`
     this.status = status
     this.access = true
+
+    if (result.newlyFailed.length > 0) {
+      for (const tileId of result.newlyFailed) {
+        console.warn(`Tile ${tileId} failed permanently: ${result.failed.get(tileId)}`)
+      }
+    }
+  }
+
+  /** Get the tile load tracker for external access (e.g., loading screen). */
+  getTileTracker(): TileLoadTracker {
+    return this.tileTracker
+  }
+
+  /** Log a summary of tile loading results (call once when loading completes). */
+  logLoadingSummary(): void {
+    if (this.loadSummaryLogged) return
+    this.loadSummaryLogged = true
+    logTileLoadSummary(this.ready.size, this.tileTracker.getAbsent(), this.tileTracker.getFailed())
   }
   private pump() {
     if (this.disposed) return

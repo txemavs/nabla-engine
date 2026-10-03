@@ -198,12 +198,20 @@ class Game {
 
     const requiredTiles = this.loading.getRequiredTiles()
     const position: Vec3Tuple = [0, 100, 0]
+    const tracker = this.world.getTileTracker()
 
     const checkComplete = () => {
       for (const tile of requiredTiles) {
         const key = mapTileId(tile)
         if (this.world!.activeTiles.some((t) => t.key === key)) {
           this.loading.markTileLoaded(key)
+        } else {
+          const state = tracker.getState(key)
+          if (state === 'absent') {
+            this.loading.markTileAbsent(key)
+          } else if (state === 'failed') {
+            this.loading.markTileFailed(key)
+          }
         }
       }
       return this.loading.isComplete()
@@ -221,9 +229,33 @@ class Game {
       this.world.flushInstall(5)
 
       const progress = this.loading.getProgress()
-      this.loading.setStatus(`Loading tiles: ${progress.loaded}/${progress.total}`)
+      const available = progress.loaded
+      const resolved = progress.loaded + progress.absent + progress.failed
+
+      if (progress.absent > 0 || progress.failed > 0) {
+        this.loading.setStatus(
+          `Loading tiles: ${available}/${resolved - progress.absent - progress.failed} available (${progress.absent} absent, ${progress.failed} failed)`,
+        )
+      } else {
+        this.loading.setStatus(`Loading tiles: ${progress.loaded}/${progress.total}`)
+      }
 
       await new Promise((r) => setTimeout(r, 100))
+    }
+
+    this.world.logLoadingSummary()
+
+    if (this.loading.hasNoLoadedTiles()) {
+      throw new Error(
+        'No tiles available. Check that the tile host is reachable and tiles are published for this location.',
+      )
+    }
+
+    const progress = this.loading.getProgress()
+    if (progress.absent > 0 || progress.failed > 0) {
+      console.log(
+        `Game starting with ${progress.loaded} tiles (${progress.absent} absent, ${progress.failed} failed)`,
+      )
     }
   }
 
