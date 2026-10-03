@@ -248,3 +248,18 @@ node scripts/prepare-a3.mjs /path/to/original-a3-backup --wheel-only
 The previous wheel is also backed up locally at
 `/home/txema/backups/nabla-wheel-20260929/car.audi.a3.wheel.glb`.
 The reference photo is not embedded or redistributed as a texture.
+
+## White truck Studio prototype
+
+`studio/trucks/white-truck-studio/assets/*.glb` derive from the user-supplied
+`truck_man_tgx.glb` and `trailer.glb`. Embedded attribution identifies zairiq zairiq 8
+and CC-BY-4.0. The source URLs, hashes and modification record are in the
+[package guide](studio/trucks/white-truck-studio/README.md). Preserve that
+attribution and license when redistributing these assets.
+
+The package includes white untextured bodies, transparent glass, colored lights,
+two reusable road-wheel meshes and the original separated steering wheel. The
+front auxiliary mirror is removed. Scale and hitch coordinates are design
+references; `drivable: false` remains until physical scene acceptance.
+See [the trailer integration requirements](../docs/white-truck-studio.md) for
+animation, attach/detach UI, articulated dynamics, and separate tare/cargo masses.

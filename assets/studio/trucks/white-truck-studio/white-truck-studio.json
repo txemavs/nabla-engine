@@ -1,0 +1,194 @@
+{
+  "id": "white-truck-studio",
+  "version": 1,
+  "units": "metres",
+  "up": "+Y",
+  "forward": "-Z",
+  "drivable": false,
+  "acceptance": "Synthetic prototype; not surveyed or road accepted",
+  "modes": ["tractor", "trailer", "separated", "coupled"],
+  "coupling": {
+    "type": "revolute",
+    "axis": [0, 1, 0],
+    "limits": [-1.35, 1.35],
+    "captureDistance": 0.12,
+    "captureSpeed": 0.3,
+    "note": "Yaw only: flat-ground prototype; no pitch/roll articulation"
+  },
+  "scalePolicy": "2.55 m body width. Trailer body height 4 m; rear wheels reused from tractor.",
+  "compatibility": "Requires included adapter; not a stock Studio vehicle JSON",
+  "tractor": {
+    "body": "assets/tractor.body.glb",
+    "massKg": 7500,
+    "spawnHeight": 1.2,
+    "wheels": [
+      {
+        "id": "FL",
+        "hub": [-1.0751686397108915, -0.6225349863344417, -1.3792322055748583],
+        "radius": 0.5774650136655582,
+        "asset": "assets/wheel.front.glb",
+        "rotationY": 0,
+        "steering": true,
+        "driven": false
+      },
+      {
+        "id": "FR",
+        "hub": [1.0808938218294213, -0.6225349863344417, -1.3792320170858947],
+        "radius": 0.5774650136655582,
+        "asset": "assets/wheel.front.glb",
+        "rotationY": 3.141592653589793,
+        "steering": true,
+        "driven": false
+      },
+      {
+        "id": "RL2",
+        "hub": [-0.9568073150305044, -0.6276177768713792, 2.2889794731158193],
+        "radius": 0.5723822231286207,
+        "asset": "assets/wheel.rear.glb",
+        "rotationY": 0,
+        "steering": false,
+        "driven": true
+      },
+      {
+        "id": "RR2",
+        "hub": [0.9319417003052736, -0.6276177768713792, 2.2882289691068207],
+        "radius": 0.5723822231286207,
+        "asset": "assets/wheel.rear.glb",
+        "rotationY": 3.141592653589793,
+        "steering": false,
+        "driven": true
+      }
+    ],
+    "suspensionRest": 0.22,
+    "stiffness": 110,
+    "brakeImpulse": 120,
+    "engineForcePerWheel": 12000,
+    "inertiaKgM2": [55000, 60000, 18000],
+    "anchor": [0, 0, 1.766745487],
+    "sourceSha256": "e91655f884c74e60bbb4d79bf351a79c54cf8bbd60aeb95eb855e83e3ae2b035",
+    "bodyWidth": 2.55,
+    "sourceHeightScale": 1,
+    "sourceWorldScale": 118.52191227089664,
+    "steeringWheel": {
+      "asset": "assets/steering.glb",
+      "position": [-0.714255259311445, 1.1138955192545268, -2.206799173597997],
+      "axis": [-2.0543495550641777e-7, 0.8191521782084441, 0.5735762450941627],
+      "maxAngle": 4.7,
+      "source": "Original components 68 and 84"
+    },
+    "removed": [
+      {
+        "mesh": "1_color [spec]_0",
+        "component": 7,
+        "triangles": 182,
+        "reason": "front mirror"
+      },
+      {
+        "mesh": "1_color [spec]_0",
+        "component": 10,
+        "triangles": 148,
+        "reason": "front mirror"
+      }
+    ],
+    "colliders": [
+      {
+        "size": [2.2, 2.8, 2.7],
+        "position": [0, 1.25, -1.45]
+      },
+      {
+        "size": [2.15, 0.45, 3.2],
+        "position": [0, -0.4, 1.1]
+      }
+    ]
+  },
+  "trailer": {
+    "body": "assets/trailer.body.glb",
+    "spawnHeight": 1.2,
+    "wheels": [
+      {
+        "id": "RL1",
+        "hub": [-0.8920750849989497, -0.6276177768713792, 1.775093997560098],
+        "radius": 0.5723822231286207,
+        "asset": "assets/wheel.rear.glb",
+        "rotationY": 0,
+        "steering": false,
+        "driven": false
+      },
+      {
+        "id": "RL2",
+        "hub": [-0.8920751181276269, -0.6276177768713792, 3.0726903836142947],
+        "radius": 0.5723822231286207,
+        "asset": "assets/wheel.rear.glb",
+        "rotationY": 0,
+        "steering": false,
+        "driven": false
+      },
+      {
+        "id": "RL3",
+        "hub": [-0.8920750731796226, -0.6276177768713792, 4.395842308976179],
+        "radius": 0.5723822231286207,
+        "asset": "assets/wheel.rear.glb",
+        "rotationY": 0,
+        "steering": false,
+        "driven": false
+      },
+      {
+        "id": "RR1",
+        "hub": [0.9086138554755453, -0.6276177768713792, 1.7908736211266039],
+        "radius": 0.5723822231286207,
+        "asset": "assets/wheel.rear.glb",
+        "rotationY": 3.141592653589793,
+        "steering": false,
+        "driven": false
+      },
+      {
+        "id": "RR2",
+        "hub": [0.9086138224215439, -0.6276177768713792, 3.087616785232877],
+        "radius": 0.5723822231286207,
+        "asset": "assets/wheel.rear.glb",
+        "rotationY": 3.141592653589793,
+        "steering": false,
+        "driven": false
+      },
+      {
+        "id": "RR3",
+        "hub": [0.9086138673694283, -0.6276177768713792, 4.410768710594881],
+        "radius": 0.5723822231286207,
+        "asset": "assets/wheel.rear.glb",
+        "rotationY": 3.141592653589793,
+        "steering": false,
+        "driven": false
+      }
+    ],
+    "suspensionRest": 0.22,
+    "stiffness": 110,
+    "brakeImpulse": 120,
+    "engineForcePerWheel": 12000,
+    "inertiaKgM2": [110000, 115000, 22000],
+    "anchor": [0, 0, -5.565219856],
+    "sourceSha256": "edcdd0b650f1aa3379807c95ab5ce5220948d66a6047378a1625fcf77c4c02cd",
+    "bodyWidth": 2.55,
+    "sourceHeightScale": 0.9075760222349035,
+    "sourceWorldScale": 134.73916826254688,
+    "tareMassKg": 6500,
+    "cargoMassKg": 0,
+    "cargoCenterOfMass": [0, 1, 0],
+    "cargoSize": [2.4, 2.3, 12.8],
+    "colliders": [
+      {
+        "size": [2.48, 2.45, 13.45],
+        "position": [0, 1.55, 0]
+      }
+    ],
+    "landingGear": [
+      {
+        "size": [0.18, 1.2, 0.18],
+        "position": [-0.85, -0.6, -3.8]
+      },
+      {
+        "size": [0.18, 1.2, 0.18],
+        "position": [0.85, -0.6, -3.8]
+      }
+    ]
+  }
+}
