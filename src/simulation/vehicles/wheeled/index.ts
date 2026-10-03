@@ -10,6 +10,8 @@ export {
 } from './runtime.js'
 export {
   idleWheeledInput,
+  normalizeHubs,
+  type HubDefinition,
   type WheeledDefinition,
   type PowertrainDefinition,
   type WheeledInput,

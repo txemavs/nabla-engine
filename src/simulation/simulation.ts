@@ -453,12 +453,15 @@ export class Simulation {
         new Quaternion(...collider.transform.rotation),
       )
     // Slightly above the tyre, so the wheels still drive. The ball only meets a road lip.
-    if (e.vehicle?.plane)
-      for (const hub of vehicleDefinition(e).hubs) {
-        const gear = new Sphere(Math.max(0.08, vehicleDefinition(e).wheelRadius - 0.05))
+    if (e.vehicle?.plane) {
+      const def = vehicleDefinition(e)
+      const hubPositions = def.hubConfigs ? def.hubConfigs.map((h) => h.position) : (def.hubs ?? [])
+      for (const hub of hubPositions) {
+        const gear = new Sphere(Math.max(0.08, def.wheelRadius - 0.05))
         gear.friction = 0
         body.addShape(gear, new Vec3(...hub))
       }
+    }
     body.position.set(...transform.position)
     body.quaternion.set(...transform.rotation)
     body.previousPosition.copy(body.position)
@@ -979,9 +982,10 @@ export class Simulation {
     })
     if (vehicle) {
       const [w, h, l] = vehicle.entity.size
+      const hubPositions = vehicle.hubConfigs.map((h) => h.position)
       // Include bodywork and the full suspension/wheel envelope, not just the chassis collider.
       const floor = Math.min(
-        ...vehicle.definition.hubs.map(
+        ...hubPositions.map(
           (hub, i) =>
             hub[1] +
             vehicle.definition.suspensionRest -
@@ -997,7 +1001,7 @@ export class Simulation {
         new Vec3(0, floor + (h + radius) / 2, 0),
         new Quaternion(),
       )
-      vehicle.definition.hubs.forEach((hub, i) => {
+      hubPositions.forEach((hub, i) => {
         const wheel = vehicle.raycast.wheelInfos[i]
         const centre = new Vec3(
           hub[0],

@@ -1,0 +1,105 @@
+{
+  "id": "white-truck",
+  "label": "White Truck (MAN TGX)",
+  "clearance": 1.2,
+  "placement": [8, 1.2, 6],
+  "order": 10,
+  "name": "White Truck",
+  "color": "#ffffff",
+  "size": [2.55, 3.2, 5.5],
+  "mass": 7500,
+  "vehicle": {
+    "colliders": [
+      {
+        "size": [2.2, 2.8, 2.7],
+        "transform": {
+          "position": [0, 1.25, -1.45],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "size": [2.15, 0.45, 3.2],
+        "transform": {
+          "position": [0, -0.4, 1.1],
+          "rotation": [0, 0, 0, 1]
+        }
+      }
+    ],
+    "hubConfigs": [
+      {
+        "position": [-1.0751686, -0.6225349, -1.3792322],
+        "steered": true,
+        "driven": false,
+        "radius": 0.577465
+      },
+      {
+        "position": [1.0808938, -0.6225349, -1.379232],
+        "steered": true,
+        "driven": false,
+        "radius": 0.577465
+      },
+      {
+        "position": [-0.9568073, -0.6276177, 2.2889794],
+        "steered": false,
+        "driven": true,
+        "radius": 0.5723822
+      },
+      {
+        "position": [0.9319417, -0.6276177, 2.2882289],
+        "steered": false,
+        "driven": true,
+        "radius": 0.5723822
+      }
+    ],
+    "wheelRadius": 0.5723822,
+    "suspensionRest": 0.22,
+    "suspensionTravel": 0.35,
+    "stiffness": 110,
+    "engineForce": 24000,
+    "brakeForce": 120,
+    "powertrain": {
+      "powerCv": 420,
+      "torqueNm": 2100,
+      "ratios": [12.0, 8.5, 6.0, 4.2, 3.0, 2.1, 1.5, 1.0, 0.75],
+      "finalDrive": 3.5,
+      "grip": 5.0
+    },
+    "driver": [-0.714, 1.1, -2.2],
+    "headOffset": [0, 0.3, 0],
+    "cameraDistance": 14,
+    "trailer": {
+      "anchor": [0, 0, 1.766745487],
+      "kingpin": [0, 0, -5.565219856],
+      "limits": [-1.35, 1.35]
+    }
+  },
+  "visual": {
+    "body": {
+      "url": "/studio/trucks/white-truck-studio/assets/tractor.body.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    "wheel": {
+      "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    "wheelRotations": [
+      [0, 0, 0, 1],
+      [0, 1, 0, 0],
+      [0, 0, 0, 1],
+      [0, 1, 0, 0]
+    ],
+    "steering": {
+      "url": "/studio/trucks/white-truck-studio/assets/steering.glb",
+      "transform": {
+        "position": [-0.714255, 1.1138955, -2.2067991],
+        "rotation": [0, 0, 0, 1]
+      }
+    }
+  }
+}
