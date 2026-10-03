@@ -71,6 +71,7 @@ class Game {
 
       this.loading.setStatus('Creating scene...')
       const document = this.createGameDocument()
+      this.setupGeography(document)
       this.view = new SceneView(document, false, true)
       this.scene.add(this.view.root)
 
@@ -90,6 +91,9 @@ class Game {
       this.animationFrame = requestAnimationFrame((t) => this.loop(t))
     } catch (error) {
       console.error('Game initialization failed:', error)
+      if (error instanceof Error && error.stack) {
+        console.error('Stack trace:', error.stack)
+      }
       showError(error instanceof Error ? error.message : String(error))
     }
   }
@@ -120,11 +124,13 @@ class Game {
     this.shadowManager = new ShadowManager(this.renderer, 1024)
     this.shadowManager.distance = 2000
 
-    this.geography = new GeographicView(this.origin, () => {})
+    window.addEventListener('resize', () => this.onResize())
+  }
+
+  private setupGeography(document: SceneDocument): void {
+    this.geography = new GeographicView(document, () => {})
     this.scene.add(this.geography.sky)
     this.scene.add(this.geography.sun)
-
-    window.addEventListener('resize', () => this.onResize())
   }
 
   private setupInput(): void {
