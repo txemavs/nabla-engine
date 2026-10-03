@@ -24,6 +24,7 @@ import { KeyboardSteering } from '../src/simulation/vehicles/keyboard-steering.j
 import { SceneView } from '../src/presentation/scene-view.js'
 import { GeographicView } from '../src/render/planet/sky.js'
 import { ShadowManager } from '../src/render/shadows.js'
+import { CatchFloor } from '../src/render/planet/catch-floor.js'
 import * as THREE from 'three'
 
 class Game {
@@ -38,6 +39,7 @@ class Game {
   private view: SceneView | null = null
   private geography: GeographicView | null = null
   private shadowManager: ShadowManager | null = null
+  private catchFloor: CatchFloor | null = null
   private sun: THREE.DirectionalLight | null = null
   private ambient: THREE.AmbientLight | null = null
   private renderOrigin = new THREE.Vector3()
@@ -199,6 +201,10 @@ class Game {
     this.world.setQuality(2, 8, false, 32)
     this.world.setDistance(4000)
     this.scene.add(this.world.root)
+
+    this.catchFloor = new CatchFloor()
+    this.shadowManager?.setupMaterial(this.catchFloor.mesh.material)
+    this.scene.add(this.catchFloor.mesh)
   }
 
   private async loadInitialTiles(): Promise<void> {
@@ -206,12 +212,20 @@ class Game {
 
     const requiredTiles = this.loading.getRequiredTiles()
     const position: Vec3Tuple = [0, 100, 0]
+    const tracker = this.world.getTileTracker()
 
     const checkComplete = () => {
       for (const tile of requiredTiles) {
         const key = mapTileId(tile)
         if (this.world!.activeTiles.some((t) => t.key === key)) {
           this.loading.markTileLoaded(key)
+        } else {
+          const state = tracker.getState(key)
+          if (state === 'absent') {
+            this.loading.markTileAbsent(key)
+          } else if (state === 'failed') {
+            this.loading.markTileFailed(key)
+          }
         }
       }
       return this.loading.isComplete()
@@ -229,9 +243,27 @@ class Game {
       this.world.flushInstall(5)
 
       const progress = this.loading.getProgress()
-      this.loading.setStatus(`Loading tiles: ${progress.loaded}/${progress.total}`)
+      const available = progress.loaded
+      const resolved = progress.loaded + progress.absent + progress.failed
+
+      if (progress.absent > 0 || progress.failed > 0) {
+        this.loading.setStatus(
+          `Loading tiles: ${available}/${resolved - progress.absent - progress.failed} available (${progress.absent} absent, ${progress.failed} failed)`,
+        )
+      } else {
+        this.loading.setStatus(`Loading tiles: ${progress.loaded}/${progress.total}`)
+      }
 
       await new Promise((r) => setTimeout(r, 100))
+    }
+
+    this.world.logLoadingSummary()
+
+    const progress = this.loading.getProgress()
+    if (progress.absent > 0 || progress.failed > 0) {
+      console.log(
+        `Game starting with ${progress.loaded} tiles (${progress.absent} absent, ${progress.failed} failed)`,
+      )
     }
   }
 
@@ -241,15 +273,29 @@ class Game {
     const spawn = document.entities.find((e) => e.kind === 'spawn')!
     const position = spawn.transform.position
 
-    await this.world.ensureGround(position)
-    const ground = this.world.groundHeight(position)
+    let ground: number | undefined
+    try {
+      await this.world.ensureGround(position, 5000)
+      ground = this.world.groundHeight(position)
+    } catch {
+      console.warn('No ground tile available at spawn, using catch floor')
+      ground = undefined
+    }
 
+    const vehicleEntity = document.entities.find((e) => e.kind === 'vehicle')
     if (ground !== undefined) {
-      const vehicleEntity = document.entities.find((e) => e.kind === 'vehicle')
       if (vehicleEntity) {
         vehicleEntity.transform.position[1] = ground + (vehicleEntity.groundOffset ?? 0.62)
       }
       spawn.transform.position[1] = ground + (spawn.groundOffset ?? 0.2)
+      this.catchFloor?.hide()
+    } else {
+      const fallbackHeight = this.origin.altitude
+      if (vehicleEntity) {
+        vehicleEntity.transform.position[1] = fallbackHeight + (vehicleEntity.groundOffset ?? 0.62)
+      }
+      spawn.transform.position[1] = fallbackHeight + (spawn.groundOffset ?? 0.2)
+      this.catchFloor?.show([0, fallbackHeight, 0], [0, 0, 0, 1], this.renderOrigin)
     }
 
     this.sim = new Simulation(document, {
@@ -287,6 +333,11 @@ class Game {
     this.world.update(position, [0, 0, 0])
     this.world.flushInstall(2)
     this.world.renderUpdate(new THREE.Vector3(...position), true, this.sim)
+
+    const ground = this.world.groundHeight(position)
+    if (ground !== undefined) {
+      this.catchFloor?.hide()
+    }
 
     this.updateCamera(player)
     this.updateHud(player)
@@ -453,6 +504,7 @@ class Game {
     this.world?.dispose()
     this.view?.dispose()
     this.geography?.dispose()
+    this.catchFloor?.dispose()
     this.renderer.dispose()
   }
 }

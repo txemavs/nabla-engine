@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { hasVehiclePreset, presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity, type SceneDocument } from '../../src/index.js'
 import type { GeoPoint } from '../../src/math/geo/sphere.js'
+import { TileLoadTracker } from '../../src/render/planet/static-tiles.js'
 
 describe('game startup regression tests', () => {
   const SPAWN: GeoPoint = {
@@ -88,6 +89,61 @@ describe('game startup regression tests', () => {
 
       expect(Array.isArray(document.entities)).toBe(true)
       expect(document.entities.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('tile loading robustness', () => {
+    it('TileLoadTracker correctly tracks absent tiles', () => {
+      const tracker = new TileLoadTracker()
+
+      tracker.markAbsent('tile-1')
+      tracker.markAbsent('tile-2')
+
+      expect(tracker.getState('tile-1')).toBe('absent')
+      expect(tracker.getState('tile-2')).toBe('absent')
+      expect(tracker.shouldRequest('tile-1')).toBe(false)
+      expect(tracker.getAbsent()).toContain('tile-1')
+      expect(tracker.getAbsent()).toContain('tile-2')
+    })
+
+    it('TileLoadTracker correctly tracks failed tiles', () => {
+      const tracker = new TileLoadTracker()
+
+      tracker.markFailed('tile-1', 'network error')
+
+      expect(tracker.getState('tile-1')).toBe('failed')
+      expect(tracker.shouldRequest('tile-1')).toBe(false)
+      expect(tracker.getFailed().get('tile-1')).toBe('network error')
+    })
+
+    it('TileLoadTracker allows retries before marking failed', () => {
+      const tracker = new TileLoadTracker(3)
+
+      expect(tracker.shouldRequest('tile-1')).toBe(true)
+
+      expect(tracker.recordRetry('tile-1')).toBe(true)
+      expect(tracker.getState('tile-1')).toBe('pending')
+
+      expect(tracker.recordRetry('tile-1')).toBe(true)
+
+      expect(tracker.recordRetry('tile-1')).toBe(false)
+    })
+
+    it('absent or failed tiles do not block game startup', () => {
+      const tracker = new TileLoadTracker()
+
+      tracker.markAbsent('WebMercatorQuad/15/16223/11997')
+      tracker.markAbsent('WebMercatorQuad/15/16224/11997')
+      tracker.markFailed('WebMercatorQuad/15/16225/11997', 'timeout')
+
+      const absentTiles = tracker.getAbsent()
+      const failedTiles = tracker.getFailed()
+
+      expect(absentTiles.length).toBe(2)
+      expect(failedTiles.size).toBe(1)
+
+      expect(tracker.shouldRequest('WebMercatorQuad/15/16223/11997')).toBe(false)
+      expect(tracker.shouldRequest('WebMercatorQuad/15/16224/11998')).toBe(true)
     })
   })
 })

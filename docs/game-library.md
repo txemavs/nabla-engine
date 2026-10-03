@@ -65,9 +65,24 @@ Serve the game page over **HTTPS** (`http://localhost` is fine for development):
 
 ### What the status line tells you
 
-The loading status shows how many manifests loaded, how many are not published (HTTP 404) and the real cause of the
-first failure, for example `HTTP 403 (access denied; S3/CloudFront also answer 403 for a tile that is not uploaded
-yet)`, `network or CORS error`, `timed out after 15 s`, `not valid JSON` or `invalid manifest`.
+The loading status shows how many manifests loaded, how many are absent (not published), and how many failed after
+retries. Absent tiles are detected via HTTP 404, SPA fallback (HTML 200 from Vite/dev servers), or HTTP 403/CORS
+errors (common for S3 missing keys without CORS headers). True errors like timeouts retry with exponential backoff
+(up to 3 attempts), then the tile is marked as permanently failed for the session.
+
+### Robust tile loading
+
+The game handles missing or unavailable tiles gracefully:
+
+- **Independent loading**: Each tile is fetched independently so one failure does not block others
+- **SPA fallback detection**: Dev servers returning HTML for missing paths are treated as "tile absent"
+- **S3/CloudFront 403**: Access denied (often returned for missing keys) is treated as "tile absent"
+- **Retry with backoff**: Transient errors (timeout, network) retry up to 3 times with exponential backoff
+- **Graceful degradation**: The game starts once at least one tile loads, even if others are absent
+- **Console summary**: When loading completes, absent and failed tiles are logged once (not on every retry)
+
+If zero tiles load, the loading screen shows a clear error. If some tiles are absent, the game proceeds with
+available tiles and logs a summary like `Tile loading complete: 7 loaded, 2 absent (not published)`.
 
 ### CORS Configuration
 

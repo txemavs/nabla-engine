@@ -8,7 +8,7 @@ import {
   type PlanetPayload,
   type PlanetCollisionTile,
 } from '../../planet/index.js'
-import { fetchTileManifest } from './static-tiles.js'
+import { fetchTileManifestsRobust, logTileLoadSummary, TileLoadTracker } from './static-tiles.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 import { PlanetHorizon } from './horizon.js'
@@ -273,6 +273,8 @@ export class PlanetWorld {
   private protectedPositions: Vec3Tuple[] = []
   private buildings = true
   private access = true
+  private tileTracker = new TileLoadTracker(3, 2000)
+  private loadSummaryLogged = false
   private createSea: () => THREE.Material = () =>
     new THREE.MeshStandardMaterial({
       color: '#102f43',
@@ -596,31 +598,47 @@ export class PlanetWorld {
   }
 
   private async discoverStatic(batch: MapTile[]) {
-    let missing = 0
-    const failures: Error[] = []
-    await Promise.all(
-      batch.map(async (tile) => {
-        try {
-          const manifest = await fetchTileManifest(tile, {
-            baseUrl: this.base,
-            signal: this.controller.signal,
-            cors: true,
-          })
-          if (manifest) this.ready.set(mapTileId(tile), manifest)
-          else missing++
-        } catch (error) {
-          if (this.controller.signal.aborted) return
-          failures.push(error instanceof Error ? error : new Error(String(error)))
-        }
-      }),
+    const result = await fetchTileManifestsRobust(
+      batch,
+      {
+        baseUrl: this.base,
+        signal: this.controller.signal,
+        cors: true,
+      },
+      this.tileTracker,
     )
+
+    for (const [tileId, manifest] of result.manifests) {
+      this.ready.set(tileId, manifest)
+    }
+
     const loaded = batch.filter((t) => this.ready.has(mapTileId(t))).length
+    const absentCount = result.absent.length
+    const failedCount = result.failed.size
+
     let status = `Static tiles · ${loaded}/${batch.length} loaded · ${this.visible.length} visible`
-    if (missing) status += ` · ${missing} not published (404)`
-    // Show the real cause of the first failure (HTTP status, CORS/network, mixed content, invalid manifest), not just a count.
-    if (failures.length) status += ` · ${failures.length} failed: ${failures[0].message}`
+    if (absentCount) status += ` · ${absentCount} absent`
+    if (failedCount) status += ` · ${failedCount} failed`
     this.status = status
     this.access = true
+
+    if (result.newlyFailed.length > 0) {
+      for (const tileId of result.newlyFailed) {
+        console.warn(`Tile ${tileId} failed permanently: ${result.failed.get(tileId)}`)
+      }
+    }
+  }
+
+  /** Get the tile load tracker for external access (e.g., loading screen). */
+  getTileTracker(): TileLoadTracker {
+    return this.tileTracker
+  }
+
+  /** Log a summary of tile loading results (call once when loading completes). */
+  logLoadingSummary(): void {
+    if (this.loadSummaryLogged) return
+    this.loadSummaryLogged = true
+    logTileLoadSummary(this.ready.size, this.tileTracker.getAbsent(), this.tileTracker.getFailed())
   }
   private pump() {
     if (this.disposed) return
@@ -916,12 +934,35 @@ export class PlanetWorld {
     return highest
   }
 
-  async ensureGround(position: Vec3Tuple): Promise<void> {
+  /**
+   * Wait for ground collision data at a position with a bounded timeout.
+   * If timeout expires or tiles are unavailable/failed, returns without throwing.
+   * Use groundHeight() after calling to check if ground is available.
+   *
+   * @param position Position to ensure ground for
+   * @param timeoutMs Maximum time to wait in milliseconds (default: 10000)
+   */
+  async ensureGround(position: Vec3Tuple, timeoutMs = 10000): Promise<void> {
     const started = Date.now()
     while (this.groundHeight(position) === undefined) {
-      if (this.disposed) throw Error('Carga cancelada')
-      if (Date.now() - started > 120000)
-        throw Error('El terreno todavía se está preparando. Espera a que aparezca antes de jugar.')
+      if (this.disposed) return
+      if (Date.now() - started > timeoutMs) {
+        console.warn('ensureGround timeout: no ground tile available at position')
+        return
+      }
+
+      const tile = mapTileAt(
+        localToGeo(this.origin, position).latitude,
+        localToGeo(this.origin, position).longitude,
+        15,
+      )
+      const tileId = mapTileId(tile)
+      const state = this.tileTracker.getState(tileId)
+      if (state === 'absent' || state === 'failed') {
+        console.warn(`ensureGround: spawn tile ${tileId} is ${state}`)
+        return
+      }
+
       this.flushInstall(1.5)
       this.update(position, [0, 0, 0])
       await new Promise((r) => setTimeout(r, 200))
