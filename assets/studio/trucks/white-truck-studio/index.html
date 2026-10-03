@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>white-truck-studio</title>
+  <style>
+    body {
+      margin: 0;
+      background: #bac5d1;
+      font: 14px system-ui;
+      color: #e8eef5;
+      overflow: hidden;
+    }
+    aside {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      padding: 20px;
+      background: #152331ee;
+      border: 1px solid #526070;
+      border-radius: 12px;
+      width: 280px;
+      box-shadow: 0 12px 35px #0003;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 12px;
+    }
+    button,
+    select {
+      padding: 9px;
+      border: 1px solid #657789;
+      border-radius: 6px;
+      background: #263b4e;
+      color: white;
+      margin: 4px 4px 4px 0;
+      cursor: pointer;
+    }
+    p {
+      line-height: 1.5;
+      color: #c7d5e3;
+    }
+    label {
+      display: block;
+      margin: 10px 0;
+    }
+    #status {
+      font-variant-numeric: tabular-nums;
+    }
+    small {
+      color: #b4c4d4;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+  <aside>
+    <h1>white-truck-studio</h1>
+    <select id="mode">
+      <option value="coupled">Conjunto articulado</option>
+      <option value="separated">Ambos, sin enganchar</option>
+      <option value="tractor">Cabeza sola</option>
+      <option value="trailer">Remolque aparcado</option>
+    </select>
+    <button id="reset">Reiniciar</button><button id="coupling">Desenganchar</button>
+    <label><input id="lights" type="checkbox" checked /> Faros</label>
+    <label><input id="hazards" type="checkbox" /> Emergencia</label>
+    <label><input id="anchors" type="checkbox" /> Ver puntos de enganche</label>
+    <label>Tara: <span id="tare">6500</span> kg</label>
+    <label
+      >Carga (kg):
+      <input
+        id="cargo"
+        type="number"
+        min="0"
+        max="24000"
+        step="1000"
+        value="0"
+        style="width: 85px"
+      />
+      <button id="apply-cargo">Aplicar</button></label
+    >
+    <p>
+      W/S: avanzar / marcha atrás<br />A/D: dirección · Espacio: frenar<br />
+      Ratón: orbitar · Rueda: acercar
+    </p>
+    <p id="status">Cargando…</p>
+    <small>Prototipo para suelo plano. Física aproximada; sin validación de conducción real.</small>
+  </aside>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/deps/three/build/three.module.js",
+        "three/addons/": "/deps/three/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="./demo.mjs"></script>
+</html>

@@ -6,3 +6,4 @@ test-results
 playwright-report
 
 assets/geography/irun-ventas.json
+assets/studio/trucks/white-truck-studio/*-results.json
