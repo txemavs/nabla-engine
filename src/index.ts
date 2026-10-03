@@ -97,7 +97,16 @@ export {
 
 export { mapTilePath, parseMapTilePath, mapTileFilename, mapTileSample } from './scene/mercator.js'
 
-export { PlanetWorld } from './render/planet/world.js'
+export { PlanetWorld, type TileDiscoveryMode } from './render/planet/world.js'
+export {
+  fetchTileManifest,
+  fetchTileManifests,
+  isManifestCurrent,
+  tileGlbUrl,
+  verifyGlbHash,
+  type StaticTileProviderOptions,
+  type StaticTileResult,
+} from './render/planet/static-tiles.js'
 export { GeographicView } from './render/planet/sky.js'
 export { SeaWater } from './render/planet/water.js'
 export {

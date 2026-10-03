@@ -8,6 +8,9 @@ import {
   type PlanetPayload,
   type PlanetCollisionTile,
 } from '../../planet/index.js'
+import { fetchTileManifest } from './static-tiles.js'
+
+export type TileDiscoveryMode = 'dynamic' | 'static'
 import { PlanetHorizon } from './horizon.js'
 import { carriagewayTint, matteGroundMaterial } from './ground-material.js'
 import { treeInstances } from './vegetation.js'
@@ -283,6 +286,7 @@ export class PlanetWorld {
     private setupMaterial: (m: THREE.Material) => void,
     private base = import.meta.env.VITE_WORLD_PREPARED_URL || '/prepared',
     private api = import.meta.env.VITE_WORLD_PREPARE_API || '/prepare',
+    private discoveryMode: TileDiscoveryMode = 'dynamic',
   ) {
     this.horizon = new PlanetHorizon(origin, changed, `${base}/photos`, setupMaterial)
     this.root.add(this.horizon.root)
@@ -551,32 +555,65 @@ export class PlanetWorld {
     this.busy = true
     this.next = Date.now() + 3000
     try {
-      const response = await fetch(this.api + '/tiles', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keys: batch.map(mapTilePath) }),
-        signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(15000)]),
-      })
-      if (!response.ok) throw Error(`HTTP ${response.status}`)
-      const data = await response.json()
-      this.access = !!data.authorized
-      for (const tile of batch) {
-        const value = data.available?.[mapTilePath(tile)]
-        if (value) this.ready.set(mapTileId(tile), validatePlanetManifest(value, tile))
+      if (this.discoveryMode === 'static') {
+        await this.discoverStatic(batch)
+      } else {
+        await this.discoverDynamic(batch)
       }
-      this.status = this.access
-        ? 'Preparando GLB en el servidor…'
-        : data.generationAccess === 'neighbors'
-          ? 'GLB vecinos y otros zooms · generación pública limitada · activa tu sesión para otras zonas'
-          : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
       this.pump()
       this.changed()
     } catch (error) {
-      if (!this.disposed) this.status = 'Servidor planetario pendiente · ' + String(error)
+      if (!this.disposed)
+        this.status =
+          this.discoveryMode === 'static'
+            ? 'Static tiles unavailable · ' + String(error)
+            : 'Servidor planetario pendiente · ' + String(error)
     } finally {
       this.busy = false
     }
+  }
+
+  private async discoverDynamic(batch: MapTile[]) {
+    const response = await fetch(this.api + '/tiles', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keys: batch.map(mapTilePath) }),
+      signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(15000)]),
+    })
+    if (!response.ok) throw Error(`HTTP ${response.status}`)
+    const data = await response.json()
+    this.access = !!data.authorized
+    for (const tile of batch) {
+      const value = data.available?.[mapTilePath(tile)]
+      if (value) this.ready.set(mapTileId(tile), validatePlanetManifest(value, tile))
+    }
+    this.status = this.access
+      ? 'Preparando GLB en el servidor…'
+      : data.generationAccess === 'neighbors'
+        ? 'GLB vecinos y otros zooms · generación pública limitada · activa tu sesión para otras zonas'
+        : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
+  }
+
+  private async discoverStatic(batch: MapTile[]) {
+    const fetches = batch.map(async (tile) => {
+      try {
+        const manifest = await fetchTileManifest(tile, {
+          baseUrl: this.base,
+          signal: this.controller.signal,
+          cors: true,
+        })
+        if (manifest) {
+          this.ready.set(mapTileId(tile), manifest)
+        }
+      } catch {
+        // Individual tile failures are silently ignored in static mode
+      }
+    })
+    await Promise.all(fetches)
+    const loaded = batch.filter((t) => this.ready.has(mapTileId(t))).length
+    this.status = `Static tiles · ${loaded}/${batch.length} loaded · ${this.visible.length} visible`
+    this.access = true
   }
   private pump() {
     if (this.disposed) return
