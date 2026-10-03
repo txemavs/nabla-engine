@@ -89,8 +89,43 @@ export class Simulation {
   private readonly terrainEntity: Entity | undefined
   private waterLevel = 0
   private catchFloor: Body | null = null
+  private fallbackGround: Body | null = null
+
   setWaterLevel(metres: number): void {
     if (Number.isFinite(metres)) this.waterLevel = clamp(metres, -5, 50)
+  }
+
+  /**
+   * Add a static fallback ground plane at the specified Y height.
+   * Used when no terrain tiles are available to provide a physics floor.
+   */
+  setFallbackGround(y: number): void {
+    if (this.fallbackGround) {
+      this.world.removeBody(this.fallbackGround)
+      this.fallbackGround = null
+    }
+    if (!Number.isFinite(y)) return
+    this.fallbackGround = new Body({ mass: 0, material: this.solidMaterial })
+    this.fallbackGround.addShape(new Box(new Vec3(5000, 0.5, 5000)))
+    this.fallbackGround.position.set(0, y - 0.5, 0)
+    this.world.addBody(this.fallbackGround)
+    console.log(`Fallback ground floor added at Y=${y}`)
+  }
+
+  /**
+   * Remove the fallback ground (when real terrain colliders become available).
+   */
+  clearFallbackGround(): void {
+    if (this.fallbackGround) {
+      this.world.removeBody(this.fallbackGround)
+      this.fallbackGround = null
+      console.log('Fallback ground floor removed')
+    }
+  }
+
+  /** Check if the fallback ground is active. */
+  hasFallbackGround(): boolean {
+    return this.fallbackGround !== null
   }
   /** Top face of the gray disk, once the occupied actor has dropped under the sea. */
   catchDisk(): Transform | null {
@@ -2185,6 +2220,7 @@ export class Simulation {
   dispose(): void {
     if (this.disposed) return
     this.dropCatchFloor()
+    this.clearFallbackGround()
     for (const dock of this.docks.values()) this.world.removeConstraint(dock.constraint)
     this.docks.clear()
     for (const coupling of this.fifthWheelCouplings.values())

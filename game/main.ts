@@ -377,10 +377,9 @@ class Game {
       spawn.transform.position = [spawnLocalPos[0] - 4, ground + spawnHeight, spawnLocalPos[2]]
       this.catchFloor?.hide()
     } else {
-      // No ground available - use CatchFloor at Y=0 (origin altitude)
-      // CatchFloor is a flat disk at the specified Y position
-      const fallbackY = 0 // This corresponds to origin.altitude in world space
-      console.log(`Using CatchFloor at Y=${fallbackY}`)
+      // No ground available - use fallback ground at Y=0
+      const fallbackY = 0
+      console.log(`Using fallback ground at Y=${fallbackY}`)
       if (vehicleEntity) {
         vehicleEntity.transform.position = [
           spawnLocalPos[0],
@@ -389,7 +388,7 @@ class Game {
         ]
       }
       spawn.transform.position = [spawnLocalPos[0] - 4, fallbackY + spawnHeight, spawnLocalPos[2]]
-      // Show CatchFloor at spawn position
+      // Show visual CatchFloor at spawn position
       this.catchFloor?.show(
         [spawnLocalPos[0], fallbackY, spawnLocalPos[2]],
         [0, 0, 0, 1],
@@ -405,6 +404,11 @@ class Game {
       playerMode: 'walk',
       planetaryTerrain: true,
     })
+
+    // If no ground from tiles, add a physics fallback ground to the simulation
+    if (ground === undefined) {
+      this.sim.setFallbackGround(0)
+    }
 
     const vehicleId = vehicleEntity?.id
     if (vehicleId) {
@@ -434,6 +438,8 @@ class Game {
     this.animationFrame = requestAnimationFrame((t) => this.loop(t))
   }
 
+  private debugLogTimer = 0
+
   private update(elapsed: number): void {
     if (!this.sim || !this.world || !this.view) return
 
@@ -449,8 +455,40 @@ class Game {
     this.world.renderUpdate(new THREE.Vector3(...position), true, this.sim)
 
     const ground = this.world.groundHeight(position)
-    if (ground !== undefined) {
+
+    // Safety check: if vehicle falls below a threshold, ensure fallback ground exists
+    // This catches cases where terrain tiles exist but collision isn't built yet
+    if (position[1] < -5 && !this.sim.hasFallbackGround()) {
+      console.warn(
+        `Vehicle falling (Y=${position[1].toFixed(2)}), adding emergency fallback ground`,
+      )
+      this.sim.setFallbackGround(0)
+    }
+
+    // Only remove fallback ground when:
+    // 1. We have ground height from tiles, AND
+    // 2. Vehicle is above ground (not still falling), AND
+    // 3. Vehicle velocity is stable (not bouncing high)
+    const vehicleStable = position[1] > 0 && Math.abs(player.speed) < 50
+    if (ground !== undefined && vehicleStable) {
       this.catchFloor?.hide()
+      if (this.sim.hasFallbackGround()) {
+        this.sim.clearFallbackGround()
+      }
+    }
+
+    // Debug logging every second
+    this.debugLogTimer += elapsed
+    if (this.debugLogTimer >= 1) {
+      this.debugLogTimer = 0
+      const colliderStatus = this.sim.hasFallbackGround()
+        ? 'fallbackGround'
+        : ground !== undefined
+          ? 'terrain'
+          : 'none'
+      console.log(
+        `[DEBUG] Vehicle Y=${position[1].toFixed(2)}, ground=${ground?.toFixed(2) ?? 'undefined'}, collider=${colliderStatus}, speed=${(player.speed * 3.6).toFixed(1)}km/h`,
+      )
     }
 
     this.updateCamera(player)

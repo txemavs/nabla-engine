@@ -476,3 +476,47 @@ describe('diesel drivetrain', () => {
     expect(state.launchSlip).toBe(0)
   })
 })
+
+describe('fallback ground', () => {
+  it('vehicle rests on fallback ground when no terrain tiles', () => {
+    const world = new World()
+
+    // Add fallback ground at Y=0
+    const fallbackGround = new Body({ mass: 0 })
+    fallbackGround.addShape(new Box(new Vec3(5000, 0.5, 5000)))
+    fallbackGround.position.set(0, -0.5, 0)
+    world.addBody(fallbackGround)
+
+    // Create truck at Y=0.62 (typical vehicle height offset)
+    const truck = createWheeledVehicle(tractorChassis(0), truckDefinition('diesel'))
+    truck.body.position.set(0, 1.2, 0)
+    truck.raycast.addToWorld(world)
+
+    try {
+      // Simulate 10 seconds of physics
+      for (let i = 0; i < 600; i++) {
+        stepWheeledVehicle(truck, idleWheeledInput(), 1 / 60, false)
+        world.step(1 / 60)
+        for (let w = 0; w < 4; w++) truck.raycast.updateWheelTransform(w)
+      }
+
+      // After 10 seconds, truck should be resting on the ground (Y around 1.0-1.5)
+      // and NOT falling through (Y should not be negative or very low)
+      expect(truck.body.position.y).toBeGreaterThan(0.5)
+      expect(truck.body.position.y).toBeLessThan(3.0)
+
+      // Velocity should be near zero (settled)
+      expect(Math.abs(truck.body.velocity.y)).toBeLessThan(0.5)
+
+      // Wheels should be in contact
+      const contacts = wheelContacts(truck, idleWheeledInput(), false)
+      const inContact = contacts.filter((c) => c.isInContact).length
+      expect(inContact).toBeGreaterThanOrEqual(3)
+    } finally {
+      truck.raycast.removeFromWorld(world)
+      world.removeBody(fallbackGround)
+      for (const body of [...world.bodies]) world.removeBody(body)
+      world.raw.free()
+    }
+  })
+})
