@@ -58,6 +58,10 @@
     "./vehicles/trailer": {
       "types": "./dist/simulation/vehicles/trailer/index.d.ts",
       "import": "./dist/simulation/vehicles/trailer/index.js"
+    },
+    "./driving": {
+      "types": "./dist/driving/index.d.ts",
+      "import": "./dist/driving/index.js"
     }
   },
   "imports": {

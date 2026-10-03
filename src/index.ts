@@ -127,6 +127,19 @@ export { simplifiedTide } from './planet/tide.js'
 export { DepthOfField } from './render/effects/depth-of-field.js'
 export { PerformanceMonitor, type FrameSample } from './diagnostics/performance-monitor.js'
 export { VehicleAudio } from './audio/vehicle.js'
+export { Powertrain, type EngineProfile } from './audio/powertrain.js'
+
+export {
+  DrivingController,
+  DrivingTelemetry,
+  driverHeadPose,
+  followDrivingHeading,
+  overheadDrivingPose,
+  overheadDrivingHeight,
+  type CameraMode,
+  type DrivingCameraState,
+  type DrivingControllerOptions,
+} from './driving/index.js'
 
 export { capturePng } from './render/capture.js'
 

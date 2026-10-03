@@ -3,6 +3,7 @@
  *
  * This module provides a library mode for running games without the Studio UI.
  * It loads terrain tiles statically and spawns the player in a vehicle.
+ * Uses the same driving systems as Studio (camera, audio, telemetry).
  */
 
 import { parseGameConfig, type GameConfig } from './config.js'
@@ -12,9 +13,11 @@ import {
   Simulation,
   createEntity,
   idleInput,
+  DrivingController,
   type SceneDocument,
   type PlayerInput,
   type Vec3Tuple,
+  type CameraMode,
 } from '../src/index.js'
 import {
   presetVehicle,
@@ -49,13 +52,12 @@ class Game {
   private ambient: THREE.AmbientLight | null = null
   private renderOrigin = new THREE.Vector3()
   private keyboardSteering = new KeyboardSteering()
+  private driving = new DrivingController({ enableAudio: true, initialCameraMode: 'cockpit' })
   private disposed = false
   private animationFrame = 0
   private lastTime = 0
   private keys = new Set<string>()
-  private cameraMode: 'chase' | 'cockpit' = 'cockpit'
   private yaw = 0
-  private pitch = 0.15
 
   constructor() {
     this.config = parseGameConfig()
@@ -158,12 +160,17 @@ class Game {
       if (e.code === 'KeyC') this.cycleCamera()
       if (e.code === 'KeyR') this.resetVehicle()
       if (e.code === 'KeyH') this.toggleTrailer()
+      this.driving.unlockAudio()
     })
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code)
     })
     window.addEventListener('blur', () => {
       this.keys.clear()
+    })
+    window.addEventListener('pointerdown', () => this.driving.unlockAudio())
+    document.addEventListener('visibilitychange', () => {
+      this.driving.setAudioSuspended(document.hidden)
     })
   }
 
@@ -522,7 +529,8 @@ class Game {
       )
     }
 
-    this.updateCamera(player)
+    this.driving.update(this.sim, elapsed)
+    this.updateCamera(elapsed)
     this.updateHud(player)
     this.view.sync(this.sim, elapsed)
 
@@ -549,39 +557,20 @@ class Game {
     }
   }
 
-  private updateCamera(player: {
-    position: Vec3Tuple
-    vehicleId: string | null
-    speed: number
-  }): void {
+  private updateCamera(elapsed: number): void {
     if (!this.sim) return
 
-    const target = new THREE.Vector3(...player.position)
+    const groundUp = this.geography?.sunDirection
+      ? new THREE.Vector3(0, 1, 0)
+      : new THREE.Vector3(0, 1, 0)
 
-    if (player.vehicleId) {
-      const vehicleTransform = this.sim.entityTransform(player.vehicleId)
-      const vehiclePos = new THREE.Vector3(...vehicleTransform.position)
-      const vehicleQuat = new THREE.Quaternion(...vehicleTransform.rotation)
+    const cameraState = this.driving.computeCamera(this.sim, elapsed, groundUp)
 
-      if (this.cameraMode === 'cockpit') {
-        const driverOffset = new THREE.Vector3(-0.35, 0.9, 0.3)
-        driverOffset.applyQuaternion(vehicleQuat)
-        this.camera.position.copy(vehiclePos).add(driverOffset)
-
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(vehicleQuat)
-        this.camera.lookAt(this.camera.position.clone().add(forward))
-      } else {
-        const distance = 6 + Math.min(player.speed * 0.1, 4)
-        const height = 2 + Math.min(player.speed * 0.05, 2)
-        const back = new THREE.Vector3(0, height, distance).applyQuaternion(vehicleQuat)
-        this.camera.position.copy(vehiclePos).add(back)
-        this.camera.lookAt(vehiclePos.clone().add(new THREE.Vector3(0, 1, 0)))
-      }
-    } else {
-      const offset = new THREE.Vector3(0, 2, 5)
-      this.camera.position.copy(target).add(offset)
-      this.camera.lookAt(target)
-    }
+    this.camera.position.copy(cameraState.position)
+    this.camera.up.copy(cameraState.up)
+    this.camera.lookAt(cameraState.target)
+    this.camera.fov = cameraState.fov
+    this.camera.updateProjectionMatrix()
   }
 
   private updateGeography(position: Vec3Tuple): void {
@@ -612,7 +601,8 @@ class Game {
   }
 
   private cycleCamera(): void {
-    this.cameraMode = this.cameraMode === 'chase' ? 'cockpit' : 'chase'
+    const mode = this.driving.cycleCamera()
+    console.log(`Cámara: ${mode === 'chase' ? 'seguimiento' : mode === 'cockpit' ? 'conductor' : 'mapa'}`)
   }
 
   private resetVehicle(): void {
@@ -716,6 +706,7 @@ class Game {
     this.view?.dispose()
     this.geography?.dispose()
     this.catchFloor?.dispose()
+    this.driving.dispose()
     this.renderer.dispose()
   }
 }
