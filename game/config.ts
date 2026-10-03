@@ -5,9 +5,12 @@
  *   - lat: spawn latitude (default: Zaisa, Irun center)
  *   - lon: spawn longitude
  *   - vehicle: vehicle preset ID (default: 'car')
- *   - tiles: tile base URL (default: same origin /z/)
+ *   - tiles: tile base URL, WITHOUT the trailing /z (default: https://atlas.chained.world/euskadi);
+ *            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
  *   - static: use static tile mode ('true' or '1')
  */
+
+import { DEFAULT_TILES_BASE_URL, normalizeTilesBase } from '../src/render/planet/static-tiles.js'
 
 export interface GameConfig {
   spawn: {
@@ -38,8 +41,12 @@ export function parseGameConfig(search: string = location.search): GameConfig {
 
   const vehicle = params.get('vehicle') ?? 'car'
 
+  // `?tiles=/` means "this origin" (manifests at /z/15/x/y/manifest.json); a missing or blank value means the default host.
   const tilesParam = params.get('tiles')
-  const tilesBaseUrl = tilesParam ?? '/z'
+  const tilesBaseUrl =
+    tilesParam === null || tilesParam.trim() === ''
+      ? DEFAULT_TILES_BASE_URL
+      : normalizeTilesBase(tilesParam)
 
   const staticParam = params.get('static')
   const staticTiles = staticParam !== 'false' && staticParam !== '0'
@@ -66,8 +73,8 @@ export function configToUrl(config: GameConfig): string {
   if (config.vehicle !== 'car') {
     params.set('vehicle', config.vehicle)
   }
-  if (config.tilesBaseUrl !== '/z') {
-    params.set('tiles', config.tilesBaseUrl)
+  if (config.tilesBaseUrl !== DEFAULT_TILES_BASE_URL) {
+    params.set('tiles', config.tilesBaseUrl || '/')
   }
   if (!config.staticTiles) {
     params.set('static', 'false')

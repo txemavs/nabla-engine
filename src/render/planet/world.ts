@@ -596,23 +596,30 @@ export class PlanetWorld {
   }
 
   private async discoverStatic(batch: MapTile[]) {
-    const fetches = batch.map(async (tile) => {
-      try {
-        const manifest = await fetchTileManifest(tile, {
-          baseUrl: this.base,
-          signal: this.controller.signal,
-          cors: true,
-        })
-        if (manifest) {
-          this.ready.set(mapTileId(tile), manifest)
+    let missing = 0
+    const failures: Error[] = []
+    await Promise.all(
+      batch.map(async (tile) => {
+        try {
+          const manifest = await fetchTileManifest(tile, {
+            baseUrl: this.base,
+            signal: this.controller.signal,
+            cors: true,
+          })
+          if (manifest) this.ready.set(mapTileId(tile), manifest)
+          else missing++
+        } catch (error) {
+          if (this.controller.signal.aborted) return
+          failures.push(error instanceof Error ? error : new Error(String(error)))
         }
-      } catch {
-        // Individual tile failures are silently ignored in static mode
-      }
-    })
-    await Promise.all(fetches)
+      }),
+    )
     const loaded = batch.filter((t) => this.ready.has(mapTileId(t))).length
-    this.status = `Static tiles · ${loaded}/${batch.length} loaded · ${this.visible.length} visible`
+    let status = `Static tiles · ${loaded}/${batch.length} loaded · ${this.visible.length} visible`
+    if (missing) status += ` · ${missing} not published (404)`
+    // Show the real cause of the first failure (HTTP status, CORS/network, mixed content, invalid manifest), not just a count.
+    if (failures.length) status += ` · ${failures.length} failed: ${failures[0].message}`
+    this.status = status
     this.access = true
   }
   private pump() {

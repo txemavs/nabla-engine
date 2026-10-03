@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
+  DEFAULT_TILES_BASE_URL,
+  StaticTileError,
+  assertSecureTileBase,
+  fetchTileManifest,
   isManifestCurrent,
+  normalizeTilesBase,
   tileGlbUrl,
-  verifyGlbHash,
+  tileManifestUrl,
 } from '../../src/render/planet/static-tiles.js'
 import {
   PLANET_GEOMETRY_REVISION,
@@ -56,6 +61,7 @@ describe('static-tiles', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   describe('tile URL building', () => {
@@ -125,24 +131,141 @@ describe('static-tiles', () => {
     })
   })
 
-  describe('verifyGlbHash', () => {
-    it('verifies correct hash', async () => {
-      const data = new TextEncoder().encode('test data')
-      const hash = await crypto.subtle.digest('SHA-256', data)
-      const hashHex = Array.from(new Uint8Array(hash))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
-
-      const result = await verifyGlbHash(data.buffer, hashHex)
-      expect(result).toBe(true)
+  describe('tileManifestUrl and defaults', () => {
+    it('builds the Euskadi manifest URL from the default base', () => {
+      expect(DEFAULT_TILES_BASE_URL).toBe('https://atlas.chained.world/euskadi')
+      expect(tileManifestUrl(tile, DEFAULT_TILES_BASE_URL)).toBe(
+        'https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json',
+      )
     })
 
-    it('rejects incorrect hash', async () => {
-      const data = new TextEncoder().encode('test data')
-      const wrongHash = 'a'.repeat(64)
+    it('normalizes trailing slashes and whitespace', () => {
+      expect(normalizeTilesBase(' https://a.example/b// ')).toBe('https://a.example/b')
+      expect(tileManifestUrl(tile, '/')).toBe('/z/15/16224/11998/manifest.json')
+    })
+  })
 
-      const result = await verifyGlbHash(data.buffer, wrongHash)
-      expect(result).toBe(false)
+  describe('assertSecureTileBase', () => {
+    it('rejects an http: tile host from an https: page with an explicit message', () => {
+      expect(() => assertSecureTileBase('http://tiles.example.org/x', 'https:')).toThrow(/HTTPS/)
+    })
+
+    it('allows https hosts, localhost over http, relative bases and http pages', () => {
+      expect(() => assertSecureTileBase('https://tiles.example.org', 'https:')).not.toThrow()
+      expect(() => assertSecureTileBase('http://localhost:5174', 'https:')).not.toThrow()
+      expect(() => assertSecureTileBase('http://127.0.0.1:8080', 'https:')).not.toThrow()
+      expect(() => assertSecureTileBase('/z/15/1/2/manifest.json', 'https:')).not.toThrow()
+      expect(() => assertSecureTileBase('http://tiles.example.org', 'http:')).not.toThrow()
+    })
+  })
+
+  describe('fetchTileManifest', () => {
+    const opts = { baseUrl: DEFAULT_TILES_BASE_URL, pageProtocol: 'https:' }
+    const json = (body: unknown, init: ResponseInit = {}) =>
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+        ...init,
+      })
+    const failure = async (promise: Promise<unknown>): Promise<StaticTileError> => {
+      try {
+        await promise
+      } catch (error) {
+        expect(error).toBeInstanceOf(StaticTileError)
+        return error as StaticTileError
+      }
+      throw new Error('expected a StaticTileError')
+    }
+
+    it('requests the Euskadi manifest URL with GET and CORS', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(json(mockManifest))
+      vi.stubGlobal('fetch', fetchMock)
+
+      const manifest = await fetchTileManifest(tile, opts)
+
+      expect(manifest).toEqual(mockManifest)
+      const [url, init] = fetchMock.mock.calls[0]
+      expect(url).toBe('https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json')
+      expect(url).not.toContain('/z/z/')
+      expect(init).toMatchObject({ method: 'GET', mode: 'cors' })
+    })
+
+    it('returns undefined for 404 (not published)', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 404 })))
+      expect(await fetchTileManifest(tile, opts)).toBeUndefined()
+    })
+
+    it('reports HTTP 403 with the URL and the S3/CloudFront hint', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<Error/>', { status: 403 })))
+      const error = await failure(fetchTileManifest(tile, opts))
+      expect(error.kind).toBe('http')
+      expect(error.status).toBe(403)
+      expect(error.message).toContain('HTTP 403')
+      expect(error.message).toContain('not uploaded yet')
+      expect(error.message).toContain('/z/15/16224/11998/manifest.json')
+    })
+
+    it('reports HTTP 500 as a host error', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })))
+      const error = await failure(fetchTileManifest(tile, opts))
+      expect(error.status).toBe(500)
+      expect(error.message).toContain('tile host error')
+    })
+
+    it('reports network/CORS failures instead of hiding them', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+      const error = await failure(fetchTileManifest(tile, opts))
+      expect(error.kind).toBe('network')
+      expect(error.message).toContain('network or CORS error')
+      expect(error.message).toContain('Failed to fetch')
+    })
+
+    it('reports a timeout', async () => {
+      const timeout = new DOMException('The operation timed out.', 'TimeoutError')
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timeout))
+      const error = await failure(fetchTileManifest(tile, opts))
+      expect(error.kind).toBe('timeout')
+    })
+
+    it('rethrows the caller abort as is', async () => {
+      const controller = new AbortController()
+      controller.abort()
+      const abort = new DOMException('aborted', 'AbortError')
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(abort))
+      await expect(fetchTileManifest(tile, { ...opts, signal: controller.signal })).rejects.toBe(
+        abort,
+      )
+    })
+
+    it('reports a body that is not JSON', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            new Response('<html/>', { status: 200, headers: { 'content-type': 'text/html' } }),
+          ),
+      )
+      const error = await failure(fetchTileManifest(tile, opts))
+      expect(error.kind).toBe('invalid')
+      expect(error.message).toContain('not valid JSON (text/html)')
+    })
+
+    it('reports an invalid manifest with the validation cause', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ ...mockManifest, format: 'x' })))
+      const error = await failure(fetchTileManifest(tile, opts))
+      expect(error.kind).toBe('invalid')
+      expect(error.message).toContain('invalid manifest')
+    })
+
+    it('refuses an http: base from an https: page before any request', async () => {
+      const fetchMock = vi.fn()
+      vi.stubGlobal('fetch', fetchMock)
+      const error = await failure(
+        fetchTileManifest(tile, { baseUrl: 'http://tiles.example.org', pageProtocol: 'https:' }),
+      )
+      expect(error.kind).toBe('insecure')
+      expect(fetchMock).not.toHaveBeenCalled()
     })
   })
 })

@@ -103,9 +103,14 @@ export {
   fetchTileManifests,
   isManifestCurrent,
   tileGlbUrl,
-  verifyGlbHash,
+  tileManifestUrl,
+  normalizeTilesBase,
+  assertSecureTileBase,
+  StaticTileError,
+  DEFAULT_TILES_BASE_URL,
   type StaticTileProviderOptions,
   type StaticTileResult,
+  type StaticTileErrorKind,
 } from './render/planet/static-tiles.js'
 export { GeographicView } from './render/planet/sky.js'
 export { SeaWater } from './render/planet/water.js'

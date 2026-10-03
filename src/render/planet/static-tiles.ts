@@ -2,10 +2,17 @@
  * Static tile provider: fetches tiles via GET requests to pre-built manifest.json files.
  * Suitable for deployment on static hosts (S3, nginx) where POST /prepare/tiles is unavailable.
  *
- * Directory structure expected:
+ * Directory structure expected (baseUrl does NOT include the trailing `/z`; `mapTilePath` adds `z/{zoom}/{x}/{y}`):
  *   {baseUrl}/z/{zoom}/{x}/{y}/manifest.json
  *   {baseUrl}/z/{zoom}/{x}/{y}/{terrain-file}.glb
  *   {baseUrl}/z/{zoom}/{x}/{y}/{buildings-file}.glb
+ *
+ * Example: baseUrl `https://atlas.chained.world/euskadi` gives
+ *   https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json
+ *
+ * GLB integrity (size and SHA-256 from the manifest) is verified by the planet worker when it loads the files.
+ * The page must be served over HTTPS (or localhost): the worker's `crypto.subtle` and Cache API need a secure
+ * context, and an HTTPS page cannot load tiles from an `http:` host (mixed content).
  */
 
 import {
@@ -15,10 +22,15 @@ import {
 } from '../../planet/contract.js'
 import { mapTileId, mapTilePath, type MapTile } from '../../scene/mercator.js'
 
+/** The default tile host: the published Euskadi tile set. */
+export const DEFAULT_TILES_BASE_URL = 'https://atlas.chained.world/euskadi'
+
 export interface StaticTileProviderOptions {
   baseUrl: string
   signal?: AbortSignal
   cors?: boolean
+  /** Protocol of the embedding page, for the mixed-content check. Defaults to `location.protocol`. */
+  pageProtocol?: string
 }
 
 export interface StaticTileResult {
@@ -26,45 +38,128 @@ export interface StaticTileResult {
   available: boolean
 }
 
+export type StaticTileErrorKind = 'http' | 'network' | 'timeout' | 'invalid' | 'insecure'
+
+/** A manifest request that failed for a reason worth showing to the user (never a plain "not found"). */
+export class StaticTileError extends Error {
+  constructor(
+    message: string,
+    readonly kind: StaticTileErrorKind,
+    readonly url: string,
+    readonly status?: number,
+  ) {
+    super(message)
+    this.name = 'StaticTileError'
+  }
+}
+
+/** Trim the base URL and drop trailing slashes. */
+export function normalizeTilesBase(baseUrl: string): string {
+  return baseUrl.trim().replace(/\/+$/, '')
+}
+
+export function tileManifestUrl(tile: MapTile, baseUrl: string): string {
+  return `${normalizeTilesBase(baseUrl)}/${mapTilePath(tile)}/manifest.json`
+}
+
+const LOCAL_HOST = /^(localhost|127\.\d+\.\d+\.\d+|\[::1\])$/
+
+/**
+ * An `https:` page cannot fetch from an `http:` tile host (browsers block mixed content, and the failure shows up as a
+ * bare network error). Local development hosts are allowed. Relative URLs inherit the page protocol.
+ */
+export function assertSecureTileBase(baseUrl: string, pageProtocol: string | undefined): void {
+  if (pageProtocol !== 'https:') return
+  let parsed: URL
+  try {
+    parsed = new URL(baseUrl)
+  } catch {
+    return
+  }
+  if (parsed.protocol === 'http:' && !LOCAL_HOST.test(parsed.hostname))
+    throw new StaticTileError(
+      `Tile host ${parsed.origin} uses http: but this page is https:; the browser blocks it. Serve the tiles over HTTPS.`,
+      'insecure',
+      baseUrl,
+    )
+}
+
+function describeHttp(status: number): string {
+  if (status === 403)
+    return 'HTTP 403 (access denied; S3/CloudFront also answer 403 for a tile that is not uploaded yet)'
+  if (status >= 500) return `HTTP ${status} (tile host error)`
+  return `HTTP ${status}`
+}
+
 /**
  * Fetch manifest.json for a single tile via GET request.
- * Returns undefined if the tile is not available (404).
+ * Returns undefined if the tile is not published (404). Every other failure throws a StaticTileError (or the caller's
+ * AbortError) whose message names the URL and the real cause: HTTP status, network/CORS, timeout, or an invalid manifest.
  */
 export async function fetchTileManifest(
   tile: MapTile,
   options: StaticTileProviderOptions,
 ): Promise<PlanetManifest | undefined> {
   const { baseUrl, signal, cors = true } = options
-  const path = mapTilePath(tile)
-  const url = `${baseUrl.replace(/\/$/, '')}/${path}/manifest.json`
+  const url = tileManifestUrl(tile, baseUrl)
+  assertSecureTileBase(
+    url,
+    options.pageProtocol ?? (typeof location !== 'undefined' ? location.protocol : undefined),
+  )
 
+  const timeout = AbortSignal.timeout(15000)
   const fetchOptions: RequestInit = {
     method: 'GET',
-    signal: signal
-      ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
-      : AbortSignal.timeout(15000),
+    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
   }
   if (cors) {
     fetchOptions.mode = 'cors'
   }
 
+  let response: Response
   try {
-    const response = await fetch(url, fetchOptions)
-    if (!response.ok) {
-      if (response.status === 404) return undefined
-      throw new Error(`HTTP ${response.status}`)
-    }
-    const data = await response.json()
+    response = await fetch(url, fetchOptions)
+  } catch (error) {
+    if (signal?.aborted) throw error
+    if (timeout.aborted || (error instanceof Error && error.name === 'TimeoutError'))
+      throw new StaticTileError(`Manifest ${url}: timed out after 15 s`, 'timeout', url)
+    throw new StaticTileError(
+      `Manifest ${url}: network or CORS error (${error instanceof Error ? error.message : String(error)}). ` +
+        'Check that the host is reachable over HTTPS and sends Access-Control-Allow-Origin for this page.',
+      'network',
+      url,
+    )
+  }
+  if (response.status === 404) return undefined
+  if (!response.ok)
+    throw new StaticTileError(
+      `Manifest ${url}: ${describeHttp(response.status)}`,
+      'http',
+      url,
+      response.status,
+    )
+  let data: unknown
+  try {
+    data = await response.json()
+  } catch {
+    const type = response.headers.get('content-type') ?? 'unknown content type'
+    throw new StaticTileError(`Manifest ${url}: not valid JSON (${type})`, 'invalid', url)
+  }
+  try {
     return validatePlanetManifest(data, tile)
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') throw error
-    return undefined
+    throw new StaticTileError(
+      `Manifest ${url}: invalid manifest (${error instanceof Error ? error.message : String(error)})`,
+      'invalid',
+      url,
+    )
   }
 }
 
 /**
  * Batch fetch manifests for multiple tiles.
- * Returns a map of tile IDs to manifests (only includes available tiles).
+ * Returns a map of tile IDs to manifests (only includes available tiles). A tile that fails for any reason other than
+ * 404 rejects the whole call with that tile's error; use `fetchTileManifest` per tile to keep going.
  */
 export async function fetchTileManifests(
   tiles: MapTile[],
@@ -98,15 +193,5 @@ export function tileGlbUrl(
   manifest: PlanetManifest,
 ): string {
   const path = mapTilePath(tile)
-  return `${baseUrl.replace(/\/$/, '')}/${path}/${manifest.files[layer].path}`
-}
-
-/**
- * Verify a fetched GLB's SHA256 hash matches the manifest.
- */
-export async function verifyGlbHash(bytes: ArrayBuffer, expectedHash: string): Promise<boolean> {
-  const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
-  return hashHex === expectedHash
+  return `${normalizeTilesBase(baseUrl)}/${path}/${manifest.files[layer].path}`
 }

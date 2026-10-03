@@ -20,19 +20,20 @@ tiles from pre-built manifest.json files via GET requests.
 
 Configure the game spawn location and vehicle:
 
-| Parameter | Default | Description                        |
-| --------- | ------- | ---------------------------------- |
-| `lat`     | 43.3372 | Spawn latitude (Zaisa, Irun)       |
-| `lon`     | -1.7523 | Spawn longitude                    |
-| `alt`     | 50      | Spawn altitude in meters           |
-| `vehicle` | `car`   | Vehicle preset ID                  |
-| `tiles`   | `/z`    | Base URL for tile manifests        |
-| `static`  | `true`  | Use static tile mode (GET vs POST) |
+| Parameter | Default                               | Description                                                  |
+| --------- | ------------------------------------- | ------------------------------------------------------------ |
+| `lat`     | 43.3372                               | Spawn latitude (Zaisa, Irun)                                 |
+| `lon`     | -1.7523                               | Spawn longitude                                              |
+| `alt`     | 50                                    | Spawn altitude in meters                                     |
+| `vehicle` | `car`                                 | Vehicle preset ID                                            |
+| `tiles`   | `https://atlas.chained.world/euskadi` | Tile base URL, without the trailing `/z` (`/` = this origin) |
+| `static`  | `true`                                | Use static tile mode (GET vs POST)                           |
 
 **Example:**
 
 ```
 ?lat=40.4168&lon=-3.7038&vehicle=police
+?tiles=https://tiles.example.org/my-set
 ```
 
 ## Static Tile Mode
@@ -45,8 +46,28 @@ When `static=true` (default), the game fetches tile manifests via GET requests:
 {tilesBaseUrl}/z/{zoom}/{x}/{y}/{buildings}.glb
 ```
 
-This is compatible with S3, CloudFront, nginx, or any static file server.
-The GLB files include SHA256 verification from the manifest.
+`tilesBaseUrl` must **not** end in `/z`: the engine adds `z/{zoom}/{x}/{y}` itself (a base of `/z` would
+request `/z/z/15/...`). The default base is the Euskadi tile set, `https://atlas.chained.world/euskadi`, so the
+Z15 tile 16224/11998 is read from
+`https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json`. Use `?tiles=` to point at another host.
+
+This is compatible with S3, CloudFront, nginx, or any static file server. The planet worker checks every GLB
+against the size and SHA-256 in its manifest and rejects a mismatch.
+
+### HTTPS requirement
+
+Serve the game page over **HTTPS** (`http://localhost` is fine for development):
+
+- the worker uses `crypto.subtle` (GLB checksum) and the Cache API, which browsers only provide in a secure
+  context;
+- an `https:` page cannot load tiles from an `http:` host (mixed content); the game reports this explicitly
+  instead of a bare network error.
+
+### What the status line tells you
+
+The loading status shows how many manifests loaded, how many are not published (HTTP 404) and the real cause of the
+first failure, for example `HTTP 403 (access denied; S3/CloudFront also answer 403 for a tile that is not uploaded
+yet)`, `network or CORS error`, `timed out after 15 s`, `not valid JSON` or `invalid manifest`.
 
 ### CORS Configuration
 
@@ -54,9 +75,12 @@ For cross-origin tile hosting, configure your CDN/bucket with appropriate CORS
 headers:
 
 ```
-Access-Control-Allow-Origin: *
+Access-Control-Allow-Origin: *            (or the exact origin of the game page)
 Access-Control-Allow-Methods: GET
 ```
+
+The header must be present on manifests and GLB files, including error responses if you want the real status to
+be visible (without it the browser reports only a CORS error).
 
 ## Loading Screen
 
@@ -114,7 +138,7 @@ const world = new PlanetWorld(
   origin,
   onChange,
   setupMaterial,
-  '/z', // tilesBaseUrl
+  'https://atlas.chained.world/euskadi', // tilesBaseUrl (no trailing /z)
   '/prepare', // apiUrl (unused in static mode)
   'static', // discoveryMode
 )
