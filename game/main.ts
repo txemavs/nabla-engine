@@ -61,6 +61,9 @@ class Game {
   private yaw = 0
   private safeSpawnPosition: Vec3Tuple = [0, 0, 0]
   private noTerrainWarning = false
+  private stableFrameCount = 0
+  private fallCount = 0
+  private fallbackRemoved = false
 
   constructor() {
     this.config = parseGameConfig()
@@ -491,29 +494,57 @@ class Game {
 
     const ground = this.world.groundHeight(position)
 
-    // Safety check: if vehicle falls below ground, reset it
-    // This catches cases where terrain collision isn't ready yet
-    if (position[1] < -2) {
-      console.warn(`Vehicle fell below ground (Y=${position[1].toFixed(2)}), recovering...`)
-      if (!this.sim.hasFallbackGround()) {
-        this.sim.setFallbackGround(0)
+    // Safety check: if vehicle falls significantly below the safe spawn height, teleport back
+    // This catches cases where terrain collision isn't ready yet or there's a hole
+    const safeY = this.safeSpawnPosition[1]
+    if (position[1] < safeY - 5) {
+      console.warn(
+        `Vehicle fell below safe height (Y=${position[1].toFixed(2)}, safe=${safeY.toFixed(2)}), teleporting to safe spawn...`,
+      )
+      this.fallCount++
+      // If we've fallen multiple times after removing fallback, restore it permanently
+      if (this.fallbackRemoved && this.fallCount >= 2) {
+        console.warn('Terrain collision not working, restoring permanent fallback ground')
+        this.fallbackRemoved = false
       }
-      // Use recoverVehicle to reset position and velocity
-      this.sim.recoverVehicle()
+      if (!this.sim.hasFallbackGround()) {
+        this.sim.setFallbackGround(safeY - 0.62)
+      }
+      this.sim.teleportVehicle(this.safeSpawnPosition, 0)
     }
 
     // Only remove fallback ground when:
     // 1. Terrain collision physics is actually ready (preparePlanetCollisions returns true)
     // 2. Vehicle is above ground (not falling)
     // 3. Vehicle has positive Y position (resting on something)
+    // 4. Vehicle has been stable for multiple frames (to avoid race with physics body activation)
+    // 5. We have actual terrain data loaded (not just empty collision set)
     const collisionReady = this.sim.preparePlanetCollisions()
+    const hasTerrainLoaded = this.loading.hasAnyLoaded()
     const vehicleStable = position[1] > 0 && position[1] < 50
-    if (ground !== undefined && collisionReady && vehicleStable) {
-      this.catchFloor?.hide()
-      if (this.sim.hasFallbackGround()) {
-        console.log('Terrain collision ready, removing fallback ground')
-        this.sim.clearFallbackGround()
+
+    // Only consider removing fallback ground if terrain is loaded AND collision is ready
+    // AND we haven't had repeated falls (indicating terrain collision isn't working)
+    if (
+      ground !== undefined &&
+      collisionReady &&
+      vehicleStable &&
+      hasTerrainLoaded &&
+      this.fallCount < 2
+    ) {
+      this.stableFrameCount++
+      // Require 180 frames (~3 seconds) of stability before removing fallback
+      if (this.stableFrameCount > 180 && !this.fallbackRemoved) {
+        this.catchFloor?.hide()
+        if (this.sim.hasFallbackGround()) {
+          console.log('Terrain collision stable for 3s, removing fallback ground')
+          this.sim.clearFallbackGround()
+          this.fallbackRemoved = true
+          this.fallCount = 0 // Reset fall count - give terrain a fair chance
+        }
       }
+    } else {
+      this.stableFrameCount = 0
     }
 
     // Debug logging every second
