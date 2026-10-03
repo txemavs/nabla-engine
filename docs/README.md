@@ -33,6 +33,7 @@ preserves the edit/play contract and a single physics owner.
 - [Module map and compatibility](architecture/module-map.md)
 - [Game library mode](game-library.md): Run the engine without Studio, with static tiles
 - [Create a vehicle](creating-a-vehicle.md)
+- [Truck ideas](ideas/trucks.md): driving, slow traffic, parked trucks and traffic AI (idea document)
 - [Create a monitor](creating-a-monitor.md)
 - [Migration history](architecture/vehicle-modularity.md)
 
