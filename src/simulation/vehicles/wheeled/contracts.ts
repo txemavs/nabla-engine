@@ -1,11 +1,16 @@
+import type { DrivetrainProfile } from '../drivetrain.js'
+
 /** Metres, Y-up, front = -Z; front hubs 0/1, rear hubs 2/3. Plain configuration. */
 export type WheelVector = [number, number, number]
+
 export interface PowertrainDefinition {
   powerCv: number
   torqueNm: number
   ratios: number[]
   finalDrive: number
   grip: number
+  /** Engine profile: 'gasoline' (default) for cars, 'diesel' for trucks. */
+  profile?: DrivetrainProfile
 }
 /** Per-hub configuration for N-wheel vehicles (trucks, trailers). */
 export interface HubDefinition {

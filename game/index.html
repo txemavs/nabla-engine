@@ -110,6 +110,16 @@
         font-size: 2rem;
         font-weight: 600;
       }
+      #trailer-display {
+        font-size: 0.9rem;
+        color: #aaa;
+      }
+      #trailer-display.coupled {
+        color: #4a9eff;
+      }
+      #trailer-display.available {
+        color: #7c3aed;
+      }
       #controls-hint {
         position: fixed;
         bottom: 20px;
@@ -184,12 +194,13 @@
     <div id="game-hud" class="hidden">
       <div id="speed-display">0 km/h</div>
       <div id="gear-display">N</div>
+      <div id="trailer-display"></div>
       <div id="location-display"></div>
     </div>
 
     <div id="controls-hint">
       <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Drive · <kbd>Space</kbd> Brake ·
-      <kbd>C</kbd> Camera · <kbd>R</kbd> Reset
+      <kbd>C</kbd> Camera · <kbd>R</kbd> Reset · <kbd>H</kbd> Remolque
     </div>
 
     <div id="error-message">

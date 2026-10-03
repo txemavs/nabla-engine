@@ -54,6 +54,8 @@ export const vehicleField = z
         ratios: z.array(finite.min(0.2).max(15)).min(1).max(16),
         finalDrive: finite.min(1).max(8),
         grip: finite.min(0.5).max(8),
+        /** Engine profile: 'gasoline' (default) for cars, 'diesel' for trucks. */
+        profile: z.enum(['gasoline', 'diesel']).optional(),
       })
       .strict()
       .optional(),

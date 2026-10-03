@@ -152,6 +152,7 @@ class Game {
       this.keys.add(e.code)
       if (e.code === 'KeyC') this.cycleCamera()
       if (e.code === 'KeyR') this.resetVehicle()
+      if (e.code === 'KeyH') this.toggleTrailer()
     })
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code)
@@ -556,6 +557,15 @@ class Game {
     this.sim.recoverVehicle()
   }
 
+  private toggleTrailer(): void {
+    if (!this.sim) return
+    const player = this.sim.player
+    if (!player.vehicleId) return
+
+    const result = this.sim.toggleTrailerCoupling()
+    console.log('Trailer:', result)
+  }
+
   private render(): void {
     const worldCamera = this.camera.position.clone()
 
@@ -577,6 +587,7 @@ class Game {
   private updateHud(player: { speed: number; vehicleId: string | null }): void {
     const speedDisplay = document.getElementById('speed-display')
     const gearDisplay = document.getElementById('gear-display')
+    const trailerDisplay = document.getElementById('trailer-display')
     const locationDisplay = document.getElementById('location-display')
 
     if (speedDisplay) {
@@ -586,6 +597,25 @@ class Game {
     if (gearDisplay && player.vehicleId && this.sim) {
       const info = this.sim.vehicleInfo(player.vehicleId)
       gearDisplay.textContent = info.gear < 0 ? 'R' : `D${info.gear}`
+    }
+
+    if (trailerDisplay && player.vehicleId && this.sim) {
+      const info = this.sim.vehicleInfo(player.vehicleId)
+      trailerDisplay.classList.remove('coupled', 'available')
+      if (info.coupledTrailerId) {
+        trailerDisplay.textContent = 'Remolque: Acoplado'
+        trailerDisplay.classList.add('coupled')
+      } else if (info.trailerCouplingCandidate) {
+        trailerDisplay.textContent = 'Remolque: Disponible (H)'
+        trailerDisplay.classList.add('available')
+      } else if (info.hasFifthWheel) {
+        trailerDisplay.textContent = 'Remolque: Sin acoplar'
+      } else if (info.isActingAsTrailer) {
+        trailerDisplay.textContent = 'Remolque: Enganchado a tractor'
+        trailerDisplay.classList.add('coupled')
+      } else {
+        trailerDisplay.textContent = ''
+      }
     }
 
     if (locationDisplay && this.sim) {

@@ -6,7 +6,12 @@ import {
   idleWheeledInput,
   wheelContacts,
   wheeledTelemetry,
+  createDrivetrain,
+  stepDrivetrain,
+  engineBrakingForce,
+  getDrivetrainTuning,
   type WheeledDefinition,
+  type DrivetrainProfile,
 } from '../../src/simulation/vehicles/wheeled/index.js'
 import {
   createTrailer,
@@ -16,7 +21,7 @@ import {
   type TrailerDefinition,
 } from '../../src/simulation/vehicles/trailer/index.js'
 
-const truckDefinition = (): WheeledDefinition => ({
+const truckDefinition = (profile?: DrivetrainProfile): WheeledDefinition => ({
   hubConfigs: [
     {
       position: [-1.0751686, -0.6225349, -1.3792322],
@@ -55,6 +60,7 @@ const truckDefinition = (): WheeledDefinition => ({
     ratios: [12.0, 8.5, 6.0, 4.2, 3.0, 2.1, 1.5, 1.0, 0.75],
     finalDrive: 3.5,
     grip: 5.0,
+    profile,
   },
 })
 
@@ -340,5 +346,133 @@ describe('trailer coupling', () => {
       for (const body of [...world.bodies]) world.removeBody(body)
       world.raw.free()
     }
+  })
+})
+
+describe('diesel drivetrain', () => {
+  it('has lower RPM range than gasoline', () => {
+    const gasolineTuning = getDrivetrainTuning('gasoline')
+    const dieselTuning = getDrivetrainTuning('diesel')
+
+    expect(dieselTuning.idleRpm).toBeLessThan(gasolineTuning.idleRpm)
+    expect(dieselTuning.redlineRpm).toBeLessThan(gasolineTuning.redlineRpm)
+    expect(dieselTuning.upshiftRpm).toBeLessThan(gasolineTuning.upshiftRpm)
+    expect(dieselTuning.downshiftRpm).toBeLessThan(gasolineTuning.downshiftRpm)
+  })
+
+  it('has stronger engine braking than gasoline', () => {
+    const gasolineTuning = getDrivetrainTuning('gasoline')
+    const dieselTuning = getDrivetrainTuning('diesel')
+
+    expect(dieselTuning.brakingTorqueBase).toBeGreaterThan(gasolineTuning.brakingTorqueBase)
+    expect(dieselTuning.brakingTorquePerRpm).toBeGreaterThan(gasolineTuning.brakingTorquePerRpm)
+  })
+
+  it('creates drivetrain state with profile-specific idle RPM', () => {
+    const gasolineState = createDrivetrain('gasoline')
+    const dieselState = createDrivetrain('diesel')
+
+    expect(gasolineState.rpm).toBe(900)
+    expect(dieselState.rpm).toBe(550)
+  })
+
+  it('shifts at lower RPM thresholds for diesel', () => {
+    const dieselSpec = {
+      powerCv: 420,
+      torqueNm: 2100,
+      ratios: [12.0, 8.5, 6.0, 4.2, 3.0],
+      finalDrive: 3.5,
+      grip: 5.0,
+      profile: 'diesel' as const,
+    }
+
+    const state = createDrivetrain('diesel')
+    const radius = 0.57
+    let speed = 0
+
+    for (let i = 0; i < 600; i++) {
+      stepDrivetrain(state, dieselSpec, radius, speed, 1.0, false, 1 / 60)
+      speed += (state.force / 7500) * (1 / 60)
+      speed = Math.max(0, speed)
+    }
+
+    expect(state.gear).toBeGreaterThan(1)
+    expect(state.rpm).toBeLessThan(2200)
+  })
+
+  it('applies stronger engine braking force for diesel', () => {
+    const gasolineSpec = {
+      powerCv: 420,
+      torqueNm: 2100,
+      ratios: [3.5, 2.0, 1.0],
+      finalDrive: 3.5,
+      grip: 5.0,
+      profile: 'gasoline' as const,
+    }
+    const dieselSpec = { ...gasolineSpec, profile: 'diesel' as const }
+
+    const gasolineState = createDrivetrain('gasoline')
+    gasolineState.gear = 2
+    gasolineState.rpm = 3000
+
+    const dieselState = createDrivetrain('diesel')
+    dieselState.gear = 2
+    dieselState.rpm = 1500
+
+    const gasolineBraking = Math.abs(engineBrakingForce(gasolineState, gasolineSpec, 0.57, 10))
+    const dieselBraking = Math.abs(engineBrakingForce(dieselState, dieselSpec, 0.57, 10))
+
+    expect(dieselBraking).toBeGreaterThan(gasolineBraking)
+  })
+
+  it('accelerates truck with diesel profile', () => {
+    const world = new World()
+    const floor = new Body({
+      shape: new Box(new Vec3(500, 0.5, 500)),
+      position: new Vec3(0, -0.5, 0),
+    })
+    world.addBody(floor)
+
+    const truck = createWheeledVehicle(tractorChassis(), truckDefinition('diesel'))
+    truck.raycast.addToWorld(world)
+
+    try {
+      for (let i = 0; i < 60; i++) {
+        stepWheeledVehicle(truck, idleWheeledInput(), 1 / 60, false)
+        world.step(1 / 60)
+      }
+
+      for (let i = 0; i < 300; i++) {
+        stepWheeledVehicle(truck, { ...idleWheeledInput(), throttle: 1 }, 1 / 60, true)
+        world.step(1 / 60)
+        for (let w = 0; w < 4; w++) truck.raycast.updateWheelTransform(w)
+      }
+
+      const telemetry = wheeledTelemetry(truck, { ...idleWheeledInput(), throttle: 1 }, true)
+      expect(telemetry.speedMps).toBeGreaterThan(2)
+      expect(telemetry.rpm).toBeLessThan(2200)
+      expect(telemetry.gear).toBeGreaterThan(1)
+    } finally {
+      truck.raycast.removeFromWorld(world)
+      for (const body of [...world.bodies]) world.removeBody(body)
+      world.raw.free()
+    }
+  })
+
+  it('does not allow burnout for diesel vehicles', () => {
+    const dieselSpec = {
+      powerCv: 420,
+      torqueNm: 2100,
+      ratios: [12.0, 8.5],
+      finalDrive: 3.5,
+      grip: 5.0,
+      profile: 'diesel' as const,
+    }
+
+    const state = createDrivetrain('diesel')
+    stepDrivetrain(state, dieselSpec, 0.57, 0, 1.0, true, 1 / 60)
+
+    expect(state.burnout).toBe(false)
+    expect(state.launchSlip).toBe(0)
   })
 })
