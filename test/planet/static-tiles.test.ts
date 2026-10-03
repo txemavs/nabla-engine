@@ -2,9 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   DEFAULT_TILES_BASE_URL,
   StaticTileError,
+  TileLoadTracker,
   assertSecureTileBase,
   fetchTileManifest,
+  fetchTileManifestsRobust,
   isManifestCurrent,
+  logTileLoadSummary,
   normalizeTilesBase,
   tileGlbUrl,
   tileManifestUrl,
@@ -237,7 +240,7 @@ describe('static-tiles', () => {
       )
     })
 
-    it('reports a body that is not JSON', async () => {
+    it('returns undefined for SPA fallback (HTML 200) instead of throwing', async () => {
       vi.stubGlobal(
         'fetch',
         vi
@@ -246,9 +249,35 @@ describe('static-tiles', () => {
             new Response('<html/>', { status: 200, headers: { 'content-type': 'text/html' } }),
           ),
       )
+      const manifest = await fetchTileManifest(tile, opts)
+      expect(manifest).toBeUndefined()
+    })
+
+    it('returns undefined for HTML response with charset', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response('<!DOCTYPE html>', {
+            status: 200,
+            headers: { 'content-type': 'text/html; charset=utf-8' },
+          }),
+        ),
+      )
+      expect(await fetchTileManifest(tile, opts)).toBeUndefined()
+    })
+
+    it('reports non-HTML invalid JSON as an error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            new Response('not json', { status: 200, headers: { 'content-type': 'text/plain' } }),
+          ),
+      )
       const error = await failure(fetchTileManifest(tile, opts))
       expect(error.kind).toBe('invalid')
-      expect(error.message).toContain('not valid JSON (text/html)')
+      expect(error.message).toContain('not valid JSON')
     })
 
     it('reports an invalid manifest with the validation cause', async () => {
@@ -266,6 +295,321 @@ describe('static-tiles', () => {
       )
       expect(error.kind).toBe('insecure')
       expect(fetchMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('TileLoadTracker', () => {
+    it('allows initial requests for unknown tiles', () => {
+      const tracker = new TileLoadTracker()
+      expect(tracker.shouldRequest('tile-1')).toBe(true)
+      expect(tracker.getState('tile-1')).toBeUndefined()
+    })
+
+    it('blocks requests for absent tiles', () => {
+      const tracker = new TileLoadTracker()
+      tracker.markAbsent('tile-1')
+      expect(tracker.shouldRequest('tile-1')).toBe(false)
+      expect(tracker.getState('tile-1')).toBe('absent')
+      expect(tracker.getAbsent()).toContain('tile-1')
+    })
+
+    it('blocks requests for failed tiles', () => {
+      const tracker = new TileLoadTracker()
+      tracker.markFailed('tile-1', 'network error')
+      expect(tracker.shouldRequest('tile-1')).toBe(false)
+      expect(tracker.getState('tile-1')).toBe('failed')
+      expect(tracker.getFailed().get('tile-1')).toBe('network error')
+    })
+
+    it('allows retries up to maxRetries', () => {
+      const tracker = new TileLoadTracker(3, 10)
+      expect(tracker.recordRetry('tile-1')).toBe(true)
+      expect(tracker.recordRetry('tile-1')).toBe(true)
+      expect(tracker.recordRetry('tile-1')).toBe(false)
+      expect(tracker.getState('tile-1')).toBe('pending')
+    })
+
+    it('respects backoff delay before allowing retry', async () => {
+      const tracker = new TileLoadTracker(3, 50)
+      tracker.recordRetry('tile-1')
+      expect(tracker.shouldRequest('tile-1')).toBe(false)
+      await new Promise((r) => setTimeout(r, 120))
+      expect(tracker.shouldRequest('tile-1')).toBe(true)
+    })
+
+    it('clears tracking for specific tile', () => {
+      const tracker = new TileLoadTracker()
+      tracker.markAbsent('tile-1')
+      tracker.markFailed('tile-2', 'error')
+      tracker.clear('tile-1')
+      expect(tracker.shouldRequest('tile-1')).toBe(true)
+      expect(tracker.shouldRequest('tile-2')).toBe(false)
+    })
+
+    it('clears all tracking', () => {
+      const tracker = new TileLoadTracker()
+      tracker.markAbsent('tile-1')
+      tracker.markFailed('tile-2', 'error')
+      tracker.clear()
+      expect(tracker.shouldRequest('tile-1')).toBe(true)
+      expect(tracker.shouldRequest('tile-2')).toBe(true)
+    })
+  })
+
+  describe('fetchTileManifestsRobust', () => {
+    const opts = { baseUrl: DEFAULT_TILES_BASE_URL, pageProtocol: 'https:' }
+
+    const createTile = (x: number): MapTile => ({ z: 15, x, y: 11998 })
+    const createManifestFor = (t: MapTile): PlanetManifest => {
+      const bounds = mapTileBounds(t)
+      const anchor = mapTileSample(t, 1, 1, 2)
+      return {
+        format: 'nabla-planet-tile-v1',
+        generator: 'native-xyz-v2',
+        geometryRevision: PLANET_GEOMETRY_REVISION,
+        id: mapTileId(t),
+        tile: t,
+        anchor,
+        bounds,
+        files: {
+          terrain: {
+            path: `terra-15-${t.x}-${t.y}-202609151200.glb`,
+            download: `earth-WebMercatorQuad-z15-x${t.x}-y${t.y}-terrain.glb`,
+            bytes: 2456789,
+            sha256: 'a'.repeat(64),
+          },
+          'buildings-osm': {
+            path: `build-15-${t.x}-${t.y}-202609151200.glb`,
+            download: `earth-WebMercatorQuad-z15-x${t.x}-y${t.y}-buildings-osm.glb`,
+            bytes: 1234567,
+            sha256: 'b'.repeat(64),
+          },
+        },
+      }
+    }
+
+    it('fetches multiple tiles independently', async () => {
+      const tile1 = createTile(16224)
+      const tile2 = createTile(16225)
+      const manifest1 = createManifestFor(tile1)
+      const manifest2 = createManifestFor(tile2)
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation((url: string) => {
+          if (url.includes('/16224/')) {
+            return Promise.resolve(
+              new Response(JSON.stringify(manifest1), {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+              }),
+            )
+          }
+          if (url.includes('/16225/')) {
+            return Promise.resolve(
+              new Response(JSON.stringify(manifest2), {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+              }),
+            )
+          }
+          return Promise.resolve(new Response('', { status: 404 }))
+        }),
+      )
+
+      const tracker = new TileLoadTracker()
+      const result = await fetchTileManifestsRobust([tile1, tile2], opts, tracker)
+
+      expect(result.manifests.size).toBe(2)
+      expect(result.manifests.get(mapTileId(tile1))).toEqual(manifest1)
+      expect(result.manifests.get(mapTileId(tile2))).toEqual(manifest2)
+      expect(result.absent).toHaveLength(0)
+      expect(result.failed.size).toBe(0)
+    })
+
+    it('marks 404 tiles as absent without blocking others', async () => {
+      const tile1 = createTile(16224)
+      const tile2 = createTile(16225)
+      const manifest1 = createManifestFor(tile1)
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation((url: string) => {
+          if (url.includes('/16224/')) {
+            return Promise.resolve(
+              new Response(JSON.stringify(manifest1), {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+              }),
+            )
+          }
+          return Promise.resolve(new Response('', { status: 404 }))
+        }),
+      )
+
+      const tracker = new TileLoadTracker()
+      const result = await fetchTileManifestsRobust([tile1, tile2], opts, tracker)
+
+      expect(result.manifests.size).toBe(1)
+      expect(result.manifests.has(mapTileId(tile1))).toBe(true)
+      expect(result.absent).toContain(mapTileId(tile2))
+      expect(tracker.shouldRequest(mapTileId(tile2))).toBe(false)
+    })
+
+    it('treats SPA fallback (HTML 200) as absent', async () => {
+      const tile1 = createTile(16224)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response('<!DOCTYPE html><html></html>', {
+            status: 200,
+            headers: { 'content-type': 'text/html; charset=utf-8' },
+          }),
+        ),
+      )
+
+      const tracker = new TileLoadTracker()
+      const result = await fetchTileManifestsRobust([tile1], opts, tracker)
+
+      expect(result.manifests.size).toBe(0)
+      expect(result.absent).toContain(mapTileId(tile1))
+    })
+
+    it('treats 403 as absent (S3 missing key without CORS)', async () => {
+      const tile1 = createTile(16224)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(new Response('<Error>AccessDenied</Error>', { status: 403 })),
+      )
+
+      const tracker = new TileLoadTracker()
+      const result = await fetchTileManifestsRobust([tile1], opts, tracker)
+
+      expect(result.manifests.size).toBe(0)
+      expect(result.absent).toContain(mapTileId(tile1))
+    })
+
+    it('treats CORS/network error as absent (S3 403 without CORS headers)', async () => {
+      const tile1 = createTile(16224)
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+
+      const tracker = new TileLoadTracker()
+      const result = await fetchTileManifestsRobust([tile1], opts, tracker)
+
+      expect(result.manifests.size).toBe(0)
+      expect(result.absent).toContain(mapTileId(tile1))
+    })
+
+    it('retries timeout errors with backoff then fails', async () => {
+      const tile1 = createTile(16224)
+      const timeout = new DOMException('The operation timed out.', 'TimeoutError')
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timeout))
+
+      const tracker = new TileLoadTracker(2, 10)
+
+      const result1 = await fetchTileManifestsRobust([tile1], opts, tracker)
+      expect(result1.manifests.size).toBe(0)
+      expect(result1.newlyFailed).toHaveLength(0)
+      expect(tracker.getState(mapTileId(tile1))).toBe('pending')
+
+      await new Promise((r) => setTimeout(r, 30))
+      const result2 = await fetchTileManifestsRobust([tile1], opts, tracker)
+      expect(result2.newlyFailed).toContain(mapTileId(tile1))
+      expect(tracker.getState(mapTileId(tile1))).toBe('failed')
+    })
+
+    it('does not re-request absent tiles', async () => {
+      const tile1 = createTile(16224)
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 404 }))
+      vi.stubGlobal('fetch', fetchMock)
+
+      const tracker = new TileLoadTracker()
+      await fetchTileManifestsRobust([tile1], opts, tracker)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+
+      await fetchTileManifestsRobust([tile1], opts, tracker)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not re-request failed tiles', async () => {
+      const tile1 = createTile(16224)
+      const fetchMock = vi
+        .fn()
+        .mockRejectedValue(new DOMException('The operation timed out.', 'TimeoutError'))
+      vi.stubGlobal('fetch', fetchMock)
+
+      const tracker = new TileLoadTracker(1, 0)
+      await fetchTileManifestsRobust([tile1], opts, tracker)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(tracker.getState(mapTileId(tile1))).toBe('failed')
+
+      await fetchTileManifestsRobust([tile1], opts, tracker)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles mixed success, absent, and failure in one batch', async () => {
+      const tileSuccess = createTile(16224)
+      const tileAbsent = createTile(16225)
+      const tileFail = createTile(16226)
+      const manifestSuccess = createManifestFor(tileSuccess)
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation((url: string) => {
+          if (url.includes('/16224/')) {
+            return Promise.resolve(
+              new Response(JSON.stringify(manifestSuccess), {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+              }),
+            )
+          }
+          if (url.includes('/16225/')) {
+            return Promise.resolve(new Response('', { status: 404 }))
+          }
+          if (url.includes('/16226/')) {
+            return Promise.reject(new DOMException('The operation timed out.', 'TimeoutError'))
+          }
+          return Promise.resolve(new Response('', { status: 404 }))
+        }),
+      )
+
+      const tracker = new TileLoadTracker(1, 0)
+      const result = await fetchTileManifestsRobust(
+        [tileSuccess, tileAbsent, tileFail],
+        opts,
+        tracker,
+      )
+
+      expect(result.manifests.size).toBe(1)
+      expect(result.manifests.has(mapTileId(tileSuccess))).toBe(true)
+      expect(result.absent).toContain(mapTileId(tileAbsent))
+      expect(result.failed.has(mapTileId(tileFail))).toBe(true)
+      expect(result.newlyFailed).toContain(mapTileId(tileFail))
+    })
+  })
+
+  describe('logTileLoadSummary', () => {
+    it('logs nothing when all tiles loaded successfully', () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      logTileLoadSummary(5, [], new Map())
+      expect(logSpy).not.toHaveBeenCalled()
+      logSpy.mockRestore()
+    })
+
+    it('logs summary with absent tiles', () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      logTileLoadSummary(3, ['tile-1', 'tile-2'], new Map())
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('3 loaded'))
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('2 absent'))
+      logSpy.mockRestore()
+    })
+
+    it('logs summary with failed tiles', () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      logTileLoadSummary(3, [], new Map([['tile-1', 'timeout']]))
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('1 failed'))
+      logSpy.mockRestore()
     })
   })
 })

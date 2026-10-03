@@ -1,5 +1,7 @@
 /**
  * Loading screen controller for the 3x3 initial tile grid.
+ * Tracks both loaded and absent tiles so the game can start when all tiles
+ * are either loaded or confirmed absent.
  */
 
 import { mapTileAt, mapTileId, type MapTile } from '../src/scene/mercator.js'
@@ -7,7 +9,9 @@ import { mapTileAt, mapTileId, type MapTile } from '../src/scene/mercator.js'
 export interface LoadingProgress {
   total: number
   loaded: number
-  tiles: Map<string, boolean>
+  absent: number
+  failed: number
+  tiles: Map<string, 'pending' | 'loaded' | 'absent' | 'failed'>
 }
 
 export class LoadingScreen {
@@ -18,6 +22,8 @@ export class LoadingScreen {
   private centerTile: MapTile | null = null
   private grid3x3: MapTile[] = []
   private loadedTiles = new Set<string>()
+  private absentTiles = new Set<string>()
+  private failedTiles = new Set<string>()
 
   constructor() {
     this.screen = document.getElementById('loading-screen')!
@@ -30,6 +36,8 @@ export class LoadingScreen {
     this.centerTile = mapTileAt(latitude, longitude, 15)
     this.grid3x3 = this.get3x3Grid(this.centerTile)
     this.loadedTiles.clear()
+    this.absentTiles.clear()
+    this.failedTiles.clear()
     this.updateIndicators()
   }
 
@@ -56,37 +64,88 @@ export class LoadingScreen {
 
   markTileLoaded(tileId: string): void {
     this.loadedTiles.add(tileId)
+    this.absentTiles.delete(tileId)
+    this.failedTiles.delete(tileId)
     this.updateIndicators()
   }
 
+  markTileAbsent(tileId: string): void {
+    if (!this.loadedTiles.has(tileId)) {
+      this.absentTiles.add(tileId)
+      this.updateIndicators()
+    }
+  }
+
+  markTileFailed(tileId: string): void {
+    if (!this.loadedTiles.has(tileId) && !this.absentTiles.has(tileId)) {
+      this.failedTiles.add(tileId)
+      this.updateIndicators()
+    }
+  }
+
+  /**
+   * Check if loading is complete. Complete means all tiles are either:
+   * - loaded (available and downloaded)
+   * - absent (confirmed not published)
+   * - failed (errored after max retries)
+   */
   isComplete(): boolean {
-    return this.grid3x3.every((tile) => this.loadedTiles.has(mapTileId(tile)))
+    return this.grid3x3.every((tile) => {
+      const id = mapTileId(tile)
+      return this.loadedTiles.has(id) || this.absentTiles.has(id) || this.failedTiles.has(id)
+    })
+  }
+
+  /** Check if at least one tile loaded (game can start). */
+  hasAnyLoaded(): boolean {
+    return this.loadedTiles.size > 0
+  }
+
+  /** Check if all tiles are absent or failed (game cannot start). */
+  hasNoLoadedTiles(): boolean {
+    return this.loadedTiles.size === 0 && this.isComplete()
   }
 
   getProgress(): LoadingProgress {
-    const tiles = new Map<string, boolean>()
+    const tiles = new Map<string, 'pending' | 'loaded' | 'absent' | 'failed'>()
     for (const tile of this.grid3x3) {
-      tiles.set(mapTileId(tile), this.loadedTiles.has(mapTileId(tile)))
+      const id = mapTileId(tile)
+      if (this.loadedTiles.has(id)) {
+        tiles.set(id, 'loaded')
+      } else if (this.absentTiles.has(id)) {
+        tiles.set(id, 'absent')
+      } else if (this.failedTiles.has(id)) {
+        tiles.set(id, 'failed')
+      } else {
+        tiles.set(id, 'pending')
+      }
     }
     return {
       total: this.grid3x3.length,
       loaded: this.loadedTiles.size,
+      absent: this.absentTiles.size,
+      failed: this.failedTiles.size,
       tiles,
     }
   }
 
   private updateIndicators(): void {
     const progress = this.getProgress()
-    const percent = progress.total > 0 ? (progress.loaded / progress.total) * 100 : 0
+    const resolved = progress.loaded + progress.absent + progress.failed
+    const percent = progress.total > 0 ? (resolved / progress.total) * 100 : 0
     this.progressBar.style.width = `${percent}%`
 
     let index = 0
     for (const tile of this.grid3x3) {
       if (index < this.tileIndicators.length) {
         const indicator = this.tileIndicators[index]
-        const isLoaded = this.loadedTiles.has(mapTileId(tile))
-        const isCenter = this.centerTile && mapTileId(tile) === mapTileId(this.centerTile)
-        indicator.classList.toggle('loaded', isLoaded)
+        const tileId = mapTileId(tile)
+        const state = progress.tiles.get(tileId) ?? 'pending'
+        const isCenter = this.centerTile && tileId === mapTileId(this.centerTile)
+
+        indicator.classList.toggle('loaded', state === 'loaded')
+        indicator.classList.toggle('absent', state === 'absent')
+        indicator.classList.toggle('failed', state === 'failed')
         indicator.classList.toggle('center', !!isCenter)
       }
       index++
