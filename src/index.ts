@@ -97,7 +97,21 @@ export {
 
 export { mapTilePath, parseMapTilePath, mapTileFilename, mapTileSample } from './scene/mercator.js'
 
-export { PlanetWorld } from './render/planet/world.js'
+export { PlanetWorld, type TileDiscoveryMode } from './render/planet/world.js'
+export {
+  fetchTileManifest,
+  fetchTileManifests,
+  isManifestCurrent,
+  tileGlbUrl,
+  tileManifestUrl,
+  normalizeTilesBase,
+  assertSecureTileBase,
+  StaticTileError,
+  DEFAULT_TILES_BASE_URL,
+  type StaticTileProviderOptions,
+  type StaticTileResult,
+  type StaticTileErrorKind,
+} from './render/planet/static-tiles.js'
 export { GeographicView } from './render/planet/sky.js'
 export { SeaWater } from './render/planet/water.js'
 export {
@@ -113,6 +127,19 @@ export { simplifiedTide } from './planet/tide.js'
 export { DepthOfField } from './render/effects/depth-of-field.js'
 export { PerformanceMonitor, type FrameSample } from './diagnostics/performance-monitor.js'
 export { VehicleAudio } from './audio/vehicle.js'
+export { Powertrain, type EngineProfile } from './audio/powertrain.js'
+
+export {
+  DrivingController,
+  DrivingTelemetry,
+  driverHeadPose,
+  followDrivingHeading,
+  overheadDrivingPose,
+  overheadDrivingHeight,
+  type CameraMode,
+  type DrivingCameraState,
+  type DrivingControllerOptions,
+} from './driving/index.js'
 
 export { capturePng } from './render/capture.js'
 

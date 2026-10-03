@@ -8,6 +8,9 @@ import {
   type PlanetPayload,
   type PlanetCollisionTile,
 } from '../../planet/index.js'
+import { fetchTileManifestsRobust, logTileLoadSummary, TileLoadTracker } from './static-tiles.js'
+
+export type TileDiscoveryMode = 'dynamic' | 'static'
 import { PlanetHorizon } from './horizon.js'
 import { carriagewayTint, matteGroundMaterial } from './ground-material.js'
 import { treeInstances } from './vegetation.js'
@@ -270,6 +273,8 @@ export class PlanetWorld {
   private protectedPositions: Vec3Tuple[] = []
   private buildings = true
   private access = true
+  private tileTracker = new TileLoadTracker(3, 2000)
+  private loadSummaryLogged = false
   private createSea: () => THREE.Material = () =>
     new THREE.MeshStandardMaterial({
       color: '#102f43',
@@ -283,6 +288,7 @@ export class PlanetWorld {
     private setupMaterial: (m: THREE.Material) => void,
     private base = import.meta.env.VITE_WORLD_PREPARED_URL || '/prepared',
     private api = import.meta.env.VITE_WORLD_PREPARE_API || '/prepare',
+    private discoveryMode: TileDiscoveryMode = 'dynamic',
   ) {
     this.horizon = new PlanetHorizon(origin, changed, `${base}/photos`, setupMaterial)
     this.root.add(this.horizon.root)
@@ -551,32 +557,123 @@ export class PlanetWorld {
     this.busy = true
     this.next = Date.now() + 3000
     try {
-      const response = await fetch(this.api + '/tiles', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keys: batch.map(mapTilePath) }),
-        signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(15000)]),
-      })
-      if (!response.ok) throw Error(`HTTP ${response.status}`)
-      const data = await response.json()
-      this.access = !!data.authorized
-      for (const tile of batch) {
-        const value = data.available?.[mapTilePath(tile)]
-        if (value) this.ready.set(mapTileId(tile), validatePlanetManifest(value, tile))
+      if (this.discoveryMode === 'static') {
+        await this.discoverStatic(batch)
+      } else {
+        await this.discoverDynamic(batch)
       }
-      this.status = this.access
-        ? 'Preparando GLB en el servidor…'
-        : data.generationAccess === 'neighbors'
-          ? 'GLB vecinos y otros zooms · generación pública limitada · activa tu sesión para otras zonas'
-          : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
       this.pump()
       this.changed()
     } catch (error) {
-      if (!this.disposed) this.status = 'Servidor planetario pendiente · ' + String(error)
+      if (!this.disposed)
+        this.status =
+          this.discoveryMode === 'static'
+            ? 'Static tiles unavailable · ' + String(error)
+            : 'Servidor planetario pendiente · ' + String(error)
     } finally {
       this.busy = false
     }
+  }
+
+  private async discoverDynamic(batch: MapTile[]) {
+    const response = await fetch(this.api + '/tiles', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keys: batch.map(mapTilePath) }),
+      signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(15000)]),
+    })
+    if (!response.ok) throw Error(`HTTP ${response.status}`)
+    const data = await response.json()
+    this.access = !!data.authorized
+    for (const tile of batch) {
+      const value = data.available?.[mapTilePath(tile)]
+      if (value) this.ready.set(mapTileId(tile), validatePlanetManifest(value, tile))
+    }
+    this.status = this.access
+      ? 'Preparando GLB en el servidor…'
+      : data.generationAccess === 'neighbors'
+        ? 'GLB vecinos y otros zooms · generación pública limitada · activa tu sesión para otras zonas'
+        : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
+  }
+
+  private async discoverStatic(batch: MapTile[]) {
+    const result = await fetchTileManifestsRobust(
+      batch,
+      {
+        baseUrl: this.base,
+        signal: this.controller.signal,
+        cors: true,
+      },
+      this.tileTracker,
+    )
+
+    for (const [tileId, manifest] of result.manifests) {
+      this.ready.set(tileId, manifest)
+    }
+
+    const loaded = batch.filter((t) => this.ready.has(mapTileId(t))).length
+    const absentCount = result.absent.length
+    const failedCount = result.failed.size
+
+    let status = `Static tiles · ${loaded}/${batch.length} loaded · ${this.visible.length} visible`
+    if (absentCount) status += ` · ${absentCount} absent`
+    if (failedCount) status += ` · ${failedCount} failed`
+    this.status = status
+    this.access = true
+
+    if (result.newlyFailed.length > 0) {
+      for (const tileId of result.newlyFailed) {
+        console.warn(`Tile ${tileId} failed permanently: ${result.failed.get(tileId)}`)
+      }
+    }
+  }
+
+  /** Get the tile load tracker for external access (e.g., loading screen). */
+  getTileTracker(): TileLoadTracker {
+    return this.tileTracker
+  }
+
+  /**
+   * Check if a tile is installed (resident) and available for collision/rendering.
+   * Use this instead of activeTiles for loading checks, as activeTiles requires
+   * the plan and visibility computation.
+   */
+  isTileInstalled(tileId: string): boolean {
+    return this.resident.has(tileId)
+  }
+
+  /**
+   * Check if a tile's manifest is ready (fetched and validated).
+   * The tile may still be loading (GLB download) or installing.
+   */
+  isTileReady(tileId: string): boolean {
+    return this.ready.has(tileId)
+  }
+
+  /**
+   * Get the loading state of a tile for the loading screen.
+   * Returns: 'installed' | 'ready' | 'loading' | 'absent' | 'failed' | 'pending'
+   */
+  getTileLoadingState(
+    tileId: string,
+  ): 'installed' | 'ready' | 'loading' | 'absent' | 'failed' | 'pending' {
+    if (this.resident.has(tileId)) return 'installed'
+    if (this.installQueue.some((job) => job.key === tileId)) return 'loading'
+    if (this.installing?.key === tileId) return 'loading'
+    if ([...this.requests.values()].some((r) => r.key === tileId)) return 'loading'
+    if (this.ready.has(tileId)) return 'ready'
+    const trackerState = this.tileTracker.getState(tileId)
+    if (trackerState === 'absent') return 'absent'
+    if (trackerState === 'failed') return 'failed'
+    return 'pending'
+  }
+
+  /** Log a summary of tile loading results (call once when loading completes). */
+  logLoadingSummary(): void {
+    if (this.loadSummaryLogged) return
+    this.loadSummaryLogged = true
+    logTileLoadSummary(this.ready.size, this.tileTracker.getAbsent(), this.tileTracker.getFailed())
   }
   private pump() {
     if (this.disposed) return
@@ -872,12 +969,35 @@ export class PlanetWorld {
     return highest
   }
 
-  async ensureGround(position: Vec3Tuple): Promise<void> {
+  /**
+   * Wait for ground collision data at a position with a bounded timeout.
+   * If timeout expires or tiles are unavailable/failed, returns without throwing.
+   * Use groundHeight() after calling to check if ground is available.
+   *
+   * @param position Position to ensure ground for
+   * @param timeoutMs Maximum time to wait in milliseconds (default: 10000)
+   */
+  async ensureGround(position: Vec3Tuple, timeoutMs = 10000): Promise<void> {
     const started = Date.now()
     while (this.groundHeight(position) === undefined) {
-      if (this.disposed) throw Error('Carga cancelada')
-      if (Date.now() - started > 120000)
-        throw Error('El terreno todavía se está preparando. Espera a que aparezca antes de jugar.')
+      if (this.disposed) return
+      if (Date.now() - started > timeoutMs) {
+        console.warn('ensureGround timeout: no ground tile available at position')
+        return
+      }
+
+      const tile = mapTileAt(
+        localToGeo(this.origin, position).latitude,
+        localToGeo(this.origin, position).longitude,
+        15,
+      )
+      const tileId = mapTileId(tile)
+      const state = this.tileTracker.getState(tileId)
+      if (state === 'absent' || state === 'failed') {
+        console.warn(`ensureGround: spawn tile ${tileId} is ${state}`)
+        return
+      }
+
       this.flushInstall(1.5)
       this.update(position, [0, 0, 0])
       await new Promise((r) => setTimeout(r, 200))

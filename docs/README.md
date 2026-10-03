@@ -31,6 +31,7 @@ preserves the edit/play contract and a single physics owner.
 ## Composable engine modules
 
 - [Module map and compatibility](architecture/module-map.md)
+- [Game library mode](game-library.md): Run the engine without Studio, with static tiles
 - [Create a vehicle](creating-a-vehicle.md)
 - [Create a monitor](creating-a-monitor.md)
 - [Migration history](architecture/vehicle-modularity.md)

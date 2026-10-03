@@ -791,6 +791,69 @@ export class LockConstraint {
   }
 }
 
+/**
+ * Spherical joint for trailer coupling (fifth wheel / kingpin).
+ * Allows free rotation at the anchor points but no translation.
+ */
+export class HitchConstraint {
+  bodyA: Body
+  bodyB: Body
+  /** Local anchor on body A (tractor's fifth wheel position). */
+  anchorA: Vec3
+  /** Local anchor on body B (trailer's kingpin position). */
+  anchorB: Vec3
+  collideConnected = false
+  joint: ImpulseJoint | null = null
+  constructor(
+    bodyA: Body,
+    bodyB: Body,
+    anchorA: Vec3,
+    anchorB: Vec3,
+    options?: { collideConnected?: boolean },
+  ) {
+    this.bodyA = bodyA
+    this.bodyB = bodyB
+    this.anchorA = anchorA.clone()
+    this.anchorB = anchorB.clone()
+    this.collideConnected = options?.collideConnected ?? false
+  }
+}
+
+/**
+ * Revolute joint for yaw-only trailer coupling.
+ * Allows rotation around a single axis (typically Y for yaw) with optional limits.
+ */
+export class RevoluteConstraint {
+  bodyA: Body
+  bodyB: Body
+  /** Local anchor on body A (tractor's fifth wheel position). */
+  anchorA: Vec3
+  /** Local anchor on body B (trailer's kingpin position). */
+  anchorB: Vec3
+  /** Rotation axis in local space (typically [0, 1, 0] for yaw). */
+  axis: Vec3
+  /** Optional rotation limits in radians [min, max]. */
+  limits?: [number, number]
+  collideConnected = false
+  joint: ImpulseJoint | null = null
+  constructor(
+    bodyA: Body,
+    bodyB: Body,
+    anchorA: Vec3,
+    anchorB: Vec3,
+    axis: Vec3,
+    options?: { limits?: [number, number]; collideConnected?: boolean },
+  ) {
+    this.bodyA = bodyA
+    this.bodyB = bodyB
+    this.anchorA = anchorA.clone()
+    this.anchorB = anchorB.clone()
+    this.axis = axis.clone()
+    this.limits = options?.limits
+    this.collideConnected = options?.collideConnected ?? false
+  }
+}
+
 export class World {
   raw: RapierWorld
   /** Double-precision scene position of Rapier's local origin. */
@@ -810,7 +873,7 @@ export class World {
   bodies: Body[] = []
   contacts: { bi: Body; bj: Body; ni: Vec3 }[] = []
   vehicles = new Set<RaycastVehicle>()
-  constraints = new Map<LockConstraint, ImpulseJoint>()
+  constraints = new Map<LockConstraint | HitchConstraint | RevoluteConstraint, ImpulseJoint>()
   gravity: Vec3
   defaultContactMaterial = { friction: 0.3, restitution: 0 }
   stepping = false
@@ -852,6 +915,50 @@ export class World {
     this.constraints.set(constraint, joint)
   }
   removeConstraint(constraint: LockConstraint) {
+    const joint = this.constraints.get(constraint)
+    if (joint) this.raw.removeImpulseJoint(joint, true)
+    this.constraints.delete(constraint)
+    constraint.joint = null
+  }
+  addHitchConstraint(constraint: HitchConstraint) {
+    const a = constraint.bodyA.raw
+    const b = constraint.bodyB.raw
+    if (!a || !b) return
+    const joint = this.raw.createImpulseJoint(
+      R().JointData.spherical(constraint.anchorA, constraint.anchorB),
+      a,
+      b,
+      true,
+    )
+    joint.setContactsEnabled(constraint.collideConnected)
+    constraint.joint = joint
+    this.constraints.set(constraint, joint)
+  }
+  removeHitchConstraint(constraint: HitchConstraint) {
+    const joint = this.constraints.get(constraint)
+    if (joint) this.raw.removeImpulseJoint(joint, true)
+    this.constraints.delete(constraint)
+    constraint.joint = null
+  }
+  addRevoluteConstraint(constraint: RevoluteConstraint) {
+    const a = constraint.bodyA.raw
+    const b = constraint.bodyB.raw
+    if (!a || !b) return
+    const limits = constraint.limits
+    const jointData = limits
+      ? R().JointData.revolute(constraint.anchorA, constraint.anchorB, constraint.axis)
+      : R().JointData.revolute(constraint.anchorA, constraint.anchorB, constraint.axis)
+    const joint = this.raw.createImpulseJoint(jointData, a, b, true)
+    if (limits) {
+      // Cast to access revolute-specific limit methods
+      const revolute = joint as unknown as { setLimits(min: number, max: number): void }
+      revolute.setLimits(limits[0], limits[1])
+    }
+    joint.setContactsEnabled(constraint.collideConnected)
+    constraint.joint = joint
+    this.constraints.set(constraint, joint)
+  }
+  removeRevoluteConstraint(constraint: RevoluteConstraint) {
     const joint = this.constraints.get(constraint)
     if (joint) this.raw.removeImpulseJoint(joint, true)
     this.constraints.delete(constraint)

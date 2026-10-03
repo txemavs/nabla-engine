@@ -54,6 +54,14 @@
     "./vehicles/flight": {
       "types": "./dist/simulation/vehicles/flight.d.ts",
       "import": "./dist/simulation/vehicles/flight.js"
+    },
+    "./vehicles/trailer": {
+      "types": "./dist/simulation/vehicles/trailer/index.d.ts",
+      "import": "./dist/simulation/vehicles/trailer/index.js"
+    },
+    "./driving": {
+      "types": "./dist/driving/index.d.ts",
+      "import": "./dist/driving/index.js"
     }
   },
   "imports": {
@@ -72,8 +80,10 @@
   ],
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:game": "vite --config vite.game.config.ts --host 0.0.0.0",
     "build": "tsc -p tsconfig.build.json",
     "build:demo": "vite build",
+    "build:game": "vite build --config vite.game.config.ts",
     "typecheck": "tsc --noEmit && node scripts/typecheck-vue.cjs --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

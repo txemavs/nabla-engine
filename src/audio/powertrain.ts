@@ -1,13 +1,44 @@
 import { silentOutput } from './graph.js'
 
+export type EngineProfile = 'gasoline' | 'diesel'
+
+interface EngineNoteTuning {
+  rpmDivisor: number
+  baseGain: number
+  loadGain: number
+  baseFilterFreq: number
+  rpmFilterScale: number
+  loadFilterScale: number
+}
+
+const GASOLINE_NOTE: EngineNoteTuning = {
+  rpmDivisor: 30,
+  baseGain: 0.025,
+  loadGain: 0.055,
+  baseFilterFreq: 180,
+  rpmFilterScale: 0.1,
+  loadFilterScale: 700,
+}
+
+const DIESEL_NOTE: EngineNoteTuning = {
+  rpmDivisor: 60,
+  baseGain: 0.045,
+  loadGain: 0.035,
+  baseFilterFreq: 90,
+  rpmFilterScale: 0.06,
+  loadFilterScale: 400,
+}
+
 /**
- * Road-car engine. One sawtooth at the four-cylinder firing rate:
- * a four-stroke fires twice per revolution, so the tone is rpm / 30.
+ * Engine note synthesis.
+ * Gasoline: 4-cylinder firing rate at rpm/30 Hz (higher-revving).
+ * Diesel: 6-cylinder firing rate at rpm/60 Hz (deeper, slower-revving).
  */
 class EngineNote {
   private readonly output: GainNode
   private readonly oscillator: OscillatorNode
   private readonly filter: BiquadFilterNode
+  private tuning: EngineNoteTuning = GASOLINE_NOTE
 
   constructor(context: AudioContext) {
     this.output = silentOutput(context)
@@ -23,21 +54,64 @@ class EngineNote {
     this.oscillator.start()
   }
 
+  setProfile(profile: EngineProfile): void {
+    this.tuning = profile === 'diesel' ? DIESEL_NOTE : GASOLINE_NOTE
+  }
+
   silence(time: number): void {
     this.output.gain.setTargetAtTime(0, time, 0.05)
   }
 
   update(time: number, audible: boolean, rpm: number, load: number): void {
-    this.output.gain.setTargetAtTime(audible ? 0.025 + load * 0.055 : 0, time, 0.035)
-    this.oscillator.frequency.setTargetAtTime(Math.max(30, rpm / 30), time, 0.035)
-    this.filter.frequency.setTargetAtTime(180 + rpm * 0.1 + load * 700, time, 0.04)
+    const t = this.tuning
+    this.output.gain.setTargetAtTime(audible ? t.baseGain + load * t.loadGain : 0, time, 0.035)
+    this.oscillator.frequency.setTargetAtTime(Math.max(15, rpm / t.rpmDivisor), time, 0.035)
+    this.filter.frequency.setTargetAtTime(
+      t.baseFilterFreq + rpm * t.rpmFilterScale + load * t.loadFilterScale,
+      time,
+      0.04,
+    )
   }
+}
+
+interface TurboTuning {
+  spoolStartRpm: number
+  spoolRangeRpm: number
+  whistleFadeEndRpm: number
+  whistleFadeRangeRpm: number
+  whistleBaseFreq: number
+  whistleBoostScale: number
+  airGainScale: number
+  releaseGainScale: number
+}
+
+const GASOLINE_TURBO: TurboTuning = {
+  spoolStartRpm: 1600,
+  spoolRangeRpm: 3600,
+  whistleFadeEndRpm: 3800,
+  whistleFadeRangeRpm: 1400,
+  whistleBaseFreq: 1100,
+  whistleBoostScale: 1900,
+  airGainScale: 0.003,
+  releaseGainScale: 0.04,
+}
+
+const DIESEL_TURBO: TurboTuning = {
+  spoolStartRpm: 800,
+  spoolRangeRpm: 1200,
+  whistleFadeEndRpm: 1800,
+  whistleFadeRangeRpm: 600,
+  whistleBaseFreq: 700,
+  whistleBoostScale: 1000,
+  airGainScale: 0.006,
+  releaseGainScale: 0.06,
 }
 
 /**
  * Turbo on that same engine. A sine whistle plus a slice of the shared noise.
  * No new nodes per gear change. A hard drop in load vents the stored boost once:
  * that is the short shift cut. The whistle fades out as rpm rises.
+ * Diesel turbos spool earlier and lower, with deeper whistle and more air release.
  */
 class Turbo {
   private readonly whistle: OscillatorNode
@@ -46,6 +120,7 @@ class Turbo {
   private boost = 0
   private release = 0
   private previousLoad = 0
+  private tuning: TurboTuning = GASOLINE_TURBO
 
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
     this.whistleLevel = silentOutput(context)
@@ -64,6 +139,10 @@ class Turbo {
     noise.connect(airFilter)
   }
 
+  setProfile(profile: EngineProfile): void {
+    this.tuning = profile === 'diesel' ? DIESEL_TURBO : GASOLINE_TURBO
+  }
+
   silence(time: number): void {
     this.whistleLevel.gain.setTargetAtTime(0, time, 0.03)
     this.air.gain.setTargetAtTime(0, time, 0.03)
@@ -73,7 +152,9 @@ class Turbo {
   }
 
   update(time: number, dt: number, audible: boolean, rpm: number, load: number): void {
-    const target = audible ? load * Math.max(0, Math.min(1, (rpm - 1600) / 3600)) : 0
+    const t = this.tuning
+    const spoolFactor = Math.max(0, Math.min(1, (rpm - t.spoolStartRpm) / t.spoolRangeRpm))
+    const target = audible ? load * spoolFactor : 0
     const lifted = audible && this.previousLoad > 0.5 && load < 0.25
     if (lifted) this.release = Math.max(this.release, this.boost)
     if (!audible) {
@@ -85,11 +166,18 @@ class Turbo {
     this.release *= Math.exp(-dt / 0.14)
     this.previousLoad = audible ? load : 0
 
-    const whistleFade = Math.max(0, Math.min(1, (3800 - rpm) / 1400))
+    const whistleFade = Math.max(
+      0,
+      Math.min(1, (t.whistleFadeEndRpm - rpm) / t.whistleFadeRangeRpm),
+    )
     this.whistleLevel.gain.setTargetAtTime(this.boost * whistleFade * 0.006, time, 0.06)
-    this.whistle.frequency.setTargetAtTime(1100 + this.boost * 1900, time, 0.08)
+    this.whistle.frequency.setTargetAtTime(
+      t.whistleBaseFreq + this.boost * t.whistleBoostScale,
+      time,
+      0.08,
+    )
     this.air.gain.setTargetAtTime(
-      this.boost * whistleFade * 0.003 + this.release * 0.04,
+      this.boost * whistleFade * t.airGainScale + this.release * t.releaseGainScale,
       time,
       0.025,
     )
@@ -101,10 +189,22 @@ export class Powertrain {
   private readonly engine: EngineNote
   private readonly turbo: Turbo
   private previousTime = 0
+  private profile: EngineProfile = 'gasoline'
 
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
     this.engine = new EngineNote(context)
     this.turbo = new Turbo(context, noise)
+  }
+
+  /** Switch between gasoline (high-revving car) and diesel (low-revving truck) profiles. */
+  setProfile(profile: EngineProfile): void {
+    this.profile = profile
+    this.engine.setProfile(profile)
+    this.turbo.setProfile(profile)
+  }
+
+  getProfile(): EngineProfile {
+    return this.profile
   }
 
   silence(time: number): void {

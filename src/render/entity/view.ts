@@ -717,12 +717,16 @@ export class SceneView {
       this.shipLights.get(e.id)?.attachStern(hinge)
     })
     if (visual.wheel) {
-      const wheels = definition.hubs.map((hub, i) => {
+      const hubPositions = definition.hubConfigs
+        ? definition.hubConfigs.map((h) => h.position)
+        : (definition.hubs ?? [])
+      const wheels = hubPositions.map((hub, i) => {
         const wheel = new THREE.Group()
         wheel.position.fromArray(hub)
         group.add(wheel)
         const orientation = new THREE.Group()
-        if (visual.wheelRotations) orientation.quaternion.fromArray(visual.wheelRotations[i])
+        const rotations = visual.hubRotations ?? visual.wheelRotations
+        if (rotations && rotations[i]) orientation.quaternion.fromArray(rotations[i])
         wheel.add(orientation)
         this.addAsset(orientation, visual.wheel!, undefined, (model) =>
           adapter?.preparePart?.(model, 'wheel'),

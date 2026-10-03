@@ -10,6 +10,8 @@ export {
 } from './runtime.js'
 export {
   idleWheeledInput,
+  normalizeHubs,
+  type HubDefinition,
   type WheeledDefinition,
   type PowertrainDefinition,
   type WheeledInput,
@@ -23,6 +25,9 @@ export {
   shiftGear,
   engineBrakingForce,
   isDriven,
+  getDrivetrainTuning,
+  type DrivetrainProfile,
   type DrivetrainState,
+  type DrivetrainTuning,
 } from '../drivetrain.js'
 export { KeyboardSteering } from '../keyboard-steering.js'
