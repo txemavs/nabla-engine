@@ -365,35 +365,37 @@ class Game {
     const vehicleHeight = vehicleEntity?.groundOffset ?? 0.62
     const spawnHeight = spawn.groundOffset ?? 0.2
 
-    if (ground !== undefined) {
-      // Ground available from tiles
-      if (vehicleEntity) {
-        vehicleEntity.transform.position = [
-          spawnLocalPos[0],
-          ground + vehicleHeight,
-          spawnLocalPos[2],
-        ]
-      }
-      spawn.transform.position = [spawnLocalPos[0] - 4, ground + spawnHeight, spawnLocalPos[2]]
-      this.catchFloor?.hide()
-    } else {
-      // No ground available - use fallback ground at Y=0
-      const fallbackY = 0
-      console.log(`Using fallback ground at Y=${fallbackY}`)
-      if (vehicleEntity) {
-        vehicleEntity.transform.position = [
-          spawnLocalPos[0],
-          fallbackY + vehicleHeight,
-          spawnLocalPos[2],
-        ]
-      }
-      spawn.transform.position = [spawnLocalPos[0] - 4, fallbackY + spawnHeight, spawnLocalPos[2]]
-      // Show visual CatchFloor at spawn position
+    // Determine spawn Y: use terrain ground if positive, otherwise fallback to Y=0
+    // This prevents spawning underground when terrain altitude is below origin
+    const effectiveGround = ground !== undefined && ground >= 0 ? ground : 0
+    const useFallback = ground === undefined || ground < 0
+
+    console.log(
+      `Ground detection: raw=${ground?.toFixed(2) ?? 'undefined'}, effective=${effectiveGround.toFixed(2)}, useFallback=${useFallback}`,
+    )
+
+    if (vehicleEntity) {
+      vehicleEntity.transform.position = [
+        spawnLocalPos[0],
+        effectiveGround + vehicleHeight,
+        spawnLocalPos[2],
+      ]
+    }
+    spawn.transform.position = [
+      spawnLocalPos[0] - 4,
+      effectiveGround + spawnHeight,
+      spawnLocalPos[2],
+    ]
+
+    if (useFallback) {
+      // Show visual CatchFloor
       this.catchFloor?.show(
-        [spawnLocalPos[0], fallbackY, spawnLocalPos[2]],
+        [spawnLocalPos[0], effectiveGround, spawnLocalPos[2]],
         [0, 0, 0, 1],
         this.renderOrigin,
       )
+    } else {
+      this.catchFloor?.hide()
     }
 
     console.log(
