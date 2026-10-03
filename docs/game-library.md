@@ -20,20 +20,24 @@ tiles from pre-built manifest.json files via GET requests.
 
 Configure the game spawn location and vehicle:
 
-| Parameter | Default                               | Description                                                  |
-| --------- | ------------------------------------- | ------------------------------------------------------------ |
-| `lat`     | 43.3372                               | Spawn latitude (Zaisa, Irun)                                 |
-| `lon`     | -1.7523                               | Spawn longitude                                              |
-| `alt`     | 50                                    | Spawn altitude in meters                                     |
-| `vehicle` | `car`                                 | Vehicle preset ID                                            |
-| `tiles`   | `https://atlas.chained.world/euskadi` | Tile base URL, without the trailing `/z` (`/` = this origin) |
-| `static`  | `true`                                | Use static tile mode (GET vs POST)                           |
+| Parameter     | Default                               | Description                                                  |
+| ------------- | ------------------------------------- | ------------------------------------------------------------ |
+| `lat`         | 43.3372                               | Spawn latitude (Zaisa, Irun)                                 |
+| `lon`         | -1.7523                               | Spawn longitude                                              |
+| `alt`         | 50                                    | Spawn altitude in meters                                     |
+| `vehicle`     | `car`                                 | Vehicle preset ID                                            |
+| `tiles`       | `https://atlas.chained.world/euskadi` | Tile base URL, without the trailing `/z` (`/` = this origin) |
+| `static`      | `true`                                | Use static tile mode (GET vs POST)                           |
+| `distance`    | 4000                                  | View distance in meters (1000–20000)                         |
+| `concurrency` | 2                                     | Tile download concurrency (1–3)                              |
+| `ahead`       | 30                                    | Prefetch lookahead in seconds (0–45)                         |
 
 **Example:**
 
 ```
 ?lat=40.4168&lon=-3.7038&vehicle=police
 ?tiles=https://tiles.example.org/my-set
+?distance=10000&concurrency=3&ahead=45
 ```
 
 ## Static Tile Mode
@@ -103,6 +107,45 @@ Tile indicators show loading progress:
 | C       | Cycle camera (cockpit/chase) |
 | R       | Reset vehicle position       |
 | Shift   | Sprint (when walking)        |
+| F12     | Open/close options panel     |
+
+## Options Panel
+
+Press **F12** or click the gear icon in the lower-left corner to open a hidden
+options panel with runtime configuration:
+
+### Tile Cache
+
+The game uses the same IndexedDB cache as Studio (`nabla-map-cache-v1`), sharing
+the budget and LRU eviction policy. Each terrain/buildings GLB can be up to
+64 MB; prepared zones accumulate quickly when exploring.
+
+- **Budget**: select a target size from 0 (disabled) to 100 GB; the default is
+  100 GB for deployments that revisit the same areas. The browser decides the
+  actual quota—`navigator.storage.estimate()` reports what was granted, not
+  what was requested. Selecting a large budget does not allocate that space
+  immediately; it only caps how much the cache can grow.
+- **Persist storage**: requests `navigator.storage.persist()`. The browser may
+  grant or deny this; persistence reduces the risk of automatic eviction but
+  clearing site data still removes the cache.
+- **Clear cache**: removes all cached map responses, preserving the selected
+  budget.
+
+The panel shows the current cache usage, entry count, and the browser's
+reported site quota and total usage.
+
+### Streaming
+
+- **Concurrency**: number of simultaneous tile downloads (1–3).
+- **Prefetch ahead**: how many seconds ahead the game fetches tiles along the
+  velocity vector (0–45 s).
+- **View distance**: how far the terrain and buildings are drawn (1–20 km).
+
+### Advanced
+
+- **Tiles base URL**: override the static tiles host without changing the URL
+  parameter; leave blank to use the default or URL value.
+- **Vehicle**: change the vehicle preset; this requires a page reload.
 
 ## Vehicle Presets
 
