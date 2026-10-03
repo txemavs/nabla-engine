@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { createCarrierPortal } from '../../entity/portal/portal.js'
 import { createEntity, type Entity, type Vec3Tuple } from '../../entity/schema.js'
 import { vector, finite } from '../../entity/coords.js'
-import { vehicleField, visualField, type VehicleDefinition } from '../../entity/vehicle/field.js'
+import { vehicleField, visualField } from '../../entity/vehicle/field.js'
 import { readVehiclePresetSources } from './preset-source.js'
 
 /**

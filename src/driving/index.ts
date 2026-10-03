@@ -1,4 +1,9 @@
-export { DrivingController, type CameraMode, type DrivingCameraState, type DrivingControllerOptions } from './controller.js'
+export {
+  DrivingController,
+  type CameraMode,
+  type DrivingCameraState,
+  type DrivingControllerOptions,
+} from './controller.js'
 export {
   driverHeadPose,
   followDrivingHeading,

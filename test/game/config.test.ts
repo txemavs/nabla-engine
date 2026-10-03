@@ -7,8 +7,9 @@ describe('game config', () => {
     it('uses Zaisa defaults with no params', () => {
       const config = parseGameConfig('')
 
-      expect(config.spawn.latitude).toBeCloseTo(43.3372, 4)
-      expect(config.spawn.longitude).toBeCloseTo(-1.7523, 4)
+      // Updated spawn coordinates on land (west of Bidasoa river)
+      expect(config.spawn.latitude).toBeCloseTo(43.3365, 4)
+      expect(config.spawn.longitude).toBeCloseTo(-1.7565, 4)
       expect(config.spawn.altitude).toBe(50)
       expect(config.vehicle).toBe('car')
       expect(config.tilesBaseUrl).toBe('https://atlas.chained.world/euskadi')
@@ -113,8 +114,9 @@ describe('game config', () => {
     it('handles invalid numbers gracefully', () => {
       const config = parseGameConfig('?lat=invalid&lon=NaN&alt=abc')
 
-      expect(config.spawn.latitude).toBeCloseTo(43.3372, 4)
-      expect(config.spawn.longitude).toBeCloseTo(-1.7523, 4)
+      // Falls back to Zaisa defaults on land
+      expect(config.spawn.latitude).toBeCloseTo(43.3365, 4)
+      expect(config.spawn.longitude).toBeCloseTo(-1.7565, 4)
       expect(config.spawn.altitude).toBe(50)
     })
   })

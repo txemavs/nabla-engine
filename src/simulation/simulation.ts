@@ -1533,6 +1533,24 @@ export class Simulation {
     v.body.wakeUp()
     return 'Coche enderezado'
   }
+
+  /** Teleport the occupied vehicle to an absolute position with optional yaw. */
+  teleportVehicle(position: Vec3Tuple, yaw = 0): string {
+    const id = this.vehicleId
+    const v = id ? this.vehicles.get(id) : undefined
+    if (!v) return 'Monta en un coche'
+    if (this.docks.has(id!)) return 'Desengancha antes de teleportar'
+    v.body.position.set(...position)
+    v.body.quaternion.setFromAxisAngle(new Vec3(0, 1, 0), yaw)
+    v.body.previousPosition.copy(v.body.position)
+    v.body.previousQuaternion.copy(v.body.quaternion)
+    v.body.interpolatedPosition.copy(v.body.position)
+    v.body.velocity.setZero()
+    v.body.angularVelocity.setZero()
+    v.body.wakeUp()
+    return 'Teleportado'
+  }
+
   setHelmMode(mode: Vehicle['helm']): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
     if (!v?.definition.flight) return 'Ponte al mando de la nave para cambiar de modo'
@@ -2049,9 +2067,7 @@ export class Simulation {
     const hasKingpin = Boolean(trailerCfg?.kingpin) || Boolean(trailerBody?.kingpin)
 
     const trailerAvailable =
-      id !== null &&
-      !this.fifthWheelCouplings.has(id) &&
-      this.trailerCouplingCandidate(id) !== null
+      id !== null && !this.fifthWheelCouplings.has(id) && this.trailerCouplingCandidate(id) !== null
 
     return {
       hasFifthWheel: Boolean(trailerCfg?.anchor),

@@ -23,9 +23,14 @@ export interface GameConfig {
   staticTiles: boolean
 }
 
+/**
+ * Default spawn at Zaisa industrial area, Irún.
+ * This position is on land (west of the Bidasoa river) on a road.
+ * Previous spawn at lon -1.7523 was in the river channel with no ground triangles.
+ */
 const ZAISA_IRUN = {
-  latitude: 43.3372,
-  longitude: -1.7523,
+  latitude: 43.3365,
+  longitude: -1.7565,
   altitude: 50,
 } as const
 

@@ -8,7 +8,6 @@ import {
   DrivingTelemetry,
 } from '../render/entity/driving-camera.js'
 import { VehicleAudio } from '../audio/vehicle.js'
-import type { Vec3Tuple } from '../entity/schema.js'
 
 export type CameraMode = 'chase' | 'cockpit' | 'map'
 
@@ -96,7 +95,6 @@ export class DrivingController {
       const info = sim.vehicleInfo(vehicleId)
       this.telemetry.update(vehicleId, player.speed, info.turnRate, elapsed)
 
-      const entity = sim.entityTransform(vehicleId)
       const hasPowertrain = info.rpm > 0
 
       if (hasPowertrain) {
