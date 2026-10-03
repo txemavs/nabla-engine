@@ -480,18 +480,22 @@ class Game {
     // If we were waiting for terrain and now have ground data, update spawn position
     if (this.waitingForTerrain && ground !== undefined) {
       const vehicleHeight = 0.62
-      // Check if we can find stable ground at spawn position
-      const spawnGround = checkFootprint(
-        (pos) => this.world!.groundHeight(pos),
-        [this.spawnPosition[0] || position[0], 0, this.spawnPosition[2] || position[2]],
-        FOOTPRINT_RADIUS,
-      )
-      if (spawnGround !== undefined) {
-        this.spawnPosition = [
-          this.spawnPosition[0] || position[0],
-          spawnGround + vehicleHeight,
-          this.spawnPosition[2] || position[2],
-        ]
+      // Use current position for terrain check (vehicle may have moved from original spawn)
+      const currentX = position[0]
+      const currentZ = position[2]
+
+      // First try a simple ground check at current position
+      const groundHeightFn = (pos: Vec3Tuple) => this.world!.groundHeight(pos)
+      let terrainGround = groundHeightFn([currentX, 0, currentZ])
+
+      // If no ground at exact position, try footprint check
+      if (terrainGround === undefined) {
+        terrainGround = checkFootprint(groundHeightFn, [currentX, 0, currentZ], FOOTPRINT_RADIUS)
+      }
+
+      if (terrainGround !== undefined) {
+        // Terrain detected - update spawn position to be ON the terrain
+        this.spawnPosition = [currentX, terrainGround + vehicleHeight, currentZ]
         console.log(
           `Terrain now available! Spawn position updated to: ` +
             `[${this.spawnPosition.map((n) => n.toFixed(2)).join(', ')}]`,
@@ -499,15 +503,24 @@ class Game {
         this.waitingForTerrain = false
         this.terrainMessage = ''
 
-        // Immediately teleport vehicle to correct position on terrain
-        this.sim.teleportVehicle(this.spawnPosition, 0)
-        console.log(
-          `Vehicle teleported to terrain height. Y=${this.spawnPosition[1].toFixed(2)}, ground=${spawnGround.toFixed(2)}`,
-        )
+        // Check if vehicle Y is below terrain - if so, teleport to correct height
+        if (position[1] < terrainGround) {
+          console.log(
+            `Vehicle Y=${position[1].toFixed(2)} < terrain=${terrainGround.toFixed(2)}, teleporting...`,
+          )
+          this.sim.teleportVehicle(this.spawnPosition, 0)
+          console.log(
+            `Vehicle teleported to terrain height. Y=${this.spawnPosition[1].toFixed(2)}, ground=${terrainGround.toFixed(2)}`,
+          )
+        } else {
+          console.log(
+            `Vehicle Y=${position[1].toFixed(2)} >= terrain=${terrainGround.toFixed(2)}, already above ground`,
+          )
+        }
 
         // Update catch floor to show at terrain level
         this.catchFloor?.show(
-          [this.spawnPosition[0], spawnGround, this.spawnPosition[2]],
+          [currentX, terrainGround, currentZ],
           [0, 0, 0, 1],
           this.renderOrigin,
         )
