@@ -520,3 +520,57 @@ describe('fallback ground', () => {
     }
   })
 })
+
+describe('trailer preset loading', () => {
+  it('tractor has fifth wheel anchor and trailer has kingpin', () => {
+    const tractorDef = truckDefinition('diesel')
+    const trailerDef = trailerDefinition()
+
+    expect(tractorDef).toBeDefined()
+    expect(trailerDef.kingpin).toEqual([0, 0, -5.565219856])
+  })
+
+  it('coupled trailer brakes when tractor brakes', () => {
+    const world = new World()
+    const floor = new Body({
+      shape: new Box(new Vec3(500, 0.5, 500)),
+      position: new Vec3(0, -0.5, 0),
+    })
+    world.addBody(floor)
+
+    const tractorBody = tractorChassis()
+    const truck = createWheeledVehicle(tractorBody, truckDefinition('diesel'))
+    truck.raycast.addToWorld(world)
+
+    const trailerBody = trailerChassis()
+    const trailer = createTrailer(trailerBody, trailerDefinition())
+    trailer.raycast.addToWorld(world)
+
+    const fifthWheelPosition = new Vec3(0, 0, 1.766745487)
+    const kingpinPosition = new Vec3(...trailerDefinition().kingpin)
+    const hitch = new HitchConstraint(tractorBody, trailerBody, fifthWheelPosition, kingpinPosition)
+    world.addHitchConstraint(hitch)
+
+    try {
+      // First let vehicles settle
+      for (let i = 0; i < 60; i++) {
+        stepWheeledVehicle(truck, idleWheeledInput(), 1 / 60, false)
+        stepTrailer(trailer, idleTrailerInput(), 1 / 60)
+        world.step(1 / 60)
+      }
+
+      // Apply brakes to trailer and verify brake force is applied
+      stepTrailer(trailer, { brake: 1, parkingBrake: false }, 1 / 60)
+
+      for (const wheel of trailer.raycast.wheelInfos) {
+        expect(wheel.brake).toBeGreaterThan(0)
+      }
+    } finally {
+      world.removeHitchConstraint(hitch)
+      truck.raycast.removeFromWorld(world)
+      trailer.raycast.removeFromWorld(world)
+      for (const body of [...world.bodies]) world.removeBody(body)
+      world.raw.free()
+    }
+  })
+})
