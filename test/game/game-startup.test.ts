@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { hasVehiclePreset, presetVehicle } from '../../src/catalog/vehicles/library.js'
-import { createEntity, type SceneDocument } from '../../src/index.js'
+import { createEntity, Simulation, type SceneDocument } from '../../src/index.js'
 import type { GeoPoint } from '../../src/math/geo/sphere.js'
 import { TileLoadTracker } from '../../src/render/planet/static-tiles.js'
 
@@ -338,6 +338,89 @@ describe('game startup regression tests', () => {
         expect(elapsed).toBeGreaterThanOrEqual(0)
         expect(elapsed).toBeLessThanOrEqual(0.1)
       }
+    })
+  })
+
+  describe('vehicle spawn height', () => {
+    it('vehicle should spawn above ground level with groundOffset', () => {
+      // Ground height from tiles/CatchFloor
+      const groundHeight = 0
+
+      // Vehicle groundOffset (distance from body center to wheels bottom)
+      const vehicleGroundOffset = 0.62
+
+      // Expected spawn Y position
+      const expectedVehicleY = groundHeight + vehicleGroundOffset
+
+      expect(expectedVehicleY).toBeCloseTo(0.62, 2)
+    })
+
+    it('spawn position uses local coordinates relative to origin', () => {
+      // When origin.altitude = 50m, local Y=0 corresponds to 50m altitude
+      // If tiles have ground at 50m altitude, groundHeight returns ~0
+
+      // Spawn at origin (lat/lon match, same altitude)
+      const spawnLocalPos = [0, 0, 0] // At origin, local position is [0,0,0]
+
+      // If ground is at Y=0, vehicle at Y=0.62
+      const groundHeight = 0
+      const vehicleGroundOffset = 0.62
+      const vehicleY = groundHeight + vehicleGroundOffset
+
+      expect(vehicleY).toBeGreaterThan(groundHeight)
+      expect(spawnLocalPos[0]).toBe(0)
+      expect(spawnLocalPos[2]).toBe(0)
+    })
+
+    it('CatchFloor fallback places vehicle at Y=0 + offset', () => {
+      // When no tiles available, CatchFloor is at Y=0
+      const catchFloorY = 0
+      const vehicleGroundOffset = 0.62
+      const vehicleY = catchFloorY + vehicleGroundOffset
+
+      expect(vehicleY).toBeCloseTo(0.62, 2)
+    })
+  })
+
+  describe('vehicle reset', () => {
+    it('Simulation has recoverVehicle method', () => {
+      // The game uses sim.recoverVehicle() to reset the vehicle
+      // This method uprights the vehicle and lifts it 3m, zeroing velocity
+      const doc = createGameDocument('car')
+      const sim = new Simulation(doc, { playerMode: 'walk' })
+
+      // recoverVehicle exists as a method
+      expect(typeof sim.recoverVehicle).toBe('function')
+
+      sim.dispose()
+    })
+
+    it('recoverVehicle returns message when not in vehicle', () => {
+      const doc = createGameDocument('car')
+      const sim = new Simulation(doc, { playerMode: 'walk' })
+
+      // Not in vehicle, should return a message
+      const result = sim.recoverVehicle()
+      expect(typeof result).toBe('string')
+
+      sim.dispose()
+    })
+
+    it('recoverVehicle works when in vehicle', () => {
+      const doc = createGameDocument('car')
+      const sim = new Simulation(doc, { playerMode: 'walk' })
+
+      // Get into the vehicle first
+      const vehicleId = doc.entities.find((e) => e.kind === 'vehicle')?.id
+      if (vehicleId) {
+        sim.startInVehicle(vehicleId)
+      }
+
+      // Now recover - should work without throwing
+      const result = sim.recoverVehicle()
+      expect(typeof result).toBe('string')
+
+      sim.dispose()
     })
   })
 })

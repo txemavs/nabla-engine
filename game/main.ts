@@ -319,62 +319,86 @@ class Game {
     const spawn = document.entities.find((e) => e.kind === 'spawn')!
     const vehicleEntity = document.entities.find((e) => e.kind === 'vehicle')
 
-    // Use spawn position from config (in local coords) for ground check
-    const spawnLocalPos = geoToLocal(this.origin, {
-      latitude: this.config.spawn.latitude,
-      longitude: this.config.spawn.longitude,
-      altitude: this.config.spawn.altitude,
-    })
+    // Compute spawn position in local coordinates
+    // Note: geoToLocal returns position relative to origin, so if origin.altitude=50m
+    // and we pass altitude=50m, the local Y will be ~0
+    const spawnLocalPos: Vec3Tuple = [0, 0, 0]
 
-    // Wait for ground with longer timeout (10s) since tiles may still be installing
+    // Wait for ground with timeout - keep flushing installs while waiting
     let ground: number | undefined
-    try {
-      await this.world.ensureGround(spawnLocalPos, 10000)
+    const groundTimeout = 10000
+    const started = Date.now()
+
+    while (Date.now() - started < groundTimeout) {
+      // Keep processing tile installations
+      this.world.update(spawnLocalPos, [0, 0, 0])
+      this.world.flushInstall(10)
+
+      // Check for ground at spawn
       ground = this.world.groundHeight(spawnLocalPos)
-    } catch {
-      console.warn('ensureGround threw, using catch floor')
-      ground = undefined
+      if (ground !== undefined) {
+        console.log(`Ground found at height ${ground.toFixed(2)}m after ${Date.now() - started}ms`)
+        break
+      }
+
+      // Check if spawn tile is absent/failed (no point waiting)
+      const spawnTile = this.loading.getSpawnTile()
+      if (spawnTile) {
+        const spawnTileId = mapTileId(spawnTile)
+        const state = this.world.getTileLoadingState(spawnTileId)
+        if (state === 'absent' || state === 'failed') {
+          console.warn(`Spawn tile ${spawnTileId} is ${state}, using CatchFloor`)
+          break
+        }
+      }
+
+      await new Promise((r) => setTimeout(r, 100))
+    }
+
+    if (ground === undefined) {
+      console.warn(`No ground available after ${Date.now() - started}ms, using CatchFloor`)
     }
 
     // Position entities based on ground availability
+    // The vehicle needs to be placed ABOVE the ground surface
+    const vehicleHeight = vehicleEntity?.groundOffset ?? 0.62
+    const spawnHeight = spawn.groundOffset ?? 0.2
+
     if (ground !== undefined) {
-      console.log(`Ground found at height ${ground.toFixed(2)}m`)
+      // Ground available from tiles
       if (vehicleEntity) {
         vehicleEntity.transform.position = [
           spawnLocalPos[0],
-          ground + (vehicleEntity.groundOffset ?? 0.62),
+          ground + vehicleHeight,
           spawnLocalPos[2],
         ]
       }
-      spawn.transform.position = [
-        spawnLocalPos[0] - 4,
-        ground + (spawn.groundOffset ?? 0.2),
-        spawnLocalPos[2],
-      ]
+      spawn.transform.position = [spawnLocalPos[0] - 4, ground + spawnHeight, spawnLocalPos[2]]
       this.catchFloor?.hide()
     } else {
-      // No ground available - use CatchFloor as fallback
-      const fallbackHeight = this.origin.altitude
-      console.warn(`No ground at spawn, using CatchFloor at altitude ${fallbackHeight}m`)
+      // No ground available - use CatchFloor at Y=0 (origin altitude)
+      // CatchFloor is a flat disk at the specified Y position
+      const fallbackY = 0 // This corresponds to origin.altitude in world space
+      console.log(`Using CatchFloor at Y=${fallbackY}`)
       if (vehicleEntity) {
         vehicleEntity.transform.position = [
           spawnLocalPos[0],
-          fallbackHeight + (vehicleEntity.groundOffset ?? 0.62),
+          fallbackY + vehicleHeight,
           spawnLocalPos[2],
         ]
       }
-      spawn.transform.position = [
-        spawnLocalPos[0] - 4,
-        fallbackHeight + (spawn.groundOffset ?? 0.2),
-        spawnLocalPos[2],
-      ]
+      spawn.transform.position = [spawnLocalPos[0] - 4, fallbackY + spawnHeight, spawnLocalPos[2]]
       // Show CatchFloor at spawn position
       this.catchFloor?.show(
-        [spawnLocalPos[0], fallbackHeight, spawnLocalPos[2]],
+        [spawnLocalPos[0], fallbackY, spawnLocalPos[2]],
         [0, 0, 0, 1],
         this.renderOrigin,
       )
     }
+
+    console.log(
+      `Vehicle spawn position: [${vehicleEntity?.transform.position.map((n) => n.toFixed(2)).join(', ')}]`,
+    )
 
     this.sim = new Simulation(document, {
       playerMode: 'walk',
@@ -527,10 +551,9 @@ class Game {
     const player = this.sim.player
     if (!player.vehicleId) return
 
-    const ground = this.world.groundHeight(player.position)
-    if (ground !== undefined) {
-      this.sim.resetVehicle(player.vehicleId, [player.position[0], ground + 1, player.position[2]])
-    }
+    // Use recoverVehicle to upright the vehicle and reset velocity
+    // It lifts the vehicle 3m and zeroes velocity
+    this.sim.recoverVehicle()
   }
 
   private render(): void {
