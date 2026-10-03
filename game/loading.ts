@@ -3,6 +3,10 @@
  */
 
 import { mapTileAt, mapTileId, type MapTile } from '../src/scene/mercator.js'
+import {
+  withNablaIndicator,
+  type NablaIndicatorState,
+} from '../src/ui/nabla-indicator.js'
 
 export interface LoadingProgress {
   total: number
@@ -18,6 +22,7 @@ export class LoadingScreen {
   private centerTile: MapTile | null = null
   private grid3x3: MapTile[] = []
   private loadedTiles = new Set<string>()
+  private currentState: NablaIndicatorState = 'reconnecting'
 
   constructor() {
     this.screen = document.getElementById('loading-screen')!
@@ -93,8 +98,9 @@ export class LoadingScreen {
     }
   }
 
-  setStatus(message: string): void {
-    this.status.textContent = message
+  setStatus(message: string, state?: NablaIndicatorState): void {
+    if (state !== undefined) this.currentState = state
+    this.status.innerHTML = withNablaIndicator(message, this.currentState)
   }
 
   hide(): void {

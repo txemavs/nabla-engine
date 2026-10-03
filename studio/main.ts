@@ -1,5 +1,9 @@
 import { randomUUID } from '../src/util/uuid.js'
 import {
+  withNablaIndicator,
+  type NablaIndicatorState,
+} from '../src/ui/nabla-indicator.js'
+import {
   commands,
   bindAction,
   inspector,
@@ -111,6 +115,27 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
   if (!element) throw new Error('Missing element: ' + id)
   return element as T
 }
+
+/** Set an element's HTML content with the Nabla status indicator. */
+function setStatusWithIndicator(
+  element: HTMLElement,
+  text: string,
+  state: NablaIndicatorState,
+): void {
+  element.innerHTML = withNablaIndicator(text, state)
+}
+
+/** Infer the indicator state from a status message. */
+function inferIndicatorState(message: string): NablaIndicatorState {
+  const loading =
+    /cargando|carga|preparando|leyendo|descargando|loading|connecting/i.test(message)
+  const error =
+    /error|no se pudo|failed|parcial|sin conexión|offline|invalid|bloqueado/i.test(message)
+  if (error) return 'error'
+  if (loading) return 'reconnecting'
+  return 'normal'
+}
+
 const performanceSettings = readPerformance()
 const STORAGE_KEY = 'nabla.scene.v1'
 const PROJECT_KEY = 'nabla.project.v1'
@@ -1126,8 +1151,12 @@ async function travelTo(): Promise<void> {
     Math.abs(latitude) > 85 ||
     Math.abs(longitude) > 180
   ) {
-    $('travel-status').textContent = 'Introduce coordenadas válidas (latitud entre −85 y 85).'
-    toast($('travel-status').textContent!)
+    setStatusWithIndicator(
+      $('travel-status'),
+      'Introduce coordenadas válidas (latitud entre −85 y 85).',
+      'error',
+    )
+    toast('Introduce coordenadas válidas (latitud entre −85 y 85).')
     return
   }
   const city = $<HTMLSelectElement>('travel-city')
@@ -1143,8 +1172,8 @@ async function travelTo(): Promise<void> {
   $('travel-cancel').hidden = false
   $('world-loading').hidden = false
   const message = `Cargando ${name} · terreno y edificios. Una zona nueva puede tardar varios minutos; los fallos temporales se reintentan…`
-  $('world-loading').textContent = message
-  $('travel-status').textContent = message
+  setStatusWithIndicator($('world-loading'), message, 'reconnecting')
+  setStatusWithIndicator($('travel-status'), message, 'reconnecting')
   try {
     project = retainLocation(project!, editor.document)
     const nextProject = travelPlanet(project!, latitude, longitude, name)
@@ -1161,7 +1190,11 @@ async function travelTo(): Promise<void> {
     await view.ready
     focusCursor(true)
     renderer.domElement.dataset.world = 'destination'
-    $('travel-status').textContent = `${name} · mismo planeta. Tus objetos conservan su ubicación.`
+    setStatusWithIndicator(
+      $('travel-status'),
+      `${name} · mismo planeta. Tus objetos conservan su ubicación.`,
+      'normal',
+    )
     toast(`${name} · destino cargado`)
     $('travel-menu').hidePopover()
     void placeNewWorldObjects()
@@ -1169,7 +1202,11 @@ async function travelTo(): Promise<void> {
     const message = controller.signal.aborted
       ? 'Viaje cancelado. Se conserva la escena anterior.'
       : `No se pudo cargar el destino: ${error instanceof Error ? error.message : String(error)}. Se conserva la escena anterior; puedes reintentar.`
-    $('travel-status').textContent = message
+    setStatusWithIndicator(
+      $('travel-status'),
+      message,
+      controller.signal.aborted ? 'normal' : 'error',
+    )
     toast(message)
   } finally {
     travelController = null
@@ -2421,7 +2458,10 @@ function frame(now: number): void {
   installStatus.hidden = !startupPending && view.pendingMapInstall === 0
   if (view.pendingMapInstall) {
     const label = 'Cargando entorno · ' + view.pendingMapInstall + ' elementos pendientes'
-    if (installStatus.textContent !== label) installStatus.textContent = label
+    const currentText = installStatus.textContent
+    if (currentText !== label) {
+      setStatusWithIndicator(installStatus, label, 'reconnecting')
+    }
   }
   let physicsMs = 0
   renderer.info.reset()
@@ -2892,7 +2932,7 @@ function frame(now: number): void {
     const gps = localToGeo(view.document.geography, position)
     $('gps-status').textContent =
       `${gps.latitude.toFixed(5)}°, ${gps.longitude.toFixed(5)}° · ${height > 1000 ? (height / 1000).toFixed(1) + ' km' : height.toFixed(0) + ' m'}`
-    $('map-status').textContent = geography.status
+    setStatusWithIndicator($('map-status'), geography.status, inferIndicatorState(geography.status))
     renderer.domElement.dataset.geoLevel =
       height > 100000 ? 'space' : height > 250 ? 'map' : 'local'
     scene.background = null
@@ -3667,7 +3707,7 @@ setTimeout(() => void restoreStartup(), 0)
 async function restoreStartup(): Promise<void> {
   const label = $('map-install-status')
   label.hidden = false
-  label.textContent = 'Leyendo el proyecto guardado…'
+  setStatusWithIndicator(label, 'Leyendo el proyecto guardado…', 'reconnecting')
   renderer.domElement.dataset.startup = 'loading'
   try {
     const storedProject = await readScene(PROJECT_KEY)
@@ -3690,7 +3730,7 @@ async function restoreStartup(): Promise<void> {
       initialScene,
       performanceSettings.preset === 'ultra',
       (message) => {
-        label.textContent = message
+        setStatusWithIndicator(label, message, inferIndicatorState(message))
       },
       false,
     )

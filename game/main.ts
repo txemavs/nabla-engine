@@ -62,25 +62,25 @@ class Game {
   async start(): Promise<void> {
     try {
       this.loading.setSpawn(this.config.spawn.latitude, this.config.spawn.longitude)
-      this.loading.setStatus('Initializing physics...')
+      this.loading.setStatus('Inicializando física…', 'reconnecting')
       await initPhysics()
 
-      this.loading.setStatus('Setting up renderer...')
+      this.loading.setStatus('Preparando gráficos…')
       this.setupRenderer()
       this.setupInput()
 
-      this.loading.setStatus('Creating scene...')
+      this.loading.setStatus('Creando escena…')
       const document = this.createGameDocument()
       this.view = new SceneView(document, false, true)
       this.scene.add(this.view.root)
 
-      this.loading.setStatus('Setting up world streaming...')
+      this.loading.setStatus('Configurando streaming del mundo…')
       this.setupWorldStream()
 
-      this.loading.setStatus('Loading initial tiles...')
+      this.loading.setStatus('Cargando baldosas iniciales…')
       await this.loadInitialTiles()
 
-      this.loading.setStatus('Starting simulation...')
+      this.loading.setStatus('Iniciando simulación…')
       await this.startSimulation(document)
 
       this.loading.hide()
@@ -221,7 +221,7 @@ class Game {
       this.world.flushInstall(5)
 
       const progress = this.loading.getProgress()
-      this.loading.setStatus(`Loading tiles: ${progress.loaded}/${progress.total}`)
+      this.loading.setStatus(`Cargando baldosas: ${progress.loaded}/${progress.total}`)
 
       await new Promise((r) => setTimeout(r, 100))
     }
