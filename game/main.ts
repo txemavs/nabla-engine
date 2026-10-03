@@ -90,7 +90,9 @@ class Game {
       this.loading.hide()
       this.showHud()
 
-      this.lastTime = performance.now()
+      // Start the game loop - lastTime will be set on first frame
+      // to avoid clock mismatches between performance.now() and RAF timestamp
+      this.lastTime = 0
       this.animationFrame = requestAnimationFrame((t) => this.loop(t))
     } catch (error) {
       console.error('Game initialization failed:', error)
@@ -237,21 +239,22 @@ class Game {
     }
 
     // Game can start when:
-    // 1. All tiles are resolved (loaded, absent, or failed), OR
-    // 2. The spawn tile is loaded (at least one ground tile), OR
-    // 3. At least one tile loaded and some tiles are absent/failed, OR
-    // 4. Timeout expires (we'll use CatchFloor)
+    // 1. At least one tile is INSTALLED (not just tracked, actually usable for ground), OR
+    // 2. All tiles are resolved as absent or failed (use CatchFloor), OR
+    // 3. Timeout expires (use CatchFloor)
     const canStart = () => {
       const progress = this.loading.getProgress()
-      // All tiles resolved
+
+      // Check if spawn tile or any tile is actually installed (has collision data)
+      if (spawnTileId && this.world!.isTileInstalled(spawnTileId)) return true
+      if (progress.loaded > 0) return true
+
+      // All tiles resolved as absent/failed - no point waiting
+      if (progress.absent + progress.failed === progress.total && progress.total > 0) return true
+
+      // All tiles are resolved (complete) - either loaded or unavailable
       if (this.loading.isComplete()) return true
-      // At least the spawn tile loaded
-      if (spawnTileId && this.loading.isTileLoaded(spawnTileId)) return true
-      // At least one tile loaded and we've resolved most of the grid
-      if (progress.loaded > 0 && progress.loaded + progress.absent + progress.failed >= 5)
-        return true
-      // All tiles either absent or failed - no point waiting
-      if (progress.absent + progress.failed === progress.total) return true
+
       return false
     }
 
@@ -268,8 +271,9 @@ class Game {
       }
 
       // Request tile updates and process installs
+      // Give more time for flushInstall to complete mesh installation
       this.world.update(spawnPosition, [0, 0, 0])
-      this.world.flushInstall(5)
+      this.world.flushInstall(10)
 
       // Update loading screen states
       updateTileStates()
@@ -284,8 +288,15 @@ class Game {
       if (progress.failed > 0) statusParts.push(`${progress.failed} failed`)
       this.loading.setStatus(`Loading tiles: ${statusParts.join(', ')}`)
 
-      await new Promise((r) => setTimeout(r, 100))
+      await new Promise((r) => setTimeout(r, 50))
     }
+
+    // After canStart, give extra time for any in-progress installations to complete
+    // This ensures tiles that are being installed finish before we check ground
+    for (let i = 0; i < 20 && this.world.flushInstall(10); i++) {
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    updateTileStates()
 
     // Final state update
     updateTileStates()
@@ -306,31 +317,63 @@ class Game {
     if (!this.world) return
 
     const spawn = document.entities.find((e) => e.kind === 'spawn')!
-    const position = spawn.transform.position
+    const vehicleEntity = document.entities.find((e) => e.kind === 'vehicle')
 
+    // Use spawn position from config (in local coords) for ground check
+    const spawnLocalPos = geoToLocal(this.origin, {
+      latitude: this.config.spawn.latitude,
+      longitude: this.config.spawn.longitude,
+      altitude: this.config.spawn.altitude,
+    })
+
+    // Wait for ground with longer timeout (10s) since tiles may still be installing
     let ground: number | undefined
     try {
-      await this.world.ensureGround(position, 5000)
-      ground = this.world.groundHeight(position)
+      await this.world.ensureGround(spawnLocalPos, 10000)
+      ground = this.world.groundHeight(spawnLocalPos)
     } catch {
-      console.warn('No ground tile available at spawn, using catch floor')
+      console.warn('ensureGround threw, using catch floor')
       ground = undefined
     }
 
-    const vehicleEntity = document.entities.find((e) => e.kind === 'vehicle')
+    // Position entities based on ground availability
     if (ground !== undefined) {
+      console.log(`Ground found at height ${ground.toFixed(2)}m`)
       if (vehicleEntity) {
-        vehicleEntity.transform.position[1] = ground + (vehicleEntity.groundOffset ?? 0.62)
+        vehicleEntity.transform.position = [
+          spawnLocalPos[0],
+          ground + (vehicleEntity.groundOffset ?? 0.62),
+          spawnLocalPos[2],
+        ]
       }
-      spawn.transform.position[1] = ground + (spawn.groundOffset ?? 0.2)
+      spawn.transform.position = [
+        spawnLocalPos[0] - 4,
+        ground + (spawn.groundOffset ?? 0.2),
+        spawnLocalPos[2],
+      ]
       this.catchFloor?.hide()
     } else {
+      // No ground available - use CatchFloor as fallback
       const fallbackHeight = this.origin.altitude
+      console.warn(`No ground at spawn, using CatchFloor at altitude ${fallbackHeight}m`)
       if (vehicleEntity) {
-        vehicleEntity.transform.position[1] = fallbackHeight + (vehicleEntity.groundOffset ?? 0.62)
+        vehicleEntity.transform.position = [
+          spawnLocalPos[0],
+          fallbackHeight + (vehicleEntity.groundOffset ?? 0.62),
+          spawnLocalPos[2],
+        ]
       }
-      spawn.transform.position[1] = fallbackHeight + (spawn.groundOffset ?? 0.2)
-      this.catchFloor?.show([0, fallbackHeight, 0], [0, 0, 0, 1], this.renderOrigin)
+      spawn.transform.position = [
+        spawnLocalPos[0] - 4,
+        fallbackHeight + (spawn.groundOffset ?? 0.2),
+        spawnLocalPos[2],
+      ]
+      // Show CatchFloor at spawn position
+      this.catchFloor?.show(
+        [spawnLocalPos[0], fallbackHeight, spawnLocalPos[2]],
+        [0, 0, 0, 1],
+        this.renderOrigin,
+      )
     }
 
     this.sim = new Simulation(document, {
@@ -338,7 +381,7 @@ class Game {
       planetaryTerrain: true,
     })
 
-    const vehicleId = document.entities.find((e) => e.kind === 'vehicle')?.id
+    const vehicleId = vehicleEntity?.id
     if (vehicleId) {
       this.sim.startInVehicle(vehicleId)
     }
@@ -347,10 +390,20 @@ class Game {
   private loop(time: number): void {
     if (this.disposed) return
 
-    const elapsed = Math.min((time - this.lastTime) / 1000, 0.1)
+    // Compute elapsed time with safety checks:
+    // - On first frame, lastTime might be 0 or from a different clock
+    // - After tab throttling or long pause, delta could be huge
+    // - Clamp to [0, 0.1] to avoid physics instability
+    let elapsed = 0
+    if (this.lastTime > 0 && time > this.lastTime) {
+      elapsed = Math.min((time - this.lastTime) / 1000, 0.1)
+    }
     this.lastTime = time
 
-    this.update(elapsed)
+    // Skip update if elapsed is zero or invalid (first frame edge case)
+    if (elapsed > 0) {
+      this.update(elapsed)
+    }
     this.render()
 
     this.animationFrame = requestAnimationFrame((t) => this.loop(t))
@@ -360,7 +413,8 @@ class Game {
     if (!this.sim || !this.world || !this.view) return
 
     const input = this.getInput(elapsed)
-    this.sim.step(input, elapsed)
+    this.sim.setInput(input)
+    this.sim.step(elapsed)
 
     const player = this.sim.player
     const position = player.position
@@ -376,7 +430,7 @@ class Game {
 
     this.updateCamera(player)
     this.updateHud(player)
-    this.view.update(this.sim, elapsed)
+    this.view.sync(this.sim, elapsed)
 
     this.updateGeography(position)
     this.shadowManager?.update(this.camera, this.scene)

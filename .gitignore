@@ -25,3 +25,4 @@ local-backup/
 assets/custom/**
 !assets/custom/README.md
 assets/fixtures/
+assets/test-tiles/

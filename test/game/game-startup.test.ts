@@ -4,6 +4,17 @@ import { createEntity, type SceneDocument } from '../../src/index.js'
 import type { GeoPoint } from '../../src/math/geo/sphere.js'
 import { TileLoadTracker } from '../../src/render/planet/static-tiles.js'
 
+/**
+ * Simulates the game loop's elapsed time computation.
+ * This is the logic from game/main.ts loop() method.
+ */
+function computeElapsed(time: number, lastTime: number): number {
+  if (lastTime > 0 && time > lastTime) {
+    return Math.min((time - lastTime) / 1000, 0.1)
+  }
+  return 0
+}
+
 describe('game startup regression tests', () => {
   const SPAWN: GeoPoint = {
     latitude: 43.3372,
@@ -257,6 +268,76 @@ describe('game startup regression tests', () => {
       // canStart() condition: absent + failed === total
       expect(absent).toBe(total)
       expect(loaded).toBe(0)
+    })
+  })
+
+  describe('game loop timing', () => {
+    it('computes elapsed time correctly for normal frames', () => {
+      // Normal frame: 16.67ms (60 FPS)
+      const lastTime = 1000
+      const time = 1016.67
+      const elapsed = computeElapsed(time, lastTime)
+      expect(elapsed).toBeCloseTo(0.01667, 4)
+    })
+
+    it('clamps elapsed time to 100ms max', () => {
+      // Long frame: 500ms (tab was throttled)
+      const lastTime = 1000
+      const time = 1500
+      const elapsed = computeElapsed(time, lastTime)
+      expect(elapsed).toBe(0.1)
+    })
+
+    it('returns zero on first frame (lastTime is 0)', () => {
+      // First frame: lastTime is 0
+      const lastTime = 0
+      const time = 1000
+      const elapsed = computeElapsed(time, lastTime)
+      expect(elapsed).toBe(0)
+    })
+
+    it('returns zero if time goes backwards', () => {
+      // Time went backwards (should not happen, but be safe)
+      const lastTime = 2000
+      const time = 1000
+      const elapsed = computeElapsed(time, lastTime)
+      expect(elapsed).toBe(0)
+    })
+
+    it('returns zero if time equals lastTime', () => {
+      // No time passed
+      const lastTime = 1000
+      const time = 1000
+      const elapsed = computeElapsed(time, lastTime)
+      expect(elapsed).toBe(0)
+    })
+
+    it('handles very small time differences', () => {
+      // Sub-millisecond precision
+      const lastTime = 1000
+      const time = 1000.001
+      const elapsed = computeElapsed(time, lastTime)
+      expect(elapsed).toBeCloseTo(0.000001, 9)
+    })
+
+    it('elapsed is always finite and non-negative', () => {
+      const testCases = [
+        { time: 0, lastTime: 0 },
+        { time: 1000, lastTime: 0 },
+        { time: 0, lastTime: 1000 },
+        { time: Infinity, lastTime: 1000 },
+        { time: 1000, lastTime: Infinity },
+        { time: -1000, lastTime: 1000 },
+        { time: 1000, lastTime: -1000 },
+        { time: 999999999, lastTime: 1000 }, // very long pause
+      ]
+
+      for (const { time, lastTime } of testCases) {
+        const elapsed = computeElapsed(time, lastTime)
+        expect(Number.isFinite(elapsed)).toBe(true)
+        expect(elapsed).toBeGreaterThanOrEqual(0)
+        expect(elapsed).toBeLessThanOrEqual(0.1)
+      }
     })
   })
 })
