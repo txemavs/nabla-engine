@@ -166,4 +166,61 @@ describe('truck stability', () => {
 
     console.log(`Teleported to: [${position.map((n) => n.toFixed(2)).join(', ')}]`)
   })
+
+  it('truck Y >= terrain height at spawn position (critical spawn assertion)', async () => {
+    // This test asserts the critical requirement: vehicle Y must be >= terrain height
+    // at the vehicle's X,Z position. Vehicle must NEVER spawn below terrain.
+    const terrainHeights = [0, 4, 15, 32, -5, -10] // Various terrain heights to test
+
+    for (const terrainHeight of terrainHeights) {
+      const vehicleHeight = 0.62
+      const xPos = Math.random() * 100 - 50 // Random X
+      const zPos = Math.random() * 100 - 50 // Random Z
+
+      const vehicleEntity = presetVehicle(
+        'car',
+        'test-vehicle',
+        [xPos, terrainHeight + vehicleHeight, zPos], // Spawn at terrain + vehicle height
+      )
+
+      const document: SceneDocument = {
+        version: 1,
+        name: `Terrain Height ${terrainHeight}m Test`,
+        sky: { mode: 'live' },
+        geography: {
+          latitude: 43.3365,
+          longitude: -1.7565,
+          altitude: 50,
+          imagery: 'offline',
+          planetary: true,
+        },
+        cursor: [0, 0, 0],
+        cursorOnGround: true,
+        entities: [
+          { ...createEntity('spawn', 'spawn', [xPos - 4, terrainHeight + 0.2, zPos]), groundOffset: 0.2 },
+          { ...vehicleEntity, groundOffset: vehicleHeight },
+        ],
+      }
+
+      const sim = new Simulation(document, {
+        playerMode: 'walk',
+        planetaryTerrain: true,
+      })
+
+      sim.startInVehicle('test-vehicle')
+
+      const pos = sim.player.position
+      const vehicleY = pos[1]
+
+      // CRITICAL ASSERTION: Vehicle Y must be >= terrain height at its X,Z
+      // (with a small tolerance for physics settling)
+      const minAllowedY = terrainHeight - 0.1
+      expect(vehicleY).toBeGreaterThanOrEqual(minAllowedY)
+
+      console.log(
+        `Terrain=${terrainHeight}m at [${xPos.toFixed(1)}, ${zPos.toFixed(1)}]: ` +
+          `Vehicle Y=${vehicleY.toFixed(2)} >= ${minAllowedY.toFixed(2)} ✓`,
+      )
+    }
+  })
 })

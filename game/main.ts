@@ -477,8 +477,45 @@ class Game {
 
     const ground = this.world.groundHeight(position)
 
+    // If we were waiting for terrain and now have ground data, update spawn position
+    if (this.waitingForTerrain && ground !== undefined) {
+      const vehicleHeight = 0.62
+      // Check if we can find stable ground at spawn position
+      const spawnGround = checkFootprint(
+        (pos) => this.world!.groundHeight(pos),
+        [this.spawnPosition[0] || position[0], 0, this.spawnPosition[2] || position[2]],
+        FOOTPRINT_RADIUS,
+      )
+      if (spawnGround !== undefined) {
+        this.spawnPosition = [
+          this.spawnPosition[0] || position[0],
+          spawnGround + vehicleHeight,
+          this.spawnPosition[2] || position[2],
+        ]
+        console.log(
+          `Terrain now available! Spawn position updated to: ` +
+            `[${this.spawnPosition.map((n) => n.toFixed(2)).join(', ')}]`,
+        )
+        this.waitingForTerrain = false
+        this.terrainMessage = ''
+
+        // Immediately teleport vehicle to correct position on terrain
+        this.sim.teleportVehicle(this.spawnPosition, 0)
+        console.log(
+          `Vehicle teleported to terrain height. Y=${this.spawnPosition[1].toFixed(2)}, ground=${spawnGround.toFixed(2)}`,
+        )
+
+        // Update catch floor to show at terrain level
+        this.catchFloor?.show(
+          [this.spawnPosition[0], spawnGround, this.spawnPosition[2]],
+          [0, 0, 0, 1],
+          this.renderOrigin,
+        )
+      }
+    }
+
     // If vehicle falls below ground by more than 5m, try to recover
-    if (ground !== undefined && position[1] < ground - 5) {
+    if (ground !== undefined && position[1] < ground - 5 && !this.waitingForTerrain) {
       console.warn(
         `Vehicle fell below terrain (Y=${position[1].toFixed(2)}, ground=${ground.toFixed(2)}), recovering...`,
       )
