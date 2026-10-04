@@ -1,9 +1,9 @@
-import { createCarrierPortal } from '../src/entity/portal/portal.js'
-import { createEntity } from '../src/entity/schema.js'
-import { SceneGraph } from '../src/scene/graph.js'
-import { type SceneDocument } from '../src/scene/document.js'
-import { presetVehicle } from '../src/catalog/vehicles/library.js'
-import type { GeoPoint } from '../src/math/geo/sphere.js'
+import { createCarrierPortal } from '@nabla/engine'
+import { createEntity } from '@nabla/engine'
+import { SceneGraph } from '@nabla/engine'
+import { type SceneDocument } from '@nabla/engine'
+import { presetVehicle } from '@nabla/engine'
+import type { GeoPoint } from '@nabla/engine'
 /** User-owned content survives removal of generated context, with its world pose intact. */
 export function planetaryScene(document: SceneDocument): SceneDocument {
   if (

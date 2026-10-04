@@ -1,4 +1,4 @@
-import { MERCATOR_LIMIT } from '../src/scene/mercator.js'
+import { MERCATOR_LIMIT } from '@nabla/engine'
 export type UrlLocation =
   { latitude: number; longitude: number; altitude?: number } | { error: string } | null
 /** Explicit URL coordinates override the starting place, never erase the saved project. */

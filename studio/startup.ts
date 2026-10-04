@@ -1,4 +1,4 @@
-import type { SceneDocument } from '../src/scene/document.js'
+import type { SceneDocument } from '@nabla/engine'
 import type { StudioProject } from './project.js'
 export interface StartupResult {
   project: StudioProject

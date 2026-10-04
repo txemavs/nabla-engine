@@ -1,6 +1,6 @@
 import { fireSidearm } from '@nabla/engine/runtime'
 import { vehicleMenuKey } from '@nabla/engine/runtime'
-import { randomUUID } from '../src/util/uuid.js'
+import { randomUUID } from '@nabla/engine'
 import {
   commands,
   bindAction,
@@ -18,13 +18,13 @@ import {
 import { objectProperties, chooseCapability, axisLocked, axisLocks } from './ui/properties.js'
 import { sceneTree, sceneHierarchy } from './ui/scene-tree.js'
 import { openExactTransform } from './ui/exact-transform.js'
-import { parseScene } from '../src/scene/document.js'
-import { capturePng } from '../src/render/capture.js'
+import { parseScene } from '@nabla/engine'
+import { capturePng } from '@nabla/engine'
 import { worldWater } from '@nabla/engine/runtime'
-import { CatchFloor } from '../src/render/planet/catch-floor.js'
-import { seaSeenFromBelow } from '../src/render/planet/ocean-sheet.js'
-import { TileDebugView, type TileDebugMode } from '../src/render/planet/debug.js'
-import { PerformanceMonitor } from '../src/diagnostics/performance-monitor.js'
+import { CatchFloor } from '@nabla/engine/render'
+import { seaSeenFromBelow } from '@nabla/engine/render'
+import { TileDebugView, type TileDebugMode } from '@nabla/engine/render'
+import { PerformanceMonitor } from '@nabla/engine'
 import { TouchDriving } from './touch-driving.js'
 import {
   GameRuntime,
@@ -32,14 +32,14 @@ import {
   availableGamepads,
   playGroundClearance,
 } from '@nabla/engine/runtime'
-import { setNavigationPlaces } from '../src/render/entity/navigation-places.js'
+import { setNavigationPlaces } from '@nabla/engine/render'
 import { flightEntry, urlPlay } from './flight-entry.js'
-import { geoToLocal } from '../src/math/geo/sphere.js'
+import { geoToLocal } from '@nabla/engine'
 import { urlLocation } from './url-location.js'
 import { settleGroundPlacement } from './ground-placement.js'
 import { mountStudio } from './shell.js'
-import { setPlanetCharts } from '../src/render/entity/helm-map.js'
-import { PlanetWorld, projectedLayers } from '../src/render/planet/world.js'
+import { setPlanetCharts } from '@nabla/engine/render'
+import { PlanetWorld, projectedLayers } from '@nabla/engine/render'
 import { FieldLighting } from '@nabla/engine/runtime'
 import { planetaryScene, createPlanetScene } from './planet-scene.js'
 import { geographicPose, anchoredWorldPose } from './geographic-pose.js'
@@ -48,7 +48,7 @@ import { prepareStartup } from './startup.js'
 import { authoredTree, isMapEnvironment } from './outliner.js'
 import { RemotePortalViews, resolveWorldPortalViews } from '@nabla/engine/runtime'
 import { portalRegistry, setPortalConnection } from './portal-registry.js'
-import { portalEnvironment } from '../src/render/portal/environment.js'
+import { portalEnvironment } from '@nabla/engine/render'
 import {
   createProject,
   travelPlanet,
@@ -59,34 +59,34 @@ import {
   projectFilename,
   type StudioProject,
 } from './project.js'
-import { FrameLoop } from '../src/runtime/frame-loop.js'
+import { FrameLoop } from '@nabla/engine/runtime'
 import { StudioInputOwner } from './input-owner.js'
-import { mapCacheStats, setMapCacheBudget, clearMapCache } from '../src/render/planet/cache.js'
-import { receiveMapGeometry, type PreparedMapGeometry } from '../src/render/planet/geometry.js'
-import { roadGeometry } from '../src/planet/land/roads/draped-road.js'
+import { mapCacheStats, setMapCacheBudget, clearMapCache } from '@nabla/engine/render'
+import { receiveMapGeometry, type PreparedMapGeometry } from '@nabla/engine/render'
+import { roadGeometry } from '@nabla/engine'
 import { VehicleAudio } from './vehicle-audio.js'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
-import { createCatalogEntities, entityCatalog } from '../src/index.js'
+import { createCatalogEntities, entityCatalog } from '@nabla/engine'
 import { SelectionOutline } from './selection-outline.js'
 import { SelectionSilhouette } from './selection-silhouette.js'
 import { readPerformance, shadowTiers, performancePresets, streamBudget } from './performance.js'
 import { GameRenderPipeline } from '@nabla/engine/runtime'
-import { ShadowManager } from '../src/render/shadows.js'
+import { ShadowManager } from '@nabla/engine'
 import { readScene, writeScene } from './scene-storage.js'
 import { SolidEditor } from './solid-editor.js'
-import { treeSprite } from '../src/entity/sprite/sprite.js'
+import { treeSprite } from '@nabla/engine'
 import { createGallery, Gallery } from './gallery.js'
 import { PortalControls } from './portal-controls.js'
 import { Sidearm } from './sidearm.js'
-import { DrivingTelemetry } from '../src/render/entity/driving-camera.js'
+import { DrivingTelemetry } from '@nabla/engine/render'
 import { WheelDebugOverlay } from './wheel-debug.js'
-import { createPortal } from '../src/entity/portal/portal.js'
-import { renderPortals, type ExternalPortalView } from '../src/render/portal/portals.js'
-import { skyTime, localTimeInput, type SkyClock } from '../src/planet/sky.js'
-import { GeographicView } from '../src/render/planet/sky.js'
-import { WorldEnvironment, configureWorldRenderer } from '../src/render/planet/world-environment.js'
-import { localToGeo, MADRID } from '../src/math/geo/sphere.js'
+import { createPortal } from '@nabla/engine'
+import { renderPortals, type ExternalPortalView } from '@nabla/engine/render'
+import { skyTime, localTimeInput, type SkyClock } from '@nabla/engine'
+import { GeographicView } from '@nabla/engine'
+import { WorldEnvironment, configureWorldRenderer } from '@nabla/engine/render'
+import { localToGeo, MADRID } from '@nabla/engine'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { TransformControls } from 'three/addons/controls/TransformControls.js'
@@ -100,8 +100,8 @@ import {
   idleInput,
   type Entity,
   type Vec3Tuple,
-} from '../src/index.js'
-import { SceneView } from '../src/presentation/scene-view.js'
+} from '@nabla/engine'
+import { SceneView } from '@nabla/engine'
 import './style.css'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {

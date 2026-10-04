@@ -5,8 +5,8 @@ import {
   removeVertex,
   triangles,
   type SolidGeometry,
-} from '../src/math/solid/mesh.js'
-import type { Entity, Vec3Tuple } from '../src/entity/schema.js'
+} from '@nabla/engine'
+import type { Entity, Vec3Tuple } from '@nabla/engine'
 
 /** Host adapter: every completed operation is one SceneEditor transaction. */
 export class SolidEditor {

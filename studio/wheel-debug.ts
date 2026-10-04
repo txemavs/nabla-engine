@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { Simulation, Vec3Tuple } from '../src/index.js'
+import type { Simulation, Vec3Tuple } from '@nabla/engine'
 
 export interface WheelDebugData {
   wheelIndex: number

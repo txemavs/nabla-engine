@@ -1,63 +1,10 @@
 import vue from '@vitejs/plugin-vue'
 import { defineConfig, loadEnv } from 'vite'
-import { fileURLToPath } from 'node:url'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     root: 'studio',
     plugins: [vue()],
-    resolve: {
-      alias: [
-        {
-          find: '@nabla/engine/runtime',
-          replacement: fileURLToPath(new URL('./src/runtime/index.ts', import.meta.url)),
-        },
-        {
-          find: '@nabla/engine/vehicle-presentation/presets',
-          replacement: fileURLToPath(
-            new URL('./src/catalog/presentation/road-vehicles.ts', import.meta.url),
-          ),
-        },
-        {
-          find: '@nabla/engine/vehicle-presentation',
-          replacement: fileURLToPath(
-            new URL('./src/render/vehicle-presentation/index.ts', import.meta.url),
-          ),
-        },
-        {
-          find: '@nabla/engine/monitors/html',
-          replacement: fileURLToPath(
-            new URL('./src/render/monitors/html-monitor.ts', import.meta.url),
-          ),
-        },
-        {
-          find: '@nabla/engine/monitors/presets',
-          replacement: fileURLToPath(new URL('./src/catalog/monitors/index.ts', import.meta.url)),
-        },
-        {
-          find: '@nabla/engine/monitors',
-          replacement: fileURLToPath(new URL('./src/render/monitors/index.ts', import.meta.url)),
-        },
-        {
-          find: '@nabla/engine/menus',
-          replacement: fileURLToPath(new URL('./src/render/monitors/menu.ts', import.meta.url)),
-        },
-        // Studio runs in the browser. Tests and the package build keep the node reader.
-        // Exact specifier: a regex replace would keep the "./" prefix and miss the file.
-        {
-          find: './preset-source.js',
-          replacement: fileURLToPath(
-            new URL('./src/catalog/vehicles/preset-source.browser.ts', import.meta.url),
-          ),
-        },
-        {
-          find: './weapon-source.js',
-          replacement: fileURLToPath(
-            new URL('./src/catalog/weapons/weapon-source.browser.ts', import.meta.url),
-          ),
-        },
-      ],
-    },
     define: {
       __VUE_OPTIONS_API__: true,
       __VUE_PROD_DEVTOOLS__: false,

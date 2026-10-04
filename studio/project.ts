@@ -1,8 +1,8 @@
-import { randomUUID } from '../src/util/uuid.js'
+import { randomUUID } from '@nabla/engine'
 import { portalRegistry, type PortalConnection } from './portal-registry.js'
 import { z } from 'zod'
-import { parseScene, type SceneDocument } from '../src/scene/document.js'
-import { toWorldPose, fromWorldPose, type WorldPose } from '../src/math/geo/pose.js'
+import { parseScene, type SceneDocument } from '@nabla/engine'
+import { toWorldPose, fromWorldPose, type WorldPose } from '@nabla/engine'
 
 /** Places retain payloads and working frames; planet poses address root objects globally. */
 export interface StudioProject {

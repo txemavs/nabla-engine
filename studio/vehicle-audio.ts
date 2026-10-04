@@ -1,4 +1,4 @@
-import { VehicleAudio as EngineVehicleAudio } from '../src/audio/vehicle.js'
+import { VehicleAudio as EngineVehicleAudio } from '@nabla/engine'
 
 /**
  * Studio wrapper: footer mute button, the `nabla.flight-sound` preference,

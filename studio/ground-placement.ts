@@ -1,5 +1,5 @@
-import type { SceneDocument } from '../src/scene/document.js'
-import type { Vec3Tuple } from '../src/entity/schema.js'
+import type { SceneDocument } from '@nabla/engine'
+import type { Vec3Tuple } from '@nabla/engine'
 
 /** Surface placement is persistent while terrain streams; explicit pose edits clear it. */
 export function settleGroundPlacement(

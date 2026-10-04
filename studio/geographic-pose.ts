@@ -1,6 +1,6 @@
-import { fromWorldPose, toWorldPose, worldPoseGeography } from '../src/math/geo/pose.js'
-import type { GeoPoint } from '../src/math/geo/sphere.js'
-import type { Transform } from '../src/entity/schema.js'
+import { fromWorldPose, toWorldPose, worldPoseGeography } from '@nabla/engine'
+import type { GeoPoint } from '@nabla/engine'
+import type { Transform } from '@nabla/engine'
 
 /** The implicit anchor follows the object's position; explicit anchors retain local offsets. */
 export function geographicPose(origin: GeoPoint, world: Transform, fixed?: GeoPoint) {

@@ -50,7 +50,7 @@ reset prediction instead of inheriting an editor or previous-game position.
 | Capability                                                      | Current owner                                    | Next extraction / acceptance                                     |
 | --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
 | Editor tools, history, selection, inspector and project storage | `studio/`                                        | Remain in the Studio application                                 |
-| Remaining direct source imports                                 | `studio/`                                        | Deliberate public API, then test Studio against a packed package |
+| Historical tests importing Engine internals                      | `studio/test`, `studio/e2e`                       | Separate Engine implementation tests from portable Studio tests |
 | Atlas host integration                                          | separate application                             | Validate current viewer against the same package version         |
 | Final project extraction                                        | pending                                          | Move Studio only after the parity matrix is complete             |
 
@@ -73,10 +73,9 @@ pending jumps through the same method.
 
 Studio still owns its existing renderer, editor camera bindings and surrounding
 UI. Its camera push/pull bridge preserves those bindings during migration;
-this is not yet the complete browser composition. The development alias and
-TypeScript path for `/runtime` keep source types in one module graph while other
-Studio imports still reference source. The independent game consumer continues
-to run against the packed package without that alias.
+this is not yet the complete browser composition. Studio application code now
+uses package exports without Vite aliases or TypeScript source paths. Both the
+independent Studio and game consumers run against an installed package.
 
 The truck and six-wheel trailer models from `1cca41f` now run in Engine's shared
 world; the broad truck branch remains unmerged. Car GPS and ship HUD updates are
@@ -215,3 +214,28 @@ unit tests and current-shell Studio play smoke pass independently.
 Its separate renderer test also fails before exercising rendering because it
 constructs an invalid Windows Vite URL (`/@fsC:/...`). Both legacy E2E failures
 remain recorded rather than being reported as passing coverage.
+
+## Studio package boundary
+
+All 55 application source/HTML files now use public Engine entries. The explicit
+`/render` entry exposes the viewport services needed by editor hosts; it does not
+grant wildcard access to Engine internals. Existing core exports cover scene
+editing, planetary poses and catalog operations. The NBZ1 prepared-tile codec is
+owned by `/scene`, with the preparation service retaining a compatibility export.
+
+`scripts/check-studio-boundary.mjs` rejects application imports from Engine source
+or services and rejects source aliases. Historical Engine implementation tests
+inside Studio's test directories are deliberately outside this application check.
+
+Reproduce the independent check by building Engine, packing it to a sibling
+`engine-studio-test.tgz`, then running `node scripts/prepare-studio-consumer.mjs`.
+An alternative sibling archive path can be passed as its first argument. Install
+dependencies in the generated sibling `studio-consumer`, run its `typecheck` and
+`build` scripts, and serve its production output. No Engine source is copied;
+assets and worker modules come from the installed Engine archive. Run
+`scripts/studio-runtime-smoke.mjs` with `NABLA_STUDIO_URL` pointing to that server
+and `?scene=circuit` to verify play, boarding, cameras, driving and restart.
+
+This validates the application package boundary. Moving Studio to its final
+repository, splitting historical tests/CI and validating Atlas remain separate
+steps; it does not establish parity for every old editor E2E journey.

@@ -82,6 +82,10 @@
     "./planet/static-tiles": {
       "types": "./dist/render/planet/static-tiles.d.ts",
       "import": "./dist/render/planet/static-tiles.js"
+    },
+    "./render": {
+      "types": "./dist/render/index.d.ts",
+      "import": "./dist/render/index.js"
     }
   },
   "imports": {
@@ -108,7 +112,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "npm run format:check && npm run build && npm run typecheck && npm test && npm run build:demo",
+    "check": "npm run check:studio-boundary && npm run format:check && npm run build && npm run typecheck && npm test && npm run build:demo",
+    "check:studio-boundary": "node scripts/check-studio-boundary.mjs",
     "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

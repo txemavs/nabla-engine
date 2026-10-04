@@ -1,8 +1,8 @@
 import { planetaryScene } from './planet-scene.js'
-import { createRealWorld } from '../src/planet/assemble/world.js'
+import { createRealWorld } from '@nabla/engine'
 import { createProject, parseProject } from './project.js'
-import { createSampleScene } from '../src/scene/sample.js'
-import { parseScene } from '../src/scene/document.js'
+import { createSampleScene } from '@nabla/engine'
+import { parseScene } from '@nabla/engine'
 self.onmessage = (
   event: MessageEvent<{
     project: string | null

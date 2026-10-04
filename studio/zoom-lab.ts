@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { PlanetWorld } from '../src/render/planet/world.js'
+import { PlanetWorld } from '@nabla/engine/render'
 import { activatePreparation } from './preparation-access.js'
 void activatePreparation()
 const element = (id: string) => document.getElementById(id)!

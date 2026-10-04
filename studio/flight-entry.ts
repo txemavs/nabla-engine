@@ -1,6 +1,6 @@
-import { SceneGraph } from '../src/scene/graph.js'
-import { type SceneDocument } from '../src/scene/document.js'
-import { geoToLocal, localToGeo } from '../src/math/geo/sphere.js'
+import { SceneGraph } from '@nabla/engine'
+import { type SceneDocument } from '@nabla/engine'
+import { geoToLocal, localToGeo } from '@nabla/engine'
 export function urlPlay(search: string): boolean {
   const value = new URLSearchParams(search).get('play')
   return value !== null && ['', '1', 'true'].includes(value.toLowerCase())

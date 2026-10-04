@@ -1,5 +1,5 @@
 import type { DesktopMenu } from '@nabla/desktop/core'
-import { entityCatalog } from '../../src/catalog/palette.js'
+import { entityCatalog } from '@nabla/engine'
 export const commandItems = (...ids: string[]) => ids.map((command) => ({ command }))
 export const mainMenus: DesktopMenu[] = [
   {

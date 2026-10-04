@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { decodePreparedBinary } from '#world-cache/prepare/prepared-binary.js'
-import { tileAsset, restoreTileLayers, type TileArtifact } from '../src/render/planet/tile-asset.js'
+import { decodePreparedBinary } from '@nabla/engine/scene'
+import { tileAsset, restoreTileLayers, type TileArtifact } from '@nabla/engine/render'
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id)! as T
 const viewport = element('view'),

@@ -1,5 +1,5 @@
-import type { Entity } from '../src/entity/schema.js'
-import { isMapEnvironment } from '../src/scene/map-content.js'
+import type { Entity } from '@nabla/engine'
+import { isMapEnvironment } from '@nabla/engine'
 
 export { isMapEnvironment }
 export function authoredTree(entities: Entity[]): Map<string | null, Entity[]> {

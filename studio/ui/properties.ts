@@ -1,11 +1,11 @@
 import type { PropertyField, PropertySection } from '@nabla/desktop/core'
-import { SceneGraph } from '../../src/scene/graph.js'
-import type { SceneDocument } from '../../src/scene/document.js'
-import { toDegrees, rotationDegrees, type Entity, type Vec3Tuple } from '../../src/entity/schema.js'
-import type { SceneEditor } from '../../src/scene/history.js'
+import { SceneGraph } from '@nabla/engine'
+import type { SceneDocument } from '@nabla/engine'
+import { toDegrees, rotationDegrees, type Entity, type Vec3Tuple } from '@nabla/engine'
+import type { SceneEditor } from '@nabla/engine'
 import { geographicPose, anchoredWorldPose } from '../geographic-pose.js'
 import { isMapEnvironment } from '../outliner.js'
-import { entityCapabilities } from '../../src/entity/capability.js'
+import { entityCapabilities } from '@nabla/engine'
 import { capabilityOpen, capabilityTitle, capabilitySections, inspector } from './state.js'
 export const axisLocks = new Map<string, Set<number>>()
 export const axisLocked = (id: string, axis: number) => axisLocks.get(id)?.has(axis) ?? false

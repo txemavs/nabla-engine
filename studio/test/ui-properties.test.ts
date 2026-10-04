@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest'
-import { SceneEditor } from '../../src/scene/history.js'
+import { SceneEditor } from '@nabla/engine'
 import { createSampleScene } from '../../src/scene/sample.js'
 import { parseScene } from '../../src/scene/document.js'
 import { objectProperties, axisLocks, axisLocked } from '../ui/properties.js'

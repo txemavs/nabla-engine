@@ -1,4 +1,4 @@
-import type { Entity } from '../../src/entity/schema.js'
+import type { Entity } from '@nabla/engine'
 import { authoredTree } from '../outliner.js'
 import type { TreeNode } from '@nabla/desktop/core'
 export function sceneHierarchy(entities: Entity[], disabled = false): TreeNode[] {
