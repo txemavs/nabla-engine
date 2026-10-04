@@ -75,3 +75,11 @@ independent. This is a group switch, not separate low/high/indicator controls.
 Collision boxes, mirror tuning, A3 lamp fitting and ramp definitions still use
 existing configuration or adapters. This migration does not claim those remaining
 geometric definitions have all moved into GLB metadata.
+
+## Stock asset URLs
+
+Published content lives under `assets/library`, with public URLs `/library/...`.
+The former `assets/studio` name did not represent an editor dependency. Scene
+parsing migrates only known local stock URL prefixes and the old truck folder
+name, on the validated copy. Custom URLs, remote URLs, tuning and caller data are
+unchanged. This narrow path migration does not upgrade vehicle recipes or anchors.

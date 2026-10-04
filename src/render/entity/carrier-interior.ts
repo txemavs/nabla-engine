@@ -42,7 +42,7 @@ export function carrierInterior(mounts: VehicleDefinition['monitorMounts']): {
     room.add(mesh)
     return mesh
   }
-  const atlas = new THREE.TextureLoader().load('/studio/ships/container/room-skin.jpg')
+  const atlas = new THREE.TextureLoader().load('/library/ships/container/room-skin.jpg')
   atlas.colorSpace = THREE.SRGBColorSpace
   let textureOwner = false
   // Sample the supplied atlas with per-face UVs, preserving the original JPEG.

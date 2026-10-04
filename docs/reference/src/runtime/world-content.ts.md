@@ -83,8 +83,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 Explicit throws in this body:
 
-- `Error('Destino de portal no válido')`
-- `Error('Los marcos deben tener las mismas dimensiones')`
+- `Error('Invalid portal destination')`
+- `Error('Portal frames must have matching dimensions')`
 
 ## setPortalConnection.callback@76
 

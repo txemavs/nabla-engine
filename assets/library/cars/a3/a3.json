@@ -41,21 +41,21 @@
   },
   "visual": {
     "body": {
-      "url": "/studio/cars/a3/a3.cabrio.glb",
+      "url": "/library/cars/a3/a3.cabrio.glb",
       "transform": {
         "position": [0, -0.55, 0],
         "rotation": [0, 1, 0, 6.123233995736766e-17]
       }
     },
     "wheel": {
-      "url": "/studio/cars/a3/a3.wheel.glb",
+      "url": "/library/cars/a3/a3.wheel.glb",
       "transform": {
         "position": [0, 0, 0],
         "rotation": [0, 0, 0, 1]
       }
     },
     "steering": {
-      "url": "/studio/cars/a3/a3.steering.glb"
+      "url": "/library/cars/a3/a3.steering.glb"
     }
   },
   "rig": "glb"

@@ -2,7 +2,7 @@
 
 The four original GLBs were recovered unchanged from this
 repository's experimental branch, commit `6a22576`. See [provenance](../assets/README.md).
-The published copies live under `assets/studio`.
+The published copies live under `assets/library`.
 
 ## A3 Cabrio
 

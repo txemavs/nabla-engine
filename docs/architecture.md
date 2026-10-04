@@ -26,7 +26,7 @@ SceneDocument (validated JSON v1)
 | `src/planet/extract/`   | Downloaded district and tile source: features, tags, colours and multipolygons                         |
 | `src/planet/assemble/`  | District assembler: buildings, ways, cover, water and the sample spawn                                 |
 | `playground/`           | Rendering, browser events, map fetching, location permissions and local storage                        |
-| `studio/`               | Studio application. Depends on the engine; will move to its own repo                                   |
+| `studio/`               | Studio application lives in the separate nabla-studio repository                                       |
 
 Runtime engine modules do not import the playground or Studio, and they do not access `window`, `document`,
 `localStorage`, Vue or Agency services. The engine uses Three.js math and Rapier

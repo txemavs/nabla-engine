@@ -17,7 +17,7 @@ type Glb = {
   nodes: { name: string; mesh?: number }[]
 }
 function load(part: string) {
-  const bytes = readFileSync(`assets/studio/cars/a3/a3.${part}.glb`),
+  const bytes = readFileSync(`assets/library/cars/a3/a3.${part}.glb`),
     length = bytes.readUInt32LE(12)
   const json = JSON.parse(bytes.subarray(20, 20 + length).toString()) as Glb,
     bin = bytes.subarray(28 + length)
@@ -76,7 +76,7 @@ it('keeps the complete assembled A3 under 100k triangles and includes the correc
 })
 
 it('preserves the supplied binary geometry while adding driver and mechanical anchors', () => {
-  const bytes = readFileSync('assets/studio/cars/a3/a3.cabrio.glb')
+  const bytes = readFileSync('assets/library/cars/a3/a3.cabrio.glb')
   const length = bytes.readUInt32LE(12)
   // Hash of the untouched binary chunk from the user-supplied body.
   expect(

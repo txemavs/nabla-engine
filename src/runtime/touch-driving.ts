@@ -1,3 +1,4 @@
+import { createRuntimeText, type RuntimeText } from './messages.js'
 export interface TouchDrivingActions {
   play?: () => void
   interact: () => void
@@ -29,22 +30,23 @@ export class TouchDriving {
     host: HTMLElement,
     actions: TouchDrivingActions,
     visibility: TouchDrivingVisibility = 'auto',
+    private readonly text: RuntimeText = createRuntimeText(),
   ) {
     this.root.className = 'touch-driving'
     this.root.dataset.visibility = visibility
     const style = document.createElement('style')
     style.textContent = styles
     this.root.append(style)
-    this.root.setAttribute('aria-label', 'Controles táctiles')
+    this.root.setAttribute('aria-label', this.text('Touch controls'))
     const controls = [
-      ['play', 'Jugar'],
-      ['interact', 'Entrar / salir'],
-      ['camera', 'Cámara'],
-      ['brake', 'Freno'],
+      ['play', this.text('Play')],
+      ['interact', this.text('Enter / exit')],
+      ['camera', this.text('Camera')],
+      ['brake', this.text('Brake')],
       ['left', '◀'],
       ['right', '▶'],
-      ['reverse', 'Atrás'],
-      ['forward', 'Acelerar'],
+      ['reverse', this.text('Reverse')],
+      ['forward', this.text('Accelerate')],
     ]
     for (const [action, label] of controls) {
       if (action === 'play' && !actions.play) continue

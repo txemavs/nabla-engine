@@ -76,9 +76,9 @@ export function setPortalConnection<T extends WorldContent>(
   const from = registry.find((p) => p.id === source),
     to = registry.find((p) => p.id === destination)
   if (!from || (destination && (!to || source === destination)))
-    throw Error('Destino de portal no válido')
+    throw Error('Invalid portal destination')
   if (to && from.size.some((n, i) => Math.abs(n - to.size[i]) > 1e-6))
-    throw Error('Los marcos deben tener las mismas dimensiones')
+    throw Error('Portal frames must have matching dimensions')
   const connections = (project.connections ?? []).filter((c) => c.source !== source)
   if (destination) connections.push({ source, destination, mode })
   return { ...project, connections }

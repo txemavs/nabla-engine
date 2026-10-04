@@ -10,6 +10,9 @@
 - `./game.js`
 - `./placement.js`
 - `./frame-loop.js`
+- `./messages.js`
+- `./hud.js`
+- `../diagnostics/wheel-debug.js`
 - `./vehicle-effects.js`
 - `./game-camera.js`
 - `./input.js`

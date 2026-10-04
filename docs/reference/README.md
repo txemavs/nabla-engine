@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **236 modules; 2134 executable function definitions**.
+Coverage: **241 modules; 2168 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -51,6 +51,7 @@ Coverage: **236 modules; 2134 executable function definitions**.
 | [src/config/streaming.ts](src/config/streaming.ts.md) | 0 |
 | [src/diagnostics/performance-monitor.ts](src/diagnostics/performance-monitor.ts.md) | 10 |
 | [src/diagnostics/runtime-frame.ts](src/diagnostics/runtime-frame.ts.md) | 0 |
+| [src/diagnostics/wheel-debug.ts](src/diagnostics/wheel-debug.ts.md) | 13 |
 | [src/entity/capability.ts](src/entity/capability.ts.md) | 1 |
 | [src/entity/coords.ts](src/entity/coords.ts.md) | 1 |
 | [src/entity/landcover/field.ts](src/entity/landcover/field.ts.md) | 0 |
@@ -188,7 +189,7 @@ Coverage: **236 modules; 2134 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 59 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 73 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
@@ -196,8 +197,11 @@ Coverage: **236 modules; 2134 executable function definitions**.
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 15 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 5 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 4 |
+| [src/runtime/hud.ts](src/runtime/hud.ts.md) | 3 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 8 |
+| [src/runtime/messages.es.ts](src/runtime/messages.es.ts.md) | 0 |
+| [src/runtime/messages.ts](src/runtime/messages.ts.md) | 3 |
 | [src/runtime/performance.ts](src/runtime/performance.ts.md) | 0 |
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 2 |
 | [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 5 |
@@ -212,6 +216,7 @@ Coverage: **236 modules; 2134 executable function definitions**.
 | [src/runtime/vehicle-monitors.ts](src/runtime/vehicle-monitors.ts.md) | 34 |
 | [src/runtime/water.ts](src/runtime/water.ts.md) | 1 |
 | [src/runtime/world-content.ts](src/runtime/world-content.ts.md) | 12 |
+| [src/scene/asset-urls.ts](src/scene/asset-urls.ts.md) | 1 |
 | [src/scene/circuit-plan.ts](src/scene/circuit-plan.ts.md) | 3 |
 | [src/scene/document.ts](src/scene/document.ts.md) | 9 |
 | [src/scene/fingerprint.ts](src/scene/fingerprint.ts.md) | 4 |

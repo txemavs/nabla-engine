@@ -5,6 +5,7 @@
  * owns session state, held input, camera transitions and local portal events.
  */
 import type { GameCameraSettings } from '../config/camera.js'
+import { createRuntimeText } from './messages.js'
 import { GameplayStreaming } from './streaming.js'
 import { Quaternion, Vector3 } from 'three'
 import type { SceneDocument } from '../scene/document.js'
@@ -17,6 +18,8 @@ import { createGameCameraState, updateGameCamera } from './game-camera.js'
 
 /** Shared game coordination. Hosts supply rendering, device events and editor UI. */
 export class GameRuntime {
+  /** Per-host text resolver; headless callers default to English. */
+  text = createRuntimeText()
   readonly streaming = new GameplayStreaming()
   readonly session = new PlaySession()
   readonly cameraState = createGameCameraState()
@@ -194,17 +197,17 @@ export class GameRuntime {
       state.entrance = null
       if (!sim.player.vehicleId) {
         state.firstPerson = !state.firstPerson
-        return state.firstPerson ? 'Primera persona' : 'Tercera persona'
+        return state.firstPerson ? this.text('First person') : this.text('Third person')
       }
       state.mode = state.mode === 'chase' ? 'cockpit' : state.mode === 'cockpit' ? 'map' : 'chase'
       state.pitch = state.mode === 'cockpit' ? state.settings.headPitch : state.settings.chasePitch
       state.headYaw = 0
       state.headPitch = state.settings.headPitch
       return state.mode === 'map'
-        ? 'Cámara cenital · rueda para acercar o alejar'
+        ? this.text('Overhead camera · scroll to zoom')
         : state.mode === 'cockpit'
-          ? 'Cámara del conductor'
-          : 'Cámara exterior'
+          ? this.text('Driver camera')
+          : this.text('Chase camera')
     }
     if (code === 'KeyV') return sim.toggleFlight()
     if (code === 'KeyF') return sim.toggleDock()

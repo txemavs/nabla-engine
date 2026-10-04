@@ -46,7 +46,7 @@
   },
   "visual": {
     "body": {
-      "url": "/studio/trucks/white-truck-studio/assets/tractor.modern.glb",
+      "url": "/library/trucks/white-truck/assets/tractor.modern.glb",
       "transform": {
         "position": [0, 0, 0],
         "rotation": [0, 0, 0, 1]
@@ -54,28 +54,28 @@
     },
     "wheels": [
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.front.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.front.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
         }
       },
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.front.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.front.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
         }
       },
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
         }
       },
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
@@ -83,7 +83,7 @@
       }
     ],
     "steering": {
-      "url": "/studio/trucks/white-truck-studio/assets/steering.glb"
+      "url": "/library/trucks/white-truck/assets/steering.glb"
     },
     "presentation": "nabla.truck"
   },

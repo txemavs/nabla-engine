@@ -4,11 +4,9 @@
 
 [Source](../../../../src/scene/document.ts)
 
-A scene document: versioned JSON of entities, geography and sky.
-External data is parsed before it changes any state. Names never select behavior.
-
 ## Module dependencies
 
+- `./asset-urls.js`
 - `../math/solid/mesh.js`
 - `zod`
 - `../entity/schema.js`
@@ -20,7 +18,7 @@ External data is parsed before it changes any state. Names never select behavior
 
 ## parseScene
 
-[Implementation, line 56](../../../../src/scene/document.ts#L56)
+[Implementation, line 57](../../../../src/scene/document.ts#L57)
 
 Validates external data before changing any state. Names never select behavior.
 
@@ -31,6 +29,7 @@ parseScene(raw: unknown, experimentalLargeScene = false): SceneDocument
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `documentSchema.extend`
+- `migrateStockAssetUrls`
 - `schema.parse`
 - `validateScene`
 - `z.array`
@@ -38,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## replaceMapScene
 
-[Implementation, line 66](../../../../src/scene/document.ts#L66)
+[Implementation, line 69](../../../../src/scene/document.ts#L69)
 
 Internal streaming transaction over an already validated, privately owned document.
 Retained geometry must be immutable; edits use parseScene instead. References are
@@ -62,12 +61,12 @@ Explicit throws in this body:
 
 - `new Error('Scene entity limit exceeded')`
 
-## replaceMapScene.callback@73
+## replaceMapScene.callback@76
 
-[Implementation, line 73](../../../../src/scene/document.ts#L73)
+[Implementation, line 76](../../../../src/scene/document.ts#L76)
 
 ```ts
-callback@73(e): inferred by TypeScript; see implementation
+callback@76(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -76,7 +75,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## updateSceneEntity
 
-[Implementation, line 83](../../../../src/scene/document.ts#L83)
+[Implementation, line 86](../../../../src/scene/document.ts#L86)
 
 Patch a privately owned validated scene without reparsing unrelated geometry.
 
@@ -102,20 +101,20 @@ Explicit throws in this body:
 
 - `new Error('Unknown entity: ' + id)`
 
-## updateSceneEntity.callback@88
+## updateSceneEntity.callback@91
 
-[Implementation, line 88](../../../../src/scene/document.ts#L88)
+[Implementation, line 91](../../../../src/scene/document.ts#L91)
 
 ```ts
-callback@88(e): inferred by TypeScript; see implementation
+callback@91(e): inferred by TypeScript; see implementation
 ```
 
-## updateSceneEntity.callback@98
+## updateSceneEntity.callback@101
 
-[Implementation, line 98](../../../../src/scene/document.ts#L98)
+[Implementation, line 101](../../../../src/scene/document.ts#L101)
 
 ```ts
-callback@98(key): inferred by TypeScript; see implementation
+callback@101(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -124,7 +123,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## validateScene
 
-[Implementation, line 112](../../../../src/scene/document.ts#L112)
+[Implementation, line 115](../../../../src/scene/document.ts#L115)
 
 ```ts
 validateScene(doc: SceneDocument, changed?: Set<Entity>): SceneDocument
@@ -163,18 +162,18 @@ Explicit throws in this body:
 - `new Error('Spawn cannot have children')`
 - `new Error('A collider cannot be parented to a dynamic body')`
 
-## validateScene.callback@113
+## validateScene.callback@116
 
-[Implementation, line 113](../../../../src/scene/document.ts#L113)
+[Implementation, line 116](../../../../src/scene/document.ts#L116)
 
 ```ts
-callback@113(e): inferred by TypeScript; see implementation
+callback@116(e): inferred by TypeScript; see implementation
 ```
 
-## validateScene.callback@115
+## validateScene.callback@118
 
-[Implementation, line 115](../../../../src/scene/document.ts#L115)
+[Implementation, line 118](../../../../src/scene/document.ts#L118)
 
 ```ts
-callback@115(e): inferred by TypeScript; see implementation
+callback@118(e): inferred by TypeScript; see implementation
 ```

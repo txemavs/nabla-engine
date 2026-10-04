@@ -3,10 +3,10 @@
 The reference `game/` application consumes public `@nabla/engine` entries. Engine
 owns the session, render loop, cameras, input, effects and planetary environment;
 the application supplies content, URL configuration and its HTML HUD.
-This is the first extraction increment, not full Studio parity. See the
-[remaining inventory](architecture/studio-extraction.md).
+Studio Play uses this same browser runtime. See the
+[ownership boundary](architecture/studio-extraction.md).
 
-`GameRuntime` from `/runtime` is the host-driven coordinator used by Studio and
+`GameRuntime` from `/runtime` is the headless coordinator used by
 the browser composition. It owns a PlaySession, camera state, input mixing and
 gameplay actions; it does not create a renderer or attach DOM listeners.
 `GameRuntime` from `/runtime/browser` supplies those browser resources around the
@@ -37,7 +37,7 @@ initial occupied vehicle. Unknown presets report an error.
 
 Controls: WASD, Space to brake/jump, C for cameras, E to enter/exit, R for recovery,
 H for the car's retractable GPS, V for supported flight, F for docking and T for control transfer. Click the canvas
-to focus and enable audio; drag to look. Standard gamepad axes use Studio's mixer.
+to focus and enable audio; drag to look. Standard gamepad axes use Engine's shared mixer.
 For LAN/Tailscale testing, the server must listen on the network interface.
 HTTP IP origins use a portable SHA-256 verifier for tiles; checksums are still
 mandatory. Keyboard controls work there. Gamepad access requires a browser

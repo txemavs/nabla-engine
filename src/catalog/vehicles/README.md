@@ -6,15 +6,15 @@ A3, S3 and the modern tractor derive wheel and steering poses from their body
 GLBs. See the [anchor contract and generation workflow](../../../docs/vehicle-rigs.md).
 Generated poses support headless physics; do not copy them back into preset JSON.
 
-`assets/studio` is what this repo publishes. `assets/custom` is this machine only
+`assets/library` is what this repo publishes. `assets/custom` is this machine only
 and is gitignored. Both use `cars`, `planes`, `ships` and `boats`. Studio loads
-both. To publish a vehicle, move its folder into `assets/studio`.
+both. To publish a vehicle, move its folder into `assets/library`.
 
-| Published now   | Folder                          |
-| --------------- | ------------------------------- |
-| S3 and A3       | `assets/studio/cars/a3`         |
-| Container craft | `assets/studio/ships/container` |
-| Portal frame    | `assets/studio/portals`         |
+| Published now   | Folder                           |
+| --------------- | -------------------------------- |
+| S3 and A3       | `assets/library/cars/a3`         |
+| Container craft | `assets/library/ships/container` |
+| Portal frame    | `assets/library/portals`         |
 
 Jeep, police Focus, Cessna and the outboard stay in `assets/custom` until one is
 ready to publish. `presentation` still names a code adapter (`nabla.s3`,

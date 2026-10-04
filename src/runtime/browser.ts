@@ -12,7 +12,12 @@ import { lightingDefaults } from '../config/lighting.js'
 import { streamingDefaults } from '../config/streaming.js'
 import { simulationDefaults } from '../config/simulation.js'
 import { gameCameraDefaults, type GameCameraSettings } from '../config/camera.js'
-import { resolveWorldPortalViews, type WorldContent } from './world-content.js'
+import {
+  portalRegistry,
+  setPortalConnection,
+  resolveWorldPortalViews,
+  type WorldContent,
+} from './world-content.js'
 import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
 import type { FieldLightOptions } from '../render/entity/field-lights.js'
@@ -56,6 +61,9 @@ import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { VehicleEffects } from './vehicle-effects.js'
 
 import { waitForGround } from './ground.js'
+import { GameHud } from './hud.js'
+import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
+import { createRuntimeText, type RuntimeLocale } from './messages.js'
 
 export interface GameFrame {
   speedKmh: number
@@ -66,6 +74,15 @@ export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
   canvas: HTMLCanvasElement
+  /** Render the Engine-owned gameplay HUD inside the canvas parent. */
+  hud?: boolean
+  /** Initial audio preference; hosts may change it later with setAudioEnabled. */
+  audio?: boolean
+  /** Per-instance UI language and optional message-template overrides. English is the fallback. */
+  locale?: RuntimeLocale
+  messages?: Readonly<Record<string, string>>
+  /** Additional host focus policy, for editor menus and docked panels. */
+  acceptsInput?: () => boolean
   scene: SceneDocument
   world?: WorldContent
   tiles?: { baseUrl: string; apiUrl?: string; mode?: TileDiscoveryMode } & PlanetSourceOptions
@@ -142,10 +159,17 @@ export class GameRuntime {
   private previousPad: number | null = null
   private readonly originalTabIndex: string | null
   private disposed = false
+  private readonly hud: GameHud | null
+  private readonly wheelDebug = new WheelDebugOverlay()
+  private readonly text: ReturnType<typeof createRuntimeText>
 
   constructor(private readonly options: GameRuntimeOptions) {
     // Reject malformed JavaScript callers before allocating browser resources.
     if (options.tiles) normalizeTilesBase(options.tiles.baseUrl)
+    this.text = createRuntimeText(options.locale, options.messages)
+    this.game.text = this.text
+    this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
+    this.scene.add(this.wheelDebug.root)
     this.display = resolveDisplaySettings(options.display)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
     this.camera.near = this.cameraState.settings.nearClip
@@ -205,13 +229,58 @@ export class GameRuntime {
       options.canvas.parentElement!,
       (message) => options.onMessage?.(message),
       options.canvas,
+      this.text,
     )
     this.monitors.onShipSwitch = (id, kind) => this.view.pressShipSwitch(id, kind)
+    if (this.worldContent) {
+      const world = this.worldContent
+      const source = (id: string) =>
+        portalRegistry(world).find(
+          (entry) => entry.entityId === id && entry.locationId === world.activeLocation,
+        )
+      this.monitors.projectRegistry = {
+        entries: () =>
+          portalRegistry(world).filter((entry) => entry.locationId !== world.activeLocation),
+        selected: (id) =>
+          world.connections?.find((connection) => connection.source === source(id)?.id)
+            ?.destination,
+        configure: (id, destination, open) => {
+          const entry = source(id)
+          if (!entry) throw new Error('Portal is not registered')
+          const mouth = this.document.entities.find((entity) => entity.id === id)
+          const sim = this.session.simulation
+          if (
+            open &&
+            mouth?.portal?.clearsRamp &&
+            mouth.parentId &&
+            sim &&
+            !sim.vehicleInfo(mouth.parentId).rampClosed
+          )
+            throw new Error('Close the garage door first')
+          if (destination && sim) sim.configurePortal(id, null, 'closed')
+          Object.assign(
+            world,
+            setPortalConnection(world, entry.id, destination, open ? 'window' : 'closed'),
+          )
+          this.remoteViews.dispose()
+          return this.text(open ? 'Remote window open' : 'Remote window closed')
+        },
+        status: (id) => {
+          const connection = world.connections?.find((item) => item.source === source(id)?.id)
+          return connection
+            ? this.text(
+                connection.mode === 'window' ? 'Remote window open' : 'Remote window closed',
+              )
+            : undefined
+        },
+      }
+    }
     this.monitors.rebuild(this.document)
-    this.gallery = new Gallery(options.canvas.parentElement!)
+    this.gallery = new Gallery(options.canvas.parentElement!, this.text)
     this.sky = new GeographicView(this.document, () => {})
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
     this.effects = new VehicleEffects(this.scene)
+    this.effects.audio.setEnabled(options.audio !== false)
     this.touchDriving =
       options.touchControls === false
         ? null
@@ -226,6 +295,7 @@ export class GameRuntime {
               camera: () => this.cycleCamera(),
             },
             options.touchControls ?? 'auto',
+            this.text,
           )
     if (this.quality.shadows > 0)
       this.shadows.init({
@@ -315,7 +385,7 @@ export class GameRuntime {
       const simulation = await this.game.play(document, {
         playerMode: 'walk',
         ...options,
-        planetaryTerrain: true,
+        planetaryTerrain: !!document.geography?.planetary,
       })
       simulation.setCollisionDistance(this.quality.collisions)
       controller.signal.throwIfAborted()
@@ -412,6 +482,8 @@ export class GameRuntime {
     this.pipeline.dispose()
     this.shadows.dispose()
     this.catchFloor.dispose()
+    this.hud?.dispose()
+    this.wheelDebug.dispose()
     this.renderer.dispose()
     this.renderer.forceContextLoss()
     if (this.originalTabIndex === null) this.options.canvas.removeAttribute('tabindex')
@@ -464,7 +536,9 @@ export class GameRuntime {
     const crossing = this.game.step(dt, input, water.level, time)
     const physicsMs = measuring ? performance.now() - physicsStart : 0
     if (crossing)
-      this.options.onMessage?.(crossing.blocked ? 'Paso bloqueado' : 'Stargate atravesado')
+      this.options.onMessage?.(
+        crossing.blocked ? this.text('Passage blocked') : this.text('Stargate crossed'),
+      )
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
     this.view.sync(
@@ -475,6 +549,17 @@ export class GameRuntime {
       this.cameraState.headPitch,
     )
     const { player, info } = this.game.updateCamera(this.view, this.camera, time, dt)
+    const canvas = this.options.canvas
+    canvas.dataset.vehicle = player.vehicleId ?? ''
+    canvas.dataset.interior = player.interiorId ?? ''
+    canvas.dataset.cameraMode = player.vehicleId
+      ? this.cameraState.mode
+      : this.cameraState.firstPerson
+        ? 'first-person'
+        : 'chase'
+    canvas.dataset.mapHeight = String(Math.round(this.cameraState.mapHeight))
+    canvas.dataset.vehicleEntrance = this.cameraState.entrance ? 'active' : 'complete'
+    if (crossing) canvas.dataset.portalCrossings = String(crossing.sequence)
     this.gallery.update(this.view, true, dt)
     if (this.sidearm) {
       this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
@@ -496,6 +581,33 @@ export class GameRuntime {
     this.origin.set(0, 0, 0)
     if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
       this.origin.fromArray(player.position)
+    if (this.wheelDebug.isEnabled) {
+      const surfaces: THREE.Object3D[] = []
+      for (const entity of this.document.entities) {
+        const object = this.view.objects.get(entity.id)
+        if (object && (entity.terrain || entity.road)) surfaces.push(object)
+      }
+      this.world?.root.traverseVisible((object) => {
+        if (
+          (object as THREE.Mesh).isMesh &&
+          ['Terrain', 'Roads'].includes(object.userData.category)
+        )
+          surfaces.push(object)
+      })
+      this.wheelDebug.setTerrainMeshes(surfaces)
+      this.wheelDebug.update(sim, player.vehicleId, this.origin)
+    }
+    this.hud?.update({
+      speedKmh: player.speed * 3.6,
+      gear: info?.gear ?? null,
+      vehicle:
+        this.document.entities.find((entity) => entity.id === player.vehicleId)?.name ?? null,
+      cameraMode: canvas.dataset.cameraMode!,
+      interaction: player.vehicleId
+        ? 'E exit · C camera · L lights · F9 wheel diagnostics'
+        : 'WASD move · Space jump · E enter · C camera',
+      wheelDebug: this.wheelDebug.formatHud(),
+    })
     this.effects.updateAudio(sim, this.document, eye)
     this.effects.updateTires(sim, dt, this.origin)
     this.environment.updateSea(
@@ -623,6 +735,11 @@ export class GameRuntime {
   get displaySettings(): DisplaySettings {
     return { ...this.display }
   }
+  /** Change the host's mute preference without replacing the audio graph. */
+  setAudioEnabled(enabled: boolean): void {
+    this.assertAlive()
+    this.effects.audio.setEnabled(enabled)
+  }
   /** Apply a live automatic-clock cap and drawing-buffer scale; physics keeps its fixed timestep. */
   setDisplay(settings: Partial<DisplaySettings>): void {
     if (this.disposed) throw new Error('Game runtime is disposed')
@@ -648,9 +765,15 @@ export class GameRuntime {
     )
   }
   private hasInput(): boolean {
-    return document.activeElement === this.options.canvas && document.hasFocus() && !document.hidden
+    return (
+      document.activeElement === this.options.canvas &&
+      document.hasFocus() &&
+      !document.hidden &&
+      (this.options.acceptsInput?.() ?? true)
+    )
   }
-  private releaseInput(): void {
+  /** Release held controls when host UI takes focus, without stopping simulation. */
+  releaseInput(): void {
     this.fireRequested = false
     this.touchDriving?.clear()
     this.monitors.releaseInput()
@@ -684,29 +807,53 @@ export class GameRuntime {
   private action(code: string): void {
     const sim = this.session.simulation
     if (!sim) return
+    if (code === 'F9') {
+      this.wheelDebug.toggle()
+      return
+    }
     if (code === 'Tab' && !sim.player.vehicleId) {
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
       if (this.weaponDrawn && !this.sidearm)
         this.sidearm = new Sidearm(this.options.canvas.parentElement!)
-      this.options.onMessage?.(this.weaponDrawn ? 'Arma desenfundada' : 'Arma guardada')
+      this.options.onMessage?.(
+        this.weaponDrawn ? this.text('Weapon drawn') : this.text('Weapon holstered'),
+      )
       return
     }
     if (code === 'KeyN') this.gallery.reset()
     let message = this.game.action(code)
     if (code === 'KeyL' && sim.player.vehicleId) {
       const enabled = this.view.toggleVehicleLights(sim.player.vehicleId)
-      if (enabled !== null) message = enabled ? 'Luces encendidas' : 'Luces apagadas'
+      if (enabled !== null) message = enabled ? this.text('Lights on') : this.text('Lights off')
     }
     if (code === 'KeyH' && sim.player.vehicleId) {
       const open = this.view.toggleVehicleGps(sim.player.vehicleId)
-      if (open !== null) message = open ? 'GPS encendido' : 'GPS apagado'
+      if (open !== null) message = open ? this.text('GPS on') : this.text('GPS off')
     }
     if (message) this.options.onMessage?.(message)
   }
   private bindInput(): void {
     const options = { signal: this.lifetime.signal }
     const canvas = this.options.canvas
+    canvas.addEventListener(
+      'wheel',
+      (event) => {
+        if (
+          !this.hasInput() ||
+          !this.session.simulation?.player.vehicleId ||
+          this.cameraState.mode !== 'map'
+        )
+          return
+        event.preventDefault()
+        this.cameraState.mapZoom = THREE.MathUtils.clamp(
+          this.cameraState.mapZoom * Math.exp(event.deltaY * controlDefaults.mapZoomSensitivity),
+          controlDefaults.mapZoomMin,
+          controlDefaults.mapZoomMax,
+        )
+      },
+      { ...options, passive: false },
+    )
     canvas.parentElement!.addEventListener(
       'pointerdown',
       (event) => {
@@ -757,6 +904,7 @@ export class GameRuntime {
               const entity = this.document.entities.find((e) => e.id === entityId)
               if (entity) Object.assign(entity, patch)
             },
+            this.text,
           )
           if (result.handled) {
             event.preventDefault()
@@ -793,6 +941,7 @@ export class GameRuntime {
         if (!this.hasInput() || (!(event.buttons & 1) && document.pointerLockElement !== canvas))
           return
         const state = this.cameraState
+        if (state.mode === 'map' && this.session.simulation?.player.vehicleId) return
         state.lastLookTime = performance.now()
         if (state.mode === 'cockpit' && this.session.simulation?.player.vehicleId) {
           state.headYaw -= event.movementX * controlDefaults.mouseSensitivity

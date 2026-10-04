@@ -193,19 +193,14 @@
   },
   "devDependencies": {
     "@babel/parser": "7.29.9",
-    "@nabla/desktop": "file:vendor/nabla-desktop-0.2.0-studio.3.tgz",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
     "@types/three": "^0.186.0",
-    "@vitejs/plugin-vue": "^6.0.9",
-    "pinia": "^4.0.3",
     "prettier": "^3.9.8",
     "typescript": "^7.0.2",
     "typescript-vue": "npm:typescript@^5.9.3",
     "vite": "^8.3.0",
-    "vitest": "^5.0.1",
-    "vue": "^3.5.41",
-    "vue-tsc": "^3.3.11"
+    "vitest": "^5.0.1"
   },
   "browser": {
     "./dist/catalog/weapons/weapon-source.js": "./dist/catalog/weapons/weapon-source.browser.js",

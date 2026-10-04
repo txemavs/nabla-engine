@@ -89,7 +89,7 @@ into a competing global table:
 
 - Vehicle definitions and validation: [vehicle fields](../src/entity/vehicle/field.ts).
   Each vehicle stores its own mass, suspension, engine/brake force, seats and
-  camera distance. Stock vehicle recipes live under `assets/studio`; changing
+  camera distance. Stock vehicle recipes live under `assets/library`; changing
   camera defaults does not overwrite a vehicle's authored camera distance.
 - Scene sky/water and geography: [scene document](../src/scene/document.ts),
   [sky clock](../src/planet/sky.ts) and [water model](../src/runtime/water.ts).
@@ -140,3 +140,20 @@ when changing a setting's meaning, and regenerate the reference with
 For weak machines, start with `performance: { preset: 'mobile' }`; `minimal` lowers
 the pixel-ratio cap further to 0.35 while retaining the same conservative collision
 coverage. See the [measured comparison](architecture/performance-review-2026-10-04.md).
+
+## Runtime language and shared Play UI
+
+`GameRuntime` from `/runtime/browser` accepts `locale: 'en' | 'es'` and an optional
+`messages` dictionary keyed by English templates. English is the fallback. Language
+is per instance; no singleton changes another host. `createRuntimeText` is also
+available from `/runtime` for custom HUDs. Templates use `{0}`, `{1}`, etc. for
+values. Touch controls, camera notices, equipment menus, monitors and the gallery
+use the resolver. Authored entity names and lower-level simulation diagnostics
+remain authored data, not automatic translations.
+
+`hud: true` mounts the shared gameplay HUD. `acceptsInput` lets a host add its
+menu/panel focus policy; Engine still owns keyboard, mouse, gamepad and touch
+bindings. `releaseInput()` clears commands without disposing the session.
+
+Mouse sensitivity and map wheel zoom live in `controlDefaults`. F9 toggles the
+Engine wheel diagnostic overlay; markers are allocated on demand for every axle.

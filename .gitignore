@@ -23,6 +23,6 @@ services/world-cache/prepared/
 
 local-backup/
 
-# Per-user vehicles. Publish one by moving it under assets/studio.
+# Per-user vehicles. Publish one by moving it under assets/library.
 assets/custom/**
 !assets/custom/README.md

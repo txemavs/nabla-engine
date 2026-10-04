@@ -104,6 +104,8 @@ try {
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
   runtime = new GameRuntime({
+    locale: 'es',
+    hud: true,
     display: readDisplaySettings(),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,

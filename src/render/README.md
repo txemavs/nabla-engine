@@ -1,6 +1,6 @@
 # Render
 
-Turns a `SceneDocument` into a frame. Studio is a client of this folder: gizmos, panels, and the playable editor stay in `studio/`, which will leave this repo. A game imports the presenter from here (also re-exported on `src/index.ts`) and does not need Studio.
+Turns a `SceneDocument` into a frame. Studio is a client of this folder: gizmos, panels, and the playable editor live in the separate `nabla-studio` repository. A game imports the presenter from here (also re-exported on `src/index.ts`) and does not need Studio.
 
 Nothing in `src/` imports `studio/`.
 
