@@ -71,6 +71,8 @@ export const vehicleField = z
             launchRpm: finite.min(300).max(6000).optional(),
             directionSeconds: finite.min(0).max(3).optional(),
             directionShiftSeconds: finite.min(0).max(2).optional(),
+            neutralSeconds: finite.min(0).max(10).optional(),
+            parkSeconds: finite.min(0).max(30).optional(),
             clack: z
               .object({
                 clunkHz: finite.min(30).max(500).optional(),

@@ -4,19 +4,21 @@
 
 [Source](../../../../../src/entity/vehicle/gear-label.ts)
 
-Gear shown on dashboards and HUDs: `R`, `D1`..`Dn` in automatic mode and `M1`..`Mn` while
-the driver holds a manual gear. Shared so the game HUD, the car cluster and Studio agree.
+Gear shown on dashboards and HUDs: `R`, `N`, `P`, `D1`..`Dn` in automatic mode and
+`M1`..`Mn` while the driver holds a manual gear. Gear 0 is N, or P when `parked`.
+Shared so the game HUD, the car cluster and Studio agree.
 
 ## Module dependencies
 
 
 ## gearLabel
 
-[Implementation, line 5](../../../../../src/entity/vehicle/gear-label.ts#L5)
+[Implementation, line 6](../../../../../src/entity/vehicle/gear-label.ts#L6)
 
-Gear shown on dashboards and HUDs: `R`, `D1`..`Dn` in automatic mode and `M1`..`Mn` while
-the driver holds a manual gear. Shared so the game HUD, the car cluster and Studio agree.
+Gear shown on dashboards and HUDs: `R`, `N`, `P`, `D1`..`Dn` in automatic mode and
+`M1`..`Mn` while the driver holds a manual gear. Gear 0 is N, or P when `parked`.
+Shared so the game HUD, the car cluster and Studio agree.
 
 ```ts
-gearLabel(gear: number, manual: boolean): string
+gearLabel(gear: number, manual: boolean, parked = false): string
 ```

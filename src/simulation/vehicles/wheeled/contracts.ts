@@ -40,6 +40,10 @@ export interface GearboxTuning {
   launchRpm?: number
   /** Standstill dwell before D/R is engaged, seconds. */
   directionSeconds?: number
+  /** Seconds stopped with the handbrake on and no pedal before D/R drops to N. */
+  neutralSeconds?: number
+  /** Further seconds stopped in N with the handbrake on before P engages. */
+  parkSeconds?: number
   /** Torque-cut time after D/R is engaged, seconds. */
   directionShiftSeconds?: number
   /** Sound of every gear change and D/R engagement. */
@@ -100,6 +104,8 @@ export interface WheeledTelemetry {
   readonly tireSlip: number
   /** Counts every gear change (automatic, manual) and D/R engagement. */
   readonly shiftCount: number
+  /** True in P: gear is 0 and the vehicle is held by its brakes. */
+  readonly parked: boolean
   /** Counts audible changes only (D/R engagement, manual shifts); hosts play one clack per increase. */
   readonly clackCount: number
   /** True while torque is cut for a gear change or while D/R waits for standstill. */

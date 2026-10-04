@@ -11,7 +11,7 @@
 
 ## createDrivetrain
 
-[Implementation, line 26](../../../../../src/simulation/vehicles/drivetrain.ts#L26)
+[Implementation, line 31](../../../../../src/simulation/vehicles/drivetrain.ts#L31)
 
 ```ts
 createDrivetrain(): DrivetrainState
@@ -19,7 +19,7 @@ createDrivetrain(): DrivetrainState
 
 ## gearboxTuning
 
-[Implementation, line 59](../../../../../src/simulation/vehicles/drivetrain.ts#L59)
+[Implementation, line 70](../../../../../src/simulation/vehicles/drivetrain.ts#L70)
 
 ```ts
 gearboxTuning(spec?: PowertrainDefinition): ResolvedGearbox
@@ -27,7 +27,7 @@ gearboxTuning(spec?: PowertrainDefinition): ResolvedGearbox
 
 ## selectDriveDirection
 
-[Implementation, line 87](../../../../../src/simulation/vehicles/drivetrain.ts#L87)
+[Implementation, line 100](../../../../../src/simulation/vehicles/drivetrain.ts#L100)
 
 Brake-then-shift direction selector. An opposite pedal never engages D/R while the vehicle
 is still rolling: the caller keeps braking (returns true) until `|speed|` drops below
@@ -47,9 +47,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.sign`
 - `gearboxTuning`
 
+## selectNeutralOrPark
+
+[Implementation, line 149](../../../../../src/simulation/vehicles/drivetrain.ts#L149)
+
+Realistic selector: stopped with the handbrake on and both pedals released, D/R drops to N
+after `neutralSeconds`, and N to P after a further `parkSeconds`. Nothing here ever returns
+to D or R: releasing the handbrake keeps N/P, and only `selectDriveDirection` (the driver's
+W or S) leaves them. Reaching P is audible; the vehicle is then held by the brakes.
+
+```ts
+selectNeutralOrPark(state: DrivetrainState, speed: number, throttle: number, handbrake: boolean, dt: number, gearbox: Pick<ResolvedGearbox, 'neutralSeconds' | 'parkSeconds'> = gearboxTuning()): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `gearboxTuning`
+
+## gearForSpeed
+
+[Implementation, line 179](../../../../../src/simulation/vehicles/drivetrain.ts#L179)
+
+Lowest forward gear whose coupled engine speed stays below the upshift point.
+
+```ts
+gearForSpeed(spec: PowertrainDefinition, radius: number, speed: number, upshiftRpm: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+
 ## isDriven
 
-[Implementation, line 126](../../../../../src/simulation/vehicles/drivetrain.ts#L126)
+[Implementation, line 190](../../../../../src/simulation/vehicles/drivetrain.ts#L190)
 
 ```ts
 isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
@@ -57,7 +89,7 @@ isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
 
 ## stepDrivetrain
 
-[Implementation, line 130](../../../../../src/simulation/vehicles/drivetrain.ts#L130)
+[Implementation, line 194](../../../../../src/simulation/vehicles/drivetrain.ts#L194)
 
 Fixed-step, deliberately forgiving DSG-style clutch; no dependency on asset names or Studio.
 
@@ -75,12 +107,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isInteger`
 - `Object.assign`
 - `createDrivetrain`
+- `gearForSpeed`
 - `gearboxTuning`
 - `selectDriveDirection`
+- `selectNeutralOrPark`
 
 ## shiftGear
 
-[Implementation, line 204](../../../../../src/simulation/vehicles/drivetrain.ts#L204)
+[Implementation, line 275](../../../../../src/simulation/vehicles/drivetrain.ts#L275)
 
 A paddle enters manual mode; reject unsafe reductions instead of over-revving.
 
@@ -95,7 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## engineBrakingForce
 
-[Implementation, line 227](../../../../../src/simulation/vehicles/drivetrain.ts#L227)
+[Implementation, line 298](../../../../../src/simulation/vehicles/drivetrain.ts#L298)
 
 Closed-throttle pumping losses through the selected gear, fading before standstill.
 

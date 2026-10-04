@@ -36,6 +36,13 @@ export const roadVehicleDefaults = Object.freeze({
   directionChangeSeconds: 0.3,
   /** Absolute road speed below which the vehicle counts as stopped for D/R changes, m/s. */
   directionChangeSpeed: 0.5,
+  /**
+   * Stopped with the handbrake on and no pedal pressed, D/R drops to N after this many
+   * seconds. `shift.neutralSeconds`.
+   */
+  neutralSeconds: 0.4,
+  /** Further seconds stopped in N with the handbrake on before P engages. `shift.parkSeconds`. */
+  parkSeconds: 1.5,
   /** Torque-cut time after a D/R selection is engaged, seconds. `shift.directionShiftSeconds`. */
   directionShiftSeconds: 0.15,
   /** Torque-cut time of an automatic or manual gear change, seconds. `shift.seconds`. */

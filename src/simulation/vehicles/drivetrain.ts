@@ -2,6 +2,7 @@ import type { PowertrainDefinition, WheeledDefinition } from './wheeled/contract
 import { roadVehicleDefaults } from '../../config/simulation.js'
 
 export interface DrivetrainState {
+  /** Selector position: -1 R, 0 N or P (see `parked`), 1..n D (or M when `manual`). */
   gear: number
   manual: boolean
   rpm: number
@@ -15,7 +16,11 @@ export interface DrivetrainState {
   directionRemaining: number
   /** True while an opposite-direction request waits for the vehicle to stop. */
   changingDirection: boolean
-  /** Increments on every gear change, automatic or not, and on every D/R engagement. */
+  /** Park: gear is 0 and the brakes hold the vehicle. Only the driver's W or S leaves it. */
+  parked: boolean
+  /** Seconds the vehicle has been stopped with the handbrake on and no pedal (N then P timers). */
+  holdSeconds: number
+  /** Increments on every gear change, automatic or not, and on every D/R/N/P engagement. */
   shiftCount: number
   /**
    * Increments only on changes the driver hears: D/R engagement and manual paddle shifts.
@@ -36,6 +41,8 @@ export const createDrivetrain = (): DrivetrainState => ({
   pendingDirection: null,
   directionRemaining: 0,
   changingDirection: false,
+  parked: false,
+  holdSeconds: 0,
   shiftCount: 0,
   clackCount: 0,
 })
@@ -53,6 +60,10 @@ export interface ResolvedGearbox {
   launchRpm: number
   directionSeconds: number
   directionShiftSeconds: number
+  /** Standstill with the handbrake on and no pedal before D/R drops to N, seconds. */
+  neutralSeconds: number
+  /** Further time stopped in N with the handbrake on before P engages, seconds. */
+  parkSeconds: number
   /** maxRpm relative to the 6,900 rpm road car the burnout constants were written for. */
   rpmScale: number
 }
@@ -72,6 +83,8 @@ export function gearboxTuning(spec?: PowertrainDefinition): ResolvedGearbox {
     directionSeconds: shift?.directionSeconds ?? roadVehicleDefaults.directionChangeSeconds,
     directionShiftSeconds:
       shift?.directionShiftSeconds ?? roadVehicleDefaults.directionShiftSeconds,
+    neutralSeconds: shift?.neutralSeconds ?? roadVehicleDefaults.neutralSeconds,
+    parkSeconds: shift?.parkSeconds ?? roadVehicleDefaults.parkSeconds,
     rpmScale,
   }
 }
@@ -102,18 +115,22 @@ export function selectDriveDirection(
     return false
   }
   state.changingDirection = true
-  if (Math.abs(speed) > roadVehicleDefaults.directionChangeSpeed) {
+  // From N (not P) the driver may select the direction the vehicle is already rolling in.
+  const along = state.gear === 0 && !state.parked && speed * requested > 0
+  if (!along && Math.abs(speed) > roadVehicleDefaults.directionChangeSpeed) {
     state.pendingDirection = null
     state.directionRemaining = 0
     return true
   }
   if (state.pendingDirection !== requested) {
     state.pendingDirection = requested
-    state.directionRemaining = gearbox.directionSeconds
+    state.directionRemaining = along ? 0 : gearbox.directionSeconds
   }
   state.directionRemaining = Math.max(0, state.directionRemaining - dt)
   if (state.directionRemaining > 1e-8) return true
   state.gear = requested
+  state.parked = false
+  state.holdSeconds = 0
   state.pendingDirection = null
   state.directionRemaining = 0
   state.changingDirection = false
@@ -122,6 +139,53 @@ export function selectDriveDirection(
   state.shiftCount++
   state.clackCount++
   return false
+}
+/**
+ * Realistic selector: stopped with the handbrake on and both pedals released, D/R drops to N
+ * after `neutralSeconds`, and N to P after a further `parkSeconds`. Nothing here ever returns
+ * to D or R: releasing the handbrake keeps N/P, and only `selectDriveDirection` (the driver's
+ * W or S) leaves them. Reaching P is audible; the vehicle is then held by the brakes.
+ */
+export function selectNeutralOrPark(
+  state: DrivetrainState,
+  speed: number,
+  throttle: number,
+  handbrake: boolean,
+  dt: number,
+  gearbox: Pick<ResolvedGearbox, 'neutralSeconds' | 'parkSeconds'> = gearboxTuning(),
+): void {
+  const resting =
+    handbrake &&
+    Math.abs(throttle) < 0.01 &&
+    Math.abs(speed) < roadVehicleDefaults.directionChangeSpeed
+  if (!resting || state.parked) {
+    state.holdSeconds = 0
+    return
+  }
+  state.holdSeconds += dt
+  if (state.gear !== 0) {
+    if (state.holdSeconds < gearbox.neutralSeconds) return
+    state.gear = 0
+    state.holdSeconds = 0
+    state.shiftCount++
+  } else if (state.holdSeconds >= gearbox.parkSeconds) {
+    state.parked = true
+    state.holdSeconds = 0
+    state.shiftCount++
+    state.clackCount++
+  }
+}
+/** Lowest forward gear whose coupled engine speed stays below the upshift point. */
+export function gearForSpeed(
+  spec: PowertrainDefinition,
+  radius: number,
+  speed: number,
+  upshiftRpm: number,
+): number {
+  const wheelRpm = (Math.abs(speed) / (2 * Math.PI * radius)) * 60
+  for (let g = 1; g < spec.ratios.length; g++)
+    if (wheelRpm * spec.ratios[g - 1] * spec.finalDrive < upshiftRpm) return g
+  return spec.ratios.length
 }
 export function isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean {
   return axle === 'all' || (axle === 'front' ? wheel < 2 : wheel >= 2)
@@ -141,7 +205,7 @@ export function stepDrivetrain(
   // Reject a stale/invalid gear before it can introduce NaN forces into Rapier.
   if (
     !Number.isInteger(state.gear) ||
-    (state.gear !== -1 && (state.gear < 1 || state.gear > spec.ratios.length))
+    (state.gear !== -1 && state.gear !== 0 && (state.gear < 1 || state.gear > spec.ratios.length))
   ) {
     Object.assign(state, createDrivetrain())
   }
@@ -153,13 +217,19 @@ export function stepDrivetrain(
       ? Math.max(0, Math.min(1, (15 - Math.abs(speed)) / 10))
       : 0
   const gearbox = gearboxTuning(spec)
+  selectNeutralOrPark(state, speed, throttle, handbrake, dt, gearbox)
+  const fromNeutral = state.gear === 0
   const changingDirection = selectDriveDirection(state, speed, throttle, dt, gearbox)
+  // Leaving N while rolling engages the gear that suits the road speed, not first.
+  if (fromNeutral && state.gear === 1)
+    state.gear = gearForSpeed(spec, radius, speed, gearbox.upshiftRpm)
   if (changingDirection) throttle = 0
   const reverse = state.gear < 0
   const wheelRpm = (Math.abs(speed) / (2 * Math.PI * radius)) * 60
   const maxRpm = spec.maxRpm ?? 6900
   const idleRpm = spec.idleRpm ?? roadVehicleDefaults.idleRpm
-  let ratio = state.gear < 0 ? (spec.reverseRatio ?? 3.2) : spec.ratios[state.gear - 1]
+  let ratio =
+    state.gear === 0 ? 0 : state.gear < 0 ? (spec.reverseRatio ?? 3.2) : spec.ratios[state.gear - 1]
   const coupled = wheelRpm * ratio * spec.finalDrive
   if (!state.manual && state.gear > 0 && !state.burnout && state.cooldown === 0) {
     const previous = state.gear
@@ -193,6 +263,7 @@ export function stepDrivetrain(
     Math.min(wheelForce, powerLimit, spec.maxWheelForceN ?? Infinity)
   if (
     changingDirection ||
+    state.gear === 0 ||
     coupled > maxRpm + 100 ||
     (reverse && Math.abs(speed) > 12) ||
     (spec.maxSpeedKmh !== undefined && speed * 3.6 >= spec.maxSpeedKmh)
@@ -209,7 +280,7 @@ export function shiftGear(
   direction: -1 | 1,
 ): boolean {
   state.manual = true
-  if (state.gear < 1 || state.shiftRemaining > 0) return false
+  if (state.gear < 1 || state.shiftRemaining > 0) return false // not in N, P or R
   const gear = state.gear + direction
   if (gear < 1 || gear > spec.ratios.length) return false
   const rpm =
@@ -230,6 +301,7 @@ export function engineBrakingForce(
   radius: number,
   speed: number,
 ): number {
+  if (state.gear === 0) return 0
   const ratio = state.gear < 0 ? 3.2 : spec.ratios[state.gear - 1]
   const torque = 12 + Math.max(0, state.rpm - 900) * 0.007
   return (

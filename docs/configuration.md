@@ -134,6 +134,15 @@ The clack is synthesized (no sample file): two impacts plus an optional air rele
 shaped by `shift.clack` (`clunkHz`, `clickHz`, `gain`, `decaySeconds`, `echoSeconds`,
 `airSeconds`). Omitted fields give the light car clack.
 
+**Neutral and park.** Stopped (below 0.5 m/s) with the handbrake (Space) on and no pedal
+pressed, D/R drops to N after `shift.neutralSeconds` (default 0.4 s, truck 0.8 s), and N to P
+after a further `shift.parkSeconds` (default 1.5 s, truck 2.5 s); reaching P is audible (one
+clack) and the brakes then hold the vehicle. Releasing the handbrake never returns to D or R:
+only W (D) or S (R) leaves N/P, through the usual dwell (`directionSeconds`) and a clack.
+From N, W while already rolling forward engages a gear that suits the speed immediately;
+S while rolling still brakes to a stop first. `vehicleInfo(id).parked` is true in P (gear 0);
+displays use `gearLabel(gear, manual, parked)`: `R`, `N`, `P`, `D<n>`, `M<n>`.
+
 The stock truck recipe defines its own diesel gearing, 650 RPM idle, 2,400 RPM
 ceiling and 120 km/h forward speed limit, plus a slow heavy gearbox: 0.55 s torque cut,
 shifts at 1,950/1,000 RPM, a heavier flywheel, a 60 kN wheel-force limit and a low,
