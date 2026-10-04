@@ -438,6 +438,7 @@ export class GameRuntime {
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
+    this.canvasDiagnostics(frameMs)
     const pad = this.pollGamepad()
     const installStart = measuring ? performance.now() : 0
     this.world?.flushInstall(
@@ -654,6 +655,14 @@ export class GameRuntime {
   private hasInput(): boolean {
     return document.activeElement === this.options.canvas && document.hasFocus() && !document.hidden
   }
+  /** Expose input health on the canvas so a stuck-control report can be checked in devtools. */
+  private canvasDiagnostics(frameMs: number): void {
+    const data = this.options.canvas.dataset
+    data.heldKeys = [...this.keys.values].join(' ')
+    data.keyExpirations = String(this.keys.expirations)
+    if (frameMs > 100) data.longFrames = String(Number(data.longFrames ?? 0) + 1)
+    data.lastFrameMs = frameMs.toFixed(1)
+  }
   private releaseInput(): void {
     this.fireRequested = false
     this.touchDriving?.clear()
@@ -780,6 +789,14 @@ export class GameRuntime {
       capture: true,
     })
     window.addEventListener('pagehide', () => this.releaseInput(), options)
+    // Leaving pointer lock (Escape, browser UI) can swallow the keyups of held controls.
+    document.addEventListener(
+      'pointerlockchange',
+      () => {
+        if (document.pointerLockElement !== canvas) this.releaseInput()
+      },
+      options,
+    )
     canvas.addEventListener('blur', () => this.releaseInput(), options)
     window.addEventListener('blur', () => this.releaseInput(), options)
     document.addEventListener(

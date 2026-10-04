@@ -11,7 +11,7 @@ Keyboard state with a bounded lifetime for a lost keyup (embedded browsers/focus
 
 ## HeldKeys.press
 
-[Implementation, line 7](../../../../src/runtime/held-keys.ts#L7)
+[Implementation, line 15](../../../../src/runtime/held-keys.ts#L15)
 
 Record a physical KeyboardEvent.code at a millisecond timestamp; ignore orphan repeats.
 
@@ -27,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.release
 
-[Implementation, line 15](../../../../src/runtime/held-keys.ts#L15)
+[Implementation, line 24](../../../../src/runtime/held-keys.ts#L24)
 
 Release one key from both the exposed chord and its expiry tracking.
 
@@ -42,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.clear
 
-[Implementation, line 20](../../../../src/runtime/held-keys.ts#L20)
+[Implementation, line 32](../../../../src/runtime/held-keys.ts#L32)
 
 Release the complete chord after blur, pause or other loss of input ownership.
 
@@ -57,9 +57,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.expire
 
-[Implementation, line 25](../../../../src/runtime/held-keys.ts#L25)
+[Implementation, line 42](../../../../src/runtime/held-keys.ts#L42)
 
-Release movement keys after 1500 ms of chord inactivity, recovering from lost keyup events.
+Release movement keys after 1500 ms without a keydown or repeat from the newest held key,
+recovering from a lost keyup. A key held while another key was tapped and released keeps
+silently counting as held: throttle must not drop because steering was tapped.
 
 ```ts
 expire(now: number): void
@@ -67,6 +69,18 @@ expire(now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `/^(Key[WASD]|Arrow(Up|Down|Left|Right)|Space)$/.test`
+- `[...this.seen.keys()].filter`
 - `this.release`
 - `this.seen.keys`
+
+## HeldKeys.expire.callback@44
+
+[Implementation, line 44](../../../../src/runtime/held-keys.ts#L44)
+
+```ts
+callback@44(code): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `/^(Key[WASD]|Arrow(Up|Down|Left|Right)|Space)$/.test`
