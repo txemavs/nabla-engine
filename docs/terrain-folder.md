@@ -12,22 +12,22 @@ The terrain location is **never hard-coded**. You tell the game where to read it
 /?terrain=<base>&tile=<x>/<y>[&dx=<m>&dz=<m>][&heading=<deg>]
 ```
 
-| Parameter                 | Meaning                                                                                                                                 |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `terrain` (or `z15`)      | Tile host, **without** the trailing `/z`. Manifests are read from `<base>/z/15/<x>/<y>/manifest.json`. `/` = this origin.               |
-| `tile`                    | Start over the centre of this tile, e.g. `16211/12003`. Optional when the host serves `<base>/index.json` (first tile).                 |
-| `dx`, `dz`                | Metres east / south of that centre. Use them to start on a road.                                                                        |
-| `lat`, `lon`              | Start at explicit coordinates instead of `tile`.                                                                                        |
-| `heading`                 | Compass heading the parked fleet faces, degrees clockwise from north (default 0).                                                       |
-| `alt`                     | Origin altitude in metres (default 0: the GLBs carry absolute elevations; the vehicles are rested on the real ground).                  |
-| `vehicle`                 | Preset the player starts in: `car` (default), `a3`, `white-truck`, `carrier`.                                                           |
-| `relief`                  | `engine` (default, drivable, with roads) or `lidar` (2 m LiDAR mesh as ground, experimental).                                           |
-| `photo`                   | Orthophoto draped on the ground: `full` (4096 px, default), `lo` (1024 px) or `none` (vertex colours).                                  |
-| `sky`                     | `day` (default fixed midday sun), `live` (real clock) or an ISO date-time with zone.                                                    |
-| `cells`                   | `all` (default): every cell of the host's `index.json` is loaded and drawn, nearest first; `near`: only those within the draw distance. |
-| `player`                  | `hover` (default): on foot you are Studio's floating monitor (1.25 m above the ground); `walk`: a 1.8 m walker.                         |
-| `layers`                  | Layers to hide: `-road` (road mesh gone, ground photo stays), `-photo`, `-buildings`; `all`/`none`. Also stored in `localStorage`.      |
-| `quality`, `fps`, `scale` | As in the other game modes.                                                                                                             |
+| Parameter                     | Meaning                                                                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `terrain` (or `z15`)          | Tile host, **without** the trailing `/z`. Manifests are read from `<base>/z/15/<x>/<y>/manifest.json`. `/` = this origin.               |
+| `tile`                        | Start over the centre of this tile, e.g. `16211/12003`. Optional when the host serves `<base>/index.json` (first tile).                 |
+| `dx`, `dz`                    | Metres east / south of that centre. Use them to start on a road.                                                                        |
+| `lat`, `lon`                  | Start at explicit coordinates instead of `tile`.                                                                                        |
+| `heading`                     | Compass heading the parked fleet faces, degrees clockwise from north (default 0).                                                       |
+| `alt`                         | Origin altitude in metres (default 0: the GLBs carry absolute elevations; the vehicles are rested on the real ground).                  |
+| `vehicle`                     | Preset the player starts in: `car` (default), `a3`, `white-truck`, `carrier`.                                                           |
+| `relief`                      | `engine` (default, drivable, with roads) or `lidar` (2 m LiDAR mesh as ground, experimental).                                           |
+| `photo`                       | Orthophoto draped on the ground: `full` (4096 px, default), `lo` (1024 px) or `none` (vertex colours).                                  |
+| `sky`                         | `day` (default fixed midday sun), `live` (real clock) or an ISO date-time with zone.                                                    |
+| `distance`, `memory`, `cache` | Load radius in metres, cells kept in memory and disk cache in MB (see "Cache and load radius"); they override what the menu remembered. |
+| `player`                      | `hover` (default): on foot you are Studio's floating monitor (1.25 m above the ground); `walk`: a 1.8 m walker.                         |
+| `layers`                      | Layers to hide: `-road` (road mesh gone, ground photo stays), `-photo`, `-buildings`; `all`/`none`. Also stored in `localStorage`.      |
+| `quality`, `fps`, `scale`     | As in the other game modes.                                                                                                             |
 
 `?example=z15` is an alias that still requires `terrain`/`z15`; without a terrain
 location the page says so in Spanish instead of guessing.
@@ -62,14 +62,36 @@ _Aplicar y recargar_ reloads the page with that URL and remembers the choice in 
 5. A tile URL must start with `http://`, `https://` or `/`; otherwise the menu shows a Spanish message and does not
    reload. The field is pre-filled with the active, then the remembered, then the build-time `VITE_NABLA_TILES_URL`.
 
+### Cache and load radius
+
+The same section has the controls Studio already had, now in the game menu (Spanish):
+
+| Control           | Mechanism                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| Caché en disco    | `setMapCacheBudget` of the shared IndexedDB map cache: Desactivada, 25 MB … 10 GB. |
+| Celdas en memoria | `PlanetWorld.setMaxTiles` (12 … 240 cells kept resident).                          |
+| Radio de carga    | `PlanetWorld.setDistance` (1 … 20 km): cells farther than this are not requested.  |
+| Vaciar caché      | `clearMapCache`.                                                                   |
+
+Values are remembered in `localStorage` (`nabla.terrain.cache`); `?cache=<MB>&memory=<cells>&distance=<m>` win
+over the remembered ones. The disk cache defaults to 1 GB here (cells are 11-15 MB; the engine's 100 MB default
+would evict them as they arrive). The pure vocabulary (choices, parsing, labels) is
+`@nabla/engine/planet/terrain-cache`; it reuses the choices and texts of Studio's cache panel (`studio/main.ts`, which is unchanged).
+
 The section is bound before anything loads, so a terrain that fails to load can still be swapped from the menu.
 
 ## Behaviour matched to Studio's play mode
 
-- **All cells.** With an index the whole dataset is streamed (`PlanetSourceOptions.stream: 'coverage'`,
-  `planMapCoverage`): all 33 cells are requested nearest first, drawn and collidable, so a car drives across
-  seams. The HUD shows `Celdas: n/33` (`· cargando k…` while cells arrive). The example asks for a 20 km draw
-  distance and 16 km fog unless `quality=` names a profile.
+- **Streaming is Studio's.** The example uses the engine's own `PlanetWorld` ground-mode streaming
+  (`planMapZooms`, the pump with its worker, the IndexedDB cache, `installBudgetMs` per frame): the cell under
+  the player and its neighbours first, then the rest by distance within the load radius (4 km by default,
+  like Studio's balanced profile). The game starts as soon as the spawn cell is ready; the HUD shows
+  `Celdas: n/33` (`· cargando k…` while cells arrive). Loading never turns into an error while cells keep
+  arriving (the wait is a stall limit, not a total time).
+- **Heavy work in the worker.** Download, SHA-256, GLB parse, collision chunks, the ground-photo drape geometry
+  and the photo's download/check/decode all run in the streaming worker; the main thread only wraps the arrays.
+- **Far photos are small.** Cells farther than one cell from the player use the 1024 px `lo` photo (about 16x
+  fewer pixels to download, decode and keep on the GPU); a cell the player approaches is upgraded to `full`.
 - **Ground height.** The collision surface is the engine terrain. The photo drape used to be lifted 15 cm
   above it (a roof-only offset applied to the ground too), so every wheel looked 15 cm into the drawn road;
   ground photos now sit on the surface (`GROUND_DRAPE_LIFT`), roofs keep their lift.

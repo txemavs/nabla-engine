@@ -22,6 +22,7 @@ import {
   normalizePerformance,
   performancePresets,
   streamBudget,
+  tileBudget,
   type PerformanceSettings,
 } from './performance.js'
 import { GameRenderPipeline } from './render-pipeline.js'
@@ -37,6 +38,7 @@ import { SceneView } from '../presentation/scene-view.js'
 import { GeographicView } from '../render/planet/sky.js'
 import {
   PlanetWorld,
+  type TileTiming,
   type TileDiscoveryMode,
   type PlanetSourceOptions,
 } from '../render/planet/world.js'
@@ -119,7 +121,7 @@ export class GameRuntime {
   private readonly worldContent: WorldContent | undefined
   private readonly fieldLighting: FieldLighting | null
   private display: DisplaySettings
-  private readonly quality: PerformanceSettings
+  private quality: PerformanceSettings
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
@@ -658,6 +660,31 @@ export class GameRuntime {
   /** Terrain cells loaded and drawn of the known dataset; null without tiles. */
   get cellStats(): { loaded: number; visible: number; total: number; pending: number } | null {
     return this.world?.cellStats ?? null
+  }
+  /**
+   * Change how far terrain is loaded and how many cells stay in memory, live. Unset fields keep their value,
+   * except that a new distance without `cells` resets the cells to the quality profile for that distance.
+   * The disk cache is separate (`setMapCacheBudget`, `clearMapCache`).
+   */
+  setStreaming(options: { distance?: number; cells?: number }): void {
+    this.assertAlive()
+    if (options.distance !== undefined) {
+      if (!Number.isFinite(options.distance) || options.distance < 500 || options.distance > 20000)
+        throw new Error('Load distance must be 500–20000 m')
+      this.quality = { ...this.quality, distance: options.distance }
+      this.world?.setDistance(options.distance)
+      // A longer radius needs more cells resident, unless the caller sets the number.
+      if (options.cells === undefined) this.world?.setMaxTiles(tileBudget(options.distance))
+    }
+    if (options.cells !== undefined) this.world?.setMaxTiles(options.cells)
+  }
+  /** Current load radius (metres) and cells kept in memory. */
+  get streaming(): { distance: number; cells: number } {
+    return { distance: this.quality.distance, cells: this.world?.maxCells ?? 0 }
+  }
+  /** Per-cell load timings (worker phases, install steps, photo), keyed by cell id; empty without tiles. */
+  get cellTimings(): [string, TileTiming][] {
+    return [...(this.world?.tileTimings ?? [])]
   }
   /** Ids of the terrain layers switched off (see `TILE_LAYERS`). */
   get hiddenLayers(): string[] {

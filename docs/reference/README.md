@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **252 modules; 2276 executable function definitions**.
+Coverage: **255 modules; 2329 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -18,6 +18,7 @@ Coverage: **252 modules; 2276 executable function definitions**.
 | [game/loading.ts](game/loading.ts.md) | 16 |
 | [game/main.ts](game/main.ts.md) | 0 |
 | [game/menu.ts](game/menu.ts.md) | 1 |
+| [game/terrain-cache.ts](game/terrain-cache.ts.md) | 16 |
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 8 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
 | [game/terrain.ts](game/terrain.ts.md) | 10 |
@@ -97,7 +98,7 @@ Coverage: **252 modules; 2276 executable function definitions**.
 | [src/planet/assemble/waterway.ts](src/planet/assemble/waterway.ts.md) | 5 |
 | [src/planet/assemble/ways.ts](src/planet/assemble/ways.ts.md) | 3 |
 | [src/planet/assemble/world.ts](src/planet/assemble/world.ts.md) | 5 |
-| [src/planet/atlas-z15.ts](src/planet/atlas-z15.ts.md) | 11 |
+| [src/planet/atlas-z15.ts](src/planet/atlas-z15.ts.md) | 12 |
 | [src/planet/buildings/buildings.ts](src/planet/buildings/buildings.ts.md) | 0 |
 | [src/planet/buildings/footprints.ts](src/planet/buildings/footprints.ts.md) | 18 |
 | [src/planet/buildings/rings.ts](src/planet/buildings/rings.ts.md) | 11 |
@@ -122,6 +123,7 @@ Coverage: **252 modules; 2276 executable function definitions**.
 | [src/planet/places.ts](src/planet/places.ts.md) | 4 |
 | [src/planet/sea-coverage.ts](src/planet/sea-coverage.ts.md) | 2 |
 | [src/planet/sky.ts](src/planet/sky.ts.md) | 4 |
+| [src/planet/terrain-cache.ts](src/planet/terrain-cache.ts.md) | 11 |
 | [src/planet/terrain-source.ts](src/planet/terrain-source.ts.md) | 9 |
 | [src/planet/tide.ts](src/planet/tide.ts.md) | 1 |
 | [src/planet/tiles.ts](src/planet/tiles.ts.md) | 6 |
@@ -164,6 +166,7 @@ Coverage: **252 modules; 2276 executable function definitions**.
 | [src/render/planet/chart.ts](src/render/planet/chart.ts.md) | 5 |
 | [src/render/planet/clouds.ts](src/render/planet/clouds.ts.md) | 4 |
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
+| [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 5 |
 | [src/render/planet/geometry.ts](src/render/planet/geometry.ts.md) | 11 |
 | [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 7 |
 | [src/render/planet/horizon.ts](src/render/planet/horizon.ts.md) | 36 |
@@ -187,9 +190,9 @@ Coverage: **252 modules; 2276 executable function definitions**.
 | [src/render/planet/water-material.ts](src/render/planet/water-material.ts.md) | 3 |
 | [src/render/planet/water-worker.ts](src/render/planet/water-worker.ts.md) | 5 |
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
-| [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 11 |
+| [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 28 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 96 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 101 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
@@ -203,7 +206,7 @@ Coverage: **252 modules; 2276 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 70 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 73 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
@@ -235,7 +238,7 @@ Coverage: **252 modules; 2276 executable function definitions**.
 | [src/scene/history.ts](src/scene/history.ts.md) | 47 |
 | [src/scene/index.ts](src/scene/index.ts.md) | 0 |
 | [src/scene/map-content.ts](src/scene/map-content.ts.md) | 1 |
-| [src/scene/mercator.ts](src/scene/mercator.ts.md) | 41 |
+| [src/scene/mercator.ts](src/scene/mercator.ts.md) | 36 |
 | [src/scene/prepared-binary.ts](src/scene/prepared-binary.ts.md) | 2 |
 | [src/scene/sample.ts](src/scene/sample.ts.md) | 5 |
 | [src/scene/tiles.ts](src/scene/tiles.ts.md) | 3 |

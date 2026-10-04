@@ -78,6 +78,14 @@ export interface PlanetPayload {
   bytes: number
   buildings: boolean
   vegetation: { position: [number, number, number]; size: [number, number] }[]
+  /** Orthophoto drape prepared by the worker: triangles per layer, plus the decoded photo. */
+  drape?: {
+    layers: { id: string; position: Float32Array; uv: Float32Array }[]
+    photo?: ImageBitmap
+    error?: string
+  }
+  /** Worker milliseconds per phase (download, SHA-256, GLB parse, photo decode, collision build). */
+  timings?: { fetch: number; verify: number; parse: number; photo: number; collision: number }
 }
 export interface PlanetCollisionChunk {
   key: string

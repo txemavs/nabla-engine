@@ -10,6 +10,7 @@ import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/v
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
 import { bindTerrainSelector } from './terrain-selector.js'
+import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
@@ -159,6 +160,7 @@ try {
     },
   })
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
+  bindTerrainCache(runtime)
   await runtime.play({ vehicleId: vehicle.id })
   loading.hide()
   bindDisplaySettings(runtime)

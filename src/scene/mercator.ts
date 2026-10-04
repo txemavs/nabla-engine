@@ -226,25 +226,6 @@ export function planMapZooms(options: {
     budgetLimited: roots.length < candidates.length || viewDistance / width > 31,
   }
 }
-/**
- * Plan that streams every tile of a finite, known dataset, nearest first. Used by offline
- * examples whose whole coverage should be drawn and collidable, whatever the draw distance.
- */
-export function planMapCoverage(
-  tiles: readonly MapTile[],
-  latitude: number,
-  longitude: number,
-): MapZoomPlan {
-  const n = 2 ** 15
-  const px = (((((longitude + 180) % 360) + 360) % 360) / 360) * n
-  const py = ((1 - Math.asinh(Math.tan(latitude * radians)) / Math.PI) / 2) * n
-  const distance = (tile: MapTile) => Math.hypot(tile.x + 0.5 - px, tile.y + 0.5 - py)
-  const roots = tiles
-    .filter((tile) => tile.z === 15)
-    .map((tile) => ({ ...tile }))
-    .sort((a, b) => distance(a) - distance(b) || a.y - b.y || a.x - b.x)
-  return { roots, leaves: roots, requests: roots, budgetLimited: false }
-}
 /** Atomic parent replacement. Never display a parent and descendants together. */
 export function readyMapCover(plan: MapZoomPlan, ready: ReadonlySet<string>): MapTile[] {
   const wanted = new Set(plan.requests.map(mapTileId))

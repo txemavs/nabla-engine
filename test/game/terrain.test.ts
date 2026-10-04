@@ -141,15 +141,13 @@ describe('bare URL and cell streaming', () => {
     expect(await resolveTerrainSearch('?terrain=/t&tile=1/2', never)).toBe('?terrain=/t&tile=1/2')
   })
 
-  it('loads every cell and floats the Studio monitor unless asked otherwise', () => {
+  it('floats the Studio monitor unless asked otherwise', () => {
     expect(parseTerrainConfig('?terrain=/t&tile=16211/12003')).toMatchObject({
-      stream: 'coverage',
       playerMode: 'hover',
     })
-    expect(parseTerrainConfig('?terrain=/t&tile=16211/12003&cells=near&player=walk')).toMatchObject(
-      { stream: 'distance', playerMode: 'walk' },
-    )
-    expect(() => parseTerrainConfig('?terrain=/t&cells=some')).toThrow(/cells/)
+    expect(parseTerrainConfig('?terrain=/t&tile=16211/12003&player=walk')).toMatchObject({
+      playerMode: 'walk',
+    })
     expect(() => parseTerrainConfig('?terrain=/t&player=fly')).toThrow(/player/)
   })
 

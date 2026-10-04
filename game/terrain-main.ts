@@ -5,6 +5,7 @@ import { hasVehiclePreset } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
 import { LoadingScreen, showError } from './loading.js'
 import { bindTerrainSelector } from './terrain-selector.js'
+import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { fetchCoverage, formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
@@ -57,17 +58,14 @@ try {
     scene,
     sea: true,
     restParkedOnGround: true,
-    // Seeing the whole dataset needs a draw distance and fog that reach its far cells.
-    performance: params.has('quality')
-      ? { preset: params.get('quality')! }
-      : { preset: 'custom', distance: 20000, fog: 16000, roads: 4000, collisions: 800 },
+    // Same streaming as Studio's ground mode: the cells around the player first, the rest by distance.
+    performance: { preset: params.get('quality') ?? 'custom' },
     tiles: {
       baseUrl: config.base,
       mode: 'static',
       horizon: false,
       // A host that lists its tiles (the dev-server mount does) is never asked for tiles it lacks.
       coverage: await fetchCoverage(config.base),
-      stream: config.stream,
       atlas: config.atlas,
       imagery: config.atlas.photo === 'none' ? 'none' : 'package',
     },
@@ -77,8 +75,15 @@ try {
             .getElementById('game-canvas')!
             .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
       : undefined,
-    onProgress(status, tiles) {
-      loading.setStatus(status)
+    onProgress(_status, tiles) {
+      // Always a Spanish loading state, never the engine's raw status (which also says "cargando…").
+      const stats = runtime?.cellStats
+      loading.setStatus(
+        stats
+          ? `Cargando el terreno · ${stats.loaded} de ${stats.total} celdas listas` +
+              (stats.pending ? ` · ${stats.pending} en camino…` : '…')
+          : 'Cargando el terreno…',
+      )
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
@@ -96,6 +101,7 @@ try {
       document.getElementById('game-message')!.textContent = message
     },
   })
+  bindTerrainCache(runtime)
   // Headless checks read where vehicles and the player sit against the ground.
   if (params.has('diagnostics'))
     Object.assign(window, { nablaGroundAudit: () => runtime?.groundAudit(), nablaRuntime: runtime })

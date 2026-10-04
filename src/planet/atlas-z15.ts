@@ -207,3 +207,19 @@ export function atlasFileUrl(tilesBase: string, tile: MapTile, name: string): st
   if (!isAtlasFileName(name)) throw new Error('Unsafe Atlas file name')
   return `${tilesBase.replace(/\/+$/, '')}/${mapTilePath(tile)}/${name}`
 }
+
+/**
+ * Photo quality for one cell: the wanted quality near the player, the small `lo` photo farther away
+ * (16x fewer pixels to download, decode and keep on the GPU). `none` and `lo` are never upgraded.
+ */
+export function atlasPhotoFor(
+  wanted: NonNullable<AtlasZ15Options['photo']>,
+  tile: MapTile,
+  focus: MapTile | undefined,
+  nearCells = 1,
+): NonNullable<AtlasZ15Options['photo']> {
+  if (wanted !== 'full' || !focus) return wanted
+  return Math.max(Math.abs(tile.x - focus.x), Math.abs(tile.y - focus.y)) <= nearCells
+    ? 'full'
+    : 'lo'
+}

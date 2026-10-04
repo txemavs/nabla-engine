@@ -5,6 +5,7 @@ import {
   atlasCompatibilityNotes,
   atlasFile,
   atlasFileUrl,
+  atlasPhotoFor,
   atlasPackageRef,
   atlasPackageUrl,
   isAtlasFileName,
@@ -175,5 +176,19 @@ describe('fetchTileManifest with Atlas packages', () => {
     const error = await fetchTileManifest(tile, { ...options, atlas: {} }).catch((e) => e)
     expect(error).toBeInstanceOf(StaticTileError)
     expect(error.message).toMatch(/z15-059a2665959db8a9\.json.*HTTP 404/)
+  })
+})
+
+describe('atlasPhotoFor', () => {
+  const focus = { z: 15, x: 100, y: 200 }
+  it('keeps the wanted photo near the player and drops far cells to lo', () => {
+    expect(atlasPhotoFor('full', { z: 15, x: 101, y: 199 }, focus)).toBe('full')
+    expect(atlasPhotoFor('full', { z: 15, x: 102, y: 200 }, focus)).toBe('lo')
+    expect(atlasPhotoFor('full', { z: 15, x: 102, y: 200 }, focus, 2)).toBe('full')
+  })
+  it('never upgrades lo or none, and waits for a focus', () => {
+    expect(atlasPhotoFor('lo', focus, focus)).toBe('lo')
+    expect(atlasPhotoFor('none', focus, focus)).toBe('none')
+    expect(atlasPhotoFor('full', { z: 15, x: 900, y: 900 }, undefined)).toBe('full')
   })
 })

@@ -12,8 +12,8 @@
  *   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
  *   &photo=full|lo|none      orthophoto draped on the ground (default full)
  *   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
- *   &cells=all|near          keep every cell of the host's index loaded and drawn (default), or only
- *                            those within the draw distance
+ *   &distance=<m>            load radius (also in the menu, remembered); farther cells are not loaded.
+ *                            &cache=<MB> disk cache and &memory=<cells> cells in memory work the same way
  *   &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
  *
  * A bare URL (no query, or only display options) starts the default tile of the dev-server mount.
@@ -87,8 +87,6 @@ export interface TerrainConfig {
   tile?: MapTile
   scene: Omit<TerrainDriveOptions, 'latitude' | 'longitude'>
   atlas: Required<AtlasZ15Options>
-  /** Keep the whole dataset loaded (default) or only what the draw distance reaches. */
-  stream: 'coverage' | 'distance'
   playerMode: 'hover' | 'walk'
 }
 
@@ -120,9 +118,6 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
     throw new Error(`relief debe ser engine o lidar, no "${relief}"`)
   if (photo !== 'full' && photo !== 'lo' && photo !== 'none')
     throw new Error(`photo debe ser full, lo o none, no "${photo}"`)
-  const cells = params.get('cells') ?? 'all'
-  if (cells !== 'all' && cells !== 'near')
-    throw new Error(`cells debe ser all o near, no "${cells}"`)
   const player = params.get('player') ?? 'hover'
   if (player !== 'hover' && player !== 'walk')
     throw new Error(`player debe ser hover o walk, no "${player}"`)
@@ -159,7 +154,6 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
       sky: params.get('sky') ?? undefined,
     },
     atlas: { relief, photo },
-    stream: cells === 'all' ? 'coverage' : 'distance',
     playerMode: player,
   }
 }

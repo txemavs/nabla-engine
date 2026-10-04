@@ -10,7 +10,7 @@
 
 ## groundAtSeam
 
-[Implementation, line 13](../../../../src/runtime/ground.ts#L13)
+[Implementation, line 15](../../../../src/runtime/ground.ts#L15)
 
 GLB float32 vertices can leave sub-millimetre gaps at shared tile corners.
 Probe only 1 mm around the same location; never substitute a plane or a distant tile.
@@ -26,9 +26,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## waitForGround
 
-[Implementation, line 32](../../../../src/runtime/ground.ts#L32)
+[Implementation, line 38](../../../../src/runtime/ground.ts#L38)
 
 Wait for usable ground, not a fixed count of neighbouring tiles. Never starts after a timeout.
+`timeoutMs` is a stall limit: it restarts whenever the provider reports progress (`loadProgress`),
+so a slow link that keeps delivering cells is never reported as an error.
 
 ```ts
 waitForGround(world: GroundProvider, position: Vec3Tuple, options: { signal?: AbortSignal; timeoutMs?: number; onProgress?: (status: string) => void } = {}): Promise<number>
@@ -51,12 +53,12 @@ Explicit throws in this body:
 - `new Error('Invalid ground timeout')`
 - `new Error(\`Ground unavailable: ${world.status}\`)`
 
-## waitForGround.callback@49
+## waitForGround.callback@60
 
-[Implementation, line 49](../../../../src/runtime/ground.ts#L49)
+[Implementation, line 60](../../../../src/runtime/ground.ts#L60)
 
 ```ts
-callback@49(resolve, reject): inferred by TypeScript; see implementation
+callback@60(resolve, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -66,9 +68,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.signal?.addEventListener`
 - `setTimeout`
 
-## waitForGround.callback@49.finish
+## waitForGround.callback@60.finish
 
-[Implementation, line 50](../../../../src/runtime/ground.ts#L50)
+[Implementation, line 61](../../../../src/runtime/ground.ts#L61)
 
 ```ts
 finish(): inferred by TypeScript; see implementation
@@ -79,9 +81,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.signal?.removeEventListener`
 - `resolve`
 
-## waitForGround.callback@49.abort
+## waitForGround.callback@60.abort
 
-[Implementation, line 55](../../../../src/runtime/ground.ts#L55)
+[Implementation, line 66](../../../../src/runtime/ground.ts#L66)
 
 ```ts
 abort(): inferred by TypeScript; see implementation

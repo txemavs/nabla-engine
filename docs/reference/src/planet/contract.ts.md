@@ -15,7 +15,7 @@ Labels live in `places.ts`. The metre frame and the source grid live in `tiles.t
 
 ## validatePlanetManifest
 
-[Implementation, line 88](../../../../src/planet/contract.ts#L88)
+[Implementation, line 96](../../../../src/planet/contract.ts#L96)
 
 ```ts
 validatePlanetManifest(value: unknown, tile: MapTile): PlanetManifest
@@ -37,12 +37,12 @@ Explicit throws in this body:
 - `Error('Invalid native planet manifest')`
 - `Error('Invalid planet layer')`
 
-## validatePlanetManifest.callback@101
+## validatePlanetManifest.callback@109
 
-[Implementation, line 101](../../../../src/planet/contract.ts#L101)
+[Implementation, line 109](../../../../src/planet/contract.ts#L109)
 
 ```ts
-callback@101([key, n]): inferred by TypeScript; see implementation
+callback@109([key, n]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -52,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## coversTile
 
-[Implementation, line 123](../../../../src/planet/contract.ts#L123)
+[Implementation, line 131](../../../../src/planet/contract.ts#L131)
 
 True when `child` lies inside `parent` on the Web Mercator quadtree.
 

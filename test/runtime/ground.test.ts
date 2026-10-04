@@ -50,3 +50,48 @@ test('disposing while waiting cancels polling immediately', async () => {
   expect(world.update).toHaveBeenCalledTimes(1)
   expect(vi.getTimerCount()).toBe(0)
 })
+
+test('a slow link that keeps delivering cells is never reported as an error', async () => {
+  vi.useFakeTimers()
+  let progress = 0
+  let height: number | undefined
+  const world = {
+    update: vi.fn(),
+    flushInstall: vi.fn(),
+    groundHeight: () => height,
+    status: 'cargando…',
+    get loadProgress() {
+      return String(progress)
+    },
+  }
+  const waiting = waitForGround(world, [0, 0, 0], { timeoutMs: 300 })
+  let settled = false
+  void waiting.then(
+    () => (settled = true),
+    () => (settled = true),
+  )
+  // Far longer than the stall limit in total, but a cell arrives inside every window.
+  for (let i = 0; i < 6; i++) {
+    await vi.advanceTimersByTimeAsync(200)
+    progress++
+  }
+  expect(settled).toBe(false)
+  height = 12
+  await vi.advanceTimersByTimeAsync(200)
+  await expect(waiting).resolves.toBe(12)
+})
+
+test('a stalled load still fails after the stall limit', async () => {
+  vi.useFakeTimers()
+  const world = {
+    update: vi.fn(),
+    flushInstall: vi.fn(),
+    groundHeight: () => undefined,
+    status: 'sin respuesta',
+    loadProgress: '7',
+  }
+  const waiting = waitForGround(world, [0, 0, 0], { timeoutMs: 300 })
+  const result = expect(waiting).rejects.toThrow('Ground unavailable')
+  await vi.advanceTimersByTimeAsync(400)
+  await result
+})

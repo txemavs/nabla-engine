@@ -17,8 +17,8 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
   &photo=full|lo|none      orthophoto draped on the ground (default full)
   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
-  &cells=all|near          keep every cell of the host's index loaded and drawn (default), or only
-                           those within the draw distance
+  &distance=<m>            load radius (also in the menu, remembered); farther cells are not loaded.
+                           &cache=<MB> disk cache and &memory=<cells> cells in memory work the same way
   &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
 
 A bare URL (no query, or only display options) starts the default tile of the dev-server mount.
@@ -100,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## wantsTerrain
 
-[Implementation, line 96](../../../game/terrain.ts#L96)
+[Implementation, line 94](../../../game/terrain.ts#L94)
 
 True when the URL asks for the terrain-folder example.
 
@@ -116,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 101](../../../game/terrain.ts#L101)
+[Implementation, line 99](../../../game/terrain.ts#L99)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -136,7 +136,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 110](../../../game/terrain.ts#L110)
+[Implementation, line 108](../../../game/terrain.ts#L108)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -163,7 +163,6 @@ Explicit throws in this body:
 - `new Error( 'Falta el origen del terreno: añade ?terrain=<url base> (sin /z al final; /terrain en el servidor de desarrollo con la carpeta montada).', )`
 - `new Error(\`relief debe ser engine o lidar, no "${relief}"\`)`
 - `new Error(\`photo debe ser full, lo o none, no "${photo}"\`)`
-- `new Error(\`cells debe ser all o near, no "${cells}"\`)`
 - `new Error(\`player debe ser hover o walk, no "${player}"\`)`
 - `new Error('Indica lat y lon juntos (o usa tile=<x>/<y>).')`
 - `new Error('lat/lon fuera de rango')`
@@ -171,7 +170,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 171](../../../game/terrain.ts#L171)
+[Implementation, line 165](../../../game/terrain.ts#L165)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -192,7 +191,7 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 183](../../../game/terrain.ts#L183)
+[Implementation, line 177](../../../game/terrain.ts#L177)
 
 Spanish HUD text for the streaming progress: loaded cells out of the dataset, plus those still arriving.
 

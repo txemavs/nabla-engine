@@ -210,3 +210,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Explicit throws in this body:
 
 - `new Error('Unsafe Atlas file name')`
+
+## atlasPhotoFor
+
+[Implementation, line 215](../../../../src/planet/atlas-z15.ts#L215)
+
+Photo quality for one cell: the wanted quality near the player, the small `lo` photo farther away
+(16x fewer pixels to download, decode and keep on the GPU). `none` and `lo` are never upgraded.
+
+```ts
+atlasPhotoFor(wanted: NonNullable<AtlasZ15Options['photo']>, tile: MapTile, focus: MapTile | undefined, nearCells = 1): NonNullable<AtlasZ15Options['photo']>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.max`
