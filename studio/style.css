@@ -702,19 +702,6 @@ body.playing #footer-mode {
   font-size: 10px;
 }
 
-.gallery-score {
-  position: absolute;
-  left: 18px;
-  top: 55px;
-  padding: 8px 12px;
-  background: #102035dd;
-  border: 1px solid #5bacff;
-  border-radius: 5px;
-  font-size: 12px;
-  pointer-events: none;
-  z-index: 5;
-}
-
 .solid-tools {
   border-top: 1px solid #35485d;
   margin-top: 16px;

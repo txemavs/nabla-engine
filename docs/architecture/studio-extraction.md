@@ -50,7 +50,6 @@ reset prediction instead of inheriting an editor or previous-game position.
 | Capability                                                      | Current owner                                    | Next extraction / acceptance                                     |
 | --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
 | Complete render pipeline, mirrors, portal windows and DOF       | `studio/main.ts`                                 | Shared renderer with explicit editor overlay hooks               |
-| Weapon viewmodel, shot routing and gallery                      | `studio/sidearm.ts`, `studio/gallery.ts`         | Engine systems plus explicit example rules/content               |
 | Time/tides, field lights and performance options                | `studio/main.ts`, `studio/performance.ts`        | Reusable settings and runtime systems; host persists preferences |
 | Cross-location portal registry                                  | `studio/project.ts`, `studio/portal-registry.ts` | Runtime world-content contract distinct from editor document     |
 | Editor tools, history, selection, inspector and project storage | `studio/`                                        | Remain in the Studio application                                 |
@@ -123,3 +122,20 @@ rebuild/disposal without duplicates and restoration of host canvas styles.
 independent release, cancellation, blur, disable/dispose, and acceleration/braking
 in the packed game. Streaming unit tests verify live support positions, cadence,
 copy isolation and resets between worlds/clocks.
+
+## Shared shooting and gallery
+
+`runtime/sidearm.ts` owns the viewmodel, reticle, cadence and asset lifetime.
+`runtime/shooting.ts` owns third-person aim correction; `runtime/gallery.ts`
+handles portal ray transport, impacts, targets, score and respawn. The sample
+scene factory lives separately in `examples/gallery.ts`. Studio keeps only
+compatibility exports and its UI event bindings. The browser game uses the same
+system: Tab draws/holsters on foot, click fires, N resets gallery scoring.
+Boarding hides the weapon and suppresses firing.
+
+Portal obstruction, range and oblique-ray tests now live in `test/runtime/`.
+`scripts/shooting-smoke.mjs` checks the packed weapon asset and the draw/fire/
+holster/board flow. The standalone renderer still lacks portal-window views;
+shared shot transport does not imply complete visual portal parity.
+
+Weapon lifetime checks in scripts/weapon-lifetime-smoke.mjs cover cadence, disposal during asset loading and renderer-state restoration after a failed draw.

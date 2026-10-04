@@ -1,3 +1,6 @@
+import { Sidearm } from './sidearm.js'
+import { Gallery } from './gallery.js'
+import { fireSidearm } from './shooting.js'
 import { TouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
@@ -56,6 +59,10 @@ export class GameRuntime {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
   private readonly renderer: THREE.WebGLRenderer
+  private readonly gallery: Gallery
+  private sidearm: Sidearm | null = null
+  private weaponDrawn = false
+  private fireRequested = false
   private readonly touchDriving: TouchDriving | null
   private readonly monitors: VehicleMonitors
   private readonly view: SceneView
@@ -104,6 +111,7 @@ export class GameRuntime {
     )
     this.monitors.onShipSwitch = (id, kind) => this.view.pressShipSwitch(id, kind)
     this.monitors.rebuild(this.document)
+    this.gallery = new Gallery(options.canvas.parentElement!)
     this.sky = new GeographicView(this.document, () => {})
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
     this.effects = new VehicleEffects(this.scene)
@@ -241,6 +249,13 @@ export class GameRuntime {
     this.world?.renderUpdate(this.origin, true, null)
     this.touchDriving?.setActive(false)
     this.monitors.hide()
+    this.weaponDrawn = false
+    if (this.sidearm) {
+      this.sidearm.visible = false
+      this.sidearm.reset()
+    }
+    this.gallery.reset()
+    this.gallery.update(this.view, false, 0)
     this.game.stop()
     this.releaseInput()
     this.view.setPlaying(false)
@@ -270,6 +285,8 @@ export class GameRuntime {
     this.observer.disconnect()
     this.game.dispose()
     this.world?.dispose()
+    this.sidearm?.dispose()
+    this.gallery.dispose()
     this.touchDriving?.dispose()
     this.monitors.dispose()
     this.view.dispose()
@@ -321,6 +338,23 @@ export class GameRuntime {
       this.cameraState.headPitch,
     )
     const { player, info } = this.game.updateCamera(this.view, this.camera, time, dt)
+    this.gallery.update(this.view, true, dt)
+    if (this.sidearm) {
+      this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
+      if (this.fireRequested && this.hasInput()) {
+        fireSidearm(
+          this.sidearm,
+          this.gallery,
+          sim,
+          this.view,
+          this.camera,
+          time,
+          this.cameraState.firstPerson,
+        )
+        this.options.canvas.dataset.impacts = String(this.view.impacts.count)
+      }
+    }
+    this.fireRequested = false
     const eye = this.camera.position.clone()
     this.origin.set(0, 0, 0)
     if (new THREE.Vector3(...player.position).length() > 10000)
@@ -407,6 +441,7 @@ export class GameRuntime {
       this.monitors.finish()
       this.camera.position.copy(eye)
     }
+    this.sidearm?.render(this.renderer, time, this.camera.aspect, this.cameraState.firstPerson)
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
@@ -420,6 +455,7 @@ export class GameRuntime {
     return document.activeElement === this.options.canvas && document.hasFocus() && !document.hidden
   }
   private releaseInput(): void {
+    this.fireRequested = false
     this.touchDriving?.clear()
     this.monitors.releaseInput()
     this.game.releaseInput()
@@ -452,6 +488,15 @@ export class GameRuntime {
   private action(code: string): void {
     const sim = this.session.simulation
     if (!sim) return
+    if (code === 'Tab' && !sim.player.vehicleId) {
+      this.weaponDrawn = !this.weaponDrawn
+      this.fireRequested = false
+      if (this.weaponDrawn && !this.sidearm)
+        this.sidearm = new Sidearm(this.options.canvas.parentElement!)
+      this.options.onMessage?.(this.weaponDrawn ? 'Arma desenfundada' : 'Arma guardada')
+      return
+    }
+    if (code === 'KeyN') this.gallery.reset()
     let message = this.game.action(code)
     if (code === 'KeyH' && sim.player.vehicleId) {
       const open = this.view.toggleVehicleGps(sim.player.vehicleId)
@@ -483,9 +528,11 @@ export class GameRuntime {
     )
     canvas.addEventListener(
       'pointerdown',
-      () => {
+      (event) => {
         canvas.focus()
         this.effects.audio.unlock()
+        if (event.button === 0 && this.weaponDrawn && !this.session.simulation?.player.vehicleId)
+          this.fireRequested = true
       },
       options,
     )
@@ -493,7 +540,9 @@ export class GameRuntime {
       'keydown',
       (event) => {
         if (!this.hasInput() || this.session.state !== 'playing') return
-        if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code))
+        if (
+          ['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)
+        )
           event.preventDefault()
         const id = this.session.simulation?.player.vehicleId
         if (id && !event.ctrlKey && !event.metaKey && !event.altKey) {

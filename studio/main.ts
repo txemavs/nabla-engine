@@ -1,3 +1,4 @@
+import { fireSidearm } from '@nabla/engine/runtime'
 import { vehicleMenuKey } from '@nabla/engine/runtime'
 import { randomUUID } from '../src/util/uuid.js'
 import {
@@ -2534,23 +2535,8 @@ function frame(now: number): void {
   )
   sidearm.visible = !!sim && !sim.player.vehicleId && weaponDrawn
   if (fireRequested && sim && sidearm.visible && document.hasFocus() && !document.hidden) {
-    const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
-    if (sidearm.fire(now)) {
-      // Preserve camera-to-monitor obstruction checks before transporting a shot through a window.
-      const aimed = sim.shoot(camera.position.toArray(), direction.toArray(), sidearm.range, 0)
-      const origin = new THREE.Vector3(...sim.renderPlayerPosition)
-      const destination = aimed
-        ? new THREE.Vector3(...aimed.point)
-        : camera.position.clone().addScaledVector(direction, sidearm.range)
-      const firing = camera.clone()
-      if (!firstPerson) {
-        firing.position.copy(origin)
-        firing.lookAt(destination)
-      }
-      firing.updateMatrixWorld(true)
-      sidearm.impact(gallery.shoot(sim, view, firing, sidearm.range, sidearm.impulse))
+    if (fireSidearm(sidearm, gallery, sim, view, camera, now, firstPerson))
       renderer.domElement.dataset.impacts = String(view.impacts.count)
-    }
   }
   vehicleEffects.updateAudio(sim, view.document, camera.position)
   fireRequested = false

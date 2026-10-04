@@ -1,0 +1,173 @@
+import * as THREE from 'three'
+import { type Entity } from '../entity/schema.js'
+import { type SceneDocument } from '../scene/document.js'
+import { portalMapping, portalLocal } from '../entity/portal/portal.js'
+import type { Simulation } from '../simulation/simulation.js'
+import type { SceneView } from '../render/entity/view.js'
+
+/** Bounded one-hop ray transport: window barriers stop bodies, but gallery shots cross them. */
+export function shotView(
+  sim: Simulation,
+  document: SceneDocument,
+  camera: THREE.PerspectiveCamera,
+  range = 150,
+): { camera: THREE.PerspectiveCamera; range: number; throughPortal: boolean } {
+  camera.updateMatrixWorld(true)
+  const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+  let closest = range,
+    gate: Entity | undefined
+  for (const e of document.entities.filter((e) => e.portal)) {
+    const state = sim.portalState(e.id)
+    if (state.mode === 'closed' || !state.pairId) continue
+    const pose = sim.entityTransform(e.id, true)
+    const a = portalLocal(camera.position.toArray(), pose)
+    const localDirection = direction
+      .clone()
+      .applyQuaternion(new THREE.Quaternion(...pose.rotation).invert())
+    if (a.z <= 0 || localDirection.z >= -1e-6) continue
+    const distance = -a.z / localDirection.z
+    const hit = a.clone().addScaledVector(localDirection, distance)
+    if (distance < closest && Math.abs(hit.x) < e.size[0] / 2 && Math.abs(hit.y) < e.size[1] / 2) {
+      closest = distance
+      gate = e
+    }
+  }
+  if (
+    !gate ||
+    sim.shoot(
+      camera.position.toArray(),
+      direction.toArray(),
+      Math.max(0.001, closest - gate.size[2] - 0.02),
+      0,
+    )
+  )
+    return { camera, range, throughPortal: false }
+  const destination = sim.portalState(gate.id).pairId!
+  const mapping = portalMapping(
+    sim.entityTransform(gate.id, true),
+    sim.entityTransform(destination, true),
+  )
+  // Rapier reports a hit at distance zero when a ray begins inside the window's
+  // solid barrier. Start beyond the destination thickness, including oblique rays.
+  const exit = document.entities.find((e) => e.id === destination)!
+  const localDirection = direction
+    .clone()
+    .applyQuaternion(new THREE.Quaternion(...sim.entityTransform(gate.id, true).rotation).invert())
+  const travel = closest + (exit.size[2] / 2 + 0.02) / Math.abs(localDirection.z)
+  if (travel >= range) return { camera, range, throughPortal: false }
+  const remote = camera.clone()
+  const point = camera.position.clone().addScaledVector(direction, travel).applyMatrix4(mapping)
+  remote.position.copy(point)
+  remote.quaternion.premultiply(new THREE.Quaternion().setFromRotationMatrix(mapping))
+  remote.updateMatrixWorld(true)
+  return { camera: remote, range: range - travel, throughPortal: true }
+}
+
+export class Gallery {
+  private elapsed = 0
+  private remaining = 60
+  private started = false
+  private hits = 0
+  private shots = 0
+  private respawn = new Map<string, number>()
+  private readonly hud = document.createElement('div')
+  constructor(viewport: HTMLElement) {
+    this.hud.className = 'gallery-score'
+    Object.assign(this.hud.style, {
+      position: 'absolute',
+      left: '18px',
+      top: '55px',
+      padding: '8px 12px',
+      background: '#102035dd',
+      border: '1px solid #5bacff',
+      borderRadius: '5px',
+      font: '12px system-ui',
+      color: '#fff',
+      pointerEvents: 'none',
+      zIndex: '5',
+    })
+    this.hud.hidden = true
+    viewport.append(this.hud)
+  }
+  dispose(): void {
+    this.hud.remove()
+    this.respawn.clear()
+  }
+  reset(): void {
+    this.elapsed = 0
+    this.remaining = 60
+    this.started = false
+    this.hits = 0
+    this.shots = 0
+    this.respawn.clear()
+  }
+  update(view: SceneView, playing: boolean, dt: number): void {
+    const targets = view.document.entities.filter((e) => e.sprite?.target)
+    this.hud.hidden = !playing || !targets.length
+    if (!playing) return
+    this.elapsed += Math.min(dt, 0.1)
+    if (this.started) this.remaining = Math.max(0, this.remaining - Math.min(dt, 0.1))
+    targets.forEach((e, i) => {
+      const sprite = view.sprites.get(e.id)
+      if (!sprite) return
+      sprite.visible = this.remaining > 0 && (this.respawn.get(e.id) ?? 0) <= this.elapsed
+      sprite.position.x = Math.sin(this.elapsed * 0.8 + i) * 1.5
+    })
+    this.hud.textContent = `Galería · ${this.hits}/${this.shots} · ${Math.ceil(this.remaining)} s · N reiniciar`
+    this.hud.dataset.hits = String(this.hits)
+  }
+  shoot(
+    sim: Simulation,
+    view: SceneView,
+    camera: THREE.PerspectiveCamera,
+    range = 150,
+    impulse = 12,
+  ): boolean {
+    let rayView = shotView(sim, view.document, camera, range)
+    const foreground = new THREE.Raycaster()
+    foreground.setFromCamera(new THREE.Vector2(), camera)
+    const obstruction = view.hitSprite(foreground)
+    if (rayView.throughPortal && obstruction && obstruction.distance < range - rayView.range)
+      rayView = { camera, range, throughPortal: false }
+    const ray = new THREE.Raycaster()
+    ray.setFromCamera(new THREE.Vector2(), rayView.camera)
+    ray.far = rayView.range
+    const solid = sim.shoot(ray.ray.origin.toArray(), ray.ray.direction.toArray(), rayView.range, 0)
+    const sprite = view.hitSprite(ray)
+    const spriteFirst =
+      sprite &&
+      (!solid || sprite.distance < ray.ray.origin.distanceTo(new THREE.Vector3(...solid.point)))
+    const targetHit =
+      spriteFirst &&
+      view.document.entities.find((e) => e.id === sprite.object.userData.entityId)?.sprite?.target
+    if (
+      (rayView.throughPortal || targetHit) &&
+      view.document.entities.some((e) => e.sprite?.target)
+    ) {
+      if (this.remaining <= 0) return false
+      this.started = true
+      this.shots++
+    }
+    if (spriteFirst) {
+      const id = sprite.object.userData.entityId as string
+      if (view.document.entities.find((e) => e.id === id)?.sprite?.target && this.remaining > 0) {
+        this.started = true
+        this.hits++
+        this.respawn.set(id, this.elapsed + 1.5)
+        sprite.object.visible = false
+      }
+      return true
+    }
+    const hit = sim.shoot(
+      ray.ray.origin.toArray(),
+      ray.ray.direction.toArray(),
+      rayView.range,
+      impulse,
+    )
+    if (hit?.entityId) {
+      const object = view.objects.get(hit.entityId)
+      if (object) view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)
+    }
+    return !!hit
+  }
+}

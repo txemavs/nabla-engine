@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'
-import { createGallery, shotView } from '../gallery.js'
+import { createGallery } from '../../src/examples/gallery.js'
+import { shotView } from '../../src/runtime/gallery.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { parseScene } from '../../src/scene/document.js'

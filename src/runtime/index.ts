@@ -21,3 +21,7 @@ export {
   type TouchDrivingVisibility,
 } from './touch-driving.js'
 export { GameplayStreaming, type GameplayWorldStream } from './streaming.js'
+export { Sidearm } from './sidearm.js'
+export { Gallery, shotView } from './gallery.js'
+export { fireSidearm } from './shooting.js'
+export { createGallery } from '../examples/gallery.js'
