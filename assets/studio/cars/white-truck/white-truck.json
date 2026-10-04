@@ -31,7 +31,18 @@
     "engineForce": 12000,
     "brakeForce": 120,
     "drivenWheels": "rear",
-    "cameraDistance": 10
+    "cameraDistance": 10,
+    "powertrain": {
+      "powerCv": 420,
+      "torqueNm": 2000,
+      "ratios": [14.9, 8.6, 5, 2.9, 1.7, 1],
+      "finalDrive": 3.2,
+      "grip": 4.5,
+      "idleRpm": 650,
+      "maxRpm": 2400,
+      "reverseRatio": 13.6,
+      "maxSpeedKmh": 120
+    }
   },
   "visual": {
     "body": {

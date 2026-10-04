@@ -1,4 +1,4 @@
-import { simulationDefaults } from '../../../config/simulation.js'
+import { simulationDefaults, roadVehicleDefaults } from '../../../config/simulation.js'
 import { Body, RaycastVehicle, Vec3 } from '../../physics.js'
 import {
   createDrivetrain,
@@ -6,6 +6,7 @@ import {
   stepDrivetrain,
   shiftGear,
   engineBrakingForce,
+  selectDriveDirection,
   type DrivetrainState,
 } from '../drivetrain.js'
 import type {
@@ -45,7 +46,11 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
     (spec &&
       (![spec.powerCv, spec.torqueNm, spec.finalDrive, spec.grip].every(positive) ||
         !spec.ratios.length ||
-        !spec.ratios.every(positive)))
+        !spec.ratios.every(positive) ||
+        [spec.idleRpm, spec.maxRpm, spec.reverseRatio, spec.maxSpeedKmh].some(
+          (value) => value !== undefined && !positive(value),
+        ) ||
+        (spec.idleRpm ?? 900) >= (spec.maxRpm ?? 6900)))
   )
     throw new Error('Invalid wheeled vehicle definition')
   const car = new RaycastVehicle({
@@ -56,7 +61,7 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
   })
   // Tuned road cars already model aerodynamic drag below. Generic rigid-body
   // damping adds a large speed-proportional brake and hides the engine power.
-  if (definition.powertrain) body.linearDamping = 0
+  if (definition.powertrain || definition.passive) body.linearDamping = 0
   // Front is -Z; all hubs and suspension dimensions are body-local metres.
   for (const [x, y, z] of definition.hubs) {
     car.addWheel({
@@ -100,6 +105,12 @@ export function stepWheeledVehicle(
     throw new Error('Expected finite nonnegative tick and normalized wheeled input')
   if (dt === 0) return
   if (v.definition.passive) {
+    const velocity = v.body.velocity,
+      speed = velocity.length()
+    if (v.raycast.wheelInfos.some((wheel) => wheel.isInContact))
+      v.body.applyForce(
+        velocity.scale((-0.012 * v.body.mass * simulationDefaults.gravity) / Math.max(1, speed)),
+      )
     for (let i = 0; i < v.raycast.wheelInfos.length; i++) {
       v.raycast.setSteeringValue(0, i)
       v.raycast.applyEngineForce(0, i)
@@ -152,6 +163,13 @@ export function stepWheeledVehicle(
       ? 0.012 * v.body.mass * simulationDefaults.gravity
       : 0
     v.body.applyForce(velocity.scale(-0.42 * magnitude - rolling / Math.max(1, magnitude)))
+  } else {
+    const changing = selectDriveDirection(v.drivetrain, speed, throttle, dt)
+    v.drivetrain.force = changing ? 0 : throttle * v.definition.engineForce
+    v.drivetrain.load = changing ? 0 : Math.abs(throttle)
+    v.drivetrain.rpm +=
+      ((powered ? roadVehicleDefaults.idleRpm + v.drivetrain.load * 1800 : 0) - v.drivetrain.rpm) *
+      Math.min(1, dt * 8)
   }
   for (let i = 0; i < 4; i++) {
     v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
@@ -163,7 +181,7 @@ export function stepWheeledVehicle(
     const share =
       v.definition.drivenWheels === 'all' ? (i < 2 ? 1 - rearShare : rearShare) / 2 : 0.5
     v.raycast.applyEngineForce(
-      driven(i) ? (tune ? v.drivetrain.force * share : throttle * v.definition.engineForce) : 0,
+      driven(i) ? (tune ? v.drivetrain.force * share : v.drivetrain.force) : 0,
       i,
     )
     if (tune) {
@@ -180,7 +198,7 @@ export function stepWheeledVehicle(
       ? v.definition.brakeForce * 0.4
       : input.handbrake
         ? v.definition.brakeForce * (i >= 2 ? 1.5 : 0.4)
-        : opposing
+        : opposing || v.drivetrain.pendingDirection !== null
           ? v.definition.brakeForce
           : 0
     v.raycast.setBrake(

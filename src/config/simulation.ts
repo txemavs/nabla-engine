@@ -25,6 +25,24 @@ export const simulationDefaults = Object.freeze({
   jumpSpeed: 5.5,
 })
 
+/** Road-vehicle selector timing and baseline engine speed. */
+export const roadVehicleDefaults = Object.freeze({
+  /** Continuous opposite-pedal request required near standstill before engaging D or R, seconds. */
+  directionChangeSeconds: 1,
+  /** Maximum absolute road speed at which a direction change may begin, m/s. */
+  directionChangeSpeed: 0.8,
+  /** Generic petrol-engine idle speed; vehicle powertrains may override it. */
+  idleRpm: 900,
+  /** Maximum tractor/trailer yaw either side of straight ahead, radians (65 degrees). */
+  trailerArticulationRadians: (65 * Math.PI) / 180,
+  /** Sustained horizontal contact load that breaks a reversing trailer coupling, newtons. */
+  couplingBreakForce: 45000,
+  /** Duration above the sustained load threshold, seconds. */
+  couplingBreakSeconds: 0.12,
+  /** A severe impact breaks immediately, newtons. */
+  couplingImpactForce: 250000,
+})
+
 /** Conservative map collision streaming. Safety margins are in metres; budgets are soft. */
 export const mapCollisionDefaults = Object.freeze({
   /** Resort deferred colliders at this interval in milliseconds. */

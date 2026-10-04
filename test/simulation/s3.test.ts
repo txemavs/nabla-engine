@@ -21,7 +21,8 @@ it('limits delivered power, selects seven gears and reverses without gear huntin
     expect(state.rpm).toBeLessThanOrEqual(6900)
   }
   expect([...gears]).toEqual([1, 2, 3, 4, 5, 6, 7])
-  stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, -1, false, 1 / 60)
+  for (let i = 0; i < 60; i++)
+    stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, -1, false, 1 / 60)
   expect(state.gear).toBe(-1)
   expect(state.force).toBeLessThan(0)
   if (hasVehiclePreset('police'))
@@ -69,7 +70,8 @@ it('accelerates, shifts, brakes and holds a burnout on Rapier ground', () => {
 it('keeps reverse while coasting backwards fast and never selects gear zero', () => {
   const v = presetVehicle('car', 's3').vehicle!
   const state = createDrivetrain()
-  stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, -1, false, 1 / 60)
+  for (let i = 0; i < 60; i++)
+    stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, -1, false, 1 / 60)
   expect(state.gear).toBe(-1)
   // A descent or a collision can exceed the powered reverse speed limit.
   // Opposite throttle is also converted to zero while the simulation brakes.
@@ -79,7 +81,8 @@ it('keeps reverse while coasting backwards fast and never selects gear zero', ()
     expect(state.force).toBe(0)
     expect(Number.isFinite(state.rpm)).toBe(true)
   }
-  stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, 1, false, 1 / 60)
+  for (let i = 0; i < 60; i++)
+    stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, 1, false, 1 / 60)
   expect(state.gear).toBe(1)
   expect(state.force).toBeGreaterThan(0)
 })

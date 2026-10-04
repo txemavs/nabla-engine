@@ -107,6 +107,31 @@ their behavior or duplicating authored content.
 
 ## Maintenance
 
+### Road vehicles and trailer couplings
+
+`roadVehicleDefaults` in `src/config/simulation.ts` owns the one-second D/R
+delay, the 0.8 m/s safe switching threshold, idle RPM and trailer coupling
+limits. These are build-time defaults. Releasing the opposite pedal cancels
+the switching timer; coasting retains the selected direction.
+
+The stock truck recipe defines its own diesel gearing, 650 RPM idle, 2,400 RPM
+ceiling and 120 km/h forward speed limit. Passive trailers use wheel rolling
+resistance instead of artificial body damping. Engine audio follows the piloted
+road vehicle, including vehicles without an explicit powertrain recipe.
+
+Connected tractor/trailer bodies collide and articulation is limited to 65 degrees
+in either direction. While the piloted tractor pushes in reverse, horizontal
+trailer contact impulses approximate coupling load: 45 kN sustained for 0.12 s
+or a 250 kN impact releases the joint. Ground-support contacts are excluded.
+This is a gameplay approximation, not a measured joint stress model. The trailer
+remains a physical body and its unsupported front drops when the tractor leaves;
+the broken tow link is cleared so recovery cannot silently reconnect it.
+
+Compound-body inertia includes collider rotation and offset about the authored
+chassis origin, using a diagonal approximation. Vehicle masses remain authored
+in their recipes. Regression tests cover delayed direction changes, the loaded
+truck reaching 120 km/h, normal reversing, overload detachment and a car impact.
+
 Keep one owner for each setting. Document its units, supported range, precedence
 and lifetime. Preserve existing values during extraction. Add a behavioral test
 when changing a setting's meaning, and regenerate the reference with

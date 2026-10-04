@@ -1,7 +1,7 @@
 /**
  * Rapier world. WASM has to be ready first: `await initPhysics()`.
  */
-import { simulationDefaults } from '../config/simulation.js'
+import { simulationDefaults, roadVehicleDefaults } from '../config/simulation.js'
 import RAPIER from '@dimforge/rapier3d-compat/rapier.es.js'
 import type {
   Collider,
@@ -542,9 +542,27 @@ export class Body {
     for (const shape of boxes) {
       const share = total > 0 ? (this.mass * volume(shape)) / total : this.mass
       const { x: hx, y: hy, z: hz } = shape.halfExtents
-      ix += (share * (hy * hy + hz * hz)) / 3
-      iy += (share * (hx * hx + hz * hz)) / 3
-      iz += (share * (hx * hx + hy * hy)) / 3
+      const index = this.shapes.indexOf(shape)
+      const offset = this.shapeOffsets[index]
+      const rotation = this.shapeOrientations[index]
+      const axes = [new Vec3(1, 0, 0), new Vec3(0, 1, 0), new Vec3(0, 0, 1)].map((v) =>
+        rotation.vmult(v),
+      )
+      const principal = [
+        (share * (hy * hy + hz * hz)) / 3,
+        (share * (hx * hx + hz * hz)) / 3,
+        (share * (hx * hx + hy * hy)) / 3,
+      ]
+      // Diagonal approximation about the authored chassis centre, including the parallel-axis term.
+      ix +=
+        principal.reduce((sum, value, i) => sum + value * axes[i].x ** 2, 0) +
+        share * (offset.y ** 2 + offset.z ** 2)
+      iy +=
+        principal.reduce((sum, value, i) => sum + value * axes[i].y ** 2, 0) +
+        share * (offset.x ** 2 + offset.z ** 2)
+      iz +=
+        principal.reduce((sum, value, i) => sum + value * axes[i].z ** 2, 0) +
+        share * (offset.x ** 2 + offset.y ** 2)
     }
     if (iy === 0) iy = ix = iz = this.mass
     this.inertia.set(ix, iy, iz)
@@ -860,7 +878,10 @@ export class World {
         : R().JointData.fixed({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 }, local, frame)
     if (constraint instanceof HingeConstraint) {
       description.limitsEnabled = true
-      description.limits = [-1.35, 1.35]
+      description.limits = [
+        -roadVehicleDefaults.trailerArticulationRadians,
+        roadVehicleDefaults.trailerArticulationRadians,
+      ]
     }
     const joint = this.raw.createImpulseJoint(description, a, b, true)
     joint.setContactsEnabled(constraint.collideConnected)

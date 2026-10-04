@@ -1,3 +1,4 @@
+import { TowOverload } from './tow-overload.js'
 /** Own one physics world and coordinate independent collision, portal and vehicle subsystems. */
 import { VehicleDocking } from './vehicle-docking.js'
 import { PortalTraversal } from './portal-traversal.js'
@@ -144,6 +145,7 @@ export class Simulation {
   )
   private readonly docks = this.garage.docks
   private readonly trailerJoints: HingeConstraint[] = []
+  private readonly towOverload = new TowOverload()
   private ticks = 0
   private lostTime = 0
   private readonly roadGuidance = new RoadAssist()
@@ -190,6 +192,7 @@ export class Simulation {
         new Vec3(...tow.hitch),
         new Vec3(...tow.anchor),
       )
+      joint.collideConnected = true
       this.world.addConstraint(joint)
       this.trailerJoints.push(joint)
     }
@@ -604,6 +607,27 @@ export class Simulation {
       this.beforeTick()
       this.updateCatchFloor()
       this.world.step(FIXED_STEP)
+      for (let i = this.trailerJoints.length - 1; i >= 0; i--) {
+        const joint = this.trailerJoints[i]
+        const driver = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
+        if (
+          !this.towOverload.step(
+            this.world,
+            joint,
+            driver?.body === joint.bodyA && this.input.forward < 0,
+            FIXED_STEP,
+          )
+        )
+          continue
+        this.world.removeConstraint(joint)
+        this.trailerJoints.splice(i, 1)
+        for (const trailer of this.vehicles.values())
+          if (trailer.body === joint.bodyB) {
+            delete trailer.definition.tow
+            if (trailer.entity.vehicle) delete trailer.entity.vehicle.tow
+            trailer.body.wakeUp()
+          }
+      }
       this.constrainTerrainBoundary()
       if (carry && host) {
         const relative = this.playerBody.position
@@ -1313,6 +1337,7 @@ export class Simulation {
     manualTransmission: boolean
     engineLoad: number
     tireSlip: number
+    towVehicleId: string | null
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
@@ -1352,6 +1377,7 @@ export class Simulation {
       manualTransmission: ground.manualTransmission,
       engineLoad: ground.engineLoad,
       tireSlip: ground.tireSlip,
+      towVehicleId: v.definition.tow?.vehicleId ?? null,
     }
   }
 

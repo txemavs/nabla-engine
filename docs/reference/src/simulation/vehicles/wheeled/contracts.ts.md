@@ -11,7 +11,7 @@ Metres, Y-up, front = -Z; front hubs 0/1, rear hubs 2/3. Plain configuration.
 
 ## idleWheeledInput
 
-[Implementation, line 31](../../../../../../src/simulation/vehicles/wheeled/contracts.ts#L31)
+[Implementation, line 36](../../../../../../src/simulation/vehicles/wheeled/contracts.ts#L36)
 
 ```ts
 idleWheeledInput(): WheeledInput

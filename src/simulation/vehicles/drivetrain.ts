@@ -1,4 +1,5 @@
 import type { PowertrainDefinition, WheeledDefinition } from './wheeled/contracts.js'
+import { roadVehicleDefaults } from '../../config/simulation.js'
 
 export interface DrivetrainState {
   gear: number
@@ -10,6 +11,8 @@ export interface DrivetrainState {
   load: number
   burnout: boolean
   launchSlip: number
+  pendingDirection: -1 | 1 | null
+  directionRemaining: number
 }
 export const createDrivetrain = (): DrivetrainState => ({
   gear: 1,
@@ -21,7 +24,39 @@ export const createDrivetrain = (): DrivetrainState => ({
   load: 0,
   burnout: false,
   launchSlip: 0,
+  pendingDirection: null,
+  directionRemaining: 0,
 })
+
+/** Keep the selected direction at idle; opposite input must be held for a full safe-stop delay. */
+export function selectDriveDirection(
+  state: DrivetrainState,
+  speed: number,
+  throttle: number,
+  dt: number,
+): boolean {
+  const requested = throttle > 0.01 ? 1 : throttle < -0.01 ? -1 : 0
+  if (!requested || requested === Math.sign(state.gear)) {
+    state.pendingDirection = null
+    state.directionRemaining = 0
+    return false
+  }
+  if (Math.abs(speed) > roadVehicleDefaults.directionChangeSpeed) {
+    state.pendingDirection = null
+    state.directionRemaining = 0
+    return true
+  }
+  if (state.pendingDirection !== requested) {
+    state.pendingDirection = requested
+    state.directionRemaining = roadVehicleDefaults.directionChangeSeconds
+  }
+  state.directionRemaining = Math.max(0, state.directionRemaining - dt)
+  if (state.directionRemaining > 1e-8) return true
+  state.gear = requested
+  state.pendingDirection = null
+  state.directionRemaining = 0
+  return false
+}
 export function isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean {
   return axle === 'all' || (axle === 'front' ? wheel < 2 : wheel >= 2)
 }
@@ -51,16 +86,18 @@ export function stepDrivetrain(
     aggressiveLaunch && throttle > 0.5 && !handbrake && speed > -0.8
       ? Math.max(0, Math.min(1, (15 - Math.abs(speed)) / 10))
       : 0
-  const reverse = throttle < 0 && speed < 0.8
-  if (reverse) state.gear = -1
-  else if (state.gear < 0 && speed > -0.8) state.gear = 1
+  const changingDirection = selectDriveDirection(state, speed, throttle, dt)
+  if (changingDirection) throttle = 0
+  const reverse = state.gear < 0
   const wheelRpm = (Math.abs(speed) / (2 * Math.PI * radius)) * 60
-  let ratio = state.gear < 0 ? 3.2 : spec.ratios[state.gear - 1]
+  const maxRpm = spec.maxRpm ?? 6900
+  const idleRpm = spec.idleRpm ?? roadVehicleDefaults.idleRpm
+  let ratio = state.gear < 0 ? (spec.reverseRatio ?? 3.2) : spec.ratios[state.gear - 1]
   const coupled = wheelRpm * ratio * spec.finalDrive
   if (!state.manual && state.gear > 0 && !state.burnout && state.cooldown === 0) {
     const previous = state.gear
-    if (coupled > 6400 && state.gear < spec.ratios.length) state.gear++
-    else if (coupled < 2300 && state.gear > 1) state.gear--
+    if (coupled > maxRpm * (6400 / 6900) && state.gear < spec.ratios.length) state.gear++
+    else if (coupled < maxRpm / 3 && state.gear > 1) state.gear--
     if (state.gear !== previous) {
       state.shiftRemaining = 0.09
       state.cooldown = 0.45
@@ -72,7 +109,7 @@ export function stepDrivetrain(
     : state.launchSlip > 0
       ? 2400 + state.launchSlip * 1800
       : Math.abs(throttle) * 2400
-  const targetRpm = Math.min(6900, Math.max(900, launch, wheelRpm * ratio * spec.finalDrive))
+  const targetRpm = Math.min(maxRpm, Math.max(idleRpm, launch, wheelRpm * ratio * spec.finalDrive))
   state.rpm += (targetRpm - state.rpm) * (1 - Math.exp(-dt * 16))
   state.load = Math.abs(throttle) * (state.shiftRemaining > 0 ? 0.15 : 1)
   // Torque plateau, then constant-power falloff. 400 CV = 294.2 kW at the crank.
@@ -80,7 +117,13 @@ export function stepDrivetrain(
   const wheelForce = (torque * ratio * spec.finalDrive * 0.9) / radius
   const powerLimit = (spec.powerCv * 735.49875 * 0.9) / Math.max(1, Math.abs(speed))
   state.force = Math.sign(throttle) * state.load * Math.min(wheelForce, powerLimit)
-  if (coupled > 7000 || (reverse && Math.abs(speed) > 12)) state.force = 0
+  if (
+    changingDirection ||
+    coupled > maxRpm + 100 ||
+    (reverse && Math.abs(speed) > 12) ||
+    (spec.maxSpeedKmh !== undefined && speed * 3.6 >= spec.maxSpeedKmh)
+  )
+    state.force = 0
 }
 
 /** A paddle enters manual mode; reject unsafe reductions instead of over-revving. */

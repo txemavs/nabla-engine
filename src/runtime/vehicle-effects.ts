@@ -43,7 +43,14 @@ export class VehicleEffects {
     const pilot = sim?.player.vehicleId
     const piloted = pilot ? document.entities.find((entity) => entity.id === pilot) : undefined
     this.audio.propeller(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
-    const car = pilot && piloted?.vehicle?.powertrain ? sim!.vehicleInfo(pilot) : null
+    const car =
+      pilot &&
+      piloted?.vehicle &&
+      !piloted.vehicle.passive &&
+      !piloted.vehicle.boat &&
+      !piloted.vehicle.flight
+        ? sim!.vehicleInfo(pilot)
+        : null
     this.audio.powertrain(car?.helm !== 'off' ? (car?.rpm ?? 0) : 0, car?.engineLoad ?? 0)
   }
 

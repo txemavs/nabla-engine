@@ -61,7 +61,7 @@ callback@44(entity): inferred by TypeScript; see implementation
 
 ## VehicleEffects.updateTires
 
-[Implementation, line 50](../../../../src/runtime/vehicle-effects.ts#L50)
+[Implementation, line 57](../../../../src/runtime/vehicle-effects.ts#L57)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -81,33 +81,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.smoke.clear`
 - `this.smoke.update`
 
-## VehicleEffects.updateTires.callback@58
+## VehicleEffects.updateTires.callback@65
 
-[Implementation, line 58](../../../../src/runtime/vehicle-effects.ts#L58)
+[Implementation, line 65](../../../../src/runtime/vehicle-effects.ts#L65)
 
 ```ts
-callback@58(wheel): inferred by TypeScript; see implementation
+callback@65(wheel): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateTires.callback@62
+## VehicleEffects.updateTires.callback@69
 
-[Implementation, line 62](../../../../src/runtime/vehicle-effects.ts#L62)
+[Implementation, line 69](../../../../src/runtime/vehicle-effects.ts#L69)
 
 ```ts
-callback@62(wheel): inferred by TypeScript; see implementation
+callback@69(wheel): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateTires.callback@63
+## VehicleEffects.updateTires.callback@70
 
-[Implementation, line 63](../../../../src/runtime/vehicle-effects.ts#L63)
+[Implementation, line 70](../../../../src/runtime/vehicle-effects.ts#L70)
 
 ```ts
-callback@63(wheel): inferred by TypeScript; see implementation
+callback@70(wheel): inferred by TypeScript; see implementation
 ```
 
 ## VehicleEffects.dispose
 
-[Implementation, line 71](../../../../src/runtime/vehicle-effects.ts#L71)
+[Implementation, line 78](../../../../src/runtime/vehicle-effects.ts#L78)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 

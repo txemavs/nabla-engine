@@ -7,18 +7,35 @@
 ## Module dependencies
 
 - `./wheeled/contracts.js`
+- `../../config/simulation.js`
 
 ## createDrivetrain
 
-[Implementation, line 14](../../../../../src/simulation/vehicles/drivetrain.ts#L14)
+[Implementation, line 17](../../../../../src/simulation/vehicles/drivetrain.ts#L17)
 
 ```ts
 createDrivetrain(): DrivetrainState
 ```
 
+## selectDriveDirection
+
+[Implementation, line 32](../../../../../src/simulation/vehicles/drivetrain.ts#L32)
+
+Keep the selected direction at idle; opposite input must be held for a full safe-stop delay.
+
+```ts
+selectDriveDirection(state: DrivetrainState, speed: number, throttle: number, dt: number): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.max`
+- `Math.sign`
+
 ## isDriven
 
-[Implementation, line 25](../../../../../src/simulation/vehicles/drivetrain.ts#L25)
+[Implementation, line 60](../../../../../src/simulation/vehicles/drivetrain.ts#L60)
 
 ```ts
 isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
@@ -26,7 +43,7 @@ isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
 
 ## stepDrivetrain
 
-[Implementation, line 29](../../../../../src/simulation/vehicles/drivetrain.ts#L29)
+[Implementation, line 64](../../../../../src/simulation/vehicles/drivetrain.ts#L64)
 
 Fixed-step, deliberately forgiving DSG-style clutch; no dependency on asset names or Studio.
 
@@ -44,10 +61,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isInteger`
 - `Object.assign`
 - `createDrivetrain`
+- `selectDriveDirection`
 
 ## shiftGear
 
-[Implementation, line 87](../../../../../src/simulation/vehicles/drivetrain.ts#L87)
+[Implementation, line 130](../../../../../src/simulation/vehicles/drivetrain.ts#L130)
 
 A paddle enters manual mode; reject unsafe reductions instead of over-revving.
 
@@ -61,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## engineBrakingForce
 
-[Implementation, line 107](../../../../../src/simulation/vehicles/drivetrain.ts#L107)
+[Implementation, line 150](../../../../../src/simulation/vehicles/drivetrain.ts#L150)
 
 Closed-throttle pumping losses through the selected gear, fading before standstill.
 

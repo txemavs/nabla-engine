@@ -39,9 +39,13 @@ export const vehicleField = z
       .object({
         powerCv: finite.min(20).max(2000),
         torqueNm: finite.min(20).max(3000),
-        ratios: z.array(finite.min(0.2).max(6)).min(1).max(10),
+        ratios: z.array(finite.min(0.2).max(20)).min(1).max(10),
         finalDrive: finite.min(1).max(8),
         grip: finite.min(0.5).max(8),
+        idleRpm: finite.min(300).max(2000).optional(),
+        maxRpm: finite.min(2000).max(10000).optional(),
+        reverseRatio: finite.positive().max(20).optional(),
+        maxSpeedKmh: finite.positive().max(400).optional(),
       })
       .strict()
       .optional(),

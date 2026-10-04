@@ -6,6 +6,11 @@ export interface PowertrainDefinition {
   ratios: number[]
   finalDrive: number
   grip: number
+  /** Optional engine operating range and governed forward speed, rpm and km/h. */
+  idleRpm?: number
+  maxRpm?: number
+  reverseRatio?: number
+  maxSpeedKmh?: number
 }
 export interface WheeledDefinition {
   hubs:
