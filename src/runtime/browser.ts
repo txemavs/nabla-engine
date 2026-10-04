@@ -1,3 +1,5 @@
+import { resolveWorldPortalViews, type WorldContent } from './world-content.js'
+import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
 import type { FieldLightOptions } from '../render/entity/field-lights.js'
 import { worldWater } from './water.js'
@@ -46,6 +48,7 @@ export interface GameFrame {
 export interface GameRuntimeOptions {
   canvas: HTMLCanvasElement
   scene: SceneDocument
+  world?: WorldContent
   tiles?: { baseUrl: string; apiUrl?: string; mode?: TileDiscoveryMode } & PlanetSourceOptions
   /** Disable only the visible water sheet for a synthetic sea-level test surface. */
   sea?: boolean
@@ -73,6 +76,8 @@ export class GameRuntime {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
   private readonly renderer: THREE.WebGLRenderer
+  private readonly remoteViews: RemotePortalViews
+  private readonly worldContent: WorldContent | undefined
   private readonly fieldLighting: FieldLighting | null
   private readonly quality: PerformanceSettings
   private readonly pipeline = new GameRenderPipeline()
@@ -118,6 +123,24 @@ export class GameRuntime {
       ...options.performance,
     })
     this.document = parseScene(options.scene)
+    this.worldContent = options.world ? structuredClone(options.world) : undefined
+    this.remoteViews = new RemotePortalViews(
+      () => {},
+      (message) => options.onMessage?.(message),
+      (doc) => new SceneView(doc),
+      (doc) =>
+        doc.geography && options.tiles
+          ? new PlanetWorld(
+              doc.geography,
+              () => {},
+              () => {},
+              options.tiles.baseUrl,
+              options.tiles.apiUrl ?? '/prepare',
+              options.tiles.mode ?? 'static',
+              options.tiles,
+            )
+          : undefined,
+    )
     if (!this.document.geography)
       throw new Error('A Nabla game requires planetary coordinates, including offline scenes')
     this.renderer = new THREE.WebGLRenderer({
@@ -290,6 +313,7 @@ export class GameRuntime {
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, null)
     this.touchDriving?.setActive(false)
     this.monitors.hide()
+    this.remoteViews.dispose()
     this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
     if (this.sidearm) {
@@ -475,6 +499,13 @@ export class GameRuntime {
     }
     try {
       this.pipeline.render({
+        externalViews: this.worldContent
+          ? resolveWorldPortalViews(
+              this.worldContent,
+              this.view.portals,
+              (location, document, entity) => this.remoteViews.resolve(location, document, entity),
+            )
+          : undefined,
         renderer: this.renderer,
         scene: this.scene,
         camera: this.camera,

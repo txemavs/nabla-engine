@@ -46,7 +46,7 @@ import { geographicPose, anchoredWorldPose } from './geographic-pose.js'
 import { bindCoverageMap } from './ui/coverage-map.js'
 import { prepareStartup } from './startup.js'
 import { authoredTree, isMapEnvironment } from './outliner.js'
-import { RemotePortalViews } from '../src/render/portal/remote.js'
+import { RemotePortalViews, resolveWorldPortalViews } from '@nabla/engine/runtime'
 import { portalRegistry, setPortalConnection } from './portal-registry.js'
 import { portalEnvironment } from '../src/render/portal/environment.js'
 import {
@@ -2662,24 +2662,12 @@ function frame(now: number): void {
   )
   renderer.domElement.dataset.depthOfField = performanceSettings.dof > 0 ? '1' : '0'
   if (sim || needsRender) {
-    const externalViews = new Map<string, ExternalPortalView>()
-    for (const connection of project!.connections ?? []) {
-      if (connection.mode !== 'window') continue
-      const registry = projectPortalEntries()
-      const source = registry.find((p) => p.id === connection.source)
-      const target = registry.find((p) => p.id === connection.destination)
-      if (!source || !target || source.locationId !== project!.activeLocation) continue
-      const surface = view.portals.get(source.entityId)
-      if (!surface || !surface.mesh.visible) continue
-      const destination = project!.locations.find((p) => p.id === target.locationId)
-      if (!destination) continue
-      const remote = remotePortalViews?.resolve(
-        target.locationId,
-        destination.scene,
-        target.entityId,
-      )
-      if (remote) externalViews.set(source.entityId, remote)
-    }
+    const externalViews = resolveWorldPortalViews(
+      project!,
+      view.portals,
+      (location, document, entity) => remotePortalViews?.resolve(location, document, entity),
+      projectPortalEntries(),
+    )
     photoExternalViews = externalViews
     renderPipeline.render({
       renderer,

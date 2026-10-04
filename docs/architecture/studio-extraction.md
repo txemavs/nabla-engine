@@ -49,7 +49,6 @@ reset prediction instead of inheriting an editor or previous-game position.
 
 | Capability                                                      | Current owner                                    | Next extraction / acceptance                                     |
 | --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Cross-location portal registry                                  | `studio/project.ts`, `studio/portal-registry.ts` | Runtime world-content contract distinct from editor document     |
 | Editor tools, history, selection, inspector and project storage | `studio/`                                        | Remain in the Studio application                                 |
 | Remaining direct source imports                                 | `studio/`                                        | Deliberate public API, then test Studio against a packed package |
 | Atlas host integration                                          | separate application                             | Validate current viewer against the same package version         |
@@ -134,8 +133,8 @@ Boarding hides the weapon and suppresses firing.
 Portal obstruction, range and oblique-ray tests now live in `test/runtime/`.
 `scripts/shooting-smoke.mjs` checks the packed weapon asset and the draw/fire/
 holster/board flow. The standalone game now also renders local portal-window views
-through the shared render pipeline. Cross-location content resolution remains
-a host concern pending the world-content contract.
+through the shared render pipeline. Cross-location windows use the shared
+world-content contract described below; hosts retain loading and persistence.
 
 Weapon lifetime checks in scripts/weapon-lifetime-smoke.mjs cover cadence, disposal during asset loading and renderer-state restoration after a failed draw.
 
@@ -147,7 +146,8 @@ supplies editor overlay exclusions, layer visibility and external portal views.
 The browser runtime accepts optional `depthOfField`. Alpha survives postprocessing
 so native instrument screens remain visible. Resources and host renderer state
 are restored on disposal/failure. Planet/environment preparation, editor photo
-export and external-world resolution remain separate consumers or host bindings.
+export remain separate consumers or host bindings. External-world resolution now
+uses the shared world-content contract.
 
 The optional demo URL `?example=flat&gallery=1` shows a local portal gallery;
 append `&dof=1` to check postprocessing. The ordinary driving example is unchanged.
@@ -186,3 +186,32 @@ optional flat demo `?example=flat&lights=1` bundles two lamps and a fixed night
 clock. Unit tests cover isolation, late-result rejection, grounding, collision
 handoff and tile unloading; `scripts/field-lights-smoke.mjs` verifies that the
 packaged night example renders/drives with no external requests.
+
+## Shared cross-location windows
+
+`WorldContent` describes locations, registered objects and portal connections
+without editor history or storage. Engine owns stable portal identifiers,
+immutable connection edits and visible-window destination resolution. Studio
+retains a compatibility export and supplies its project through this contract;
+existing saved identifiers and connections are preserved.
+
+Browser hosts pass `world` to the runtime alongside the active `scene`.
+`RemotePortalViews` prepares destination scenes in their own geographic frames,
+with at most two cached destinations, and releases them when play stops. The
+browser composition supplies its configured tile provider instead of implicitly
+requesting remote map services. These connections remain visual windows only:
+physical travel and remote gameplay simulation are not implemented.
+
+The optional `?example=flat&remote=1` demo places the gallery in another location.
+`scripts/world-portals-smoke.mjs` verifies actual destination rendering from the
+installed package with no external requests. Runtime tests cover stable IDs,
+invalid ancestry, immutable edits and destination filtering; Studio tests retain
+coverage of project persistence and renamed locations.
+
+The historical portal-registry UI E2E still clicks the hidden legacy
+`#portal-registry-button` and times out in the current desktop shell. That UI
+journey is not verified by this increment; the packed-window smoke, registry
+unit tests and current-shell Studio play smoke pass independently.
+Its separate renderer test also fails before exercising rendering because it
+constructs an invalid Windows Vite URL (`/@fsC:/...`). Both legacy E2E failures
+remain recorded rather than being reported as passing coverage.

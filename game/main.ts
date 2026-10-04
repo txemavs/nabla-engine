@@ -1,4 +1,4 @@
-import { createGallery } from '@nabla/engine/runtime'
+import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
   createFlatTestScene,
@@ -52,8 +52,49 @@ try {
     }
     scene.entities.push(trailer)
   }
-  if (flat && new URLSearchParams(location.search).has('gallery'))
+  if (
+    flat &&
+    (new URLSearchParams(location.search).has('gallery') ||
+      new URLSearchParams(location.search).has('remote'))
+  )
     scene.entities.push(...createGallery('demo-gallery'))
+  let world: WorldContent | undefined
+  if (flat && new URLSearchParams(location.search).has('remote')) {
+    const remote = structuredClone(scene)
+    remote.name = 'Galería remota'
+    remote.geography!.longitude = 0.001
+    remote.entities = remote.entities.filter(
+      (e) => e.id.startsWith('demo-gallery-') && e.id !== 'demo-gallery-window',
+    )
+    remote.entities.push(createEntity('remote-spawn', 'spawn', [0, 2, 0]))
+    scene.entities = scene.entities.filter(
+      (e) => !e.id.startsWith('demo-gallery-') || e.id === 'demo-gallery-window',
+    )
+    for (const doc of [scene, remote])
+      for (const e of doc.entities)
+        if (e.portal) {
+          e.portal.pairId = null
+          e.portal.mode = 'closed'
+        }
+    world = {
+      activeLocation: 'drive',
+      locations: [
+        { id: 'drive', scene },
+        { id: 'gallery', scene: remote },
+      ],
+      objects: [],
+    }
+    const registry = portalRegistry(world)
+    world.connections = [
+      {
+        source: registry.find(
+          (p) => p.locationId === 'drive' && p.entityId === 'demo-gallery-window',
+        )!.id,
+        destination: registry.find((p) => p.locationId === 'gallery')!.id,
+        mode: 'window',
+      },
+    ]
+  }
   const lights = flat && new URLSearchParams(location.search).has('lights')
   if (lights) scene.sky = { mode: 'fixed', at: '2026-03-20T00:00:00.000Z' }
   const loading = new LoadingScreen()
@@ -63,6 +104,7 @@ try {
   runtime = new GameRuntime({
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
+    world,
     sea: !flat,
     fieldLights: lights
       ? {

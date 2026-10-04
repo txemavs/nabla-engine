@@ -46,3 +46,12 @@ export {
   type FieldLightSource,
   type FieldLightMark,
 } from '../render/entity/field-lights.js'
+export {
+  portalRegistry,
+  setPortalConnection,
+  resolveWorldPortalViews,
+  type WorldContent,
+  type PortalConnection,
+  type RegisteredPortal,
+} from './world-content.js'
+export { RemotePortalViews } from '../render/portal/remote.js'
