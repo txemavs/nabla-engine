@@ -118,6 +118,10 @@
     "./config/shadows": {
       "types": "./dist/config/shadows.d.ts",
       "import": "./dist/config/shadows.js"
+    },
+    "./config/display": {
+      "types": "./dist/config/display.d.ts",
+      "import": "./dist/config/display.js"
     }
   },
   "imports": {

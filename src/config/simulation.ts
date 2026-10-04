@@ -24,3 +24,21 @@ export const simulationDefaults = Object.freeze({
   /** Initial upward jump velocity, metres per second. */
   jumpSpeed: 5.5,
 })
+
+/** Conservative map collision streaming. Safety margins are in metres; budgets are soft. */
+export const mapCollisionDefaults = Object.freeze({
+  /** Resort deferred colliders at this interval in milliseconds. */
+  reorderIntervalMs: 200,
+  /** Travel margin for stale ordering, metres. */
+  orderingMargin: 100,
+  /** Colliders inside this distance bypass the soft cooking budget, metres. */
+  criticalDistance: 80,
+  /** Maximum noncritical collider creations per submission. */
+  installCount: 4,
+  /** Noncritical cooking time budget per submission, milliseconds. */
+  installBudgetMs: 2,
+  /** Additional coverage based on actor velocity, seconds. */
+  lookAheadSeconds: 2,
+  /** Refresh active map collider membership every this many fixed physics steps. */
+  activationIntervalTicks: 15,
+})

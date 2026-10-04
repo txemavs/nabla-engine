@@ -1,4 +1,13 @@
-import { simulationDefaults } from '../config/simulation.js'
+/** Own one physics world and coordinate independent collision, portal and vehicle subsystems. */
+import { VehicleDocking } from './vehicle-docking.js'
+import { PortalTraversal } from './portal-traversal.js'
+import { MapCollisions } from './map-collisions.js'
+import { PlanetCatchFloor } from './catch-floor.js'
+import { createEntityBody } from './entity-body.js'
+import { RoadAssist } from './road-assist.js'
+import { portalEnvelope, portalExitBlocked } from './portal-clearance.js'
+import { constrainTerrainBoundary } from './terrain-boundary.js'
+import { simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
 import {
   createWheeledVehicle,
   stepWheeledVehicle,
@@ -11,24 +20,17 @@ import {
 import type { WheeledInput, WheelContactSnapshot } from './vehicles/wheeled/contracts.js'
 import { stepBoatInWater } from './vehicles/boat.js'
 import { stepFlight } from './vehicles/flight.js'
-import { CATCH_FLOOR_DEPTH, CATCH_FLOOR_RADIUS } from '../planet/catch-floor.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
-import { terrainHeight, terrainVertices, terrainIndices } from '../planet/land/terrain.js'
-import { triangles } from '../math/solid/mesh.js'
 import { SceneEditor } from '../scene/history.js'
-import { portalColliders, portalLocal, portalMapping } from '../entity/portal/portal.js'
+import { portalColliders, portalLocal } from '../entity/portal/portal.js'
 import { EARTH_RADIUS, geoToLocal, localFrame, localToGeo } from '../math/geo/sphere.js'
-import { OBB } from 'three/addons/math/OBB.js'
-import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
+import { Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition, type Vehicle } from '../entity/vehicle/vehicle.js'
-import { roadGeometry, nearestRoadCenterline } from '../planet/land/roads/draped-road.js'
 import {
-  Trimesh,
   AABB,
   Body,
   Box,
   Material,
-  LockConstraint,
   HingeConstraint,
   Quaternion,
   Sphere,
@@ -42,46 +44,14 @@ import { SceneGraph } from '../scene/graph.js'
 export const FIXED_STEP = simulationDefaults.fixedStepSeconds
 const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
 const PLAYER_RADIUS = simulationDefaults.playerRadius
-export interface PlayerInput {
-  forward: number
-  right: number
-  yaw: number // radians; yaw=0 faces -Z, positive turns left
-  sprint: boolean
-  jump: boolean // request; consumed once on the next simulation tick
-  brake: boolean
-  lift?: number // -1 descend, +1 ascend; neutral holds altitude
-  turn?: number // -1 left, +1 right; independent of camera yaw
-}
-export const idleInput = (): PlayerInput => ({
-  forward: 0,
-  right: 0,
-  yaw: 0,
-  sprint: false,
-  jump: false,
-  brake: false,
-})
-export interface PlayerSnapshot {
-  position: Vec3Tuple // body centre, metres
-  yaw: number
-  grounded: boolean
-  vehicleId: string | null
-  interiorId: string | null
-  speed: number // metres per second
-}
+export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
+import { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 const vec = (v: Vec3): Vec3Tuple => [v.x, v.y, v.z]
 const pose = (b: Body): Transform => ({
   position: vec(b.position),
   rotation: [b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w],
 })
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
-function alignUp(up: Vec3): Quaternion {
-  const dot = clamp(up.y, -1, 1)
-  if (dot > 0.999999) return new Quaternion(0, 0, 0, 1)
-  if (dot < -0.999999) return new Quaternion(1, 0, 0, 0)
-  const axis = new Vec3(up.z, 0, -up.x)
-  axis.normalize()
-  return new Quaternion().setFromAxisAngle(axis, Math.acos(dot))
-}
 
 /** Owns exactly one physics world. Scene data is copied and never mutated.
  * The host supplies elapsed seconds and input, and reads snapshots after step(). */
@@ -89,23 +59,12 @@ export class Simulation {
   private readonly document: SceneDocument
   private readonly terrainEntity: Entity | undefined
   private waterLevel = 0
-  private catchFloor: Body | null = null
   setWaterLevel(metres: number): void {
     if (Number.isFinite(metres)) this.waterLevel = clamp(metres, -5, 50)
   }
   /** Top face of the gray disk, once the occupied actor has dropped under the sea. */
   catchDisk(): Transform | null {
-    if (!this.catchFloor) return null
-    const up = this.catchFloor.quaternion.vmult(new Vec3(0, 1, 0))
-    return {
-      position: vec(this.catchFloor.position.vadd(up.scale(0.5))),
-      rotation: [
-        this.catchFloor.quaternion.x,
-        this.catchFloor.quaternion.y,
-        this.catchFloor.quaternion.z,
-        this.catchFloor.quaternion.w,
-      ],
-    }
+    return this.fallbackFloor.pose()
   }
   private minimumFlightAltitude: number
   private graph: SceneGraph
@@ -163,13 +122,10 @@ export class Simulation {
   private readonly bodies = new Map<string, Body>()
   private mapBuildingsEnabled = true
   private collisionDistance = 400
-  private readonly deferredMapBodies = new Map<
-    string,
-    { entity: Entity; center: Vec3; radius: number }
-  >()
-  private pendingBodyOrder: string[] = []
-  private nextBodyOrder = 0
-  private readonly mapBodies = new Map<string, Body>()
+  private readonly mapCollision = new MapCollisions(this.world)
+  private readonly deferredMapBodies = this.mapCollision.deferredMapBodies
+  private readonly mapBodies = this.mapCollision.mapBodies
+  private readonly fallbackFloor = new PlanetCatchFloor(this.world, this.solidMaterial)
   private readonly vehicles = new Map<string, Vehicle>()
   private readonly hostedShapes = new Map<string, Box[]>()
   private readonly playerBody: Body
@@ -183,26 +139,17 @@ export class Simulation {
   private disposed = false
   private grounded = false
   private support: Body | null = null
-  private readonly docks = new Map<string, { carrierId: string; constraint: LockConstraint }>()
+  private readonly garage = new VehicleDocking(this.world, this.vehicles, (v, closed) =>
+    this.setRamp(v, closed),
+  )
+  private readonly docks = this.garage.docks
   private readonly trailerJoints: HingeConstraint[] = []
   private ticks = 0
   private lostTime = 0
-  private roadAssistEnabled = false
-  private assistSource?: Entity[]
-  private readonly assistCells = new Map<string, { paths: Vec3Tuple[][]; width: number }[]>()
-  private roadAssistStrength = 0.3
-  private portalSequence = 0
-  private lastPortalEvent: {
-    sequence: number
-    actorId: string
-    sourceId: string
-    destinationId: string
-    yawDelta: number
-    blocked: boolean
-  } | null = null
-  private readonly portalLocks = new Map<number, string>()
+  private readonly roadGuidance = new RoadAssist()
+  private readonly portalTraversal = new PortalTraversal()
   get portalEvent() {
-    return this.lastPortalEvent ? { ...this.lastPortalEvent } : null
+    return this.portalTraversal.event
   }
 
   constructor(
@@ -316,7 +263,7 @@ export class Simulation {
       for (const body of this.world.bodies) {
         if (!body.mass || body === this.bodies.get(mouth.parentId ?? '')) continue
         const actor = [...this.vehicles.values()].find((v) => v.body === body)
-        const corners = this.portalEnvelope(body, actor).map((p) => portalLocal(p, transform))
+        const corners = portalEnvelope(body, actor).map((p) => portalLocal(p, transform))
         if (
           corners.length &&
           Math.min(...corners.map((p) => p.z)) < 0.2 &&
@@ -389,7 +336,7 @@ export class Simulation {
         this.deferredMapBodies.set(e.id, { entity: e, center: new Vec3(...pose.position), radius })
       } else this.addEntityBody(e)
     }
-    this.nextBodyOrder = 0
+    this.mapCollision.invalidate()
     this.preparePlanetCollisions()
     this.installNearbyMapBodies()
     this.minimumFlightAltitude = Math.min(
@@ -400,101 +347,24 @@ export class Simulation {
     )
   }
   private addEntityBody(e: Entity): void {
-    const roadSurface =
-      e.road?.elevation === 'bridge' ||
-      (e.road?.mode === 'smooth-float' && (!e.road.elevation || e.road.elevation === 'terrain'))
-    // Gallery targets are animated billboards, not trees with stationary trunks.
-    const trunk = !!e.sprite && !e.sprite.target
-    if ((e.motion === 'none' && !e.portal && !roadSurface && !trunk) || (e.portal && e.parentId))
-      return
-    if (isMapBuilding(e) && e.motion === 'static' && !this.mapBuildingsEnabled) return
-    const transform = this.graph.worldTransform(e.id)
-    const body = new Body({
-      mass: e.motion === 'dynamic' ? e.mass : 0,
-      material: this.solidMaterial,
-    })
-    const colliders = e.portal
-      ? portalColliders(e)
-      : e.kind === 'vehicle'
-        ? vehicleDefinition(e).colliders
-        : [
-            {
-              size: (e.light && e.light.shape !== 'globe'
-                ? [Math.max(e.size[0], 0.44), e.size[1], Math.max(e.size[2], 0.44)]
-                : e.size) as Vec3Tuple,
-              transform: {
-                position: [0, 0, 0] as Vec3Tuple,
-                rotation: [0, 0, 0, 1] as [number, number, number, number],
-              },
-            },
-          ]
-    if (e.sprite) {
-      const height = Math.max(1, e.size[1])
-      body.addShape(new Box(new Vec3(0.35, height / 2, 0.35)), new Vec3(0, height / 2, 0))
-    }
-    if (e.terrain) {
-      const t = e.terrain
-      // Share the exact rendered triangle grid, including missing-data holes.
-      const index = new Uint32Array(terrainIndices(t))
-      if (index.length)
-        body.addShape(new Trimesh(new Float32Array(terrainVertices(t).flat()), index))
-    }
-    const bridgeTerrain = roadSurface
-      ? this.entitiesById.get(e.road!.terrainId)?.terrain
-      : undefined
-    const geometry =
-      e.geometry ??
-      (bridgeTerrain
-        ? roadGeometry(bridgeTerrain, e.road!.paths, e.road!.width, e.road)
-        : undefined)
-    if (geometry) {
-      const vertices = new Float32Array(geometry.vertices.length * 3)
-      geometry.vertices.forEach((vertex, i) => {
-        vertices[i * 3] = vertex[0]
-        vertices[i * 3 + 1] = vertex[1]
-        vertices[i * 3 + 2] = vertex[2]
-      })
-      const faces = triangles(geometry)
-      const indices = new Uint32Array(faces.length * 3)
-      faces.forEach((face, i) => {
-        indices[i * 3] = face[0]
-        indices[i * 3 + 1] = face[1]
-        indices[i * 3 + 2] = face[2]
-      })
-      if (indices.length >= 3) body.addShape(new Trimesh(vertices, indices))
-    }
-    const hull = e.vehicle?.plane
-      ? colliders.filter((c) => c.transform.position[1] - c.size[1] / 2 > -0.5)
-      : colliders
-    for (const collider of geometry || e.terrain || e.road || e.sprite ? [] : hull)
-      body.addShape(
-        new Box(new Vec3(...(collider.size.map((n) => n / 2) as Vec3Tuple))),
-        new Vec3(...collider.transform.position),
-        new Quaternion(...collider.transform.rotation),
-      )
-    // Slightly above the tyre, so the wheels still drive. The ball only meets a road lip.
-    if (e.vehicle?.plane)
-      for (const hub of vehicleDefinition(e).hubs) {
-        const gear = new Sphere(Math.max(0.08, vehicleDefinition(e).wheelRadius - 0.05))
-        gear.friction = 0
-        body.addShape(gear, new Vec3(...hub))
-      }
-    body.position.set(...transform.position)
-    body.quaternion.set(...transform.rotation)
-    body.previousPosition.copy(body.position)
-    body.previousQuaternion.copy(body.quaternion)
-    body.linearDamping = 0.05
-    body.angularDamping = 0.35
+    const created = createEntityBody(
+      e,
+      this.graph.worldTransform(e.id),
+      this.entitiesById,
+      this.solidMaterial,
+      this.mapBuildingsEnabled,
+    )
+    if (!created) return
+    const { body, mapBody } = created
     this.bodies.set(e.id, body)
-    if (e.source && e.motion === 'static' && !e.terrain && !e.portal) this.mapBodies.set(e.id, body)
-    if (roadSurface) this.mapBodies.set(e.id, body)
+    if (mapBody) this.mapBodies.set(e.id, body)
     if (e.kind === 'vehicle') this.createVehicle(e, body)
     else this.world.addBody(body)
   }
 
   setMapBuildingsEnabled(enabled: boolean): void {
     this.mapBuildingsEnabled = enabled
-    this.nextBodyOrder = 0
+    this.mapCollision.invalidate()
     this.preparePlanetCollisions()
     this.installNearbyMapBodies()
     if (enabled)
@@ -528,114 +398,31 @@ export class Simulation {
     }
   }
   private installNearbyMapBodies(): void {
-    const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
-    const started = performance.now()
-    let installed = 0
-    const distance = (pending: { center: Vec3; radius: number }) =>
-      Math.min(
-        ...actors.map(
-          (actor) =>
-            actor.position.distanceTo(pending.center) -
-            pending.radius -
-            actor.boundingRadius -
-            actor.velocity.length() * 2,
-        ),
-      )
-    if (started >= this.nextBodyOrder) {
-      const distances = new Map([...this.deferredMapBodies].map(([id, p]) => [id, distance(p)]))
-      this.pendingBodyOrder = [...distances.keys()].sort(
-        (a, b) => distances.get(a)! - distances.get(b)!,
-      )
-      this.nextBodyOrder = started + 200
-    }
-    for (const id of this.pendingBodyOrder) {
-      const pending = this.deferredMapBodies.get(id)
-      if (!pending) continue
-      if (!this.mapBuildingsEnabled && isMapBuilding(pending.entity)) continue
-      const gap = distance(pending)
-      // Ordered distances are refreshed at most every 200 ms. Keep a travel margin.
-      if (gap > this.collisionDistance + 100) break
-      if (gap > this.collisionDistance) continue
-      // Immediate safety colliders can exceed this soft budget; distant cooking cannot.
-      const critical = gap < 80
-      if (!critical && (installed >= 4 || performance.now() - started >= 2)) break
-      this.addEntityBody(pending.entity)
-      this.deferredMapBodies.delete(id)
-      installed++
-    }
+    if (!this.mapCollision.deferredMapBodies.size) return
+    this.mapCollision.install(
+      [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)],
+      this.mapBuildingsEnabled,
+      this.collisionDistance,
+      (e) => this.addEntityBody(e),
+    )
   }
   /** Keep terrain, actors and portal colliders. Cull map solids conservatively around every actor. */
   private updateMapCollisions(): void {
-    // Collider installation has its own per-frame budget in step().
-    const actors = [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]
-    for (const [id, body] of this.mapBodies) {
-      if (!this.mapBuildingsEnabled && isMapBuilding(this.entitiesById.get(id))) {
-        if (body.world === this.world) this.world.removeBody(body)
-        continue
-      }
-      if (body.aabbNeedsUpdate) body.updateAABB()
-      const active = actors.some((actor) => {
-        const p = actor.position,
-          lo = body.aabb.lowerBound,
-          hi = body.aabb.upperBound
-        const distance = Math.hypot(
-          p.x - clamp(p.x, lo.x, hi.x),
-          p.y - clamp(p.y, lo.y, hi.y),
-          p.z - clamp(p.z, lo.z, hi.z),
-        )
-        // Two seconds of look-ahead covers fast flight and the throttled update interval.
-        return (
-          distance < this.collisionDistance + actor.velocity.length() * 2 + actor.boundingRadius
-        )
-      })
-      if (active && body.world !== this.world) this.world.addBody(body)
-      else if (!active && body.world === this.world) this.world.removeBody(body)
-    }
+    if (!this.mapBodies.size) return
+    this.mapCollision.update(
+      [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)],
+      this.mapBuildingsEnabled,
+      this.collisionDistance,
+      this.entitiesById,
+    )
   }
 
   private constrainTerrainBoundary(): void {
-    const grounds = this.terrainGrounds
-    if (!grounds.length) return
-    for (const b of [this.playerBody, ...[...this.vehicles.values()].map((v) => v.body)]) {
-      let nearest: { point: Vec3; distance: number; height: number } | null = null
-      for (const { e, pose } of grounds) {
-        const t = e.terrain!,
-          hx = ((t.columns - 1) * t.spacing) / 2,
-          hz = ((t.rows - 1) * t.spacing) / 2
-        const q = new Quaternion(...pose.rotation),
-          origin = new Vec3(...pose.position)
-        const p = q.inverse().vmult(b.position.vsub(origin))
-        const neighbor = (dx: number, dz: number) =>
-          grounds.some(
-            (g) =>
-              g.e.id !== e.id &&
-              Math.abs(g.pose.position[0] - pose.position[0] - dx) < 0.01 &&
-              Math.abs(g.pose.position[2] - pose.position[2] - dz) < 0.01,
-          )
-        const x = clamp(
-          p.x,
-          -hx + (neighbor(-2 * hx, 0) ? 0 : 8),
-          hx - (neighbor(2 * hx, 0) ? 0 : 8),
-        )
-        const z = clamp(
-          p.z,
-          -hz + (neighbor(0, -2 * hz) ? 0 : 8),
-          hz - (neighbor(0, 2 * hz) ? 0 : 8),
-        )
-        const distance = Math.hypot(x - p.x, z - p.z)
-        if (!nearest || distance < nearest.distance)
-          nearest = {
-            point: q.vmult(new Vec3(x, p.y, z)).vadd(origin),
-            distance,
-            height: terrainHeight(t, x, z) + pose.position[1],
-          }
-      }
-      if (!nearest || nearest.distance < 1e-6 || b.position.y > nearest.height + 20) continue
-      if (Math.abs(b.position.x - nearest.point.x) > 1e-6) b.velocity.x = 0
-      if (Math.abs(b.position.z - nearest.point.z) > 1e-6) b.velocity.z = 0
-      b.position.copy(nearest.point)
-      b.aabbNeedsUpdate = true
-    }
+    if (!this.terrainGrounds.length) return
+    constrainTerrainBoundary(this.terrainGrounds, [
+      this.playerBody,
+      ...[...this.vehicles.values()].map((v) => v.body),
+    ])
   }
 
   private createVehicle(entity: Entity, body: Body): void {
@@ -811,7 +598,8 @@ export class Simulation {
             }
           : null
       if (carry) host!.getVelocityAtWorldPoint(this.playerBody.position, carry.velocity)
-      if (this.ticks % 15 === 0) this.updateMapCollisions()
+      if (this.ticks % mapCollisionDefaults.activationIntervalTicks === 0)
+        this.updateMapCollisions()
       for (const vehicle of this.vehicles.values()) this.updateRamp(vehicle, FIXED_STEP)
       this.beforeTick()
       this.updateCatchFloor()
@@ -837,270 +625,42 @@ export class Simulation {
     previous: { body: Body; position: Vec3Tuple }[],
     beforeMouths: Map<string, Transform>,
   ): void {
-    const mouths = this.portalEntities
-      .filter((e) => e.portal!.mode === 'open')
-      .map((e) => ({ ...e, transform: this.entityTransform(e.id) }))
-    if (!mouths.length) return
-    for (const { body, position } of previous) {
-      const actor = [...this.bodies].find(([, b]) => b === body)?.[0] ?? 'player'
-      const vehicle = this.vehicles.get(actor)
-      const corners = this.portalEnvelope(body, vehicle)
-      const lock = this.portalLocks.get(body.id)
-      if (lock) {
-        const mouth = mouths.find((e) => e.id === lock)
-        if (mouth && corners.some((c) => Math.abs(portalLocal(c, mouth.transform).z) < 0.25))
-          continue
-        // Keep the lock until the entire body has cleared the exit plane.
-        if (mouth) {
-          const zs = corners.map((c) => portalLocal(c, mouth.transform).z)
-          if (Math.min(...zs) <= 0.15 && Math.max(...zs) >= -0.15) continue
-        }
-        this.portalLocks.delete(body.id)
-      }
-      for (const source of mouths) {
-        if (source.id === lock || source.parentId === actor) continue
-        const a = portalLocal(position, beforeMouths.get(source.id)!),
-          b = portalLocal(vec(body.position), source.transform)
-        const crossing = a.z > 0 && b.z <= 0 ? a.z / (a.z - b.z) : null
-        const backwards = a.z < 0 && b.z >= 0
-        if (crossing === null && !backwards) continue
-        const fraction = crossing ?? -a.z / (b.z - a.z)
-        const centre = new Vector3(...position).lerp(new Vector3(...vec(body.position)), fraction)
-        const local = portalLocal(centre.toArray(), source.transform)
-        if (
-          Math.abs(local.x) > source.size[0] / 2 + 5 ||
-          Math.abs(local.y) > source.size[1] / 2 + 5
-        )
-          continue
-        const shift = centre.sub(new Vector3(...vec(body.position)))
-        const fits = corners.every((c) => {
-          const p = portalLocal(new Vector3(...c).add(shift).toArray(), source.transform)
-          return (
-            Math.abs(p.x) < source.size[0] / 2 - 0.025 && Math.abs(p.y) < source.size[1] / 2 + 0.025
-          )
-        })
-        // A near miss outside the frame must remain ordinary movement.
-        const projected = corners.map((c) =>
-          portalLocal(new Vector3(...c).add(shift).toArray(), source.transform),
-        )
-        if (
-          Math.min(...projected.map((p) => p.x)) > source.size[0] / 2 ||
-          Math.max(...projected.map((p) => p.x)) < -source.size[0] / 2 ||
-          Math.min(...projected.map((p) => p.y)) > source.size[1] / 2 ||
-          Math.max(...projected.map((p) => p.y)) < -source.size[1] / 2
-        )
-          continue
-        const destination = mouths.find((e) => e.id === source.portal!.pairId)!
-        const mapping = portalMapping(source.transform, destination.transform)
-        const rotation = new RenderQuaternion().setFromRotationMatrix(mapping)
-        const mappedPosition = new Vector3(...vec(body.position)).applyMatrix4(mapping)
-        const mappedRotation = rotation
-          .clone()
-          .multiply(
-            new RenderQuaternion(
-              body.quaternion.x,
-              body.quaternion.y,
-              body.quaternion.z,
-              body.quaternion.w,
-            ),
-          )
-        const constrained =
-          this.docks.has(actor) || [...this.docks.values()].some((d) => d.carrierId === actor)
-        const blocked =
-          backwards ||
-          !fits ||
-          constrained ||
-          destination.parentId === actor ||
-          this.portalExitBlocked(body, mappedPosition, mappedRotation, destination)
-        if (blocked) {
-          body.position.set(...position)
-          body.velocity.setZero()
-          body.angularVelocity.setZero()
-        } else {
-          const sourceHost = this.bodies.get(source.parentId ?? '')
-          const destinationHost = this.bodies.get(destination.parentId ?? '')
-          const sourceVelocity = new Vec3(),
-            destinationVelocity = new Vec3()
-          sourceHost?.getVelocityAtWorldPoint(body.position, sourceVelocity)
-          destinationHost?.getVelocityAtWorldPoint(
-            new Vec3(...mappedPosition.toArray()),
-            destinationVelocity,
-          )
-          body.velocity.vsub(sourceVelocity, body.velocity)
-          if (sourceHost)
-            body.angularVelocity.vsub(sourceHost.angularVelocity, body.angularVelocity)
-          body.position.set(...mappedPosition.toArray())
-          body.quaternion.set(...mappedRotation.toArray())
-          body.velocity.set(
-            ...new Vector3(...vec(body.velocity)).applyQuaternion(rotation).toArray(),
-          )
-          body.angularVelocity.set(
-            ...new Vector3(...vec(body.angularVelocity)).applyQuaternion(rotation).toArray(),
-          )
-          body.velocity.vadd(destinationVelocity, body.velocity)
-          if (destinationHost)
-            body.angularVelocity.vadd(destinationHost.angularVelocity, body.angularVelocity)
-          this.updateMapCollisions()
-          this.portalLocks.set(body.id, destination.id)
-          // A solved contact belongs to the old location; do not expose it at the exit.
-          this.world.contacts = this.world.contacts.filter((c) => c.bi !== body && c.bj !== body)
-          if (vehicle) {
-            this.previousWheels.delete(actor)
-            vehicle.raycast.wheelInfos.forEach((w) => {
-              w.isInContact = false
-              w.raycastResult.reset()
-            })
-            if (vehicle.flight) vehicle.flight = null
-          }
-        }
-        body.previousPosition.copy(body.position)
-        body.interpolatedPosition.copy(body.position)
-        body.previousQuaternion.copy(body.quaternion)
-        body.aabbNeedsUpdate = true
-        body.wakeUp()
-        const forward = new Vector3(0, 0, -1).applyQuaternion(rotation)
-        const yawDelta = blocked ? 0 : Math.atan2(-forward.x, -forward.z)
-        if (body === this.playerBody && !blocked) {
-          const old = this.interiorBody()?.quaternion ?? new Quaternion()
-          const look = new Vector3(-Math.sin(this.input.yaw), 0, -Math.cos(this.input.yaw))
-            .applyQuaternion(new RenderQuaternion(old.x, old.y, old.z, old.w))
-            .applyQuaternion(rotation)
-          this.interiorId = destination.parentId
-          const next = this.interiorBody()?.quaternion ?? new Quaternion()
-          look.applyQuaternion(new RenderQuaternion(next.x, next.y, next.z, next.w).invert())
-          this.input.yaw = Math.atan2(-look.x, -look.z)
-          this.playerBody.quaternion.copy(next)
-        } else if (actor === this.vehicleId) this.input.yaw += yawDelta
-        this.lastPortalEvent = {
-          sequence: ++this.portalSequence,
-          actorId: actor,
-          sourceId: source.id,
-          destinationId: destination.id,
-          yawDelta,
-          blocked,
-        }
-        break
-      }
-    }
-  }
-  private portalEnvelope(body: Body, vehicle?: Vehicle): Vec3Tuple[] {
-    const points: Vec3Tuple[] = []
-    const addBox = (half: Vec3, offset: Vec3, q: Quaternion) => {
-      for (const x of [-1, 1])
-        for (const y of [-1, 1])
-          for (const z of [-1, 1]) {
-            const point = q.vmult(new Vec3(x * half.x, y * half.y, z * half.z)).vadd(offset)
-            points.push(vec(body.pointToWorldFrame(point)))
-          }
-    }
-    body.shapes.forEach((shape, i) => {
-      if (shape instanceof Box)
-        addBox(shape.halfExtents, body.shapeOffsets[i], body.shapeOrientations[i])
+    if (!this.portalEntities.length) return
+    this.portalTraversal.cross(previous, beforeMouths, {
+      portals: this.portalEntities,
+      bodies: this.bodies,
+      vehicles: this.vehicles,
+      world: this.world,
+      playerBody: this.playerBody,
+      input: this.input,
+      activeVehicle: this.vehicleId,
+      transform: (id) => this.entityTransform(id),
+      interiorBody: () => this.interiorBody(),
+      setInteriorId: (id) => {
+        this.interiorId = id
+      },
+      isDocked: (id) =>
+        this.docks.has(id) || [...this.docks.values()].some((d) => d.carrierId === id),
+      exitBlocked: (body, position, quaternion, destination) =>
+        this.portalExitBlocked(body, position, quaternion, destination),
+      refreshCollisions: () => this.updateMapCollisions(),
+      clearWheelHistory: (id) => this.previousWheels.delete(id),
     })
-    if (vehicle) {
-      const [w, h, l] = vehicle.entity.size
-      // Include bodywork and the full suspension/wheel envelope, not just the chassis collider.
-      const floor = Math.min(
-        ...vehicle.definition.hubs.map(
-          (hub, i) =>
-            hub[1] +
-            vehicle.definition.suspensionRest -
-            vehicle.definition.wheelRadius -
-            vehicle.raycast.wheelInfos[i].suspensionLength,
-        ),
-      )
-      const radius = vehicle.definition.wheelRadius
-      // Bodywork starts above the tire bottoms. Extending the lowest spring height
-      // over the full car length invents corners below the road under pitch.
-      addBox(
-        new Vec3(w / 2, (h - radius) / 2, l / 2),
-        new Vec3(0, floor + (h + radius) / 2, 0),
-        new Quaternion(),
-      )
-      vehicle.definition.hubs.forEach((hub, i) => {
-        const wheel = vehicle.raycast.wheelInfos[i]
-        const centre = new Vec3(
-          hub[0],
-          hub[1] + vehicle.definition.suspensionRest - wheel.suspensionLength,
-          hub[2],
-        )
-        const steering = new Quaternion().setFromAxisAngle(new Vec3(0, 1, 0), wheel.steering)
-        for (const side of [-1, 1])
-          for (let j = 0; j < 16; j++) {
-            const angle = (j * Math.PI) / 8
-            const rim = steering
-              .vmult(
-                new Vec3(side * radius * 0.37, Math.cos(angle) * radius, Math.sin(angle) * radius),
-              )
-              .vadd(centre)
-            points.push(vec(body.pointToWorldFrame(rim)))
-          }
-      })
-    }
-    return points
   }
+
   private portalExitBlocked(
     body: Body,
     position: Vector3,
     quaternion: RenderQuaternion,
     destination: Entity,
   ): boolean {
-    const normal = new Vector3(0, 0, 1).applyQuaternion(
-      new RenderQuaternion(...destination.transform.rotation),
-    )
-    const shapeBoxes = (other: Body): OBB[] =>
-      other.shapes.flatMap((shape, i) => {
-        if (!(shape instanceof Box) || !shape.collisionResponse) return []
-        const p = other.pointToWorldFrame(other.shapeOffsets[i]),
-          q = other.quaternion.mult(other.shapeOrientations[i])
-        return [
-          new OBB(
-            new Vector3(...vec(p)),
-            new Vector3(...vec(shape.halfExtents)).multiplyScalar(0.995),
-            new Matrix3().setFromMatrix4(
-              new Matrix4().makeRotationFromQuaternion(new RenderQuaternion(q.x, q.y, q.z, q.w)),
-            ),
-          ),
-        ]
-      })
-    // Exit safety must include map bodies suspended by distance culling.
-    const mapObstacles = [...this.mapBodies]
+    const map = [...this.mapBodies]
       .filter(([id]) => this.mapBuildingsEnabled || !isMapBuilding(this.entitiesById.get(id)))
-      .map(([, obstacle]) => obstacle)
-    const obstacles = [...new Set([...this.world.bodies, ...mapObstacles])]
-      .filter((b) => b !== body)
-      .flatMap(shapeBoxes)
-    // Check a clear exit corridor at transfer time; cross-seam contacts are not simulated.
-    const length = Math.max(...body.shapes.map((s) => s.boundingSphereRadius), 1) + 0.25
-    for (let distance = 0; distance <= length; distance += 0.25) {
-      for (let i = 0; i < body.shapes.length; i++) {
-        const shape = body.shapes[i]
-        if (!(shape instanceof Box)) continue
-        const centre = new Vector3(...vec(body.shapeOffsets[i]))
-          .applyQuaternion(quaternion)
-          .add(position)
-          .addScaledVector(normal, distance)
-        const q = quaternion
-          .clone()
-          .multiply(
-            new RenderQuaternion(
-              ...([
-                body.shapeOrientations[i].x,
-                body.shapeOrientations[i].y,
-                body.shapeOrientations[i].z,
-                body.shapeOrientations[i].w,
-              ] as [number, number, number, number]),
-            ),
-          )
-        const bounds = new OBB(
-          centre,
-          new Vector3(...vec(shape.halfExtents)).multiplyScalar(0.98),
-          new Matrix3().setFromMatrix4(new Matrix4().makeRotationFromQuaternion(q)),
-        )
-        if (obstacles.some((obstacle) => bounds.intersectsOBB(obstacle))) return true
-      }
-    }
-    return false
+      .map(([, body]) => body)
+    return portalExitBlocked(body, position, quaternion, destination, [
+      ...this.world.bodies,
+      ...map,
+    ])
   }
   private get playerHalfHeight(): number {
     return this.options.playerMode === 'hover' ? 0.28 : PLAYER_HALF_HEIGHT
@@ -1275,7 +835,14 @@ export class Simulation {
         continue
       }
       stepWheeledVehicle(v, drivingInput, FIXED_STEP, active, v.helm !== 'off')
-      if (active && this.roadAssistEnabled) this.applyRoadAssist(v)
+      if (active && this.roadGuidance.enabled)
+        this.roadGuidance.apply(
+          v,
+          this.input.right,
+          this.document.entities,
+          this.graph,
+          this.entitiesById,
+        )
     }
     if (!this.vehicleId) {
       let x = this.input.right,
@@ -1332,54 +899,16 @@ export class Simulation {
   /** Flat slab 30 m under the sea. Tracks the occupied body so a hole cannot drop it forever. */
   private updateCatchFloor(): void {
     const geo = this.document.geography
-    if (!geo) return
-    const actor = this.vehicleId
-      ? this.vehicles.get(this.vehicleId)!.body
-      : (this.interiorBody() ?? this.playerBody)
-    const sea = this.waterLevel - geo.altitude
-    // A floating hull sits just under the surface. Wait until the fall is real,
-    // then keep the disk until the actor climbs back out.
-    const sunk = this.catchFloor ? 0 : 2
-    if (this.altitude(actor.position) >= sea - sunk) {
-      this.dropCatchFloor()
-      return
-    }
-    const center = new Vec3(0, -(EARTH_RADIUS + geo.altitude), 0)
-    const radial = actor.position.vsub(center)
-    const span = radial.length()
-    if (span < 1) return
-    radial.scale(1 / span, radial)
-    const top = center.vadd(radial.scale(EARTH_RADIUS + this.waterLevel - CATCH_FLOOR_DEPTH))
-    if (!this.catchFloor) {
-      this.catchFloor = new Body({ mass: 0, material: this.solidMaterial })
-      this.catchFloor.addShape(new Box(new Vec3(CATCH_FLOOR_RADIUS, 0.5, CATCH_FLOOR_RADIUS)))
-      this.seatCatchFloor(top, radial)
-      this.world.addBody(this.catchFloor)
-      return
-    }
-    const up = this.catchFloor.quaternion.vmult(new Vec3(0, 1, 0))
-    const current = this.catchFloor.position.vadd(up.scale(0.5))
-    const offset = top.vsub(current)
-    const rise = Math.abs(offset.dot(up))
-    const drift = offset.vsub(up.scale(offset.dot(up))).length()
-    if (drift > CATCH_FLOOR_RADIUS * 0.45 || rise > 0.05) this.seatCatchFloor(top, radial)
+    if (geo)
+      this.fallbackFloor.update(
+        geo,
+        this.vehicleId
+          ? this.vehicles.get(this.vehicleId)!.body
+          : (this.interiorBody() ?? this.playerBody),
+        this.waterLevel,
+      )
   }
-  private seatCatchFloor(top: Vec3, up: Vec3): void {
-    const body = this.catchFloor!
-    const rotation = alignUp(up)
-    const position = top.vsub(rotation.vmult(new Vec3(0, 0.5, 0)))
-    body.quaternion.copy(rotation)
-    body.position.copy(position)
-    body.previousPosition.copy(position)
-    body.previousQuaternion.copy(rotation)
-    body.velocity.setZero()
-    body.angularVelocity.setZero()
-  }
-  private dropCatchFloor(): void {
-    if (!this.catchFloor) return
-    this.world.removeBody(this.catchFloor)
-    this.catchFloor = null
-  }
+
   /** 0 is stopped, 1 is full prop. Idles while occupied and windmills in the slipstream. */
   private spoolEngine(v: Vehicle, active: boolean): void {
     const running = active && v.helm !== 'off'
@@ -1843,77 +1372,11 @@ export class Simulation {
   }
 
   dockingCandidate(id = this.vehicleId): string | null {
-    if (!id || this.docks.has(id)) return null
-    const car = this.vehicles.get(id)
-    if (!car || car.definition.garage) return null
-    for (const [carrierId, carrier] of this.vehicles) {
-      const bay = carrier.definition.garage
-      if (!bay || [...this.docks.values()].some((d) => d.carrierId === carrierId)) continue
-      if (
-        carrier.body.velocity.length() > 0.8 ||
-        car.body.velocity.vsub(carrier.body.velocity).length() > 0.8
-      )
-        continue
-      // Every chassis corner must be inside, and all four suspension rays must rest on this carrier.
-      if (
-        !car.raycast.wheelInfos.every(
-          (w) => w.raycastResult.hasHit && w.raycastResult.body === carrier.body,
-        )
-      )
-        continue
-      const contained = car.definition.colliders.every((collider) => {
-        const q = new Quaternion(...collider.transform.rotation)
-        for (const x of [-1, 1])
-          for (const y of [-1, 1])
-            for (const z of [-1, 1]) {
-              const point = q
-                .vmult(
-                  new Vec3(
-                    (x * collider.size[0]) / 2,
-                    (y * collider.size[1]) / 2,
-                    (z * collider.size[2]) / 2,
-                  ),
-                )
-                .vadd(new Vec3(...collider.transform.position))
-              const local = carrier.body.pointToLocalFrame(car.body.pointToWorldFrame(point))
-              if (vec(local).some((n, i) => n < bay.min[i] - 0.05 || n > bay.max[i])) return false
-            }
-        return true
-      })
-      if (contained) return carrierId
-    }
-    return null
+    return this.garage.candidate(id)
   }
 
   toggleDock(): string {
-    if (!this.vehicleId) return 'Entra en el coche para sujetarlo al garaje'
-    const car = this.vehicles.get(this.vehicleId)!
-    const dock = this.docks.get(this.vehicleId)
-    if (dock) {
-      if (this.vehicles.get(dock.carrierId)!.flight)
-        return 'Aterriza y activa modo tierra antes de soltar el coche'
-      if (this.vehicles.get(dock.carrierId)!.body.velocity.length() > 0.8)
-        return 'Detén el container para soltar el coche'
-      this.setRamp(this.vehicles.get(dock.carrierId)!, false)
-      this.world.removeConstraint(dock.constraint)
-      this.docks.delete(this.vehicleId)
-      car.raycast.addToWorld(this.world)
-      car.body.wakeUp()
-      return 'Coche libre · sal marcha atrás por la rampa'
-    }
-    const carrierId = this.dockingCandidate()
-    if (!carrierId) return 'Aparca completamente dentro del garaje y frena'
-    const carrier = this.vehicles.get(carrierId)!
-    car.raycast.removeFromWorld(this.world)
-    this.world.addBody(car.body)
-    car.body.velocity.copy(carrier.body.velocity)
-    car.body.angularVelocity.copy(carrier.body.angularVelocity)
-    const constraint = new LockConstraint(carrier.body, car.body, { maxForce: 1e12 })
-    constraint.collideConnected = false
-    this.world.addConstraint(constraint)
-    this.docks.set(this.vehicleId, { carrierId, constraint })
-    this.setRamp(carrier, true)
-    return 'A3 sujeto al suelo · T para conducir el container'
+    return this.garage.toggle(this.vehicleId)
   }
 
   setCruiseSpeed(id: string, speed: number): void {
@@ -1925,73 +1388,11 @@ export class Simulation {
 
   /** Enable/disable road assist (gentle snap to road centerline). */
   setRoadAssist(enabled: boolean, strength = 0.3): void {
-    this.roadAssistEnabled = enabled
-    this.roadAssistStrength = clamp(strength, 0, 1)
+    this.roadGuidance.configure(enabled, strength)
   }
 
   get roadAssist(): { enabled: boolean; strength: number } {
-    return { enabled: this.roadAssistEnabled, strength: this.roadAssistStrength }
-  }
-
-  private applyRoadAssist(v: Vehicle): void {
-    const speed = v.body.velocity.length()
-    if (speed < 0.5 || speed > 40) return
-
-    if (v.definition.flight || Math.abs(this.input.right) > 0.1) return
-    if (this.assistSource !== this.document.entities) {
-      this.assistCells.clear()
-      for (const e of this.document.entities) {
-        if (!e.road || (e.road.elevation && e.road.elevation !== 'terrain')) continue
-        const highway = e.source?.tags?.highway
-        if (highway && ['footway', 'path', 'pedestrian', 'cycleway', 'steps'].includes(highway))
-          continue
-        const pose = this.graph.worldTransform(e.id),
-          q = new RenderQuaternion(...pose.rotation)
-        const terrain = this.entitiesById.get(e.road.terrainId)?.terrain
-        for (const path of e.road.paths)
-          for (let i = 1; i < path.length; i++) {
-            const points = [path[i - 1], path[i]].map((p) => {
-              const h = terrain ? terrainHeight(terrain, p[0], p[2]) : p[1]
-              return new Vector3(p[0], h, p[2])
-                .applyQuaternion(q)
-                .add(new Vector3(...pose.position))
-                .toArray() as Vec3Tuple
-            })
-            const road = { paths: [points], width: e.road.width }
-            for (
-              let x = Math.floor((Math.min(points[0][0], points[1][0]) - 20) / 64);
-              x <= Math.floor((Math.max(points[0][0], points[1][0]) + 20) / 64);
-              x++
-            )
-              for (
-                let z = Math.floor((Math.min(points[0][2], points[1][2]) - 20) / 64);
-                z <= Math.floor((Math.max(points[0][2], points[1][2]) + 20) / 64);
-                z++
-              ) {
-                const key = `${x}:${z}`,
-                  cell = this.assistCells.get(key) ?? []
-                cell.push(road)
-                this.assistCells.set(key, cell)
-              }
-          }
-      }
-      this.assistSource = this.document.entities
-    }
-    const roads =
-      this.assistCells.get(
-        `${Math.floor(v.body.position.x / 64)}:${Math.floor(v.body.position.z / 64)}`,
-      ) ?? []
-
-    const position: Vec3Tuple = [v.body.position.x, v.body.position.y, v.body.position.z]
-    const nearest = nearestRoadCenterline(position, roads, 20, 3)
-
-    if (!nearest || nearest.onRoad) return
-
-    const effectiveStrength = this.roadAssistStrength * Math.min(1, (nearest.distance - 1) / 5)
-    if (effectiveStrength < 0.01) return
-
-    const force = effectiveStrength * v.body.mass * 2
-    v.body.applyForce(new Vec3(nearest.direction[0] * force, 0, nearest.direction[2] * force))
+    return this.roadGuidance.settings
   }
 
   setGarageDoor(id: string, closed: boolean): string {
@@ -2001,7 +1402,7 @@ export class Simulation {
       if (!body.mass || body === carrier.body || (body === this.playerBody && this.vehicleId))
         continue
       const actor = [...this.vehicles.values()].find((v) => v.body === body)
-      const points = this.portalEnvelope(body, actor).map((point) =>
+      const points = portalEnvelope(body, actor).map((point) =>
         carrier.body.pointToLocalFrame(new Vec3(...point)),
       )
       const overlaps = (axis: 'x' | 'y' | 'z', low: number, high: number) =>
@@ -2111,9 +1512,8 @@ export class Simulation {
   }
   dispose(): void {
     if (this.disposed) return
-    this.dropCatchFloor()
-    for (const dock of this.docks.values()) this.world.removeConstraint(dock.constraint)
-    this.docks.clear()
+    this.fallbackFloor.dropCatchFloor()
+    this.garage.dispose()
     for (const joint of this.trailerJoints) this.world.removeConstraint(joint)
     this.trailerJoints.length = 0
     this.planetCollisions.dispose()
@@ -2122,8 +1522,8 @@ export class Simulation {
     for (const b of [...this.world.bodies]) this.world.removeBody(b)
     this.vehicles.clear()
     this.bodies.clear()
-    this.mapBodies.clear()
-    this.deferredMapBodies.clear()
+    this.mapCollision.clear()
+    this.portalTraversal.clear()
     this.world.raw.free()
     this.disposed = true
   }

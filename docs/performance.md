@@ -1,5 +1,12 @@
 # Performance status and remaining work
 
+See the [2026-10-04 measured review](architecture/performance-review-2026-10-04.md)
+for current profile comparisons, limitations and the user's 60 FPS / 10 km RTX 4090
+reference. [Simulation ownership](architecture/simulation.md) and
+[configuration by topic](configuration.md) describe the current implementation.
+The notes below include historical context; current quality values are defined
+in `src/config/performance.ts` and `src/config/shadows.ts`.
+
 ## Implemented
 
 - Streamed terrain, building triangles and draped roads are prepared in a worker;
@@ -77,8 +84,9 @@ when the page is hidden or play stops. The footer sound toggle persists locally.
 
 ## Cascaded local shadows
 
-The sun uses one cascade at low quality (512 px, 40 m), two at medium quality
-(1024 px each, 200 m) and three at high quality (2048 px each, 500 m). Low is the
+The sun uses the cascade count, map size and coverage recorded in
+`src/config/shadows.ts`: the 512 tier reaches 120 m; 1024 reaches 1 km;
+2048 and 4096 reach 4 km with three and four cascades respectively. Low is the
 default for new profiles; saved preferences are respected. High quality adds shadow
 passes and memory, so it is an optional distance/detail tradeoff, not a free upgrade.
 

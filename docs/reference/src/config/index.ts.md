@@ -9,6 +9,7 @@ Public, topic-based Engine tuning catalog. See docs/configuration.md for overrid
 ## Module dependencies
 
 - `./camera.js`
+- `./display.js`
 - `./controls.js`
 - `./lighting.js`
 - `./streaming.js`

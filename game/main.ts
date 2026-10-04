@@ -9,6 +9,7 @@ import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
+import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 
 let runtime: GameRuntime | undefined
 try {
@@ -102,6 +103,7 @@ try {
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
   runtime = new GameRuntime({
+    display: readDisplaySettings(),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
     world,
@@ -128,6 +130,12 @@ try {
           apiUrl: '/prepare',
           mode: config.staticTiles ? 'static' : 'dynamic',
         },
+    onDiagnostics: new URLSearchParams(location.search).has('diagnostics')
+      ? (sample) =>
+          document
+            .getElementById('game-canvas')!
+            .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
+      : undefined,
     onProgress(status, tiles) {
       loading.setStatus(status)
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
@@ -150,6 +158,7 @@ try {
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
   await runtime.play({ vehicleId: vehicle.id })
   loading.hide()
+  bindDisplaySettings(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()
 } catch (error) {

@@ -42,6 +42,34 @@ non-negative; ordered ranges and positive divisors/FOV are checked. Do not mutat
 the exported defaults. To change a running camera's settings, recreate its state
 with `createGameCameraState` so telemetry and framing share the same settings.
 
+## Display, synchronization and scaling
+
+[display.ts](../src/config/display.ts) owns `maxFps` and `resolutionScale`.
+Browser hosts can pass `display: { maxFps: 60, resolutionScale: 0.75 }` at creation,
+or call `runtime.setDisplay({ maxFps: 30 })` during play. A cap of zero follows
+browser cadence; positive caps are integers from 30 to 360. The automatic loop
+retains real timestamps, carries fractional scheduling remainder and does not
+produce catch-up render bursts after a stall. Physics still uses fixed steps.
+Manual-clock hosts control their own frame submission and do not use this cap.
+
+Scaling multiplies the selected quality profile's effective device pixel ratio.
+At scale 1 the profile is unchanged; 0.5 renders half its width and height.
+Changing FPS does not recreate render targets. The demo exposes these live
+controls under **Pantalla y rendimiento**, preserving them in `fps` and `scale`
+URL parameters. Changing its quality preset explicitly reloads the demo.
+
+Synchronization is managed by the browser through
+[requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame).
+There is no exposed native swap-chain/VSync-off control in this WebGL host; zero
+does not promise uncapped rendering beyond the browser/display cadence.
+
+The current renderer uses standard resolution scaling, not DLSS reconstruction.
+[NVIDIA's supported integration](https://developer.nvidia.com/blog/how-to-integrate-nvidia-dlss-4-into-your-game-with-nvidia-streamline/)
+uses native graphics APIs/Streamline. Nabla's WebGL renderer has no such backend;
+an RTX card alone does not enable DLSS in it. A native rendering backend would be
+a separate integration project. Temporal or spatial web upscaling is possible
+future work, but is not implemented or advertised as DLSS here.
+
 ## Scope and precedence
 
 Global source defaults require rebuilding Engine and updating the consumer's
@@ -83,3 +111,7 @@ Keep one owner for each setting. Document its units, supported range, precedence
 and lifetime. Preserve existing values during extraction. Add a behavioral test
 when changing a setting's meaning, and regenerate the reference with
 `npm run docs:generate`; `npm run docs:check` rejects stale documentation.
+
+For weak machines, start with `performance: { preset: 'mobile' }`; `minimal` lowers
+the pixel-ratio cap further to 0.35 while retaining the same conservative collision
+coverage. See the [measured comparison](architecture/performance-review-2026-10-04.md).

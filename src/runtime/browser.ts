@@ -4,6 +4,9 @@
  * monitors and a single frame loop. Hosts supply a canvas and authored planetary
  * scene; dispose releases owned resources without removing the host canvas.
  */
+import { resolveDisplaySettings, type DisplaySettings } from '../config/display.js'
+import type { RuntimeFrameSample } from '../diagnostics/runtime-frame.js'
+export type { RuntimeFrameSample } from '../diagnostics/runtime-frame.js'
 import { controlDefaults } from '../config/controls.js'
 import { lightingDefaults } from '../config/lighting.js'
 import { streamingDefaults } from '../config/streaming.js'
@@ -68,6 +71,8 @@ export interface GameRuntimeOptions {
   /** Disable only the visible water sheet for a synthetic sea-level test surface. */
   sea?: boolean
   clock?: 'automatic' | 'manual'
+  /** Frame cap and additional resolution scaling; caps apply only to the automatic clock. */
+  display?: Partial<DisplaySettings>
   /** Auto shows driving controls on coarse-pointer devices; false disables them. */
   touchControls?: TouchDrivingVisibility | false
   depthOfField?: boolean
@@ -76,6 +81,8 @@ export interface GameRuntimeOptions {
   fieldLights?: FieldLightOptions
   onProgress?: (status: string, loadedTiles?: string[]) => void
   onFrame?: (frame: GameFrame) => void
+  /** Opt-in per-frame CPU and render counters; omit to avoid diagnostics collection. */
+  onDiagnostics?: (sample: RuntimeFrameSample) => void
   onMessage?: (message: string) => void
   onError?: (error: unknown) => void
 }
@@ -99,6 +106,7 @@ export class GameRuntime {
   private readonly remoteViews: RemotePortalViews
   private readonly worldContent: WorldContent | undefined
   private readonly fieldLighting: FieldLighting | null
+  private display: DisplaySettings
   private readonly quality: PerformanceSettings
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
@@ -135,6 +143,7 @@ export class GameRuntime {
   private disposed = false
 
   constructor(private readonly options: GameRuntimeOptions) {
+    this.display = resolveDisplaySettings(options.display)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
     this.camera.near = this.cameraState.settings.nearClip
     this.camera.far = this.cameraState.settings.farClip
@@ -176,7 +185,11 @@ export class GameRuntime {
       logarithmicDepthBuffer: true,
     })
     configureWorldRenderer(this.renderer)
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.quality.resolution))
+    if (options.onDiagnostics) this.renderer.info.autoReset = false
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, this.quality.resolution) *
+        this.display.resolutionScale,
+    )
     this.renderer.shadowMap.enabled = this.quality.shadows > 0
     this.renderer.shadowMap.type = THREE.PCFShadowMap
     this.renderer.shadowMap.autoUpdate = false
@@ -249,6 +262,7 @@ export class GameRuntime {
         this.options.onError?.(error)
       }
     })
+    this.loop.setMaxFps(this.display.maxFps)
     this.originalTabIndex = options.canvas.getAttribute('tabindex')
     options.canvas.tabIndex = 0
     this.bindInput()
@@ -405,6 +419,10 @@ export class GameRuntime {
     const sim = this.session.simulation
     if (this.disposed || !sim || this.session.state !== 'playing') return
     if (!Number.isFinite(time)) throw new Error('Invalid frame time')
+    const measuring = !!this.options.onDiagnostics
+    const cpuStart = measuring ? performance.now() : 0
+    const frameMs = this.lastTime === null ? 0 : Math.max(0, time - this.lastTime)
+    if (measuring) this.renderer.info.reset()
     const dt =
       this.lastTime === null
         ? 0
@@ -415,8 +433,9 @@ export class GameRuntime {
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
     const pad = this.pollGamepad()
+    const installStart = measuring ? performance.now() : 0
     this.world?.flushInstall(
-      this.quality.preset === 'mobile'
+      this.quality.preset === 'mobile' || this.quality.preset === 'minimal'
         ? streamingDefaults.mobileInstallBudgetMs
         : streamingDefaults.installBudgetMs,
     )
@@ -426,6 +445,7 @@ export class GameRuntime {
       this.camera.position,
     )
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    const installMs = measuring ? performance.now() - installStart : 0
     const input = this.game.readInput(dt, {
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
@@ -437,7 +457,9 @@ export class GameRuntime {
     })
     const water = worldWater(this.document.water, this.document.sky)
     this.environment.ocean.setLevel(water.level)
+    const physicsStart = measuring ? performance.now() : 0
     const crossing = this.game.step(dt, input, water.level, time)
+    const physicsMs = measuring ? performance.now() - physicsStart : 0
     if (crossing)
       this.options.onMessage?.(crossing.blocked ? 'Paso bloqueado' : 'Stargate atravesado')
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
@@ -488,6 +510,7 @@ export class GameRuntime {
       this.document.sky ?? { mode: 'live' },
       this.quality.fog,
     )
+    const previousFar = this.camera.far
     if (this.sky.enabled) {
       const direction = this.environment.applyLighting(this.sky)
       this.shadows.setLightDirection(direction.clone().negate())
@@ -501,7 +524,7 @@ export class GameRuntime {
       this.scene.background = new THREE.Color('#a6bbd5')
       this.scene.fog = new THREE.Fog('#a6bbd5', this.quality.fog * 0.75, this.quality.fog)
     }
-    this.camera.updateProjectionMatrix()
+    if (this.camera.far !== previousFar) this.camera.updateProjectionMatrix()
     this.view.root.position.copy(this.origin).negate()
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
     const disk = sim.catchDisk()
@@ -572,6 +595,18 @@ export class GameRuntime {
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
     this.sidearm?.render(this.renderer, time, this.camera.aspect, this.cameraState.firstPerson)
+    if (this.options.onDiagnostics)
+      this.options.onDiagnostics({
+        frameMs,
+        cpuMs: performance.now() - cpuStart,
+        physicsMs,
+        installMs,
+        calls: this.renderer.info.render.calls,
+        triangles: this.renderer.info.render.triangles,
+        width: this.renderer.domElement.width,
+        height: this.renderer.domElement.height,
+        droppedSeconds: sim.stats.droppedSeconds,
+      })
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
@@ -579,6 +614,25 @@ export class GameRuntime {
         ? localToGeo(this.document.geography, player.position)
         : null,
     })
+  }
+
+  /** Return per-instance presentation settings without exposing mutable internal state. */
+  get displaySettings(): DisplaySettings {
+    return { ...this.display }
+  }
+  /** Apply a live automatic-clock cap and drawing-buffer scale; physics keeps its fixed timestep. */
+  setDisplay(settings: Partial<DisplaySettings>): void {
+    if (this.disposed) throw new Error('Game runtime is disposed')
+    const next = resolveDisplaySettings({ ...this.display, ...settings })
+    const resize = next.resolutionScale !== this.display.resolutionScale
+    if (next.maxFps !== this.display.maxFps) this.loop.setMaxFps(next.maxFps)
+    this.display = next
+    if (resize) {
+      this.renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio || 1, this.quality.resolution) * next.resolutionScale,
+      )
+      this.resize()
+    }
   }
 
   private cull(position: THREE.Vector3): void {

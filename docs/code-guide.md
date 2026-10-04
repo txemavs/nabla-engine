@@ -70,3 +70,6 @@ side-effect imports and keep type-only groups separate. Keep future refactors
 small enough that documentation and behavior changes can be reviewed separately.
 
 See the [topic-based configuration guide](configuration.md) for defaults, units and application overrides.
+
+See [simulation subsystem ownership](architecture/simulation.md) for internal boundaries and
+the [measured performance review](architecture/performance-review-2026-10-04.md) for current results.

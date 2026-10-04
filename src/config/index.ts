@@ -1,5 +1,6 @@
 /** Public, topic-based Engine tuning catalog. See docs/configuration.md for override lifetimes. */
 export * from './camera.js'
+export * from './display.js'
 export * from './controls.js'
 export * from './lighting.js'
 export * from './streaming.js'

@@ -68,7 +68,7 @@ try {
     await page.close()
   }
   const page = await browser.newPage()
-  await page.goto('http://127.0.0.1:5188/?example=flat')
+  await page.goto(process.env.NABLA_GAME_URL ?? 'http://127.0.0.1:5188/?example=flat')
   await page.locator('#game-hud:not(.hidden)').waitFor({ timeout: 45000 })
   await page.waitForTimeout(2000)
   await page.locator('#game-canvas').click()

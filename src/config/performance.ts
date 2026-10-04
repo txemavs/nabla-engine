@@ -99,6 +99,26 @@ export function normalizePerformance(value: unknown): PerformanceSettings {
 }
 
 export const performancePresets = {
+  minimal: {
+    label: 'Mínimo',
+    settings: {
+      vehicleShadows: 0,
+      mirrors: 0,
+      dof: 0,
+      roads: 250,
+      buildings: 0,
+      distance: 1000,
+      fog: 500,
+      relief: 2,
+      collisions: 200,
+      resolution: 0.35,
+      shadows: 0,
+    },
+    cache: 25,
+    concurrent: 1,
+    ahead: 0,
+    tiles: 12,
+  },
   mobile: {
     label: 'Móvil básico',
     settings: {

@@ -29,6 +29,16 @@ it('shares named mobile budgets and preserves explicitly disabled render effects
   expect(streamBudget(p)).toEqual({ concurrent: 1, ahead: 0, retain: false, tiles: 12 })
   expect(normalizePerformance({ preset: 'ultra' }).fog).toBe(8000)
 })
+it('minimal quality reduces pixels without dropping collision coverage below the safe mobile tier', () => {
+  const minimal = normalizePerformance({
+    ...performancePresets.minimal.settings,
+    preset: 'minimal',
+  })
+  expect(minimal.resolution).toBe(0.35)
+  expect(minimal.shadows + minimal.mirrors + minimal.dof + minimal.buildings).toBe(0)
+  expect(minimal.collisions).toBe(performancePresets.mobile.settings.collisions)
+  expect(streamBudget(minimal)).toEqual({ concurrent: 1, ahead: 0, retain: false, tiles: 12 })
+})
 it('manual sea level is independent of the world clock', () => {
   expect(worldWater({ mode: 'manual', level: 2, amplitude: 3 }, { mode: 'live' }, 0).level).toBe(2)
 })

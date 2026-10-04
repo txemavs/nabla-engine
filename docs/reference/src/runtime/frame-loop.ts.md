@@ -8,10 +8,11 @@ One animation owner per runtime. The callback does not schedule itself.
 
 ## Module dependencies
 
+- `../config/display.js`
 
 ## FrameLoop.constructor
 
-[Implementation, line 6](../../../../src/runtime/frame-loop.ts#L6)
+[Implementation, line 9](../../../../src/runtime/frame-loop.ts#L9)
 
 Inject the frame callback and scheduler; timestamps follow requestAnimationFrame milliseconds.
 
@@ -19,33 +20,47 @@ Inject the frame callback and scheduler; timestamps follow requestAnimationFrame
 constructor(private readonly frame: (time: number) => void, private readonly request: (callback: FrameRequestCallback) => number = (callback) => requestAnimationFrame(callback), private readonly cancel: (handle: number) => void = (handle) => cancelAnimationFrame(handle)): instance
 ```
 
-## FrameLoop.constructor.callback@8
+## FrameLoop.constructor.callback@11
 
-[Implementation, line 8](../../../../src/runtime/frame-loop.ts#L8)
+[Implementation, line 11](../../../../src/runtime/frame-loop.ts#L11)
 
 ```ts
-callback@8(callback): inferred by TypeScript; see implementation
+callback@11(callback): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `requestAnimationFrame`
 
-## FrameLoop.constructor.callback@10
+## FrameLoop.constructor.callback@13
 
-[Implementation, line 10](../../../../src/runtime/frame-loop.ts#L10)
+[Implementation, line 13](../../../../src/runtime/frame-loop.ts#L13)
 
 ```ts
-callback@10(handle): inferred by TypeScript; see implementation
+callback@13(handle): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `cancelAnimationFrame`
 
+## FrameLoop.setMaxFps
+
+[Implementation, line 16](../../../../src/runtime/frame-loop.ts#L16)
+
+Limit submissions while retaining browser synchronization; zero follows display cadence.
+
+```ts
+setMaxFps(maxFps: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `resolveDisplaySettings`
+
 ## FrameLoop.start
 
-[Implementation, line 13](../../../../src/runtime/frame-loop.ts#L13)
+[Implementation, line 22](../../../../src/runtime/frame-loop.ts#L22)
 
 Schedule exactly one pending frame; repeated starts do not create parallel loops.
 
@@ -59,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FrameLoop.stop
 
-[Implementation, line 19](../../../../src/runtime/frame-loop.ts#L19)
+[Implementation, line 29](../../../../src/runtime/frame-loop.ts#L29)
 
 Cancel the pending frame and prevent rescheduling; safe before the first start.
 
@@ -73,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FrameLoop.tick
 
-[Implementation, line 25](../../../../src/runtime/frame-loop.ts#L25)
+[Implementation, line 36](../../../../src/runtime/frame-loop.ts#L36)
 
 Run one frame, stop on callback failure, and respect stop/restart requests made inside it.
 
@@ -83,6 +98,8 @@ tick(time: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.floor`
+- `Math.max`
 - `this.frame`
 - `this.request`
 - `this.stop`

@@ -165,6 +165,45 @@
       #error-message button:hover {
         background: #444;
       }
+      #display-settings {
+        max-height: calc(100vh - 40px);
+        overflow: auto;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 20;
+        max-width: min(310px, calc(100vw - 40px));
+        padding: 12px;
+        background: #161c24ed;
+        border: 1px solid #495362;
+        border-radius: 8px;
+        font-size: 13px;
+      }
+      #display-settings summary {
+        cursor: pointer;
+      }
+      #display-settings label {
+        display: grid;
+        gap: 5px;
+        margin-top: 14px;
+      }
+      #display-settings input,
+      #display-settings select,
+      #display-settings button {
+        color: #eee;
+        background: #283340;
+        border: 1px solid #627084;
+        border-radius: 4px;
+        padding: 6px;
+      }
+      #display-settings p {
+        margin-top: 12px;
+        color: #b9c6d4;
+      }
+      #display-settings button {
+        margin-top: 8px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -197,6 +236,33 @@
       <div id="location-display"></div>
       <div id="game-message" role="status"></div>
     </div>
+
+    <details id="display-settings">
+      <summary>Pantalla y rendimiento</summary>
+      <label
+        >Límite de FPS (0 = automático)
+        <input id="display-fps" type="number" min="0" max="360" step="1" value="0" />
+      </label>
+      <label
+        >Escala de resolución <span id="display-scale-label">100% del perfil</span>
+        <input id="display-scale" type="range" min="25" max="100" step="1" value="100" />
+      </label>
+      <p>FPS y escala se aplican durante la partida.</p>
+      <label
+        >Calidad
+        <select id="display-quality">
+          <option value="custom">Predeterminada</option>
+          <option value="minimal">Mínima</option>
+          <option value="mobile">Móvil</option>
+          <option value="low">Baja</option>
+          <option value="balanced">Equilibrada</option>
+          <option value="high">Alta</option>
+          <option value="ultra">Ultra</option>
+        </select>
+      </label>
+      <button id="display-apply-quality" type="button">Aplicar calidad y reiniciar demo</button>
+      <p>Sincronización: automática del navegador.<br />Reescalado estándar; DLSS no disponible.</p>
+    </details>
 
     <div id="controls-hint">
       <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Drive · <kbd>Space</kbd> Brake ·

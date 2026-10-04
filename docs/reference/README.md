@@ -6,13 +6,14 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **220 modules; 2058 executable function definitions**.
+Coverage: **232 modules; 2105 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
 | [game/config.ts](game/config.ts.md) | 3 |
+| [game/display-settings.ts](game/display-settings.ts.md) | 7 |
 | [game/loading.ts](game/loading.ts.md) | 16 |
-| [game/main.ts](game/main.ts.md) | 13 |
+| [game/main.ts](game/main.ts.md) | 14 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 9 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
@@ -40,6 +41,7 @@ Coverage: **220 modules; 2058 executable function definitions**.
 | [src/catalog/weapons/weapon-source.ts](src/catalog/weapons/weapon-source.ts.md) | 4 |
 | [src/config/camera.ts](src/config/camera.ts.md) | 2 |
 | [src/config/controls.ts](src/config/controls.ts.md) | 0 |
+| [src/config/display.ts](src/config/display.ts.md) | 1 |
 | [src/config/index.ts](src/config/index.ts.md) | 0 |
 | [src/config/lighting.ts](src/config/lighting.ts.md) | 0 |
 | [src/config/performance.ts](src/config/performance.ts.md) | 5 |
@@ -47,6 +49,7 @@ Coverage: **220 modules; 2058 executable function definitions**.
 | [src/config/simulation.ts](src/config/simulation.ts.md) | 0 |
 | [src/config/streaming.ts](src/config/streaming.ts.md) | 0 |
 | [src/diagnostics/performance-monitor.ts](src/diagnostics/performance-monitor.ts.md) | 10 |
+| [src/diagnostics/runtime-frame.ts](src/diagnostics/runtime-frame.ts.md) | 0 |
 | [src/entity/capability.ts](src/entity/capability.ts.md) | 1 |
 | [src/entity/coords.ts](src/entity/coords.ts.md) | 1 |
 | [src/entity/landcover/field.ts](src/entity/landcover/field.ts.md) | 0 |
@@ -182,9 +185,9 @@ Coverage: **220 modules; 2058 executable function definitions**.
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 57 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 59 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
-| [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 6 |
+| [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 2 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 15 |
@@ -217,9 +220,18 @@ Coverage: **220 modules; 2058 executable function definitions**.
 | [src/scene/prepared-binary.ts](src/scene/prepared-binary.ts.md) | 2 |
 | [src/scene/sample.ts](src/scene/sample.ts.md) | 5 |
 | [src/scene/tiles.ts](src/scene/tiles.ts.md) | 3 |
+| [src/simulation/catch-floor.ts](src/simulation/catch-floor.ts.md) | 8 |
+| [src/simulation/contracts.ts](src/simulation/contracts.ts.md) | 1 |
+| [src/simulation/entity-body.ts](src/simulation/entity-body.ts.md) | 5 |
+| [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |
 | [src/simulation/physics.ts](src/simulation/physics.ts.md) | 113 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 195 |
+| [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 12 |
+| [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
+| [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 4 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 158 |
+| [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
+| [src/simulation/vehicle-docking.ts](src/simulation/vehicle-docking.ts.md) | 9 |
 | [src/simulation/vehicles/boat.ts](src/simulation/vehicles/boat.ts.md) | 5 |
 | [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 5 |
 | [src/simulation/vehicles/flight.ts](src/simulation/vehicles/flight.ts.md) | 3 |

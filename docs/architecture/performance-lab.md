@@ -1,6 +1,6 @@
 # Streaming and performance laboratory
 
-The active Studio is served at http://127.0.0.1:8080. Open project options and use
+Studio now lives in the independent `nabla-studio` repository. In that application, open project options and use
 **Calidad** for presets, internal pixel ratio (including 0.35 and 0.5), shadow
 quality, stable/full car shading, mirrors and depth of field. A first visit with a
 coarse pointer chooses the conservative mobile preset. Saved preferences win.
@@ -29,12 +29,12 @@ work: disable it for comparative performance measurements.
 - `src/render/planet/world.ts`: requests, worker backpressure, resident lifetime,
   cooperative installation and physical coverage.
 - `src/render/planet/debug.ts`: optional diagnostics only.
-- `studio/performance.ts`: quality defaults and persistence.
-- `studio/performance-monitor.ts`: bounded 1,800-sample CSV and recent 240-frame
+- `src/config/performance.ts`: shared quality defaults; Studio owns preference persistence.
+- `src/diagnostics/performance-monitor.ts`: bounded 1,800-sample CSV and recent 240-frame
   mean/p95/p99. CPU is main-thread elapsed time, not GPU timing. Suspension gaps
   over one second are excluded. A stationary editor need not draw each animation
   callback; do not compare its callback rate to active gameplay.
-- `studio/touch-driving.ts`: captured multi-pointer driving inputs; cancellation,
+- `src/runtime/touch-driving.ts`: captured multi-pointer driving inputs; cancellation,
   blur and visibility changes clear pressed controls.
 - `src/render/shadows.ts`: shared CSM material registration, current Three lighting
   compatibility and a dedicated near cascade for vehicle contact shadows.

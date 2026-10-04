@@ -39,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tileBudget
 
-[Implementation, line 204](../../../../src/config/performance.ts#L204)
+[Implementation, line 224](../../../../src/config/performance.ts#L224)
 
 z15 meshes for a custom draw distance. Named presets carry their own cap.
 
@@ -49,7 +49,7 @@ tileBudget(distance: number): number
 
 ## streamBudget
 
-[Implementation, line 212](../../../../src/config/performance.ts#L212)
+[Implementation, line 232](../../../../src/config/performance.ts#L232)
 
 ```ts
 streamBudget(settings: PerformanceSettings): inferred by TypeScript; see implementation
@@ -62,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## performanceProfile
 
-[Implementation, line 222](../../../../src/config/performance.ts#L222)
+[Implementation, line 242](../../../../src/config/performance.ts#L242)
 
 ```ts
 performanceProfile(settings: PerformanceSettings): inferred by TypeScript; see implementation
