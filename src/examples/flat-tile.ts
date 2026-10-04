@@ -24,6 +24,7 @@ export function createFlatTestScene(vehicle?: Entity): SceneDocument {
     version: 1,
     name: 'Planetary vehicle test · Z15 0,0',
     geography: { ...FLAT_TEST_ORIGIN, imagery: 'offline', planetary: true },
+    water: { mode: 'manual', level: 0, amplitude: 0 },
     sky: { mode: 'fixed', at: '2026-03-20T12:00:00.000Z' },
     entities,
   }

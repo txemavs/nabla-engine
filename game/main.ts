@@ -62,7 +62,8 @@ try {
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
     sea: !flat,
-    depthOfField: new URLSearchParams(location.search).has('dof'),
+    depthOfField: new URLSearchParams(location.search).has('dof') ? true : undefined,
+    performance: { preset: new URLSearchParams(location.search).get('quality') ?? 'custom' },
     tiles: flat
       ? { baseUrl: FLAT_TEST_BASE, mode: 'static', tiles: FLAT_TEST_TILES, horizon: false }
       : {

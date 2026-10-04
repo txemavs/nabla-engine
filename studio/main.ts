@@ -20,7 +20,7 @@ import { sceneTree, sceneHierarchy } from './ui/scene-tree.js'
 import { openExactTransform } from './ui/exact-transform.js'
 import { parseScene } from '../src/scene/document.js'
 import { capturePng } from '../src/render/capture.js'
-import { simplifiedTide } from '../src/planet/tide.js'
+import { worldWater } from '@nabla/engine/runtime'
 import { CatchFloor } from '../src/render/planet/catch-floor.js'
 import { seaSeenFromBelow } from '../src/render/planet/ocean-sheet.js'
 import { TileDebugView, type TileDebugMode } from '../src/render/planet/debug.js'
@@ -1534,7 +1534,10 @@ for (const id of ['water-level', 'water-level-number', 'tide-amplitude'])
   $(id).onchange = () => action(saveWater)
 function updateTide(now: number): void {
   if (waterMode !== 'tide') return
-  const tide = simplifiedTide(skyTime(skyClock).getTime(), tideAmplitude)
+  const tide = worldWater(
+    { mode: waterMode, level: waterLevel, amplitude: tideAmplitude },
+    skyClock,
+  )
   waterLevel = tide.level
   ocean.setLevel(waterLevel)
   if (now >= nextTideReadout) {

@@ -49,7 +49,7 @@ reset prediction instead of inheriting an editor or previous-game position.
 
 | Capability                                                      | Current owner                                    | Next extraction / acceptance                                     |
 | --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Time/tides, field lights and performance options                | `studio/main.ts`, `studio/performance.ts`        | Reusable settings and runtime systems; host persists preferences |
+| Field lights and environment option bindings                    | `studio/main.ts`, `studio/performance.ts`        | Reusable settings and runtime systems; host persists preferences |
 | Cross-location portal registry                                  | `studio/project.ts`, `studio/portal-registry.ts` | Runtime world-content contract distinct from editor document     |
 | Editor tools, history, selection, inspector and project storage | `studio/`                                        | Remain in the Studio application                                 |
 | Remaining direct source imports                                 | `studio/`                                        | Deliberate public API, then test Studio against a packed package |
@@ -156,3 +156,17 @@ append `&dof=1` to check postprocessing. The ordinary driving example is unchang
 with/without DOF. Unit tests cover render ordering and failure-state restoration.
 
 Studio's gallery E2E now uses the visible F8 play shortcut and verifies a target hit through the portal plus score reset against the shared pipeline.
+
+## Shared quality and water settings
+
+Engine now owns performance presets, validation and streaming budgets in
+`runtime/performance.ts`. Studio retains only localStorage/device preference
+selection. Browser hosts pass `performance` (a named preset plus optional overrides)
+to configure resolution, shadows, mirrors, culling, terrain budgets and collisions.
+The flat demo accepts `quality=mobile`/`low`/`balanced`/`high`/`ultra` for checks;
+without it, its existing high-quality shadows remain enabled.
+
+`worldWater` resolves manual sea level or the existing approximate tide using the
+scene clock. Both Studio and the browser game use it for consistent water levels;
+the flat fixture explicitly fixes sea level at zero. Editor time-preview controls
+and preference persistence remain host UI. Field-light coordination is still pending.

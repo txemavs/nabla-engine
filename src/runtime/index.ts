@@ -26,3 +26,15 @@ export { Gallery, shotView } from './gallery.js'
 export { fireSidearm } from './shooting.js'
 export { createGallery } from '../examples/gallery.js'
 export { GameRenderPipeline, type GameRenderFrame } from './render-pipeline.js'
+export {
+  normalizePerformance,
+  performanceDefaults,
+  performancePresets,
+  performanceProfile,
+  streamBudget,
+  tileBudget,
+  shadowTiers,
+  type ShadowTier,
+  type PerformanceSettings,
+} from './performance.js'
+export { worldWater } from './water.js'

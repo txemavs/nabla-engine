@@ -1,3 +1,10 @@
+import { worldWater } from './water.js'
+import {
+  normalizePerformance,
+  performancePresets,
+  streamBudget,
+  type PerformanceSettings,
+} from './performance.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
@@ -44,6 +51,7 @@ export interface GameRuntimeOptions {
   /** Auto shows driving controls on coarse-pointer devices; false disables them. */
   touchControls?: TouchDrivingVisibility | false
   depthOfField?: boolean
+  performance?: Partial<PerformanceSettings>
   onProgress?: (status: string, loadedTiles?: string[]) => void
   onFrame?: (frame: GameFrame) => void
   onMessage?: (message: string) => void
@@ -61,6 +69,7 @@ export class GameRuntime {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
   private readonly renderer: THREE.WebGLRenderer
+  private readonly quality: PerformanceSettings
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
@@ -90,6 +99,19 @@ export class GameRuntime {
   private disposed = false
 
   constructor(private readonly options: GameRuntimeOptions) {
+    const profile = options.performance?.preset
+    const preset =
+      profile && Object.hasOwn(performancePresets, profile)
+        ? performancePresets[profile as keyof typeof performancePresets].settings
+        : {}
+    this.quality = normalizePerformance({
+      preset: 'custom',
+      resolution: 2,
+      shadows: 2048,
+      fog: 4000,
+      ...preset,
+      ...options.performance,
+    })
     this.document = parseScene(options.scene)
     if (!this.document.geography)
       throw new Error('A Nabla game requires planetary coordinates, including offline scenes')
@@ -100,8 +122,8 @@ export class GameRuntime {
       logarithmicDepthBuffer: true,
     })
     configureWorldRenderer(this.renderer)
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-    this.renderer.shadowMap.enabled = true
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.quality.resolution))
+    this.renderer.shadowMap.enabled = this.quality.shadows > 0
     this.renderer.shadowMap.type = THREE.PCFShadowMap
     this.renderer.shadowMap.autoUpdate = false
     this.scene.add(this.sun, this.ambient, this.catchFloor.mesh)
@@ -133,15 +155,17 @@ export class GameRuntime {
             },
             options.touchControls ?? 'auto',
           )
-    this.shadows.init({
-      camera: this.camera,
-      scene: this.scene,
-      lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
-      tier: shadowTiers[2048]!,
-    })
+    if (this.quality.shadows > 0)
+      this.shadows.init({
+        camera: this.camera,
+        scene: this.scene,
+        lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
+        tier: shadowTiers[this.quality.shadows]!,
+      })
+    this.view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
     this.view.setupMaterials((material) => this.shadows.setupMaterial(material))
     this.shadows.setupMaterial(this.catchFloor.mesh.material)
-    this.sun.visible = false
+    this.sun.visible = this.quality.shadows === 0
     this.world =
       options.tiles && this.document.geography
         ? new PlanetWorld(
@@ -155,8 +179,10 @@ export class GameRuntime {
           )
         : null
     if (this.world) {
-      this.world.setQuality(2, 8, false, 32)
-      this.world.setDistance(4000)
+      const budget = streamBudget(this.quality)
+      this.world.setQuality(budget.concurrent, budget.ahead, budget.retain, budget.tiles)
+      this.world.setDistance(this.quality.distance)
+      this.world.setRelief(this.quality.relief)
       this.scene.add(this.world.root)
     }
     this.loop = new FrameLoop((time) => {
@@ -212,12 +238,17 @@ export class GameRuntime {
       }
       controller.signal.throwIfAborted()
       this.options.onProgress?.('Starting simulation…')
-      await this.game.play(document, { playerMode: 'walk', ...options, planetaryTerrain: true })
+      const simulation = await this.game.play(document, {
+        playerMode: 'walk',
+        ...options,
+        planetaryTerrain: true,
+      })
+      simulation.setCollisionDistance(this.quality.collisions)
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
       this.view.setPlaying(true)
       this.effects.audio.setSuspended(globalThis.document.hidden)
-      this.world?.renderUpdate(this.origin, true, this.session.simulation)
+      this.world?.renderUpdate(this.origin, !!this.quality.buildings, this.session.simulation)
       this.lastTime = null
       if (this.options.clock !== 'manual') this.loop.start()
     } catch (error) {
@@ -249,7 +280,7 @@ export class GameRuntime {
     this.loading?.abort()
     this.loading = null
     this.loop.stop()
-    this.world?.renderUpdate(this.origin, true, null)
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, null)
     this.touchDriving?.setActive(false)
     this.monitors.hide()
     this.weaponDrawn = false
@@ -317,9 +348,9 @@ export class GameRuntime {
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
     const pad = this.pollGamepad()
-    this.world?.flushInstall(1.5)
+    this.world?.flushInstall(this.quality.preset === 'mobile' ? 1 : 1.5)
     this.view.flushMapInstall(4, 24, this.camera.position)
-    this.world?.renderUpdate(this.origin, true, sim)
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
     const input = this.game.readInput(dt, {
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
@@ -329,7 +360,9 @@ export class GameRuntime {
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
-    const crossing = this.game.step(dt, input, 0, time)
+    const water = worldWater(this.document.water, this.document.sky)
+    this.environment.ocean.setLevel(water.level)
+    const crossing = this.game.step(dt, input, water.level, time)
     if (crossing)
       this.options.onMessage?.(crossing.blocked ? 'Paso bloqueado' : 'Stargate atravesado')
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
@@ -369,7 +402,7 @@ export class GameRuntime {
       this.document.geography,
       eye,
       this.origin,
-      8000,
+      Math.max(this.quality.distance, this.quality.fog * 2),
       time,
       this.options.sea !== false,
     )
@@ -378,7 +411,7 @@ export class GameRuntime {
       eye,
       this.origin,
       this.document.sky ?? { mode: 'live' },
-      4000,
+      this.quality.fog,
     )
     if (this.sky.enabled) {
       const direction = this.environment.applyLighting(this.sky)
@@ -386,21 +419,21 @@ export class GameRuntime {
       this.shadows.setLightIntensity(this.sun.intensity)
       this.shadows.setLightColor(this.sun.color)
       this.camera.far = Math.hypot(
-        Math.max(height >= 2000 ? 80000 : 12000, 4500),
+        Math.max(height >= 2000 ? 80000 : 12000, this.quality.distance + 500),
         Math.max(0, height),
       )
     } else {
       this.scene.background = new THREE.Color('#a6bbd5')
-      this.scene.fog = new THREE.Fog('#a6bbd5', 1500, 4000)
+      this.scene.fog = new THREE.Fog('#a6bbd5', this.quality.fog * 0.75, this.quality.fog)
     }
     this.camera.updateProjectionMatrix()
     this.view.root.position.copy(this.origin).negate()
-    this.world?.renderUpdate(this.origin, true, sim)
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
     const disk = sim.catchDisk()
     if (disk) this.catchFloor.show(disk.position, disk.rotation, this.origin)
     else this.catchFloor.hide()
-    this.view.streetlights.update(eye, this.view.night, 4000)
-    this.view.limitDrawDistance(eye, 4000, true, true, 1000)
+    this.view.streetlights.update(eye, this.view.night, this.quality.distance)
+    this.cull(eye)
     this.monitors.update(
       sim,
       this.document,
@@ -436,10 +469,11 @@ export class GameRuntime {
         shadows: this.shadows,
         monitors: this.monitors,
         time,
-        mirrorVehicle: this.cameraState.mode === 'cockpit' ? player.vehicleId : null,
-        shadowsEnabled: true,
-        depthOfField: this.options.depthOfField,
-        cull: (position) => this.view.limitDrawDistance(position, 4000, true, true, 1000),
+        mirrorVehicle:
+          this.quality.mirrors && this.cameraState.mode === 'cockpit' ? player.vehicleId : null,
+        shadowsEnabled: this.quality.shadows > 0,
+        depthOfField: this.options.depthOfField ?? !!this.quality.dof,
+        cull: (position) => this.cull(position),
       })
     } finally {
       this.camera.position.copy(eye)
@@ -455,6 +489,15 @@ export class GameRuntime {
     })
   }
 
+  private cull(position: THREE.Vector3): void {
+    this.view.limitDrawDistance(
+      position,
+      this.quality.distance,
+      true,
+      !!this.quality.buildings,
+      this.quality.preset === 'ultra' ? 20000 : Math.min(this.quality.distance, this.quality.roads),
+    )
+  }
   private hasInput(): boolean {
     return document.activeElement === this.options.canvas && document.hasFocus() && !document.hidden
   }
