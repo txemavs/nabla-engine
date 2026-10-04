@@ -25,6 +25,7 @@ import {
   tileBudget,
   type PerformanceSettings,
 } from './performance.js'
+import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
@@ -39,6 +40,7 @@ import { GeographicView } from '../render/planet/sky.js'
 import {
   PlanetWorld,
   type TileTiming,
+  type LoadDiagnostics,
   type TileDiscoveryMode,
   type PlanetSourceOptions,
 } from '../render/planet/world.js'
@@ -658,7 +660,13 @@ export class GameRuntime {
   }
 
   /** Terrain cells loaded and drawn of the known dataset; null without tiles. */
-  get cellStats(): { loaded: number; visible: number; total: number; pending: number } | null {
+  get cellStats(): {
+    loaded: number
+    visible: number
+    missing: number
+    pending: number
+    failed: number
+  } | null {
     return this.world?.cellStats ?? null
   }
   /**
@@ -681,6 +689,17 @@ export class GameRuntime {
   /** Current load radius (metres) and cells kept in memory. */
   get streaming(): { distance: number; cells: number } {
     return { distance: this.quality.distance, cells: this.world?.maxCells ?? 0 }
+  }
+  /** What the loading screen needs: requests in flight, failures, holes and the last error. */
+  get loadDiagnostics(): LoadDiagnostics | null {
+    return this.world?.loadDiagnostics ?? null
+  }
+  /** Tiles the host does not have (z/x/y, HTTP status, when): holes in the map, kept for the tile producer. */
+  get missingTiles(): MissingTile[] {
+    return this.world?.missingTiles ?? []
+  }
+  clearMissingTiles(): void {
+    this.world?.clearMissingTiles()
   }
   /** Per-cell load timings (worker phases, install steps, photo), keyed by cell id; empty without tiles. */
   get cellTimings(): [string, TileTiming][] {

@@ -18,7 +18,7 @@ network. Hosts apply a choice by reloading with `withTerrainSource(search, sourc
 
 ## normalizeSourceUrl
 
-[Implementation, line 41](../../../../src/planet/terrain-source.ts#L41)
+[Implementation, line 44](../../../../src/planet/terrain-source.ts#L44)
 
 Normalise a tile/package base URL, or throw a Spanish error shown next to the field.
 
@@ -40,7 +40,7 @@ Explicit throws in this body:
 
 ## parseTerrainSource
 
-[Implementation, line 51](../../../../src/planet/terrain-source.ts#L51)
+[Implementation, line 54](../../../../src/planet/terrain-source.ts#L54)
 
 The source named by a URL query, or null when it names none. Precedence: packages, flat, tiles.
 
@@ -58,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## validateTerrainSource
 
-[Implementation, line 67](../../../../src/planet/terrain-source.ts#L67)
+[Implementation, line 70](../../../../src/planet/terrain-source.ts#L70)
 
 Check a source before it is applied or stored; returns it normalised.
 
@@ -77,7 +77,7 @@ Explicit throws in this body:
 
 ## withTerrainSource
 
-[Implementation, line 84](../../../../src/planet/terrain-source.ts#L84)
+[Implementation, line 87](../../../../src/planet/terrain-source.ts#L87)
 
 The query to reload with so that `source` is used. Other parameters (quality, layers, vehicle ...)
 are kept. Position parameters are dropped when the kind changes, because a tile offset of one
@@ -98,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseStoredSource
 
-[Implementation, line 101](../../../../src/planet/terrain-source.ts#L101)
+[Implementation, line 104](../../../../src/planet/terrain-source.ts#L104)
 
 A remembered choice from storage text; anything unreadable is "nothing remembered".
 
@@ -113,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## serializeStoredSource
 
-[Implementation, line 112](../../../../src/planet/terrain-source.ts#L112)
+[Implementation, line 115](../../../../src/planet/terrain-source.ts#L115)
 
 ```ts
 serializeStoredSource(source: TerrainSource): string
@@ -126,7 +126,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## loadTerrainSource
 
-[Implementation, line 121](../../../../src/planet/terrain-source.ts#L121)
+[Implementation, line 124](../../../../src/planet/terrain-source.ts#L124)
 
 ```ts
 loadTerrainSource(storage: SourceStorage | undefined, key: string): TerrainSource | null
@@ -139,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveTerrainSource
 
-[Implementation, line 132](../../../../src/planet/terrain-source.ts#L132)
+[Implementation, line 135](../../../../src/planet/terrain-source.ts#L135)
 
 ```ts
 saveTerrainSource(storage: SourceStorage | undefined, key: string, source: TerrainSource): void
@@ -152,13 +152,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## chooseTerrainSource
 
-[Implementation, line 154](../../../../src/planet/terrain-source.ts#L154)
+[Implementation, line 157](../../../../src/planet/terrain-source.ts#L157)
 
 Decide which source a page uses. The URL wins; then the remembered choice (a package folder
-only while its index answers); then the package folder when it is available, else the flat tile.
+only while it answers); then the package folder when it is available, else the flat tile.
 
 ```ts
-chooseTerrainSource(options: { search: string stored?: TerrainSource | null /** True when the default package folder answers (`/terrain/index.json`). */ packagesAvailable: boolean }): SourceChoice
+chooseTerrainSource(options: { search: string stored?: TerrainSource | null /** True when the default package folder answers (it publishes the default start cell). */ packagesAvailable: boolean }): SourceChoice
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

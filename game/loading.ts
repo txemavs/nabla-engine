@@ -111,6 +111,19 @@ export class LoadingScreen {
     this.status.textContent = message
   }
 
+  /** Extra lines under the status (requests in flight, last error); empty hides them. */
+  setDetail(message: string): void {
+    let detail = document.getElementById('loading-detail')
+    if (!detail) {
+      detail = document.createElement('div')
+      detail.id = 'loading-detail'
+      detail.setAttribute('role', 'status')
+      this.status.after(detail)
+    }
+    detail.textContent = message
+    detail.hidden = !message
+  }
+
   hide(): void {
     this.screen.classList.add('hidden')
     setTimeout(() => {

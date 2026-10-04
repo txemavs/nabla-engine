@@ -95,3 +95,17 @@ test('a stalled load still fails after the stall limit', async () => {
   await vi.advanceTimersByTimeAsync(400)
   await result
 })
+
+test('a position over a tile the host does not have fails at once instead of waiting', async () => {
+  const world = {
+    update: vi.fn(),
+    flushInstall: vi.fn(),
+    groundHeight: () => undefined,
+    status: 'cargando…',
+    missingAt: () => true,
+  }
+  await expect(waitForGround(world, [0, 0, 0], { timeoutMs: 60_000 })).rejects.toThrow(
+    /no terrain at this position/,
+  )
+  expect(world.update).toHaveBeenCalledTimes(1)
+})

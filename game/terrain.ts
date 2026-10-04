@@ -27,7 +27,10 @@ import {
 import type { AtlasZ15Options } from '@nabla/engine/planet/atlas-z15'
 import { mapTileAt, type MapTile } from '@nabla/engine/scene'
 
-/** Tiles listed by the host's `index.json` (dev-server mount), or undefined when it has none. */
+/**
+ * Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
+ * it has none. Only used to pick a start cell when the URL names none; streaming never needs it.
+ */
 export async function fetchCoverage(base: string): Promise<MapTile[] | undefined> {
   try {
     const response = await fetch(`${base}/index.json`)
@@ -50,33 +53,28 @@ export const DEFAULT_TERRAIN_QUERY = {
   vehicle: 'car',
 }
 
-/** Default query for a package folder: full defaults over cell 16211/12003 when listed, else just the folder. */
+/** Default query for a package folder: the default start when its cell is published, else just the folder. */
 export function terrainDefaults(
-  index: readonly MapTile[],
+  defaultCellPublished: boolean,
   base: string = DEFAULT_TERRAIN_QUERY.terrain,
 ) {
-  return index.some((t) => t.x === 16211 && t.y === 12003)
-    ? { ...DEFAULT_TERRAIN_QUERY, terrain: base }
-    : { terrain: base }
+  return defaultCellPublished ? { ...DEFAULT_TERRAIN_QUERY, terrain: base } : { terrain: base }
 }
 
 /**
- * The query string to play with, or null when the URL belongs to another mode (`?tiles=`,
- * `?example=flat`, ...). A URL that names no source gets the default terrain when the mount's
- * `index.json` answers; otherwise it keeps the original (error-reporting) flow.
+ * True when the folder publishes the default start cell. This asks for one manifest, like the engine
+ * does for any tile; no index file is needed.
  */
-export async function resolveTerrainSearch(
-  search: string = location.search,
-  fetchIndex: (base: string) => Promise<MapTile[] | undefined> = fetchCoverage,
-): Promise<string | null> {
-  if (wantsTerrain(search)) return search
-  const params = new URLSearchParams(search)
-  if (params.has('tiles') || params.has('example') || params.has('api')) return null
-  const index = await fetchIndex(DEFAULT_TERRAIN_QUERY.terrain)
-  if (!index) return null
-  const merged = new URLSearchParams(terrainDefaults(index))
-  for (const [key, value] of params) merged.set(key, value)
-  return '?' + merged.toString()
+export async function probeTerrainFolder(
+  base: string = DEFAULT_TERRAIN_QUERY.terrain,
+  cell: string = DEFAULT_TERRAIN_QUERY.tile,
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${base}/z/15/${cell}/manifest.json`)
+    return response.ok
+  } catch {
+    return false
+  }
 }
 
 export interface TerrainConfig {
@@ -173,10 +171,11 @@ export async function startFromIndex(config: TerrainConfig): Promise<TerrainConf
   return { ...config, tile: first, start: { latitude: at.latitude, longitude: at.longitude } }
 }
 
-/** Spanish HUD text for the streaming progress: loaded cells out of the dataset, plus those still arriving. */
-export function formatCells(stats: { loaded: number; total: number; pending: number }): string {
+/** Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving. */
+export function formatCells(stats: { loaded: number; missing: number; pending: number }): string {
   return (
-    `Celdas: ${stats.loaded}/${stats.total}` +
+    `Celdas: ${stats.loaded} ${stats.loaded === 1 ? 'cargada' : 'cargadas'}` +
+    (stats.missing ? ` · ${stats.missing} ${stats.missing === 1 ? 'falta' : 'faltan'}` : '') +
     (stats.pending ? ` · cargando ${stats.pending}…` : '')
   )
 }

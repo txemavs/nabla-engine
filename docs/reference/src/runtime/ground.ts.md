@@ -10,7 +10,7 @@
 
 ## groundAtSeam
 
-[Implementation, line 15](../../../../src/runtime/ground.ts#L15)
+[Implementation, line 17](../../../../src/runtime/ground.ts#L17)
 
 GLB float32 vertices can leave sub-millimetre gaps at shared tile corners.
 Probe only 1 mm around the same location; never substitute a plane or a distant tile.
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## waitForGround
 
-[Implementation, line 38](../../../../src/runtime/ground.ts#L38)
+[Implementation, line 40](../../../../src/runtime/ground.ts#L40)
 
 Wait for usable ground, not a fixed count of neighbouring tiles. Never starts after a timeout.
 `timeoutMs` is a stall limit: it restarts whenever the provider reports progress (`loadProgress`),
@@ -46,19 +46,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.signal?.throwIfAborted`
 - `performance.now`
 - `world.flushInstall`
+- `world.missingAt`
 - `world.update`
 
 Explicit throws in this body:
 
 - `new Error('Invalid ground timeout')`
+- `new Error(\`Ground unavailable: the tile host has no terrain at this position\`)`
 - `new Error(\`Ground unavailable: ${world.status}\`)`
 
-## waitForGround.callback@60
+## waitForGround.callback@64
 
-[Implementation, line 60](../../../../src/runtime/ground.ts#L60)
+[Implementation, line 64](../../../../src/runtime/ground.ts#L64)
 
 ```ts
-callback@60(resolve, reject): inferred by TypeScript; see implementation
+callback@64(resolve, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -68,9 +70,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.signal?.addEventListener`
 - `setTimeout`
 
-## waitForGround.callback@60.finish
+## waitForGround.callback@64.finish
 
-[Implementation, line 61](../../../../src/runtime/ground.ts#L61)
+[Implementation, line 65](../../../../src/runtime/ground.ts#L65)
 
 ```ts
 finish(): inferred by TypeScript; see implementation
@@ -81,9 +83,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.signal?.removeEventListener`
 - `resolve`
 
-## waitForGround.callback@60.abort
+## waitForGround.callback@64.abort
 
-[Implementation, line 66](../../../../src/runtime/ground.ts#L66)
+[Implementation, line 70](../../../../src/runtime/ground.ts#L70)
 
 ```ts
 abort(): inferred by TypeScript; see implementation

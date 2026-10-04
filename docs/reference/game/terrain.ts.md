@@ -32,9 +32,10 @@ A bare URL (no query, or only display options) starts the default tile of the de
 
 ## fetchCoverage
 
-[Implementation, line 31](../../../game/terrain.ts#L31)
+[Implementation, line 34](../../../game/terrain.ts#L34)
 
-Tiles listed by the host's `index.json` (dev-server mount), or undefined when it has none.
+Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
+it has none. Only used to pick a start cell when the URL names none; streaming never needs it.
 
 ```ts
 fetchCoverage(base: string): Promise<MapTile[] | undefined>
@@ -46,61 +47,42 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `index.tiles?.filter`
 - `response.json`
 
-## fetchCoverage.callback@36
+## fetchCoverage.callback@39
 
-[Implementation, line 36](../../../game/terrain.ts#L36)
+[Implementation, line 39](../../../game/terrain.ts#L39)
 
 ```ts
-callback@36(t): inferred by TypeScript; see implementation
+callback@39(t): inferred by TypeScript; see implementation
 ```
 
 ## terrainDefaults
 
-[Implementation, line 54](../../../game/terrain.ts#L54)
+[Implementation, line 57](../../../game/terrain.ts#L57)
 
-Default query for a package folder: full defaults over cell 16211/12003 when listed, else just the folder.
-
-```ts
-terrainDefaults(index: readonly MapTile[], base: string = DEFAULT_TERRAIN_QUERY.terrain): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `index.some`
-
-## terrainDefaults.callback@58
-
-[Implementation, line 58](../../../game/terrain.ts#L58)
+Default query for a package folder: the default start when its cell is published, else just the folder.
 
 ```ts
-callback@58(t): inferred by TypeScript; see implementation
+terrainDefaults(defaultCellPublished: boolean, base: string = DEFAULT_TERRAIN_QUERY.terrain): inferred by TypeScript; see implementation
 ```
 
-## resolveTerrainSearch
+## probeTerrainFolder
 
 [Implementation, line 68](../../../game/terrain.ts#L68)
 
-The query string to play with, or null when the URL belongs to another mode (`?tiles=`,
-`?example=flat`, ...). A URL that names no source gets the default terrain when the mount's
-`index.json` answers; otherwise it keeps the original (error-reporting) flow.
+True when the folder publishes the default start cell. This asks for one manifest, like the engine
+does for any tile; no index file is needed.
 
 ```ts
-resolveTerrainSearch(search: string = location.search, fetchIndex: (base: string) => Promise<MapTile[] | undefined> = fetchCoverage): Promise<string | null>
+probeTerrainFolder(base: string = DEFAULT_TERRAIN_QUERY.terrain, cell: string = DEFAULT_TERRAIN_QUERY.tile): Promise<boolean>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `URLSearchParams`
-- `fetchIndex`
-- `merged.set`
-- `merged.toString`
-- `params.has`
-- `terrainDefaults`
-- `wantsTerrain`
+- `fetch`
 
 ## wantsTerrain
 
-[Implementation, line 94](../../../game/terrain.ts#L94)
+[Implementation, line 92](../../../game/terrain.ts#L92)
 
 True when the URL asks for the terrain-folder example.
 
@@ -116,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 99](../../../game/terrain.ts#L99)
+[Implementation, line 97](../../../game/terrain.ts#L97)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -136,7 +118,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 108](../../../game/terrain.ts#L108)
+[Implementation, line 106](../../../game/terrain.ts#L106)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -170,7 +152,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 165](../../../game/terrain.ts#L165)
+[Implementation, line 163](../../../game/terrain.ts#L163)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -191,10 +173,10 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 177](../../../game/terrain.ts#L177)
+[Implementation, line 175](../../../game/terrain.ts#L175)
 
-Spanish HUD text for the streaming progress: loaded cells out of the dataset, plus those still arriving.
+Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving.
 
 ```ts
-formatCells(stats: { loaded: number; total: number; pending: number }): string
+formatCells(stats: { loaded: number; missing: number; pending: number }): string
 ```

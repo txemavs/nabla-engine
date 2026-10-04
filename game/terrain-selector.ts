@@ -7,16 +7,18 @@ import {
   saveTerrainSource,
   withTerrainSource,
   type SourceStorage,
+  DEFAULT_TILES_URL,
   type TerrainSource,
   type TerrainSourceKind,
 } from '@nabla/engine/planet/terrain-source'
 import { SOURCE_STORAGE_KEY, browserStorage } from './entry.js'
 import { menuSection } from './menu.js'
 
-/** Optional build-time default for the tile host, e.g. VITE_NABLA_TILES_URL=https://tiles.example/. */
+/** Build-time default for the tile host (VITE_NABLA_TILES_URL), else the public Atlas host. */
 function configuredTilesUrl(): string {
   return (
-    (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_NABLA_TILES_URL ?? ''
+    (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_NABLA_TILES_URL ||
+    DEFAULT_TILES_URL
   )
 }
 

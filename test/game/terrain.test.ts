@@ -3,7 +3,8 @@ import {
   fetchCoverage,
   formatCells,
   parseTerrainConfig,
-  resolveTerrainSearch,
+  probeTerrainFolder,
+  terrainDefaults,
   startFromIndex,
   wantsTerrain,
 } from '../../game/terrain.js'
@@ -104,41 +105,33 @@ describe('terrain-folder example config', () => {
 })
 
 describe('bare URL and cell streaming', () => {
-  const index = [
-    { z: 15, x: 16211, y: 12003 },
-    { z: 15, x: 16212, y: 12003 },
-  ]
-  it('plays the default terrain on a bare URL when the mount has an index', async () => {
-    const search = await resolveTerrainSearch('', async () => index)
-    const params = new URLSearchParams(search!)
+  it('starts a bare URL over the default road when its cell is published', () => {
+    const params = new URLSearchParams(terrainDefaults(true))
     expect(params.get('terrain')).toBe('/terrain')
     expect(params.get('tile')).toBe('16211/12003')
     expect(params.get('dx')).toBe('17.4')
     expect(params.get('dz')).toBe('-197.6')
     expect(params.get('heading')).toBe('118')
     expect(params.get('vehicle')).toBe('car')
-    expect(() => parseTerrainConfig(search!)).not.toThrow()
+    expect(() => parseTerrainConfig('?' + params.toString())).not.toThrow()
+    expect(terrainDefaults(true, '/other').terrain).toBe('/other')
   })
 
-  it('keeps display options on a bare URL and lets them override the defaults', async () => {
-    const search = await resolveTerrainSearch('?quality=low&heading=10', async () => index)
-    const params = new URLSearchParams(search!)
-    expect(params.get('quality')).toBe('low')
-    expect(params.get('heading')).toBe('10')
-    expect(params.get('terrain')).toBe('/terrain')
+  it('asks for no start when the default cell is not published', () => {
+    expect(terrainDefaults(false)).toEqual({ terrain: '/terrain' })
   })
 
-  it('starts over the first cell when the default one is not in the dataset', async () => {
-    const search = await resolveTerrainSearch('', async () => [{ z: 15, x: 5, y: 6 }])
-    expect(new URLSearchParams(search!).has('tile')).toBe(false)
-  })
-
-  it('leaves ?tiles=, ?example= and hosts without an index to the original flow', async () => {
-    const never = async () => index
-    expect(await resolveTerrainSearch('?tiles=/x', never)).toBeNull()
-    expect(await resolveTerrainSearch('?example=flat', never)).toBeNull()
-    expect(await resolveTerrainSearch('', async () => undefined)).toBeNull()
-    expect(await resolveTerrainSearch('?terrain=/t&tile=1/2', never)).toBe('?terrain=/t&tile=1/2')
+  it('probes one manifest, not an index file', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', async (url: string) => {
+      urls.push(url)
+      return new Response('{}', { status: url.includes('16211/12003') ? 200 : 403 })
+    })
+    expect(await probeTerrainFolder('/terrain')).toBe(true)
+    expect(urls).toEqual(['/terrain/z/15/16211/12003/manifest.json'])
+    expect(await probeTerrainFolder('/terrain', '1/2')).toBe(false)
+    vi.stubGlobal('fetch', async () => Promise.reject(new TypeError('Failed to fetch')))
+    expect(await probeTerrainFolder('/terrain')).toBe(false)
   })
 
   it('floats the Studio monitor unless asked otherwise', () => {
@@ -152,8 +145,11 @@ describe('bare URL and cell streaming', () => {
   })
 
   it('shows the loaded cells in Spanish', () => {
-    expect(formatCells({ loaded: 12, total: 33, pending: 0 })).toBe('Celdas: 12/33')
-    expect(formatCells({ loaded: 12, total: 33, pending: 3 })).toBe('Celdas: 12/33 · cargando 3…')
+    expect(formatCells({ loaded: 12, missing: 0, pending: 0 })).toBe('Celdas: 12 cargadas')
+    expect(formatCells({ loaded: 1, missing: 1, pending: 0 })).toBe('Celdas: 1 cargada · 1 falta')
+    expect(formatCells({ loaded: 12, missing: 5, pending: 3 })).toBe(
+      'Celdas: 12 cargadas · 5 faltan · cargando 3…',
+    )
   })
 })
 

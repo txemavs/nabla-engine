@@ -9,7 +9,7 @@ import {
   type PlanetCollisionTile,
 } from '../../planet/index.js'
 import type { PlanetPhoto } from '../../planet/contract.js'
-import { fetchTileManifest } from './static-tiles.js'
+import { StaticTileError, fetchTileManifest } from './static-tiles.js'
 import { atlasFileUrl, atlasPhotoFor, type AtlasZ15Options } from '../../planet/atlas-z15.js'
 import { sha256 } from '../../util/sha256.js'
 
@@ -28,6 +28,12 @@ export interface PlanetSourceOptions {
    * the player approaches is upgraded. Default 1; only meaningful with `atlas`.
    */
   nearCells?: number
+  /**
+   * Tiles the host does not have (404/403). Holes, not errors: they are remembered here (pass a
+   * `MissingTiles` with storage to keep them across sessions) so they are not requested again for a while
+   * and can be reported to the tile producer. Default: an in-memory list.
+   */
+  missing?: MissingTiles
   /** Disable external coarse relief for self-contained examples. Coordinates remain planetary. */
   horizon?: boolean
   /** Read Atlas `nabla-z15-package/1` cells (static mode). Implies `imagery: 'package'`. */
@@ -58,6 +64,7 @@ import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import type { Simulation } from '../../simulation/simulation.js'
 import type { Vec3Tuple } from '../../entity/schema.js'
 import { restoreTileLayers } from './tile-asset.js'
+import { MissingTiles, type MissingTile } from '../../planet/missing-tiles.js'
 import {
   DRAPE_LAYERS,
   GROUND_DRAPE_LIFT,
@@ -306,6 +313,29 @@ interface Resident {
   revision: string
   buildings: boolean
 }
+/** The last thing that went wrong while loading cells, structured so a host can phrase it. */
+export interface StreamError {
+  message: string
+  /** `http`/`network`/`timeout`/`invalid`/`insecure` for a manifest; `cell` for a GLB; `worker` for the loader. */
+  kind: string
+  url?: string
+  status?: number
+  key?: string
+}
+export interface LoadDiagnostics {
+  manifestsInFlight: number
+  cellsInFlight: number
+  installing: number
+  failed: number
+  missing: number
+  lastError?: StreamError
+}
+function describeStreamError(error: unknown): StreamError {
+  if (error instanceof StaticTileError)
+    return { message: error.message, kind: error.kind, url: error.url, status: error.status }
+  return { message: error instanceof Error ? error.message : String(error), kind: 'network' }
+}
+
 /** One planetary stream for editor, rendering and physics. Only tile roots change frame. */
 export class PlanetWorld {
   readonly root = new THREE.Group()
@@ -365,8 +395,12 @@ export class PlanetWorld {
   private requests = new Map<number, { key: string; manifest: PlanetManifest }>()
   private ready = new Map<string, PlanetManifest>()
   private retry = new Map<string, number>()
-  /** Static tiles that answered 404, retried after a minute. */
-  private absent = new Map<string, number>()
+  /** Tiles the host does not have: holes, remembered and not re-requested for a while. */
+  private readonly missing: MissingTiles
+  /** Manifest requests that failed (not "missing"): backed off for a few seconds, reported to the player. */
+  private failedManifests = new Map<string, { until: number }>()
+  private manifestsInFlight = 0
+  private lastError: StreamError | undefined
   private wanted: MapTile[] = []
   /** The z15 cell under the player at the last update. */
   private focus?: MapTile
@@ -405,6 +439,7 @@ export class PlanetWorld {
     private discoveryMode: TileDiscoveryMode = 'dynamic',
     private sourceOptions: PlanetSourceOptions = {},
   ) {
+    this.missing = sourceOptions.missing ?? new MissingTiles()
     this.horizon = new PlanetHorizon(origin, changed, `${base}/photos`, setupMaterial)
     this.root.add(this.horizon.root)
     this.worker.onmessage = (
@@ -430,12 +465,21 @@ export class PlanetWorld {
         })
       else {
         this.retry.set(request.key, Date.now() + 15000)
+        this.lastError = {
+          message: event.data.error ?? 'sin datos',
+          kind: 'cell',
+          key: request.key,
+        }
         this.status = 'GLB pendiente · ' + (event.data.error ?? 'sin datos')
       }
       this.pump()
       this.changed()
     }
-    this.worker.onerror = () => {
+    this.worker.onerror = (event) => {
+      this.lastError = {
+        message: event.message || 'no se pudo iniciar el cargador de celdas (worker)',
+        kind: 'worker',
+      }
       this.status = 'Error en el cargador GLB'
       this.requests.clear()
       this.changed()
@@ -451,15 +495,51 @@ export class PlanetWorld {
     this.streamMode = mode
     this.planKey = ''
   }
-  /** Cells resident in memory, drawn now, and in the known dataset (0 when streaming is unbounded). */
-  get cellStats(): { loaded: number; visible: number; total: number; pending: number } {
-    const known = this.sourceOptions.coverage ?? this.sourceOptions.tiles
+  /**
+   * Cells resident in memory, drawn now, wanted but missing on the host (holes), still arriving, and
+   * failed (will be retried). There is no "total": streaming never needs an index of the host.
+   */
+  get cellStats(): {
+    loaded: number
+    visible: number
+    missing: number
+    pending: number
+    failed: number
+  } {
     return {
       loaded: this.resident.size,
       visible: this.visible.length,
-      total: known?.length ?? 0,
+      missing: this.missing.countAmong(this.wanted),
       pending: this.requests.size + this.installQueue.length + Number(!!this.installing),
+      failed: this.failedManifests.size + this.retry.size,
     }
+  }
+  /** What the loading screen needs to explain a slow or failing load. */
+  get loadDiagnostics(): LoadDiagnostics {
+    const now = Date.now()
+    return {
+      manifestsInFlight: this.manifestsInFlight,
+      cellsInFlight: this.requests.size,
+      installing: this.installQueue.length + Number(!!this.installing),
+      failed:
+        [...this.failedManifests.values()].filter((f) => f.until > now).length + this.retry.size,
+      missing: this.missing.countAmong(this.wanted),
+      lastError: this.lastError,
+    }
+  }
+  /** Tiles the host lacks (z/x/y, status, when), oldest first, kept across sessions when storage was given. */
+  get missingTiles(): MissingTile[] {
+    return this.missing.list()
+  }
+  /** Forget the recorded holes so they are requested again. */
+  clearMissingTiles(): void {
+    this.missing.clear()
+    this.planKey = ''
+  }
+  /** True when the host has no tile under this position: nothing will ever load there. */
+  missingAt(position: Vec3Tuple): boolean {
+    const gps = localToGeo(this.origin, position)
+    return this.missing.has(mapTileAt(gps.latitude, gps.longitude, 15))
   }
   /** Changes whenever a cell finishes loading or fails; stays equal while nothing is happening. */
   get loadProgress(): string {
@@ -718,7 +798,8 @@ export class PlanetWorld {
         const upgrade = this.ready.get(id)?.photo?.level === 'lo' && this.photoQuality(t) === 'full'
         return (
           ((!this.resident.has(id) && !this.ready.has(id)) || upgrade) &&
-          now >= (this.absent.get(id) ?? 0)
+          !this.missing.suppressed(t) &&
+          now >= (this.failedManifests.get(id)?.until ?? 0)
         )
       }
       return (
@@ -786,36 +867,50 @@ export class PlanetWorld {
     )
   }
   private async discoverStatic(batch: MapTile[]) {
-    let missing = 0
-    const failures: Error[] = []
+    let notFound = 0
     await Promise.all(
       batch.map(async (tile) => {
+        const id = mapTileId(tile)
+        let status = 404
+        this.manifestsInFlight++
         try {
           const manifest = await fetchTileManifest(tile, {
             baseUrl: this.base,
             signal: this.controller.signal,
             cors: true,
+            missingStatuses: [403, 404],
+            onMissing: (value) => (status = value),
             atlas: this.sourceOptions.atlas && {
               ...this.sourceOptions.atlas,
               photo: this.photoQuality(tile),
             },
           })
-          if (manifest) this.ready.set(mapTileId(tile), manifest)
-          else {
-            missing++
-            this.absent.set(mapTileId(tile), Date.now() + 60000)
+          if (manifest) {
+            this.ready.set(id, manifest)
+            this.missing.resolve(tile)
+            this.failedManifests.delete(id)
+            // Start this cell now; do not wait for the slowest request of the batch.
+            this.pump()
+            this.changed()
+          } else {
+            // A hole, not an error: remembered, and not asked for again for a while.
+            notFound++
+            this.missing.record(tile, status)
           }
         } catch (error) {
           if (this.controller.signal.aborted) return
-          failures.push(error instanceof Error ? error : new Error(String(error)))
+          this.failedManifests.set(id, { until: Date.now() + 15000 })
+          this.lastError = describeStreamError(error)
+        } finally {
+          this.manifestsInFlight--
         }
       }),
     )
     const loaded = batch.filter((t) => this.ready.has(mapTileId(t))).length
     let status = `Static tiles · ${loaded}/${batch.length} loaded · ${this.visible.length} visible`
-    if (missing) status += ` · ${missing} not published (404)`
-    // Show the real cause of the first failure (HTTP status, CORS/network, mixed content, invalid manifest), not just a count.
-    if (failures.length) status += ` · ${failures.length} failed: ${failures[0].message}`
+    if (notFound) status += ` · ${notFound} not published (holes)`
+    if (this.lastError && batch.some((t) => this.failedManifests.has(mapTileId(t))))
+      status += ` · failed: ${this.lastError.message}`
     this.status = status
     this.access = true
   }

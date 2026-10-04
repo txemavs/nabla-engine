@@ -30,6 +30,9 @@ export const TERRAIN_SOURCES: readonly { kind: TerrainSourceKind; label: string;
 /** The dev-server mount of a package folder. */
 export const DEFAULT_PACKAGES_URL = '/terrain'
 
+/** The public Atlas tile host: `{url}/z/15/{x}/{y}/manifest.json`. No index file; absent cells are holes. */
+export const DEFAULT_TILES_URL = 'https://atlas.chained.world/euskadi/terraform'
+
 /** URL parameters that choose the source. */
 export const SOURCE_PARAMS = ['example', 'terrain', 'z15', 'tiles', 'relief'] as const
 /** URL parameters that place the player inside a source; they mean nothing for another one. */
@@ -149,12 +152,12 @@ export interface SourceChoice {
 
 /**
  * Decide which source a page uses. The URL wins; then the remembered choice (a package folder
- * only while its index answers); then the package folder when it is available, else the flat tile.
+ * only while it answers); then the package folder when it is available, else the flat tile.
  */
 export function chooseTerrainSource(options: {
   search: string
   stored?: TerrainSource | null
-  /** True when the default package folder answers (`/terrain/index.json`). */
+  /** True when the default package folder answers (it publishes the default start cell). */
   packagesAvailable: boolean
 }): SourceChoice {
   const explicit = parseTerrainSource(options.search)

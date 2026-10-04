@@ -9,12 +9,11 @@ Which game mode a page runs and with which query: the URL first, then the rememb
 ## Module dependencies
 
 - `@nabla/engine/planet/terrain-source`
-- `@nabla/engine/scene`
 - `./terrain.js`
 
 ## browserStorage
 
-[Implementation, line 20](../../../game/entry.ts#L20)
+[Implementation, line 24](../../../game/entry.ts#L24)
 
 ```ts
 browserStorage(): SourceStorage | undefined
@@ -22,14 +21,14 @@ browserStorage(): SourceStorage | undefined
 
 ## resolveEntry
 
-[Implementation, line 33](../../../game/entry.ts#L33)
+[Implementation, line 37](../../../game/entry.ts#L37)
 
 URL parameters win (they keep every old link working). A URL that names no source uses the
-remembered choice; with none remembered, the package folder when `/terrain/index.json` answers,
-else the flat tile.
+remembered choice; with none remembered, the package folder when it publishes the default start
+cell (one manifest request; no index file), else the flat tile.
 
 ```ts
-resolveEntry(search: string = location.search, storage: SourceStorage | undefined = browserStorage(), fetchIndex: (base: string) => Promise<MapTile[] | undefined> = fetchCoverage): Promise<Entry>
+resolveEntry(search: string = location.search, storage: SourceStorage | undefined = browserStorage(), probe: (base: string) => Promise<boolean> = probeTerrainFolder): Promise<Entry>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -37,13 +36,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `URLSearchParams`
 - `browserStorage`
 - `chooseTerrainSource`
-- `fetchIndex`
 - `loadTerrainSource`
 - `merged.set`
 - `merged.toString`
 - `next.toString`
 - `params.has`
 - `parseTerrainSource`
+- `probe`
 - `terrainDefaults`
 - `wantsTerrain`
 - `withTerrainSource`

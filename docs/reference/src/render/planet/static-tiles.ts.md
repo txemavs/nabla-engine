@@ -28,7 +28,7 @@ An HTTPS page still cannot load tiles from an `http:` host (mixed content).
 
 ## StaticTileError.constructor
 
-[Implementation, line 57](../../../../../src/render/planet/static-tiles.ts#L57)
+[Implementation, line 64](../../../../../src/render/planet/static-tiles.ts#L64)
 
 A manifest request that failed for a reason worth showing to the user (never a plain "not found").
 
@@ -42,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## normalizeTilesBase
 
-[Implementation, line 69](../../../../../src/render/planet/static-tiles.ts#L69)
+[Implementation, line 76](../../../../../src/render/planet/static-tiles.ts#L76)
 
 Trim the base URL and drop trailing slashes.
 
@@ -62,7 +62,7 @@ Explicit throws in this body:
 
 ## tileManifestUrl
 
-[Implementation, line 77](../../../../../src/render/planet/static-tiles.ts#L77)
+[Implementation, line 84](../../../../../src/render/planet/static-tiles.ts#L84)
 
 ```ts
 tileManifestUrl(tile: MapTile, baseUrl: string): string
@@ -75,7 +75,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## assertSecureTileBase
 
-[Implementation, line 87](../../../../../src/render/planet/static-tiles.ts#L87)
+[Implementation, line 94](../../../../../src/render/planet/static-tiles.ts#L94)
 
 An `https:` page cannot fetch from an `http:` tile host (browsers block mixed content, and the failure shows up as a
 bare network error). Local development hosts are allowed. Relative URLs inherit the page protocol.
@@ -96,7 +96,7 @@ Explicit throws in this body:
 
 ## describeHttp
 
-[Implementation, line 103](../../../../../src/render/planet/static-tiles.ts#L103)
+[Implementation, line 110](../../../../../src/render/planet/static-tiles.ts#L110)
 
 ```ts
 describeHttp(status: number): string
@@ -104,10 +104,10 @@ describeHttp(status: number): string
 
 ## fetchTileManifest
 
-[Implementation, line 115](../../../../../src/render/planet/static-tiles.ts#L115)
+[Implementation, line 122](../../../../../src/render/planet/static-tiles.ts#L122)
 
 Fetch manifest.json for a single tile via GET request.
-Returns undefined if the tile is not published (404). Every other failure throws a StaticTileError (or the caller's
+Returns undefined if the tile is not published (404, or the statuses in `missingStatuses`). Every other failure throws a StaticTileError (or the caller's
 AbortError) whose message names the URL and the real cause: HTTP status, network/CORS, timeout, or an invalid manifest.
 
 ```ts
@@ -116,6 +116,7 @@ fetchTileManifest(tile: MapTile, options: StaticTileProviderOptions): Promise<Pl
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(options.missingStatuses ?? [404]).includes`
 - `AbortSignal.any`
 - `AbortSignal.timeout`
 - `StaticTileError`
@@ -124,6 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `assertSecureTileBase`
 - `describeHttp`
 - `fetch`
+- `options.onMissing`
 - `response.headers.get`
 - `response.json`
 - `tileManifestUrl`
@@ -140,7 +142,7 @@ Explicit throws in this body:
 
 ## adaptWithAtlasPackage
 
-[Implementation, line 180](../../../../../src/render/planet/static-tiles.ts#L180)
+[Implementation, line 190](../../../../../src/render/planet/static-tiles.ts#L190)
 
 Fetch, verify and apply the Atlas package a manifest points to. Every failure names the URL.
 
@@ -176,7 +178,7 @@ Explicit throws in this body:
 
 ## adaptWithAtlasPackage.fail
 
-[Implementation, line 186](../../../../../src/render/planet/static-tiles.ts#L186)
+[Implementation, line 196](../../../../../src/render/planet/static-tiles.ts#L196)
 
 ```ts
 fail(message: string, kind: StaticTileErrorKind, url: string, status?: number): inferred by TypeScript; see implementation
@@ -188,7 +190,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fetchTileManifests
 
-[Implementation, line 217](../../../../../src/render/planet/static-tiles.ts#L217)
+[Implementation, line 227](../../../../../src/render/planet/static-tiles.ts#L227)
 
 Batch fetch manifests for multiple tiles.
 Returns a map of tile IDs to manifests (only includes available tiles). A tile that fails for any reason other than
@@ -204,12 +206,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Promise.all`
 - `tiles.map`
 
-## fetchTileManifests.callback@222
+## fetchTileManifests.callback@232
 
-[Implementation, line 222](../../../../../src/render/planet/static-tiles.ts#L222)
+[Implementation, line 232](../../../../../src/render/planet/static-tiles.ts#L232)
 
 ```ts
-callback@222(tile): inferred by TypeScript; see implementation
+callback@232(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -220,7 +222,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isManifestCurrent
 
-[Implementation, line 235](../../../../../src/render/planet/static-tiles.ts#L235)
+[Implementation, line 245](../../../../../src/render/planet/static-tiles.ts#L245)
 
 Check if a manifest is current (has the expected geometry revision).
 
@@ -230,7 +232,7 @@ isManifestCurrent(manifest: PlanetManifest): boolean
 
 ## tileGlbUrl
 
-[Implementation, line 242](../../../../../src/render/planet/static-tiles.ts#L242)
+[Implementation, line 252](../../../../../src/render/planet/static-tiles.ts#L252)
 
 Build the URL for a tile's GLB file.
 

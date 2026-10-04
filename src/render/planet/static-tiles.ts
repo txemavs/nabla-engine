@@ -43,6 +43,13 @@ export interface StaticTileProviderOptions {
    * applied to the returned manifest. Plain engine manifests are returned unchanged.
    */
   atlas?: AtlasZ15Options
+  /**
+   * HTTP statuses that mean "this tile is not published" and return undefined instead of throwing.
+   * Default `[404]`; S3-style hosts answer 403 for an object that is not uploaded.
+   */
+  missingStatuses?: readonly number[]
+  /** Called with the status when a tile is reported missing. */
+  onMissing?: (status: number) => void
 }
 
 export interface StaticTileResult {
@@ -109,7 +116,7 @@ function describeHttp(status: number): string {
 
 /**
  * Fetch manifest.json for a single tile via GET request.
- * Returns undefined if the tile is not published (404). Every other failure throws a StaticTileError (or the caller's
+ * Returns undefined if the tile is not published (404, or the statuses in `missingStatuses`). Every other failure throws a StaticTileError (or the caller's
  * AbortError) whose message names the URL and the real cause: HTTP status, network/CORS, timeout, or an invalid manifest.
  */
 export async function fetchTileManifest(
@@ -146,7 +153,10 @@ export async function fetchTileManifest(
       url,
     )
   }
-  if (response.status === 404) return undefined
+  if (!response.ok && (options.missingStatuses ?? [404]).includes(response.status)) {
+    options.onMissing?.(response.status)
+    return undefined
+  }
   if (!response.ok)
     throw new StaticTileError(
       `Manifest ${url}: ${describeHttp(response.status)}`,

@@ -3,12 +3,15 @@ import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
 import { hasVehiclePreset } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
+import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
+import { browserStorage } from './entry.js'
 import { LoadingScreen, showError } from './loading.js'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
-import { fetchCoverage, formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
+import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
+import { describeLoading } from './loading-text.js'
 
 /** Spanish controls for the terrain example (the original hint is shared with the flat demo). */
 const CONTROLS =
@@ -24,7 +27,7 @@ let cellsLabel = ''
 /** HUD line with the loaded cells of the host's index, e.g. "Celdas: 12/33". */
 function showCells(): void {
   const stats = runtime?.cellStats
-  if (!stats?.total) return
+  if (!stats) return
   const text = formatCells(stats)
   if (text === cellsLabel) return
   cellsLabel = text
@@ -35,7 +38,8 @@ function showCells(): void {
     document.getElementById('location-display')!.after(el)
   }
   el.textContent = text
-  el.title = 'Celdas del terreno cargadas / disponibles en el índice'
+  el.title =
+    'Celdas cargadas y celdas que el servidor no tiene (huecos en el mapa). Lista: nablaRuntime.missingTiles con ?diagnostics=1'
 }
 try {
   const params = new URLSearchParams(location.search)
@@ -64,8 +68,11 @@ try {
       baseUrl: config.base,
       mode: 'static',
       horizon: false,
-      // A host that lists its tiles (the dev-server mount does) is never asked for tiles it lacks.
-      coverage: await fetchCoverage(config.base),
+      // No index file: the engine asks for the tiles it needs; a tile the host lacks is a hole, recorded here.
+      missing: new MissingTiles({
+        key: `nabla.terrain.missing:${config.base}`,
+        storage: browserStorage(),
+      }),
       atlas: config.atlas,
       imagery: config.atlas.photo === 'none' ? 'none' : 'package',
     },
@@ -76,14 +83,10 @@ try {
             .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
       : undefined,
     onProgress(_status, tiles) {
-      // Always a Spanish loading state, never the engine's raw status (which also says "cargando…").
-      const stats = runtime?.cellStats
-      loading.setStatus(
-        stats
-          ? `Cargando el terreno · ${stats.loaded} de ${stats.total} celdas listas` +
-              (stats.pending ? ` · ${stats.pending} en camino…` : '…')
-          : 'Cargando el terreno…',
-      )
+      // Always a Spanish loading state with what is in flight and the last error, never silent.
+      const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
+      loading.setStatus(text.status)
+      loading.setDetail(text.detail)
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {

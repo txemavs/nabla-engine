@@ -9,6 +9,9 @@ import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
+import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
+import { browserStorage } from './entry.js'
+import { describeLoading } from './loading-text.js'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
@@ -134,6 +137,15 @@ try {
           baseUrl: tilesBase,
           apiUrl: '/prepare',
           mode: config.staticTiles ? 'static' : 'dynamic',
+          // Atlas packages (terrain, photo) are read when a manifest names one; plain tiles ignore this.
+          ...(config.staticTiles && {
+            atlas: { relief: 'engine' as const, photo: 'full' as const },
+            imagery: 'package' as const,
+            missing: new MissingTiles({
+              key: `nabla.terrain.missing:${tilesBase}`,
+              storage: browserStorage(),
+            }),
+          }),
         },
     onDiagnostics: new URLSearchParams(location.search).has('diagnostics')
       ? (sample) =>
@@ -142,7 +154,9 @@ try {
             .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
       : undefined,
     onProgress(status, tiles) {
-      loading.setStatus(status)
+      const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
+      loading.setStatus(runtime?.cellStats ? text.status : status)
+      loading.setDetail(text.detail)
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
@@ -161,6 +175,8 @@ try {
   })
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
   bindTerrainCache(runtime)
+  if (new URLSearchParams(location.search).has('diagnostics'))
+    Object.assign(window, { nablaRuntime: runtime })
   await runtime.play({ vehicleId: vehicle.id })
   loading.hide()
   bindDisplaySettings(runtime)

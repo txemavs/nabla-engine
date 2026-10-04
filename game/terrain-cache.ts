@@ -20,6 +20,7 @@ import {
   serializeStoredCache,
   type TerrainCacheSettings,
 } from '@nabla/engine/planet/terrain-cache'
+import { formatMissingReport } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
 import type { SourceStorage } from '@nabla/engine/planet/terrain-source'
 
@@ -110,7 +111,41 @@ export function bindTerrainCache(
   clear.type = 'button'
   clear.id = 'terrain-cache-clear'
   clear.textContent = 'Vaciar caché'
-  section.append(heading, disk.label, memory.label, distance.label, usage, clear)
+  const holes = document.createElement('button')
+  holes.type = 'button'
+  holes.id = 'terrain-missing-show'
+  holes.textContent = 'Celdas que faltan'
+  holes.title = 'Celdas que el servidor no tiene (huecos en el mapa), para pedirlas al productor'
+  const retry = document.createElement('button')
+  retry.type = 'button'
+  retry.id = 'terrain-missing-retry'
+  retry.textContent = 'Volver a pedirlas'
+  const list = document.createElement('pre')
+  list.id = 'terrain-missing-list'
+  list.hidden = true
+  section.append(
+    heading,
+    disk.label,
+    memory.label,
+    distance.label,
+    usage,
+    clear,
+    holes,
+    retry,
+    list,
+  )
+  const showHoles = () => {
+    const tiles = runtime.missingTiles
+    list.textContent = tiles.length
+      ? formatMissingReport(tiles)
+      : 'Ninguna: el servidor tiene todas las celdas pedidas.'
+    list.hidden = false
+  }
+  holes.addEventListener('click', () => (list.hidden ? showHoles() : (list.hidden = true)))
+  retry.addEventListener('click', () => {
+    runtime.clearMissingTiles()
+    list.hidden = true
+  })
 
   let remembered: TerrainCacheSettings = { ...stored }
   const change = (patch: TerrainCacheSettings) => {
@@ -156,7 +191,10 @@ export function bindTerrainCache(
 
   async function refresh() {
     const cells = runtime.cellStats
-    const memoryLine = cells ? formatMemoryCells(cells.loaded, runtime.streaming.cells) : ''
+    const memoryLine = cells
+      ? formatMemoryCells(cells.loaded, runtime.streaming.cells) +
+        (cells.missing ? ` · ${cells.missing} faltan en el servidor` : '')
+      : ''
     try {
       usage.textContent = `${formatCacheUsage(await mapCacheStats())}${memoryLine ? ' · ' + memoryLine : ''}`
     } catch {

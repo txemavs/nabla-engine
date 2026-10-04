@@ -7,6 +7,8 @@ export interface GroundProvider {
   readonly status: string
   /** Changes whenever loading advances (a cell arrives or fails); lets the wait tell slow from stuck. */
   readonly loadProgress?: string
+  /** True when the tile host has no tile here: waiting cannot help. */
+  missingAt?(position: Vec3Tuple): boolean
 }
 
 /** GLB float32 vertices can leave sub-millimetre gaps at shared tile corners.
@@ -51,6 +53,8 @@ export async function waitForGround(
     const height = groundAtSeam(world, position)
     if (height !== undefined && Number.isFinite(height)) return height
     options.onProgress?.(world.status)
+    if (world.missingAt?.(position))
+      throw new Error(`Ground unavailable: the tile host has no terrain at this position`)
     if (world.loadProgress !== progress) {
       progress = world.loadProgress
       started = performance.now()
