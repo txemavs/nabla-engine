@@ -8,27 +8,64 @@ const assetPart = z
   })
   .strict()
 
-/** Chassis, four hubs, and the optional cabin, garage and flight flag. */
+/** Per-hub configuration for N-wheel vehicles. */
+const hubConfig = z
+  .object({
+    position: vector,
+    steered: z.boolean().optional(),
+    driven: z.boolean().optional(),
+    radius: finite.min(0.05).max(1.5).optional(),
+  })
+  .strict()
+
+/** Trailer coupling configuration for tractor vehicles. */
+const trailerCoupling = z
+  .object({
+    /** Fifth wheel anchor position on the tractor. */
+    anchor: vector,
+    /** Kingpin position on the trailer (relative to trailer origin). */
+    kingpin: vector,
+    /** Yaw limits in radians [min, max]. */
+    limits: z.tuple([finite.min(-Math.PI).max(0), finite.max(Math.PI).min(0)]).optional(),
+  })
+  .strict()
+
+/** Configuration for vehicles that act as trailers (passive towed units). */
+const trailerBodyConfig = z
+  .object({
+    /** Kingpin position on this trailer (where it couples to a tractor's fifth wheel). */
+    kingpin: vector,
+    /** Whether this vehicle is a trailer (passive, no engine). */
+    isTrailer: z.literal(true),
+  })
+  .strict()
+
+/** Chassis, hubs, and the optional cabin, garage and flight flag. */
 export const vehicleField = z
   .object({
     colliders: z.array(boxCollider).min(1).max(32),
-    hubs: z.tuple([vector, vector, vector, vector]),
+    /** Legacy 4-wheel format: front hubs 0/1 steer, drivenWheels selects driven axle. */
+    hubs: z.tuple([vector, vector, vector, vector]).optional(),
+    /** Extended format: per-hub configuration for N wheels. */
+    hubConfigs: z.array(hubConfig).min(2).max(12).optional(),
     wheelRadius: finite.min(0.05).max(1.5),
     suspensionRest: finite.min(0.02).max(1),
     /** Metres of travel each side of the rest length. Default 0.3. */
     suspensionTravel: finite.min(0.05).max(1.2).optional(),
     stiffness: finite.min(5).max(200),
     engineForce: finite.positive().max(100000),
-    /** Front hubs are 0/1; rear hubs 2/3. Omitted keeps rear-wheel drive. */
+    /** Legacy driven-axle selector for 4-wheel vehicles. Ignored if hubConfigs is used. */
     drivenWheels: z.enum(['front', 'rear', 'all']).optional(),
     /** Optional automatic powertrain. Power is metric horsepower (CV), torque is N·m. */
     powertrain: z
       .object({
         powerCv: finite.min(20).max(2000),
         torqueNm: finite.min(20).max(3000),
-        ratios: z.array(finite.min(0.2).max(6)).min(1).max(10),
+        ratios: z.array(finite.min(0.2).max(15)).min(1).max(16),
         finalDrive: finite.min(1).max(8),
         grip: finite.min(0.5).max(8),
+        /** Engine profile: 'gasoline' (default) for cars, 'diesel' for trucks. */
+        profile: z.enum(['gasoline', 'diesel']).optional(),
       })
       .strict()
       .optional(),
@@ -59,8 +96,15 @@ export const vehicleField = z
       })
       .strict()
       .optional(),
+    /** Trailer coupling for tractor vehicles. */
+    trailer: trailerCoupling.optional(),
+    /** Mark this vehicle as a passive trailer (towed, no engine). */
+    trailerBody: trailerBodyConfig.optional(),
   })
   .strict()
+  .refine((data) => data.hubs || data.hubConfigs, {
+    message: 'Either hubs or hubConfigs must be provided',
+  })
 
 /** GLB body, wheels, steering wheel and ramp nodes. Asset names are not physics. */
 export const visualField = z
@@ -81,7 +125,10 @@ export const visualField = z
       .optional(),
     wheel: assetPart.optional(),
     steering: assetPart.optional(),
+    /** Legacy 4-wheel rotations. */
     wheelRotations: z.tuple([rotation, rotation, rotation, rotation]).optional(),
+    /** Extended N-wheel rotations (use instead of wheelRotations for >4 wheels). */
+    hubRotations: z.array(rotation).min(2).max(12).optional(),
   })
   .strict()
 

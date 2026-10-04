@@ -28,6 +28,7 @@ import {
   Box,
   Material,
   LockConstraint,
+  HitchConstraint,
   Quaternion,
   Sphere,
   Vec3,
@@ -88,8 +89,43 @@ export class Simulation {
   private readonly terrainEntity: Entity | undefined
   private waterLevel = 0
   private catchFloor: Body | null = null
+  private fallbackGround: Body | null = null
+
   setWaterLevel(metres: number): void {
     if (Number.isFinite(metres)) this.waterLevel = clamp(metres, -5, 50)
+  }
+
+  /**
+   * Add a static fallback ground plane at the specified Y height.
+   * Used when no terrain tiles are available to provide a physics floor.
+   */
+  setFallbackGround(y: number): void {
+    if (this.fallbackGround) {
+      this.world.removeBody(this.fallbackGround)
+      this.fallbackGround = null
+    }
+    if (!Number.isFinite(y)) return
+    this.fallbackGround = new Body({ mass: 0, material: this.solidMaterial })
+    this.fallbackGround.addShape(new Box(new Vec3(5000, 0.5, 5000)))
+    this.fallbackGround.position.set(0, y - 0.5, 0)
+    this.world.addBody(this.fallbackGround)
+    console.log(`Fallback ground floor added at Y=${y}`)
+  }
+
+  /**
+   * Remove the fallback ground (when real terrain colliders become available).
+   */
+  clearFallbackGround(): void {
+    if (this.fallbackGround) {
+      this.world.removeBody(this.fallbackGround)
+      this.fallbackGround = null
+      console.log('Fallback ground floor removed')
+    }
+  }
+
+  /** Check if the fallback ground is active. */
+  hasFallbackGround(): boolean {
+    return this.fallbackGround !== null
   }
   /** Top face of the gray disk, once the occupied actor has dropped under the sea. */
   catchDisk(): Transform | null {
@@ -179,6 +215,10 @@ export class Simulation {
   private grounded = false
   private support: Body | null = null
   private readonly docks = new Map<string, { carrierId: string; constraint: LockConstraint }>()
+  private readonly fifthWheelCouplings = new Map<
+    string,
+    { trailerId: string; constraint: HitchConstraint }
+  >()
   private ticks = 0
   private lostTime = 0
   private roadAssistEnabled = false
@@ -453,12 +493,15 @@ export class Simulation {
         new Quaternion(...collider.transform.rotation),
       )
     // Slightly above the tyre, so the wheels still drive. The ball only meets a road lip.
-    if (e.vehicle?.plane)
-      for (const hub of vehicleDefinition(e).hubs) {
-        const gear = new Sphere(Math.max(0.08, vehicleDefinition(e).wheelRadius - 0.05))
+    if (e.vehicle?.plane) {
+      const def = vehicleDefinition(e)
+      const hubPositions = def.hubConfigs ? def.hubConfigs.map((h) => h.position) : (def.hubs ?? [])
+      for (const hub of hubPositions) {
+        const gear = new Sphere(Math.max(0.08, def.wheelRadius - 0.05))
         gear.friction = 0
         body.addShape(gear, new Vec3(...hub))
       }
+    }
     body.position.set(...transform.position)
     body.quaternion.set(...transform.rotation)
     body.previousPosition.copy(body.position)
@@ -979,9 +1022,10 @@ export class Simulation {
     })
     if (vehicle) {
       const [w, h, l] = vehicle.entity.size
+      const hubPositions = vehicle.hubConfigs.map((h) => h.position)
       // Include bodywork and the full suspension/wheel envelope, not just the chassis collider.
       const floor = Math.min(
-        ...vehicle.definition.hubs.map(
+        ...hubPositions.map(
           (hub, i) =>
             hub[1] +
             vehicle.definition.suspensionRest -
@@ -997,7 +1041,7 @@ export class Simulation {
         new Vec3(0, floor + (h + radius) / 2, 0),
         new Quaternion(),
       )
-      vehicle.definition.hubs.forEach((hub, i) => {
+      hubPositions.forEach((hub, i) => {
         const wheel = vehicle.raycast.wheelInfos[i]
         const centre = new Vec3(
           hub[0],
@@ -1242,6 +1286,13 @@ export class Simulation {
         dock ? (this.vehicles.get(dock.carrierId)?.body.linearDamping ?? 0.05) : undefined,
       )
       if (dock) continue
+
+      const isTrailer = Boolean(v.definition.trailerBody?.isTrailer)
+      if (isTrailer) {
+        this.stepTrailerVehicle(v)
+        continue
+      }
+
       const active = id === this.vehicleId
       if (v.definition.plane) this.spoolEngine(v, active)
       if (v.flight) {
@@ -1385,6 +1436,21 @@ export class Simulation {
       active,
     )
   }
+
+  /** Step a passive trailer vehicle (no engine force, only brakes). */
+  private stepTrailerVehicle(v: Vehicle): void {
+    const numWheels = v.raycast.wheelInfos.length
+    const coupledToTractor = this.isTrailer(v.entity.id)
+    const tractorBraking = coupledToTractor ? this.input.brake : false
+
+    for (let i = 0; i < numWheels; i++) {
+      v.raycast.setSteeringValue(0, i)
+      v.raycast.applyEngineForce(0, i)
+      const brakeForce = tractorBraking ? v.definition.brakeForce : 0
+      v.raycast.setBrake(brakeForce, i)
+    }
+  }
+
   /** Flight keeps the same collision body and cargo constraints; only wheel forces are disabled. */
   toggleFlight(): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
@@ -1467,6 +1533,24 @@ export class Simulation {
     v.body.wakeUp()
     return 'Coche enderezado'
   }
+
+  /** Teleport the occupied vehicle to an absolute position with optional yaw. */
+  teleportVehicle(position: Vec3Tuple, yaw = 0): string {
+    const id = this.vehicleId
+    const v = id ? this.vehicles.get(id) : undefined
+    if (!v) return 'Monta en un coche'
+    if (this.docks.has(id!)) return 'Desengancha antes de teleportar'
+    v.body.position.set(...position)
+    v.body.quaternion.setFromAxisAngle(new Vec3(0, 1, 0), yaw)
+    v.body.previousPosition.copy(v.body.position)
+    v.body.previousQuaternion.copy(v.body.quaternion)
+    v.body.interpolatedPosition.copy(v.body.position)
+    v.body.velocity.setZero()
+    v.body.angularVelocity.setZero()
+    v.body.wakeUp()
+    return 'Teleportado'
+  }
+
   setHelmMode(mode: Vehicle['helm']): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
     if (!v?.definition.flight) return 'Ponte al mando de la nave para cambiar de modo'
@@ -1733,6 +1817,11 @@ export class Simulation {
     manualTransmission: boolean
     engineLoad: number
     tireSlip: number
+    hasFifthWheel: boolean
+    hasKingpin: boolean
+    coupledTrailerId: string | null
+    isActingAsTrailer: boolean
+    trailerCouplingCandidate: string | null
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
@@ -1743,6 +1832,8 @@ export class Simulation {
       !v.definition.boat,
     )
     const up = this.radialUp(v.body)
+    const trailerCfg = v.definition.trailer
+    const coupling = this.fifthWheelCouplings.get(id)
     return {
       steer: v.steer,
       up: [up.x, up.y, up.z],
@@ -1772,6 +1863,11 @@ export class Simulation {
       manualTransmission: ground.manualTransmission,
       engineLoad: ground.engineLoad,
       tireSlip: ground.tireSlip,
+      hasFifthWheel: Boolean(trailerCfg?.anchor),
+      hasKingpin: Boolean(trailerCfg?.kingpin),
+      coupledTrailerId: coupling?.trailerId ?? null,
+      isActingAsTrailer: this.isTrailer(id),
+      trailerCouplingCandidate: this.trailerCouplingCandidate(id),
     }
   }
 
@@ -1863,6 +1959,124 @@ export class Simulation {
     this.docks.set(this.vehicleId, { carrierId, constraint })
     this.setRamp(carrier, true)
     return 'A3 sujeto al suelo · T para conducir el container'
+  }
+
+  /** Returns whether the vehicle has a fifth-wheel anchor point defined. */
+  hasFifthWheel(id = this.vehicleId): boolean {
+    if (!id) return false
+    const v = this.vehicles.get(id)
+    return Boolean(v?.definition.trailer?.anchor)
+  }
+
+  /** Returns the ID of the currently coupled trailer, or null if none. */
+  coupledTrailer(id = this.vehicleId): string | null {
+    if (!id) return null
+    return this.fifthWheelCouplings.get(id)?.trailerId ?? null
+  }
+
+  /** Check if a specific vehicle is acting as a trailer (coupled to something). */
+  isTrailer(id: string): boolean {
+    return [...this.fifthWheelCouplings.values()].some((c) => c.trailerId === id)
+  }
+
+  /** Find a nearby trailer that can be coupled to the current tractor. */
+  trailerCouplingCandidate(id = this.vehicleId): string | null {
+    if (!id) return null
+    const tractor = this.vehicles.get(id)
+    if (!tractor || !tractor.definition.trailer?.anchor) return null
+    if (this.fifthWheelCouplings.has(id)) return null
+
+    const anchorWorld = tractor.body.pointToWorldFrame(
+      new Vec3(...tractor.definition.trailer.anchor),
+    )
+
+    for (const [trailerId, trailer] of this.vehicles) {
+      if (trailerId === id) continue
+      if (this.isTrailer(trailerId)) continue
+
+      const kingpin = trailer.definition.trailerBody?.kingpin ?? trailer.definition.trailer?.kingpin
+      if (!kingpin) continue
+
+      if (trailer.body.velocity.length() > 1.5 || tractor.body.velocity.length() > 1.5) continue
+
+      const kingpinWorld = trailer.body.pointToWorldFrame(new Vec3(...kingpin))
+      const distance = anchorWorld.distanceTo(kingpinWorld)
+
+      if (distance < 1.5) return trailerId
+    }
+    return null
+  }
+
+  /** Toggle coupling/uncoupling of the trailer from the current tractor. */
+  toggleTrailerCoupling(): string {
+    if (!this.vehicleId) return 'Entra en el camión para acoplar el remolque'
+    const tractor = this.vehicles.get(this.vehicleId)
+    if (!tractor) return 'Vehículo no encontrado'
+
+    const existing = this.fifthWheelCouplings.get(this.vehicleId)
+    if (existing) {
+      if (tractor.body.velocity.length() > 0.5)
+        return 'Detén el camión antes de desacoplar el remolque'
+      this.world.removeHitchConstraint(existing.constraint)
+      this.fifthWheelCouplings.delete(this.vehicleId)
+      const trailer = this.vehicles.get(existing.trailerId)
+      if (trailer) {
+        trailer.body.wakeUp()
+      }
+      return 'Remolque desacoplado'
+    }
+
+    const trailerCfg = tractor.definition.trailer
+    if (!trailerCfg?.anchor) return 'Este vehículo no tiene quinta rueda'
+
+    const trailerId = this.trailerCouplingCandidate()
+    if (!trailerId) return 'Acerca la quinta rueda al kingpin del remolque'
+
+    const trailer = this.vehicles.get(trailerId)!
+    const trailerKingpin =
+      trailer.definition.trailerBody?.kingpin ?? trailer.definition.trailer?.kingpin
+    if (!trailerKingpin) return 'El remolque no tiene kingpin definido'
+
+    const anchorLocal = new Vec3(...trailerCfg.anchor)
+    const kingpinLocal = new Vec3(...trailerKingpin)
+
+    const constraint = new HitchConstraint(tractor.body, trailer.body, anchorLocal, kingpinLocal)
+    this.world.addHitchConstraint(constraint)
+    this.fifthWheelCouplings.set(this.vehicleId, { trailerId, constraint })
+
+    trailer.body.velocity.copy(tractor.body.velocity)
+    trailer.body.angularVelocity.copy(tractor.body.angularVelocity)
+    trailer.body.wakeUp()
+
+    return 'Remolque acoplado'
+  }
+
+  /** Get trailer coupling state for a vehicle. */
+  trailerState(id = this.vehicleId): {
+    hasFifthWheel: boolean
+    hasKingpin: boolean
+    coupledTrailerId: string | null
+    isActingAsTrailer: boolean
+    couplingCandidate: string | null
+    trailerAvailable: boolean
+  } {
+    const v = id ? this.vehicles.get(id) : null
+    const trailerCfg = v?.definition.trailer
+    const trailerBody = v?.definition.trailerBody
+    const coupling = id ? this.fifthWheelCouplings.get(id) : null
+    const hasKingpin = Boolean(trailerCfg?.kingpin) || Boolean(trailerBody?.kingpin)
+
+    const trailerAvailable =
+      id !== null && !this.fifthWheelCouplings.has(id) && this.trailerCouplingCandidate(id) !== null
+
+    return {
+      hasFifthWheel: Boolean(trailerCfg?.anchor),
+      hasKingpin,
+      coupledTrailerId: coupling?.trailerId ?? null,
+      isActingAsTrailer: id ? this.isTrailer(id) : false,
+      couplingCandidate: id ? this.trailerCouplingCandidate(id) : null,
+      trailerAvailable,
+    }
   }
 
   setCruiseSpeed(id: string, speed: number): void {
@@ -2056,8 +2270,12 @@ export class Simulation {
   dispose(): void {
     if (this.disposed) return
     this.dropCatchFloor()
+    this.clearFallbackGround()
     for (const dock of this.docks.values()) this.world.removeConstraint(dock.constraint)
     this.docks.clear()
+    for (const coupling of this.fifthWheelCouplings.values())
+      this.world.removeHitchConstraint(coupling.constraint)
+    this.fifthWheelCouplings.clear()
     this.planetCollisions.dispose()
     this.previousWheels.clear()
     for (const v of this.vehicles.values()) v.raycast.removeFromWorld(this.world)

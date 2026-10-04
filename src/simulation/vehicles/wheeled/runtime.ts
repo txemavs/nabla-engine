@@ -1,18 +1,19 @@
 import { Body, RaycastVehicle, Vec3 } from '../../physics.js'
 import {
   createDrivetrain,
-  isDriven,
   stepDrivetrain,
   shiftGear,
   engineBrakingForce,
   type DrivetrainState,
 } from '../drivetrain.js'
-import type {
-  WheeledDefinition,
-  WheeledInput,
-  WheeledTelemetry,
-  WheelContactSnapshot,
-  WheelVector,
+import {
+  normalizeHubs,
+  type HubDefinition,
+  type WheeledDefinition,
+  type WheeledInput,
+  type WheeledTelemetry,
+  type WheelContactSnapshot,
+  type WheelVector,
 } from './contracts.js'
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n))
 
@@ -21,17 +22,25 @@ export interface WheeledVehicle {
   body: Body
   raycast: RaycastVehicle
   definition: WheeledDefinition
+  /** Normalized hub configurations derived from definition. */
+  hubConfigs: HubDefinition[]
   steer: number
   drivetrain: DrivetrainState
 }
-/** Create a four-wheel rig around a supplied body. Host attaches it with raycast.addToWorld(world). */
+/** Create a wheeled rig around a supplied body. Host attaches it with raycast.addToWorld(world). */
 export function createWheeledVehicle(body: Body, definition: WheeledDefinition): WheeledVehicle {
   const positive = (value: number) => Number.isFinite(value) && value > 0
   const spec = definition.powertrain
+  const hubConfigs = normalizeHubs(definition)
   if (
     !positive(body.mass) ||
-    definition.hubs.length !== 4 ||
-    !definition.hubs.every((hub) => hub.length === 3 && hub.every(Number.isFinite)) ||
+    hubConfigs.length < 2 ||
+    !hubConfigs.every(
+      (hub) =>
+        hub.position.length === 3 &&
+        hub.position.every(Number.isFinite) &&
+        (hub.radius === undefined || positive(hub.radius)),
+    ) ||
     ![
       definition.wheelRadius,
       definition.suspensionRest,
@@ -40,7 +49,6 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
       definition.brakeForce,
       definition.suspensionTravel ?? 0.3,
     ].every(positive) ||
-    ![undefined, 'front', 'rear', 'all'].includes(definition.drivenWheels) ||
     (spec &&
       (![spec.powerCv, spec.torqueNm, spec.finalDrive, spec.grip].every(positive) ||
         !spec.ratios.length ||
@@ -53,16 +61,15 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
     indexUpAxis: 1,
     indexForwardAxis: 2,
   })
-  // Tuned road cars already model aerodynamic drag below. Generic rigid-body
-  // damping adds a large speed-proportional brake and hides the engine power.
   if (definition.powertrain) body.linearDamping = 0
-  // Front is -Z; all hubs and suspension dimensions are body-local metres.
-  for (const [x, y, z] of definition.hubs) {
+  for (const hub of hubConfigs) {
+    const [x, y, z] = hub.position
+    const radius = hub.radius ?? definition.wheelRadius
     car.addWheel({
       chassisConnectionPointLocal: new Vec3(x, y + definition.suspensionRest, z),
       directionLocal: new Vec3(0, -1, 0),
       axleLocal: new Vec3(1, 0, 0),
-      radius: definition.wheelRadius,
+      radius,
       suspensionRestLength: definition.suspensionRest,
       suspensionStiffness: definition.stiffness,
       dampingRelaxation: 2.3,
@@ -74,12 +81,43 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
     })
   }
 
-  return { body, raycast: car, definition, steer: 0, drivetrain: createDrivetrain() }
+  return { body, raycast: car, definition, hubConfigs, steer: 0, drivetrain: createDrivetrain() }
 }
 /** A docked car must share the carrier's damping; the host decides attachment/mode. */
 export function syncWheeledDamping(v: WheeledVehicle, dockedDamping?: number): void {
   if (v.definition.powertrain) v.body.linearDamping = dockedDamping ?? 0
 }
+
+/** Check if a hub is steered based on normalized config. */
+function isSteered(v: WheeledVehicle, i: number): boolean {
+  return v.hubConfigs[i]?.steered ?? false
+}
+
+/** Check if a hub is driven based on normalized config. */
+function isDriven(v: WheeledVehicle, i: number): boolean {
+  return v.hubConfigs[i]?.driven ?? false
+}
+
+/** Check if a hub is a rear hub (Z > 0, behind center). Used for handbrake/burnout logic. */
+function isRearHub(v: WheeledVehicle, i: number): boolean {
+  const hub = v.hubConfigs[i]
+  return hub ? hub.position[2] > 0 : i >= 2
+}
+
+/** Count driven hubs for force distribution. */
+function drivenHubCount(v: WheeledVehicle): number {
+  return v.hubConfigs.filter((h) => h.driven).length
+}
+
+/** Check if all driven hubs are on the same axle (for AWD launch logic). */
+function hasAllWheelDrive(v: WheeledVehicle): boolean {
+  const driven = v.hubConfigs.filter((h) => h.driven)
+  if (driven.length < 2) return false
+  const hasFront = driven.some((h) => h.position[2] < 0)
+  const hasRear = driven.some((h) => h.position[2] > 0)
+  return hasFront && hasRear
+}
+
 /** Apply one fixed tick of forces/steering; call before the shared world's step. */
 export function stepWheeledVehicle(
   v: WheeledVehicle,
@@ -104,11 +142,10 @@ export function stepWheeledVehicle(
   const forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
   const speed = v.body.velocity.dot(forward)
   const opposing = active && input.throttle * speed < -0.8
-  const driven = (i: number) => isDriven(v.definition.drivenWheels, i)
   const tune = v.definition.powertrain
   const aggressiveLaunch =
     !!tune &&
-    v.definition.drivenWheels === 'all' &&
+    hasAllWheelDrive(v) &&
     active &&
     powered &&
     input.launch &&
@@ -136,7 +173,6 @@ export function stepWheeledVehicle(
       const retention = engineBrakingForce(v.drivetrain, tune, v.definition.wheelRadius, speed)
       v.body.applyForce(forward.scale(clamp(retention, -v.body.mass * 2.5, v.body.mass * 2.5)))
     }
-    // Aerodynamic drag in the direction of travel; zero extra force on parked cars.
     const velocity = v.body.velocity
     const magnitude = velocity.length()
     const rolling = v.raycast.wheelInfos.some((wheel) => wheel.isInContact)
@@ -144,24 +180,32 @@ export function stepWheeledVehicle(
       : 0
     v.body.applyForce(velocity.scale(-0.42 * magnitude - rolling / Math.max(1, magnitude)))
   }
-  for (let i = 0; i < 4; i++) {
-    v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
+  const numHubs = v.hubConfigs.length
+  const numDriven = drivenHubCount(v)
+  for (let i = 0; i < numHubs; i++) {
+    const steered = isSteered(v, i)
+    const driven = isDriven(v, i)
+    const rear = isRearHub(v, i)
+
+    v.raycast.setSteeringValue(steered ? v.steer : 0, i)
+
     const rearShare = v.drivetrain.burnout
       ? 1
       : active && input.handbrake
         ? 0.7
         : 0.55 + v.drivetrain.launchSlip * 0.15
-    const share =
-      v.definition.drivenWheels === 'all' ? (i < 2 ? 1 - rearShare : rearShare) / 2 : 0.5
+    const share = hasAllWheelDrive(v)
+      ? (rear ? rearShare : 1 - rearShare) / Math.max(1, numDriven / 2)
+      : 1 / Math.max(1, numDriven)
     v.raycast.applyEngineForce(
-      driven(i) ? (tune ? v.drivetrain.force * share : throttle * v.definition.engineForce) : 0,
+      driven ? (tune ? v.drivetrain.force * share : throttle * v.definition.engineForce) : 0,
       i,
     )
     if (tune) {
       const desiredGrip =
-        active && input.handbrake && i >= 2
+        active && input.handbrake && rear
           ? 0.7
-          : i >= 2
+          : rear
             ? tune.grip * (1 - v.drivetrain.launchSlip * 0.6)
             : tune.grip
       const wheel = v.raycast.wheelInfos[i]
@@ -170,12 +214,12 @@ export function stepWheeledVehicle(
     const brake = !active
       ? v.definition.brakeForce * 0.4
       : input.handbrake
-        ? v.definition.brakeForce * (i >= 2 ? 1.5 : 0.4)
+        ? v.definition.brakeForce * (rear ? 1.5 : 0.4)
         : opposing
           ? v.definition.brakeForce
           : 0
     v.raycast.setBrake(
-      tune && v.drivetrain.burnout ? (i < 2 ? v.definition.brakeForce * 4 : 0) : brake,
+      tune && v.drivetrain.burnout ? (steered ? v.definition.brakeForce * 4 : 0) : brake,
       i,
     )
   }
@@ -239,6 +283,7 @@ export function wheelContacts(
     const point = tuple(wheel.raycastResult.hitPointWorld)
     const contact =
       wheel.isInContact && Number.isFinite(length) && length > 1e-8 && point.every(Number.isFinite)
+    const rear = isRearHub(v, i)
     return {
       wheelCenter: tuple(wheel.worldTransform.position),
       contactPoint: contact ? point : null,
@@ -247,8 +292,8 @@ export function wheelContacts(
         contact && tireEffects
           ? Math.max(
               lateralSlip,
-              i >= 2 ? v.drivetrain.launchSlip : 0,
-              active && input.handbrake && i >= 2 ? Math.min(1, v.body.velocity.length() / 5) : 0,
+              rear ? v.drivetrain.launchSlip : 0,
+              active && input.handbrake && rear ? Math.min(1, v.body.velocity.length() / 5) : 0,
             )
           : 0,
       suspensionLength: wheel.suspensionLength,

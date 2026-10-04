@@ -1,6 +1,7 @@
 node_modules
 dist
 demo-dist
+game-dist
 package-lock.json
 test-results
 playwright-report

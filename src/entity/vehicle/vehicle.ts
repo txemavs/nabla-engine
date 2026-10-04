@@ -1,4 +1,5 @@
 import type { DrivetrainState } from '../../simulation/vehicles/drivetrain.js'
+import type { HubDefinition } from '../../simulation/vehicles/wheeled/contracts.js'
 import type { Body, RaycastVehicle } from '../../simulation/physics.js'
 import type { Entity } from '../schema.js'
 import type { VehicleDefinition } from './field.js'
@@ -8,6 +9,8 @@ export interface Vehicle {
   body: Body
   raycast: RaycastVehicle
   entity: Entity
+  /** Normalized hub configurations derived from definition. */
+  hubConfigs: HubDefinition[]
   steer: number
   /** Outboard throttle, −1..1. Lags the stick so the hull carries speed. */
   drivetrain: DrivetrainState

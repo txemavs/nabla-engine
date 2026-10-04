@@ -239,7 +239,8 @@ it('raises the settled A3 chassis by five centimetres while keeping tyres on the
     oldDoc = document()
   const old = oldDoc.entities.find((e) => e.id === 'car')!.vehicle!
   old.suspensionRest -= 0.05
-  for (const hub of old.hubs) hub[1] += 0.05
+  const hubs = old.hubConfigs ? old.hubConfigs.map((h) => h.position) : (old.hubs ?? [])
+  for (const hub of hubs) hub[1] += 0.05
   const raised = new Simulation(raisedDoc),
     previous = new Simulation(oldDoc)
   step(raised, 300)

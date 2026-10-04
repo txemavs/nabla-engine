@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const buckets = ['studio', 'custom']
-const kinds = ['cars', 'planes', 'ships', 'boats']
+const kinds = ['cars', 'trucks', 'planes', 'ships', 'boats']
 
 /** assets/ next to this repo, the built package, or a prepare-dist compile. */
 function assetsDir(): string {
@@ -32,7 +32,11 @@ export function readVehiclePresetSources(): { file: string; data: unknown }[] {
   const found: { file: string; data: unknown }[] = []
   for (const bucket of buckets)
     for (const kind of kinds)
-      for (const file of jsonFiles(join(root, bucket, kind)))
-        found.push({ file, data: JSON.parse(readFileSync(file, 'utf8')) as unknown })
+      for (const file of jsonFiles(join(root, bucket, kind))) {
+        const data = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>
+        // Skip non-preset files (must have label and vehicle fields)
+        if (typeof data.label !== 'string' || typeof data.vehicle !== 'object') continue
+        found.push({ file, data })
+      }
   return found
 }

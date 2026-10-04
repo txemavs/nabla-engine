@@ -1339,7 +1339,13 @@ async function togglePlay(startFlight = false): Promise<void> {
                   ? 1.5
                   : e.vehicle
                     ? 0.06 -
-                      Math.min(...e.vehicle.hubs.map((hub) => hub[1] - e.vehicle!.wheelRadius))
+                      Math.min(
+                        ...(e.vehicle.hubConfigs
+                          ? e.vehicle.hubConfigs.map(
+                              (hub) => hub.position[1] - (hub.radius ?? e.vehicle!.wheelRadius),
+                            )
+                          : (e.vehicle.hubs ?? []).map((hub) => hub[1] - e.vehicle!.wheelRadius)),
+                      )
                     : 0.85
             e.transform.position[1] = Math.max(e.transform.position[1], ground + ride)
           }
