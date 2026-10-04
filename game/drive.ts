@@ -9,8 +9,11 @@ import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
+import { bindTerrainSelector } from './terrain-selector.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 
+// Bound first, so a terrain that fails to load can still be swapped from the menu.
+bindTerrainSelector()
 let runtime: GameRuntime | undefined
 try {
   const config = parseGameConfig()

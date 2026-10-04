@@ -10,10 +10,11 @@ Terrain layer selector, inside the existing display menu. Engine owns the layers
 
 - `@nabla/engine/render`
 - `@nabla/engine/runtime/browser`
+- `./menu.js`
 
 ## browserStorage
 
-[Implementation, line 14](../../../game/layers-ui.ts#L14)
+[Implementation, line 15](../../../game/layers-ui.ts#L15)
 
 ```ts
 browserStorage(): LayerStorage | undefined
@@ -21,7 +22,7 @@ browserStorage(): LayerStorage | undefined
 
 ## initialHiddenLayers
 
-[Implementation, line 23](../../../game/layers-ui.ts#L23)
+[Implementation, line 24](../../../game/layers-ui.ts#L24)
 
 The layers to start with: an explicit `&layers=` wins over the stored choice.
 
@@ -39,7 +40,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindLayerSelector
 
-[Implementation, line 32](../../../game/layers-ui.ts#L32)
+[Implementation, line 33](../../../game/layers-ui.ts#L33)
 
 Add one checkbox per layer (road first) to the display menu; changes apply live and persist.
 
@@ -55,16 +56,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `boxes.set`
 - `browserStorage`
 - `document.createElement`
-- `document.getElementById`
 - `group.append`
 - `hidden.has`
 - `label.append`
-- `panel.querySelector`
-- `panel.querySelector('summary')!.after`
+- `menuSection`
 
 ## bindLayerSelector.sync
 
-[Implementation, line 40](../../../game/layers-ui.ts#L40)
+[Implementation, line 36](../../../game/layers-ui.ts#L36)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -82,22 +81,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `url.searchParams.delete`
 - `url.searchParams.set`
 
-## bindLayerSelector.sync.callback@41
+## bindLayerSelector.sync.callback@37
 
-[Implementation, line 41](../../../game/layers-ui.ts#L41)
+[Implementation, line 37](../../../game/layers-ui.ts#L37)
 
 ```ts
-callback@41(layer): inferred by TypeScript; see implementation
+callback@37(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `boxes.get`
 
-## bindLayerSelector.sync.callback@41
+## bindLayerSelector.sync.callback@37
 
-[Implementation, line 41](../../../game/layers-ui.ts#L41)
+[Implementation, line 37](../../../game/layers-ui.ts#L37)
 
 ```ts
-callback@41(l): inferred by TypeScript; see implementation
+callback@37(l): inferred by TypeScript; see implementation
 ```

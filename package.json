@@ -83,6 +83,10 @@
       "types": "./dist/scene/index.d.ts",
       "import": "./dist/scene/index.js"
     },
+    "./planet/terrain-source": {
+      "types": "./dist/planet/terrain-source.d.ts",
+      "import": "./dist/planet/terrain-source.js"
+    },
     "./planet/atlas-z15": {
       "types": "./dist/planet/atlas-z15.d.ts",
       "import": "./dist/planet/atlas-z15.js"

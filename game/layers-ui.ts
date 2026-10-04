@@ -8,6 +8,7 @@ import {
   type LayerStorage,
 } from '@nabla/engine/render'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
+import { menuSection } from './menu.js'
 
 export const LAYERS_STORAGE_KEY = 'nabla.terrain.layers'
 
@@ -30,12 +31,7 @@ export function initialHiddenLayers(
 
 /** Add one checkbox per layer (road first) to the display menu; changes apply live and persist. */
 export function bindLayerSelector(runtime: GameRuntime, storage = browserStorage()): void {
-  const panel = document.getElementById('display-settings')!
-  const group = document.createElement('fieldset')
-  group.id = 'terrain-layers'
-  const legend = document.createElement('legend')
-  legend.textContent = 'Capas del terreno'
-  group.append(legend)
+  const group = menuSection('terrain-layers', 'Capas del terreno')
   const boxes = new Map<string, HTMLInputElement>()
   const sync = () => {
     const hidden = TILE_LAYERS.filter((layer) => !boxes.get(layer.id)!.checked).map((l) => l.id)
@@ -59,5 +55,4 @@ export function bindLayerSelector(runtime: GameRuntime, storage = browserStorage
     label.append(box, ' ' + layer.label)
     group.append(label)
   }
-  panel.querySelector('summary')!.after(group)
 }

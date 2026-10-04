@@ -54,9 +54,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@36(t): inferred by TypeScript; see implementation
 ```
 
-## resolveTerrainSearch
+## terrainDefaults
+
+[Implementation, line 54](../../../game/terrain.ts#L54)
+
+Default query for a package folder: full defaults over cell 16211/12003 when listed, else just the folder.
+
+```ts
+terrainDefaults(index: readonly MapTile[], base: string = DEFAULT_TERRAIN_QUERY.terrain): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `index.some`
+
+## terrainDefaults.callback@58
 
 [Implementation, line 58](../../../game/terrain.ts#L58)
+
+```ts
+callback@58(t): inferred by TypeScript; see implementation
+```
+
+## resolveTerrainSearch
+
+[Implementation, line 68](../../../game/terrain.ts#L68)
 
 The query string to play with, or null when the URL belongs to another mode (`?tiles=`,
 `?example=flat`, ...). A URL that names no source gets the default terrain when the mount's
@@ -70,23 +92,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `URLSearchParams`
 - `fetchIndex`
-- `index.some`
 - `merged.set`
 - `merged.toString`
 - `params.has`
+- `terrainDefaults`
 - `wantsTerrain`
-
-## resolveTerrainSearch.callback@68
-
-[Implementation, line 68](../../../game/terrain.ts#L68)
-
-```ts
-callback@68(t): inferred by TypeScript; see implementation
-```
 
 ## wantsTerrain
 
-[Implementation, line 90](../../../game/terrain.ts#L90)
+[Implementation, line 96](../../../game/terrain.ts#L96)
 
 True when the URL asks for the terrain-folder example.
 
@@ -102,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 95](../../../game/terrain.ts#L95)
+[Implementation, line 101](../../../game/terrain.ts#L101)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -122,7 +136,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 104](../../../game/terrain.ts#L104)
+[Implementation, line 110](../../../game/terrain.ts#L110)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -157,7 +171,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 165](../../../game/terrain.ts#L165)
+[Implementation, line 171](../../../game/terrain.ts#L171)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -178,7 +192,7 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 177](../../../game/terrain.ts#L177)
+[Implementation, line 183](../../../game/terrain.ts#L183)
 
 Spanish HUD text for the streaming progress: loaded cells out of the dataset, plus those still arriving.
 

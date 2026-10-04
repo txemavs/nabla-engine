@@ -50,6 +50,16 @@ export const DEFAULT_TERRAIN_QUERY = {
   vehicle: 'car',
 }
 
+/** Default query for a package folder: full defaults over cell 16211/12003 when listed, else just the folder. */
+export function terrainDefaults(
+  index: readonly MapTile[],
+  base: string = DEFAULT_TERRAIN_QUERY.terrain,
+) {
+  return index.some((t) => t.x === 16211 && t.y === 12003)
+    ? { ...DEFAULT_TERRAIN_QUERY, terrain: base }
+    : { terrain: base }
+}
+
 /**
  * The query string to play with, or null when the URL belongs to another mode (`?tiles=`,
  * `?example=flat`, ...). A URL that names no source gets the default terrain when the mount's
@@ -64,11 +74,7 @@ export async function resolveTerrainSearch(
   if (params.has('tiles') || params.has('example') || params.has('api')) return null
   const index = await fetchIndex(DEFAULT_TERRAIN_QUERY.terrain)
   if (!index) return null
-  const merged = new URLSearchParams(
-    index.some((t) => t.x === 16211 && t.y === 12003)
-      ? DEFAULT_TERRAIN_QUERY
-      : { terrain: DEFAULT_TERRAIN_QUERY.terrain },
-  )
+  const merged = new URLSearchParams(terrainDefaults(index))
   for (const [key, value] of params) merged.set(key, value)
   return '?' + merged.toString()
 }

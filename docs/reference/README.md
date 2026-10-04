@@ -6,18 +6,21 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **248 modules; 2255 executable function definitions**.
+Coverage: **252 modules; 2276 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
 | [game/config.ts](game/config.ts.md) | 4 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 7 |
 | [game/drive.ts](game/drive.ts.md) | 14 |
+| [game/entry.ts](game/entry.ts.md) | 2 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
 | [game/loading.ts](game/loading.ts.md) | 16 |
 | [game/main.ts](game/main.ts.md) | 0 |
+| [game/menu.ts](game/menu.ts.md) | 1 |
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 8 |
-| [game/terrain.ts](game/terrain.ts.md) | 9 |
+| [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
+| [game/terrain.ts](game/terrain.ts.md) | 10 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 9 |
@@ -119,6 +122,7 @@ Coverage: **248 modules; 2255 executable function definitions**.
 | [src/planet/places.ts](src/planet/places.ts.md) | 4 |
 | [src/planet/sea-coverage.ts](src/planet/sea-coverage.ts.md) | 2 |
 | [src/planet/sky.ts](src/planet/sky.ts.md) | 4 |
+| [src/planet/terrain-source.ts](src/planet/terrain-source.ts.md) | 9 |
 | [src/planet/tide.ts](src/planet/tide.ts.md) | 1 |
 | [src/planet/tiles.ts](src/planet/tiles.ts.md) | 6 |
 | [src/presentation/scene-view.ts](src/presentation/scene-view.ts.md) | 1 |

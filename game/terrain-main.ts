@@ -4,6 +4,7 @@ import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
 import { hasVehiclePreset } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
 import { LoadingScreen, showError } from './loading.js'
+import { bindTerrainSelector } from './terrain-selector.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { fetchCoverage, formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
@@ -15,6 +16,8 @@ const CONTROLS =
   '<kbd>V</kbd> Vuelo · <kbd>F</kbd> Acoplar · <kbd>T</kbd> Transferir · <kbd>R</kbd> Recuperar · ' +
   '<kbd>Tab</kbd> Arma'
 
+// Bound first, so a terrain that fails to load can still be swapped from the menu.
+bindTerrainSelector()
 let runtime: GameRuntime | undefined
 let cellsLabel = ''
 /** HUD line with the loaded cells of the host's index, e.g. "Celdas: 12/33". */

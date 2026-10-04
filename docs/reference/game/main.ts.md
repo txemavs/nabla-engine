@@ -4,10 +4,10 @@
 
 [Source](../../../game/main.ts)
 
-Entry point: the terrain-folder example when the URL names a terrain (or is bare and a terrain mount exists), otherwise the original drive demo.
+Entry point: the terrain chosen by the URL or the menu (flat tile, tile host, package folder).
 
 ## Module dependencies
 
-- `./terrain.js`
+- `./entry.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

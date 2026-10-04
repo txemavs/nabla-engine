@@ -36,6 +36,34 @@ A URL **without any query** (or with only display options) plays the default of 
 `?terrain=/terrain&tile=16211/12003&dx=17.4&dz=-197.6&heading=118&vehicle=car`, when `/terrain/index.json`
 answers. `?tiles=` and `?example=flat` keep their original behaviour.
 
+## Choosing the terrain at runtime
+
+The in-game menu (top right, _Pantalla y rendimiento_) starts with a **Terreno** section:
+
+| Option                  | Meaning                                                       | URL it applies                        |
+| ----------------------- | ------------------------------------------------------------- | ------------------------------------- |
+| **Plano**               | the bundled flat GLB tile, fully offline                      | `?example=flat`                       |
+| **Teselas**             | a tile host; type its base URL in the field                   | `?tiles=<base url>`                   |
+| **Carpeta de paquetes** | the Atlas Z15 folder served at `/terrain` (+ _Relieve LiDAR_) | `?terrain=/terrain` (`&relief=lidar`) |
+
+_Aplicar y recargar_ reloads the page with that URL and remembers the choice in `localStorage`
+(`nabla.terrain.source`). The logic is `src/planet/terrain-source.ts` (`parseTerrainSource`,
+`withTerrainSource`, `chooseTerrainSource`, storage helpers); the game only draws the section
+(`game/terrain-selector.ts`) and picks the mode (`game/entry.ts`). Rules:
+
+1. **The URL wins.** `?example=flat`, `?tiles=` and `?terrain=` (alias `?z15=`) keep working and are never
+   overridden by the remembered choice. Precedence between them: packages, flat, tiles.
+2. A URL that names **no source** (a bare URL, or only `quality`, `fps`, `layers` ...) uses the remembered
+   choice. With none remembered it plays the package folder when `/terrain/index.json` answers, else the flat tile.
+3. A remembered _default_ package folder is ignored while its index does not answer; a remembered custom folder
+   or tile host is trusted.
+4. Changing the kind drops position parameters (`tile`, `dx`, `dz`, `heading`, `lat`, `lon`, `alt`); changing only
+   the relief or the URL of the same kind keeps them. Other parameters are kept.
+5. A tile URL must start with `http://`, `https://` or `/`; otherwise the menu shows a Spanish message and does not
+   reload. The field is pre-filled with the active, then the remembered, then the build-time `VITE_NABLA_TILES_URL`.
+
+The section is bound before anything loads, so a terrain that fails to load can still be swapped from the menu.
+
 ## Behaviour matched to Studio's play mode
 
 - **All cells.** With an index the whole dataset is streamed (`PlanetSourceOptions.stream: 'coverage'`,
