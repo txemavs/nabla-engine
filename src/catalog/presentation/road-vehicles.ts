@@ -76,11 +76,7 @@ export const s3Presentation: VehiclePresentationAdapter = {
       instruments,
     }
   },
-  preparePart(model, kind) {
-    if (kind === 'steering') {
-      model.rotation.x = THREE.MathUtils.degToRad(2.8)
-      model.position.y = -0.0275568
-    }
+  preparePart(model) {
     shineVehicle(model)
   },
   paint(model, color) {

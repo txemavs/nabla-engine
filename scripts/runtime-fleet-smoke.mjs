@@ -33,7 +33,7 @@ try {
     await page.waitForTimeout(2500)
     assert.equal(await page.locator('#vehicle-picker').count(), 0)
     assert.equal(await page.locator('.tile-indicator.loaded').count(), 4)
-    assert.ok([...assets].some((a) => a.endsWith('/tractor.body.glb')))
+    assert.ok([...assets].some((a) => a.endsWith('/tractor.modern.glb')))
     assert.ok([...assets].some((a) => a.endsWith('/wheel.rear.glb')))
     assert.ok([...assets].some((a) => a.endsWith('/ship.container.5x10.glb')))
     await page.locator('#game-container').click({ position: { x: 640, y: 300 } })

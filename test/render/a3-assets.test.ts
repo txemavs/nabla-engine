@@ -40,7 +40,7 @@ function load(part: string) {
   }
   return { json, read }
 }
-it('retains the exact original paint, glazing, optical surfaces and mirror triangles', () => {
+it('retains the corrected source paint, glazing, optical surfaces and mirror triangles', () => {
   const { json: j, read } = load('cabrio'),
     hash = createHash('sha256')
   for (const m of j.meshes)
@@ -55,12 +55,12 @@ it('retains the exact original paint, glazing, optical surfaces and mirror trian
       )
       hash.update(bytes)
     }
-  // Captured from the untouched source before simplification, not from the generated file.
+  // Corrected user-supplied body, 2026-10-04; only meshless anchors are added during migration.
   expect(hash.digest('hex')).toBe(
-    '8cd09cdb05c0c00d53b7ffa59773c98d9cb0b3d5c0e725527ed60add6065a41f',
+    'e20c8a7311d54b5ff58e8e2f3d03d994544a7f8fbc5c5a0462e245c273697be5',
   )
 })
-it('keeps the complete assembled A3 under 100k triangles and includes the light seals', () => {
+it('keeps the complete assembled A3 under 100k triangles and includes the corrected body base', () => {
   let total = 0
   for (const part of ['cabrio', 'wheel', 'steering']) {
     const { json: j } = load(part)
@@ -70,27 +70,27 @@ it('keeps the complete assembled A3 under 100k triangles and includes the light 
     )
     total += triangles * (part === 'wheel' ? 4 : 1)
     expect(j.nodes.some((n) => n.name.startsWith('Nabla'))).toBe(true)
-    if (part === 'cabrio') expect(j.nodes.some((n) => n.name === 'A3 closed underfloor')).toBe(true)
+    if (part === 'cabrio') expect(j.nodes.some((n) => n.name === 'Base')).toBe(true)
   }
   expect(total).toBeLessThan(100000)
 })
 
-it('keeps new floor and arch seals outside the tire envelope, including front steering', () => {
-  const { json: j, read } = load('cabrio')
-  const radius = 0.315374,
-    halfWidth = 0.1145
-  for (const node of j.nodes.filter((n) => /underfloor|floor seal|wheel arch inner/.test(n.name))) {
-    const points = j.meshes[node.mesh!].primitives.flatMap((p) => read(p.attributes.POSITION))
-    const lo = [0, 1, 2].map((k) => Math.min(...points.map((p) => p[k])))
-    const hi = [0, 1, 2].map((k) => Math.max(...points.map((p) => p[k])))
-    for (const z of [-1.291815, 1.291815])
-      for (const side of [-1, 1])
-        for (const angle of [-0.45, 0, 0.45]) {
-          const x = side * (z > 0 ? 0.7622195 : 0.7547195)
-          const rx = halfWidth * Math.cos(angle) + radius * Math.abs(Math.sin(angle))
-          const rz = radius * Math.cos(angle) + halfWidth * Math.abs(Math.sin(angle))
-          const separated = hi[0] < x - rx || lo[0] > x + rx || hi[2] < z - rz || lo[2] > z + rz
-          expect(separated, `${node.name} intersects the tire sweep`).toBe(true)
-        }
-  }
+it('preserves the supplied binary geometry while adding five meshless anchors', () => {
+  const bytes = readFileSync('assets/studio/cars/a3/a3.cabrio.glb')
+  const length = bytes.readUInt32LE(12)
+  // Hash of the untouched binary chunk from the user-supplied body.
+  expect(
+    createHash('sha256')
+      .update(bytes.subarray(20 + length))
+      .digest('hex'),
+  ).toBe('526a0a046eca7db2650d8131b7212a501bae4f88ce16a44ee16760c66f1f25a7')
+  const anchors = load('cabrio').json.nodes.filter((node) => node.name.startsWith('nabla.'))
+  expect(anchors.map((node) => node.name).sort()).toEqual([
+    'nabla.steering',
+    'nabla.wheel.fl',
+    'nabla.wheel.fr',
+    'nabla.wheel.rl',
+    'nabla.wheel.rr',
+  ])
+  expect(anchors.every((node) => node.mesh === undefined)).toBe(true)
 })

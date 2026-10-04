@@ -2,6 +2,10 @@
 
 Stock vehicle definitions are JSON files next to their models, not code.
 
+A3, S3 and the modern tractor derive wheel and steering poses from their body
+GLBs. See the [anchor contract and generation workflow](../../../docs/vehicle-rigs.md).
+Generated poses support headless physics; do not copy them back into preset JSON.
+
 `assets/studio` is what this repo publishes. `assets/custom` is this machine only
 and is gitignored. Both use `cars`, `planes`, `ships` and `boats`. Studio loads
 both. To publish a vehicle, move its folder into `assets/studio`.

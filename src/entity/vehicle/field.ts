@@ -18,6 +18,8 @@ export const vehicleField = z
     ]),
     /** Unpowered trailer, excluded from player boarding. */
     passive: z.boolean().optional(),
+    /** Chassis-local towing mount, extracted from the body's tow.hitch anchor. */
+    hitch: vector.optional(),
     tow: z
       .object({ vehicleId: z.string().min(1), anchor: vector, hitch: vector })
       .strict()

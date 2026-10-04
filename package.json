@@ -150,14 +150,17 @@
     "docs:generate": "node scripts/document-code.mjs",
     "docs:check": "node scripts/document-code.mjs --check",
     "test:e2e": "playwright test",
-    "check": "npm run docs:check && npm run format:check && npm run build && npm run typecheck && npm test && npm run build:game",
+    "check": "npm run rigs:check && npm run rigs:test && npm run docs:check && npm run format:check && npm run build && npm run typecheck && npm test && npm run build:game",
     "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build:prepare": "tsc -p tsconfig.prepare.json",
     "prebuild:prepare": "node -e \"require('node:fs').rmSync('prepare-dist', { recursive: true, force: true })\"",
     "test:atlas": "python3 -m unittest discover -s services/world-cache/atlas_tests -t services/world-cache",
-    "build:fixture": "npm run build && node scripts/build-flat-test-tile.mjs"
+    "build:fixture": "npm run build && node scripts/build-flat-test-tile.mjs",
+    "rigs:generate": "node scripts/generate-vehicle-rigs.mjs",
+    "rigs:check": "node scripts/generate-vehicle-rigs.mjs --check",
+    "rigs:test": "node --test scripts/lib/vehicle-rig.test.mjs"
   },
   "keywords": [
     "3d",

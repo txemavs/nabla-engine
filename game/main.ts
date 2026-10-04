@@ -49,7 +49,7 @@ try {
     const trailer = presetVehicle('white-trailer', 'demo-trailer', [10, 2, 7.33])
     trailer.vehicle!.tow = {
       vehicleId: tractor.id,
-      hitch: [0, 0, 1.766745487],
+      hitch: tractor.vehicle!.hitch!,
       anchor: [0, 0, -5.565219856],
     }
     scene.entities.push(trailer)

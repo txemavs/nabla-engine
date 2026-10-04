@@ -4,12 +4,13 @@ import { createEntity, type Entity, type Vec3Tuple } from '../../entity/schema.j
 import { vector } from '../../entity/coords.js'
 import { vehicleField, visualField } from '../../entity/vehicle/field.js'
 import { readVehiclePresetSources } from './preset-source.js'
+import { generatedVehicleRigs } from './generated-rigs.js'
 
 /**
  * A vehicle preset is a JSON file under assets/studio or assets/custom, in
  * cars, planes, ships or boats. studio is published. custom is this machine
- * only. The file is the whole definition. This module checks it and stamps an
- * id and a position. Lights, mirrors and physics stay in code.
+ * only. GLB-backed stock presets merge generated anchor poses before schema
+ * validation. This module stamps an id and position without loading a renderer.
  */
 const presetSchema = z
   .object({
@@ -38,7 +39,30 @@ export function vehiclePresets(): VehiclePreset[] {
   const presets: VehiclePreset[] = []
   for (const source of readVehiclePresetSources()) {
     try {
-      presets.push(presetSchema.parse(source.data))
+      const { rig, ...authored } = source.data as VehiclePreset & { rig?: string }
+      if (rig !== undefined && rig !== 'glb') throw new Error(`Unknown rig source: ${rig}`)
+      const extracted = rig === 'glb' ? generatedVehicleRigs[authored.id] : undefined
+      if (rig === 'glb' && (!extracted || extracted.source !== authored.visual.body.url))
+        throw new Error(`Missing generated GLB rig for ${authored.id}; run rigs:generate`)
+      presets.push(
+        presetSchema.parse(
+          extracted
+            ? {
+                ...authored,
+                vehicle: {
+                  ...authored.vehicle,
+                  hubs: extracted.hubs,
+                  ...(extracted.hitch ? { hitch: extracted.hitch } : {}),
+                },
+                visual: {
+                  ...authored.visual,
+                  wheelRotations: extracted.wheelRotations,
+                  steering: { ...authored.visual.steering, transform: extracted.steering },
+                },
+              }
+            : authored,
+        ),
+      )
     } catch (error) {
       throw new Error(`Vehicle preset ${source.file} is invalid`, { cause: error })
     }
