@@ -61,6 +61,9 @@ Without `example=flat`, URL configuration selects geographic coverage:
 Zero is valid for latitude, longitude and altitude. No cartographic coverage does
 not imply a different coordinate system.
 
+To play on real Atlas Z15 cells (LiDAR, orthophoto, buildings) use `?terrain=<base>`; see
+[Terrain folder](terrain-folder.md).
+
 Opening the demo without a terrain source reports a configuration error before
 creating the runtime or requesting terrain. Use `?example=flat` for the bundled
 offline surface, `?tiles=/my-tiles&lat=0&lon=0&alt=0` for local coverage, or

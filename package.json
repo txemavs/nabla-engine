@@ -71,6 +71,10 @@
       "types": "./dist/runtime/browser.d.ts",
       "import": "./dist/runtime/browser.js"
     },
+    "./examples/terrain-drive": {
+      "types": "./dist/examples/terrain-drive.d.ts",
+      "import": "./dist/examples/terrain-drive.js"
+    },
     "./examples/flat-tile": {
       "types": "./dist/examples/flat-tile.d.ts",
       "import": "./dist/examples/flat-tile.js"
@@ -78,6 +82,10 @@
     "./scene": {
       "types": "./dist/scene/index.d.ts",
       "import": "./dist/scene/index.js"
+    },
+    "./planet/atlas-z15": {
+      "types": "./dist/planet/atlas-z15.d.ts",
+      "import": "./dist/planet/atlas-z15.js"
     },
     "./planet/static-tiles": {
       "types": "./dist/render/planet/static-tiles.d.ts",

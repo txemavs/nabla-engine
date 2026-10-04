@@ -1,11 +1,12 @@
 import vue from '@vitejs/plugin-vue'
 import { defineConfig, loadEnv } from 'vite'
+import { terrainFolder } from './scripts/vite-terrain-folder.js'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     root: 'game',
-    plugins: [vue()],
+    plugins: [vue(), terrainFolder(env)],
     define: {
       __VUE_OPTIONS_API__: true,
       __VUE_PROD_DEVTOOLS__: false,

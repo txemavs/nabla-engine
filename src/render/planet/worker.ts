@@ -105,6 +105,9 @@ self.onmessage = async (
           const index = seaCoverageIndex(p, originalIndex, mesh.userData, manifest.anchor.altitude)
           if (index?.length === 0) return
           const metadata = { ...mesh.userData }
+          // Atlas LiDAR terrain (`terrain-lidar-*.glb`) has no category: it is one 2 m grid mesh. Declare
+          // it as terrain so it is rendered, collided with and draped like the engine's own terrain.
+          if (metadata.nablaTerrainLidar && !metadata.category) metadata.category = 'Terrain'
           if (index !== originalIndex) delete metadata.parts
           meshes.push({
             name: mesh.name,

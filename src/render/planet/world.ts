@@ -8,14 +8,30 @@ import {
   type PlanetPayload,
   type PlanetCollisionTile,
 } from '../../planet/index.js'
+import type { PlanetPhoto } from '../../planet/contract.js'
 import { fetchTileManifest } from './static-tiles.js'
+import { atlasFileUrl, type AtlasZ15Options } from '../../planet/atlas-z15.js'
+import { sha256 } from '../../util/sha256.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
   /** Known coverage of a finite offline dataset. Omit for unrestricted streaming. */
   tiles?: readonly MapTile[]
+  /**
+   * Tiles known to exist, for hosts that cannot answer 404 cheaply or quietly. Unlike `tiles`, nothing
+   * waits for them at startup; streaming only skips requests for tiles outside the set.
+   */
+  coverage?: readonly MapTile[]
   /** Disable external coarse relief for self-contained examples. Coordinates remain planetary. */
   horizon?: boolean
+  /** Read Atlas `nabla-z15-package/1` cells (static mode). Implies `imagery: 'package'`. */
+  atlas?: AtlasZ15Options
+  /**
+   * Source of the photo draped over roofs, pitches and (when enabled) the ground.
+   * `online` (default) streams ArcGIS World Imagery; `package` uses the orthophoto shipped
+   * inside the tile package, so nothing leaves the tile host; `none` never drapes a photo.
+   */
+  imagery?: 'online' | 'package' | 'none'
 }
 import { PlanetHorizon } from './horizon.js'
 import { carriagewayTint, matteGroundMaterial } from './ground-material.js'
@@ -52,6 +68,14 @@ const drapeLayers: { id: string; ground?: number; roads?: boolean; terrain?: boo
   { id: 'terrain', terrain: true },
   { id: 'roads', roads: true },
 ]
+/**
+ * Show the tile photo (see `PlanetSourceOptions.imagery`) over the ground as well as over roofs: terrain,
+ * roads and every land-use surface except inland water, which keeps its own shader.
+ */
+export function projectGroundPhoto(enabled = true) {
+  for (const layer of drapeLayers)
+    if (layer.id !== 'water') projectedLayers[enabled ? 'add' : 'delete'](layer.id)
+}
 function inlandWater(metadata: { category?: string; groundLayer?: number }) {
   return metadata.category === 'Surfaces' && metadata.groundLayer === SURFACE_LAYERS.water
 }
@@ -62,14 +86,28 @@ function drapeBias(id: string): number {
   if (id === 'roads') return -20
   return -(drapeLayers.find((layer) => layer.id === id)?.ground ?? 1)
 }
+/** Decode a verified package orthophoto, flipped so the texture needs no `flipY` (north-up, v up). */
+async function loadPackagePhoto(url: string, photo: PlanetPhoto): Promise<ImageBitmap> {
+  const response = await fetch(url, { signal: AbortSignal.timeout(60000) })
+  if (!response.ok) throw new Error(`Photo ${url}: HTTP ${response.status}`)
+  const bytes = await response.arrayBuffer()
+  if (bytes.byteLength !== photo.bytes) throw new Error(`Photo ${url}: size mismatch`)
+  if ((await sha256(bytes)) !== photo.sha256) throw new Error(`Photo ${url}: checksum mismatch`)
+  return createImageBitmap(new Blob([bytes]), { imageOrientation: 'flipY' })
+}
+
 function dressSatelliteRoofs(
   group: THREE.Group,
   manifest: PlanetManifest,
   changed: () => void,
   setupMaterial: (material: THREE.Material) => void,
+  imagery: 'online' | 'package' | 'none' = 'online',
+  photoUrl?: string,
+  onPhotoError?: (error: unknown) => void,
 ) {
   const tile = manifest.tile
-  if (tile.z !== 15) return
+  if (tile.z !== 15 || imagery === 'none') return
+  if (imagery === 'package' && (!manifest.photo || !photoUrl)) return
   const baked = new Set<string>()
   for (const node of group.children) {
     const mesh = node as THREE.Mesh
@@ -123,10 +161,11 @@ function dressSatelliteRoofs(
   if (!buckets.size) return
   const zoom = tile.z + 3
   const span = 2 ** (zoom - tile.z)
-  const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = span * 256
-  const ctx = canvas.getContext('2d')!
-  const texture = new THREE.CanvasTexture(canvas)
+  const packaged = imagery === 'package'
+  const canvas = packaged ? undefined : document.createElement('canvas')
+  if (canvas) canvas.width = canvas.height = span * 256
+  const ctx = canvas?.getContext('2d') ?? undefined
+  const texture: THREE.Texture = canvas ? new THREE.CanvasTexture(canvas) : new THREE.Texture()
   texture.colorSpace = THREE.SRGBColorSpace
   const draped: THREE.Mesh[] = []
   for (const [id, xyz] of buckets) {
@@ -168,13 +207,31 @@ function dressSatelliteRoofs(
     }
     changed()
   }
+  if (packaged) {
+    loadPackagePhoto(photoUrl!, manifest.photo!)
+      .then((bitmap) => {
+        if (group.userData.disposed) {
+          // The tile was evicted while the photo downloaded.
+          bitmap.close()
+          return
+        }
+        texture.image = bitmap
+        texture.flipY = false
+        texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
+        texture.anisotropy = 8
+        texture.needsUpdate = true
+        show()
+      })
+      .catch((error) => onPhotoError?.(error))
+    return
+  }
   let pending = span * span
   for (let row = 0; row < span; row++) {
     for (let col = 0; col < span; col++) {
       const image = new Image()
       image.crossOrigin = 'anonymous'
       image.onload = () => {
-        ctx.drawImage(image, col * 256, row * 256)
+        ctx!.drawImage(image, col * 256, row * 256)
         if (--pending === 0) {
           texture.needsUpdate = true
           show()
@@ -261,6 +318,8 @@ export class PlanetWorld {
   private requests = new Map<number, { key: string; manifest: PlanetManifest }>()
   private ready = new Map<string, PlanetManifest>()
   private retry = new Map<string, number>()
+  /** Static tiles that answered 404, retried after a minute. */
+  private absent = new Map<string, number>()
   private wanted: MapTile[] = []
   private plan?: MapZoomPlan
   private visible: string[] = []
@@ -528,8 +587,9 @@ export class PlanetWorld {
         ]),
       ).values(),
     ]
-    if (this.sourceOptions.tiles) {
-      const available = new Set(this.sourceOptions.tiles.map(mapTileId))
+    const known = this.sourceOptions.coverage ?? this.sourceOptions.tiles
+    if (known) {
+      const available = new Set(known.map(mapTileId))
       this.wanted = this.wanted.filter((tile) => available.has(mapTileId(tile)))
     }
     const needed = new Set(this.wanted.map(mapTileId))
@@ -553,12 +613,20 @@ export class PlanetWorld {
   }
   private async discover() {
     if (this.busy || Date.now() < this.next || this.disposed) return
-    const missing = this.wanted.filter(
-      (t) =>
-        (!this.resident.has(mapTileId(t)) && !this.ready.has(mapTileId(t))) ||
-        this.ready.get(mapTileId(t))?.geometryRevision !== PLANET_GEOMETRY_REVISION ||
-        (t.z < 15 && this.ready.get(mapTileId(t))?.lod?.revision !== 'mesh-lod-v1'),
-    )
+    const isStatic = this.discoveryMode === 'static'
+    const now = Date.now()
+    const missing = this.wanted.filter((t) => {
+      const id = mapTileId(t)
+      // A static host cannot regenerate a tile: older revisions and unpublished (404)
+      // tiles are not re-requested on every pass.
+      if (isStatic)
+        return !this.resident.has(id) && !this.ready.has(id) && now >= (this.absent.get(id) ?? 0)
+      return (
+        (!this.resident.has(id) && !this.ready.has(id)) ||
+        this.ready.get(id)?.geometryRevision !== PLANET_GEOMETRY_REVISION ||
+        (t.z < 15 && this.ready.get(id)?.lod?.revision !== 'mesh-lod-v1')
+      )
+    })
     if (!missing.length) return
     // Public requests may be ineligible; do not let the first rejected batch
     // permanently hide available/adjacent cells later in the flight plan.
@@ -618,9 +686,13 @@ export class PlanetWorld {
             baseUrl: this.base,
             signal: this.controller.signal,
             cors: true,
+            atlas: this.sourceOptions.atlas,
           })
           if (manifest) this.ready.set(mapTileId(tile), manifest)
-          else missing++
+          else {
+            missing++
+            this.absent.set(mapTileId(tile), Date.now() + 60000)
+          }
         } catch (error) {
           if (this.controller.signal.aborted) return
           failures.push(error instanceof Error ? error : new Error(String(error)))
@@ -716,11 +788,18 @@ export class PlanetWorld {
       this.setupMaterial(material)
       yield
     }
+    const imagery = this.sourceOptions.imagery ?? (this.sourceOptions.atlas ? 'package' : 'online')
     dressSatelliteRoofs(
       group,
       manifest,
       () => this.changed(),
       (material) => this.setupMaterial(material),
+      imagery,
+      manifest.photo ? atlasFileUrl(this.base, manifest.tile, manifest.photo.path) : undefined,
+      (error) => {
+        this.status = 'Foto del terreno no disponible · ' + String(error)
+        this.changed()
+      },
     )
     group.userData.planetTile = {
       key,
@@ -1037,6 +1116,7 @@ export class PlanetWorld {
     if (!r) return
     r.chart?.bitmap.close()
     r.group.removeFromParent()
+    r.group.userData.disposed = true
     r.group.traverse((n) => {
       if (n instanceof THREE.Sprite && n.userData.ownedLabelTexture) {
         n.material.map?.dispose()
@@ -1045,7 +1125,11 @@ export class PlanetWorld {
       const m = n as THREE.Mesh
       if (m.isMesh) {
         m.geometry.dispose()
-        for (const mat of Array.isArray(m.material) ? m.material : [m.material]) mat.dispose()
+        for (const mat of Array.isArray(m.material) ? m.material : [m.material]) {
+          // The photo texture is shared by every drape mesh of the tile.
+          if (m.name === 'Drape') (mat as THREE.MeshStandardMaterial).map?.dispose()
+          mat.dispose()
+        }
       }
     })
     this.resident.delete(key)

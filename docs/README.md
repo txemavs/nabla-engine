@@ -32,6 +32,7 @@ preserves the edit/play contract and a single physics owner.
 
 - [Module map and compatibility](architecture/module-map.md)
 - [Game library mode](game-library.md): Run the engine without Studio, with static tiles
+- [Terrain folder](terrain-folder.md): Play on real nabla-atlas Z15 packages (`?terrain=<base>`), format mapping and deployment
 - [Create a vehicle](creating-a-vehicle.md)
 - [Create a monitor](creating-a-monitor.md)
 - [Migration history](architecture/vehicle-modularity.md)

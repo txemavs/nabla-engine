@@ -164,12 +164,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Number.isFinite`
 
-## callback@9.callback@132
+## callback@9.callback@135
 
-[Implementation, line 132](../../../../../src/render/planet/worker.ts#L132)
+[Implementation, line 135](../../../../../src/render/planet/worker.ts#L135)
 
 ```ts
-callback@132(node): inferred by TypeScript; see implementation
+callback@135(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -178,26 +178,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `m.geometry.dispose`
 - `material.dispose`
 
-## callback@9.callback@146
+## callback@9.callback@149
 
-[Implementation, line 146](../../../../../src/render/planet/worker.ts#L146)
+[Implementation, line 149](../../../../../src/render/planet/worker.ts#L149)
 
 ```ts
-callback@146(m): inferred by TypeScript; see implementation
+callback@149(m): inferred by TypeScript; see implementation
 ```
 
-## callback@9.callback@153
+## callback@9.callback@156
 
-[Implementation, line 153](../../../../../src/render/planet/worker.ts#L153)
+[Implementation, line 156](../../../../../src/render/planet/worker.ts#L156)
 
 ```ts
-callback@153(c): inferred by TypeScript; see implementation
+callback@156(c): inferred by TypeScript; see implementation
 ```
 
-## callback@9.callback@154
+## callback@9.callback@157
 
-[Implementation, line 154](../../../../../src/render/planet/worker.ts#L154)
+[Implementation, line 157](../../../../../src/render/planet/worker.ts#L157)
 
 ```ts
-callback@154(m): inferred by TypeScript; see implementation
+callback@157(m): inferred by TypeScript; see implementation
 ```

@@ -35,6 +35,29 @@ export interface PlanetManifest {
     'terrain' | 'buildings-osm',
     { path: string; download: string; bytes: number; sha256: string }
   >
+  /** Present when an external producer (nabla-atlas) published a Z15 package next to this manifest. */
+  z15Package?: PlanetZ15PackageRef
+  /**
+   * Orthophoto draped over the tile (the compatibility composite of an Atlas package).
+   * Set only by the Atlas adapter; the standard preparation service never writes it.
+   */
+  photo?: PlanetPhoto
+}
+/** Pointer to the `nabla-z15-package/1` JSON that lists every file of an Atlas cell. */
+export interface PlanetZ15PackageRef {
+  schema: 'nabla-z15-package/1'
+  file: string
+  sha256: string
+  bytes: number
+  packageVersion: number
+}
+/** One north-up image covering exactly the tile (Web Mercator, row 0 = north). */
+export interface PlanetPhoto {
+  path: string
+  bytes: number
+  sha256: string
+  sizePx: number
+  level: 'full' | 'lo'
 }
 export interface PlanetMesh {
   name: string

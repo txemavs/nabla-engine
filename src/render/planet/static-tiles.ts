@@ -21,6 +21,14 @@ import {
   type PlanetManifest,
 } from '../../planet/contract.js'
 import { mapTileId, mapTilePath, type MapTile } from '../../scene/mercator.js'
+import {
+  adaptAtlasManifest,
+  atlasPackageRef,
+  atlasPackageUrl,
+  validateAtlasZ15Package,
+  type AtlasZ15Options,
+} from '../../planet/atlas-z15.js'
+import { sha256 } from '../../util/sha256.js'
 
 export interface StaticTileProviderOptions {
   /** Application-owned tile origin. Use `/` (or normalized empty string) for this origin. */
@@ -29,6 +37,12 @@ export interface StaticTileProviderOptions {
   cors?: boolean
   /** Protocol of the embedding page, for the mixed-content check. Defaults to `location.protocol`. */
   pageProtocol?: string
+  /**
+   * Read `nabla-z15-package/1` cells published by nabla-atlas: when a manifest points to a package
+   * the package is fetched (size and SHA-256 verified) and its LiDAR/orthophoto choices are
+   * applied to the returned manifest. Plain engine manifests are returned unchanged.
+   */
+  atlas?: AtlasZ15Options
 }
 
 export interface StaticTileResult {
@@ -147,14 +161,51 @@ export async function fetchTileManifest(
     const type = response.headers.get('content-type') ?? 'unknown content type'
     throw new StaticTileError(`Manifest ${url}: not valid JSON (${type})`, 'invalid', url)
   }
+  let manifest: PlanetManifest
   try {
-    return validatePlanetManifest(data, tile)
+    manifest = validatePlanetManifest(data, tile)
   } catch (error) {
     throw new StaticTileError(
       `Manifest ${url}: invalid manifest (${error instanceof Error ? error.message : String(error)})`,
       'invalid',
       url,
     )
+  }
+  return options.atlas && manifest.z15Package
+    ? adaptWithAtlasPackage(tile, manifest, options, url)
+    : manifest
+}
+
+/** Fetch, verify and apply the Atlas package a manifest points to. Every failure names the URL. */
+async function adaptWithAtlasPackage(
+  tile: MapTile,
+  manifest: PlanetManifest,
+  options: StaticTileProviderOptions,
+  manifestUrl: string,
+): Promise<PlanetManifest> {
+  const fail = (message: string, kind: StaticTileErrorKind, url: string, status?: number) =>
+    new StaticTileError(`Atlas package ${url}: ${message}`, kind, url, status)
+  let url = manifestUrl
+  try {
+    const ref = atlasPackageRef(manifest)!
+    url = atlasPackageUrl(options.baseUrl, tile, ref)
+    const timeout = AbortSignal.timeout(15000)
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: options.cors === false ? undefined : 'cors',
+      signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout,
+    })
+    if (!response.ok) throw fail(describeHttp(response.status), 'http', url, response.status)
+    const bytes = await response.arrayBuffer()
+    if (bytes.byteLength !== ref.bytes)
+      throw fail('size does not match manifest.json', 'invalid', url)
+    if ((await sha256(bytes)) !== ref.sha256)
+      throw fail('SHA-256 does not match manifest.json', 'invalid', url)
+    const pkg = validateAtlasZ15Package(JSON.parse(new TextDecoder().decode(bytes)), tile)
+    return adaptAtlasManifest(manifest, pkg, options.atlas)
+  } catch (error) {
+    if (error instanceof StaticTileError || options.signal?.aborted) throw error
+    throw fail(error instanceof Error ? error.message : String(error), 'invalid', url)
   }
 }
 

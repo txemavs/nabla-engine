@@ -74,6 +74,12 @@ export interface GameRuntimeOptions {
   tiles?: { baseUrl: string; apiUrl?: string; mode?: TileDiscoveryMode } & PlanetSourceOptions
   /** Disable only the visible water sheet for a synthetic sea-level test surface. */
   sea?: boolean
+  /**
+   * Also rest every other vehicle of the scene on the loaded ground before play (the player's
+   * vehicle always is). Needed on real terrain, where a fixed authored height is wrong.
+   * Towed trailers keep their offset from the tractor.
+   */
+  restParkedOnGround?: boolean
   clock?: 'automatic' | 'manual'
   /** Frame cap and additional resolution scaling; caps apply only to the automatic clock. */
   display?: Partial<DisplaySettings>
@@ -311,6 +317,29 @@ export class GameRuntime {
           onProgress: progress,
         })
         spawn.transform.position[1] = ground + playGroundClearance(spawn)
+        if (this.options.restParkedOnGround) {
+          const authored = new Map(
+            this.document.entities.map((entity) => [entity.id, entity.transform.position[1]]),
+          )
+          const towed = document.entities.filter((entity) => entity.vehicle?.tow)
+          for (const entity of document.entities) {
+            if (entity === spawn || !entity.vehicle || entity.vehicle.tow) continue
+            entity.transform.position[1] =
+              (await waitForGround(this.world, entity.transform.position, {
+                signal: controller.signal,
+                onProgress: progress,
+              })) + playGroundClearance(entity)
+          }
+          for (const trailer of towed) {
+            const tractor = document.entities.find(
+              (entity) => entity.id === trailer.vehicle!.tow!.vehicleId,
+            )
+            if (!tractor) continue
+            trailer.transform.position[1] =
+              tractor.transform.position[1] +
+              (authored.get(trailer.id)! - authored.get(tractor.id)!)
+          }
+        }
         progress('Ground ready')
       }
       controller.signal.throwIfAborted()
