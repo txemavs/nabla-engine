@@ -46,7 +46,7 @@ export interface PlanetSourceOptions {
   imagery?: 'online' | 'package' | 'none'
 }
 import { PlanetHorizon } from './horizon.js'
-import { carriagewayTint, matteGroundMaterial } from './ground-material.js'
+import { carriagewayTint, matteGroundMaterial, withMap } from './ground-material.js'
 import { treeInstances } from './vegetation.js'
 import * as THREE from 'three'
 import {
@@ -980,7 +980,7 @@ export class PlanetWorld {
             ? (p: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(p)
             : matteGroundMaterial)({
             color: carriagewayTint(data.metadata, data.tint),
-            map: photo,
+            ...withMap(photo),
             vertexColors: !!data.color,
             roughness: 1,
             side: data.side as THREE.Side,

@@ -1,6 +1,14 @@
 import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import * as THREE from 'three'
 
+/**
+ * `{ map }` when there is a texture, else `{}`: three.js warns "parameter 'map' has value of undefined"
+ * for a key that is present but undefined, once per material.
+ */
+export function withMap(map: THREE.Texture | undefined): { map?: THREE.Texture } {
+  return map ? { map } : {}
+}
+
 /** Diffuse ground: roughness alone still leaves a broad dielectric sun highlight. */
 export function matteGroundMaterial(
   parameters: THREE.MeshStandardMaterialParameters,

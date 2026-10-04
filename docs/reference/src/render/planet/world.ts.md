@@ -1207,6 +1207,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tileRevision`
 - `treeInstances`
 - `validPlanetPlaces`
+- `withMap`
 
 ## PlanetWorld.install.callback@980
 
