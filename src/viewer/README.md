@@ -1,4 +1,10 @@
-# Geographic GLB viewer
+# Viewer
+
+Geographic viewing API used by Atlas. Viewing does not imply driving or physics
+acceptance.
+
+**Owns:** local GLB inspection without a play session.
+**Does not own:** simulation, vehicles, world-cache, or Studio projects.
 
 `@nabla/engine/viewer` is a browser-only, framework-independent viewer for local geographic GLBs. It uses Engine's GeographicView and spherical frame (radius 6371000 m), without Studio, world-cache, workers or online imagery.
 

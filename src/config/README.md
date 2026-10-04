@@ -1,19 +1,23 @@
-# Engine configuration by topic
+# Config
 
-Engine tuning lives in small, typed topic files under `src/config`. Import their
-public entries from `@nabla/engine/config` or `@nabla/engine/config/<topic>`.
+Topic-based Engine tuning. Import from `@nabla/engine/config` or
+`@nabla/engine/config/<topic>`.
+
+**Owns:** typed defaults, units and override lifetimes.
+**Does not own:** persistence, Studio preferences, worlds or renderers.
+
 Values have English source comments describing units and behavior. These modules
-contain data and small validation helpers; they do not create worlds or renderers.
+contain data and small validation helpers.
 
-| Topic              | Source                                         | Application mechanism                                                                                             |
-| ------------------ | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Camera             | [camera.ts](../src/config/camera.ts)           | `GameRuntime({ camera: overrides })` in both shared and browser runtimes; independent settings per instance       |
-| Controls           | [controls.ts](../src/config/controls.ts)       | Build-time defaults for mouse sensitivity, gamepad deadzone and keyboard steering                                 |
-| Performance        | [performance.ts](../src/config/performance.ts) | Browser `performance` option; named presets and supported quality choices                                         |
-| Shadows            | [shadows.ts](../src/config/shadows.ts)         | Quality keys select cascade count, map size, reach and bias                                                       |
-| Lighting           | [lighting.ts](../src/config/lighting.ts)       | Browser fallback lights; geographic lights support `fieldLights.layers` and `fieldLights.look` overrides          |
-| Terrain scheduling | [streaming.ts](../src/config/streaming.ts)     | Build-time sampling/install budgets and floating-origin distance; tile/cache limits remain in performance presets |
-| Simulation         | [simulation.ts](../src/config/simulation.ts)   | Build-time fixed stepping, gravity, solver and player movement defaults                                           |
+| Topic              | Source                           | Application mechanism                                                                                             |
+| ------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Camera             | [camera.ts](camera.ts)           | `GameRuntime({ camera: overrides })` in both shared and browser runtimes; independent settings per instance       |
+| Controls           | [controls.ts](controls.ts)       | Build-time defaults for mouse sensitivity, gamepad deadzone and keyboard steering                                 |
+| Performance        | [performance.ts](performance.ts) | Browser `performance` option; named presets and supported quality choices                                         |
+| Shadows            | [shadows.ts](shadows.ts)         | Quality keys select cascade count, map size, reach and bias                                                       |
+| Lighting           | [lighting.ts](lighting.ts)       | Browser fallback lights; geographic lights support `fieldLights.layers` and `fieldLights.look` overrides          |
+| Terrain scheduling | [streaming.ts](streaming.ts)     | Build-time sampling/install budgets and floating-origin distance; tile/cache limits remain in performance presets |
+| Simulation         | [simulation.ts](simulation.ts)   | Build-time fixed stepping, gravity, solver and player movement defaults                                           |
 
 ## Camera example
 
@@ -44,7 +48,7 @@ with `createGameCameraState` so telemetry and framing share the same settings.
 
 ## Display, synchronization and scaling
 
-[display.ts](../src/config/display.ts) owns `maxFps` and `resolutionScale`.
+[display.ts](display.ts) owns `maxFps` and `resolutionScale`.
 Browser hosts can pass `display: { maxFps: 60, resolutionScale: 0.75 }` at creation,
 or call `runtime.setDisplay({ maxFps: 30 })` during play. A cap of zero follows
 browser cadence; positive caps are integers from 30 to 360. The automatic loop
@@ -87,14 +91,14 @@ shadow-tier imports re-export the same definitions for compatibility.
 Authored content remains in its existing topic files rather than being copied
 into a competing global table:
 
-- Vehicle definitions and validation: [vehicle fields](../src/entity/vehicle/field.ts).
+- Vehicle definitions and validation: [vehicle fields](../entity/vehicle/field.ts).
   Each vehicle stores its own mass, suspension, engine/brake force, seats and
   camera distance. Stock vehicle recipes live under `assets/studio`; changing
   camera defaults does not overwrite a vehicle's authored camera distance.
-- Scene sky/water and geography: [scene document](../src/scene/document.ts),
-  [sky clock](../src/planet/sky.ts) and [water model](../src/runtime/water.ts).
+- Scene sky/water and geography: [scene document](../scene/document.ts),
+  [sky clock](../planet/sky.ts) and [water model](../runtime/water.ts).
 - Terrain sources and offline coverage: `GameRuntimeOptions.tiles` and
-  [PlanetSourceOptions](../src/render/planet/world.ts).
+  [PlanetSourceOptions](../render/planet/world.ts).
 - Lights, portals, roads and terrain content: the corresponding `field.ts`
   schemas under `src/entity`, exposed through the public scene API.
 
@@ -139,4 +143,4 @@ when changing a setting's meaning, and regenerate the reference with
 
 For weak machines, start with `performance: { preset: 'mobile' }`; `minimal` lowers
 the pixel-ratio cap further to 0.35 while retaining the same conservative collision
-coverage. See the [measured comparison](architecture/performance-review-2026-10-04.md).
+coverage. See the [measured comparison](../../docs/architecture/performance-review-2026-10-04.md).

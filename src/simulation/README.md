@@ -1,8 +1,14 @@
-# Simulation subsystem ownership
+# Simulation
 
 `Simulation` remains the public facade and owner of one Rapier world. It copies
 the scene, owns player/control selection and runs the fixed-step sequence. Hosts
 continue to use the same constructor, actions, snapshots and disposal API.
+
+**Owns:** the Rapier world, boarding, portal crossing, docking, catch floor.
+**Does not own:** cameras, audio, HUD, or Studio input.
+
+Boarding/hover details: [vehicle interaction](vehicle-interaction.md).
+Vehicle controllers: [`vehicles/`](vehicles/README.md).
 
 The following internal modules do not import the coordinator or browser/runtime
 code. Architecture tests enforce that dependency direction, including type imports.

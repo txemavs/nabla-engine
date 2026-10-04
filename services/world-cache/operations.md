@@ -1,6 +1,6 @@
 # World cache and server preparation runbook
 
-> Current runtime: [native planetary GLB pipeline](architecture/native-planet-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
+> Current runtime: [native planetary GLB pipeline](native-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
 
 This records the deployed design checked on **22 September 2026**. It uses no
 production hostname or credentials. `https://demo.example` is a placeholder;
@@ -338,9 +338,9 @@ scene load, and this service is not yet a global vector-tile distribution system
 For regional bulk coverage, plan an extract-based pipeline instead of assuming
 public Overpass will sustain unrestricted bulk downloading.
 
-Implementation and tests: [service README](../services/world-cache/README.md),
-[streaming investigation](streaming-investigation.md), and
-[performance guide](performance.md). Useful checks after code changes:
+Implementation and tests: [service README](README.md),
+[streaming investigation](../../docs/streaming-investigation.md), and
+[performance guide](../../docs/performance.md). Useful checks after code changes:
 
 ```sh
 npm run build:prepare

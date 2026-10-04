@@ -53,5 +53,7 @@ Reuse the shared physics; do not add a second vehicle simulation to Studio.
 The police Focus definition is `assets/custom/cars/police/police-focus.json`. Its light bar stays
 in code (`catalog/presentation/police-equipment.ts`) because it walks the mesh.
 
-See [create a vehicle](../../../docs/creating-a-vehicle.md) for the public APIs,
-custom adapters and standalone wheeled/boat/flight hosts.
+See [create a vehicle](creating-a-vehicle.md) for the public APIs, custom
+adapters and standalone wheeled/boat/flight hosts. Original GLB mounts:
+[vehicle assets](vehicle-assets.md). Presentation adapters:
+[`src/catalog/presentation`](../presentation/README.md).

@@ -29,12 +29,13 @@ in `diagnostics/`, and synthesized sound in `audio/`. Studio supplies DOM contro
 preferences, user activation and the frame loop. Engine does not read Studio DOM
 or local storage. Studio imports these implementations directly.
 
-See [sea surface](../docs/architecture/sea-surface.md) for the single ocean cap,
+See [sea surface](render/planet/sea-surface.md) for the single ocean cap,
 tile-water filtering, manual flood level and simplified tide. See
 [performance lab](../docs/architecture/performance-lab.md) for quality and tile
-inspection controls. Frame-time metrics describe measured CPU/frame time, not GPU
-cost, and do not certify a mobile or Quest performance target.
+inspection controls; measurements live in [`diagnostics/`](diagnostics/README.md).
+Frame-time metrics describe measured CPU/frame time, not GPU cost, and do not
+certify a mobile or Quest performance target.
 
 High-resolution PNG export lives in `render/capture.ts`. See
-[photo export](../docs/architecture/photo-export.md) for tiled rendering, scene
-freezing, cancellation and memory limits. Studio owns the button and download.
+[photo export](render/photo-export.md) for tiled rendering, scene freezing,
+cancellation and memory limits. Studio owns the button and download.

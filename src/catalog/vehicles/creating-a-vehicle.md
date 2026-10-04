@@ -1,6 +1,6 @@
 # Create a vehicle
 
-Start with the [module map](architecture/module-map.md). Choose one host:
+Start with the [module map](../../../docs/architecture/module-map.md). Choose one host:
 
 1. **Scene host:** a serializable entity is consumed by the existing `Simulation`
    and public `SceneView`. This retains boarding, portals, cameras and docking.
@@ -40,8 +40,8 @@ Add it to a version-1 scene containing exactly one spawn and a floor. Initialize
 Rapier once with `initPhysics()`, construct `Simulation`, and feed `idleInput()`
 with normalized forward/right values. `startInVehicle(id)` is useful for a test
 host; normal play uses the boarding API. Step from the host clock. Do not create a
-physics world per car. See the [complete custom prefab](../examples/modularity/custom-prefab.mjs), [headless scene](../examples/modularity/headless-vehicle.mjs)
-and [independent wheeled runtime](../examples/modularity/wheeled-runtime.mjs).
+physics world per car. See the [complete custom prefab](../../../examples/modularity/custom-prefab.mjs), [headless scene](../../../examples/modularity/headless-vehicle.mjs)
+and [independent wheeled runtime](../../../examples/modularity/wheeled-runtime.mjs).
 
 ## Add your model and equipment
 
@@ -77,7 +77,7 @@ is needed. Stock Studio cannot know an arbitrary application adapter ID: registe
 it in your host composition or ship a catalogue adapter. Never assign the S3 ID to
 an unrelated GLB just to obtain its instruments.
 
-The [equipment guide](architecture/vehicle-equipment.md) specifies lamps, mirrors,
+The [equipment guide](../../render/vehicle-presentation/README.md) specifies lamps, mirrors,
 mount quads, animation and disposal. Model geometry/textures may be shared; dispose
 only resources you own. Independent mounts are demonstrated at
 `/examples/equipment.html` while running the development server.
@@ -85,7 +85,7 @@ only resources you own. Independent mounts are demonstrated at
 ## Monitors, settings and controls
 
 Compose the same `/monitors` and `/menus` used for wall displays. See
-[create a monitor](creating-a-monitor.md); physics must not depend on the screen.
+[create a monitor](../monitors/creating-a-monitor.md); physics must not depend on the screen.
 The host handles menu actions, validates patches and uses `SceneEditor.update`
 for undo/redo and persistence. Read existing saved values before prefab defaults.
 The host translates keys/gamepads/touch into inputs and consumes menu keys before
@@ -93,7 +93,7 @@ feeding steering, clearing held controls when focus changes.
 
 ## Boat or aircraft
 
-For an independent hull or airframe, use the [boat/flight example](../examples/modularity/boat-flight.mjs).
+For an independent hull or airframe, use the [boat/flight example](../../../examples/modularity/boat-flight.mjs).
 These APIs borrow a body and require no wheels. The existing scene serialization
 currently shares wheel fields in the active vehicle container. Use the current
 scene factories; this is an active implementation boundary, not a compatibility API. A plane may combine wheeled and flight control

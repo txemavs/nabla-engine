@@ -2,7 +2,7 @@
 
 Use `@nabla/engine/monitors` for layered GPU displays and `/menus` for optional menu
 state. A monitor has no knowledge of cars, boats, portals or physics. Its host
-mounts `root` on an object and supplies values. See the [editing guide](monitors.md)
+mounts `root` on an object and supplies values. See the [editing guide](../../render/monitors/editing.md)
 for existing S3 artwork and preview locations.
 
 ```ts
@@ -59,7 +59,7 @@ display.update(
 ```
 
 The example assumes your host supplies `mount`, telemetry and the clock; it does
-not create a second animation loop. [Executable standalone example](../studio/examples/modular-monitor.ts)
+not create a second animation loop. [Executable standalone example](../../../examples/modularity/README.md)
 uses the public API; open `/examples/modular-monitor.html`. The S3 recipe is also
 shown independently at `/examples/s3-monitor.html`.
 

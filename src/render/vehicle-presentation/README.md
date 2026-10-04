@@ -1,4 +1,9 @@
-# Vehicle equipment — phase 3
+# Vehicle presentation
+
+Generic mounts, retractable supports, instruments, lights, mirrors and cameras.
+
+**Owns:** `@nabla/engine/vehicle-presentation` controllers and resource lifetime.
+**Does not own:** stock asset selectors (those stay in `src/catalog/presentation`).
 
 Equipment is selected by an explicit `visual.presentation` ID. The renderer asks
 the host's resolver for an adapter; it does not compare stock road-vehicle URLs,
@@ -115,7 +120,7 @@ The first browser regression run retains the S3's 161 draw calls / 91,070 triang
 in the same unoccupied-car fixture. This is a geometry/draw-count comparison, not
 an FPS claim. Mirrors, GPS and layered displays retain their previous refresh
 budgets. Ground and boat/flight runtimes are now available; see the
-[module map](module-map.md).
+[module map](../../../docs/architecture/module-map.md).
 
 ## Validation commands
 

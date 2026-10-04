@@ -1,7 +1,7 @@
 # Vehicles and mobile garage
 
 The four original GLBs were recovered unchanged from this
-repository's experimental branch, commit `6a22576`. See [provenance](../assets/README.md).
+repository's experimental branch, commit `6a22576`. See [provenance](../../../assets/README.md).
 The published copies live under `assets/studio`.
 
 ## A3 Cabrio
@@ -81,7 +81,7 @@ Returning to ground mode requires nearby static support, low speed and a level
 orientation. Cargo cannot be released in flight, even while hovering. Stop restores
 the authored scene; runtime flight/latch state is discarded.
 
-See [controls](controls.md) for keyboard and gamepad mappings. Automated browser
+See [controls](../../../docs/controls.md) for keyboard and gamepad mappings. Automated browser
 tests use a simulated standard gamepad; physical controller validation remains
 separate. Nonstandard radio calibration, acrobatic mode and portals are not included.
 

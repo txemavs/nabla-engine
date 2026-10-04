@@ -136,4 +136,5 @@ The first integration is the S3 GPS console:
 Future hosts can accept actions such as `ship.helm` or `portal.selectDestination`;
 these are integration examples, not implemented commands. Existing ship and portal
 screens are not migrated automatically. The S3 instrument cluster also uses layers; the old HTML panel is retained as
-`assets/monitors/html-panel.example.html`. See [the editing guide](../../../docs/monitors.md).
+`assets/monitors/html-panel.example.html`. See [the editing guide](editing.md)
+and [create a monitor](../../catalog/monitors/creating-a-monitor.md).

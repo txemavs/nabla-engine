@@ -42,17 +42,17 @@ its normal history, without recreating the running physics world.
 
 ## Where to edit
 
-| What you want to change                                               | Source                                                                                                        |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Dial sizes, positions, needle pivots/ranges, speed and gear placement | [S3 layered definition](../src/catalog/monitors/s3-cluster.ts)                                                |
-| Dial artwork and central panel                                        | [Static background SVG](../assets/monitors/s3-cluster.svg)                                                    |
-| Needle shape/colour                                                   | [Transparent needle SVG](../assets/monitors/red-needle.svg)                                                   |
-| Standalone instrument preview                                         | [Preview HTML](../assets/monitors/speedometer.html)                                                           |
-| Menu layout, colour choices and emitted actions                       | [Car menu definition](../src/catalog/monitors/car.ts)                                                         |
-| Rich HTML panel appearance and bindings                               | [HTML example](../assets/monitors/html-panel.example.html)                                                    |
-| Mounting, GPS animation and power                                     | [CarInstruments](../src/render/entity/car-instruments.ts)                                                     |
-| Telemetry formatting and stock composition                            | [S3 recipe](../src/catalog/monitors/s3-instruments.ts), [public presenter](../src/presentation/scene-view.ts) |
-| Generic types, examples and integration rules                         | [Library contract](../src/render/monitors/README.md)                                                          |
+| What you want to change                                               | Source                                                                                                      |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Dial sizes, positions, needle pivots/ranges, speed and gear placement | [S3 layered definition](../../catalog/monitors/s3-cluster.ts)                                               |
+| Dial artwork and central panel                                        | [Static background SVG](../../../assets/monitors/s3-cluster.svg)                                            |
+| Needle shape/colour                                                   | [Transparent needle SVG](../../../assets/monitors/red-needle.svg)                                           |
+| Standalone instrument preview                                         | [Preview HTML](../../../assets/monitors/speedometer.html)                                                   |
+| Menu layout, colour choices and emitted actions                       | [Car menu definition](../../catalog/monitors/car.ts)                                                        |
+| Rich HTML panel appearance and bindings                               | [HTML example](../../../assets/monitors/html-panel.example.html)                                            |
+| Mounting, GPS animation and power                                     | [CarInstruments](../entity/car-instruments.ts)                                                              |
+| Telemetry formatting and stock composition                            | [S3 recipe](../../catalog/monitors/s3-instruments.ts), [public presenter](../../presentation/scene-view.ts) |
+| Generic types, examples and integration rules                         | [Library contract](README.md)                                                                               |
 
 The preview and the live S3 share artwork, but not a live DOM: changing preview CSS
 alone does **not** change the in-game layout. Edit the layered definition for that,
@@ -119,7 +119,7 @@ The public `SceneView` injects the stock S3 recipe; it accepts a replacement in
 its fourth options argument: `{ carInstruments: customRecipe }`. The lower-level
 renderer under `src/render/entity/view.ts` requires explicit injection. The
 catalog recipe owns display values/labels; the host still owns keyboard actions,
-properties and saving. See [modularity progress](architecture/vehicle-modularity.md).
+properties and saving. See [modularity progress](../../../docs/architecture/vehicle-modularity.md).
 
 ## Building the next monitor
 
@@ -139,13 +139,13 @@ There is no arbitrary web-page/script execution inside monitor definitions.
 
 The S3 instrument mounting and GPS casing geometry now live in a stock asset
 adapter. `RetractableMount` is reusable outside vehicles; its host supplies time,
-travel and duration. See [vehicle equipment](architecture/vehicle-equipment.md)
+travel and duration. See [vehicle equipment](../vehicle-presentation/README.md)
 for the public modules, lifecycle and camera/mirror configuration.
 
 ## Other work included in this delivery
 
 - Lighter, repaired A3 body/wheels, dark headlamp backing and wheel-well clearance;
-  chrome Nabla emblems replace the original rings. See [asset provenance and rebuild notes](../assets/README.md).
+  chrome Nabla emblems replace the original rings. See [asset provenance and rebuild notes](../../../assets/README.md).
 - Custom S3: 400 CV, AWD, seven-speed automatic, reversible transmission safeguards,
   drift/burnout handling, bounded tire smoke, RPM-linked exhaust and discreet turbo.
 - Removed duplicate drag that capped high-speed acceleration; regression benchmark
@@ -155,8 +155,8 @@ for the public modules, lifecycle and camera/mirror configuration.
   and wheel adjustment; corrected cockpit anchors and monitor placement.
 - Portal clearance uses bodywork and tire outlines to avoid false blocking under pitch.
 
-See [controls](controls.md), [vehicle catalog](../src/catalog/vehicles/README.md) and
-[physics tests](../test/simulation/s3.test.ts) for the respective contracts.
+See [controls](../../../docs/controls.md), [vehicle catalog](../../catalog/vehicles/README.md) and
+[physics tests](../../../test/simulation/s3.test.ts) for the respective contracts.
 
 ### Tyre feedback
 

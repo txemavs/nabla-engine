@@ -1,5 +1,8 @@
 # Vehicle interaction
 
+Boarding and hover interaction owned by `Simulation`. Studio only selects the
+hover controller and shows the HUD.
+
 Studio uses the hovering monitor while playing (a 1.25 m ground cushion and a small collider). Editing is deliberately static: use
 **Jugar / F8**, approach a vehicle, then **E** to enter or leave it. Pressing E
 in edit mode explains that sequence. Model streaming mode pauses physics and

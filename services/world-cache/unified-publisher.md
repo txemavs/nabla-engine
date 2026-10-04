@@ -56,7 +56,7 @@ rewrite manifests. Startup photo backfill is opt-in with `ATLAS_BACKFILL_PHOTOS=
 so opening the service does not launch a full-map conversion. S3 remains optional
 and is disabled without explicit archive configuration; no cloud credentials were migrated.
 
-The subsequent [performance laboratory](performance-lab.md) adds offline Z14/Z13
+The subsequent [performance laboratory](../../docs/architecture/performance-lab.md) adds offline Z14/Z13
 mesh composition and simplification. Photo composition remains a separate pipeline.
 
 ## Verification

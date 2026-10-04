@@ -1,10 +1,16 @@
-# Game library mode
+# Game
 
-The reference `game/` application consumes public `@nabla/engine` entries. Engine
+Standalone browser game consuming public Engine exports. The playground UI stays
+in Spanish.
+
+**Owns:** URL configuration, HTML HUD, content selection.
+**Does not own:** session, render loop, cameras, input or planetary environment.
+
+The reference application consumes public `@nabla/engine` entries. Engine
 owns the session, render loop, cameras, input, effects and planetary environment;
 the application supplies content, URL configuration and its HTML HUD.
 This is the first extraction increment, not full Studio parity. See the
-[remaining inventory](architecture/studio-extraction.md).
+[remaining inventory](../docs/architecture/studio-extraction.md).
 
 `GameRuntime` from `/runtime` is the host-driven coordinator used by Studio and
 the browser composition. It owns a PlaySession, camera state, input mixing and

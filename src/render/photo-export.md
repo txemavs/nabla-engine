@@ -1,5 +1,7 @@
 # High-resolution photos
 
+Implementation: `capture.ts`. Studio owns the button and download.
+
 The camera button immediately left of Play downloads a PNG with a 15,360-pixel
 long edge, preserving the current viewport aspect ratio (15,360 × 8,640 at 16:9).
 The progress dialog can cancel the operation; Escape cancels too. The simulation,
