@@ -66,6 +66,7 @@ fs.writeFileSync(
   ) + '\n',
 )
 const ts = JSON.parse(fs.readFileSync(path.join(root, 'tsconfig.json'), 'utf8'))
+ts.compilerOptions.noEmit = true
 ts.include = ['studio', 'vite.config.ts']
 fs.writeFileSync(path.join(destination, 'tsconfig.json'), JSON.stringify(ts, null, 2) + '\n')
 console.log(destination)

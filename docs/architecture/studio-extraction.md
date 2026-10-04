@@ -239,3 +239,22 @@ and `?scene=circuit` to verify play, boarding, cameras, driving and restart.
 This validates the application package boundary. Moving Studio to its final
 repository, splitting historical tests/CI and validating Atlas remain separate
 steps; it does not establish parity for every old editor E2E journey.
+
+## Independent Studio repository
+
+The extracted application is now in `txemavs/nabla-studio`, initially at
+`cab8eb8`, with a pinned Engine archive, Desktop archive, pnpm lockfile and its
+own CI. Its 11 host test files pass 33 tests (one custom-preset test is skipped).
+The independent production build passes play/board/cameras/drive/restart over
+the local Tailscale IP. Engine implementation tests formerly under `studio/test`
+now live under `test/presentation`; the full Engine suite still passes 496 tests.
+
+An isolated copy of the current Atlas UI also passes Vue/TypeScript checking,
+production build and three domain tests using the same Engine archive. This
+checks package/API compatibility, not live backend, surveyed terrain or driving
+acceptance. The original Atlas checkout and its dependency pin were not changed.
+
+The original Studio application and historical browser harness remain here for
+the coordinated removal of legacy browser tests/CI. The independent repository
+does not read them. Do not count their retained compatibility copy as the active
+Studio project or silently drop those tests when deleting it.
