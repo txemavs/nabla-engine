@@ -89,7 +89,7 @@ it('keeps reverse while coasting backwards fast and never selects gear zero', ()
 
 it('recovers invalid gear indices before calculating wheel force', () => {
   const v = presetVehicle('car', 's3').vehicle!
-  for (const gear of [0, -2, 8, 1.5, NaN]) {
+  for (const gear of [-2, 8, 1.5, NaN]) {
     const state = { ...createDrivetrain(), gear }
     stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, 1, false, 1 / 60)
     expect(state.gear).toBe(1)

@@ -223,7 +223,7 @@ export function stepWheeledVehicle(
       ? v.definition.brakeForce * 0.4
       : input.handbrake
         ? v.definition.brakeForce * (i >= 2 ? 1.5 : 0.4)
-        : opposing || v.drivetrain.changingDirection
+        : opposing || v.drivetrain.changingDirection || v.drivetrain.parked
           ? v.definition.brakeForce
           : 0
     v.raycast.setBrake(
@@ -269,6 +269,7 @@ export function wheeledTelemetry(
       active && (signedSpeed < -0.15 || (input.throttle < 0 && Math.abs(signedSpeed) <= 0.15)),
     shiftCount: v.drivetrain.shiftCount,
     clackCount: v.drivetrain.clackCount,
+    parked: v.drivetrain.parked,
     shifting: v.drivetrain.shiftRemaining > 0 || v.drivetrain.changingDirection,
     clack: v.definition.powertrain?.shift?.clack,
     tireSlip: !tireEffects

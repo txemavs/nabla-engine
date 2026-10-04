@@ -17,6 +17,11 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
   &photo=full|lo|none      orthophoto draped on the ground (default full)
   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
+  &cells=all|near          keep every cell of the host's index loaded and drawn (default), or only
+                           those within the draw distance
+  &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
+
+A bare URL (no query, or only display options) starts the default tile of the dev-server mount.
 
 ## Module dependencies
 
@@ -27,7 +32,7 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
 
 ## fetchCoverage
 
-[Implementation, line 26](../../../game/terrain.ts#L26)
+[Implementation, line 31](../../../game/terrain.ts#L31)
 
 Tiles listed by the host's `index.json` (dev-server mount), or undefined when it has none.
 
@@ -41,17 +46,47 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `index.tiles?.filter`
 - `response.json`
 
-## fetchCoverage.callback@31
+## fetchCoverage.callback@36
 
-[Implementation, line 31](../../../game/terrain.ts#L31)
+[Implementation, line 36](../../../game/terrain.ts#L36)
 
 ```ts
-callback@31(t): inferred by TypeScript; see implementation
+callback@36(t): inferred by TypeScript; see implementation
+```
+
+## resolveTerrainSearch
+
+[Implementation, line 58](../../../game/terrain.ts#L58)
+
+The query string to play with, or null when the URL belongs to another mode (`?tiles=`,
+`?example=flat`, ...). A URL that names no source gets the default terrain when the mount's
+`index.json` answers; otherwise it keeps the original (error-reporting) flow.
+
+```ts
+resolveTerrainSearch(search: string = location.search, fetchIndex: (base: string) => Promise<MapTile[] | undefined> = fetchCoverage): Promise<string | null>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `URLSearchParams`
+- `fetchIndex`
+- `index.some`
+- `merged.set`
+- `merged.toString`
+- `params.has`
+- `wantsTerrain`
+
+## resolveTerrainSearch.callback@68
+
+[Implementation, line 68](../../../game/terrain.ts#L68)
+
+```ts
+callback@68(t): inferred by TypeScript; see implementation
 ```
 
 ## wantsTerrain
 
-[Implementation, line 49](../../../game/terrain.ts#L49)
+[Implementation, line 90](../../../game/terrain.ts#L90)
 
 True when the URL asks for the terrain-folder example.
 
@@ -67,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 54](../../../game/terrain.ts#L54)
+[Implementation, line 95](../../../game/terrain.ts#L95)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -87,7 +122,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 63](../../../game/terrain.ts#L63)
+[Implementation, line 104](../../../game/terrain.ts#L104)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -114,13 +149,15 @@ Explicit throws in this body:
 - `new Error( 'Falta el origen del terreno: añade ?terrain=<url base> (sin /z al final; /terrain en el servidor de desarrollo con la carpeta montada).', )`
 - `new Error(\`relief debe ser engine o lidar, no "${relief}"\`)`
 - `new Error(\`photo debe ser full, lo o none, no "${photo}"\`)`
+- `new Error(\`cells debe ser all o near, no "${cells}"\`)`
+- `new Error(\`player debe ser hover o walk, no "${player}"\`)`
 - `new Error('Indica lat y lon juntos (o usa tile=<x>/<y>).')`
 - `new Error('lat/lon fuera de rango')`
 - `new Error( 'Posición inicial no válida: ' + (error instanceof Error ? error.message : String(error)), )`
 
 ## startFromIndex
 
-[Implementation, line 116](../../../game/terrain.ts#L116)
+[Implementation, line 165](../../../game/terrain.ts#L165)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -138,3 +175,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Explicit throws in this body:
 
 - `new Error( 'Falta la posición inicial: añade tile=<x>/<y> (por ejemplo tile=16211/12003) o lat y lon; este servidor no ofrece index.json.', )`
+
+## formatCells
+
+[Implementation, line 177](../../../game/terrain.ts#L177)
+
+Spanish HUD text for the streaming progress: loaded cells out of the dataset, plus those still arriving.
+
+```ts
+formatCells(stats: { loaded: number; total: number; pending: number }): string
+```

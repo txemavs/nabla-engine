@@ -983,6 +983,7 @@ export class SceneView {
           sim.vehicleInfo(id).gear,
           sim.vehicleInfo(id).engineLoad,
           sim.vehicleInfo(id).manualTransmission,
+          sim.vehicleInfo(id).parked,
         )
     }
     const vehicleId = sim.player.vehicleId

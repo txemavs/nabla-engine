@@ -648,7 +648,7 @@ export class GameRuntime {
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
-      gearLabel: info ? gearLabel(info.gear, info.manualTransmission) : null,
+      gearLabel: info ? gearLabel(info.gear, info.manualTransmission, info.parked) : null,
       location: this.document.geography
         ? localToGeo(this.document.geography, player.position)
         : null,

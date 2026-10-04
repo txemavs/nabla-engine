@@ -4,7 +4,7 @@
 
 [Source](../../../game/main.ts)
 
-Entry point: the terrain-folder example when the URL names a terrain, otherwise the original drive demo.
+Entry point: the terrain-folder example when the URL names a terrain (or is bare and a terrain mount exists), otherwise the original drive demo.
 
 ## Module dependencies
 

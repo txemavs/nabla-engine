@@ -6,17 +6,18 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **245 modules; 2202 executable function definitions**.
+Coverage: **248 modules; 2255 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
 | [game/config.ts](game/config.ts.md) | 4 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 7 |
 | [game/drive.ts](game/drive.ts.md) | 14 |
+| [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
 | [game/loading.ts](game/loading.ts.md) | 16 |
 | [game/main.ts](game/main.ts.md) | 0 |
-| [game/terrain-main.ts](game/terrain-main.ts.md) | 6 |
-| [game/terrain.ts](game/terrain.ts.md) | 6 |
+| [game/terrain-main.ts](game/terrain-main.ts.md) | 8 |
+| [game/terrain.ts](game/terrain.ts.md) | 9 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 9 |
@@ -175,6 +176,7 @@ Coverage: **245 modules; 2202 executable function definitions**.
 | [src/render/planet/static-tiles.ts](src/render/planet/static-tiles.ts.md) | 12 |
 | [src/render/planet/sun-disc.ts](src/render/planet/sun-disc.ts.md) | 2 |
 | [src/render/planet/tile-asset.ts](src/render/planet/tile-asset.ts.md) | 5 |
+| [src/render/planet/tile-layers.ts](src/render/planet/tile-layers.ts.md) | 16 |
 | [src/render/planet/vegetation.ts](src/render/planet/vegetation.ts.md) | 6 |
 | [src/render/planet/visibility.ts](src/render/planet/visibility.ts.md) | 1 |
 | [src/render/planet/water-geometry.ts](src/render/planet/water-geometry.ts.md) | 17 |
@@ -183,7 +185,7 @@ Coverage: **245 modules; 2202 executable function definitions**.
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 11 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 93 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 96 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
@@ -197,12 +199,13 @@ Coverage: **245 modules; 2202 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 64 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 70 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 3 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 15 |
+| [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 7 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 5 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 5 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
@@ -228,7 +231,7 @@ Coverage: **245 modules; 2202 executable function definitions**.
 | [src/scene/history.ts](src/scene/history.ts.md) | 47 |
 | [src/scene/index.ts](src/scene/index.ts.md) | 0 |
 | [src/scene/map-content.ts](src/scene/map-content.ts.md) | 1 |
-| [src/scene/mercator.ts](src/scene/mercator.ts.md) | 36 |
+| [src/scene/mercator.ts](src/scene/mercator.ts.md) | 41 |
 | [src/scene/prepared-binary.ts](src/scene/prepared-binary.ts.md) | 2 |
 | [src/scene/sample.ts](src/scene/sample.ts.md) | 5 |
 | [src/scene/tiles.ts](src/scene/tiles.ts.md) | 3 |
@@ -241,12 +244,12 @@ Coverage: **245 modules; 2202 executable function definitions**.
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 12 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 4 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 158 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 161 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/vehicle-docking.ts](src/simulation/vehicle-docking.ts.md) | 9 |
 | [src/simulation/vehicles/boat.ts](src/simulation/vehicles/boat.ts.md) | 5 |
-| [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 7 |
+| [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 9 |
 | [src/simulation/vehicles/flight.ts](src/simulation/vehicles/flight.ts.md) | 3 |
 | [src/simulation/vehicles/keyboard-steering.ts](src/simulation/vehicles/keyboard-steering.ts.md) | 2 |
 | [src/simulation/vehicles/wheeled/contracts.ts](src/simulation/vehicles/wheeled/contracts.ts.md) | 1 |

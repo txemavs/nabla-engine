@@ -53,6 +53,8 @@
         "launchRpm": 1500,
         "directionSeconds": 0.6,
         "directionShiftSeconds": 0.5,
+        "neutralSeconds": 0.8,
+        "parkSeconds": 2.5,
         "clack": {
           "clunkHz": 58,
           "clickHz": 850,

@@ -1369,6 +1369,8 @@ export class Simulation {
     gearShifts: number
     /** Counts audible changes (D/R engagement, manual shifts); play one clack per increase. */
     gearClacks: number
+    /** True in P (gear is then 0): the brakes hold the vehicle until W or S. */
+    parked: boolean
     /** True while torque is cut for a gear change or D/R waits for standstill. */
     shifting: boolean
     /** Per-vehicle clack sound; null selects the audio layer's car default. */
@@ -1415,6 +1417,7 @@ export class Simulation {
       tireSlip: ground.tireSlip,
       gearShifts: ground.shiftCount,
       gearClacks: ground.clackCount,
+      parked: ground.parked,
       shifting: ground.shifting,
       gearClack: ground.clack ?? null,
       towVehicleId: v.definition.tow?.vehicleId ?? null,
