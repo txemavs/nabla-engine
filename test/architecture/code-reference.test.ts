@@ -23,7 +23,7 @@ it('indexes Vue callbacks with original line offsets and rejects stale or remove
       '<template>🌍</template>\r\n<script setup lang="ts">\r\nconst value = () => 42\r\n</script>\r\n',
     )
     expect(run()).toContain('1 modules, 1 functions')
-    const page = path.join(directory, 'docs/reference/studio/view.vue.md')
+    const page = path.join(directory, 'studio/REFERENCE.md')
     expect(fs.readFileSync(page, 'utf8')).toContain('Implementation, line 3')
     expect(run('--check')).toContain('verified')
     fs.writeFileSync(file, '<script setup lang="ts">const changed = () => 17</script>')

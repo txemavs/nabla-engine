@@ -10,7 +10,7 @@
   controls, preferences and audio activation. Existing asset URLs are unchanged.
 - The worker removes cached near-zero coastal water triangles before rendering
   and collision extraction; the native publisher uses the same filter. Elevated
-  rivers remain. See `sea-surface.md` for classification limits.
+  rivers remain. See [sea surface](../../src/render/planet/sea-surface.md) for classification limits.
 - Rapier contacts resolve colliders by handle and expose a consistent body/normal
   order. Initial mass properties are refreshed before impulses, and cached linear
   and angular velocity retain the impulse across the next step.
@@ -43,7 +43,7 @@ expectations were updated to their current contracts.
 Six additional browser checks pass: full 16K PNG download and cancellation,
 tiled image continuity, portal atmosphere restoration, portal registry editing,
 remote-view renderer restoration and driving the A3 through a live portal.
-See `photo-export.md` and `../portals.md` for the current contracts.
+See [photo export](../../src/render/photo-export.md) and [portals](../portals.md) for the current contracts.
 
 ## Recovery
 

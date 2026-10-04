@@ -99,4 +99,4 @@ docker run --rm --network none \
 Before changing these areas, preserve source and published data. This turn's
 source snapshot is `/home/txema/backups/nabla-performance-20260928/source.tgz`;
 the earlier generator migration and original volumes are documented in
-[the publisher architecture](unified-planet-publisher.md).
+[the publisher architecture](../../services/world-cache/unified-publisher.md).

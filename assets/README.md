@@ -44,7 +44,7 @@ colors. The screen faces forward (−Z), matching Agency's original orientation.
 The reference host uses a 0.825 exploration scale and adds
 hover, travel banking and braking recovery. These are visual effects; the shared
 walking collider remains available; the playground now selects the compact hover
-controller described in `docs/controls.md`.
+controller described in [docs/controls.md](../docs/controls.md).
 
 ## Carrier-mounted frames
 
@@ -226,7 +226,7 @@ close the front optics while retaining the clear lenses and lit details.
 
 `monitors/s3-cluster.svg` and `monitors/red-needle.svg` are project-authored vector
 artwork inspired by the user-provided instrument-layout reference. The reference
-photograph is not embedded or redistributed. See [the monitor editing guide](../docs/monitors.md)
+photograph is not embedded or redistributed. See [the monitor editing guide](../src/render/monitors/editing.md)
 for the layered definition, preview page, retained HTML example and performance model.
 
 ### Photo-inspired chrome wheels

@@ -1,8 +1,9 @@
 # Code ownership and documentation
 
-The [complete code reference](reference/README.md) indexes every active module and
-executable function in `src/` and `game/`, including private methods and callbacks.
-It is generated from syntax rather than maintained as a second copy of the code.
+The [folder reference index](reference/README.md) lists every `REFERENCE.md` next
+to the code. Those pages index every active module and executable function in
+`src/` and `game/`, including private methods and callbacks.
+They are generated from syntax rather than maintained as a second copy of the code.
 Type-only declarations, tests, service backends and vendor/generated files are
 outside that reference's scope. Existing architecture documents describe their
 separate contracts.
@@ -61,15 +62,16 @@ transitive callees are exhaustively listed. Inferred return types remain labelle
 as inferred rather than inventing a contract.
 
 After editing production code, run `npm run docs:generate`. CI uses
-`npm run docs:check` to reject stale signatures, source links or removed modules.
-Generated pages are excluded from Prettier; their generator owns formatting.
+`npm run docs:check` to reject stale signatures, source links or removed modules,
+and `npm run docs:links` to reject broken relative documentation links.
+Generated `REFERENCE.md` pages are excluded from Prettier; their generator owns formatting.
 Use ordinary formatting and the existing type/unit/browser checks for code.
 
 Consolidate repeated imports without changing module evaluation order. Preserve
 side-effect imports and keep type-only groups separate. Keep future refactors
 small enough that documentation and behavior changes can be reviewed separately.
 
-See the [topic-based configuration guide](configuration.md) for defaults, units and application overrides.
+See the [topic-based configuration guide](../src/config/README.md) for defaults, units and application overrides.
 
-See [simulation subsystem ownership](architecture/simulation.md) for internal boundaries and
+See [simulation subsystem ownership](../src/simulation/README.md) for internal boundaries and
 the [measured performance review](architecture/performance-review-2026-10-04.md) for current results.

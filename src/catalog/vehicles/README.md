@@ -3,7 +3,7 @@
 Stock vehicle definitions are JSON files next to their models, not code.
 
 A3, S3 and the modern tractor derive wheel and steering poses from their body
-GLBs. See the [anchor contract and generation workflow](../../../docs/vehicle-rigs.md).
+GLBs. See the [anchor contract and generation workflow](vehicle-rigs.md).
 Generated poses support headless physics; do not copy them back into preset JSON.
 
 `assets/studio` is what this repo publishes. `assets/custom` is this machine only
@@ -53,5 +53,9 @@ Reuse the shared physics; do not add a second vehicle simulation to Studio.
 The police Focus definition is `assets/custom/cars/police/police-focus.json`. Its light bar stays
 in code (`catalog/presentation/police-equipment.ts`) because it walks the mesh.
 
-See [create a vehicle](../../../docs/creating-a-vehicle.md) for the public APIs,
-custom adapters and standalone wheeled/boat/flight hosts.
+See [create a vehicle](creating-a-vehicle.md) for the public APIs, custom
+adapters and standalone wheeled/boat/flight hosts. Original GLB mounts:
+[vehicle assets](vehicle-assets.md). Presentation adapters:
+[`src/catalog/presentation`](../presentation/README.md).
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

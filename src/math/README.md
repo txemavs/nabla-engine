@@ -6,13 +6,13 @@ Metres, Y-up, −Z forward. Rotations are unit quaternions.
 
 ## Folders
 
-| Folder     | What it computes                                                                                                 |
-| ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| `frame/`   | Vec3 and quaternion tuples. Degrees to quaternion for the UI.                                                    |
-| `geo/`     | Mean-radius sphere, local east-up-south frame, slippy-tile indices, approximate sun and moon, planet-fixed pose. |
-| `planar/`  | Point in polygon and axis-aligned segment clip.                                                                  |
-| `solid/`   | Local mesh topology: box, extrude, validate, triangulate.                                                        |
-| `terrain/` | Heightfield sample and the matching triangle grid.                                                               |
+| Folder     | What it computes                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `frame/`   | Vec3 and quaternion tuples. Degrees to quaternion for the UI.                                                                                          |
+| `geo/`     | Mean-radius sphere, local east-up-south frame, slippy-tile indices, approximate sun and moon, planet-fixed pose. See [`geo/README.md`](geo/README.md). |
+| `planar/`  | Point in polygon and axis-aligned segment clip.                                                                                                        |
+| `solid/`   | Local mesh topology: box, extrude, validate, triangulate.                                                                                              |
+| `terrain/` | Heightfield sample and the matching triangle grid.                                                                                                     |
 
 Left outside on purpose. Mercator tile identity and zoom cover stay in `scene/`. OSM rings, roofs, draped roads and multipolygon assembly stay in `planet/`: they encode map rules and then call these kernels. `planet/land/terrain.ts` re-exports the heightfield so existing land imports keep working.
 

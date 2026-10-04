@@ -1,7 +1,7 @@
 # Planetary publisher
 
 The active service is the unified publisher described in
-[the architecture document](../../docs/architecture/unified-planet-publisher.md).
+[the publisher document](unified-publisher.md).
 
 # Private shared world cache
 
@@ -9,10 +9,10 @@ For the complete local Studio + generator stack, start with the
 [local development guide](../../docs/local-development.md). The standalone service
 recipes below are intended for server operators.
 
-> Current runtime: [native planetary GLB pipeline](../../docs/architecture/native-planet-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
+> Current runtime: [native planetary GLB pipeline](native-generation.md). Local-grid and pilot procedures below are historical compatibility/rollback notes; do not use them to populate the active world.
 
 For the deployed layout, refresh procedures and operational history, see the
-[world cache runbook](../../docs/world-cache-operations.md).
+[world cache runbook](operations.md).
 
 This service caches exact OSM queries and Esri elevation tiles on disk. It is a
 shared demand cache, not a pre-generated national map archive. Source OSM data

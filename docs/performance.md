@@ -2,8 +2,8 @@
 
 See the [2026-10-04 measured review](architecture/performance-review-2026-10-04.md)
 for current profile comparisons, limitations and the user's 60 FPS / 10 km RTX 4090
-reference. [Simulation ownership](architecture/simulation.md) and
-[configuration by topic](configuration.md) describe the current implementation.
+reference. [Simulation ownership](../src/simulation/README.md) and
+[configuration by topic](../src/config/README.md) describe the current implementation.
 The notes below include historical context; current quality values are defined
 in `src/config/performance.ts` and `src/config/shadows.ts`.
 

@@ -1,5 +1,10 @@
 # Geography, horizon and sky
 
+Player-facing geography: a persisted GPS origin, connected maps, and the sky
+clock. Numeric kernels live in [`src/math/geo`](../src/math/geo/README.md). Tile,
+sky and sea assembly live in [`src/planet`](../src/planet/README.md). World poses
+and working frames live in [planetary addresses](../src/planet/planetary-world.md).
+
 ## Persistent location
 
 `SceneDocument.geography` stores latitude, longitude, reference altitude and
@@ -12,35 +17,6 @@ and OSM geometry stream around the player. See [real-world driving](real-world.m
 Location changes are validated, undoable edits and require editing mode.
 **Guardar** and JSON export preserve the selected origin. Moving or deleting the
 authored ground entity does not move that origin.
-
-## Geographic frame and precision
-
-WGS84 latitude/longitude angles are mapped onto a mean-radius sphere of
-6,371,000 m, not a survey ellipsoid or elevation model. The local origin is the
-GPS point: +X east, +Y up and −Z north. Agency's patio wire format uses +Z north;
-convert that axis explicitly when integrating.
-
-`geoToLocal` and `localToGeo` use an Earth-centred frame, including antimeridian
-crossings and large altitudes. Physics uses metres and double-precision numbers.
-A smooth reference sphere supports players and vehicles beyond the authored lot;
-gravity and flight follow its radial vertical. This is not orbital mechanics.
-
-Shift/L3 scales assisted climb/descent with altitude, capped at 2,000 km/s, to make
-planetary distances explorable. Releasing the controls brakes and holds altitude.
-Loaded ascent/braking is tested, but discrete collision detection is not a general
-guarantee of safety at extreme travel speeds.
-
-## Rendering scales
-
-Earth and celestial objects render in a separate pass whose unit is one million
-metres. Tiles and scene objects use metres, with a render origin near the vehicle
-at large distances. The renderer uses logarithmic depth. Both passes represent
-the same location and do not create a second physics world.
-
-The local map haze and planetary haze share color and converted distances. The
-sky background uses the same color treatment, preventing a strip of unattenuated
-Earth behind the map. Celestial objects retain planet occlusion without receiving
-ground fog. At high altitude, the sky darkens and decorative stars appear.
 
 ## Authored ground and connected maps
 
@@ -71,11 +47,6 @@ Physical detail must be authored explicitly.
 
 ## Sun, Moon and clock
 
-The apparent directions adapt Agency's simplified `sunPosition.ts` formulas.
-The Sun and Moon have approximate mean radii/distances; they are visual bodies,
-not destinations with collisions or simulated orbits. The Moon's shading follows
-the solar direction. These are not precision ephemerides.
-
 `SceneDocument.sky` is optional:
 
 ```json
@@ -97,6 +68,9 @@ The shared clock updates apparent celestial directions each second and drives
 scene shadows, ambient light, sky color, map brightness and star visibility.
 Changing it during play preserves physics and does not reload the models.
 
+Formulas, radii and the rendering split live in
+[`src/planet`](../src/planet/README.md).
+
 ## Circuit plan alignment
 
 The local Agency JPEG is a 1024 × 682 authored plan, not a georeferenced satellite
@@ -112,13 +86,3 @@ The current sample uses this plan. An older locally saved baseline with its know
 plan IDs are replaced; vehicles, portals and unrelated additions are preserved.
 The saved document is not overwritten until **Guardar**. This is an authored
 placement pass, not automatic image recognition or a real-world building import.
-
-### Terrain palette
-
-Local landcover uses darker grass/forest greens and warmer ochre soil colors. The
-unloaded low-resolution terrain uses the same base color as the lightest grass
-surface, preventing a pale gray-green band at the streaming boundary. Legacy
-baked surface defaults are translated by the renderer, so existing cached zones
-receive the palette without downloading or rebuilding geometry. Custom color
-values are retained. Daylight uses less ambient fill and lower exposure to retain
-contrast; vehicle materials and the physical reflection shader are unchanged.

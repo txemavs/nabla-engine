@@ -9,7 +9,7 @@ not a dependency of the engine.
 
 ## Monitors and the S3
 
-Start with the [monitor editing guide](docs/monitors.md) for preview links, artwork,
+Start with the [monitor editing guide](src/render/monitors/editing.md) for preview links, artwork,
 layer definitions, keyboard menus, refresh settings and future ship/portal integration.
 
 ## Run locally
@@ -76,14 +76,14 @@ browser. Loading the example is undoable and does not overwrite the saved copy.
 - [Complete module and function reference](docs/reference/README.md)
 
 - [Module map and public API](docs/architecture/module-map.md)
-- [Create a vehicle](docs/creating-a-vehicle.md) · [Create a monitor](docs/creating-a-monitor.md)
+- [Create a vehicle](src/catalog/vehicles/creating-a-vehicle.md) · [Create a monitor](src/catalog/monitors/creating-a-monitor.md)
 - [Vehicle modularity: modular architecture and acceptance evidence](docs/architecture/vehicle-modularity.md)
 
 Start with the [documentation index](docs/README.md).
 
 - [Controls and walkthrough](docs/controls.md)
 - [Architecture and invariants](docs/architecture.md)
-- [Vehicles and mobile garage](docs/vehicle-assets.md)
+- [Vehicles and mobile garage](src/catalog/vehicles/vehicle-assets.md)
 - [Geography, horizon and sky clock](docs/geography.md)
 - [Agency integration boundary](docs/agency-integration.md)
 - [Asset provenance](assets/README.md)
@@ -163,4 +163,4 @@ Start Studio, the cache and native planetary GLB generation with Docker Compose.
 See [Local development](docs/local-development.md) for setup, activation, job
 inspection, storage, debugging and a guided tour of the implementation.
 
-See the [topic-based configuration guide](docs/configuration.md) for defaults, units and application overrides.
+See the [topic-based configuration guide](src/config/README.md) for defaults, units and application overrides.

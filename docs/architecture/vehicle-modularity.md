@@ -23,10 +23,11 @@ records the actual owners and public entries.
 - **Studio**: owns editor UI, input translation, persistence, rendering schedule
   and browser activation. Core modules do not import Studio.
 
-See [create a vehicle](../creating-a-vehicle.md),
-[create a monitor](../creating-a-monitor.md),
-[wheeled runtime](wheeled-runtime.md), [boat/flight runtime](boat-flight-runtime.md)
-and [equipment ownership](vehicle-equipment.md).
+See [create a vehicle](../../src/catalog/vehicles/creating-a-vehicle.md),
+[create a monitor](../../src/catalog/monitors/creating-a-monitor.md),
+[wheeled runtime](../../src/simulation/vehicles/wheeled/wheeled-runtime.md),
+[boat/flight runtime](../../src/simulation/vehicles/boat-flight-runtime.md)
+and [equipment ownership](../../src/render/vehicle-presentation/README.md).
 
 ## Current formats and factories
 

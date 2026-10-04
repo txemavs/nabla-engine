@@ -1,33 +1,15 @@
-# Portals: current implementation
+# Portals
 
 One simulation owns physical traversal. One renderer draws portal views. Studio
 owns the controls and saved-project address book. There is no second legacy
 portal simulation to activate.
 
-## Source map
+Implementation lives next to the owners:
 
-- `src/entity/portal/portal.ts`: mouths, reciprocal links, validation and rigid transforms.
-- `src/simulation/simulation.ts`: swept crossing, clearance, host-relative velocity,
-  boarding, ramp coordination and the exit lock.
-- `src/render/portal/portals.ts`: remote projection and clipping.
-- `src/render/portal/environment.ts`: temporary destination sky/environment.
-- `studio/portal-controls.ts`: rear tablets and carrier controls.
-- `studio/portal-registry.ts`: project-wide addresses and remote windows.
-
-`createCarrierPortal(hostId, sternId)` creates the single stock stern mouth.
-Use it explicitly when composing a carrier scene. The palette, sample and planet
-factories already include the stern mouth. The plural factory and saved-scene
-migration have been removed: loading never rewrites authored portals or glass.
-
-## Carrier and saved scenes
-
-The stock carrier has armoured bow glass. Its scene assembly adds one stern portal;
-custom side mouths and links remain ordinary authored entities.
-
-The garage door must finish closing before its portal opens. During a connection,
-the closed visual door uses a horizontal collision apron. Its collider transform
-is updated in Rapier alongside the animation. Opening the garage door first
-closes the portal. Hosted frame colliders belong to the existing carrier body.
+- [Mouths, links and validation](../src/entity/portal/README.md)
+- [Crossing, clearance and boarding](../src/simulation/README.md)
+- [Remote views and destination sky](../src/render/portal/README.md)
+- [Planet-wide poses](../src/planet/planetary-world.md)
 
 ## Playing
 

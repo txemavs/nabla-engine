@@ -9,14 +9,11 @@ node examples/modularity/headless-vehicle.mjs
 node examples/modularity/menu-only.mjs
 ```
 
-The [standalone wall monitor](../../studio/examples/modular-monitor.html) is served
-by `npm run dev` at `/examples/modular-monitor.html`. It uses the public `/monitors` and `/menus`
-subpaths and never starts the Studio editor.
-
-The [static S3 monitor](../../studio/examples/s3-monitor.html), at
-`/examples/s3-monitor.html`, uses `/monitors/presets`: the same definition and
-telemetry bindings as the S3, without a vehicle instance or physics. It includes
-speed/RPM sliders and the keyboard menu; actions update local example properties.
+Studio serves `/examples/modular-monitor.html` and `/examples/s3-monitor.html`
+from its own repo. Both use public `/monitors` and `/menus` (the S3 page also
+uses `/monitors/presets`) and never start the editor. See
+[create a monitor](../../src/catalog/monitors/creating-a-monitor.md) and the
+[library contract](../../src/render/monitors/README.md).
 Vite maps the public subpaths to source; the published package maps them to `dist`.
 Consumers serve their own monitor assets (the stock recipe uses `/monitors/`).
 
@@ -25,10 +22,10 @@ Checks: `npx vitest run test/architecture` and
 `npx playwright test studio/e2e/module-monitor.spec.ts studio/e2e/a3-nabla.spec.ts`.
 The design contracts under `docs/architecture` are proposals, not runtime APIs.
 
-The [equipment bench](../../studio/examples/equipment.html) uses the public
-`/vehicle-presentation` module for retractable support and lamps, with no vehicle
-instance. H raises/lowers its monitor; lowered monitors receive no data updates.
-See [phase-3 adapter guide](../../docs/architecture/vehicle-equipment.md).
+Studio's `/examples/equipment.html` bench uses `/vehicle-presentation` for
+retractable support and lamps, with no vehicle instance. H raises/lowers its
+monitor; lowered monitors receive no data updates.
+See [phase-3 adapter guide](../../src/render/vehicle-presentation/README.md).
 
 The [wheeled runtime example](wheeled-runtime.mjs) goes one level below the existing
 headless Simulation example: it defines a new car with primitive colliders and
@@ -39,11 +36,11 @@ node examples/modularity/wheeled-runtime.mjs
 ```
 
 It shares one Rapier world and owns all stepping and teardown. See
-[phase-4 contracts](../../docs/architecture/wheeled-runtime.md).
+[phase-4 contracts](../../src/simulation/vehicles/wheeled/wheeled-runtime.md).
 
 - `node examples/modularity/boat-flight.mjs`: independent hull and hovering craft,
   injected water/flight environment, one shared world, no wheel controllers.
-  Build first. See [boat/flight runtime](../../docs/architecture/boat-flight-runtime.md).
+  Build first. See [boat/flight runtime](../../src/simulation/vehicles/boat-flight-runtime.md).
 
 - `node examples/modularity/custom-prefab.mjs`: a new procedural compact car using
   the existing public scene facade.
