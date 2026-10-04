@@ -15,3 +15,9 @@ export { waitForGround, type GroundProvider } from './ground.js'
 
 export { VehicleMonitors } from './vehicle-monitors.js'
 export { vehicleMenuKey } from './vehicle-menu.js'
+export {
+  TouchDriving,
+  type TouchDrivingActions,
+  type TouchDrivingVisibility,
+} from './touch-driving.js'
+export { GameplayStreaming, type GameplayWorldStream } from './streaming.js'

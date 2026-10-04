@@ -992,33 +992,7 @@ body.playing #footer-mode {
   font: 12px/1.5 monospace;
   white-space: pre-line;
 }
-.touch-driving {
-  display: none;
-  position: absolute;
-  inset: auto 10px 16px;
-  z-index: 45;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  pointer-events: none;
-}
-.touch-driving button {
-  pointer-events: auto;
-  touch-action: none;
-  user-select: none;
-  min-height: 52px;
-  background: #111827dd;
-  color: #fff;
-  border: 1px solid #66758d;
-  border-radius: 10px;
-  font-size: 14px;
-}
-.touch-driving button:active {
-  background: #2563eb;
-}
 @media (pointer: coarse) {
-  .touch-driving {
-    display: grid;
-  }
   .performance-hud {
     font-size: 10px;
   }

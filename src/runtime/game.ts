@@ -1,3 +1,4 @@
+import { GameplayStreaming } from './streaming.js'
 import { Quaternion, Vector3 } from 'three'
 import type { SceneDocument } from '../scene/document.js'
 import { idleInput, type PlayerInput } from '../simulation/simulation.js'
@@ -9,6 +10,7 @@ import { createGameCameraState, updateGameCamera } from './game-camera.js'
 
 /** Shared game coordination. Hosts supply rendering, device events and editor UI. */
 export class GameRuntime {
+  readonly streaming = new GameplayStreaming()
   readonly session = new PlaySession()
   readonly cameraState = createGameCameraState()
   readonly keys = new HeldKeys()
@@ -28,6 +30,7 @@ export class GameRuntime {
 
   async play(document: SceneDocument, options: PlayOptions = {}) {
     this.releaseInput()
+    this.streaming.reset()
     this.scene = structuredClone(document)
     const sim = await this.session.play(document, options)
     Object.assign(this.cameraState, createGameCameraState())
@@ -57,6 +60,7 @@ export class GameRuntime {
   }
   stop(): void {
     this.releaseInput()
+    this.streaming.reset()
     this.session.stop()
     this.scene = null
   }

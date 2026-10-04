@@ -34,20 +34,29 @@ The standalone browser runtime is an incremental composition, not a claim of ful
 Studio parity. Studio already uses the shared components but retains the following
 coordination, which must be extracted before the editor can move.
 
+Touch driving controls (including styles, cancellation and disposal) now live in
+`runtime/touch-driving.ts`. Studio and the browser game use the same component.
+The browser host defaults to coarse-pointer detection and accepts `touchControls`
+('auto', 'always', 'hidden', or false). It owns focus/audio; the component owns
+multi-pointer state. Stopping or pausing the game disables its commands.
+
+`GameRuntime.streaming` owns the 500 ms terrain update cadence, velocity sampling
+and support positions beneath live vehicles and portal endpoints. Both game hosts
+use it. Studio's orbit-camera streaming stays with the editor. New play sessions
+reset prediction instead of inheriting an editor or previous-game position.
+
 ## Remaining parity inventory
 
-| Capability                                                      | Current owner                                    | Next extraction / acceptance                                                 |
-| --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- |
-| Complete render pipeline, mirrors, portal windows and DOF       | `studio/main.ts`                                 | Shared renderer with explicit editor overlay hooks                           |
-| Touch controls and their styling/lifetime                       | `studio/touch-driving.ts`                        | Public optional controls with cancellation and teardown                      |
-| Weapon viewmodel, shot routing and gallery                      | `studio/sidearm.ts`, `studio/gallery.ts`         | Engine systems plus explicit example rules/content                           |
-| Streaming prediction and protected vehicle positions            | `studio/main.ts`                                 | Shared streaming coordinator; maintain current budgets and collision support |
-| Time/tides, field lights and performance options                | `studio/main.ts`, `studio/performance.ts`        | Reusable settings and runtime systems; host persists preferences             |
-| Cross-location portal registry                                  | `studio/project.ts`, `studio/portal-registry.ts` | Runtime world-content contract distinct from editor document                 |
-| Editor tools, history, selection, inspector and project storage | `studio/`                                        | Remain in the Studio application                                             |
-| Remaining direct source imports                                 | `studio/`                                        | Deliberate public API, then test Studio against a packed package             |
-| Atlas host integration                                          | separate application                             | Validate current viewer against the same package version                     |
-| Final project extraction                                        | pending                                          | Move Studio only after the parity matrix is complete                         |
+| Capability                                                      | Current owner                                    | Next extraction / acceptance                                     |
+| --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
+| Complete render pipeline, mirrors, portal windows and DOF       | `studio/main.ts`                                 | Shared renderer with explicit editor overlay hooks               |
+| Weapon viewmodel, shot routing and gallery                      | `studio/sidearm.ts`, `studio/gallery.ts`         | Engine systems plus explicit example rules/content               |
+| Time/tides, field lights and performance options                | `studio/main.ts`, `studio/performance.ts`        | Reusable settings and runtime systems; host persists preferences |
+| Cross-location portal registry                                  | `studio/project.ts`, `studio/portal-registry.ts` | Runtime world-content contract distinct from editor document     |
+| Editor tools, history, selection, inspector and project storage | `studio/`                                        | Remain in the Studio application                                 |
+| Remaining direct source imports                                 | `studio/`                                        | Deliberate public API, then test Studio against a packed package |
+| Atlas host integration                                          | separate application                             | Validate current viewer against the same package version         |
+| Final project extraction                                        | pending                                          | Move Studio only after the parity matrix is complete             |
 
 The existing local geographic viewer changes were preserved in the isolated
 checkout and are a dependency of this increment. No truck branch was merged.
@@ -109,3 +118,8 @@ keyboard focus, camera visibility and the car equipment menu in the packed demo.
 
 `scripts/vehicle-monitors-lifetime-smoke.mjs` uses the Studio Vite server to check
 rebuild/disposal without duplicates and restoration of host canvas styles.
+
+`scripts/touch-driving-smoke.mjs` checks simultaneous real touch pointers,
+independent release, cancellation, blur, disable/dispose, and acceleration/braking
+in the packed game. Streaming unit tests verify live support positions, cadence,
+copy isolation and resets between worlds/clocks.

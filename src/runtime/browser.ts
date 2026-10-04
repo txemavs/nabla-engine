@@ -1,3 +1,4 @@
+import { TouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
 import * as THREE from 'three'
@@ -36,6 +37,8 @@ export interface GameRuntimeOptions {
   /** Disable only the visible water sheet for a synthetic sea-level test surface. */
   sea?: boolean
   clock?: 'automatic' | 'manual'
+  /** Auto shows driving controls on coarse-pointer devices; false disables them. */
+  touchControls?: TouchDrivingVisibility | false
   onProgress?: (status: string, loadedTiles?: string[]) => void
   onFrame?: (frame: GameFrame) => void
   onMessage?: (message: string) => void
@@ -53,6 +56,7 @@ export class GameRuntime {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
   private readonly renderer: THREE.WebGLRenderer
+  private readonly touchDriving: TouchDriving | null
   private readonly monitors: VehicleMonitors
   private readonly view: SceneView
   private readonly sky: GeographicView
@@ -103,6 +107,21 @@ export class GameRuntime {
     this.sky = new GeographicView(this.document, () => {})
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
     this.effects = new VehicleEffects(this.scene)
+    this.touchDriving =
+      options.touchControls === false
+        ? null
+        : new TouchDriving(
+            options.canvas.parentElement!,
+            {
+              engage: () => {
+                options.canvas.focus()
+                this.effects.audio.unlock()
+              },
+              interact: () => this.action('KeyE'),
+              camera: () => this.cycleCamera(),
+            },
+            options.touchControls ?? 'auto',
+          )
     this.shadows.init({
       camera: this.camera,
       scene: this.scene,
@@ -200,6 +219,7 @@ export class GameRuntime {
 
   pause(): void {
     this.assertAlive()
+    this.touchDriving?.setActive(false)
     this.game.pause()
     this.loop.stop()
     this.releaseInput()
@@ -219,6 +239,7 @@ export class GameRuntime {
     this.loading = null
     this.loop.stop()
     this.world?.renderUpdate(this.origin, true, null)
+    this.touchDriving?.setActive(false)
     this.monitors.hide()
     this.game.stop()
     this.releaseInput()
@@ -249,6 +270,7 @@ export class GameRuntime {
     this.observer.disconnect()
     this.game.dispose()
     this.world?.dispose()
+    this.touchDriving?.dispose()
     this.monitors.dispose()
     this.view.dispose()
     this.sky.dispose()
@@ -269,6 +291,7 @@ export class GameRuntime {
     const dt =
       this.lastTime === null ? 0 : Math.min(0.1, Math.max(0, (time - this.lastTime) / 1000))
     this.lastTime = time
+    this.touchDriving?.setActive(document.hasFocus() && !document.hidden)
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
@@ -281,13 +304,14 @@ export class GameRuntime {
       yaw: this.cameraState.yaw,
       pad,
       touch: this.monitors.flightInput(),
+      driving: this.touchDriving?.input(),
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
     const crossing = this.game.step(dt, input, 0, time)
     if (crossing)
       this.options.onMessage?.(crossing.blocked ? 'Paso bloqueado' : 'Stargate atravesado')
-    this.world?.update(sim.player.position, [0, 0, 0])
+    if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < 0.15
     this.view.sync(
       sim,
@@ -396,6 +420,7 @@ export class GameRuntime {
     return document.activeElement === this.options.canvas && document.hasFocus() && !document.hidden
   }
   private releaseInput(): void {
+    this.touchDriving?.clear()
     this.monitors.releaseInput()
     this.game.releaseInput()
     this.previousButtons = []

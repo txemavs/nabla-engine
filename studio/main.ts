@@ -553,6 +553,7 @@ function rebuild(prepared?: PreparedMapGeometry): void {
 }
 function setupWorldStream(): void {
   streamSample = null
+  game.streaming.reset()
   const doc = editor.document
   seaRoot.visible = !!doc.geography && sceneLayer('layer-sea')
   $('stream-status').textContent = ''
@@ -1555,6 +1556,7 @@ $('stream-mode').onchange = () => {
   streamMode = $<HTMLSelectElement>('stream-mode').value as typeof streamMode
   worldStream?.setStreamMode(streamMode)
   streamSample = null
+  game.streaming.reset()
   needsRender = true
   if (streamMode === 'model')
     toast('Maqueta: física pausada. Vuelve a conducción o vuelo para reanudar.')
@@ -2382,18 +2384,7 @@ function frame(now: number): void {
       $('performance-status').textContent =
         `${performanceText} · Colisiones: ${c.active} / ${c.total}`
     }
-    if (worldStream && !document.hidden && (!streamSample || now - streamSample.at > 500)) {
-      const position = sim.player.position
-      const elapsed = streamSample ? (now - streamSample.at) / 1000 : 1
-      const velocity = position.map((v, i) =>
-        streamSample ? (v - streamSample.position[i]) / elapsed : 0,
-      ) as Vec3Tuple
-      const protectedPositions = view.document.entities
-        .filter((e) => e.kind === 'vehicle' || e.portal)
-        .map((e) => sim!.entityTransform(e.id).position)
-      worldStream.update(position, velocity, protectedPositions)
-      streamSample = { at: now, position: [...position] }
-    }
+    if (worldStream && !document.hidden) game.streaming.update(worldStream, sim, view.document, now)
     if (crossing) {
       renderer.domElement.dataset.portalCrossings = String(crossing.sequence)
       toast(
@@ -2839,7 +2830,9 @@ function frame(now: number): void {
         diagnostics,
         mode,
         $<HTMLInputElement>('tile-debug-labels').checked,
-        new THREE.Vector3(...(streamSample?.position ?? worldCamera.toArray())),
+        new THREE.Vector3(
+          ...((sim ? game.streaming.position : streamSample?.position) ?? worldCamera.toArray()),
+        ),
       )
       const rows = [12, 13, 14, 15].map((z) => {
         const tiles = diagnostics.tiles.filter((t) => t.tile.z === z)
