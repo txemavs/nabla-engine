@@ -71,8 +71,15 @@ describe('game config', () => {
       expect(config.staticTiles).toBe(true)
     })
 
-    it('enables static mode with tiles param', () => {
+    it('uses dynamic mode for local tiles (not S3)', () => {
       const config = parseGameConfig('?tiles=/custom/tiles')
+
+      // Local servers use dynamic mode for faster loading (like Studio)
+      expect(config.staticTiles).toBe(false)
+    })
+
+    it('uses static mode for S3 tiles host', () => {
+      const config = parseGameConfig('?tiles=https://atlas.chained.world/euskadi')
 
       expect(config.staticTiles).toBe(true)
     })

@@ -66,8 +66,20 @@ export function parseGameConfig(search: string = location.search): GameConfig {
       ? DEFAULT_TILES_BASE_URL
       : normalizeTilesBase(tilesParam)
 
+  // Static mode: only use static (GET-based) tile discovery when explicitly requested
+  // or when using the default S3 tiles host. Local servers should use dynamic mode
+  // (POST-based) like Studio for faster loading.
   const staticParam = params.get('static')
-  const staticTiles = staticParam !== 'false' && staticParam !== '0'
+  const isDynamicServer =
+    tilesParam !== null &&
+    tilesParam.trim() !== '' &&
+    !tilesParam.includes('atlas.chained.world') // Default S3 host uses static
+  const staticTiles =
+    staticParam === 'true' || staticParam === '1'
+      ? true
+      : staticParam === 'false' || staticParam === '0'
+        ? false
+        : !isDynamicServer // Default: static for S3, dynamic for local servers
 
   // Single tile mode: load only one specific tile, truck at center
   const singleTile = parseSingleTile(params.get('tile'))

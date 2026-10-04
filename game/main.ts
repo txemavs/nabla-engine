@@ -8,7 +8,6 @@
 
 import { parseGameConfig, type GameConfig } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
-import { findNearestGround, checkFootprint, FOOTPRINT_RADIUS } from './ground.js'
 import { initPhysics } from '../src/simulation/physics.js'
 import {
   Simulation,
@@ -25,7 +24,6 @@ import {
   presetTractorTrailer,
 } from '../src/catalog/vehicles/library.js'
 import { PlanetWorld } from '../src/render/planet/world.js'
-import { mapTileAt, mapTileId } from '../src/scene/mercator.js'
 import { geoToLocal, localToGeo, type GeoPoint } from '../src/math/geo/sphere.js'
 import { KeyboardSteering } from '../src/simulation/vehicles/keyboard-steering.js'
 import { SceneView } from '../src/presentation/scene-view.js'
@@ -58,9 +56,9 @@ class Game {
   private keys = new Set<string>()
   private yaw = 0
   private spawnPosition: Vec3Tuple = [0, 0, 0]
+  private pointerLocked = false
   private waitingForTerrain = true
   private terrainMessage = ''
-  private pointerLocked = false
 
   constructor() {
     this.config = parseGameConfig()
@@ -99,23 +97,92 @@ class Game {
       this.loading.setStatus('Setting up world streaming...')
       this.setupWorldStream()
 
-      this.loading.setStatus('Loading initial tiles...')
-      await this.loadInitialTiles()
-
-      this.loading.setStatus('Esperando terreno...')
-      await this.waitForTerrain(document)
+      // Start the game immediately - tiles stream in during gameplay (like Studio)
+      // No separate waiting loop - terrain collisions ready when tile installs
+      this.loading.setStatus('Starting...')
+      await this.startSimulation(document)
 
       this.loading.hide()
       this.showHud()
 
       this.lastTime = 0
       this.animationFrame = requestAnimationFrame((t) => this.loop(t))
+
+      // Log loading time
+      console.log(`Game started in ${(performance.now() / 1000).toFixed(1)}s`)
     } catch (error) {
       console.error('Game initialization failed:', error)
       if (error instanceof Error && error.stack) {
         console.error('Stack trace:', error.stack)
       }
       showError(error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  /**
+   * Start simulation immediately (like Studio).
+   * Terrain streams in during gameplay - collision ready when tiles install.
+   */
+  private async startSimulation(document: SceneDocument): Promise<void> {
+    const vehicleEntity = document.entities.find((e) => e.kind === 'vehicle')
+
+    // Initial world update to kick off tile loading
+    const spawnPosition = geoToLocal(this.origin, {
+      latitude: this.config.spawn.latitude,
+      longitude: this.config.spawn.longitude,
+      altitude: this.config.spawn.altitude,
+    })
+    this.spawnPosition = [spawnPosition[0], spawnPosition[1] + 10, spawnPosition[2]]
+
+    // Create simulation
+    this.sim = new Simulation(document, {
+      playerMode: 'walk',
+      planetaryTerrain: true,
+    })
+
+    // Enter the vehicle
+    const vehicleId = vehicleEntity?.id
+    if (vehicleId) {
+      this.sim.startInVehicle(vehicleId)
+      console.log(`Started in vehicle: ${vehicleId}`)
+    }
+
+    // Wait for terrain collision to be ready (like Studio)
+    // This is the key: pump tiles until collision data is available
+    const loadStart = performance.now()
+    let collisionReady = false
+
+    while (!collisionReady && performance.now() - loadStart < 10000) {
+      this.world?.update(this.spawnPosition, [0, 0, 0])
+      this.world?.flushInstall(10)
+      this.world?.renderUpdate(new THREE.Vector3(...this.spawnPosition), true, this.sim)
+
+      // preparePlanetCollisions returns true when collision data is ready
+      collisionReady = this.sim.preparePlanetCollisions()
+
+      if (!collisionReady) {
+        const elapsed = ((performance.now() - loadStart) / 1000).toFixed(1)
+        this.loading.setStatus(`Loading terrain... ${elapsed}s`)
+        await new Promise((r) => requestAnimationFrame(r))
+      }
+    }
+
+    const loadTime = ((performance.now() - loadStart) / 1000).toFixed(1)
+    if (collisionReady) {
+      console.log(`Terrain collision ready in ${loadTime}s`)
+
+      // Now position vehicle on the terrain
+      const ground = this.world?.groundHeight(this.spawnPosition)
+      if (ground !== undefined) {
+        const vehicleHeight = vehicleEntity?.groundOffset ?? 0.62
+        this.spawnPosition = [this.spawnPosition[0], ground + vehicleHeight, this.spawnPosition[2]]
+        this.sim.teleportVehicle(this.spawnPosition, 0)
+        console.log(`Vehicle positioned at Y=${this.spawnPosition[1].toFixed(2)}, ground=${ground.toFixed(2)}`)
+        this.waitingForTerrain = false
+      }
+    } else {
+      console.warn(`Terrain collision not ready after ${loadTime}s`)
+      this.terrainMessage = 'Terrain not available'
     }
   }
 
@@ -313,201 +380,6 @@ class Game {
     }
   }
 
-  private async loadInitialTiles(): Promise<void> {
-    if (!this.world) return
-
-    const requiredTiles = this.loading.getRequiredTiles()
-    const spawnTile = this.loading.getSpawnTile()
-    const spawnTileId = spawnTile ? mapTileId(spawnTile) : null
-
-    const spawnPosition = geoToLocal(this.origin, {
-      latitude: this.config.spawn.latitude,
-      longitude: this.config.spawn.longitude,
-      altitude: this.config.spawn.altitude,
-    })
-
-    const updateTileStates = () => {
-      for (const tile of requiredTiles) {
-        const key = mapTileId(tile)
-        const state = this.world!.getTileLoadingState(key)
-        if (state === 'installed') {
-          this.loading.markTileLoaded(key)
-        } else if (state === 'absent') {
-          this.loading.markTileAbsent(key)
-        } else if (state === 'failed') {
-          this.loading.markTileFailed(key)
-        }
-      }
-    }
-
-    const isSpawnTileResolved = (): 'installed' | 'absent' | 'failed' | null => {
-      if (!spawnTileId) return null
-      const state = this.world!.getTileLoadingState(spawnTileId)
-      if (state === 'installed' || state === 'absent' || state === 'failed') return state
-      return null
-    }
-
-    const canStart = () => {
-      const spawnState = isSpawnTileResolved()
-      if (spawnState !== null) {
-        console.log(`Spawn tile ${spawnTileId} resolved as: ${spawnState}`)
-        return true
-      }
-      const progress = this.loading.getProgress()
-      if (progress.absent + progress.failed === progress.total && progress.total > 0) return true
-      if (this.loading.isComplete()) return true
-      return false
-    }
-
-    const maxWait = 15000
-    const started = Date.now()
-
-    this.world.update(spawnPosition, [0, 0, 0])
-
-    while (!canStart()) {
-      if (Date.now() - started > maxWait) {
-        console.warn('Tile loading timeout after 15s')
-        break
-      }
-
-      this.world.update(spawnPosition, [0, 0, 0])
-      this.world.flushInstall(10)
-      updateTileStates()
-
-      const progress = this.loading.getProgress()
-      const pending = progress.total - progress.loaded - progress.absent - progress.failed
-      const statusParts: string[] = []
-      if (progress.loaded > 0) statusParts.push(`${progress.loaded} loaded`)
-      if (pending > 0) statusParts.push(`${pending} pending`)
-      if (progress.absent > 0) statusParts.push(`${progress.absent} absent`)
-      if (progress.failed > 0) statusParts.push(`${progress.failed} failed`)
-      this.loading.setStatus(`Loading tiles: ${statusParts.join(', ')}`)
-
-      await new Promise((r) => setTimeout(r, 50))
-    }
-
-    for (let i = 0; i < 20 && this.world.flushInstall(10); i++) {
-      await new Promise((r) => setTimeout(r, 50))
-    }
-    updateTileStates()
-    this.world.logLoadingSummary()
-  }
-
-  /**
-   * Wait for real terrain ground height at the spawn position.
-   * Does NOT spawn until ground is known - no fake Y=0 fallback.
-   */
-  private async waitForTerrain(document: SceneDocument): Promise<void> {
-    if (!this.world) return
-
-    const spawn = document.entities.find((e) => e.kind === 'spawn')!
-    const vehicleEntity = document.entities.find((e) => e.kind === 'vehicle')
-    const trailerEntity = document.entities.find((e) => e.id === 'player-trailer')
-
-    let spawnLocalPos: Vec3Tuple = [0, 0, 0]
-    const groundHeightFn = (pos: Vec3Tuple) => this.world!.groundHeight(pos)
-
-    const maxWait = 60000 // Wait up to 60 seconds for terrain
-    const started = Date.now()
-
-    this.loading.setStatus('Esperando terreno...')
-
-    while (Date.now() - started < maxWait) {
-      // Keep updating world to process tile installations
-      this.world.update(spawnLocalPos, [0, 0, 0])
-      this.world.flushInstall(10)
-
-      // Check for ground at spawn position with footprint
-      let ground = checkFootprint(groundHeightFn, spawnLocalPos, FOOTPRINT_RADIUS)
-
-      if (ground === undefined) {
-        // Try ring search for nearby ground
-        const searchResult = findNearestGround(groundHeightFn, spawnLocalPos, { maxRadius: 100 })
-        if (searchResult.found) {
-          spawnLocalPos = searchResult.position
-          ground = searchResult.groundHeight
-          console.log(
-            `Ground found at radius ${searchResult.searchRadius}m: ` +
-              `[${spawnLocalPos.map((n) => n.toFixed(1)).join(', ')}] height=${ground.toFixed(2)}m`,
-          )
-        }
-      }
-
-      if (ground !== undefined) {
-        // Real terrain found - spawn on it
-        console.log(`Terrain ready at height ${ground.toFixed(2)}m`)
-        this.waitingForTerrain = false
-        this.terrainMessage = ''
-
-        const vehicleHeight = vehicleEntity?.groundOffset ?? 0.62
-        const spawnHeight = spawn.groundOffset ?? 0.2
-
-        this.spawnPosition = [spawnLocalPos[0], ground + vehicleHeight, spawnLocalPos[2]]
-
-        if (vehicleEntity) {
-          vehicleEntity.transform.position = [...this.spawnPosition]
-        }
-        spawn.transform.position = [spawnLocalPos[0] - 4, ground + spawnHeight, spawnLocalPos[2]]
-
-        if (trailerEntity) {
-          trailerEntity.transform.position = [
-            spawnLocalPos[0],
-            ground + (trailerEntity.groundOffset ?? 0.62),
-            spawnLocalPos[2] + 10,
-          ]
-        }
-
-        // Show visual catch floor at terrain level for reference
-        this.catchFloor?.show(
-          [spawnLocalPos[0], ground, spawnLocalPos[2]],
-          [0, 0, 0, 1],
-          this.renderOrigin,
-        )
-
-        console.log(
-          `Vehicle spawn position: [${this.spawnPosition.map((n) => n.toFixed(2)).join(', ')}]`,
-        )
-
-        // Create simulation with vehicle on real terrain
-        this.sim = new Simulation(document, {
-          playerMode: 'walk',
-          planetaryTerrain: true,
-        })
-
-        // NO fallback ground - we have real terrain
-        const vehicleId = vehicleEntity?.id
-        if (vehicleId) {
-          this.sim.startInVehicle(vehicleId)
-        }
-        return
-      }
-
-      // Update loading message
-      const elapsed = Math.floor((Date.now() - started) / 1000)
-      this.loading.setStatus(`Esperando terreno... (${elapsed}s)`)
-      this.terrainMessage = 'Esperando terreno...'
-
-      await new Promise((r) => setTimeout(r, 100))
-    }
-
-    // Timeout - no terrain available
-    console.warn('No terrain found after 60s timeout')
-    this.waitingForTerrain = true
-    this.terrainMessage = 'Sin terreno en esta posición'
-
-    // Still create simulation but vehicle won't be properly placed
-    // Show warning and don't hide loading screen fully
-    this.sim = new Simulation(document, {
-      playerMode: 'walk',
-      planetaryTerrain: true,
-    })
-
-    const vehicleId = vehicleEntity?.id
-    if (vehicleId) {
-      this.sim.startInVehicle(vehicleId)
-    }
-  }
-
   private loop(time: number): void {
     if (this.disposed) return
 
@@ -537,75 +409,21 @@ class Game {
     const player = this.sim.player
     const position = player.position
 
+    // Stream tiles and update collision (like Studio)
     this.world.update(position, [0, 0, 0])
     this.world.flushInstall(2)
     this.world.renderUpdate(new THREE.Vector3(...position), true, this.sim)
+    this.sim.preparePlanetCollisions()
 
     const ground = this.world.groundHeight(position)
 
-    // If we were waiting for terrain and now have ground data, update spawn position
-    if (this.waitingForTerrain && ground !== undefined) {
-      const vehicleHeight = 0.62
-      // Use current position for terrain check (vehicle may have moved from original spawn)
-      const currentX = position[0]
-      const currentZ = position[2]
-
-      // First try a simple ground check at current position
-      const groundHeightFn = (pos: Vec3Tuple) => this.world!.groundHeight(pos)
-      let terrainGround = groundHeightFn([currentX, 0, currentZ])
-
-      // If no ground at exact position, try footprint check
-      if (terrainGround === undefined) {
-        terrainGround = checkFootprint(groundHeightFn, [currentX, 0, currentZ], FOOTPRINT_RADIUS)
-      }
-
-      if (terrainGround !== undefined) {
-        // Terrain detected - update spawn position to be ON the terrain
-        this.spawnPosition = [currentX, terrainGround + vehicleHeight, currentZ]
-        console.log(
-          `Terrain now available! Spawn position updated to: ` +
-            `[${this.spawnPosition.map((n) => n.toFixed(2)).join(', ')}]`,
-        )
-        this.waitingForTerrain = false
-        this.terrainMessage = ''
-
-        // Check if vehicle Y is below terrain - if so, teleport to correct height
-        if (position[1] < terrainGround) {
-          console.log(
-            `Vehicle Y=${position[1].toFixed(2)} < terrain=${terrainGround.toFixed(2)}, teleporting...`,
-          )
-          this.sim.teleportVehicle(this.spawnPosition, 0)
-          console.log(
-            `Vehicle teleported to terrain height. Y=${this.spawnPosition[1].toFixed(2)}, ground=${terrainGround.toFixed(2)}`,
-          )
-        } else {
-          console.log(
-            `Vehicle Y=${position[1].toFixed(2)} >= terrain=${terrainGround.toFixed(2)}, already above ground`,
-          )
-        }
-
-        // Update catch floor to show at terrain level
-        this.catchFloor?.show(
-          [currentX, terrainGround, currentZ],
-          [0, 0, 0, 1],
-          this.renderOrigin,
-        )
-      }
-    }
-
-    // If vehicle falls below ground by more than 5m, try to recover
-    if (ground !== undefined && position[1] < ground - 5 && !this.waitingForTerrain) {
+    // Recovery: if vehicle falls below terrain, teleport back to spawn
+    if (ground !== undefined && position[1] < ground - 5) {
       console.warn(
         `Vehicle fell below terrain (Y=${position[1].toFixed(2)}, ground=${ground.toFixed(2)}), recovering...`,
       )
-      // Teleport back to spawn position (which is on real terrain)
-      this.sim.teleportVehicle(this.spawnPosition, 0)
-    }
-
-    // Hide catch floor once terrain collision is working
-    const collisionReady = this.sim.preparePlanetCollisions()
-    if (ground !== undefined && collisionReady && !this.waitingForTerrain) {
-      this.catchFloor?.hide()
+      const vehicleHeight = 0.62
+      this.sim.teleportVehicle([position[0], ground + vehicleHeight, position[2]], 0)
     }
 
     // Debug logging every second
