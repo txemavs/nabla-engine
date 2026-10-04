@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../../config/lighting.js`
 - `three`
 - `../../math/geo/sphere.js`
 - `../../scene/mercator.js`
@@ -13,7 +14,7 @@
 
 ## FieldLights.constructor
 
-[Implementation, line 62](../../../../../src/render/entity/field-lights.ts#L62)
+[Implementation, line 63](../../../../../src/render/entity/field-lights.ts#L63)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -29,7 +30,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLights.lampLevel
 
-[Implementation, line 74](../../../../../src/render/entity/field-lights.ts#L74)
+[Implementation, line 84](../../../../../src/render/entity/field-lights.ts#L84)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -39,7 +40,7 @@ lampLevel(): number
 
 ## FieldLights.reset
 
-[Implementation, line 77](../../../../../src/render/entity/field-lights.ts#L77)
+[Implementation, line 87](../../../../../src/render/entity/field-lights.ts#L87)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -59,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLights.dispose
 
-[Implementation, line 85](../../../../../src/render/entity/field-lights.ts#L85)
+[Implementation, line 95](../../../../../src/render/entity/field-lights.ts#L95)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -79,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLights.update
 
-[Implementation, line 96](../../../../../src/render/entity/field-lights.ts#L96)
+[Implementation, line 106](../../../../../src/render/entity/field-lights.ts#L106)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -115,17 +116,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wanted.add`
 - `wanted.has`
 
-## FieldLights.update.callback@115
+## FieldLights.update.callback@125
 
-[Implementation, line 115](../../../../../src/render/entity/field-lights.ts#L115)
+[Implementation, line 125](../../../../../src/render/entity/field-lights.ts#L125)
 
 ```ts
-callback@115(tile): inferred by TypeScript; see implementation
+callback@125(tile): inferred by TypeScript; see implementation
 ```
 
 ## FieldLights.ensure
 
-[Implementation, line 165](../../../../../src/render/entity/field-lights.ts#L165)
+[Implementation, line 175](../../../../../src/render/entity/field-lights.ts#L175)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -143,12 +144,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.loading.set`
 - `this.nextTry.get`
 
-## FieldLights.ensure.callback@172
+## FieldLights.ensure.callback@182
 
-[Implementation, line 172](../../../../../src/render/entity/field-lights.ts#L172)
+[Implementation, line 182](../../../../../src/render/entity/field-lights.ts#L182)
 
 ```ts
-callback@172(): inferred by TypeScript; see implementation
+callback@182(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -156,12 +157,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parseMapTilePath`
 - `this.source`
 
-## FieldLights.ensure.callback@173
+## FieldLights.ensure.callback@183
 
-[Implementation, line 173](../../../../../src/render/entity/field-lights.ts#L173)
+[Implementation, line 183](../../../../../src/render/entity/field-lights.ts#L183)
 
 ```ts
-callback@173(elements): inferred by TypeScript; see implementation
+callback@183(elements): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -170,12 +171,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.mount`
 - `this.wanted.has`
 
-## FieldLights.ensure.callback@177
+## FieldLights.ensure.callback@187
 
-[Implementation, line 177](../../../../../src/render/entity/field-lights.ts#L177)
+[Implementation, line 187](../../../../../src/render/entity/field-lights.ts#L187)
 
 ```ts
-callback@177(): inferred by TypeScript; see implementation
+callback@187(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -183,12 +184,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `this.nextTry.set`
 
-## FieldLights.ensure.callback@180
+## FieldLights.ensure.callback@190
 
-[Implementation, line 180](../../../../../src/render/entity/field-lights.ts#L180)
+[Implementation, line 190](../../../../../src/render/entity/field-lights.ts#L190)
 
 ```ts
-callback@180(): inferred by TypeScript; see implementation
+callback@190(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -198,7 +199,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLights.mount
 
-[Implementation, line 184](../../../../../src/render/entity/field-lights.ts#L184)
+[Implementation, line 194](../../../../../src/render/entity/field-lights.ts#L194)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -227,20 +228,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.placeLamp`
 - `this.root.add`
 
-## FieldLights.mount.callback@186
+## FieldLights.mount.callback@196
 
-[Implementation, line 186](../../../../../src/render/entity/field-lights.ts#L186)
+[Implementation, line 196](../../../../../src/render/entity/field-lights.ts#L196)
 
 ```ts
-callback@186(element): inferred by TypeScript; see implementation
+callback@196(element): inferred by TypeScript; see implementation
 ```
 
-## FieldLights.mount.callback@191
+## FieldLights.mount.callback@201
 
-[Implementation, line 191](../../../../../src/render/entity/field-lights.ts#L191)
+[Implementation, line 201](../../../../../src/render/entity/field-lights.ts#L201)
 
 ```ts
-callback@191(element): inferred by TypeScript; see implementation
+callback@201(element): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -249,7 +250,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLights.poles
 
-[Implementation, line 231](../../../../../src/render/entity/field-lights.ts#L231)
+[Implementation, line 241](../../../../../src/render/entity/field-lights.ts#L241)
 
 Upright posts in the geographic frame. The head is not a collider.
 
@@ -265,7 +266,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLights.paintHeads
 
-[Implementation, line 250](../../../../../src/render/entity/field-lights.ts#L250)
+[Implementation, line 260](../../../../../src/render/entity/field-lights.ts#L260)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -281,7 +282,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLights.lightNearest
 
-[Implementation, line 254](../../../../../src/render/entity/field-lights.ts#L254)
+[Implementation, line 264](../../../../../src/render/entity/field-lights.ts#L264)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -299,25 +300,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.lampCells.values`
 - `this.lampLevel`
 
-## FieldLights.lightNearest.callback@270
+## FieldLights.lightNearest.callback@280
 
-[Implementation, line 270](../../../../../src/render/entity/field-lights.ts#L270)
+[Implementation, line 280](../../../../../src/render/entity/field-lights.ts#L280)
 
 ```ts
-callback@270(a, b): inferred by TypeScript; see implementation
+callback@280(a, b): inferred by TypeScript; see implementation
 ```
 
-## FieldLights.lightNearest.callback@273
+## FieldLights.lightNearest.callback@283
 
-[Implementation, line 273](../../../../../src/render/entity/field-lights.ts#L273)
+[Implementation, line 283](../../../../../src/render/entity/field-lights.ts#L283)
 
 ```ts
-callback@273(a, b): inferred by TypeScript; see implementation
+callback@283(a, b): inferred by TypeScript; see implementation
 ```
 
 ## FieldLights.placeLamp
 
-[Implementation, line 291](../../../../../src/render/entity/field-lights.ts#L291)
+[Implementation, line 301](../../../../../src/render/entity/field-lights.ts#L301)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -333,7 +334,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLights.drop
 
-[Implementation, line 298](../../../../../src/render/entity/field-lights.ts#L298)
+[Implementation, line 308](../../../../../src/render/entity/field-lights.ts#L308)
 
 One z15 cell, kept like the terrain tile. The network runs once per cell.
 
@@ -354,12 +355,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.lampCells.delete`
 - `this.lampCells.get`
 
-## FieldLights.drop.callback@310
+## FieldLights.drop.callback@320
 
-[Implementation, line 310](../../../../../src/render/entity/field-lights.ts#L310)
+[Implementation, line 320](../../../../../src/render/entity/field-lights.ts#L320)
 
 ```ts
-callback@310(node): inferred by TypeScript; see implementation
+callback@320(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -369,7 +370,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## osmFieldLightSource
 
-[Implementation, line 323](../../../../../src/render/entity/field-lights.ts#L323)
+[Implementation, line 333](../../../../../src/render/entity/field-lights.ts#L333)
 
 Optional online provider used by Studio; games can supply bundled marks instead.
 
@@ -387,7 +388,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readCache
 
-[Implementation, line 336](../../../../../src/render/entity/field-lights.ts#L336)
+[Implementation, line 346](../../../../../src/render/entity/field-lights.ts#L346)
 
 ```ts
 readCache(path: string): Stored[] | null
@@ -401,7 +402,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## writeCache
 
-[Implementation, line 346](../../../../../src/render/entity/field-lights.ts#L346)
+[Implementation, line 356](../../../../../src/render/entity/field-lights.ts#L356)
 
 ```ts
 writeCache(path: string, elements: Stored[]): void
@@ -414,7 +415,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## loadMarks
 
-[Implementation, line 354](../../../../../src/render/entity/field-lights.ts#L354)
+[Implementation, line 364](../../../../../src/render/entity/field-lights.ts#L364)
 
 ```ts
 loadMarks(south: number, west: number, north: number, east: number, signal: AbortSignal): Promise<Stored[]>
@@ -444,7 +445,7 @@ Explicit throws in this body:
 
 ## place
 
-[Implementation, line 389](../../../../../src/render/entity/field-lights.ts#L389)
+[Implementation, line 399](../../../../../src/render/entity/field-lights.ts#L399)
 
 ```ts
 place(tags: Record<string, string>): { kind: Kind; color: string; flash: number } | null
@@ -459,7 +460,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## buildBuoy
 
-[Implementation, line 403](../../../../../src/render/entity/field-lights.ts#L403)
+[Implementation, line 413](../../../../../src/render/entity/field-lights.ts#L413)
 
 Colour tag order is top to bottom. Vertex colours, so a later GLB keeps COLOR_0.
 
@@ -485,7 +486,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## addBody
 
-[Implementation, line 435](../../../../../src/render/entity/field-lights.ts#L435)
+[Implementation, line 445](../../../../../src/render/entity/field-lights.ts#L445)
 
 ```ts
 addBody(group: THREE.Group, shape: string, names: string[], size: { radius: number; height: number }): number
@@ -504,7 +505,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## addTopmark
 
-[Implementation, line 469](../../../../../src/render/entity/field-lights.ts#L469)
+[Implementation, line 479](../../../../../src/render/entity/field-lights.ts#L479)
 
 ```ts
 addTopmark(group: THREE.Group, shape: string, colour: string, y: number): number
@@ -527,7 +528,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## coneMesh
 
-[Implementation, line 525](../../../../../src/render/entity/field-lights.ts#L525)
+[Implementation, line 535](../../../../../src/render/entity/field-lights.ts#L535)
 
 ```ts
 coneMesh(hex: string, up: boolean): THREE.Mesh
@@ -541,7 +542,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## placeCone
 
-[Implementation, line 533](../../../../../src/render/entity/field-lights.ts#L533)
+[Implementation, line 543](../../../../../src/render/entity/field-lights.ts#L543)
 
 ```ts
 placeCone(mesh: THREE.Mesh, up: boolean, baseY: number): void
@@ -549,7 +550,7 @@ placeCone(mesh: THREE.Mesh, up: boolean, baseY: number): void
 
 ## conesBaseTogether
 
-[Implementation, line 537](../../../../../src/render/entity/field-lights.ts#L537)
+[Implementation, line 547](../../../../../src/render/entity/field-lights.ts#L547)
 
 ```ts
 conesBaseTogether(group: THREE.Group, hex: string, y: number): number
@@ -563,7 +564,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## conesPointTogether
 
-[Implementation, line 547](../../../../../src/render/entity/field-lights.ts#L547)
+[Implementation, line 557](../../../../../src/render/entity/field-lights.ts#L557)
 
 ```ts
 conesPointTogether(group: THREE.Group, hex: string, y: number): number
@@ -577,7 +578,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## markShape
 
-[Implementation, line 557](../../../../../src/render/entity/field-lights.ts#L557)
+[Implementation, line 567](../../../../../src/render/entity/field-lights.ts#L567)
 
 ```ts
 markShape(tags: Record<string, string>, type: string): string
@@ -591,7 +592,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bodySize
 
-[Implementation, line 565](../../../../../src/render/entity/field-lights.ts#L565)
+[Implementation, line 575](../../../../../src/render/entity/field-lights.ts#L575)
 
 ```ts
 bodySize(shape: string, lightH: number): { radius: number; height: number }
@@ -604,7 +605,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bodyColourNames
 
-[Implementation, line 576](../../../../../src/render/entity/field-lights.ts#L576)
+[Implementation, line 586](../../../../../src/render/entity/field-lights.ts#L586)
 
 ```ts
 bodyColourNames(tags: Record<string, string>, type: string): string[]
@@ -619,12 +620,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `typedValue`
 - `typedValue(tags, ':system').includes`
 
-## bodyColourNames.callback@586
+## bodyColourNames.callback@596
 
-[Implementation, line 586](../../../../../src/render/entity/field-lights.ts#L586)
+[Implementation, line 596](../../../../../src/render/entity/field-lights.ts#L596)
 
 ```ts
-callback@586(part): inferred by TypeScript; see implementation
+callback@596(part): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -634,7 +635,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## typedValue
 
-[Implementation, line 600](../../../../../src/render/entity/field-lights.ts#L600)
+[Implementation, line 610](../../../../../src/render/entity/field-lights.ts#L610)
 
 ```ts
 typedValue(tags: Record<string, string>, suffix: string): string
@@ -649,7 +650,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cardinalTopmark
 
-[Implementation, line 608](../../../../../src/render/entity/field-lights.ts#L608)
+[Implementation, line 618](../../../../../src/render/entity/field-lights.ts#L618)
 
 ```ts
 cardinalTopmark(category: string): string
@@ -657,7 +658,7 @@ cardinalTopmark(category: string): string
 
 ## lampHex
 
-[Implementation, line 616](../../../../../src/render/entity/field-lights.ts#L616)
+[Implementation, line 626](../../../../../src/render/entity/field-lights.ts#L626)
 
 ```ts
 lampHex(tags: Record<string, string>, type: string): string
@@ -671,7 +672,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## lightMetres
 
-[Implementation, line 627](../../../../../src/render/entity/field-lights.ts#L627)
+[Implementation, line 637](../../../../../src/render/entity/field-lights.ts#L637)
 
 ```ts
 lightMetres(tags: Record<string, string>): number
@@ -684,7 +685,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## solid
 
-[Implementation, line 632](../../../../../src/render/entity/field-lights.ts#L632)
+[Implementation, line 642](../../../../../src/render/entity/field-lights.ts#L642)
 
 ```ts
 solid(geometry: THREE.BufferGeometry, hex: string): void
@@ -699,7 +700,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## painted
 
-[Implementation, line 644](../../../../../src/render/entity/field-lights.ts#L644)
+[Implementation, line 654](../../../../../src/render/entity/field-lights.ts#L654)
 
 ```ts
 painted(geometry: THREE.BufferGeometry): THREE.Mesh
@@ -712,7 +713,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## paint
 
-[Implementation, line 651](../../../../../src/render/entity/field-lights.ts#L651)
+[Implementation, line 661](../../../../../src/render/entity/field-lights.ts#L661)
 
 ```ts
 paint(colour: string): string | null
@@ -724,7 +725,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## flashOf
 
-[Implementation, line 662](../../../../../src/render/entity/field-lights.ts#L662)
+[Implementation, line 672](../../../../../src/render/entity/field-lights.ts#L672)
 
 ```ts
 flashOf(character: string | undefined): number

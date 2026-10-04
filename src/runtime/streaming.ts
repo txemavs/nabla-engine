@@ -1,4 +1,5 @@
 /** Coordinate terrain requests from live gameplay positions, in the current world frame. */
+import { streamingDefaults } from '../config/streaming.js'
 import type { SceneDocument } from '../scene/document.js'
 import type { Vec3Tuple } from '../entity/schema.js'
 
@@ -17,7 +18,7 @@ export class GameplayStreaming {
     this.sample = null
   }
   /**
-   * Request terrain at intervals greater than 500 ms, protecting vehicles and portal endpoints.
+   * Request terrain at intervals greater than the configured sample period, protecting vehicles and portal endpoints.
    * Time is a monotonic timestamp in milliseconds; velocity is estimated in metres/second.
    * Ignore non-finite timestamps. A backward timestamp restarts sampling with zero velocity.
    * Return whether a request was submitted; store copies so physics cannot mutate history.
@@ -29,7 +30,12 @@ export class GameplayStreaming {
     time: number,
   ): boolean {
     if (!Number.isFinite(time)) return false
-    if (this.sample && time >= this.sample.at && time - this.sample.at <= 500) return false
+    if (
+      this.sample &&
+      time >= this.sample.at &&
+      time - this.sample.at <= streamingDefaults.sampleIntervalMs
+    )
+      return false
     const position: Vec3Tuple = [...sim.player.position]
     const elapsed = this.sample ? (time - this.sample.at) / 1000 : 0
     const velocity = position.map((value, axis) =>

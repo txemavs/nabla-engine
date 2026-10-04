@@ -55,3 +55,9 @@ export {
   type RegisteredPortal,
 } from './world-content.js'
 export { RemotePortalViews } from '../render/portal/remote.js'
+
+export {
+  gameCameraDefaults,
+  resolveGameCameraSettings,
+  type GameCameraSettings,
+} from '../config/camera.js'

@@ -13,14 +13,14 @@ describe('driving and monitor presentation', () => {
   it('respects manual look, follows a chase turn and takes the short path across ±pi', () => {
     expect(followDrivingHeading(1, 0, 0, 20, 1 / 60, 500)).toBe(1)
     let yaw = 0
-    for (let i = 0; i < 30; i++) yaw = followDrivingHeading(yaw, 1, 0, 20, 1 / 60, 2000)
+    for (let i = 0; i < 30; i++) yaw = followDrivingHeading(yaw, 1, 0, 20, 1 / 60, 11000)
     expect(yaw).toBeGreaterThan(0.99)
-    expect(followDrivingHeading(3.12, -3.12, 0, 20, 1 / 60, 2000)).toBeGreaterThan(3.12)
+    expect(followDrivingHeading(3.12, -3.12, 0, 20, 1 / 60, 11000)).toBeGreaterThan(3.12)
   })
   it('follows equally at 30 and 120 fps', () => {
     const advance = (fps: number) => {
       let yaw = 0
-      for (let i = 0; i < fps; i++) yaw = followDrivingHeading(yaw, 1, 0.4, 25, 1 / fps, 2000)
+      for (let i = 0; i < fps; i++) yaw = followDrivingHeading(yaw, 1, 0.4, 25, 1 / fps, 11000)
       return yaw
     }
     expect(advance(30)).toBeCloseTo(advance(120), 6)

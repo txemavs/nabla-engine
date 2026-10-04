@@ -6,13 +6,14 @@
 
 ## Module dependencies
 
+- `../config/controls.js`
 - `../simulation/vehicles/keyboard-steering.js`
 - `../simulation/simulation.js`
 - `../scene/document.js`
 
 ## availableGamepads
 
-[Implementation, line 5](../../../../src/runtime/input.ts#L5)
+[Implementation, line 6](../../../../src/runtime/input.ts#L6)
 
 Gamepad access may be absent or denied on HTTP LAN origins and embedded views.
 
@@ -26,9 +27,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## deadzone
 
-[Implementation, line 20](../../../../src/runtime/input.ts#L20)
+[Implementation, line 21](../../../../src/runtime/input.ts#L21)
 
-Remove a 0.12 dead band and rescale the remaining signed range; non-finite input becomes zero.
+Remove the configured dead band and rescale the remaining signed range; non-finite input becomes zero.
 
 ```ts
 deadzone(value: number): number
@@ -43,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gamepadAxes
 
-[Implementation, line 25](../../../../src/runtime/input.ts#L25)
+[Implementation, line 32](../../../../src/runtime/input.ts#L32)
 
 Map standard gamepad controls; flight uses mode 2 sticks, road driving uses trigger throttle.
 
@@ -58,7 +59,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gamepadAxes.axis
 
-[Implementation, line 26](../../../../src/runtime/input.ts#L26)
+[Implementation, line 33](../../../../src/runtime/input.ts#L33)
 
 ```ts
 axis(i: number): inferred by TypeScript; see implementation
@@ -70,7 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.reset
 
-[Implementation, line 50](../../../../src/runtime/input.ts#L50)
+[Implementation, line 57](../../../../src/runtime/input.ts#L57)
 
 Forget keyboard steering interpolation after focus loss or a session boundary.
 
@@ -84,7 +85,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read
 
-[Implementation, line 59](../../../../src/runtime/input.ts#L59)
+[Implementation, line 66](../../../../src/runtime/input.ts#L66)
 
 Combine keyboard, gamepad, touch and monitor commands into one physics input.
 Elapsed time is seconds and yaw is radians. Disabled/menu input resets steering;
@@ -108,7 +109,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read.axis
 
-[Implementation, line 72](../../../../src/runtime/input.ts#L72)
+[Implementation, line 79](../../../../src/runtime/input.ts#L79)
 
 ```ts
 axis(positive: string, negative: string): inferred by TypeScript; see implementation
@@ -119,10 +120,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `keys.has`
 
-## GameInput.read.callback@82
+## GameInput.read.callback@89
 
-[Implementation, line 82](../../../../src/runtime/input.ts#L82)
+[Implementation, line 89](../../../../src/runtime/input.ts#L89)
 
 ```ts
-callback@82(e): inferred by TypeScript; see implementation
+callback@89(e): inferred by TypeScript; see implementation
 ```

@@ -4,6 +4,7 @@
  * The host owns focus policy, rendering and scheduling, while this coordinator
  * owns session state, held input, camera transitions and local portal events.
  */
+import type { GameCameraSettings } from '../config/camera.js'
 import { GameplayStreaming } from './streaming.js'
 import { Quaternion, Vector3 } from 'three'
 import type { SceneDocument } from '../scene/document.js'
@@ -27,6 +28,11 @@ export class GameRuntime {
   private portalSequence = 0
   private jumpRequested = false
 
+  /** Copy per-application camera overrides; replay retains them. */
+  constructor(options: { camera?: Partial<GameCameraSettings> } = {}) {
+    Object.assign(this.cameraState, createGameCameraState(options.camera))
+  }
+
   /** Expose the session-owned simulation for presentation, or null outside a live session. */
   get simulation() {
     return this.session.simulation
@@ -42,7 +48,7 @@ export class GameRuntime {
     this.streaming.reset()
     this.scene = structuredClone(document)
     const sim = await this.session.play(document, options)
-    Object.assign(this.cameraState, createGameCameraState())
+    Object.assign(this.cameraState, createGameCameraState(this.cameraState.settings))
     const spawn = document.entities.find((e) => e.kind === 'spawn')!
     const forward = new Vector3(0, 0, -1).applyQuaternion(
       new Quaternion(...spawn.transform.rotation),
@@ -144,11 +150,15 @@ export class GameRuntime {
         !definition.interior
       ) {
         this.cameraState.mode = 'cockpit'
-        this.cameraState.mapHeight = overheadDrivingHeight(0, this.cameraState.mapZoom)
+        this.cameraState.mapHeight = overheadDrivingHeight(
+          0,
+          this.cameraState.mapZoom,
+          this.cameraState.settings,
+        )
         this.cameraState.entrance = { id: this.vehicle, started: now }
       }
       this.cameraState.headYaw = 0
-      this.cameraState.headPitch = 0.05
+      this.cameraState.headPitch = this.cameraState.settings.headPitch
     }
     return event
   }
@@ -187,9 +197,9 @@ export class GameRuntime {
         return state.firstPerson ? 'Primera persona' : 'Tercera persona'
       }
       state.mode = state.mode === 'chase' ? 'cockpit' : state.mode === 'cockpit' ? 'map' : 'chase'
-      state.pitch = state.mode === 'cockpit' ? 0.05 : 0.24
+      state.pitch = state.mode === 'cockpit' ? state.settings.headPitch : state.settings.chasePitch
       state.headYaw = 0
-      state.headPitch = 0.05
+      state.headPitch = state.settings.headPitch
       return state.mode === 'map'
         ? 'Cámara cenital · rueda para acercar o alejar'
         : state.mode === 'cockpit'

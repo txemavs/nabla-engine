@@ -1,6 +1,7 @@
 /**
  * Rapier world. WASM has to be ready first: `await initPhysics()`.
  */
+import { simulationDefaults } from '../config/simulation.js'
 import RAPIER from '@dimforge/rapier3d-compat/rapier.es.js'
 import type {
   Collider,
@@ -827,7 +828,7 @@ export class World {
   defaultContactMaterial = { friction: 0.3, restitution: 0 }
   stepping = false
   constructor(options?: { gravity?: Vec3 }) {
-    const g = options?.gravity ?? new Vec3(0, -9.81, 0)
+    const g = options?.gravity ?? new Vec3(0, -simulationDefaults.gravity, 0)
     this.gravity = g
     this.raw = new (R().World)(g)
     this.raw.integrationParameters.numSolverIterations = 15

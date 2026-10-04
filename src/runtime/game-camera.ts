@@ -1,3 +1,9 @@
+/** Shared gameplay camera with configurable manual-look recovery. Times are milliseconds; dt is seconds. */
+import {
+  cameraRecovery,
+  resolveGameCameraSettings,
+  type GameCameraSettings,
+} from '../config/camera.js'
 import * as THREE from 'three'
 import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../presentation/scene-view.js'
@@ -12,6 +18,7 @@ import {
 } from '../render/entity/driving-camera.js'
 
 export interface GameCameraState {
+  settings: GameCameraSettings
   mode: 'chase' | 'cockpit' | 'map'
   firstPerson: boolean
   yaw: number
@@ -25,23 +32,26 @@ export interface GameCameraState {
   telemetry: DrivingTelemetry
 }
 
-export function createGameCameraState(): GameCameraState {
+/** Create independent camera state and validate per-consumer recovery overrides. */
+export function createGameCameraState(settings: Partial<GameCameraSettings> = {}): GameCameraState {
+  const resolved = resolveGameCameraSettings(settings)
   return {
+    settings: resolved,
     mode: 'chase',
     firstPerson: true,
     yaw: 0,
-    pitch: 0.24,
+    pitch: resolved.chasePitch,
     headYaw: 0,
-    headPitch: 0.05,
+    headPitch: resolved.headPitch,
     lastLookTime: 0,
-    mapHeight: 45,
+    mapHeight: resolved.mapHeight,
     mapZoom: 1,
     entrance: null,
-    telemetry: new DrivingTelemetry(),
+    telemetry: new DrivingTelemetry(resolved),
   }
 }
 
-/** Studio's gameplay camera, independent of editor UI and renderer ownership.
+/** Shared gameplay camera, independent of editor UI and renderer ownership.
  * Coordinates remain in world space; the renderer applies its floating origin afterwards.
  */
 export function updateGameCamera(
@@ -53,6 +63,7 @@ export function updateGameCamera(
   dt: number,
   prepareVehicle?: (body: THREE.Object3D, camera: THREE.PerspectiveCamera) => void,
 ) {
+  const tuning = state.settings
   const {
     mode: cameraMode,
     firstPerson,
@@ -74,7 +85,8 @@ export function updateGameCamera(
   const altitude = geoPoint ? geoPoint.altitude - view.document.geography!.altitude : p.position[1]
   const info = p.vehicleId ? sim.vehicleInfo(p.vehicleId, true) : null
   drivingTelemetry.update(p.vehicleId, p.speed, info?.turnRate ?? 0, dt)
-  const fov = (cockpit && info) || (!p.vehicleId && firstPerson) ? 70 : 48
+  const fov =
+    (cockpit && info) || (!p.vehicleId && firstPerson) ? tuning.firstPersonFov : tuning.chaseFov
   if (camera.fov !== fov) {
     camera.fov = fov
     camera.updateProjectionMatrix()
@@ -93,20 +105,27 @@ export function updateGameCamera(
       drivingTelemetry.speed,
       dt,
       now - lastLookTime,
+      state.settings,
     )
-  } else if (info && p.speed > 1 && now - lastLookTime > 1400 && !cockpit) {
+  } else if (
+    info &&
+    p.speed > tuning.flightMinSpeed &&
+    now - lastLookTime > state.settings.autoCenterDelayMs &&
+    !cockpit
+  ) {
     const wanted = Math.atan2(-vehicleForward.x, -vehicleForward.z)
     yaw +=
       Math.atan2(Math.sin(wanted - yaw), Math.cos(wanted - yaw)) *
-      (1 - Math.exp(-2 * Math.min(dt, 0.1)))
+      (1 - Math.exp(-tuning.flightDamping * Math.min(dt, tuning.maxStepSeconds))) *
+      cameraRecovery(now - lastLookTime, state.settings)
   }
   const target: Vec3Tuple = [
     p.position[0],
-    p.position[1] + (info?.isCarrier ? 1 : 0.55),
+    p.position[1] + (info?.isCarrier ? tuning.carrierTargetHeight : tuning.targetHeight),
     p.position[2],
   ]
   if (p.interiorId) {
-    const anchor = new THREE.Vector3(0, 0.55, 0)
+    const anchor = new THREE.Vector3(0, tuning.targetHeight, 0)
       .applyQuaternion(playerFrameQ)
       .add(new THREE.Vector3(...p.position))
     target.splice(0, 3, ...anchor.toArray())
@@ -117,8 +136,10 @@ export function updateGameCamera(
       .copy(playerFrameQ)
       .multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ')))
   } else if (overhead) {
-    const wantedHeight = overheadDrivingHeight(drivingTelemetry.speed, mapZoom)
-    mapHeight += (wantedHeight - mapHeight) * (1 - Math.exp(-3 * Math.min(dt, 0.1)))
+    const wantedHeight = overheadDrivingHeight(drivingTelemetry.speed, mapZoom, tuning)
+    mapHeight +=
+      (wantedHeight - mapHeight) *
+      (1 - Math.exp(-tuning.mapDamping * Math.min(dt, tuning.maxStepSeconds)))
     // Offset half a vertical half-frustum: the car projects to 75% screen height.
     const lookAhead = mapHeight * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.5
     const map = overheadDrivingPose(
@@ -150,20 +171,34 @@ export function updateGameCamera(
     const cameraAnchor = [...target]
     if (info && !info.isCarrier) {
       const ahead =
-        Math.min(3.5, drivingTelemetry.speed * 0.14) *
-        THREE.MathUtils.smoothstep(now - lastLookTime, 900, 1400)
+        Math.min(tuning.maxLookAhead, drivingTelemetry.speed * tuning.lookAheadSeconds) *
+        cameraRecovery(now - lastLookTime, state.settings)
       target[0] += vehicleForward.x * ahead
       target[2] += vehicleForward.z * ahead
     }
     const distance =
-      (info?.cameraDistance ?? 5.5) * (1 + 2 * THREE.MathUtils.smoothstep(altitude, 50000, 2000000))
+      (info?.cameraDistance ?? tuning.chaseDistance) *
+      (1 +
+        tuning.altitudeDistanceGain *
+          THREE.MathUtils.smoothstep(
+            altitude,
+            tuning.altitudeDistanceStart,
+            tuning.altitudeDistanceEnd,
+          ))
     const travelPitch =
-      now - lastLookTime > 10000
-        ? Math.max(pitch, THREE.MathUtils.smoothstep(altitude, 1000, 500000) * 1.56)
+      now - lastLookTime > state.settings.autoCenterDelayMs
+        ? Math.max(
+            pitch,
+            THREE.MathUtils.smoothstep(
+              altitude,
+              tuning.altitudePitchStart,
+              tuning.altitudePitchEnd,
+            ) * tuning.altitudePitchMax,
+          )
         : pitch
     const desired: Vec3Tuple = [
       cameraAnchor[0] + Math.sin(yaw) * distance * Math.cos(travelPitch),
-      cameraAnchor[1] + 0.8 + Math.sin(travelPitch) * distance,
+      cameraAnchor[1] + tuning.chaseHeight + Math.sin(travelPitch) * distance,
       cameraAnchor[2] + Math.cos(yaw) * distance * Math.cos(travelPitch),
     ]
     if (p.interiorId) {
@@ -178,7 +213,7 @@ export function updateGameCamera(
   }
   if (vehicleEntrance && vehicleEntrance.id === p.vehicleId && cockpit && info) {
     const elapsed = now - vehicleEntrance.started
-    const t = THREE.MathUtils.smoothstep(elapsed, 150, 1200)
+    const t = THREE.MathUtils.smoothstep(elapsed, tuning.entranceDelayMs, tuning.entranceEndMs)
     const seatPosition = camera.position.clone()
     const seatRotation = camera.quaternion.clone()
     const top = overheadDrivingPose(
@@ -195,7 +230,7 @@ export function updateGameCamera(
     camera.quaternion.slerp(seatRotation, t)
     const body = view.objects.get(p.vehicleId!)
     if (body) prepareVehicle?.(body, camera)
-    if (elapsed >= 1200) vehicleEntrance = null
+    if (elapsed >= tuning.entranceEndMs) vehicleEntrance = null
   } else vehicleEntrance = null
 
   state.yaw = yaw

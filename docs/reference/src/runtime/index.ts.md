@@ -29,5 +29,6 @@
 - `../render/entity/field-lights.js`
 - `./world-content.js`
 - `../render/portal/remote.js`
+- `../config/camera.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

@@ -1,3 +1,4 @@
+import { simulationDefaults } from '../../config/simulation.js'
 import type { Body } from '../physics.js'
 import { Vec3 } from '../physics.js'
 
@@ -46,7 +47,7 @@ export function stepBoat(
 ): void {
   const body = v.body
   const wet = clamp(depth / 0.55, 0, 1.6)
-  body.applyForce(up.scale(wet * body.mass * 9.81 * 1.22))
+  body.applyForce(up.scale(wet * body.mass * simulationDefaults.gravity * 1.22))
   const vertical = body.velocity.dot(up)
   if (wet > 0) body.applyForce(up.scale(-vertical * body.mass * 2.2))
   const forward = body.quaternion.vmult(new Vec3(0, 0, -1))

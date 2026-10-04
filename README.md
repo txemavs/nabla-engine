@@ -162,3 +162,5 @@ third-party trademarks or map imagery.
 Start Studio, the cache and native planetary GLB generation with Docker Compose.
 See [Local development](docs/local-development.md) for setup, activation, job
 inspection, storage, debugging and a guided tour of the implementation.
+
+See the [topic-based configuration guide](docs/configuration.md) for defaults, units and application overrides.

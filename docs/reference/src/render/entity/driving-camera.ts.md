@@ -6,16 +6,17 @@
 
 ## Module dependencies
 
+- `../../config/camera.js`
 - `three`
 
 ## driverHeadPose
 
-[Implementation, line 6](../../../../../src/render/entity/driving-camera.ts#L6)
+[Implementation, line 7](../../../../../src/render/entity/driving-camera.ts#L7)
 
 One rigid seat anchor for the driver's eyes and visible monitor.
 
 ```ts
-driverHeadPose(driver: readonly number[], rotation: readonly number[], isCarrier: boolean, yaw = 0, pitch = 0.05, offset?: readonly number[]): { position: Vector3; quaternion: Quaternion }
+driverHeadPose(driver: readonly number[], rotation: readonly number[], isCarrier: boolean, yaw = 0, pitch = gameCameraDefaults.headPitch, offset?: readonly number[]): { position: Vector3; quaternion: Quaternion }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -30,12 +31,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## followDrivingHeading
 
-[Implementation, line 30](../../../../../src/render/entity/driving-camera.ts#L30)
+[Implementation, line 31](../../../../../src/render/entity/driving-camera.ts#L31)
 
-Brief manual-look grace, then speed-aware damping and bounded corner anticipation.
+Configurable manual-look grace, then speed-aware damping and bounded corner anticipation.
 
 ```ts
-followDrivingHeading(yaw: number, heading: number, turnRate: number, speed: number, elapsed: number, sinceLookMs: number): number
+followDrivingHeading(yaw: number, heading: number, turnRate: number, speed: number, elapsed: number, sinceLookMs: number, settings: Readonly<GameCameraSettings> = gameCameraDefaults): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -48,10 +49,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.sin`
 - `MathUtils.clamp`
 - `MathUtils.smoothstep`
+- `cameraRecovery`
+
+## DrivingTelemetry.constructor
+
+[Implementation, line 68](../../../../../src/render/entity/driving-camera.ts#L68)
+
+Use the owning camera settings for telemetry filtering.
+
+```ts
+constructor(private readonly settings: Readonly<GameCameraSettings> = gameCameraDefaults): instance
+```
 
 ## DrivingTelemetry.update
 
-[Implementation, line 55](../../../../../src/render/entity/driving-camera.ts#L55)
+[Implementation, line 72](../../../../../src/render/entity/driving-camera.ts#L72)
 
 Filter suspension noise before it can change camera framing or anticipated yaw.
 
@@ -67,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## overheadDrivingPose
 
-[Implementation, line 69](../../../../../src/render/entity/driving-camera.ts#L69)
+[Implementation, line 91](../../../../../src/render/entity/driving-camera.ts#L91)
 
 Overhead view: local ground normal below the camera, vehicle nose toward screen top.
 
@@ -95,12 +107,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## overheadDrivingHeight
 
-[Implementation, line 90](../../../../../src/render/entity/driving-camera.ts#L90)
+[Implementation, line 112](../../../../../src/render/entity/driving-camera.ts#L112)
 
 Driving map: roughly 30 m ahead at rest, with two seconds of extra road at speed.
 
 ```ts
-overheadDrivingHeight(speed: number, zoom = 1): number
+overheadDrivingHeight(speed: number, zoom = 1, settings: Readonly<GameCameraSettings> = gameCameraDefaults): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

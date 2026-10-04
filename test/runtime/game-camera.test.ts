@@ -5,6 +5,44 @@ import { PlaySession } from '../../src/runtime/session.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import type { SceneDocument } from '../../src/scene/document.js'
+import { gameCameraDefaults, resolveGameCameraSettings } from '../../src/config/camera.js'
+import { followDrivingHeading } from '../../src/render/entity/driving-camera.js'
+import { GameRuntime } from '../../src/runtime/game.js'
+
+test('manual look lasts ten seconds, then recovery ramps up and can be overridden', () => {
+  for (const elapsed of [0, 900, 1400, 9999, 10000]) {
+    expect(followDrivingHeading(1, 0, 0, 20, 1 / 60, elapsed)).toBe(1)
+  }
+  const blending = followDrivingHeading(1, 0, 0, 20, 1 / 60, 10250)
+  const resumed = followDrivingHeading(1, 0, 0, 20, 1 / 60, 10500)
+  expect(blending).toBeLessThan(1)
+  expect(resumed).toBeLessThan(blending)
+  const custom = resolveGameCameraSettings({ autoCenterDelayMs: 200, autoCenterBlendMs: 0 })
+  expect(followDrivingHeading(1, 0, 0, 20, 1 / 60, 200, custom)).toBe(1)
+  expect(followDrivingHeading(1, 0, 0, 20, 1 / 60, 201, custom)).toBeLessThan(1)
+  expect(gameCameraDefaults.autoCenterDelayMs).toBe(10000)
+  expect(() => resolveGameCameraSettings({ autoCenterDelayMs: -1 })).toThrow(RangeError)
+  expect(() => resolveGameCameraSettings({ autoCenterBlendMs: NaN })).toThrow(RangeError)
+  expect(() => resolveGameCameraSettings({ speedDampingDivisor: 0 })).toThrow(RangeError)
+})
+
+test('camera overrides survive replay without leaking to other runtimes', async () => {
+  const game = new GameRuntime({ camera: { autoCenterDelayMs: 3000 } })
+  const document: SceneDocument = {
+    version: 1,
+    name: 'Replay',
+    entities: [createEntity('spawn', 'spawn')],
+  }
+  try {
+    await game.play(document)
+    game.stop()
+    await game.play(document)
+    expect(game.cameraState.settings.autoCenterDelayMs).toBe(3000)
+    expect(createGameCameraState().settings.autoCenterDelayMs).toBe(10000)
+  } finally {
+    game.dispose()
+  }
+})
 
 test('Studio cameras work without editor DOM and cover cockpit, chase and overhead', async () => {
   const session = new PlaySession()

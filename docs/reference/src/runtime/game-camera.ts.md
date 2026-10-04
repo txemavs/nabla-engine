@@ -4,8 +4,11 @@
 
 [Source](../../../../src/runtime/game-camera.ts)
 
+Shared gameplay camera with configurable manual-look recovery. Times are milliseconds; dt is seconds.
+
 ## Module dependencies
 
+- `../config/camera.js`
 - `three`
 - `../simulation/simulation.js`
 - `../presentation/scene-view.js`
@@ -15,21 +18,24 @@
 
 ## createGameCameraState
 
-[Implementation, line 28](../../../../src/runtime/game-camera.ts#L28)
+[Implementation, line 36](../../../../src/runtime/game-camera.ts#L36)
+
+Create independent camera state and validate per-consumer recovery overrides.
 
 ```ts
-createGameCameraState(): GameCameraState
+createGameCameraState(settings: Partial<GameCameraSettings> = {}): GameCameraState
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `DrivingTelemetry`
+- `resolveGameCameraSettings`
 
 ## updateGameCamera
 
-[Implementation, line 47](../../../../src/runtime/game-camera.ts#L47)
+[Implementation, line 57](../../../../src/runtime/game-camera.ts#L57)
 
-Studio's gameplay camera, independent of editor UI and renderer ownership.
+Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
 
 ```ts
@@ -63,6 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.up.set`
 - `camera.up.set(0, 1, 0).applyQuaternion`
 - `camera.updateProjectionMatrix`
+- `cameraRecovery`
 - `desired.splice`
 - `driverHeadPose`
 - `drivingTelemetry.update`

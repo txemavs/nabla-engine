@@ -8,12 +8,13 @@ Coordinate terrain requests from live gameplay positions, in the current world f
 
 ## Module dependencies
 
+- `../config/streaming.js`
 - `../scene/document.js`
 - `../entity/schema.js`
 
 ## GameplayStreaming.position
 
-[Implementation, line 12](../../../../src/runtime/streaming.ts#L12)
+[Implementation, line 13](../../../../src/runtime/streaming.ts#L13)
 
 Return a defensive copy of the last sampled position, in metres.
 
@@ -23,7 +24,7 @@ position(): Vec3Tuple | null
 
 ## GameplayStreaming.reset
 
-[Implementation, line 16](../../../../src/runtime/streaming.ts#L16)
+[Implementation, line 17](../../../../src/runtime/streaming.ts#L17)
 
 Discard velocity history before replay, origin changes or a different clock.
 
@@ -33,9 +34,9 @@ reset(): void
 
 ## GameplayStreaming.update
 
-[Implementation, line 25](../../../../src/runtime/streaming.ts#L25)
+[Implementation, line 26](../../../../src/runtime/streaming.ts#L26)
 
-Request terrain at intervals greater than 500 ms, protecting vehicles and portal endpoints.
+Request terrain at intervals greater than the configured sample period, protecting vehicles and portal endpoints.
 Time is a monotonic timestamp in milliseconds; velocity is estimated in metres/second.
 Ignore non-finite timestamps. A backward timestamp restarts sampling with zero velocity.
 Return whether a request was submitted; store copies so physics cannot mutate history.
@@ -50,28 +51,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `position.map`
 - `world.update`
 
-## GameplayStreaming.update.callback@35
+## GameplayStreaming.update.callback@41
 
-[Implementation, line 35](../../../../src/runtime/streaming.ts#L35)
+[Implementation, line 41](../../../../src/runtime/streaming.ts#L41)
 
 ```ts
-callback@35(value, axis): inferred by TypeScript; see implementation
+callback@41(value, axis): inferred by TypeScript; see implementation
 ```
 
-## GameplayStreaming.update.callback@39
+## GameplayStreaming.update.callback@45
 
-[Implementation, line 39](../../../../src/runtime/streaming.ts#L39)
+[Implementation, line 45](../../../../src/runtime/streaming.ts#L45)
 
 ```ts
-callback@39(entity): inferred by TypeScript; see implementation
+callback@45(entity): inferred by TypeScript; see implementation
 ```
 
-## GameplayStreaming.update.callback@40
+## GameplayStreaming.update.callback@46
 
-[Implementation, line 40](../../../../src/runtime/streaming.ts#L40)
+[Implementation, line 46](../../../../src/runtime/streaming.ts#L46)
 
 ```ts
-callback@40(entity): inferred by TypeScript; see implementation
+callback@46(entity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

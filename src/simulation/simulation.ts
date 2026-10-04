@@ -1,3 +1,4 @@
+import { simulationDefaults } from '../config/simulation.js'
 import {
   createWheeledVehicle,
   stepWheeledVehicle,
@@ -38,9 +39,9 @@ import { isMapBuilding, type Entity, type Transform, type Vec3Tuple } from '../e
 import { parseScene, replaceMapScene, type SceneDocument } from '../scene/document.js'
 import { SceneGraph } from '../scene/graph.js'
 
-export const FIXED_STEP = 1 / 60
-const PLAYER_HALF_HEIGHT = 0.9
-const PLAYER_RADIUS = 0.32
+export const FIXED_STEP = simulationDefaults.fixedStepSeconds
+const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
+const PLAYER_RADIUS = simulationDefaults.playerRadius
 export interface PlayerInput {
   forward: number
   right: number
@@ -111,8 +112,11 @@ export class Simulation {
   private entitiesById = new Map<string, Entity>()
   private terrainGrounds: { e: Entity; pose: Transform }[] = []
   private readonly portalEntities: Entity[]
-  private readonly world = new World({ gravity: new Vec3(0, -9.81, 0) })
-  private readonly solidMaterial = new Material({ friction: 0.55, restitution: 0 })
+  private readonly world = new World({ gravity: new Vec3(0, -simulationDefaults.gravity, 0) })
+  private readonly solidMaterial = new Material({
+    friction: simulationDefaults.solidFriction,
+    restitution: 0,
+  })
   private readonly planetCollisions = new PlanetCollisions(this.world, this.solidMaterial)
   setPlanetTiles(tiles: PlanetCollisionTile[]): void {
     this.planetCollisions.setTiles(tiles)
@@ -224,8 +228,8 @@ export class Simulation {
       .filter((e) => e.terrain)
       .map((e) => ({ e, pose: this.graph.worldTransform(e.id) }))
     this.portalEntities = this.document.entities.filter((e) => e.portal)
-    this.world.raw.integrationParameters.numSolverIterations = 15
-    this.world.defaultContactMaterial.friction = 0.55
+    this.world.raw.integrationParameters.numSolverIterations = simulationDefaults.solverIterations
+    this.world.defaultContactMaterial.friction = simulationDefaults.solidFriction
     this.world.defaultContactMaterial.restitution = 0
     for (const e of this.document.entities) this.addEntityBody(e)
     for (const v of this.vehicles.values()) {
@@ -779,7 +783,7 @@ export class Simulation {
       throw new Error('Elapsed seconds must be finite and nonnegative')
     this.preparePlanetCollisions()
     this.installNearbyMapBodies()
-    const accepted = Math.min(elapsed, FIXED_STEP * 4)
+    const accepted = Math.min(elapsed, FIXED_STEP * simulationDefaults.maxSubsteps)
     this.lostTime += elapsed - accepted
     this.accumulator += accepted
     while (this.accumulator + 1e-10 >= FIXED_STEP) {
@@ -1167,10 +1171,10 @@ export class Simulation {
         vertical < -1 ? (vertical * vertical) / (2 * Math.max(0.1, distance - 1.25)) : -Infinity
       const acceleration = clamp(
         Math.max((1.25 - distance) * 45 - vertical * 12, braking),
-        -9.81,
+        -simulationDefaults.gravity,
         70,
       )
-      body.applyForce(up.scale(body.mass * (9.81 + acceleration)))
+      body.applyForce(up.scale(body.mass * (simulationDefaults.gravity + acceleration)))
     }
   }
 
@@ -1237,9 +1241,9 @@ export class Simulation {
         const radial = this.radialUp(body)
         body.applyForce(
           new Vec3(
-            -radial.x * 9.81 * body.mass,
-            (1 - radial.y) * 9.81 * body.mass,
-            -radial.z * 9.81 * body.mass,
+            -radial.x * simulationDefaults.gravity * body.mass,
+            (1 - radial.y) * simulationDefaults.gravity * body.mass,
+            -radial.z * simulationDefaults.gravity * body.mass,
           ),
         )
       }
@@ -1247,7 +1251,9 @@ export class Simulation {
     if (interior && !this.vehicleId) {
       const up = interior.quaternion.vmult(new Vec3(0, 1, 0))
       const gravityUp = this.document.geography ? this.radialUp(this.playerBody) : new Vec3(0, 1, 0)
-      this.playerBody.applyForce(gravityUp.vsub(up).scale(9.81 * this.playerBody.mass))
+      this.playerBody.applyForce(
+        gravityUp.vsub(up).scale(simulationDefaults.gravity * this.playerBody.mass),
+      )
       this.playerBody.quaternion.copy(interior.quaternion)
     }
     const drivingInput = this.wheeledInput()
@@ -1279,7 +1285,9 @@ export class Simulation {
         x /= len
         z /= len
       }
-      const speed = this.input.sprint ? 7 : 4.2
+      const speed = this.input.sprint
+        ? simulationDefaults.sprintSpeed
+        : simulationDefaults.walkSpeed
       const c = Math.cos(this.input.yaw),
         s = Math.sin(this.input.yaw)
       const platformVelocity = new Vec3()
@@ -1289,13 +1297,16 @@ export class Simulation {
       const relative = frame.inverse().vmult(this.playerBody.velocity.vsub(platformVelocity))
       const targetX = (x * c - z * s) * speed,
         targetZ = (-x * s - z * c) * speed
-      const accel = (this.grounded || this.options.playerMode === 'hover' ? 35 : 9) * FIXED_STEP
+      const accel =
+        (this.grounded || this.options.playerMode === 'hover'
+          ? simulationDefaults.groundAcceleration
+          : simulationDefaults.airAcceleration) * FIXED_STEP
       relative.x += clamp(targetX - relative.x, -accel, accel)
       relative.z += clamp(targetZ - relative.z, -accel, accel)
       frame.vmult(relative).vadd(platformVelocity, this.playerBody.velocity)
       if (this.options.playerMode === 'hover') this.hover()
       if (this.options.playerMode !== 'hover' && this.jumpPending && this.grounded)
-        this.playerBody.velocity.y = 5.5
+        this.playerBody.velocity.y = simulationDefaults.jumpSpeed
       this.playerBody.wakeUp()
     }
     this.jumpPending = false

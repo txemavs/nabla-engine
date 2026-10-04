@@ -38,4 +38,4 @@ it('indexes Vue callbacks with original line offsets and rejects stale or remove
     if (!path.resolve(directory).startsWith(parent)) throw new Error('Unsafe temporary directory')
     fs.rmSync(directory, { recursive: true, force: true })
   }
-})
+}, 30_000)

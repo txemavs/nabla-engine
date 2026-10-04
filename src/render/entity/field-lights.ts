@@ -1,3 +1,4 @@
+import { lightingDefaults } from '../../config/lighting.js'
 import * as THREE from 'three'
 import { geoToLocal, localToGeo } from '../../math/geo/sphere.js'
 import {
@@ -60,11 +61,20 @@ export class FieldLights {
   private readonly beams: THREE.SpotLight[] = []
   private readonly nearest: { x: number; y: number; z: number; d2: number }[] = []
   constructor(options: FieldLightOptions = {}) {
-    this.layers = { lamps: true, navigation: true, ...options.layers }
-    this.look = { level: 10, reach: 28, armed: true, ...options.look }
+    this.layers = {
+      lamps: lightingDefaults.lamps,
+      navigation: lightingDefaults.navigation,
+      ...options.layers,
+    }
+    this.look = {
+      level: lightingDefaults.level,
+      reach: lightingDefaults.reach,
+      armed: lightingDefaults.armed,
+      ...options.look,
+    }
     this.source = options.source ?? osmFieldLightSource
     this.root.name = 'Field lights'
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < lightingDefaults.maxBeams; i++) {
       const beam = new THREE.SpotLight('#fff1d2', 0, this.look.reach, Math.PI / 3, 0.55, 2)
       beam.castShadow = false
       this.root.add(beam, beam.target)

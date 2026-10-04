@@ -1,3 +1,4 @@
+import { controlDefaults } from '../config/controls.js'
 import { KeyboardSteering } from '../simulation/vehicles/keyboard-steering.js'
 import { idleInput, type PlayerInput, type Simulation } from '../simulation/simulation.js'
 import type { SceneDocument } from '../scene/document.js'
@@ -16,10 +17,16 @@ export function availableGamepads(): (Gamepad | null)[] {
   }
 }
 
-/** Remove a 0.12 dead band and rescale the remaining signed range; non-finite input becomes zero. */
+/** Remove the configured dead band and rescale the remaining signed range; non-finite input becomes zero. */
 export function deadzone(value: number): number {
-  if (!Number.isFinite(value) || Math.abs(value) <= 0.12) return 0
-  return Math.sign(value) * Math.min(1, (Math.abs(value) - 0.12) / 0.88)
+  if (!Number.isFinite(value) || Math.abs(value) <= controlDefaults.gamepadDeadzone) return 0
+  return (
+    Math.sign(value) *
+    Math.min(
+      1,
+      (Math.abs(value) - controlDefaults.gamepadDeadzone) / (1 - controlDefaults.gamepadDeadzone),
+    )
+  )
 }
 /** Map standard gamepad controls; flight uses mode 2 sticks, road driving uses trigger throttle. */
 export function gamepadAxes(pad: Pick<Gamepad, 'axes' | 'buttons'>, flight: boolean) {

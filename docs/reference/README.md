@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **212 modules; 2054 executable function definitions**.
+Coverage: **220 modules; 2058 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -38,6 +38,14 @@ Coverage: **212 modules; 2054 executable function definitions**.
 | [src/catalog/weapons/library.ts](src/catalog/weapons/library.ts.md) | 6 |
 | [src/catalog/weapons/weapon-source.browser.ts](src/catalog/weapons/weapon-source.browser.ts.md) | 2 |
 | [src/catalog/weapons/weapon-source.ts](src/catalog/weapons/weapon-source.ts.md) | 4 |
+| [src/config/camera.ts](src/config/camera.ts.md) | 2 |
+| [src/config/controls.ts](src/config/controls.ts.md) | 0 |
+| [src/config/index.ts](src/config/index.ts.md) | 0 |
+| [src/config/lighting.ts](src/config/lighting.ts.md) | 0 |
+| [src/config/performance.ts](src/config/performance.ts.md) | 5 |
+| [src/config/shadows.ts](src/config/shadows.ts.md) | 0 |
+| [src/config/simulation.ts](src/config/simulation.ts.md) | 0 |
+| [src/config/streaming.ts](src/config/streaming.ts.md) | 0 |
 | [src/diagnostics/performance-monitor.ts](src/diagnostics/performance-monitor.ts.md) | 10 |
 | [src/entity/capability.ts](src/entity/capability.ts.md) | 1 |
 | [src/entity/coords.ts](src/entity/coords.ts.md) | 1 |
@@ -113,7 +121,7 @@ Coverage: **212 modules; 2054 executable function definitions**.
 | [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 10 |
 | [src/render/entity/carrier-interior.ts](src/render/entity/carrier-interior.ts.md) | 6 |
 | [src/render/entity/carrier-thrusters.ts](src/render/entity/carrier-thrusters.ts.md) | 2 |
-| [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 5 |
+| [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 6 |
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 46 |
 | [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 13 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 6 |
@@ -179,12 +187,12 @@ Coverage: **212 modules; 2054 executable function definitions**.
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 6 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 2 |
-| [src/runtime/game.ts](src/runtime/game.ts.md) | 14 |
+| [src/runtime/game.ts](src/runtime/game.ts.md) | 15 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 5 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 4 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 8 |
-| [src/runtime/performance.ts](src/runtime/performance.ts.md) | 5 |
+| [src/runtime/performance.ts](src/runtime/performance.ts.md) | 0 |
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 2 |
 | [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 5 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |

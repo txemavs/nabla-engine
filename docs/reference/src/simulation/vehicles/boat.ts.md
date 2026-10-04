@@ -6,11 +6,12 @@
 
 ## Module dependencies
 
+- `../../config/simulation.js`
 - `../physics.js`
 
 ## createBoat
 
-[Implementation, line 16](../../../../../src/simulation/vehicles/boat.ts#L16)
+[Implementation, line 17](../../../../../src/simulation/vehicles/boat.ts#L17)
 
 ```ts
 createBoat(body: Body, engineForce = 16000): BoatRuntime
@@ -27,7 +28,7 @@ Explicit throws in this body:
 
 ## stepBoatInWater
 
-[Implementation, line 21](../../../../../src/simulation/vehicles/boat.ts#L21)
+[Implementation, line 22](../../../../../src/simulation/vehicles/boat.ts#L22)
 
 ```ts
 stepBoatInWater(boat: BoatRuntime, input: { forward: number; right: number; brake: boolean }, water: BoatWater, dt: number, active = true): void
@@ -48,7 +49,7 @@ Explicit throws in this body:
 
 ## clamp
 
-[Implementation, line 37](../../../../../src/simulation/vehicles/boat.ts#L37)
+[Implementation, line 38](../../../../../src/simulation/vehicles/boat.ts#L38)
 
 ```ts
 clamp(n: number, min: number, max: number): inferred by TypeScript; see implementation
@@ -61,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stepBoat
 
-[Implementation, line 39](../../../../../src/simulation/vehicles/boat.ts#L39)
+[Implementation, line 40](../../../../../src/simulation/vehicles/boat.ts#L40)
 
 One fixed step of buoyancy, propulsion and hull damping. Depth is relative to the keel.
 
@@ -101,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stepBoat.hydro
 
-[Implementation, line 73](../../../../../src/simulation/vehicles/boat.ts#L73)
+[Implementation, line 74](../../../../../src/simulation/vehicles/boat.ts#L74)
 
 ```ts
 hydro(localZ: number, gain: number): inferred by TypeScript; see implementation

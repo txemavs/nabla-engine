@@ -1,3 +1,4 @@
+import { simulationDefaults } from '../../config/simulation.js'
 import { Body, Vec3, Quaternion } from '../physics.js'
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
 export interface FlightState {
@@ -114,7 +115,7 @@ export function stepFlight(
       const flightDir = body.velocity.length() > 4 ? body.velocity.clone().normalize() : nose
       // Nose above the flight path is positive. The old sign rewarded diving.
       const aoa = clamp(-wing.dot(flightDir), -0.45, 0.5)
-      const liftAccel = 9.81 * wings * clamp(1 + aoa * 2.4, 0, 1.65)
+      const liftAccel = simulationDefaults.gravity * wings * clamp(1 + aoa * 2.4, 0, 1.65)
       body.applyForce(
         wing
           .scale(liftAccel)
@@ -126,7 +127,7 @@ export function stepFlight(
       const push = lift > 0 ? clamp(680 - along, 0, 80) : lift < 0 ? clamp(-40 - along, -80, 0) : 0
       body.applyForce(
         radial
-          .scale(9.81 * wings)
+          .scale(simulationDefaults.gravity * wings)
           .vadd(nose.scale(push))
           .scale(body.mass),
       )
@@ -148,7 +149,7 @@ export function stepFlight(
   )
   // Distribute assisted lift over the rigid assembly: same net force/moment at its
   // combined centre of mass, without forcing the solver to transmit cruise-scale impulses.
-  const accelerationVector = radial.scale(9.81 + acceleration)
+  const accelerationVector = radial.scale(simulationDefaults.gravity + acceleration)
   const direction = new Vec3(right, 0, -forward)
   if (direction.length() > 1) direction.normalize()
   const pace = space ? travelSpeed : v.cruiseSpeed / 3.6

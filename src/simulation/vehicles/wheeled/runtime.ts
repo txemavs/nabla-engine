@@ -1,3 +1,4 @@
+import { simulationDefaults } from '../../../config/simulation.js'
 import { Body, RaycastVehicle, Vec3 } from '../../physics.js'
 import {
   createDrivetrain,
@@ -148,7 +149,7 @@ export function stepWheeledVehicle(
     const velocity = v.body.velocity
     const magnitude = velocity.length()
     const rolling = v.raycast.wheelInfos.some((wheel) => wheel.isInContact)
-      ? 0.012 * v.body.mass * 9.81
+      ? 0.012 * v.body.mass * simulationDefaults.gravity
       : 0
     v.body.applyForce(velocity.scale(-0.42 * magnitude - rolling / Math.max(1, magnitude)))
   }

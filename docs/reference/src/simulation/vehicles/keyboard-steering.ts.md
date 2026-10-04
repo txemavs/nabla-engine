@@ -8,12 +8,11 @@ Turn keyboard taps into a gradual steering demand; analog controls bypass this f
 
 ## Module dependencies
 
+- `../../config/controls.js`
 
 ## KeyboardSteering.reset
 
-[Implementation, line 5](../../../../../src/simulation/vehicles/keyboard-steering.ts#L5)
-
-Turn keyboard taps into a gradual steering demand; analog controls bypass this filter.
+[Implementation, line 6](../../../../../src/simulation/vehicles/keyboard-steering.ts#L6)
 
 ```ts
 reset(): void
@@ -21,9 +20,7 @@ reset(): void
 
 ## KeyboardSteering.update
 
-[Implementation, line 9](../../../../../src/simulation/vehicles/keyboard-steering.ts#L9)
-
-Turn keyboard taps into a gradual steering demand; analog controls bypass this filter.
+[Implementation, line 10](../../../../../src/simulation/vehicles/keyboard-steering.ts#L10)
 
 ```ts
 update(vehicle: string | null, demand: number, elapsed: number): number

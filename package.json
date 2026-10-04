@@ -86,6 +86,38 @@
     "./render": {
       "types": "./dist/render/index.d.ts",
       "import": "./dist/render/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js"
+    },
+    "./config/camera": {
+      "types": "./dist/config/camera.d.ts",
+      "import": "./dist/config/camera.js"
+    },
+    "./config/controls": {
+      "types": "./dist/config/controls.d.ts",
+      "import": "./dist/config/controls.js"
+    },
+    "./config/lighting": {
+      "types": "./dist/config/lighting.d.ts",
+      "import": "./dist/config/lighting.js"
+    },
+    "./config/streaming": {
+      "types": "./dist/config/streaming.d.ts",
+      "import": "./dist/config/streaming.js"
+    },
+    "./config/simulation": {
+      "types": "./dist/config/simulation.d.ts",
+      "import": "./dist/config/simulation.js"
+    },
+    "./config/performance": {
+      "types": "./dist/config/performance.d.ts",
+      "import": "./dist/config/performance.js"
+    },
+    "./config/shadows": {
+      "types": "./dist/config/shadows.d.ts",
+      "import": "./dist/config/shadows.js"
     }
   },
   "imports": {

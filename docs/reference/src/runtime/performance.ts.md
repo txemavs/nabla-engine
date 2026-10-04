@@ -4,62 +4,10 @@
 
 [Source](../../../../src/runtime/performance.ts)
 
+Compatibility entry; performance tuning is maintained in config/performance.
+
 ## Module dependencies
 
-- `../render/shadow-tiers.js`
+- `../config/performance.js`
 
-## normalizePerformance
-
-[Implementation, line 34](../../../../src/runtime/performance.ts#L34)
-
-```ts
-normalizePerformance(value: unknown): PerformanceSettings
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Object.hasOwn`
-- `choose`
-
-## normalizePerformance.choose
-
-[Implementation, line 37](../../../../src/runtime/performance.ts#L37)
-
-```ts
-choose(value: unknown, allowed: number[], fallback: number): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `allowed.includes`
-
-## tileBudget
-
-[Implementation, line 170](../../../../src/runtime/performance.ts#L170)
-
-z15 meshes for a custom draw distance. Named presets carry their own cap.
-
-```ts
-tileBudget(distance: number): number
-```
-
-## streamBudget
-
-[Implementation, line 178](../../../../src/runtime/performance.ts#L178)
-
-```ts
-streamBudget(settings: PerformanceSettings): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `performanceProfile`
-- `tileBudget`
-
-## performanceProfile
-
-[Implementation, line 188](../../../../src/runtime/performance.ts#L188)
-
-```ts
-performanceProfile(settings: PerformanceSettings): inferred by TypeScript; see implementation
-```
+This module contains declarations, data or re-exports; it defines no executable functions.

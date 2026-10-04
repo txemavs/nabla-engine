@@ -3,6 +3,7 @@
  * Hosts pass elapsed seconds; cancellation generations prevent late initialization
  * from reviving a stopped session. Authored scenes remain isolated from physics.
  */
+import { simulationDefaults } from '../config/simulation.js'
 import { initPhysics } from '../simulation/physics.js'
 import { Simulation, idleInput, type PlayerInput } from '../simulation/simulation.js'
 import type { SceneDocument } from '../scene/document.js'
@@ -70,7 +71,7 @@ export class PlaySession {
     if (!Number.isFinite(elapsed) || elapsed < 0) throw new Error('Invalid frame duration')
     this.current.setInput(input)
     this.current.setWaterLevel(waterLevel)
-    this.current.step(Math.min(elapsed, 0.1))
+    this.current.step(Math.min(elapsed, simulationDefaults.maxFrameSeconds))
   }
 
   /** Clear movement commands and suspend stepping; retain the simulation for resume. */

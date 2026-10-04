@@ -4,12 +4,18 @@
  * monitors and a single frame loop. Hosts supply a canvas and authored planetary
  * scene; dispose releases owned resources without removing the host canvas.
  */
+import { controlDefaults } from '../config/controls.js'
+import { lightingDefaults } from '../config/lighting.js'
+import { streamingDefaults } from '../config/streaming.js'
+import { simulationDefaults } from '../config/simulation.js'
+import { gameCameraDefaults, type GameCameraSettings } from '../config/camera.js'
 import { resolveWorldPortalViews, type WorldContent } from './world-content.js'
 import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
 import type { FieldLightOptions } from '../render/entity/field-lights.js'
 import { worldWater } from './water.js'
 import {
+  browserPerformanceDefaults,
   normalizePerformance,
   performancePresets,
   streamBudget,
@@ -38,6 +44,7 @@ import { shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
+import { createGameCameraState } from './game-camera.js'
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
@@ -52,6 +59,8 @@ export interface GameFrame {
   location: ReturnType<typeof localToGeo> | null
 }
 export interface GameRuntimeOptions {
+  /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
+  camera?: Partial<GameCameraSettings>
   canvas: HTMLCanvasElement
   scene: SceneDocument
   world?: WorldContent
@@ -80,7 +89,12 @@ export class GameRuntime {
   readonly cameraState = this.game.cameraState
   private readonly document: SceneDocument
   private readonly scene = new THREE.Scene()
-  private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
+  private readonly camera = new THREE.PerspectiveCamera(
+    gameCameraDefaults.chaseFov,
+    1,
+    gameCameraDefaults.nearClip,
+    gameCameraDefaults.farClip,
+  )
   private readonly renderer: THREE.WebGLRenderer
   private readonly remoteViews: RemotePortalViews
   private readonly worldContent: WorldContent | undefined
@@ -98,8 +112,14 @@ export class GameRuntime {
   private readonly environment: WorldEnvironment
   private readonly effects: VehicleEffects
   private readonly shadows = new ShadowManager()
-  private readonly sun = new THREE.DirectionalLight('#ffe1b1', 3.2)
-  private readonly ambient = new THREE.AmbientLight('#dce7f5', 0.22)
+  private readonly sun = new THREE.DirectionalLight(
+    lightingDefaults.sunColor,
+    lightingDefaults.sunIntensity,
+  )
+  private readonly ambient = new THREE.AmbientLight(
+    lightingDefaults.ambientColor,
+    lightingDefaults.ambientIntensity,
+  )
   private readonly catchFloor = new CatchFloor()
   private readonly origin = new THREE.Vector3()
   private readonly loop: FrameLoop
@@ -115,16 +135,16 @@ export class GameRuntime {
   private disposed = false
 
   constructor(private readonly options: GameRuntimeOptions) {
+    Object.assign(this.cameraState, createGameCameraState(options.camera))
+    this.camera.near = this.cameraState.settings.nearClip
+    this.camera.far = this.cameraState.settings.farClip
     const profile = options.performance?.preset
     const preset =
       profile && Object.hasOwn(performancePresets, profile)
         ? performancePresets[profile as keyof typeof performancePresets].settings
         : {}
     this.quality = normalizePerformance({
-      preset: 'custom',
-      resolution: 2,
-      shadows: 2048,
-      fog: 4000,
+      ...browserPerformanceDefaults,
       ...preset,
       ...options.performance,
     })
@@ -386,15 +406,25 @@ export class GameRuntime {
     if (this.disposed || !sim || this.session.state !== 'playing') return
     if (!Number.isFinite(time)) throw new Error('Invalid frame time')
     const dt =
-      this.lastTime === null ? 0 : Math.min(0.1, Math.max(0, (time - this.lastTime) / 1000))
+      this.lastTime === null
+        ? 0
+        : Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
     this.lastTime = time
     this.touchDriving?.setActive(document.hasFocus() && !document.hidden)
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
     const pad = this.pollGamepad()
-    this.world?.flushInstall(this.quality.preset === 'mobile' ? 1 : 1.5)
-    this.view.flushMapInstall(4, 24, this.camera.position)
+    this.world?.flushInstall(
+      this.quality.preset === 'mobile'
+        ? streamingDefaults.mobileInstallBudgetMs
+        : streamingDefaults.installBudgetMs,
+    )
+    this.view.flushMapInstall(
+      streamingDefaults.mapInstallBudgetMs,
+      streamingDefaults.mapInstallCount,
+      this.camera.position,
+    )
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
     const input = this.game.readInput(dt, {
       keys: this.keys.values,
@@ -411,7 +441,7 @@ export class GameRuntime {
     if (crossing)
       this.options.onMessage?.(crossing.blocked ? 'Paso bloqueado' : 'Stargate atravesado')
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
-    this.view.night = this.sky.enabled && this.sky.atmosphere.day < 0.15
+    this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
     this.view.sync(
       sim,
       dt,
@@ -439,7 +469,7 @@ export class GameRuntime {
     this.fireRequested = false
     const eye = this.camera.position.clone()
     this.origin.set(0, 0, 0)
-    if (new THREE.Vector3(...player.position).length() > 10000)
+    if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
       this.origin.fromArray(player.position)
     this.effects.updateAudio(sim, this.document, eye)
     this.effects.updateTires(sim, dt, this.origin)
@@ -704,15 +734,19 @@ export class GameRuntime {
         const state = this.cameraState
         state.lastLookTime = performance.now()
         if (state.mode === 'cockpit' && this.session.simulation?.player.vehicleId) {
-          state.headYaw -= event.movementX * 0.003
+          state.headYaw -= event.movementX * controlDefaults.mouseSensitivity
           state.headPitch = THREE.MathUtils.clamp(
-            state.headPitch + event.movementY * 0.003,
-            -1.4,
-            1.4,
+            state.headPitch + event.movementY * controlDefaults.mouseSensitivity,
+            -controlDefaults.pitchLimit,
+            controlDefaults.pitchLimit,
           )
         } else {
-          state.yaw -= event.movementX * 0.003
-          state.pitch = THREE.MathUtils.clamp(state.pitch + event.movementY * 0.003, -1.4, 1.4)
+          state.yaw -= event.movementX * controlDefaults.mouseSensitivity
+          state.pitch = THREE.MathUtils.clamp(
+            state.pitch + event.movementY * controlDefaults.mouseSensitivity,
+            -controlDefaults.pitchLimit,
+            controlDefaults.pitchLimit,
+          )
         }
       },
       options,

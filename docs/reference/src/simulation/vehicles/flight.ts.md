@@ -6,11 +6,12 @@
 
 ## Module dependencies
 
+- `../../config/simulation.js`
 - `../physics.js`
 
 ## clamp
 
-[Implementation, line 2](../../../../../src/simulation/vehicles/flight.ts#L2)
+[Implementation, line 3](../../../../../src/simulation/vehicles/flight.ts#L3)
 
 ```ts
 clamp(n: number, min: number, max: number): inferred by TypeScript; see implementation
@@ -23,7 +24,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createFlight
 
-[Implementation, line 32](../../../../../src/simulation/vehicles/flight.ts#L32)
+[Implementation, line 33](../../../../../src/simulation/vehicles/flight.ts#L33)
 
 ```ts
 createFlight(body: Body, altitude: number, plane = false): FlightRuntime
@@ -37,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stepFlight
 
-[Implementation, line 43](../../../../../src/simulation/vehicles/flight.ts#L43)
+[Implementation, line 44](../../../../../src/simulation/vehicles/flight.ts#L44)
 
 Accumulates forces only: the host steps its single shared physics world.
 
