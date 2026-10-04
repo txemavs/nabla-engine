@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **238 modules; 2150 executable function definitions**.
+Coverage: **240 modules; 2156 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -66,7 +66,7 @@ Coverage: **238 modules; 2150 executable function definitions**.
 | [src/entity/sprite/sprite.ts](src/entity/sprite/sprite.ts.md) | 2 |
 | [src/entity/terrain/field.ts](src/entity/terrain/field.ts.md) | 0 |
 | [src/entity/terrain/terrain.ts](src/entity/terrain/terrain.ts.md) | 1 |
-| [src/entity/vehicle/field.ts](src/entity/vehicle/field.ts.md) | 0 |
+| [src/entity/vehicle/field.ts](src/entity/vehicle/field.ts.md) | 1 |
 | [src/entity/vehicle/gear-label.ts](src/entity/vehicle/gear-label.ts.md) | 1 |
 | [src/entity/vehicle/vehicle.ts](src/entity/vehicle/vehicle.ts.md) | 5 |
 | [src/examples/flat-tile.ts](src/examples/flat-tile.ts.md) | 1 |
@@ -135,6 +135,7 @@ Coverage: **238 modules; 2150 executable function definitions**.
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
 | [src/render/entity/ship-hud.ts](src/render/entity/ship-hud.ts.md) | 4 |
 | [src/render/entity/ship-lights.ts](src/render/entity/ship-lights.ts.md) | 14 |
+| [src/render/entity/steering-wheel.ts](src/render/entity/steering-wheel.ts.md) | 3 |
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 11 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 7 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
@@ -187,6 +188,7 @@ Coverage: **238 modules; 2150 executable function definitions**.
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
 | [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 3 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
+| [src/render/vehicle-presentation/mirror-lenses.ts](src/render/vehicle-presentation/mirror-lenses.ts.md) | 2 |
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |

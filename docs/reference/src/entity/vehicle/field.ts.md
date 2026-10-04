@@ -9,4 +9,14 @@
 - `zod`
 - `../coords.js`
 
-This module contains declarations, data or re-exports; it defines no executable functions.
+## callback@17
+
+[Implementation, line 17](../../../../../src/entity/vehicle/field.ts#L17)
+
+```ts
+callback@17(v): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.hypot`

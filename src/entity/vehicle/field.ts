@@ -8,6 +8,17 @@ const assetPart = z
   })
   .strict()
 
+/** Steering wheel model. `axis` is the column axis in the model's own space, pointing away
+ * from the driver; omit it when the rim already turns about the model's +Z. */
+const steeringPart = assetPart
+  .extend({
+    axis: z
+      .tuple([finite, finite, finite])
+      .refine((v) => Math.hypot(...v) > 1e-6, 'Steering axis must not be zero')
+      .optional(),
+  })
+  .strict()
+
 /** Chassis, four hubs, and the optional cabin, garage and flight flag. */
 export const vehicleField = z
   .object({
@@ -98,6 +109,23 @@ export const vehicleField = z
           .strict(),
       )
       .optional(),
+    /**
+     * Flat mirror lenses in body-model space for presentations whose GLB has no lens material.
+     * `normal` is the direction the glass faces; width and height are metres.
+     */
+    mirrors: z
+      .array(
+        z
+          .object({
+            position: vector,
+            normal: vector,
+            width: finite.positive().max(5),
+            height: finite.positive().max(5),
+          })
+          .strict(),
+      )
+      .max(8)
+      .optional(),
     /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
     mirrorTilt: finite.min(-5).max(12).optional(),
     flight: z.boolean().optional(),
@@ -148,7 +176,7 @@ export const visualField = z
         z.tuple([assetPart, assetPart, assetPart, assetPart, assetPart, assetPart]),
       ])
       .optional(),
-    steering: assetPart.optional(),
+    steering: steeringPart.optional(),
     wheelRotations: z
       .union([
         z.tuple([rotation, rotation, rotation, rotation]),
