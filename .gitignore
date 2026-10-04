@@ -1,6 +1,8 @@
 node_modules/
 dist/
 demo-dist/
+game-dist/
+package-smoke/
 playwright-report/
 test-results/
 *.log

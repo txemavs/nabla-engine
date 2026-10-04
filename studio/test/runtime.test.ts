@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { FrameLoop } from '../frame-loop.js'
+import { FrameLoop } from '../../src/runtime/frame-loop.js'
 import { StudioInputOwner } from '../input-owner.js'
 
 test('nested desktop interactions release gameplay and cannot re-enable an inactive view', () => {
@@ -40,6 +40,31 @@ test('starting twice schedules one frame, stopping during a frame does not resta
   callback(16)
   expect(queue.size).toBe(0)
   loop.start()
+  expect(queue.size).toBe(1)
+  loop.stop()
+  expect(queue.size).toBe(0)
+})
+
+test('stop and restart inside a frame do not schedule two animation owners', () => {
+  const queue = new Map<number, FrameRequestCallback>()
+  let serial = 0
+  const loop = new FrameLoop(
+    () => {
+      loop.stop()
+      loop.start()
+    },
+    (callback) => {
+      queue.set(++serial, callback)
+      return serial
+    },
+    (id) => {
+      queue.delete(id)
+    },
+  )
+  loop.start()
+  const callback = queue.get(serial)!
+  queue.delete(serial)
+  callback(16)
   expect(queue.size).toBe(1)
   loop.stop()
   expect(queue.size).toBe(0)

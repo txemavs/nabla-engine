@@ -24,8 +24,10 @@ function moonMaterial(sun: THREE.Vector3): THREE.ShaderMaterial {
   placeholder.needsUpdate = true
   return new THREE.ShaderMaterial({
     uniforms: {
-      sun: { value: sun }, map: { value: placeholder },
-      daylight: { value: 0 }, skyTint: { value: new THREE.Color('#b9d5e8') },
+      sun: { value: sun },
+      map: { value: placeholder },
+      daylight: { value: 0 },
+      skyTint: { value: new THREE.Color('#b9d5e8') },
     },
     transparent: true,
     depthWrite: false,

@@ -33,10 +33,20 @@ parallel proposal-only contracts.
 - Boundary regressions: `test/architecture/`; inventory command:
   `node scripts/module-inventory.ts` (Node 22.18+).
 
-The host owns one clock/world, input translation and resource lifetime. Controllers
-apply forces before the fixed world step; presentation reads the resulting state.
-No module creates its own render loop. Physics can run without WebGL/Audio. Use
-narrow subpaths to avoid the broad root dependency graph.
+The runtime composition owns one clock/world and resource lifetime. Low-level
+hosts may drive the shared session with their own clock; automatic and manual
+clocks are exclusive. Controllers apply forces before the fixed world step;
+presentation reads the resulting state. Individual modules do not schedule frames.
+Physics can run without WebGL/Audio. Use narrow subpaths to avoid the broad root
+dependency graph.
+
+The first #78 extraction adds `/runtime/session` (headless play lifecycle),
+`/runtime` (shared camera, input and vehicle effects), `/runtime/browser`
+(standalone browser composition), `/scene`, and `/examples/flat-tile`.
+`game/` consumes these public entries. Studio uses the extracted components but
+still owns some gameplay orchestration; see the
+[remaining parity inventory](studio-extraction.md) before claiming the editor is
+independent or moving it to another repository.
 
 ## Current-format policy
 

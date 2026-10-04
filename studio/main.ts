@@ -17,9 +17,6 @@ import { objectProperties, chooseCapability, axisLocked, axisLocks } from './ui/
 import { sceneTree, sceneHierarchy } from './ui/scene-tree.js'
 import { openExactTransform } from './ui/exact-transform.js'
 import { parseScene } from '../src/scene/document.js'
-import { KeyboardSteering } from '../src/simulation/vehicles/keyboard-steering.js'
-import { TireMarks } from '../src/render/entity/tire-marks.js'
-import { TireSmoke } from '../src/render/entity/tire-smoke.js'
 import { capturePng } from '../src/render/capture.js'
 import { simplifiedTide } from '../src/planet/tide.js'
 import { CatchFloor } from '../src/render/planet/catch-floor.js'
@@ -27,7 +24,7 @@ import { seaSeenFromBelow } from '../src/render/planet/ocean-sheet.js'
 import { TileDebugView, type TileDebugMode } from '../src/render/planet/debug.js'
 import { PerformanceMonitor } from '../src/diagnostics/performance-monitor.js'
 import { TouchDriving } from './touch-driving.js'
-import { initPhysics } from '../src/simulation/physics.js'
+import { PlaySession, VehicleEffects, updateGameCamera, GameInput } from '../src/runtime/index.js'
 import { setNavigationPlaces } from '../src/render/entity/navigation-places.js'
 import { flightEntry, urlPlay } from './flight-entry.js'
 import { geoToLocal } from '../src/math/geo/sphere.js'
@@ -55,7 +52,7 @@ import {
   projectFilename,
   type StudioProject,
 } from './project.js'
-import { FrameLoop } from './frame-loop.js'
+import { FrameLoop } from '../src/runtime/frame-loop.js'
 import { StudioInputOwner } from './input-owner.js'
 import { mapCacheStats, setMapCacheBudget, clearMapCache } from '../src/render/planet/cache.js'
 import { receiveMapGeometry, type PreparedMapGeometry } from '../src/render/planet/geometry.js'
@@ -75,13 +72,7 @@ import { treeSprite } from '../src/entity/sprite/sprite.js'
 import { createGallery, Gallery } from './gallery.js'
 import { PortalControls } from './portal-controls.js'
 import { Sidearm } from './sidearm.js'
-import {
-  driverHeadPose,
-  overheadDrivingPose,
-  overheadDrivingHeight,
-  followDrivingHeading,
-  DrivingTelemetry,
-} from '../src/render/entity/driving-camera.js'
+import { overheadDrivingHeight, DrivingTelemetry } from '../src/render/entity/driving-camera.js'
 import { WheelDebugOverlay } from './wheel-debug.js'
 import { createPortal } from '../src/entity/portal/portal.js'
 import { renderPortals, type ExternalPortalView } from '../src/render/portal/portals.js'
@@ -89,7 +80,6 @@ import { skyTime, localTimeInput, type SkyClock } from '../src/planet/sky.js'
 import { GeographicView } from '../src/render/planet/sky.js'
 import { WorldEnvironment, configureWorldRenderer } from '../src/render/planet/world-environment.js'
 import { localToGeo, MADRID } from '../src/math/geo/sphere.js'
-import { gamepadAxes } from './input.js'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { TransformControls } from 'three/addons/controls/TransformControls.js'
@@ -153,6 +143,7 @@ const collapsed = new Set(
 let selectedGeometry: Entity['geometry']
 let selectedId =
   editor.document.entities.find((e) => e.kind === 'vehicle')?.id ?? editor.document.entities[0].id
+const playSession = new PlaySession()
 let sim: Simulation | null = null
 let needsRender = true
 let firstPerson = true
@@ -257,10 +248,8 @@ const touchDriving = new TouchDriving(viewport, {
 
 renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
-const tireSmoke = new TireSmoke()
-scene.add(tireSmoke.root)
-const tireMarks = new TireMarks()
-scene.add(tireMarks.root)
+const vehicleEffects = new VehicleEffects(scene, vehicleAudio)
+const tireMarks = vehicleEffects.marks
 const fieldLights = new FieldLights()
 scene.add(fieldLights.root)
 let fieldFollow = true
@@ -1368,7 +1357,7 @@ async function togglePlay(startFlight = false): Promise<void> {
 async function togglePlayNow(startFlight = false): Promise<void> {
   keys.clear()
   if (sim) {
-    sim.dispose()
+    playSession.stop()
     sim = null
     view.setPlaying(false)
     renderer.domElement.dataset.impacts = '0'
@@ -1390,8 +1379,7 @@ async function togglePlayNow(startFlight = false): Promise<void> {
     project = retainLocation(project!, editor.document)
     portalControls.rebuild(editor.document)
     const entry = startFlight ? flightEntry(editor.document) : null
-    await initPhysics()
-    sim = new Simulation(entry?.scene ?? editor.document, {
+    sim = await playSession.play(entry?.scene ?? editor.document, {
       playerMode: 'hover',
       planetaryTerrain: !!editor.document.geography?.planetary,
       experimentalLargeScene: performanceSettings.preset === 'ultra',
@@ -2181,53 +2169,21 @@ function pollGamepad(): Gamepad | null {
   previousButtons = pad.buttons.map((b) => b.pressed)
   return pad
 }
-const keyboardSteering = new KeyboardSteering()
+const gameInput = new GameInput()
 function currentInput(pad: Gamepad | null = null, elapsed = 0) {
-  if (sim?.player.vehicleId && view.vehicleMenu(sim.player.vehicleId)?.open) {
-    keyboardSteering.reset()
-    return { ...idleInput(), brake: true }
-  }
-
-  if (
-    !studioInput.acceptsInput ||
-    !document.hasFocus() ||
-    document.hidden ||
-    document.querySelector('.app-menu:popover-open, dialog[open]')
-  ) {
-    keyboardSteering.reset()
-    return idleInput()
-  }
-  const id = sim?.player.vehicleId
-  const flight = Boolean(id && sim?.vehicleInfo(id).flightMode)
-  const axis = (positive: string, negative: string) =>
-    Number(keys.has(positive)) - Number(keys.has(negative))
-  const analog = pad
-    ? gamepadAxes(pad, flight)
-    : { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
-  const touch = portalControls.flightInput()
-  const driving = touchDriving.input()
-  const keyboardRight = flight
-    ? axis('ArrowRight', 'ArrowLeft')
-    : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')
-  const vehicle = id ? view.document.entities.find((e) => e.id === id)?.vehicle : null
-  const roadCar = id && vehicle && !flight && !vehicle.boat && !vehicle.plane && !vehicle.interior
-  const steering = keyboardSteering.update(roadCar ? id : null, keyboardRight, elapsed)
-  return {
-    forward:
-      (flight
-        ? axis('ArrowUp', 'ArrowDown')
-        : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) +
-      analog.forward +
-      touch.forward +
-      driving.forward,
-    right: steering + analog.right + touch.right + driving.right,
-    lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
-    turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
+  return gameInput.read(sim, view.document, elapsed, {
+    keys,
     yaw,
-    sprint: keys.has('ShiftLeft') || keys.has('ShiftRight') || Boolean(pad?.buttons[10]?.pressed),
-    jump: false,
-    brake: keys.has('Space') || analog.brake || touch.brake || driving.brake,
-  }
+    pad,
+    menuOpen: !!(sim?.player.vehicleId && view.vehicleMenu(sim.player.vehicleId)?.open),
+    enabled:
+      studioInput.acceptsInput &&
+      document.hasFocus() &&
+      !document.hidden &&
+      !document.querySelector('.app-menu:popover-open, dialog[open]'),
+    touch: portalControls.flightInput(),
+    driving: touchDriving.input(),
+  })
 }
 new ResizeObserver(() => {
   const w = viewport.clientWidth,
@@ -2440,10 +2396,12 @@ function frame(now: number): void {
     }
     const input = currentInput(pad, dt)
     if (input.forward || input.right || input.brake || input.sprint) vehicleEntrance = null
-    sim.setInput(input)
     const physicsStart = performance.now()
-    sim.setWaterLevel(waterLevel)
-    sim.step(document.hidden || playTransition || streamMode === 'model' ? 0 : dt)
+    playSession.step(
+      document.hidden || playTransition || streamMode === 'model' ? 0 : dt,
+      input,
+      waterLevel,
+    )
     physicsMs = performance.now() - physicsStart
     if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       const c = sim.collisionStats
@@ -2519,12 +2477,34 @@ function frame(now: number): void {
       playerInterior = sim.player.interiorId
       yaw = sim.player.yaw
     }
-    const p = { ...sim.player, position: sim.renderPlayerPosition }
-    const cockpit = cameraMode === 'cockpit'
-    const overhead = cameraMode === 'map' && !!p.vehicleId
-    const playerFrame = sim.playerFrame
-    const playerFrameQ = new THREE.Quaternion(...(playerFrame?.rotation ?? ([0, 0, 0, 1] as const)))
-    camera.up.set(0, 1, 0).applyQuaternion(playerFrameQ)
+    const cameraState = {
+      mode: cameraMode,
+      firstPerson,
+      yaw,
+      pitch,
+      headYaw,
+      headPitch,
+      lastLookTime,
+      mapHeight,
+      mapZoom,
+      entrance: vehicleEntrance,
+      telemetry: drivingTelemetry,
+    }
+    const {
+      player: p,
+      info,
+      altitude,
+    } = updateGameCamera(sim, view, camera, cameraState, now, dt, (body, activeCamera) => {
+      if (preparedVehicles.has(body)) return
+      preparedVehicles.add(body)
+      void renderer.compileAsync(body, activeCamera, scene).catch((error) => {
+        preparedVehicles.delete(body)
+        console.warn('Vehicle material preparation failed', error)
+      })
+    })
+    yaw = cameraState.yaw
+    mapHeight = cameraState.mapHeight
+    vehicleEntrance = cameraState.entrance
     renderer.domElement.dataset.vehicle = p.vehicleId ?? ''
     renderer.domElement.dataset.interior = p.interiorId ?? ''
     renderer.domElement.dataset.cameraMode = p.vehicleId
@@ -2532,155 +2512,16 @@ function frame(now: number): void {
       : firstPerson
         ? 'first-person'
         : 'chase'
-    document.querySelector('.caption-tag')!.textContent = overhead
-      ? 'CENITAL · proa ↑'
-      : cockpit && p.vehicleId
-        ? 'CONDUCTOR'
-        : !p.vehicleId && firstPerson
-          ? 'PRIMERA PERSONA'
-          : 'PERSPECTIVA'
-    const geoPoint = view.document.geography
-      ? localToGeo(view.document.geography, p.position)
-      : null
-    const altitude = geoPoint
-      ? geoPoint.altitude - view.document.geography!.altitude
-      : p.position[1]
-    const info = p.vehicleId ? sim.vehicleInfo(p.vehicleId, true) : null
-    if (overhead && info) document.querySelector('.caption-tag')!.textContent = 'CENITAL · proa ↑'
-    drivingTelemetry.update(p.vehicleId, p.speed, info?.turnRate ?? 0, dt)
-    const fov = (cockpit && info) || (!p.vehicleId && firstPerson) ? 70 : 48
-    if (camera.fov !== fov) {
-      camera.fov = fov
-      camera.updateProjectionMatrix()
-    }
-    const vehicleForward = info
-      ? new THREE.Vector3(0, 0, -1).applyQuaternion(
-          new THREE.Quaternion(...sim.entityTransform(p.vehicleId!, true).rotation),
-        )
-      : new THREE.Vector3(0, 0, -1)
-    if (info && !info.flightMode && !cockpit) {
-      const wanted = Math.atan2(-vehicleForward.x, -vehicleForward.z)
-      yaw = followDrivingHeading(
-        yaw,
-        wanted,
-        drivingTelemetry.turnRate,
-        drivingTelemetry.speed,
-        dt,
-        now - lastLookTime,
-      )
-    } else if (info && p.speed > 1 && now - lastLookTime > 1400 && !cockpit) {
-      const wanted = Math.atan2(-vehicleForward.x, -vehicleForward.z)
-      yaw +=
-        Math.atan2(Math.sin(wanted - yaw), Math.cos(wanted - yaw)) *
-        (1 - Math.exp(-2 * Math.min(dt, 0.1)))
-    }
-    const target: Vec3Tuple = [
-      p.position[0],
-      p.position[1] + (info?.isCarrier ? 1 : 0.55),
-      p.position[2],
-    ]
-    if (p.interiorId) {
-      const anchor = new THREE.Vector3(0, 0.55, 0)
-        .applyQuaternion(playerFrameQ)
-        .add(new THREE.Vector3(...p.position))
-      target.splice(0, 3, ...anchor.toArray())
-    }
-    if (!p.vehicleId && firstPerson) {
-      camera.position.fromArray(p.position)
-      camera.quaternion
-        .copy(playerFrameQ)
-        .multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ')))
-    } else if (overhead) {
-      const wantedHeight = overheadDrivingHeight(drivingTelemetry.speed, mapZoom)
-      mapHeight += (wantedHeight - mapHeight) * (1 - Math.exp(-3 * Math.min(dt, 0.1)))
-      // Offset half a vertical half-frustum: the car projects to 75% screen height.
-      const lookAhead = mapHeight * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.5
-      const map = overheadDrivingPose(
-        p.position,
-        sim.entityTransform(p.vehicleId!, true).rotation,
-        mapHeight,
-        new THREE.Vector3(0, 1, 0).applyQuaternion(playerFrameQ),
-        lookAhead,
-      )
-      camera.up.copy(map.up)
-      camera.position.copy(map.position)
-      camera.lookAt(map.target)
-      renderer.domElement.dataset.mapHeight = String(Math.round(mapHeight))
-    } else if (cockpit && info) {
-      const head = driverHeadPose(
-        info.driver,
-        sim.entityTransform(p.vehicleId!, true).rotation,
-        info.isCarrier,
-        headYaw,
-        headPitch,
-        view.vehicleHeadOffset(p.vehicleId!),
-      )
-      camera.position.copy(head.position)
-      camera.quaternion.copy(head.quaternion)
-      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(head.quaternion)
-      yaw = Math.atan2(-forward.x, -forward.z)
-    } else {
-      // Look farther along the road without moving the camera toward the bonnet.
-      // Manual orbit and automatic heading recovery share the same car-relative radius.
-      const cameraAnchor = [...target]
-      if (info && !info.isCarrier) {
-        const ahead =
-          Math.min(3.5, drivingTelemetry.speed * 0.14) *
-          THREE.MathUtils.smoothstep(now - lastLookTime, 900, 1400)
-        target[0] += vehicleForward.x * ahead
-        target[2] += vehicleForward.z * ahead
-      }
-      const distance =
-        (info?.cameraDistance ?? 5.5) *
-        (1 + 2 * THREE.MathUtils.smoothstep(altitude, 50000, 2000000))
-      const travelPitch =
-        now - lastLookTime > 10000
-          ? Math.max(pitch, THREE.MathUtils.smoothstep(altitude, 1000, 500000) * 1.56)
-          : pitch
-      const desired: Vec3Tuple = [
-        cameraAnchor[0] + Math.sin(yaw) * distance * Math.cos(travelPitch),
-        cameraAnchor[1] + 0.8 + Math.sin(travelPitch) * distance,
-        cameraAnchor[2] + Math.cos(yaw) * distance * Math.cos(travelPitch),
-      ]
-      if (p.interiorId) {
-        const offset = new THREE.Vector3(...desired)
-          .sub(new THREE.Vector3(...target))
-          .applyQuaternion(playerFrameQ)
-          .add(new THREE.Vector3(...target))
-        desired.splice(0, 3, ...offset.toArray())
-      }
-      camera.position.fromArray(sim.cameraPosition(target, desired))
-      camera.lookAt(...target)
-    }
-    if (vehicleEntrance && vehicleEntrance.id === p.vehicleId && cockpit && info) {
-      const elapsed = now - vehicleEntrance.started
-      const t = THREE.MathUtils.smoothstep(elapsed, 150, 1200)
-      const seatPosition = camera.position.clone()
-      const seatRotation = camera.quaternion.clone()
-      const top = overheadDrivingPose(
-        p.position,
-        sim.entityTransform(p.vehicleId!, true).rotation,
-        mapHeight,
-        new THREE.Vector3(0, 1, 0).applyQuaternion(playerFrameQ),
-        0,
-      )
-      camera.position.copy(top.position)
-      camera.up.copy(top.up)
-      camera.lookAt(top.target)
-      camera.position.lerp(seatPosition, t)
-      camera.quaternion.slerp(seatRotation, t)
-      const body = view.objects.get(p.vehicleId!)
-      if (body && !preparedVehicles.has(body)) {
-        preparedVehicles.add(body)
-        // Compile the occupied car with scene lighting before its first close-up.
-        void renderer.compileAsync(body, camera, scene).catch((error) => {
-          preparedVehicles.delete(body)
-          console.warn('Vehicle material preparation failed', error)
-        })
-      }
-      if (elapsed >= 1200) vehicleEntrance = null
-    } else vehicleEntrance = null
+    renderer.domElement.dataset.mapHeight = String(Math.round(mapHeight))
     renderer.domElement.dataset.vehicleEntrance = vehicleEntrance ? 'active' : 'complete'
+    document.querySelector('.caption-tag')!.textContent =
+      cameraMode === 'map' && p.vehicleId
+        ? 'CENITAL · proa ↑'
+        : cameraMode === 'cockpit' && p.vehicleId
+          ? 'CONDUCTOR'
+          : !p.vehicleId && firstPerson
+            ? 'PRIMERA PERSONA'
+            : 'PERSPECTIVA'
     $('player-mode').textContent = p.vehicleId
       ? view.document.entities.find((e) => e.id === p.vehicleId)!.name.toUpperCase() +
         (info?.dockedTo ? ' · SUJETO' : '') +
@@ -2780,33 +2621,7 @@ function frame(now: number): void {
       renderer.domElement.dataset.impacts = String(view.impacts.count)
     }
   }
-  let flightLevel = 0,
-    flightSpeed = 0
-  if (sim)
-    for (const e of view.document.entities) {
-      if (!e.vehicle?.flight || e.vehicle.plane) continue
-      const info = sim.vehicleInfo(e.id)
-      if (!info.flightMode) continue
-      const p = sim.entityTransform(e.id, true).position
-      const distance = camera.position.distanceTo(new THREE.Vector3(...p))
-      const level =
-        sim.player.vehicleId === e.id || sim.player.interiorId === e.id
-          ? 0.55
-          : Math.max(0, 1 - distance / 100)
-      if (level > flightLevel) {
-        flightLevel = level
-        flightSpeed = info.speedKmh
-      }
-    }
-  vehicleAudio.turbine(flightLevel, flightSpeed)
-  const pilot = sim?.player.vehicleId
-  const piloted = pilot ? view.document.entities.find((e) => e.id === pilot) : undefined
-  vehicleAudio.propeller(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
-  const carInfo = pilot && piloted?.vehicle?.powertrain ? sim!.vehicleInfo(pilot) : null
-  vehicleAudio.powertrain(
-    carInfo?.helm !== 'off' ? (carInfo?.rpm ?? 0) : 0,
-    carInfo?.engineLoad ?? 0,
-  )
+  vehicleEffects.updateAudio(sim, view.document, camera.position)
   fireRequested = false
   const worldCamera = camera.position.clone()
   const position = sim?.player.position ?? camera.position.toArray()
@@ -2847,22 +2662,7 @@ function frame(now: number): void {
   if (geography.animatingClouds) needsRender = true
   worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
   if (worldStream) $('world-note').textContent = worldStream.status
-  if (!sim) {
-    tireSmoke.clear()
-    tireMarks.clear()
-  }
-  const tireContacts = pilot ? sim!.wheelContactInfo(pilot) : []
-  const slip = Math.max(0, ...tireContacts.map((w) => w.slip))
-  tireSmoke.update(
-    dt,
-    tireContacts
-      .filter((w) => w.slip > 0.22)
-      .flatMap((w) => (w.contactPoint ? [w.contactPoint] : [])),
-    slip,
-    renderOrigin,
-  )
-  tireMarks.update(document.hidden ? 0 : dt, pilot ?? null, tireContacts, renderOrigin)
-  vehicleAudio.tires(slip, pilot ? sim!.vehicleInfo(pilot).speedKmh : 0)
+  vehicleEffects.updateTires(sim, document.hidden ? 0 : dt, renderOrigin)
   renderer.domElement.dataset.tireMarks = String(tireMarks.root.geometry.drawRange.count / 6)
   renderer.domElement.dataset.tireSound = String(vehicleAudio.tireSoundLevel)
   view.root.position.copy(renderOrigin).negate()

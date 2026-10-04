@@ -127,7 +127,8 @@ export function createGeographicViewer(
   controls.maxDistance = 200000
   let mouseSensitivity = 0.35
   function setMouseSensitivity(value: number) {
-    if (!Number.isFinite(value) || value < 0.1 || value > 2) throw new Error('Mouse sensitivity must be between 0.1 and 2')
+    if (!Number.isFinite(value) || value < 0.1 || value > 2)
+      throw new Error('Mouse sensitivity must be between 0.1 and 2')
     mouseSensitivity = value
     controls.zoomSpeed = value
     controls.rotateSpeed = value
@@ -198,7 +199,10 @@ export function createGeographicViewer(
     camera.aspect = width / height
     camera.updateProjectionMatrix()
   }
-  const surfaceOverrides = new Map<string, { texture: THREE.CanvasTexture; restore: (() => void)[] }>()
+  const surfaceOverrides = new Map<
+    string,
+    { texture: THREE.CanvasTexture; restore: (() => void)[] }
+  >()
   function clearSurface(id: string) {
     const override = surfaceOverrides.get(id)
     if (!override) return
@@ -221,14 +225,17 @@ export function createGeographicViewer(
       const clones = (Array.isArray(original) ? original : [original]).map((material) => {
         const copy = material.clone()
         if ('map' in copy) {
-          (copy as THREE.MeshStandardMaterial).map = texture
+          ;(copy as THREE.MeshStandardMaterial).map = texture
           if ('color' in copy) (copy as THREE.MeshStandardMaterial).color.set(0xffffff)
           copy.needsUpdate = true
         }
         return copy
       })
       object.material = Array.isArray(original) ? clones : clones[0]
-      restore.push(() => { object.material = original; for (const material of clones) material.dispose() })
+      restore.push(() => {
+        object.material = original
+        for (const material of clones) material.dispose()
+      })
     })
     surfaceOverrides.set(id, { texture, restore })
   }
@@ -303,17 +310,34 @@ export function createGeographicViewer(
     try {
       // Atlas includes the content hash in this URL: a rebuilt section gets a new cache key.
       // Unversioned URLs are fetched normally to avoid keeping mutable assets indefinitely.
-      const cache = new URL(asset.url, window.location.href).searchParams.has('version') ? mapCache('geographic-glb') : undefined
+      const cache = new URL(asset.url, window.location.href).searchParams.has('version')
+        ? mapCache('geographic-glb')
+        : undefined
       let response: Response | undefined
-      try { response = await cache?.match(asset.url) } catch { /* Storage unavailable: use network. */ }
+      try {
+        response = await cache?.match(asset.url)
+      } catch {
+        /* Storage unavailable: use network. */
+      }
       if (controller.signal.aborted || disposed) return
       const cached = Boolean(response)
       response ??= await fetch(asset.url, { signal: controller.signal })
       if (!response.ok) throw new Error(`GLB request failed (${response.status})`)
       const data = await response.arrayBuffer()
-      if (!cached && cache && data.byteLength >= 12 && new DataView(data).getUint32(0, true) === 0x46546c67) {
-        try { await cache.put(asset.url, new Response(data, { headers: { 'Content-Type': 'model/gltf-binary' } })) }
-        catch { /* Quota or private mode must not prevent viewing the downloaded GLB. */ }
+      if (
+        !cached &&
+        cache &&
+        data.byteLength >= 12 &&
+        new DataView(data).getUint32(0, true) === 0x46546c67
+      ) {
+        try {
+          await cache.put(
+            asset.url,
+            new Response(data, { headers: { 'Content-Type': 'model/gltf-binary' } }),
+          )
+        } catch {
+          /* Quota or private mode must not prevent viewing the downloaded GLB. */
+        }
       }
       if (controller.signal.aborted || disposed) return
       const gltf = await loader.parseAsync(
@@ -327,13 +351,16 @@ export function createGeographicViewer(
       const group = new THREE.Group()
       group.name = asset.id
       group.applyMatrix4(geographicAssetTransform(origin, asset.origin))
-      if (asset.untexturedColor) gltf.scene.traverse((object) => {
-        if (!(object instanceof THREE.Mesh)) return
-        for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-          if (material instanceof THREE.MeshStandardMaterial && !material.map)
-            material.color.set(asset.untexturedColor!)
-        }
-      })
+      if (asset.untexturedColor)
+        gltf.scene.traverse((object) => {
+          if (!(object instanceof THREE.Mesh)) return
+          for (const material of Array.isArray(object.material)
+            ? object.material
+            : [object.material]) {
+            if (material instanceof THREE.MeshStandardMaterial && !material.map)
+              material.color.set(asset.untexturedColor!)
+          }
+        })
       group.add(gltf.scene)
       group.visible = asset.visible !== false
       assets.set(asset.id, group)
@@ -354,7 +381,9 @@ export function createGeographicViewer(
   const ray = new THREE.Raycaster()
   const direction = new THREE.Vector3()
   function nearestHit() {
-    const candidates = [...assets.entries()].filter(([id, a]) => a.visible && ray.ray.intersectsBox(assetBounds.get(id)!)).map(([, a]) => a)
+    const candidates = [...assets.entries()]
+      .filter(([id, a]) => a.visible && ray.ray.intersectsBox(assetBounds.get(id)!))
+      .map(([, a]) => a)
     return ray.intersectObjects(candidates, true)[0]
   }
   function translate(delta: THREE.Vector3) {
@@ -368,9 +397,12 @@ export function createGeographicViewer(
     controls.target.add(delta)
     controls.update()
   }
-  let clearance = 100, clearanceAt = 0
+  let clearance = 100,
+    clearanceAt = 0
   function upDirection() {
-    return new THREE.Vector3(0, 1, 0).applyQuaternion(localFrame(getCamera())).applyQuaternion(localFrame(origin).invert())
+    return new THREE.Vector3(0, 1, 0)
+      .applyQuaternion(localFrame(getCamera()))
+      .applyQuaternion(localFrame(origin).invert())
   }
   function groundHit() {
     ray.set(camera.position, upDirection().negate())
@@ -389,7 +421,8 @@ export function createGeographicViewer(
     const pose = getCamera()
     const position = hit.point.clone().addScaledVector(upDirection(), 1.7)
     setCamera({ ...localToGeo(origin, position.toArray()), heading: pose.heading, pitch: -3 })
-    clearance = 1.7; clearanceAt = performance.now()
+    clearance = 1.7
+    clearanceAt = performance.now()
     return true
   }
   function speed() {
@@ -397,44 +430,80 @@ export function createGeographicViewer(
       clearance = groundHit()?.distance ?? Math.max(10, Math.abs(getCamera().altitude))
       clearanceAt = performance.now()
     }
-    return THREE.MathUtils.clamp(clearance * 0.8, 4, 5000) * (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 4 : 1)
+    return (
+      THREE.MathUtils.clamp(clearance * 0.8, 4, 5000) *
+      (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 4 : 1)
+    )
   }
   let looking: { id: number; x: number; y: number } | undefined
-  canvas.addEventListener('pointerdown', event => {
-    if (event.button !== 2 || !active) return
-    event.stopImmediatePropagation(); event.preventDefault()
-    canvas.focus({ preventScroll: true }); canvas.setPointerCapture(event.pointerId)
-    controls.enabled = false
-    looking = { id: event.pointerId, x: event.clientX, y: event.clientY }
-  }, { ...inputOptions, capture: true })
-  canvas.addEventListener('pointermove', event => {
-    if (!looking || looking.id !== event.pointerId) return
-    const pose = getCamera()
-    setCamera({ ...pose, heading: pose.heading + (event.clientX - looking.x) * 0.18 * mouseSensitivity,
-      pitch: THREE.MathUtils.clamp(pose.pitch - (event.clientY - looking.y) * 0.18 * mouseSensitivity, -89, 89) })
-    looking.x = event.clientX; looking.y = event.clientY
-  }, inputOptions)
-  function endLook() { looking = undefined; controls.enabled = active }
+  canvas.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.button !== 2 || !active) return
+      event.stopImmediatePropagation()
+      event.preventDefault()
+      canvas.focus({ preventScroll: true })
+      canvas.setPointerCapture(event.pointerId)
+      controls.enabled = false
+      looking = { id: event.pointerId, x: event.clientX, y: event.clientY }
+    },
+    { ...inputOptions, capture: true },
+  )
+  canvas.addEventListener(
+    'pointermove',
+    (event) => {
+      if (!looking || looking.id !== event.pointerId) return
+      const pose = getCamera()
+      setCamera({
+        ...pose,
+        heading: pose.heading + (event.clientX - looking.x) * 0.18 * mouseSensitivity,
+        pitch: THREE.MathUtils.clamp(
+          pose.pitch - (event.clientY - looking.y) * 0.18 * mouseSensitivity,
+          -89,
+          89,
+        ),
+      })
+      looking.x = event.clientX
+      looking.y = event.clientY
+    },
+    inputOptions,
+  )
+  function endLook() {
+    looking = undefined
+    controls.enabled = active
+  }
   canvas.addEventListener('pointerup', endLook, inputOptions)
   canvas.addEventListener('pointercancel', endLook, inputOptions)
   canvas.addEventListener('lostpointercapture', endLook, inputOptions)
   canvas.addEventListener('blur', endLook, inputOptions)
   canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }), inputOptions)
-  canvas.addEventListener('keydown', event => {
-    if (!active || event.ctrlKey || event.metaKey || event.altKey) return
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight'].includes(event.code)) {
-      event.preventDefault(); keys.add(event.code)
-    }
-  }, inputOptions)
-  canvas.addEventListener('keyup', event => keys.delete(event.code), inputOptions)
+  canvas.addEventListener(
+    'keydown',
+    (event) => {
+      if (!active || event.ctrlKey || event.metaKey || event.altKey) return
+      if (
+        ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight'].includes(
+          event.code,
+        )
+      ) {
+        event.preventDefault()
+        keys.add(event.code)
+      }
+    },
+    inputOptions,
+  )
+  canvas.addEventListener('keyup', (event) => keys.delete(event.code), inputOptions)
   canvas.addEventListener('blur', () => keys.clear(), inputOptions)
   window.addEventListener('blur', () => keys.clear(), inputOptions)
   let lastNavigation = performance.now()
   function navigate() {
-    const now = performance.now(), dt = Math.min(0.05, (now - lastNavigation) / 1000)
+    const now = performance.now(),
+      dt = Math.min(0.05, (now - lastNavigation) / 1000)
     lastNavigation = now
     if (!keys.size) return
-    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(localFrame(getCamera())).applyQuaternion(localFrame(origin).invert())
+    const up = new THREE.Vector3(0, 1, 0)
+      .applyQuaternion(localFrame(getCamera()))
+      .applyQuaternion(localFrame(origin).invert())
     camera.getWorldDirection(direction)
     if (direction.lengthSq() < 0.000001) direction.set(0, 0, -1).projectOnPlane(up)
     direction.normalize()
@@ -442,7 +511,10 @@ export function createGeographicViewer(
     const forward = Number(keys.has('KeyW')) - Number(keys.has('KeyS'))
     const sideways = Number(keys.has('KeyD')) - Number(keys.has('KeyA'))
     const lift = Number(keys.has('KeyE')) - Number(keys.has('KeyQ'))
-    const movement = direction.multiplyScalar(forward).addScaledVector(right, sideways).addScaledVector(up, lift)
+    const movement = direction
+      .multiplyScalar(forward)
+      .addScaledVector(right, sideways)
+      .addScaledVector(up, lift)
     if (movement.lengthSq()) translate(movement.normalize().multiplyScalar(speed() * dt))
   }
   const observer = new ResizeObserver(resize)

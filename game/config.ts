@@ -10,7 +10,7 @@
  *   - static: use static tile mode ('true' or '1')
  */
 
-import { DEFAULT_TILES_BASE_URL, normalizeTilesBase } from '../src/render/planet/static-tiles.js'
+import { DEFAULT_TILES_BASE_URL, normalizeTilesBase } from '@nabla/engine/planet/static-tiles'
 
 export interface GameConfig {
   spawn: {
@@ -32,9 +32,13 @@ const ZAISA_IRUN = {
 export function parseGameConfig(search: string = location.search): GameConfig {
   const params = new URLSearchParams(search)
 
-  const latitude = parseFloat(params.get('lat') ?? '') || ZAISA_IRUN.latitude
-  const longitude = parseFloat(params.get('lon') ?? '') || ZAISA_IRUN.longitude
-  const altitude = parseFloat(params.get('alt') ?? '') || ZAISA_IRUN.altitude
+  const coordinate = (key: string, fallback: number) => {
+    const value = parseFloat(params.get(key) ?? '')
+    return Number.isFinite(value) ? value : fallback
+  }
+  const latitude = coordinate('lat', ZAISA_IRUN.latitude)
+  const longitude = coordinate('lon', ZAISA_IRUN.longitude)
+  const altitude = coordinate('alt', ZAISA_IRUN.altitude)
 
   const clampedLat = Math.max(-85, Math.min(85, latitude))
   const clampedLon = ((((longitude + 180) % 360) + 360) % 360) - 180

@@ -27,6 +27,7 @@ export class FrameLoop {
       this.stop()
       throw error
     }
-    if (this.running) this.handle = this.request(this.tick)
+    // A callback may stop and restart the loop. start() already scheduled that frame.
+    if (this.running && this.handle === undefined) this.handle = this.request(this.tick)
   }
 }

@@ -4,6 +4,13 @@ import { DEFAULT_TILES_BASE_URL } from '../../src/render/planet/static-tiles.js'
 
 describe('game config', () => {
   describe('parseGameConfig', () => {
+    it('preserves the planetary origin and sea-level altitude at zero', () => {
+      expect(parseGameConfig('?lat=0&lon=0&alt=0').spawn).toEqual({
+        latitude: 0,
+        longitude: 0,
+        altitude: 0,
+      })
+    })
     it('uses Zaisa defaults with no params', () => {
       const config = parseGameConfig('')
 

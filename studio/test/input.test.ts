@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { deadzone, gamepadAxes } from '../input.js'
+import { deadzone, gamepadAxes } from '../../src/runtime/input.js'
 it('maps mode 2 sticks independently and ignores centre drift', () => {
   const pad = { axes: [0.56, -1, -0.56, -0.12], buttons: [] }
   const input = gamepadAxes(pad, true)

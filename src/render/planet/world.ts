@@ -11,6 +11,12 @@ import {
 import { fetchTileManifest } from './static-tiles.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
+export interface PlanetSourceOptions {
+  /** Known coverage of a finite offline dataset. Omit for unrestricted streaming. */
+  tiles?: readonly MapTile[]
+  /** Disable external coarse relief for self-contained examples. Coordinates remain planetary. */
+  horizon?: boolean
+}
 import { PlanetHorizon } from './horizon.js'
 import { carriagewayTint, matteGroundMaterial } from './ground-material.js'
 import { treeInstances } from './vegetation.js'
@@ -287,6 +293,7 @@ export class PlanetWorld {
     private base = import.meta.env.VITE_WORLD_PREPARED_URL || '/prepared',
     private api = import.meta.env.VITE_WORLD_PREPARE_API || '/prepare',
     private discoveryMode: TileDiscoveryMode = 'dynamic',
+    private sourceOptions: PlanetSourceOptions = {},
   ) {
     this.horizon = new PlanetHorizon(origin, changed, `${base}/photos`, setupMaterial)
     this.root.add(this.horizon.root)
@@ -475,8 +482,10 @@ export class PlanetWorld {
     )
     // Relief span is the quality control. Do not inflate it with altitude:
     // a hidden 40 km ring was rebuilding hundreds of photo meshes in flight.
-    this.horizon.update(gps.latitude, gps.longitude, this.relief)
-    this.horizon.setFocus(mapTileAt(gps.latitude, gps.longitude, 15))
+    if (this.sourceOptions.horizon !== false) {
+      this.horizon.update(gps.latitude, gps.longitude, this.relief)
+      this.horizon.setFocus(mapTileAt(gps.latitude, gps.longitude, 15))
+    }
     const center = mapTileAt(gps.latitude, gps.longitude, 15)
     const planKey = `${mapTileId(center)}:${this.distance}:${this.maxTiles}:${this.streamMode}:${Math.floor(height / 500)}`
     if (!this.plan || planKey !== this.planKey) {
@@ -519,6 +528,10 @@ export class PlanetWorld {
         ]),
       ).values(),
     ]
+    if (this.sourceOptions.tiles) {
+      const available = new Set(this.sourceOptions.tiles.map(mapTileId))
+      this.wanted = this.wanted.filter((tile) => available.has(mapTileId(tile)))
+    }
     const needed = new Set(this.wanted.map(mapTileId))
     this.installQueue = this.installQueue.filter((job) => {
       if (needed.has(job.key)) return true
