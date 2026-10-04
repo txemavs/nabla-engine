@@ -205,7 +205,10 @@ export class OceanSheet {
     return material
   }
   constructor(changed: () => void = () => {}) {
-    this.texture = new THREE.TextureLoader().load('/geography/water-normal.png', changed)
+    this.texture = new THREE.TextureLoader().load(
+      new URL('../../../assets/geography/water-normal.png', import.meta.url).href,
+      changed,
+    )
     this.texture.wrapS = this.texture.wrapT = THREE.RepeatWrapping
     this.uniforms = {
       earthRadial: { value: new THREE.Vector3(0, 1, 0) },

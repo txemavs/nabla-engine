@@ -23,7 +23,12 @@ function moonMaterial(sun: THREE.Vector3): THREE.ShaderMaterial {
   placeholder.colorSpace = THREE.SRGBColorSpace
   placeholder.needsUpdate = true
   return new THREE.ShaderMaterial({
-    uniforms: { sun: { value: sun }, map: { value: placeholder } },
+    uniforms: {
+      sun: { value: sun }, map: { value: placeholder },
+      daylight: { value: 0 }, skyTint: { value: new THREE.Color('#b9d5e8') },
+    },
+    transparent: true,
+    depthWrite: false,
     fog: false,
     vertexShader: `
       varying vec3 vNormal;
@@ -37,12 +42,25 @@ function moonMaterial(sun: THREE.Vector3): THREE.ShaderMaterial {
     fragmentShader: `
       uniform vec3 sun;
       uniform sampler2D map;
+      uniform float daylight;
+      uniform vec3 skyTint;
       varying vec3 vNormal;
       varying vec2 vUv;
       void main() {
         vec3 albedo = texture2D(map, vUv).rgb;
         float lit = smoothstep(-0.04, 0.28, dot(normalize(vNormal), normalize(sun)));
-        gl_FragColor = vec4(albedo * (0.05 + 0.95 * lit), 1.0);
+        // The atmosphere washes out lunar detail in daylight; the unlit side
+        // fades into the sky instead of drawing a dark disc over it.
+        float day = smoothstep(0.0, 1.0, daylight);
+        float luminance = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+        vec3 nightAlbedo = mix(vec3(luminance), albedo, 0.25);
+        vec3 nightColor = pow(nightAlbedo, vec3(1.12)) * (0.018 + 1.35 * lit);
+        vec3 dayAlbedo = mix(vec3(0.9), vec3(luminance), 0.18);
+        vec3 dayColor = mix(dayAlbedo, skyTint, 0.24);
+        float opacity = mix(1.0, lit * 0.38, day);
+        gl_FragColor = vec4(mix(nightColor, dayColor, day), opacity);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
       }
     `,
   })
@@ -150,6 +168,7 @@ export class GeographicView {
     document: SceneDocument,
     private readonly changed: () => void,
     online = false,
+    options: { textures?: boolean } = {},
   ) {
     this.hasTerrain = !!document.geography?.planetary || document.entities.some((e) => !!e.terrain)
     if (this.hasTerrain) online = false
@@ -183,25 +202,26 @@ export class GeographicView {
     this.space.add(this.night.root)
     const rotation = this.origin ? localFrame(this.origin).invert() : new THREE.Quaternion()
     this.space.add(this.daylight, this.backdrop, this.clouds.mesh, this.globe.mesh, this.air)
-    new THREE.TextureLoader().load(
-      '/geography/moon.jpg',
-      (texture) => {
-        if (this.disposed) {
-          texture.dispose()
-          return
-        }
-        texture.colorSpace = THREE.SRGBColorSpace
-        texture.anisotropy = 8
-        const material = this.moon.material as THREE.ShaderMaterial
-        const previous = material.uniforms.map.value as THREE.Texture
-        material.uniforms.map.value = texture
-        previous.dispose()
-        this.moonTexture = texture
-        this.changed()
-      },
-      undefined,
-      () => this.changed(),
-    )
+    if (options.textures !== false)
+      new THREE.TextureLoader().load(
+        new URL('../../../assets/geography/moon.jpg', import.meta.url).href,
+        (texture) => {
+          if (this.disposed) {
+            texture.dispose()
+            return
+          }
+          texture.colorSpace = THREE.SRGBColorSpace
+          texture.anisotropy = 8
+          const material = this.moon.material as THREE.ShaderMaterial
+          const previous = material.uniforms.map.value as THREE.Texture
+          material.uniforms.map.value = texture
+          previous.dispose()
+          this.moonTexture = texture
+          this.changed()
+        },
+        undefined,
+        () => this.changed(),
+      )
     this.syncClouds()
     this.backdrop.renderOrder = -100
     this.earth.quaternion.copy(rotation)
@@ -209,24 +229,25 @@ export class GeographicView {
     this.globe.mesh.position.copy(this.earth.position)
     this.globe.mesh.quaternion.copy(rotation)
     this.air.position.copy(this.earth.position)
-    new THREE.TextureLoader().load(
-      '/geography/earth.jpg',
-      (texture) => {
-        if (this.disposed) {
-          texture.dispose()
-          return
-        }
-        texture.colorSpace = THREE.SRGBColorSpace
-        this.earthTexture = texture
-        const material = this.earth.material as THREE.MeshLambertMaterial
-        material.color.set('#ffffff')
-        material.map = texture
-        material.needsUpdate = true
-        this.changed()
-      },
-      undefined,
-      () => this.changed(),
-    )
+    if (options.textures !== false)
+      new THREE.TextureLoader().load(
+        new URL('../../../assets/geography/earth.jpg', import.meta.url).href,
+        (texture) => {
+          if (this.disposed) {
+            texture.dispose()
+            return
+          }
+          texture.colorSpace = THREE.SRGBColorSpace
+          this.earthTexture = texture
+          const material = this.earth.material as THREE.MeshLambertMaterial
+          material.color.set('#ffffff')
+          material.map = texture
+          material.needsUpdate = true
+          this.changed()
+        },
+        undefined,
+        () => this.changed(),
+      )
   }
   get enabled() {
     return Boolean(this.origin)
@@ -269,6 +290,9 @@ export class GeographicView {
       this.hasTerrain ? this.viewDistance : 220,
     )
     const air = this.atmosphere
+    const lunarMaterial = this.moon.material as THREE.ShaderMaterial
+    lunarMaterial.uniforms.daylight.value = air.day * (1 - air.space)
+    lunarMaterial.uniforms.skyTint.value.copy(air.color)
     if (this.hasTerrain) Object.assign(air, mapFogRange(this.viewDistance))
     this.backdrop.material.color.copy(air.color)
     this.space.background = null
@@ -437,13 +461,19 @@ export class GeographicView {
     this.artistic.deck.visible = artistic
     this.globe.mesh.visible = artistic
   }
-  setLayers(layers: { sky: boolean; planets: boolean; sun: boolean; clouds?: boolean }) {
+  setLayers(layers: {
+    sky: boolean
+    planets: boolean
+    sun: boolean
+    moon?: boolean
+    clouds?: boolean
+  }) {
     this.backdrop.visible = layers.sky
     this.cloudsWanted = layers.sky && layers.clouds !== false && !!this.origin
     this.syncClouds()
     this.earth.visible = layers.planets
     this.air.visible = layers.sky
-    this.moon.visible = layers.planets
+    this.moon.visible = layers.planets && layers.moon !== false
     this.night.root.visible = layers.planets
     this.sunDisc.value.set(layers.sun ? '#ffffff' : '#000000')
     this.flare.mesh.visible = layers.sun

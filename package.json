@@ -54,6 +54,10 @@
     "./vehicles/flight": {
       "types": "./dist/simulation/vehicles/flight.d.ts",
       "import": "./dist/simulation/vehicles/flight.js"
+    },
+    "./viewer": {
+      "import": "./dist/viewer/index.js",
+      "types": "./dist/viewer/index.d.ts"
     }
   },
   "imports": {

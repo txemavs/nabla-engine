@@ -23,7 +23,7 @@ import { TireSmoke } from '../src/render/entity/tire-smoke.js'
 import { capturePng } from '../src/render/capture.js'
 import { simplifiedTide } from '../src/planet/tide.js'
 import { CatchFloor } from '../src/render/planet/catch-floor.js'
-import { OceanSheet, seaSeenFromBelow } from '../src/render/planet/ocean-sheet.js'
+import { seaSeenFromBelow } from '../src/render/planet/ocean-sheet.js'
 import { TileDebugView, type TileDebugMode } from '../src/render/planet/debug.js'
 import { PerformanceMonitor } from '../src/diagnostics/performance-monitor.js'
 import { TouchDriving } from './touch-driving.js'
@@ -87,6 +87,7 @@ import { createPortal } from '../src/entity/portal/portal.js'
 import { renderPortals, type ExternalPortalView } from '../src/render/portal/portals.js'
 import { skyTime, localTimeInput, type SkyClock } from '../src/planet/sky.js'
 import { GeographicView } from '../src/render/planet/sky.js'
+import { WorldEnvironment, configureWorldRenderer } from '../src/render/planet/world-environment.js'
 import { localToGeo, MADRID } from '../src/math/geo/sphere.js'
 import { gamepadAxes } from './input.js'
 import * as THREE from 'three'
@@ -227,8 +228,8 @@ renderer.shadowMap.enabled = performanceSettings.shadows > 0
 renderer.shadowMap.type = THREE.PCFShadowMap
 // Refresh once for the main view; auxiliary cameras reuse that map.
 renderer.shadowMap.autoUpdate = false
-renderer.toneMapping = THREE.ACESFilmicToneMapping
-renderer.toneMappingExposure = 1.08
+configureWorldRenderer(renderer)
+
 const DRONE_W = 320
 const DRONE_H = 180
 const droneTarget = new THREE.WebGLRenderTarget(DRONE_W, DRONE_H)
@@ -419,13 +420,14 @@ const silhouette = new SelectionSilhouette()
 const outline = new SelectionOutline()
 scene.add(outline)
 const lastWorldInstallMs = 0
-const ocean = new OceanSheet(() => {
+const worldEnvironment = new WorldEnvironment(scene, sun, ambientFill, () => {
   needsRender = true
 })
 let waterLevel = 0
 let waterMode: 'manual' | 'tide' = 'tide'
 let tideAmplitude = 1
 let nextTideReadout = 0
+const ocean = worldEnvironment.ocean
 const seaRoot = ocean.mesh
 shadowManager.setupMaterial(seaRoot.material)
 scene.add(seaRoot)
@@ -2813,18 +2815,16 @@ function frame(now: number): void {
   const underSea =
     !!view.document.geography &&
     seaSeenFromBelow(worldCamera, view.document.geography.altitude, waterLevel)
-  if (view.document.geography && sceneLayer('layer-sea')) {
-    ocean.update(
-      view.document.geography,
-      worldCamera,
-      renderOrigin,
-      Math.max(performanceSettings.distance, performanceSettings.fog * 2),
-      now,
-      !sim && sceneLayer('layer-catch') && underSea,
-    )
-    needsRender = true
-  }
-  seaRoot.visible = !!view.document.geography && sceneLayer('layer-sea')
+  worldEnvironment.updateSea(
+    view.document.geography,
+    worldCamera,
+    renderOrigin,
+    Math.max(performanceSettings.distance, performanceSettings.fog * 2),
+    now,
+    sceneLayer('layer-sea'),
+    !sim && sceneLayer('layer-catch') && underSea,
+  )
+  if (seaRoot.visible) needsRender = true
   renderer.domElement.dataset.sea = seaRoot.visible ? 'sheet' : 'off'
   const disk = sim?.catchDisk()
   const catchOn = sceneLayer('layer-catch')
@@ -2837,9 +2837,13 @@ function frame(now: number): void {
   view.buildingDistance =
     performanceSettings.preset === 'ultra' ? 20000 : Math.min(3000, performanceSettings.distance)
   // Fog is a horizontal fade, independent of how far geometry is drawn.
-  geography.viewDistance = performanceSettings.fog
-  const height = geography.update(worldCamera.toArray(), renderOrigin, skyClock)
-  if (seaRoot.visible) ocean.fadeWithSky(geography.atmosphere.space)
+  const height = worldEnvironment.updateSky(
+    geography,
+    worldCamera,
+    renderOrigin,
+    skyClock,
+    performanceSettings.fog,
+  )
   if (geography.animatingClouds) needsRender = true
   worldStream?.renderUpdate(renderOrigin, !!performanceSettings.buildings, sim)
   if (worldStream) $('world-note').textContent = worldStream.status
@@ -2897,20 +2901,7 @@ function frame(now: number): void {
       height > 100000 ? 'space' : height > 250 ? 'map' : 'local'
     scene.background = null
     const air = geography.atmosphere
-    const night = 1 - Math.min(1, Math.max(0, air.day))
-    ambientFill.intensity = (0.22 * air.day + 0.04 * night) * (1 - air.space)
-    scene.fog = air.fog ? new THREE.Fog(air.color, air.near, air.far) : null
-    const moonUp = Math.max(0, geography.moonDirection.y)
-    const useMoon = geography.sunDirection.y <= 0 && moonUp > 0
-    const lightDirection = useMoon ? geography.moonDirection : geography.sunDirection
-    sun.position.copy(lightDirection).multiplyScalar(65)
-    sun.intensity = useMoon
-      ? 0.35 * Math.min(1, moonUp * 2)
-      : geography.sunDirection.y > 0
-        ? 3.2 * air.day
-        : 0
-    sun.color.set(useMoon ? '#d5def2' : air.day > 0.05 ? '#fff0d8' : '#b8ccff')
-    ocean.setLight(lightDirection, sun.intensity, sun.color, ambientFill.intensity)
+    const lightDirection = worldEnvironment.applyLighting(geography)
     sunDirection.copy(lightDirection).negate()
     shadowManager.setLightDirection(sunDirection)
     shadowManager.setLightIntensity(sun.intensity)
