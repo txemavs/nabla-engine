@@ -9,6 +9,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: [
         {
+          find: '@nabla/engine/runtime',
+          replacement: fileURLToPath(new URL('./src/runtime/index.ts', import.meta.url)),
+        },
+        {
           find: '@nabla/engine/vehicle-presentation/presets',
           replacement: fileURLToPath(
             new URL('./src/catalog/presentation/road-vehicles.ts', import.meta.url),

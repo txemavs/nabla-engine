@@ -11,8 +11,8 @@
  *   https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json
  *
  * GLB integrity (size and SHA-256 from the manifest) is verified by the planet worker when it loads the files.
- * The page must be served over HTTPS (or localhost): the worker's `crypto.subtle` and Cache API need a secure
- * context, and an HTTPS page cannot load tiles from an `http:` host (mixed content).
+ * HTTPS uses native Web Crypto; HTTP LAN workers use the portable SHA-256 verifier.
+ * An HTTPS page still cannot load tiles from an `http:` host (mixed content).
  */
 
 import {

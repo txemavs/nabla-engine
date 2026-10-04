@@ -1,6 +1,20 @@
 import { KeyboardSteering } from '../simulation/vehicles/keyboard-steering.js'
 import { idleInput, type PlayerInput, type Simulation } from '../simulation/simulation.js'
 import type { SceneDocument } from '../scene/document.js'
+/** Gamepad access may be absent or denied on HTTP LAN origins and embedded views. */
+export function availableGamepads(): (Gamepad | null)[] {
+  if (
+    typeof navigator === 'undefined' ||
+    !navigator.getGamepads ||
+    globalThis.isSecureContext === false
+  )
+    return []
+  try {
+    return [...navigator.getGamepads()]
+  } catch {
+    return []
+  }
+}
 
 /** Standard Gamepad mapping: mode 2, left stick altitude/yaw; right stick pitch/roll. */
 export function deadzone(value: number): number {

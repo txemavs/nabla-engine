@@ -10,17 +10,19 @@ ownership into Engine; moving the application directory alone is insufficient.
 
 ## Implemented boundary
 
-| Capability                                                   | Engine owner                               | Consumers               |
-| ------------------------------------------------------------ | ------------------------------------------ | ----------------------- |
-| Simulation lifetime, scene snapshot, play/pause/resume/stop  | `runtime/session.ts`                       | Studio and game         |
-| Single animation scheduler                                   | `runtime/frame-loop.ts`                    | Studio and game         |
-| Cockpit, chase, first-person and overhead camera calculation | `runtime/game-camera.ts`                   | Studio and game         |
-| Keyboard steering, gamepad axes, touch input mixing          | `runtime/input.ts`                         | Studio and game         |
-| Turbine, propeller, powertrain and tire audio orchestration  | `runtime/vehicle-effects.ts`               | Studio and game         |
-| Tire smoke and marks orchestration                           | `runtime/vehicle-effects.ts`               | Studio and game         |
-| Standalone browser composition and scoped browser input      | `runtime/browser.ts`                       | Game                    |
-| Planetary sky, lighting and sea                              | `render/planet/world-environment.ts`       | Studio, viewer and game |
-| Small reproducible planetary test dataset                    | `examples/flat-tile.ts` and published GLBs | Package consumers       |
+| Capability                                                             | Engine owner                                 | Consumers               |
+| ---------------------------------------------------------------------- | -------------------------------------------- | ----------------------- |
+| Simulation lifetime, scene snapshot, play/pause/resume/stop            | `runtime/session.ts`                         | Studio and game         |
+| Gameplay coordination, boarding, camera actions and portal transitions | `runtime/game.ts`                            | Studio and browser game |
+| Lost-key release and focus reset policy                                | `runtime/held-keys.ts` and `runtime/game.ts` | Studio and browser game |
+| Single animation scheduler                                             | `runtime/frame-loop.ts`                      | Studio and game         |
+| Cockpit, chase, first-person and overhead camera calculation           | `runtime/game-camera.ts`                     | Studio and game         |
+| Keyboard steering, gamepad axes, touch input mixing                    | `runtime/input.ts`                           | Studio and game         |
+| Turbine, propeller, powertrain and tire audio orchestration            | `runtime/vehicle-effects.ts`                 | Studio and game         |
+| Tire smoke and marks orchestration                                     | `runtime/vehicle-effects.ts`                 | Studio and game         |
+| Standalone browser composition and scoped browser input                | `runtime/browser.ts`                         | Game                    |
+| Planetary sky, lighting and sea                                        | `render/planet/world-environment.ts`         | Studio, viewer and game |
+| Small reproducible planetary test dataset                              | `examples/flat-tile.ts` and published GLBs   | Package consumers       |
 
 `game/` now imports only public package entries. It owns URL configuration, its
 loading display and HUD. It no longer owns physics, cameras or a render loop.
@@ -36,7 +38,6 @@ coordination, which must be extracted before the editor can move.
 
 | Capability                                                      | Current owner                                    | Next extraction / acceptance                                                 |
 | --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- |
-| Boarding camera transition, portal yaw, vehicle input actions   | `studio/main.ts`                                 | One shared player controller; preserve entrance and local-frame transitions  |
 | Complete render pipeline, mirrors, portal windows and DOF       | `studio/main.ts`                                 | Shared renderer with explicit editor overlay hooks                           |
 | Ship/portal tablets, GPS and equipment menus                    | `studio/portal-controls.ts` and `studio/main.ts` | Engine browser UI components with host callbacks and disposal                |
 | Touch controls and their styling/lifetime                       | `studio/touch-driving.ts`                        | Public optional controls with cancellation and teardown                      |
@@ -57,12 +58,35 @@ explicitly says it is not a stock drivable preset and needs an adapter. The broa
 loading; do not merge those changes as part of Studio extraction. Integrate truck
 content separately against the established engine contracts.
 
+## Shared Play coordinator
+
+Studio's Play action now starts `GameRuntime` from the public `/runtime` entry.
+The `/runtime/browser` composition uses the same coordinator internally. Both
+hosts delegate input mixing, simulation steps, vehicle actions, boarding camera
+transitions, camera cycling and portal yaw to it. Jump requests survive render
+frames that do not advance a physics tick. Focus release clears commands and
+pending jumps through the same method.
+
+Studio still owns its existing renderer, editor camera bindings and surrounding
+UI. Its camera push/pull bridge preserves those bindings during migration;
+this is not yet the complete browser composition. The development alias and
+TypeScript path for `/runtime` keep source types in one module graph while other
+Studio imports still reference source. The independent game consumer continues
+to run against the packed package without that alias.
+
+The truck and six-wheel trailer models from `1cca41f` now run in Engine's shared
+world; the broad truck branch remains unmerged. Car GPS and ship HUD updates are
+available in the browser runtime; CSS tablets and equipment menus remain in the
+parity inventory above.
+
 ## Verification
 
 - TypeScript checks include `game/`; incompatible API calls cannot hide behind a
   transpilation-only Vite build.
 - Session tests cover authored-scene isolation, cancellation, separate worlds,
   restart and pause; camera tests require no editor DOM.
+- Shared GameRuntime tests cover boarding, camera transitions, input cancellation,
+  queued jumps and restoring authored vehicle positions on replay.
 - Fixture tests validate hashes, spherical altitude, collision geometry and the
   four coincident corners at `(0,0)`.
 - `scripts/runtime-smoke.mjs` runs the flat example, checks all four tiles, drives,

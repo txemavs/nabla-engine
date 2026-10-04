@@ -9,7 +9,9 @@ const browser = await chromium.launch({
 })
 try {
   fs.mkdirSync('test-results', { recursive: true })
-  for (const vehicle of ['car', 'white-truck', 'carrier']) {
+  for (const vehicle of process.env.NABLA_TEST_VEHICLE
+    ? [process.env.NABLA_TEST_VEHICLE]
+    : ['car', 'white-truck', 'carrier']) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
     const errors = [],
       assets = new Set()
@@ -53,6 +55,12 @@ try {
     }
     await page.keyboard.up('KeyW')
     const speed = await page.locator('#speed-display').textContent()
+
+    assert.equal(
+      await page.locator('#error-message').evaluate((e) => e.classList.contains('visible')),
+      false,
+      await page.locator('#error-text').textContent(),
+    )
     assert.ok(parseInt(speed) > 1, `${vehicle}: ${speed}`)
     await page.screenshot({ path: `test-results/fleet-${vehicle}.png` })
     assert.deepEqual(errors, [])

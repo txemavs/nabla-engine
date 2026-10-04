@@ -24,7 +24,12 @@ import { seaSeenFromBelow } from '../src/render/planet/ocean-sheet.js'
 import { TileDebugView, type TileDebugMode } from '../src/render/planet/debug.js'
 import { PerformanceMonitor } from '../src/diagnostics/performance-monitor.js'
 import { TouchDriving } from './touch-driving.js'
-import { PlaySession, VehicleEffects, updateGameCamera, GameInput } from '../src/runtime/index.js'
+import {
+  GameRuntime,
+  VehicleEffects,
+  availableGamepads,
+  playGroundClearance,
+} from '@nabla/engine/runtime'
 import { setNavigationPlaces } from '../src/render/entity/navigation-places.js'
 import { flightEntry, urlPlay } from './flight-entry.js'
 import { geoToLocal } from '../src/math/geo/sphere.js'
@@ -72,7 +77,7 @@ import { treeSprite } from '../src/entity/sprite/sprite.js'
 import { createGallery, Gallery } from './gallery.js'
 import { PortalControls } from './portal-controls.js'
 import { Sidearm } from './sidearm.js'
-import { overheadDrivingHeight, DrivingTelemetry } from '../src/render/entity/driving-camera.js'
+import { DrivingTelemetry } from '../src/render/entity/driving-camera.js'
 import { WheelDebugOverlay } from './wheel-debug.js'
 import { createPortal } from '../src/entity/portal/portal.js'
 import { renderPortals, type ExternalPortalView } from '../src/render/portal/portals.js'
@@ -143,7 +148,7 @@ const collapsed = new Set(
 let selectedGeometry: Entity['geometry']
 let selectedId =
   editor.document.entities.find((e) => e.kind === 'vehicle')?.id ?? editor.document.entities[0].id
-const playSession = new PlaySession()
+const game = new GameRuntime()
 let sim: Simulation | null = null
 let needsRender = true
 let firstPerson = true
@@ -152,38 +157,53 @@ let weaponDrawn = false
 let cameraMode: 'chase' | 'cockpit' | 'map' = 'chase'
 let headYaw = 0
 let headPitch = 0.05
-let headVehicle: string | null = null
 let vehicleEntrance: { id: string; started: number } | null = null
 const preparedVehicles = new WeakSet<THREE.Object3D>()
 let mapHeight = 45
 let mapZoom = 1
 const drivingTelemetry = new DrivingTelemetry()
+function pushGameCamera(): void {
+  Object.assign(game.cameraState, {
+    mode: cameraMode,
+    firstPerson,
+    yaw,
+    pitch,
+    headYaw,
+    headPitch,
+    lastLookTime,
+    mapHeight,
+    mapZoom,
+    entrance: vehicleEntrance,
+    telemetry: drivingTelemetry,
+  })
+}
+function pullGameCamera(): void {
+  const state = game.cameraState
+  cameraMode = state.mode
+  firstPerson = state.firstPerson
+  yaw = state.yaw
+  pitch = state.pitch
+  headYaw = state.headYaw
+  headPitch = state.headPitch
+  mapHeight = state.mapHeight
+  vehicleEntrance = state.entrance
+}
+function gameAction(code: string): string {
+  pushGameCamera()
+  const message = game.action(code)
+  pullGameCamera()
+  return message ?? ''
+}
 function cycleCamera(): void {
-  vehicleEntrance = null
-  if (!sim) return
-  if (!sim.player.vehicleId) {
-    firstPerson = !firstPerson
-    toast(firstPerson ? 'Primera persona' : 'Tercera persona')
-    return
-  }
-  cameraMode = cameraMode === 'chase' ? 'cockpit' : cameraMode === 'cockpit' ? 'map' : 'chase'
-  pitch = cameraMode === 'cockpit' ? 0.05 : 0.24
-  headYaw = 0
-  headPitch = 0.05
-  toast(
-    cameraMode === 'map'
-      ? 'Cámara cenital · rueda para acercar o alejar'
-      : cameraMode === 'cockpit'
-        ? 'Cámara del conductor'
-        : 'Cámara exterior',
-  )
+  const message = gameAction('KeyC')
+  if (message) toast(message)
 }
 let lastLookTime = 0
 let yaw = 0,
   pitch = 0.24
-const keys = new Set<string>()
+const keys = game.keys.values
 const studioInput = new StudioInputOwner(() => {
-  keys.clear()
+  game.releaseInput()
   fireRequested = false
   if (document.pointerLockElement) document.exitPointerLock()
 })
@@ -241,7 +261,7 @@ viewport.append(performanceHud)
 const touchDriving = new TouchDriving(viewport, {
   play: () => $('play').click(),
   interact: () => {
-    if (sim) toast(sim.interact())
+    if (sim) toast(gameAction('KeyE'))
   },
   camera: () => cycleCamera(),
 })
@@ -1323,15 +1343,7 @@ async function togglePlay(startFlight = false): Promise<void> {
         if (e.kind === 'vehicle' || e.kind === 'spawn') {
           const ground = worldStream.groundHeight(e.transform.position)
           if (ground !== undefined) {
-            const ride =
-              e.kind === 'spawn'
-                ? 0.2
-                : e.vehicle?.flight
-                  ? 1.5
-                  : e.vehicle
-                    ? 0.06 -
-                      Math.min(...e.vehicle.hubs.map((hub) => hub[1] - e.vehicle!.wheelRadius))
-                    : 0.85
+            const ride = playGroundClearance(e)
             e.transform.position[1] = Math.max(e.transform.position[1], ground + ride)
           }
         }
@@ -1355,9 +1367,9 @@ async function togglePlay(startFlight = false): Promise<void> {
   }
 }
 async function togglePlayNow(startFlight = false): Promise<void> {
-  keys.clear()
+  game.releaseInput()
   if (sim) {
-    playSession.stop()
+    game.stop()
     sim = null
     view.setPlaying(false)
     renderer.domElement.dataset.impacts = '0'
@@ -1379,7 +1391,7 @@ async function togglePlayNow(startFlight = false): Promise<void> {
     project = retainLocation(project!, editor.document)
     portalControls.rebuild(editor.document)
     const entry = startFlight ? flightEntry(editor.document) : null
-    sim = await playSession.play(entry?.scene ?? editor.document, {
+    sim = await game.play(entry?.scene ?? editor.document, {
       playerMode: 'hover',
       planetaryTerrain: !!editor.document.geography?.planetary,
       experimentalLargeScene: performanceSettings.preset === 'ultra',
@@ -1392,10 +1404,8 @@ async function togglePlayNow(startFlight = false): Promise<void> {
     weaponDrawn = false
     sidearm.reset()
     gallery.reset()
-    portalSequence = 0
     drivingTelemetry.update(null, 0, 0, 0, true)
     delete renderer.domElement.dataset.portalCrossings
-    headVehicle = null
     vehicleEntrance = null
     cameraMode = entry ? 'cockpit' : 'chase'
     if (entry) {
@@ -1782,7 +1792,7 @@ for (const section of document.querySelectorAll<HTMLDetailsElement>('.app-menu d
 }
 for (const menu of document.querySelectorAll<HTMLElement>('.app-menu')) {
   menu.addEventListener('beforetoggle', () => {
-    keys.clear()
+    game.releaseInput()
     sim?.setInput(idleInput())
     if (document.pointerLockElement) document.exitPointerLock()
   })
@@ -1967,7 +1977,7 @@ window.addEventListener('keydown', (e) => {
       if (!e.repeat) {
         const opened = view.toggleVehicleMenu(menuVehicle)
         if (opened !== null) {
-          keys.clear()
+          game.releaseInput()
           if (opened) cameraMode = 'cockpit'
           toast(opened ? 'Menú del coche · flechas y Enter · J para salir' : 'Menú cerrado')
         }
@@ -2061,15 +2071,15 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault()
   if (e.code === 'PageUp' || e.code === 'PageDown') {
     e.preventDefault()
-    if (!e.repeat) toast(sim.shiftVehicle(e.code === 'PageUp' ? 1 : -1))
+    if (!e.repeat) toast(gameAction(e.code))
     return
   }
   if (e.code === 'KeyB' && !e.repeat) {
-    toast(sim.automaticTransmission())
+    toast(gameAction('KeyB'))
     return
   }
   if (e.code === 'KeyR' && !e.repeat) {
-    if (sim) toast(sim.recoverVehicle())
+    if (sim) toast(gameAction('KeyR'))
     return
   }
   if ((e.code === 'Comma' || e.code === 'Period') && !e.repeat && sim?.player.vehicleId) {
@@ -2097,44 +2107,33 @@ window.addEventListener('keydown', (e) => {
     return
   }
   if (e.code === 'KeyV' && !e.repeat) {
-    toast(sim.toggleFlight())
+    toast(gameAction('KeyV'))
     return
   }
   if (e.code === 'KeyM' && !e.repeat) {
-    toast(sim.cycleHelmMode())
+    toast(gameAction('KeyM'))
     return
   }
   if (e.code === 'KeyF' && !e.repeat) {
-    toast(sim.toggleDock())
+    toast(gameAction('KeyF'))
     return
   }
   if (e.code === 'KeyT' && !e.repeat) {
-    toast(sim.transferControls())
+    toast(gameAction('KeyT'))
     cameraMode = 'chase'
     return
   }
-  keys.add(e.code)
-  if (e.code === 'Space' && !e.repeat && !sim.player.vehicleId)
-    sim.setInput({ ...currentInput(), jump: true })
-  if (e.code === 'KeyE' && !e.repeat) {
-    const prev = sim.player.vehicleId
-    toast(sim.interact())
-    const id = sim.player.vehicleId
-    if (id && id !== prev) {
-      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(
-        new THREE.Quaternion(...sim.entityTransform(id).rotation),
-      )
-      yaw = Math.atan2(-fwd.x, -fwd.z)
-    }
-  }
+  game.keys.press(e.code, e.repeat, performance.now())
+  if (e.code === 'Space' && !e.repeat && !sim.player.vehicleId) game.action('Space')
+  if (e.code === 'KeyE' && !e.repeat) toast(gameAction('KeyE'))
 })
-window.addEventListener('keyup', (e) => keys.delete(e.code))
+window.addEventListener('keyup', (e) => game.keys.release(e.code), { capture: true })
 window.addEventListener('blur', () => {
-  keys.clear()
+  game.releaseInput()
   sim?.setInput(idleInput())
 })
 document.addEventListener('pointerlockchange', () => {
-  if (!document.pointerLockElement) keys.clear()
+  if (!document.pointerLockElement) game.releaseInput()
 })
 let previousButtons: boolean[] = []
 let previousPadIndex: number | null = null
@@ -2148,42 +2147,48 @@ function pollGamepad(): Gamepad | null {
     previousButtons = []
     return null
   }
-  const pad =
-    [...navigator.getGamepads()].find((p) => p?.connected && p.mapping === 'standard') ?? null
+  const pad = availableGamepads().find((p) => p?.connected && p.mapping === 'standard') ?? null
   if (pad?.index !== previousPadIndex) previousButtons = []
   previousPadIndex = pad?.index ?? null
   if (!pad) return null
   const pressed = (i: number) => Boolean(pad.buttons[i]?.pressed && !previousButtons[i])
   if (sim) {
-    if (pressed(0)) toast(sim.interact())
+    if (pressed(0)) toast(gameAction('KeyE'))
     if (pressed(1)) {
       cycleCamera()
     }
-    if (pressed(2)) toast(sim.toggleDock())
-    if (pressed(3)) toast(sim.toggleFlight())
+    if (pressed(2)) toast(gameAction('KeyF'))
+    if (pressed(3)) toast(gameAction('KeyV'))
     if (pressed(4)) {
-      toast(sim.transferControls())
+      toast(gameAction('KeyT'))
       cameraMode = 'chase'
     }
   }
   previousButtons = pad.buttons.map((b) => b.pressed)
   return pad
 }
-const gameInput = new GameInput()
 function currentInput(pad: Gamepad | null = null, elapsed = 0) {
-  return gameInput.read(sim, view.document, elapsed, {
-    keys,
-    yaw,
-    pad,
-    menuOpen: !!(sim?.player.vehicleId && view.vehicleMenu(sim.player.vehicleId)?.open),
-    enabled:
-      studioInput.acceptsInput &&
-      document.hasFocus() &&
-      !document.hidden &&
-      !document.querySelector('.app-menu:popover-open, dialog[open]'),
-    touch: portalControls.flightInput(),
-    driving: touchDriving.input(),
-  })
+  pushGameCamera()
+  game.keys.expire(performance.now())
+  const input = game.readInput(
+    elapsed,
+    {
+      keys,
+      yaw,
+      pad,
+      menuOpen: !!(sim?.player.vehicleId && view.vehicleMenu(sim.player.vehicleId)?.open),
+      enabled:
+        studioInput.acceptsInput &&
+        document.hasFocus() &&
+        !document.hidden &&
+        !document.querySelector('.app-menu:popover-open, dialog[open]'),
+      touch: portalControls.flightInput(),
+      driving: touchDriving.input(),
+    },
+    view.document,
+  )
+  pullGameCamera()
+  return input
 }
 new ResizeObserver(() => {
   const w = viewport.clientWidth,
@@ -2194,8 +2199,6 @@ new ResizeObserver(() => {
   camera.updateProjectionMatrix()
   needsRender = true
 }).observe(viewport)
-let playerInterior: string | null = null
-let portalSequence = 0
 let previous = performance.now()
 const frameTimes: number[] = []
 let performanceText = ''
@@ -2390,18 +2393,16 @@ function frame(now: number): void {
   tickSkyCycle(dt)
   if (sim) {
     const pad = pollGamepad()
-    if (playerInterior !== sim.player.interiorId) {
-      playerInterior = sim.player.interiorId
-      yaw = sim.player.yaw
-    }
     const input = currentInput(pad, dt)
-    if (input.forward || input.right || input.brake || input.sprint) vehicleEntrance = null
     const physicsStart = performance.now()
-    playSession.step(
+    const crossing = game.step(
       document.hidden || playTransition || streamMode === 'model' ? 0 : dt,
       input,
       waterLevel,
+      now,
+      view.document,
     )
+    pullGameCamera()
     physicsMs = performance.now() - physicsStart
     if (Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       const c = sim.collisionStats
@@ -2420,32 +2421,13 @@ function frame(now: number): void {
       worldStream.update(position, velocity, protectedPositions)
       streamSample = { at: now, position: [...position] }
     }
-    const crossing = sim.portalEvent
-    if (crossing && crossing.sequence !== portalSequence) {
-      portalSequence = crossing.sequence
-      if (crossing.actorId === sim.player.vehicleId || crossing.actorId === 'player') {
-        if (crossing.actorId === 'player') yaw = sim.player.yaw
-        else yaw += crossing.yawDelta
-        drivingTelemetry.update(sim.player.vehicleId, sim.player.speed, 0, dt, true)
-        renderer.domElement.dataset.portalCrossings = String(crossing.sequence)
-        toast(
-          crossing.blocked
-            ? 'Paso bloqueado: comprueba el tamaño, el sentido y la salida'
-            : 'Stargate atravesado',
-        )
-      }
-    }
-    if (headVehicle !== sim.player.vehicleId) {
-      headVehicle = sim.player.vehicleId
-      vehicleEntrance = null
-      const vehicle = view.document.entities.find((e) => e.id === headVehicle)?.vehicle
-      if (headVehicle && vehicle && !vehicle.boat && !vehicle.plane && !vehicle.interior) {
-        cameraMode = 'cockpit'
-        mapHeight = overheadDrivingHeight(0, mapZoom)
-        vehicleEntrance = { id: headVehicle, started: now }
-      }
-      headYaw = 0
-      headPitch = 0.05
+    if (crossing) {
+      renderer.domElement.dataset.portalCrossings = String(crossing.sequence)
+      toast(
+        crossing.blocked
+          ? 'Paso bloqueado: comprueba el tamaño, el sentido y la salida'
+          : 'Stargate atravesado',
+      )
     }
     view.night = !!view.document.geography && geography.atmosphere.day < 0.15
     view.sync(
@@ -2473,28 +2455,13 @@ function frame(now: number): void {
       wheelDebug.setTerrainMeshes(terrainMeshes)
       wheelDebug.update(sim, sim.player.vehicleId, renderOrigin)
     }
-    if (playerInterior !== sim.player.interiorId) {
-      playerInterior = sim.player.interiorId
-      yaw = sim.player.yaw
-    }
-    const cameraState = {
-      mode: cameraMode,
-      firstPerson,
-      yaw,
-      pitch,
-      headYaw,
-      headPitch,
-      lastLookTime,
-      mapHeight,
-      mapZoom,
-      entrance: vehicleEntrance,
-      telemetry: drivingTelemetry,
-    }
+    pushGameCamera()
+    const cameraState = game.cameraState
     const {
       player: p,
       info,
       altitude,
-    } = updateGameCamera(sim, view, camera, cameraState, now, dt, (body, activeCamera) => {
+    } = game.updateCamera(view, camera, now, dt, (body, activeCamera) => {
       if (preparedVehicles.has(body)) return
       preparedVehicles.add(body)
       void renderer.compileAsync(body, activeCamera, scene).catch((error) => {
@@ -3312,7 +3279,7 @@ mountStudio({
 bindAction('save-as', () => {
   $<HTMLInputElement>('project-filename').value = projectFilename(project!.name)
   $('file-menu').hidePopover()
-  keys.clear()
+  game.releaseInput()
   if (document.pointerLockElement) document.exitPointerLock()
   $<HTMLDialogElement>('save-project-dialog').showModal()
 })

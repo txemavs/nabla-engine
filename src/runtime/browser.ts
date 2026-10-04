@@ -13,13 +13,13 @@ import { ShadowManager } from '../render/shadows.js'
 import { shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
-import { PlaySession, type PlayOptions } from './session.js'
+import type { PlayOptions } from './session.js'
+import { GameRuntime as SharedGameRuntime } from './game.js'
+import { availableGamepads } from './input.js'
+import { playGroundClearance } from './placement.js'
 import { FrameLoop } from './frame-loop.js'
 import { VehicleEffects } from './vehicle-effects.js'
-import { GameInput } from './input.js'
-import { HeldKeys } from './held-keys.js'
-import { idleInput } from '../simulation/simulation.js'
-import { createGameCameraState, updateGameCamera } from './game-camera.js'
+
 import { waitForGround } from './ground.js'
 
 export interface GameFrame {
@@ -44,8 +44,9 @@ export interface GameRuntimeOptions {
  * Owns its renderer and listeners; the caller owns the canvas and surrounding UI.
  */
 export class GameRuntime {
-  readonly session = new PlaySession()
-  readonly cameraState = createGameCameraState()
+  readonly game = new SharedGameRuntime()
+  readonly session = this.game.session
+  readonly cameraState = this.game.cameraState
   private readonly document: SceneDocument
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
@@ -60,15 +61,12 @@ export class GameRuntime {
   private readonly catchFloor = new CatchFloor()
   private readonly origin = new THREE.Vector3()
   private readonly loop: FrameLoop
-  private readonly keys = new HeldKeys()
-  private readonly input = new GameInput()
+  private readonly keys = this.game.keys
   private readonly lifetime = new AbortController()
   private readonly observer: ResizeObserver
   private readonly world: PlanetWorld | null
   private loading: AbortController | null = null
   private lastTime: number | null = null
-  private lastVehicle: string | null = null
-  private lastPortal = 0
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
   private readonly originalTabIndex: string | null
@@ -168,14 +166,13 @@ export class GameRuntime {
           signal: controller.signal,
           onProgress: progress,
         })
-        spawn.transform.position[1] = ground + (spawn.groundOffset ?? 1)
+        spawn.transform.position[1] = ground + playGroundClearance(spawn)
         progress('Ground ready')
       }
       controller.signal.throwIfAborted()
       this.options.onProgress?.('Starting simulation…')
-      await this.session.play(document, { playerMode: 'walk', ...options, planetaryTerrain: true })
+      await this.game.play(document, { playerMode: 'walk', ...options, planetaryTerrain: true })
       controller.signal.throwIfAborted()
-      Object.assign(this.cameraState, createGameCameraState())
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
       this.view.setPlaying(true)
       this.effects.audio.setSuspended(globalThis.document.hidden)
@@ -192,7 +189,7 @@ export class GameRuntime {
 
   pause(): void {
     this.assertAlive()
-    this.session.pause()
+    this.game.pause()
     this.loop.stop()
     this.releaseInput()
     this.effects.audio.setSuspended(true)
@@ -200,7 +197,7 @@ export class GameRuntime {
   }
   resume(): void {
     this.assertAlive()
-    this.session.resume()
+    this.game.resume()
     this.effects.audio.setSuspended(document.hidden)
     this.lastTime = null
     if (this.session.state === 'playing' && this.options.clock !== 'manual') this.loop.start()
@@ -211,14 +208,12 @@ export class GameRuntime {
     this.loading = null
     this.loop.stop()
     this.world?.renderUpdate(this.origin, true, null)
-    this.session.stop()
+    this.game.stop()
     this.releaseInput()
     this.view.setPlaying(false)
     this.effects.updateAudio(null, this.document, this.camera.position)
     this.effects.updateTires(null, 0, this.origin)
     this.lastTime = null
-    this.lastVehicle = null
-    this.lastPortal = 0
   }
   /** Host-owned scheduling is exclusive with the automatic loop. Time is in milliseconds. */
   tick(time: number): void {
@@ -240,7 +235,7 @@ export class GameRuntime {
     this.disposed = true
     this.lifetime.abort()
     this.observer.disconnect()
-    this.session.dispose()
+    this.game.dispose()
     this.world?.dispose()
     this.view.dispose()
     this.sky.dispose()
@@ -268,27 +263,17 @@ export class GameRuntime {
     this.world?.flushInstall(1.5)
     this.view.flushMapInstall(4, 24, this.camera.position)
     this.world?.renderUpdate(this.origin, true, sim)
-    const input = this.input.read(sim, this.document, dt, {
+    const input = this.game.readInput(dt, {
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
       pad,
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
-    this.session.step(dt, input)
+    const crossing = this.game.step(dt, input, 0, time)
+    if (crossing)
+      this.options.onMessage?.(crossing.blocked ? 'Paso bloqueado' : 'Stargate atravesado')
     this.world?.update(sim.player.position, [0, 0, 0])
-    if (sim.portalEvent && sim.portalEvent.sequence !== this.lastPortal) {
-      this.lastPortal = sim.portalEvent.sequence
-      if (sim.portalEvent.actorId === 'player') this.cameraState.yaw = sim.player.yaw
-      else if (sim.portalEvent.actorId === sim.player.vehicleId)
-        this.cameraState.yaw += sim.portalEvent.yawDelta
-      this.cameraState.telemetry.update(sim.player.vehicleId, sim.player.speed, 0, dt, true)
-    }
-    if (this.lastVehicle !== sim.player.vehicleId) {
-      this.lastVehicle = sim.player.vehicleId
-      this.cameraState.headYaw = 0
-      this.cameraState.headPitch = 0.05
-    }
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < 0.15
     this.view.sync(
       sim,
@@ -297,14 +282,7 @@ export class GameRuntime {
       this.cameraState.headYaw,
       this.cameraState.headPitch,
     )
-    const { player, info } = updateGameCamera(
-      sim,
-      this.view,
-      this.camera,
-      this.cameraState,
-      time,
-      dt,
-    )
+    const { player, info } = this.game.updateCamera(this.view, this.camera, time, dt)
     const eye = this.camera.position.clone()
     this.origin.set(0, 0, 0)
     if (new THREE.Vector3(...player.position).length() > 10000)
@@ -389,33 +367,21 @@ export class GameRuntime {
     return document.activeElement === this.options.canvas && document.hasFocus() && !document.hidden
   }
   private releaseInput(): void {
-    this.keys.clear()
-    this.input.reset()
-    this.session.simulation?.setInput(idleInput())
+    this.game.releaseInput()
     this.previousButtons = []
     this.previousPad = null
     if (document.pointerLockElement === this.options.canvas) document.exitPointerLock()
   }
   private cycleCamera(): void {
-    if (!this.session.simulation?.player.vehicleId)
-      this.cameraState.firstPerson = !this.cameraState.firstPerson
-    else
-      this.cameraState.mode =
-        this.cameraState.mode === 'chase'
-          ? 'cockpit'
-          : this.cameraState.mode === 'cockpit'
-            ? 'map'
-            : 'chase'
-    this.cameraState.headYaw = 0
-    this.cameraState.headPitch = 0.05
+    const message = this.game.action('KeyC')
+    if (message) this.options.onMessage?.(message)
   }
   private pollGamepad(): Gamepad | null {
     if (!this.hasInput()) {
       this.previousButtons = []
       return null
     }
-    const pad =
-      [...navigator.getGamepads()].find((p) => p?.connected && p.mapping === 'standard') ?? null
+    const pad = availableGamepads().find((p) => p?.connected && p.mapping === 'standard') ?? null
     if (pad?.index !== this.previousPad) this.previousButtons = []
     this.previousPad = pad?.index ?? null
     if (!pad) return null
@@ -431,30 +397,11 @@ export class GameRuntime {
   private action(code: string): void {
     const sim = this.session.simulation
     if (!sim) return
-    let message: string | undefined
-    if (code === 'KeyE') message = sim.interact()
-    if (code === 'KeyV') message = sim.toggleFlight()
-    if (code === 'KeyF') message = sim.toggleDock()
-    if (code === 'KeyM') message = sim.cycleHelmMode()
-    if (code === 'KeyB') message = sim.automaticTransmission()
-    if (code === 'KeyR') message = sim.recoverVehicle()
-    if (code === 'KeyT') {
-      message = sim.transferControls()
-      this.cameraState.mode = 'chase'
-    }
-    if (code === 'KeyC') this.cycleCamera()
+    let message = this.game.action(code)
     if (code === 'KeyH' && sim.player.vehicleId) {
       const open = this.view.toggleVehicleGps(sim.player.vehicleId)
       if (open !== null) message = open ? 'GPS encendido' : 'GPS apagado'
     }
-    if (code === 'Space' && !sim.player.vehicleId)
-      sim.setInput({
-        ...this.input.read(sim, this.document, 0, {
-          keys: this.keys.values,
-          yaw: this.cameraState.yaw,
-        }),
-        jump: true,
-      })
     if (message) this.options.onMessage?.(message)
   }
   private bindInput(): void {

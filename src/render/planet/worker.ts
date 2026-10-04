@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, Mesh, MeshStandardMaterial, Matrix3, Vector3 } from 'three'
 import { planetCollisionChunks, type PlanetManifest, type PlanetMesh } from '../../planet/index.js'
 import { mapCache } from './cache.js'
+import { sha256 } from '../../util/sha256.js'
 const controllers = new Map<number, AbortController>()
 self.onmessage = async (
   event: MessageEvent<{
@@ -46,9 +47,7 @@ self.onmessage = async (
       if (!response.ok) throw Error(`GLB HTTP ${response.status}`)
       const bytes = await response.arrayBuffer()
       if (bytes.byteLength !== file.bytes) throw Error('GLB size mismatch')
-      const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
+      const hash = await sha256(bytes)
       if (hash !== file.sha256) throw Error('GLB checksum mismatch')
       await cache.put(url, new Response(bytes)).catch(() => {})
       bytesTotal += bytes.byteLength
