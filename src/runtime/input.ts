@@ -50,6 +50,22 @@ export interface GameInputSources {
   menuOpen?: boolean
 }
 
+/**
+ * A single non-finite axis (a faulty gamepad, a touch source) would make `Simulation.setInput`
+ * throw and stop the frame loop, freezing every control. Treat it as released instead.
+ */
+export function finiteInput(input: PlayerInput): PlayerInput {
+  const safe = (value: number | undefined) => (Number.isFinite(value) ? (value as number) : 0)
+  return {
+    ...input,
+    forward: safe(input.forward),
+    right: safe(input.right),
+    lift: safe(input.lift),
+    turn: safe(input.turn),
+    yaw: safe(input.yaw),
+  }
+}
+
 /** Studio's keyboard, gamepad and touch mixing, without application focus policy. */
 export class GameInput {
   private readonly steering = new KeyboardSteering()
@@ -88,7 +104,7 @@ export class GameInput {
       : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')
     const vehicle = id ? document.entities.find((e) => e.id === id)?.vehicle : null
     const roadCar = id && vehicle && !flight && !vehicle.boat && !vehicle.plane && !vehicle.interior
-    return {
+    const input: PlayerInput = {
       forward:
         (flight
           ? axis('ArrowUp', 'ArrowDown')
@@ -108,5 +124,6 @@ export class GameInput {
       jump: false,
       brake: keys.has('Space') || analog.brake || touch.brake || driving.brake,
     }
+    return finiteInput(input)
   }
 }

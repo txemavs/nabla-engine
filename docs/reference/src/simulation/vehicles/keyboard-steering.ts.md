@@ -32,3 +32,4 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.exp`
 - `Math.max`
 - `Math.min`
+- `Number.isFinite`
