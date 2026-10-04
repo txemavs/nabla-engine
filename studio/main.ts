@@ -1,3 +1,4 @@
+import { vehicleMenuKey } from '@nabla/engine/runtime'
 import { randomUUID } from '../src/util/uuid.js'
 import {
   commands,
@@ -1972,48 +1973,20 @@ window.addEventListener('keydown', (e) => {
   if ((e.target as HTMLElement)?.matches('input,select,textarea,[contenteditable]')) return
   const menuVehicle = sim?.player.vehicleId
   if (menuVehicle && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    if (e.code === 'KeyJ') {
+    const result = vehicleMenuKey(
+      view,
+      editor.document,
+      menuVehicle,
+      e.code,
+      e.repeat,
+      toast,
+      (id, patch) => editor.update(id, patch),
+    )
+    if (result.handled) {
       e.preventDefault()
-      if (!e.repeat) {
-        const opened = view.toggleVehicleMenu(menuVehicle)
-        if (opened !== null) {
-          game.releaseInput()
-          if (opened) cameraMode = 'cockpit'
-          toast(opened ? 'Menú del coche · flechas y Enter · J para salir' : 'Menú cerrado')
-        }
-      }
+      if (result.opened !== undefined) game.releaseInput()
+      if (result.opened) cameraMode = 'cockpit'
       return
-    }
-    const menu = view.vehicleMenu(menuVehicle)
-    if (menu?.open) {
-      const result = menu.key(e.code)
-      if (result.handled) {
-        e.preventDefault()
-        if (result.action?.type === 'vehicle.mirror') {
-          const vehicle = editor.document.entities.find((e) => e.id === menuVehicle)?.vehicle
-          if (vehicle) {
-            const tilt = THREE.MathUtils.clamp(
-              (vehicle.mirrorTilt ?? -2) + Number(result.action.value),
-              -5,
-              12,
-            )
-            editor.update(menuVehicle, { vehicle: { ...vehicle, mirrorTilt: tilt } })
-            view.setVehicleMirrorTilt(menuVehicle, tilt)
-            toast(`Espejos: ${tilt} grados · Guardar conserva el ajuste`)
-          }
-        }
-        if (result.action?.type === 'vehicle.map') {
-          const follow = result.action.value !== 'north'
-          view.setVehicleMapFollow(menuVehicle, follow)
-          toast(follow ? 'Mapa sigue al coche' : 'Mapa clavado al norte')
-        }
-        if (result.action?.type === 'vehicle.paint' && result.action.value) {
-          editor.update(menuVehicle, { color: result.action.value })
-          view.setVehiclePaint(menuVehicle, result.action.value)
-          toast('Color aplicado · Guardar conserva el cambio')
-        }
-        return
-      }
     }
   }
   if (e.code === 'Tab' && sim) {
@@ -2825,8 +2798,8 @@ function frame(now: number): void {
       renderer.shadowMap.needsUpdate = shadowsActive
       renderer.render(scene, camera)
       if (geography.enabled) geography.renderClouds(renderer, camera)
-      portalControls.finish()
     } finally {
+      portalControls.finish()
       if (dof) depthOfField.present(renderer, camera)
     }
     silhouette.render(

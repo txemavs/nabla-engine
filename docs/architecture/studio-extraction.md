@@ -39,7 +39,6 @@ coordination, which must be extracted before the editor can move.
 | Capability                                                      | Current owner                                    | Next extraction / acceptance                                                 |
 | --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- |
 | Complete render pipeline, mirrors, portal windows and DOF       | `studio/main.ts`                                 | Shared renderer with explicit editor overlay hooks                           |
-| Ship/portal tablets, GPS and equipment menus                    | `studio/portal-controls.ts` and `studio/main.ts` | Engine browser UI components with host callbacks and disposal                |
 | Touch controls and their styling/lifetime                       | `studio/touch-driving.ts`                        | Public optional controls with cancellation and teardown                      |
 | Weapon viewmodel, shot routing and gallery                      | `studio/sidearm.ts`, `studio/gallery.ts`         | Engine systems plus explicit example rules/content                           |
 | Streaming prediction and protected vehicle positions            | `studio/main.ts`                                 | Shared streaming coordinator; maintain current budgets and collision support |
@@ -76,8 +75,11 @@ to run against the packed package without that alias.
 
 The truck and six-wheel trailer models from `1cca41f` now run in Engine's shared
 world; the broad truck branch remains unmerged. Car GPS and ship HUD updates are
-available in the browser runtime; CSS tablets and equipment menus remain in the
-parity inventory above.
+available in the browser runtime. `VehicleMonitors` now owns CSS3D portal and
+container panels, styles, native buttons and held touch commands. Its lifetime
+restores canvas state and removes listeners/DOM on disposal. Equipment menu
+actions are shared through `vehicleMenuKey`, with persistence delegated to hosts.
+Studio retains a compatibility re-export, not a second implementation.
 
 ## Verification
 
@@ -101,3 +103,9 @@ parity inventory above.
 The older `studio/e2e/cameras.spec.ts` still clicks the hidden legacy `#play`
 button. Its current-shell replacement above tests the runtime through the exposed
 shortcut. This is not evidence that the complete historical E2E suite passes.
+
+`scripts/vehicle-monitors-smoke.mjs` verifies native container buttons, flight,
+keyboard focus, camera visibility and the car equipment menu in the packed demo.
+
+`scripts/vehicle-monitors-lifetime-smoke.mjs` uses the Studio Vite server to check
+rebuild/disposal without duplicates and restoration of host canvas styles.

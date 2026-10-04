@@ -36,7 +36,7 @@ try {
     assert.ok([...assets].some((a) => a.endsWith('/tractor.body.glb')))
     assert.ok([...assets].some((a) => a.endsWith('/wheel.rear.glb')))
     assert.ok([...assets].some((a) => a.endsWith('/ship.container.5x10.glb')))
-    await page.locator('#game-canvas').click()
+    await page.locator('#game-container').click({ position: { x: 640, y: 300 } })
     if (vehicle === 'car') {
       await page.keyboard.press('KeyH')
       assert.equal(await page.locator('#game-message').textContent(), 'GPS encendido')

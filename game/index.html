@@ -90,9 +90,14 @@
         height: 100%;
         display: block;
       }
+      #game-hud,
+      #controls-hint {
+        z-index: 10;
+        pointer-events: none;
+      }
       #game-hud {
         position: fixed;
-        bottom: 20px;
+        top: 20px;
         left: 20px;
         display: flex;
         flex-direction: column;
@@ -190,8 +195,8 @@
 
     <div id="controls-hint">
       <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Drive · <kbd>Space</kbd> Brake ·
-      <kbd>C</kbd> Cámara · <kbd>H</kbd> GPS · <kbd>E</kbd> Entrar/salir · <kbd>V</kbd> Vuelo ·
-      <kbd>R</kbd> Recuperar
+      <kbd>C</kbd> Cámara · <kbd>J</kbd> Menú · <kbd>H</kbd> GPS · <kbd>E</kbd> Entrar/salir ·
+      <kbd>V</kbd> Vuelo · <kbd>R</kbd> Recuperar
     </div>
 
     <div id="error-message">

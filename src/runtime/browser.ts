@@ -1,3 +1,5 @@
+import { vehicleMenuKey } from './vehicle-menu.js'
+import { VehicleMonitors } from './vehicle-monitors.js'
 import * as THREE from 'three'
 import { parseScene, type SceneDocument } from '../scene/document.js'
 import { SceneView } from '../presentation/scene-view.js'
@@ -51,6 +53,7 @@ export class GameRuntime {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
   private readonly renderer: THREE.WebGLRenderer
+  private readonly monitors: VehicleMonitors
   private readonly view: SceneView
   private readonly sky: GeographicView
   private readonly environment: WorldEnvironment
@@ -79,6 +82,7 @@ export class GameRuntime {
     this.renderer = new THREE.WebGLRenderer({
       canvas: options.canvas,
       antialias: true,
+      alpha: true,
       logarithmicDepthBuffer: true,
     })
     configureWorldRenderer(this.renderer)
@@ -89,6 +93,13 @@ export class GameRuntime {
     this.scene.add(this.sun, this.ambient, this.catchFloor.mesh)
     this.view = new SceneView(this.document)
     this.scene.add(this.view.root)
+    this.monitors = new VehicleMonitors(
+      options.canvas.parentElement!,
+      (message) => options.onMessage?.(message),
+      options.canvas,
+    )
+    this.monitors.onShipSwitch = (id, kind) => this.view.pressShipSwitch(id, kind)
+    this.monitors.rebuild(this.document)
     this.sky = new GeographicView(this.document, () => {})
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
     this.effects = new VehicleEffects(this.scene)
@@ -208,6 +219,7 @@ export class GameRuntime {
     this.loading = null
     this.loop.stop()
     this.world?.renderUpdate(this.origin, true, null)
+    this.monitors.hide()
     this.game.stop()
     this.releaseInput()
     this.view.setPlaying(false)
@@ -237,6 +249,7 @@ export class GameRuntime {
     this.observer.disconnect()
     this.game.dispose()
     this.world?.dispose()
+    this.monitors.dispose()
     this.view.dispose()
     this.sky.dispose()
     this.environment.dispose()
@@ -267,6 +280,7 @@ export class GameRuntime {
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
       pad,
+      touch: this.monitors.flightInput(),
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
@@ -325,6 +339,19 @@ export class GameRuntime {
     else this.catchFloor.hide()
     this.view.streetlights.update(eye, this.view.night, 4000)
     this.view.limitDrawDistance(eye, 4000, true, true, 1000)
+    this.monitors.update(
+      sim,
+      this.document,
+      this.camera,
+      this.view.portalTablets,
+      this.view.helmScreens,
+      this.view.touchScreens,
+      this.view.flightScreens,
+      this.view.placeScreens,
+      this.view.systemScreens,
+      this.origin,
+      this.cameraState.mode === 'cockpit',
+    )
     this.camera.position.sub(this.origin)
     for (const [id, hud] of this.view.shipHuds) {
       const inside =
@@ -349,9 +376,11 @@ export class GameRuntime {
       }
       this.shadows.update(this.camera, this.origin)
       this.renderer.shadowMap.needsUpdate = true
+      this.monitors.prepare(this.camera)
       this.renderer.render(this.scene, this.camera)
       if (this.sky.enabled) this.sky.renderClouds(this.renderer, this.camera)
     } finally {
+      this.monitors.finish()
       this.camera.position.copy(eye)
     }
     this.options.onFrame?.({
@@ -367,6 +396,7 @@ export class GameRuntime {
     return document.activeElement === this.options.canvas && document.hasFocus() && !document.hidden
   }
   private releaseInput(): void {
+    this.monitors.releaseInput()
     this.game.releaseInput()
     this.previousButtons = []
     this.previousPad = null
@@ -407,6 +437,25 @@ export class GameRuntime {
   private bindInput(): void {
     const options = { signal: this.lifetime.signal }
     const canvas = this.options.canvas
+    canvas.parentElement!.addEventListener(
+      'pointerdown',
+      (event) => {
+        if (
+          event.target instanceof Element &&
+          event.target.closest('.portal-tablet-layer button')
+        ) {
+          event.preventDefault()
+          canvas.focus()
+          this.effects.audio.unlock()
+        }
+        if (event.target === canvas.parentElement) {
+          event.preventDefault()
+          canvas.focus()
+          this.effects.audio.unlock()
+        }
+      },
+      options,
+    )
     canvas.addEventListener(
       'pointerdown',
       () => {
@@ -421,6 +470,27 @@ export class GameRuntime {
         if (!this.hasInput() || this.session.state !== 'playing') return
         if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code))
           event.preventDefault()
+        const id = this.session.simulation?.player.vehicleId
+        if (id && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          const result = vehicleMenuKey(
+            this.view,
+            this.document,
+            id,
+            event.code,
+            event.repeat,
+            (message) => this.options.onMessage?.(message),
+            (entityId, patch) => {
+              const entity = this.document.entities.find((e) => e.id === entityId)
+              if (entity) Object.assign(entity, patch)
+            },
+          )
+          if (result.handled) {
+            event.preventDefault()
+            this.game.releaseInput()
+            if (result.opened) this.cameraState.mode = 'cockpit'
+            return
+          }
+        }
         this.keys.press(event.code, event.repeat, performance.now())
         this.effects.audio.unlock()
         if (!event.repeat) this.action(event.code)
@@ -446,7 +516,8 @@ export class GameRuntime {
     canvas.addEventListener(
       'pointermove',
       (event) => {
-        if (!this.hasInput() || !(event.buttons & 1)) return
+        if (!this.hasInput() || (!(event.buttons & 1) && document.pointerLockElement !== canvas))
+          return
         const state = this.cameraState
         state.lastLookTime = performance.now()
         if (state.mode === 'cockpit' && this.session.simulation?.player.vehicleId) {
