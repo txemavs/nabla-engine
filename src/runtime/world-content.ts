@@ -1,3 +1,8 @@
+/**
+ * Describe cross-location visual windows independently of editor persistence.
+ * Registry IDs address authored portals; resolving a view does not transfer
+ * actors, physics or gameplay into the destination location.
+ */
 import type { SceneDocument } from '../scene/document.js'
 import type { ExternalPortalView, PortalSurface } from '../render/portal/portals.js'
 import type { Vec3Tuple } from '../entity/schema.js'
@@ -21,6 +26,11 @@ export interface PortalConnection {
   destination: string
   mode: 'closed' | 'window'
 }
+/**
+ * Index authored portal apertures using their root object's global identity when available.
+ * Sizes are copied. Missing parents and cyclic ancestry are rejected rather than
+ * silently producing unstable addresses; no project entities are mutated.
+ */
 export function portalRegistry(project: WorldContent): RegisteredPortal[] {
   const result: RegisteredPortal[] = []
   for (const place of project.locations) {
@@ -51,6 +61,11 @@ export function portalRegistry(project: WorldContent): RegisteredPortal[] {
   }
   return result
 }
+/**
+ * Replace one source's outgoing connection while preserving host-specific project fields.
+ * A null destination removes it. Reject unknown/self destinations and unequal
+ * aperture sizes. The returned project is a shallow copy with a new connection list.
+ */
 export function setPortalConnection<T extends WorldContent>(
   project: T,
   source: string,

@@ -40,9 +40,16 @@ export interface GameRenderFrame {
 export class GameRenderPipeline {
   renderedPortals = 0
   readonly depthOfField = new DepthOfField()
+  /** Release owned postprocessing resources; scene, renderer and monitors remain host-owned. */
   dispose(): void {
     this.depthOfField.dispose()
   }
+  /**
+   * Render auxiliary views before the main scene and optional depth of field.
+   * Restore render target, auto-clear and overlay visibility even when a pass throws.
+   * The frame's culling callbacks may mutate scene visibility; the host retains
+   * ownership of supplied scene resources and the animation clock.
+   */
   render(frame: GameRenderFrame): void {
     const { renderer, scene, camera, view, sky, origin, eye, monitors } = frame
     const target = renderer.getRenderTarget(),

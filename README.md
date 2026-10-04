@@ -72,6 +72,9 @@ browser. Loading the example is undoable and does not overwrite the saved copy.
 
 ## Documentation
 
+- [Code ownership and documentation guide](docs/code-guide.md)
+- [Complete module and function reference](docs/reference/README.md)
+
 - [Module map and public API](docs/architecture/module-map.md)
 - [Create a vehicle](docs/creating-a-vehicle.md) · [Create a monitor](docs/creating-a-monitor.md)
 - [Vehicle modularity: modular architecture and acceptance evidence](docs/architecture/vehicle-modularity.md)

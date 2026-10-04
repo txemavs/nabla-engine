@@ -1,5 +1,8 @@
-import type { VehiclePresentationResolver } from '../vehicle-presentation/adapter.js'
-import type { BeaconEquipment } from '../vehicle-presentation/adapter.js'
+import type {
+  VehiclePresentationResolver,
+  BeaconEquipment,
+} from '../vehicle-presentation/adapter.js'
+
 import { ShipHud } from './ship-hud.js'
 import { entityMapArtifact } from '../planet/map-artifact.js'
 import { isMapEnvironment } from '../../scene/map-content.js'

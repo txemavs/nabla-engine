@@ -12,9 +12,8 @@ import { createEntity, type Entity } from '../../entity/schema.js'
 import { terrainHeight } from '../land/terrain.js'
 import type { SolidGeometry } from '../../math/solid/mesh.js'
 import { buildingFootprints } from '../buildings/buildings.js'
-import { isWaterFeature } from '../land/surface.js'
+import { isWaterFeature, SURFACE_COLORS } from '../land/surface.js'
 import { pointInPolygon } from '../../math/planar/polygon.js'
-import { SURFACE_COLORS } from '../land/surface.js'
 
 export interface DistrictOptions {
   offset?: [number, number]

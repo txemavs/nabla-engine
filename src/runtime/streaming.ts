@@ -1,3 +1,4 @@
+/** Coordinate terrain requests from live gameplay positions, in the current world frame. */
 import type { SceneDocument } from '../scene/document.js'
 import type { Vec3Tuple } from '../entity/schema.js'
 
@@ -7,12 +8,20 @@ export interface GameplayWorldStream {
 /** Shared terrain request cadence and support under vehicles/portals during play. */
 export class GameplayStreaming {
   private sample: { at: number; position: Vec3Tuple } | null = null
+  /** Return a defensive copy of the last sampled position, in metres. */
   get position(): Vec3Tuple | null {
     return this.sample ? [...this.sample.position] : null
   }
+  /** Discard velocity history before replay, origin changes or a different clock. */
   reset(): void {
     this.sample = null
   }
+  /**
+   * Request terrain at intervals greater than 500 ms, protecting vehicles and portal endpoints.
+   * Time is a monotonic timestamp in milliseconds; velocity is estimated in metres/second.
+   * Ignore non-finite timestamps. A backward timestamp restarts sampling with zero velocity.
+   * Return whether a request was submitted; store copies so physics cannot mutate history.
+   */
   update(
     world: GameplayWorldStream,
     sim: { player: { position: Vec3Tuple }; entityTransform(id: string): { position: Vec3Tuple } },

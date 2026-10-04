@@ -5,14 +5,17 @@ import type { Simulation } from '../simulation/simulation.js'
 export class FieldLighting {
   readonly lights: FieldLights
   private followNight = true
+  /** Own a light collection; omitted navigation settings follow the first observed night. */
   constructor(options: FieldLightOptions = {}) {
     this.lights = new FieldLights(options)
     this.followNight = options.layers?.navigation === undefined
   }
+  /** Apply an explicit navigation-light preference and stop automatic night activation. */
   setNavigation(enabled: boolean): void {
     this.followNight = false
     this.lights.layers.navigation = enabled
   }
+  /** Update geographic placement, compensate the floating origin and copy pole collisions to physics. */
   update(args: {
     origin: Parameters<FieldLights['update']>[0]
     eye: Vector3
@@ -38,6 +41,7 @@ export class FieldLighting {
     )
     args.simulation?.setPoles(this.lights.poles())
   }
+  /** Cancel outstanding light loads and release the owned render resources. */
   dispose(): void {
     this.lights.dispose()
   }

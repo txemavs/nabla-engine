@@ -16,11 +16,12 @@ export function availableGamepads(): (Gamepad | null)[] {
   }
 }
 
-/** Standard Gamepad mapping: mode 2, left stick altitude/yaw; right stick pitch/roll. */
+/** Remove a 0.12 dead band and rescale the remaining signed range; non-finite input becomes zero. */
 export function deadzone(value: number): number {
   if (!Number.isFinite(value) || Math.abs(value) <= 0.12) return 0
   return Math.sign(value) * Math.min(1, (Math.abs(value) - 0.12) / 0.88)
 }
+/** Map standard gamepad controls; flight uses mode 2 sticks, road driving uses trigger throttle. */
 export function gamepadAxes(pad: Pick<Gamepad, 'axes' | 'buttons'>, flight: boolean) {
   const axis = (i: number) => deadzone(pad.axes[i] ?? 0)
   return {
@@ -45,10 +46,16 @@ export interface GameInputSources {
 /** Studio's keyboard, gamepad and touch mixing, without application focus policy. */
 export class GameInput {
   private readonly steering = new KeyboardSteering()
+  /** Forget keyboard steering interpolation after focus loss or a session boundary. */
   reset(): void {
     this.steering.reset()
   }
 
+  /**
+   * Combine keyboard, gamepad, touch and monitor commands into one physics input.
+   * Elapsed time is seconds and yaw is radians. Disabled/menu input resets steering;
+   * an open equipment menu applies the brake. The authored scene is read-only.
+   */
   read(
     sim: Simulation | null,
     document: SceneDocument,

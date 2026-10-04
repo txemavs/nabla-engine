@@ -1,3 +1,9 @@
+/**
+ * Coordinate device-independent gameplay for editor and browser hosts.
+ * Physics uses seconds and metres; camera entrance timestamps use milliseconds.
+ * The host owns focus policy, rendering and scheduling, while this coordinator
+ * owns session state, held input, camera transitions and local portal events.
+ */
 import { GameplayStreaming } from './streaming.js'
 import { Quaternion, Vector3 } from 'three'
 import type { SceneDocument } from '../scene/document.js'
@@ -21,13 +27,16 @@ export class GameRuntime {
   private portalSequence = 0
   private jumpRequested = false
 
+  /** Expose the session-owned simulation for presentation, or null outside a live session. */
   get simulation() {
     return this.session.simulation
   }
+  /** Read the session phase; this accessor has no lifecycle side effects. */
   get state() {
     return this.session.state
   }
 
+  /** Copy the authored scene, replace physics and initialize camera yaw from the spawn pose. */
   async play(document: SceneDocument, options: PlayOptions = {}) {
     this.releaseInput()
     this.streaming.reset()
@@ -45,30 +54,36 @@ export class GameRuntime {
     this.portalSequence = 0
     return sim
   }
+  /** Clear held controls, steering history and queued jumps, then idle the active simulation. */
   releaseInput(): void {
     this.keys.clear()
     this.input.reset()
     this.jumpRequested = false
     this.simulation?.setInput(idleInput())
   }
+  /** Release controls before suspending physics so resume cannot replay a held command. */
   pause(): void {
     this.releaseInput()
     this.session.pause()
   }
+  /** Resume a paused session without restoring previously held controls. */
   resume(): void {
     this.session.resume()
   }
+  /** Release controls, discard streaming history and close the current simulation. */
   stop(): void {
     this.releaseInput()
     this.streaming.reset()
     this.session.stop()
     this.scene = null
   }
+  /** Stop gameplay and permanently close the session owner. */
   dispose(): void {
     this.stop()
     this.session.dispose()
   }
 
+  /** Mix controls using elapsed seconds; align camera/input yaw when entering a new interior. */
   readInput(
     elapsed: number,
     sources: Omit<GameInputSources, 'yaw'> & { yaw?: number },
@@ -86,6 +101,12 @@ export class GameRuntime {
       yaw,
     })
   }
+  /**
+   * Advance physics and synchronize boarding and local portal camera transitions.
+   * Elapsed time is seconds, water level is metres and now is milliseconds.
+   * Preserve a queued jump until a physics tick occurs. Return a newly observed
+   * player/vehicle portal crossing, or null when no relevant crossing occurred.
+   */
   step(
     elapsed: number,
     input: PlayerInput,
@@ -131,6 +152,7 @@ export class GameRuntime {
     }
     return event
   }
+  /** Update the host camera from live physics; now is milliseconds and dt is seconds. */
   updateCamera(
     view: Parameters<typeof updateGameCamera>[1],
     camera: Parameters<typeof updateGameCamera>[2],

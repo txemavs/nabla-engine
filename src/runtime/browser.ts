@@ -1,3 +1,9 @@
+/**
+ * Compose a complete browser game over the shared gameplay coordinator.
+ * This owner creates GPU resources, terrain streaming, input listeners, audio,
+ * monitors and a single frame loop. Hosts supply a canvas and authored planetary
+ * scene; dispose releases owned resources without removing the host canvas.
+ */
 import { resolveWorldPortalViews, type WorldContent } from './world-content.js'
 import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
@@ -231,6 +237,7 @@ export class GameRuntime {
     this.resize()
   }
 
+  /** Prepare usable terrain and presentation before starting physics; reject cancelled/failed loads. */
   async play(options: PlayOptions = {}): Promise<void> {
     this.assertAlive()
     this.stop()
@@ -289,6 +296,7 @@ export class GameRuntime {
     }
   }
 
+  /** Suspend the frame loop, physics, audio and held input while retaining loaded resources. */
   pause(): void {
     this.assertAlive()
     this.touchDriving?.setActive(false)
@@ -298,6 +306,7 @@ export class GameRuntime {
     this.effects.audio.setSuspended(true)
     this.lastTime = null
   }
+  /** Resume paused gameplay and automatic scheduling; manual-clock hosts still supply ticks. */
   resume(): void {
     this.assertAlive()
     this.game.resume()
@@ -305,6 +314,7 @@ export class GameRuntime {
     this.lastTime = null
     if (this.session.state === 'playing' && this.options.clock !== 'manual') this.loop.start()
   }
+  /** Cancel loading and reset gameplay/presentation for replay while retaining reusable renderer resources. */
   stop(): void {
     if (this.disposed) return
     this.loading?.abort()
@@ -335,6 +345,7 @@ export class GameRuntime {
     if (this.options.clock !== 'manual') throw new Error('tick requires a manual clock')
     this.frame(time)
   }
+  /** Fit renderer and projection to canvas CSS dimensions; ignore notifications after disposal. */
   resize(): void {
     if (this.disposed) return
     const width = Math.max(1, this.options.canvas.clientWidth)
@@ -343,6 +354,7 @@ export class GameRuntime {
     this.camera.aspect = width / height
     this.camera.updateProjectionMatrix()
   }
+  /** Release GPU/audio/DOM listeners and restore canvas tab index. Idempotent and terminal. */
   dispose(): void {
     if (this.disposed) return
     this.stop()
