@@ -11,7 +11,7 @@ export {
   availableGamepads,
   type GameInputSources,
 } from './input.js'
-export { waitForGround, type GroundProvider } from './ground.js'
+export { waitForGround, GroundMissingError, type GroundProvider } from './ground.js'
 
 export { VehicleMonitors } from './vehicle-monitors.js'
 export { vehicleMenuKey } from './vehicle-menu.js'

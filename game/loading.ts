@@ -137,9 +137,25 @@ export class LoadingScreen {
   }
 }
 
-export function showError(message: string): void {
+export interface ErrorButton {
+  label: string
+  onClick: () => void
+}
+
+export function showError(message: string, buttons: readonly ErrorButton[] = []): void {
   const errorEl = document.getElementById('error-message')!
   const textEl = document.getElementById('error-text')!
   textEl.textContent = message
+  // Recovery buttons go before "Recargar"; earlier ones from a previous error are replaced.
+  errorEl.querySelectorAll('button.recovery').forEach((button) => button.remove())
+  const reload = errorEl.querySelector('button')
+  for (const { label, onClick } of buttons) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'recovery'
+    button.textContent = label
+    button.addEventListener('click', onClick)
+    errorEl.insertBefore(button, reload)
+  }
   errorEl.classList.add('visible')
 }

@@ -6,6 +6,7 @@ import { mapTileId } from '@nabla/engine/scene'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
 import { LoadingScreen, showError } from './loading.js'
+import { startError } from './start-error.js'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
@@ -24,6 +25,8 @@ const CONTROLS =
 bindTerrainSelector()
 let runtime: GameRuntime | undefined
 let cellsLabel = ''
+/** The tile host of this page, known even when the configuration fails to load. */
+let startBase = (new URLSearchParams(location.search).get('terrain') ?? '').replace(/\/+$/, '')
 /** HUD line with the loaded cells of the host's index, e.g. "Celdas: 12/33". */
 function showCells(): void {
   const stats = runtime?.cellStats
@@ -44,6 +47,7 @@ function showCells(): void {
 try {
   const params = new URLSearchParams(location.search)
   const config = await startFromIndex(parseTerrainConfig())
+  startBase = config.base
   const vehicle = config.scene.vehicle ?? 'car'
   if (!hasVehiclePreset(vehicle)) throw new Error(`Vehículo desconocido: ${vehicle}`)
   const scene = createTerrainDriveScene({
@@ -120,5 +124,13 @@ try {
   document.getElementById('game-canvas')!.focus()
 } catch (error) {
   runtime?.dispose()
-  showError(error instanceof Error ? error.message : String(error))
+  // A start over a hole offers the nearest available cell. Nothing is remembered: the position is the URL's.
+  const failure = await startError(error, startBase)
+  showError(
+    failure.message,
+    failure.actions.map((action) => ({
+      label: action.label,
+      onClick: () => location.assign(location.pathname + action.search),
+    })),
+  )
 }

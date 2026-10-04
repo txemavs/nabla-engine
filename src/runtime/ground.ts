@@ -1,4 +1,13 @@
 import type { Vec3Tuple } from '../entity/schema.js'
+import { mapTileId, type MapTile } from '../scene/mercator.js'
+
+/** The tile host has no tile under the position: waiting cannot help. `tile` names the missing cell. */
+export class GroundMissingError extends Error {
+  constructor(readonly tile: MapTile) {
+    super(`Ground unavailable: the tile host has no terrain at ${mapTileId(tile)}`)
+    this.name = 'GroundMissingError'
+  }
+}
 
 export interface GroundProvider {
   update(position: Vec3Tuple, velocity: Vec3Tuple): void
@@ -7,8 +16,8 @@ export interface GroundProvider {
   readonly status: string
   /** Changes whenever loading advances (a cell arrives or fails); lets the wait tell slow from stuck. */
   readonly loadProgress?: string
-  /** True when the tile host has no tile here: waiting cannot help. */
-  missingAt?(position: Vec3Tuple): boolean
+  /** The tile the host lacks under this position, if any: waiting cannot help. */
+  missingTileAt?(position: Vec3Tuple): MapTile | undefined
 }
 
 /** GLB float32 vertices can leave sub-millimetre gaps at shared tile corners.
@@ -53,8 +62,8 @@ export async function waitForGround(
     const height = groundAtSeam(world, position)
     if (height !== undefined && Number.isFinite(height)) return height
     options.onProgress?.(world.status)
-    if (world.missingAt?.(position))
-      throw new Error(`Ground unavailable: the tile host has no terrain at this position`)
+    const hole = world.missingTileAt?.(position)
+    if (hole) throw new GroundMissingError(hole)
     if (world.loadProgress !== progress) {
       progress = world.loadProgress
       started = performance.now()

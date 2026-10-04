@@ -536,10 +536,11 @@ export class PlanetWorld {
     this.missing.clear()
     this.planKey = ''
   }
-  /** True when the host has no tile under this position: nothing will ever load there. */
-  missingAt(position: Vec3Tuple): boolean {
+  /** The tile the host lacks under this position: nothing will ever load there. */
+  missingTileAt(position: Vec3Tuple): MapTile | undefined {
     const gps = localToGeo(this.origin, position)
-    return this.missing.has(mapTileAt(gps.latitude, gps.longitude, 15))
+    const tile = mapTileAt(gps.latitude, gps.longitude, 15)
+    return this.missing.has(tile) ? tile : undefined
   }
   /** Changes whenever a cell finishes loading or fails; stays equal while nothing is happening. */
   get loadProgress(): string {

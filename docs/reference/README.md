@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **257 modules; 2363 executable function definitions**.
+Coverage: **258 modules; 2373 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -16,11 +16,12 @@ Coverage: **257 modules; 2363 executable function definitions**.
 | [game/entry.ts](game/entry.ts.md) | 2 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
-| [game/loading.ts](game/loading.ts.md) | 17 |
+| [game/loading.ts](game/loading.ts.md) | 18 |
 | [game/main.ts](game/main.ts.md) | 0 |
 | [game/menu.ts](game/menu.ts.md) | 1 |
+| [game/start-error.ts](game/start-error.ts.md) | 6 |
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
-| [game/terrain-main.ts](game/terrain-main.ts.md) | 8 |
+| [game/terrain-main.ts](game/terrain-main.ts.md) | 10 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
 | [game/terrain.ts](game/terrain.ts.md) | 9 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
@@ -215,7 +216,7 @@ Coverage: **257 modules; 2363 executable function definitions**.
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 3 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 15 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 7 |
-| [src/runtime/ground.ts](src/runtime/ground.ts.md) | 5 |
+| [src/runtime/ground.ts](src/runtime/ground.ts.md) | 6 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 5 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 10 |

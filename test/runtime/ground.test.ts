@@ -102,10 +102,11 @@ test('a position over a tile the host does not have fails at once instead of wai
     flushInstall: vi.fn(),
     groundHeight: () => undefined,
     status: 'cargando…',
-    missingAt: () => true,
+    missingTileAt: () => ({ z: 15, x: 16223, y: 19997 }),
   }
-  await expect(waitForGround(world, [0, 0, 0], { timeoutMs: 60_000 })).rejects.toThrow(
-    /no terrain at this position/,
-  )
+  await expect(waitForGround(world, [0, 0, 0], { timeoutMs: 60_000 })).rejects.toMatchObject({
+    name: 'GroundMissingError',
+    tile: { z: 15, x: 16223, y: 19997 },
+  })
   expect(world.update).toHaveBeenCalledTimes(1)
 })

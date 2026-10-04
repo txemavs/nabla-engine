@@ -215,13 +215,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## showError
 
-[Implementation, line 140](../../../game/loading.ts#L140)
+[Implementation, line 145](../../../game/loading.ts#L145)
 
 ```ts
-showError(message: string): void
+showError(message: string, buttons: readonly ErrorButton[] = []): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `button.addEventListener`
+- `document.createElement`
 - `document.getElementById`
 - `errorEl.classList.add`
+- `errorEl.insertBefore`
+- `errorEl.querySelector`
+- `errorEl.querySelectorAll`
+- `errorEl.querySelectorAll('button.recovery').forEach`
+
+## showError.callback@150
+
+[Implementation, line 150](../../../game/loading.ts#L150)
+
+```ts
+callback@150(button): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `button.remove`
