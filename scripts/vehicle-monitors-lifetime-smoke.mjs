@@ -12,7 +12,7 @@ try {
       body: '<div id="host"><canvas style="position:absolute;z-index:7;pointer-events:auto"></canvas></div>',
     }),
   )
-  await page.goto('http://127.0.0.1:5185/__monitor_lifetime')
+  await page.goto('http://127.0.0.1:5191/__monitor_lifetime')
   const result = await page.evaluate(
     async (moduleUrl) => {
       const { VehicleMonitors } = await import(moduleUrl)

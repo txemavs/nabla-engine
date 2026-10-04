@@ -4,9 +4,9 @@ Nabla remains a planetary engine. A viewport without cartographic data still has
 planetary origin, geographic coordinates and altitude. Offline examples provide
 local planetary data; they do not introduce a separate coordinate system.
 
-The current implementation is the first extraction increment, not the completion
-of #78. Studio is still in this repository. Preserve its gameplay while moving
-ownership into Engine; moving the application directory alone is insufficient.
+Studio now lives in `txemavs/nabla-studio`; its application directory has been
+removed from Engine. The sections below retain the incremental migration record.
+The final cutover section supersedes earlier inventories of pending work.
 
 ## Implemented boundary
 
@@ -47,12 +47,12 @@ reset prediction instead of inheriting an editor or previous-game position.
 
 ## Remaining parity inventory
 
-| Capability                                                      | Current owner                                    | Next extraction / acceptance                                     |
-| --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Editor tools, history, selection, inspector and project storage | `studio/`                                        | Remain in the Studio application                                 |
-| Historical tests importing Engine internals                      | `studio/test`, `studio/e2e`                       | Separate Engine implementation tests from portable Studio tests |
-| Atlas host integration                                          | separate application                             | Validate current viewer against the same package version         |
-| Final project extraction                                        | pending                                          | Move Studio only after the parity matrix is complete             |
+| Capability                                                      | Current owner               | Next extraction / acceptance                                    |
+| --------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------- |
+| Editor tools, history, selection, inspector and project storage | `studio/`                   | Remain in the Studio application                                |
+| Historical tests importing Engine internals                     | `studio/test`, `studio/e2e` | Separate Engine implementation tests from portable Studio tests |
+| Atlas host integration                                          | separate application        | Validate current viewer against the same package version        |
+| Final project extraction                                        | pending                     | Move Studio only after the parity matrix is complete            |
 
 The existing local geographic viewer changes were preserved in the isolated
 checkout and are a dependency of this increment. No truck branch was merged.
@@ -254,7 +254,17 @@ production build and three domain tests using the same Engine archive. This
 checks package/API compatibility, not live backend, surveyed terrain or driving
 acceptance. The original Atlas checkout and its dependency pin were not changed.
 
-The original Studio application and historical browser harness remain here for
-the coordinated removal of legacy browser tests/CI. The independent repository
-does not read them. Do not count their retained compatibility copy as the active
-Studio project or silently drop those tests when deleting it.
+## Application removal and browser cutover
+
+The old `studio/` directory and editor build/typecheck/copy scripts are removed.
+Engine's default development command and Docker gateway now serve the game.
+Engine's unit suite has 463 passing tests; the separate Studio host suite owns
+the other 33 passing tests. No unit coverage was discarded in the split.
+
+Six Engine rendering journeys use a minimal browser host in `test/browser`.
+Seven active editor desktop/cursor journeys run in Studio against the installed
+package. The remaining historical browser files are preserved under Studio's
+`legacy/e2e`; they require individual UI/API migration and are explicitly outside
+passing CI coverage. This replaces the former non-blocking legacy suite without
+silently deleting its cases. Shared asset URLs under `/studio/` are retained for
+compatibility; those assets belong to Engine and are not the editor application.

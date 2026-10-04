@@ -18,14 +18,15 @@ Requires **Node.js 22.12 or later** and npm.
 
 ```bash
 npm ci
+npm run build
 npm run dev
 ```
 
-Open [localhost:5173](http://localhost:5173). Models, the authored ground image,
-Earth texture and branding are bundled. Connected maps use Esri or CARTO;
-**Sin conexión** selects local raster resources in the circuit scene. Real-world
-exploration separately fetches OSM features and Esri elevation as you travel.
-No account is required.
+Open the [flat planetary driving example](http://localhost:5174/?example=flat).
+Four bundled Z15 tiles surround `(0, 0)` at sea level. Models, Earth texture and
+branding are bundled. The editor now lives in
+[nabla-studio](https://github.com/txemavs/nabla-studio), which consumes Engine as a
+package and owns its own tests and CI.
 
 The Studio UI remains in Spanish. Documentation is in English; the
 [controls guide](docs/controls.md) includes the corresponding UI labels.
@@ -57,14 +58,15 @@ browser. Loading the example is undoable and does not overwrite the saved copy.
 
 ## Repository layout
 
-| Path                       | Responsibility                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------ |
-| `src/`                     | Engine. This is what stays in the nabla-engine repo                                        |
-| `test/`                    | Engine unit and physics tests                                                              |
-| `studio/`                  | Playable editor. `test/` is its unit suite, `e2e/` the browser journeys. Leaving this repo |
-| `assets/`                  | Original vehicle models, ground/Earth images and official logo                             |
-| `docs/`                    | Controls, architecture, asset conventions and integration guide                            |
-| `.github/workflows/ci.yml` | Checks, production builds and browser tests                                                |
+| Path                       | Responsibility                                                  |
+| -------------------------- | --------------------------------------------------------------- |
+| `src/`                     | Engine. This is what stays in the nabla-engine repo             |
+| `test/`                    | Engine unit and physics tests                                   |
+| `game/`                    | Standalone browser game consuming public Engine exports         |
+| `test/browser/`            | Rendering regressions with a minimal browser host               |
+| `assets/`                  | Original vehicle models, ground/Earth images and official logo  |
+| `docs/`                    | Controls, architecture, asset conventions and integration guide |
+| `.github/workflows/ci.yml` | Checks, production builds and browser tests                     |
 
 `dist/`, `demo-dist/`, `test-results/` and `node_modules/` are generated and ignored.
 

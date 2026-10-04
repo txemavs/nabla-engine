@@ -9,7 +9,7 @@ try {
   await page.route('**/__weapon_lifetime', (r) =>
     r.fulfill({ contentType: 'text/html', body: '<div id="host"></div>' }),
   )
-  await page.goto('http://127.0.0.1:5185/__weapon_lifetime')
+  await page.goto('http://127.0.0.1:5191/__weapon_lifetime')
   const result = await page.evaluate(
     async (root) => {
       const { Sidearm } = await import(root + '/runtime/sidearm.ts')
