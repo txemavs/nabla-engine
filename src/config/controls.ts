@@ -4,6 +4,10 @@ export const controlDefaults = Object.freeze({
   gamepadDeadzone: 0.12,
   /** Mouse rotation in radians per CSS movement pixel. */
   mouseSensitivity: 0.003,
+  /** Exponential overhead-map zoom per wheel pixel; zoom bounds are dimensionless. */
+  mapZoomSensitivity: 0.001,
+  mapZoomMin: 0.75,
+  mapZoomMax: 3,
   /** Absolute vertical look limit in radians. */
   pitchLimit: 1.4,
   /** Keyboard steering rise time constant in seconds; must be positive. */

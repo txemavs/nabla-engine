@@ -21,7 +21,7 @@ A finished game does not need Studio. It needs `render/`, `simulation/`, and a `
 ## Where to change a feature
 
 Start with [the vehicle catalogue](catalog/vehicles/README.md) for cars, boats,
-aircraft and the container craft. Published models live in `assets/studio`;
+aircraft and the container craft. Published models live in `assets/library`;
 `assets/custom` is local and not committed. Physics and rendering belong to this package.
 
 Reusable post-processing lives in `render/effects/`, bounded frame measurements

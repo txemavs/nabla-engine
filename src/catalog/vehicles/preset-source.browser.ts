@@ -1,6 +1,6 @@
 const modules = import.meta.glob(
   [
-    '../../../assets/studio/{cars,planes,ships,boats}/**/*.json',
+    '../../../assets/library/{cars,planes,ships,boats}/**/*.json',
     '../../../assets/custom/{cars,planes,ships,boats}/**/*.json',
   ],
   { eager: true, import: 'default' },

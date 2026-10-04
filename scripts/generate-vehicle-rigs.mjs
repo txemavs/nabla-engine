@@ -7,9 +7,9 @@ import { readGlbDocument, extractVehicleRig } from './lib/vehicle-rig.mjs'
 
 const assets = path.resolve('assets')
 const rigs = {}
-for (const entry of fs.readdirSync('assets/studio', { recursive: true }).sort()) {
+for (const entry of fs.readdirSync('assets/library', { recursive: true }).sort()) {
   if (!entry.endsWith('.json')) continue
-  const source = JSON.parse(fs.readFileSync(path.join('assets/studio', entry), 'utf8'))
+  const source = JSON.parse(fs.readFileSync(path.join('assets/library', entry), 'utf8'))
   if (source.rig !== 'glb') continue
   if (
     source.vehicle.hubs ||

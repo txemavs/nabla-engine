@@ -22,7 +22,7 @@ export const generatedVehicleRigs: Record<
   }
 > = {
   a3: {
-    source: '/studio/cars/a3/a3.cabrio.glb',
+    source: '/library/cars/a3/a3.cabrio.glb',
     sha256: '4d5f48c92e93b643a6686dcef51a7567dd782f357be7e053ad7b7e1c48da5d86',
     hubs: [
       [-0.7622195, -0.28462600000000005, -1.291815],
@@ -47,7 +47,7 @@ export const generatedVehicleRigs: Record<
     headRotation: [0, 0, 0, 1],
   },
   car: {
-    source: '/studio/cars/a3/a3.cabrio.glb',
+    source: '/library/cars/a3/a3.cabrio.glb',
     sha256: '4d5f48c92e93b643a6686dcef51a7567dd782f357be7e053ad7b7e1c48da5d86',
     hubs: [
       [-0.7622195, -0.28462600000000005, -1.291815],
@@ -72,7 +72,7 @@ export const generatedVehicleRigs: Record<
     headRotation: [0, 0, 0, 1],
   },
   'white-trailer': {
-    source: '/studio/trucks/white-truck-studio/assets/trailer.anchored.glb',
+    source: '/library/trucks/white-truck/assets/trailer.anchored.glb',
     sha256: 'e13f4c799584a990353f66e98a5faab6fa3854c9be23e03c7343c7638e90a32e',
     hubs: [
       [-0.8920750849989497, -0.6276177768713792, 1.775093997560098],
@@ -96,7 +96,7 @@ export const generatedVehicleRigs: Record<
     towAnchor: [0, 0, -5.565219879150391],
   },
   'white-truck': {
-    source: '/studio/trucks/white-truck-studio/assets/tractor.modern.glb',
+    source: '/library/trucks/white-truck/assets/tractor.modern.glb',
     sha256: '7c650b7027c237ce8152d5049fa1cd5fcfab33f03b5d8b8feac75745d10d10e0',
     hubs: [
       [-1.0751686096191406, -0.622534990310669, -1.3792321681976318],
@@ -120,7 +120,7 @@ export const generatedVehicleRigs: Record<
     hitch: [0, 0, 1.7667454481124878],
   },
   carrier: {
-    source: '/studio/ships/container/ship.container.5x10.glb',
+    source: '/library/ships/container/ship.container.5x10.glb',
     sha256: '09d74dda79794002f2df0916e375386836422acf5067874aa1b6d01b10d3827b',
     hubs: [
       [-2.02, -1.08, -4.52],

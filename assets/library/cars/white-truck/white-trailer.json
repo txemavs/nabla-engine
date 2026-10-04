@@ -28,7 +28,7 @@
   },
   "visual": {
     "body": {
-      "url": "/studio/trucks/white-truck-studio/assets/trailer.anchored.glb",
+      "url": "/library/trucks/white-truck/assets/trailer.anchored.glb",
       "transform": {
         "position": [0, 0, 0],
         "rotation": [0, 0, 0, 1]
@@ -36,42 +36,42 @@
     },
     "wheels": [
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
         }
       },
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
         }
       },
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
         }
       },
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
         }
       },
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
         }
       },
       {
-        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]

@@ -7,7 +7,7 @@ import { readVehiclePresetSources } from './preset-source.js'
 import { generatedVehicleRigs } from './generated-rigs.js'
 
 /**
- * A vehicle preset is a JSON file under assets/studio or assets/custom, in
+ * A vehicle preset is a JSON file under assets/library or assets/custom, in
  * cars, planes, ships or boats. studio is published. custom is this machine
  * only. GLB-backed stock presets merge generated anchor poses before schema
  * validation. This module stamps an id and position without loading a renderer.

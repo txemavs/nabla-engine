@@ -355,7 +355,7 @@ export class SceneView {
           this.addAsset(
             group,
             {
-              url: '/studio/portals/portal.frame.glb',
+              url: '/library/portals/portal.frame.glb',
               transform: { position: [0, -(h + 2 * PORTAL_BAR) / 2, 0], rotation: [0, 0, 0, 1] },
             },
             undefined,

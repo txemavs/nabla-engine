@@ -17,7 +17,7 @@ await MeshoptSimplifier.ready
 const sourceDir = process.argv[2]
 if (!sourceDir) throw Error('Pass the directory containing the three original A3 GLBs')
 const brand = readGlb(
-  new URL('../assets/studio/ships/container/ship.container.5x10.glb', import.meta.url),
+  new URL('../assets/library/ships/container/ship.container.5x10.glb', import.meta.url),
 )
 const bp =
   brand.json.meshes[brand.json.nodes.find((n) => n.name === 'Brand_Nabla_Proa').mesh].primitives[0]
@@ -36,7 +36,7 @@ for (const part of process.argv.includes('--wheel-only')
   if (part === 'wheel') {
     console.log(
       'wheel',
-      writeA3Wheel(new URL('../assets/studio/cars/a3/a3.wheel.glb', import.meta.url), badge),
+      writeA3Wheel(new URL('../assets/library/cars/a3/a3.wheel.glb', import.meta.url), badge),
     )
     continue
   }
@@ -232,6 +232,6 @@ for (const part of process.argv.includes('--wheel-only')
   } else emblem('Nabla steering centre', 0.065, -Math.PI / 2, [0.129, 0.0064, 0])
   j.asset.generator =
     'Nabla prepare-a3.mjs; protected body and optical surfaces; simplified small details'
-  writeGlb(new URL(`../assets/studio/cars/a3/a3.${part}.glb`, import.meta.url), j, read, bin)
+  writeGlb(new URL(`../assets/library/cars/a3/a3.${part}.glb`, import.meta.url), j, read, bin)
   console.log(part, { before, after, removed })
 }

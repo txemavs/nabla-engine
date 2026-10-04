@@ -7,16 +7,17 @@
 ## Module dependencies
 
 - `../scene/document.js`
+- `./messages.js`
 - `../presentation/scene-view.js`
 
 ## vehicleMenuKey
 
-[Implementation, line 5](../../../../src/runtime/vehicle-menu.ts#L5)
+[Implementation, line 6](../../../../src/runtime/vehicle-menu.ts#L6)
 
 Equipment actions shared by game hosts. Persistence is a host concern.
 
 ```ts
-vehicleMenuKey(view: SceneView, document: SceneDocument, id: string, code: string, repeat: boolean, report: (message: string) => void, update: (id: string, patch: Partial<SceneDocument['entities'][number]>) => void): { handled: boolean; opened?: boolean }
+vehicleMenuKey(view: SceneView, document: SceneDocument, id: string, code: string, repeat: boolean, report: (message: string) => void, update: (id: string, patch: Partial<SceneDocument['entities'][number]>) => void, text: RuntimeText = createRuntimeText()): { handled: boolean; opened?: boolean }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -24,9 +25,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number`
+- `createRuntimeText`
 - `document.entities.find`
 - `menu.key`
 - `report`
+- `text`
 - `update`
 - `view.setVehicleMapFollow`
 - `view.setVehicleMirrorTilt`
@@ -34,10 +37,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.toggleVehicleMenu`
 - `view.vehicleMenu`
 
-## vehicleMenuKey.callback@26
+## vehicleMenuKey.callback@28
 
-[Implementation, line 26](../../../../src/runtime/vehicle-menu.ts#L26)
+[Implementation, line 28](../../../../src/runtime/vehicle-menu.ts#L28)
 
 ```ts
-callback@26(e): inferred by TypeScript; see implementation
+callback@28(e): inferred by TypeScript; see implementation
 ```

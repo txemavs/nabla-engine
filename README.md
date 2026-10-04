@@ -159,7 +159,7 @@ third-party trademarks or map imagery.
 
 ## Run the complete local development stack
 
-Start Studio, the cache and native planetary GLB generation with Docker Compose.
+Start the reference game, cache and native planetary GLB generation with Docker Compose.
 See [Local development](docs/local-development.md) for setup, activation, job
 inspection, storage, debugging and a guided tour of the implementation.
 

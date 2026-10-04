@@ -15,7 +15,7 @@ import {
 import { authoredMirrorLenses } from '../../src/render/vehicle-presentation/mirror-lenses.js'
 import { vehicleField } from '../../src/entity/vehicle/field.js'
 
-const assets = 'assets/studio/trucks/white-truck-studio/assets/'
+const assets = 'assets/library/trucks/white-truck/assets/'
 
 /** Vertex positions of every primitive of a mesh in a GLB, in the mesh's own space. */
 function glbMeshVertices(file: string, meshName: string): Vector3[] {

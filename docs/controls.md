@@ -167,7 +167,7 @@ selects `new Simulation(scene, { playerMode: 'hover' })`.
 
 The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Click the viewport once to capture the mouse, then left-click to fire with the weapon drawn. The centre
 reticle shows aim and briefly changes to a cross on impact. Studio equips the first weapon preset
-(`assets/studio/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
+(`assets/library/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
 220 ms interval, 150 m range and impulse 12. Another pistol is another JSON file. Shots stop at the first
 physical solid and push dynamic props. In third person, a second ray from the
 monitor prevents shooting through an obstruction between the monitor and the aim

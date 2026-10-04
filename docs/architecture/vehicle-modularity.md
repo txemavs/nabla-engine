@@ -8,7 +8,7 @@ records the actual owners and public entries.
 ## Composition
 
 - **Catalogue**: `src/catalog/vehicles/` loads JSON presets. Definitions live
-  under `assets/studio` and `assets/custom`, not as one file per vehicle. Stock
+  under `assets/library` and `assets/custom`, not as one file per vehicle. Stock
   road presentation adapters live in `src/catalog/presentation/`; monitors and
   S3 recipes live in `catalog/monitors/`.
 - **Simulation**: wheeled, boat and flight controllers borrow bodies in a shared

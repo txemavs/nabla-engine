@@ -106,7 +106,7 @@
   },
   "visual": {
     "body": {
-      "url": "/studio/ships/container/ship.container.5x10.glb",
+      "url": "/library/ships/container/ship.container.5x10.glb",
       "transform": {
         "position": [0, -1.2, 0],
         "rotation": [0, 0, 0, 1]

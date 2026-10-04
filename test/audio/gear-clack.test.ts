@@ -256,7 +256,7 @@ describe('gear clack events from the simulation', () => {
     })
   }
 
-  it('s3 (assets/studio/cars/a3/s3.json) at full throttle: one counted shift per gear change, no clack', () => {
+  it('s3 (assets/library/cars/a3/s3.json) at full throttle: one counted shift per gear change, no clack', () => {
     const { sim, effects, document, calls } = drive('s3', 'car')
     try {
       const eye = new Vector3()

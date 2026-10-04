@@ -1,5 +1,5 @@
 const modules = import.meta.glob(
-  ['../../../assets/studio/weapons/**/*.json', '../../../assets/custom/weapons/**/*.json'],
+  ['../../../assets/library/weapons/**/*.json', '../../../assets/custom/weapons/**/*.json'],
   { eager: true, import: 'default' },
 )
 

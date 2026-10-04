@@ -1,16 +1,9 @@
-import vue from '@vitejs/plugin-vue'
 import { defineConfig, loadEnv } from 'vite'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     root: 'game',
-    plugins: [vue()],
-    define: {
-      __VUE_OPTIONS_API__: true,
-      __VUE_PROD_DEVTOOLS__: false,
-      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
-    },
     optimizeDeps: {
       entries: ['index.html'],
       include: ['lerc'],
