@@ -205,8 +205,113 @@ outputs.set(
         return `| [${escape(folder)}](${href}) | ${page.files.length} | ${count} |`
       }),
     '',
+    'A curated agent index is generated at the repository root: [`llms.txt`](../../llms.txt) (links) and [`llms-full.txt`](../../llms-full.txt) (expanded READMEs and folder references).',
+    '',
   ].join('\n'),
 )
+const folders = [...folderPages].sort(([a], [b]) => a.localeCompare(b))
+function firstParagraph(file) {
+  if (!fs.existsSync(file)) return ''
+  const bits = []
+  for (const line of fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n').split('\n')) {
+    if (/^#|^<!--|^\||^```|^>|^- |\* |^\d+\. /.test(line) || /^[-*]{3,}$/.test(line.trim())) {
+      if (bits.length) break
+      continue
+    }
+    if (!line.trim()) {
+      if (bits.length) break
+      continue
+    }
+    bits.push(line.trim())
+    if (bits.join(' ').length > 180) break
+  }
+  return bits.join(' ').replace(/\s+/g, ' ')
+}
+function folderCount(page) {
+  return page.files.reduce((sum, [, count]) => sum + count, 0)
+}
+const project = studio ? 'Nabla Studio' : 'Nabla Engine'
+const summary = studio
+  ? 'Editor layer over Nabla Engine. Studio owns UI, persistence and host wiring; reusable simulation, cameras, sound and input stay in Engine.'
+  : 'Independent scene, simulation and editing foundation for Nabla applications. Studio is only a layer over this package.'
+const narrative = fs.existsSync('docs/README.md') ? 'docs/README.md' : ''
+const llmsItems = []
+if (narrative) {
+  const note = firstParagraph(narrative)
+  llmsItems.push(`- [Documentation index](${narrative})${note ? `: ${note}` : ''}`)
+}
+llmsItems.push(
+  `- [Code reference index](${indexDestination}/README.md): generated folder table for \`REFERENCE.md\` pages`,
+)
+const moduleItems = folders.map(([folder, page]) => {
+  const readme = `${folder}/README.md`
+  const reference = `${folder}/REFERENCE.md`
+  const counts = `${page.files.length} modules, ${folderCount(page)} functions`
+  if (fs.existsSync(readme)) {
+    const note = (firstParagraph(readme) || 'module ownership').replace(/\.+$/, '')
+    return `- [${folder}](${readme}): ${note}. Generated signatures: [${folder} reference](${reference}) (${counts})`
+  }
+  return `- [${folder} reference](${reference}): ${counts}`
+})
+outputs.set(
+  'llms.txt',
+  [
+    `# ${project}`,
+    '',
+    `> ${summary}`,
+    '',
+    generatedMark,
+    '',
+    'Curated index for agents. Paths are repository-relative from this file. Narrative guides live under `docs/`; module contracts live next to the code as `README.md`; generated signatures live in each folder `REFERENCE.md`. Edit JSDoc in source, then `node scripts/document-code.mjs`. Verify with `--check`.',
+    '',
+    '## Narrative',
+    '',
+    ...llmsItems,
+    '',
+    '## Modules',
+    '',
+    ...moduleItems,
+    '',
+  ].join('\n'),
+)
+const fullParts = [
+  `# ${project}`,
+  '',
+  `> ${summary}`,
+  '',
+  generatedMark,
+  '',
+  'Expanded documentation for agents. Concatenates the narrative index and each module README plus its generated `REFERENCE.md`. Links inside a folder page stay relative to that folder.',
+  '',
+]
+if (narrative) {
+  fullParts.push(
+    `## ${narrative}`,
+    '',
+    fs.readFileSync(narrative, 'utf8').replaceAll('\r\n', '\n').trimEnd(),
+    '',
+  )
+}
+fullParts.push(
+  `## ${indexDestination}/README.md`,
+  '',
+  outputs.get(`${indexDestination}/README.md`).trimEnd(),
+  '',
+)
+for (const [folder] of folders) {
+  const readme = `${folder}/README.md`
+  const reference = `${folder}/REFERENCE.md`
+  if (fs.existsSync(readme)) {
+    fullParts.push(
+      `## ${readme}`,
+      '',
+      fs.readFileSync(readme, 'utf8').replaceAll('\r\n', '\n').trimEnd(),
+      '',
+    )
+  }
+  fullParts.push(`## ${reference}`, '', outputs.get(reference).trimEnd(), '')
+}
+outputs.set('llms-full.txt', fullParts.join('\n') + '\n')
 const differences = []
 for (const [file, value] of outputs) {
   if (check) {
@@ -224,7 +329,7 @@ function walkMarkdown(directory, found) {
     if (file.endsWith('.md')) found.push(file)
   }
 }
-const generatedPages = []
+const generatedPages = ['llms.txt', 'llms-full.txt']
 for (const directory of [...roots, indexDestination]) walkMarkdown(directory, generatedPages)
 for (const file of generatedPages) {
   if (outputs.has(file)) continue

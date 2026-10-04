@@ -74,6 +74,7 @@ browser. Loading the example is undoable and does not overwrite the saved copy.
 
 - [Code ownership and documentation guide](docs/code-guide.md)
 - [Complete module and function reference](docs/reference/README.md)
+- [Agent index](llms.txt) · [expanded](llms-full.txt)
 
 - [Module map and public API](docs/architecture/module-map.md)
 - [Create a vehicle](src/catalog/vehicles/creating-a-vehicle.md) · [Create a monitor](src/catalog/monitors/creating-a-monitor.md)

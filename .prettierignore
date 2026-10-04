@@ -1,6 +1,8 @@
 node_modules
 docs/reference
 **/REFERENCE.md
+llms.txt
+llms-full.txt
 dist
 demo-dist
 game-dist

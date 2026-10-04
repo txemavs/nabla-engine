@@ -12,12 +12,13 @@ Start with [Local development](local-development.md) to run the Docker stack, or
 
 ## How the tree is organized
 
-| Kind                                                         | Where                                                                            |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| Product, architecture, usage, operations, decisions, studies | this `docs/` tree                                                                |
-| Module contracts, how-tos and ownership                      | `README.md` (and a few named pages) beside the code                              |
-| Generated signatures, JSDoc and call sites                   | `REFERENCE.md` in each source folder; index at [reference/](reference/README.md) |
-| Dated measurements                                           | [benchmarks/2026-10-04](benchmarks/2026-10-04/) — left here, not next to code    |
+| Kind                                                         | Where                                                                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Product, architecture, usage, operations, decisions, studies | this `docs/` tree                                                                    |
+| Module contracts, how-tos and ownership                      | `README.md` (and a few named pages) beside the code                                  |
+| Generated signatures, JSDoc and call sites                   | `REFERENCE.md` in each source folder; index at [reference/](reference/README.md)     |
+| Agent index                                                  | [`llms.txt`](../llms.txt) (links) and [`llms-full.txt`](../llms-full.txt) (expanded) |
+| Dated measurements                                           | [benchmarks/2026-10-04](benchmarks/2026-10-04/) — left here, not next to code        |
 
 `npm run docs:generate` rewrites the folder reference pages. `npm run docs:check`
 and `npm run docs:links` verify that the reference is current and that relative

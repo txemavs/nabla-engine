@@ -2,7 +2,9 @@
 
 The [folder reference index](reference/README.md) lists every `REFERENCE.md` next
 to the code. Those pages index every active module and executable function in
-`src/` and `game/`, including private methods and callbacks.
+`src/` and `game/`, including private methods and callbacks. The generator also
+writes [`llms.txt`](../llms.txt) and [`llms-full.txt`](../llms-full.txt) at the
+repository root for agents.
 They are generated from syntax rather than maintained as a second copy of the code.
 Type-only declarations, tests, service backends and vendor/generated files are
 outside that reference's scope. Existing architecture documents describe their

@@ -59,3 +59,5 @@ Coverage: **236 modules; 2134 executable function definitions** across **47 fold
 | [src/simulation/vehicles/wheeled](../../src/simulation/vehicles/wheeled/REFERENCE.md) | 3 | 18 |
 | [src/util](../../src/util/REFERENCE.md) | 2 | 9 |
 | [src/viewer](../../src/viewer/REFERENCE.md) | 1 | 41 |
+
+A curated agent index is generated at the repository root: [`llms.txt`](../../llms.txt) (links) and [`llms-full.txt`](../../llms-full.txt) (expanded READMEs and folder references).

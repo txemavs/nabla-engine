@@ -45,7 +45,11 @@ function headingExists(file, hash) {
 }
 
 const markdown = []
-walk(root, markdown, (name) => name.endsWith('.md') && name !== 'REFERENCE.md')
+walk(
+  root,
+  markdown,
+  (name) => (name.endsWith('.md') && name !== 'REFERENCE.md') || name === 'llms.txt',
+)
 const code = []
 walk(root, code, (name) => /\.(ts|mjs|js)$/.test(name) && name !== 'document-code.mjs')
 
