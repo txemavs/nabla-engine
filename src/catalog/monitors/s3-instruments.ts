@@ -1,4 +1,5 @@
 import type { CarInstrumentDefinition } from '../../render/entity/car-instrument-definition.js'
+import { gearLabel } from '../../entity/vehicle/gear-label.js'
 import { carMenuDefinition, carMenuItems } from './car.js'
 import { s3ClusterDefinition } from './s3-cluster.js'
 
@@ -15,7 +16,7 @@ export const s3Instruments: CarInstrumentDefinition = {
         speed: Math.abs(speedKmh),
         speedDisplay: String(speed),
         rpm,
-        gear: gear < 0 ? 'R' : `${manual ? 'M' : 'D'}${gear}`,
+        gear: gearLabel(gear, manual),
         throttle: `${Math.round(load * 100)} %`,
       },
       bars: { speed: speed / 320, rpm: rpm / 7000, throttle: load },

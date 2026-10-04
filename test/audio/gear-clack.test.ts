@@ -177,7 +177,7 @@ describe('gear clack events from the simulation', () => {
     ['s3', 'car'],
     ['truck', 'white-truck'],
   ] as const) {
-    it(`${entity}: one clack per counted gear change and one when reverse engages`, () => {
+    it(`${entity}: automatic shifts are silent; D/R engagement clacks once each`, () => {
       const { sim, effects, document, calls } = drive(entity, catalog)
       try {
         const eye = new Vector3()
@@ -190,19 +190,27 @@ describe('gear clack events from the simulation', () => {
         // Baseline: nothing plays just because a vehicle was entered.
         step(5)
         expect(calls).toHaveLength(0)
-        const start = sim.vehicleInfo(entity).gearShifts
+        const start = sim.vehicleInfo(entity)
         sim.setInput({ ...idleInput(), forward: 1 })
         step(60 * 8)
-        const accelerated = sim.vehicleInfo(entity).gearShifts - start
-        expect(accelerated).toBeGreaterThanOrEqual(2)
-        expect(calls).toHaveLength(accelerated)
-        // Braking downshifts count too; engaging reverse is the last one.
+        const accelerated = sim.vehicleInfo(entity)
+        // Several automatic upshifts were counted, but none of them clacks.
+        expect(accelerated.gearShifts - start.gearShifts).toBeGreaterThanOrEqual(2)
+        expect(accelerated.gearClacks).toBe(start.gearClacks)
+        expect(calls).toHaveLength(0)
+        // Braking downshifts are automatic too; only engaging R clacks, exactly once.
         sim.setInput({ ...idleInput(), forward: -1 })
         step(60 * 40)
-        const total = sim.vehicleInfo(entity).gearShifts - start
-        expect(sim.vehicleInfo(entity).gear).toBe(-1)
-        expect(calls).toHaveLength(total)
-        expect(total).toBeGreaterThan(accelerated)
+        const reversed = sim.vehicleInfo(entity)
+        expect(reversed.gear).toBe(-1)
+        expect(reversed.gearShifts - accelerated.gearShifts).toBeGreaterThanOrEqual(1)
+        expect(reversed.gearClacks - start.gearClacks).toBe(1)
+        expect(calls).toHaveLength(1)
+        // Selecting drive again after braking to a stop clacks once more.
+        sim.setInput({ ...idleInput(), forward: 1 })
+        step(60 * 20)
+        expect(sim.vehicleInfo(entity).gear).toBeGreaterThan(0)
+        expect(calls).toHaveLength(2)
         const profile = presetVehicle(catalog, entity).vehicle!.powertrain!.shift?.clack ?? null
         for (const played of calls) expect(played).toEqual(profile)
         // Truck uses its own heavy profile, the car's falls back to the audio default.
@@ -212,5 +220,71 @@ describe('gear clack events from the simulation', () => {
         sim.dispose()
       }
     })
+
+    it(`${entity}: a manual shift clacks once while automatic shifts stay silent`, () => {
+      const { sim, effects, document, calls } = drive(entity, catalog)
+      try {
+        const eye = new Vector3()
+        const step = (ticks: number) => {
+          for (let i = 0; i < ticks; i++) {
+            sim.step(1 / 60)
+            effects.updateAudio(sim, document, eye)
+          }
+        }
+        step(5)
+        sim.setInput({ ...idleInput(), forward: 1 })
+        step(60 * 6)
+        expect(sim.vehicleInfo(entity).gearShifts).toBeGreaterThanOrEqual(2)
+        expect(calls).toHaveLength(0)
+        sim.shiftVehicle(1)
+        step(2)
+        expect(sim.vehicleInfo(entity).manualTransmission).toBe(true)
+        expect(calls).toHaveLength(1)
+        // Manual mode holds the gear; no further sound until another paddle press.
+        step(60 * 3)
+        expect(calls).toHaveLength(1)
+        // A protected (refused) change is silent; whichever direction is accepted clacks once.
+        const second = sim.shiftVehicle(-1)
+        const message = second.startsWith('Manual') ? second : sim.shiftVehicle(1)
+        expect(message).toMatch(/^Manual/)
+        step(2)
+        expect(calls).toHaveLength(2)
+      } finally {
+        effects.dispose()
+        sim.dispose()
+      }
+    })
   }
+
+  it('s3 (assets/studio/cars/a3/s3.json) at full throttle: one counted shift per gear change, no clack', () => {
+    const { sim, effects, document, calls } = drive('s3', 'car')
+    try {
+      const eye = new Vector3()
+      sim.step(1 / 60)
+      effects.updateAudio(sim, document, eye)
+      sim.setInput({ ...idleInput(), forward: 1 })
+      let gear = sim.vehicleInfo('s3').gear
+      let counted = sim.vehicleInfo('s3').gearShifts
+      const clacks = sim.vehicleInfo('s3').gearClacks
+      let changes = 0
+      for (let i = 0; i < 60 * 40; i++) {
+        sim.step(1 / 60)
+        effects.updateAudio(sim, document, eye)
+        const info = sim.vehicleInfo('s3')
+        if (info.gear !== gear) {
+          changes++
+          expect(info.gearShifts).toBe(counted + 1)
+          gear = info.gear
+        }
+        counted = info.gearShifts
+      }
+      expect(changes).toBeGreaterThanOrEqual(3)
+      expect(counted).toBe(changes + 0)
+      expect(sim.vehicleInfo('s3').gearClacks).toBe(clacks)
+      expect(calls).toHaveLength(0)
+    } finally {
+      effects.dispose()
+      sim.dispose()
+    }
+  })
 })

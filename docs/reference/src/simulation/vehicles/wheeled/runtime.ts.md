@@ -256,7 +256,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tuple
 
-[Implementation, line 283](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L283)
+[Implementation, line 284](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L284)
 
 ```ts
 tuple(v: Vec3): WheelVector
@@ -264,7 +264,7 @@ tuple(v: Vec3): WheelVector
 
 ## wheelContacts
 
-[Implementation, line 284](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L284)
+[Implementation, line 285](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L285)
 
 ```ts
 wheelContacts(v: WheeledVehicle, input: WheeledInput, active: boolean, tireEffects = true): WheelContactSnapshot[]
@@ -275,12 +275,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.raycast.wheelInfos.map`
 - `wheeledTelemetry`
 
-## wheelContacts.callback@291
+## wheelContacts.callback@292
 
-[Implementation, line 291](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L291)
+[Implementation, line 292](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L292)
 
 ```ts
-callback@291(wheel, i): inferred by TypeScript; see implementation
+callback@292(wheel, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

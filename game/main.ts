@@ -143,8 +143,7 @@ try {
     },
     onFrame(frame) {
       document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
-      document.getElementById('gear-display')!.textContent =
-        frame.gear === null ? '' : frame.gear < 0 ? 'R' : 'D' + frame.gear
+      document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
       document.getElementById('location-display')!.textContent = frame.location
         ? frame.location.latitude.toFixed(5) + '°, ' + frame.location.longitude.toFixed(5) + '°'
         : ''

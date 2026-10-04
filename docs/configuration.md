@@ -126,8 +126,10 @@ direction.
 `upshiftRpm`/`downshiftRpm` (default 92.8 % and one third of `maxRpm`),
 `torqueFraction`, `rpmResponse` (engine inertia, 1/s) and `launchRpm` are per recipe.
 Every automatic change, manual change and D/R engagement increments the drivetrain
-`shiftCount`; `Simulation.vehicleInfo(id).gearShifts` exposes it and
-`VehicleEffects.updateAudio` plays one `VehicleAudio.gearChange(profile)` per increase.
+`shiftCount` (`vehicleInfo(id).gearShifts`). Only the audible ones, D/R engagement and
+manual paddle shifts, increment `clackCount` (`vehicleInfo(id).gearClacks`);
+automatic up/down shifts are silent. `VehicleEffects.updateAudio` plays one
+`VehicleAudio.gearChange(profile)` per `gearClacks` increase.
 The clack is synthesized (no sample file): two impacts plus an optional air release,
 shaped by `shift.clack` (`clunkHz`, `clickHz`, `gain`, `decaySeconds`, `echoSeconds`,
 `airSeconds`). Omitted fields give the light car clack.

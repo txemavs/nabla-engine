@@ -49,6 +49,8 @@ describe('automatic and manual gear changes', () => {
       stepDrivetrain(state, spec, v.wheelRadius, speed, 1, false, dt)
       expect(state.gear).toBe(2)
       expect(state.shiftCount).toBe(1)
+      // Automatic changes are counted but silent.
+      expect(state.clackCount).toBe(0)
       expect(state.shiftRemaining).toBeCloseTo(tuning.seconds, 5)
       expect(state.load).toBeCloseTo(tuning.torqueFraction)
       expect(state.cooldown).toBeGreaterThan(tuning.cooldownSeconds - 2 * dt)

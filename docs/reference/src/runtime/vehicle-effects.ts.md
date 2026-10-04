@@ -65,10 +65,10 @@ callback@47(entity): inferred by TypeScript; see implementation
 
 [Implementation, line 62](../../../../src/runtime/vehicle-effects.ts#L62)
 
-One clack per counted gear change; the first sample of a vehicle only sets the baseline.
+One clack per audible gear change (D/R engagement or manual shift, never an automatic shift); the first sample of a vehicle only sets the baseline.
 
 ```ts
-playGearChanges(id: string | null, info: { gearShifts: number; gearClack: GearClackProfile | null; helm: string } | null): void
+playGearChanges(id: string | null, info: { gearClacks: number; gearClack: GearClackProfile | null; helm: string } | null): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -268,6 +268,7 @@ export function wheeledTelemetry(
     reversing:
       active && (signedSpeed < -0.15 || (input.throttle < 0 && Math.abs(signedSpeed) <= 0.15)),
     shiftCount: v.drivetrain.shiftCount,
+    clackCount: v.drivetrain.clackCount,
     shifting: v.drivetrain.shiftRemaining > 0 || v.drivetrain.changingDirection,
     clack: v.definition.powertrain?.shift?.clack,
     tireSlip: !tireEffects

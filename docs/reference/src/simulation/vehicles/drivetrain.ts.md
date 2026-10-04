@@ -11,7 +11,7 @@
 
 ## createDrivetrain
 
-[Implementation, line 21](../../../../../src/simulation/vehicles/drivetrain.ts#L21)
+[Implementation, line 26](../../../../../src/simulation/vehicles/drivetrain.ts#L26)
 
 ```ts
 createDrivetrain(): DrivetrainState
@@ -19,7 +19,7 @@ createDrivetrain(): DrivetrainState
 
 ## gearboxTuning
 
-[Implementation, line 53](../../../../../src/simulation/vehicles/drivetrain.ts#L53)
+[Implementation, line 59](../../../../../src/simulation/vehicles/drivetrain.ts#L59)
 
 ```ts
 gearboxTuning(spec?: PowertrainDefinition): ResolvedGearbox
@@ -27,7 +27,7 @@ gearboxTuning(spec?: PowertrainDefinition): ResolvedGearbox
 
 ## selectDriveDirection
 
-[Implementation, line 81](../../../../../src/simulation/vehicles/drivetrain.ts#L81)
+[Implementation, line 87](../../../../../src/simulation/vehicles/drivetrain.ts#L87)
 
 Brake-then-shift direction selector. An opposite pedal never engages D/R while the vehicle
 is still rolling: the caller keeps braking (returns true) until `|speed|` drops below
@@ -49,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isDriven
 
-[Implementation, line 119](../../../../../src/simulation/vehicles/drivetrain.ts#L119)
+[Implementation, line 126](../../../../../src/simulation/vehicles/drivetrain.ts#L126)
 
 ```ts
 isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
@@ -57,7 +57,7 @@ isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
 
 ## stepDrivetrain
 
-[Implementation, line 123](../../../../../src/simulation/vehicles/drivetrain.ts#L123)
+[Implementation, line 130](../../../../../src/simulation/vehicles/drivetrain.ts#L130)
 
 Fixed-step, deliberately forgiving DSG-style clutch; no dependency on asset names or Studio.
 
@@ -80,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shiftGear
 
-[Implementation, line 197](../../../../../src/simulation/vehicles/drivetrain.ts#L197)
+[Implementation, line 204](../../../../../src/simulation/vehicles/drivetrain.ts#L204)
 
 A paddle enters manual mode; reject unsafe reductions instead of over-revving.
 
@@ -95,7 +95,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## engineBrakingForce
 
-[Implementation, line 219](../../../../../src/simulation/vehicles/drivetrain.ts#L219)
+[Implementation, line 227](../../../../../src/simulation/vehicles/drivetrain.ts#L227)
 
 Closed-throttle pumping losses through the selected gear, fading before standstill.
 

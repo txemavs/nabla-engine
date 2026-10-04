@@ -54,12 +54,15 @@ import { playGroundClearance } from './placement.js'
 import { FrameLoop } from './frame-loop.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { VehicleEffects } from './vehicle-effects.js'
+import { gearLabel } from '../entity/vehicle/gear-label.js'
 
 import { waitForGround } from './ground.js'
 
 export interface GameFrame {
   speedKmh: number
   gear: number | null
+  /** HUD text: `R`, `D3` in automatic mode, `M3` in manual mode; null outside a gearbox vehicle. */
+  gearLabel: string | null
   location: ReturnType<typeof localToGeo> | null
 }
 export interface GameRuntimeOptions {
@@ -613,6 +616,7 @@ export class GameRuntime {
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
+      gearLabel: info ? gearLabel(info.gear, info.manualTransmission) : null,
       location: this.document.geography
         ? localToGeo(this.document.geography, player.position)
         : null,

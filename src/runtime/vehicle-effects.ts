@@ -58,10 +58,10 @@ export class VehicleEffects {
     this.audio.powertrain(car?.helm !== 'off' ? (car?.rpm ?? 0) : 0, car?.engineLoad ?? 0)
   }
 
-  /** One clack per counted gear change; the first sample of a vehicle only sets the baseline. */
+  /** One clack per audible gear change (D/R engagement or manual shift, never an automatic shift); the first sample of a vehicle only sets the baseline. */
   private playGearChanges(
     id: string | null,
-    info: { gearShifts: number; gearClack: GearClackProfile | null; helm: string } | null,
+    info: { gearClacks: number; gearClack: GearClackProfile | null; helm: string } | null,
   ): void {
     if (!id || !info) {
       this.shiftVehicleId = null
@@ -70,8 +70,8 @@ export class VehicleEffects {
     const known = this.shiftVehicleId === id
     const previous = this.shiftCount
     this.shiftVehicleId = id
-    this.shiftCount = info.gearShifts
-    if (known && info.gearShifts > previous && info.helm !== 'off')
+    this.shiftCount = info.gearClacks
+    if (known && info.gearClacks > previous && info.helm !== 'off')
       this.audio.gearChange(info.gearClack)
   }
 

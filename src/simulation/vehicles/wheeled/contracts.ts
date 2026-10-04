@@ -98,8 +98,10 @@ export interface WheeledTelemetry {
   readonly braking: boolean
   readonly reversing: boolean
   readonly tireSlip: number
-  /** Counts every gear change and D/R engagement; hosts play one clack per increase. */
+  /** Counts every gear change (automatic, manual) and D/R engagement. */
   readonly shiftCount: number
+  /** Counts audible changes only (D/R engagement, manual shifts); hosts play one clack per increase. */
+  readonly clackCount: number
   /** True while torque is cut for a gear change or while D/R waits for standstill. */
   readonly shifting: boolean
   /** Clack sound of this vehicle; undefined uses the audio layer's car default. */

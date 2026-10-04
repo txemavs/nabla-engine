@@ -15,8 +15,13 @@ export interface DrivetrainState {
   directionRemaining: number
   /** True while an opposite-direction request waits for the vehicle to stop. */
   changingDirection: boolean
-  /** Increments on every gear change and D/R engagement; the audio layer plays one clack each. */
+  /** Increments on every gear change, automatic or not, and on every D/R engagement. */
   shiftCount: number
+  /**
+   * Increments only on changes the driver hears: D/R engagement and manual paddle shifts.
+   * Automatic up/down shifts are silent; the audio layer plays one clack per increase.
+   */
+  clackCount: number
 }
 export const createDrivetrain = (): DrivetrainState => ({
   gear: 1,
@@ -32,6 +37,7 @@ export const createDrivetrain = (): DrivetrainState => ({
   directionRemaining: 0,
   changingDirection: false,
   shiftCount: 0,
+  clackCount: 0,
 })
 
 /** Gearbox feel with every default applied; see `GearboxTuning` and `roadVehicleDefaults`. */
@@ -114,6 +120,7 @@ export function selectDriveDirection(
   state.shiftRemaining = gearbox.directionShiftSeconds
   state.cooldown = gearbox.cooldownSeconds
   state.shiftCount++
+  state.clackCount++
   return false
 }
 export function isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean {
@@ -213,6 +220,7 @@ export function shiftGear(
   state.shiftRemaining = gearbox.seconds
   state.cooldown = gearbox.cooldownSeconds
   state.shiftCount++
+  state.clackCount++
   return true
 }
 /** Closed-throttle pumping losses through the selected gear, fading before standstill. */
