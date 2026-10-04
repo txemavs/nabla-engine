@@ -119,6 +119,32 @@ describe('game config', () => {
       expect(config.spawn.longitude).toBeCloseTo(-1.7565, 4)
       expect(config.spawn.altitude).toBe(50)
     })
+
+    it('parses single tile mode with ?tile=z/x/y', () => {
+      const config = parseGameConfig('?tile=15/16224/11998')
+
+      expect(config.singleTile).not.toBeNull()
+      expect(config.singleTile!.z).toBe(15)
+      expect(config.singleTile!.x).toBe(16224)
+      expect(config.singleTile!.y).toBe(11998)
+      // Spawn should be at tile center (approximate values for Z15 tile)
+      expect(config.spawn.latitude).toBeCloseTo(43.337, 1) // Approximate tile center
+      expect(config.spawn.longitude).toBeCloseTo(-1.75, 1) // Approximate
+    })
+
+    it('returns null singleTile for invalid tile format', () => {
+      expect(parseGameConfig('?tile=invalid').singleTile).toBeNull()
+      expect(parseGameConfig('?tile=15/16224').singleTile).toBeNull()
+      expect(parseGameConfig('?tile=').singleTile).toBeNull()
+    })
+
+    it('single tile mode overrides lat/lon params', () => {
+      const config = parseGameConfig('?tile=15/16224/11998&lat=40.0&lon=-3.0')
+
+      // Tile center takes precedence over lat/lon
+      expect(config.singleTile).not.toBeNull()
+      expect(config.spawn.latitude).toBeCloseTo(43.337, 2) // Tile center, not 40.0
+    })
   })
 
   describe('configToUrl', () => {
@@ -128,6 +154,7 @@ describe('game config', () => {
         vehicle: 'police',
         tilesBaseUrl: 'https://cdn.example.com/tiles',
         staticTiles: true,
+        singleTile: null,
       }
 
       const url = configToUrl(config)
@@ -145,6 +172,7 @@ describe('game config', () => {
         vehicle: 'car',
         tilesBaseUrl: DEFAULT_TILES_BASE_URL,
         staticTiles: true,
+        singleTile: null,
       }
 
       const url = configToUrl(config)
@@ -161,6 +189,7 @@ describe('game config', () => {
         vehicle: 'car',
         tilesBaseUrl: DEFAULT_TILES_BASE_URL,
         staticTiles: false,
+        singleTile: null,
       }
 
       const url = configToUrl(config)

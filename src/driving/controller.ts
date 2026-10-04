@@ -66,6 +66,26 @@ export class DrivingController {
     this.lastLookTime = performance.now()
   }
 
+  /**
+   * Apply mouse movement to camera yaw/pitch.
+   * Call from mousemove handler with movementX/Y.
+   */
+  applyMouseLook(movementX: number, movementY: number): void {
+    this.yaw -= movementX * 0.0025
+    this.pitch = MathUtils.clamp(this.pitch + movementY * 0.002, -1.45, 1.45)
+    this.lastLookTime = performance.now()
+  }
+
+  /** Get current yaw for input synchronization. */
+  getYaw(): number {
+    return this.yaw
+  }
+
+  /** Set yaw directly (e.g., when entering vehicle). */
+  setYaw(yaw: number): void {
+    this.yaw = yaw
+  }
+
   unlockAudio(): void {
     this.audio.unlock()
   }

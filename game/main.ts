@@ -51,7 +51,7 @@ class Game {
   private ambient: THREE.AmbientLight | null = null
   private renderOrigin = new THREE.Vector3()
   private keyboardSteering = new KeyboardSteering()
-  private driving = new DrivingController({ enableAudio: true, initialCameraMode: 'cockpit' })
+  private driving = new DrivingController({ enableAudio: true, initialCameraMode: 'chase' })
   private disposed = false
   private animationFrame = 0
   private lastTime = 0
@@ -60,6 +60,7 @@ class Game {
   private spawnPosition: Vec3Tuple = [0, 0, 0]
   private waitingForTerrain = true
   private terrainMessage = ''
+  private pointerLocked = false
 
   constructor() {
     this.config = parseGameConfig()
@@ -73,7 +74,15 @@ class Game {
 
   async start(): Promise<void> {
     try {
-      this.loading.setSpawn(this.config.spawn.latitude, this.config.spawn.longitude)
+      // Single-tile mode: load only one specific tile with truck at center
+      if (this.config.singleTile) {
+        this.loading.setSingleTile(this.config.singleTile)
+        console.log(
+          `Single tile mode: ${this.config.singleTile.z}/${this.config.singleTile.x}/${this.config.singleTile.y}`,
+        )
+      } else {
+        this.loading.setSpawn(this.config.spawn.latitude, this.config.spawn.longitude)
+      }
       this.loading.setStatus('Initializing physics...')
       await initPhysics()
 
@@ -160,12 +169,16 @@ class Game {
   }
 
   private setupInput(): void {
+    const canvas = document.getElementById('game-canvas') as HTMLCanvasElement
+
+    // Keyboard controls
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return
       this.keys.add(e.code)
       if (e.code === 'KeyC') this.cycleCamera()
       if (e.code === 'KeyR') this.resetVehicle()
       if (e.code === 'KeyH') this.toggleTrailer()
+      if (e.code === 'Escape') this.exitPointerLock()
       this.driving.unlockAudio()
     })
     window.addEventListener('keyup', (e) => {
@@ -174,10 +187,52 @@ class Game {
     window.addEventListener('blur', () => {
       this.keys.clear()
     })
+
+    // Mouse controls - click to lock pointer, move to rotate camera
+    canvas.addEventListener('click', () => {
+      if (!this.pointerLocked) {
+        canvas.requestPointerLock()
+      }
+    })
+
+    document.addEventListener('pointerlockchange', () => {
+      this.pointerLocked = document.pointerLockElement === canvas
+      console.log('Pointer lock:', this.pointerLocked ? 'active' : 'released')
+    })
+
+    // Mouse movement for camera rotation (like Studio)
+    document.addEventListener('mousemove', (e) => {
+      if (this.pointerLocked && this.sim) {
+        const mode = this.driving.getCameraMode()
+        if (mode !== 'map') {
+          this.driving.applyMouseLook(e.movementX, e.movementY)
+        }
+      }
+    })
+
+    // Wheel for map zoom
+    canvas.addEventListener(
+      'wheel',
+      (e) => {
+        if (this.driving.getCameraMode() === 'map') {
+          e.preventDefault()
+          const currentZoom = 1 // Could track this
+          this.driving.setMapZoom(currentZoom + e.deltaY * 0.001)
+        }
+      },
+      { passive: false },
+    )
+
     window.addEventListener('pointerdown', () => this.driving.unlockAudio())
     document.addEventListener('visibilitychange', () => {
       this.driving.setAudioSuspended(document.hidden)
     })
+  }
+
+  private exitPointerLock(): void {
+    if (document.pointerLockElement) {
+      document.exitPointerLock()
+    }
   }
 
   private createGameDocument(): SceneDocument {
@@ -238,13 +293,24 @@ class Game {
       apiUrl,
       this.config.staticTiles ? 'static' : 'dynamic',
     )
-    this.world.setQuality(2, 8, false, 32)
-    this.world.setDistance(4000)
+
+    // Single-tile mode: limit view distance to keep within one tile
+    if (this.config.singleTile) {
+      this.world.setQuality(1, 4, false, 1) // Only 1 tile max
+      this.world.setDistance(500) // ~500m, well within a Z15 tile
+    } else {
+      this.world.setQuality(2, 8, false, 32)
+      this.world.setDistance(4000)
+    }
+
     this.scene.add(this.world.root)
 
-    this.catchFloor = new CatchFloor()
-    this.shadowManager?.setupMaterial(this.catchFloor.mesh.material)
-    this.scene.add(this.catchFloor.mesh)
+    // No CatchFloor in single-tile mode - use real terrain only
+    if (!this.config.singleTile) {
+      this.catchFloor = new CatchFloor()
+      this.shadowManager?.setupMaterial(this.catchFloor.mesh.material)
+      this.scene.add(this.catchFloor.mesh)
+    }
   }
 
   private async loadInitialTiles(): Promise<void> {
@@ -572,7 +638,7 @@ class Game {
     return {
       forward,
       right: steering,
-      yaw: this.yaw,
+      yaw: this.driving.getYaw(),
       sprint: this.keys.has('ShiftLeft'),
       jump: this.keys.has('Space'),
       brake: this.keys.has('Space'),

@@ -41,6 +41,17 @@ export class LoadingScreen {
     this.updateIndicators()
   }
 
+  /** Single-tile mode: load only one specific tile. */
+  setSingleTile(tile: MapTile): void {
+    this.centerTile = tile
+    this.grid3x3 = [tile] // Only this one tile
+    this.loadedTiles.clear()
+    this.absentTiles.clear()
+    this.failedTiles.clear()
+    console.log(`Single tile mode: ${mapTileId(tile)}`)
+    this.updateIndicators()
+  }
+
   private get3x3Grid(center: MapTile): MapTile[] {
     const tiles: MapTile[] = []
     const n = 2 ** center.z

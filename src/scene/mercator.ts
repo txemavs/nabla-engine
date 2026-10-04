@@ -139,6 +139,15 @@ export function mapTileBounds(tile: MapTile) {
     south: latitude(tile.y + 1),
   }
 }
+
+/** Geographic center of a tile. */
+export function tileCenterGeo(tile: MapTile): { latitude: number; longitude: number } {
+  const bounds = mapTileBounds(tile)
+  return {
+    latitude: (bounds.north + bounds.south) / 2,
+    longitude: (bounds.west + bounds.east) / 2,
+  }
+}
 export function mapTileChildren(tile: MapTile): MapTile[] {
   validate(tile)
   if (tile.z === 22) throw Error('Maximum supported zoom')
