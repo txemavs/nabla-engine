@@ -6,11 +6,11 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **232 modules; 2105 executable function definitions**.
+Coverage: **232 modules; 2106 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
-| [game/config.ts](game/config.ts.md) | 3 |
+| [game/config.ts](game/config.ts.md) | 4 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 7 |
 | [game/loading.ts](game/loading.ts.md) | 16 |
 | [game/main.ts](game/main.ts.md) | 14 |

@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { parseGameConfig, configToUrl, type GameConfig } from '../../game/config.js'
-import { DEFAULT_TILES_BASE_URL } from '../../src/render/planet/static-tiles.js'
+import {
+  parseGameConfig,
+  configToUrl,
+  requireGeographicTileBase,
+  type GameConfig,
+} from '../../game/config.js'
 
 describe('game config', () => {
   describe('parseGameConfig', () => {
@@ -18,18 +22,21 @@ describe('game config', () => {
       expect(config.spawn.longitude).toBeCloseTo(-1.7523, 4)
       expect(config.spawn.altitude).toBe(50)
       expect(config.vehicle).toBe('car')
-      expect(config.tilesBaseUrl).toBe('https://atlas.chained.world/euskadi')
+      expect(config.tilesBaseUrl).toBe(undefined)
       expect(config.staticTiles).toBe(true)
     })
 
-    it('defaults to the Euskadi base, which never produces /z/z/ manifest URLs', () => {
-      const config = parseGameConfig('')
-
-      expect(config.tilesBaseUrl).toBe('https://atlas.chained.world/euskadi')
-      expect(`${config.tilesBaseUrl}/z/15/16224/11998/manifest.json`).toBe(
-        'https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json',
+    it('diagnoses missing terrain before geographic startup', () => {
+      for (const search of ['', '?tiles=', '?tiles=%20']) {
+        expect(() => requireGeographicTileBase(parseGameConfig(search))).toThrow(
+          /Terrain source missing/,
+        )
+      }
+      expect(requireGeographicTileBase(parseGameConfig('?tiles=/'))).toBe('')
+      expect(requireGeographicTileBase(parseGameConfig('?static=false'))).toBe('/prepared')
+      expect(requireGeographicTileBase(parseGameConfig('?tiles=/assets/local'))).toBe(
+        '/assets/local',
       )
-      expect(config.tilesBaseUrl).not.toMatch(/\/z$/)
     })
 
     it('keeps the ?tiles= override and strips trailing slashes', () => {
@@ -38,9 +45,9 @@ describe('game config', () => {
       )
     })
 
-    it('treats a blank ?tiles= as the default and ?tiles=/ as this origin', () => {
-      expect(parseGameConfig('?tiles=').tilesBaseUrl).toBe(DEFAULT_TILES_BASE_URL)
-      expect(parseGameConfig('?tiles=%20').tilesBaseUrl).toBe(DEFAULT_TILES_BASE_URL)
+    it('treats a blank ?tiles= as unconfigured and ?tiles=/ as this origin', () => {
+      expect(parseGameConfig('?tiles=').tilesBaseUrl).toBe(undefined)
+      expect(parseGameConfig('?tiles=%20').tilesBaseUrl).toBe(undefined)
       expect(parseGameConfig('?tiles=/').tilesBaseUrl).toBe('')
     })
 
@@ -148,7 +155,7 @@ describe('game config', () => {
       const config: GameConfig = {
         spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 50 },
         vehicle: 'car',
-        tilesBaseUrl: DEFAULT_TILES_BASE_URL,
+        tilesBaseUrl: undefined,
         staticTiles: true,
       }
 
@@ -164,7 +171,7 @@ describe('game config', () => {
       const config: GameConfig = {
         spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 50 },
         vehicle: 'car',
-        tilesBaseUrl: DEFAULT_TILES_BASE_URL,
+        tilesBaseUrl: undefined,
         staticTiles: false,
       }
 

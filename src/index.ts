@@ -112,7 +112,6 @@ export {
   normalizeTilesBase,
   assertSecureTileBase,
   StaticTileError,
-  DEFAULT_TILES_BASE_URL,
   type StaticTileProviderOptions,
   type StaticTileResult,
   type StaticTileErrorKind,

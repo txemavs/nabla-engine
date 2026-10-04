@@ -15,92 +15,92 @@
 - `./loading.js`
 - `./display-settings.js`
 
-## callback@34
+## callback@35
 
-[Implementation, line 34](../../../game/main.ts#L34)
+[Implementation, line 35](../../../game/main.ts#L35)
 
 ```ts
-callback@34(preset, index): inferred by TypeScript; see implementation
+callback@35(preset, index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `presetEntities`
 
-## callback@44
+## callback@45
 
-[Implementation, line 44](../../../game/main.ts#L44)
+[Implementation, line 45](../../../game/main.ts#L45)
 
 ```ts
-callback@44(e): inferred by TypeScript; see implementation
+callback@45(e): inferred by TypeScript; see implementation
 ```
 
-## callback@68
+## callback@69
 
-[Implementation, line 68](../../../game/main.ts#L68)
-
-```ts
-callback@68(e): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `e.id.startsWith`
-
-## callback@72
-
-[Implementation, line 72](../../../game/main.ts#L72)
+[Implementation, line 69](../../../game/main.ts#L69)
 
 ```ts
-callback@72(e): inferred by TypeScript; see implementation
+callback@69(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `e.id.startsWith`
 
-## callback@92
+## callback@73
 
-[Implementation, line 92](../../../game/main.ts#L92)
+[Implementation, line 73](../../../game/main.ts#L73)
 
 ```ts
-callback@92(p): inferred by TypeScript; see implementation
+callback@73(e): inferred by TypeScript; see implementation
 ```
 
-## callback@94
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 94](../../../game/main.ts#L94)
+- `e.id.startsWith`
+
+## callback@93
+
+[Implementation, line 93](../../../game/main.ts#L93)
 
 ```ts
-callback@94(p): inferred by TypeScript; see implementation
+callback@93(p): inferred by TypeScript; see implementation
+```
+
+## callback@95
+
+[Implementation, line 95](../../../game/main.ts#L95)
+
+```ts
+callback@95(p): inferred by TypeScript; see implementation
 ```
 
 ## source
 
-[Implementation, line 114](../../../game/main.ts#L114)
+[Implementation, line 115](../../../game/main.ts#L115)
 
 ```ts
 source(tile): inferred by TypeScript; see implementation
 ```
 
-## source.callback@118
+## source.callback@119
 
-[Implementation, line 118](../../../game/main.ts#L118)
+[Implementation, line 119](../../../game/main.ts#L119)
 
 ```ts
-callback@118(mark): inferred by TypeScript; see implementation
+callback@119(mark): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mapTileAt`
 
-## callback@134
+## callback@135
 
-[Implementation, line 134](../../../game/main.ts#L134)
+[Implementation, line 135](../../../game/main.ts#L135)
 
 ```ts
-callback@134(sample): inferred by TypeScript; see implementation
+callback@135(sample): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -109,7 +109,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onProgress
 
-[Implementation, line 139](../../../game/main.ts#L139)
+[Implementation, line 140](../../../game/main.ts#L140)
 
 ```ts
 onProgress(status, tiles): inferred by TypeScript; see implementation
@@ -122,7 +122,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onFrame
 
-[Implementation, line 143](../../../game/main.ts#L143)
+[Implementation, line 144](../../../game/main.ts#L144)
 
 ```ts
 onFrame(frame): inferred by TypeScript; see implementation
@@ -137,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onError
 
-[Implementation, line 151](../../../game/main.ts#L151)
+[Implementation, line 152](../../../game/main.ts#L152)
 
 ```ts
 onError(error): inferred by TypeScript; see implementation
@@ -150,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onMessage
 
-[Implementation, line 154](../../../game/main.ts#L154)
+[Implementation, line 155](../../../game/main.ts#L155)
 
 ```ts
 onMessage(message): inferred by TypeScript; see implementation
@@ -160,12 +160,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `document.getElementById`
 
-## callback@158
+## callback@159
 
-[Implementation, line 158](../../../game/main.ts#L158)
+[Implementation, line 159](../../../game/main.ts#L159)
 
 ```ts
-callback@158(): inferred by TypeScript; see implementation
+callback@159(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -10,7 +10,7 @@ URL parameters:
   - lat: spawn latitude (default: Zaisa, Irun center)
   - lon: spawn longitude
   - vehicle: vehicle preset ID (default: 'car')
-  - tiles: tile base URL, WITHOUT the trailing /z (default: https://atlas.chained.world/euskadi);
+  - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
   - static: use static tile mode ('true' or '1')
 
@@ -20,7 +20,7 @@ URL parameters:
 
 ## parseGameConfig
 
-[Implementation, line 32](../../../game/config.ts#L32)
+[Implementation, line 33](../../../game/config.ts#L33)
 
 ```ts
 parseGameConfig(search: string = location.search): GameConfig
@@ -38,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseGameConfig.coordinate
 
-[Implementation, line 35](../../../game/config.ts#L35)
+[Implementation, line 36](../../../game/config.ts#L36)
 
 ```ts
 coordinate(key: string, fallback: number): inferred by TypeScript; see implementation
@@ -52,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## configToUrl
 
-[Implementation, line 70](../../../game/config.ts#L70)
+[Implementation, line 69](../../../game/config.ts#L69)
 
 ```ts
 configToUrl(config: GameConfig): string
@@ -66,3 +66,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `config.spawn.longitude.toFixed`
 - `params.set`
 - `params.toString`
+
+## requireGeographicTileBase
+
+[Implementation, line 89](../../../game/config.ts#L89)
+
+Validate geographic terrain before allocating a renderer or starting any requests.
+
+```ts
+requireGeographicTileBase(config: GameConfig): string
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+
+Explicit throws in this body:
+
+- `new Error( 'Terrain source missing: set ?tiles=<tile-base-url> for geographic mode, or use ?example=flat for the local planetary demo.', )`

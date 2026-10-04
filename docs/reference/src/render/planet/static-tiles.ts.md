@@ -12,8 +12,8 @@ Directory structure expected (baseUrl does NOT include the trailing `/z`; `mapTi
   {baseUrl}/z/{zoom}/{x}/{y}/{terrain-file}.glb
   {baseUrl}/z/{zoom}/{x}/{y}/{buildings-file}.glb
 
-Example: baseUrl `https://atlas.chained.world/euskadi` gives
-  https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json
+Example: baseUrl `https://tiles.example.org/world` gives
+  https://tiles.example.org/world/z/15/16224/11998/manifest.json
 
 GLB integrity (size and SHA-256 from the manifest) is verified by the planet worker when it loads the files.
 HTTPS uses native Web Crypto; HTTP LAN workers use the portable SHA-256 verifier.
@@ -26,7 +26,7 @@ An HTTPS page still cannot load tiles from an `http:` host (mixed content).
 
 ## StaticTileError.constructor
 
-[Implementation, line 45](../../../../../src/render/planet/static-tiles.ts#L45)
+[Implementation, line 43](../../../../../src/render/planet/static-tiles.ts#L43)
 
 A manifest request that failed for a reason worth showing to the user (never a plain "not found").
 
@@ -40,7 +40,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## normalizeTilesBase
 
-[Implementation, line 57](../../../../../src/render/planet/static-tiles.ts#L57)
+[Implementation, line 55](../../../../../src/render/planet/static-tiles.ts#L55)
 
 Trim the base URL and drop trailing slashes.
 
@@ -50,12 +50,17 @@ normalizeTilesBase(baseUrl: string): string
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Error`
 - `baseUrl.trim`
 - `baseUrl.trim().replace`
 
+Explicit throws in this body:
+
+- `new Error( 'Terrain source missing: provide an explicit tile baseUrl; use / for this origin.', )`
+
 ## tileManifestUrl
 
-[Implementation, line 61](../../../../../src/render/planet/static-tiles.ts#L61)
+[Implementation, line 63](../../../../../src/render/planet/static-tiles.ts#L63)
 
 ```ts
 tileManifestUrl(tile: MapTile, baseUrl: string): string
@@ -68,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## assertSecureTileBase
 
-[Implementation, line 71](../../../../../src/render/planet/static-tiles.ts#L71)
+[Implementation, line 73](../../../../../src/render/planet/static-tiles.ts#L73)
 
 An `https:` page cannot fetch from an `http:` tile host (browsers block mixed content, and the failure shows up as a
 bare network error). Local development hosts are allowed. Relative URLs inherit the page protocol.
@@ -89,7 +94,7 @@ Explicit throws in this body:
 
 ## describeHttp
 
-[Implementation, line 87](../../../../../src/render/planet/static-tiles.ts#L87)
+[Implementation, line 89](../../../../../src/render/planet/static-tiles.ts#L89)
 
 ```ts
 describeHttp(status: number): string
@@ -97,7 +102,7 @@ describeHttp(status: number): string
 
 ## fetchTileManifest
 
-[Implementation, line 99](../../../../../src/render/planet/static-tiles.ts#L99)
+[Implementation, line 101](../../../../../src/render/planet/static-tiles.ts#L101)
 
 Fetch manifest.json for a single tile via GET request.
 Returns undefined if the tile is not published (404). Every other failure throws a StaticTileError (or the caller's
@@ -132,7 +137,7 @@ Explicit throws in this body:
 
 ## fetchTileManifests
 
-[Implementation, line 164](../../../../../src/render/planet/static-tiles.ts#L164)
+[Implementation, line 166](../../../../../src/render/planet/static-tiles.ts#L166)
 
 Batch fetch manifests for multiple tiles.
 Returns a map of tile IDs to manifests (only includes available tiles). A tile that fails for any reason other than
@@ -148,12 +153,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Promise.all`
 - `tiles.map`
 
-## fetchTileManifests.callback@169
+## fetchTileManifests.callback@171
 
-[Implementation, line 169](../../../../../src/render/planet/static-tiles.ts#L169)
+[Implementation, line 171](../../../../../src/render/planet/static-tiles.ts#L171)
 
 ```ts
-callback@169(tile): inferred by TypeScript; see implementation
+callback@171(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -164,7 +169,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isManifestCurrent
 
-[Implementation, line 182](../../../../../src/render/planet/static-tiles.ts#L182)
+[Implementation, line 184](../../../../../src/render/planet/static-tiles.ts#L184)
 
 Check if a manifest is current (has the expected geometry revision).
 
@@ -174,7 +179,7 @@ isManifestCurrent(manifest: PlanetManifest): boolean
 
 ## tileGlbUrl
 
-[Implementation, line 189](../../../../../src/render/planet/static-tiles.ts#L189)
+[Implementation, line 191](../../../../../src/render/planet/static-tiles.ts#L191)
 
 Build the URL for a tile's GLB file.
 

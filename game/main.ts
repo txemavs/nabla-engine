@@ -7,7 +7,7 @@ import {
 } from '@nabla/engine/examples/flat-tile'
 import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
-import { parseGameConfig } from './config.js'
+import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 
@@ -15,6 +15,7 @@ let runtime: GameRuntime | undefined
 try {
   const config = parseGameConfig()
   const flat = new URLSearchParams(location.search).get('example') === 'flat'
+  const tilesBase = flat ? FLAT_TEST_BASE : requireGeographicTileBase(config)
   if (!hasVehiclePreset(config.vehicle))
     throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
   const vehicle = presetVehicle(config.vehicle, 'player-vehicle', [0, 2, 0])
@@ -126,7 +127,7 @@ try {
     tiles: flat
       ? { baseUrl: FLAT_TEST_BASE, mode: 'static', tiles: FLAT_TEST_TILES, horizon: false }
       : {
-          baseUrl: config.staticTiles ? config.tilesBaseUrl : '/prepared',
+          baseUrl: tilesBase,
           apiUrl: '/prepare',
           mode: config.staticTiles ? 'static' : 'dynamic',
         },

@@ -7,8 +7,8 @@
  *   {baseUrl}/z/{zoom}/{x}/{y}/{terrain-file}.glb
  *   {baseUrl}/z/{zoom}/{x}/{y}/{buildings-file}.glb
  *
- * Example: baseUrl `https://atlas.chained.world/euskadi` gives
- *   https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json
+ * Example: baseUrl `https://tiles.example.org/world` gives
+ *   https://tiles.example.org/world/z/15/16224/11998/manifest.json
  *
  * GLB integrity (size and SHA-256 from the manifest) is verified by the planet worker when it loads the files.
  * HTTPS uses native Web Crypto; HTTP LAN workers use the portable SHA-256 verifier.
@@ -22,10 +22,8 @@ import {
 } from '../../planet/contract.js'
 import { mapTileId, mapTilePath, type MapTile } from '../../scene/mercator.js'
 
-/** The default tile host: the published Euskadi tile set. */
-export const DEFAULT_TILES_BASE_URL = 'https://atlas.chained.world/euskadi'
-
 export interface StaticTileProviderOptions {
+  /** Application-owned tile origin. Use `/` (or normalized empty string) for this origin. */
   baseUrl: string
   signal?: AbortSignal
   cors?: boolean
@@ -55,6 +53,10 @@ export class StaticTileError extends Error {
 
 /** Trim the base URL and drop trailing slashes. */
 export function normalizeTilesBase(baseUrl: string): string {
+  if (typeof baseUrl !== 'string')
+    throw new Error(
+      'Terrain source missing: provide an explicit tile baseUrl; use / for this origin.',
+    )
   return baseUrl.trim().replace(/\/+$/, '')
 }
 

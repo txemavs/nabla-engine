@@ -49,17 +49,42 @@ press is required after expiry; queued repeats cannot restart cleared controls.
 
 Without `example=flat`, URL configuration selects geographic coverage:
 
-| Parameter | Default                               | Meaning                                                |
-| --------- | ------------------------------------- | ------------------------------------------------------ |
-| `lat`     | `43.3372`                             | Spawn latitude                                         |
-| `lon`     | `-1.7523`                             | Spawn longitude                                        |
-| `alt`     | `50`                                  | Geographic origin altitude in metres                   |
-| `vehicle` | `car`                                 | Installed preset                                       |
-| `tiles`   | `https://atlas.chained.world/euskadi` | Tile base without trailing `/z`                        |
-| `static`  | `true`                                | Static manifests; `false` uses the preparation service |
+| Parameter | Default                                   | Meaning                                                |
+| --------- | ----------------------------------------- | ------------------------------------------------------ |
+| `lat`     | `43.3372`                                 | Spawn latitude                                         |
+| `lon`     | `-1.7523`                                 | Spawn longitude                                        |
+| `alt`     | `50`                                      | Geographic origin altitude in metres                   |
+| `vehicle` | `car`                                     | Installed preset                                       |
+| `tiles`   | None (required in static geographic mode) | Application-owned tile base without trailing `/z`      |
+| `static`  | `true`                                    | Static manifests; `false` uses the preparation service |
 
 Zero is valid for latitude, longitude and altitude. No cartographic coverage does
 not imply a different coordinate system.
+
+Opening the demo without a terrain source reports a configuration error before
+creating the runtime or requesting terrain. Use `?example=flat` for the bundled
+offline surface, `?tiles=/my-tiles&lat=0&lon=0&alt=0` for local coverage, or
+`?tiles=https://tiles.example.org/world&lat=0&lon=0&alt=0` for an external dataset.
+`?tiles=/` explicitly selects this origin; missing or whitespace-only values do
+not. Dynamic mode (`?static=false`) explicitly selects this demo's `/prepared`
+and `/prepare` services, which the application must deploy or proxy.
+
+### Migration: application-owned terrain
+
+`DEFAULT_TILES_BASE_URL` has been removed from both the root export and
+`@nabla/engine/planet/static-tiles`. Replace its imports with application
+configuration and pass `tiles: { baseUrl, mode: 'static' }` to the browser runtime,
+or `{ baseUrl }` to `fetchTileManifest`. Local paths and arbitrary hosts use the
+same loader and manifest validation. No deployment host is selected by this API.
+The demo's spawn defaults are application choices, not Engine defaults.
+
+For a self-contained static dataset also set `horizon: false` and omit optional
+external-data features such as `fieldLights`. Removing the old tile constant
+does **not** finish the wider provider audit: coarse horizon elevation still has
+an ArcGIS fallback, imagery uses ArcGIS, and legacy geographic preparation has
+ArcGIS/Overpass defaults. Water data also has an OpenFreeMap fallback. These
+providers need explicit per-instance source configuration in a follow-up; do not
+interpret a custom tile base as a guarantee that all optional layers are offline.
 
 ## External application
 

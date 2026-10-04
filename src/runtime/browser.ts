@@ -52,6 +52,7 @@ import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
 import { FrameLoop } from './frame-loop.js'
+import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { VehicleEffects } from './vehicle-effects.js'
 
 import { waitForGround } from './ground.js'
@@ -143,6 +144,8 @@ export class GameRuntime {
   private disposed = false
 
   constructor(private readonly options: GameRuntimeOptions) {
+    // Reject malformed JavaScript callers before allocating browser resources.
+    if (options.tiles) normalizeTilesBase(options.tiles.baseUrl)
     this.display = resolveDisplaySettings(options.display)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
     this.camera.near = this.cameraState.settings.nearClip
