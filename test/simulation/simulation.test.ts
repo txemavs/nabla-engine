@@ -79,6 +79,23 @@ describe('shared simulation', () => {
     expect(sim.player.position[1]).toBeGreaterThan(0.89)
     sim.dispose()
   })
+  it.each([1, -1])(
+    'leaves a vehicle on the side that is not behind a wall, so it can be boarded again (wall at %i)',
+    (side) => {
+      // A hollow building collider does not overlap the exit spot, yet its wall blocks every way back.
+      const wall = createEntity('wall', 'box', [side * 1.15, 1.5, 0])
+      wall.size = [0.1, 3, 8]
+      const sim = new Simulation(scene([car(), wall], [-side * 3, 0.05, 0]))
+      advance(sim, 1)
+      expect(sim.interact()).toContain('Conduciendo')
+      advance(sim, 0.5)
+      expect(sim.interact()).toBe('A pie')
+      expect(Math.sign(sim.player.position[0])).toBe(-side)
+      expect(sim.nearestVehicle()).toBe('car')
+      expect(sim.interact()).toContain('Conduciendo')
+      sim.dispose()
+    },
+  )
   it('pushes another vehicle in the same world', () => {
     const sim = new Simulation(scene([car(), car('other', [0, 1, -6])], [2, 0.05, 0]))
     advance(sim, 1)

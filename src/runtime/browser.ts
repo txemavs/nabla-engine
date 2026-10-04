@@ -51,6 +51,8 @@ import { createGameCameraState } from './game-camera.js'
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
+import { hiddenTileLayers, setHiddenTileLayers } from '../render/planet/tile-layers.js'
+import { auditGround, type GroundAudit } from './ground-audit.js'
 import { FrameLoop } from './frame-loop.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { VehicleEffects } from './vehicle-effects.js'
@@ -653,6 +655,36 @@ export class GameRuntime {
     })
   }
 
+  /** Terrain cells loaded and drawn of the known dataset; null without tiles. */
+  get cellStats(): { loaded: number; visible: number; total: number; pending: number } | null {
+    return this.world?.cellStats ?? null
+  }
+  /** Ids of the terrain layers switched off (see `TILE_LAYERS`). */
+  get hiddenLayers(): string[] {
+    return hiddenTileLayers()
+  }
+  /** Show or hide terrain layers live; only drawing changes, never collision. */
+  setHiddenLayers(ids: Iterable<string>): void {
+    this.assertAlive()
+    setHiddenTileLayers(ids)
+    this.world?.applyLayers()
+  }
+  /** Where every vehicle and the player sit against the loaded ground; null when not playing. */
+  groundAudit(): GroundAudit | null {
+    const sim = this.session.simulation
+    if (!sim || !this.world) return null
+    const world = this.world
+    return auditGround(
+      sim,
+      this.document.entities.flatMap((entity) =>
+        entity.vehicle
+          ? [{ id: entity.id, name: entity.name, wheelRadius: entity.vehicle.wheelRadius }]
+          : [],
+      ),
+      (position) => world.groundHeight(position),
+      sim.options.playerMode === 'hover' ? 0.28 : simulationDefaults.playerHalfHeight,
+    )
+  }
   /** Return per-instance presentation settings without exposing mutable internal state. */
   get displaySettings(): DisplaySettings {
     return { ...this.display }

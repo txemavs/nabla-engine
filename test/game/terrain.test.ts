@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   fetchCoverage,
+  formatCells,
   parseTerrainConfig,
+  resolveTerrainSearch,
   startFromIndex,
   wantsTerrain,
 } from '../../game/terrain.js'
@@ -98,5 +100,72 @@ describe('terrain-folder example config', () => {
     await expect(startFromIndex(parseTerrainConfig('?terrain=/terrain'))).rejects.toThrow(
       /Falta la posición inicial/,
     )
+  })
+})
+
+describe('bare URL and cell streaming', () => {
+  const index = [
+    { z: 15, x: 16211, y: 12003 },
+    { z: 15, x: 16212, y: 12003 },
+  ]
+  it('plays the default terrain on a bare URL when the mount has an index', async () => {
+    const search = await resolveTerrainSearch('', async () => index)
+    const params = new URLSearchParams(search!)
+    expect(params.get('terrain')).toBe('/terrain')
+    expect(params.get('tile')).toBe('16211/12003')
+    expect(params.get('dx')).toBe('17.4')
+    expect(params.get('dz')).toBe('-197.6')
+    expect(params.get('heading')).toBe('118')
+    expect(params.get('vehicle')).toBe('car')
+    expect(() => parseTerrainConfig(search!)).not.toThrow()
+  })
+
+  it('keeps display options on a bare URL and lets them override the defaults', async () => {
+    const search = await resolveTerrainSearch('?quality=low&heading=10', async () => index)
+    const params = new URLSearchParams(search!)
+    expect(params.get('quality')).toBe('low')
+    expect(params.get('heading')).toBe('10')
+    expect(params.get('terrain')).toBe('/terrain')
+  })
+
+  it('starts over the first cell when the default one is not in the dataset', async () => {
+    const search = await resolveTerrainSearch('', async () => [{ z: 15, x: 5, y: 6 }])
+    expect(new URLSearchParams(search!).has('tile')).toBe(false)
+  })
+
+  it('leaves ?tiles=, ?example= and hosts without an index to the original flow', async () => {
+    const never = async () => index
+    expect(await resolveTerrainSearch('?tiles=/x', never)).toBeNull()
+    expect(await resolveTerrainSearch('?example=flat', never)).toBeNull()
+    expect(await resolveTerrainSearch('', async () => undefined)).toBeNull()
+    expect(await resolveTerrainSearch('?terrain=/t&tile=1/2', never)).toBe('?terrain=/t&tile=1/2')
+  })
+
+  it('loads every cell and floats the Studio monitor unless asked otherwise', () => {
+    expect(parseTerrainConfig('?terrain=/t&tile=16211/12003')).toMatchObject({
+      stream: 'coverage',
+      playerMode: 'hover',
+    })
+    expect(parseTerrainConfig('?terrain=/t&tile=16211/12003&cells=near&player=walk')).toMatchObject(
+      { stream: 'distance', playerMode: 'walk' },
+    )
+    expect(() => parseTerrainConfig('?terrain=/t&cells=some')).toThrow(/cells/)
+    expect(() => parseTerrainConfig('?terrain=/t&player=fly')).toThrow(/player/)
+  })
+
+  it('shows the loaded cells in Spanish', () => {
+    expect(formatCells({ loaded: 12, total: 33, pending: 0 })).toBe('Celdas: 12/33')
+    expect(formatCells({ loaded: 12, total: 33, pending: 3 })).toBe('Celdas: 12/33 · cargando 3…')
+  })
+})
+
+describe('layer selector start state', () => {
+  const store = (value: string | null) => ({ getItem: () => value, setItem: () => {} })
+  it('prefers ?layers= over the stored choice, and falls back to it', async () => {
+    const { initialHiddenLayers } = await import('../../game/layers-ui.js')
+    expect(initialHiddenLayers('?layers=-photo', store('-road'))).toEqual(['photo'])
+    expect(initialHiddenLayers('?layers=', store('-road'))).toEqual([])
+    expect(initialHiddenLayers('', store('-road'))).toEqual(['road'])
+    expect(initialHiddenLayers('', store(null))).toEqual([])
   })
 })

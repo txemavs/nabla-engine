@@ -12,3 +12,15 @@ export { DrivingTelemetry } from './entity/driving-camera.js'
 export { renderPortals, type ExternalPortalView } from './portal/portals.js'
 export { WorldEnvironment, configureWorldRenderer } from './planet/world-environment.js'
 export { tileAsset, restoreTileLayers, type TileArtifact } from './planet/tile-asset.js'
+export {
+  TILE_LAYERS,
+  hiddenTileLayers,
+  setHiddenTileLayers,
+  tileMeshHidden,
+  parseLayerSpec,
+  formatLayerSpec,
+  loadHiddenLayers,
+  saveHiddenLayers,
+  type TileLayer,
+  type LayerStorage,
+} from './planet/tile-layers.js'

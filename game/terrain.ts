@@ -12,6 +12,11 @@
  *   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
  *   &photo=full|lo|none      orthophoto draped on the ground (default full)
  *   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
+ *   &cells=all|near          keep every cell of the host's index loaded and drawn (default), or only
+ *                            those within the draw distance
+ *   &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
+ *
+ * A bare URL (no query, or only display options) starts the default tile of the dev-server mount.
  */
 import { normalizeTilesBase } from '@nabla/engine/planet/static-tiles'
 import {
@@ -35,6 +40,39 @@ export async function fetchCoverage(base: string): Promise<MapTile[] | undefined
   }
 }
 
+/** What a bare URL plays: the dev-server mount, over the first straight road of cell 16211/12003. */
+export const DEFAULT_TERRAIN_QUERY = {
+  terrain: '/terrain',
+  tile: '16211/12003',
+  dx: '17.4',
+  dz: '-197.6',
+  heading: '118',
+  vehicle: 'car',
+}
+
+/**
+ * The query string to play with, or null when the URL belongs to another mode (`?tiles=`,
+ * `?example=flat`, ...). A URL that names no source gets the default terrain when the mount's
+ * `index.json` answers; otherwise it keeps the original (error-reporting) flow.
+ */
+export async function resolveTerrainSearch(
+  search: string = location.search,
+  fetchIndex: (base: string) => Promise<MapTile[] | undefined> = fetchCoverage,
+): Promise<string | null> {
+  if (wantsTerrain(search)) return search
+  const params = new URLSearchParams(search)
+  if (params.has('tiles') || params.has('example') || params.has('api')) return null
+  const index = await fetchIndex(DEFAULT_TERRAIN_QUERY.terrain)
+  if (!index) return null
+  const merged = new URLSearchParams(
+    index.some((t) => t.x === 16211 && t.y === 12003)
+      ? DEFAULT_TERRAIN_QUERY
+      : { terrain: DEFAULT_TERRAIN_QUERY.terrain },
+  )
+  for (const [key, value] of params) merged.set(key, value)
+  return '?' + merged.toString()
+}
+
 export interface TerrainConfig {
   /** Tile host base (no trailing slash; empty string = this origin). */
   base: string
@@ -43,6 +81,9 @@ export interface TerrainConfig {
   tile?: MapTile
   scene: Omit<TerrainDriveOptions, 'latitude' | 'longitude'>
   atlas: Required<AtlasZ15Options>
+  /** Keep the whole dataset loaded (default) or only what the draw distance reaches. */
+  stream: 'coverage' | 'distance'
+  playerMode: 'hover' | 'walk'
 }
 
 /** True when the URL asks for the terrain-folder example. */
@@ -73,6 +114,12 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
     throw new Error(`relief debe ser engine o lidar, no "${relief}"`)
   if (photo !== 'full' && photo !== 'lo' && photo !== 'none')
     throw new Error(`photo debe ser full, lo o none, no "${photo}"`)
+  const cells = params.get('cells') ?? 'all'
+  if (cells !== 'all' && cells !== 'near')
+    throw new Error(`cells debe ser all o near, no "${cells}"`)
+  const player = params.get('player') ?? 'hover'
+  if (player !== 'hover' && player !== 'walk')
+    throw new Error(`player debe ser hover o walk, no "${player}"`)
   const lat = finite(params, 'lat'),
     lon = finite(params, 'lon')
   if ((lat === undefined) !== (lon === undefined))
@@ -106,6 +153,8 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
       sky: params.get('sky') ?? undefined,
     },
     atlas: { relief, photo },
+    stream: cells === 'all' ? 'coverage' : 'distance',
+    playerMode: player,
   }
 }
 
@@ -122,4 +171,12 @@ export async function startFromIndex(config: TerrainConfig): Promise<TerrainConf
     )
   const at = tileOffsetToGeo({ z: 15, x: first.x, y: first.y })
   return { ...config, tile: first, start: { latitude: at.latitude, longitude: at.longitude } }
+}
+
+/** Spanish HUD text for the streaming progress: loaded cells out of the dataset, plus those still arriving. */
+export function formatCells(stats: { loaded: number; total: number; pending: number }): string {
+  return (
+    `Celdas: ${stats.loaded}/${stats.total}` +
+    (stats.pending ? ` · cargando ${stats.pending}…` : '')
+  )
 }

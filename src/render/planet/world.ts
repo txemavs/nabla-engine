@@ -22,6 +22,11 @@ export interface PlanetSourceOptions {
    * waits for them at startup; streaming only skips requests for tiles outside the set.
    */
   coverage?: readonly MapTile[]
+  /**
+   * `coverage` (with `coverage` or `tiles` given) keeps every known tile loaded and drawn, nearest
+   * first, instead of only those within the draw distance. Default `distance`.
+   */
+  stream?: 'distance' | 'coverage'
   /** Disable external coarse relief for self-contained examples. Coordinates remain planetary. */
   horizon?: boolean
   /** Read Atlas `nabla-z15-package/1` cells (static mode). Implies `imagery: 'package'`. */
@@ -42,6 +47,7 @@ import {
   mapTileId,
   mapTilePath,
   planMapZooms,
+  planMapCoverage,
   planetReadyCover,
   type MapTile,
   type MapZoomPlan,
@@ -52,8 +58,12 @@ import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import type { Simulation } from '../../simulation/simulation.js'
 import type { Vec3Tuple } from '../../entity/schema.js'
 import { restoreTileLayers } from './tile-asset.js'
+import { tileMeshHidden } from './tile-layers.js'
 /** Satellite painted over the z15 GLB. Roofs, runways and pitches on by default. */
 export const projectedLayers = new Set(['roofs', 'runways', 'pitches'])
+/** A drape is drawn when it is projected and its layer (road, photo, ...) is not switched off. */
+const drapeShown = (id: unknown) =>
+  projectedLayers.has(String(id)) && !tileMeshHidden({ drape: id })
 const drapeLayers: { id: string; ground?: number; roads?: boolean; terrain?: boolean }[] = [
   { id: 'farmland', ground: 4 },
   { id: 'forest', ground: 5 },
@@ -96,6 +106,13 @@ async function loadPackagePhoto(url: string, photo: PlanetPhoto): Promise<ImageB
   return createImageBitmap(new Blob([bytes]), { imageOrientation: 'flipY' })
 }
 
+/**
+ * Roof photos float a hand above the roof so the tiles never z-fight with the building. Photos of
+ * the ground must NOT: the physics ground is the unlifted surface, and a 15 cm lift made every wheel
+ * and the player look sunk into the drawn road. polygonOffset alone wins the depth test there.
+ */
+export const ROOF_DRAPE_LIFT = 0.15
+export const GROUND_DRAPE_LIFT = 0.005
 function dressSatelliteRoofs(
   group: THREE.Group,
   manifest: PlanetManifest,
@@ -136,7 +153,7 @@ function dressSatelliteRoofs(
       for (const i of ids) {
         xyz.push(
           position.getX(i),
-          position.getY(i) + 0.15,
+          position.getY(i) + (roofs ? ROOF_DRAPE_LIFT : GROUND_DRAPE_LIFT),
           position.getZ(i),
           0.5 + position.getX(i) / width,
           0.5 - position.getZ(i) / width,
@@ -203,7 +220,7 @@ function dressSatelliteRoofs(
   const show = () => {
     for (const mesh of draped) {
       mesh.userData.ready = true
-      mesh.visible = projectedLayers.has(mesh.userData.drape)
+      mesh.visible = drapeShown(mesh.userData.drape)
     }
     changed()
   }
@@ -394,6 +411,16 @@ export class PlanetWorld {
     this.streamMode = mode
     this.planKey = ''
   }
+  /** Cells resident in memory, drawn now, and in the known dataset (0 when streaming is unbounded). */
+  get cellStats(): { loaded: number; visible: number; total: number; pending: number } {
+    const known = this.sourceOptions.coverage ?? this.sourceOptions.tiles
+    return {
+      loaded: this.resident.size,
+      visible: this.visible.length,
+      total: known?.length ?? 0,
+      pending: this.requests.size + this.installQueue.length + Number(!!this.installing),
+    }
+  }
   get installMilliseconds(): number {
     return this.lastInstallMs
   }
@@ -518,11 +545,16 @@ export class PlanetWorld {
     material.side = side
     return material
   }
+  /** Re-apply the hidden tile layers (see `setHiddenTileLayers`) to everything already loaded. */
+  applyLayers() {
+    this.cover()
+    this.applyProjection()
+  }
   applyProjection() {
     this.root.traverse((node) => {
       const mesh = node as THREE.Mesh
       if (mesh.name === 'Drape' && mesh.userData.ready)
-        mesh.visible = projectedLayers.has(mesh.userData.drape)
+        mesh.visible = drapeShown(mesh.userData.drape)
     })
     this.changed()
   }
@@ -546,17 +578,23 @@ export class PlanetWorld {
       this.horizon.setFocus(mapTileAt(gps.latitude, gps.longitude, 15))
     }
     const center = mapTileAt(gps.latitude, gps.longitude, 15)
-    const planKey = `${mapTileId(center)}:${this.distance}:${this.maxTiles}:${this.streamMode}:${Math.floor(height / 500)}`
+    const dataset =
+      this.sourceOptions.stream === 'coverage'
+        ? (this.sourceOptions.coverage ?? this.sourceOptions.tiles)
+        : undefined
+    const planKey = `${mapTileId(center)}:${this.distance}:${this.maxTiles}:${this.streamMode}:${Math.floor(height / 500)}:${dataset?.length ?? ''}`
     if (!this.plan || planKey !== this.planKey) {
       this.planKey = planKey
-      this.plan = planMapZooms({
-        latitude: gps.latitude,
-        longitude: gps.longitude,
-        heightAboveGround: height,
-        viewDistance: this.distance,
-        maxTiles: this.maxTiles,
-        adaptive: this.streamMode !== 'ground',
-      })
+      this.plan = dataset
+        ? planMapCoverage(dataset, gps.latitude, gps.longitude)
+        : planMapZooms({
+            latitude: gps.latitude,
+            longitude: gps.longitude,
+            heightAboveGround: height,
+            viewDistance: this.distance,
+            maxTiles: this.maxTiles,
+            adaptive: this.streamMode !== 'ground',
+          })
     }
     const plan = this.plan
     if (!plan) return
@@ -778,7 +816,9 @@ export class PlanetWorld {
       }
       const mesh = new THREE.Mesh(geometry, material)
       mesh.name = data.name
-      mesh.visible = !data.metadata.drape || projectedLayers.has(String(data.metadata.drape))
+      mesh.visible = data.metadata.drape
+        ? drapeShown(data.metadata.drape)
+        : !tileMeshHidden(data.metadata)
       mesh.userData = data.metadata
       mesh.castShadow =
         !data.metadata.skirt && ['Terrain', 'Buildings'].includes(data.metadata.category)
@@ -901,10 +941,12 @@ export class PlanetWorld {
       r.group.visible = active.has(key)
       for (const child of r.group.children) {
         if (child.name === 'Drape') {
-          child.visible = !!child.userData.ready && projectedLayers.has(child.userData.drape)
+          child.visible = !!child.userData.ready && drapeShown(child.userData.drape)
           continue
         }
-        child.visible = this.buildings || child.userData.category !== 'Buildings'
+        child.visible =
+          (this.buildings || child.userData.category !== 'Buildings') &&
+          !tileMeshHidden(child.userData)
       }
     }
     const wanted = new Set(this.wanted.map(mapTileId))

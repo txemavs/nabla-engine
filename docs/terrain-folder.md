@@ -12,22 +12,44 @@ The terrain location is **never hard-coded**. You tell the game where to read it
 /?terrain=<base>&tile=<x>/<y>[&dx=<m>&dz=<m>][&heading=<deg>]
 ```
 
-| Parameter                 | Meaning                                                                                                                   |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `terrain` (or `z15`)      | Tile host, **without** the trailing `/z`. Manifests are read from `<base>/z/15/<x>/<y>/manifest.json`. `/` = this origin. |
-| `tile`                    | Start over the centre of this tile, e.g. `16211/12003`. Optional when the host serves `<base>/index.json` (first tile).   |
-| `dx`, `dz`                | Metres east / south of that centre. Use them to start on a road.                                                          |
-| `lat`, `lon`              | Start at explicit coordinates instead of `tile`.                                                                          |
-| `heading`                 | Compass heading the parked fleet faces, degrees clockwise from north (default 0).                                         |
-| `alt`                     | Origin altitude in metres (default 0: the GLBs carry absolute elevations; the vehicles are rested on the real ground).    |
-| `vehicle`                 | Preset the player starts in: `car` (default), `a3`, `white-truck`, `carrier`.                                             |
-| `relief`                  | `engine` (default, drivable, with roads) or `lidar` (2 m LiDAR mesh as ground, experimental).                             |
-| `photo`                   | Orthophoto draped on the ground: `full` (4096 px, default), `lo` (1024 px) or `none` (vertex colours).                    |
-| `sky`                     | `day` (default fixed midday sun), `live` (real clock) or an ISO date-time with zone.                                      |
-| `quality`, `fps`, `scale` | As in the other game modes.                                                                                               |
+| Parameter                 | Meaning                                                                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `terrain` (or `z15`)      | Tile host, **without** the trailing `/z`. Manifests are read from `<base>/z/15/<x>/<y>/manifest.json`. `/` = this origin.               |
+| `tile`                    | Start over the centre of this tile, e.g. `16211/12003`. Optional when the host serves `<base>/index.json` (first tile).                 |
+| `dx`, `dz`                | Metres east / south of that centre. Use them to start on a road.                                                                        |
+| `lat`, `lon`              | Start at explicit coordinates instead of `tile`.                                                                                        |
+| `heading`                 | Compass heading the parked fleet faces, degrees clockwise from north (default 0).                                                       |
+| `alt`                     | Origin altitude in metres (default 0: the GLBs carry absolute elevations; the vehicles are rested on the real ground).                  |
+| `vehicle`                 | Preset the player starts in: `car` (default), `a3`, `white-truck`, `carrier`.                                                           |
+| `relief`                  | `engine` (default, drivable, with roads) or `lidar` (2 m LiDAR mesh as ground, experimental).                                           |
+| `photo`                   | Orthophoto draped on the ground: `full` (4096 px, default), `lo` (1024 px) or `none` (vertex colours).                                  |
+| `sky`                     | `day` (default fixed midday sun), `live` (real clock) or an ISO date-time with zone.                                                    |
+| `cells`                   | `all` (default): every cell of the host's `index.json` is loaded and drawn, nearest first; `near`: only those within the draw distance. |
+| `player`                  | `hover` (default): on foot you are Studio's floating monitor (1.25 m above the ground); `walk`: a 1.8 m walker.                         |
+| `layers`                  | Layers to hide: `-road` (road mesh gone, ground photo stays), `-photo`, `-buildings`; `all`/`none`. Also stored in `localStorage`.      |
+| `quality`, `fps`, `scale` | As in the other game modes.                                                                                                             |
 
 `?example=z15` is an alias that still requires `terrain`/`z15`; without a terrain
 location the page says so in Spanish instead of guessing.
+
+A URL **without any query** (or with only display options) plays the default of the dev-server mount:
+`?terrain=/terrain&tile=16211/12003&dx=17.4&dz=-197.6&heading=118&vehicle=car`, when `/terrain/index.json`
+answers. `?tiles=` and `?example=flat` keep their original behaviour.
+
+## Behaviour matched to Studio's play mode
+
+- **All cells.** With an index the whole dataset is streamed (`PlanetSourceOptions.stream: 'coverage'`,
+  `planMapCoverage`): all 33 cells are requested nearest first, drawn and collidable, so a car drives across
+  seams. The HUD shows `Celdas: n/33` (`· cargando k…` while cells arrive). The example asks for a 20 km draw
+  distance and 16 km fog unless `quality=` names a profile.
+- **Ground height.** The collision surface is the engine terrain. The photo drape used to be lifted 15 cm
+  above it (a roof-only offset applied to the ground too), so every wheel looked 15 cm into the drawn road;
+  ground photos now sit on the surface (`GROUND_DRAPE_LIFT`), roofs keep their lift.
+- **Floating monitor.** Studio plays with `playerMode: 'hover'`; the example does too (`player=walk` for a walker).
+- **Leaving a vehicle.** The exit spot is the first free side from which the vehicle can be reached again: a
+  building collider is hollow, so the old rule could drop you behind a wall where E found nothing.
+- **Layers.** The display menu lists the terrain layers (`TILE_LAYERS`, road first). Turning _Carretera_ off hides
+  the road mesh and its photo; the ground photo underneath remains and collision is unchanged.
 
 ## Serving the folder from the dev server
 
