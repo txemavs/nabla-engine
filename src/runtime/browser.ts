@@ -1,3 +1,5 @@
+import { FieldLighting } from './field-lighting.js'
+import type { FieldLightOptions } from '../render/entity/field-lights.js'
 import { worldWater } from './water.js'
 import {
   normalizePerformance,
@@ -52,6 +54,8 @@ export interface GameRuntimeOptions {
   touchControls?: TouchDrivingVisibility | false
   depthOfField?: boolean
   performance?: Partial<PerformanceSettings>
+  /** Explicit opt-in; omit to keep offline games independent of external light data. */
+  fieldLights?: FieldLightOptions
   onProgress?: (status: string, loadedTiles?: string[]) => void
   onFrame?: (frame: GameFrame) => void
   onMessage?: (message: string) => void
@@ -69,6 +73,7 @@ export class GameRuntime {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
   private readonly renderer: THREE.WebGLRenderer
+  private readonly fieldLighting: FieldLighting | null
   private readonly quality: PerformanceSettings
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
@@ -127,6 +132,8 @@ export class GameRuntime {
     this.renderer.shadowMap.type = THREE.PCFShadowMap
     this.renderer.shadowMap.autoUpdate = false
     this.scene.add(this.sun, this.ambient, this.catchFloor.mesh)
+    this.fieldLighting = options.fieldLights ? new FieldLighting(options.fieldLights) : null
+    if (this.fieldLighting) this.scene.add(this.fieldLighting.lights.root)
     this.view = new SceneView(this.document)
     this.scene.add(this.view.root)
     this.monitors = new VehicleMonitors(
@@ -283,6 +290,7 @@ export class GameRuntime {
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, null)
     this.touchDriving?.setActive(false)
     this.monitors.hide()
+    this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
     if (this.sidearm) {
       this.sidearm.visible = false
@@ -326,6 +334,7 @@ export class GameRuntime {
     this.view.dispose()
     this.sky.dispose()
     this.environment.dispose()
+    this.fieldLighting?.dispose()
     this.effects.dispose()
     this.pipeline.dispose()
     this.shadows.dispose()
@@ -447,6 +456,16 @@ export class GameRuntime {
       this.origin,
       this.cameraState.mode === 'cockpit',
     )
+    this.fieldLighting?.update({
+      origin: this.document.geography,
+      eye,
+      renderOrigin: this.origin,
+      night: this.view.night,
+      time,
+      heightAt: (p) => this.world?.groundHeight(p),
+      tiles: this.world?.activeTiles.map((tile) => tile.manifest.tile) ?? [],
+      simulation: sim,
+    })
     this.camera.position.sub(this.origin)
     for (const [id, hud] of this.view.shipHuds) {
       const inside =

@@ -38,3 +38,11 @@ export {
   type PerformanceSettings,
 } from './performance.js'
 export { worldWater } from './water.js'
+export { FieldLighting } from './field-lighting.js'
+export {
+  FieldLights,
+  osmFieldLightSource,
+  type FieldLightOptions,
+  type FieldLightSource,
+  type FieldLightMark,
+} from '../render/entity/field-lights.js'

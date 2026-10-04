@@ -49,7 +49,6 @@ reset prediction instead of inheriting an editor or previous-game position.
 
 | Capability                                                      | Current owner                                    | Next extraction / acceptance                                     |
 | --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Field lights and environment option bindings                    | `studio/main.ts`, `studio/performance.ts`        | Reusable settings and runtime systems; host persists preferences |
 | Cross-location portal registry                                  | `studio/project.ts`, `studio/portal-registry.ts` | Runtime world-content contract distinct from editor document     |
 | Editor tools, history, selection, inspector and project storage | `studio/`                                        | Remain in the Studio application                                 |
 | Remaining direct source imports                                 | `studio/`                                        | Deliberate public API, then test Studio against a packed package |
@@ -169,4 +168,21 @@ without it, its existing high-quality shadows remain enabled.
 `worldWater` resolves manual sea level or the existing approximate tide using the
 scene clock. Both Studio and the browser game use it for consistent water levels;
 the flat fixture explicitly fixes sea level at zero. Editor time-preview controls
-and preference persistence remain host UI. Field-light coordination is still pending.
+and preference persistence remain host UI. Field-light coordination is now shared through `FieldLighting`.
+
+## Shared field lighting
+
+`FieldLighting` coordinates geographic light placement, floating-origin offsets,
+navigation activation and pole collisions for both Studio and browser games.
+`FieldLights` owns per-instance layer/look settings and an injectable async data
+source; changing worlds, unloading tiles or disposal cancels pending work and
+ignores stale results. Geometry/materials and instance buffers are released.
+Ground placement retries while terrain is unavailable, and lamp posts now join
+buoy/post collision shapes instead of being visual-only.
+
+Studio uses the existing cached OSM provider. Browser games opt in through
+`fieldLights`; leaving it unset introduces no light-data network requests. The
+optional flat demo `?example=flat&lights=1` bundles two lamps and a fixed night
+clock. Unit tests cover isolation, late-result rejection, grounding, collision
+handoff and tile unloading; `scripts/field-lights-smoke.mjs` verifies that the
+packaged night example renders/drives with no external requests.

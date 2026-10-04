@@ -40,7 +40,7 @@ import { settleGroundPlacement } from './ground-placement.js'
 import { mountStudio } from './shell.js'
 import { setPlanetCharts } from '../src/render/entity/helm-map.js'
 import { PlanetWorld, projectedLayers } from '../src/render/planet/world.js'
-import { FieldLights, fieldLayers, lampLook } from '../src/render/entity/field-lights.js'
+import { FieldLighting } from '@nabla/engine/runtime'
 import { planetaryScene, createPlanetScene } from './planet-scene.js'
 import { geographicPose, anchoredWorldPose } from './geographic-pose.js'
 import { bindCoverageMap } from './ui/coverage-map.js'
@@ -273,9 +273,11 @@ renderer.domElement.setAttribute('aria-label', 'Vista 3D de la escena')
 const scene = new THREE.Scene()
 const vehicleEffects = new VehicleEffects(scene, vehicleAudio)
 const tireMarks = vehicleEffects.marks
-const fieldLights = new FieldLights()
+const fieldLighting = new FieldLighting()
+const fieldLights = fieldLighting.lights
+const fieldLayers = fieldLights.layers
+const lampLook = fieldLights.look
 scene.add(fieldLights.root)
-let fieldFollow = true
 scene.background = new THREE.Color('#a6bbd5')
 scene.fog = new THREE.Fog('#a6bbd5', 70, 160)
 // A small diffuse fill lifts shadows without adding an environment reflection.
@@ -1732,7 +1734,7 @@ for (const box of document.querySelectorAll<HTMLInputElement>('#light-layers inp
   const key = box.dataset.field as 'lamps' | 'navigation'
   box.checked = fieldLayers[key]
   box.onchange = () => {
-    fieldFollow = false
+    if (key === 'navigation') fieldLighting.setNavigation(box.checked)
     fieldLayers[key] = box.checked
   }
 }
@@ -2587,24 +2589,16 @@ function frame(now: number): void {
   renderer.domElement.dataset.tireMarks = String(tireMarks.root.geometry.drawRange.count / 6)
   renderer.domElement.dataset.tireSound = String(vehicleAudio.tireSoundLevel)
   view.root.position.copy(renderOrigin).negate()
-  fieldLights.root.position.copy(renderOrigin).negate()
-  const nightLights = !!view.document.geography && geography.atmosphere.day < 0.15
-  if (fieldFollow && nightLights) {
-    fieldLayers.navigation = true
-    const box = document.querySelector<HTMLInputElement>('#light-layers [data-field="navigation"]')
-    if (box) box.checked = true
-    fieldFollow = false
-  }
-  fieldLayers.lamps = lampLook.armed && lampLook.level > 0
-  fieldLights.update(
-    view.document.geography,
-    worldCamera.toArray(),
-    nightLights,
-    performance.now(),
-    (p) => worldStream?.groundHeight(p),
-    worldStream?.activeTiles.map((tile) => tile.manifest.tile) ?? [],
-  )
-  sim?.setPoles(fieldLights.poles())
+  fieldLighting.update({
+    origin: view.document.geography,
+    eye: worldCamera,
+    renderOrigin,
+    night: !!view.document.geography && geography.atmosphere.day < 0.15,
+    time: now,
+    heightAt: (p) => worldStream?.groundHeight(p),
+    tiles: worldStream?.activeTiles.map((tile) => tile.manifest.tile) ?? [],
+    simulation: sim,
+  })
   camera.position.sub(renderOrigin)
   for (const [id, hud] of view.shipHuds) {
     const inside =

@@ -54,6 +54,8 @@ try {
   }
   if (flat && new URLSearchParams(location.search).has('gallery'))
     scene.entities.push(...createGallery('demo-gallery'))
+  const lights = flat && new URLSearchParams(location.search).has('lights')
+  if (lights) scene.sky = { mode: 'fixed', at: '2026-03-20T00:00:00.000Z' }
   const loading = new LoadingScreen()
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
@@ -62,6 +64,19 @@ try {
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
     sea: !flat,
+    fieldLights: lights
+      ? {
+          look: { level: 20 },
+          source: async (tile) =>
+            [
+              { lat: 0.0001, lon: -0.00007, tags: { highway: 'street_lamp' } },
+              { lat: 0.0001, lon: 0.00007, tags: { highway: 'street_lamp' } },
+            ].filter((mark) => {
+              const at = mapTileAt(mark.lat, mark.lon, 15)
+              return at.x === tile.x && at.y === tile.y && tile.z === 15
+            }),
+        }
+      : undefined,
     depthOfField: new URLSearchParams(location.search).has('dof') ? true : undefined,
     performance: { preset: new URLSearchParams(location.search).get('quality') ?? 'custom' },
     tiles: flat
