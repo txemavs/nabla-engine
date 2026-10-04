@@ -42,7 +42,21 @@
       "torqueNm": 520,
       "ratios": [3.4, 2.75, 1.77, 1.13, 0.92, 0.76, 0.64],
       "finalDrive": 4.06,
-      "grip": 4.8
+      "grip": 4.8,
+      "shift": {
+        "seconds": 0.12,
+        "cooldownSeconds": 0.45,
+        "directionSeconds": 0.3,
+        "directionShiftSeconds": 0.15,
+        "clack": {
+          "clunkHz": 150,
+          "clickHz": 2400,
+          "gain": 1,
+          "decaySeconds": 0.07,
+          "echoSeconds": 0.05,
+          "airSeconds": 0
+        }
+      }
     },
     "brakeForce": 65,
     "cameraDistance": 6.5

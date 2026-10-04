@@ -18,7 +18,11 @@ import {
   shiftWheeledVehicle,
   automaticWheeledTransmission,
 } from './vehicles/wheeled/runtime.js'
-import type { WheeledInput, WheelContactSnapshot } from './vehicles/wheeled/contracts.js'
+import type {
+  GearClackProfile,
+  WheeledInput,
+  WheelContactSnapshot,
+} from './vehicles/wheeled/contracts.js'
 import { stepBoatInWater } from './vehicles/boat.js'
 import { stepFlight } from './vehicles/flight.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
@@ -1337,6 +1341,12 @@ export class Simulation {
     manualTransmission: boolean
     engineLoad: number
     tireSlip: number
+    /** Counts gear changes and D/R engagements; play one clack per increase. */
+    gearShifts: number
+    /** True while torque is cut for a gear change or D/R waits for standstill. */
+    shifting: boolean
+    /** Per-vehicle clack sound; null selects the audio layer's car default. */
+    gearClack: GearClackProfile | null
     towVehicleId: string | null
   } {
     const v = this.vehicles.get(id)
@@ -1377,6 +1387,9 @@ export class Simulation {
       manualTransmission: ground.manualTransmission,
       engineLoad: ground.engineLoad,
       tireSlip: ground.tireSlip,
+      gearShifts: ground.shiftCount,
+      shifting: ground.shifting,
+      gearClack: ground.clack ?? null,
       towVehicleId: v.definition.tow?.vehicleId ?? null,
     }
   }

@@ -12,6 +12,8 @@ export {
   idleWheeledInput,
   type WheeledDefinition,
   type PowertrainDefinition,
+  type GearboxTuning,
+  type GearClackProfile,
   type WheeledInput,
   type WheeledTelemetry,
   type WheelContactSnapshot,
@@ -22,6 +24,7 @@ export {
   stepDrivetrain,
   shiftGear,
   engineBrakingForce,
+  gearboxTuning,
   isDriven,
   type DrivetrainState,
 } from '../drivetrain.js'

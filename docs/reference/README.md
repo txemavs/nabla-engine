@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **236 modules; 2134 executable function definitions**.
+Coverage: **237 modules; 2149 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -14,12 +14,13 @@ Coverage: **236 modules; 2134 executable function definitions**.
 | [game/display-settings.ts](game/display-settings.ts.md) | 7 |
 | [game/loading.ts](game/loading.ts.md) | 16 |
 | [game/main.ts](game/main.ts.md) | 14 |
+| [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 9 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
 | [src/audio/tires.ts](src/audio/tires.ts.md) | 4 |
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 15 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 17 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
 | [src/catalog/monitors/car.ts](src/catalog/monitors/car.ts.md) | 1 |
@@ -206,7 +207,7 @@ Coverage: **236 modules; 2134 executable function definitions**.
 | [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 11 |
 | [src/runtime/streaming.ts](src/runtime/streaming.ts.md) | 6 |
 | [src/runtime/touch-driving.ts](src/runtime/touch-driving.ts.md) | 10 |
-| [src/runtime/vehicle-effects.ts](src/runtime/vehicle-effects.ts.md) | 8 |
+| [src/runtime/vehicle-effects.ts](src/runtime/vehicle-effects.ts.md) | 9 |
 | [src/runtime/vehicle-menu.ts](src/runtime/vehicle-menu.ts.md) | 2 |
 | [src/runtime/vehicle-monitor-styles.ts](src/runtime/vehicle-monitor-styles.ts.md) | 0 |
 | [src/runtime/vehicle-monitors.ts](src/runtime/vehicle-monitors.ts.md) | 34 |
@@ -237,12 +238,12 @@ Coverage: **236 modules; 2134 executable function definitions**.
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/vehicle-docking.ts](src/simulation/vehicle-docking.ts.md) | 9 |
 | [src/simulation/vehicles/boat.ts](src/simulation/vehicles/boat.ts.md) | 5 |
-| [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 6 |
+| [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 7 |
 | [src/simulation/vehicles/flight.ts](src/simulation/vehicles/flight.ts.md) | 3 |
 | [src/simulation/vehicles/keyboard-steering.ts](src/simulation/vehicles/keyboard-steering.ts.md) | 2 |
 | [src/simulation/vehicles/wheeled/contracts.ts](src/simulation/vehicles/wheeled/contracts.ts.md) | 1 |
 | [src/simulation/vehicles/wheeled/index.ts](src/simulation/vehicles/wheeled/index.ts.md) | 0 |
-| [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 17 |
+| [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 20 |
 | [src/util/sha256.ts](src/util/sha256.ts.md) | 5 |
 | [src/util/uuid.ts](src/util/uuid.ts.md) | 4 |
 | [src/viewer/index.ts](src/viewer/index.ts.md) | 41 |

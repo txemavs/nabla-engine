@@ -1,25 +1,42 @@
 import { expect, it } from 'vitest'
+import { roadVehicleDefaults } from '../../src/config/simulation.js'
 import { createDrivetrain, selectDriveDirection } from '../../src/simulation/vehicles/drivetrain.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Body, Box, Vec3, World } from '../../src/simulation/physics.js'
 
-it('requires one uninterrupted second near standstill and retains reverse at idle', () => {
+it('holds the pedal back while rolling, then needs a short planted dwell before engaging', () => {
   const state = createDrivetrain()
-  for (let i = 0; i < 59; i++) expect(selectDriveDirection(state, 0, -1, 1 / 60)).toBe(true)
+  const dwell = roadVehicleDefaults.directionChangeSeconds
+  expect(dwell).toBeLessThan(0.5)
+  // Still rolling forward at 3 m/s: the request is refused and no dwell clock runs.
+  for (let i = 0; i < 600; i++) expect(selectDriveDirection(state, 3, -1, 1 / 60)).toBe(true)
   expect(state.gear).toBe(1)
+  expect(state.pendingDirection).toBeNull()
+  expect(state.shiftCount).toBe(0)
+  const ticks = Math.round(dwell * 60)
+  for (let i = 0; i < ticks - 1; i++) expect(selectDriveDirection(state, 0, -1, 1 / 60)).toBe(true)
+  expect(state.gear).toBe(1)
+  // Releasing the pedal restarts the dwell: no rebound into reverse.
   selectDriveDirection(state, 0, 0, 1 / 60)
-  for (let i = 0; i < 59; i++) selectDriveDirection(state, 0, -1, 1 / 60)
+  for (let i = 0; i < ticks - 1; i++) selectDriveDirection(state, 0, -1, 1 / 60)
   expect(state.gear).toBe(1)
-  selectDriveDirection(state, 0, -1, 1 / 60)
+  // Rolling again (above the stop speed) also restarts it.
+  selectDriveDirection(state, roadVehicleDefaults.directionChangeSpeed * 2, -1, 1 / 60)
+  for (let i = 0; i < ticks - 1; i++) selectDriveDirection(state, 0, -1, 1 / 60)
+  expect(state.gear).toBe(1)
+  expect(selectDriveDirection(state, 0, -1, 1 / 60)).toBe(false)
   expect(state.gear).toBe(-1)
+  expect(state.shiftCount).toBe(1)
+  expect(state.shiftRemaining).toBeCloseTo(roadVehicleDefaults.directionShiftSeconds)
   for (let i = 0; i < 120; i++) selectDriveDirection(state, 0, 0, 1 / 60)
   expect(state.gear).toBe(-1)
   for (let i = 0; i < 120; i++) selectDriveDirection(state, -5, 1, 1 / 60)
   expect(state.gear).toBe(-1)
-  for (let i = 0; i < 60; i++) selectDriveDirection(state, 0, 1, 1 / 60)
+  for (let i = 0; i < ticks; i++) selectDriveDirection(state, 0, 1, 1 / 60)
   expect(state.gear).toBe(1)
+  expect(state.shiftCount).toBe(2)
 })
 
 it('includes displaced chassis mass in its rotational inertia without changing total mass', () => {

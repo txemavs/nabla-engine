@@ -46,6 +46,34 @@ export const vehicleField = z
         maxRpm: finite.min(2000).max(10000).optional(),
         reverseRatio: finite.positive().max(20).optional(),
         maxSpeedKmh: finite.positive().max(400).optional(),
+        /** Traction/clutch ceiling on the force at the wheels, newtons. */
+        maxWheelForceN: finite.positive().max(1000000).optional(),
+        /** Shift timing, shift points, engine response and the gear-change sound. */
+        shift: z
+          .object({
+            seconds: finite.min(0.02).max(2).optional(),
+            cooldownSeconds: finite.min(0.05).max(5).optional(),
+            upshiftRpm: finite.min(400).max(10000).optional(),
+            downshiftRpm: finite.min(300).max(9000).optional(),
+            torqueFraction: finite.min(0).max(1).optional(),
+            rpmResponse: finite.min(1).max(40).optional(),
+            launchRpm: finite.min(300).max(6000).optional(),
+            directionSeconds: finite.min(0).max(3).optional(),
+            directionShiftSeconds: finite.min(0).max(2).optional(),
+            clack: z
+              .object({
+                clunkHz: finite.min(30).max(500).optional(),
+                clickHz: finite.min(200).max(8000).optional(),
+                gain: finite.min(0).max(2).optional(),
+                decaySeconds: finite.min(0.02).max(0.8).optional(),
+                echoSeconds: finite.min(0).max(0.5).optional(),
+                airSeconds: finite.min(0).max(1.5).optional(),
+              })
+              .strict()
+              .optional(),
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .optional(),

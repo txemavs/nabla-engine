@@ -4,6 +4,7 @@ import { TireMarks } from '../render/entity/tire-marks.js'
 import { TireSmoke } from '../render/entity/tire-smoke.js'
 import type { SceneDocument } from '../scene/document.js'
 import type { Simulation } from '../simulation/simulation.js'
+import type { GearClackProfile } from '../simulation/vehicles/wheeled/contracts.js'
 
 /** Shared audio/effects orchestration. Supplied audio remains owned by the host. */
 export class VehicleEffects {
@@ -12,6 +13,8 @@ export class VehicleEffects {
   readonly audio: VehicleAudio
   private readonly ownsAudio: boolean
   private disposed = false
+  private shiftVehicleId: string | null = null
+  private shiftCount = 0
 
   constructor(scene: Scene, audio?: VehicleAudio) {
     this.ownsAudio = !audio
@@ -51,7 +54,25 @@ export class VehicleEffects {
       !piloted.vehicle.flight
         ? sim!.vehicleInfo(pilot)
         : null
+    this.playGearChanges(car ? pilot! : null, car)
     this.audio.powertrain(car?.helm !== 'off' ? (car?.rpm ?? 0) : 0, car?.engineLoad ?? 0)
+  }
+
+  /** One clack per counted gear change; the first sample of a vehicle only sets the baseline. */
+  private playGearChanges(
+    id: string | null,
+    info: { gearShifts: number; gearClack: GearClackProfile | null; helm: string } | null,
+  ): void {
+    if (!id || !info) {
+      this.shiftVehicleId = null
+      return
+    }
+    const known = this.shiftVehicleId === id
+    const previous = this.shiftCount
+    this.shiftVehicleId = id
+    this.shiftCount = info.gearShifts
+    if (known && info.gearShifts > previous && info.helm !== 'off')
+      this.audio.gearChange(info.gearClack)
   }
 
   updateTires(sim: Simulation | null, elapsed: number, origin: Vector3): void {

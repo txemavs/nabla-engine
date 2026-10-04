@@ -109,13 +109,33 @@ their behavior or duplicating authored content.
 
 ### Road vehicles and trailer couplings
 
-`roadVehicleDefaults` in `src/config/simulation.ts` owns the one-second D/R
-delay, the 0.8 m/s safe switching threshold, idle RPM and trailer coupling
-limits. These are build-time defaults. Releasing the opposite pedal cancels
-the switching timer; coasting retains the selected direction.
+`roadVehicleDefaults` in `src/config/simulation.ts` owns the direction-change and
+gear-shift defaults, idle RPM and trailer coupling limits. These are build-time
+defaults; a vehicle's `powertrain.shift` block (schema in `src/entity/vehicle/field.ts`,
+type `GearboxTuning`) overrides them per recipe.
+
+**D/R changes brake first.** The opposite pedal never engages the other direction
+while the vehicle is rolling: the wheels brake until the speed is below
+`directionChangeSpeed` (0.5 m/s), the vehicle stays planted for `directionChangeSeconds`
+(0.3 s, previously a 1 s timer that also started at 0.8 m/s), then the gear flips, a
+gear clack is counted and torque stays cut for `directionShiftSeconds` (0.15 s).
+Releasing the pedal or rolling again restarts the dwell. Coasting retains the selected
+direction.
+
+**Gear changes.** `shift.seconds` (torque cut, default 0.12 s), `cooldownSeconds`,
+`upshiftRpm`/`downshiftRpm` (default 92.8 % and one third of `maxRpm`),
+`torqueFraction`, `rpmResponse` (engine inertia, 1/s) and `launchRpm` are per recipe.
+Every automatic change, manual change and D/R engagement increments the drivetrain
+`shiftCount`; `Simulation.vehicleInfo(id).gearShifts` exposes it and
+`VehicleEffects.updateAudio` plays one `VehicleAudio.gearChange(profile)` per increase.
+The clack is synthesized (no sample file): two impacts plus an optional air release,
+shaped by `shift.clack` (`clunkHz`, `clickHz`, `gain`, `decaySeconds`, `echoSeconds`,
+`airSeconds`). Omitted fields give the light car clack.
 
 The stock truck recipe defines its own diesel gearing, 650 RPM idle, 2,400 RPM
-ceiling and 120 km/h forward speed limit. Passive trailers use wheel rolling
+ceiling and 120 km/h forward speed limit, plus a slow heavy gearbox: 0.55 s torque cut,
+shifts at 1,950/1,000 RPM, a heavier flywheel, a 60 kN wheel-force limit and a low,
+long clack with air release. Passive trailers use wheel rolling
 resistance instead of artificial body damping. Engine audio follows the piloted
 road vehicle, including vehicles without an explicit powertrain recipe.
 

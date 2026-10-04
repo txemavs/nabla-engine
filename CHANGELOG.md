@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make D/R changes brake to a real standstill, dwell briefly (0.3 s instead of a 1 s timer) and then engage with a torque-cut moment, and add a synthesized per-vehicle gear-change clack (`VehicleAudio.gearChange`, `powertrain.shift.clack`). Give the stock truck its own heavy gearbox: shift points, 0.55 s shift, engine inertia, launch rpm, wheel-force limit and a low clunk with air release.
+
 - Treat OSM building outlines with contained 3D parts as non-rendered envelopes, preserving explicit parts and neighboring buildings. Add a regression for the detailed JFK building in Boston.
 - Open Desktop utility windows at their final viewport position with a neutral dark titlebar and monochrome SVG controls.
 

@@ -25,12 +25,29 @@ export const simulationDefaults = Object.freeze({
   jumpSpeed: 5.5,
 })
 
-/** Road-vehicle selector timing and baseline engine speed. */
+/** Road-vehicle selector timing, gear-change feel and baseline engine speed. */
 export const roadVehicleDefaults = Object.freeze({
-  /** Continuous opposite-pedal request required near standstill before engaging D or R, seconds. */
-  directionChangeSeconds: 1,
-  /** Maximum absolute road speed at which a direction change may begin, m/s. */
-  directionChangeSpeed: 0.8,
+  /**
+   * Time the vehicle must stay stopped (below `directionChangeSpeed`, brakes held,
+   * opposite pedal still down) before D or R is engaged, seconds. The clock only runs
+   * once the vehicle has really stopped, so braking from speed is never delayed by it.
+   * A powertrain may override it with `shift.directionSeconds`.
+   */
+  directionChangeSeconds: 0.3,
+  /** Absolute road speed below which the vehicle counts as stopped for D/R changes, m/s. */
+  directionChangeSpeed: 0.5,
+  /** Torque-cut time after a D/R selection is engaged, seconds. `shift.directionShiftSeconds`. */
+  directionShiftSeconds: 0.15,
+  /** Torque-cut time of an automatic or manual gear change, seconds. `shift.seconds`. */
+  gearShiftSeconds: 0.12,
+  /** Minimum time between two gear changes, seconds. `shift.cooldownSeconds`. */
+  gearShiftCooldownSeconds: 0.45,
+  /** Share of the throttle that still reaches the wheels while shifting. `shift.torqueFraction`. */
+  gearShiftTorqueFraction: 0.15,
+  /** First-order engine speed response, 1/s. Lower is a heavier flywheel. `shift.rpmResponse`. */
+  engineRpmResponse: 16,
+  /** Engine speed commanded by a fully pressed pedal at rest, rpm. `shift.launchRpm`. */
+  launchRpm: 2400,
   /** Generic petrol-engine idle speed; vehicle powertrains may override it. */
   idleRpm: 900,
   /** Maximum tractor/trailer yaw either side of straight ahead, radians (65 degrees). */

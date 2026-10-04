@@ -78,7 +78,7 @@ require data-specific correction; back-face culling is not polygon union.
 Container exhaust uses four pairs of eight-sided, unlit cones at the model's lower
 sockets. It adds no shadow lights, particles or offscreen render passes. Exhaust
 fades with flight mode and varies with speed. `VehicleAudio` is one shared graph
-(turbine, propeller, powertrain, tires). It starts only after user interaction.
+(turbine, propeller, powertrain, tires, gear clack). It starts only after user interaction.
 The turbine attenuates with distance and inside the cabin, and the graph mutes
 when the page is hidden or play stops. The footer sound toggle persists locally.
 
