@@ -75,8 +75,8 @@ export class Gallery {
     this.hud.className = 'gallery-score'
     Object.assign(this.hud.style, {
       position: 'absolute',
-      left: '18px',
-      top: '55px',
+      right: '18px',
+      top: '18px',
       padding: '8px 12px',
       background: '#102035dd',
       border: '1px solid #5bacff',

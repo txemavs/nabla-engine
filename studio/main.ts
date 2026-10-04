@@ -71,7 +71,7 @@ import { createCatalogEntities, entityCatalog } from '../src/index.js'
 import { SelectionOutline } from './selection-outline.js'
 import { SelectionSilhouette } from './selection-silhouette.js'
 import { readPerformance, shadowTiers, performancePresets, streamBudget } from './performance.js'
-import { DepthOfField } from '../src/render/effects/depth-of-field.js'
+import { GameRenderPipeline } from '@nabla/engine/runtime'
 import { ShadowManager } from '../src/render/shadows.js'
 import { readScene, writeScene } from './scene-storage.js'
 import { SolidEditor } from './solid-editor.js'
@@ -255,7 +255,8 @@ let droneLat = Number.NaN
 let droneLon = Number.NaN
 let dronePreview = ''
 viewport.prepend(renderer.domElement)
-const depthOfField = new DepthOfField()
+const renderPipeline = new GameRenderPipeline()
+const depthOfField = renderPipeline.depthOfField
 const performanceHud = document.createElement('output')
 performanceHud.className = 'performance-hud'
 performanceHud.hidden = true
@@ -2664,31 +2665,6 @@ function frame(now: number): void {
   )
   renderer.domElement.dataset.depthOfField = performanceSettings.dof > 0 ? '1' : '0'
   if (sim || needsRender) {
-    const outlineVisible = outline.visible
-    outline.visible = false
-    const mirrorVehicle =
-      performanceSettings.mirrors && cameraMode === 'cockpit' && !document.hidden
-        ? (sim?.player.vehicleId ?? null)
-        : null
-    if (mirrorVehicle)
-      view.limitDrawDistance(
-        worldCamera,
-        performanceSettings.distance,
-        !!sim,
-        !!performanceSettings.buildings,
-        performanceSettings.preset === 'ultra'
-          ? 20000
-          : Math.min(performanceSettings.distance, performanceSettings.roads),
-      )
-    const portalLive = [...view.portals.values()].map((p) => p.mesh.material.uniforms.live.value)
-    try {
-      for (const p of view.portals.values()) p.mesh.material.uniforms.live.value = 0
-      view.renderMirrors(renderer, scene, camera, mirrorVehicle, now)
-    } finally {
-      ;[...view.portals.values()].forEach((p, i) => {
-        p.mesh.material.uniforms.live.value = portalLive[i]
-      })
-    }
     const externalViews = new Map<string, ExternalPortalView>()
     for (const connection of project!.connections ?? []) {
       if (connection.mode !== 'window') continue
@@ -2708,77 +2684,42 @@ function frame(now: number): void {
       if (remote) externalViews.set(source.entityId, remote)
     }
     photoExternalViews = externalViews
-    renderPortals(
-      view.portals,
+    renderPipeline.render({
       renderer,
       scene,
       camera,
-      (remote) => {
+      view,
+      sky: geography,
+      clock: skyClock,
+      origin: renderOrigin,
+      eye: worldCamera,
+      ambient: ambientFill,
+      lights: [sun, ...shadowManager.lights],
+      shadows: shadowManager,
+      monitors: portalControls,
+      time: now,
+      mirrorVehicle:
+        performanceSettings.mirrors && cameraMode === 'cockpit' && !document.hidden
+          ? (sim?.player.vehicleId ?? null)
+          : null,
+      shadowsEnabled: shadowsActive,
+      depthOfField: performanceSettings.dof > 0,
+      skyVisible: sceneLayer('layer-sky') || sceneLayer('layer-planets'),
+      externalViews,
+      overlays: [outline],
+      cull: (position) =>
         view.limitDrawDistance(
-          remote.position.clone().add(renderOrigin),
+          position,
           performanceSettings.distance,
           !!sim,
           !!performanceSettings.buildings,
           performanceSettings.preset === 'ultra'
             ? 20000
             : Math.min(performanceSettings.distance, performanceSettings.roads),
-        )
-        if (geography.enabled) {
-          const remotePosition = remote.position.clone().add(renderOrigin)
-          const restore = portalEnvironment(
-            geography,
-            scene,
-            remotePosition,
-            worldCamera,
-            renderOrigin,
-            skyClock,
-            ambientFill,
-            [sun, ...shadowManager.lights],
-          )
-          try {
-            geography.render(renderer, remote, remotePosition)
-            renderer.autoClear = false
-          } catch (error) {
-            restore()
-            throw error
-          }
-          return restore
-        }
-        return undefined
-      },
-      externalViews,
-    )
-    outline.visible = outlineVisible
-    view.batchBuildings = !gizmo.dragging
-    view.limitDrawDistance(
-      worldCamera,
-      performanceSettings.distance,
-      !!sim,
-      !!performanceSettings.buildings,
-      performanceSettings.preset === 'ultra'
-        ? 20000
-        : Math.min(performanceSettings.distance, performanceSettings.roads),
-    )
-    applySceneLayers()
-    geography.setViewAspect(camera.aspect)
-    renderer.autoClear = true
-    const dof = performanceSettings.dof > 0
-    if (dof) depthOfField.begin(renderer)
-    try {
-      if (geography.enabled && (sceneLayer('layer-sky') || sceneLayer('layer-planets'))) {
-        geography.render(renderer, camera, worldCamera)
-        renderer.autoClear = false
-        renderer.clearDepth()
-      }
-      shadowManager.update(camera, renderOrigin)
-      portalControls.prepare(camera)
-      renderer.shadowMap.needsUpdate = shadowsActive
-      renderer.render(scene, camera)
-      if (geography.enabled) geography.renderClouds(renderer, camera)
-    } finally {
-      portalControls.finish()
-      if (dof) depthOfField.present(renderer, camera)
-    }
+        ),
+      batchBuildings: !gizmo.dragging,
+      beforeMain: applySceneLayers,
+    })
     silhouette.render(
       renderer,
       camera,

@@ -1,3 +1,4 @@
+import { createGallery } from '@nabla/engine/runtime'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
   createFlatTestScene,
@@ -51,6 +52,8 @@ try {
     }
     scene.entities.push(trailer)
   }
+  if (flat && new URLSearchParams(location.search).has('gallery'))
+    scene.entities.push(...createGallery('demo-gallery'))
   const loading = new LoadingScreen()
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
@@ -59,6 +62,7 @@ try {
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
     sea: !flat,
+    depthOfField: new URLSearchParams(location.search).has('dof'),
     tiles: flat
       ? { baseUrl: FLAT_TEST_BASE, mode: 'static', tiles: FLAT_TEST_TILES, horizon: false }
       : {

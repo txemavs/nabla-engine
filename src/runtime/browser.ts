@@ -1,3 +1,4 @@
+import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm } from './shooting.js'
@@ -42,6 +43,7 @@ export interface GameRuntimeOptions {
   clock?: 'automatic' | 'manual'
   /** Auto shows driving controls on coarse-pointer devices; false disables them. */
   touchControls?: TouchDrivingVisibility | false
+  depthOfField?: boolean
   onProgress?: (status: string, loadedTiles?: string[]) => void
   onFrame?: (frame: GameFrame) => void
   onMessage?: (message: string) => void
@@ -59,6 +61,7 @@ export class GameRuntime {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(48, 1, 0.1, 50000)
   private readonly renderer: THREE.WebGLRenderer
+  private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
   private weaponDrawn = false
@@ -293,6 +296,7 @@ export class GameRuntime {
     this.sky.dispose()
     this.environment.dispose()
     this.effects.dispose()
+    this.pipeline.dispose()
     this.shadows.dispose()
     this.catchFloor.dispose()
     this.renderer.dispose()
@@ -418,29 +422,29 @@ export class GameRuntime {
       hud.update(this.camera, this.origin, time, inside ? sim.vehicleInfo(id) : null)
     }
     try {
-      this.view.renderMirrors(
-        this.renderer,
-        this.scene,
-        this.camera,
-        this.cameraState.mode === 'cockpit' ? player.vehicleId : null,
+      this.pipeline.render({
+        renderer: this.renderer,
+        scene: this.scene,
+        camera: this.camera,
+        view: this.view,
+        sky: this.sky,
+        clock: this.document.sky ?? { mode: 'live' },
+        origin: this.origin,
+        eye,
+        ambient: this.ambient,
+        lights: [this.sun, ...this.shadows.lights],
+        shadows: this.shadows,
+        monitors: this.monitors,
         time,
-      )
-      this.sky.setViewAspect(this.camera.aspect)
-      this.renderer.autoClear = true
-      if (this.sky.enabled) {
-        this.sky.render(this.renderer, this.camera, eye)
-        this.renderer.autoClear = false
-        this.renderer.clearDepth()
-      }
-      this.shadows.update(this.camera, this.origin)
-      this.renderer.shadowMap.needsUpdate = true
-      this.monitors.prepare(this.camera)
-      this.renderer.render(this.scene, this.camera)
-      if (this.sky.enabled) this.sky.renderClouds(this.renderer, this.camera)
+        mirrorVehicle: this.cameraState.mode === 'cockpit' ? player.vehicleId : null,
+        shadowsEnabled: true,
+        depthOfField: this.options.depthOfField,
+        cull: (position) => this.view.limitDrawDistance(position, 4000, true, true, 1000),
+      })
     } finally {
-      this.monitors.finish()
       this.camera.position.copy(eye)
     }
+    this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
     this.sidearm?.render(this.renderer, time, this.camera.aspect, this.cameraState.firstPerson)
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,

@@ -73,7 +73,7 @@ export class DepthOfField {
             gather(vec2(-0.707, -0.707), dist, radiusPx, sum, weight);
             color = sum / weight;
           }
-          gl_FragColor = vec4(color, 1.0);
+          gl_FragColor = vec4(color, texture2D(colorTex, vUv).a);
           #include <colorspace_fragment>
         }
       `,
@@ -110,10 +110,21 @@ export class DepthOfField {
     this.material.uniforms.radius.value = 5 * renderer.getPixelRatio()
     const autoClear = renderer.autoClear
     renderer.autoClear = true
-    renderer.render(this.scene, this.camera)
-    renderer.autoClear = autoClear
+    try {
+      renderer.render(this.scene, this.camera)
+    } finally {
+      renderer.autoClear = autoClear
+    }
   }
 
+  dispose(): void {
+    this.release()
+    this.material.dispose()
+    this.scene.traverse((object) => {
+      if (object instanceof THREE.Mesh) object.geometry.dispose()
+    })
+    this.scene.clear()
+  }
   release(): void {
     this.target?.dispose()
     this.target = null
