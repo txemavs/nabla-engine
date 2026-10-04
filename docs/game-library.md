@@ -19,13 +19,22 @@ follows planetary curvature. The visible sea sheet is disabled over the syntheti
 surface to avoid overlap; coordinates, sky and the planetary model remain active.
 See [fixture details](../assets/examples/flat-z15/README.md).
 
-The reference vehicle is the car. Add `&vehicle=<preset-id>` for another installed
-preset. Unknown presets report an error. The white-truck prototype still needs an
-adapter and is not yet a compatible stock preset.
+The example starts in the car, with the white truck and flying container parked
+beside it. Exit with E, walk to another vehicle and press E to board; there is no
+vehicle selector. The truck starts with a six-wheel passive trailer attached.
+Its yaw hinge is intended for this flat test surface; interactive coupling and
+pitch/roll articulation are not yet implemented. Models come from `1cca41f`,
+using Engine's existing physics world rather than the prototype's standalone rig.
+For automated scenarios, `&vehicle=white-truck` or `&vehicle=carrier` selects the
+initial occupied vehicle. Unknown presets report an error.
 
 Controls: WASD, Space to brake/jump, C for cameras, E to enter/exit, R for recovery,
-V for supported flight, F for docking and T for control transfer. Click the canvas
+H for the car's retractable GPS, V for supported flight, F for docking and T for control transfer. Click the canvas
 to focus and enable audio; drag to look. Standard gamepad axes use Studio's mixer.
+The browser runtime clears keyboard commands on focus loss, captures key releases
+before bubbling handlers, and expires movement keys after 1.5 seconds without
+keyboard activity. Normal OS key repeats renew the whole held chord. A fresh
+press is required after expiry; queued repeats cannot restart cleared controls.
 
 Without `example=flat`, URL configuration selects geographic coverage:
 

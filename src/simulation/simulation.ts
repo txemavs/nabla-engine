@@ -28,6 +28,7 @@ import {
   Box,
   Material,
   LockConstraint,
+  HingeConstraint,
   Quaternion,
   Sphere,
   Vec3,
@@ -179,6 +180,7 @@ export class Simulation {
   private grounded = false
   private support: Body | null = null
   private readonly docks = new Map<string, { carrierId: string; constraint: LockConstraint }>()
+  private readonly trailerJoints: HingeConstraint[] = []
   private ticks = 0
   private lostTime = 0
   private roadAssistEnabled = false
@@ -226,6 +228,20 @@ export class Simulation {
     this.world.defaultContactMaterial.friction = 0.55
     this.world.defaultContactMaterial.restitution = 0
     for (const e of this.document.entities) this.addEntityBody(e)
+    for (const v of this.vehicles.values()) {
+      const tow = v.definition.tow
+      if (!tow) continue
+      const tractor = this.vehicles.get(tow.vehicleId)!
+      this.alignTrailer(v, tractor)
+      const joint = new HingeConstraint(
+        tractor.body,
+        v.body,
+        new Vec3(...tow.hitch),
+        new Vec3(...tow.anchor),
+      )
+      this.world.addConstraint(joint)
+      this.trailerJoints.push(joint)
+    }
     for (const mouth of this.portalEntities) if (mouth.parentId) this.rebuildPortalCollider(mouth)
     for (const v of this.vehicles.values())
       if (v.definition.garage) {
@@ -1242,7 +1258,7 @@ export class Simulation {
         dock ? (this.vehicles.get(dock.carrierId)?.body.linearDamping ?? 0.05) : undefined,
       )
       if (dock) continue
-      const active = id === this.vehicleId
+      const active = id === this.vehicleId || v.definition.tow?.vehicleId === this.vehicleId
       if (v.definition.plane) this.spoolEngine(v, active)
       if (v.flight) {
         this.fly(v, active)
@@ -1465,7 +1481,25 @@ export class Simulation {
     v.body.velocity.setZero()
     v.body.angularVelocity.setZero()
     v.body.wakeUp()
+    for (const trailer of this.vehicles.values()) {
+      if (trailer.definition.tow?.vehicleId === id) this.alignTrailer(trailer, v)
+    }
     return 'Coche enderezado'
+  }
+  private alignTrailer(trailer: Vehicle, tractor: Vehicle): void {
+    const tow = trailer.definition.tow!
+    trailer.body.quaternion.copy(tractor.body.quaternion)
+    trailer.body.position.copy(
+      tractor.body
+        .pointToWorldFrame(new Vec3(...tow.hitch))
+        .vsub(trailer.body.quaternion.vmult(new Vec3(...tow.anchor))),
+    )
+    trailer.body.previousPosition.copy(trailer.body.position)
+    trailer.body.interpolatedPosition.copy(trailer.body.position)
+    trailer.body.previousQuaternion.copy(trailer.body.quaternion)
+    trailer.body.velocity.setZero()
+    trailer.body.angularVelocity.setZero()
+    trailer.body.wakeUp()
   }
   setHelmMode(mode: Vehicle['helm']): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
@@ -1545,6 +1579,7 @@ export class Simulation {
       distance = Infinity
     for (const [id, v] of this.vehicles) {
       // Reach the hull/doors, not an arbitrary model origin or distant pilot seat.
+      if (v.definition.passive) continue
       const local = v.body.pointToLocalFrame(this.playerBody.position)
       const half = v.entity.size.map((size) => Math.max(0.1, size / 2))
       const target = v.body.pointToWorldFrame(
@@ -1592,7 +1627,12 @@ export class Simulation {
   }
   /** Explicit scenario entry; ordinary interaction still checks reach and obstructions. */
   startInVehicle(id: string): void {
-    if (this.disposed || this.vehicleId || !this.vehicles.has(id))
+    if (
+      this.disposed ||
+      this.vehicleId ||
+      !this.vehicles.has(id) ||
+      this.vehicles.get(id)!.definition.passive
+    )
       throw new Error('Invalid initial vehicle')
     this.setInterior(null)
     this.vehicleId = id
@@ -2047,8 +2087,13 @@ export class Simulation {
     if (total < 0.001) return [...target]
     let distance = total
     const active = this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : null
+    const trailers = new Set(
+      [...this.vehicles.values()]
+        .filter((v) => this.vehicleId !== null && v.definition.tow?.vehicleId === this.vehicleId)
+        .map((v) => v.body),
+    )
     this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
-      if (hit.body !== this.playerBody && hit.body !== active)
+      if (hit.body !== this.playerBody && hit.body !== active && !trailers.has(hit.body!))
         distance = Math.min(distance, Math.max(0.15, hit.distance - 0.2))
     })
     return vec(from.vadd(delta.scale(distance / total)))
@@ -2058,6 +2103,8 @@ export class Simulation {
     this.dropCatchFloor()
     for (const dock of this.docks.values()) this.world.removeConstraint(dock.constraint)
     this.docks.clear()
+    for (const joint of this.trailerJoints) this.world.removeConstraint(joint)
+    this.trailerJoints.length = 0
     this.planetCollisions.dispose()
     this.previousWheels.clear()
     for (const v of this.vehicles.values()) v.raycast.removeFromWorld(this.world)

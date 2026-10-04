@@ -5,7 +5,7 @@ import {
   FLAT_TEST_TILES,
 } from '@nabla/engine/examples/flat-tile'
 import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
-import { presetVehicle, hasVehiclePreset } from '@nabla/engine/vehicles'
+import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
 
@@ -25,6 +25,32 @@ try {
         geography: { ...config.spawn, imagery: 'offline', planetary: true },
         entities: [createEntity('spawn', 'spawn', [-4, 2, 0]), vehicle],
       }
+  if (flat) {
+    const fleet = ['car', 'white-truck', 'carrier']
+    scene.entities = [
+      createEntity('spawn', 'spawn', [-4, 2, 0]),
+      ...fleet.flatMap((preset, index) =>
+        presetEntities(preset, preset === config.vehicle ? vehicle.id : `demo-${preset}`, [
+          index * 10,
+          2,
+          0,
+        ]),
+      ),
+      ...(fleet.includes(config.vehicle) ? [] : [vehicle]),
+    ]
+    const tractor = scene.entities.find(
+      (e) => e.id === (config.vehicle === 'white-truck' ? vehicle.id : 'demo-white-truck'),
+    )!
+    tractor.groundOffset = 1.45
+    tractor.vehicle!.cameraDistance = 24
+    const trailer = presetVehicle('white-trailer', 'demo-trailer', [10, 2, 7.33])
+    trailer.vehicle!.tow = {
+      vehicleId: tractor.id,
+      hitch: [0, 0, 1.766745487],
+      anchor: [0, 0, -5.565219856],
+    }
+    scene.entities.push(trailer)
+  }
   const loading = new LoadingScreen()
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
@@ -54,6 +80,9 @@ try {
     },
     onError(error) {
       showError(error instanceof Error ? error.message : String(error))
+    },
+    onMessage(message) {
+      document.getElementById('game-message')!.textContent = message
     },
   })
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })

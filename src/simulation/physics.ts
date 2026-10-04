@@ -791,6 +791,18 @@ export class LockConstraint {
   }
 }
 
+/** Yaw articulation for a flat-ground trailer, in each body's local coordinates. */
+export class HingeConstraint extends LockConstraint {
+  constructor(
+    bodyA: Body,
+    bodyB: Body,
+    readonly anchorA: Vec3,
+    readonly anchorB: Vec3,
+  ) {
+    super(bodyA, bodyB)
+  }
+}
+
 export class World {
   raw: RapierWorld
   /** Double-precision scene position of Rapier's local origin. */
@@ -841,12 +853,15 @@ export class World {
     if (!a || !b) return
     const local = constraint.bodyB.pointToLocalFrame(constraint.bodyA.position)
     const frame = constraint.bodyB.quaternion.inverse().mult(constraint.bodyA.quaternion)
-    const joint = this.raw.createImpulseJoint(
-      R().JointData.fixed({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 }, local, frame),
-      a,
-      b,
-      true,
-    )
+    const description =
+      constraint instanceof HingeConstraint
+        ? R().JointData.revolute(constraint.anchorA, constraint.anchorB, { x: 0, y: 1, z: 0 })
+        : R().JointData.fixed({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 }, local, frame)
+    if (constraint instanceof HingeConstraint) {
+      description.limitsEnabled = true
+      description.limits = [-1.35, 1.35]
+    }
+    const joint = this.raw.createImpulseJoint(description, a, b, true)
     joint.setContactsEnabled(constraint.collideConnected)
     constraint.joint = joint
     this.constraints.set(constraint, joint)

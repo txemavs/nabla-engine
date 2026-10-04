@@ -716,7 +716,7 @@ export class SceneView {
       this.ramps.set(e.id, hinge)
       this.shipLights.get(e.id)?.attachStern(hinge)
     })
-    if (visual.wheel) {
+    if (visual.wheel || visual.wheels) {
       const wheels = definition.hubs.map((hub, i) => {
         const wheel = new THREE.Group()
         wheel.position.fromArray(hub)
@@ -724,7 +724,7 @@ export class SceneView {
         const orientation = new THREE.Group()
         if (visual.wheelRotations) orientation.quaternion.fromArray(visual.wheelRotations[i])
         wheel.add(orientation)
-        this.addAsset(orientation, visual.wheel!, undefined, (model) =>
+        this.addAsset(orientation, visual.wheels?.[i] ?? visual.wheel!, undefined, (model) =>
           adapter?.preparePart?.(model, 'wheel'),
         )
         return wheel

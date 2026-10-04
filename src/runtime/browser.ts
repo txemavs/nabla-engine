@@ -17,6 +17,8 @@ import { PlaySession, type PlayOptions } from './session.js'
 import { FrameLoop } from './frame-loop.js'
 import { VehicleEffects } from './vehicle-effects.js'
 import { GameInput } from './input.js'
+import { HeldKeys } from './held-keys.js'
+import { idleInput } from '../simulation/simulation.js'
 import { createGameCameraState, updateGameCamera } from './game-camera.js'
 import { waitForGround } from './ground.js'
 
@@ -58,7 +60,7 @@ export class GameRuntime {
   private readonly catchFloor = new CatchFloor()
   private readonly origin = new THREE.Vector3()
   private readonly loop: FrameLoop
-  private readonly keys = new Set<string>()
+  private readonly keys = new HeldKeys()
   private readonly input = new GameInput()
   private readonly lifetime = new AbortController()
   private readonly observer: ResizeObserver
@@ -96,8 +98,10 @@ export class GameRuntime {
       camera: this.camera,
       scene: this.scene,
       lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
-      tier: shadowTiers[1024]!,
+      tier: shadowTiers[2048]!,
     })
+    this.view.setupMaterials((material) => this.shadows.setupMaterial(material))
+    this.shadows.setupMaterial(this.catchFloor.mesh.material)
     this.sun.visible = false
     this.world =
       options.tiles && this.document.geography
@@ -258,12 +262,14 @@ export class GameRuntime {
       this.lastTime === null ? 0 : Math.min(0.1, Math.max(0, (time - this.lastTime) / 1000))
     this.lastTime = time
     if (document.hidden) return
+    if (!this.hasInput()) this.releaseInput()
+    this.keys.expire(performance.now())
     const pad = this.pollGamepad()
     this.world?.flushInstall(1.5)
     this.view.flushMapInstall(4, 24, this.camera.position)
     this.world?.renderUpdate(this.origin, true, sim)
     const input = this.input.read(sim, this.document, dt, {
-      keys: this.keys,
+      keys: this.keys.values,
       yaw: this.cameraState.yaw,
       pad,
       enabled: this.hasInput(),
@@ -342,6 +348,12 @@ export class GameRuntime {
     this.view.streetlights.update(eye, this.view.night, 4000)
     this.view.limitDrawDistance(eye, 4000, true, true, 1000)
     this.camera.position.sub(this.origin)
+    for (const [id, hud] of this.view.shipHuds) {
+      const inside =
+        (player.interiorId === id && this.cameraState.firstPerson) ||
+        (player.vehicleId === id && this.cameraState.mode === 'cockpit')
+      hud.update(this.camera, this.origin, time, inside ? sim.vehicleInfo(id) : null)
+    }
     try {
       this.view.renderMirrors(
         this.renderer,
@@ -379,6 +391,7 @@ export class GameRuntime {
   private releaseInput(): void {
     this.keys.clear()
     this.input.reset()
+    this.session.simulation?.setInput(idleInput())
     this.previousButtons = []
     this.previousPad = null
     if (document.pointerLockElement === this.options.canvas) document.exitPointerLock()
@@ -430,9 +443,16 @@ export class GameRuntime {
       this.cameraState.mode = 'chase'
     }
     if (code === 'KeyC') this.cycleCamera()
+    if (code === 'KeyH' && sim.player.vehicleId) {
+      const open = this.view.toggleVehicleGps(sim.player.vehicleId)
+      if (open !== null) message = open ? 'GPS encendido' : 'GPS apagado'
+    }
     if (code === 'Space' && !sim.player.vehicleId)
       sim.setInput({
-        ...this.input.read(sim, this.document, 0, { keys: this.keys, yaw: this.cameraState.yaw }),
+        ...this.input.read(sim, this.document, 0, {
+          keys: this.keys.values,
+          yaw: this.cameraState.yaw,
+        }),
         jump: true,
       })
     if (message) this.options.onMessage?.(message)
@@ -454,13 +474,17 @@ export class GameRuntime {
         if (!this.hasInput() || this.session.state !== 'playing') return
         if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code))
           event.preventDefault()
-        this.keys.add(event.code)
+        this.keys.press(event.code, event.repeat, performance.now())
         this.effects.audio.unlock()
         if (!event.repeat) this.action(event.code)
       },
       options,
     )
-    window.addEventListener('keyup', (event) => this.keys.delete(event.code), options)
+    window.addEventListener('keyup', (event) => this.keys.release(event.code), {
+      ...options,
+      capture: true,
+    })
+    window.addEventListener('pagehide', () => this.releaseInput(), options)
     canvas.addEventListener('blur', () => this.releaseInput(), options)
     window.addEventListener('blur', () => this.releaseInput(), options)
     document.addEventListener(
