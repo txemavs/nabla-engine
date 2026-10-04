@@ -1,0 +1,80 @@
+import { Vector3, type Scene } from 'three'
+import { VehicleAudio } from '../audio/vehicle.js'
+import { TireMarks } from '../render/entity/tire-marks.js'
+import { TireSmoke } from '../render/entity/tire-smoke.js'
+import type { SceneDocument } from '../scene/document.js'
+import type { Simulation } from '../simulation/simulation.js'
+
+/** Shared audio/effects orchestration. Supplied audio remains owned by the host. */
+export class VehicleEffects {
+  readonly smoke = new TireSmoke()
+  readonly marks = new TireMarks()
+  readonly audio: VehicleAudio
+  private readonly ownsAudio: boolean
+  private disposed = false
+
+  constructor(scene: Scene, audio?: VehicleAudio) {
+    this.ownsAudio = !audio
+    this.audio = audio ?? new VehicleAudio()
+    scene.add(this.smoke.root, this.marks.root)
+  }
+
+  updateAudio(sim: Simulation | null, document: SceneDocument, eye: Vector3): void {
+    if (this.disposed) return
+    let flightLevel = 0,
+      flightSpeed = 0
+    if (sim)
+      for (const entity of document.entities) {
+        if (!entity.vehicle?.flight || entity.vehicle.plane) continue
+        const info = sim.vehicleInfo(entity.id)
+        if (!info.flightMode) continue
+        const position = sim.entityTransform(entity.id, true).position
+        const distance = eye.distanceTo(new Vector3(...position))
+        const level =
+          sim.player.vehicleId === entity.id || sim.player.interiorId === entity.id
+            ? 0.55
+            : Math.max(0, 1 - distance / 100)
+        if (level > flightLevel) {
+          flightLevel = level
+          flightSpeed = info.speedKmh
+        }
+      }
+    this.audio.turbine(flightLevel, flightSpeed)
+    const pilot = sim?.player.vehicleId
+    const piloted = pilot ? document.entities.find((entity) => entity.id === pilot) : undefined
+    this.audio.propeller(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
+    const car = pilot && piloted?.vehicle?.powertrain ? sim!.vehicleInfo(pilot) : null
+    this.audio.powertrain(car?.helm !== 'off' ? (car?.rpm ?? 0) : 0, car?.engineLoad ?? 0)
+  }
+
+  updateTires(sim: Simulation | null, elapsed: number, origin: Vector3): void {
+    if (this.disposed) return
+    if (!sim) {
+      this.smoke.clear()
+      this.marks.clear()
+    }
+    const pilot = sim?.player.vehicleId
+    const contacts = pilot ? sim!.wheelContactInfo(pilot) : []
+    const slip = Math.max(0, ...contacts.map((wheel) => wheel.slip))
+    this.smoke.update(
+      elapsed,
+      contacts
+        .filter((wheel) => wheel.slip > 0.22)
+        .flatMap((wheel) => (wheel.contactPoint ? [wheel.contactPoint] : [])),
+      slip,
+      origin,
+    )
+    this.marks.update(elapsed, pilot ?? null, contacts, origin)
+    this.audio.tires(slip, pilot ? sim!.vehicleInfo(pilot).speedKmh : 0)
+  }
+
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.smoke.root.removeFromParent()
+    this.marks.root.removeFromParent()
+    this.smoke.dispose()
+    this.marks.dispose()
+    if (this.ownsAudio) this.audio.dispose()
+  }
+}

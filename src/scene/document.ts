@@ -125,6 +125,11 @@ function validateScene(doc: SceneDocument, changed?: Set<Entity>): SceneDocument
     if (e.sprite) validateSprite(e)
     if (e.portal) validatePortal(e, byId, !!doc.geography?.planetary)
     if (e.kind === 'vehicle' || e.vehicle) validateVehicle(e)
+    if (e.vehicle?.tow) {
+      const tractor = byId.get(e.vehicle.tow.vehicleId)
+      if (!tractor?.vehicle || tractor.vehicle.passive || tractor.id === e.id)
+        throw new Error('Trailer requires a powered towing vehicle')
+    }
     if ((e.kind === 'group' || e.kind === 'spawn') && e.motion !== 'none')
       throw new Error('Groups and spawn cannot have physics')
     if ((e.motion === 'dynamic' || e.kind === 'spawn') && e.parentId !== null)

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
-  DEFAULT_TILES_BASE_URL,
   StaticTileError,
   assertSecureTileBase,
   fetchTileManifest,
@@ -21,6 +20,8 @@ import {
   mapTileBounds,
   type MapTile,
 } from '../../src/scene/mercator.js'
+
+const TEST_TILES_BASE = 'https://tiles.example.org/world'
 
 describe('static-tiles', () => {
   const tile: MapTile = { z: 15, x: 16224, y: 11998 }
@@ -131,12 +132,18 @@ describe('static-tiles', () => {
     })
   })
 
-  describe('tileManifestUrl and defaults', () => {
-    it('builds the Euskadi manifest URL from the default base', () => {
-      expect(DEFAULT_TILES_BASE_URL).toBe('https://atlas.chained.world/euskadi')
-      expect(tileManifestUrl(tile, DEFAULT_TILES_BASE_URL)).toBe(
-        'https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json',
+  describe('tileManifestUrl', () => {
+    it('builds a manifest URL from an application-owned base', () => {
+      expect(tileManifestUrl(tile, TEST_TILES_BASE)).toBe(
+        'https://tiles.example.org/world/z/15/16224/11998/manifest.json',
       )
+    })
+
+    it('rejects an omitted source without making a request', async () => {
+      const request = vi.fn()
+      vi.stubGlobal('fetch', request)
+      await expect(fetchTileManifest(tile, {} as any)).rejects.toThrow(/Terrain source missing/)
+      expect(request).not.toHaveBeenCalled()
     })
 
     it('normalizes trailing slashes and whitespace', () => {
@@ -160,7 +167,7 @@ describe('static-tiles', () => {
   })
 
   describe('fetchTileManifest', () => {
-    const opts = { baseUrl: DEFAULT_TILES_BASE_URL, pageProtocol: 'https:' }
+    const opts = { baseUrl: TEST_TILES_BASE, pageProtocol: 'https:' }
     const json = (body: unknown, init: ResponseInit = {}) =>
       new Response(JSON.stringify(body), {
         status: 200,
@@ -185,7 +192,7 @@ describe('static-tiles', () => {
 
       expect(manifest).toEqual(mockManifest)
       const [url, init] = fetchMock.mock.calls[0]
-      expect(url).toBe('https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json')
+      expect(url).toBe('https://tiles.example.org/world/z/15/16224/11998/manifest.json')
       expect(url).not.toContain('/z/z/')
       expect(init).toMatchObject({ method: 'GET', mode: 'cors' })
     })

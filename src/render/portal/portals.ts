@@ -51,14 +51,14 @@ export function renderPortals(
   camera: THREE.PerspectiveCamera,
   background: (camera: THREE.PerspectiveCamera) => void | (() => void),
   externalViews?: Map<string, ExternalPortalView>,
-): void {
-  if (!surfaces.size) return
+): number {
+  if (!surfaces.size) return 0
   const connected = [...surfaces.values()].some(
     (s) => s.entity.portal!.mode !== 'closed' && surfaces.has(s.entity.portal!.pairId ?? ''),
   )
   if (!connected && !externalViews?.size) {
     for (const surface of surfaces.values()) surface.mesh.material.uniforms.live.value = 0
-    return
+    return 0
   }
   scene.updateMatrixWorld(true)
   camera.updateMatrixWorld(true)
@@ -72,6 +72,7 @@ export function renderPortals(
   const frustum = new THREE.Frustum().setFromProjectionMatrix(
     new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
   )
+  let rendered = 0
   try {
     // A recursion boundary has a stable dark surface rather than rendering stale feedback.
     for (const surface of surfaces.values()) surface.mesh.material.uniforms.live.value = 0
@@ -112,6 +113,7 @@ export function renderPortals(
         renderer.clippingPlanes = [new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point)]
         destination.mesh.visible = false
         renderer.render(external?.scene ?? scene, remote)
+        rendered++
       } finally {
         destination.mesh.visible = wasVisible
         restoreEnvironment?.()
@@ -134,4 +136,5 @@ export function renderPortals(
     renderer.clippingPlanes = oldClipping
     renderer.shadowMap.autoUpdate = oldShadowUpdate
   }
+  return rendered
 }

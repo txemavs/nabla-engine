@@ -12,7 +12,16 @@ const assetPart = z
 export const vehicleField = z
   .object({
     colliders: z.array(boxCollider).min(1).max(32),
-    hubs: z.tuple([vector, vector, vector, vector]),
+    hubs: z.union([
+      z.tuple([vector, vector, vector, vector]),
+      z.tuple([vector, vector, vector, vector, vector, vector]),
+    ]),
+    /** Unpowered trailer, excluded from player boarding. */
+    passive: z.boolean().optional(),
+    tow: z
+      .object({ vehicleId: z.string().min(1), anchor: vector, hitch: vector })
+      .strict()
+      .optional(),
     wheelRadius: finite.min(0.05).max(1.5),
     suspensionRest: finite.min(0.02).max(1),
     /** Metres of travel each side of the rest length. Default 0.3. */
@@ -80,8 +89,20 @@ export const visualField = z
       .strict()
       .optional(),
     wheel: assetPart.optional(),
+    /** Optional individual wheel models in hub order (front left/right, rear left/right). */
+    wheels: z
+      .union([
+        z.tuple([assetPart, assetPart, assetPart, assetPart]),
+        z.tuple([assetPart, assetPart, assetPart, assetPart, assetPart, assetPart]),
+      ])
+      .optional(),
     steering: assetPart.optional(),
-    wheelRotations: z.tuple([rotation, rotation, rotation, rotation]).optional(),
+    wheelRotations: z
+      .union([
+        z.tuple([rotation, rotation, rotation, rotation]),
+        z.tuple([rotation, rotation, rotation, rotation, rotation, rotation]),
+      ])
+      .optional(),
   })
   .strict()
 

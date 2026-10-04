@@ -5,12 +5,12 @@
  *   - lat: spawn latitude (default: Zaisa, Irun center)
  *   - lon: spawn longitude
  *   - vehicle: vehicle preset ID (default: 'car')
- *   - tiles: tile base URL, WITHOUT the trailing /z (default: https://atlas.chained.world/euskadi);
+ *   - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
  *            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
  *   - static: use static tile mode ('true' or '1')
  */
 
-import { DEFAULT_TILES_BASE_URL, normalizeTilesBase } from '../src/render/planet/static-tiles.js'
+import { normalizeTilesBase } from '@nabla/engine/planet/static-tiles'
 
 export interface GameConfig {
   spawn: {
@@ -19,7 +19,8 @@ export interface GameConfig {
     altitude: number
   }
   vehicle: string
-  tilesBaseUrl: string
+  /** Undefined means unconfigured; empty string explicitly selects this origin. */
+  tilesBaseUrl: string | undefined
   staticTiles: boolean
 }
 
@@ -32,21 +33,23 @@ const ZAISA_IRUN = {
 export function parseGameConfig(search: string = location.search): GameConfig {
   const params = new URLSearchParams(search)
 
-  const latitude = parseFloat(params.get('lat') ?? '') || ZAISA_IRUN.latitude
-  const longitude = parseFloat(params.get('lon') ?? '') || ZAISA_IRUN.longitude
-  const altitude = parseFloat(params.get('alt') ?? '') || ZAISA_IRUN.altitude
+  const coordinate = (key: string, fallback: number) => {
+    const value = parseFloat(params.get(key) ?? '')
+    return Number.isFinite(value) ? value : fallback
+  }
+  const latitude = coordinate('lat', ZAISA_IRUN.latitude)
+  const longitude = coordinate('lon', ZAISA_IRUN.longitude)
+  const altitude = coordinate('alt', ZAISA_IRUN.altitude)
 
   const clampedLat = Math.max(-85, Math.min(85, latitude))
   const clampedLon = ((((longitude + 180) % 360) + 360) % 360) - 180
 
   const vehicle = params.get('vehicle') ?? 'car'
 
-  // `?tiles=/` means "this origin" (manifests at /z/15/x/y/manifest.json); a missing or blank value means the default host.
+  // Preserve the distinction between an explicit origin root and missing configuration.
   const tilesParam = params.get('tiles')
   const tilesBaseUrl =
-    tilesParam === null || tilesParam.trim() === ''
-      ? DEFAULT_TILES_BASE_URL
-      : normalizeTilesBase(tilesParam)
+    tilesParam === null || tilesParam.trim() === '' ? undefined : normalizeTilesBase(tilesParam)
 
   const staticParam = params.get('static')
   const staticTiles = staticParam !== 'false' && staticParam !== '0'
@@ -73,11 +76,22 @@ export function configToUrl(config: GameConfig): string {
   if (config.vehicle !== 'car') {
     params.set('vehicle', config.vehicle)
   }
-  if (config.tilesBaseUrl !== DEFAULT_TILES_BASE_URL) {
+  if (config.tilesBaseUrl !== undefined) {
     params.set('tiles', config.tilesBaseUrl || '/')
   }
   if (!config.staticTiles) {
     params.set('static', 'false')
   }
   return '?' + params.toString()
+}
+
+/** Validate geographic terrain before allocating a renderer or starting any requests. */
+export function requireGeographicTileBase(config: GameConfig): string {
+  // Dynamic mode explicitly selects the demo's same-origin preparation service.
+  if (!config.staticTiles) return '/prepared'
+  if (config.tilesBaseUrl === undefined)
+    throw new Error(
+      'Terrain source missing: set ?tiles=<tile-base-url> for geographic mode, or use ?example=flat for the local planetary demo.',
+    )
+  return config.tilesBaseUrl
 }

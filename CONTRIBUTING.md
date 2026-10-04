@@ -1,13 +1,13 @@
 # Contributing
 
 Use Node.js 22.12+ (`.nvmrc` selects Node 22), install with `npm ci`, and run the
-Studio host with `npm run dev`. Do not commit dependency folders or build/test output.
+game host with `npm run build` followed by `npm run dev`. Do not commit dependency folders or build/test output.
 
 ## Development workflow
 
 1. Keep changes focused and preserve the current edit/play behavior.
-2. Put engine contracts, simulation, and the presenter in `src/`. The playable editor is `studio/` and depends on the engine; it is leaving this repo.
-3. Engine unit tests live in `test/`. Studio unit tests live in `studio/test/` and browser journeys in `studio/e2e/`.
+2. Put engine contracts, simulation, and the presenter in `src/`. The editor lives in the separate `txemavs/nabla-studio` repository.
+3. Engine unit tests live in `test/` and rendering journeys in `test/browser/e2e/`. Editor tests and their CI belong to Studio.
 4. Update the relevant English documentation when contracts or controls change.
 5. Format and run the checks appropriate to the change.
 
@@ -52,4 +52,4 @@ rendering path must match the locally validated browser.
 
 For the full local Studio/cache/generator environment, follow
 [Local development](docs/local-development.md). Browser test readiness and fixture
-conventions are documented in [studio/e2e/README.md](studio/e2e/README.md).
+conventions are documented in [test/browser/README.md](test/browser/README.md).

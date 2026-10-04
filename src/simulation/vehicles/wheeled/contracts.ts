@@ -8,7 +8,10 @@ export interface PowertrainDefinition {
   grip: number
 }
 export interface WheeledDefinition {
-  hubs: [WheelVector, WheelVector, WheelVector, WheelVector]
+  hubs:
+    | [WheelVector, WheelVector, WheelVector, WheelVector]
+    | [WheelVector, WheelVector, WheelVector, WheelVector, WheelVector, WheelVector]
+  passive?: boolean
   wheelRadius: number
   suspensionRest: number
   suspensionTravel?: number

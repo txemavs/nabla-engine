@@ -2,7 +2,7 @@
  * Loading screen controller for the 3x3 initial tile grid.
  */
 
-import { mapTileAt, mapTileId, type MapTile } from '../src/scene/mercator.js'
+import { mapTileAt, mapTileId, type MapTile } from '@nabla/engine/scene'
 
 export interface LoadingProgress {
   total: number
@@ -28,7 +28,21 @@ export class LoadingScreen {
 
   setSpawn(latitude: number, longitude: number): void {
     this.centerTile = mapTileAt(latitude, longitude, 15)
-    this.grid3x3 = this.get3x3Grid(this.centerTile)
+    this.setTiles(this.get3x3Grid(this.centerTile))
+  }
+
+  setTiles(tiles: MapTile[]): void {
+    this.grid3x3 = [...tiles]
+    const grid = document.getElementById('loading-tiles')!
+    grid.replaceChildren(
+      ...tiles.map(() => {
+        const indicator = document.createElement('div')
+        indicator.className = 'tile-indicator'
+        return indicator
+      }),
+    )
+    grid.style.gridTemplateColumns = `repeat(${tiles.length === 4 ? 2 : 3}, 1fr)`
+    this.tileIndicators = Array.from(grid.children) as HTMLElement[]
     this.loadedTiles.clear()
     this.updateIndicators()
   }

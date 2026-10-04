@@ -44,7 +44,7 @@ it('composes only four complete verified children in the parent geographic frame
   const { join } = await import('node:path')
   const { tmpdir } = await import('node:os')
   const { createHash } = await import('node:crypto')
-  const { groundGlb } = await import('../../../studio/e2e/planet-fixture.js')
+  const { groundGlb } = await import('../../../test/browser/e2e/planet-fixture.js')
   const { mapTileChildren, mapTilePath, mapTileId, mapTileBounds, mapTileSample } =
     await import('../../../src/scene/mercator.js')
   const { composeChildMeshes } = await import('./lod.js')

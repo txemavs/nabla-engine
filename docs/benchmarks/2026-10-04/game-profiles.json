@@ -1,0 +1,53 @@
+{
+  "scenario": "Warm offline flat Z15, parked fleet, exterior chase, 1280x800 CSS, DPR 1, headless Chrome; no streaming arrivals",
+  "results": [
+    {
+      "quality": "custom",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "samples": 180,
+      "fps": 32.00056889900265,
+      "frameP95Ms": 31.600000000000364,
+      "frameP99Ms": 31.699999999999818,
+      "cpuMeanMs": 5.611666668123669,
+      "physicsMeanMs": 0.6305555552244186,
+      "installMeanMs": 0.040555556449625225,
+      "calls": 1155,
+      "triangles": 629336,
+      "width": 1280,
+      "height": 800,
+      "droppedSeconds": 0
+    },
+    {
+      "quality": "mobile",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "samples": 180,
+      "fps": 31.999999999999996,
+      "frameP95Ms": 31.600000000000364,
+      "frameP99Ms": 31.699999999999818,
+      "cpuMeanMs": 3.7883333320418995,
+      "physicsMeanMs": 0.6750000003311369,
+      "installMeanMs": 0.04999999933772617,
+      "calls": 183,
+      "triangles": 163415,
+      "width": 640,
+      "height": 400,
+      "droppedSeconds": 0
+    },
+    {
+      "quality": "minimal",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "samples": 180,
+      "fps": 31.99943112122451,
+      "frameP95Ms": 31.600000000000364,
+      "frameP99Ms": 31.600000000000364,
+      "cpuMeanMs": 3.7272222222553357,
+      "physicsMeanMs": 0.6572222222884496,
+      "installMeanMs": 0.040000000761614904,
+      "calls": 183,
+      "triangles": 163415,
+      "width": 448,
+      "height": 280,
+      "droppedSeconds": 0
+    }
+  ]
+}

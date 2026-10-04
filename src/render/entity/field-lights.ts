@@ -1,3 +1,4 @@
+import { lightingDefaults } from '../../config/lighting.js'
 import * as THREE from 'three'
 import { geoToLocal, localToGeo } from '../../math/geo/sphere.js'
 import {
@@ -13,21 +14,20 @@ import type { Vec3Tuple } from '../../entity/schema.js'
 const MAP = 'https://api.openstreetmap.org/api/0.6/map'
 const CACHE = 'nabla-lamps-z15:'
 
-export const fieldLayers = { lamps: true, navigation: true }
-/** 0 off, 1–10 glow only, 11–20 also casts. Reach is metres. `armed` is the layer checkbox. */
-export const lampLook = { level: 10, reach: 28, armed: true }
-
-function lampLevel() {
-  return lampLook.armed ? lampLook.level : 0
+export type FieldLightMark = { lat: number; lon: number; tags: Record<string, string> }
+export type FieldLightSource = (tile: MapTile, signal: AbortSignal) => Promise<FieldLightMark[]>
+export interface FieldLightOptions {
+  source?: FieldLightSource
+  layers?: Partial<{ lamps: boolean; navigation: boolean }>
+  look?: Partial<{ level: number; reach: number; armed: boolean }>
 }
-
 type Kind = 'lamp' | 'nav' | 'buoy'
 type LampCell = {
   poles: THREE.InstancedMesh
   heads: THREE.InstancedMesh
   spots: { x: number; y: number; z: number; grounded: boolean }[]
 }
-type Stored = { lat: number; lon: number; tags: Record<string, string> }
+type Stored = FieldLightMark
 type Mark = {
   kind: Kind
   group: THREE.Group
@@ -40,9 +40,15 @@ type Mark = {
 /** One z15 cell, kept like the terrain tile. The network runs once per cell. */
 export class FieldLights {
   readonly root = new THREE.Group()
+  readonly layers: { lamps: boolean; navigation: boolean }
+  readonly look: { level: number; reach: number; armed: boolean }
+  private readonly source: FieldLightSource
+  private wanted = new Set<string>()
+  private originKey = ''
+  private disposed = false
   private readonly cells = new Map<string, Mark[]>()
   private readonly lampCells = new Map<string, LampCell>()
-  private readonly loading = new Set<string>()
+  private readonly loading = new Map<string, AbortController>()
   private nextTry = new Map<string, number>()
   private readonly poleGeometry = new THREE.CylinderGeometry(0.05, 0.07, 5, 5)
   private readonly headGeometry = new THREE.SphereGeometry(0.75, 8, 6)
@@ -54,14 +60,48 @@ export class FieldLights {
   private readonly lampMatrix = new THREE.Matrix4()
   private readonly beams: THREE.SpotLight[] = []
   private readonly nearest: { x: number; y: number; z: number; d2: number }[] = []
-  constructor() {
+  constructor(options: FieldLightOptions = {}) {
+    this.layers = {
+      lamps: lightingDefaults.lamps,
+      navigation: lightingDefaults.navigation,
+      ...options.layers,
+    }
+    this.look = {
+      level: lightingDefaults.level,
+      reach: lightingDefaults.reach,
+      armed: lightingDefaults.armed,
+      ...options.look,
+    }
+    this.source = options.source ?? osmFieldLightSource
     this.root.name = 'Field lights'
-    for (let i = 0; i < 8; i++) {
-      const beam = new THREE.SpotLight('#fff1d2', 0, lampLook.reach, Math.PI / 3, 0.55, 2)
+    for (let i = 0; i < lightingDefaults.maxBeams; i++) {
+      const beam = new THREE.SpotLight('#fff1d2', 0, this.look.reach, Math.PI / 3, 0.55, 2)
       beam.castShadow = false
       this.root.add(beam, beam.target)
       this.beams.push(beam)
     }
+  }
+  private lampLevel(): number {
+    return this.layers.lamps && this.look.armed ? this.look.level : 0
+  }
+  reset(): void {
+    for (const controller of this.loading.values()) controller.abort()
+    this.loading.clear()
+    for (const path of [...this.cells.keys()]) this.drop(path)
+    this.nextTry.clear()
+    this.wanted.clear()
+    for (const beam of this.beams) beam.intensity = 0
+  }
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.reset()
+    this.poleGeometry.dispose()
+    this.headGeometry.dispose()
+    this.poleMaterial.dispose()
+    this.headMaterial.dispose()
+    this.root.clear()
+    this.root.removeFromParent()
   }
   update(
     origin: GeoPoint | undefined,
@@ -71,8 +111,14 @@ export class FieldLights {
     heightAt: (position: Vec3Tuple) => number | undefined,
     tiles: MapTile[] = [],
   ): void {
-    const showLamps = lampLevel() > 0
-    const showNav = fieldLayers.navigation
+    if (this.disposed) return
+    const key = JSON.stringify(origin ?? null)
+    if (key !== this.originKey) {
+      this.reset()
+      this.originKey = key
+    }
+    const showLamps = this.lampLevel() > 0
+    const showNav = this.layers.navigation
     this.paintHeads()
     this.root.visible = !!origin
     if (!origin) return
@@ -81,6 +127,12 @@ export class FieldLights {
       const here = localToGeo(origin, camera)
       wanted.add(mapTilePath(mapTileAt(here.latitude, here.longitude, 15)))
     }
+    this.wanted = wanted
+    for (const [path, controller] of this.loading)
+      if (!wanted.has(path)) {
+        controller.abort()
+        this.loading.delete(path)
+      }
     for (const path of wanted) this.ensure(origin, path)
     for (const path of this.cells.keys()) if (!wanted.has(path)) this.drop(path)
     let groundBudget = 12
@@ -93,8 +145,8 @@ export class FieldLights {
         if (spot.grounded) continue
         groundBudget--
         const y = heightAt([spot.x, spot.y, spot.z])
-        spot.grounded = true
         if (y === undefined) continue
+        spot.grounded = true
         spot.y = y
         moved = true
         this.placeLamp(cell, i)
@@ -124,23 +176,19 @@ export class FieldLights {
     if (this.cells.has(path) || this.loading.has(path)) return
     const wait = this.nextTry.get(path) ?? 0
     if (performance.now() < wait) return
-    const cached = readCache(path)
-    if (cached) {
-      this.mount(origin, path, cached)
-      return
-    }
-    this.loading.add(path)
-    const bounds = mapTileBounds(parseMapTilePath(path))
-    loadMarks(bounds.south, bounds.west, bounds.north, bounds.east)
+    const controller = new AbortController()
+    this.loading.set(path, controller)
+    Promise.resolve()
+      .then(() => this.source(parseMapTilePath(path), controller.signal))
       .then((elements) => {
-        writeCache(path, elements)
-        this.mount(origin, path, elements)
+        if (!this.disposed && this.loading.get(path) === controller && this.wanted.has(path))
+          this.mount(origin, path, elements)
       })
       .catch(() => {
-        this.nextTry.set(path, performance.now() + 8000)
+        if (!controller.signal.aborted) this.nextTry.set(path, performance.now() + 8000)
       })
       .finally(() => {
-        this.loading.delete(path)
+        if (this.loading.get(path) === controller) this.loading.delete(path)
       })
   }
   private mount(origin: GeoPoint, path: string, elements: Stored[]): void {
@@ -192,6 +240,9 @@ export class FieldLights {
   /** Upright posts in the geographic frame. The head is not a collider. */
   poles(): { position: Vec3Tuple; half: Vec3Tuple }[] {
     const poles: { position: Vec3Tuple; half: Vec3Tuple }[] = []
+    for (const cell of this.lampCells.values())
+      for (const spot of cell.spots)
+        poles.push({ position: [spot.x, spot.y + 2.5, spot.z], half: [0.07, 2.5, 0.07] })
     for (const marks of this.cells.values())
       for (const mark of marks) {
         if (mark.kind === 'nav') continue
@@ -207,11 +258,11 @@ export class FieldLights {
     return poles
   }
   private paintHeads(): void {
-    const glow = lampLevel() <= 0 ? 0 : Math.min(1, lampLevel() / 10)
+    const glow = this.lampLevel() <= 0 ? 0 : Math.min(1, this.lampLevel() / 10)
     this.headMaterial.color.setRGB(0.1 + 0.9 * glow, 0.1 + 0.845 * glow, 0.1 + 0.724 * glow)
   }
   private lightNearest(camera: Vec3Tuple): void {
-    const cast = Math.max(0, lampLevel() - 10) / 10
+    const cast = Math.max(0, this.lampLevel() - 10) / 10
     const found = this.nearest
     found.length = 0
     if (cast > 0) {
@@ -242,7 +293,7 @@ export class FieldLights {
         continue
       }
       beam.intensity = cast * 700
-      beam.distance = lampLook.reach
+      beam.distance = this.look.reach
       beam.position.set(item.x, item.y, item.z)
       beam.target.position.set(item.x, item.y - 8, item.z)
     }
@@ -257,6 +308,8 @@ export class FieldLights {
   private drop(path: string): void {
     const lamps = this.lampCells.get(path)
     if (lamps) {
+      lamps.poles.dispose()
+      lamps.heads.dispose()
       lamps.poles.removeFromParent()
       lamps.heads.removeFromParent()
       this.lampCells.delete(path)
@@ -276,10 +329,24 @@ export class FieldLights {
   }
 }
 
+/** Optional online provider used by Studio; games can supply bundled marks instead. */
+export async function osmFieldLightSource(
+  tile: MapTile,
+  signal: AbortSignal,
+): Promise<FieldLightMark[]> {
+  const path = mapTilePath(tile),
+    cached = readCache(path)
+  if (cached) return cached
+  const bounds = mapTileBounds(tile)
+  const marks = await loadMarks(bounds.south, bounds.west, bounds.north, bounds.east, signal)
+  if (!signal.aborted) writeCache(path, marks)
+  return marks
+}
+
 function readCache(path: string): Stored[] | null {
-  const raw = localStorage.getItem(CACHE + path)
-  if (!raw) return null
   try {
+    const raw = localStorage.getItem(CACHE + path)
+    if (!raw) return null
     const parsed = JSON.parse(raw) as Stored[]
     return Array.isArray(parsed) ? parsed : null
   } catch {
@@ -299,9 +366,10 @@ async function loadMarks(
   west: number,
   north: number,
   east: number,
+  signal: AbortSignal,
 ): Promise<Stored[]> {
   const response = await fetch(`${MAP}?bbox=${west},${south},${east},${north}`, {
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.any([signal, AbortSignal.timeout(20000)]),
   })
   if (!response.ok) throw new Error(String(response.status))
   const xml = new DOMParser().parseFromString(await response.text(), 'text/xml')

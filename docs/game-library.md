@@ -1,191 +1,158 @@
-# Game Library Mode
+# Game library mode
 
-The Nabla Engine can run as a standalone game library without the Studio UI.
-This mode loads terrain tiles statically and spawns the player directly in a
-vehicle, making it suitable for deployment on static hosts like S3 or nginx.
+The reference `game/` application consumes public `@nabla/engine` entries. Engine
+owns the session, render loop, cameras, input, effects and planetary environment;
+the application supplies content, URL configuration and its HTML HUD.
+This is the first extraction increment, not full Studio parity. See the
+[remaining inventory](architecture/studio-extraction.md).
 
-## Quick Start
+`GameRuntime` from `/runtime` is the host-driven coordinator used by Studio and
+the browser composition. It owns a PlaySession, camera state, input mixing and
+gameplay actions; it does not create a renderer or attach DOM listeners.
+`GameRuntime` from `/runtime/browser` supplies those browser resources around the
+same coordinator. Its `game` property exposes that coordinator, and its existing
+`session` property remains available for compatibility.
 
-Build and deploy the game:
+## Offline planetary example
 
-```bash
-npm run build:game
-# Output: game-dist/
-```
-
-Serve the `game-dist/` directory from any static host. The game loads terrain
-tiles from pre-built manifest.json files via GET requests.
-
-## URL Parameters
-
-Configure the game spawn location and vehicle:
-
-| Parameter | Default                               | Description                                                  |
-| --------- | ------------------------------------- | ------------------------------------------------------------ |
-| `lat`     | 43.3372                               | Spawn latitude (Zaisa, Irun)                                 |
-| `lon`     | -1.7523                               | Spawn longitude                                              |
-| `alt`     | 50                                    | Spawn altitude in meters                                     |
-| `vehicle` | `car`                                 | Vehicle preset ID                                            |
-| `tiles`   | `https://atlas.chained.world/euskadi` | Tile base URL, without the trailing `/z` (`/` = this origin) |
-| `static`  | `true`                                | Use static tile mode (GET vs POST)                           |
-
-**Example:**
-
-```
-?lat=40.4168&lon=-3.7038&vehicle=police
-?tiles=https://tiles.example.org/my-set
-```
-
-## Static Tile Mode
-
-When `static=true` (default), the game fetches tile manifests via GET requests:
-
-```
-{tilesBaseUrl}/z/{zoom}/{x}/{y}/manifest.json
-{tilesBaseUrl}/z/{zoom}/{x}/{y}/{terrain}.glb
-{tilesBaseUrl}/z/{zoom}/{x}/{y}/{buildings}.glb
-```
-
-`tilesBaseUrl` must **not** end in `/z`: the engine adds `z/{zoom}/{x}/{y}` itself (a base of `/z` would
-request `/z/z/15/...`). The default base is the Euskadi tile set, `https://atlas.chained.world/euskadi`, so the
-Z15 tile 16224/11998 is read from
-`https://atlas.chained.world/euskadi/z/15/16224/11998/manifest.json`. Use `?tiles=` to point at another host.
-
-This is compatible with S3, CloudFront, nginx, or any static file server. The planet worker checks every GLB
-against the size and SHA-256 in its manifest and rejects a mismatch.
-
-### HTTPS requirement
-
-Serve the game page over **HTTPS** (`http://localhost` is fine for development):
-
-- the worker uses `crypto.subtle` (GLB checksum) and the Cache API, which browsers only provide in a secure
-  context;
-- an `https:` page cannot load tiles from an `http:` host (mixed content); the game reports this explicitly
-  instead of a bare network error.
-
-### What the status line tells you
-
-The loading status shows how many manifests loaded, how many are not published (HTTP 404) and the real cause of the
-first failure, for example `HTTP 403 (access denied; S3/CloudFront also answer 403 for a tile that is not uploaded
-yet)`, `network or CORS error`, `timed out after 15 s`, `not valid JSON` or `invalid manifest`.
-
-### CORS Configuration
-
-For cross-origin tile hosting, configure your CDN/bucket with appropriate CORS
-headers:
-
-```
-Access-Control-Allow-Origin: *            (or the exact origin of the game page)
-Access-Control-Allow-Methods: GET
-```
-
-The header must be present on manifests and GLB files, including error responses if you want the real status to
-be visible (without it the browser reports only a CORS error).
-
-## Loading Screen
-
-The game shows a loading screen until the initial 3×3 tile grid (Z15) around
-the spawn location is loaded. This ensures terrain collision is available
-before the player spawns.
-
-Tile indicators show loading progress:
-
-- Gray: waiting
-- Blue: loaded
-- Purple: center (spawn) tile
-
-## Controls
-
-| Key     | Action                       |
-| ------- | ---------------------------- |
-| W/A/S/D | Drive                        |
-| Space   | Brake / Handbrake            |
-| C       | Cycle camera (cockpit/chase) |
-| R       | Reset vehicle position       |
-| Shift   | Sprint (when walking)        |
-
-## Vehicle Presets
-
-Available vehicle presets are defined in `assets/studio/cars/`. The default
-`car` preset loads the S3 Nabla 400 CV from `assets/studio/cars/a3/s3.json`.
-
-Custom vehicles can be added by placing JSON presets in the assets folder.
-See [Creating a Vehicle](creating-a-vehicle.md) for the preset format.
-
-## Integration
-
-Import the engine as a library for custom game code:
-
-```typescript
-import { PlanetWorld, Simulation, SceneView, presetVehicle, createEntity } from '@nabla/engine'
-
-// Create a scene document with geography
-const document = {
-  version: 1,
-  name: 'MyGame',
-  geography: {
-    latitude: 43.3372,
-    longitude: -1.7523,
-    altitude: 50,
-    imagery: 'offline',
-    planetary: true,
-  },
-  entities: [createEntity('spawn', 'spawn'), presetVehicle('car', 'player-car')],
-}
-
-// Create world stream with static tiles
-const world = new PlanetWorld(
-  origin,
-  onChange,
-  setupMaterial,
-  'https://atlas.chained.world/euskadi', // tilesBaseUrl (no trailing /z)
-  '/prepare', // apiUrl (unused in static mode)
-  'static', // discoveryMode
-)
-
-// Create simulation
-const sim = new Simulation(document, {
-  planetaryTerrain: true,
-})
-sim.startInVehicle('player-car')
-```
-
-## Build Output
-
-The `game-dist/` directory contains:
-
-- `index.html` - Entry point
-- `assets/` - JS bundles, workers, WASM modules
-- Copies of `assets/` (sprites, brands, vehicle models)
-
-Deploy the entire directory to your static host. For S3 deployment:
-
-```bash
-aws s3 sync game-dist/ s3://your-bucket/ --delete
-```
-
-## Development
-
-Run the game in development mode:
-
-```bash
+```sh
+npm run build
 npm run dev:game
-# Opens at http://localhost:5174
 ```
 
-Configure tile proxying in `vite.game.config.ts` for local development with
-a remote tile server.
+Open `http://localhost:5174/?example=flat`. Four Z15 tiles surround `(lon=0, lat=0)`,
+providing approximately 2.44 × 2.44 km at sea level. The surface has no relief but
+follows planetary curvature. The visible sea sheet is disabled over the synthetic
+surface to avoid overlap; coordinates, sky and the planetary model remain active.
+See [fixture details](../assets/examples/flat-z15/README.md).
 
-## Tile Preparation
+The example starts in the car, with the white truck and flying container parked
+beside it. Exit with E, walk to another vehicle and press E to board; there is no
+vehicle selector. The truck starts with a six-wheel passive trailer attached.
+Its yaw hinge is intended for this flat test surface; interactive coupling and
+pitch/roll articulation are not yet implemented. Models come from `1cca41f`,
+using Engine's existing physics world rather than the prototype's standalone rig.
+For automated scenarios, `&vehicle=white-truck` or `&vehicle=carrier` selects the
+initial occupied vehicle. Unknown presets report an error.
 
-Pre-built tiles must exist at the configured base URL. Use the world-cache
-services to generate tiles:
+Controls: WASD, Space to brake/jump, C for cameras, E to enter/exit, R for recovery,
+H for the car's retractable GPS, V for supported flight, F for docking and T for control transfer. Click the canvas
+to focus and enable audio; drag to look. Standard gamepad axes use Studio's mixer.
+For LAN/Tailscale testing, the server must listen on the network interface.
+HTTP IP origins use a portable SHA-256 verifier for tiles; checksums are still
+mandatory. Keyboard controls work there. Gamepad access requires a browser
+context that permits it (normally HTTPS or localhost) and is otherwise disabled.
+The browser runtime clears keyboard commands on focus loss, captures key releases
+before bubbling handlers, and expires movement keys after 1.5 seconds without
+keyboard activity. Normal OS key repeats renew the whole held chord. A fresh
+press is required after expiry; queued repeats cannot restart cleared controls.
 
-1. Generate tiles with the world-cache pipeline
-2. Upload to your static host maintaining the `z/{zoom}/{x}/{y}/` structure
-3. Each tile directory needs:
-   - `manifest.json` (tile metadata and GLB paths)
-   - `terra-{zoom}-{x}-{y}-{timestamp}.glb` (terrain)
-   - `build-{zoom}-{x}-{y}-{timestamp}.glb` (buildings)
+Without `example=flat`, URL configuration selects geographic coverage:
 
-See [World cache operations](world-cache-operations.md) for tile generation.
+| Parameter | Default                                   | Meaning                                                |
+| --------- | ----------------------------------------- | ------------------------------------------------------ |
+| `lat`     | `43.3372`                                 | Spawn latitude                                         |
+| `lon`     | `-1.7523`                                 | Spawn longitude                                        |
+| `alt`     | `50`                                      | Geographic origin altitude in metres                   |
+| `vehicle` | `car`                                     | Installed preset                                       |
+| `tiles`   | None (required in static geographic mode) | Application-owned tile base without trailing `/z`      |
+| `static`  | `true`                                    | Static manifests; `false` uses the preparation service |
+
+Zero is valid for latitude, longitude and altitude. No cartographic coverage does
+not imply a different coordinate system.
+
+Opening the demo without a terrain source reports a configuration error before
+creating the runtime or requesting terrain. Use `?example=flat` for the bundled
+offline surface, `?tiles=/my-tiles&lat=0&lon=0&alt=0` for local coverage, or
+`?tiles=https://tiles.example.org/world&lat=0&lon=0&alt=0` for an external dataset.
+`?tiles=/` explicitly selects this origin; missing or whitespace-only values do
+not. Dynamic mode (`?static=false`) explicitly selects this demo's `/prepared`
+and `/prepare` services, which the application must deploy or proxy.
+
+### Migration: application-owned terrain
+
+`DEFAULT_TILES_BASE_URL` has been removed from both the root export and
+`@nabla/engine/planet/static-tiles`. Replace its imports with application
+configuration and pass `tiles: { baseUrl, mode: 'static' }` to the browser runtime,
+or `{ baseUrl }` to `fetchTileManifest`. Local paths and arbitrary hosts use the
+same loader and manifest validation. No deployment host is selected by this API.
+The demo's spawn defaults are application choices, not Engine defaults.
+
+For a self-contained static dataset also set `horizon: false` and omit optional
+external-data features such as `fieldLights`. Removing the old tile constant
+does **not** finish the wider provider audit: coarse horizon elevation still has
+an ArcGIS fallback, imagery uses ArcGIS, and legacy geographic preparation has
+ArcGIS/Overpass defaults. Water data also has an OpenFreeMap fallback. These
+providers need explicit per-instance source configuration in a follow-up; do not
+interpret a custom tile base as a guarantee that all optional layers are offline.
+
+## External application
+
+```ts
+import { GameRuntime } from '@nabla/engine/runtime/browser'
+import { presetVehicle } from '@nabla/engine/vehicles'
+import {
+  createFlatTestScene,
+  FLAT_TEST_BASE,
+  FLAT_TEST_TILES,
+} from '@nabla/engine/examples/flat-tile'
+
+const vehicle = presetVehicle('car', 'player')
+const game = new GameRuntime({
+  canvas,
+  scene: createFlatTestScene(vehicle),
+  sea: false,
+  tiles: {
+    baseUrl: FLAT_TEST_BASE,
+    mode: 'static',
+    tiles: FLAT_TEST_TILES,
+    horizon: false,
+  },
+  onProgress: (status) => {
+    statusElement.textContent = status
+  },
+  onFrame: ({ speedKmh }) => {
+    speedElement.textContent = `${Math.round(speedKmh)} km/h`
+  },
+  onError: (error) => console.error(error),
+})
+await game.play({ vehicleId: vehicle.id })
+// game.pause(); game.resume(); game.stop(); await game.play(...)
+// game.dispose() releases owned resources; the host retains its canvas.
+```
+
+Serve the package's `assets/` at the application root. A Vite consumer can use
+`publicDir: 'node_modules/@nabla/engine/assets'`. No aliases to Engine source or
+Studio imports are required. Stock catalogs are generated as ordinary ESM during
+package build; local `assets/custom` files are excluded from published catalogs.
+
+For host-controlled scheduling, set `clock: 'manual'` and call `game.tick(time)`
+with a `performance.now()`-compatible timestamp. Manual ticks are rejected in
+automatic mode. `PlaySession` from `@nabla/engine/runtime/session` can be used
+without creating a renderer or DOM listeners.
+
+## Loading and deployment
+
+Static files retain the existing contract:
+
+```text
+{base}/z/{zoom}/{x}/{y}/manifest.json
+{base}/z/{zoom}/{x}/{y}/{terrain}.glb
+{base}/z/{zoom}/{x}/{y}/{buildings}.glb
+```
+
+The worker checks GLB sizes and SHA-256 hashes. Startup waits for actual ground;
+finite examples first load all declared tiles. A timeout rejects startup with
+the provider status. It never proceeds over absent terrain. A 1 mm probe handles
+float32 gaps at shared tile corners. Stop/dispose cancels pending startup.
+
+Use HTTPS or localhost for crypto and caching. Remote providers need CORS on
+manifests and models. Loading exposes provider errors through progress and the
+startup rejection. The four-tile synthetic example makes no external requests.
+
+`npm run build:game` produces `game-dist/`; deploy the whole directory.
+`npm run build:fixture` regenerates the deterministic example. Run
+`node scripts/runtime-smoke.mjs` against the game; `NABLA_GAME_URL` selects the
+host and `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` selects an installed browser.
+Also verify a clean sibling application installed from `npm pack` output, so
+ancestor dependencies and source-tree aliases cannot hide packaging problems.

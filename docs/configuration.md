@@ -1,0 +1,117 @@
+# Engine configuration by topic
+
+Engine tuning lives in small, typed topic files under `src/config`. Import their
+public entries from `@nabla/engine/config` or `@nabla/engine/config/<topic>`.
+Values have English source comments describing units and behavior. These modules
+contain data and small validation helpers; they do not create worlds or renderers.
+
+| Topic              | Source                                         | Application mechanism                                                                                             |
+| ------------------ | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Camera             | [camera.ts](../src/config/camera.ts)           | `GameRuntime({ camera: overrides })` in both shared and browser runtimes; independent settings per instance       |
+| Controls           | [controls.ts](../src/config/controls.ts)       | Build-time defaults for mouse sensitivity, gamepad deadzone and keyboard steering                                 |
+| Performance        | [performance.ts](../src/config/performance.ts) | Browser `performance` option; named presets and supported quality choices                                         |
+| Shadows            | [shadows.ts](../src/config/shadows.ts)         | Quality keys select cascade count, map size, reach and bias                                                       |
+| Lighting           | [lighting.ts](../src/config/lighting.ts)       | Browser fallback lights; geographic lights support `fieldLights.layers` and `fieldLights.look` overrides          |
+| Terrain scheduling | [streaming.ts](../src/config/streaming.ts)     | Build-time sampling/install budgets and floating-origin distance; tile/cache limits remain in performance presets |
+| Simulation         | [simulation.ts](../src/config/simulation.ts)   | Build-time fixed stepping, gravity, solver and player movement defaults                                           |
+
+## Camera example
+
+```ts
+import { GameRuntime } from '@nabla/engine/runtime/browser'
+
+const game = new GameRuntime({
+  canvas,
+  scene,
+  camera: {
+    autoCenterDelayMs: 10_000,
+    autoCenterBlendMs: 500,
+  },
+})
+```
+
+Ten seconds are measured from the last manual look, not from the last steering
+input. During the grace period automatic exterior heading and road look-ahead
+remain suspended. After ten seconds recovery ramps up over half a second.
+Ground and flight recovery use the same settings. Cockpit look stays manual;
+overhead view intentionally follows vehicle orientation. Replay retains overrides.
+
+`createGameCameraState(overrides)` supports hosts that update cameras directly.
+Camera overrides are validated before use. Durations must be finite and
+non-negative; ordered ranges and positive divisors/FOV are checked. Do not mutate
+the exported defaults. To change a running camera's settings, recreate its state
+with `createGameCameraState` so telemetry and framing share the same settings.
+
+## Display, synchronization and scaling
+
+[display.ts](../src/config/display.ts) owns `maxFps` and `resolutionScale`.
+Browser hosts can pass `display: { maxFps: 60, resolutionScale: 0.75 }` at creation,
+or call `runtime.setDisplay({ maxFps: 30 })` during play. A cap of zero follows
+browser cadence; positive caps are integers from 30 to 360. The automatic loop
+retains real timestamps, carries fractional scheduling remainder and does not
+produce catch-up render bursts after a stall. Physics still uses fixed steps.
+Manual-clock hosts control their own frame submission and do not use this cap.
+
+Scaling multiplies the selected quality profile's effective device pixel ratio.
+At scale 1 the profile is unchanged; 0.5 renders half its width and height.
+Changing FPS does not recreate render targets. The demo exposes these live
+controls under **Pantalla y rendimiento**, preserving them in `fps` and `scale`
+URL parameters. Changing its quality preset explicitly reloads the demo.
+
+Synchronization is managed by the browser through
+[requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame).
+There is no exposed native swap-chain/VSync-off control in this WebGL host; zero
+does not promise uncapped rendering beyond the browser/display cadence.
+
+The current renderer uses standard resolution scaling, not DLSS reconstruction.
+[NVIDIA's supported integration](https://developer.nvidia.com/blog/how-to-integrate-nvidia-dlss-4-into-your-game-with-nvidia-streamline/)
+uses native graphics APIs/Streamline. Nabla's WebGL renderer has no such backend;
+an RTX card alone does not enable DLSS in it. A native rendering backend would be
+a separate integration project. Temporal or spatial web upscaling is possible
+future work, but is not implemented or advertised as DLSS here.
+
+## Scope and precedence
+
+Global source defaults require rebuilding Engine and updating the consumer's
+package. Importing a defaults object does not change a live runtime. Camera,
+performance and field-light options are per-instance overrides; physics/control
+defaults are intentionally build-time values in this change. Physics tuning must
+be consistent between gravity, boats, flight and wheeled vehicles.
+
+The standalone browser game has an explicit `browserPerformanceDefaults` profile.
+Its precedence is browser defaults, then a selected named preset, then explicit
+host overrides. `normalizePerformance` accepts the quality choices listed in its
+topic file; unsupported choices fall back to defaults. Existing runtime and
+shadow-tier imports re-export the same definitions for compatibility.
+
+Authored content remains in its existing topic files rather than being copied
+into a competing global table:
+
+- Vehicle definitions and validation: [vehicle fields](../src/entity/vehicle/field.ts).
+  Each vehicle stores its own mass, suspension, engine/brake force, seats and
+  camera distance. Stock vehicle recipes live under `assets/studio`; changing
+  camera defaults does not overwrite a vehicle's authored camera distance.
+- Scene sky/water and geography: [scene document](../src/scene/document.ts),
+  [sky clock](../src/planet/sky.ts) and [water model](../src/runtime/water.ts).
+- Terrain sources and offline coverage: `GameRuntimeOptions.tiles` and
+  [PlanetSourceOptions](../src/render/planet/world.ts).
+- Lights, portals, roads and terrain content: the corresponding `field.ts`
+  schemas under `src/entity`, exposed through the public scene API.
+
+This catalog centralizes the settings listed above. It is not a claim that every
+numeric literal in the legacy engine has been audited or made configurable.
+Algorithmic tolerances, geometry topology, schema versions and unit conversions
+are implementation contracts, not application preferences. Additional tunable
+policies found during review should move into their topic file without changing
+their behavior or duplicating authored content.
+
+## Maintenance
+
+Keep one owner for each setting. Document its units, supported range, precedence
+and lifetime. Preserve existing values during extraction. Add a behavioral test
+when changing a setting's meaning, and regenerate the reference with
+`npm run docs:generate`; `npm run docs:check` rejects stale documentation.
+
+For weak machines, start with `performance: { preset: 'mobile' }`; `minimal` lowers
+the pixel-ratio cap further to 0.35 while retaining the same conservative collision
+coverage. See the [measured comparison](architecture/performance-review-2026-10-04.md).

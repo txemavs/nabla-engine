@@ -24,6 +24,15 @@ export interface Vehicle {
 
 export function validateVehicle(entity: Entity): void {
   const spec = entity.vehicle
+  if (spec) {
+    if (spec.hubs.length !== 4 && !spec.passive)
+      throw new Error('Six-wheel rigs must be passive trailers')
+    if (spec.tow && !spec.passive) throw new Error('Only passive trailers can be towed')
+    if (entity.visual?.wheels && entity.visual.wheels.length !== spec.hubs.length)
+      throw new Error('Wheel models must match the hubs')
+    if (entity.visual?.wheelRotations && entity.visual.wheelRotations.length !== spec.hubs.length)
+      throw new Error('Wheel rotations must match the hubs')
+  }
   if (spec && entity.kind !== 'vehicle') throw new Error('Vehicle definition requires a vehicle')
   const ramp = spec?.garage?.ramp
   if (ramp && ramp.colliderIndex >= spec!.colliders.length)

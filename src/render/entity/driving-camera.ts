@@ -1,3 +1,4 @@
+import { cameraRecovery, gameCameraDefaults, type GameCameraSettings } from '../../config/camera.js'
 import { Euler, MathUtils, Quaternion, Vector3 } from 'three'
 
 const carEyes: readonly number[] = [0, -0.15, -0.36]
@@ -8,7 +9,7 @@ export function driverHeadPose(
   rotation: readonly number[],
   isCarrier: boolean,
   yaw = 0,
-  pitch = 0.05,
+  pitch = gameCameraDefaults.headPitch,
   offset?: readonly number[],
 ): { position: Vector3; quaternion: Quaternion } {
   const body = new Quaternion().fromArray(rotation)
@@ -26,7 +27,7 @@ export function driverHeadPose(
   }
 }
 
-/** Brief manual-look grace, then speed-aware damping and bounded corner anticipation. */
+/** Configurable manual-look grace, then speed-aware damping and bounded corner anticipation. */
 export function followDrivingHeading(
   yaw: number,
   heading: number,
@@ -34,21 +35,37 @@ export function followDrivingHeading(
   speed: number,
   elapsed: number,
   sinceLookMs: number,
+  settings: Readonly<GameCameraSettings> = gameCameraDefaults,
 ): number {
-  const resume = MathUtils.smoothstep(sinceLookMs, 900, 1400)
-  const anticipation = MathUtils.clamp(turnRate * 0.22, -0.3, 0.3)
-  const wanted = heading + anticipation * MathUtils.smoothstep(speed, 1, 8)
+  const resume = cameraRecovery(sinceLookMs, settings)
+  const anticipation = MathUtils.clamp(
+    turnRate * settings.turnAnticipationSeconds,
+    -settings.maxTurnAnticipation,
+    settings.maxTurnAnticipation,
+  )
+  const wanted =
+    heading +
+    anticipation *
+      MathUtils.smoothstep(speed, settings.anticipationMinSpeed, settings.anticipationFullSpeed)
   const error = Math.atan2(Math.sin(wanted - yaw), Math.cos(wanted - yaw))
   return (
     yaw +
     error *
-      (1 - Math.exp(-(7 + Math.min(speed / 5, 5)) * Math.min(Math.max(elapsed, 0), 0.1))) *
+      (1 -
+        Math.exp(
+          -(
+            settings.headingDamping +
+            Math.min(speed / settings.speedDampingDivisor, settings.maxSpeedDamping)
+          ) * Math.min(Math.max(elapsed, 0), settings.maxStepSeconds),
+        )) *
       resume
   )
 }
 
 /** Filter suspension noise before it can change camera framing or anticipated yaw. */
 export class DrivingTelemetry {
+  /** Use the owning camera settings for telemetry filtering. */
+  constructor(private readonly settings: Readonly<GameCameraSettings> = gameCameraDefaults) {}
   speed = 0
   turnRate = 0
   private vehicleId: string | null = null
@@ -59,7 +76,12 @@ export class DrivingTelemetry {
       this.turnRate = 0
       return
     }
-    const alpha = 1 - Math.exp(-5 * Math.min(Math.max(elapsed, 0), 0.1))
+    const alpha =
+      1 -
+      Math.exp(
+        -this.settings.telemetryDamping *
+          Math.min(Math.max(elapsed, 0), this.settings.maxStepSeconds),
+      )
     this.speed += (speed - this.speed) * alpha
     this.turnRate += (turnRate - this.turnRate) * alpha
   }
@@ -87,6 +109,15 @@ export function overheadDrivingPose(
 }
 
 /** Driving map: roughly 30 m ahead at rest, with two seconds of extra road at speed. */
-export function overheadDrivingHeight(speed: number, zoom = 1): number {
-  return MathUtils.clamp((45 + Math.max(0, speed) * 2) * MathUtils.clamp(zoom, 0.75, 3), 45, 600)
+export function overheadDrivingHeight(
+  speed: number,
+  zoom = 1,
+  settings: Readonly<GameCameraSettings> = gameCameraDefaults,
+): number {
+  return MathUtils.clamp(
+    (settings.mapHeight + Math.max(0, speed) * settings.mapSpeedSeconds) *
+      MathUtils.clamp(zoom, settings.mapMinZoom, settings.mapMaxZoom),
+    settings.mapHeight,
+    settings.mapMaxHeight,
+  )
 }

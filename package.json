@@ -54,6 +54,74 @@
     "./vehicles/flight": {
       "types": "./dist/simulation/vehicles/flight.d.ts",
       "import": "./dist/simulation/vehicles/flight.js"
+    },
+    "./viewer": {
+      "import": "./dist/viewer/index.js",
+      "types": "./dist/viewer/index.d.ts"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js"
+    },
+    "./runtime/session": {
+      "types": "./dist/runtime/session.d.ts",
+      "import": "./dist/runtime/session.js"
+    },
+    "./runtime/browser": {
+      "types": "./dist/runtime/browser.d.ts",
+      "import": "./dist/runtime/browser.js"
+    },
+    "./examples/flat-tile": {
+      "types": "./dist/examples/flat-tile.d.ts",
+      "import": "./dist/examples/flat-tile.js"
+    },
+    "./scene": {
+      "types": "./dist/scene/index.d.ts",
+      "import": "./dist/scene/index.js"
+    },
+    "./planet/static-tiles": {
+      "types": "./dist/render/planet/static-tiles.d.ts",
+      "import": "./dist/render/planet/static-tiles.js"
+    },
+    "./render": {
+      "types": "./dist/render/index.d.ts",
+      "import": "./dist/render/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js"
+    },
+    "./config/camera": {
+      "types": "./dist/config/camera.d.ts",
+      "import": "./dist/config/camera.js"
+    },
+    "./config/controls": {
+      "types": "./dist/config/controls.d.ts",
+      "import": "./dist/config/controls.js"
+    },
+    "./config/lighting": {
+      "types": "./dist/config/lighting.d.ts",
+      "import": "./dist/config/lighting.js"
+    },
+    "./config/streaming": {
+      "types": "./dist/config/streaming.d.ts",
+      "import": "./dist/config/streaming.js"
+    },
+    "./config/simulation": {
+      "types": "./dist/config/simulation.d.ts",
+      "import": "./dist/config/simulation.js"
+    },
+    "./config/performance": {
+      "types": "./dist/config/performance.d.ts",
+      "import": "./dist/config/performance.js"
+    },
+    "./config/shadows": {
+      "types": "./dist/config/shadows.d.ts",
+      "import": "./dist/config/shadows.js"
+    },
+    "./config/display": {
+      "types": "./dist/config/display.d.ts",
+      "import": "./dist/config/display.js"
     }
   },
   "imports": {
@@ -71,22 +139,25 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --config vite.game.config.ts --host 0.0.0.0",
     "dev:game": "vite --config vite.game.config.ts --host 0.0.0.0",
-    "build": "tsc -p tsconfig.build.json",
-    "build:demo": "vite build",
+    "build": "tsc -p tsconfig.build.json && node scripts/finalize-package.mjs",
+    "build:demo": "vite build --config vite.game.config.ts",
     "build:game": "vite build --config vite.game.config.ts",
-    "typecheck": "tsc --noEmit && node scripts/typecheck-vue.cjs --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "docs:generate": "node scripts/document-code.mjs",
+    "docs:check": "node scripts/document-code.mjs --check",
     "test:e2e": "playwright test",
-    "check": "npm run format:check && npm run build && npm run typecheck && npm test && npm run build:demo",
+    "check": "npm run docs:check && npm run format:check && npm run build && npm run typecheck && npm test && npm run build:game",
     "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build:prepare": "tsc -p tsconfig.prepare.json",
     "prebuild:prepare": "node -e \"require('node:fs').rmSync('prepare-dist', { recursive: true, force: true })\"",
-    "test:atlas": "python3 -m unittest discover -s services/world-cache/atlas_tests -t services/world-cache"
+    "test:atlas": "python3 -m unittest discover -s services/world-cache/atlas_tests -t services/world-cache",
+    "build:fixture": "npm run build && node scripts/build-flat-test-tile.mjs"
   },
   "keywords": [
     "3d",
@@ -114,7 +185,8 @@
     "pbf": "^4.0.1",
     "polygon-clipping": "^0.15.7",
     "three": "^0.186.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "lerc": "^4.2.0"
   },
   "devDependencies": {
     "@babel/parser": "7.29.9",
@@ -123,7 +195,6 @@
     "@types/node": "^26.6.2",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-vue": "^6.0.9",
-    "lerc": "^4.2.0",
     "pinia": "^4.0.3",
     "prettier": "^3.9.8",
     "typescript": "^7.0.2",
@@ -132,5 +203,9 @@
     "vitest": "^5.0.1",
     "vue": "^3.5.41",
     "vue-tsc": "^3.3.11"
+  },
+  "browser": {
+    "./dist/catalog/weapons/weapon-source.js": "./dist/catalog/weapons/weapon-source.browser.js",
+    "./dist/catalog/vehicles/preset-source.js": "./dist/catalog/vehicles/preset-source.browser.js"
   }
 }

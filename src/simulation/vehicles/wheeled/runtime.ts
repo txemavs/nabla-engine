@@ -1,3 +1,4 @@
+import { simulationDefaults } from '../../../config/simulation.js'
 import { Body, RaycastVehicle, Vec3 } from '../../physics.js'
 import {
   createDrivetrain,
@@ -30,7 +31,7 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
   const spec = definition.powertrain
   if (
     !positive(body.mass) ||
-    definition.hubs.length !== 4 ||
+    (definition.hubs.length !== 4 && !(definition.passive && definition.hubs.length === 6)) ||
     !definition.hubs.every((hub) => hub.length === 3 && hub.every(Number.isFinite)) ||
     ![
       definition.wheelRadius,
@@ -98,6 +99,14 @@ export function stepWheeledVehicle(
   )
     throw new Error('Expected finite nonnegative tick and normalized wheeled input')
   if (dt === 0) return
+  if (v.definition.passive) {
+    for (let i = 0; i < v.raycast.wheelInfos.length; i++) {
+      v.raycast.setSteeringValue(0, i)
+      v.raycast.applyEngineForce(0, i)
+      v.raycast.setBrake(!active || input.handbrake ? v.definition.brakeForce : 0, i)
+    }
+    return
+  }
   const target =
     active && powered ? (-input.steering * 0.45) / (1 + v.body.velocity.length() * 0.035) : 0
   v.steer += clamp(target - v.steer, -dt * 1.8, dt * 1.8)
@@ -140,7 +149,7 @@ export function stepWheeledVehicle(
     const velocity = v.body.velocity
     const magnitude = velocity.length()
     const rolling = v.raycast.wheelInfos.some((wheel) => wheel.isInContact)
-      ? 0.012 * v.body.mass * 9.81
+      ? 0.012 * v.body.mass * simulationDefaults.gravity
       : 0
     v.body.applyForce(velocity.scale(-0.42 * magnitude - rolling / Math.max(1, magnitude)))
   }

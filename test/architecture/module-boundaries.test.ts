@@ -1,6 +1,23 @@
 import { expect, it } from 'vitest'
 import { importEdges, moduleGraph, reachable } from '../../scripts/lib/module-graph.js'
 const graph = moduleGraph(process.cwd())
+it('simulation subsystems cannot depend on their coordinator or browser runtime', () => {
+  for (const name of [
+    'contracts',
+    'entity-body',
+    'map-collisions',
+    'terrain-boundary',
+    'catch-floor',
+    'road-assist',
+    'portal-clearance',
+    'portal-traversal',
+    'vehicle-docking',
+  ]) {
+    const closure = [...reachable(graph, [`src/simulation/${name}.ts`], true)]
+    expect(closure).not.toContain('src/simulation/simulation.ts')
+    expect(closure.filter((path) => /^src\/(runtime|render)\//.test(path))).toEqual([])
+  }
+})
 it('requires explicit review before computed module loading can bypass boundaries', () => {
   expect(graph.filter((e) => e.to === '<computed import>')).toEqual([])
 })

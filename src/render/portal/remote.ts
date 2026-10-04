@@ -25,6 +25,7 @@ export class RemotePortalViews {
     private readonly report: (message: string) => void,
     private readonly createView: (document: SceneDocument) => SceneView = (doc) =>
       new SceneView(doc),
+    private readonly createPlanet?: (document: SceneDocument) => PlanetWorld | undefined,
   ) {}
   resolve(key: string, document: SceneDocument, entityId: string): ExternalPortalView | undefined {
     let entry = this.views.get(key)
@@ -37,9 +38,11 @@ export class RemotePortalViews {
       const ambient = new THREE.AmbientLight('#dce7f5', 0.22),
         sun = new THREE.DirectionalLight('#fff0d8', 3.2)
       scene.add(view.root, geography.tiles, ambient, sun)
-      const planet = document.geography?.planetary
-        ? new PlanetWorld(document.geography, this.changed, () => {})
-        : undefined
+      const planet = this.createPlanet
+        ? this.createPlanet(document)
+        : document.geography?.planetary
+          ? new PlanetWorld(document.geography, this.changed, () => {})
+          : undefined
       if (planet) {
         planet.setDistance(1500)
         scene.add(planet.root)

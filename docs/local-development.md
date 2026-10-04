@@ -1,4 +1,4 @@
-# Local development: Studio, cache and planetary tiles
+# Local development: game, cache and planetary tiles
 
 This is the starting point for running and studying Nabla on your own computer.
 The root `compose.dev.yaml` runs the same application source and native XYZ tile
@@ -14,7 +14,7 @@ Ubuntu distribution, clone into its Linux home directory, and run these commands
 in that distribution. A working `docker version` must show both Client and Server.
 You do not need Node or Python installed on the host for this workflow.
 On Linux/WSL, if your user ID is not 1000, export `NABLA_DEV_UID=$(id -u)`
-and `NABLA_DEV_GID=$(id -g)` before starting; Studio writes files as that user.
+and `NABLA_DEV_GID=$(id -g)` before starting; the game writes files as that user.
 
 Allow roughly 4 GB of free RAM for the stack, additional memory for the browser,
 and at least 12 GB of free disk for caches, images and dependencies. The generator
@@ -26,14 +26,14 @@ data. This is not a download of the whole planet.
 git clone https://github.com/txemavs/nabla-engine.git
 cd nabla-engine
 docker compose -f compose.dev.yaml up --build -d
-docker compose -f compose.dev.yaml logs -f studio world-cache
+docker compose -f compose.dev.yaml logs -f game world-cache
 ```
 
 Wait until Vite prints its ready message. Open
-[Studio](http://localhost:8080/). A brief HTTP 502 before Vite
-finishes installing dependencies is normal. The default world starts in Irún.
-Use [the circuit](http://localhost:8080/?scene=circuit) for a small
-local scene, or [the zoom lab](http://localhost:8080/zoom-lab.html) to inspect tiles.
+[Game](http://localhost:8080/?example=flat). A brief HTTP 502 before Vite
+finishes installing dependencies is normal. Use the bundled flat planetary example for offline driving.
+Use [the flat example](http://localhost:8080/?example=flat) for a small
+local scene. The editor and zoom lab now run from the separate nabla-studio repository.
 
 ### Enable your local generator
 

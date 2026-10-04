@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test'
-const port = Number(process.env.NABLA_TEST_PORT || 5173)
+const port = Number(process.env.NABLA_TEST_PORT || 5191)
 export default defineConfig({
-  testDir: './studio/e2e',
+  testDir: './test/browser/e2e',
   timeout: 90000,
   fullyParallel: false,
   workers: 1,
@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: `npm run dev -- --port ${port}`,
+    command: `node node_modules/vite/bin/vite.js --config vite.browser.config.ts --port ${port}`,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
   },

@@ -1,0 +1,36 @@
+{
+  "format": "nabla-planet-tile-v1",
+  "generator": "native-xyz-v2",
+  "geometryRevision": "native-surfaces-v5",
+  "id": "WebMercatorQuad/15/16384/16384",
+  "tile": {
+    "z": 15,
+    "x": 16384,
+    "y": 16384
+  },
+  "anchor": {
+    "longitude": 0.0054931640625,
+    "latitude": -0.005493164054084669,
+    "altitude": 0
+  },
+  "bounds": {
+    "west": 0,
+    "east": 0.010986328125,
+    "north": 0,
+    "south": -0.010986328057677354
+  },
+  "files": {
+    "terrain": {
+      "path": "terra-15-16384-16384-202610040000.glb",
+      "download": "earth-WebMercatorQuad-z15-x16384-y16384-terrain.glb",
+      "bytes": 39528,
+      "sha256": "b7e808fb194cc05d2e19fd7c44ccc721f906bfa300cfa7fdc659ea01f5ef91ad"
+    },
+    "buildings-osm": {
+      "path": "build-15-16384-16384-202610040000.glb",
+      "download": "earth-WebMercatorQuad-z15-x16384-y16384-buildings-osm.glb",
+      "bytes": 224,
+      "sha256": "c384b62b60bd105c3694b82485778f9a2201d78bd19ad650921b47e22ca06dc6"
+    }
+  }
+}

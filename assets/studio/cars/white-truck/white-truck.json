@@ -1,0 +1,95 @@
+{
+  "id": "white-truck",
+  "label": "Camión blanco",
+  "clearance": 1.45,
+  "placement": [10, 1.45, 0],
+  "order": 6,
+  "name": "Camión blanco · tractora",
+  "color": "#eeeeee",
+  "size": [2.55, 4, 6.2],
+  "mass": 7500,
+  "vehicle": {
+    "colliders": [
+      {
+        "size": [2.2, 2.8, 2.7],
+        "transform": {
+          "position": [0, 1.25, -1.45],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "size": [2.15, 0.45, 3.2],
+        "transform": {
+          "position": [0, -0.4, 1.1],
+          "rotation": [0, 0, 0, 1]
+        }
+      }
+    ],
+    "hubs": [
+      [-1.0751686397108915, -0.6225349863344417, -1.3792322055748583],
+      [1.0808938218294213, -0.6225349863344417, -1.3792320170858947],
+      [-0.9568073150305044, -0.6276177768713792, 2.2889794731158193],
+      [0.9319417003052736, -0.6276177768713792, 2.2882289691068207]
+    ],
+    "wheelRadius": 0.5774650136655582,
+    "suspensionRest": 0.22,
+    "stiffness": 110,
+    "engineForce": 12000,
+    "brakeForce": 120,
+    "drivenWheels": "rear",
+    "driver": [-0.71, 1.95, -1.75],
+    "cameraDistance": 10
+  },
+  "visual": {
+    "body": {
+      "url": "/studio/trucks/white-truck-studio/assets/tractor.body.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    "wheels": [
+      {
+        "url": "/studio/trucks/white-truck-studio/assets/wheel.front.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "url": "/studio/trucks/white-truck-studio/assets/wheel.front.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "url": "/studio/trucks/white-truck-studio/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      }
+    ],
+    "wheelRotations": [
+      [0, 0, 0, 1],
+      [0, 1, 0, 6.123233995736766e-17],
+      [0, 0, 0, 1],
+      [0, 1, 0, 6.123233995736766e-17]
+    ],
+    "steering": {
+      "url": "/studio/trucks/white-truck-studio/assets/steering.glb",
+      "transform": {
+        "position": [-0.714255259311445, 1.1138955192545268, -2.206799173597997],
+        "rotation": [0, 0, 0, 1]
+      }
+    }
+  }
+}
