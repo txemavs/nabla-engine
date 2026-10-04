@@ -18,6 +18,10 @@ jobs:
           cache: npm
       - run: docker compose -f compose.dev.yaml config --quiet
       - run: npm ci
+      - name: Validate white truck assets and flat-ground trailer prototype
+        run: |
+          node assets/studio/trucks/white-truck-studio/tests/assets.mjs
+          node assets/studio/trucks/white-truck-studio/tests/simulation.mjs
       - run: npm run check
       - name: Verify public API from an installed package
         run: node scripts/check-package.mjs
