@@ -10,3 +10,5 @@ do not own a world.
 - Wheeled contract: [wheeled](wheeled/wheeled-runtime.md)
 - How-to: [create a vehicle](../../catalog/vehicles/creating-a-vehicle.md)
 - Tests: `test/simulation`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

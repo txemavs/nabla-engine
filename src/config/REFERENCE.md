@@ -107,7 +107,7 @@ Explicit throws in this body:
 
 [Source](index.ts)
 
-Public, topic-based Engine tuning catalog. See docs/configuration.md for override lifetimes.
+Public, topic-based Engine tuning catalog. See src/config/README.md for override lifetimes.
 
 ## Module dependencies
 

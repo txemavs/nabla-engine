@@ -144,3 +144,5 @@ when changing a setting's meaning, and regenerate the reference with
 For weak machines, start with `performance: { preset: 'mobile' }`; `minimal` lowers
 the pixel-ratio cap further to 0.35 while retaining the same conservative collision
 coverage. See the [measured comparison](../../docs/architecture/performance-review-2026-10-04.md).
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

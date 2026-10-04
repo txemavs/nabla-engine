@@ -27,4 +27,4 @@ coordinate foundation, not a completed planet-wide streaming runtime.
 
 Do not feed Sydney coordinates into Madrid's physics scene as multi-million-metre
 floats. Full world-object transfer is not yet wired into Studio. Named remote-window
-routing is available; see [the portal registry](studio-projects.md#named-portal-registry-and-remote-windows).
+routing is available; see [the portal registry](studio-projects.md#portal-registry).

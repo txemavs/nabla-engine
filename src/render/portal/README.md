@@ -17,3 +17,5 @@ not turn that frame's origin into sea level.
 - World poses: [planetary-world](../../planet/planetary-world.md)
 - Play contract: [portals](../../../docs/portals.md)
 - Tests: `test/portal`, `test/world`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

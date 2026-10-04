@@ -39,3 +39,5 @@ certify a mobile or Quest performance target.
 High-resolution PNG export lives in `render/capture.ts`. See
 [photo export](render/photo-export.md) for tiled rendering, scene freezing,
 cancellation and memory limits. Studio owns the button and download.
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

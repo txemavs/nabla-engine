@@ -441,7 +441,7 @@ precomputed geographic tiles and progressive terrain LOD remain separate improve
 
 Open sea is a hole in the published terrain GLB, not a client-side vector mesh.
 The publisher drops Esri samples at or below 0 m. See
-[native planetary generation](architecture/native-planet-generation.md#sea).
+[native planetary generation](../services/world-cache/native-generation.md#sea).
 The view fills that hole with one flat sheet. Coast and inland water are the OSM
 polygons already baked into the GLB. The browser does not request OpenFreeMap.
 

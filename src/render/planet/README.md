@@ -9,3 +9,5 @@ Stream published tiles, distant relief, sky, sun, flare, sea and inland water.
 - Assembly: [`src/planet`](../../planet/README.md)
 - Diagnostics overlay: [`src/diagnostics`](../../diagnostics/README.md)
 - Tests: `test/render`, `test/world`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

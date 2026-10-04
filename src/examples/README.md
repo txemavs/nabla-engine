@@ -7,3 +7,5 @@ Reproducible package content. Uses the same Engine contracts as applications.
 
 - Game consumer: [`game/`](../../game/README.md)
 - Fixture assets: [`assets/examples/flat-z15`](../../assets/examples/flat-z15/README.md)
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

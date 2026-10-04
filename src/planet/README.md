@@ -19,3 +19,5 @@ not flash a pale band.
 - Sea shader: [sea surface](../render/planet/sea-surface.md)
 - Product geography: [docs/geography](../../docs/geography.md)
 - Tests: `test/planet`, `test/world`, `test/sea-coverage.test.ts`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

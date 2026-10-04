@@ -18,3 +18,5 @@ first closes the portal.
 - Drawing: [`src/render/portal`](../../render/portal/README.md)
 - Play contract: [portals](../../../docs/portals.md)
 - Tests: `test/portal`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

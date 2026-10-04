@@ -9,6 +9,8 @@ game host with `npm run build` followed by `npm run dev`. Do not commit dependen
 2. Put engine contracts, simulation, and the presenter in `src/`. The editor lives in the separate `txemavs/nabla-studio` repository.
 3. Engine unit tests live in `test/` and rendering journeys in `test/browser/e2e/`. Editor tests and their CI belong to Studio.
 4. Update the relevant English documentation when contracts or controls change.
+   Module contracts live next to the code; `docs/` is narrative only. After moving
+   or adding links, run `npm run docs:links`.
 5. Format and run the checks appropriate to the change.
 
 ```bash

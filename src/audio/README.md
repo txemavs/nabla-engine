@@ -11,3 +11,5 @@ DOM or local storage.
 
 - Tests: exercised through runtime/browser hosts
 - Vehicles: [`src/catalog/vehicles`](../catalog/vehicles/README.md)
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

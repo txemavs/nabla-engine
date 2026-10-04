@@ -11,3 +11,5 @@ Quality keys live in [`src/config/performance.ts`](../config/performance.ts).
 
 - Tests: `test/runtime`
 - Measured review: [2026-10-04](../../docs/architecture/performance-review-2026-10-04.md)
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

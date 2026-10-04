@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep `docs/` as narrative guides and move module documentation next to the code, with a generated `REFERENCE.md` per source folder.
 - Treat OSM building outlines with contained 3D parts as non-rendered envelopes, preserving explicit parts and neighboring buildings. Add a regression for the detailed JFK building in Boston.
 - Open Desktop utility windows at their final viewport position with a neutral dark titlebar and monochrome SVG controls.
 

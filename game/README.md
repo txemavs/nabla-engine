@@ -162,3 +162,5 @@ startup rejection. The four-tile synthetic example makes no external requests.
 host and `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` selects an installed browser.
 Also verify a clean sibling application installed from `npm pack` output, so
 ancestor dependencies and source-tree aliases cannot hide packaging problems.
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

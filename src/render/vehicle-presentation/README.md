@@ -136,3 +136,5 @@ The ten browser checks pass, including a renamed GLB with an explicit adapter,
 shared-geometry survival after disposing the first car, and no catalog/physics
 requests from the independent bench. Wrangler remains 46 calls / 35,820 triangles;
 police remains 32 calls / 106,340 triangles in their isolated fixtures.
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

@@ -18,3 +18,5 @@ Stock factories live in [`src/catalog`](../catalog/README.md). Portal mouths:
 
 - Tests: `test/scene`, `test/portal`
 - Architecture: [invariants](../../docs/architecture.md)
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

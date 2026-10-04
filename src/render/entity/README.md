@@ -10,3 +10,5 @@ Generic equipment controllers live in
 stay in [`src/catalog/presentation`](../../catalog/presentation/README.md).
 
 - Tests: `test/render`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

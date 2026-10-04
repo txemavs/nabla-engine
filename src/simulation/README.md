@@ -57,3 +57,5 @@ Keep tuning in `src/config`, behavioral contracts beside the implementation and
 the generated reference up to date. Existing physics/portal/garage regressions
 verify compatibility; headless CPU and browser profile benchmarks are separate
 from correctness tests.
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

@@ -10,3 +10,5 @@ know about cars.
 - Library: [`src/render/monitors`](../../render/monitors/README.md)
 - Editing map: [S3 editing](../../render/monitors/editing.md)
 - Tests: `test/monitor-menu.test.ts`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

@@ -19,3 +19,5 @@ Capabilities are derived in [`src/entity`](../entity/README.md). Vehicles:
 
 - Tests: `test/presentation`, `test/local-presets.ts`
 - How-to: [create a vehicle](vehicles/creating-a-vehicle.md)
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

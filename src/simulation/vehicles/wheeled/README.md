@@ -8,3 +8,5 @@ Standalone ground runtime: contacts, drivetrain and telemetry.
 - Contract: [wheeled-runtime](wheeled-runtime.md)
 - Examples: `examples/modularity/wheeled-runtime.mjs`
 - Tests: `test/simulation`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

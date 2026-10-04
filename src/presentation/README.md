@@ -7,3 +7,5 @@ Public `SceneView`: a ready-to-use presenter over `src/render`.
 
 - Render kernels: [`src/render`](../render/README.md)
 - Tests: `test/presentation`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

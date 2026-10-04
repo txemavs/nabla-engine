@@ -16,3 +16,5 @@ loop and manual ticks simultaneously.
 - Game host: [`game/`](../../game/README.md)
 - Config: [`src/config`](../config/README.md)
 - Tests: `test/runtime`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

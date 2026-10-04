@@ -73,7 +73,7 @@ The deployed worker runs as UID/GID **1001:1001**, with a read-only container
 filesystem, writable bind mounts, a 64 MiB temporary filesystem, one CPU and 1 GiB
 memory. Adjust ownership for a different host rather than assuming these IDs.
 The repository's portable template is
-[`compose.prepare.yaml`](../services/world-cache/compose.prepare.yaml).
+[`compose.prepare.yaml`](compose.prepare.yaml).
 
 Configured budgets are **5 GiB upstream cache + 5 GiB prepared output**. Each
 uses oldest-file eviction, not permanent archival. Static bakes and the rest of

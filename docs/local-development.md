@@ -203,7 +203,7 @@ volume set or deliberately reset your local generated data, preserving projects.
    browser loading, coverage, eviction, collision support and fallback terrain.
 6. [Studio projects](studio-projects.md), [planetary world](planetary-world.md)
    and [portals](portals.md): authored objects, world placement and travel.
-7. [Performance](performance.md) and [cache operations](world-cache-operations.md):
+7. [Performance](performance.md) and [cache operations](../services/world-cache/operations.md):
    budgets, known tradeoffs and the separate server deployment workflow.
 
 ## Troubleshooting

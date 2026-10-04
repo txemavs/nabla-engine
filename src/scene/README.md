@@ -12,3 +12,5 @@ tile-policy decision lives in
 
 - Entity schemas: [`src/entity`](../entity/README.md)
 - Tests: `test/scene`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

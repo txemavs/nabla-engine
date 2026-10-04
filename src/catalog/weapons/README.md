@@ -6,3 +6,5 @@ Stock weapon recipes. The hitscan sidearm lives in `src/runtime/sidearm.ts`.
 **Does not own:** input, damage, or decals.
 
 - Tests: `test/` weapon and shooting journeys
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

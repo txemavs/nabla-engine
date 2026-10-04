@@ -1,47 +1,105 @@
 # Documentation
 
-Start with [Local development](local-development.md) to run the complete Docker
-stack and follow the guided source-code tour.
+Narrative guides for Nabla Engine. Documentation that belongs to a code folder
+lives next to that code. This index stays with product vision, architecture,
+usage, operations, decisions, studies and archive.
 
-This documentation describes the working 0.2.0 baseline. The playground keeps its
-Spanish interface; UI labels are quoted where needed to locate a control.
+The playground UI stays in Spanish; documentation is in English. UI labels are
+quoted where needed to locate a control.
 
-| Guide                                       | Read it to…                                                      |
-| ------------------------------------------- | ---------------------------------------------------------------- |
-| [Controls](controls.md)                     | Edit, drive, latch cargo, fly and select location/time           |
-| [Videotiro review](videotiro-review.md)     | Understand the original layered scenarios and proposed reuse     |
-| [Architecture](architecture.md)             | Understand ownership, units, scene validation and simulation     |
-| [Vehicle assets](vehicle-assets.md)         | Understand the original models, mounts and carrier physics       |
-| [Geography](geography.md)                   | Understand GPS, maps, planetary scale, horizon and the sky clock |
-| [Agency integration](agency-integration.md) | Consume the engine without bringing host conventions into it     |
-| [Asset provenance](../assets/README.md)     | Locate the original artwork and its sources                      |
-| [Contributing](../CONTRIBUTING.md)          | Run checks and make reviewable changes                           |
-| [Changelog](../CHANGELOG.md)                | Review the scope of this baseline                                |
+Start with [Local development](local-development.md) to run the Docker stack, or
+[Controls](controls.md) to edit, drive, fly and set location/time.
 
-The [Stargates and CSS interiors proposal](portals.md) records the next design,
-including the Agency source review, the playable fixed-gate prototype and staged
-acceptance criteria for carrier integration and CSS interiors. The prototype
-preserves the edit/play contract and a single physics owner.
+## How the tree is organized
 
-- [Solid and building editor](solid-editor.md): points, lines, faces, extrusion and the future entity catalog boundary.
-- [Real-world driving](real-world.md): reviewed Streets GL integration boundary, streamed geography, local edits and the first playable milestone.
+| Kind                                                         | Where                                                                            |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Product, architecture, usage, operations, decisions, studies | this `docs/` tree                                                                |
+| Module contracts, how-tos and ownership                      | `README.md` (and a few named pages) beside the code                              |
+| Generated signatures, JSDoc and call sites                   | `REFERENCE.md` in each source folder; index at [reference/](reference/README.md) |
+| Dated measurements                                           | [benchmarks/2026-10-04](benchmarks/2026-10-04/) — left here, not next to code    |
 
-- [World cache operations](world-cache-operations.md): deployed cache layers, preparation queue, regeneration, publishing, backups and troubleshooting.
+`npm run docs:generate` rewrites the folder reference pages. `npm run docs:check`
+and `npm run docs:links` verify that the reference is current and that relative
+links resolve.
 
-## Composable engine modules
+## Usage
 
-- [Module map and compatibility](architecture/module-map.md)
-- [Game library mode](game-library.md): Run the engine without Studio, with static tiles
-- [Create a vehicle](creating-a-vehicle.md)
-- [Create a monitor](creating-a-monitor.md)
-- [Migration history](architecture/vehicle-modularity.md)
+| Guide                                        | Read it to…                                            |
+| -------------------------------------------- | ------------------------------------------------------ |
+| [Controls](controls.md)                      | Edit, drive, latch cargo, fly and select location/time |
+| [Geography, horizon and sky](geography.md)   | GPS origin, maps and the sky clock                     |
+| [Portals](portals.md)                        | Play and traversal contract                            |
+| [Solid and building editor](solid-editor.md) | Points, lines, faces, extrusion                        |
+| [Agency integration](agency-integration.md)  | Consume the engine without host conventions            |
 
-## Regional data pilots
+## Architecture and decisions
 
-- [geoEuskadi road-area comparison: import, preparation and remaining integration gates](geoeuskadi-pilot.md)
+| Guide                                                    | Read it to…                                     |
+| -------------------------------------------------------- | ----------------------------------------------- |
+| [Architecture and invariants](architecture.md)           | Ownership, units, validation and simulation     |
+| [Code ownership](code-guide.md)                          | Dependency direction and how to write contracts |
+| [Module map](architecture/module-map.md)                 | Public imports and which file to change         |
+| [Planetary addresses](planetary-world.md)                | Working frames versus planet-wide identity      |
+| [Real-world driving](real-world.md)                      | Streets GL boundary and streamed geography      |
+| [Vehicle modularity](architecture/vehicle-modularity.md) | Issue #63 migration history                     |
+| [Studio extraction](architecture/studio-extraction.md)   | Remaining editor parity                         |
+| [Planet streaming](architecture/planet-streaming.md)     | Grid migration record                           |
+| [Map zoom policy](architecture/map-zoom-streaming.md)    | WebMercatorQuad decision                        |
+| [Native tiles](architecture/native-planet-generation.md) | One-page address summary                        |
+| [Performance lab](architecture/performance-lab.md)       | Studio Calidad / Diagnóstico                    |
 
-- [Studio Desktop foundation](studio-desktop.md): experimental dockable workspace, runtime boundaries and the migration sequence.
+## Operations
 
-- [Named Studio projects](studio-projects.md): portable files, retained places, consistent geographic navigation and tabbed settings windows.
+| Guide                                                             | Read it to…                                |
+| ----------------------------------------------------------------- | ------------------------------------------ |
+| [Local development](local-development.md)                         | Docker stack, activation and a source tour |
+| [World cache](../services/world-cache/README.md)                  | Private OSM/elevation cache                |
+| [Cache runbook](../services/world-cache/operations.md)            | Layers, queue, publish, backups            |
+| [Native generation](../services/world-cache/native-generation.md) | Prepare/publish pipeline                   |
+| [Unified publisher](../services/world-cache/unified-publisher.md) | Compose layout and volumes                 |
+| [Performance status](performance.md)                              | Remaining work and measurement limits      |
+| [Contributing](../CONTRIBUTING.md)                                | Checks and reviewable changes              |
+| [Changelog](../CHANGELOG.md)                                      | Scope of this baseline                     |
 
-- [Planetary world model](planetary-world.md): global object poses, local working frames and destination-specific portal environments.
+## Studio product (this repo documents the boundary)
+
+Studio is a layer over Engine. Reusable cameras, sound, HUD, input, vehicle reset
+and driving feel live under `src/`. These pages describe the editor product.
+
+- [Studio Desktop](studio-desktop.md)
+- [Named projects](studio-projects.md)
+- [Studio UI](studio-ui.md) · [UI next](studio-ui-next.md)
+- [CSS interior prototype](css-interior-prototype.md)
+
+## Studies and archive
+
+- [Videotiro review](videotiro-review.md)
+- [Streaming investigation](streaming-investigation.md)
+- [geoEuskadi pilot](geoeuskadi-pilot.md)
+- [Tile GLB pilot](tile-glb-pilot.md)
+- [Performance review 2026-10-04](architecture/performance-review-2026-10-04.md)
+- [Cleanup validation](architecture/cleanup-validation.md)
+- [Benchmarks 2026-10-04](benchmarks/2026-10-04/)
+- [Portals proposal (historical)](archive/portals-proposal-20260928.md)
+
+## Code, by owner
+
+| Area                    | Start here                                                                                                                                                                                                                        |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Engine layers           | [`src/README.md`](../src/README.md)                                                                                                                                                                                               |
+| Config                  | [`src/config`](../src/config/README.md)                                                                                                                                                                                           |
+| Vehicles                | [`src/catalog/vehicles`](../src/catalog/vehicles/README.md) · [create](../src/catalog/vehicles/creating-a-vehicle.md) · [assets](../src/catalog/vehicles/vehicle-assets.md) · [GLB rigs](../src/catalog/vehicles/vehicle-rigs.md) |
+| Wheeled / boat / flight | [`src/simulation/vehicles`](../src/simulation/vehicles/README.md)                                                                                                                                                                 |
+| Monitors                | [`src/render/monitors`](../src/render/monitors/README.md) · [create](../src/catalog/monitors/creating-a-monitor.md) · [editing](../src/render/monitors/editing.md)                                                                |
+| Equipment               | [`src/render/vehicle-presentation`](../src/render/vehicle-presentation/README.md)                                                                                                                                                 |
+| Simulation              | [`src/simulation`](../src/simulation/README.md)                                                                                                                                                                                   |
+| Portals (code)          | [`entity/portal`](../src/entity/portal/README.md) · [`render/portal`](../src/render/portal/README.md)                                                                                                                             |
+| Geography kernels       | [`src/math/geo`](../src/math/geo/README.md)                                                                                                                                                                                       |
+| Planet                  | [`src/planet`](../src/planet/README.md)                                                                                                                                                                                           |
+| Sea                     | [`src/render/planet/sea-surface.md`](../src/render/planet/sea-surface.md)                                                                                                                                                         |
+| Viewer                  | [`src/viewer`](../src/viewer/README.md)                                                                                                                                                                                           |
+| Game host               | [`game/`](../game/README.md)                                                                                                                                                                                                      |
+| Generated reference     | [folder index](reference/README.md)                                                                                                                                                                                               |
+
+[Asset provenance](../assets/README.md) stays with the artwork.

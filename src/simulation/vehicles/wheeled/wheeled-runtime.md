@@ -100,7 +100,7 @@ npm run build
 node examples/modularity/wheeled-runtime.mjs
 ```
 
-This [complete example](../../examples/modularity/wheeled-runtime.mjs) constructs a
+This [complete example](../../../../examples/modularity/wheeled-runtime.mjs) constructs a
 custom 150 CV front-wheel-drive car with primitive colliders and one shared Rapier
 world. It imports only public physics/wheeled subpaths: no stock vehicle preset,
 `Simulation`, DOM, WebGL or Studio. It accelerates, requests a manual reduction,

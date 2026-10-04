@@ -19,3 +19,5 @@ Parent overview: [`src/math`](../README.md). Product geography:
 [planetary-world](../../planet/planetary-world.md).
 
 - Tests: `test/geography`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)

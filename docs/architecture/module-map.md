@@ -21,14 +21,14 @@ parallel proposal-only contracts.
 
 ## Which file should change?
 
-- New car: [create a vehicle](../creating-a-vehicle.md). Prefer a prefab and asset
+- New car: [create a vehicle](../../src/catalog/vehicles/creating-a-vehicle.md). Prefer a prefab and asset
   adapter. Do not add model URL branches to Simulation or the renderer.
-- New screen or dashboard: [create a monitor](../creating-a-monitor.md). Bind data;
+- New screen or dashboard: [create a monitor](../../src/catalog/monitors/creating-a-monitor.md). Bind data;
   do not make the monitor call physics or own an input loop.
-- Boat/flight dynamics: [runtime contract](boat-flight-runtime.md).
-- Ground dynamics: [wheeled contract](wheeled-runtime.md).
+- Boat/flight dynamics: [runtime contract](../../src/simulation/vehicles/boat-flight-runtime.md).
+- Ground dynamics: [wheeled contract](../../src/simulation/vehicles/wheeled/wheeled-runtime.md).
 - Model-specific material names, holes, logos and mount coordinates:
-  `src/catalog/presentation/`; [equipment contract](vehicle-equipment.md).
+  `src/catalog/presentation/`; [equipment contract](../../src/render/vehicle-presentation/README.md).
 - Editor keyboard/touch focus, storage and undo actions: `studio/` host.
 - Boundary regressions: `test/architecture/`; inventory command:
   `node scripts/module-inventory.ts` (Node 22.18+).

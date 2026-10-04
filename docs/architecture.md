@@ -93,7 +93,7 @@ obstacles from the same physics world and excludes its own player/vehicle.
 
 Geographic scenes add a smooth spherical support surface and radial gravity.
 Flight retains the same bodies, disables suspension and uses assisted attitude
-and altitude control. See [vehicles](vehicle-assets.md) and [geography](geography.md).
+and altitude control. See [vehicles](../src/catalog/vehicles/vehicle-assets.md) and [geography](geography.md).
 
 ## Authored state versus runtime state
 

@@ -27,3 +27,5 @@ an Engine owner.
 - Portals: [portal rendering](portal/README.md)
 - Equipment: [vehicle presentation](vehicle-presentation/README.md)
 - Tests: `test/render`
+
+- Generated reference: [REFERENCE.md](REFERENCE.md)
