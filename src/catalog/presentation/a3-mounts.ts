@@ -1,13 +1,37 @@
 import * as THREE from 'three'
 import type { InstrumentMounts } from '../../render/vehicle-presentation/mounts.js'
 
-/** Measured stock asset coordinates stay here. New assets should provide named mount nodes. */
+/** Mount instruments using authored GLB nodes and casing metadata. */
 export function createA3Mounts(model: THREE.Object3D): InstrumentMounts | undefined {
   const interior = model.getObjectByName('Interior')
   if (!interior) {
     console.warn('S3 instruments omitted: missing Interior mount')
     return undefined
   }
+  const metadata = interior.userData.nabla
+  if (!metadata?.gpsCasingBounds || !metadata?.retract)
+    throw new Error('A3 GLB is missing instrument mount metadata')
+  const mount = (role: string) => {
+    let node: THREE.Object3D | undefined
+    interior.traverse((candidate) => {
+      if (candidate.userData.nabla?.mount === role) node = candidate
+    })
+    if (!node) throw new Error('Missing instrument anchor: ' + role)
+    interior.updateWorldMatrix(true, true)
+    const matrix = new THREE.Matrix4()
+      .copy(interior.matrixWorld)
+      .invert()
+      .multiply(node.matrixWorld)
+    const position = new THREE.Vector3(),
+      quaternion = new THREE.Quaternion(),
+      scale = new THREE.Vector3()
+    matrix.decompose(position, quaternion, scale)
+    return { position, quaternion, scale }
+  }
+  const quad = (role: string) =>
+    [0, 1, 2, 3].map((i) => mount(role + '.' + i).position.toArray()) as InstrumentMounts['menu']
+  const cluster = mount('instrument.cluster')
+  const bounds = metadata.gpsCasingBounds as { min: number[]; max: number[] }
   const support = new THREE.Group()
   support.name = 'A3 retractable GPS'
   const releases: (() => void)[] = []
@@ -29,12 +53,12 @@ export function createA3Mounts(model: THREE.Object3D): InstrumentMounts | undefi
       const triangle = [index.getX(i), index.getX(i + 1), index.getX(i + 2)]
       const screen = triangle.every(
         (v) =>
-          position.getX(v) > 0.64 &&
-          position.getX(v) < 0.87 &&
-          position.getY(v) > 0.675 &&
-          position.getY(v) < 0.82 &&
-          position.getZ(v) > -0.54 &&
-          position.getZ(v) < -0.48,
+          position.getX(v) > bounds.min[0] &&
+          position.getX(v) < bounds.max[0] &&
+          position.getY(v) > bounds.min[1] &&
+          position.getY(v) < bounds.max[1] &&
+          position.getZ(v) > bounds.min[2] &&
+          position.getZ(v) < bounds.max[2],
       )
       ;(screen ? moving : fixed).push(...triangle)
     }
@@ -67,25 +91,15 @@ export function createA3Mounts(model: THREE.Object3D): InstrumentMounts | undefi
     parent: interior,
     support,
     cluster: {
-      position: [1.135, 0.67, -0.535],
-      rotation: [0, 1, 0, 0],
-      scale: 0.00045,
+      position: cluster.position.toArray(),
+      rotation: cluster.quaternion.toArray(),
+      scale: cluster.scale.x,
       name: 'A3 speed readout',
     },
-    menu: [
-      [0.845568, 0.805089, -0.509282],
-      [0.665396, 0.804139, -0.531724],
-      [0.846191, 0.68512, -0.509205],
-      [0.666019, 0.68417, -0.531646],
-    ],
-    navigator: [
-      [0.845568, 0.805089, -0.508282],
-      [0.665396, 0.804139, -0.530724],
-      [0.846191, 0.68512, -0.508205],
-      [0.666019, 0.68417, -0.530646],
-    ],
+    menu: quad('instrument.menu'),
+    navigator: quad('instrument.navigator'),
     navigatorName: 'A3 navigator',
-    retract: { offset: [0, -0.145, 0], durationMs: 1800 },
+    retract: metadata.retract,
     dispose() {
       if (disposed) return
       disposed = true

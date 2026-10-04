@@ -7,15 +7,16 @@
 ## Module dependencies
 
 - `three`
+- `../../entity/vehicle/field.js`
 
 ## carrierInterior
 
-[Implementation, line 4](../../../../../src/render/entity/carrier-interior.ts#L4)
+[Implementation, line 5](../../../../../src/render/entity/carrier-interior.ts#L5)
 
 Interior trim follows the existing carrier collision shell; dimensions are metres.
 
 ```ts
-carrierInterior(): {
+carrierInterior(mounts: VehicleDefinition['monitorMounts']): {
   room: THREE.Group
   screens: THREE.Mesh[]
   door: THREE.Mesh[]
@@ -26,25 +27,59 @@ carrierInterior(): {
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `(light.material as THREE.MeshStandardMaterial).emissive.set`
+- `Error`
 - `THREE.BoxGeometry`
 - `THREE.Group`
 - `THREE.Mesh`
-- `THREE.MeshBasicMaterial`
 - `THREE.MeshStandardMaterial`
-- `THREE.PlaneGeometry`
 - `THREE.TextureLoader`
-- `[-0.78, 0, 0.78].map`
-- `[-1.05, 1.05].map`
+- `['door0', 'door1'].map`
+- `['helm0', 'helm1', 'helm2'].map`
 - `glass.position.set`
 - `new THREE.TextureLoader().load`
 - `panel`
 - `room.add`
+- `screenAt`
 - `skin`
-- `touch.position.set`
+
+Explicit throws in this body:
+
+- `new Error('Carrier requires GLB-generated monitor mounts; reload its preset')`
+
+## carrierInterior.screenAt
+
+[Implementation, line 13](../../../../../src/render/entity/carrier-interior.ts#L13)
+
+```ts
+screenAt(id: string): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `THREE.Mesh`
+- `THREE.MeshBasicMaterial`
+- `THREE.PlaneGeometry`
+- `mesh.position.fromArray`
+- `mesh.quaternion.fromArray`
+- `mounts.find`
+- `room.add`
+
+Explicit throws in this body:
+
+- `new Error('Missing carrier monitor: ' + id)`
+
+## carrierInterior.screenAt.callback@14
+
+[Implementation, line 14](../../../../../src/render/entity/carrier-interior.ts#L14)
+
+```ts
+callback@14(entry): inferred by TypeScript; see implementation
+```
 
 ## carrierInterior.panel
 
-[Implementation, line 12](../../../../../src/render/entity/carrier-interior.ts#L12)
+[Implementation, line 26](../../../../../src/render/entity/carrier-interior.ts#L26)
 
 ```ts
 panel(size: [number, number, number], position: [number, number, number], color: string): inferred by TypeScript; see implementation
@@ -60,7 +95,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## carrierInterior.skin
 
-[Implementation, line 35](../../../../../src/render/entity/carrier-interior.ts#L35)
+[Implementation, line 49](../../../../../src/render/entity/carrier-interior.ts#L49)
 
 ```ts
 skin(mesh: THREE.Mesh, rect: [number, number, number, number]): inferred by TypeScript; see implementation
@@ -75,48 +110,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `uv.getY`
 - `uv.setXY`
 
-## carrierInterior.skin.callback@37
+## carrierInterior.skin.callback@51
 
-[Implementation, line 37](../../../../../src/render/entity/carrier-interior.ts#L37)
+[Implementation, line 51](../../../../../src/render/entity/carrier-interior.ts#L51)
 
 ```ts
-callback@37(): inferred by TypeScript; see implementation
+callback@51(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `atlas.dispose`
-
-## carrierInterior.callback@58
-
-[Implementation, line 58](../../../../../src/render/entity/carrier-interior.ts#L58)
-
-```ts
-callback@58(x): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `THREE.Mesh`
-- `THREE.MeshBasicMaterial`
-- `THREE.PlaneGeometry`
-- `panel`
-- `room.add`
-- `screen.position.set`
-
-## carrierInterior.callback@84
-
-[Implementation, line 84](../../../../../src/render/entity/carrier-interior.ts#L84)
-
-```ts
-callback@84(x): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `THREE.Mesh`
-- `THREE.MeshBasicMaterial`
-- `THREE.PlaneGeometry`
-- `panel`
-- `room.add`
-- `screen.position.set`

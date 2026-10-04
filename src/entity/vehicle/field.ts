@@ -20,6 +20,8 @@ export const vehicleField = z
     passive: z.boolean().optional(),
     /** Chassis-local towing mount, extracted from the body's tow.hitch anchor. */
     hitch: vector.optional(),
+    /** Trailer-side kingpin extracted from the tow.anchor node. */
+    towAnchor: vector.optional(),
     tow: z
       .object({ vehicleId: z.string().min(1), anchor: vector, hitch: vector })
       .strict()
@@ -48,6 +50,22 @@ export const vehicleField = z
     cameraDistance: finite.min(2).max(30),
     /** Optional driver-local eye offset. */
     headOffset: vector.optional(),
+    /** Neutral eye orientation relative to the chassis, authored in the body GLB. */
+    headRotation: rotation.optional(),
+    /** Authored carrier display surfaces; dimensions are metres in chassis space. */
+    monitorMounts: z
+      .array(
+        z
+          .object({
+            id: z.string(),
+            width: finite.positive(),
+            height: finite.positive(),
+            position: vector,
+            rotation,
+          })
+          .strict(),
+      )
+      .optional(),
     /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
     mirrorTilt: finite.min(-5).max(12).optional(),
     flight: z.boolean().optional(),

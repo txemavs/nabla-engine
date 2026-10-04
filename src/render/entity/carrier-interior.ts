@@ -1,13 +1,27 @@
 import * as THREE from 'three'
+import type { VehicleDefinition } from '../../entity/vehicle/field.js'
 
 /** Interior trim follows the existing carrier collision shell; dimensions are metres. */
-export function carrierInterior(): {
+export function carrierInterior(mounts: VehicleDefinition['monitorMounts']): {
   room: THREE.Group
   screens: THREE.Mesh[]
   door: THREE.Mesh[]
   touch: THREE.Mesh
 } {
+  if (!mounts) throw new Error('Carrier requires GLB-generated monitor mounts; reload its preset')
   const room = new THREE.Group()
+  const screenAt = (id: string) => {
+    const mount = mounts.find((entry) => entry.id === id)
+    if (!mount) throw new Error('Missing carrier monitor: ' + id)
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(mount.width, mount.height),
+      new THREE.MeshBasicMaterial({ color: '#030405' }),
+    )
+    mesh.position.fromArray(mount.position)
+    mesh.quaternion.fromArray(mount.rotation)
+    room.add(mesh)
+    return mesh
+  }
   room.name = 'Carrier interior lining'
   const panel = (
     size: [number, number, number],
@@ -55,16 +69,7 @@ export function carrierInterior(): {
   // The stern and central doorway stay open; the bow has a physical window.
   for (const x of [-1.5, 1.5]) panel([1.75, 2.82, 0.065], [x, 0.58, 0], '#303b48')
   panel([1.2, 0.72, 0.065], [0, 1.65, 0], '#303b48')
-  const screens = [-0.78, 0, 0.78].map((x) => {
-    panel([0.66, 0.38, 0.008], [x, 0.28, -3.711], '#050608')
-    const screen = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.62, 0.34),
-      new THREE.MeshBasicMaterial({ color: '#030405' }),
-    )
-    screen.position.set(x, 0.28, -3.706)
-    room.add(screen)
-    return screen
-  })
+  const screens = ['helm0', 'helm1', 'helm2'].map(screenAt)
   const glass = new THREE.Mesh(
     new THREE.BoxGeometry(4.71, 2.91, 0.08),
     new THREE.MeshStandardMaterial({
@@ -81,23 +86,7 @@ export function carrierInterior(): {
   room.add(glass)
   panel([2.49, 0.008, 0.44], [0, 0.016, -3.34], '#050608')
   // Same screens as the helm row, on the cabin face of the door. +X is the sitter's right.
-  const door = [-1.05, 1.05].map((x) => {
-    panel([0.66, 0.38, 0.008], [x, 0.28, -0.05], '#050608')
-    const screen = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.62, 0.34),
-      new THREE.MeshBasicMaterial({ color: '#030405' }),
-    )
-    screen.position.set(x, 0.28, -0.056)
-    screen.rotation.y = Math.PI
-    room.add(screen)
-    return screen
-  })
-  const touch = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.43, 0.4),
-    new THREE.MeshBasicMaterial({ color: '#030405' }),
-  )
-  touch.rotation.x = -Math.PI / 2
-  touch.position.set(0, 0.0202, -3.34)
-  room.add(touch)
+  const door = ['door0', 'door1'].map(screenAt)
+  const touch = screenAt('touch')
   return { room, screens, door, touch }
 }

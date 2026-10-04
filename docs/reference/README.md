@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **233 modules; 2106 executable function definitions**.
+Coverage: **235 modules; 2124 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -28,9 +28,9 @@ Coverage: **233 modules; 2106 executable function definitions**.
 | [src/catalog/monitors/s3-instruments.ts](src/catalog/monitors/s3-instruments.ts.md) | 2 |
 | [src/catalog/palette.ts](src/catalog/palette.ts.md) | 4 |
 | [src/catalog/presentation/a3-lamps.ts](src/catalog/presentation/a3-lamps.ts.md) | 10 |
-| [src/catalog/presentation/a3-mounts.ts](src/catalog/presentation/a3-mounts.ts.md) | 6 |
+| [src/catalog/presentation/a3-mounts.ts](src/catalog/presentation/a3-mounts.ts.md) | 10 |
 | [src/catalog/presentation/police-equipment.ts](src/catalog/presentation/police-equipment.ts.md) | 14 |
-| [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 15 |
+| [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 16 |
 | [src/catalog/vehicles/generated-rigs.ts](src/catalog/vehicles/generated-rigs.ts.md) | 0 |
 | [src/catalog/vehicles/index.ts](src/catalog/vehicles/index.ts.md) | 0 |
 | [src/catalog/vehicles/library.ts](src/catalog/vehicles/library.ts.md) | 8 |
@@ -116,7 +116,7 @@ Coverage: **233 modules; 2106 executable function definitions**.
 | [src/presentation/scene-view.ts](src/presentation/scene-view.ts.md) | 1 |
 | [src/render/capture.ts](src/render/capture.ts.md) | 7 |
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 6 |
-| [src/render/entity/assets.ts](src/render/entity/assets.ts.md) | 10 |
+| [src/render/entity/assets.ts](src/render/entity/assets.ts.md) | 13 |
 | [src/render/entity/avatar.ts](src/render/entity/avatar.ts.md) | 3 |
 | [src/render/entity/billboard.ts](src/render/entity/billboard.ts.md) | 7 |
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 0 |
@@ -136,7 +136,7 @@ Coverage: **233 modules; 2106 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 11 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 7 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 83 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 85 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
@@ -183,14 +183,16 @@ Coverage: **233 modules; 2106 executable function definitions**.
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
 | [src/render/shadows.ts](src/render/shadows.ts.md) | 21 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
+| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 3 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
+| [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/runtime/browser.ts](src/runtime/browser.ts.md) | 59 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
-| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 2 |
+| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 3 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 15 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 5 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 4 |

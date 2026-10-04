@@ -11,6 +11,7 @@ export function driverHeadPose(
   yaw = 0,
   pitch = gameCameraDefaults.headPitch,
   offset?: readonly number[],
+  eyeRotation?: readonly number[],
 ): { position: Vector3; quaternion: Quaternion } {
   const body = new Quaternion().fromArray(rotation)
   // Cars saved before the 10 cm forward shift still store the old eye.
@@ -23,7 +24,9 @@ export function driverHeadPose(
       .fromArray(eyes)
       .applyQuaternion(body)
       .add(new Vector3().fromArray(driver)),
-    quaternion: body.multiply(new Quaternion().setFromEuler(new Euler(-pitch, yaw, 0, 'YXZ'))),
+    quaternion: body
+      .multiply(new Quaternion().fromArray(eyeRotation ?? [0, 0, 0, 1]))
+      .multiply(new Quaternion().setFromEuler(new Euler(-pitch, yaw, 0, 'YXZ'))),
   }
 }
 

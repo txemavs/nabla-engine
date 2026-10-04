@@ -37,7 +37,6 @@
     "stiffness": 65,
     "engineForce": 2600,
     "brakeForce": 36,
-    "driver": [-0.356, 0.7, 0.32],
     "cameraDistance": 6.5
   },
   "visual": {

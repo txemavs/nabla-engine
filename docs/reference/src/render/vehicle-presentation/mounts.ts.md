@@ -10,7 +10,7 @@
 
 ## quadGeometry
 
-[Implementation, line 21](../../../../../src/render/vehicle-presentation/mounts.ts#L21)
+[Implementation, line 23](../../../../../src/render/vehicle-presentation/mounts.ts#L23)
 
 ```ts
 quadGeometry(quad: SurfaceQuad): BufferGeometry
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## surfaceMatrix
 
-[Implementation, line 29](../../../../../src/render/vehicle-presentation/mounts.ts#L29)
+[Implementation, line 31](../../../../../src/render/vehicle-presentation/mounts.ts#L31)
 
 Pixel-centred display to a planar local-space mount.
 

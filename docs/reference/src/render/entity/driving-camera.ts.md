@@ -16,7 +16,7 @@
 One rigid seat anchor for the driver's eyes and visible monitor.
 
 ```ts
-driverHeadPose(driver: readonly number[], rotation: readonly number[], isCarrier: boolean, yaw = 0, pitch = gameCameraDefaults.headPitch, offset?: readonly number[]): { position: Vector3; quaternion: Quaternion }
+driverHeadPose(driver: readonly number[], rotation: readonly number[], isCarrier: boolean, yaw = 0, pitch = gameCameraDefaults.headPitch, offset?: readonly number[], eyeRotation?: readonly number[]): { position: Vector3; quaternion: Quaternion }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -24,14 +24,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Euler`
 - `Quaternion`
 - `Vector3`
-- `body.multiply`
 - `new Quaternion().fromArray`
 - `new Quaternion().setFromEuler`
 - `new Vector3().fromArray`
 
 ## followDrivingHeading
 
-[Implementation, line 31](../../../../../src/render/entity/driving-camera.ts#L31)
+[Implementation, line 34](../../../../../src/render/entity/driving-camera.ts#L34)
 
 Configurable manual-look grace, then speed-aware damping and bounded corner anticipation.
 
@@ -53,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DrivingTelemetry.constructor
 
-[Implementation, line 68](../../../../../src/render/entity/driving-camera.ts#L68)
+[Implementation, line 71](../../../../../src/render/entity/driving-camera.ts#L71)
 
 Use the owning camera settings for telemetry filtering.
 
@@ -63,7 +62,7 @@ constructor(private readonly settings: Readonly<GameCameraSettings> = gameCamera
 
 ## DrivingTelemetry.update
 
-[Implementation, line 72](../../../../../src/render/entity/driving-camera.ts#L72)
+[Implementation, line 75](../../../../../src/render/entity/driving-camera.ts#L75)
 
 Filter suspension noise before it can change camera framing or anticipated yaw.
 
@@ -79,7 +78,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## overheadDrivingPose
 
-[Implementation, line 91](../../../../../src/render/entity/driving-camera.ts#L91)
+[Implementation, line 94](../../../../../src/render/entity/driving-camera.ts#L94)
 
 Overhead view: local ground normal below the camera, vehicle nose toward screen top.
 
@@ -107,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## overheadDrivingHeight
 
-[Implementation, line 112](../../../../../src/render/entity/driving-camera.ts#L112)
+[Implementation, line 115](../../../../../src/render/entity/driving-camera.ts#L115)
 
 Driving map: roughly 30 m ahead at rest, with two seconds of extra road at speed.
 

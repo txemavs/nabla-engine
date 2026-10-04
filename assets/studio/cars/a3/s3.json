@@ -45,8 +45,6 @@
       "grip": 4.8
     },
     "brakeForce": 65,
-    "driver": [-0.356, 0.7, 0.32],
-    "headOffset": [0, -0.15, -0.36],
     "cameraDistance": 6.5
   },
   "visual": {

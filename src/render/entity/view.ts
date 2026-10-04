@@ -21,6 +21,7 @@ import { ShipLights, type ShipSwitch } from './ship-lights.js'
 import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
+import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
 import type { CarMirrors } from './car-mirrors.js'
 import type { CarInstruments } from './car-instruments.js'
 import type { CarInstrumentDefinition } from './car-instrument-definition.js'
@@ -125,6 +126,10 @@ export class SceneView {
   }
   toggleVehicleGps(id: string): boolean | null {
     return this.instruments.get(id)?.toggleGps() ?? null
+  }
+  private readonly authoredLights = new Map<string, AuthoredVehicleLights>()
+  toggleVehicleLights(id: string): boolean | null {
+    return this.authoredLights.get(id)?.toggle() ?? null
   }
   setVehicleShadowReceiving(enabled: boolean): void {
     for (const entity of this.document.entities) {
@@ -591,7 +596,7 @@ export class SceneView {
           const thrusters = new CarrierThrusters()
           group.add(thrusters.root)
           this.thrusters.set(e.id, thrusters)
-          const interior = carrierInterior()
+          const interior = carrierInterior(e.vehicle.monitorMounts)
           group.add(interior.room)
           this.shipLights.set(e.id, new ShipLights(interior.room, group))
           const hud = new ShipHud()
@@ -689,6 +694,7 @@ export class SceneView {
     const fallback = box(e.size, e.color)
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
+      this.authoredLights.set(e.id, new AuthoredVehicleLights(model))
       const equipment = adapter?.mount(model, e, this.options.carInstruments)
       adapter?.preparePart?.(model, 'body')
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
@@ -987,6 +993,7 @@ export class SceneView {
         headYaw,
         headPitch,
         this.vehicleHeadOffset(vehicleId),
+        this.document.entities.find((entity) => entity.id === vehicleId)?.vehicle?.headRotation,
       )
       this.avatar.position.copy(head.position)
       this.avatar.quaternion.copy(head.quaternion)
@@ -1078,6 +1085,7 @@ export class SceneView {
     this.carMirrors.clear()
     for (const instruments of this.instruments.values()) instruments.dispose()
     this.instruments.clear()
+    this.authoredLights.clear()
     this.roads.dispose()
     this.buildings.dispose()
     this.landcover.dispose()

@@ -18,6 +18,7 @@ export function readGlbDocument(buffer) {
 /** Compose authored node hierarchy and the model-to-chassis pose, in metres. */
 export function extractVehicleRig(document, bodyPose) {
   const anchors = new Map()
+  const monitors = []
   const visited = new Set()
   const pose = (position, rotation, scale = [1, 1, 1]) =>
     new Matrix4().compose(
@@ -50,6 +51,12 @@ export function extractVehicleRig(document, bodyPose) {
       )
         throw new Error(`Vehicle anchor ${role} must have a rigid, unit-scale transform`)
       anchors.set(role, { position: position.toArray(), rotation: rotation.toArray() })
+      if (node.extras.nabla.screen)
+        monitors.push({
+          ...node.extras.nabla.screen,
+          position: position.toArray(),
+          rotation: rotation.toArray(),
+        })
     }
     for (const child of node.children ?? []) visit(child, world)
   }
@@ -60,11 +67,25 @@ export function extractVehicleRig(document, bodyPose) {
     if (!anchors.has(role)) throw new Error(`Missing vehicle anchor: ${role}`)
     return anchors.get(role)
   }
-  const wheels = ['wheel.fl', 'wheel.fr', 'wheel.rl', 'wheel.rr'].map(required)
+  const roles = ['wheel.fl', 'wheel.fr', 'wheel.rl', 'wheel.rr']
+  if (anchors.has('wheel.r2l') || anchors.has('wheel.r2r')) roles.push('wheel.r2l', 'wheel.r2r')
+  const wheels = roles.map(required)
+  const seat = anchors.get('driver.seat'),
+    eyes = anchors.get('driver.eyes')
+  if (!!seat !== !!eyes) throw new Error('Driver requires both seat and eyes anchors')
   return {
     hubs: wheels.map((p) => p.position),
     wheelRotations: wheels.map((p) => p.rotation),
-    steering: required('steering'),
+    ...(anchors.has('steering') ? { steering: anchors.get('steering') } : {}),
+    ...(seat
+      ? {
+          driver: seat.position,
+          headOffset: eyes.position.map((v, i) => v - seat.position[i]),
+          headRotation: eyes.rotation,
+        }
+      : {}),
+    ...(monitors.length ? { monitors } : {}),
     ...(anchors.has('tow.hitch') ? { hitch: anchors.get('tow.hitch').position } : {}),
+    ...(anchors.has('tow.anchor') ? { towAnchor: anchors.get('tow.anchor').position } : {}),
   }
 }

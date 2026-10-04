@@ -187,18 +187,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.retraction.update`
 - `this.speedMonitor.update`
 
-## CarInstruments.update.callback@163
-
-[Implementation, line 163](../../../../../src/render/entity/car-instruments.ts#L163)
-
-```ts
-callback@163(v): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Math.round`
-
 ## CarInstruments.update.callback@164
 
 [Implementation, line 164](../../../../../src/render/entity/car-instruments.ts#L164)
@@ -211,9 +199,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.round`
 
+## CarInstruments.update.callback@165
+
+[Implementation, line 165](../../../../../src/render/entity/car-instruments.ts#L165)
+
+```ts
+callback@165(v): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+
 ## CarInstruments.dispose
 
-[Implementation, line 173](../../../../../src/render/entity/car-instruments.ts#L173)
+[Implementation, line 174](../../../../../src/render/entity/car-instruments.ts#L174)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 

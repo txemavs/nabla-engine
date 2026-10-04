@@ -160,6 +160,7 @@ export function updateGameCamera(
       headYaw,
       headPitch,
       view.vehicleHeadOffset(p.vehicleId!),
+      view.document.entities.find((entity) => entity.id === p.vehicleId)?.vehicle?.headRotation,
     )
     camera.position.copy(head.position)
     camera.quaternion.copy(head.quaternion)

@@ -31,7 +31,6 @@
     "engineForce": 12000,
     "brakeForce": 120,
     "drivenWheels": "rear",
-    "driver": [-0.71, 1.95, -1.75],
     "cameraDistance": 10
   },
   "visual": {
@@ -74,7 +73,8 @@
     ],
     "steering": {
       "url": "/studio/trucks/white-truck-studio/assets/steering.glb"
-    }
+    },
+    "presentation": "nabla.truck"
   },
   "rig": "glb"
 }

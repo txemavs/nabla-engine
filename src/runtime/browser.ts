@@ -694,6 +694,10 @@ export class GameRuntime {
     }
     if (code === 'KeyN') this.gallery.reset()
     let message = this.game.action(code)
+    if (code === 'KeyL' && sim.player.vehicleId) {
+      const enabled = this.view.toggleVehicleLights(sim.player.vehicleId)
+      if (enabled !== null) message = enabled ? 'Luces encendidas' : 'Luces apagadas'
+    }
     if (code === 'KeyH' && sim.player.vehicleId) {
       const open = this.view.toggleVehicleGps(sim.player.vehicleId)
       if (open !== null) message = open ? 'GPS encendido' : 'GPS apagado'

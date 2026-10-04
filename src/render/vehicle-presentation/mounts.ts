@@ -3,6 +3,8 @@ import type { Group, Object3D } from 'three'
 export type Point3 = [number, number, number]
 export type SurfaceQuad = [Point3, Point3, Point3, Point3]
 export interface InstrumentMounts {
+  /** Cluster, GPS and menu share one physical surface and are shown exclusively. */
+  sharedSurface?: boolean
   parent: Object3D
   support: Group
   cluster: {

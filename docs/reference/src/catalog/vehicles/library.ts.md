@@ -42,12 +42,12 @@ Explicit throws in this body:
 - `new Error(\`Vehicle preset ${source.file} is invalid\`, { cause: error })`
 - `new Error(\`Duplicate vehicle preset id ${preset.id}\`)`
 
-## vehiclePresets.callback@70
+## vehiclePresets.callback@81
 
-[Implementation, line 70](../../../../../src/catalog/vehicles/library.ts#L70)
+[Implementation, line 81](../../../../../src/catalog/vehicles/library.ts#L81)
 
 ```ts
-callback@70(a, b): inferred by TypeScript; see implementation
+callback@81(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -56,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hasVehiclePreset
 
-[Implementation, line 79](../../../../../src/catalog/vehicles/library.ts#L79)
+[Implementation, line 90](../../../../../src/catalog/vehicles/library.ts#L90)
 
 ```ts
 hasVehiclePreset(id: string): boolean
@@ -67,17 +67,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vehiclePresets`
 - `vehiclePresets().some`
 
-## hasVehiclePreset.callback@80
+## hasVehiclePreset.callback@91
 
-[Implementation, line 80](../../../../../src/catalog/vehicles/library.ts#L80)
+[Implementation, line 91](../../../../../src/catalog/vehicles/library.ts#L91)
 
 ```ts
-callback@80(preset): inferred by TypeScript; see implementation
+callback@91(preset): inferred by TypeScript; see implementation
 ```
 
 ## vehiclePreset
 
-[Implementation, line 83](../../../../../src/catalog/vehicles/library.ts#L83)
+[Implementation, line 94](../../../../../src/catalog/vehicles/library.ts#L94)
 
 ```ts
 vehiclePreset(id: string): VehiclePreset
@@ -93,17 +93,17 @@ Explicit throws in this body:
 
 - `new Error(\`No vehicle preset "${id}"\`)`
 
-## vehiclePreset.callback@84
+## vehiclePreset.callback@95
 
-[Implementation, line 84](../../../../../src/catalog/vehicles/library.ts#L84)
+[Implementation, line 95](../../../../../src/catalog/vehicles/library.ts#L95)
 
 ```ts
-callback@84(entry): inferred by TypeScript; see implementation
+callback@95(entry): inferred by TypeScript; see implementation
 ```
 
 ## presetVehicle
 
-[Implementation, line 90](../../../../../src/catalog/vehicles/library.ts#L90)
+[Implementation, line 101](../../../../../src/catalog/vehicles/library.ts#L101)
 
 One vehicle. Omit position to use the preset's placement.
 
@@ -119,7 +119,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## presetEntities
 
-[Implementation, line 105](../../../../../src/catalog/vehicles/library.ts#L105)
+[Implementation, line 116](../../../../../src/catalog/vehicles/library.ts#L116)
 
 The vehicle, plus the carrier stern portal when the preset asks for one.
 

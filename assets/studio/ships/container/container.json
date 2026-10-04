@@ -82,18 +82,11 @@
         }
       }
     ],
-    "hubs": [
-      [-2.02, -1.08, -4.52],
-      [2.02, -1.08, -4.52],
-      [-2.02, -1.08, 4.52],
-      [2.02, -1.08, 4.52]
-    ],
     "wheelRadius": 0.12,
     "suspensionRest": 0.18,
     "stiffness": 80,
     "engineForce": 32000,
     "brakeForce": 300,
-    "driver": [0, 1.05, -2.8],
     "cameraDistance": 15,
     "flight": true,
     "interior": {
@@ -124,5 +117,6 @@
       "hinge": [0, 0.27, 5.1],
       "closeAngle": -1.6619025137490007
     }
-  }
+  },
+  "rig": "glb"
 }

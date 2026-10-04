@@ -75,7 +75,7 @@ it('keeps the complete assembled A3 under 100k triangles and includes the correc
   expect(total).toBeLessThan(100000)
 })
 
-it('preserves the supplied binary geometry while adding five meshless anchors', () => {
+it('preserves the supplied binary geometry while adding driver and mechanical anchors', () => {
   const bytes = readFileSync('assets/studio/cars/a3/a3.cabrio.glb')
   const length = bytes.readUInt32LE(12)
   // Hash of the untouched binary chunk from the user-supplied body.
@@ -86,6 +86,8 @@ it('preserves the supplied binary geometry while adding five meshless anchors', 
   ).toBe('526a0a046eca7db2650d8131b7212a501bae4f88ce16a44ee16760c66f1f25a7')
   const anchors = load('cabrio').json.nodes.filter((node) => node.name.startsWith('nabla.'))
   expect(anchors.map((node) => node.name).sort()).toEqual([
+    'nabla.driver.eyes',
+    'nabla.driver.seat',
     'nabla.steering',
     'nabla.wheel.fl',
     'nabla.wheel.fr',

@@ -5,14 +5,25 @@ export const generatedVehicleRigs: Record<
     source: string
     sha256: string
     hitch?: number[]
+    towAnchor?: number[]
     hubs: number[][]
     wheelRotations: number[][]
-    steering: { position: number[]; rotation: number[] }
+    monitors?: {
+      id: string
+      width: number
+      height: number
+      position: number[]
+      rotation: number[]
+    }[]
+    driver?: number[]
+    headOffset?: number[]
+    headRotation?: number[]
+    steering?: { position: number[]; rotation: number[] }
   }
 > = {
   a3: {
     source: '/studio/cars/a3/a3.cabrio.glb',
-    sha256: '88169c63e79f45acc4c90096158b8bbc68e4c5e8d70d22de73c8192ceed68b74',
+    sha256: '4d5f48c92e93b643a6686dcef51a7567dd782f357be7e053ad7b7e1c48da5d86',
     hubs: [
       [-0.7622195, -0.28462600000000005, -1.291815],
       [0.7622195, -0.28462600000000005, -1.291815],
@@ -31,10 +42,13 @@ export const generatedVehicleRigs: Record<
         1.171515179289125e-17, 0.9815271415365469, -0.19132294798872282, 6.010120360794915e-17,
       ],
     },
+    driver: [-0.356, 0.7, 0.32],
+    headOffset: [0, -0.1499999999999999, -0.36],
+    headRotation: [0, 0, 0, 1],
   },
   car: {
     source: '/studio/cars/a3/a3.cabrio.glb',
-    sha256: '88169c63e79f45acc4c90096158b8bbc68e4c5e8d70d22de73c8192ceed68b74',
+    sha256: '4d5f48c92e93b643a6686dcef51a7567dd782f357be7e053ad7b7e1c48da5d86',
     hubs: [
       [-0.7622195, -0.28462600000000005, -1.291815],
       [0.7622195, -0.28462600000000005, -1.291815],
@@ -53,10 +67,37 @@ export const generatedVehicleRigs: Record<
         1.171515179289125e-17, 0.9815271415365469, -0.19132294798872282, 6.010120360794915e-17,
       ],
     },
+    driver: [-0.356, 0.7, 0.32],
+    headOffset: [0, -0.1499999999999999, -0.36],
+    headRotation: [0, 0, 0, 1],
+  },
+  'white-trailer': {
+    source: '/studio/trucks/white-truck-studio/assets/trailer.anchored.glb',
+    sha256: 'e13f4c799584a990353f66e98a5faab6fa3854c9be23e03c7343c7638e90a32e',
+    hubs: [
+      [-0.8920750849989497, -0.6276177768713792, 1.775093997560098],
+      [-0.8920751181276269, -0.6276177768713792, 3.0726903836142947],
+      [-0.8920750731796226, -0.6276177768713792, 4.395842308976179],
+      [0.9086138554755453, -0.6276177768713792, 1.7908736211266039],
+      [0.9086138224215439, -0.6276177768713792, 3.087616785232877],
+      [0.9086138673694283, -0.6276177768713792, 4.410768710594881],
+    ],
+    wheelRotations: [
+      [0, 0, 0, 1],
+      [0, 0, 0, 1],
+      [0, 0, 0, 1],
+      [0, 1, 0, 6.123233995736766e-17],
+      [0, 1, 0, 6.123233995736766e-17],
+      [0, 1, 0, 6.123233995736766e-17],
+    ],
+    driver: [0, 1, 0],
+    headOffset: [0, -0.15000000000000002, -0.36],
+    headRotation: [0, 0, 0, 1],
+    towAnchor: [0, 0, -5.565219879150391],
   },
   'white-truck': {
     source: '/studio/trucks/white-truck-studio/assets/tractor.modern.glb',
-    sha256: 'fca37d26806b897b0d43711a330c6ca7f42377874242200ce3de5a53400cfc35',
+    sha256: '7c650b7027c237ce8152d5049fa1cd5fcfab33f03b5d8b8feac75745d10d10e0',
     hubs: [
       [-1.0751686096191406, -0.622534990310669, -1.3792321681976318],
       [1.080893874168396, -0.622534990310669, -1.3792320489883423],
@@ -73,6 +114,72 @@ export const generatedVehicleRigs: Record<
       position: [-0.714255259311445, 1.1138955192545268, -2.206799173597997],
       rotation: [0, 0, 0, 1],
     },
+    driver: [-0.71, 1.95, -1.75],
+    headOffset: [0, -0.5, 0.050000000000000044],
+    headRotation: [0, 0, 0, 1],
     hitch: [0, 0, 1.7667454481124878],
+  },
+  carrier: {
+    source: '/studio/ships/container/ship.container.5x10.glb',
+    sha256: '09d74dda79794002f2df0916e375386836422acf5067874aa1b6d01b10d3827b',
+    hubs: [
+      [-2.02, -1.08, -4.52],
+      [2.02, -1.08, -4.52],
+      [-2.02, -1.08, 4.52],
+      [2.02, -1.08, 4.52],
+    ],
+    wheelRotations: [
+      [0, 0, 0, 1],
+      [0, 0, 0, 1],
+      [0, 0, 0, 1],
+      [0, 0, 0, 1],
+    ],
+    driver: [0, 1.05, -2.8],
+    headOffset: [0, -0.10000000000000009, 0.20000000000000018],
+    headRotation: [0, 0, 0, 1],
+    monitors: [
+      {
+        id: 'helm0',
+        width: 0.62,
+        height: 0.34,
+        position: [-0.78, 0.28, -3.706],
+        rotation: [0, 0, 0, 1],
+      },
+      {
+        id: 'helm1',
+        width: 0.62,
+        height: 0.34,
+        position: [0, 0.28, -3.706],
+        rotation: [0, 0, 0, 1],
+      },
+      {
+        id: 'helm2',
+        width: 0.62,
+        height: 0.34,
+        position: [0.78, 0.28, -3.706],
+        rotation: [0, 0, 0, 1],
+      },
+      {
+        id: 'door0',
+        width: 0.62,
+        height: 0.34,
+        position: [-1.05, 0.28, -0.056],
+        rotation: [0, 1, 0, 0],
+      },
+      {
+        id: 'door1',
+        width: 0.62,
+        height: 0.34,
+        position: [1.05, 0.28, -0.056],
+        rotation: [0, 1, 0, 0],
+      },
+      {
+        id: 'touch',
+        width: 2.43,
+        height: 0.4,
+        position: [0, 0.020199999999999996, -3.34],
+        rotation: [-0.7071067811865475, 0, 0, 0.7071067811865476],
+      },
+    ],
   },
 }

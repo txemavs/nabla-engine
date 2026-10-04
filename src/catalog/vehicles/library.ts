@@ -52,12 +52,23 @@ export function vehiclePresets(): VehiclePreset[] {
                 vehicle: {
                   ...authored.vehicle,
                   hubs: extracted.hubs,
+                  ...(extracted.monitors ? { monitorMounts: extracted.monitors } : {}),
+                  ...(extracted.driver
+                    ? {
+                        driver: extracted.driver,
+                        headOffset: extracted.headOffset,
+                        headRotation: extracted.headRotation,
+                      }
+                    : {}),
                   ...(extracted.hitch ? { hitch: extracted.hitch } : {}),
+                  ...(extracted.towAnchor ? { towAnchor: extracted.towAnchor } : {}),
                 },
                 visual: {
                   ...authored.visual,
                   wheelRotations: extracted.wheelRotations,
-                  steering: { ...authored.visual.steering, transform: extracted.steering },
+                  ...(authored.visual.steering
+                    ? { steering: { ...authored.visual.steering, transform: extracted.steering } }
+                    : {}),
                 },
               }
             : authored,

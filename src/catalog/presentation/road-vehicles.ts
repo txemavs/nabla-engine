@@ -8,6 +8,7 @@ import type {
 } from '../../render/vehicle-presentation/adapter.js'
 import { createA3Lights } from './a3-lamps.js'
 import { createA3Mounts } from './a3-mounts.js'
+import { authoredScreenMounts } from '../../render/vehicle-presentation/screen-mounts.js'
 function shineVehicle(model: THREE.Object3D): void {
   model.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
@@ -125,6 +126,17 @@ export const policePresentation: VehiclePresentationAdapter = {
   },
 }
 const stock = new Map<string, VehiclePresentationAdapter>([
+  [
+    'nabla.truck',
+    {
+      mount(model, _entity, definition) {
+        const mounts = definition ? authoredScreenMounts(model, definition.cluster) : undefined
+        return {
+          instruments: mounts && definition ? new CarInstruments(mounts, definition) : undefined,
+        }
+      },
+    },
+  ],
   ['nabla.s3', s3Presentation],
   ['nabla.wrangler', wranglerPresentation],
   ['nabla.police', policePresentation],

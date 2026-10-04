@@ -147,7 +147,8 @@ export class CarInstruments {
       this.frameMs += (Math.min(100, Math.max(0, now - this.lastUpdate)) - this.frameMs) * 0.04
     this.lastUpdate = now
     this.retraction.update(now)
-    this.navigator.visible = !this.menu.open
+    this.navigator.visible = !this.menu.open && (!this.mounts.sharedSurface || this.gpsOpen)
+    if (this.mounts.sharedSurface) this.speedMonitor.root.visible = !this.menu.open && !this.gpsOpen
     if (this.menuDisplay) {
       this.menuDisplay.root.visible = this.menu.open
       this.menuDisplay.update(this.definition.menuData(this.menu, this), now)

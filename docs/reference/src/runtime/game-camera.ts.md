@@ -86,5 +86,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sim.entityTransform`
 - `sim.vehicleInfo`
 - `target.splice`
+- `view.document.entities.find`
 - `view.objects.get`
 - `view.vehicleHeadOffset`
+
+## updateGameCamera.callback@163
+
+[Implementation, line 163](../../../../src/runtime/game-camera.ts#L163)
+
+```ts
+callback@163(entity): inferred by TypeScript; see implementation
+```

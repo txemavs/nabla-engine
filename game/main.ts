@@ -50,7 +50,7 @@ try {
     trailer.vehicle!.tow = {
       vehicleId: tractor.id,
       hitch: tractor.vehicle!.hitch!,
-      anchor: [0, 0, -5.565219856],
+      anchor: trailer.vehicle!.towAnchor!,
     }
     scene.entities.push(trailer)
   }
