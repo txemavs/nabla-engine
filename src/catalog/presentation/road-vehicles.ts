@@ -10,6 +10,15 @@ import { createA3Lights } from './a3-lamps.js'
 import { createA3Mounts } from './a3-mounts.js'
 import { authoredMirrorLenses } from '../../render/vehicle-presentation/mirror-lenses.js'
 import { authoredScreenMounts } from '../../render/vehicle-presentation/screen-mounts.js'
+function paintWhiteBody(model: THREE.Object3D, color: string): void {
+  model.traverse((node) => {
+    if (!(node instanceof THREE.Mesh)) return
+    for (const material of Array.isArray(node.material) ? node.material : [node.material])
+      if (material instanceof THREE.MeshStandardMaterial && /^White paint/i.test(material.name))
+        material.color.set(color)
+  })
+}
+
 function shineVehicle(model: THREE.Object3D): void {
   model.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
@@ -144,10 +153,14 @@ const stock = new Map<string, VehiclePresentationAdapter>([
         const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
           model.getWorldQuaternion(new THREE.Quaternion()),
         )
+        paintWhiteBody(model, entity.color)
         return {
           instruments,
           mirrors: lenses.length ? new CarMirrors(lenses, up, tilt, policy) : undefined,
         }
+      },
+      paint(model, color) {
+        paintWhiteBody(model, color)
       },
     },
   ],

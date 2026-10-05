@@ -7,7 +7,8 @@
  *   - alt: origin altitude in metres (default 50)
  *   - heading: player compass heading, degrees clockwise from north (default 0)
  *   - vehicle: vehicle preset ID (default: 'car') — the possessed start vehicle
- *   - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?}`
+ *   - color: body paint for the start vehicle (`#rrggbb`, same `entity.color` as cars)
+ *   - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?, color?, tow?}`
  *     (WGS84). Also `VITE_NABLA_VEHICLES` at build time. See `host-vehicles.ts`.
  *   - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
  *            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
@@ -25,6 +26,8 @@ export interface GameConfig {
     heading: number
   }
   vehicle: string
+  /** Optional `#rrggbb` paint for the start vehicle. Same field cars already use. */
+  color?: string
   /** Extra vehicles placed after terrain is ready. Empty when none were declared. */
   vehicles: HostVehicle[]
   /** Undefined means unconfigured; empty string explicitly selects this origin. */
@@ -54,6 +57,8 @@ export function parseGameConfig(search: string = location.search): GameConfig {
   const clampedLon = ((((longitude + 180) % 360) + 360) % 360) - 180
 
   const vehicle = params.get('vehicle') ?? 'car'
+  const colorParam = params.get('color')
+  const color = colorParam && /^#[0-9a-fA-F]{6}$/.test(colorParam) ? colorParam : undefined
 
   // Preserve the distinction between an explicit origin root and missing configuration.
   const tilesParam = params.get('tiles')
@@ -71,6 +76,7 @@ export function parseGameConfig(search: string = location.search): GameConfig {
       heading,
     },
     vehicle,
+    ...(color ? { color } : {}),
     vehicles: hostVehiclesFromSearch(search, viteHostVehicles()),
     tilesBaseUrl,
     staticTiles,
@@ -89,6 +95,9 @@ export function configToUrl(config: GameConfig): string {
   }
   if (config.vehicle !== 'car') {
     params.set('vehicle', config.vehicle)
+  }
+  if (config.color) {
+    params.set('color', config.color)
   }
   if (config.vehicles.length) {
     params.set('vehicles', JSON.stringify(config.vehicles))

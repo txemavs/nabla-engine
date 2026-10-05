@@ -13,7 +13,7 @@
  *   - a typed `HostVehicle[]` passed to {@link installHostVehicles}
  *
  * Example:
- *   [{"lat":43.3386,"lon":-1.7899,"heading":118,"vehicle":"white-truck"}]
+ *   [{"lat":43.3386,"lon":-1.7899,"heading":118,"vehicle":"white-truck","color":"#2157a5"}]
  */
 import { geoToLocal, type GeoPoint } from '@nabla/engine'
 import { isValidLatLon } from '@nabla/engine/planet/lat-lon'
@@ -30,8 +30,18 @@ export interface HostVehicle {
   heading: number
   /** Orthometric altitude in metres. Omitted uses the scene origin altitude. */
   alt?: number
-  /** Catalog preset id (`car`, `white-truck`, `a3`, `carrier`, …). */
+  /** Catalog preset id (`car`, `white-truck`, `white-trailer`, `a3`, `carrier`, …). */
   vehicle: string
+  /**
+   * Body paint, same `entity.color` field cars already use (`#rrggbb`).
+   * Applied to `white-truck` / `white-trailer` through the `nabla.truck` White paint materials.
+   */
+  color?: string
+  /**
+   * Hitch this trailer to the previous tractor in the same `vehicles` list
+   * (or an explicit tractor id). Free trailers omit it and rest on landing legs.
+   */
+  tow?: boolean | string
 }
 
 /** Local-metre pose for a host vehicle, ready for `placeVehicle`. */
@@ -44,6 +54,7 @@ export interface HostVehiclePose {
 /** What {@link installHostVehicles} needs from the browser runtime. */
 export interface HostVehicleRuntime {
   placeVehicle(template: Entity, position: Vec3Tuple, yaw?: number): Promise<string>
+  hitchTrailer?(tractorId: string, trailerId: string): string
 }
 
 /** Gameplay yaw (radians) for a compass heading in degrees clockwise from north. */
@@ -79,6 +90,16 @@ function parseHostVehicle(value: unknown, index: number): HostVehicle {
   const heading = raw.heading === undefined ? 0 : finiteNumber(raw.heading, `${index}.heading`)
   const vehicle: HostVehicle = { lat, lon, heading, vehicle: raw.vehicle.trim() }
   if (raw.alt !== undefined) vehicle.alt = finiteNumber(raw.alt, `${index}.alt`)
+  if (raw.color !== undefined) {
+    if (typeof raw.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(raw.color))
+      throw new Error(`Host vehicle ${index}.color must be #rrggbb`)
+    vehicle.color = raw.color
+  }
+  if (raw.tow !== undefined) {
+    if (raw.tow === true) vehicle.tow = true
+    else if (typeof raw.tow === 'string' && raw.tow.trim() !== '') vehicle.tow = raw.tow.trim()
+    else throw new Error(`Host vehicle ${index}.tow must be true or a tractor id`)
+  }
   return vehicle
 }
 
@@ -141,10 +162,30 @@ export async function installHostVehicles(
     if (!hasVehiclePreset(spec.vehicle)) throw new Error(`Unknown vehicle preset: ${spec.vehicle}`)
   }
   const ids: string[] = []
+  const placed = new Map<string, { hitch?: [number, number, number] }>()
+  let lastTractorId: string | undefined
   for (const [index, spec] of vehicles.entries()) {
     const pose = hostVehicleLocalPose(origin, spec)
     const template = presetVehicle(spec.vehicle, `host-${spec.vehicle}-${index}`)
-    ids.push(await runtime.placeVehicle(template, pose.position, pose.yaw))
+    if (spec.color) template.color = spec.color
+    if (spec.tow) {
+      const tractorId = spec.tow === true ? lastTractorId : spec.tow
+      const tractor = tractorId ? placed.get(tractorId) : undefined
+      if (!tractorId || !tractor?.hitch || !template.vehicle?.towAnchor)
+        throw new Error(`Host vehicle ${index} tow needs a previous tractor with a hitch`)
+      template.vehicle.tow = {
+        vehicleId: tractorId,
+        hitch: tractor.hitch,
+        anchor: template.vehicle.towAnchor,
+      }
+    }
+    const id = await runtime.placeVehicle(template, pose.position, pose.yaw)
+    ids.push(id)
+    const hitch = template.vehicle?.hitch
+    placed.set(id, {
+      hitch: hitch ? [hitch[0], hitch[1], hitch[2]] : undefined,
+    })
+    if (hitch && !template.vehicle?.passive) lastTractorId = id
   }
   return ids
 }

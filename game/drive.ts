@@ -31,6 +31,7 @@ try {
   if (!hasVehiclePreset(config.vehicle))
     throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
   const vehicle = presetVehicle(config.vehicle, 'player-vehicle', [0, 2, 0])
+  if (config.color) vehicle.color = config.color
   const scene: SceneDocument = flat
     ? createFlatTestScene(vehicle)
     : {

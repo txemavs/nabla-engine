@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **277 modules; 2680 executable function definitions**.
+Coverage: **280 modules; 2724 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -45,7 +45,7 @@ Coverage: **277 modules; 2680 executable function definitions**.
 | [src/catalog/presentation/a3-lamps.ts](src/catalog/presentation/a3-lamps.ts.md) | 10 |
 | [src/catalog/presentation/a3-mounts.ts](src/catalog/presentation/a3-mounts.ts.md) | 10 |
 | [src/catalog/presentation/police-equipment.ts](src/catalog/presentation/police-equipment.ts.md) | 14 |
-| [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 16 |
+| [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 19 |
 | [src/catalog/vehicles/generated-rigs.ts](src/catalog/vehicles/generated-rigs.ts.md) | 0 |
 | [src/catalog/vehicles/index.ts](src/catalog/vehicles/index.ts.md) | 0 |
 | [src/catalog/vehicles/library.ts](src/catalog/vehicles/library.ts.md) | 8 |
@@ -215,13 +215,14 @@ Coverage: **277 modules; 2680 executable function definitions**.
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
 | [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 13 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
+| [src/render/vehicle-presentation/landing-gear.ts](src/render/vehicle-presentation/landing-gear.ts.md) | 7 |
 | [src/render/vehicle-presentation/light-controller.ts](src/render/vehicle-presentation/light-controller.ts.md) | 6 |
 | [src/render/vehicle-presentation/light-rig.ts](src/render/vehicle-presentation/light-rig.ts.md) | 7 |
 | [src/render/vehicle-presentation/mirror-lenses.ts](src/render/vehicle-presentation/mirror-lenses.ts.md) | 2 |
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 129 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 132 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
@@ -266,15 +267,17 @@ Coverage: **277 modules; 2680 executable function definitions**.
 | [src/simulation/catch-floor.ts](src/simulation/catch-floor.ts.md) | 8 |
 | [src/simulation/contracts.ts](src/simulation/contracts.ts.md) | 1 |
 | [src/simulation/entity-body.ts](src/simulation/entity-body.ts.md) | 5 |
+| [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |
 | [src/simulation/physics.ts](src/simulation/physics.ts.md) | 117 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 12 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 4 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 167 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 179 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
+| [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |
 | [src/simulation/vehicle-docking.ts](src/simulation/vehicle-docking.ts.md) | 9 |
 | [src/simulation/vehicles/boat.ts](src/simulation/vehicles/boat.ts.md) | 5 |
 | [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 9 |

@@ -75,6 +75,11 @@ describe('game config', () => {
       expect(config.vehicle).toBe('police')
     })
 
+    it('parses start-vehicle paint', () => {
+      expect(parseGameConfig('?vehicle=white-truck&color=%232157a5').color).toBe('#2157a5')
+      expect(parseGameConfig('?color=blue').color).toBeUndefined()
+    })
+
     it('parses the player heading without changing the default start vehicle', () => {
       const config = parseGameConfig('?heading=118&vehicle=car')
       expect(config.spawn.heading).toBe(118)

@@ -12,7 +12,8 @@ URL parameters:
   - alt: origin altitude in metres (default 50)
   - heading: player compass heading, degrees clockwise from north (default 0)
   - vehicle: vehicle preset ID (default: 'car') — the possessed start vehicle
-  - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?}`
+  - color: body paint for the start vehicle (`#rrggbb`, same `entity.color` as cars)
+  - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?, color?, tow?}`
     (WGS84). Also `VITE_NABLA_VEHICLES` at build time. See `host-vehicles.ts`.
   - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
@@ -25,7 +26,7 @@ URL parameters:
 
 ## parseGameConfig
 
-[Implementation, line 41](../../../game/config.ts#L41)
+[Implementation, line 44](../../../game/config.ts#L44)
 
 ```ts
 parseGameConfig(search: string = location.search): GameConfig
@@ -33,6 +34,7 @@ parseGameConfig(search: string = location.search): GameConfig
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `/^#[0-9a-fA-F]{6}$/.test`
 - `Math.max`
 - `Math.min`
 - `URLSearchParams`
@@ -45,7 +47,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseGameConfig.coordinate
 
-[Implementation, line 44](../../../game/config.ts#L44)
+[Implementation, line 47](../../../game/config.ts#L47)
 
 ```ts
 coordinate(key: string, fallback: number): inferred by TypeScript; see implementation
@@ -59,7 +61,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## configToUrl
 
-[Implementation, line 80](../../../game/config.ts#L80)
+[Implementation, line 86](../../../game/config.ts#L86)
 
 ```ts
 configToUrl(config: GameConfig): string
@@ -78,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## requireGeographicTileBase
 
-[Implementation, line 106](../../../game/config.ts#L106)
+[Implementation, line 115](../../../game/config.ts#L115)
 
 Validate geographic terrain before allocating a renderer or starting any requests.
 

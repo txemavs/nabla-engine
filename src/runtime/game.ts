@@ -226,7 +226,7 @@ export class GameRuntime {
           : this.text('Chase camera')
     }
     if (code === 'KeyV') return sim.toggleFlight()
-    if (code === 'KeyF') return sim.toggleDock()
+    if (code === 'KeyF') return sim.toggleHitch() ?? sim.toggleDock()
     if (code === 'KeyM') return sim.cycleHelmMode()
     if (code === 'KeyB') return sim.automaticTransmission()
     if (code === 'KeyR') return sim.recoverVehicle()

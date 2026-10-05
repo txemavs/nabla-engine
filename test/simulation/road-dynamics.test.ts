@@ -134,7 +134,7 @@ it('keeps normal reversing attached but releases an overloaded kingpin against a
         expect(
           sim.entityTransform('trailer').position[2] - sim.entityTransform('truck').position[2],
         ).toBeGreaterThan(15)
-        expect(sim.entityTransform('trailer').rotation[0]).not.toBeCloseTo(0, 2)
+        expect(sim.vehicleInfo('trailer').landingGear).toBe(true)
       }
     } finally {
       sim.dispose()

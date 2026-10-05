@@ -7,6 +7,7 @@
 ## Module dependencies
 
 - `./retractable.js`
+- `./landing-gear.js`
 - `./mounts.js`
 - `./adapter.js`
 - `../entity/car-instruments.js`

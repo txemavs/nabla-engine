@@ -1,4 +1,5 @@
 export { RetractableMount } from './retractable.js'
+export { LandingGearVisual, mountLandingGear, landingGearMeshBounds } from './landing-gear.js'
 export {
   quadGeometry,
   surfaceMatrix,
