@@ -31,7 +31,7 @@ setPlanetCharts(provider: () => ChartTile[]): inferred by TypeScript; see implem
 
 ## chartRoads
 
-[Implementation, line 23](../../../../../src/render/entity/helm-map.ts#L23)
+[Implementation, line 24](../../../../../src/render/entity/helm-map.ts#L24)
 
 All cockpit screens share one immutable projection per scene revision.
 
@@ -45,20 +45,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `chartCache.get`
 - `chartCache.set`
 
-## chartRoads.callback@28
-
-[Implementation, line 28](../../../../../src/render/entity/helm-map.ts#L28)
-
-```ts
-callback@28(e): inferred by TypeScript; see implementation
-```
-
 ## chartRoads.callback@29
 
 [Implementation, line 29](../../../../../src/render/entity/helm-map.ts#L29)
 
 ```ts
 callback@29(e): inferred by TypeScript; see implementation
+```
+
+## chartRoads.callback@30
+
+[Implementation, line 30](../../../../../src/render/entity/helm-map.ts#L30)
+
+```ts
+callback@30(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -70,27 +70,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `graph.worldTransform`
 - `new Matrix4().compose`
 
-## chartRoads.callback@29.callback@36
+## chartRoads.callback@30.callback@37
 
-[Implementation, line 36](../../../../../src/render/entity/helm-map.ts#L36)
+[Implementation, line 37](../../../../../src/render/entity/helm-map.ts#L37)
 
 ```ts
-callback@36(path): inferred by TypeScript; see implementation
+callback@37(path): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
 - `Math.min`
+- `e.source?.tags?.name?.trim`
 - `isChartCarriageway`
 - `path.map`
 
-## chartRoads.callback@29.callback@36.callback@37
+## chartRoads.callback@30.callback@37.callback@38
 
-[Implementation, line 37](../../../../../src/render/entity/helm-map.ts#L37)
+[Implementation, line 38](../../../../../src/render/entity/helm-map.ts#L38)
 
 ```ts
-callback@37(p): inferred by TypeScript; see implementation
+callback@38(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -100,7 +101,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HelmMap.constructor
 
-[Implementation, line 68](../../../../../src/render/entity/helm-map.ts#L68)
+[Implementation, line 72](../../../../../src/render/entity/helm-map.ts#L72)
 
 Local north-up chart: loaded vector roads only, no network or extra WebGL camera.
 
@@ -110,7 +111,7 @@ constructor(readonly canvas: HTMLCanvasElement, private readonly clean = false, 
 
 ## HelmMap.headingUp
 
-[Implementation, line 79](../../../../../src/render/entity/helm-map.ts#L79)
+[Implementation, line 83](../../../../../src/render/entity/helm-map.ts#L83)
 
 Heading-up keeps the car pointing up. North-up leaves the chart fixed.
 
@@ -120,7 +121,7 @@ headingUp(value: boolean): inferred by TypeScript; see implementation
 
 ## HelmMap.headingUp
 
-[Implementation, line 84](../../../../../src/render/entity/helm-map.ts#L84)
+[Implementation, line 88](../../../../../src/render/entity/helm-map.ts#L88)
 
 Local north-up chart: loaded vector roads only, no network or extra WebGL camera.
 
@@ -130,7 +131,7 @@ headingUp(): boolean
 
 ## HelmMap.update
 
-[Implementation, line 87](../../../../../src/render/entity/helm-map.ts#L87)
+[Implementation, line 91](../../../../../src/render/entity/helm-map.ts#L91)
 
 Local north-up chart: loaded vector roads only, no network or extra WebGL camera.
 
@@ -144,7 +145,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Quaternion`
 - `Vector3`
-- `[...this.roads].sort`
+- `[...osm, ...this.roads].sort`
 - `chartRoads`
 - `ctx.beginPath`
 - `ctx.closePath`
@@ -160,30 +161,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `ctx.stroke`
 - `ctx.transform`
 - `ctx.translate`
-- `nearestLocality`
+- `navigationLabel`
+- `navigationRoads`
 - `new Vector3(0, 0, -1).applyQuaternion`
 - `planetCharts`
 - `road.points.forEach`
 - `this.canvas.getContext`
+- `this.roads.filter`
 
-## HelmMap.update.callback@139
+## HelmMap.update.callback@143
 
-[Implementation, line 139](../../../../../src/render/entity/helm-map.ts#L139)
+[Implementation, line 143](../../../../../src/render/entity/helm-map.ts#L143)
 
 ```ts
-callback@139(a, b): inferred by TypeScript; see implementation
+callback@143(r): inferred by TypeScript; see implementation
+```
+
+## HelmMap.update.callback@146
+
+[Implementation, line 146](../../../../../src/render/entity/helm-map.ts#L146)
+
+```ts
+callback@146(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number`
 
-## HelmMap.update.callback@152
+## HelmMap.update.callback@160
 
-[Implementation, line 152](../../../../../src/render/entity/helm-map.ts#L152)
+[Implementation, line 160](../../../../../src/render/entity/helm-map.ts#L160)
 
 ```ts
-callback@152(p, i): inferred by TypeScript; see implementation
+callback@160(p, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

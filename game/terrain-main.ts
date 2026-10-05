@@ -20,7 +20,7 @@ import { describeLoading } from './loading-text.js'
 /** Spanish controls for the terrain example (the original hint is shared with the flat demo). */
 const CONTROLS =
   '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Conducir · <kbd>Espacio</kbd> Freno · ' +
-  '<kbd>C</kbd> Cámara · <kbd>J</kbd> Menú · <kbd>H</kbd> GPS · <kbd>E</kbd> Entrar/salir · ' +
+  '<kbd>C</kbd> Cámara · <kbd>J</kbd> Menú · <kbd>H</kbd> Luces · <kbd>G</kbd> GPS · <kbd>E</kbd> Entrar/salir · ' +
   '<kbd>V</kbd> Vuelo · <kbd>F</kbd> Acoplar · <kbd>T</kbd> Transferir · <kbd>R</kbd> Recuperar · ' +
   '<kbd>Tab</kbd> Arma'
 

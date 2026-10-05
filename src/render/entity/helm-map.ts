@@ -1,4 +1,4 @@
-import { nearestLocality } from './navigation-places.js'
+import { navigationLabel, navigationRoads, type NavigationRoad } from './navigation-places.js'
 import { isChartCarriageway } from '../planet/ground-material.js'
 import { Matrix4, Quaternion, Vector3 } from 'three'
 import { SceneGraph } from '../../scene/graph.js'
@@ -9,14 +9,15 @@ let planetCharts: () => ChartTile[] = () => []
 export function setPlanetCharts(provider: () => ChartTile[]) {
   planetCharts = provider
 }
-type ChartRoad = {
-  points: Vector3[]
+export type ChartRoad = {
+  points: { x: number; z: number }[]
   width: number
   minX: number
   maxX: number
   minZ: number
   maxZ: number
   carriageway: boolean
+  name: string
 }
 const chartCache = new WeakMap<Entity[], ChartRoad[]>()
 /** All cockpit screens share one immutable projection per scene revision. */
@@ -45,6 +46,8 @@ export function chartRoads(doc: SceneDocument): ChartRoad[] {
           minZ = Math.min(minZ, p.z)
           maxZ = Math.max(maxZ, p.z)
         }
+        const tagged = e.source?.tags?.name?.trim()
+        const name = tagged && tagged !== e.source?.tags?.highway ? tagged : ''
         return {
           points,
           width: e.road!.width,
@@ -53,6 +56,7 @@ export function chartRoads(doc: SceneDocument): ChartRoad[] {
           minZ,
           maxZ,
           carriageway: isChartCarriageway({ source: e.source, transport: 'road' }),
+          name,
         }
       })
     })
@@ -136,7 +140,11 @@ export class HelmMap {
       ctx.drawImage(tile.bitmap, x, z, maxX - x, maxZ - z)
       ctx.restore()
     }
-    const roads = [...this.roads].sort((a, b) => Number(a.carriageway) - Number(b.carriageway))
+    const sceneNames: NavigationRoad[] = this.roads.filter((r) => r.name)
+    const osm = navigationRoads()
+    const roads = [...osm, ...this.roads].sort(
+      (a, b) => Number(a.carriageway) - Number(b.carriageway),
+    )
     for (const road of roads) {
       const pad = road.width / 2
       if (
@@ -175,7 +183,7 @@ export class HelmMap {
     ctx.fillStyle = '#d5e6ef'
     ctx.font = '20px system-ui'
     ctx.textAlign = 'center'
-    ctx.fillText(nearestLocality(pose.position), 290, 25, 560)
+    ctx.fillText(navigationLabel(pose.position, sceneNames), 290, 25, 560)
     ctx.textAlign = 'start'
     if (this.clean) return
     ctx.fillStyle = '#d5e6ef'
@@ -183,6 +191,7 @@ export class HelmMap {
     ctx.fillText('N ↑', 12, 58)
     ctx.fillText('200 m', 475, 212)
     ctx.fillRect(475, 218, 46, 2)
-    if (!this.roads.length && !tiles.length) ctx.fillText('Sin carreteras cargadas', 12, 215)
+    if (!this.roads.length && !osm.length && !tiles.length)
+      ctx.fillText('Sin carreteras cargadas', 12, 215)
   }
 }

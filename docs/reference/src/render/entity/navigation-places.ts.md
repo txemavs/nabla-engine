@@ -7,18 +7,27 @@
 ## Module dependencies
 
 - `three`
+- `../../planet/osm-snapshot.js`
 
-## provider
+## places
 
-[Implementation, line 7](../../../../../src/render/entity/navigation-places.ts#L7)
+[Implementation, line 12](../../../../../src/render/entity/navigation-places.ts#L12)
 
 ```ts
-provider(): inferred by TypeScript; see implementation
+places(): inferred by TypeScript; see implementation
+```
+
+## roads
+
+[Implementation, line 13](../../../../../src/render/entity/navigation-places.ts#L13)
+
+```ts
+roads(): inferred by TypeScript; see implementation
 ```
 
 ## setNavigationPlaces
 
-[Implementation, line 8](../../../../../src/render/entity/navigation-places.ts#L8)
+[Implementation, line 15](../../../../../src/render/entity/navigation-places.ts#L15)
 
 ```ts
 setNavigationPlaces(value: () => NavigationPlace[]): inferred by TypeScript; see implementation
@@ -26,7 +35,7 @@ setNavigationPlaces(value: () => NavigationPlace[]): inferred by TypeScript; see
 
 ## navigationPlaces
 
-[Implementation, line 11](../../../../../src/render/entity/navigation-places.ts#L11)
+[Implementation, line 18](../../../../../src/render/entity/navigation-places.ts#L18)
 
 ```ts
 navigationPlaces(): NavigationPlace[]
@@ -34,11 +43,31 @@ navigationPlaces(): NavigationPlace[]
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `provider`
+- `places`
+
+## setNavigationRoads
+
+[Implementation, line 21](../../../../../src/render/entity/navigation-places.ts#L21)
+
+```ts
+setNavigationRoads(value: () => NavigationRoad[]): inferred by TypeScript; see implementation
+```
+
+## navigationRoads
+
+[Implementation, line 24](../../../../../src/render/entity/navigation-places.ts#L24)
+
+```ts
+navigationRoads(): NavigationRoad[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `roads`
 
 ## nearestLocality
 
-[Implementation, line 15](../../../../../src/render/entity/navigation-places.ts#L15)
+[Implementation, line 29](../../../../../src/render/entity/navigation-places.ts#L29)
 
 OSM settlement points are references, not municipal boundary polygons.
 
@@ -49,4 +78,62 @@ nearestLocality(position: readonly number[]): string
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.hypot`
-- `provider`
+- `places`
+
+## segmentDistance
+
+[Implementation, line 42](../../../../../src/render/entity/navigation-places.ts#L42)
+
+```ts
+segmentDistance(x: number, z: number, ax: number, az: number, bx: number, bz: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.hypot`
+- `Math.max`
+- `Math.min`
+
+## polylineDistance
+
+[Implementation, line 57](../../../../../src/render/entity/navigation-places.ts#L57)
+
+```ts
+polylineDistance(x: number, z: number, road: NavigationRoad): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `segmentDistance`
+
+## nearestStreet
+
+[Implementation, line 74](../../../../../src/render/entity/navigation-places.ts#L74)
+
+Named street under the pose, or undefined when none is close enough.
+
+```ts
+nearestStreet(position: readonly number[], extra: readonly NavigationRoad[] = []): string | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.max`
+- `polylineDistance`
+- `roads`
+
+## navigationLabel
+
+[Implementation, line 99](../../../../../src/render/entity/navigation-places.ts#L99)
+
+Street when the OSM/scene road is under the car; city/locality otherwise.
+
+```ts
+navigationLabel(position: readonly number[], extra: readonly NavigationRoad[] = []): string
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `nearestLocality`
+- `nearestStreet`

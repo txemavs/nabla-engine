@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **271 modules; 2566 executable function definitions**.
+Coverage: **274 modules; 2597 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -129,6 +129,7 @@ Coverage: **271 modules; 2566 executable function definitions**.
 | [src/planet/land/terrain.ts](src/planet/land/terrain.ts.md) | 0 |
 | [src/planet/lat-lon.ts](src/planet/lat-lon.ts.md) | 8 |
 | [src/planet/missing-tiles.ts](src/planet/missing-tiles.ts.md) | 17 |
+| [src/planet/osm-snapshot.ts](src/planet/osm-snapshot.ts.md) | 8 |
 | [src/planet/places.ts](src/planet/places.ts.md) | 4 |
 | [src/planet/sea-coverage.ts](src/planet/sea-coverage.ts.md) | 2 |
 | [src/planet/sky.ts](src/planet/sky.ts.md) | 8 |
@@ -150,9 +151,9 @@ Coverage: **271 modules; 2566 executable function definitions**.
 | [src/render/entity/carrier-thrusters.ts](src/render/entity/carrier-thrusters.ts.md) | 2 |
 | [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 6 |
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 46 |
-| [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 13 |
+| [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 14 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 6 |
-| [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 4 |
+| [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 11 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
 | [src/render/entity/ship-hud.ts](src/render/entity/ship-hud.ts.md) | 4 |
 | [src/render/entity/ship-lights.ts](src/render/entity/ship-lights.ts.md) | 14 |
@@ -185,6 +186,7 @@ Coverage: **271 modules; 2566 executable function definitions**.
 | [src/render/planet/map-artifact.ts](src/render/planet/map-artifact.ts.md) | 2 |
 | [src/render/planet/night-sky.ts](src/render/planet/night-sky.ts.md) | 11 |
 | [src/render/planet/ocean-sheet.ts](src/render/planet/ocean-sheet.ts.md) | 14 |
+| [src/render/planet/osm-roads.ts](src/render/planet/osm-roads.ts.md) | 1 |
 | [src/render/planet/place-label.ts](src/render/planet/place-label.ts.md) | 2 |
 | [src/render/planet/provider.ts](src/render/planet/provider.ts.md) | 38 |
 | [src/render/planet/road-batches.ts](src/render/planet/road-batches.ts.md) | 7 |
@@ -201,7 +203,7 @@ Coverage: **271 modules; 2566 executable function definitions**.
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 28 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 109 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 116 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
@@ -217,7 +219,7 @@ Coverage: **271 modules; 2566 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 115 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 121 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
@@ -278,6 +280,7 @@ Coverage: **271 modules; 2566 executable function definitions**.
 | [src/simulation/vehicles/wheeled/contracts.ts](src/simulation/vehicles/wheeled/contracts.ts.md) | 1 |
 | [src/simulation/vehicles/wheeled/index.ts](src/simulation/vehicles/wheeled/index.ts.md) | 0 |
 | [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 20 |
+| [src/util/gzip.ts](src/util/gzip.ts.md) | 1 |
 | [src/util/sha256.ts](src/util/sha256.ts.md) | 5 |
 | [src/util/uuid.ts](src/util/uuid.ts.md) | 4 |
 | [src/viewer/index.ts](src/viewer/index.ts.md) | 41 |

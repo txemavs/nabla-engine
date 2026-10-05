@@ -93,6 +93,11 @@ describe('Atlas Z15 package adapter', () => {
     expect(lidar.files['buildings-osm'].path).toBe('buildings-osm-8b7a0e12579eb3ab.glb')
     expect(lidar.photo).toMatchObject({ path: 'ground-lo-93fed02bb5c4abd3.webp', level: 'lo' })
     expect(adaptAtlasManifest(manifest(), p, { photo: 'none' }).photo).toBeUndefined()
+    expect(engine.osmSnapshot).toMatchObject({
+      path: 'osm-3f3939c12c359aab.json.gz',
+      bytes: 43942,
+      sha256: '3f3939c12c359aab03c1320740958aa4335f46034585bad36923c635540c0894',
+    })
     // Pure: the input manifest is untouched.
     expect(manifest().files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
     expect(adaptAtlasManifest(manifest(), p).roads).toBeUndefined()

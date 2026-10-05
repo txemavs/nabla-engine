@@ -2,7 +2,7 @@
 export { CatchFloor } from './planet/catch-floor.js'
 export { seaSeenFromBelow } from './planet/ocean-sheet.js'
 export { TileDebugView, type TileDebugMode } from './planet/debug.js'
-export { setNavigationPlaces } from './entity/navigation-places.js'
+export { setNavigationPlaces, setNavigationRoads } from './entity/navigation-places.js'
 export { setPlanetCharts } from './entity/helm-map.js'
 export { PlanetWorld, projectedLayers, projectGroundPhoto } from './planet/world.js'
 export type { LoadDiagnostics, StreamError } from './planet/world.js'

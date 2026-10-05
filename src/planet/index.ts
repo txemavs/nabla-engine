@@ -28,6 +28,13 @@ export type {
   PlanetGlbLayer,
 } from './contract.js'
 export { planetPlaces, validPlanetPlaces, type PlanetPlace } from './places.js'
+export {
+  OSM_CELL_FORMAT,
+  osmSnapshotHighways,
+  projectOsmRoads,
+  type OsmChartRoad,
+  type OsmHighway,
+} from './osm-snapshot.js'
 export { horizonGeometry, planetTileFrame, type HorizonGeometry } from './tiles.js'
 export { validatePlanetTileSource, type PlanetTileSource } from './extract/source.js'
 export {

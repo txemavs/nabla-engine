@@ -21,14 +21,14 @@ In the S3:
 | Key           | Action                                                 |
 | ------------- | ------------------------------------------------------ |
 | C             | Exterior → driver → overhead camera                    |
-| K             | Retract/raise the GPS and its casing in 1.8 seconds    |
+| G             | Retract/raise the GPS and its casing in 1.8 seconds    |
 | J             | Open/close the car menu on the GPS; enter cockpit view |
 | ↑ / ↓         | Select a menu entry                                    |
 | Enter         | Open a section or apply the selected action            |
 | Escape        | Return to parent, or close the root menu               |
 | Save / Ctrl+S | Persist the scene, including the chosen paint          |
 
-Cars start with the GPS fully lowered and off on each entry; H raises it on demand.
+Cars start with the GPS fully lowered and off on each entry; G raises it on demand.
 Entry shows a 1.2-second overhead-to-seat transition, while the occupied car's
 materials are prepared with the scene lighting. C or driving input cancels the
 transition. Boats and carriers retain their existing entry behaviour.
