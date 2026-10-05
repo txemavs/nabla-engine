@@ -36,7 +36,7 @@ export const DEFAULT_TILES_URL = 'https://atlas.chained.world/euskadi/terraform'
 /** URL parameters that choose the source. */
 export const SOURCE_PARAMS = ['example', 'terrain', 'z15', 'tiles', 'relief'] as const
 /** URL parameters that place the player inside a source; they mean nothing for another one. */
-export const POSITION_PARAMS = ['tile', 'dx', 'dz', 'heading', 'lat', 'lon', 'alt'] as const
+export const POSITION_PARAMS = ['tile', 'dx', 'dz', 'heading', 'lat', 'lon', 'll', 'alt'] as const
 
 const URL_BASE = /^(https?:\/\/|\/|\.\.?\/)\S*$/
 

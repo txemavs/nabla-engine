@@ -224,7 +224,8 @@
         gap: 8px;
         margin-top: 8px;
       }
-      #display-settings .menu-section > label:has(input[type='url']) {
+      #display-settings .menu-section > label:has(input[type='url']),
+      #display-settings .menu-section > label:has(input[type='text']) {
         display: grid;
       }
       #display-settings .menu-section > label:has(select) {
@@ -249,6 +250,15 @@
         opacity: 0.8;
         white-space: pre-line;
         text-align: center;
+      }
+      #location-display {
+        pointer-events: auto;
+        cursor: copy;
+        user-select: all;
+      }
+      #position-message {
+        min-height: 1em;
+        font-size: 12px;
       }
       #terrain-cache-usage {
         min-height: 1em;

@@ -6,19 +6,20 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **263 modules; 2408 executable function definitions**.
+Coverage: **265 modules; 2428 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
 | [game/config.ts](game/config.ts.md) | 4 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 7 |
 | [game/drive.ts](game/drive.ts.md) | 14 |
-| [game/entry.ts](game/entry.ts.md) | 2 |
+| [game/entry.ts](game/entry.ts.md) | 3 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 18 |
 | [game/main.ts](game/main.ts.md) | 0 |
 | [game/menu.ts](game/menu.ts.md) | 1 |
+| [game/position.ts](game/position.ts.md) | 11 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 10 |
@@ -123,6 +124,7 @@ Coverage: **263 modules; 2408 executable function definitions**.
 | [src/planet/land/roads/draped-road.ts](src/planet/land/roads/draped-road.ts.md) | 42 |
 | [src/planet/land/surface.ts](src/planet/land/surface.ts.md) | 5 |
 | [src/planet/land/terrain.ts](src/planet/land/terrain.ts.md) | 0 |
+| [src/planet/lat-lon.ts](src/planet/lat-lon.ts.md) | 8 |
 | [src/planet/missing-tiles.ts](src/planet/missing-tiles.ts.md) | 17 |
 | [src/planet/places.ts](src/planet/places.ts.md) | 4 |
 | [src/planet/sea-coverage.ts](src/planet/sea-coverage.ts.md) | 2 |

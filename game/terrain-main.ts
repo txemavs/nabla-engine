@@ -7,6 +7,7 @@ import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
 import { LoadingScreen, showError } from './loading.js'
 import { startError } from './start-error.js'
+import { bindPosition, showLocation } from './position.js'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
@@ -23,11 +24,12 @@ const CONTROLS =
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
+bindPosition()
 let runtime: GameRuntime | undefined
 let cellsLabel = ''
 /** The tile host of this page, known even when the configuration fails to load. */
 let startBase = (new URLSearchParams(location.search).get('terrain') ?? '').replace(/\/+$/, '')
-/** HUD line with the loaded cells of the host's index, e.g. "Celdas: 12/33". */
+/** HUD line with the cells loaded and the ones the host lacks, e.g. "Celdas: 12 cargadas · 5 faltan". */
 function showCells(): void {
   const stats = runtime?.cellStats
   if (!stats) return
@@ -99,9 +101,7 @@ try {
       document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
       document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
       showCells()
-      document.getElementById('location-display')!.textContent = frame.location
-        ? frame.location.latitude.toFixed(5) + '°, ' + frame.location.longitude.toFixed(5) + '°'
-        : ''
+      showLocation(frame.location)
     },
     onError(error) {
       showError(error instanceof Error ? error.message : String(error))

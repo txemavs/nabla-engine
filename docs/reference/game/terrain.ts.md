@@ -10,7 +10,8 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
                            {base}/z/15/{x}/{y}/manifest.json. `/terrain` is the dev server's read-only mount.
   &tile=<x>/<y>            start over this tile's centre (e.g. 16211/12003) ...
   &dx=<m>&dz=<m>           ... shifted this many metres east / south
-  &lat=<deg>&lon=<deg>     ... or start at explicit coordinates
+  &lat=<deg>&lon=<deg>     ... or start at explicit coordinates (decimal degrees, WGS84; dx/dz are ignored)
+  &ll=<lat>,<lon>          ... the same in one value, as Google Maps shows it (ll=43.3386,-1.7899)
   &alt=<m>                 origin altitude, default 0 (terrain files carry absolute elevations)
   &heading=<deg>           compass heading the fleet faces (default 0 = north)
   &vehicle=<preset>        vehicle the player starts in (default car)
@@ -29,10 +30,11 @@ A bare URL (no query, or only display options) starts the default tile of the de
 - `@nabla/engine/examples/terrain-drive`
 - `@nabla/engine/planet/atlas-z15`
 - `@nabla/engine/scene`
+- `@nabla/engine/planet/lat-lon`
 
 ## fetchCoverage
 
-[Implementation, line 34](../../../game/terrain.ts#L34)
+[Implementation, line 41](../../../game/terrain.ts#L41)
 
 Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
 it has none. Only used to pick a start cell when the URL names none; streaming never needs it.
@@ -47,17 +49,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `index.tiles?.filter`
 - `response.json`
 
-## fetchCoverage.callback@39
+## fetchCoverage.callback@46
 
-[Implementation, line 39](../../../game/terrain.ts#L39)
+[Implementation, line 46](../../../game/terrain.ts#L46)
 
 ```ts
-callback@39(t): inferred by TypeScript; see implementation
+callback@46(t): inferred by TypeScript; see implementation
 ```
 
 ## terrainDefaults
 
-[Implementation, line 57](../../../game/terrain.ts#L57)
+[Implementation, line 64](../../../game/terrain.ts#L64)
 
 Default query for a package folder: the default start when its cell is published, else just the folder.
 
@@ -67,7 +69,7 @@ terrainDefaults(defaultCellPublished: boolean, base: string = DEFAULT_TERRAIN_QU
 
 ## probeTerrainFolder
 
-[Implementation, line 68](../../../game/terrain.ts#L68)
+[Implementation, line 75](../../../game/terrain.ts#L75)
 
 True when the folder publishes the default start cell. This asks for one manifest, like the engine
 does for any tile; no index file is needed.
@@ -82,7 +84,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## wantsTerrain
 
-[Implementation, line 92](../../../game/terrain.ts#L92)
+[Implementation, line 99](../../../game/terrain.ts#L99)
 
 True when the URL asks for the terrain-folder example.
 
@@ -98,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 97](../../../game/terrain.ts#L97)
+[Implementation, line 104](../../../game/terrain.ts#L104)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -118,7 +120,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 106](../../../game/terrain.ts#L106)
+[Implementation, line 113](../../../game/terrain.ts#L113)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -129,15 +131,17 @@ parseTerrainConfig(search: string = location.search): TerrainConfig
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
-- `Math.abs`
 - `String`
 - `URLSearchParams`
 - `finite`
-- `mapTileAt`
+- `isValidLatLon`
+- `ll.trim`
 - `normalizeTilesBase`
 - `params.get`
+- `parseLatLon`
 - `parseTileSpec`
 - `raw.trim`
+- `tileOffsetFromGeo`
 - `tileOffsetToGeo`
 
 Explicit throws in this body:
@@ -146,13 +150,15 @@ Explicit throws in this body:
 - `new Error(\`relief debe ser engine o lidar, no "${relief}"\`)`
 - `new Error(\`photo debe ser full, lo o none, no "${photo}"\`)`
 - `new Error(\`player debe ser hover o walk, no "${player}"\`)`
-- `new Error('Indica lat y lon juntos (o usa tile=<x>/<y>).')`
-- `new Error('lat/lon fuera de rango')`
+- `new Error('Indica lat y lon juntos (o usa ll=<lat>,<lon>, o tile=<x>/<y>).')`
+- `new Error('Usa ll=<lat>,<lon> o lat= y lon=, no las dos formas a la vez.')`
+- `new Error( \`ll debe ser <lat>,<lon> en grados, por ejemplo ll=43.3386,-1.7899 (no "${ll}")\`, )`
+- `new Error('lat/lon fuera de rango (latitud ±85,05°, longitud ±180°)')`
 - `new Error( 'Posición inicial no válida: ' + (error instanceof Error ? error.message : String(error)), )`
 
 ## startFromIndex
 
-[Implementation, line 163](../../../game/terrain.ts#L163)
+[Implementation, line 184](../../../game/terrain.ts#L184)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -173,7 +179,7 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 175](../../../game/terrain.ts#L175)
+[Implementation, line 196](../../../game/terrain.ts#L196)
 
 Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving.
 

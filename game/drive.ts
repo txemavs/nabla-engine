@@ -11,6 +11,7 @@ import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
+import { showLocation } from './position.js'
 import { describeLoading } from './loading-text.js'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
@@ -164,9 +165,7 @@ try {
     onFrame(frame) {
       document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
       document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
-      document.getElementById('location-display')!.textContent = frame.location
-        ? frame.location.latitude.toFixed(5) + '°, ' + frame.location.longitude.toFixed(5) + '°'
-        : ''
+      showLocation(frame.location)
     },
     onError(error) {
       showError(error instanceof Error ? error.message : String(error))
