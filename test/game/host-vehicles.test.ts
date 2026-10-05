@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { localToGeo } from '../../src/math/geo/sphere.js'
 import {
+  footprintsOverlap,
   headingRotation,
+  hostFootprint,
   headingYaw,
   hostVehicleLocalPose,
   hostVehiclesFromSearch,
@@ -259,5 +261,92 @@ describe('installHostVehicles', () => {
     expect(calls[0]!.height).toBeLessThan(calls[1]!.height)
     expect(calls[1]!.attachments?.[0]).toMatch(/trailer\.box\.glb$/)
     expect(calls[2]!.attachments).toBeUndefined()
+  })
+})
+
+describe('host vehicle footprints', () => {
+  const yaw = headingYaw(330)
+  const right = [Math.cos(yaw), -Math.sin(yaw)]
+  const forward = [-Math.sin(yaw), -Math.cos(yaw)]
+  const trailer = [2.55, 4, 13.5]
+  const at = (r: number, f: number): [number, number, number] => [
+    right[0] * r + forward[0] * f,
+    0,
+    right[1] * r + forward[1] * f,
+  ]
+  afterEach(() => vi.restoreAllMocks())
+
+  it('separates trailers parked side by side and flags trailers stacked along their heading', () => {
+    const a = hostFootprint(at(0, 0), yaw, trailer)
+    expect(footprintsOverlap(a, hostFootprint(at(4.2, 0), yaw, trailer))).toBe(false)
+    expect(footprintsOverlap(a, hostFootprint(at(0, 16), yaw, trailer))).toBe(false)
+    expect(footprintsOverlap(a, hostFootprint(at(0, 4.2), yaw, trailer))).toBe(true)
+    // A lat/lon grid laid out for heading 60 turned to 330 lines trailers up nose to tail.
+    const crossed = hostFootprint(at(0, 4.17), yaw, trailer)
+    expect(footprintsOverlap(a, crossed)).toBe(true)
+    expect(footprintsOverlap(a, hostFootprint(at(2, 0), yaw + Math.PI / 2, trailer))).toBe(true)
+  })
+
+  it('skips overlapping host vehicles instead of spawning them inside each other', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const geo = (r: number, f: number) => {
+      const p = localToGeo(irun, at(r, f))
+      return { lat: p.latitude, lon: p.longitude, heading: 330 }
+    }
+    const placed: { id: string; tow?: string }[] = []
+    const ids = await installHostVehicles(
+      {
+        async placeVehicle(template) {
+          placed.push({ id: template.id, tow: template.vehicle?.tow?.vehicleId })
+          return `spawned-${placed.length}`
+        },
+      },
+      irun,
+      [
+        // 0, 1: hitched rig ? the trailer shares the tractor's lat/lon and is not a clash.
+        { ...geo(-12, 0), vehicle: 'white-truck' },
+        { ...geo(-12, 0), vehicle: 'white-trailer', tow: true },
+        // 2, 3: free trailers side by side.
+        { ...geo(0, 0), vehicle: 'white-trailer' },
+        { ...geo(4.2, 0), vehicle: 'white-trailer' },
+        // 4: stacked 4.2 m ahead of 2 along the heading ? skipped.
+        { ...geo(0, 4.2), vehicle: 'white-trailer' },
+        // 5: tractor inside the first rig ? skipped, and so is its tow:true trailer 6.
+        { ...geo(-12, 1), vehicle: 'white-truck' },
+        { ...geo(-12, 1), vehicle: 'white-trailer', tow: true },
+        // 7: free trailer behind trailer 3 in the next row.
+        { ...geo(4.2, -16), vehicle: 'white-trailer' },
+      ],
+    )
+    expect(ids).toEqual(['spawned-1', 'spawned-2', 'spawned-3', 'spawned-4', 'spawned-5'])
+    expect(placed.map((p) => p.id)).toEqual([
+      'host-white-truck-0',
+      'host-white-trailer-1',
+      'host-white-trailer-2',
+      'host-white-trailer-3',
+      'host-white-trailer-7',
+    ])
+    expect(placed[1]!.tow).toBe('spawned-1')
+    expect(warn.mock.calls.map((c) => String(c[0]))).toEqual([
+      'Host vehicle 4 (white-trailer) skipped: it overlaps host vehicle 2',
+      'Host vehicle 5 (white-truck) skipped: it overlaps host vehicle 0',
+      'Host vehicle 6 (white-trailer) skipped: its tractor was skipped',
+    ])
+  })
+
+  it('checks a hitched trailer where the tow joint puts it, behind the tractor', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const geo = (r: number, f: number) => {
+      const p = localToGeo(irun, at(r, f))
+      return { lat: p.latitude, lon: p.longitude, heading: 330 }
+    }
+    const ids = await installHostVehicles({ placeVehicle: async (t) => t.id }, irun, [
+      // Free trailer parked 12 m behind the tractor (clear of the cab): the towed trailer lands on it.
+      { ...geo(0, -12), vehicle: 'white-trailer' },
+      { ...geo(0, 0), vehicle: 'white-truck' },
+      { ...geo(0, 0), vehicle: 'white-trailer', tow: true },
+    ])
+    expect(ids).toEqual(['host-white-trailer-0', 'host-white-truck-1'])
+    expect(String(warn.mock.calls[0]?.[0])).toMatch(/Host vehicle 2 .* overlaps host vehicle 0/)
   })
 })

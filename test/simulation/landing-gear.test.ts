@@ -71,6 +71,42 @@ describe('trailer landing gear', () => {
     sim.dispose()
   })
 
+  it('keeps a stall row of free trailers level at any heading (host park-on-legs)', () => {
+    for (const heading of [330, 60, -90]) {
+      const sim = new Simulation(scene(), { playerMode: 'walk' })
+      const yaw = (-heading * Math.PI) / 180
+      const right = [Math.cos(yaw), -Math.sin(yaw)]
+      const rotation: [number, number, number, number] = [
+        0,
+        Math.sin(yaw / 2),
+        0,
+        Math.cos(yaw / 2),
+      ]
+      const ids: string[] = []
+      for (let i = 0; i < 5; i++) {
+        const trailer = presetVehicle('white-trailer', `stall-${i}`)
+        const lateral = (i - 2) * 4.2
+        trailer.transform = {
+          position: [right[0]! * lateral, 1.26, right[1]! * lateral],
+          rotation,
+        }
+        ids.push(trailer.id)
+        sim.addVehicles([trailer])
+      }
+      for (let i = 0; i < 240; i++) sim.step(1 / 60)
+      for (const id of ids) {
+        const { pitch, roll, yaw: settledYaw } = tilt(sim, id)
+        expect(Math.abs(pitch), `${id} pitch at ${heading}`).toBeLessThan(0.05)
+        expect(Math.abs(roll), `${id} roll at ${heading}`).toBeLessThan(0.05)
+        expect(
+          Math.abs(Math.atan2(Math.sin(settledYaw - yaw), Math.cos(settledYaw - yaw))),
+        ).toBeLessThan(0.05)
+        expect(sim.vehicleInfo(id).landingGear).toBe(true)
+      }
+      sim.dispose()
+    }
+  })
+
   it('retracts legs when the trailer is spawned already hitched', () => {
     const tractor = presetVehicle('white-truck', 'tractor', [0, 1.45, 0])
     const trailer = presetVehicle('white-trailer', 'trailer', [0, 1.45, 7.33])

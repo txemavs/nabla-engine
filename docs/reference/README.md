@@ -14,7 +14,7 @@ Coverage: **281 modules; 2732 executable function definitions**.
 | [game/display-settings.ts](game/display-settings.ts.md) | 7 |
 | [game/drive.ts](game/drive.ts.md) | 15 |
 | [game/entry.ts](game/entry.ts.md) | 3 |
-| [game/host-vehicles.ts](game/host-vehicles.ts.md) | 9 |
+| [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 18 |
