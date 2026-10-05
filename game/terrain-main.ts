@@ -60,6 +60,7 @@ try {
     ...config.scene,
     latitude: config.start!.latitude,
     longitude: config.start!.longitude,
+    includeDemoFleet: config.vehicles.length === 0,
   })
   // &time=, &timeSpeed= and &sea= start the scene at that hour / rate / sea level; the menu changes them live.
   if (config.timeOfDay !== undefined)

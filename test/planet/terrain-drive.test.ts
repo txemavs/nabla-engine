@@ -74,6 +74,23 @@ describe('terrain drive example', () => {
     parseScene(scene)
   })
 
+  it('omits the parked demo row when includeDemoFleet is false', () => {
+    const scene = createTerrainDriveScene({
+      latitude: 0,
+      longitude: 0,
+      vehicle: 'white-truck',
+      includeDemoFleet: false,
+    })
+    const ids = scene.entities.filter((e) => e.vehicle).map((e) => e.id)
+    expect(ids).toEqual(['player-vehicle', 'player-vehicle-trailer'])
+    expect(ids).not.toContain('demo-car')
+    expect(ids).not.toContain('demo-a3')
+    expect(ids).not.toContain('demo-carrier')
+    const trailer = scene.entities.find((e) => e.id === 'player-vehicle-trailer')!
+    expect(trailer.vehicle!.tow).toMatchObject({ vehicleId: 'player-vehicle' })
+    parseScene(scene)
+  })
+
   it('selects the sun', () => {
     expect(createTerrainDriveScene({ latitude: 0, longitude: 0, sky: 'live' }).sky).toEqual({
       mode: 'live',

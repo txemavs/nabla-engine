@@ -99,7 +99,8 @@ VITE_NABLA_VEHICLES='[{"lat":43.3386,"lon":-1.7899,"heading":90,"vehicle":"white
 
 `?vehicles=` wins over `VITE_NABLA_VEHICLES`. A present empty `vehicles=` means
 no extras. Unknown presets fail at startup. The terrain-folder entry
-(`?terrain=`) uses the same parameter.
+(`?terrain=`) uses the same parameter; a non-empty host list omits the built-in
+parked demo row (`includeDemoFleet: false`) so a second carrier or A3 is not stacked.
 
 To play on real Atlas Z15 cells (LiDAR, orthophoto, buildings) use `?terrain=<base>`; see
 [Terrain folder](terrain-folder.md).

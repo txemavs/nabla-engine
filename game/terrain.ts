@@ -11,7 +11,8 @@
  *   &heading=<deg>           compass heading the fleet faces (default 0 = north)
  *   &vehicle=<preset>        vehicle the player starts in (default car)
  *   &vehicles=<json>         extra host vehicles after terrain is ready: JSON array of
- *                            {lat, lon, heading, vehicle, alt?} (WGS84). Also VITE_NABLA_VEHICLES.
+ *                            {lat, lon, heading, vehicle, alt?, color?, tow?, box?} (WGS84).
+ *                            A non-empty list replaces the built-in parked demo row. Also VITE_NABLA_VEHICLES.
  *   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
  *   &photo=full|lo|none      orthophoto draped on the ground (default full)
  *   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
