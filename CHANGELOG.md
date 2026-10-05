@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- At Alto/Ultra quality, the truck's authored left mirror captures at 16 Hz and 768×512; the right mirror and cheaper presets stay at 8 Hz / 384×256.
+
 - Replace the invented circular Volante/Pedales pads with Studio's agency-ui drive rig: CSS steering wheel, accelerator slider, red handbrake and turbo, using the same pad mapping as `drive.ts`.
 
 - Write ocean-sheet depth from a few centimetres inward along the planet normal instead of pulling `clip.w` 1.4 m toward the camera, so the shoreline stays on the true sea contour in overhead and map views.

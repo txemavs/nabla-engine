@@ -2,7 +2,12 @@ import fs from 'node:fs/promises'
 import { expect, it } from 'vitest'
 import { Mesh, Vector3 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { authoredMirrorSurfaces, CarMirrors } from '../../src/render/entity/car-mirrors.js'
+import {
+  authoredMirrorSurfaces,
+  CarMirrors,
+  mirrorPolicyForQuality,
+} from '../../src/render/entity/car-mirrors.js'
+import { Reflector } from 'three/addons/objects/Reflector.js'
 
 it('keeps both authored truck lenses planar, inside their contour and attached to the doors', async () => {
   const bytes = await fs.readFile('assets/library/trucks/white-truck/assets/tractor.modern.glb')
@@ -38,4 +43,24 @@ it('keeps both authored truck lenses planar, inside their contour and attached t
   }
   mirrors.dispose()
   for (const lens of lenses) expect(lens.parent!.children).toEqual([lens])
+})
+
+it('at Alto quality doubles only the truck left Reflector', async () => {
+  const bytes = await fs.readFile('assets/library/trucks/white-truck/assets/tractor.modern.glb')
+  const gltf = await new GLTFLoader().parseAsync(
+    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    '',
+  )
+  const lenses = authoredMirrorSurfaces(gltf.scene)
+  const mirrors = new CarMirrors(lenses, new Vector3(0, 1, 0), 0, mirrorPolicyForQuality('high'))
+  const sizes = Object.fromEntries(
+    lenses.map((lens) => {
+      const reflection = lens.parent!.children.find((node) => node !== lens)
+      expect(reflection).toBeInstanceOf(Reflector)
+      const target = (reflection as Reflector).getRenderTarget()
+      return [lens.userData.nabla.mirror, `${target.width}x${target.height}`]
+    }),
+  )
+  expect(sizes).toEqual({ left: '768x512', right: '384x256' })
+  mirrors.dispose()
 })

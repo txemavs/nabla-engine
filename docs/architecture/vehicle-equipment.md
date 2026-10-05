@@ -77,9 +77,11 @@ selected adapter. Do not assign an S3 adapter to an unrelated model.
   intensities and the 450 ms flash cadence retain existing behaviour.
 - `CarMirrors(surfaces, worldUp, tilt, policy)` receives explicit meshes, with no
   material-name search. `worldUp` is the host/vehicle's up direction at mounting.
-  The optional policy configures target width/height and capture interval. Defaults
-  remain 384×256 and 125 ms. Captures require an enabled, visible, front-facing
-  mirror; all mirrors are hidden during capture to avoid recursion.
+  The optional policy configures target width/height and capture interval, plus
+  per-side overrides (`sides.left`). Defaults remain 384×256 and 125 ms. Named
+  Alto/Ultra quality doubles the authored left lens to 768×512 at 16 Hz. Captures
+  require an enabled, visible, front-facing mirror; all mirrors are hidden during
+  capture to avoid recursion.
 - `CarInstruments(mounts, recipe)` receives display poses/quads, a support, retraction
   parameters and the phase-2 recipe. The generic `LayeredMonitor` remains usable
   separately without this car/GPS controller.
