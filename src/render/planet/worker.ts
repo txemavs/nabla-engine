@@ -1,13 +1,11 @@
-import { seaCoverageIndex } from '../../planet/sea-coverage.js'
 import { planetChart } from './chart.js'
+import { convertPlanetGlbMesh } from './convert-mesh.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { LoadingManager, Mesh, MeshStandardMaterial, Matrix3, Vector3 } from 'three'
+import { LoadingManager, Mesh } from 'three'
 import {
-  isCandidateRoadKind,
   planetCollisionChunks,
   planetGlbCacheKey,
   planetTileGlbLayers,
-  tagCandidateRoadMesh,
   type PlanetManifest,
   type PlanetMesh,
   type PlanetPayload,
@@ -119,63 +117,13 @@ self.onmessage = async (
               .slice(0, 20000)
           const mesh = node as Mesh
           if (!mesh.isMesh) return
-          const g = mesh.geometry,
-            position = g.getAttribute('position'),
-            normal = g.getAttribute('normal'),
-            color = g.getAttribute('color'),
-            uvAttr = g.getAttribute('uv')
-          if (!position || !normal || position.count > 4000000) throw Error('Invalid planet mesh')
-          const p = new Float32Array(position.count * 3),
-            n = new Float32Array(position.count * 3),
-            c = color ? new Float32Array(position.count * 3) : undefined,
-            uv = uvAttr ? new Float32Array(uvAttr.count * 2) : undefined
-          const nm = new Matrix3().getNormalMatrix(mesh.matrixWorld)
-          for (let i = 0; i < position.count; i++) {
-            p.set(
-              new Vector3()
-                .fromBufferAttribute(position, i)
-                .applyMatrix4(mesh.matrixWorld)
-                .toArray(),
-              i * 3,
-            )
-            n.set(
-              new Vector3().fromBufferAttribute(normal, i).applyMatrix3(nm).normalize().toArray(),
-              i * 3,
-            )
-            if (c && color) c.set([color.getX(i), color.getY(i), color.getZ(i)], i * 3)
-            if (uv && uvAttr) uv.set([uvAttr.getX(i), uvAttr.getY(i)], i * 2)
-          }
-          if (!p.every(Number.isFinite) || !n.every(Number.isFinite))
-            throw Error('Invalid GLB coordinates')
-          const material = (
-            Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
-          ) as MeshStandardMaterial
-          const originalIndex = g.index ? new Uint32Array(g.index.array) : undefined
-          const index = seaCoverageIndex(p, originalIndex, mesh.userData, manifest.anchor.altitude)
-          if (index?.length === 0) return
-          const metadata = { ...mesh.userData }
-          // Atlas LiDAR terrain (`terrain-lidar-*.glb`) has no category: it is one 2 m grid mesh. Declare
-          // it as terrain so it is rendered, collided with and draped like the engine's own terrain.
-          if (metadata.nablaTerrainLidar && !metadata.category) metadata.category = 'Terrain'
-          if (isCandidateRoadKind(kind)) tagCandidateRoadMesh(metadata, kind)
-          if (index !== originalIndex) delete metadata.parts
-          meshes.push({
-            name: mesh.name,
-            position: p,
-            normal: n,
-            color: c,
-            uv,
-            index,
-            tint: '#' + material.color.getHexString(),
-            side: material.side,
-            metadata,
+          const converted = convertPlanetGlbMesh(mesh, {
+            kind,
+            anchorAltitude: manifest.anchor.altitude,
           })
-          const image = material.map?.image
-          if (uv && image)
-            photos.push({
-              mesh: meshes[meshes.length - 1],
-              image: image as CanvasImageSource,
-            })
+          if (!converted) return
+          meshes.push(converted.mesh)
+          if (converted.image) photos.push({ mesh: converted.mesh, image: converted.image })
         })
         timings.parse += performance.now() - convertStarted
         for (const photo of photos) {
