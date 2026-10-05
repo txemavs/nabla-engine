@@ -58,6 +58,8 @@ const styles = `
 .touch-flight[data-visibility="always"] { display: flex; }
 .touch-flight[data-visibility="hidden"] { display: none; }
 @media (pointer: coarse) { .touch-flight[data-visibility="auto"] { display: flex; } }
+/* The visibility rules above beat the UA [hidden] style, so hiding needs its own rule. */
+.touch-flight[hidden] { display: none !important; }
 `
 
 /**
