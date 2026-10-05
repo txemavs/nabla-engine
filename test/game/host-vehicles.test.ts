@@ -17,13 +17,13 @@ describe('parseHostVehicles', () => {
     expect(
       parseHostVehicles(
         JSON.stringify([
-          { lat: 43.3386, lon: -1.7899, heading: 118, vehicle: 'white-truck' },
-          { lat: 43.339, lon: -1.79, heading: 0, alt: 12, vehicle: 'car' },
+          { lat: 43.3386, lon: -1.7899, heading: 118, vehicle: 'white-truck', color: '#2157a5' },
+          { lat: 43.339, lon: -1.79, heading: 0, alt: 12, vehicle: 'white-trailer', tow: true },
         ]),
       ),
     ).toEqual<HostVehicle[]>([
-      { lat: 43.3386, lon: -1.7899, heading: 118, vehicle: 'white-truck' },
-      { lat: 43.339, lon: -1.79, heading: 0, alt: 12, vehicle: 'car' },
+      { lat: 43.3386, lon: -1.7899, heading: 118, vehicle: 'white-truck', color: '#2157a5' },
+      { lat: 43.339, lon: -1.79, heading: 0, alt: 12, vehicle: 'white-trailer', tow: true },
     ])
   })
 
@@ -43,6 +43,9 @@ describe('parseHostVehicles', () => {
     )
     expect(() => parseHostVehicles('[{"lat":"x","lon":0,"vehicle":"car"}]')).toThrow(
       /finite number/,
+    )
+    expect(() => parseHostVehicles('[{"lat":43,"lon":-1,"vehicle":"car","color":"blue"}]')).toThrow(
+      /#rrggbb/,
     )
   })
 })
@@ -127,7 +130,13 @@ describe('installHostVehicles', () => {
       irun,
       [
         { lat: east.latitude, lon: east.longitude, heading: 90, vehicle: 'car' },
-        { lat: irun.latitude, lon: irun.longitude, heading: 0, vehicle: 'white-truck' },
+        {
+          lat: irun.latitude,
+          lon: irun.longitude,
+          heading: 0,
+          vehicle: 'white-truck',
+          color: '#b91929',
+        },
       ],
     )
     expect(ids).toEqual(['spawned-1', 'spawned-2'])
@@ -155,5 +164,38 @@ describe('installHostVehicles', () => {
       ),
     ).rejects.toThrow(/Unknown vehicle preset/)
     expect(calls).toEqual([])
+  })
+
+  it('applies spawn color and hitches a trailer to the previous tractor', async () => {
+    const calls: { id: string; color: string; tow?: string }[] = []
+    const ids = await installHostVehicles(
+      {
+        async placeVehicle(template) {
+          calls.push({
+            id: template.id,
+            color: template.color,
+            tow: template.vehicle?.tow?.vehicleId,
+          })
+          return `spawned-${calls.length}`
+        },
+      },
+      irun,
+      [
+        { lat: 43.3386, lon: -1.7899, heading: 90, vehicle: 'white-truck', color: '#2157a5' },
+        {
+          lat: 43.3386,
+          lon: -1.7899,
+          heading: 90,
+          vehicle: 'white-trailer',
+          color: '#b91929',
+          tow: true,
+        },
+        { lat: 43.339, lon: -1.79, heading: 0, vehicle: 'white-trailer', color: '#f0f0ea' },
+      ],
+    )
+    expect(ids).toEqual(['spawned-1', 'spawned-2', 'spawned-3'])
+    expect(calls[0]).toMatchObject({ color: '#2157a5' })
+    expect(calls[1]).toMatchObject({ color: '#b91929', tow: 'spawned-1' })
+    expect(calls[2]).toMatchObject({ color: '#f0f0ea', tow: undefined })
   })
 })

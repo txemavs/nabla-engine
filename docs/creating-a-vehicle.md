@@ -103,6 +103,11 @@ on the same body; enable only the intended force controller at a time.
 
 Test real contacts, drive/coast/brake/steer, shared-world rebasing, boarding and
 cleanup. Check two instances together to catch destruction of shared assets.
+Stock `white-truck` / `white-trailer` use the same `entity.color` field as cars
+(`#rrggbb`). The `nabla.truck` adapter paints materials named `White paint` /
+`White paint.001`. Free trailers rest on landing legs; `Simulation.hitchTrailer`
+and `unhitchTrailer` couple them to a tractor at runtime.
+
 For equipment, check missing mounts, power-off behaviour, paint and saved mirror
 settings. Compare draw calls/triangles and secondary update counts with the same
 camera and scene; geometry counts alone are not measured FPS.

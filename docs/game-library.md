@@ -29,14 +29,15 @@ See [fixture details](../assets/examples/flat-z15/README.md).
 The example starts in the car, with the white truck and flying container parked
 beside it. Exit with E, walk to another vehicle and press E to board; there is no
 vehicle selector. The truck starts with a six-wheel passive trailer attached.
-Its yaw hinge is intended for this flat test surface; interactive coupling and
-pitch/roll articulation are not yet implemented. Models come from `1cca41f`,
+Its yaw hinge is intended for this flat test surface. **F** hitches or
+unhitches a nearby fifth-wheel trailer when driving a tractor (otherwise it
+still docks a car in the carrier). Free trailers rest on landing legs. Models come from `1cca41f`,
 using Engine's existing physics world rather than the prototype's standalone rig.
 For automated scenarios, `&vehicle=white-truck` or `&vehicle=carrier` selects the
 initial occupied vehicle. Unknown presets report an error.
 
 Controls: WASD, Space to brake/jump, C for cameras, E to enter/exit, R for recovery,
-H for vehicle lights, G for the car's retractable GPS, K for high/low beams, V for supported flight, F for docking and T for control transfer. On-screen
+H for vehicle lights, G for the car's retractable GPS, K for high/low beams, V for supported flight, F for trailer hitch / carrier dock and T for control transfer. On-screen
 steer/pedal pads, brake, enter/exit and camera match Studio's tactile driving HUD
 and mix with the keyboard and a standard gamepad. Click the canvas
 to focus and enable audio; drag to look. Standard gamepad axes use Engine's shared mixer.
@@ -51,16 +52,17 @@ press is required after expiry; queued repeats cannot restart cleared controls.
 
 Without `example=flat`, URL configuration selects geographic coverage:
 
-| Parameter  | Default                                   | Meaning                                                                             |
-| ---------- | ----------------------------------------- | ----------------------------------------------------------------------------------- |
-| `lat`      | `43.3372`                                 | Spawn latitude                                                                      |
-| `lon`      | `-1.7523`                                 | Spawn longitude                                                                     |
-| `alt`      | `50`                                      | Geographic origin altitude in metres                                                |
-| `heading`  | `0`                                       | Player compass heading, degrees clockwise from north                                |
-| `vehicle`  | `car`                                     | Possessed start preset                                                              |
-| `vehicles` | none                                      | Extra host vehicles: JSON array of `{lat, lon, heading, vehicle, alt?}` (see below) |
-| `tiles`    | None (required in static geographic mode) | Application-owned tile base without trailing `/z`                                   |
-| `static`   | `true`                                    | Static manifests; `false` uses the preparation service                              |
+| Parameter  | Default                                   | Meaning                                                                               |
+| ---------- | ----------------------------------------- | ------------------------------------------------------------------------------------- |
+| `lat`      | `43.3372`                                 | Spawn latitude                                                                        |
+| `lon`      | `-1.7523`                                 | Spawn longitude                                                                       |
+| `alt`      | `50`                                      | Geographic origin altitude in metres                                                  |
+| `heading`  | `0`                                       | Player compass heading, degrees clockwise from north                                  |
+| `vehicle`  | `car`                                     | Possessed start preset                                                                |
+| `color`    | none                                      | `#rrggbb` body paint for the start vehicle (same `entity.color` cars use)             |
+| `vehicles` | none                                      | Extra host vehicles: JSON array of `{lat, lon, heading, vehicle, alt?, color?, tow?}` |
+| `tiles`    | None (required in static geographic mode) | Application-owned tile base without trailing `/z`                                     |
+| `static`   | `true`                                    | Static manifests; `false` uses the preparation service                                |
 
 Zero is valid for latitude, longitude and altitude. No cartographic coverage does
 not imply a different coordinate system.
@@ -74,16 +76,18 @@ installs it with `GameRuntime.placeVehicle` (the same `addVehicles` path as
 **Añadir vehículo**). Positions are geographic, not local XYZ.
 
 ```text
-?lat=43.3372&lon=-1.7523&heading=118&vehicle=car&vehicles=[{"lat":43.3386,"lon":-1.7899,"heading":90,"vehicle":"white-truck"}]
+?lat=43.3372&lon=-1.7523&heading=118&vehicle=car&color=%232157a5&vehicles=[{"lat":43.3386,"lon":-1.7899,"heading":90,"vehicle":"white-truck","color":"#2157a5"}]
 ```
 
-| Field     | Required | Meaning                                                      |
-| --------- | -------- | ------------------------------------------------------------ |
-| `lat`     | yes      | WGS84 latitude, degrees                                      |
-| `lon`     | yes      | WGS84 longitude, degrees                                     |
-| `heading` | no       | Compass degrees clockwise from north (default 0)             |
-| `vehicle` | yes      | Catalog preset id (`car`, `a3`, `white-truck`, `carrier`, …) |
-| `alt`     | no       | Orthometric metres; omitted uses the scene origin altitude   |
+| Field     | Required | Meaning                                                                 |
+| --------- | -------- | ----------------------------------------------------------------------- |
+| `lat`     | yes      | WGS84 latitude, degrees                                                 |
+| `lon`     | yes      | WGS84 longitude, degrees                                                |
+| `heading` | no       | Compass degrees clockwise from north (default 0)                        |
+| `vehicle` | yes      | Catalog preset id (`car`, `a3`, `white-truck`, `white-trailer`, …)      |
+| `alt`     | no       | Orthometric metres; omitted uses the scene origin altitude              |
+| `color`   | no       | `#rrggbb` body paint (`entity.color`; White paint on truck/trailer)     |
+| `tow`     | no       | `true` hitch this trailer to the previous tractor; or that tractor's id |
 
 The same array can be a typed `HostVehicle[]` in game config (`parseGameConfig().vehicles`,
 `installHostVehicles(runtime, origin, list)`) or a Vite build-time define:

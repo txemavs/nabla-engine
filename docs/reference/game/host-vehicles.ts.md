@@ -18,7 +18,7 @@ Sources, URL wins:
   - a typed `HostVehicle[]` passed to {@link installHostVehicles}
 
 Example:
-  [{"lat":43.3386,"lon":-1.7899,"heading":118,"vehicle":"white-truck"}]
+  [{"lat":43.3386,"lon":-1.7899,"heading":118,"vehicle":"white-truck","color":"#2157a5"}]
 
 ## Module dependencies
 
@@ -29,7 +29,7 @@ Example:
 
 ## headingYaw
 
-[Implementation, line 50](../../../game/host-vehicles.ts#L50)
+[Implementation, line 61](../../../game/host-vehicles.ts#L61)
 
 Gameplay yaw (radians) for a compass heading in degrees clockwise from north.
 
@@ -39,7 +39,7 @@ headingYaw(headingDegrees: number): number
 
 ## headingRotation
 
-[Implementation, line 55](../../../game/host-vehicles.ts#L55)
+[Implementation, line 66](../../../game/host-vehicles.ts#L66)
 
 Unit quaternion [x, y, z, w] that faces `headingDegrees` (clockwise from north).
 
@@ -55,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finiteNumber
 
-[Implementation, line 60](../../../game/host-vehicles.ts#L60)
+[Implementation, line 71](../../../game/host-vehicles.ts#L71)
 
 ```ts
 finiteNumber(value: unknown, field: string): number
@@ -74,7 +74,7 @@ Explicit throws in this body:
 
 ## parseHostVehicle
 
-[Implementation, line 69](../../../game/host-vehicles.ts#L69)
+[Implementation, line 80](../../../game/host-vehicles.ts#L80)
 
 ```ts
 parseHostVehicle(value: unknown, index: number): HostVehicle
@@ -82,10 +82,12 @@ parseHostVehicle(value: unknown, index: number): HostVehicle
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `/^#[0-9a-fA-F]{6}$/.test`
 - `Array.isArray`
 - `Error`
 - `finiteNumber`
 - `isValidLatLon`
+- `raw.tow.trim`
 - `raw.vehicle.trim`
 
 Explicit throws in this body:
@@ -93,10 +95,12 @@ Explicit throws in this body:
 - `new Error(\`Host vehicle ${index} must be an object\`)`
 - `new Error(\`Host vehicle ${index} needs a vehicle preset id\`)`
 - `new Error(\`Host vehicle ${index} lat/lon is out of range (lat ±85.05°, lon ±180°)\`)`
+- `new Error(\`Host vehicle ${index}.color must be #rrggbb\`)`
+- `new Error(\`Host vehicle ${index}.tow must be true or a tractor id\`)`
 
 ## parseHostVehicles
 
-[Implementation, line 86](../../../game/host-vehicles.ts#L86)
+[Implementation, line 107](../../../game/host-vehicles.ts#L107)
 
 ```ts
 parseHostVehicles(raw: string): HostVehicle[]
@@ -115,7 +119,7 @@ Explicit throws in this body:
 
 ## viteHostVehicles
 
-[Implementation, line 99](../../../game/host-vehicles.ts#L99)
+[Implementation, line 120](../../../game/host-vehicles.ts#L120)
 
 Build-time default from `VITE_NABLA_VEHICLES` (same JSON as `?vehicles=`).
 
@@ -130,7 +134,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostVehiclesFromSearch
 
-[Implementation, line 109](../../../game/host-vehicles.ts#L109)
+[Implementation, line 130](../../../game/host-vehicles.ts#L130)
 
 ```ts
 hostVehiclesFromSearch(search: string, fallback: readonly HostVehicle[] = []): HostVehicle[]
@@ -145,7 +149,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostVehicleLocalPose
 
-[Implementation, line 120](../../../game/host-vehicles.ts#L120)
+[Implementation, line 141](../../../game/host-vehicles.ts#L141)
 
 Convert one geographic entry to local metres relative to the scene origin.
 
@@ -160,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## installHostVehicles
 
-[Implementation, line 135](../../../game/host-vehicles.ts#L135)
+[Implementation, line 156](../../../game/host-vehicles.ts#L156)
 
 After `runtime.play()`, rest each extra vehicle on loaded ground at its
 geographic place. Validates presets first so a typo does not leave a partial fleet.
@@ -172,9 +176,12 @@ installHostVehicles(runtime: HostVehicleRuntime, origin: GeoPoint, vehicles: rea
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
+- `Map`
 - `hasVehiclePreset`
 - `hostVehicleLocalPose`
 - `ids.push`
+- `placed.get`
+- `placed.set`
 - `presetVehicle`
 - `runtime.placeVehicle`
 - `vehicles.entries`
@@ -182,3 +189,4 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Explicit throws in this body:
 
 - `new Error(\`Unknown vehicle preset: ${spec.vehicle}\`)`
+- `new Error(\`Host vehicle ${index} tow needs a previous tractor with a hitch\`)`
