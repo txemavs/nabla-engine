@@ -16,6 +16,7 @@ import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { readBootConfig, runBootPhase } from './boot.js'
+import { mountSettingsHud } from './settings-hud.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { describeLoading } from './loading-text.js'
@@ -153,12 +154,13 @@ try {
   bootLog('play() done (ground + physics)')
   if (scene.geography && config.vehicles.length)
     bootLog(`installHostVehicles start (${config.vehicles.length})`)
-    await installHostVehicles(runtime, scene.geography, config.vehicles)
-    bootLog('installHostVehicles done')
+  await installHostVehicles(runtime, scene.geography, config.vehicles)
+  bootLog('installHostVehicles done')
   bootLog('loading screen hide')
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
+  mountSettingsHud(runtime)
   bindLayerSelector(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()

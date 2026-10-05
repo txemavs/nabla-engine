@@ -20,6 +20,7 @@ import { bindSceneControls } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { readBootConfig, runBootPhase } from './boot.js'
+import { mountSettingsHud } from './settings-hud.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
@@ -204,6 +205,7 @@ try {
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
+  mountSettingsHud(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()
 } catch (error) {

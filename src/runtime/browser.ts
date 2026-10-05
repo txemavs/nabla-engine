@@ -249,6 +249,8 @@ export class GameRuntime {
     sea: boolean
     cloudStyle: 'low' | 'artistic'
     cloudAmount: number
+    cloudPressure: number
+    lensFlareAmount: number
   } = {
     sky: PLANET_DEFAULTS.sky,
     sun: PLANET_DEFAULTS.sun,
@@ -256,6 +258,8 @@ export class GameRuntime {
     sea: PLANET_DEFAULTS.sea,
     cloudStyle: 'artistic',
     cloudAmount: PLANET_DEFAULTS.cloudAmount,
+    cloudPressure: 0.12,
+    lensFlareAmount: 1,
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
@@ -377,6 +381,8 @@ export class GameRuntime {
     this.monitors.rebuild(this.document)
     this.gallery = new Gallery(options.canvas.parentElement!, this.text)
     this.sky = new GeographicView(this.document, () => {})
+    // Reattach after Play extraction: viewer still parents the flare; game must too.
+    this.scene.add(this.sky.lensFlare)
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
     this.planet.sea = this.options.sea !== false
     this.syncPlanet()
@@ -991,8 +997,38 @@ export class GameRuntime {
     this.assertAlive()
     if (!Number.isFinite(amount) || amount < 0 || amount > 1)
       throw new Error('Cloud amount must be between 0 and 1')
+    if (!Number.isFinite(storm) || storm < 0 || storm > 1)
+      throw new Error('Cloud pressure must be between 0 and 1')
     this.planet.cloudAmount = amount
+    this.planet.cloudPressure = storm
     this.sky.setCloudWeather(amount, storm)
+  }
+  get cloudPressure(): number {
+    return this.planet.cloudPressure
+  }
+  get lensFlareAmount(): number {
+    return this.planet.lensFlareAmount
+  }
+  /** 0-1 sun lens flare strength (`GeographicView.setLensFlareAmount`). */
+  setLensFlareAmount(amount: number): void {
+    this.assertAlive()
+    if (!Number.isFinite(amount) || amount < 0 || amount > 1)
+      throw new Error('Lens flare amount must be between 0 and 1')
+    this.planet.lensFlareAmount = amount
+    this.sky.setLensFlareAmount(amount)
+  }
+  /** Snapshot of Planeta visual knobs for host/demo config paste. */
+  planetVisualConfig() {
+    return {
+      cloudStyle: this.planet.cloudStyle,
+      cloudAmount: this.planet.cloudAmount,
+      cloudPressure: this.planet.cloudPressure,
+      lensFlare: this.planet.lensFlareAmount,
+      sky: this.planet.sky,
+      sun: this.planet.sun,
+      clouds: this.planet.clouds,
+      sea: this.planet.sea,
+    }
   }
   private syncPlanet(): void {
     this.sky.setLayers({
@@ -1003,7 +1039,8 @@ export class GameRuntime {
       clouds: this.planet.clouds,
     })
     this.sky.setCloudStyle(this.planet.cloudStyle)
-    this.sky.setCloudWeather(this.planet.cloudAmount, 0)
+    this.sky.setCloudWeather(this.planet.cloudAmount, this.planet.cloudPressure)
+    this.sky.setLensFlareAmount(this.planet.lensFlareAmount)
   }
   /** Sea settings in use; undefined means the simplified tide. */
   get waterSettings(): SceneDocument['water'] {
