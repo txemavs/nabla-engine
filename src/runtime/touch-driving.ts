@@ -145,6 +145,8 @@ const styles = `
 .touch-driving[data-visibility="always"] { display: flex; }
 .touch-driving[data-visibility="hidden"] { display: none; }
 @media (pointer: coarse) { .touch-driving[data-visibility="auto"] { display: flex; } }
+/* The visibility rules above beat the UA [hidden] style, so hiding needs its own rule. */
+.touch-driving[hidden] { display: none !important; }
 /* Wheel / accel / handbrake / pilot only while seated in a road vehicle (car/truck). */
 .touch-driving:not(.is-driving) .touch-driving-stack,
 .touch-driving:not(.is-driving) .touch-driving-wheel,
