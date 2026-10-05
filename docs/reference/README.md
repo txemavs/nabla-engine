@@ -6,14 +6,15 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **275 modules; 2635 executable function definitions**.
+Coverage: **276 modules; 2646 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
 | [game/config.ts](game/config.ts.md) | 4 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 7 |
-| [game/drive.ts](game/drive.ts.md) | 14 |
+| [game/drive.ts](game/drive.ts.md) | 15 |
 | [game/entry.ts](game/entry.ts.md) | 3 |
+| [game/host-vehicles.ts](game/host-vehicles.ts.md) | 9 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 18 |
@@ -219,7 +220,7 @@ Coverage: **275 modules; 2635 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 121 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 122 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
