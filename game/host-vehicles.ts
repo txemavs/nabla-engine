@@ -48,7 +48,7 @@ export interface HostVehicleRuntime {
 
 /** Gameplay yaw (radians) for a compass heading in degrees clockwise from north. */
 export function headingYaw(headingDegrees: number): number {
-  return (-headingDegrees * Math.PI) / 180
+  return headingDegrees ? (-headingDegrees * Math.PI) / 180 : 0
 }
 
 /** Unit quaternion [x, y, z, w] that faces `headingDegrees` (clockwise from north). */

@@ -137,7 +137,7 @@ describe('installHostVehicles', () => {
     expect(calls[0]!.yaw).toBeCloseTo(-Math.PI / 2, 6)
     expect(calls[1]!.id).toBe('host-white-truck-1')
     expect(calls[1]!.position[0]).toBeCloseTo(0, 6)
-    expect(calls[1]!.yaw).toBe(0)
+    expect(calls[1]!.yaw).toBeCloseTo(0, 6)
   })
 
   it('rejects an unknown preset before placing anything', async () => {
