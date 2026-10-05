@@ -1,5 +1,5 @@
 import { helmTouchAxis } from './helm-touch.js'
-import { vehicleMonitorStyles, vehicleMonitorBaseStyles } from './vehicle-monitor-styles.js'
+import { installVehicleMonitorStyles } from './vehicle-monitor-styles.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 import * as THREE from 'three'
 import { HelmMap } from '../render/entity/helm-map.js'
@@ -20,7 +20,6 @@ export class VehicleMonitors {
     status: (source: string) => string | undefined
   }
   private readonly lifetime = new AbortController()
-  private readonly style = window.document.createElement('style')
   private readonly originalPointerEvents: string
   private readonly originalPosition: string
   private readonly originalZIndex: string
@@ -81,8 +80,7 @@ export class VehicleMonitors {
     if (getComputedStyle(viewport).position === 'static') viewport.style.position = 'relative'
     canvas.style.position = 'relative'
     canvas.style.zIndex = '1'
-    this.style.textContent = vehicleMonitorStyles + vehicleMonitorBaseStyles
-    this.renderer.domElement.append(this.style)
+    installVehicleMonitorStyles(this.renderer.domElement)
     const options = { signal: this.lifetime.signal }
     window.addEventListener('blur', () => this.releaseInput(), options)
     window.document.addEventListener('visibilitychange', () => this.releaseInput(), options)

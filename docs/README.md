@@ -46,4 +46,5 @@ preserves the edit/play contract and a single physics owner.
 
 - [Named Studio projects](https://github.com/txemavs/nabla-studio/blob/main/docs/studio-projects.md): portable files, retained places, consistent geographic navigation and tabbed settings windows.
 
-- [Planetary world model](planetary-world.md): global object poses, local working frames and destination-specific portal environments.
+- [Planetary world model](planetary-world.md)
+- [Planet visual settings (game HUD)](planet-visual-settings.md): global object poses, local working frames and destination-specific portal environments.

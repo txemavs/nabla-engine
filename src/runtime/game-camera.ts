@@ -30,6 +30,8 @@ export interface GameCameraState {
   mapZoom: number
   entrance: { id: string; started: number } | null
   telemetry: DrivingTelemetry
+  /** Current upward tilt of the flight chase camera, radians; eases toward `flightChaseTilt`. */
+  flightTilt: number
 }
 
 /** Create independent camera state and validate per-consumer recovery overrides. */
@@ -48,7 +50,20 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     mapZoom: 1,
     entrance: null,
     telemetry: new DrivingTelemetry(resolved),
+    flightTilt: 0,
   }
+}
+
+/**
+ * Views where plain mouse movement looks around with no button held: the exterior
+ * chase/third-person camera, on-foot first person and the seated driver view. Only the
+ * vehicle overhead map keeps the cursor free (wheel zoom, UI).
+ */
+export function mouseLooksWithoutButton(
+  state: Pick<GameCameraState, 'mode'>,
+  seated: boolean,
+): boolean {
+  return !(seated && state.mode === 'map')
 }
 
 /** Shared gameplay camera, independent of editor UI and renderer ownership.
@@ -75,6 +90,8 @@ export function updateGameCamera(
     telemetry: drivingTelemetry,
   } = state
   let { yaw, mapHeight, entrance: vehicleEntrance } = state
+  // Only the exterior chase view keeps the flight tilt; every other view drops it.
+  let flightTilt = 0
   const p = { ...sim.player, position: sim.renderPlayerPosition }
   const cockpit = cameraMode === 'cockpit'
   const overhead = cameraMode === 'map' && !!p.vehicleId
@@ -211,6 +228,18 @@ export function updateGameCamera(
     }
     camera.position.fromArray(sim.cameraPosition(target, desired))
     camera.lookAt(...target)
+    // Flight: lean the view back (pitch up) so the aircraft sits low and the route ahead shows.
+    // The tilt fades out as the altitude travel pitch turns the view toward top-down.
+    const wantedTilt = info?.flightMode
+      ? tuning.flightChaseTilt *
+        (1 -
+          THREE.MathUtils.smoothstep(altitude, tuning.altitudePitchStart, tuning.altitudePitchEnd))
+      : 0
+    flightTilt =
+      state.flightTilt +
+      (wantedTilt - state.flightTilt) *
+        (1 - Math.exp(-tuning.flightTiltDamping * Math.min(dt, tuning.maxStepSeconds)))
+    if (flightTilt > 1e-4) camera.rotateX(flightTilt)
   }
   if (vehicleEntrance && vehicleEntrance.id === p.vehicleId && cockpit && info) {
     const elapsed = now - vehicleEntrance.started
@@ -237,5 +266,6 @@ export function updateGameCamera(
   state.yaw = yaw
   state.mapHeight = mapHeight
   state.entrance = vehicleEntrance
+  state.flightTilt = flightTilt
   return { player: p, info, altitude, cockpit, overhead }
 }

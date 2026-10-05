@@ -18,6 +18,7 @@ export function createLensFlare(direction: Vector3) {
     uniforms: {
       sunDirection: { value: direction },
       aspect: { value: 1 },
+      intensity: { value: 1 },
       tileRect: { value: new Vector4(0, 0, 1, 1) },
     },
     transparent: true,
@@ -36,6 +37,7 @@ export function createLensFlare(direction: Vector3) {
     fragmentShader: `
       uniform vec3 sunDirection;
       uniform float aspect;
+      uniform float intensity;
       uniform vec4 tileRect;
       uniform mat4 projectionMatrix;
       varying vec2 vUv;
@@ -44,6 +46,7 @@ export function createLensFlare(direction: Vector3) {
         return exp(-dot(d, d) * sharp);
       }
       void main() {
+        if (intensity <= 0.001) discard;
         vec2 fullUv = tileRect.xy + vUv * tileRect.zw;
         vec3 viewDir = mat3(viewMatrix) * normalize(sunDirection);
         if (viewDir.z > -0.001 || sunDirection.y < -0.02) discard;
@@ -62,7 +65,7 @@ export function createLensFlare(direction: Vector3) {
         float side = dot(rel, across);
         float streak = exp(-side * side * 900.0) * exp(-dot(rel, rel) * 22.0);
         vec3 color = vec3(1.0, 0.94, 0.8) * (blob(fullUv, sun, 18.0) * 0.42 + blob(fullUv, sun, 5.5) * 0.1 + streak * 0.08);
-        gl_FragColor = vec4(color * cover, 1.0);
+        gl_FragColor = vec4(color * cover * intensity, 1.0);
       }
     `,
   })
@@ -88,6 +91,7 @@ export function createLensFlare(direction: Vector3) {
     scene,
     mesh,
     aspect: material.uniforms.aspect,
+    intensity: material.uniforms.intensity as { value: number },
     dispose() {
       geometry.dispose()
       material.dispose()

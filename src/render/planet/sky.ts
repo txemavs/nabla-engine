@@ -526,6 +526,13 @@ export class GeographicView {
   get lensFlare() {
     return this.flare.mesh
   }
+  get lensFlareAmount() {
+    return this.flare.intensity.value
+  }
+  /** 0-1 multiplier on the additive sun flare pass. */
+  setLensFlareAmount(amount: number) {
+    this.flare.intensity.value = Math.min(1, Math.max(0, amount))
+  }
   setViewAspect(aspect: number) {
     this.flare.aspect.value = aspect
   }

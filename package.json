@@ -79,6 +79,10 @@
       "types": "./dist/runtime/resolution-scale.d.ts",
       "import": "./dist/runtime/resolution-scale.js"
     },
+    "./runtime/planet-settings-panel": {
+      "types": "./dist/runtime/planet-settings-panel.d.ts",
+      "import": "./dist/runtime/planet-settings-panel.js"
+    },
     "./examples/terrain-drive": {
       "types": "./dist/examples/terrain-drive.d.ts",
       "import": "./dist/examples/terrain-drive.js"

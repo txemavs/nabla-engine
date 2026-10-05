@@ -83,7 +83,7 @@ import { shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
-import { createGameCameraState } from './game-camera.js'
+import { createGameCameraState, mouseLooksWithoutButton } from './game-camera.js'
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
@@ -237,6 +237,8 @@ export class GameRuntime {
   private lastTime: number | null = null
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
+  /** False until the first hover move after the mouse enters the canvas (its delta is a jump). */
+  private hoverLookPrimed = false
   private readonly originalTabIndex: string | null
   private disposed = false
   private readonly hud: GameHud | null
@@ -249,6 +251,8 @@ export class GameRuntime {
     sea: boolean
     cloudStyle: 'low' | 'artistic'
     cloudAmount: number
+    cloudPressure: number
+    lensFlareAmount: number
   } = {
     sky: PLANET_DEFAULTS.sky,
     sun: PLANET_DEFAULTS.sun,
@@ -256,6 +260,8 @@ export class GameRuntime {
     sea: PLANET_DEFAULTS.sea,
     cloudStyle: 'artistic',
     cloudAmount: PLANET_DEFAULTS.cloudAmount,
+    cloudPressure: 0.12,
+    lensFlareAmount: 1,
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
@@ -377,6 +383,8 @@ export class GameRuntime {
     this.monitors.rebuild(this.document)
     this.gallery = new Gallery(options.canvas.parentElement!, this.text)
     this.sky = new GeographicView(this.document, () => {})
+    // Reattach after Play extraction: viewer still parents the flare; game must too.
+    this.scene.add(this.sky.lensFlare)
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
     this.planet.sea = this.options.sea !== false
     this.syncPlanet()
@@ -991,8 +999,38 @@ export class GameRuntime {
     this.assertAlive()
     if (!Number.isFinite(amount) || amount < 0 || amount > 1)
       throw new Error('Cloud amount must be between 0 and 1')
+    if (!Number.isFinite(storm) || storm < 0 || storm > 1)
+      throw new Error('Cloud pressure must be between 0 and 1')
     this.planet.cloudAmount = amount
+    this.planet.cloudPressure = storm
     this.sky.setCloudWeather(amount, storm)
+  }
+  get cloudPressure(): number {
+    return this.planet.cloudPressure
+  }
+  get lensFlareAmount(): number {
+    return this.planet.lensFlareAmount
+  }
+  /** 0-1 sun lens flare strength (`GeographicView.setLensFlareAmount`). */
+  setLensFlareAmount(amount: number): void {
+    this.assertAlive()
+    if (!Number.isFinite(amount) || amount < 0 || amount > 1)
+      throw new Error('Lens flare amount must be between 0 and 1')
+    this.planet.lensFlareAmount = amount
+    this.sky.setLensFlareAmount(amount)
+  }
+  /** Snapshot of Planeta visual knobs for host/demo config paste. */
+  planetVisualConfig() {
+    return {
+      cloudStyle: this.planet.cloudStyle,
+      cloudAmount: this.planet.cloudAmount,
+      cloudPressure: this.planet.cloudPressure,
+      lensFlare: this.planet.lensFlareAmount,
+      sky: this.planet.sky,
+      sun: this.planet.sun,
+      clouds: this.planet.clouds,
+      sea: this.planet.sea,
+    }
   }
   private syncPlanet(): void {
     this.sky.setLayers({
@@ -1003,7 +1041,8 @@ export class GameRuntime {
       clouds: this.planet.clouds,
     })
     this.sky.setCloudStyle(this.planet.cloudStyle)
-    this.sky.setCloudWeather(this.planet.cloudAmount, 0)
+    this.sky.setCloudWeather(this.planet.cloudAmount, this.planet.cloudPressure)
+    this.sky.setLensFlareAmount(this.planet.lensFlareAmount)
   }
   /** Sea settings in use; undefined means the simplified tide. */
   get waterSettings(): SceneDocument['water'] {
@@ -1684,15 +1723,28 @@ export class GameRuntime {
       },
       options,
     )
+    // Hover look: in chase, first-person and driver views the mouse looks around with no
+    // button held. Re-entering the canvas resets priming so its first delta cannot jerk the view.
+    // A single hover delta above this many CSS pixels is a cursor warp, not a look gesture.
+    const hoverLookMaxJump = 250
+    const unprime = () => (this.hoverLookPrimed = false)
+    canvas.addEventListener('pointerenter', unprime, options)
+    canvas.addEventListener('pointerleave', unprime, options)
     canvas.addEventListener(
       'pointermove',
       (event) => {
-        if (!this.hasInput() || (!(event.buttons & 1) && document.pointerLockElement !== canvas))
-          return
+        if (!this.hasInput()) return
         const state = this.cameraState
-        if (state.mode === 'map' && this.session.simulation?.player.vehicleId) return
+        const seated = !!this.session.simulation?.player.vehicleId
+        if (!mouseLooksWithoutButton(state, seated)) return
+        if (!(event.buttons & 1) && document.pointerLockElement !== canvas) {
+          if (event.pointerType !== 'mouse') return
+          const primed = this.hoverLookPrimed
+          this.hoverLookPrimed = true
+          if (!primed || Math.hypot(event.movementX, event.movementY) > hoverLookMaxJump) return
+        }
         state.lastLookTime = performance.now()
-        if (state.mode === 'cockpit' && this.session.simulation?.player.vehicleId) {
+        if (state.mode === 'cockpit' && seated) {
           state.headYaw -= event.movementX * controlDefaults.mouseSensitivity
           state.headPitch = THREE.MathUtils.clamp(
             state.headPitch + event.movementY * controlDefaults.mouseSensitivity,
