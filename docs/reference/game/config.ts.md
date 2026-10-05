@@ -9,7 +9,11 @@ Game configuration from URL parameters and defaults.
 URL parameters:
   - lat: spawn latitude (default: Zaisa, Irun center)
   - lon: spawn longitude
-  - vehicle: vehicle preset ID (default: 'car')
+  - alt: origin altitude in metres (default 50)
+  - heading: player compass heading, degrees clockwise from north (default 0)
+  - vehicle: vehicle preset ID (default: 'car') — the possessed start vehicle
+  - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?}`
+    (WGS84). Also `VITE_NABLA_VEHICLES` at build time. See `host-vehicles.ts`.
   - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
   - static: use static tile mode ('true' or '1')
@@ -17,10 +21,11 @@ URL parameters:
 ## Module dependencies
 
 - `@nabla/engine/planet/static-tiles`
+- `./host-vehicles.js`
 
 ## parseGameConfig
 
-[Implementation, line 33](../../../game/config.ts#L33)
+[Implementation, line 41](../../../game/config.ts#L41)
 
 ```ts
 parseGameConfig(search: string = location.search): GameConfig
@@ -32,13 +37,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `URLSearchParams`
 - `coordinate`
+- `hostVehiclesFromSearch`
 - `normalizeTilesBase`
 - `params.get`
 - `tilesParam.trim`
+- `viteHostVehicles`
 
 ## parseGameConfig.coordinate
 
-[Implementation, line 36](../../../game/config.ts#L36)
+[Implementation, line 44](../../../game/config.ts#L44)
 
 ```ts
 coordinate(key: string, fallback: number): inferred by TypeScript; see implementation
@@ -52,7 +59,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## configToUrl
 
-[Implementation, line 69](../../../game/config.ts#L69)
+[Implementation, line 80](../../../game/config.ts#L80)
 
 ```ts
 configToUrl(config: GameConfig): string
@@ -60,6 +67,8 @@ configToUrl(config: GameConfig): string
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `JSON.stringify`
+- `String`
 - `URLSearchParams`
 - `config.spawn.altitude.toFixed`
 - `config.spawn.latitude.toFixed`
@@ -69,7 +78,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## requireGeographicTileBase
 
-[Implementation, line 89](../../../game/config.ts#L89)
+[Implementation, line 106](../../../game/config.ts#L106)
 
 Validate geographic terrain before allocating a renderer or starting any requests.
 

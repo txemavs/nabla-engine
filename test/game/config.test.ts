@@ -13,6 +13,7 @@ describe('game config', () => {
         latitude: 0,
         longitude: 0,
         altitude: 0,
+        heading: 0,
       })
     })
     it('uses Zaisa defaults with no params', () => {
@@ -22,6 +23,8 @@ describe('game config', () => {
       expect(config.spawn.longitude).toBeCloseTo(-1.7523, 4)
       expect(config.spawn.altitude).toBe(50)
       expect(config.vehicle).toBe('car')
+      expect(config.spawn.heading).toBe(0)
+      expect(config.vehicles).toEqual([])
       expect(config.tilesBaseUrl).toBe(undefined)
       expect(config.staticTiles).toBe(true)
     })
@@ -70,6 +73,25 @@ describe('game config', () => {
       const config = parseGameConfig('?vehicle=police')
 
       expect(config.vehicle).toBe('police')
+    })
+
+    it('parses the player heading without changing the default start vehicle', () => {
+      const config = parseGameConfig('?heading=118&vehicle=car')
+      expect(config.spawn.heading).toBe(118)
+      expect(config.vehicle).toBe('car')
+    })
+
+    it('parses extra host vehicles from ?vehicles= JSON', () => {
+      const config = parseGameConfig(
+        '?lat=43.3372&lon=-1.7523&vehicle=car&vehicles=' +
+          encodeURIComponent(
+            JSON.stringify([{ lat: 43.3386, lon: -1.7899, heading: 90, vehicle: 'white-truck' }]),
+          ),
+      )
+      expect(config.vehicle).toBe('car')
+      expect(config.vehicles).toEqual([
+        { lat: 43.3386, lon: -1.7899, heading: 90, vehicle: 'white-truck' },
+      ])
     })
 
     it('parses tiles base URL', () => {
@@ -136,8 +158,9 @@ describe('game config', () => {
   describe('configToUrl', () => {
     it('generates URL with all params', () => {
       const config: GameConfig = {
-        spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 700 },
+        spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 700, heading: 45 },
         vehicle: 'police',
+        vehicles: [{ lat: 40.417, lon: -3.704, heading: 90, vehicle: 'white-truck' }],
         tilesBaseUrl: 'https://cdn.example.com/tiles',
         staticTiles: true,
       }
@@ -148,13 +171,17 @@ describe('game config', () => {
       expect(url).toContain('lon=-3.703800')
       expect(url).toContain('alt=700.0')
       expect(url).toContain('vehicle=police')
+      expect(url).toContain('heading=45')
+      expect(url).toContain('vehicles=')
       expect(url).toContain('tiles=https')
+      expect(parseGameConfig(url).vehicles).toEqual(config.vehicles)
     })
 
     it('omits default values', () => {
       const config: GameConfig = {
-        spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 50 },
+        spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 50, heading: 0 },
         vehicle: 'car',
+        vehicles: [],
         tilesBaseUrl: undefined,
         staticTiles: true,
       }
@@ -163,14 +190,17 @@ describe('game config', () => {
 
       expect(url).not.toContain('alt=')
       expect(url).not.toContain('vehicle=')
+      expect(url).not.toContain('heading=')
+      expect(url).not.toContain('vehicles=')
       expect(url).not.toContain('tiles=')
       expect(url).not.toContain('static=')
     })
 
     it('includes static=false when disabled', () => {
       const config: GameConfig = {
-        spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 50 },
+        spawn: { latitude: 40.4168, longitude: -3.7038, altitude: 50, heading: 0 },
         vehicle: 'car',
+        vehicles: [],
         tilesBaseUrl: undefined,
         staticTiles: false,
       }

@@ -8,6 +8,7 @@ import {
 import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
+import { headingRotation, installHostVehicles } from './host-vehicles.js'
 import { LoadingScreen, showError } from './loading.js'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
@@ -36,7 +37,13 @@ try {
         version: 1,
         name: 'Drive',
         sky: { mode: 'live' },
-        geography: { ...config.spawn, imagery: 'offline', planetary: true },
+        geography: {
+          latitude: config.spawn.latitude,
+          longitude: config.spawn.longitude,
+          altitude: config.spawn.altitude,
+          imagery: 'offline',
+          planetary: true,
+        },
         entities: [createEntity('spawn', 'spawn', [-4, 2, 0]), vehicle],
       }
   if (flat) {
@@ -108,6 +115,8 @@ try {
       },
     ]
   }
+  const player = scene.entities.find((entity) => entity.id === vehicle.id)
+  if (player) player.transform.rotation = headingRotation(config.spawn.heading)
   const lights = flat && new URLSearchParams(location.search).has('lights')
   if (lights) scene.sky = { mode: 'fixed', at: '2026-03-20T00:00:00.000Z' }
   const loading = new LoadingScreen()
@@ -183,6 +192,8 @@ try {
   if (new URLSearchParams(location.search).has('diagnostics'))
     Object.assign(window, { nablaRuntime: runtime })
   await runtime.play({ vehicleId: vehicle.id })
+  if (scene.geography && config.vehicles.length)
+    await installHostVehicles(runtime, scene.geography, config.vehicles)
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)

@@ -4,21 +4,29 @@
  * URL parameters:
  *   - lat: spawn latitude (default: Zaisa, Irun center)
  *   - lon: spawn longitude
- *   - vehicle: vehicle preset ID (default: 'car')
+ *   - alt: origin altitude in metres (default 50)
+ *   - heading: player compass heading, degrees clockwise from north (default 0)
+ *   - vehicle: vehicle preset ID (default: 'car') — the possessed start vehicle
+ *   - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?}`
+ *     (WGS84). Also `VITE_NABLA_VEHICLES` at build time. See `host-vehicles.ts`.
  *   - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
  *            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
  *   - static: use static tile mode ('true' or '1')
  */
 
 import { normalizeTilesBase } from '@nabla/engine/planet/static-tiles'
+import { hostVehiclesFromSearch, viteHostVehicles, type HostVehicle } from './host-vehicles.js'
 
 export interface GameConfig {
   spawn: {
     latitude: number
     longitude: number
     altitude: number
+    heading: number
   }
   vehicle: string
+  /** Extra vehicles placed after terrain is ready. Empty when none were declared. */
+  vehicles: HostVehicle[]
   /** Undefined means unconfigured; empty string explicitly selects this origin. */
   tilesBaseUrl: string | undefined
   staticTiles: boolean
@@ -40,6 +48,7 @@ export function parseGameConfig(search: string = location.search): GameConfig {
   const latitude = coordinate('lat', ZAISA_IRUN.latitude)
   const longitude = coordinate('lon', ZAISA_IRUN.longitude)
   const altitude = coordinate('alt', ZAISA_IRUN.altitude)
+  const heading = coordinate('heading', 0)
 
   const clampedLat = Math.max(-85, Math.min(85, latitude))
   const clampedLon = ((((longitude + 180) % 360) + 360) % 360) - 180
@@ -59,8 +68,10 @@ export function parseGameConfig(search: string = location.search): GameConfig {
       latitude: clampedLat,
       longitude: clampedLon,
       altitude,
+      heading,
     },
     vehicle,
+    vehicles: hostVehiclesFromSearch(search, viteHostVehicles()),
     tilesBaseUrl,
     staticTiles,
   }
@@ -73,8 +84,14 @@ export function configToUrl(config: GameConfig): string {
   if (config.spawn.altitude !== ZAISA_IRUN.altitude) {
     params.set('alt', config.spawn.altitude.toFixed(1))
   }
+  if (config.spawn.heading) {
+    params.set('heading', String(config.spawn.heading))
+  }
   if (config.vehicle !== 'car') {
     params.set('vehicle', config.vehicle)
+  }
+  if (config.vehicles.length) {
+    params.set('vehicles', JSON.stringify(config.vehicles))
   }
   if (config.tilesBaseUrl !== undefined) {
     params.set('tiles', config.tilesBaseUrl || '/')

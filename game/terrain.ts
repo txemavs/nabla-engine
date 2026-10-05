@@ -10,6 +10,8 @@
  *   &alt=<m>                 origin altitude, default 0 (terrain files carry absolute elevations)
  *   &heading=<deg>           compass heading the fleet faces (default 0 = north)
  *   &vehicle=<preset>        vehicle the player starts in (default car)
+ *   &vehicles=<json>         extra host vehicles after terrain is ready: JSON array of
+ *                            {lat, lon, heading, vehicle, alt?} (WGS84). Also VITE_NABLA_VEHICLES.
  *   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
  *   &photo=full|lo|none      orthophoto draped on the ground (default full)
  *   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
@@ -39,6 +41,7 @@ import {
   tileOffsetFromGeo,
   type LatLon,
 } from '@nabla/engine/planet/lat-lon'
+import { hostVehiclesFromSearch, viteHostVehicles, type HostVehicle } from './host-vehicles.js'
 
 /**
  * Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
@@ -97,6 +100,8 @@ export interface TerrainConfig {
   start?: { latitude: number; longitude: number }
   tile?: MapTile
   scene: Omit<TerrainDriveOptions, 'latitude' | 'longitude'>
+  /** Extra vehicles placed after terrain is ready. Empty when none were declared. */
+  vehicles: HostVehicle[]
   atlas: Required<AtlasZ15Options>
   playerMode: 'hover' | 'walk'
   /** `&inspectRoads=collision`: show the candidate collision GLB. Not the driving collider. */
@@ -207,6 +212,7 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
       vehicle: params.get('vehicle') ?? 'car',
       sky: params.get('sky') ?? undefined,
     },
+    vehicles: hostVehiclesFromSearch(search, viteHostVehicles()),
     atlas: { relief, photo },
     playerMode: player,
     inspectRoadCollision: params.get('inspectRoads') === 'collision',

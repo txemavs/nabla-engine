@@ -12,25 +12,26 @@ The terrain location is **never hard-coded**. You tell the game where to read it
 /?terrain=<base>&tile=<x>/<y>[&dx=<m>&dz=<m>][&heading=<deg>]
 ```
 
-| Parameter                     | Meaning                                                                                                                                                           |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `terrain` (or `z15`)          | Tile host, **without** the trailing `/z`. Manifests are read from `<base>/z/15/<x>/<y>/manifest.json`. `/` = this origin.                                         |
-| `tile`                        | Start over the centre of this tile, e.g. `16211/12003`. Required: no index file is read (a host may still serve `index.json`; the game never needs it).           |
-| `dx`, `dz`                    | Metres east / south of that centre. Use them to start on a road.                                                                                                  |
-| `lat`, `lon`                  | Start at these decimal degrees (WGS84) instead of `tile`; both are required. `dx`/`dz` are ignored. Example: `lat=43.3386&lon=-1.7899`.                           |
-| `ll`                          | The same in one value, as Google Maps copies it: `ll=43.3386,-1.7899` (see "Starting by latitude and longitude"). Not combinable with `lat`/`lon`.                |
-| `heading`                     | Compass heading the parked fleet faces, degrees clockwise from north (default 0).                                                                                 |
-| `alt`                         | Origin altitude in metres (default 0: the GLBs carry absolute elevations; the vehicles are rested on the real ground).                                            |
-| `vehicle`                     | Preset the player starts in: `car` (default), `a3`, `white-truck`, `carrier`.                                                                                     |
-| `relief`                      | `engine` (default, drivable, with roads) or `lidar` (2 m LiDAR mesh as ground, experimental).                                                                     |
-| `photo`                       | Orthophoto draped on the ground: `full` (4096 px, default), `lo` (1024 px) or `none` (vertex colours).                                                            |
-| `sky`                         | `day` (default fixed midday sun), `live` (real clock) or an ISO date-time with zone.                                                                              |
-| `time`                        | Time of day as `HH:MM` in the viewer's time zone, on the day of `sky` (default 21 June); `ahora` (or `now`) follows the real clock. See "Time, sea and vehicles". |
-| `sea`                         | Sea level in metres, -5 to 50 (the range of Studio's sea-surface control). Default: the simplified tide (±1 m). See "Time, sea and vehicles".                     |
-| `distance`, `memory`, `cache` | Load radius in metres, cells kept in memory and disk cache in MB (see "Cache and load radius"); they override what the menu remembered.                           |
-| `player`                      | `hover` (default): on foot you are Studio's floating monitor (1.25 m above the ground); `walk`: a 1.8 m walker.                                                   |
-| `layers`                      | Layers to hide: `-road` (road mesh gone, ground photo stays), `-photo`, `-buildings`; `all`/`none`. Also stored in `localStorage`.                                |
-| `quality`, `fps`, `scale`     | As in the other game modes.                                                                                                                                       |
+| Parameter                     | Meaning                                                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `terrain` (or `z15`)          | Tile host, **without** the trailing `/z`. Manifests are read from `<base>/z/15/<x>/<y>/manifest.json`. `/` = this origin.                                          |
+| `tile`                        | Start over the centre of this tile, e.g. `16211/12003`. Required: no index file is read (a host may still serve `index.json`; the game never needs it).            |
+| `dx`, `dz`                    | Metres east / south of that centre. Use them to start on a road.                                                                                                   |
+| `lat`, `lon`                  | Start at these decimal degrees (WGS84) instead of `tile`; both are required. `dx`/`dz` are ignored. Example: `lat=43.3386&lon=-1.7899`.                            |
+| `ll`                          | The same in one value, as Google Maps copies it: `ll=43.3386,-1.7899` (see "Starting by latitude and longitude"). Not combinable with `lat`/`lon`.                 |
+| `heading`                     | Compass heading the parked fleet faces, degrees clockwise from north (default 0).                                                                                  |
+| `alt`                         | Origin altitude in metres (default 0: the GLBs carry absolute elevations; the vehicles are rested on the real ground).                                             |
+| `vehicle`                     | Preset the player starts in: `car` (default), `a3`, `white-truck`, `carrier`.                                                                                      |
+| `vehicles`                    | Extra host vehicles after terrain is ready: JSON array of `{lat, lon, heading, vehicle, alt?}`. Same shape as the drive demo; see [Game library](game-library.md). |
+| `relief`                      | `engine` (default, drivable, with roads) or `lidar` (2 m LiDAR mesh as ground, experimental).                                                                      |
+| `photo`                       | Orthophoto draped on the ground: `full` (4096 px, default), `lo` (1024 px) or `none` (vertex colours).                                                             |
+| `sky`                         | `day` (default fixed midday sun), `live` (real clock) or an ISO date-time with zone.                                                                               |
+| `time`                        | Time of day as `HH:MM` in the viewer's time zone, on the day of `sky` (default 21 June); `ahora` (or `now`) follows the real clock. See "Time, sea and vehicles".  |
+| `sea`                         | Sea level in metres, -5 to 50 (the range of Studio's sea-surface control). Default: the simplified tide (±1 m). See "Time, sea and vehicles".                      |
+| `distance`, `memory`, `cache` | Load radius in metres, cells kept in memory and disk cache in MB (see "Cache and load radius"); they override what the menu remembered.                            |
+| `player`                      | `hover` (default): on foot you are Studio's floating monitor (1.25 m above the ground); `walk`: a 1.8 m walker.                                                    |
+| `layers`                      | Layers to hide: `-road` (road mesh gone, ground photo stays), `-photo`, `-buildings`; `all`/`none`. Also stored in `localStorage`.                                 |
+| `quality`, `fps`, `scale`     | As in the other game modes.                                                                                                                                        |
 
 `?example=z15` is an alias that still requires `terrain`/`z15`; without a terrain
 location the page says so in Spanish instead of guessing.
@@ -87,6 +88,10 @@ Three menu sections (Spanish) reuse what Studio and the engine already have; no 
   (`GameRuntime.removeSpawnedVehicle`); removal is refused while the player is inside. Limits: added vehicles are
   never towed, and the container has no stern portal (that gate belongs to the editor's catalog entry).
   On `/drive` the menu has the same controls, but that page does not read `&time=`/`&sea=`.
+  Operators can also declare extra vehicles in `&vehicles=` (or `VITE_NABLA_VEHICLES`) as WGS84
+  `{lat, lon, heading, vehicle, alt?}` entries; after `play()` the page converts them to local metres
+  and calls `GameRuntime.placeVehicle`. The single-vehicle `lat`/`lon`/`heading`/`vehicle` params stay
+  the possessed start.
 
 ## No index: holes and the missing list
 

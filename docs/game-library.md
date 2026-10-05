@@ -51,17 +51,50 @@ press is required after expiry; queued repeats cannot restart cleared controls.
 
 Without `example=flat`, URL configuration selects geographic coverage:
 
-| Parameter | Default                                   | Meaning                                                |
-| --------- | ----------------------------------------- | ------------------------------------------------------ |
-| `lat`     | `43.3372`                                 | Spawn latitude                                         |
-| `lon`     | `-1.7523`                                 | Spawn longitude                                        |
-| `alt`     | `50`                                      | Geographic origin altitude in metres                   |
-| `vehicle` | `car`                                     | Installed preset                                       |
-| `tiles`   | None (required in static geographic mode) | Application-owned tile base without trailing `/z`      |
-| `static`  | `true`                                    | Static manifests; `false` uses the preparation service |
+| Parameter  | Default                                   | Meaning                                                                             |
+| ---------- | ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| `lat`      | `43.3372`                                 | Spawn latitude                                                                      |
+| `lon`      | `-1.7523`                                 | Spawn longitude                                                                     |
+| `alt`      | `50`                                      | Geographic origin altitude in metres                                                |
+| `heading`  | `0`                                       | Player compass heading, degrees clockwise from north                                |
+| `vehicle`  | `car`                                     | Possessed start preset                                                              |
+| `vehicles` | none                                      | Extra host vehicles: JSON array of `{lat, lon, heading, vehicle, alt?}` (see below) |
+| `tiles`    | None (required in static geographic mode) | Application-owned tile base without trailing `/z`                                   |
+| `static`   | `true`                                    | Static manifests; `false` uses the preparation service                              |
 
 Zero is valid for latitude, longitude and altitude. No cartographic coverage does
 not imply a different coordinate system.
+
+### Extra host vehicles
+
+`lat`/`lon`/`alt`/`heading`/`vehicle` remain the player start. To park more
+drivable catalog vehicles at map places, declare a JSON array. After terrain is
+ready the game converts each WGS84 point to local metres (`geoToLocal`) and
+installs it with `GameRuntime.placeVehicle` (the same `addVehicles` path as
+**Añadir vehículo**). Positions are geographic, not local XYZ.
+
+```text
+?lat=43.3372&lon=-1.7523&heading=118&vehicle=car&vehicles=[{"lat":43.3386,"lon":-1.7899,"heading":90,"vehicle":"white-truck"}]
+```
+
+| Field     | Required | Meaning                                                      |
+| --------- | -------- | ------------------------------------------------------------ |
+| `lat`     | yes      | WGS84 latitude, degrees                                      |
+| `lon`     | yes      | WGS84 longitude, degrees                                     |
+| `heading` | no       | Compass degrees clockwise from north (default 0)             |
+| `vehicle` | yes      | Catalog preset id (`car`, `a3`, `white-truck`, `carrier`, …) |
+| `alt`     | no       | Orthometric metres; omitted uses the scene origin altitude   |
+
+The same array can be a typed `HostVehicle[]` in game config (`parseGameConfig().vehicles`,
+`installHostVehicles(runtime, origin, list)`) or a Vite build-time define:
+
+```sh
+VITE_NABLA_VEHICLES='[{"lat":43.3386,"lon":-1.7899,"heading":90,"vehicle":"white-truck"}]'
+```
+
+`?vehicles=` wins over `VITE_NABLA_VEHICLES`. A present empty `vehicles=` means
+no extras. Unknown presets fail at startup. The terrain-folder entry
+(`?terrain=`) uses the same parameter.
 
 To play on real Atlas Z15 cells (LiDAR, orthophoto, buildings) use `?terrain=<base>`; see
 [Terrain folder](terrain-folder.md).

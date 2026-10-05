@@ -15,6 +15,7 @@ import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
+import { installHostVehicles } from './host-vehicles.js'
 import { describeLoading } from './loading-text.js'
 
 /** Spanish controls for the terrain example (the original hint is shared with the flat demo). */
@@ -132,6 +133,8 @@ try {
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
   )
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
+  if (scene.geography && config.vehicles.length)
+    await installHostVehicles(runtime, scene.geography, config.vehicles)
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)

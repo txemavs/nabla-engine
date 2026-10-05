@@ -886,7 +886,27 @@ export class GameRuntime {
       )
     const chosen = candidates.find((c) => free(spot(c.extra, c.side))) ?? candidates[0]
     const [x, , z] = spot(chosen.extra, chosen.side)
-    const ground = await waitForGround(this.world, [x, 0, z], { timeoutMs: 8000 })
+    return this.placeVehicle(template, [x, 0, z], yaw, 8000)
+  }
+  /**
+   * Rest `template` on loaded ground at a local-metre position and install it on the
+   * live view, simulation and input mixer (the same path as `spawnVehicle`).
+   * `yaw` is gameplay radians; 0 faces north (−Z). Hosts convert WGS84 lat/lon with
+   * `geoToLocal` and compass degrees with `headingYaw` before calling.
+   */
+  async placeVehicle(
+    template: Entity,
+    position: Vec3Tuple,
+    yaw = 0,
+    timeoutMs?: number,
+  ): Promise<string> {
+    this.assertAlive()
+    const sim = this.session.simulation
+    if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
+    const [x, , z] = position
+    const ground = await waitForGround(this.world, [x, 0, z], {
+      timeoutMs: timeoutMs ?? 120_000,
+    })
     const id = `spawned-${++this.spawnSequence}`
     const entity: Entity = {
       ...structuredClone(template),
