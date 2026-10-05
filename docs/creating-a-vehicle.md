@@ -91,6 +91,11 @@ for undo/redo and persistence. Read existing saved values before prefab defaults
 The host translates keys/gamepads/touch into inputs and consumes menu keys before
 feeding steering, clearing held controls when focus changes.
 
+In the browser game, set `vehicle.controls` to pick the on-screen rig and HUD
+readouts for the seat: `road` (wheel, pedals, speedometer), `flight` (Mode 2 sticks,
+no speedometer) or `none` (action bar only). A new vehicle type registers its own
+profile with `registerControlProfile`; see [vehicle control profiles](vehicle-controls.md).
+
 ## Boat or aircraft
 
 For an independent hull or airframe, use the [boat/flight example](../examples/modularity/boat-flight.mjs).

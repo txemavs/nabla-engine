@@ -7,11 +7,12 @@
 ## Module dependencies
 
 - `../entity/schema.js`
+- `../config/streaming.js`
 - `../scene/mercator.js`
 
 ## GroundMissingError.constructor
 
-[Implementation, line 6](../../../../src/runtime/ground.ts#L6)
+[Implementation, line 7](../../../../src/runtime/ground.ts#L7)
 
 The tile host has no tile under the position: waiting cannot help. `tile` names the missing cell.
 
@@ -26,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## groundAtSeam
 
-[Implementation, line 26](../../../../src/runtime/ground.ts#L26)
+[Implementation, line 27](../../../../src/runtime/ground.ts#L27)
 
 GLB float32 vertices can leave sub-millimetre gaps at shared tile corners.
 Probe only 1 mm around the same location; never substitute a plane or a distant tile.
@@ -40,56 +41,38 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `world.groundHeight`
 
-## waitForGround
+## waitTick
 
-[Implementation, line 49](../../../../src/runtime/ground.ts#L49)
+[Implementation, line 46](../../../../src/runtime/ground.ts#L46)
 
-Wait for usable ground, not a fixed count of neighbouring tiles. Never starts after a timeout.
-`timeoutMs` is a stall limit: it restarts whenever the provider reports progress (`loadProgress`),
-so a slow link that keeps delivering cells is never reported as an error.
+Yield until the next animation frame, or `fallbackMs` when rAF is unavailable (tests / Node).
 
 ```ts
-waitForGround(world: GroundProvider, position: Vec3Tuple, options: { signal?: AbortSignal; timeoutMs?: number; onProgress?: (status: string) => void } = {}): Promise<number>
+waitTick(fallbackMs: number, signal?: AbortSignal): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Error`
-- `GroundMissingError`
-- `Number.isFinite`
 - `Promise`
-- `groundAtSeam`
-- `options.onProgress`
-- `options.signal?.throwIfAborted`
-- `performance.now`
-- `world.flushInstall`
-- `world.missingTileAt`
-- `world.update`
 
-Explicit throws in this body:
+## waitTick.callback@47
 
-- `new Error('Invalid ground timeout')`
-- `new GroundMissingError(hole)`
-- `new Error(\`Ground unavailable: ${world.status}\`)`
-
-## waitForGround.callback@73
-
-[Implementation, line 73](../../../../src/runtime/ground.ts#L73)
+[Implementation, line 47](../../../../src/runtime/ground.ts#L47)
 
 ```ts
-callback@73(resolve, reject): inferred by TypeScript; see implementation
+callback@47(resolve, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.min`
-- `abort`
-- `options.signal?.addEventListener`
+- `onAbort`
+- `requestAnimationFrame`
 - `setTimeout`
+- `signal?.addEventListener`
 
-## waitForGround.callback@73.finish
+## waitTick.callback@47.finish
 
-[Implementation, line 74](../../../../src/runtime/ground.ts#L74)
+[Implementation, line 51](../../../../src/runtime/ground.ts#L51)
 
 ```ts
 finish(): inferred by TypeScript; see implementation
@@ -97,20 +80,53 @@ finish(): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `options.signal?.removeEventListener`
+- `cancelAnimationFrame`
+- `clearTimeout`
 - `resolve`
+- `signal?.removeEventListener`
 
-## waitForGround.callback@73.abort
+## waitTick.callback@47.onAbort
 
-[Implementation, line 79](../../../../src/runtime/ground.ts#L79)
+[Implementation, line 59](../../../../src/runtime/ground.ts#L59)
 
 ```ts
-abort(): inferred by TypeScript; see implementation
+onAbort(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
+- `cancelAnimationFrame`
 - `clearTimeout`
-- `options.signal?.removeEventListener`
 - `reject`
+
+## waitForGround
+
+[Implementation, line 86](../../../../src/runtime/ground.ts#L86)
+
+```ts
+waitForGround(world: GroundProvider, position: Vec3Tuple, options: { signal?: AbortSignal timeoutMs?: number onProgress?: (status: string) => void /** Override the blocking install budget (ms/tick). */ installBudgetMs?: number /** Override the poll interval (ms) when rAF is unavailable. */ pollMs?: number } = {}): Promise<number>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `GroundMissingError`
+- `Math.min`
+- `Number.isFinite`
+- `groundAtSeam`
+- `options.onProgress`
+- `options.signal?.throwIfAborted`
+- `performance.now`
+- `waitTick`
+- `world.flushInstall`
+- `world.missingTileAt`
+- `world.update`
+
+Explicit throws in this body:
+
+- `new Error('Invalid ground timeout')`
+- `new Error('Invalid ground install budget')`
+- `new Error('Invalid ground poll interval')`
+- `new GroundMissingError(hole)`
+- `new Error(\`Ground unavailable: ${world.status}\`)`

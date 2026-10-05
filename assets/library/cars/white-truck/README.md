@@ -12,3 +12,7 @@ frame, Stützbein, hitch) plus an optional cargo box (`trailer.box.glb`).
 `white-trailer` composes both; `white-trailer-chassis` is the lower trailer
 alone. Six passive wheels stay on the chassis. `vehicle.tow` or
 `Simulation.hitchTrailer` joins the kingpin to the tractor fifth wheel.
+
+The chase camera stays at the far trailer framing (`cameraDistance` 24, the same
+as `white-trailer`) whether or not a trailer is hitched, so unhitching never pulls
+the camera in.

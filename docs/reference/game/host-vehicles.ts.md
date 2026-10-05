@@ -168,7 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostFootprint
 
-[Implementation, line 163](../../../game/host-vehicles.ts#L163)
+[Implementation, line 176](../../../game/host-vehicles.ts#L176)
 
 Rectangle of `size` ([width, height, length]) centred on `position`, turned by `yaw`.
 
@@ -178,7 +178,7 @@ hostFootprint(position: Vec3Tuple, yaw: number, size: readonly number[]): HostFo
 
 ## footprintsOverlap
 
-[Implementation, line 176](../../../game/host-vehicles.ts#L176)
+[Implementation, line 189](../../../game/host-vehicles.ts#L189)
 
 True when two footprints intersect by more than `slack` metres (separating-axis test).
 Vehicles placed inside each other are pushed apart by the physics on the first step,
@@ -193,12 +193,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[a.yaw, b.yaw].flatMap`
 - `axes.every`
 
-## footprintsOverlap.callback@177
+## footprintsOverlap.callback@190
 
-[Implementation, line 177](../../../game/host-vehicles.ts#L177)
+[Implementation, line 190](../../../game/host-vehicles.ts#L190)
 
 ```ts
-callback@177(yaw): inferred by TypeScript; see implementation
+callback@190(yaw): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -208,7 +208,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## footprintsOverlap.radius
 
-[Implementation, line 181](../../../game/host-vehicles.ts#L181)
+[Implementation, line 194](../../../game/host-vehicles.ts#L194)
 
 ```ts
 radius(f: HostFootprint, [ax, az]: number[]): inferred by TypeScript; see implementation
@@ -220,12 +220,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.cos`
 - `Math.sin`
 
-## footprintsOverlap.callback@184
+## footprintsOverlap.callback@197
 
-[Implementation, line 184](../../../game/host-vehicles.ts#L184)
+[Implementation, line 197](../../../game/host-vehicles.ts#L197)
 
 ```ts
-callback@184(axis): inferred by TypeScript; see implementation
+callback@197(axis): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -235,7 +235,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## towedPosition
 
-[Implementation, line 191](../../../game/host-vehicles.ts#L191)
+[Implementation, line 204](../../../game/host-vehicles.ts#L204)
 
 Where a hitched trailer ends up: the simulation moves its kingpin onto the tractor's hitch.
 
@@ -288,12 +288,12 @@ Explicit throws in this body:
 - `new Error(\`Unknown vehicle preset: ${spec.vehicle}\`)`
 - `new Error(\`Host vehicle ${index} tow needs a previous tractor with a hitch\`)`
 
-## installHostVehicles.callback@259
+## installHostVehicles.callback@277
 
-[Implementation, line 259](../../../game/host-vehicles.ts#L259)
+[Implementation, line 277](../../../game/host-vehicles.ts#L277)
 
 ```ts
-callback@259(other): inferred by TypeScript; see implementation
+callback@277(other): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

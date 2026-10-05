@@ -2,8 +2,27 @@ export { PlaySession, type PlayOptions, type SessionState } from './session.js'
 export { GameRuntime } from './game.js'
 export { playGroundClearance } from './placement.js'
 export { FrameLoop } from './frame-loop.js'
+export {
+  AdaptiveResolutionScale,
+  probeResolutionTier,
+  qualityTierLabels,
+  type AdaptiveResolutionOptions,
+  type ResolutionProbeResult,
+  type ResolutionScaleState,
+} from './resolution-scale.js'
+export {
+  applySplashSkin,
+  defaultNablaSplashSkin,
+  injectSplashTheme,
+  resolveSplashSkin,
+  splashElements,
+  splashMessageAt,
+  type EngineSplashSkin,
+  type SplashElements,
+  type SplashLayout,
+} from './splash.js'
 export { createRuntimeText, type RuntimeText, type RuntimeLocale } from './messages.js'
-export { GameHud, type GameHudState } from './hud.js'
+export { GameHud, hudTelemetry, type GameHudState } from './hud.js'
 export { WheelDebugOverlay, type WheelDebugData } from '../diagnostics/wheel-debug.js'
 export { VehicleEffects } from './vehicle-effects.js'
 export { createGameCameraState, updateGameCamera, type GameCameraState } from './game-camera.js'
@@ -33,6 +52,24 @@ export {
   type TouchDrivingVehicleSpec,
   type TouchDrivingInput,
 } from './touch-driving.js'
+export {
+  registerControlProfile,
+  unregisterControlProfile,
+  hasControlProfile,
+  controlProfile,
+  controlProfiles,
+  inferControlProfileId,
+  resolveControlProfile,
+  controlSurfaces,
+  touchRigState,
+  type BuiltInControlProfileId,
+  type ControlProfile,
+  type ControlProfileContext,
+  type ControlProfileVehicle,
+  type ControlSurfaces,
+  type ControlTouchRig,
+  type TouchRigState,
+} from './control-profiles.js'
 export {
   TouchFlight,
   flightFromMode2,

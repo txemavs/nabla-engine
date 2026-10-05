@@ -10,6 +10,8 @@
 - `./game.js`
 - `./placement.js`
 - `./frame-loop.js`
+- `./resolution-scale.js`
+- `./splash.js`
 - `./messages.js`
 - `./hud.js`
 - `../diagnostics/wheel-debug.js`
@@ -22,6 +24,8 @@
 - `./helm-touch.js`
 - `./vehicle-menu.js`
 - `./touch-driving.js`
+- `./control-profiles.js`
+- `./touch-flight.js`
 - `./streaming.js`
 - `./sidearm.js`
 - `./gallery.js`

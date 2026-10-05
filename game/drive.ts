@@ -9,6 +9,7 @@ import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { headingRotation, installHostVehicles } from './host-vehicles.js'
+import { showTelemetry } from './telemetry.js'
 import { LoadingScreen, showError } from './loading.js'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
@@ -18,6 +19,7 @@ import { bindTerrainSelector } from './terrain-selector.js'
 import { bindSceneControls } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
+import { readBootConfig, runBootPhase } from './boot.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
@@ -64,7 +66,6 @@ try {
       (e) => e.id === (config.vehicle === 'white-truck' ? vehicle.id : 'demo-white-truck'),
     )!
     tractor.groundOffset = 1.45
-    tractor.vehicle!.cameraDistance = 24
     const trailer = presetVehicle('white-trailer', 'demo-trailer', [10, 2, 7.33])
     trailer.vehicle!.tow = {
       vehicleId: tractor.id,
@@ -120,7 +121,8 @@ try {
   if (player) player.transform.rotation = headingRotation(config.spawn.heading)
   const lights = flat && new URLSearchParams(location.search).has('lights')
   if (lights) scene.sky = { mode: 'fixed', at: '2026-03-20T00:00:00.000Z' }
-  const loading = new LoadingScreen()
+  const boot = readBootConfig()
+  const loading = new LoadingScreen(boot.splash)
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
@@ -129,6 +131,10 @@ try {
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),
+    onResolutionScale: (state) =>
+      document
+        .getElementById('game-canvas')!
+        .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
     world,
@@ -177,8 +183,7 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
-      document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
-      document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
+      showTelemetry(frame)
       showLocation(frame.location)
     },
     onError(error) {
@@ -192,6 +197,7 @@ try {
   bindTerrainCache(runtime)
   if (new URLSearchParams(location.search).has('diagnostics'))
     Object.assign(window, { nablaRuntime: runtime })
+  void runBootPhase(runtime, loading, boot)
   await runtime.play({ vehicleId: vehicle.id })
   if (scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)

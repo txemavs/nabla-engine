@@ -1,4 +1,5 @@
 import { createRuntimeText, type RuntimeText } from './messages.js'
+import { resolveControlProfile, type ControlProfileVehicle } from './control-profiles.js'
 
 export interface TouchDrivingActions {
   play?: () => void
@@ -11,21 +12,18 @@ export interface TouchDrivingActions {
 export type TouchDrivingVisibility = 'auto' | 'always' | 'hidden'
 
 /** Authored vehicle fields that decide whether the Studio road drive rig applies. */
-export type TouchDrivingVehicleSpec = {
-  boat?: boolean
-  plane?: boolean
-  interior?: unknown
-}
+export type TouchDrivingVehicleSpec = ControlProfileVehicle
 
 /**
- * True for seated car/truck road driving (shared wheeled controls).
- * False on foot, in boats/planes, carriers with an interior, or while a flyable vehicle is in flight.
+ * True when the resolved control profile uses the road rig (cars and trucks).
+ * False on foot, in trailers, boats, planes, carriers, or while a flyable vehicle is in flight.
+ * Prefer `resolveControlProfile` from `control-profiles.ts` for new code.
  */
 export function isRoadTouchDriving(
   vehicle: TouchDrivingVehicleSpec | null | undefined,
   flightMode = false,
 ): boolean {
-  return !!vehicle && !flightMode && !vehicle.boat && !vehicle.plane && !vehicle.interior
+  return !!vehicle && resolveControlProfile(vehicle, { flightMode }).touch === 'road'
 }
 
 export interface TouchDrivingInput {

@@ -49,6 +49,8 @@ through the same `GameInput` path. Cockpit view adds the twist ring on the wheel
 In cockpit view the helm touchscreen d-pads use that same mapping in road mode
 (WASD and arrows steer and accelerate; Brake holds). Coarse-pointer hosts that
 leave visibility on `auto` show the overlay only on touch devices.
+Which overlay and HUD readouts appear in each seat is decided by the vehicle's
+[control profile](vehicle-controls.md).
 
 ## A3 and mobile garage
 
@@ -66,9 +68,11 @@ animation. The ramp changes pose immediately rather than animating gradually.
 ## Flight: mode 2
 
 While piloting the 10×5 carrier, the on-screen car wheel/accelerator HUD is replaced by
-Agency-style Mode 2 touch sticks (left climb/yaw, right pitch/roll). Cars keep the
-wheel and pedal overlay.
-
+Agency-style Mode 2 touch sticks (left climb/yaw, right pitch/roll), and the car
+speedometer and gear readouts are hidden; the helm monitors show speed and altitude.
+Cars and trucks keep the wheel, pedal overlay and speedometer. On foot and in trailers
+only the Enter / exit and Camera buttons remain. Each vehicle picks this through its
+[control profile](vehicle-controls.md) (`road`, `flight` or `none`).
 
 At the carrier controls, **V** switches between ground and flight modes. The ramp
 closes for flight. Centre the controls to level out, slow horizontal motion and
@@ -186,7 +190,11 @@ above the surface below to recover normal clearance. **Space** gives one upward
 impulse followed by a fall; it does not select a permanent height. The library's default walking controller remains available; the playground
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
-The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Click the viewport once to capture the mouse, then left-click to fire with the weapon drawn. The centre
+The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Drawing the weapon captures the mouse
+like an FPS (pointer lock): the mouse aims without holding a button and left-click fires. Holstering, boarding a vehicle, pausing or
+stopping play releases it; **Esc** releases it too, and the next click on the viewport fires and captures it again. Leaving a vehicle with
+**E** while the weapon is still drawn captures it again. Each shot plays a synthesized gunshot (`VehicleAudio.gunshot`, no sample
+files) that follows the host mute preference. The centre
 reticle shows aim and briefly changes to a cross on impact. Studio equips the first weapon preset
 (`assets/library/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
 220 ms interval, 150 m range and impulse 12. Another pistol is another JSON file. Shots stop at the first

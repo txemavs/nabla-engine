@@ -11,9 +11,11 @@ Browser presentation settings; the browser owns actual display synchronization.
 
 ## resolveDisplaySettings
 
-[Implementation, line 15](../../../../src/config/display.ts#L15)
+[Implementation, line 39](../../../../src/config/display.ts#L39)
 
-Validate per-runtime overrides; the minimum cap preserves normal fixed-step catch-up.
+Validate per-runtime overrides; the minimum FPS cap preserves normal fixed-step catch-up.
+An explicit `resolutionScale` without `resolutionScaleMode` selects `manual` so hosts that
+pass a fixed scale keep that scale. Omitting both keeps the auto default (0.5 start).
 
 ```ts
 resolveDisplaySettings(value: Partial<DisplaySettings> = {}): DisplaySettings
@@ -28,4 +30,5 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Explicit throws in this body:
 
 - `new RangeError('maxFps must be 0 or an integer from 30 to 360')`
-- `new RangeError('resolutionScale must be between 0.25 and 1')`
+- `new RangeError('resolutionScaleMode must be "auto" or "manual"')`
+- `new RangeError( \`resolutionScale must be between ${range.min} and ${range.max} in ${result.resolutionScaleMode} mode\`, )`

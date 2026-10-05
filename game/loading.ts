@@ -3,6 +3,12 @@
  */
 
 import { mapTileAt, mapTileId, type MapTile } from '@nabla/engine/scene'
+import {
+  applySplashSkin,
+  resolveSplashSkin,
+  splashMessageAt,
+  type EngineSplashSkin,
+} from '@nabla/engine/runtime/splash'
 
 export interface LoadingProgress {
   total: number
@@ -18,12 +24,30 @@ export class LoadingScreen {
   private centerTile: MapTile | null = null
   private grid3x3: MapTile[] = []
   private loadedTiles = new Set<string>()
+  private skin: EngineSplashSkin
 
-  constructor() {
+  /** Default Nabla skin; hosts pass logo, title, messages, layout and theme CSS. */
+  constructor(skin: EngineSplashSkin = {}) {
     this.screen = document.getElementById('loading-screen')!
     this.status = document.getElementById('loading-status')!
     this.progressBar = document.getElementById('loading-progress-bar')!
     this.tileIndicators = Array.from(document.querySelectorAll('.tile-indicator'))
+    this.skin = applySplashSkin(this.screen, skin)
+  }
+
+  /** Swap skin at runtime (e.g. switch to the bottom-left attract layout). */
+  setSkin(skin: EngineSplashSkin): void {
+    this.skin = applySplashSkin(this.screen, { ...this.skin, ...skin })
+  }
+
+  get layout(): EngineSplashSkin['layout'] {
+    return resolveSplashSkin(this.skin).layout
+  }
+
+  /** Show the host message for a 0..1 boot phase, unless a more specific status follows. */
+  setPhase(progress: number): void {
+    const message = splashMessageAt(this.skin.messages, Math.min(1, Math.max(0, progress)))
+    if (message) this.setStatus(message)
   }
 
   setSpawn(latitude: number, longitude: number): void {
