@@ -15,6 +15,7 @@ export {
   type GameInputSources,
 } from './input.js'
 export { waitForGround, GroundMissingError, type GroundProvider } from './ground.js'
+export { warmGamePresentation, type PresentationWarmup } from './presentation-warmup.js'
 
 export { VehicleMonitors } from './vehicle-monitors.js'
 export { vehicleMenuKey } from './vehicle-menu.js'

@@ -70,6 +70,7 @@ import { VehicleEffects } from './vehicle-effects.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 
 import { waitForGround } from './ground.js'
+import { warmGamePresentation } from './presentation-warmup.js'
 import { GameHud } from './hud.js'
 import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
 import { createRuntimeText, type RuntimeLocale } from './messages.js'
@@ -173,6 +174,7 @@ export class GameRuntime {
   private readonly observer: ResizeObserver
   private readonly world: PlanetWorld | null
   private loading: AbortController | null = null
+  private warming: AbortController | null = null
   private lastTime: number | null = null
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
@@ -437,6 +439,24 @@ export class GameRuntime {
       this.world?.renderUpdate(this.origin, !!this.quality.buildings, this.session.simulation)
       this.lastTime = null
       if (this.options.clock !== 'manual') this.loop.start()
+      this.warming?.abort()
+      this.warming = controller
+      void this.view.ready
+        .then(() => {
+          if (this.warming !== controller || this.disposed) return
+          return warmGamePresentation({
+            renderer: this.renderer,
+            scene: this.scene,
+            camera: this.camera,
+            view: this.view,
+            settings: this.cameraState.settings,
+            signal: controller.signal,
+          })
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (this.warming === controller) this.warming = null
+        })
     } catch (error) {
       if (this.loading === controller) this.stop()
       throw error
@@ -468,6 +488,8 @@ export class GameRuntime {
     if (this.disposed) return
     this.loading?.abort()
     this.loading = null
+    this.warming?.abort()
+    this.warming = null
     this.loop.stop()
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, null)
     this.touchDriving?.setActive(false)
@@ -864,6 +886,9 @@ export class GameRuntime {
     sim.addVehicles([entity])
     this.game.addVehicles([entity])
     this.spawned.push(id)
+    const group = this.view.objects.get(id)
+    if (group)
+      void this.renderer.compileAsync(group, this.camera, this.scene).catch(() => undefined)
     return id
   }
   /** Remove a vehicle added with `spawnVehicle`. The player must be outside it. */

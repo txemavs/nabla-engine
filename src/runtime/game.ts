@@ -31,6 +31,7 @@ export class GameRuntime {
   private interior: string | null = null
   private portalSequence = 0
   private jumpRequested = false
+  private readonly boarded = new Set<string>()
 
   /** Copy per-application camera overrides; replay retains them. */
   constructor(options: { camera?: Partial<GameCameraSettings> } = {}) {
@@ -62,6 +63,8 @@ export class GameRuntime {
     this.vehicle = options.vehicleId ?? null
     this.interior = null
     this.portalSequence = 0
+    this.boarded.clear()
+    if (this.vehicle) this.boarded.add(this.vehicle)
     return sim
   }
   /** Clear held controls, steering history and queued jumps, then idle the active simulation. */
@@ -168,7 +171,10 @@ export class GameRuntime {
           this.cameraState.mapZoom,
           this.cameraState.settings,
         )
-        this.cameraState.entrance = { id: this.vehicle, started: now }
+        if (!this.boarded.has(this.vehicle)) {
+          this.boarded.add(this.vehicle)
+          this.cameraState.entrance = { id: this.vehicle, started: now }
+        }
       }
       this.cameraState.headYaw = 0
       this.cameraState.headPitch = this.cameraState.settings.headPitch

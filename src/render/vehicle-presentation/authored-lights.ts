@@ -5,6 +5,7 @@ import {
   Light,
   Mesh,
   MeshStandardMaterial,
+  PointLight,
   SpotLight,
   type Object3D,
 } from 'three'
@@ -112,7 +113,18 @@ export class AuthoredVehicleLights {
       if (node instanceof SpotLight && owner.userData.beamPattern === 'low-beam')
         node.map = this.mask ??= lowBeamMask()
       node.intensity = 0
+      node.visible = false
     })
+  }
+  /** Hidden GLB lamps. A shared rig copies the occupied vehicle into a fixed renderer budget. */
+  illuminators(): { spots: SpotLight[]; points: PointLight[] } {
+    const spots: SpotLight[] = []
+    const points: PointLight[] = []
+    for (const { light } of this.lamps) {
+      if (light instanceof SpotLight) spots.push(light)
+      else if (light instanceof PointLight) points.push(light)
+    }
+    return { spots, points }
   }
   /** Null means this asset has no controllable authored light sources. */
   toggle(): boolean | null {
