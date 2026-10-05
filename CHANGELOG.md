@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Changed
+
+- **Cloud style by quality:** artistic 3-layer clouds are the default only on the **Ultra**
+  performance preset. Mobile, minimal, low, balanced, high and custom start on cheap (`low`)
+  clouds. Players can still toggle artistic sheets from the Planeta controls. Artistic layer
+  scale is unchanged.
+
+### Fixed
+
+- **Cloud amount slider pressure:** `GameRuntime.setCloudWeather(amount)` no longer defaults
+  pressure to `0`. Omitting the second argument keeps the current cloud pressure, so the
+  Planeta / scene-controls quantity slider does not wipe storm settings.
+
+
 ### Added
 
 - Compact game settings HUD (icon + GTA-style tabs) for Planeta visuals: artistic cloud amount, cloud pressure, sun lens flare, and related sky/sea toggles. Shares the ship-monitor stylesheet; panel root is remountable on a monitor later. Config keys documented in `docs/planet-visual-settings.md`.

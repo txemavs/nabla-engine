@@ -36,9 +36,9 @@ function fakeRuntime(): PlanetSettingsRuntime {
     get cloudPressure() {
       return state.cloudPressure
     },
-    setCloudWeather(amount, storm = 0) {
+    setCloudWeather(amount, storm) {
       state.cloudAmount = amount
-      state.cloudPressure = storm
+      if (storm !== undefined) state.cloudPressure = storm
     },
     get lensFlareAmount() {
       return state.lensFlareAmount
@@ -98,5 +98,15 @@ describe('planet visual config text', () => {
       ['fair', 0.12],
       ['stormy', 0.55],
     ])
+  })
+
+  it('preserves cloud pressure when only amount is updated', () => {
+    const runtime = fakeRuntime()
+    runtime.setCloudWeather(0.8, 0.55)
+    runtime.setCloudWeather(0.2)
+    expect(planetVisualConfigFromRuntime(runtime)).toMatchObject({
+      cloudAmount: 0.2,
+      cloudPressure: 0.55,
+    })
   })
 })

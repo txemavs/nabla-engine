@@ -36,6 +36,7 @@ import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
 import {
   browserPerformanceDefaults,
+  cloudStyleForPerformancePreset,
   normalizePerformance,
   performancePresets,
   streamBudget,
@@ -260,7 +261,8 @@ export class GameRuntime {
     sun: PLANET_DEFAULTS.sun,
     clouds: PLANET_DEFAULTS.clouds,
     sea: PLANET_DEFAULTS.sea,
-    cloudStyle: 'artistic',
+    // Overwritten after quality is resolved; Ultra keeps artistic, other tiers start on cheap clouds.
+    cloudStyle: 'low',
     cloudAmount: PLANET_DEFAULTS.cloudAmount,
     cloudPressure: 0.12,
     lensFlareAmount: 1,
@@ -292,6 +294,7 @@ export class GameRuntime {
       ...preset,
       ...options.performance,
     })
+    this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
     this.document = parseScene(options.scene)
     this.worldContent = options.world ? structuredClone(options.world) : undefined
     this.remoteViews = new RemotePortalViews(
@@ -999,16 +1002,20 @@ export class GameRuntime {
   get cloudAmount(): number {
     return this.planet.cloudAmount
   }
-  /** Cloud coverage 0–1 (`GeographicView.setCloudWeather`). */
-  setCloudWeather(amount: number, storm = 0): void {
+  /**
+   * Cloud coverage 0–1 (`GeographicView.setCloudWeather`).
+   * Omit `storm` to keep the current cloud pressure (scene-controls amount slider).
+   */
+  setCloudWeather(amount: number, storm?: number): void {
     this.assertAlive()
     if (!Number.isFinite(amount) || amount < 0 || amount > 1)
       throw new Error('Cloud amount must be between 0 and 1')
-    if (!Number.isFinite(storm) || storm < 0 || storm > 1)
+    const pressure = storm === undefined ? this.planet.cloudPressure : storm
+    if (!Number.isFinite(pressure) || pressure < 0 || pressure > 1)
       throw new Error('Cloud pressure must be between 0 and 1')
     this.planet.cloudAmount = amount
-    this.planet.cloudPressure = storm
-    this.sky.setCloudWeather(amount, storm)
+    this.planet.cloudPressure = pressure
+    this.sky.setCloudWeather(amount, pressure)
   }
   get cloudPressure(): number {
     return this.planet.cloudPressure

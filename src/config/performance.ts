@@ -220,6 +220,12 @@ export const performancePresets = {
     tiles: 240,
   },
 } as const
+
+/** Cloud renderer for a named quality preset. Artistic 3-layer sheets only on Ultra; all other tiers use the cheaper globe layer. */
+export function cloudStyleForPerformancePreset(preset: string): 'low' | 'artistic' {
+  return preset === 'ultra' ? 'artistic' : 'low'
+}
+
 /** z15 meshes for a custom draw distance. Named presets carry their own cap. */
 export function tileBudget(distance: number): number {
   if (distance <= 1000) return 12
