@@ -25,6 +25,7 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
   &distance=<m>            load radius (also in the menu, remembered); farther cells are not loaded.
                            &cache=<MB> disk cache and &memory=<cells> cells in memory work the same way
   &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
+  &inspectRoads=collision  load the candidate collision GLB for inspection (default off; not the driving collider)
 
 A bare URL (no query, or only display options) starts the default tile of the dev-server mount.
 
@@ -39,7 +40,7 @@ A bare URL (no query, or only display options) starts the default tile of the de
 
 ## fetchCoverage
 
-[Implementation, line 46](../../../game/terrain.ts#L46)
+[Implementation, line 47](../../../game/terrain.ts#L47)
 
 Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
 it has none. Only used to pick a start cell when the URL names none; streaming never needs it.
@@ -54,17 +55,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `index.tiles?.filter`
 - `response.json`
 
-## fetchCoverage.callback@51
+## fetchCoverage.callback@52
 
-[Implementation, line 51](../../../game/terrain.ts#L51)
+[Implementation, line 52](../../../game/terrain.ts#L52)
 
 ```ts
-callback@51(t): inferred by TypeScript; see implementation
+callback@52(t): inferred by TypeScript; see implementation
 ```
 
 ## terrainDefaults
 
-[Implementation, line 69](../../../game/terrain.ts#L69)
+[Implementation, line 70](../../../game/terrain.ts#L70)
 
 Default query for a package folder: the default start when its cell is published, else just the folder.
 
@@ -74,7 +75,7 @@ terrainDefaults(defaultCellPublished: boolean, base: string = DEFAULT_TERRAIN_QU
 
 ## probeTerrainFolder
 
-[Implementation, line 80](../../../game/terrain.ts#L80)
+[Implementation, line 81](../../../game/terrain.ts#L81)
 
 True when the folder publishes the default start cell. This asks for one manifest, like the engine
 does for any tile; no index file is needed.
@@ -89,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseTimeParam
 
-[Implementation, line 111](../../../game/terrain.ts#L111)
+[Implementation, line 114](../../../game/terrain.ts#L114)
 
 Parse `&time=`: `HH:MM` (also `H`, `HH.MM`) or `ahora`/`now` for the real clock.
 
@@ -110,7 +111,7 @@ Explicit throws in this body:
 
 ## parseSeaParam
 
-[Implementation, line 121](../../../game/terrain.ts#L121)
+[Implementation, line 124](../../../game/terrain.ts#L124)
 
 Parse `&sea=`: metres within the engine's sea-surface range.
 
@@ -133,7 +134,7 @@ Explicit throws in this body:
 
 ## wantsTerrain
 
-[Implementation, line 131](../../../game/terrain.ts#L131)
+[Implementation, line 134](../../../game/terrain.ts#L134)
 
 True when the URL asks for the terrain-folder example.
 
@@ -149,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 136](../../../game/terrain.ts#L136)
+[Implementation, line 139](../../../game/terrain.ts#L139)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -169,7 +170,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 145](../../../game/terrain.ts#L145)
+[Implementation, line 148](../../../game/terrain.ts#L148)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -210,7 +211,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 218](../../../game/terrain.ts#L218)
+[Implementation, line 222](../../../game/terrain.ts#L222)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -231,7 +232,7 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 230](../../../game/terrain.ts#L230)
+[Implementation, line 234](../../../game/terrain.ts#L234)
 
 Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving.
 

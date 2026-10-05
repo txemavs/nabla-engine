@@ -3,7 +3,11 @@ import { planetChart } from './chart.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, Mesh, MeshStandardMaterial, Matrix3, Vector3 } from 'three'
 import {
+  isCandidateRoadKind,
   planetCollisionChunks,
+  planetGlbCacheKey,
+  planetTileGlbLayers,
+  tagCandidateRoadMesh,
   type PlanetManifest,
   type PlanetMesh,
   type PlanetPayload,
@@ -37,6 +41,8 @@ self.onmessage = async (
     manifest: PlanetManifest
     directory: string
     buildings?: boolean
+    /** Load `roads.files.collision` as an inspect mesh. Default off; not the driving collider. */
+    inspectRoadCollision?: boolean
     /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */
     drape?: { layers: string[]; width: number }
     cancel?: boolean
@@ -71,13 +77,15 @@ self.onmessage = async (
       throw Error('Planet GLBs must be self-contained')
     })
     const loader = new GLTFLoader(manager)
-    for (const name of ['terrain', 'buildings-osm'] as const) {
-      if (name === 'buildings-osm' && event.data.buildings === false) continue
-      const file = manifest.files[name],
-        url = directory + file.path
+    for (const { name, file, kind } of planetTileGlbLayers(manifest, {
+      buildings: event.data.buildings !== false,
+      inspectRoadCollision: event.data.inspectRoadCollision === true,
+    })) {
+      const url = directory + file.path
       const cache = mapCache('nabla-planet-glb-v2')
+      const cacheKey = planetGlbCacheKey(url, file, kind)
       const bytes = await phase('fetch', async () => {
-        let response = await cache.match(url).catch(() => undefined)
+        let response = await cache.match(cacheKey).catch(() => undefined)
         if (!response)
           response = await fetch(url, {
             signal: AbortSignal.any([controller.signal, AbortSignal.timeout(45000)]),
@@ -89,7 +97,7 @@ self.onmessage = async (
       // The check runs here, in the worker, never on the main thread.
       const hash = await phase('verify', () => sha256(bytes))
       if (hash !== file.sha256) throw Error('GLB checksum mismatch')
-      await phase('fetch', () => cache.put(url, new Response(bytes)).catch(() => {}))
+      await phase('fetch', () => cache.put(cacheKey, new Response(bytes)).catch(() => {}))
       bytesTotal += bytes.byteLength
       const gltf = await phase('parse', () => loader.parseAsync(bytes, ''))
       const convertStarted = performance.now()
@@ -149,6 +157,7 @@ self.onmessage = async (
           // Atlas LiDAR terrain (`terrain-lidar-*.glb`) has no category: it is one 2 m grid mesh. Declare
           // it as terrain so it is rendered, collided with and draped like the engine's own terrain.
           if (metadata.nablaTerrainLidar && !metadata.category) metadata.category = 'Terrain'
+          if (isCandidateRoadKind(kind)) tagCandidateRoadMesh(metadata, kind)
           if (index !== originalIndex) delete metadata.parts
           meshes.push({
             name: mesh.name,

@@ -11,6 +11,8 @@
  *     role engine.terrain / engine.buildings -> manifest.files.terrain / 'buildings-osm' (identical)
  *     role terrain.lidar                      -> optional replacement for files.terrain
  *     role ground.composite / .lo             -> `manifest.photo` (orthophoto draped on the tile)
+ *     role roads.asphalt / roads.supports     -> `manifest.roads` (loaded/used even if `drivable: false`)
+ *     role roads.collision                    -> inspect-only GLB; not loaded unless inspectRoadCollision
  *   every other role (masks, classes, instances, roofs, OSM snapshot, licences) is
  *   listed but not consumed by the engine yet; see docs/atlas-z15-terrain.md.
  *
@@ -18,6 +20,9 @@
  */
 import {
   validatePlanetManifest,
+  type PlanetCandidateRoadFile,
+  type PlanetCandidateRoadKind,
+  type PlanetCandidateRoads,
   type PlanetManifest,
   type PlanetPhoto,
   type PlanetZ15PackageRef,
@@ -49,7 +54,25 @@ export interface AtlasZ15Package {
   terrain: { engine: string; lidar?: string; note?: string }
   instances?: { count: number; file: string; types: string[] }
   engineCell?: { generator?: string; geometryRevision?: string }
+  /** Optional publisher identity copied onto `manifest.roads`. */
+  roads?: { revision?: string; recipe?: string; evidenceId?: string }
 }
+
+/** Package roles the engine maps onto `manifest.roads.files`. */
+export const ATLAS_ROAD_ROLES: Record<PlanetCandidateRoadKind, readonly string[]> = {
+  asphalt: ['roads.asphalt', 'roads.asphalt-candidate'],
+  supports: ['roads.supports', 'roads.supports-candidate'],
+  collision: ['roads.collision', 'roads.collision-candidate'],
+}
+
+const ATLAS_CONSUMED_ROLES = new Set([
+  'engine.terrain',
+  'engine.buildings',
+  'terrain.lidar',
+  'ground.composite',
+  'ground.composite.lo',
+  ...Object.values(ATLAS_ROAD_ROLES).flat(),
+])
 export interface AtlasZ15Options {
   /** `engine` (default): drivable engine terrain with roads. `lidar`: 2 m LiDAR mesh as ground. */
   relief?: 'engine' | 'lidar'
@@ -121,6 +144,71 @@ export function atlasFile(pkg: AtlasZ15Package, role: string): AtlasZ15File | un
   return pkg.files.find((f) => f.role === role)
 }
 
+function atlasRoadFile(
+  pkg: AtlasZ15Package,
+  kind: PlanetCandidateRoadKind,
+): AtlasZ15File | undefined {
+  for (const role of ATLAS_ROAD_ROLES[kind]) {
+    const file = atlasFile(pkg, role)
+    if (file) return file
+  }
+  return undefined
+}
+
+function candidateFromAtlas(file: AtlasZ15File): PlanetCandidateRoadFile {
+  return {
+    path: file.path,
+    download: file.path,
+    bytes: file.bytes,
+    sha256: file.sha256,
+    drivable: false,
+  }
+}
+
+function roadsFromPackage(pkg: AtlasZ15Package): PlanetCandidateRoads | undefined {
+  const files: PlanetCandidateRoads['files'] = {}
+  for (const kind of ['asphalt', 'supports', 'collision'] as const) {
+    const file = atlasRoadFile(pkg, kind)
+    if (file) files[kind] = candidateFromAtlas(file)
+  }
+  if (!files.asphalt && !files.supports && !files.collision) return undefined
+  return {
+    drivable: false,
+    revision: pkg.roads?.revision,
+    recipe: pkg.roads?.recipe,
+    evidenceId: pkg.roads?.evidenceId,
+    files,
+  }
+}
+
+function mergeCandidateRoads(
+  existing: PlanetCandidateRoads | undefined,
+  fromPackage: PlanetCandidateRoads | undefined,
+): PlanetCandidateRoads | undefined {
+  if (!existing) return fromPackage
+  if (!fromPackage) return existing
+  const files: PlanetCandidateRoads['files'] = { ...fromPackage.files }
+  for (const kind of ['asphalt', 'supports', 'collision'] as const) {
+    const published = existing.files[kind]
+    const packaged = fromPackage.files[kind]
+    if (
+      published &&
+      packaged &&
+      (published.path !== packaged.path || published.sha256 !== packaged.sha256)
+    )
+      throw new Error(`Atlas package roads.${kind} does not match manifest.json`)
+    if (published) files[kind] = published
+  }
+  return {
+    drivable: existing.drivable ?? fromPackage.drivable,
+    revision: existing.revision ?? fromPackage.revision,
+    recipe: existing.recipe ?? fromPackage.recipe,
+    evidenceId: existing.evidenceId ?? fromPackage.evidenceId,
+    provenance: existing.provenance,
+    files,
+  }
+}
+
 /**
  * Build the manifest the standard loader consumes. The input is not mutated.
  * The engine terrain/buildings listed by the package must be the very files the manifest
@@ -159,6 +247,8 @@ export function adaptAtlasManifest(
       sha256: lidar.sha256,
     }
   }
+  const roads = mergeCandidateRoads(adapted.roads, roadsFromPackage(pkg))
+  if (roads) adapted.roads = roads
   const quality = options.photo ?? 'full'
   if (quality !== 'none') {
     const file = atlasFile(pkg, quality === 'full' ? 'ground.composite' : 'ground.composite.lo')
@@ -190,9 +280,7 @@ export function atlasCompatibilityNotes(
   if (!pkg.terrain.lidar)
     notes.push('no LiDAR terrain in this package; relief=lidar falls back to an error')
   const unused = [...new Set(pkg.files.map((f) => f.role))].filter(
-    (r) =>
-      !['engine.terrain', 'engine.buildings', 'terrain.lidar', 'ground.composite'].includes(r) &&
-      r !== 'ground.composite.lo',
+    (r) => !ATLAS_CONSUMED_ROLES.has(r),
   )
   if (unused.length) notes.push(`roles listed but not consumed by the engine: ${unused.join(', ')}`)
   return notes
