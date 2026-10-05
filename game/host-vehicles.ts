@@ -149,9 +149,68 @@ export function hostVehicleLocalPose(origin: GeoPoint, spec: HostVehicle): HostV
   }
 }
 
+/** Ground-plane rectangle a host vehicle occupies once placed (local metres). */
+export interface HostFootprint {
+  x: number
+  z: number
+  /** Gameplay yaw in radians; 0 faces north (?Z). */
+  yaw: number
+  halfWidth: number
+  halfLength: number
+}
+
+/** Rectangle of `size` ([width, height, length]) centred on `position`, turned by `yaw`. */
+export function hostFootprint(
+  position: Vec3Tuple,
+  yaw: number,
+  size: readonly number[],
+): HostFootprint {
+  return { x: position[0], z: position[2], yaw, halfWidth: size[0] / 2, halfLength: size[2] / 2 }
+}
+
+/**
+ * True when two footprints intersect by more than `slack` metres (separating-axis test).
+ * Vehicles placed inside each other are pushed apart by the physics on the first step,
+ * which flips heavy trailers onto their sides or ends.
+ */
+export function footprintsOverlap(a: HostFootprint, b: HostFootprint, slack = 0.15): boolean {
+  const axes = [a.yaw, b.yaw].flatMap((yaw) => [
+    [Math.cos(yaw), -Math.sin(yaw)],
+    [-Math.sin(yaw), -Math.cos(yaw)],
+  ])
+  const radius = (f: HostFootprint, [ax, az]: number[]) =>
+    f.halfWidth * Math.abs(ax * Math.cos(f.yaw) - az * Math.sin(f.yaw)) +
+    f.halfLength * Math.abs(-ax * Math.sin(f.yaw) - az * Math.cos(f.yaw))
+  return axes.every((axis) => {
+    const gap = Math.abs((b.x - a.x) * axis[0] + (b.z - a.z) * axis[1])
+    return gap < radius(a, axis) + radius(b, axis) - slack
+  })
+}
+
+/** Where a hitched trailer ends up: the simulation moves its kingpin onto the tractor's hitch. */
+function towedPosition(
+  tractor: Vec3Tuple,
+  yaw: number,
+  hitch: Vec3Tuple,
+  anchor: Vec3Tuple,
+): Vec3Tuple {
+  const lx = hitch[0] - anchor[0]
+  const lz = hitch[2] - anchor[2]
+  return [
+    tractor[0] + lx * Math.cos(yaw) + lz * Math.sin(yaw),
+    tractor[1],
+    tractor[2] - lx * Math.sin(yaw) + lz * Math.cos(yaw),
+  ]
+}
+
 /**
  * After `runtime.play()`, rest each extra vehicle on loaded ground at its
  * geographic place. Validates presets first so a typo does not leave a partial fleet.
+ *
+ * An entry whose footprint overlaps an earlier host vehicle is skipped with a console
+ * warning (and so is a `tow: true` trailer whose tractor was skipped): spawning bodies
+ * inside each other makes the physics flip them, e.g. free trailers standing on end.
+ * A hitched trailer is checked where the tow joint puts it, not at its own lat/lon.
  */
 export async function installHostVehicles(
   runtime: HostVehicleRuntime,
@@ -162,14 +221,26 @@ export async function installHostVehicles(
     if (!hasVehiclePreset(spec.vehicle)) throw new Error(`Unknown vehicle preset: ${spec.vehicle}`)
   }
   const ids: string[] = []
-  const placed = new Map<string, { hitch?: [number, number, number] }>()
+  const placed = new Map<
+    string,
+    { hitch?: [number, number, number]; position: Vec3Tuple; yaw: number }
+  >()
+  const footprints: { index: number; id: string; footprint: HostFootprint }[] = []
   let lastTractorId: string | undefined
+  let lastTractorSkipped = false
   for (const [index, spec] of vehicles.entries()) {
     const pose = hostVehicleLocalPose(origin, spec)
     const template = presetVehicle(spec.vehicle, `host-${spec.vehicle}-${index}`)
     if (spec.color) template.color = spec.color
+    const isTractor = Boolean(template.vehicle?.hitch && !template.vehicle.passive)
+    let footprint = hostFootprint(pose.position, pose.yaw, template.size)
+    let tractorId: string | undefined
     if (spec.tow) {
-      const tractorId = spec.tow === true ? lastTractorId : spec.tow
+      if (spec.tow === true && lastTractorSkipped) {
+        console.warn(`Host vehicle ${index} (${spec.vehicle}) skipped: its tractor was skipped`)
+        continue
+      }
+      tractorId = spec.tow === true ? lastTractorId : spec.tow
       const tractor = tractorId ? placed.get(tractorId) : undefined
       if (!tractorId || !tractor?.hitch || !template.vehicle?.towAnchor)
         throw new Error(`Host vehicle ${index} tow needs a previous tractor with a hitch`)
@@ -178,14 +249,35 @@ export async function installHostVehicles(
         hitch: tractor.hitch,
         anchor: template.vehicle.towAnchor,
       }
+      footprint = hostFootprint(
+        towedPosition(tractor.position, tractor.yaw, tractor.hitch, template.vehicle.towAnchor),
+        tractor.yaw,
+        template.size,
+      )
+    }
+    const clash = footprints.find(
+      (other) => other.id !== tractorId && footprintsOverlap(other.footprint, footprint),
+    )
+    if (clash) {
+      console.warn(
+        `Host vehicle ${index} (${spec.vehicle}) skipped: it overlaps host vehicle ${clash.index}`,
+      )
+      if (isTractor) lastTractorSkipped = true
+      continue
     }
     const id = await runtime.placeVehicle(template, pose.position, pose.yaw)
     ids.push(id)
+    footprints.push({ index, id, footprint })
     const hitch = template.vehicle?.hitch
     placed.set(id, {
       hitch: hitch ? [hitch[0], hitch[1], hitch[2]] : undefined,
+      position: pose.position,
+      yaw: pose.yaw,
     })
-    if (hitch && !template.vehicle?.passive) lastTractorId = id
+    if (isTractor) {
+      lastTractorId = id
+      lastTractorSkipped = false
+    }
   }
   return ids
 }

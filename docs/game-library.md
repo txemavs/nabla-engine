@@ -97,7 +97,9 @@ VITE_NABLA_VEHICLES='[{"lat":43.3386,"lon":-1.7899,"heading":90,"vehicle":"white
 ```
 
 `?vehicles=` wins over `VITE_NABLA_VEHICLES`. A present empty `vehicles=` means
-no extras. Unknown presets fail at startup. The terrain-folder entry
+no extras. Unknown presets fail at startup. An entry whose footprint overlaps an earlier host vehicle
+(for example a stall grid authored for a different heading) is skipped with a console warning
+instead of being spawned inside it. The terrain-folder entry
 (`?terrain=`) uses the same parameter.
 
 To play on real Atlas Z15 cells (LiDAR, orthophoto, buildings) use `?terrain=<base>`; see

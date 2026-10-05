@@ -162,12 +162,99 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `geoToLocal`
 - `headingYaw`
 
+## hostFootprint
+
+[Implementation, line 163](../../../game/host-vehicles.ts#L163)
+
+Rectangle of `size` ([width, height, length]) centred on `position`, turned by `yaw`.
+
+```ts
+hostFootprint(position: Vec3Tuple, yaw: number, size: readonly number[]): HostFootprint
+```
+
+## footprintsOverlap
+
+[Implementation, line 176](../../../game/host-vehicles.ts#L176)
+
+True when two footprints intersect by more than `slack` metres (separating-axis test).
+Vehicles placed inside each other are pushed apart by the physics on the first step,
+which flips heavy trailers onto their sides or ends.
+
+```ts
+footprintsOverlap(a: HostFootprint, b: HostFootprint, slack = 0.15): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `[a.yaw, b.yaw].flatMap`
+- `axes.every`
+
+## footprintsOverlap.callback@177
+
+[Implementation, line 177](../../../game/host-vehicles.ts#L177)
+
+```ts
+callback@177(yaw): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.cos`
+- `Math.sin`
+
+## footprintsOverlap.radius
+
+[Implementation, line 181](../../../game/host-vehicles.ts#L181)
+
+```ts
+radius(f: HostFootprint, [ax, az]: number[]): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.cos`
+- `Math.sin`
+
+## footprintsOverlap.callback@184
+
+[Implementation, line 184](../../../game/host-vehicles.ts#L184)
+
+```ts
+callback@184(axis): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `radius`
+
+## towedPosition
+
+[Implementation, line 191](../../../game/host-vehicles.ts#L191)
+
+Where a hitched trailer ends up: the simulation moves its kingpin onto the tractor's hitch.
+
+```ts
+towedPosition(tractor: Vec3Tuple, yaw: number, hitch: Vec3Tuple, anchor: Vec3Tuple): Vec3Tuple
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.cos`
+- `Math.sin`
+
 ## installHostVehicles
 
-[Implementation, line 156](../../../game/host-vehicles.ts#L156)
+[Implementation, line 215](../../../game/host-vehicles.ts#L215)
 
 After `runtime.play()`, rest each extra vehicle on loaded ground at its
 geographic place. Validates presets first so a typo does not leave a partial fleet.
+
+An entry whose footprint overlaps an earlier host vehicle is skipped with a console
+warning (and so is a `tow: true` trailer whose tractor was skipped): spawning bodies
+inside each other makes the physics flip them, e.g. free trailers standing on end.
+A hitched trailer is checked where the tow joint puts it, not at its own lat/lon.
 
 ```ts
 installHostVehicles(runtime: HostVehicleRuntime, origin: GeoPoint, vehicles: readonly HostVehicle[]): Promise<string[]>
@@ -175,18 +262,36 @@ installHostVehicles(runtime: HostVehicleRuntime, origin: GeoPoint, vehicles: rea
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Boolean`
 - `Error`
 - `Map`
+- `console.warn`
+- `footprints.find`
+- `footprints.push`
 - `hasVehiclePreset`
+- `hostFootprint`
 - `hostVehicleLocalPose`
 - `ids.push`
 - `placed.get`
 - `placed.set`
 - `presetVehicle`
 - `runtime.placeVehicle`
+- `towedPosition`
 - `vehicles.entries`
 
 Explicit throws in this body:
 
 - `new Error(\`Unknown vehicle preset: ${spec.vehicle}\`)`
 - `new Error(\`Host vehicle ${index} tow needs a previous tractor with a hitch\`)`
+
+## installHostVehicles.callback@259
+
+[Implementation, line 259](../../../game/host-vehicles.ts#L259)
+
+```ts
+callback@259(other): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `footprintsOverlap`
