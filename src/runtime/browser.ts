@@ -22,6 +22,8 @@ import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
 import type { FieldLightOptions } from '../render/entity/field-lights.js'
 import { worldWater } from './water.js'
+import type { SkyClock } from '../planet/sky.js'
+import type { Entity, Vec3Tuple } from '../entity/schema.js'
 import {
   browserPerformanceDefaults,
   normalizePerformance,
@@ -144,6 +146,8 @@ export class GameRuntime {
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
+  private spawned: string[] = []
+  private spawnSequence = 0
   private weaponDrawn = false
   private fireRequested = false
   private readonly touchDriving: TouchDriving | null
@@ -770,6 +774,107 @@ export class GameRuntime {
         ? localToGeo(this.document.geography, player.position)
         : null,
     })
+  }
+
+  /** The sky clock in use: `live` follows the real clock, `fixed` holds one instant. */
+  get skyClock(): SkyClock {
+    return this.document.sky ?? { mode: 'live' }
+  }
+  /** Change the time of day live; sun, sky, fog and lighting follow on the next frame. */
+  setSkyClock(clock: SkyClock): void {
+    this.assertAlive()
+    this.document.sky = clock.mode === 'fixed' ? { mode: 'fixed', at: clock.at } : { mode: 'live' }
+  }
+  /** Sea settings in use; undefined means the simplified tide. */
+  get waterSettings(): SceneDocument['water'] {
+    return this.document.water
+  }
+  /** Current sea level in metres and its state label, as drawn and used by physics. */
+  get sea(): { level: number; state: string } {
+    return worldWater(this.document.water, this.document.sky)
+  }
+  /** Change the sea live: a manual level in metres, or undefined for the simplified tide. */
+  setWater(water: SceneDocument['water']): void {
+    this.assertAlive()
+    if (water === undefined) delete this.document.water
+    else this.document.water = structuredClone(water)
+  }
+  /** Ids of vehicles added with `spawnVehicle`, oldest first. */
+  get spawnedVehicles(): { id: string; name: string }[] {
+    return this.spawned.map((id) => ({
+      id,
+      name: this.document.entities.find((e) => e.id === id)?.name ?? id,
+    }))
+  }
+  /**
+   * Add a vehicle on the real ground in front of the player, facing the same way, and
+   * return its id. `template` is a complete vehicle entity (for example `presetVehicle`);
+   * its position and id are replaced. Throws when no ground is available ahead.
+   */
+  async spawnVehicle(template: Entity, distance?: number): Promise<string> {
+    this.assertAlive()
+    const sim = this.session.simulation
+    if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
+    const player = sim.player
+    const own = player.vehicleId
+      ? this.document.entities.find((e) => e.id === player.vehicleId)
+      : undefined
+    const yaw = own ? player.yaw : this.cameraState.yaw
+    const [width, length] = [template.size[0], template.size[2]]
+    const ahead = distance ?? (own ? 4 + (own.size[2] + length) / 2 : 4 + length / 2)
+    // Free spot: straight ahead first, then beside it, then farther along the heading.
+    const radius = (size: readonly number[]) => Math.hypot(size[0], size[2]) / 2
+    const others = this.document.entities.flatMap((e) =>
+      e.kind === 'vehicle' && e.id !== own?.id
+        ? [{ at: sim.entityTransform(e.id).position, r: radius(e.size) }]
+        : [],
+    )
+    const sideStep = width + 1.5 + (own ? own.size[0] / 2 : 0)
+    const spot = (extra: number, side: number): Vec3Tuple => [
+      player.position[0] - Math.sin(yaw) * (ahead + extra) + Math.cos(yaw) * side * sideStep,
+      0,
+      player.position[2] - Math.cos(yaw) * (ahead + extra) - Math.sin(yaw) * side * sideStep,
+    ]
+    const free = (at: Vec3Tuple) =>
+      others.every(
+        (o) =>
+          Math.hypot(o.at[0] - at[0], o.at[2] - at[2]) > o.r + radius([width, 0, length]) + 0.5,
+      )
+    // Nearest first, so the vehicle lands as close to straight ahead as the other vehicles allow.
+    const candidates = [0, 8, 16, 24, 32, 40]
+      .flatMap((extra) => [0, 1, -1, 2, -2, 3, -3].map((side) => ({ extra, side })))
+      .sort(
+        (a, b) => a.extra + Math.abs(a.side) * sideStep - (b.extra + Math.abs(b.side) * sideStep),
+      )
+    const chosen = candidates.find((c) => free(spot(c.extra, c.side))) ?? candidates[0]
+    const [x, , z] = spot(chosen.extra, chosen.side)
+    const ground = await waitForGround(this.world, [x, 0, z], { timeoutMs: 8000 })
+    const id = `spawned-${++this.spawnSequence}`
+    const entity: Entity = {
+      ...structuredClone(template),
+      id,
+      parentId: null,
+      transform: {
+        position: [x, 0, z],
+        rotation: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],
+      },
+    }
+    entity.transform.position[1] = ground + playGroundClearance(entity)
+    this.view.addVehicles([entity])
+    sim.addVehicles([entity])
+    this.game.addVehicles([entity])
+    this.spawned.push(id)
+    return id
+  }
+  /** Remove a vehicle added with `spawnVehicle`. The player must be outside it. */
+  removeSpawnedVehicle(id: string): void {
+    this.assertAlive()
+    if (!this.spawned.includes(id)) throw new Error(`Not a spawned vehicle: ${id}`)
+    const sim = this.session.simulation
+    if (sim) sim.removeVehicle(id)
+    this.view.removeVehicle(id)
+    this.game.removeVehicle(id)
+    this.spawned = this.spawned.filter((other) => other !== id)
   }
 
   /** Terrain cells loaded and drawn of the known dataset; null without tiles. */

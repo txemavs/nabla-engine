@@ -354,6 +354,39 @@ export class Simulation {
       ),
     )
   }
+  /**
+   * Add plain vehicles to a running simulation (the game menu spawns cars and trucks).
+   * Added vehicles are never towed and cannot be portals; use `removeVehicle` to take them out.
+   */
+  addVehicles(added: Entity[]): void {
+    for (const e of added) {
+      if (e.kind !== 'vehicle' || !e.vehicle || e.portal)
+        throw new Error(`Entity ${e.id} is not a plain vehicle`)
+      if (this.entitiesById.has(e.id)) throw new Error(`Entity id already in use: ${e.id}`)
+    }
+    const copies = structuredClone(added).map((e) => {
+      if (e.vehicle?.tow) delete e.vehicle.tow
+      return e
+    })
+    this.document.entities = [...this.document.entities, ...copies]
+    this.graph = SceneGraph.fromValidated(this.document)
+    this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
+    for (const e of copies) this.addEntityBody(e)
+  }
+  /** Remove a vehicle added with `addVehicles`. The player must not be inside it. */
+  removeVehicle(id: string): void {
+    const v = this.vehicles.get(id)
+    if (!v) throw new Error(`No vehicle ${id}`)
+    if (this.vehicleId === id) throw new Error('Leave the vehicle before removing it')
+    v.raycast.removeFromWorld(this.world)
+    if (v.body.world === this.world) this.world.removeBody(v.body)
+    this.vehicles.delete(id)
+    this.bodies.delete(id)
+    this.previousWheels.delete(id)
+    this.document.entities = this.document.entities.filter((e) => e.id !== id)
+    this.graph = SceneGraph.fromValidated(this.document)
+    this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
+  }
   private addEntityBody(e: Entity): void {
     const created = createEntityBody(
       e,

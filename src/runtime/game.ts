@@ -9,6 +9,7 @@ import { createRuntimeText } from './messages.js'
 import { GameplayStreaming } from './streaming.js'
 import { Quaternion, Vector3 } from 'three'
 import type { SceneDocument } from '../scene/document.js'
+import type { Entity } from '../entity/schema.js'
 import { idleInput, type PlayerInput } from '../simulation/simulation.js'
 import { overheadDrivingHeight } from '../render/entity/driving-camera.js'
 import { PlaySession, type PlayOptions } from './session.js'
@@ -90,6 +91,15 @@ export class GameRuntime {
   dispose(): void {
     this.stop()
     this.session.dispose()
+  }
+
+  /** Register vehicles added to the live simulation so input mixing sees their definitions. */
+  addVehicles(added: Entity[]): void {
+    this.scene?.entities.push(...structuredClone(added))
+  }
+  /** Forget a vehicle removed from the live simulation. */
+  removeVehicle(id: string): void {
+    if (this.scene) this.scene.entities = this.scene.entities.filter((e) => e.id !== id)
   }
 
   /** Mix controls using elapsed seconds; align camera/input yaw when entering a new interior. */

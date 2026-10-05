@@ -334,6 +334,64 @@ export class SceneView {
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
     return count
   }
+  /**
+   * Install vehicles added while the scene is running (the game menu spawns cars and trucks).
+   * The entities join the shared document; pair with `Simulation.addVehicles`.
+   */
+  addVehicles(added: Entity[]): void {
+    for (const e of added) {
+      if (e.kind !== 'vehicle' || !e.vehicle || e.portal)
+        throw new Error(`Entity ${e.id} is not a plain vehicle`)
+      if (this.document.entities.some((o) => o.id === e.id))
+        throw new Error(`Entity id already in use: ${e.id}`)
+    }
+    this.document.entities = [...this.document.entities, ...added]
+    this.graph = SceneGraph.fromValidated(this.document)
+    this.addEntities(added)
+    void Promise.all(this.loading.splice(0)).catch(() => undefined)
+  }
+  /** Remove a vehicle installed by `addVehicles`, releasing its meshes and per-vehicle equipment. */
+  removeVehicle(id: string): void {
+    const group = this.objects.get(id)
+    for (const wheel of this.wheels.get(id) ?? []) {
+      wheel.removeFromParent()
+      disposeObject(wheel)
+    }
+    this.carMirrors.get(id)?.dispose()
+    this.instruments.get(id)?.dispose()
+    this.shipHuds.get(id)?.dispose()
+    if (group) {
+      group.removeFromParent()
+      disposeObject(group)
+    }
+    for (const map of [
+      this.objects,
+      this.wheels,
+      this.steering,
+      this.steeringAxes,
+      this.thrusters,
+      this.shipLights,
+      this.beacons,
+      this.carLights,
+      this.carMirrors,
+      this.instruments,
+      this.propellers,
+      this.shipHuds,
+      this.helmScreens,
+      this.touchScreens,
+      this.flightScreens,
+      this.portalTablets,
+      this.placeScreens,
+      this.systemScreens,
+      this.headOffsets,
+      this.authoredLights,
+      this.ramps,
+      this.mapBounds,
+    ] as Map<string, unknown>[])
+      map.delete(id)
+    this.document.entities = this.document.entities.filter((e) => e.id !== id)
+    this.graph = SceneGraph.fromValidated(this.document)
+  }
   get pendingMapInstall(): number {
     return this.pendingMapMeshes.length
   }
