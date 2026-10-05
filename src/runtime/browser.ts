@@ -37,7 +37,11 @@ import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm } from './shooting.js'
-import { TouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
+import {
+  TouchDriving,
+  isRoadTouchDriving,
+  type TouchDrivingVisibility,
+} from './touch-driving.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
 import * as THREE from 'three'
@@ -630,7 +634,13 @@ export class GameRuntime {
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
-    this.touchDriving?.setPilot(!!sim.player.vehicleId && this.cameraState.mode === 'cockpit')
+    const vehicleId = sim.player.vehicleId
+    const vehicle = vehicleId
+      ? this.document.entities.find((entity) => entity.id === vehicleId)?.vehicle
+      : null
+    const flightMode = Boolean(vehicleId && sim.vehicleInfo(vehicleId).flightMode)
+    this.touchDriving?.setDriving(isRoadTouchDriving(vehicle, flightMode))
+    this.touchDriving?.setPilot(!!vehicleId && this.cameraState.mode === 'cockpit')
     this.touchDriving?.reflect(input)
     const water = worldWater(this.document.water, this.document.sky)
     this.environment.ocean.setLevel(water.level)

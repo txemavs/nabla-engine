@@ -22,6 +22,7 @@ export { helmTouchAxis, type HelmTouchAxis } from './helm-touch.js'
 export { vehicleMenuKey } from './vehicle-menu.js'
 export {
   TouchDriving,
+  isRoadTouchDriving,
   driveSliderThrottle,
   driveHandbrakePull,
   driveWheelSteer,
@@ -29,6 +30,7 @@ export {
   drivePilotSteer,
   type TouchDrivingActions,
   type TouchDrivingVisibility,
+  type TouchDrivingVehicleSpec,
   type TouchDrivingInput,
 } from './touch-driving.js'
 export { GameplayStreaming, type GameplayWorldStream } from './streaming.js'

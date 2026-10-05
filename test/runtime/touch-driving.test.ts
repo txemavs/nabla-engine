@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   TouchDriving,
+  isRoadTouchDriving,
   driveHandbrakePull,
   drivePilotAngle,
   drivePilotSteer,
@@ -245,6 +246,7 @@ describe('TouchDriving Studio rig', () => {
       'always',
     )
     hud.setActive(true)
+    hud.setDriving(true)
     const gas = pick(root, '[data-drive="gas"]')
     const wheel = pick(root, '[data-drive="wheel"]')
     const lever = pick(root, '[data-drive="handbrake"]')
@@ -277,6 +279,7 @@ describe('TouchDriving Studio rig', () => {
       'always',
     )
     hud.setActive(true)
+    hud.setDriving(true)
     const lever = pick(root, '[data-drive="handbrake"]')
     Object.assign(lever, { box: { left: 0, top: 0, width: 56, height: 72 } })
     fire(lever, 'pointerdown', 28, 68)
@@ -293,6 +296,7 @@ describe('TouchDriving Studio rig', () => {
       'always',
     )
     hud.setActive(true)
+    hud.setDriving(true)
     hud.reflect({ forward: 1, right: -0.5, brake: true, sprint: true })
     const knob = pick(root, '.touch-driving-knob')
     const rim = pick(root, '.touch-driving-rim')
@@ -361,3 +365,45 @@ describe('touch driving mixes analog sprint with keyboard', () => {
 })
 
 void dom
+
+describe('isRoadTouchDriving', () => {
+  it('is true for ordinary cars and trucks', () => {
+    expect(isRoadTouchDriving({})).toBe(true)
+    expect(isRoadTouchDriving({ boat: false, plane: false })).toBe(true)
+  })
+
+  it('is false on foot, boats, planes, carriers and flight mode', () => {
+    expect(isRoadTouchDriving(null)).toBe(false)
+    expect(isRoadTouchDriving(undefined)).toBe(false)
+    expect(isRoadTouchDriving({ boat: true })).toBe(false)
+    expect(isRoadTouchDriving({ plane: true })).toBe(false)
+    expect(
+      isRoadTouchDriving({ interior: { min: [0, 0, 0], max: [1, 1, 1], exit: [0, 0, 0] } }),
+    ).toBe(false)
+    expect(isRoadTouchDriving({}, true)).toBe(false)
+  })
+})
+
+describe('TouchDriving seated road rig', () => {
+  it('hides wheel/accel/handbrake until setDriving(true)', () => {
+    const parent = host()
+    const hud = new TouchDriving(
+      parent as unknown as HTMLElement,
+      { engage() {}, interact() {}, camera() {} },
+      'always',
+    )
+    const root = parent.children[0]!
+    expect(root.classList.contains('is-driving')).toBe(false)
+    hud.setActive(true)
+    hud.setDriving(true)
+    expect(root.classList.contains('is-driving')).toBe(true)
+    const lever = pick(root, '.touch-driving-lever')
+    fire(lever, 'pointerdown', 50, 10)
+    expect(hud.input().brake).toBe(true)
+    hud.setDriving(false)
+    expect(root.classList.contains('is-driving')).toBe(false)
+    expect(hud.input()).toEqual({ forward: 0, right: 0, brake: false, sprint: false })
+    hud.dispose()
+  })
+})
+
