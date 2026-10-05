@@ -8,6 +8,9 @@
 
 ## Unreleased
 
+### Changed
+- Disable the cockpit circular touch ring around the steering wheel by default (`controlDefaults.showPilotTouchRing: false`). The ring drew a circle while its hit target stayed square, so touches outside the circle still steered; DOM/CSS and `TouchDriving.setPilot` stay so it can be re-enabled later.
+
 ### Fixed
 
 - **Boot / play ground wait:** `waitForGround` (and `PlanetWorld.ensureGround`) now stage

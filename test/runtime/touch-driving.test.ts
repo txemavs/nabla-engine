@@ -304,8 +304,28 @@ describe('TouchDriving Studio rig', () => {
     expect(rim.style.transform).toBe('rotate(52.5deg)')
     expect(root.querySelector('.touch-driving-lever')!.classList.contains('is-on')).toBe(true)
     expect(root.querySelector('.touch-driving-turbo')!.classList.contains('is-on')).toBe(true)
+    // Default: cockpit pilot ring stays off (circular visual / square hit target mismatch).
+    hud.setPilot(true)
+    expect(hud.root.classList.contains('is-pilot')).toBe(false)
+    hud.dispose()
+  })
+
+  it('can re-enable the cockpit pilot touch ring via constructor flag', () => {
+    const root = host()
+    const hud = new TouchDriving(
+      root as unknown as HTMLElement,
+      { interact() {}, camera() {} },
+      'always',
+      createRuntimeText(),
+      true,
+    )
+    hud.setActive(true)
+    hud.setDriving(true)
     hud.setPilot(true)
     expect(hud.root.classList.contains('is-pilot')).toBe(true)
+    expect(root.querySelector('.touch-driving-pilot-ring')).toBeTruthy()
+    hud.setPilot(false)
+    expect(hud.root.classList.contains('is-pilot')).toBe(false)
     hud.dispose()
   })
 
@@ -406,4 +426,3 @@ describe('TouchDriving seated road rig', () => {
     hud.dispose()
   })
 })
-
