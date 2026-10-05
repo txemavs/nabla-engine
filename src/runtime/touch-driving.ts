@@ -10,8 +10,10 @@ export type TouchDrivingVisibility = 'auto' | 'always' | 'hidden'
 const styles = `
 .touch-driving { display: none; position: absolute; inset: auto 10px 16px; z-index: 45;
  width: calc(100% - 20px); pointer-events: none; gap: 10px; align-items: end;
- grid-template-columns: 1fr 1fr; }
-.touch-driving-bar { grid-column: 1 / -1; display: flex; justify-content: center; gap: 8px; }
+ grid-template-columns: 1fr auto 1fr; }
+.touch-driving-bar { grid-column: 2; display: flex; flex-direction: column; gap: 8px; }
+.touch-dpad[data-hand="left"] { grid-column: 1; }
+.touch-dpad[data-hand="right"] { grid-column: 3; }
 .touch-dpad { width: min(42vw, 148px); height: min(42vw, 148px); justify-self: start;
  border: 2px solid #66758d; border-radius: 50%; display: grid; place-items: center;
  grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4px;
