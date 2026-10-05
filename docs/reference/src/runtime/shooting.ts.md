@@ -29,12 +29,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.position.clone`
 - `camera.position.clone().addScaledVector`
 - `camera.position.toArray`
+- `destination.toArray`
 - `direction.toArray`
 - `firing.lookAt`
 - `firing.position.fromArray`
+- `firing.position.toArray`
 - `firing.updateMatrixWorld`
 - `gallery.shoot`
 - `new Vector3(0, 0, -1).applyQuaternion`
 - `sidearm.fire`
 - `sidearm.impact`
 - `sim.shoot`
+- `view.tracers.add`

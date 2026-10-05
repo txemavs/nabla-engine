@@ -22,6 +22,7 @@
 - `./helm-touch.js`
 - `./vehicle-menu.js`
 - `./touch-driving.js`
+- `./touch-flight.js`
 - `./streaming.js`
 - `./sidearm.js`
 - `./gallery.js`

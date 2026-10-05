@@ -8,6 +8,7 @@
 
 - `./gear-clack.js`
 - `./graph.js`
+- `./gunshot.js`
 - `./powertrain.js`
 - `./propeller.js`
 - `./tires.js`
@@ -16,12 +17,13 @@
 
 ## VehicleAudio.constructor
 
-[Implementation, line 29](../../../../src/audio/vehicle.ts#L29)
+[Implementation, line 33](../../../../src/audio/vehicle.ts#L33)
 
-One browser audio context, six independent voices.
+One browser audio context, seven independent voices.
 
 The context has to be created from a click or a key press (`unlock`).
-Turbine, propeller, tires, powertrain, reverse alarm and gear clack own their nodes; they only
+Turbine, propeller, tires, powertrain, reverse alarm, gear clack and the sidearm gunshot own
+their nodes; they only
 share that context and one noise buffer. Studio owns the mute button.
 Audio never throws into the host loop.
 
@@ -31,7 +33,7 @@ constructor(enabled = true): instance
 
 ## VehicleAudio.setEnabled
 
-[Implementation, line 34](../../../../src/audio/vehicle.ts#L34)
+[Implementation, line 38](../../../../src/audio/vehicle.ts#L38)
 
 Mute or restore every voice. Muting ramps the gains to zero.
 
@@ -46,7 +48,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.setSuspended
 
-[Implementation, line 41](../../../../src/audio/vehicle.ts#L41)
+[Implementation, line 45](../../../../src/audio/vehicle.ts#L45)
 
 Silence while the document is hidden. Does not change the stored preference.
 
@@ -60,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.dispose
 
-[Implementation, line 47](../../../../src/audio/vehicle.ts#L47)
+[Implementation, line 51](../../../../src/audio/vehicle.ts#L51)
 
 Close the context. Further updates are no-ops.
 
@@ -73,17 +75,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.context.close`
 - `this.context.close().catch`
 
-## VehicleAudio.dispose.callback@48
+## VehicleAudio.dispose.callback@52
 
-[Implementation, line 48](../../../../src/audio/vehicle.ts#L48)
+[Implementation, line 52](../../../../src/audio/vehicle.ts#L52)
 
 ```ts
-callback@48(): inferred by TypeScript; see implementation
+callback@52(): inferred by TypeScript; see implementation
 ```
 
 ## VehicleAudio.unlock
 
-[Implementation, line 57](../../../../src/audio/vehicle.ts#L57)
+[Implementation, line 61](../../../../src/audio/vehicle.ts#L61)
 
 Create the voices on the first user gesture and resume the context if the
 browser suspended it. Safe to call every frame; construction runs once.
@@ -98,17 +100,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.context.resume`
 - `this.context.resume().catch`
 
-## VehicleAudio.unlock.callback@61
+## VehicleAudio.unlock.callback@65
 
-[Implementation, line 61](../../../../src/audio/vehicle.ts#L61)
+[Implementation, line 65](../../../../src/audio/vehicle.ts#L65)
 
 ```ts
-callback@61(): inferred by TypeScript; see implementation
+callback@65(): inferred by TypeScript; see implementation
 ```
 
 ## VehicleAudio.tireSoundLevel
 
-[Implementation, line 68](../../../../src/audio/vehicle.ts#L68)
+[Implementation, line 72](../../../../src/audio/vehicle.ts#L72)
 
 Current tire-squeal gain, for tests and the renderer dataset.
 
@@ -118,7 +120,7 @@ tireSoundLevel(): number
 
 ## VehicleAudio.gearClackCount
 
-[Implementation, line 73](../../../../src/audio/vehicle.ts#L73)
+[Implementation, line 77](../../../../src/audio/vehicle.ts#L77)
 
 Number of gear clacks played so far, for tests and the renderer dataset.
 
@@ -126,9 +128,19 @@ Number of gear clacks played so far, for tests and the renderer dataset.
 gearClackCount(): number
 ```
 
+## VehicleAudio.gunshotCount
+
+[Implementation, line 82](../../../../src/audio/vehicle.ts#L82)
+
+Number of gunshots played so far, for tests and the renderer dataset.
+
+```ts
+gunshotCount(): number
+```
+
 ## VehicleAudio.turbine
 
-[Implementation, line 78](../../../../src/audio/vehicle.ts#L78)
+[Implementation, line 87](../../../../src/audio/vehicle.ts#L87)
 
 `level` is 0..1. `speed` is km/h.
 
@@ -143,7 +155,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.propeller
 
-[Implementation, line 85](../../../../src/audio/vehicle.ts#L85)
+[Implementation, line 94](../../../../src/audio/vehicle.ts#L94)
 
 Pass 0 when the player is not flying the plane.
 
@@ -158,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.powertrain
 
-[Implementation, line 92](../../../../src/audio/vehicle.ts#L92)
+[Implementation, line 101](../../../../src/audio/vehicle.ts#L101)
 
 `rpm` is engine speed. `load` is 0..1. Rpm 0 silences the car and the turbo.
 
@@ -173,7 +185,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.gearChange
 
-[Implementation, line 102](../../../../src/audio/vehicle.ts#L102)
+[Implementation, line 111](../../../../src/audio/vehicle.ts#L111)
 
 One mechanical clack for a gear change or D/R engagement. `sound` is the vehicle's own
 profile (a truck passes a heavier, lower one); omitted fields use the car sound.
@@ -187,14 +199,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.frame`
 - `this.gearVoice.trigger`
 
+## VehicleAudio.gunshot
+
+[Implementation, line 119](../../../../src/audio/vehicle.ts#L119)
+
+One sidearm shot. Silent before the first gesture, while muted or while suspended.
+
+```ts
+gunshot(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.frame`
+- `this.gunshotVoice.trigger`
+
 ## VehicleAudio.tires
 
-[Implementation, line 109](../../../../src/audio/vehicle.ts#L109)
+[Implementation, line 126](../../../../src/audio/vehicle.ts#L126)
 
-One browser audio context, six independent voices.
+One browser audio context, seven independent voices.
 
 The context has to be created from a click or a key press (`unlock`).
-Turbine, propeller, tires, powertrain, reverse alarm and gear clack own their nodes; they only
+Turbine, propeller, tires, powertrain, reverse alarm, gear clack and the sidearm gunshot own
+their nodes; they only
 share that context and one noise buffer. Studio owns the mute button.
 Audio never throws into the host loop.
 
@@ -209,7 +237,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.reverseAlarm
 
-[Implementation, line 115](../../../../src/audio/vehicle.ts#L115)
+[Implementation, line 132](../../../../src/audio/vehicle.ts#L132)
 
 Reverse-warning voice, gated by the vehicle profile, gear and global audio preference.
 
@@ -224,12 +252,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.build
 
-[Implementation, line 120](../../../../src/audio/vehicle.ts#L120)
+[Implementation, line 137](../../../../src/audio/vehicle.ts#L137)
 
-One browser audio context, six independent voices.
+One browser audio context, seven independent voices.
 
 The context has to be created from a click or a key press (`unlock`).
-Turbine, propeller, tires, powertrain, reverse alarm and gear clack own their nodes; they only
+Turbine, propeller, tires, powertrain, reverse alarm, gear clack and the sidearm gunshot own
+their nodes; they only
 share that context and one noise buffer. Studio owns the mute button.
 Audio never throws into the host loop.
 
@@ -241,6 +270,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `AudioContext`
 - `GearClack`
+- `Gunshot`
 - `Powertrain`
 - `Propeller`
 - `ReverseAlarm`
@@ -250,12 +280,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.frame
 
-[Implementation, line 132](../../../../src/audio/vehicle.ts#L132)
+[Implementation, line 150](../../../../src/audio/vehicle.ts#L150)
 
-One browser audio context, six independent voices.
+One browser audio context, seven independent voices.
 
 The context has to be created from a click or a key press (`unlock`).
-Turbine, propeller, tires, powertrain, reverse alarm and gear clack own their nodes; they only
+Turbine, propeller, tires, powertrain, reverse alarm, gear clack and the sidearm gunshot own
+their nodes; they only
 share that context and one noise buffer. Studio owns the mute button.
 Audio never throws into the host loop.
 
@@ -265,12 +296,13 @@ frame(): { time: number; audible: boolean } | undefined
 
 ## VehicleAudio.silence
 
-[Implementation, line 137](../../../../src/audio/vehicle.ts#L137)
+[Implementation, line 155](../../../../src/audio/vehicle.ts#L155)
 
-One browser audio context, six independent voices.
+One browser audio context, seven independent voices.
 
 The context has to be created from a click or a key press (`unlock`).
-Turbine, propeller, tires, powertrain, reverse alarm and gear clack own their nodes; they only
+Turbine, propeller, tires, powertrain, reverse alarm, gear clack and the sidearm gunshot own
+their nodes; they only
 share that context and one noise buffer. Studio owns the mute button.
 Audio never throws into the host loop.
 
@@ -281,6 +313,7 @@ silence(): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.gearVoice?.silence`
+- `this.gunshotVoice?.silence`
 - `this.powertrainVoice?.silence`
 - `this.propellerVoice?.silence`
 - `this.reverseVoice?.silence`
