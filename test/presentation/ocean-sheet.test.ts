@@ -1,6 +1,7 @@
-import { expect, it } from 'vitest'
-import { Vector3 } from 'three'
+import { afterEach, expect, it, vi } from 'vitest'
+import { PerspectiveCamera, Texture, TextureLoader, Vector3, Vector4 } from 'three'
 import {
+  OceanSheet,
   SEA_ALTITUDE,
   SEA_DEPTH_INSET,
   seaDepthPoint,
@@ -8,6 +9,17 @@ import {
   seaSeenFromBelow,
 } from '../../src/render/planet/ocean-sheet.js'
 import { EARTH_RADIUS } from '../../src/math/geo/sphere.js'
+
+afterEach(() => vi.restoreAllMocks())
+
+function clipW(point: Vector3, camera: PerspectiveCamera): number {
+  camera.updateMatrixWorld()
+  camera.updateProjectionMatrix()
+  const clip = new Vector4(point.x, point.y, point.z, 1)
+    .applyMatrix4(camera.matrixWorldInverse)
+    .applyMatrix4(camera.projectionMatrix)
+  return clip.w
+}
 it('hits the sea sphere out to the horizon and misses the sky', () => {
   expect(seaRayDistance(8, -1)).toBeCloseTo(8, 2)
   expect(seaRayDistance(8, 0)).toBeNull()
@@ -53,4 +65,39 @@ it('keeps the sea depth inset on the planet normal at every camera pitch', () =>
   }
   expect(altitudeErrors[0].viewAxis).toBeCloseTo(0, 5)
   expect(altitudeErrors.at(-1)?.viewAxis).toBeCloseTo(1.4, 5)
+})
+
+it('keeps chase-cam land at the waterline in front of the sea', () => {
+  const camera = new PerspectiveCamera(50, 1, 0.1, 1e7)
+  camera.position.set(0, 2.2, 9)
+  camera.lookAt(0, 0.9, 0)
+  const hit = new Vector3(0, 0, 0)
+  const up = new Vector3(0, 1, 0)
+  const beach = new Vector3(0, 0.08, 0)
+  expect(clipW(seaDepthPoint(hit, up), camera)).toBeGreaterThan(clipW(beach, camera))
+})
+
+it('does not cover metre-scale land when looking down from any height', () => {
+  const hit = new Vector3(0, 0, 0)
+  const up = new Vector3(0, 1, 0)
+  const land = new Vector3(0, 1, 0)
+  for (const height of [20, 200, 2000]) {
+    const camera = new PerspectiveCamera(50, 1, 0.1, 1e7)
+    camera.position.set(0, height, 0)
+    camera.lookAt(0, 0, 0)
+    const seaW = clipW(seaDepthPoint(hit, up), camera)
+    const landW = clipW(land, camera)
+    const oldSeaW = Math.max(clipW(hit, camera) - 1.4, 0)
+    expect(seaW).toBeGreaterThan(landW)
+    expect(oldSeaW).toBeLessThan(landW)
+  }
+})
+
+it('embeds a radial depth inset in the sea shader, not a view-axis pull', () => {
+  vi.spyOn(TextureLoader.prototype, 'load').mockImplementation(() => new Texture())
+  const sea = new OceanSheet()
+  const src = sea.mesh.material.fragmentShader
+  expect(src).toContain(`hit - radial * ${SEA_DEPTH_INSET}`)
+  expect(src).not.toMatch(/clipHit\.w\s*-\s*1\.4/)
+  sea.dispose()
 })
