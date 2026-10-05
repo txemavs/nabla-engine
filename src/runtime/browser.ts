@@ -174,6 +174,8 @@ export class GameRuntime {
   private spawnSequence = 0
   private weaponDrawn = false
   private fireRequested = false
+  /** True while the pointer lock on the canvas was requested for the drawn sidearm. */
+  private weaponPointerLock = false
   private readonly touchDriving: TouchDriving | null
   private readonly touchFlight: TouchFlight | null
   private readonly monitors: VehicleMonitors
@@ -717,7 +719,7 @@ export class GameRuntime {
     if (this.sidearm) {
       this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
       if (this.fireRequested && this.hasInput()) {
-        fireSidearm(
+        const fired = fireSidearm(
           this.sidearm,
           this.gallery,
           sim,
@@ -726,10 +728,16 @@ export class GameRuntime {
           time,
           this.cameraState.firstPerson,
         )
+        if (fired) {
+          this.effects.audio.gunshot()
+          this.options.canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
+        }
         this.options.canvas.dataset.impacts = String(this.view.impacts.count)
       }
     }
     this.fireRequested = false
+    // Boarding a vehicle (or any other path that leaves weapon mode) gives the mouse back.
+    this.syncWeaponPointer(false)
     const eye = this.camera.position.clone()
     this.origin.set(0, 0, 0)
     if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
@@ -1242,6 +1250,41 @@ export class GameRuntime {
     this.previousPad = null
     if (document.pointerLockElement === this.options.canvas) document.exitPointerLock()
   }
+  /** Weapon mode: sidearm drawn while playing on foot. The mouse is captured only then. */
+  private weaponMode(): boolean {
+    return (
+      this.weaponDrawn &&
+      this.session.state === 'playing' &&
+      !!this.session.simulation &&
+      !this.session.simulation.player.vehicleId
+    )
+  }
+  /**
+   * FPS-style mouse capture for the sidearm. Outside weapon mode, release a lock this owner
+   * requested. In weapon mode, request the lock only when `gesture` is true: browsers grant
+   * pointer lock from a keyboard or mouse event handler, never from the frame loop.
+   */
+  private syncWeaponPointer(gesture: boolean): void {
+    const canvas = this.options.canvas
+    const locked = document.pointerLockElement === canvas
+    if (!this.weaponMode()) {
+      if (this.weaponPointerLock && locked) document.exitPointerLock()
+      this.weaponPointerLock = false
+      return
+    }
+    if (!gesture || locked || typeof canvas.requestPointerLock !== 'function') return
+    this.weaponPointerLock = true
+    const failed = () => {
+      this.weaponPointerLock = false
+    }
+    try {
+      // Promise in current browsers, undefined in older ones; a refusal must not throw.
+      const request = canvas.requestPointerLock() as unknown as Promise<void> | undefined
+      if (request && typeof request.catch === 'function') request.catch(failed)
+    } catch {
+      failed()
+    }
+  }
   private cycleCamera(): void {
     const message = this.game.action('KeyC')
     if (message) this.options.onMessage?.(message)
@@ -1347,8 +1390,11 @@ export class GameRuntime {
       (event) => {
         canvas.focus()
         this.effects.audio.unlock()
-        if (event.button === 0 && this.weaponDrawn && !this.session.simulation?.player.vehicleId)
+        if (event.button === 0 && this.weaponDrawn && !this.session.simulation?.player.vehicleId) {
           this.fireRequested = true
+          // Re-capture after Esc: the click fires and locks the mouse again.
+          if (event.pointerType === 'mouse') this.syncWeaponPointer(true)
+        }
       },
       options,
     )
@@ -1384,7 +1430,11 @@ export class GameRuntime {
         }
         this.keys.press(event.code, event.repeat, performance.now())
         this.effects.audio.unlock()
-        if (!event.repeat) this.action(event.code)
+        if (!event.repeat) {
+          this.action(event.code)
+          // Tab draws or holsters; E leaves a vehicle with the weapon still drawn.
+          this.syncWeaponPointer(event.code === 'Tab' || event.code === 'KeyE')
+        }
       },
       options,
     )
@@ -1397,10 +1447,13 @@ export class GameRuntime {
     document.addEventListener(
       'pointerlockchange',
       () => {
-        if (document.pointerLockElement !== canvas) this.releaseInput()
+        if (document.pointerLockElement === canvas) return
+        this.weaponPointerLock = false
+        this.releaseInput()
       },
       options,
     )
+    document.addEventListener('pointerlockerror', () => (this.weaponPointerLock = false), options)
     canvas.addEventListener('blur', () => this.releaseInput(), options)
     window.addEventListener('blur', () => this.releaseInput(), options)
     document.addEventListener(

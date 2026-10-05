@@ -1,5 +1,6 @@
 import { GearClack, type GearClackSound } from './gear-clack.js'
 import { loopingNoise } from './graph.js'
+import { Gunshot } from './gunshot.js'
 import { Powertrain } from './powertrain.js'
 import { Propeller } from './propeller.js'
 import { TireSqueal } from './tires.js'
@@ -7,10 +8,11 @@ import { Turbine } from './turbine.js'
 import { ReverseAlarm } from './reverse-alarm.js'
 
 /**
- * One browser audio context, six independent voices.
+ * One browser audio context, seven independent voices.
  *
  * The context has to be created from a click or a key press (`unlock`).
- * Turbine, propeller, tires, powertrain, reverse alarm and gear clack own their nodes; they only
+ * Turbine, propeller, tires, powertrain, reverse alarm, gear clack and the sidearm gunshot own
+ * their nodes; they only
  * share that context and one noise buffer. Studio owns the mute button.
  * Audio never throws into the host loop.
  */
@@ -22,7 +24,9 @@ export class VehicleAudio {
   private powertrainVoice?: Powertrain
   private gearVoice?: GearClack
   private reverseVoice?: ReverseAlarm
+  private gunshotVoice?: Gunshot
   private clacks = 0
+  private shots = 0
   private enabled = true
   private suspended = false
 
@@ -74,6 +78,11 @@ export class VehicleAudio {
     return this.clacks
   }
 
+  /** Number of gunshots played so far, for tests and the renderer dataset. */
+  get gunshotCount(): number {
+    return this.shots
+  }
+
   /** `level` is 0..1. `speed` is km/h. */
   turbine(level: number, speed: number): void {
     const frame = this.frame()
@@ -106,6 +115,14 @@ export class VehicleAudio {
     this.clacks++
   }
 
+  /** One sidearm shot. Silent before the first gesture, while muted or while suspended. */
+  gunshot(): void {
+    const frame = this.frame()
+    if (!frame || !this.gunshotVoice || !frame.audible) return
+    this.gunshotVoice.trigger(frame.time, true)
+    this.shots++
+  }
+
   tires(slip: number, speedKmh: number): void {
     const frame = this.frame()
     if (!frame || !this.tireVoice) return
@@ -127,6 +144,7 @@ export class VehicleAudio {
     this.powertrainVoice = new Powertrain(context, noise)
     this.reverseVoice = new ReverseAlarm(context)
     this.gearVoice = new GearClack(context, noise)
+    this.gunshotVoice = new Gunshot(context, noise)
   }
 
   private frame(): { time: number; audible: boolean } | undefined {
@@ -143,5 +161,6 @@ export class VehicleAudio {
     this.powertrainVoice?.silence(time)
     this.gearVoice?.silence(time)
     this.reverseVoice?.silence(time)
+    this.gunshotVoice?.silence(time)
   }
 }

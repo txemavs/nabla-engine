@@ -182,7 +182,11 @@ above the surface below to recover normal clearance. **Space** gives one upward
 impulse followed by a fall; it does not select a permanent height. The library's default walking controller remains available; the playground
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
-The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Click the viewport once to capture the mouse, then left-click to fire with the weapon drawn. The centre
+The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Drawing the weapon captures the mouse
+like an FPS (pointer lock): the mouse aims without holding a button and left-click fires. Holstering, boarding a vehicle, pausing or
+stopping play releases it; **Esc** releases it too, and the next click on the viewport fires and captures it again. Leaving a vehicle with
+**E** while the weapon is still drawn captures it again. Each shot plays a synthesized gunshot (`VehicleAudio.gunshot`, no sample
+files) that follows the host mute preference. The centre
 reticle shows aim and briefly changes to a cross on impact. Studio equips the first weapon preset
 (`assets/library/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
 220 ms interval, 150 m range and impulse 12. Another pistol is another JSON file. Shots stop at the first
