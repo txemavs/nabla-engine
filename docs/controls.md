@@ -65,6 +65,11 @@ animation. The ramp changes pose immediately rather than animating gradually.
 
 ## Flight: mode 2
 
+While piloting the 10×5 carrier, the on-screen car wheel/accelerator HUD is replaced by
+Agency-style Mode 2 touch sticks (left climb/yaw, right pitch/roll). Cars keep the
+wheel and pedal overlay.
+
+
 At the carrier controls, **V** switches between ground and flight modes. The ramp
 closes for flight. Centre the controls to level out, slow horizontal motion and
 hold the selected altitude. Land and stabilize before switching back to ground
@@ -301,6 +306,9 @@ on the OSM building group. Other buildings, roads and terrain continue loading. 
 solid validation remains strict; this tolerance only applies to map generation.
 
 ## Bullet impact marks
+
+Each shot also draws a short muzzle-to-impact tracer streak that fades within about
+90 ms. Impact discs are unchanged.
 
 Shots against physical surfaces leave a small black circular mark. The most recent
 64 marks are retained for the current play session, replacing the oldest when full.
