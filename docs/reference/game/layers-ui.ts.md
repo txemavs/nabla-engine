@@ -4,7 +4,7 @@
 
 [Source](../../../game/layers-ui.ts)
 
-Terrain layer selector, inside the existing display menu. Engine owns the layers and the drawing.
+Terrain layer selector (menu section "Capas"). Engine owns the layers and the drawing.
 
 ## Module dependencies
 
@@ -42,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 33](../../../game/layers-ui.ts#L33)
 
-Add one checkbox per layer (road first) to the display menu; changes apply live and persist.
+Add one checkbox per layer (road first) to the Capas menu section; changes apply live and persist.
 
 ```ts
 bindLayerSelector(runtime: GameRuntime, storage = browserStorage()): void

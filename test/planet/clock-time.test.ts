@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatClockTime,
+  liveSkyClock,
   localMinutes,
   parseClockTime,
   skyClockAtMinutes,
+  skyClockAtRate,
+  skyRate,
+  skyTime,
 } from '../../src/planet/sky.js'
 
 describe('time of day helpers', () => {
@@ -45,5 +49,22 @@ describe('time of day helpers', () => {
     expect(
       localMinutes(new Date((skyClockAtMinutes(undefined, -4, now) as { at: string }).at)),
     ).toBe(0)
+  })
+
+  it('advances a live clock at the chosen rate from a captured instant', () => {
+    const now = Date.UTC(2026, 9, 5, 12, 0, 0)
+    const clock = liveSkyClock(24, now, now)
+    expect(skyRate(clock)).toBe(24)
+    expect(skyTime(clock, now).getTime()).toBe(now)
+    expect(skyTime(clock, now + 60_000).getTime()).toBe(now + 24 * 60_000)
+    expect(skyTime({ mode: 'live' }, now + 60_000).getTime()).toBe(now + 60_000)
+    const slower = skyClockAtRate(clock, 1, now + 60_000)
+    expect(slower).toEqual({ mode: 'live' })
+    const fromFixed = skyClockAtRate({ mode: 'fixed', at: new Date(now).toISOString() }, 12, now)
+    expect(skyTime(fromFixed, now + 3_600_000).getTime()).toBe(now + 12 * 3_600_000)
+    expect(skyClockAtRate({ mode: 'fixed', at: new Date(now).toISOString() }, 1, now)).toEqual({
+      mode: 'fixed',
+      at: new Date(now).toISOString(),
+    })
   })
 })

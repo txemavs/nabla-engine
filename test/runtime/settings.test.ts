@@ -6,6 +6,7 @@ import {
 } from '../../src/runtime/performance.js'
 import { worldWater } from '../../src/runtime/water.js'
 import { TIDE_PERIOD_MS } from '../../src/planet/tide.js'
+import { liveSkyClock } from '../../src/planet/sky.js'
 it('sanitizes persisted or host-supplied quality without trusting prototype keys', () => {
   const p = normalizePerformance({
     preset: '__proto__',
@@ -48,4 +49,10 @@ it('fixed clocks freeze tide while live clocks follow the same cycle in every ho
   const fixed = { mode: 'fixed' as const, at: new Date(epoch).toISOString() }
   expect(worldWater(water, fixed, epoch + TIDE_PERIOD_MS / 2).level).toBeCloseTo(2)
   expect(worldWater(water, { mode: 'live' }, epoch + TIDE_PERIOD_MS / 2).level).toBeCloseTo(-2)
+})
+it('accelerated live clocks move the tide with the sky instant', () => {
+  const epoch = Date.UTC(2026, 0, 1),
+    water = { mode: 'tide' as const, level: 0, amplitude: 2 }
+  const clock = liveSkyClock(24, epoch, epoch)
+  expect(worldWater(water, clock, epoch + TIDE_PERIOD_MS / 48).level).toBeCloseTo(-2)
 })

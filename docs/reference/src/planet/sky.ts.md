@@ -8,9 +8,36 @@
 
 - `three`
 
+## clampSkyRate
+
+[Implementation, line 18](../../../../src/planet/sky.ts#L18)
+
+```ts
+clampSkyRate(rate: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+
+## skyRate
+
+[Implementation, line 23](../../../../src/planet/sky.ts#L23)
+
+Live multiplier in use; 1 when the clock is fixed or omitted.
+
+```ts
+skyRate(clock: SkyClock | undefined): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clampSkyRate`
+
 ## skyTime
 
-[Implementation, line 3](../../../../src/planet/sky.ts#L3)
+[Implementation, line 27](../../../../src/planet/sky.ts#L27)
 
 ```ts
 skyTime(clock: SkyClock | undefined, now = Date.now()): Date
@@ -20,10 +47,48 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Date`
 - `Date.now`
+- `Date.parse`
+- `Number.isFinite`
+- `skyRate`
+
+## liveSkyClock
+
+[Implementation, line 37](../../../../src/planet/sky.ts#L37)
+
+Live clock at `rate` (1 = wall time), continuing from `skyAt`.
+
+```ts
+liveSkyClock(rate = 1, now = Date.now(), skyAt = now): SkyClock
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Date`
+- `Date.now`
+- `clampSkyRate`
+- `new Date(skyAt).toISOString`
+
+## skyClockAtRate
+
+[Implementation, line 44](../../../../src/planet/sky.ts#L44)
+
+Change the live multiplier, keeping the current sky instant. Fixed 1× stays fixed.
+
+```ts
+skyClockAtRate(clock: SkyClock | undefined, rate: number, now = Date.now()): SkyClock
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Date.now`
+- `clampSkyRate`
+- `liveSkyClock`
+- `skyTime`
+- `skyTime(clock, now).getTime`
 
 ## localTimeInput
 
-[Implementation, line 7](../../../../src/planet/sky.ts#L7)
+[Implementation, line 54](../../../../src/planet/sky.ts#L54)
 
 datetime-local uses the browser timezone; persisted dates are unambiguous UTC instants.
 
@@ -41,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## localMinutes
 
-[Implementation, line 11](../../../../src/planet/sky.ts#L11)
+[Implementation, line 58](../../../../src/planet/sky.ts#L58)
 
 Minutes after local midnight (0–1439) of an instant, in the viewer's time zone.
 
@@ -56,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## formatClockTime
 
-[Implementation, line 15](../../../../src/planet/sky.ts#L15)
+[Implementation, line 62](../../../../src/planet/sky.ts#L62)
 
 `HH:MM` for minutes after midnight, wrapped into one day.
 
@@ -74,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseClockTime
 
-[Implementation, line 20](../../../../src/planet/sky.ts#L20)
+[Implementation, line 67](../../../../src/planet/sky.ts#L67)
 
 Parse `H`, `HH:MM`, `HH.MM` or `HHhMM` into minutes after midnight; undefined when invalid.
 
@@ -90,7 +155,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## skyClockAtMinutes
 
-[Implementation, line 31](../../../../src/planet/sky.ts#L31)
+[Implementation, line 78](../../../../src/planet/sky.ts#L78)
 
 A fixed clock at `minutes` after local midnight on the calendar day of `clock`
 (or of `now` for a live clock). Local means the viewer's time zone, like `localTimeInput`.
@@ -112,7 +177,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atmosphere
 
-[Implementation, line 43](../../../../src/planet/sky.ts#L43)
+[Implementation, line 90](../../../../src/planet/sky.ts#L90)
 
 ```ts
 atmosphere(height: number, sunElevation: number, visibility = 220): inferred by TypeScript; see implementation
@@ -127,7 +192,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mapFogRange
 
-[Implementation, line 63](../../../../src/planet/sky.ts#L63)
+[Implementation, line 110](../../../../src/planet/sky.ts#L110)
 
 Camera distance. Altitude must not push the fade out.
 

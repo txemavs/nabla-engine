@@ -9,11 +9,23 @@ The in-game menu is the existing `#display-settings` panel; features add titled 
 ## Module dependencies
 
 
+## menuSections
+
+[Implementation, line 11](../../../game/menu.ts#L11)
+
+```ts
+menuSections(): HTMLElement
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.createElement`
+- `document.getElementById`
+- `panel.append`
+
 ## menuSection
 
-[Implementation, line 2](../../../game/menu.ts#L2)
-
-The in-game menu is the existing `#display-settings` panel; features add titled sections to it in order.
+[Implementation, line 22](../../../game/menu.ts#L22)
 
 ```ts
 menuSection(id: string, title: string): HTMLFieldSetElement
@@ -21,9 +33,36 @@ menuSection(id: string, title: string): HTMLFieldSetElement
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(MENU_SECTION_ORDER as readonly string[]).indexOf`
+- `[...sections.children].find`
 - `document.createElement`
-- `document.getElementById`
 - `group.append`
-- `panel.querySelector`
-- `panel.querySelector('summary')!.after`
+- `menuSections`
 - `sections.append`
+- `sections.insertBefore`
+
+## menuSection.callback@31
+
+[Implementation, line 31](../../../game/menu.ts#L31)
+
+```ts
+callback@31(el): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(MENU_SECTION_ORDER as readonly string[]).indexOf`
+
+## menuSubtitle
+
+[Implementation, line 41](../../../game/menu.ts#L41)
+
+Nested heading inside a menu section (Cielo, Sol, Mar, …).
+
+```ts
+menuSubtitle(title: string): HTMLParagraphElement
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.createElement`

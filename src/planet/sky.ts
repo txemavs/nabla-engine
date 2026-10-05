@@ -1,7 +1,54 @@
 import { Color, MathUtils } from 'three'
-export type SkyClock = { mode: 'live' } | { mode: 'fixed'; at: string }
+
+/** Live-clock multiplier: 1 is wall time, 24 is one day per hour. */
+export const SKY_RATE = { min: 1, max: 24 } as const
+
+export type SkyClock =
+  | {
+      mode: 'live'
+      /** Wall-time multiplier; omitted or 1 follows the real clock. */
+      rate?: number
+      /** Sky instant when `since` was captured (ISO). Required when `rate` is not 1. */
+      origin?: string
+      /** Wall-clock ms when `origin` was captured. */
+      since?: number
+    }
+  | { mode: 'fixed'; at: string }
+
+export function clampSkyRate(rate: number): number {
+  return Math.min(SKY_RATE.max, Math.max(SKY_RATE.min, rate))
+}
+
+/** Live multiplier in use; 1 when the clock is fixed or omitted. */
+export function skyRate(clock: SkyClock | undefined): number {
+  return clock?.mode === 'live' && clock.rate != null ? clampSkyRate(clock.rate) : 1
+}
+
 export function skyTime(clock: SkyClock | undefined, now = Date.now()): Date {
-  return new Date(clock?.mode === 'fixed' ? clock.at : now)
+  if (clock?.mode === 'fixed') return new Date(clock.at)
+  const rate = skyRate(clock)
+  if (rate === 1 || clock?.mode !== 'live' || !clock.origin || clock.since == null)
+    return new Date(now)
+  const origin = Date.parse(clock.origin)
+  return new Date(Number.isFinite(origin) ? origin + (now - clock.since) * rate : now)
+}
+
+/** Live clock at `rate` (1 = wall time), continuing from `skyAt`. */
+export function liveSkyClock(rate = 1, now = Date.now(), skyAt = now): SkyClock {
+  const next = clampSkyRate(rate)
+  if (next === 1) return { mode: 'live' }
+  return { mode: 'live', rate: next, origin: new Date(skyAt).toISOString(), since: now }
+}
+
+/** Change the live multiplier, keeping the current sky instant. Fixed 1× stays fixed. */
+export function skyClockAtRate(
+  clock: SkyClock | undefined,
+  rate: number,
+  now = Date.now(),
+): SkyClock {
+  const next = clampSkyRate(rate)
+  if (next === 1 && clock?.mode === 'fixed') return clock
+  return liveSkyClock(next, now, skyTime(clock, now).getTime())
 }
 /** datetime-local uses the browser timezone; persisted dates are unambiguous UTC instants. */
 export function localTimeInput(at: Date): string {

@@ -1,4 +1,4 @@
-/** Terrain layer selector, inside the existing display menu. Engine owns the layers and the drawing. */
+/** Terrain layer selector (menu section "Capas"). Engine owns the layers and the drawing. */
 import {
   TILE_LAYERS,
   formatLayerSpec,
@@ -29,9 +29,9 @@ export function initialHiddenLayers(
   return spec === null ? loadHiddenLayers(storage, LAYERS_STORAGE_KEY) : parseLayerSpec(spec, [])
 }
 
-/** Add one checkbox per layer (road first) to the display menu; changes apply live and persist. */
+/** Add one checkbox per layer (road first) to the Capas menu section; changes apply live and persist. */
 export function bindLayerSelector(runtime: GameRuntime, storage = browserStorage()): void {
-  const group = menuSection('terrain-layers', 'Capas del terreno')
+  const group = menuSection('terrain-layers', 'Capas')
   const boxes = new Map<string, HTMLInputElement>()
   const sync = () => {
     const hidden = TILE_LAYERS.filter((layer) => !boxes.get(layer.id)!.checked).map((l) => l.id)

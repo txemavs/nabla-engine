@@ -55,7 +55,7 @@ Manual-clock hosts control their own frame submission and do not use this cap.
 Scaling multiplies the selected quality profile's effective device pixel ratio.
 At scale 1 the profile is unchanged; 0.5 renders half its width and height.
 Changing FPS does not recreate render targets. The demo exposes these live
-controls under **Pantalla y rendimiento**, preserving them in `fps` and `scale`
+controls under **Rendimiento**, preserving them in `fps` and `scale`
 URL parameters. Changing its quality preset explicitly reloads the demo.
 
 Synchronization is managed by the browser through

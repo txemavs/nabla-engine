@@ -35,7 +35,14 @@ const documentSchema = z
       .optional(),
     sky: z
       .discriminatedUnion('mode', [
-        z.object({ mode: z.literal('live') }).strict(),
+        z
+          .object({
+            mode: z.literal('live'),
+            rate: finite.min(1).max(24).optional(),
+            origin: z.iso.datetime({ offset: true }).optional(),
+            since: finite.optional(),
+          })
+          .strict(),
         z.object({ mode: z.literal('fixed'), at: z.iso.datetime({ offset: true }) }).strict(),
       ])
       .optional(),

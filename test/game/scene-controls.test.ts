@@ -5,7 +5,12 @@ import {
   vehicleChoices,
   withSceneParams,
 } from '../../game/scene-controls.js'
-import { parseSeaParam, parseTerrainConfig, parseTimeParam } from '../../game/terrain.js'
+import {
+  parseSeaParam,
+  parseTerrainConfig,
+  parseTimeParam,
+  parseTimeSpeedParam,
+} from '../../game/terrain.js'
 
 describe('&time= and &sea= URL parameters', () => {
   it('reads the time as minutes after midnight, or the real clock', () => {
@@ -22,6 +27,10 @@ describe('&time= and &sea= URL parameters', () => {
     expect(() => parseSeaParam('mucho')).toThrow(/sea debe ser un número/)
     expect(() => parseSeaParam('51')).toThrow(/entre -5 y 50/)
     expect(() => parseSeaParam('-5.1')).toThrow(/entre -5 y 50/)
+    expect(parseTimeSpeedParam('12')).toBe(12)
+    expect(parseTimeSpeedParam('24')).toBe(24)
+    expect(() => parseTimeSpeedParam('0')).toThrow(/timeSpeed/)
+    expect(() => parseTimeSpeedParam('25')).toThrow(/entre 1 y 24/)
   })
 
   it('accepts metres with a decimal point or comma, inside the Studio range', () => {
@@ -32,8 +41,10 @@ describe('&time= and &sea= URL parameters', () => {
   })
 
   it('arrives in the terrain configuration, and is absent without the parameters', () => {
-    const config = parseTerrainConfig('?terrain=/terrain&lat=43.3386&lon=-1.7899&time=21:30&sea=3')
-    expect([config.timeOfDay, config.seaLevel]).toEqual([1290, 3])
+    const config = parseTerrainConfig(
+      '?terrain=/terrain&lat=43.3386&lon=-1.7899&time=21:30&timeSpeed=12&sea=3',
+    )
+    expect([config.timeOfDay, config.timeSpeed, config.seaLevel]).toEqual([1290, 12, 3])
     const plain = parseTerrainConfig('?terrain=/terrain&lat=43.3386&lon=-1.7899')
     expect([plain.timeOfDay, plain.seaLevel]).toEqual([undefined, undefined])
     expect(() => parseTerrainConfig('?terrain=/terrain&tile=16221/11998&sea=99')).toThrow(/sea/)
@@ -58,6 +69,9 @@ describe('menu helpers', () => {
     expect(cleared).toContain('time=21:30')
     expect(withSceneParams('?time=1:00', { time: null })).toBe('')
     expect(withSceneParams('?a=1', {})).toBe('?a=1')
+    const sped = withSceneParams('?terrain=/terrain', { timeSpeed: 12 })
+    expect(new URLSearchParams(sped).get('timeSpeed')).toBe('12')
+    expect(withSceneParams(sped, { timeSpeed: 1 })).not.toContain('timeSpeed')
   })
 
   it('shows metres with a decimal comma', () => {

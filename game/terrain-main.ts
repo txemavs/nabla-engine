@@ -9,7 +9,7 @@ import { LoadingScreen, showError } from './loading.js'
 import { startError } from './start-error.js'
 import { bindPosition, showLocation } from './position.js'
 import { bindSceneControls } from './scene-controls.js'
-import { skyClockAtMinutes } from '@nabla/engine/planet/sky'
+import { skyClockAtMinutes, skyClockAtRate } from '@nabla/engine/planet/sky'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
@@ -61,12 +61,14 @@ try {
     latitude: config.start!.latitude,
     longitude: config.start!.longitude,
   })
-  // &time= and &sea= start the scene at that hour / sea level; the menu changes both live.
+  // &time=, &timeSpeed= and &sea= start the scene at that hour / rate / sea level; the menu changes them live.
   if (config.timeOfDay !== undefined)
     scene.sky =
       config.timeOfDay === 'live'
         ? { mode: 'live' }
         : skyClockAtMinutes(scene.sky, config.timeOfDay)
+  if (config.timeSpeed !== undefined && config.timeSpeed !== 1)
+    scene.sky = skyClockAtRate(scene.sky, config.timeSpeed)
   if (config.seaLevel !== undefined)
     scene.water = { mode: 'manual', level: config.seaLevel, amplitude: 0 }
   const loading = new LoadingScreen()
