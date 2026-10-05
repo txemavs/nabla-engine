@@ -12,22 +12,25 @@ The terrain location is **never hard-coded**. You tell the game where to read it
 /?terrain=<base>&tile=<x>/<y>[&dx=<m>&dz=<m>][&heading=<deg>]
 ```
 
-| Parameter                     | Meaning                                                                                                                                                 |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `terrain` (or `z15`)          | Tile host, **without** the trailing `/z`. Manifests are read from `<base>/z/15/<x>/<y>/manifest.json`. `/` = this origin.                               |
-| `tile`                        | Start over the centre of this tile, e.g. `16211/12003`. Required: no index file is read (a host may still serve `index.json`; the game never needs it). |
-| `dx`, `dz`                    | Metres east / south of that centre. Use them to start on a road.                                                                                        |
-| `lat`, `lon`                  | Start at explicit coordinates instead of `tile`.                                                                                                        |
-| `heading`                     | Compass heading the parked fleet faces, degrees clockwise from north (default 0).                                                                       |
-| `alt`                         | Origin altitude in metres (default 0: the GLBs carry absolute elevations; the vehicles are rested on the real ground).                                  |
-| `vehicle`                     | Preset the player starts in: `car` (default), `a3`, `white-truck`, `carrier`.                                                                           |
-| `relief`                      | `engine` (default, drivable, with roads) or `lidar` (2 m LiDAR mesh as ground, experimental).                                                           |
-| `photo`                       | Orthophoto draped on the ground: `full` (4096 px, default), `lo` (1024 px) or `none` (vertex colours).                                                  |
-| `sky`                         | `day` (default fixed midday sun), `live` (real clock) or an ISO date-time with zone.                                                                    |
-| `distance`, `memory`, `cache` | Load radius in metres, cells kept in memory and disk cache in MB (see "Cache and load radius"); they override what the menu remembered.                 |
-| `player`                      | `hover` (default): on foot you are Studio's floating monitor (1.25 m above the ground); `walk`: a 1.8 m walker.                                         |
-| `layers`                      | Layers to hide: `-road` (road mesh gone, ground photo stays), `-photo`, `-buildings`; `all`/`none`. Also stored in `localStorage`.                      |
-| `quality`, `fps`, `scale`     | As in the other game modes.                                                                                                                             |
+| Parameter                     | Meaning                                                                                                                                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `terrain` (or `z15`)          | Tile host, **without** the trailing `/z`. Manifests are read from `<base>/z/15/<x>/<y>/manifest.json`. `/` = this origin.                                         |
+| `tile`                        | Start over the centre of this tile, e.g. `16211/12003`. Required: no index file is read (a host may still serve `index.json`; the game never needs it).           |
+| `dx`, `dz`                    | Metres east / south of that centre. Use them to start on a road.                                                                                                  |
+| `lat`, `lon`                  | Start at these decimal degrees (WGS84) instead of `tile`; both are required. `dx`/`dz` are ignored. Example: `lat=43.3386&lon=-1.7899`.                           |
+| `ll`                          | The same in one value, as Google Maps copies it: `ll=43.3386,-1.7899` (see "Starting by latitude and longitude"). Not combinable with `lat`/`lon`.                |
+| `heading`                     | Compass heading the parked fleet faces, degrees clockwise from north (default 0).                                                                                 |
+| `alt`                         | Origin altitude in metres (default 0: the GLBs carry absolute elevations; the vehicles are rested on the real ground).                                            |
+| `vehicle`                     | Preset the player starts in: `car` (default), `a3`, `white-truck`, `carrier`.                                                                                     |
+| `relief`                      | `engine` (default, drivable, with roads) or `lidar` (2 m LiDAR mesh as ground, experimental).                                                                     |
+| `photo`                       | Orthophoto draped on the ground: `full` (4096 px, default), `lo` (1024 px) or `none` (vertex colours).                                                            |
+| `sky`                         | `day` (default fixed midday sun), `live` (real clock) or an ISO date-time with zone.                                                                              |
+| `time`                        | Time of day as `HH:MM` in the viewer's time zone, on the day of `sky` (default 21 June); `ahora` (or `now`) follows the real clock. See "Time, sea and vehicles". |
+| `sea`                         | Sea level in metres, -5 to 50 (the range of Studio's sea-surface control). Default: the simplified tide (±1 m). See "Time, sea and vehicles".                     |
+| `distance`, `memory`, `cache` | Load radius in metres, cells kept in memory and disk cache in MB (see "Cache and load radius"); they override what the menu remembered.                           |
+| `player`                      | `hover` (default): on foot you are Studio's floating monitor (1.25 m above the ground); `walk`: a 1.8 m walker.                                                   |
+| `layers`                      | Layers to hide: `-road` (road mesh gone, ground photo stays), `-photo`, `-buildings`; `all`/`none`. Also stored in `localStorage`.                                |
+| `quality`, `fps`, `scale`     | As in the other game modes.                                                                                                                                       |
 
 `?example=z15` is an alias that still requires `terrain`/`z15`; without a terrain
 location the page says so in Spanish instead of guessing.
@@ -35,6 +38,55 @@ location the page says so in Spanish instead of guessing.
 A URL **without any query** (or with only display options) plays the default of the dev-server mount:
 `?terrain=/terrain&tile=16211/12003&dx=17.4&dz=-197.6&heading=118&vehicle=car`, when the manifest of
 cell 16211/12003 answers (one request). `?tiles=` and `?example=flat` keep their original behaviour.
+
+## Starting by latitude and longitude
+
+`?terrain=/terrain&lat=43.3386&lon=-1.7899` (or `&ll=43.3386,-1.7899`) starts the player at that point, which is
+inside the Irun package of cell **16221/11998**. A URL with a position and no `terrain=` also works
+(`/?ll=43.3386,-1.7899` plays the remembered source, the package folder by default) and replaces the default
+road start instead of being mixed with it.
+
+- **Maths** (`src/planet/lat-lon.ts`, export `./planet/lat-lon`): `tileOffsetFromGeo(point)` gives the Web
+  Mercator (WebMercatorQuad) Z15 tile that holds the point and the metres east/south of that tile's centre; it is
+  the inverse of `tileOffsetToGeo` (so `tile=x/y&dx=&dz=` and `lat=&lon=` describe the same places and round-trip
+  to the millimetre). `parseLatLon(text)` reads what people paste: `43.3386, -1.7899` (Google Maps), with a space or
+  `;`, a decimal comma (`43,3386; -1,7899`), hemisphere letters (`43.3386 N, 1.7899 W`, `N43.3386 W1.7899`) and
+  degrees-minutes-seconds (`43°20'19.0"N 1°47'23.6"W`). Latitude comes first unless letters say otherwise; values
+  outside ±85.0511° latitude or ±180° longitude are rejected.
+- **Height** is never given: the player starts on the real ground (`waitForGround`) of that cell, like any other start.
+- **Menu → "Posición"**: it shows the player's current `lat, lon` (also in the HUD; click it to copy), a
+  _Copiar posición_ button, and the field _Ir a latitud, longitud_ with the button _Ir_ (Enter works too). It
+  restarts the page at the pasted point, keeping the other URL options (`heading`, `quality`, `layers` ...) and
+  dropping the old position (`tile`, `dx`, `dz`, `lat`, `lon`, `ll`). Text that is not a position is explained in
+  Spanish in the menu. Positions are never stored; only the source choice is.
+- **Holes.** A point over a cell the host does not have behaves like any other hole: the page says in Spanish
+  `No hay terreno en la celda x/y …` and offers _Ir a la celda disponible más cercana_ (see below).
+
+## Time, sea and vehicles
+
+Three menu sections (Spanish) reuse what Studio and the engine already have; no new system was added.
+
+- **Hora.** A slider (00:00-23:59), an hour field and an _Ahora_ button. They change `SceneDocument.sky` through
+  `GameRuntime.setSkyClock`, so the sun, sky, stars, fog and lighting follow on the next frame (the frame loop already
+  reads the document every frame). _Ahora_ is the `live` clock. The hour is the viewer's local time on the calendar
+  day of the current clock (21 June by default, today after _Ahora_); the sun position is computed for the player's
+  real latitude/longitude. Helpers: `parseClockTime`, `formatClockTime`, `skyClockAtMinutes` in `src/planet/sky.ts`
+  (export `./planet/sky`). URL: `&time=21:30`, or `&time=ahora`; the menu keeps the URL in step, so a copied link
+  repeats the choice. The default tide is computed from the same clock, so changing the hour also moves the tide.
+- **Nivel del mar.** A slider and a number field (-5 to 50 m, 0.1 m steps, as in Studio) set a manual sea level through
+  `GameRuntime.setWater`: the ocean sheet (`OceanSheet.setLevel`) and the physics water level (boat buoyancy) use the
+  same value. _Marea automática_ goes back to the simplified tide (`worldWater`). URL: `&sea=3`. The sea only shows
+  where the terrain lies below that level, so use a coastal start (Hondarribia is near the Irun package) and a level
+  of a few metres to see it.
+- **Vehículos.** _Añadir vehículo_ puts the chosen catalog vehicle (`vehiclePresets()`: the S3, the A3 cabrio, the white
+  truck and the flying container; the passive trailer is left out; the catalog has no plane or helicopter) on the
+  real ground in front of the player, facing the same way. `GameRuntime.spawnVehicle(template)` waits for ground
+  ahead (`waitForGround`), rests the vehicle at `ground + playGroundClearance(entity)` exactly like the parked fleet,
+  then adds it to the running view (`SceneView.addVehicles`), simulation (`Simulation.addVehicles`) and input mixer.
+  It can be boarded with `E` like any other vehicle. Each added vehicle is listed with _Quitar vehículo_
+  (`GameRuntime.removeSpawnedVehicle`); removal is refused while the player is inside. Limits: added vehicles are
+  never towed, and the container has no stern portal (that gate belongs to the editor's catalog entry).
+  On `/drive` the menu has the same controls, but that page does not read `&time=`/`&sea=`.
 
 ## No index: holes and the missing list
 
@@ -84,7 +136,7 @@ _Aplicar y recargar_ reloads the page with that URL and remembers the choice in 
    choice. With none remembered it plays the package folder when the manifest of the default start cell answers, else the flat tile.
 3. A remembered _default_ package folder is ignored while its default start cell does not answer; a remembered custom folder
    or tile host is trusted.
-4. Changing the kind drops position parameters (`tile`, `dx`, `dz`, `heading`, `lat`, `lon`, `alt`); changing only
+4. Changing the kind drops position parameters (`tile`, `dx`, `dz`, `heading`, `lat`, `lon`, `ll`, `alt`); changing only
    the relief or the URL of the same kind keeps them. Other parameters are kept.
 5. A tile URL must start with `http://`, `https://` or `/`; otherwise the menu shows a Spanish message and does not
    reload. The field is pre-filled with the active, then the remembered, then the build-time `VITE_NABLA_TILES_URL`, then `DEFAULT_TILES_URL` (`https://atlas.chained.world/euskadi/terraform`).

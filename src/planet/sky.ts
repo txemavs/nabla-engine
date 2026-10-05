@@ -7,6 +7,37 @@ export function skyTime(clock: SkyClock | undefined, now = Date.now()): Date {
 export function localTimeInput(at: Date): string {
   return new Date(at.getTime() - at.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 }
+/** Minutes after local midnight (0–1439) of an instant, in the viewer's time zone. */
+export function localMinutes(at: Date): number {
+  return at.getHours() * 60 + at.getMinutes()
+}
+/** `HH:MM` for minutes after midnight, wrapped into one day. */
+export function formatClockTime(minutes: number): string {
+  const m = ((Math.round(minutes) % 1440) + 1440) % 1440
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+}
+/** Parse `H`, `HH:MM`, `HH.MM` or `HHhMM` into minutes after midnight; undefined when invalid. */
+export function parseClockTime(text: string): number | undefined {
+  const match = /^(\d{1,2})(?:[:.h](\d{2}))?$/.exec(text.trim())
+  if (!match) return undefined
+  const hours = Number(match[1])
+  const minutes = Number(match[2] ?? 0)
+  return hours < 24 && minutes < 60 ? hours * 60 + minutes : undefined
+}
+/**
+ * A fixed clock at `minutes` after local midnight on the calendar day of `clock`
+ * (or of `now` for a live clock). Local means the viewer's time zone, like `localTimeInput`.
+ */
+export function skyClockAtMinutes(
+  clock: SkyClock | undefined,
+  minutes: number,
+  now = Date.now(),
+): SkyClock {
+  const at = skyTime(clock, now)
+  const m = Math.min(1439, Math.max(0, Math.round(minutes)))
+  at.setHours(Math.floor(m / 60), m % 60, 0, 0)
+  return { mode: 'fixed', at: at.toISOString() }
+}
 const FOG_CEILING = 100
 
 export function atmosphere(height: number, sunElevation: number, visibility = 220) {

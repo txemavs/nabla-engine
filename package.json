@@ -91,6 +91,14 @@
       "types": "./dist/planet/terrain-cache.d.ts",
       "import": "./dist/planet/terrain-cache.js"
     },
+    "./planet/lat-lon": {
+      "types": "./dist/planet/lat-lon.d.ts",
+      "import": "./dist/planet/lat-lon.js"
+    },
+    "./planet/sky": {
+      "types": "./dist/planet/sky.d.ts",
+      "import": "./dist/planet/sky.js"
+    },
     "./planet/missing-tiles": {
       "types": "./dist/planet/missing-tiles.d.ts",
       "import": "./dist/planet/missing-tiles.js"

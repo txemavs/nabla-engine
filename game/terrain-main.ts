@@ -7,6 +7,9 @@ import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
 import { LoadingScreen, showError } from './loading.js'
 import { startError } from './start-error.js'
+import { bindPosition, showLocation } from './position.js'
+import { bindSceneControls } from './scene-controls.js'
+import { skyClockAtMinutes } from '@nabla/engine/planet/sky'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
@@ -23,11 +26,13 @@ const CONTROLS =
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
+bindPosition()
+const attachSceneControls = bindSceneControls()
 let runtime: GameRuntime | undefined
 let cellsLabel = ''
 /** The tile host of this page, known even when the configuration fails to load. */
 let startBase = (new URLSearchParams(location.search).get('terrain') ?? '').replace(/\/+$/, '')
-/** HUD line with the loaded cells of the host's index, e.g. "Celdas: 12/33". */
+/** HUD line with the cells loaded and the ones the host lacks, e.g. "Celdas: 12 cargadas · 5 faltan". */
 function showCells(): void {
   const stats = runtime?.cellStats
   if (!stats) return
@@ -55,6 +60,14 @@ try {
     latitude: config.start!.latitude,
     longitude: config.start!.longitude,
   })
+  // &time= and &sea= start the scene at that hour / sea level; the menu changes both live.
+  if (config.timeOfDay !== undefined)
+    scene.sky =
+      config.timeOfDay === 'live'
+        ? { mode: 'live' }
+        : skyClockAtMinutes(scene.sky, config.timeOfDay)
+  if (config.seaLevel !== undefined)
+    scene.water = { mode: 'manual', level: config.seaLevel, amplitude: 0 }
   const loading = new LoadingScreen()
   loading.setTiles(config.tile ? [config.tile] : [])
   document.getElementById('controls-hint')!.innerHTML = CONTROLS
@@ -99,9 +112,7 @@ try {
       document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
       document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
       showCells()
-      document.getElementById('location-display')!.textContent = frame.location
-        ? frame.location.latitude.toFixed(5) + '°, ' + frame.location.longitude.toFixed(5) + '°'
-        : ''
+      showLocation(frame.location)
     },
     onError(error) {
       showError(error instanceof Error ? error.message : String(error))
@@ -120,6 +131,7 @@ try {
   )
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
   loading.hide()
+  attachSceneControls(runtime)
   bindDisplaySettings(runtime)
   bindLayerSelector(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')

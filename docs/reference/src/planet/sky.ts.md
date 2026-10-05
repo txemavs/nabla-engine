@@ -39,9 +39,80 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new Date(at.getTime() - at.getTimezoneOffset() * 60000).toISOString`
 - `new Date(at.getTime() - at.getTimezoneOffset() * 60000).toISOString().slice`
 
+## localMinutes
+
+[Implementation, line 11](../../../../src/planet/sky.ts#L11)
+
+Minutes after local midnight (0–1439) of an instant, in the viewer's time zone.
+
+```ts
+localMinutes(at: Date): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `at.getHours`
+- `at.getMinutes`
+
+## formatClockTime
+
+[Implementation, line 15](../../../../src/planet/sky.ts#L15)
+
+`HH:MM` for minutes after midnight, wrapped into one day.
+
+```ts
+formatClockTime(minutes: number): string
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `Math.round`
+- `String`
+- `String(Math.floor(m / 60)).padStart`
+- `String(m % 60).padStart`
+
+## parseClockTime
+
+[Implementation, line 20](../../../../src/planet/sky.ts#L20)
+
+Parse `H`, `HH:MM`, `HH.MM` or `HHhMM` into minutes after midnight; undefined when invalid.
+
+```ts
+parseClockTime(text: string): number | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `/^(\d{1,2})(?:[:.h](\d{2}))?$/.exec`
+- `Number`
+- `text.trim`
+
+## skyClockAtMinutes
+
+[Implementation, line 31](../../../../src/planet/sky.ts#L31)
+
+A fixed clock at `minutes` after local midnight on the calendar day of `clock`
+(or of `now` for a live clock). Local means the viewer's time zone, like `localTimeInput`.
+
+```ts
+skyClockAtMinutes(clock: SkyClock | undefined, minutes: number, now = Date.now()): SkyClock
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Date.now`
+- `Math.floor`
+- `Math.max`
+- `Math.min`
+- `Math.round`
+- `at.setHours`
+- `at.toISOString`
+- `skyTime`
+
 ## atmosphere
 
-[Implementation, line 12](../../../../src/planet/sky.ts#L12)
+[Implementation, line 43](../../../../src/planet/sky.ts#L43)
 
 ```ts
 atmosphere(height: number, sunElevation: number, visibility = 220): inferred by TypeScript; see implementation
@@ -56,7 +127,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mapFogRange
 
-[Implementation, line 32](../../../../src/planet/sky.ts#L32)
+[Implementation, line 63](../../../../src/planet/sky.ts#L63)
 
 Camera distance. Altitude must not push the fade out.
 

@@ -13,7 +13,7 @@ Which game mode a page runs and with which query: the URL first, then the rememb
 
 ## browserStorage
 
-[Implementation, line 24](../../../game/entry.ts#L24)
+[Implementation, line 25](../../../game/entry.ts#L25)
 
 ```ts
 browserStorage(): SourceStorage | undefined
@@ -21,7 +21,7 @@ browserStorage(): SourceStorage | undefined
 
 ## resolveEntry
 
-[Implementation, line 37](../../../game/entry.ts#L37)
+[Implementation, line 38](../../../game/entry.ts#L38)
 
 URL parameters win (they keep every old link working). A URL that names no source uses the
 remembered choice; with none remembered, the package folder when it publishes the default start
@@ -34,15 +34,31 @@ resolveEntry(search: string = location.search, storage: SourceStorage | undefine
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `URLSearchParams`
+- `['tile', 'lat', 'lon', 'll'].some`
 - `browserStorage`
 - `chooseTerrainSource`
 - `loadTerrainSource`
+- `merged.delete`
 - `merged.set`
 - `merged.toString`
+- `next.set`
 - `next.toString`
+- `params.get`
 - `params.has`
 - `parseTerrainSource`
 - `probe`
 - `terrainDefaults`
 - `wantsTerrain`
 - `withTerrainSource`
+
+## resolveEntry.callback@61
+
+[Implementation, line 61](../../../game/entry.ts#L61)
+
+```ts
+callback@61(key): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `params.has`

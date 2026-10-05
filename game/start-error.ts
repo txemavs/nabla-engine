@@ -29,7 +29,7 @@ export function describeStartError(error: unknown): string {
   if (isGroundMissing(error))
     return (
       `No hay terreno en la celda ${error.tile.x}/${error.tile.y}: el servidor no la tiene, ` +
-      `así que el punto de inicio queda en un hueco. Revisa tile=, lat= y lon= de la URL.`
+      `así que el punto de inicio queda en un hueco. Revisa tile=, lat= y lon= (o ll=) de la URL, o usa «Ir a latitud, longitud» del menú.`
     )
   const text = error instanceof Error ? error.message : String(error)
   const ground = /^Ground unavailable: (.*)$/s.exec(text)
@@ -55,7 +55,7 @@ export function nearestCell(from: MapTile, cells: readonly MapTile[]): MapTile |
 /** The current URL moved onto `cell`: its centre, with the old position (offsets, lat/lon) dropped. */
 export function searchForCell(search: string, cell: MapTile): string {
   const params = new URLSearchParams(search)
-  for (const key of ['dx', 'dz', 'lat', 'lon', 'alt']) params.delete(key)
+  for (const key of ['dx', 'dz', 'lat', 'lon', 'll', 'alt']) params.delete(key)
   params.set('tile', `${cell.x}/${cell.y}`)
   return '?' + params.toString()
 }
@@ -63,7 +63,7 @@ export function searchForCell(search: string, cell: MapTile): string {
 /** The current URL moved to the default road start of the package folder. */
 export function searchForDefaultStart(search: string, base: string): string {
   const params = new URLSearchParams(search)
-  for (const key of ['lat', 'lon', 'alt']) params.delete(key)
+  for (const key of ['lat', 'lon', 'll', 'alt']) params.delete(key)
   for (const [key, value] of Object.entries(terrainDefaults(true, base)))
     if (key !== 'vehicle' || !params.has('vehicle')) params.set(key, value)
   return '?' + params.toString()
