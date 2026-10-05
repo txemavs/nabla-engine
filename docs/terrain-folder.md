@@ -226,15 +226,16 @@ z/15/16211/12003/
 fetches the package the manifest points to (size and SHA-256 checked, 4 MiB cap, safe
 file names only) and returns a manifest the unchanged loader worker consumes.
 
-| Atlas                                                         | Engine                                                                                                                                                   |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `manifest.json`                                               | read as is: format, generator, id, tile, anchor (= tile centre, checked to 1e-9), bounds, files                                                          |
-| `files.terrain` / `files.buildings-osm`                       | the loader's own layers (`engine.terrain`, `engine.buildings`; the package must name the same path and hash)                                             |
-| `terrain.lidar`                                               | with `relief=lidar` replaces `files.terrain`; the worker declares it category `Terrain`, so it is rendered, collided with and draped like engine terrain |
-| `ground.composite` / `.lo`                                    | `manifest.photo`; draped over terrain, roads, land use and roofs by the existing "Drape" mechanism, replacing the ArcGIS download (`imagery: 'package'`) |
-| `roads.asphalt` / `roads.supports` / `road.*.candidate`       | `manifest.roads` or Atlas `#49` `roadCandidates.layers`; loaded, rendered and used when present. `drivable` / `engineLoad` are not skip gates            |
-| `roads.collision` / `road.collision.candidate`                | inspect-only; loaded only with `&inspectRoads=collision` / `inspectRoadCollision: true`                                                                  |
-| instances, masks, classes, roofs, roof-ids, far, OSM snapshot | listed (`atlasCompatibilityNotes`) but **not consumed yet**                                                                                              |
+| Atlas                                                   | Engine                                                                                                                                                   |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest.json`                                         | read as is: format, generator, id, tile, anchor (= tile centre, checked to 1e-9), bounds, files                                                          |
+| `files.terrain` / `files.buildings-osm`                 | the loader's own layers (`engine.terrain`, `engine.buildings`; the package must name the same path and hash)                                             |
+| `terrain.lidar`                                         | with `relief=lidar` replaces `files.terrain`; the worker declares it category `Terrain`, so it is rendered, collided with and draped like engine terrain |
+| `ground.composite` / `.lo`                              | `manifest.photo`; draped over terrain, roads, land use and roofs by the existing "Drape" mechanism, replacing the ArcGIS download (`imagery: 'package'`) |
+| `roads.asphalt` / `roads.supports` / `road.*.candidate` | `manifest.roads` or Atlas `#49` `roadCandidates.layers`; loaded, rendered and used when present. `drivable` / `engineLoad` are not skip gates            |
+| `roads.collision` / `road.collision.candidate`          | inspect-only; loaded only with `&inspectRoads=collision` / `inspectRoadCollision: true`                                                                  |
+| `osm.snapshot` (`osm-*.json.gz`)                        | `manifest.osmSnapshot`; in-car GPS street names + vector roads. Offline package only; never Overpass at runtime                                          |
+| instances, masks, classes, roofs, roof-ids, far         | listed (`atlasCompatibilityNotes`) but **not consumed yet**                                                                                              |
 
 ### Incompatibilities found (cells 16211, 16212 and all 33 manifests)
 
@@ -285,7 +286,7 @@ heading 118°:
 The player's car starts there; the A3, the white truck with trailer and the flying
 container are parked ahead of it on the same road, each rested on the loaded ground
 (`GameRuntimeOptions.restParkedOnGround`). Controls: `WASD`, `Space`, `C` cameras,
-`E` enter/exit, `V` flight, `F` couple, `T` transfer, `H` GPS, `J` menu, `R` recover.
+`E` enter/exit, `V` flight, `F` couple, `T` transfer, `H` lights, `G` GPS, `J` menu, `R` recover.
 
 ## Deployment on Atlas
 

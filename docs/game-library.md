@@ -36,7 +36,7 @@ For automated scenarios, `&vehicle=white-truck` or `&vehicle=carrier` selects th
 initial occupied vehicle. Unknown presets report an error.
 
 Controls: WASD, Space to brake/jump, C for cameras, E to enter/exit, R for recovery,
-H for vehicle lights, G for high/low beams, K for the car's retractable GPS, V for supported flight, F for docking and T for control transfer. Click the canvas
+H for vehicle lights, G for the car's retractable GPS, K for high/low beams, V for supported flight, F for docking and T for control transfer. Click the canvas
 to focus and enable audio; drag to look. Standard gamepad axes use Engine's shared mixer.
 For LAN/Tailscale testing, the server must listen on the network interface.
 HTTP IP origins use a portable SHA-256 verifier for tiles; checksums are still

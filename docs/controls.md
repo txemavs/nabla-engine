@@ -358,7 +358,7 @@ on load while preserving their paint, placement and custom names/tuning.
 
 ### Retractable S3 GPS
 
-Press **K** while driving the S3 to lower or raise its GPS screen and casing.
+Press **G** while driving the S3 to lower or raise its GPS screen and casing.
 Travel takes 1.8 seconds; another press reverses the motion from its current position.
 Lowering immediately turns the screen black and stops map redraws/texture uploads.
 Raising refreshes the map and restores it. The speedometer stays active.
@@ -368,6 +368,6 @@ Raising refreshes the map and restores it. The speedometer stays active.
 Press **J** in the S3 to open its GPS console menu in cockpit view. Use **Up/Down**
 and **Enter** to choose a paint colour; **J** or **Escape** closes it. Driving input
 is held neutral with the brake applied while the menu has focus. The colour change
-is a normal scene edit; use **Save** to persist it. Retracting GPS with **K** closes
+is a normal scene edit; use **Save** to persist it. Retracting GPS with **G** closes
 the menu. Its layers and actions live in `src/catalog/monitors/car.ts`; the reusable
 monitor contract is documented in `src/render/monitors/README.md`.

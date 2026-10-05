@@ -4,8 +4,8 @@ export const spanishMessages: Readonly<Record<string, string>> = {
     'Intermitentes: Z izquierda · X derecha · repetir para apagar',
   'High beams selected': 'Largas seleccionadas',
   'Low beams selected': 'Cortas seleccionadas',
-  'E exit · C camera · H lights · G high/low · K GPS · Z/X indicators · F9 wheel diagnostics':
-    'E salir · C cámara · H luces · G cortas/largas · K GPS · Z/X intermitentes · F9 diagnóstico de ruedas',
+  'E exit · C camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics':
+    'E salir · C cámara · H luces · G GPS · K cortas/largas · Z/X intermitentes · F9 diagnóstico de ruedas',
   'WASD move · Space jump · E enter · C camera':
     'WASD mover · Espacio saltar · E entrar · C cámara',
   'Remote window open': 'Ventana remota abierta',

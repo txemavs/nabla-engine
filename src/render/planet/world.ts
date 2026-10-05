@@ -10,8 +10,14 @@ import {
   type PlanetCollisionTile,
 } from '../../planet/index.js'
 import type { PlanetPhoto } from '../../planet/contract.js'
+import {
+  osmSnapshotHighways,
+  projectOsmRoads,
+  type OsmChartRoad,
+} from '../../planet/osm-snapshot.js'
 import { StaticTileError, fetchTileManifest } from './static-tiles.js'
 import { atlasFileUrl, atlasPhotoFor, type AtlasZ15Options } from '../../planet/atlas-z15.js'
+import { fetchOsmSnapshot } from './osm-roads.js'
 import { sha256 } from '../../util/sha256.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
@@ -313,6 +319,7 @@ interface Resident {
   bytes: number
   revision: string
   buildings: boolean
+  roads?: OsmChartRoad[]
 }
 /** The last thing that went wrong while loading cells, structured so a host can phrase it. */
 export interface StreamError {
@@ -358,6 +365,9 @@ export class PlanetWorld {
       r.group.updateMatrix()
       return [{ ...r.chart, matrix: r.group.matrix }]
     })
+  }
+  get navigationRoads() {
+    return this.visible.flatMap((key) => this.resident.get(key)?.roads ?? [])
   }
   get navigationPlaces() {
     const seen = new Set<string>()
@@ -1118,9 +1128,34 @@ export class PlanetWorld {
       revision: tileRevision(manifest),
       buildings: payload.buildings,
     })
+    this.loadOsmSnapshot(key, manifest)
     this.cover()
     restoreSupport?.()
     this.changed()
+  }
+  private osmLoads = new Map<string, AbortController>()
+  private loadOsmSnapshot(key: string, manifest: PlanetManifest) {
+    const file = manifest.osmSnapshot
+    if (!file || this.disposed) return
+    this.osmLoads.get(key)?.abort()
+    const ac = new AbortController()
+    this.osmLoads.set(key, ac)
+    const url = atlasFileUrl(this.base, manifest.tile, file.path)
+    void fetchOsmSnapshot(url, file, AbortSignal.any([ac.signal, this.controller.signal]))
+      .then((json) => {
+        const resident = this.resident.get(key)
+        if (!resident || ac.signal.aborted || this.disposed) return
+        resident.roads = projectOsmRoads(osmSnapshotHighways(json), this.origin)
+        resident.bytes += resident.roads.reduce((n, road) => n + road.points.length * 16, 0)
+        this.changed()
+      })
+      .catch((error) => {
+        if (ac.signal.aborted || this.controller.signal.aborted) return
+        console.warn('OSM snapshot no disponible · ' + String(error))
+      })
+      .finally(() => {
+        if (this.osmLoads.get(key) === ac) this.osmLoads.delete(key)
+      })
   }
   private cover() {
     if (!this.plan) return
@@ -1346,6 +1381,8 @@ export class PlanetWorld {
     await this.discover()
   }
   private remove(key: string) {
+    this.osmLoads.get(key)?.abort()
+    this.osmLoads.delete(key)
     const r = this.resident.get(key)
     if (!r) return
     r.chart?.bitmap.close()

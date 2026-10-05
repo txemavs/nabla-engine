@@ -15,8 +15,9 @@
  *     role roads.supports / road.supports.candidate -> same; `engineLoad` is provenance, not a skip
  *     role roads.collision / road.collision.candidate -> inspect-only GLB; not loaded unless inspectRoadCollision
  *   manifest.roadCandidates (schema nabla-road-candidates/1) -> same `manifest.roads` mapping
- *   every other role (masks, classes, instances, roofs, OSM snapshot, licences) is
- *   listed but not consumed by the engine yet; see docs/atlas-z15-terrain.md.
+ *   role osm.snapshot -> `manifest.osmSnapshot` (gzip Overpass cell; in-car GPS streets)
+ *   every other role (masks, classes, instances, roofs, licences) is
+ *   listed but not consumed by the engine yet; see docs/terrain-folder.md.
  *
  * Pure data: no DOM, no network. `fetchTileManifest` performs the (verified) fetches.
  */
@@ -73,6 +74,7 @@ const ATLAS_CONSUMED_ROLES = new Set([
   'terrain.lidar',
   'ground.composite',
   'ground.composite.lo',
+  'osm.snapshot',
   ...Object.values(ATLAS_ROAD_ROLES).flat(),
 ])
 export interface AtlasZ15Options {
@@ -253,6 +255,14 @@ export function adaptAtlasManifest(
   }
   const roads = mergeCandidateRoads(adapted.roads, roadsFromPackage(pkg))
   if (roads) adapted.roads = roads
+  const osm = atlasFile(pkg, 'osm.snapshot')
+  if (osm)
+    adapted.osmSnapshot = {
+      path: osm.path,
+      download: osm.path,
+      bytes: osm.bytes,
+      sha256: osm.sha256,
+    }
   const quality = options.photo ?? 'full'
   if (quality !== 'none') {
     const file = atlasFile(pkg, quality === 'full' ? 'ground.composite' : 'ground.composite.lo')

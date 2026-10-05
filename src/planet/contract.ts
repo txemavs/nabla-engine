@@ -129,6 +129,11 @@ export interface PlanetManifest {
   roads?: PlanetCandidateRoads
   /** Atlas `#49` shape. Normalized into `roads` by `readCandidateRoads`. */
   roadCandidates?: PlanetRoadCandidates
+  /**
+   * Offline OSM snapshot (`osm.snapshot` / `osm-*.json.gz`) from an Atlas Z15 package.
+   * Set only by the Atlas adapter; used by the in-car GPS for named streets.
+   */
+  osmSnapshot?: PlanetLayerFile
 }
 /** Pointer to the `nabla-z15-package/1` JSON that lists every file of an Atlas cell. */
 export interface PlanetZ15PackageRef {

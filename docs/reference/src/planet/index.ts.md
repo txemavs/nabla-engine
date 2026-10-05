@@ -8,6 +8,7 @@
 
 - `./contract.js`
 - `./places.js`
+- `./osm-snapshot.js`
 - `./tiles.js`
 - `./extract/source.js`
 - `./collisions/index.js`
