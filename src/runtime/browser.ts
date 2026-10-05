@@ -1513,6 +1513,34 @@ export class GameRuntime {
     if (document.pointerLockElement === this.options.canvas) document.exitPointerLock()
   }
   /** Weapon mode: sidearm drawn while playing on foot. The mouse is captured only then. */
+  /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
+  private updateSidearmLaser(sim: Simulation, time: number): void {
+    if (!this.sidearm?.laserEnabled || !this.weaponDrawn || sim.player.vehicleId) {
+      this.view.laser.enabled = false
+      return
+    }
+    this.view.laser.enabled = true
+    const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
+    const origin = this.camera.position.clone()
+    if (this.cameraState.firstPerson) {
+      origin.add(this.sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
+    } else {
+      origin.fromArray(sim.renderPlayerPosition)
+    }
+    const aimed = sim.shoot(
+      origin.toArray() as Vec3Tuple,
+      direction.toArray() as Vec3Tuple,
+      this.sidearm.range,
+      0,
+    )
+    const end = (
+      aimed
+        ? aimed.point
+        : origin.clone().addScaledVector(direction, this.sidearm.range).toArray()
+    ) as Vec3Tuple
+    this.view.laser.set(origin.toArray() as Vec3Tuple, end, !!aimed)
+  }
+
   private weaponMode(): boolean {
     return (
       this.weaponDrawn &&
