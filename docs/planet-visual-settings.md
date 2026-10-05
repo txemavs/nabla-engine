@@ -6,6 +6,10 @@ GTA Online-style tabbed window that shares the ship-monitor stylesheet
 `createPlanetSettingsPanel` so a carrier interior monitor can host the same
 root later; this release only mounts it in the HUD.
 
+The Planeta tab opens with **Hora** (time of day: clock, speed, "Ahora") first,
+followed by the clouds, pressure and lens-flare form. The remaining legacy
+groups (sky, sun, sea) sit under **Capas → Cielo y mar**.
+
 ## Config keys
 
 Pasteable values from the Planeta tab **Copy config** button (also shown live
@@ -47,16 +51,15 @@ runtime.setPlanetLayers({
 `GameRuntime.planetVisualConfig()` returns the same snapshot shape for hosts
 that prefer JSON over the line-oriented copy text.
 
-
 ## Default cloud style by quality
 
 `GameRuntime` picks the starting `cloudStyle` from the active performance preset
 via `cloudStyleForPerformancePreset`:
 
-| Quality preset                                               | Default `cloudStyle` |
-| ------------------------------------------------------------ | -------------------- |
-| `ultra`                                                      | `artistic` (3-layer) |
-| `minimal`, `mobile`, `low`, `balanced`, `high`, `custom`     | `low` (cheap)        |
+| Quality preset                                           | Default `cloudStyle` |
+| -------------------------------------------------------- | -------------------- |
+| `ultra`                                                  | `artistic` (3-layer) |
+| `minimal`, `mobile`, `low`, `balanced`, `high`, `custom` | `low` (cheap)        |
 
 Hosts and the Planeta HUD can still call `setCloudStyle` to override. Artistic
 sheet scale / deck heights are unchanged by this switch.
