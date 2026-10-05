@@ -648,7 +648,7 @@ export class GameRuntime {
         this.document.entities.find((entity) => entity.id === player.vehicleId)?.name ?? null,
       cameraMode: canvas.dataset.cameraMode!,
       interaction: player.vehicleId
-        ? 'E exit · C camera · H lights · G high/low · K GPS · Z/X indicators · F9 wheel diagnostics'
+        ? 'E exit · C camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics'
         : 'WASD move · Space jump · E enter · C camera',
       wheelDebug: this.wheelDebug.formatHud(),
     })
@@ -1058,13 +1058,13 @@ export class GameRuntime {
       if (enabled !== null) message = enabled ? this.text('Lights on') : this.text('Lights off')
     }
     if (code === 'KeyG' && sim.player.vehicleId) {
+      const open = this.view.toggleVehicleGps(sim.player.vehicleId)
+      if (open !== null) message = open ? this.text('GPS on') : this.text('GPS off')
+    }
+    if (code === 'KeyK' && sim.player.vehicleId) {
       const high = this.view.toggleVehicleHighBeam(sim.player.vehicleId)
       if (high !== null)
         message = high ? this.text('High beams selected') : this.text('Low beams selected')
-    }
-    if (code === 'KeyK' && sim.player.vehicleId) {
-      const open = this.view.toggleVehicleGps(sim.player.vehicleId)
-      if (open !== null) message = open ? this.text('GPS on') : this.text('GPS off')
     }
     if (message) this.options.onMessage?.(message)
   }

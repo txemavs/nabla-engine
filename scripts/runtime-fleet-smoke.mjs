@@ -44,7 +44,7 @@ try {
       assert.equal(await page.locator('#game-message').textContent(), 'Luces apagadas')
     }
     if (vehicle === 'car') {
-      await page.keyboard.press('KeyK')
+      await page.keyboard.press('KeyG')
       assert.equal(await page.locator('#game-message').textContent(), 'GPS encendido')
       await page.waitForTimeout(1000)
     }

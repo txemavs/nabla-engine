@@ -7,6 +7,13 @@ it('isolates language and overrides between simultaneous runtime hosts', () => {
   const custom = createRuntimeText('es', { 'Lights on': 'Headlamps enabled' })
   expect(english('Lights on')).toBe('Lights on')
   expect(spanish('Lights on')).toBe('Luces encendidas')
+  expect(
+    spanish(
+      'E exit · C camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics',
+    ),
+  ).toBe(
+    'E salir · C cámara · H luces · G GPS · K cortas/largas · Z/X intermitentes · F9 diagnóstico de ruedas',
+  )
   expect(custom('Lights on')).toBe('Headlamps enabled')
   expect(spanish('Lights on')).toBe('Luces encendidas')
   expect(spanish('Unknown message')).toBe('Unknown message')

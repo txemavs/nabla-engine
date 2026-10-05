@@ -285,7 +285,7 @@ heading 118°:
 The player's car starts there; the A3, the white truck with trailer and the flying
 container are parked ahead of it on the same road, each rested on the loaded ground
 (`GameRuntimeOptions.restParkedOnGround`). Controls: `WASD`, `Space`, `C` cameras,
-`E` enter/exit, `V` flight, `F` couple, `T` transfer, `H` GPS, `J` menu, `R` recover.
+`E` enter/exit, `V` flight, `F` couple, `T` transfer, `H` lights, `G` GPS, `J` menu, `R` recover.
 
 ## Deployment on Atlas
 

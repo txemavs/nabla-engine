@@ -60,7 +60,7 @@ metadata for preset compatibility and cannot be boarded.
   GLTFLoader name sanitization. Parent transforms are composed. The authored
   interior metadata also contains the casing selection bounds and retract travel.
 - Tractor: its `dynamic-dashboard-display` mesh defines position, rotation,
-  width and height. Cluster, GPS (K) and menu share the surface exclusively.
+  width and height. Cluster, GPS (G) and menu share the surface exclusively.
 - Container: six `monitor.*` anchors carry `extras.nabla.screen` dimensions and
   ids (helm0–2, door0–1, touch). Generated poses place the rendered and interactive
   displays. Older saved container entities need their preset refreshed to acquire
@@ -70,7 +70,7 @@ Truck punctual lights and tagged emissive surfaces start off. In the browser
 runtime, H toggles the occupied vehicle's authored light group. Intensities come
 from GLB `onIntensity` metadata. Cloning rebinds spot/directional targets into
 that vehicle's hierarchy so beams turn with it and separate instances stay
-independent. H switches driving lights, G selects low/high beams, and K toggles GPS.
+independent. H switches driving lights, G toggles GPS, and K selects low/high beams.
 Low beams are selected initially; fog lights remain off. The tractor's GLB declares
 `beamPattern: "low-beam"`, 1800 cd and a 55 m range. A projected texture removes the
 upper half of the low-beam cone with a soft cutoff; it needs no shadow map or extra
