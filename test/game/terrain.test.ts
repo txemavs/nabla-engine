@@ -48,6 +48,17 @@ describe('terrain-folder example config', () => {
     expect(explicit.start).toEqual({ latitude: 43.2954, longitude: -1.8949 })
     expect(explicit.tile).toEqual({ z: 15, x: 16211, y: 12003 })
     expect(explicit.scene).toMatchObject({ altitude: 12, vehicle: 'white-truck' })
+    expect(explicit.vehicles).toEqual([])
+  })
+
+  it('parses extra host vehicles from ?vehicles= without replacing the start vehicle', () => {
+    const list = [{ lat: 43.3386, lon: -1.7899, heading: 90, vehicle: 'white-truck' }]
+    const c = parseTerrainConfig(
+      '?terrain=/t&lat=43.2954&lon=-1.8949&vehicle=car&vehicles=' +
+        encodeURIComponent(JSON.stringify(list)),
+    )
+    expect(c.scene.vehicle).toBe('car')
+    expect(c.vehicles).toEqual(list)
   })
 
   it('accepts the position as ll=<lat>,<lon> like lat= and lon=, in any common format', () => {

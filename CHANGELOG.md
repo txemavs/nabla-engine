@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Let the standalone game (drive and terrain-folder entries) spawn extra catalog vehicles from WGS84 `lat`/`lon`/`heading` after terrain is ready, via `?vehicles=` JSON, `VITE_NABLA_VEHICLES`, or a typed `HostVehicle[]`. Existing `lat`/`lon`/`alt`/`heading`/`vehicle` remain the player start. See docs/game-library.md.
 - At Alto/Ultra quality, the truck's authored left mirror captures at 16 Hz and 768×512; the right mirror and cheaper presets stay at 8 Hz / 384×256.
 
 - Replace the invented circular Volante/Pedales pads with Studio's agency-ui drive rig: CSS steering wheel, accelerator slider, red handbrake and turbo, using the same pad mapping as `drive.ts`.
