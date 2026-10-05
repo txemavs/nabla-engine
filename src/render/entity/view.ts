@@ -23,7 +23,7 @@ import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
 import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
 import { VehicleLightRig } from '../vehicle-presentation/light-rig.js'
-import type { CarMirrors } from './car-mirrors.js'
+import type { CarMirrors, MirrorPolicy } from './car-mirrors.js'
 import { poseSteeringWheel, steeringAxis } from './steering-wheel.js'
 import type { CarInstruments } from './car-instruments.js'
 import type { CarInstrumentDefinition } from './car-instrument-definition.js'
@@ -72,6 +72,8 @@ export interface SceneViewOptions {
   vehiclePresentation?: VehiclePresentationResolver
   /** Stock A3 mount recipe. Null/omitted disables instruments in the bare renderer. */
   carInstruments?: CarInstrumentDefinition | null
+  /** Capture size/interval for vehicle mirrors; high/ultra boosts the authored left lens. */
+  mirrorPolicy?: MirrorPolicy
 }
 
 /** Bare renderer. The public package SceneView supplies stock presentation recipes. */
@@ -766,7 +768,12 @@ export class SceneView {
     const fallback = box(e.size, e.color)
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
-      const equipment = adapter?.mount(model, e, this.options.carInstruments)
+      const equipment = adapter?.mount(
+        model,
+        e,
+        this.options.carInstruments,
+        this.options.mirrorPolicy,
+      )
       this.authoredLights.set(e.id, new AuthoredVehicleLights(model, equipment?.lights?.controller))
       adapter?.preparePart?.(model, 'body')
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)

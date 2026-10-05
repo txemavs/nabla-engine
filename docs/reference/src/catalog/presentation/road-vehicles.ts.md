@@ -48,7 +48,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 33](../../../../../src/catalog/presentation/road-vehicles.ts#L33)
 
 ```ts
-mount(model, e, definition): inferred by TypeScript; see implementation
+mount(model, e, definition, policy): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -208,7 +208,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 133](../../../../../src/catalog/presentation/road-vehicles.ts#L133)
 
 ```ts
-mount(model, entity, definition): inferred by TypeScript; see implementation
+mount(model, entity, definition, policy): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -54,12 +54,54 @@ export function raisedMirrorNormal(
   const angle = THREE.MathUtils.degToRad(degrees)
   return n.multiplyScalar(Math.cos(angle)).addScaledVector(tangent, Math.sin(angle)).normalize()
 }
-export interface MirrorPolicy {
+export interface MirrorCapturePolicy {
   width?: number
   height?: number
   intervalMs?: number
 }
-/** Side mirrors render only in the occupied cockpit, at most 8 Hz. */
+export interface MirrorPolicy extends MirrorCapturePolicy {
+  /** Per-side overrides keyed by `userData.nabla.mirror` (`left`, `right`, …). */
+  sides?: Readonly<Record<string, MirrorCapturePolicy>>
+}
+export const defaultMirrorCapture = { width: 384, height: 256, intervalMs: 125 } as const
+const highQualityPresets = new Set(['high', 'ultra'])
+export function resolveMirrorCapture(
+  policy: MirrorPolicy = {},
+  side?: string,
+): { width: number; height: number; intervalMs: number } {
+  const override = side ? policy.sides?.[side] : undefined
+  const resolved = {
+    width: override?.width ?? policy.width ?? defaultMirrorCapture.width,
+    height: override?.height ?? policy.height ?? defaultMirrorCapture.height,
+    intervalMs: override?.intervalMs ?? policy.intervalMs ?? defaultMirrorCapture.intervalMs,
+  }
+  if (
+    ![resolved.width, resolved.height, resolved.intervalMs].every(
+      (v) => Number.isFinite(v) && v > 0,
+    )
+  )
+    throw new Error('Invalid mirror policy')
+  return resolved
+}
+/** Alto/ultra double the authored left lens; other sides and cheaper presets stay at 8 Hz / 384×256. */
+export function mirrorPolicyForQuality(preset: string): MirrorPolicy {
+  return highQualityPresets.has(preset)
+    ? {
+        sides: {
+          left: {
+            width: defaultMirrorCapture.width * 2,
+            height: defaultMirrorCapture.height * 2,
+            intervalMs: defaultMirrorCapture.intervalMs / 2,
+          },
+        },
+      }
+    : {}
+}
+function authoredMirrorSide(mesh: THREE.Mesh): string | undefined {
+  const side = mesh.userData.nabla?.mirror
+  return typeof side === 'string' ? side : undefined
+}
+/** Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz. */
 export class CarMirrors {
   private entries: {
     normal: THREE.Vector3
@@ -69,8 +111,11 @@ export class CarMirrors {
     mirror: Reflector
     render: Reflector['onBeforeRender']
     capture: THREE.PerspectiveCamera
+    width: number
+    height: number
+    intervalMs: number
+    next: number
   }[] = []
-  private next = 0
   private frames = 0
   constructor(
     candidates: readonly THREE.Mesh[],
@@ -78,12 +123,8 @@ export class CarMirrors {
     tilt = -2,
     private readonly policy: MirrorPolicy = {},
   ) {
-    if (
-      ![policy.width ?? 384, policy.height ?? 256, policy.intervalMs ?? 125].every(
-        (v) => Number.isFinite(v) && v > 0,
-      )
-    )
-      throw new Error('Invalid mirror policy')
+    resolveMirrorCapture(policy)
+    for (const side of Object.keys(policy.sides ?? {})) resolveMirrorCapture(policy, side)
     for (const original of candidates) {
       if (!original.parent || !original.geometry.getAttribute('normal')) {
         console.warn('Mirror omitted: missing parent or surface normals')
@@ -111,9 +152,10 @@ export class CarMirrors {
       positions.needsUpdate = true
       geometry.computeBoundingBox()
       geometry.computeBoundingSphere()
+      const capture = resolveMirrorCapture(this.policy, authoredMirrorSide(original))
       const mirror = new Reflector(geometry, {
-        textureWidth: policy.width ?? 384,
-        textureHeight: policy.height ?? 256,
+        textureWidth: capture.width,
+        textureHeight: capture.height,
         color: 0xaaaaaa,
         multisample: 0,
         clipBias: 0.003,
@@ -142,12 +184,16 @@ export class CarMirrors {
         up,
         rotation,
         capture: new THREE.PerspectiveCamera(),
+        width: capture.width,
+        height: capture.height,
+        intervalMs: capture.intervalMs,
+        next: 0,
       })
     }
   }
   setTilt(degrees: number): void {
     const tilt = THREE.MathUtils.clamp(degrees, -5, 12)
-    for (const e of this.entries)
+    for (const e of this.entries) {
       e.mirror.quaternion
         .copy(e.rotation)
         .premultiply(
@@ -156,7 +202,8 @@ export class CarMirrors {
             raisedMirrorNormal(e.normal, e.up, tilt),
           ),
         )
-    this.next = 0
+      e.next = 0
+    }
   }
   render(
     renderer: THREE.WebGLRenderer,
@@ -171,8 +218,15 @@ export class CarMirrors {
     }
     renderer.domElement.dataset.mirrorActive = String(enabled && this.entries.length > 0)
     renderer.domElement.dataset.mirrorFrames = String(this.frames)
-    if (!enabled || now < this.next) return
-    this.next = now + (this.policy.intervalMs ?? 125)
+    renderer.domElement.dataset.mirrorPolicy = this.entries
+      .map((e) => {
+        const side = authoredMirrorSide(e.original) ?? 'shared'
+        return `${side}:${e.width}x${e.height}@${e.intervalMs}`
+      })
+      .join(',')
+    const due = this.entries.filter((e) => now >= e.next)
+    if (!enabled || !due.length) return
+    for (const e of due) e.next = now + e.intervalMs
     scene.updateMatrixWorld(true)
     camera.updateMatrixWorld(true)
     const projection = new THREE.Matrix4().multiplyMatrices(
@@ -183,6 +237,7 @@ export class CarMirrors {
     const background = scene.background,
       autoClear = renderer.autoClear
     const visible = this.entries.map((e) => e.mirror.visible)
+    const capturing = new Set(due)
     try {
       // No recursive mirror captures; keep an inexpensive atmospheric background.
       for (const e of this.entries) {
@@ -192,16 +247,11 @@ export class CarMirrors {
       if (!scene.background) scene.background = scene.fog?.color ?? new THREE.Color('#50677d')
       renderer.autoClear = true
       for (const e of this.entries) {
-        if (!frustum.intersectsObject(e.mirror)) continue
+        if (!capturing.has(e) || !frustum.intersectsObject(e.mirror)) continue
         const eye = camera.position.clone().sub(e.mirror.getWorldPosition(new THREE.Vector3()))
         const normal = new THREE.Vector3(0, 0, 1).transformDirection(e.mirror.matrixWorld)
         if (eye.dot(normal) <= 0) continue
-        fitMirrorCamera(
-          e.capture,
-          camera,
-          e.mirror,
-          (this.policy.width ?? 384) / (this.policy.height ?? 256),
-        )
+        fitMirrorCamera(e.capture, camera, e.mirror, e.width / e.height)
         e.original.visible = false
         e.render.call(
           e.mirror,

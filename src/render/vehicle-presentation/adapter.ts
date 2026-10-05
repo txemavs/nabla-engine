@@ -3,7 +3,7 @@ import type { Entity } from '../../entity/schema.js'
 import type { CarInstruments } from '../entity/car-instruments.js'
 import type { CarInstrumentDefinition } from '../entity/car-instrument-definition.js'
 import type { CarLights } from '../entity/car-lights.js'
-import type { CarMirrors } from '../entity/car-mirrors.js'
+import type { CarMirrors, MirrorPolicy } from '../entity/car-mirrors.js'
 export interface BeaconEquipment {
   readonly textures: readonly Texture[]
   update(now: number, active: boolean): void
@@ -19,6 +19,7 @@ export interface VehiclePresentationAdapter {
     model: Group,
     entity: Entity,
     instruments?: CarInstrumentDefinition | null,
+    mirrorPolicy?: MirrorPolicy,
   ): VehicleEquipment
   preparePart?(model: Group, kind: 'body' | 'wheel' | 'steering'): void
   paint?(model: Group, color: string): void

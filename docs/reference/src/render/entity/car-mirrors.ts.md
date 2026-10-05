@@ -88,11 +88,62 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `up.clone().addScaledVector(n, -up.dot(n)).normalize`
 - `up.dot`
 
+## resolveMirrorCapture
+
+[Implementation, line 68](../../../../../src/render/entity/car-mirrors.ts#L68)
+
+```ts
+resolveMirrorCapture(policy: MirrorPolicy = {}, side?: string): { width: number; height: number; intervalMs: number }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `[resolved.width, resolved.height, resolved.intervalMs].every`
+
+Explicit throws in this body:
+
+- `new Error('Invalid mirror policy')`
+
+## resolveMirrorCapture.callback@80
+
+[Implementation, line 80](../../../../../src/render/entity/car-mirrors.ts#L80)
+
+```ts
+callback@80(v): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+
+## mirrorPolicyForQuality
+
+[Implementation, line 87](../../../../../src/render/entity/car-mirrors.ts#L87)
+
+Alto/ultra double the authored left lens; other sides and cheaper presets stay at 8 Hz / 384×256.
+
+```ts
+mirrorPolicyForQuality(preset: string): MirrorPolicy
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `highQualityPresets.has`
+
+## authoredMirrorSide
+
+[Implementation, line 100](../../../../../src/render/entity/car-mirrors.ts#L100)
+
+```ts
+authoredMirrorSide(mesh: THREE.Mesh): string | undefined
+```
+
 ## CarMirrors.constructor
 
-[Implementation, line 75](../../../../../src/render/entity/car-mirrors.ts#L75)
+[Implementation, line 120](../../../../../src/render/entity/car-mirrors.ts#L120)
 
-Side mirrors render only in the occupied cockpit, at most 8 Hz.
+Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz.
 
 ```ts
 constructor(candidates: readonly THREE.Mesh[], carUp = new THREE.Vector3(0, 1, 0), tilt = -2, private readonly policy: MirrorPolicy = {}): instance
@@ -100,13 +151,13 @@ constructor(candidates: readonly THREE.Mesh[], carUp = new THREE.Vector3(0, 1, 0
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Error`
+- `Object.keys`
 - `Reflector`
 - `THREE.Matrix4`
 - `THREE.PerspectiveCamera`
 - `THREE.Quaternion`
 - `THREE.Vector3`
-- `[policy.width ?? 384, policy.height ?? 256, policy.intervalMs ?? 125].every`
+- `authoredMirrorSide`
 - `basis.clone`
 - `basis.clone().invert`
 - `centre.addScaledVector`
@@ -130,37 +181,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `original.updateWorldMatrix`
 - `positions.setZ`
 - `raisedMirrorNormal`
+- `resolveMirrorCapture`
 - `this.entries.push`
 
-Explicit throws in this body:
+## CarMirrors.constructor.callback@178
 
-- `new Error('Invalid mirror policy')`
-
-## CarMirrors.constructor.callback@83
-
-[Implementation, line 83](../../../../../src/render/entity/car-mirrors.ts#L83)
+[Implementation, line 178](../../../../../src/render/entity/car-mirrors.ts#L178)
 
 ```ts
-callback@83(v): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Number.isFinite`
-
-## CarMirrors.constructor.callback@136
-
-[Implementation, line 136](../../../../../src/render/entity/car-mirrors.ts#L136)
-
-```ts
-callback@136(): inferred by TypeScript; see implementation
+callback@178(): inferred by TypeScript; see implementation
 ```
 
 ## CarMirrors.setTilt
 
-[Implementation, line 148](../../../../../src/render/entity/car-mirrors.ts#L148)
+[Implementation, line 194](../../../../../src/render/entity/car-mirrors.ts#L194)
 
-Side mirrors render only in the occupied cockpit, at most 8 Hz.
+Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz.
 
 ```ts
 setTilt(degrees: number): void
@@ -175,9 +211,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarMirrors.render
 
-[Implementation, line 161](../../../../../src/render/entity/car-mirrors.ts#L161)
+[Implementation, line 208](../../../../../src/render/entity/car-mirrors.ts#L208)
 
-Side mirrors render only in the occupied cockpit, at most 8 Hz.
+Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz.
 
 ```ts
 render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, enabled: boolean, now: number): void
@@ -185,6 +221,7 @@ render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Perspect
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Set`
 - `String`
 - `THREE.Color`
 - `THREE.Frustum`
@@ -193,6 +230,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.position.clone`
 - `camera.position.clone().sub`
 - `camera.updateMatrixWorld`
+- `capturing.has`
 - `e.mirror.getWorldPosition`
 - `e.render.call`
 - `eye.dot`
@@ -202,30 +240,51 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new THREE.Matrix4().multiplyMatrices`
 - `new THREE.Vector3(0, 0, 1).transformDirection`
 - `scene.updateMatrixWorld`
+- `this.entries.filter`
 - `this.entries.forEach`
 - `this.entries.map`
-
-## CarMirrors.render.callback@185
-
-[Implementation, line 185](../../../../../src/render/entity/car-mirrors.ts#L185)
-
-```ts
-callback@185(e): inferred by TypeScript; see implementation
-```
 
 ## CarMirrors.render.callback@222
 
 [Implementation, line 222](../../../../../src/render/entity/car-mirrors.ts#L222)
 
 ```ts
-callback@222(e, i): inferred by TypeScript; see implementation
+callback@222(e): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `authoredMirrorSide`
+
+## CarMirrors.render.callback@227
+
+[Implementation, line 227](../../../../../src/render/entity/car-mirrors.ts#L227)
+
+```ts
+callback@227(e): inferred by TypeScript; see implementation
+```
+
+## CarMirrors.render.callback@239
+
+[Implementation, line 239](../../../../../src/render/entity/car-mirrors.ts#L239)
+
+```ts
+callback@239(e): inferred by TypeScript; see implementation
+```
+
+## CarMirrors.render.callback@272
+
+[Implementation, line 272](../../../../../src/render/entity/car-mirrors.ts#L272)
+
+```ts
+callback@272(e, i): inferred by TypeScript; see implementation
 ```
 
 ## CarMirrors.dispose
 
-[Implementation, line 229](../../../../../src/render/entity/car-mirrors.ts#L229)
+[Implementation, line 279](../../../../../src/render/entity/car-mirrors.ts#L279)
 
-Side mirrors render only in the occupied cockpit, at most 8 Hz.
+Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz.
 
 ```ts
 dispose(): void

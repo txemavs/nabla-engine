@@ -30,7 +30,7 @@ function shineVehicle(model: THREE.Object3D): void {
 }
 
 export const s3Presentation: VehiclePresentationAdapter = {
-  mount(model, e, definition) {
+  mount(model, e, definition, policy) {
     model.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
       const materials = Array.isArray(object.material) ? object.material : [object.material]
@@ -74,7 +74,7 @@ export const s3Presentation: VehiclePresentationAdapter = {
     if (instruments) instruments.mirrorTilt = e.vehicle?.mirrorTilt ?? -2
     return {
       lights: createA3Lights(model),
-      mirrors: new CarMirrors(candidates, up, e.vehicle?.mirrorTilt ?? -2),
+      mirrors: new CarMirrors(candidates, up, e.vehicle?.mirrorTilt ?? -2, policy),
       instruments,
     }
   },
@@ -130,7 +130,7 @@ const stock = new Map<string, VehiclePresentationAdapter>([
   [
     'nabla.truck',
     {
-      mount(model, entity, definition) {
+      mount(model, entity, definition, policy) {
         const mounts = definition ? authoredScreenMounts(model, definition.cluster) : undefined
         const instruments =
           mounts && definition ? new CarInstruments(mounts, definition) : undefined
@@ -146,7 +146,7 @@ const stock = new Map<string, VehiclePresentationAdapter>([
         )
         return {
           instruments,
-          mirrors: lenses.length ? new CarMirrors(lenses, up, tilt) : undefined,
+          mirrors: lenses.length ? new CarMirrors(lenses, up, tilt, policy) : undefined,
         }
       },
     },

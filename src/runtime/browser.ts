@@ -43,6 +43,7 @@ import { VehicleMonitors } from './vehicle-monitors.js'
 import * as THREE from 'three'
 import { parseScene, type SceneDocument } from '../scene/document.js'
 import { SceneView } from '../presentation/scene-view.js'
+import { mirrorPolicyForQuality } from '../render/entity/car-mirrors.js'
 import { GeographicView } from '../render/planet/sky.js'
 import {
   PlanetWorld,
@@ -249,7 +250,9 @@ export class GameRuntime {
     this.scene.add(this.sun, this.ambient, this.catchFloor.mesh)
     this.fieldLighting = options.fieldLights ? new FieldLighting(options.fieldLights) : null
     if (this.fieldLighting) this.scene.add(this.fieldLighting.lights.root)
-    this.view = new SceneView(this.document)
+    this.view = new SceneView(this.document, false, false, {
+      mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
+    })
     this.scene.add(this.view.root)
     this.monitors = new VehicleMonitors(
       options.canvas.parentElement!,

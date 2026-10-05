@@ -23,8 +23,12 @@ export { VehicleLightRig, vehicleLightBudget } from './light-rig.js'
 export {
   CarMirrors,
   authoredMirrorSurfaces,
+  defaultMirrorCapture,
   fitMirrorCamera,
+  mirrorPolicyForQuality,
   raisedMirrorNormal,
+  resolveMirrorCapture,
+  type MirrorCapturePolicy,
   type MirrorPolicy,
 } from '../entity/car-mirrors.js'
 export {
