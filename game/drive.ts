@@ -66,7 +66,6 @@ try {
       (e) => e.id === (config.vehicle === 'white-truck' ? vehicle.id : 'demo-white-truck'),
     )!
     tractor.groundOffset = 1.45
-    tractor.vehicle!.cameraDistance = 24
     const trailer = presetVehicle('white-trailer', 'demo-trailer', [10, 2, 7.33])
     trailer.vehicle!.tow = {
       vehicleId: tractor.id,
