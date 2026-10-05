@@ -12,6 +12,7 @@
 - `../entity/car-instruments.js`
 - `../entity/car-lights.js`
 - `./light-controller.js`
+- `./light-rig.js`
 - `../entity/car-mirrors.js`
 - `../entity/driving-camera.js`
 - `../entity/car-instrument-definition.js`

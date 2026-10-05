@@ -19,6 +19,7 @@ export {
   type VehicleLampState,
   type VehicleLightChannel,
 } from './light-controller.js'
+export { VehicleLightRig, vehicleLightBudget } from './light-rig.js'
 export {
   CarMirrors,
   authoredMirrorSurfaces,

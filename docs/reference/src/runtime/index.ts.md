@@ -17,6 +17,7 @@
 - `./game-camera.js`
 - `./input.js`
 - `./ground.js`
+- `./presentation-warmup.js`
 - `./vehicle-monitors.js`
 - `./vehicle-menu.js`
 - `./touch-driving.js`

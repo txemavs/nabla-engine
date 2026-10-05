@@ -24,9 +24,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `VehicleLightController`
 
+## CarLights.courtesyLights
+
+[Implementation, line 30](../../../../../src/render/entity/car-lights.ts#L30)
+
+Hidden courtesy sources; the shared vehicle light rig samples them while occupied.
+
+```ts
+courtesyLights(): readonly THREE.PointLight[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.courtesy.map`
+
+## CarLights.courtesyLights.callback@31
+
+[Implementation, line 31](../../../../../src/render/entity/car-lights.ts#L31)
+
+```ts
+callback@31(well): inferred by TypeScript; see implementation
+```
+
 ## CarLights.toggle
 
-[Implementation, line 28](../../../../../src/render/entity/car-lights.ts#L28)
+[Implementation, line 33](../../../../../src/render/entity/car-lights.ts#L33)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
@@ -40,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarLights.toggleHeadlights
 
-[Implementation, line 32](../../../../../src/render/entity/car-lights.ts#L32)
+[Implementation, line 37](../../../../../src/render/entity/car-lights.ts#L37)
 
 Toggle position/front lamps without disabling brake, reverse or signal lamps.
 
@@ -54,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarLights.update
 
-[Implementation, line 35](../../../../../src/render/entity/car-lights.ts#L35)
+[Implementation, line 40](../../../../../src/render/entity/car-lights.ts#L40)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 

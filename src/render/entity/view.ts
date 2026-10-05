@@ -22,6 +22,7 @@ import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
 import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
+import { VehicleLightRig } from '../vehicle-presentation/light-rig.js'
 import type { CarMirrors } from './car-mirrors.js'
 import { poseSteeringWheel, steeringAxis } from './steering-wheel.js'
 import type { CarInstruments } from './car-instruments.js'
@@ -129,6 +130,11 @@ export class SceneView {
     return this.instruments.get(id)?.toggleGps() ?? null
   }
   private readonly authoredLights = new Map<string, AuthoredVehicleLights>()
+  readonly vehicleLights = new VehicleLightRig()
+  /** Occupied-vehicle ids that already have cockpit mirrors allocated. */
+  get mirroredVehicles(): string[] {
+    return [...this.carMirrors.keys()]
+  }
   toggleVehicleLights(id: string): boolean | null {
     return (
       this.carLights.get(id)?.toggleHeadlights() ?? this.authoredLights.get(id)?.toggle() ?? null
@@ -199,7 +205,7 @@ export class SceneView {
     this.root.add(this.landcover.root)
     this.avatar.add(this.monitor)
     this.avatar.visible = false
-    this.root.add(this.avatar)
+    this.root.add(this.avatar, this.vehicleLights.root)
     this.ready = Promise.all(this.loading).then(() => undefined)
   }
   /** A known pose-only edit; preserve all unrelated entities and render batches. */
@@ -745,7 +751,7 @@ export class SceneView {
         applyPose(model, part.transform)
         parent.add(model)
         prepare?.(model)
-        if (this.materialSetup) this.setupMaterials(this.materialSetup)
+        if (this.materialSetup) this.registerMaterials(model, this.materialSetup)
         if (fallback) {
           fallback.removeFromParent()
           disposeObject(fallback)
@@ -1066,6 +1072,7 @@ export class SceneView {
           sim.vehicleInfo(id).parked,
         )
     }
+    this.captureOccupiedLights(sim.player.vehicleId)
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
       const info = sim.vehicleInfo(vehicleId, true)
@@ -1150,16 +1157,25 @@ export class SceneView {
     this.roads.onMaterial = callback
     this.buildings.onMaterial = callback
     this.landcover.onMaterial = callback
-    this.root.traverse((object) => {
-      if (object instanceof THREE.Mesh || object instanceof THREE.SkinnedMesh) {
-        const materials = Array.isArray(object.material) ? object.material : [object.material]
-        for (const material of materials) {
-          if (material instanceof THREE.MeshStandardMaterial) {
-            callback(material)
-          }
-        }
-      }
+    this.registerMaterials(this.root, callback)
+  }
+  private registerMaterials(
+    root: THREE.Object3D,
+    callback: (material: THREE.Material) => void,
+  ): void {
+    root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh || object instanceof THREE.SkinnedMesh)) return
+      const materials = Array.isArray(object.material) ? object.material : [object.material]
+      for (const material of materials)
+        if (material instanceof THREE.MeshStandardMaterial) callback(material)
     })
+  }
+  private captureOccupiedLights(vehicleId: string | null): void {
+    const authored = vehicleId ? this.authoredLights.get(vehicleId)?.illuminators() : undefined
+    const courtesy = vehicleId ? (this.carLights.get(vehicleId)?.courtesyLights ?? []) : []
+    const group = vehicleId ? this.objects.get(vehicleId) : undefined
+    group?.updateWorldMatrix(true, true)
+    this.vehicleLights.capture(authored?.spots ?? [], [...(authored?.points ?? []), ...courtesy])
   }
   dispose(): void {
     if (this.disposed) return
@@ -1170,6 +1186,7 @@ export class SceneView {
     this.instruments.clear()
     for (const lights of this.authoredLights.values()) lights.dispose()
     this.authoredLights.clear()
+    this.vehicleLights.dispose()
     this.roads.dispose()
     this.buildings.dispose()
     this.landcover.dispose()

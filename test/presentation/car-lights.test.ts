@@ -32,6 +32,7 @@ it('switches off all lamps when unoccupied and separates braking from reversing'
   for (const material of [position, brake, reverse]) expect(material.emissiveIntensity).toBe(0)
   const courtesy = model.children.filter((child) => child instanceof THREE.PointLight)
   expect(courtesy).toHaveLength(2)
+  expect(courtesy.every((lamp) => lamp.visible === false)).toBe(true)
   lights.update({ powered: true, braking: false, reversing: false }, 0, false)
   for (const lamp of courtesy) expect(lamp.intensity).toBe(0)
   lights.update({ powered: true, braking: false, reversing: false }, 0, true)

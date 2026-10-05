@@ -24,6 +24,11 @@ export class CarLights {
     private readonly courtesy: readonly CourtesyWell[] = [],
   ) {
     this.controller = new VehicleLightController(flashMs)
+    for (const well of courtesy) well.lamp.visible = false
+  }
+  /** Hidden courtesy sources; the shared vehicle light rig samples them while occupied. */
+  get courtesyLights(): readonly THREE.PointLight[] {
+    return this.courtesy.map((well) => well.lamp)
   }
   toggle(side: number): void {
     this.controller.toggleSignal(side)

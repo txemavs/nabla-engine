@@ -34,4 +34,8 @@ export const lightingDefaults = Object.freeze({
   armed: true,
   /** Maximum simultaneously active street-light spotlights. */
   maxBeams: 8,
+  /** Fixed renderer budget for occupied-vehicle illumination. Parked GLB lights stay hidden. */
+  vehicleSpots: 6,
+  vehiclePoints: 10,
+  vehicleMappedSpots: 2,
 })

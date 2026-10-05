@@ -46,6 +46,13 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     game.step(1 / 60, idleInput(), 0, 2100)
     expect(game.cameraState.mode).toBe('cockpit')
     expect(game.cameraState.entrance?.id).toBe('car')
+    game.action('KeyE')
+    game.step(1 / 60, idleInput(), 0, 2200)
+    expect(game.simulation!.player.vehicleId).toBeNull()
+    expect(game.action('KeyE')).toMatch(/Conduciendo/)
+    game.step(1 / 60, idleInput(), 0, 2300)
+    expect(game.cameraState.mode).toBe('cockpit')
+    expect(game.cameraState.entrance).toBeNull()
     game.action('KeyC')
     expect(game.cameraState.mode).toBe('map')
     game.action('KeyC')
@@ -62,6 +69,31 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     expect(game.simulation!.entityTransform('car').position).toEqual(
       original.entities[2].transform.position,
     )
+  } finally {
+    game.dispose()
+  }
+})
+it('plays the boarding camera once per vehicle and reuses it on later enters', async () => {
+  const game = new GameRuntime(),
+    doc = scene()
+  doc.entities.push(presetVehicle('car', 'car-2', [0, 0.7, -6]))
+  try {
+    await game.play(doc)
+    for (let i = 0; i < 120; i++) game.step(1 / 60, idleInput(), 0, (i * 1000) / 60)
+    game.simulation!.startInVehicle('car')
+    game.step(1 / 60, idleInput(), 0, 2100)
+    expect(game.cameraState.entrance?.id).toBe('car')
+    expect(game.action('KeyE')).toMatch(/pie|Monitor/)
+    game.step(1 / 60, idleInput(), 0, 2200)
+    game.simulation!.startInVehicle('car-2')
+    game.step(1 / 60, idleInput(), 0, 2300)
+    expect(game.cameraState.entrance?.id).toBe('car-2')
+    expect(game.action('KeyE')).toMatch(/pie|Monitor/)
+    game.step(1 / 60, idleInput(), 0, 2400)
+    game.simulation!.startInVehicle('car-2')
+    game.step(1 / 60, idleInput(), 0, 2500)
+    expect(game.cameraState.mode).toBe('cockpit')
+    expect(game.cameraState.entrance).toBeNull()
   } finally {
     game.dispose()
   }
