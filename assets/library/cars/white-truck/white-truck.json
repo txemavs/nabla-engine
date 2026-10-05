@@ -33,7 +33,7 @@
     "engineForce": 12000,
     "brakeForce": 120,
     "drivenWheels": "rear",
-    "cameraDistance": 10,
+    "cameraDistance": 24,
     "powertrain": {
       "powerCv": 420,
       "torqueNm": 2000,

@@ -95,7 +95,6 @@ export function createTerrainDriveScene(options: TerrainDriveOptions): SceneDocu
       ahead - TRAILER_OFFSET,
     )[0]
     tractor.groundOffset = 1.45
-    tractor.vehicle!.cameraDistance = 24
     trailer.vehicle!.tow = {
       vehicleId: tractor.id,
       hitch: tractor.vehicle!.hitch!,
