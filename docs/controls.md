@@ -43,11 +43,12 @@ interior places the monitor beside its helm, including while hovering at altitud
 leave the player inside and display a status message.
 
 The standalone game keeps Studio's tactile driving HUD visible (`touchControls:
-'always'`): circular steer and pedal pads, brake, enter/exit and camera. Keyboard
-and gamepad still mix through the same `GameInput` path. In cockpit view the helm
-touchscreen d-pads use that same mapping in road mode (WASD and arrows steer and
-accelerate; Brake holds). Coarse-pointer hosts that leave visibility on `auto`
-show the overlay only on touch devices.
+'always'`): the agency-ui drive rig — steering wheel, accelerator slider, red
+handbrake and turbo — plus enter/exit and camera. Keyboard and gamepad still mix
+through the same `GameInput` path. Cockpit view adds the twist ring on the wheel.
+In cockpit view the helm touchscreen d-pads use that same mapping in road mode
+(WASD and arrows steer and accelerate; Brake holds). Coarse-pointer hosts that
+leave visibility on `auto` show the overlay only on touch devices.
 
 ## A3 and mobile garage
 
