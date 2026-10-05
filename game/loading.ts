@@ -145,7 +145,8 @@ export class LoadingScreen {
       this.status.after(detail)
     }
     detail.textContent = message
-    detail.hidden = !message
+    // `status: false` / the mark layout keep every load text hidden.
+    detail.hidden = !message || this.screen.classList.contains('splash-no-status')
   }
 
   hide(): void {

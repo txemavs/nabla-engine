@@ -13,7 +13,7 @@ rotating messages, layout and optional theme CSS without forking the loader.
 
 ## resolveSplashSkin
 
-[Implementation, line 50](../../../../src/runtime/splash.ts#L50)
+[Implementation, line 88](../../../../src/runtime/splash.ts#L88)
 
 Resolve a partial host override over the default Nabla skin.
 
@@ -23,7 +23,7 @@ resolveSplashSkin(skin: EngineSplashSkin = {}): Required<Pick<EngineSplashSkin, 
 
 ## applySplashSkin
 
-[Implementation, line 67](../../../../src/runtime/splash.ts#L67)
+[Implementation, line 105](../../../../src/runtime/splash.ts#L105)
 
 Apply skin slots to an existing splash DOM subtree.
 Expected optional ids/classes: `#loading-screen` (or `root`), `#loading-title` / `h1`,
@@ -37,6 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `injectSplashTheme`
 - `logo.getAttribute`
+- `logo?.getAttribute`
 - `resolveSplashSkin`
 - `root.classList.toggle`
 - `root.insertBefore`
@@ -46,7 +47,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## injectSplashTheme
 
-[Implementation, line 103](../../../../src/runtime/splash.ts#L103)
+[Implementation, line 157](../../../../src/runtime/splash.ts#L157)
 
 Inject or replace host theme CSS for the splash.
 
@@ -63,9 +64,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## splashMessageAt
 
-[Implementation, line 114](../../../../src/runtime/splash.ts#L114)
+[Implementation, line 168](../../../../src/runtime/splash.ts#L168)
 
-Pick a message by progress 0..1 (or cycle by index).
+Pick a message by progress 0..1 (or cycle by index). `undefined` uses the defaults; `[]` gives ''.
 
 ```ts
 splashMessageAt(messages: readonly string[] | undefined, progressOrIndex: number): string
@@ -79,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## splashElements
 
-[Implementation, line 129](../../../../src/runtime/splash.ts#L129)
+[Implementation, line 183](../../../../src/runtime/splash.ts#L183)
 
 Read the usual splash slots under a root element.
 

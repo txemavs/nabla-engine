@@ -8,6 +8,18 @@ Entry point: the terrain chosen by the URL or the menu (flat tile, tile host, pa
 
 ## Module dependencies
 
+- `@nabla/engine/runtime/splash`
+- `./boot.js`
 - `./entry.js`
 
-This module contains declarations, data or re-exports; it defines no executable functions.
+## bootSay
+
+[Implementation, line 13](../../../game/main.ts#L13)
+
+```ts
+bootSay(text: string): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `splashMessageAt`

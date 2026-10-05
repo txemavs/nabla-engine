@@ -95,7 +95,7 @@ callback@97(): inferred by TypeScript; see implementation
 
 ## Sidearm.dispose
 
-[Implementation, line 135](../../../../src/runtime/sidearm.ts#L135)
+[Implementation, line 138](../../../../src/runtime/sidearm.ts#L138)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -111,7 +111,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.visible
 
-[Implementation, line 144](../../../../src/runtime/sidearm.ts#L144)
+[Implementation, line 147](../../../../src/runtime/sidearm.ts#L147)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -121,7 +121,7 @@ visible(value: boolean): inferred by TypeScript; see implementation
 
 ## Sidearm.visible
 
-[Implementation, line 151](../../../../src/runtime/sidearm.ts#L151)
+[Implementation, line 154](../../../../src/runtime/sidearm.ts#L154)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -131,7 +131,7 @@ visible(): boolean
 
 ## Sidearm.setAiming
 
-[Implementation, line 155](../../../../src/runtime/sidearm.ts#L155)
+[Implementation, line 158](../../../../src/runtime/sidearm.ts#L158)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -141,7 +141,7 @@ setAiming(value: boolean): void
 
 ## Sidearm.isAiming
 
-[Implementation, line 158](../../../../src/runtime/sidearm.ts#L158)
+[Implementation, line 161](../../../../src/runtime/sidearm.ts#L161)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -151,7 +151,7 @@ isAiming(): boolean
 
 ## Sidearm.toggleLaser
 
-[Implementation, line 163](../../../../src/runtime/sidearm.ts#L163)
+[Implementation, line 166](../../../../src/runtime/sidearm.ts#L166)
 
 Toggle the laser sight; returns the new state.
 
@@ -161,7 +161,7 @@ toggleLaser(): boolean
 
 ## Sidearm.laserEnabled
 
-[Implementation, line 168](../../../../src/runtime/sidearm.ts#L168)
+[Implementation, line 171](../../../../src/runtime/sidearm.ts#L171)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -171,7 +171,7 @@ laserEnabled(): boolean
 
 ## Sidearm.reset
 
-[Implementation, line 172](../../../../src/runtime/sidearm.ts#L172)
+[Implementation, line 175](../../../../src/runtime/sidearm.ts#L175)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -181,7 +181,7 @@ reset(): void
 
 ## Sidearm.fire
 
-[Implementation, line 180](../../../../src/runtime/sidearm.ts#L180)
+[Implementation, line 183](../../../../src/runtime/sidearm.ts#L183)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -198,7 +198,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.impact
 
-[Implementation, line 192](../../../../src/runtime/sidearm.ts#L192)
+[Implementation, line 195](../../../../src/runtime/sidearm.ts#L195)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
@@ -208,7 +208,7 @@ impact(hit: boolean): void
 
 ## Sidearm.muzzleViewOffset
 
-[Implementation, line 200](../../../../src/runtime/sidearm.ts#L200)
+[Implementation, line 203](../../../../src/runtime/sidearm.ts#L203)
 
 Current muzzle tip in the viewmodel camera's local space (eye-relative), including
 hip/ADS blend, kick and recoil — used for the world laser and hit rays.
@@ -228,7 +228,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.render
 
-[Implementation, line 214](../../../../src/runtime/sidearm.ts#L214)
+[Implementation, line 217](../../../../src/runtime/sidearm.ts#L217)
 
 Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 

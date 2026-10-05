@@ -1,15 +1,24 @@
 /** Entry point: the terrain chosen by the URL or the menu (flat tile, tile host, package folder). */
+import { applySplashSkin, splashMessageAt } from '@nabla/engine/runtime/splash'
+import { readBootConfig } from './boot.js'
 import { resolveEntry } from './entry.js'
 
 const bootStatus = document.getElementById('loading-status')
 const bootMark = performance.now()
+// Apply the host skin before anything else, so a mark-only or quiet host never shows Nabla texts.
+const hostSplash = readBootConfig().splash ?? {}
+const splashRoot = document.getElementById('loading-screen')
+if (splashRoot) applySplashSkin(splashRoot, hostSplash)
+/** Our own early line, or the host's first message when it set any (`[]` keeps the line empty). */
+const bootSay = (text: string) => {
+  if (bootStatus)
+    bootStatus.textContent = hostSplash.messages ? splashMessageAt(hostSplash.messages, 0) : text
+}
 /** Keep the HTML from saying «Initializing...» while modules and the entry probe run. */
-if (bootStatus) bootStatus.textContent = 'Cargando el motor…'
+bootSay('Cargando el motor…')
 
 const entry = await resolveEntry()
-if (bootStatus)
-  bootStatus.textContent =
-    entry.mode === 'terrain' ? 'Cargando el terreno…' : 'Preparando la sesión…'
+bootSay(entry.mode === 'terrain' ? 'Cargando el terreno…' : 'Preparando la sesión…')
 console.info(
   `[nabla-boot] entry ${entry.mode} after ${(performance.now() - bootMark).toFixed(0)}ms`,
 )

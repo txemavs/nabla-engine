@@ -75,6 +75,39 @@
       #loading-screen.splash-corner #loading-tiles {
         display: none;
       }
+      /*
+       * Mark-only pre-attract (layout 'mark'): black screen, only the small Nabla ▽ bottom-right,
+       * no title, load texts, progress or tiles. Hosts may override --splash-mark-bg/-size/-inset.
+       */
+      #loading-screen.splash-mark {
+        inset: 0;
+        align-items: flex-end;
+        justify-content: flex-end;
+        gap: 0;
+        padding: var(--splash-mark-inset, 24px);
+        background: var(--splash-mark-bg, #000);
+        transition:
+          opacity 0.5s ease-out,
+          background-color 0.8s ease-out;
+      }
+      #loading-screen.splash-no-status :is(#loading-status, #loading-detail) {
+        display: none !important;
+      }
+      #loading-screen.splash-mark > :not(#loading-logo) {
+        display: none !important;
+      }
+      #loading-screen.splash-mark #loading-logo {
+        height: var(--splash-mark-size, 40px);
+      }
+      /* Once attract draws the planet the black curtain lifts; only the mark stays until play. */
+      body:has(#game-canvas[data-boot-mode='attract']) #loading-screen.splash-mark {
+        background-color: transparent;
+        pointer-events: none;
+      }
+      body:has(#loading-screen.splash-mark:not(.hidden))
+        :is(#display-settings, #controls-hint, .nabla-game-hud, .touch-driving, .touch-flight) {
+        display: none !important;
+      }
       /* While the planet attract view runs, keep gameplay overlays out of the shot. */
       body:has(#game-canvas[data-boot-mode='attract']) :is(.touch-driving, .touch-flight),
       body:has(#game-canvas[data-boot-mode='attract']) #controls-hint {
@@ -371,6 +404,20 @@
         <div class="tile-indicator" data-tile="8"></div>
       </div>
     </div>
+    <script>
+      // A host's mark-only / quiet splash (window.NABLA_BOOT set in <head>) from the first paint.
+      ;(function () {
+        const boot = window.NABLA_BOOT || {}
+        const splash = boot.splash || {}
+        const screen = document.getElementById('loading-screen')
+        if (boot.preAttract || splash.layout === 'mark') {
+          screen.classList.add('splash-mark', 'splash-no-status')
+          const logo = document.getElementById('loading-logo')
+          logo.src = splash.logoUrl || '/brand/source.svg'
+          logo.hidden = false
+        } else if (splash.status === false) screen.classList.add('splash-no-status')
+      })()
+    </script>
 
     <div id="game-container">
       <canvas id="game-canvas"></canvas>
