@@ -42,7 +42,7 @@ import {
   isRoadTouchDriving,
   type TouchDrivingVisibility,
 } from './touch-driving.js'
-import { TouchFlight } from './touch-flight.js
+import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
 import * as THREE from 'three'
