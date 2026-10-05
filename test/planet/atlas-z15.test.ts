@@ -95,6 +95,49 @@ describe('Atlas Z15 package adapter', () => {
     expect(adaptAtlasManifest(manifest(), p, { photo: 'none' }).photo).toBeUndefined()
     // Pure: the input manifest is untouched.
     expect(manifest().files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
+    expect(adaptAtlasManifest(manifest(), p).roads).toBeUndefined()
+  })
+
+  it('maps package road roles onto manifest.roads without enabling driving', () => {
+    const packaged = pkg()
+    packaged.roads = {
+      revision: 'evidence-rev-1',
+      recipe: 'asphalt-ground-junction-experiment-10',
+      evidenceId: 'fb1a685e-d9fe-4e31-9cc2-129bb9dfe8d2',
+    }
+    packaged.files.push(
+      {
+        path: 'asphalt-1111111111111111.glb',
+        role: 'roads.asphalt',
+        bytes: 597856,
+        sha256: '1'.repeat(64),
+      },
+      {
+        path: 'supports-candidate.glb',
+        role: 'roads.supports',
+        bytes: 23916,
+        sha256: '2'.repeat(64),
+      },
+      {
+        path: 'road-collision-candidate.glb',
+        role: 'roads.collision',
+        bytes: 597864,
+        sha256: '3'.repeat(64),
+      },
+    )
+    const adapted = adaptAtlasManifest(manifest(), validateAtlasZ15Package(packaged, tile))
+    expect(adapted.roads).toMatchObject({
+      drivable: false,
+      revision: 'evidence-rev-1',
+      recipe: 'asphalt-ground-junction-experiment-10',
+      files: {
+        asphalt: { path: 'asphalt-1111111111111111.glb', sha256: '1'.repeat(64), drivable: false },
+        supports: { path: 'supports-candidate.glb' },
+        collision: { path: 'road-collision-candidate.glb' },
+      },
+    })
+    expect(adapted.files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
+    expect(adapted.files['buildings-osm'].path).toBe('buildings-osm-8b7a0e12579eb3ab.glb')
   })
 
   it('rejects a package that belongs to other GLBs or lacks LiDAR', () => {

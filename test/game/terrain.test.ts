@@ -91,6 +91,17 @@ describe('terrain-folder example config', () => {
     })
   })
 
+  it('keeps candidate road collision inspect-only unless inspectRoads=collision', () => {
+    expect(parseTerrainConfig('?terrain=/t&tile=16211/12003').inspectRoadCollision).toBe(false)
+    expect(
+      parseTerrainConfig('?terrain=/t&tile=16211/12003&inspectRoads=collision')
+        .inspectRoadCollision,
+    ).toBe(true)
+    expect(
+      parseTerrainConfig('?terrain=/t&tile=16211/12003&inspectRoads=1').inspectRoadCollision,
+    ).toBe(false)
+  })
+
   it('explains bad input in Spanish', () => {
     expect(() => parseTerrainConfig('?terrain=/t&tile=16211/12003&relief=mesh')).toThrow(/relief/)
     expect(() => parseTerrainConfig('?terrain=/t&tile=16211/12003&photo=4k')).toThrow(/photo/)

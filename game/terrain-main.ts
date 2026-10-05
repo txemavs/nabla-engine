@@ -94,6 +94,7 @@ try {
       }),
       atlas: config.atlas,
       imagery: config.atlas.photo === 'none' ? 'none' : 'package',
+      inspectRoadCollision: config.inspectRoadCollision,
     },
     onDiagnostics: params.has('diagnostics')
       ? (sample) =>

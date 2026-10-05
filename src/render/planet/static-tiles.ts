@@ -6,6 +6,7 @@
  *   {baseUrl}/z/{zoom}/{x}/{y}/manifest.json
  *   {baseUrl}/z/{zoom}/{x}/{y}/{terrain-file}.glb
  *   {baseUrl}/z/{zoom}/{x}/{y}/{buildings-file}.glb
+ *   {baseUrl}/z/{zoom}/{x}/{y}/{asphalt|supports|road-collision-…}.glb   optional candidate roads
  *
  * Example: baseUrl `https://tiles.example.org/world` gives
  *   https://tiles.example.org/world/z/15/16224/11998/manifest.json

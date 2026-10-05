@@ -2,6 +2,7 @@ import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
 import { placeLabel } from './place-label.js'
 import {
   PLANET_GEOMETRY_REVISION,
+  planetTileRevision,
   validPlanetPlaces,
   validatePlanetManifest,
   type PlanetManifest,
@@ -44,6 +45,11 @@ export interface PlanetSourceOptions {
    * inside the tile package, so nothing leaves the tile host; `none` never drapes a photo.
    */
   imagery?: 'online' | 'package' | 'none'
+  /**
+   * Load candidate road collision GLBs for visual inspection. Default off.
+   * The mesh is never installed as driving collision.
+   */
+  inspectRoadCollision?: boolean
 }
 import { PlanetHorizon } from './horizon.js'
 import { carriagewayTint, matteGroundMaterial, withMap } from './ground-material.js'
@@ -267,12 +273,7 @@ function dressSatelliteRoofs(
 }
 
 function tileRevision(manifest: PlanetManifest) {
-  return (
-    manifest.files.terrain.sha256 +
-    ':' +
-    manifest.files['buildings-osm'].sha256 +
-    (manifest.photo ? ':' + manifest.photo.sha256 : '')
-  )
+  return planetTileRevision(manifest)
 }
 
 function roofTexture(bitmap: ImageBitmap) {
@@ -945,6 +946,7 @@ export class PlanetWorld {
         id,
         manifest,
         buildings: this.buildings,
+        inspectRoadCollision: this.sourceOptions.inspectRoadCollision === true,
         drape:
           imagery === 'package' && manifest.photo && tile.z === 15
             ? { layers: [...projectedLayers], width: planetTileFrame(tile).width }

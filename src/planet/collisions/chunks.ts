@@ -3,12 +3,15 @@
  * Each triangle belongs to one chunk only. The chunk bounds include the whole triangle.
  * Buildings stay in their own grid so the ground set can load without them.
  */
-import type { PlanetCollisionChunk, PlanetMesh } from '../contract.js'
+import { isCandidateRoadMesh, type PlanetCollisionChunk, type PlanetMesh } from '../contract.js'
 
 export function planetCollisionChunks(meshes: PlanetMesh[]): PlanetCollisionChunk[] {
   const groups = new Map<string, { values: number[]; bounds: number[]; buildings: boolean }>()
   for (const mesh of meshes) {
     const category = mesh.metadata.category
+    // Candidate asphalt/supports/collision stay visual (or inspect-only). Approved
+    // terrain Roads remain driveable; LiDAR `drivable: false` is still Terrain collision.
+    if (isCandidateRoadMesh(mesh.metadata)) continue
     if (!['Terrain', 'Roads', 'Buildings'].includes(category)) continue
     if (mesh.metadata.skirt) continue
     const buildings = category === 'Buildings'
