@@ -18,6 +18,10 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
   &photo=full|lo|none      orthophoto draped on the ground (default full)
   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
+  &time=HH:MM|ahora        time of day (the viewer's time zone) on the day of &sky; `ahora` (or `now`) follows
+                           the real clock. Also in the menu section "Hora"
+  &sea=<m>                 sea level in metres, -5 to 50 (default: the simplified tide). Also in the menu
+                           section "Nivel del mar"
   &distance=<m>            load radius (also in the menu, remembered); farther cells are not loaded.
                            &cache=<MB> disk cache and &memory=<cells> cells in memory work the same way
   &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
@@ -30,11 +34,12 @@ A bare URL (no query, or only display options) starts the default tile of the de
 - `@nabla/engine/examples/terrain-drive`
 - `@nabla/engine/planet/atlas-z15`
 - `@nabla/engine/scene`
+- `@nabla/engine/planet/sky`
 - `@nabla/engine/planet/lat-lon`
 
 ## fetchCoverage
 
-[Implementation, line 41](../../../game/terrain.ts#L41)
+[Implementation, line 46](../../../game/terrain.ts#L46)
 
 Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
 it has none. Only used to pick a start cell when the URL names none; streaming never needs it.
@@ -49,17 +54,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `index.tiles?.filter`
 - `response.json`
 
-## fetchCoverage.callback@46
+## fetchCoverage.callback@51
 
-[Implementation, line 46](../../../game/terrain.ts#L46)
+[Implementation, line 51](../../../game/terrain.ts#L51)
 
 ```ts
-callback@46(t): inferred by TypeScript; see implementation
+callback@51(t): inferred by TypeScript; see implementation
 ```
 
 ## terrainDefaults
 
-[Implementation, line 64](../../../game/terrain.ts#L64)
+[Implementation, line 69](../../../game/terrain.ts#L69)
 
 Default query for a package folder: the default start when its cell is published, else just the folder.
 
@@ -69,7 +74,7 @@ terrainDefaults(defaultCellPublished: boolean, base: string = DEFAULT_TERRAIN_QU
 
 ## probeTerrainFolder
 
-[Implementation, line 75](../../../game/terrain.ts#L75)
+[Implementation, line 80](../../../game/terrain.ts#L80)
 
 True when the folder publishes the default start cell. This asks for one manifest, like the engine
 does for any tile; no index file is needed.
@@ -82,9 +87,53 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `fetch`
 
+## parseTimeParam
+
+[Implementation, line 111](../../../game/terrain.ts#L111)
+
+Parse `&time=`: `HH:MM` (also `H`, `HH.MM`) or `ahora`/`now` for the real clock.
+
+```ts
+parseTimeParam(raw: string): number | 'live'
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `parseClockTime`
+- `raw.trim`
+- `raw.trim().toLowerCase`
+
+Explicit throws in this body:
+
+- `new Error(\`time debe ser una hora HH:MM (por ejemplo time=21:30) o ahora, no "${raw}"\`)`
+
+## parseSeaParam
+
+[Implementation, line 121](../../../game/terrain.ts#L121)
+
+Parse `&sea=`: metres within the engine's sea-surface range.
+
+```ts
+parseSeaParam(raw: string): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `Number`
+- `Number.isFinite`
+- `raw.trim`
+- `raw.trim().replace`
+
+Explicit throws in this body:
+
+- `new Error(\`sea debe ser un número de metros (por ejemplo sea=3), no "${raw}"\`)`
+- `new Error(\`sea debe estar entre ${SEA_LEVEL_RANGE.min} y ${SEA_LEVEL_RANGE.max} m\`)`
+
 ## wantsTerrain
 
-[Implementation, line 99](../../../game/terrain.ts#L99)
+[Implementation, line 131](../../../game/terrain.ts#L131)
 
 True when the URL asks for the terrain-folder example.
 
@@ -100,7 +149,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 104](../../../game/terrain.ts#L104)
+[Implementation, line 136](../../../game/terrain.ts#L136)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -120,7 +169,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 113](../../../game/terrain.ts#L113)
+[Implementation, line 145](../../../game/terrain.ts#L145)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -138,8 +187,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `ll.trim`
 - `normalizeTilesBase`
 - `params.get`
+- `params.has`
 - `parseLatLon`
+- `parseSeaParam`
 - `parseTileSpec`
+- `parseTimeParam`
 - `raw.trim`
 - `tileOffsetFromGeo`
 - `tileOffsetToGeo`
@@ -158,7 +210,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 184](../../../game/terrain.ts#L184)
+[Implementation, line 218](../../../game/terrain.ts#L218)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -179,7 +231,7 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 196](../../../game/terrain.ts#L196)
+[Implementation, line 230](../../../game/terrain.ts#L230)
 
 Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving.
 
