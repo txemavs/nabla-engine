@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- **Sidearm hit marks on buildings:** physics hits without a scene `entityId` (planet building colliders, static world) now spawn a world-anchored mark under `SceneView.root`, not only entity-parented marks on cars/props. Marks use a dark core plus light ring so they read on both light and dark surfaces.
+- **Sidearm FPS feel:** no UI reticle; **RMB** holds aim-down-sights (centred iron-sight pose) vs hip fire; viewmodel **recoil** on each shot; **H** toggles a muzzle laser while on foot (vehicle **H** still lights); hits spawn brief spark bursts and keep surface impact marks; the bullet tracer trail is no longer drawn.
+
 ### Fixed
 
 - **Boot / play ground wait:** `waitForGround` (and `PlanetWorld.ensureGround`) now stage

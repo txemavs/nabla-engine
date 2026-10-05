@@ -183,18 +183,18 @@ impulse followed by a fall; it does not select a permanent height. The library's
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
 The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Drawing the weapon captures the mouse
-like an FPS (pointer lock): the mouse aims without holding a button and left-click fires. Holstering, boarding a vehicle, pausing or
-stopping play releases it; **Esc** releases it too, and the next click on the viewport fires and captures it again. Leaving a vehicle with
-**E** while the weapon is still drawn captures it again. Each shot plays a synthesized gunshot (`VehicleAudio.gunshot`, no sample
-files) that follows the host mute preference. The centre
-reticle shows aim and briefly changes to a cross on impact. Studio equips the first weapon preset
-(`assets/library/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
+like an FPS (pointer lock): the mouse aims without holding a button and **left-click** fires. Hold **right-click** for aim-down-sights
+(raises and centres the pistol for iron sights); release to return to the hip pose. There is **no UI crosshair** — aim with the pistol.
+**H** toggles a laser sight (beam from the muzzle plus a surface pin) while the weapon is drawn; in a vehicle **H** still toggles lights.
+Each shot plays a synthesized gunshot, applies viewmodel **recoil**, and on a hit leaves a visible surface mark (buildings, vehicles, props) plus a brief spark burst (no bullet
+tracer trail). Holstering, boarding a vehicle, pausing or stopping play releases the mouse; **Esc** releases it too, and the next click on
+the viewport fires and captures it again. Leaving a vehicle with **E** while the weapon is still drawn captures it again. Studio equips the
+first weapon preset (`assets/library/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
 220 ms interval, 150 m range and impulse 12. Another pistol is another JSON file. Shots stop at the first
 physical solid and push dynamic props. In third person, a second ray from the
 monitor prevents shooting through an obstruction between the monitor and the aim
 point. Firing is disabled while driving or editing. Shots can cross one open/window portal, with opaque PNG pixels participating in
-aim and hit detection. There is no damage, ammunition or multiplayer yet. `studio/sidearm.ts` draws the preset
-and keeps the procedural model as a loading/error fallback.
+aim and hit detection. There is no damage, ammunition or multiplayer yet.
 
 ## Carrier Stargate controls
 
