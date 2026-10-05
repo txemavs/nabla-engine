@@ -1001,6 +1001,9 @@ export class GameRuntime {
     this.view.addVehicles([entity])
     sim.addVehicles([entity])
     this.game.addVehicles([entity])
+    // Ships with an interior (carrier) get their helm/telemetry/map/systems monitor panels
+    // from the document; a carrier placed after start needs them rebuilt or its screens stay dark.
+    if (entity.vehicle?.interior) this.monitors.rebuild(this.document)
     this.spawned.push(id)
     const group = this.view.objects.get(id)
     if (group)
@@ -1038,6 +1041,7 @@ export class GameRuntime {
     this.view.removeVehicle(id)
     this.game.removeVehicle(id)
     this.spawned = this.spawned.filter((other) => other !== id)
+    this.monitors.rebuild(this.document)
   }
 
   /** Terrain cells loaded and drawn of the known dataset; null without tiles. */
