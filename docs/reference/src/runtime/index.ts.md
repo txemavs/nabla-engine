@@ -22,6 +22,8 @@
 - `./helm-touch.js`
 - `./vehicle-menu.js`
 - `./touch-driving.js`
+- `./control-profiles.js`
+- `./touch-flight.js`
 - `./streaming.js`
 - `./sidearm.js`
 - `./gallery.js`

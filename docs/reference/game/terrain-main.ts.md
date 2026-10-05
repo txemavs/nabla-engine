@@ -16,6 +16,7 @@
 - `./loading.js`
 - `./start-error.js`
 - `./position.js`
+- `./telemetry.js`
 - `./scene-controls.js`
 - `@nabla/engine/planet/sky`
 - `./terrain-selector.js`
@@ -28,7 +29,7 @@
 
 ## showCells
 
-[Implementation, line 37](../../../game/terrain-main.ts#L37)
+[Implementation, line 38](../../../game/terrain-main.ts#L38)
 
 HUD line with the cells loaded and the ones the host lacks, e.g. "Celdas: 12 cargadas · 5 faltan".
 
@@ -43,12 +44,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.getElementById('location-display')!.after`
 - `formatCells`
 
-## callback@105
+## callback@106
 
-[Implementation, line 105](../../../game/terrain-main.ts#L105)
+[Implementation, line 106](../../../game/terrain-main.ts#L106)
 
 ```ts
-callback@105(sample): inferred by TypeScript; see implementation
+callback@106(sample): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -57,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onProgress
 
-[Implementation, line 110](../../../game/terrain-main.ts#L110)
+[Implementation, line 111](../../../game/terrain-main.ts#L111)
 
 ```ts
 onProgress(_status, tiles): inferred by TypeScript; see implementation
@@ -72,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onFrame
 
-[Implementation, line 117](../../../game/terrain-main.ts#L117)
+[Implementation, line 118](../../../game/terrain-main.ts#L118)
 
 ```ts
 onFrame(frame): inferred by TypeScript; see implementation
@@ -80,10 +81,9 @@ onFrame(frame): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.round`
-- `document.getElementById`
 - `showCells`
 - `showLocation`
+- `showTelemetry`
 
 ## onError
 

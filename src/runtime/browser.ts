@@ -37,14 +37,17 @@ import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm } from './shooting.js'
+import { TouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
 import {
-  TouchDriving,
-  isRoadTouchDriving,
-  type TouchDrivingVisibility,
-} from './touch-driving.js'
+  controlSurfaces,
+  resolveControlProfile,
+  touchRigState,
+  type ControlSurfaces,
+} from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
+import type { Simulation } from '../simulation/simulation.js'
 import * as THREE from 'three'
 import { parseScene, type SceneDocument } from '../scene/document.js'
 import { SceneView } from '../presentation/scene-view.js'
@@ -93,6 +96,11 @@ export interface GameFrame {
   /** HUD text: `R`, `D3` in automatic mode, `M3` in manual mode; null outside a gearbox vehicle. */
   gearLabel: string | null
   location: ReturnType<typeof localToGeo> | null
+  /**
+   * Active control profile and which readouts it shows. Hosts with their own speed/gear
+   * widgets hide them when `speed`/`gear` are false (on foot, carrier flight, trailers).
+   */
+  controls: ControlSurfaces
 }
 export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
@@ -622,10 +630,11 @@ export class GameRuntime {
         : Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
     this.lastTime = time
     const playing = this.session.state === 'playing' && !document.hidden
-    const carrier = !!sim.player.vehicleId && sim.vehicleInfo(sim.player.vehicleId).isCarrier
-    this.touchDriving?.setActive(playing && !carrier)
-    if (this.touchDriving) this.touchDriving.root.hidden = !playing || carrier
-    this.touchFlight?.setActive(playing && carrier)
+    const controls = this.controlSurfaces(sim)
+    const rigs = touchRigState(controls.touch, playing)
+    this.touchDriving?.setActive(rigs.driving.active)
+    if (this.touchDriving) this.touchDriving.root.hidden = rigs.driving.hidden
+    this.touchFlight?.setActive(rigs.flight.active)
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
@@ -663,16 +672,14 @@ export class GameRuntime {
         turn: Math.max(-1, Math.min(1, helmTouch.turn + flightTouch.turn)),
         brake: helmTouch.brake || flightTouch.brake,
       },
-      driving: carrier ? { forward: 0, right: 0, brake: false } : this.touchDriving?.input(),
+      driving: rigs.driving.seatedRoad
+        ? this.touchDriving?.input()
+        : { forward: 0, right: 0, brake: false },
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
     const vehicleId = sim.player.vehicleId
-    const vehicle = vehicleId
-      ? this.document.entities.find((entity) => entity.id === vehicleId)?.vehicle
-      : null
-    const flightMode = Boolean(vehicleId && sim.vehicleInfo(vehicleId).flightMode)
-    this.touchDriving?.setDriving(isRoadTouchDriving(vehicle, flightMode))
+    this.touchDriving?.setDriving(rigs.driving.seatedRoad)
     this.touchDriving?.setPilot(!!vehicleId && this.cameraState.mode === 'cockpit')
     this.touchDriving?.reflect(input)
     const water = worldWater(this.document.water, this.document.sky)
@@ -744,6 +751,8 @@ export class GameRuntime {
       this.wheelDebug.update(sim, player.vehicleId, this.origin)
     }
     this.hud?.update({
+      showSpeed: controls.speed,
+      showGear: controls.gear,
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
       gearLabel: info ? gearLabel(info.gear, info.manualTransmission, info.parked) : null,
@@ -877,6 +886,7 @@ export class GameRuntime {
       location: this.document.geography
         ? localToGeo(this.document.geography, player.position)
         : null,
+      controls,
     })
   }
 
@@ -1191,6 +1201,17 @@ export class GameRuntime {
       true,
       !!this.quality.buildings,
       this.quality.preset === 'ultra' ? 20000 : Math.min(this.quality.distance, this.quality.roads),
+    )
+  }
+  /**
+   * Resolve the seated vehicle's control profile from its live definition (host-placed
+   * vehicles included). All touch-rig and HUD choices read this; never branch on vehicle kind here.
+   */
+  private controlSurfaces(sim: Simulation): ControlSurfaces {
+    const id = sim.player.vehicleId
+    if (!id) return controlSurfaces(resolveControlProfile(null))
+    return controlSurfaces(
+      resolveControlProfile(sim.vehicleSpec(id), { flightMode: sim.vehicleInfo(id).flightMode }),
     )
   }
   private hasInput(): boolean {

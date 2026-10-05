@@ -9,6 +9,7 @@
   "size": [1.994, 1.332, 4.407],
   "mass": 1400,
   "vehicle": {
+    "controls": "road",
     "mirrorTilt": 4,
     "colliders": [
       {

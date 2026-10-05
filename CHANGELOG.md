@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add per-vehicle control profiles (`vehicle.controls`: `road`, `flight`, `none`, or a host profile from `registerControlProfile`). The browser runtime resolves the seated vehicle's profile each frame and drives the touch rigs and HUD from it instead of branching on vehicle kind. The carrier now hides the car speedometer/gear readouts (GameHud and the game's `#speed-display`/`#gear-display`) and shows only the Mode 2 sticks; on foot and trailers show neither. `GameFrame.controls` exposes the active profile to hosts. See docs/vehicle-controls.md.
 - `installHostVehicles` skips (with a console warning) any host vehicle whose ground footprint overlaps an earlier one, including a hitched trailer at its towed position and a `tow: true` trailer whose tractor was skipped. Bodies spawned inside each other were flipped by the physics, so a stall grid laid out for another heading left free trailers standing on end with their axles in the air.
 - `createTerrainDriveScene({ includeDemoFleet: false })` skips the built-in parked row (car, a3, white-truck, carrier). The terrain game passes that when `?vehicles=` is non-empty so a host fleet does not stack a second carrier.
 - Split `white-trailer` into `trailer.chassis.glb` + `trailer.box.glb`. `white-trailer` still spawns chassis + `white-box`; `white-trailer-chassis` is the bare frame. Host `box: false | "white-box"` and `presetVehicle(..., { box })` compose at spawn. Other box types can replace only the cargo GLB.

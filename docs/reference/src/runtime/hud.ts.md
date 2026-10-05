@@ -10,9 +10,26 @@ Shared gameplay HUD. Hosts choose its visibility; gameplay text and telemetry ha
 
 - `./messages.js`
 
+## hudTelemetry
+
+[Implementation, line 22](../../../../src/runtime/hud.ts#L22)
+
+Seated telemetry line: vehicle name, then speed and gear only when the control profile
+shows them (road: `S3 · 42 km/h · D3`; flight: `Carrier`). Null on foot.
+
+```ts
+hudTelemetry(state: GameHudState): string | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+- `parts.join`
+- `parts.push`
+
 ## GameHud.constructor
 
-[Implementation, line 19](../../../../src/runtime/hud.ts#L19)
+[Implementation, line 36](../../../../src/runtime/hud.ts#L36)
 
 ```ts
 constructor(host: HTMLElement, private readonly text: RuntimeText = createRuntimeText()): instance
@@ -26,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameHud.update
 
-[Implementation, line 31](../../../../src/runtime/hud.ts#L31)
+[Implementation, line 48](../../../../src/runtime/hud.ts#L48)
 
 Render the same frame model in any browser host without reading the simulation again.
 
@@ -36,12 +53,12 @@ update(state: GameHudState): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.round`
+- `hudTelemetry`
 - `this.text`
 
 ## GameHud.dispose
 
-[Implementation, line 40](../../../../src/runtime/hud.ts#L40)
+[Implementation, line 55](../../../../src/runtime/hud.ts#L55)
 
 Remove only the DOM owned by this HUD.
 

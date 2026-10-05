@@ -49,6 +49,8 @@ through the same `GameInput` path. Cockpit view adds the twist ring on the wheel
 In cockpit view the helm touchscreen d-pads use that same mapping in road mode
 (WASD and arrows steer and accelerate; Brake holds). Coarse-pointer hosts that
 leave visibility on `auto` show the overlay only on touch devices.
+Which overlay and HUD readouts appear in each seat is decided by the vehicle's
+[control profile](vehicle-controls.md).
 
 ## A3 and mobile garage
 
@@ -66,9 +68,11 @@ animation. The ramp changes pose immediately rather than animating gradually.
 ## Flight: mode 2
 
 While piloting the 10×5 carrier, the on-screen car wheel/accelerator HUD is replaced by
-Agency-style Mode 2 touch sticks (left climb/yaw, right pitch/roll). Cars keep the
-wheel and pedal overlay.
-
+Agency-style Mode 2 touch sticks (left climb/yaw, right pitch/roll), and the car
+speedometer and gear readouts are hidden; the helm monitors show speed and altitude.
+Cars and trucks keep the wheel, pedal overlay and speedometer. On foot and in trailers
+only the Enter / exit and Camera buttons remain. Each vehicle picks this through its
+[control profile](vehicle-controls.md) (`road`, `flight` or `none`).
 
 At the carrier controls, **V** switches between ground and flight modes. The ramp
 closes for flight. Centre the controls to level out, slow horizontal motion and

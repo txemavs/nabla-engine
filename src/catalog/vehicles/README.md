@@ -48,6 +48,8 @@ that folder. Do not duplicate the binary models into Studio.
 - `studio/vehicle-audio.ts`: Studio sound button, preference and browser activation.
 
 Import this folder or the public package. A new vehicle is a JSON preset plus its GLB.
+Declare its seat controls in `vehicle.controls` (`road`, `flight`, `none` or a registered
+profile); see [vehicle control profiles](../../../docs/vehicle-controls.md).
 Reuse the shared physics; do not add a second vehicle simulation to Studio.
 
 The police Focus definition is `assets/custom/cars/police/police-focus.json`. Its light bar stays
