@@ -61,7 +61,7 @@ export const spanishMessages: Readonly<Record<string, string>> = {
   GROUND: 'TIERRA',
   'FLIGHT · assisted altitude': 'VUELO · altura asistida',
   '{0} km/h · Altitude {1}': '{0} km/h · Altitud {1}',
-  '{0}{1} · G releases the mouse': '{0}{1} · G libera el ratón',
+  '{0}{1} · Esc releases the mouse': '{0}{1} · Esc libera el ratón',
   Closed: 'Cerrado',
   Window: 'Ventana',
   Open: 'Abrir',

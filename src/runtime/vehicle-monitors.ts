@@ -87,19 +87,20 @@ export class VehicleMonitors {
     window.document.addEventListener('pointerlockchange', () => this.releaseInput(), options)
     this.renderer.domElement.className = 'css-world-layer portal-tablet-layer'
     this.viewport.prepend(this.renderer.domElement)
-    this.viewport.addEventListener(
-      'pointerdown',
-      (event) => {
-        const canvas = this.canvas
-        if (
-          this.simulation &&
-          event.target === this.viewport &&
-          canvas?.style.pointerEvents === 'none'
-        )
-          void canvas.requestPointerLock()
-      },
-      options,
-    )
+    // Clicks outside the monitors (on the bare viewport) are recaptured by the game runtime.
+  }
+  /**
+   * Whether a visible monitor covers the viewport point (client pixels). The game uses it to
+   * free the mouse when the player clicks a monitor under the crosshair while locked.
+   */
+  panelAt(x: number, y: number): boolean {
+    const active = new Set(this.active.map((e) => e.object))
+    for (const entry of [...this.entries.values(), ...this.panels.values()]) {
+      if (entry.panel.hidden || !active.has(entry.object)) continue
+      const box = entry.panel.getBoundingClientRect()
+      if (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom) return true
+    }
+    return false
   }
   releaseInput(): void {
     this.held.clear()
@@ -434,7 +435,7 @@ export class VehicleMonitors {
         entry.status.textContent =
           this.projectRegistry?.status(mouth.id) ??
           this.text(
-            '{0}{1} · G releases the mouse',
+            '{0}{1} · Esc releases the mouse',
             state.mode === 'open'
               ? this.text('Open')
               : state.mode === 'window'
