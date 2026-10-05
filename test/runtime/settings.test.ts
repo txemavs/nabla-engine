@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
 import {
+  cloudStyleForPerformancePreset,
   normalizePerformance,
   performancePresets,
   streamBudget,
@@ -55,4 +56,11 @@ it('accelerated live clocks move the tide with the sky instant', () => {
     water = { mode: 'tide' as const, level: 0, amplitude: 2 }
   const clock = liveSkyClock(24, epoch, epoch)
   expect(worldWater(water, clock, epoch + TIDE_PERIOD_MS / 48).level).toBeCloseTo(-2)
+})
+
+it('uses artistic clouds only on Ultra; every other quality tier stays on cheap clouds', () => {
+  expect(cloudStyleForPerformancePreset('ultra')).toBe('artistic')
+  for (const preset of ['minimal', 'mobile', 'low', 'balanced', 'high', 'custom', '']) {
+    expect(cloudStyleForPerformancePreset(preset)).toBe('low')
+  }
 })

@@ -37,7 +37,9 @@ export interface SceneRuntime {
   readonly cloudStyle: 'low' | 'artistic'
   setCloudStyle(style: 'low' | 'artistic'): void
   readonly cloudAmount: number
-  setCloudWeather(amount: number): void
+  readonly cloudPressure: number
+  /** Amount 0–1; omit pressure to leave storm/deck pressure unchanged. */
+  setCloudWeather(amount: number, pressure?: number): void
   readonly spawnedVehicles: { id: string; name: string }[]
   spawnVehicle(template: Entity): Promise<string>
   removeSpawnedVehicle(id: string): void
