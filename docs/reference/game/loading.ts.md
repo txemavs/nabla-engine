@@ -225,11 +225,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `detail.setAttribute`
 - `document.createElement`
 - `document.getElementById`
+- `this.screen.classList.contains`
 - `this.status.after`
 
 ## LoadingScreen.hide
 
-[Implementation, line 151](../../../game/loading.ts#L151)
+[Implementation, line 152](../../../game/loading.ts#L152)
 
 ```ts
 hide(): void
@@ -240,17 +241,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `setTimeout`
 - `this.screen.classList.add`
 
-## LoadingScreen.hide.callback@153
+## LoadingScreen.hide.callback@154
 
-[Implementation, line 153](../../../game/loading.ts#L153)
+[Implementation, line 154](../../../game/loading.ts#L154)
 
 ```ts
-callback@153(): inferred by TypeScript; see implementation
+callback@154(): inferred by TypeScript; see implementation
 ```
 
 ## LoadingScreen.show
 
-[Implementation, line 158](../../../game/loading.ts#L158)
+[Implementation, line 159](../../../game/loading.ts#L159)
 
 ```ts
 show(): void
@@ -262,7 +263,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## showError
 
-[Implementation, line 169](../../../game/loading.ts#L169)
+[Implementation, line 170](../../../game/loading.ts#L170)
 
 ```ts
 showError(message: string, buttons: readonly ErrorButton[] = []): void
@@ -279,12 +280,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `errorEl.querySelectorAll`
 - `errorEl.querySelectorAll('button.recovery').forEach`
 
-## showError.callback@174
+## showError.callback@175
 
-[Implementation, line 174](../../../game/loading.ts#L174)
+[Implementation, line 175](../../../game/loading.ts#L175)
 
 ```ts
-callback@174(button): inferred by TypeScript; see implementation
+callback@175(button): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

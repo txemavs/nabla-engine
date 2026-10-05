@@ -43,9 +43,7 @@ export class ShotSparks {
   add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple): void {
     if (this.disposed || !Number.isFinite(now)) return
     if (this.bursts.length === MAX_BURSTS) this.bursts.shift()
-    const n = normal
-      ? new THREE.Vector3(...normal).normalize()
-      : new THREE.Vector3(0, 1, 0)
+    const n = normal ? new THREE.Vector3(...normal).normalize() : new THREE.Vector3(0, 1, 0)
     const tangent = Math.abs(n.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0)
     const bitangent = new THREE.Vector3().crossVectors(n, tangent).normalize()
     tangent.crossVectors(bitangent, n).normalize()
@@ -88,9 +86,7 @@ export class ShotSparks {
     this.geometry.attributes.position.needsUpdate = true
     this.geometry.setDrawRange(0, write)
     if (write) this.geometry.computeBoundingSphere()
-    this.material.opacity = this.bursts.length
-      ? Math.max(0, 1 - (now - newest) / LIFE_MS)
-      : 0
+    this.material.opacity = this.bursts.length ? Math.max(0, 1 - (now - newest) / LIFE_MS) : 0
   }
 
   clear(): void {

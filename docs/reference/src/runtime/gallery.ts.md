@@ -175,6 +175,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.document.entities.some`
 - `view.hitSprite`
 - `view.impacts.add`
+- `view.impacts.addWorld`
 - `view.objects.get`
 
 ## Gallery.shoot.callback@151

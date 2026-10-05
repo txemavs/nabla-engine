@@ -39,5 +39,6 @@
 - `./world-content.js`
 - `../render/portal/remote.js`
 - `../config/camera.js`
+- `./planet-settings-panel.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

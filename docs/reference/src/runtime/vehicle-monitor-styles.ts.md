@@ -9,4 +9,32 @@ Engine-owned CSS3D instrument styles, installed per monitor layer.
 ## Module dependencies
 
 
-This module contains declarations, data or re-exports; it defines no executable functions.
+## vehicleMonitorStyleText
+
+[Implementation, line 290](../../../../src/runtime/vehicle-monitor-styles.ts#L290)
+
+Combined CSS shared by ship interior monitors and the game settings HUD.
+
+```ts
+vehicleMonitorStyleText(): string
+```
+
+## installVehicleMonitorStyles
+
+[Implementation, line 302](../../../../src/runtime/vehicle-monitor-styles.ts#L302)
+
+Install (or refresh) the shared monitor stylesheet under `parent`.
+VehicleMonitors and the game settings window both call this so a style change
+restyles every host. A ship monitor can mount the settings panel later by
+appending the panel root into its CSS3D layer after installing these styles.
+
+```ts
+installVehicleMonitorStyles(parent: ParentNode = document.head): HTMLStyleElement
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `doc.createElement`
+- `doc.getElementById`
+- `parent.appendChild`
+- `vehicleMonitorStyleText`

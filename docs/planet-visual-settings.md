@@ -47,16 +47,15 @@ runtime.setPlanetLayers({
 `GameRuntime.planetVisualConfig()` returns the same snapshot shape for hosts
 that prefer JSON over the line-oriented copy text.
 
-
 ## Default cloud style by quality
 
 `GameRuntime` picks the starting `cloudStyle` from the active performance preset
 via `cloudStyleForPerformancePreset`:
 
-| Quality preset                                               | Default `cloudStyle` |
-| ------------------------------------------------------------ | -------------------- |
-| `ultra`                                                      | `artistic` (3-layer) |
-| `minimal`, `mobile`, `low`, `balanced`, `high`, `custom`     | `low` (cheap)        |
+| Quality preset                                           | Default `cloudStyle` |
+| -------------------------------------------------------- | -------------------- |
+| `ultra`                                                  | `artistic` (3-layer) |
+| `minimal`, `mobile`, `low`, `balanced`, `high`, `custom` | `low` (cheap)        |
 
 Hosts and the Planeta HUD can still call `setCloudStyle` to override. Artistic
 sheet scale / deck heights are unchanged by this switch.

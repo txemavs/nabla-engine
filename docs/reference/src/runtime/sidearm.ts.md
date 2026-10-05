@@ -12,38 +12,41 @@
 
 ## Sidearm.constructor
 
-[Implementation, line 25](../../../../src/runtime/sidearm.ts#L25)
+[Implementation, line 34](../../../../src/runtime/sidearm.ts#L34)
 
-Viewmodel, reticle and shot cadence. The equipped preset comes from assets.
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
 ```ts
-constructor(viewport: HTMLElement, preset: WeaponPreset | undefined = weaponPresets()[0]): instance
+constructor(_viewport: HTMLElement, preset: WeaponPreset | undefined = weaponPresets()[0]): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Object.assign`
+- `Float32Array`
 - `Promise.allSettled`
 - `Promise.resolve`
+- `THREE.BufferAttribute`
+- `THREE.BufferGeometry`
 - `THREE.ConeGeometry`
 - `THREE.DirectionalLight`
 - `THREE.HemisphereLight`
+- `THREE.Line`
+- `THREE.LineBasicMaterial`
 - `THREE.Mesh`
 - `THREE.MeshBasicMaterial`
 - `THREE.MeshStandardMaterial`
 - `assets.instantiate`
 - `key.position.set`
+- `new THREE.BufferGeometry().setAttribute`
 - `part`
 - `this.flash.position.set`
 - `this.model.add`
-- `this.reticle.setAttribute`
 - `this.scene.add`
-- `viewport.append`
 - `weaponPresets`
 
 ## Sidearm.constructor.part
 
-[Implementation, line 39](../../../../src/runtime/sidearm.ts#L39)
+[Implementation, line 47](../../../../src/runtime/sidearm.ts#L47)
 
 ```ts
 part(size: [number, number, number], position: [number, number, number], material: THREE.Material): inferred by TypeScript; see implementation
@@ -56,12 +59,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mesh.position.set`
 - `this.model.add`
 
-## Sidearm.constructor.callback@59
+## Sidearm.constructor.callback@66
 
-[Implementation, line 59](../../../../src/runtime/sidearm.ts#L59)
+[Implementation, line 66](../../../../src/runtime/sidearm.ts#L66)
 
 ```ts
-callback@59([bodyResult, slideResult]): inferred by TypeScript; see implementation
+callback@66([bodyResult, slideResult]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -82,19 +85,19 @@ Explicit throws in this body:
 
 - `new Error('Weapon asset failed to load')`
 
-## Sidearm.constructor.callback@91
+## Sidearm.constructor.callback@97
 
-[Implementation, line 91](../../../../src/runtime/sidearm.ts#L91)
+[Implementation, line 97](../../../../src/runtime/sidearm.ts#L97)
 
 ```ts
-callback@91(): inferred by TypeScript; see implementation
+callback@97(): inferred by TypeScript; see implementation
 ```
 
 ## Sidearm.dispose
 
-[Implementation, line 125](../../../../src/runtime/sidearm.ts#L125)
+[Implementation, line 138](../../../../src/runtime/sidearm.ts#L138)
 
-Viewmodel, reticle and shot cadence. The equipped preset comes from assets.
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
 ```ts
 dispose(): void
@@ -104,14 +107,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `disposeObject`
 - `this.model.clear`
-- `this.reticle.remove`
 - `this.scene.clear`
 
 ## Sidearm.visible
 
-[Implementation, line 134](../../../../src/runtime/sidearm.ts#L134)
+[Implementation, line 147](../../../../src/runtime/sidearm.ts#L147)
 
-Viewmodel, reticle and shot cadence. The equipped preset comes from assets.
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
 ```ts
 visible(value: boolean): inferred by TypeScript; see implementation
@@ -119,19 +121,59 @@ visible(value: boolean): inferred by TypeScript; see implementation
 
 ## Sidearm.visible
 
-[Implementation, line 138](../../../../src/runtime/sidearm.ts#L138)
+[Implementation, line 154](../../../../src/runtime/sidearm.ts#L154)
 
-Viewmodel, reticle and shot cadence. The equipped preset comes from assets.
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
 ```ts
 visible(): boolean
 ```
 
+## Sidearm.setAiming
+
+[Implementation, line 158](../../../../src/runtime/sidearm.ts#L158)
+
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
+
+```ts
+setAiming(value: boolean): void
+```
+
+## Sidearm.isAiming
+
+[Implementation, line 161](../../../../src/runtime/sidearm.ts#L161)
+
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
+
+```ts
+isAiming(): boolean
+```
+
+## Sidearm.toggleLaser
+
+[Implementation, line 166](../../../../src/runtime/sidearm.ts#L166)
+
+Toggle the laser sight; returns the new state.
+
+```ts
+toggleLaser(): boolean
+```
+
+## Sidearm.laserEnabled
+
+[Implementation, line 171](../../../../src/runtime/sidearm.ts#L171)
+
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
+
+```ts
+laserEnabled(): boolean
+```
+
 ## Sidearm.reset
 
-[Implementation, line 141](../../../../src/runtime/sidearm.ts#L141)
+[Implementation, line 175](../../../../src/runtime/sidearm.ts#L175)
 
-Viewmodel, reticle and shot cadence. The equipped preset comes from assets.
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
 ```ts
 reset(): void
@@ -139,9 +181,9 @@ reset(): void
 
 ## Sidearm.fire
 
-[Implementation, line 145](../../../../src/runtime/sidearm.ts#L145)
+[Implementation, line 183](../../../../src/runtime/sidearm.ts#L183)
 
-Viewmodel, reticle and shot cadence. The equipped preset comes from assets.
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
 ```ts
 fire(now: number): boolean
@@ -149,25 +191,46 @@ fire(now: number): boolean
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Number`
+- `Math.min`
+- `Math.random`
 - `Number.isFinite`
-- `String`
+- `THREE.MathUtils.clamp`
 
 ## Sidearm.impact
 
-[Implementation, line 152](../../../../src/runtime/sidearm.ts#L152)
+[Implementation, line 195](../../../../src/runtime/sidearm.ts#L195)
 
-Viewmodel, reticle and shot cadence. The equipped preset comes from assets.
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
 ```ts
 impact(hit: boolean): void
 ```
 
+## Sidearm.muzzleViewOffset
+
+[Implementation, line 203](../../../../src/runtime/sidearm.ts#L203)
+
+Current muzzle tip in the viewmodel camera's local space (eye-relative), including
+hip/ADS blend, kick and recoil — used for the world laser and hit rays.
+
+```ts
+muzzleViewOffset(now = this.lastShot): THREE.Vector3
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `THREE.Euler`
+- `THREE.Vector3`
+- `flash.applyEuler`
+- `hip.lerp`
+- `pos.add`
+
 ## Sidearm.render
 
-[Implementation, line 155](../../../../src/runtime/sidearm.ts#L155)
+[Implementation, line 217](../../../../src/runtime/sidearm.ts#L217)
 
-Viewmodel, reticle and shot cadence. The equipped preset comes from assets.
+Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets.
 
 ```ts
 render(renderer: THREE.WebGLRenderer, now: number, aspect: number, firstPerson: boolean): void
@@ -175,9 +238,15 @@ render(renderer: THREE.WebGLRenderer, now: number, aspect: number, firstPerson: 
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.abs`
 - `Math.max`
 - `Math.sin`
+- `THREE.MathUtils.lerp`
+- `THREE.Vector3`
+- `hip.lerp`
 - `renderer.clearDepth`
 - `renderer.render`
 - `this.camera.updateProjectionMatrix`
-- `this.model.position.set`
+- `this.flash.scale.setScalar`
+- `this.model.position.copy`
+- `this.model.rotation.set`

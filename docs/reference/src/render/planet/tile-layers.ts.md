@@ -13,7 +13,7 @@ collision is untouched, so driving works the same with the road drawn or not.
 
 ## hiddenTileLayers
 
-[Implementation, line 44](../../../../../src/render/planet/tile-layers.ts#L44)
+[Implementation, line 53](../../../../../src/render/planet/tile-layers.ts#L53)
 
 Ids of the layers currently hidden (a copy).
 
@@ -23,7 +23,7 @@ hiddenTileLayers(): string[]
 
 ## setHiddenTileLayers
 
-[Implementation, line 49](../../../../../src/render/planet/tile-layers.ts#L49)
+[Implementation, line 58](../../../../../src/render/planet/tile-layers.ts#L58)
 
 Replace the hidden set. Unknown ids are ignored, so a stale stored choice cannot break a tile.
 
@@ -37,17 +37,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hidden.add`
 - `hidden.clear`
 
-## setHiddenTileLayers.callback@51
+## setHiddenTileLayers.callback@60
 
-[Implementation, line 51](../../../../../src/render/planet/tile-layers.ts#L51)
+[Implementation, line 60](../../../../../src/render/planet/tile-layers.ts#L60)
 
 ```ts
-callback@51(layer): inferred by TypeScript; see implementation
+callback@60(layer): inferred by TypeScript; see implementation
 ```
 
 ## tileMeshHidden
 
-[Implementation, line 55](../../../../../src/render/planet/tile-layers.ts#L55)
+[Implementation, line 64](../../../../../src/render/planet/tile-layers.ts#L64)
 
 True when a mesh's metadata puts it in a hidden layer.
 
@@ -59,12 +59,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `TILE_LAYERS.some`
 
-## tileMeshHidden.callback@58
+## tileMeshHidden.callback@67
 
-[Implementation, line 58](../../../../../src/render/planet/tile-layers.ts#L58)
+[Implementation, line 67](../../../../../src/render/planet/tile-layers.ts#L67)
 
 ```ts
-callback@58(layer): inferred by TypeScript; see implementation
+callback@67(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -75,7 +75,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseLayerSpec
 
-[Implementation, line 69](../../../../../src/render/planet/tile-layers.ts#L69)
+[Implementation, line 78](../../../../../src/render/planet/tile-layers.ts#L78)
 
 Parse `-road,-photo` (hide) / `road` or `+road` (show) into the hidden ids, starting from `base`.
 `none` hides every layer and `all` shows them all. Unknown names are ignored.
@@ -101,101 +101,97 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `token.slice`
 - `token.startsWith`
 
-## parseLayerSpec.callback@77
+## parseLayerSpec.callback@86
 
-[Implementation, line 77](../../../../../src/render/planet/tile-layers.ts#L77)
+[Implementation, line 86](../../../../../src/render/planet/tile-layers.ts#L86)
 
 ```ts
-callback@77(layer): inferred by TypeScript; see implementation
+callback@86(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `out.add`
 
-## parseLayerSpec.callback@79
+## parseLayerSpec.callback@88
 
-[Implementation, line 79](../../../../../src/render/planet/tile-layers.ts#L79)
+[Implementation, line 88](../../../../../src/render/planet/tile-layers.ts#L88)
 
 ```ts
-callback@79(l): inferred by TypeScript; see implementation
+callback@88(l): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `token.slice`
 
-## parseLayerSpec.callback@83
+## parseLayerSpec.callback@92
 
-[Implementation, line 83](../../../../../src/render/planet/tile-layers.ts#L83)
+[Implementation, line 92](../../../../../src/render/planet/tile-layers.ts#L92)
 
 ```ts
-callback@83(l): inferred by TypeScript; see implementation
+callback@92(l): inferred by TypeScript; see implementation
 ```
 
-## parseLayerSpec.callback@86
+## parseLayerSpec.callback@95
 
-[Implementation, line 86](../../../../../src/render/planet/tile-layers.ts#L86)
+[Implementation, line 95](../../../../../src/render/planet/tile-layers.ts#L95)
 
 ```ts
-callback@86(layer): inferred by TypeScript; see implementation
+callback@95(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `out.has`
 
-## parseLayerSpec.callback@86
+## parseLayerSpec.callback@95
 
-[Implementation, line 86](../../../../../src/render/planet/tile-layers.ts#L86)
+[Implementation, line 95](../../../../../src/render/planet/tile-layers.ts#L95)
 
 ```ts
-callback@86(layer): inferred by TypeScript; see implementation
+callback@95(layer): inferred by TypeScript; see implementation
 ```
 
 ## formatLayerSpec
 
-[Implementation, line 90](../../../../../src/render/planet/tile-layers.ts#L90)
+[Implementation, line 103](../../../../../src/render/planet/tile-layers.ts#L103)
 
 Inverse of `parseLayerSpec` for URLs: `-road,-photo`, or '' when everything is shown.
+With a `base` (a host's default hidden set) only the differences are written: `-id` for a layer
+hidden beyond the base, `+id` for a base layer the player switched back on.
 
 ```ts
-formatLayerSpec(hiddenIds: Iterable<string>): string
+formatLayerSpec(hiddenIds: Iterable<string>, base: Iterable<string> = []): string
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Set`
-- `TILE_LAYERS.filter`
+- `TILE_LAYERS.flatMap`
 
-## formatLayerSpec.callback@92
+## formatLayerSpec.callback@106
 
-[Implementation, line 92](../../../../../src/render/planet/tile-layers.ts#L92)
+[Implementation, line 106](../../../../../src/render/planet/tile-layers.ts#L106)
 
 ```ts
-callback@92(layer): inferred by TypeScript; see implementation
+callback@106(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `fallback.has`
 - `set.has`
-
-## formatLayerSpec.callback@93
-
-[Implementation, line 93](../../../../../src/render/planet/tile-layers.ts#L93)
-
-```ts
-callback@93(layer): inferred by TypeScript; see implementation
-```
 
 ## loadHiddenLayers
 
-[Implementation, line 104](../../../../../src/render/planet/tile-layers.ts#L104)
+[Implementation, line 125](../../../../../src/render/planet/tile-layers.ts#L125)
 
-Stored choice; a broken or unavailable store behaves as "everything shown".
+Stored choice over the host's default hidden set (`base`, default none); a broken or unavailable
+store behaves as "the defaults".
 
 ```ts
-loadHiddenLayers(storage: LayerStorage | undefined, key: string): string[]
+loadHiddenLayers(storage: LayerStorage | undefined, key: string, base: Iterable<string> = []): string[]
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -205,10 +201,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveHiddenLayers
 
-[Implementation, line 112](../../../../../src/render/planet/tile-layers.ts#L112)
+[Implementation, line 138](../../../../../src/render/planet/tile-layers.ts#L138)
 
 ```ts
-saveHiddenLayers(storage: LayerStorage | undefined, key: string, hiddenIds: Iterable<string>): void
+saveHiddenLayers(storage: LayerStorage | undefined, key: string, hiddenIds: Iterable<string>, base: Iterable<string> = []): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
