@@ -60,17 +60,39 @@ metadata for preset compatibility and cannot be boarded.
   GLTFLoader name sanitization. Parent transforms are composed. The authored
   interior metadata also contains the casing selection bounds and retract travel.
 - Tractor: its `dynamic-dashboard-display` mesh defines position, rotation,
-  width and height. Cluster, GPS (H) and menu share the surface exclusively.
+  width and height. Cluster, GPS (K) and menu share the surface exclusively.
 - Container: six `monitor.*` anchors carry `extras.nabla.screen` dimensions and
   ids (helm0–2, door0–1, touch). Generated poses place the rendered and interactive
   displays. Older saved container entities need their preset refreshed to acquire
   monitor mounts; missing metadata reports a clear error.
 
 Truck punctual lights and tagged emissive surfaces start off. In the browser
-runtime, L toggles the occupied vehicle's authored light group. Intensities come
+runtime, H toggles the occupied vehicle's authored light group. Intensities come
 from GLB `onIntensity` metadata. Cloning rebinds spot/directional targets into
 that vehicle's hierarchy so beams turn with it and separate instances stay
-independent. This is a group switch, not separate low/high/indicator controls.
+independent. H switches driving lights, G selects low/high beams, and K toggles GPS.
+Low beams are selected initially; fog lights remain off. The tractor's GLB declares
+`beamPattern: "low-beam"`, 1800 cd and a 55 m range. A projected texture removes the
+upper half of the low-beam cone with a soft cutoff; it needs no shadow map or extra
+scene render. Texture parameters live in `src/config/lighting.ts`. This is a visual
+approximation, not a certified photometric headlight profile. Rear red lenses are
+emissive only, with no rear punctual floodlights; attached trailers inherit the
+tractor's switch. Materials declare `extras.vehicleLightChannel` (`Tail_Stop`,
+`Reverse`, or `Marker`). Red and amber marker lenses glow steadily with the light
+switch, including the trailer; the amber punctual light sources remain off.
+Reverse lenses follow the engaged R gear independently
+of the switch, so reverse input during the direction-change delay does not light
+them. Flashing turn signals require a dedicated signal controller.
+The stock rear-light authoring is recorded in `scripts/author-truck-rear-lights.mjs`.
+
+The tractor's `mirror.left` and `mirror.right` anchors are children of their
+door meshes. Each owns a planar lens tagged `extras.nabla.mirror` with its side.
+The lens contour is extracted from the original glass faces, retaining the
+housing and door hierarchy. Engine discovers these surfaces by metadata and
+uses the shared cockpit-only reflection renderer (384×256, at most 8 Hz).
+No truck mirror placement is supplied by the runtime. `mirrorTilt` is an
+optional user adjustment relative to the authored orientation (zero for the truck).
+`scripts/author-truck-mirrors.mjs` records the idempotent stock asset migration.
 
 Collision boxes, mirror tuning, A3 lamp fitting and ramp definitions still use
 existing configuration or adapters. This migration does not claim those remaining
@@ -94,6 +116,6 @@ the driver); otherwise the wheel wobbles instead of spinning. The white truck us
 
 A body GLB without a mirror lens material (the S3 uses material `Llanta 2`) lists flat lenses
 in `vehicle.mirrors` (`position`, `normal`, `width`, `height`, body-model metres). The
-`nabla.truck` presentation turns each into a `CarMirrors` reflection, so the driver sees a live
-rear view and the menu's mirror tilt applies. The truck's two lenses sit on the rear face of
-the door-mounted housings; authoring `nabla.mirror.*` anchors in the GLB would replace them.
+`nabla.truck` presentation uses this as a compatibility fallback only when no tagged
+GLB lenses exist. The stock truck uses its GLB anchors and contains no duplicated
+mirror placement in its preset. Authored GLB lenses take precedence in older saved scenes.

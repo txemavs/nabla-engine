@@ -21,7 +21,7 @@ In the S3:
 | Key           | Action                                                 |
 | ------------- | ------------------------------------------------------ |
 | C             | Exterior → driver → overhead camera                    |
-| H             | Retract/raise the GPS and its casing in 1.8 seconds    |
+| K             | Retract/raise the GPS and its casing in 1.8 seconds    |
 | J             | Open/close the car menu on the GPS; enter cockpit view |
 | ↑ / ↓         | Select a menu entry                                    |
 | Enter         | Open a section or apply the selected action            |

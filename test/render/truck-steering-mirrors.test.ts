@@ -146,7 +146,7 @@ describe('truck steering wheel', () => {
 describe('truck mirrors', () => {
   it('declares two mirror lenses and a valid schema', () => {
     const vehicle = truck().vehicle!
-    expect(vehicle.mirrors).toHaveLength(2)
+    expect(vehicle.mirrors).toBeUndefined()
     expect(vehicleField.safeParse(vehicle).success).toBe(true)
     expect(vehicleField.safeParse({ ...vehicle, mirrors: [{ position: [0, 0, 0] }] }).success).toBe(
       false,
@@ -159,36 +159,15 @@ describe('truck mirrors', () => {
     ).toBe(true)
   })
 
-  it('places each lens on the rear face of the authored door housing, facing the driver', () => {
-    const entity = truck()
-    for (const [meshName, side] of [
-      ['drzwi01_color [spec]_0_3', -1],
-      ['drzwi_color [spec]_0_3', 1],
-    ] as const) {
-      const housing = glbMeshVertices(assets + 'tractor.modern.glb', meshName).filter(
-        (p) => Math.abs(p.x) > 1.3,
-      )
-      const lens = entity.vehicle!.mirrors!.find((m) => Math.sign(m.position[0]) === side)!
-      const xs = housing.map((p) => p.x)
-      const ys = housing.map((p) => p.y)
-      const rear = Math.max(...housing.map((p) => p.z))
-      expect(lens.position[0]).toBeGreaterThan(Math.min(...xs))
-      expect(lens.position[0]).toBeLessThan(Math.max(...xs))
-      expect(lens.position[1] - lens.height / 2).toBeGreaterThanOrEqual(Math.min(...ys) - 0.05)
-      expect(lens.position[1] + lens.height / 2).toBeLessThanOrEqual(Math.max(...ys) + 0.05)
-      // Just behind the rearmost surface of the housing, never inside it.
-      expect(lens.position[2] - rear).toBeGreaterThan(0)
-      expect(lens.position[2] - rear).toBeLessThan(0.02)
-      // The glass faces the driver's eye.
-      const eye = new Vector3(...entity.vehicle!.driver!)
-      const toEye = eye.sub(new Vector3(...lens.position))
-      expect(toEye.dot(new Vector3(...lens.normal).normalize())).toBeGreaterThan(0)
-    }
-  })
-
   it('the nabla.truck presentation builds a live mirror per lens like the S3', () => {
     const entity = truck()
     const adapter = stockVehiclePresentation(entity)!
+    entity.vehicle!.mirrors = [-1, 1].map((side) => ({
+      position: [side, 1, 0],
+      normal: [0, 0, 1],
+      width: 0.2,
+      height: 0.5,
+    }))
     const model = new Group()
     const equipment = adapter.mount(model, entity, null)
     expect(equipment.mirrors).toBeInstanceOf(CarMirrors)

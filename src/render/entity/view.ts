@@ -130,7 +130,12 @@ export class SceneView {
   }
   private readonly authoredLights = new Map<string, AuthoredVehicleLights>()
   toggleVehicleLights(id: string): boolean | null {
-    return this.authoredLights.get(id)?.toggle() ?? null
+    return (
+      this.carLights.get(id)?.toggleHeadlights() ?? this.authoredLights.get(id)?.toggle() ?? null
+    )
+  }
+  toggleVehicleHighBeam(id: string): boolean | null {
+    return this.authoredLights.get(id)?.toggleHighBeam() ?? null
   }
   setVehicleShadowReceiving(enabled: boolean): void {
     for (const entity of this.document.entities) {
@@ -1013,6 +1018,14 @@ export class SceneView {
       thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now(), this.night)
     }
     for (const lights of this.shipLights.values()) lights.update(performance.now())
+    for (const [id, lights] of this.authoredLights) {
+      const info = sim.vehicleInfo(id)
+      const tractor = info.towVehicleId
+      lights.update(
+        tractor ? sim.vehicleInfo(tractor).reversing : info.reversing,
+        tractor ? (this.authoredLights.get(tractor)?.isEnabled ?? false) : lights.isEnabled,
+      )
+    }
     for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
     for (const [id, wheel] of this.steering)
       poseSteeringWheel(wheel, this.steeringAxes.get(id)!, sim.vehicleInfo(id).steer)
@@ -1146,6 +1159,7 @@ export class SceneView {
     this.carMirrors.clear()
     for (const instruments of this.instruments.values()) instruments.dispose()
     this.instruments.clear()
+    for (const lights of this.authoredLights.values()) lights.dispose()
     this.authoredLights.clear()
     this.roads.dispose()
     this.buildings.dispose()

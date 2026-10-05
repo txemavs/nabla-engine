@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { lightingDefaults } from '../../config/lighting.js'
 import { CarLights, type CourtesyWell, type LampBinding } from '../../render/entity/car-lights.js'
 
 export function createA3Lights(model: THREE.Object3D): CarLights {
@@ -122,7 +123,7 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
 /** Soft cabin fill from each footwell up to the seat. Model +X is the driver. */
 function footwells(model: THREE.Object3D): CourtesyWell[] {
   return [0.32, -0.32].map((x) => {
-    const lamp = new THREE.PointLight('#ffd7a8', 0, 2.6, 2)
+    const lamp = new THREE.PointLight('#ffd7a8', 0, lightingDefaults.courtesyReach, 2)
     lamp.name = 'Courtesy light'
     lamp.position.set(x, 0.46, 0.02)
     lamp.castShadow = false

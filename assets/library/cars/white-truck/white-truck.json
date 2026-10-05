@@ -1,14 +1,15 @@
 {
   "id": "white-truck",
-  "label": "Cami\u00f3n blanco",
+  "label": "Camión blanco",
   "clearance": 1.45,
   "placement": [10, 1.45, 0],
   "order": 6,
-  "name": "Cami\u00f3n blanco \u00b7 tractora",
+  "name": "Camión blanco · tractora",
   "color": "#eeeeee",
   "size": [2.55, 4, 6.2],
   "mass": 7500,
   "vehicle": {
+    "mirrorTilt": 0,
     "colliders": [
       {
         "size": [2.2, 2.8, 2.7],
@@ -64,21 +65,7 @@
           "airSeconds": 0.5
         }
       }
-    },
-    "mirrors": [
-      {
-        "position": [-1.425, 1.4, -2.322],
-        "normal": [-0.08, 0, 1],
-        "width": 0.13,
-        "height": 0.5
-      },
-      {
-        "position": [1.425, 1.4, -2.322],
-        "normal": [0.08, 0, 1],
-        "width": 0.13,
-        "height": 0.5
-      }
-    ]
+    }
   },
   "visual": {
     "body": {

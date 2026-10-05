@@ -16,6 +16,7 @@ export { CarInstruments } from '../entity/car-instruments.js'
 export { CarLights, type CarLampState, type LampBinding } from '../entity/car-lights.js'
 export {
   CarMirrors,
+  authoredMirrorSurfaces,
   fitMirrorCamera,
   raisedMirrorNormal,
   type MirrorPolicy,

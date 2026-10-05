@@ -20,6 +20,7 @@ it('switches off all lamps when unoccupied and separates braking from reversing'
   const reverse = lens('Luces_Maletero', 'PilotoRojo')
   const lights = createA3Lights(model)
   expect(position.emissiveIntensity).toBe(0)
+  lights.toggleHeadlights()
   lights.update({ powered: true, braking: true, reversing: false }, 0)
   expect(position.emissiveIntensity).toBeGreaterThan(0)
   expect(brake.emissiveIntensity).toBeGreaterThan(0)

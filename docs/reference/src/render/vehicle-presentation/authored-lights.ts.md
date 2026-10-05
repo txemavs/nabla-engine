@@ -9,10 +9,31 @@ Switch authored GLB lights as a group, using asset intensities and starting dark
 ## Module dependencies
 
 - `three`
+- `../../config/lighting.js`
+
+## lowBeamMask
+
+[Implementation, line 14](../../../../../src/render/vehicle-presentation/authored-lights.ts#L14)
+
+Project a soft horizontal cutoff; texture +Y is up in the spotlight projection.
+
+```ts
+lowBeamMask(): DataTexture
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `DataTexture`
+- `Math.abs`
+- `Math.max`
+- `Math.min`
+- `Math.pow`
+- `Math.round`
+- `Uint8Array`
 
 ## AuthoredVehicleLights.constructor
 
-[Implementation, line 8](../../../../../src/render/vehicle-presentation/authored-lights.ts#L8)
+[Implementation, line 50](../../../../../src/render/vehicle-presentation/authored-lights.ts#L50)
 
 ```ts
 constructor(model: Object3D): instance
@@ -22,27 +43,110 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `model.traverse`
 
-## AuthoredVehicleLights.constructor.callback@9
+## AuthoredVehicleLights.constructor.callback@51
 
-[Implementation, line 9](../../../../../src/render/vehicle-presentation/authored-lights.ts#L9)
+[Implementation, line 51](../../../../../src/render/vehicle-presentation/authored-lights.ts#L51)
 
 ```ts
-callback@9(node): inferred by TypeScript; see implementation
+callback@51(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Array.isArray`
 - `Number.isFinite`
+- `lowBeamMask`
 - `this.emitters.push`
+- `this.emitters.some`
 - `this.lamps.push`
+
+## AuthoredVehicleLights.constructor.callback@51.callback@58
+
+[Implementation, line 58](../../../../../src/render/vehicle-presentation/authored-lights.ts#L58)
+
+```ts
+callback@58(entry): inferred by TypeScript; see implementation
+```
 
 ## AuthoredVehicleLights.toggle
 
-[Implementation, line 28](../../../../../src/render/vehicle-presentation/authored-lights.ts#L28)
+[Implementation, line 80](../../../../../src/render/vehicle-presentation/authored-lights.ts#L80)
 
 Null means this asset has no controllable authored light sources.
 
 ```ts
 toggle(): boolean | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.update`
+
+## AuthoredVehicleLights.isEnabled
+
+[Implementation, line 87](../../../../../src/render/vehicle-presentation/authored-lights.ts#L87)
+
+Current light switch, also used by attached trailers.
+
+```ts
+isEnabled(): boolean
+```
+
+## AuthoredVehicleLights.toggleHighBeam
+
+[Implementation, line 91](../../../../../src/render/vehicle-presentation/authored-lights.ts#L91)
+
+Select high/low beams independently of the master light switch.
+
+```ts
+toggleHighBeam(): boolean | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.lamps.some`
+- `this.update`
+
+## AuthoredVehicleLights.toggleHighBeam.callback@92
+
+[Implementation, line 92](../../../../../src/render/vehicle-presentation/authored-lights.ts#L92)
+
+```ts
+callback@92(lamp): inferred by TypeScript; see implementation
+```
+
+## AuthoredVehicleLights.dispose
+
+[Implementation, line 98](../../../../../src/render/vehicle-presentation/authored-lights.ts#L98)
+
+Release the per-vehicle beam texture on scene disposal.
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.mask?.dispose`
+
+## AuthoredVehicleLights.update
+
+[Implementation, line 104](../../../../../src/render/vehicle-presentation/authored-lights.ts#L104)
+
+Reverse lamps follow the engaged gear independently of the driving-light switch.
+
+```ts
+update(reversing: boolean, enabled = this.enabled): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `active`
+
+## AuthoredVehicleLights.update.active
+
+[Implementation, line 107](../../../../../src/render/vehicle-presentation/authored-lights.ts#L107)
+
+```ts
+active(channel?: string): inferred by TypeScript; see implementation
 ```

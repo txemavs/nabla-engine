@@ -218,6 +218,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Quaternion`
 - `THREE.Vector3`
 - `authoredMirrorLenses`
+- `authoredMirrorSurfaces`
 - `authoredScreenMounts`
 - `model.getWorldQuaternion`
 - `model.updateWorldMatrix`
@@ -225,7 +226,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stockVehiclePresentation
 
-[Implementation, line 156](../../../../../src/catalog/presentation/road-vehicles.ts#L156)
+[Implementation, line 158](../../../../../src/catalog/presentation/road-vehicles.ts#L158)
 
 ```ts
 stockVehiclePresentation(entity): inferred by TypeScript; see implementation

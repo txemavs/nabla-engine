@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { CarMirrors } from '../../render/entity/car-mirrors.js'
+import { CarMirrors, authoredMirrorSurfaces } from '../../render/entity/car-mirrors.js'
 import { CarInstruments } from '../../render/entity/car-instruments.js'
 import { PoliceEquipment } from './police-equipment.js'
 import type {
@@ -134,10 +134,12 @@ const stock = new Map<string, VehiclePresentationAdapter>([
         const mounts = definition ? authoredScreenMounts(model, definition.cluster) : undefined
         const instruments =
           mounts && definition ? new CarInstruments(mounts, definition) : undefined
-        const tilt = entity.vehicle?.mirrorTilt ?? -2
+        const tilt = entity.vehicle?.mirrorTilt ?? 0
         if (instruments) instruments.mirrorTilt = tilt
-        // The tractor GLB has no lens material: its mirrors are authored in vehicle.mirrors.
-        const lenses = authoredMirrorLenses(model, entity.vehicle?.mirrors)
+        const authored = authoredMirrorSurfaces(model)
+        const lenses = authored.length
+          ? authored
+          : authoredMirrorLenses(model, entity.vehicle?.mirrors)
         model.updateWorldMatrix(true, true)
         const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
           model.getWorldQuaternion(new THREE.Quaternion()),
