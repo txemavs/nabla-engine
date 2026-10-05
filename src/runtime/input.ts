@@ -2,6 +2,7 @@ import { controlDefaults } from '../config/controls.js'
 import { KeyboardSteering } from '../simulation/vehicles/keyboard-steering.js'
 import { idleInput, type PlayerInput, type Simulation } from '../simulation/simulation.js'
 import type { SceneDocument } from '../scene/document.js'
+import { isRoadTouchDriving } from './touch-driving.js'
 /** Gamepad access may be absent or denied on HTTP LAN origins and embedded views. */
 export function availableGamepads(): (Gamepad | null)[] {
   if (
@@ -103,7 +104,7 @@ export class GameInput {
       ? axis('ArrowRight', 'ArrowLeft')
       : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')
     const vehicle = id ? document.entities.find((e) => e.id === id)?.vehicle : null
-    const roadCar = id && vehicle && !flight && !vehicle.boat && !vehicle.plane && !vehicle.interior
+    const roadCar = id && isRoadTouchDriving(vehicle, flight)
     const input: PlayerInput = {
       forward:
         (flight

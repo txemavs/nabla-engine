@@ -10,6 +10,24 @@ export interface TouchDrivingActions {
 
 export type TouchDrivingVisibility = 'auto' | 'always' | 'hidden'
 
+/** Authored vehicle fields that decide whether the Studio road drive rig applies. */
+export type TouchDrivingVehicleSpec = {
+  boat?: boolean
+  plane?: boolean
+  interior?: unknown
+}
+
+/**
+ * True for seated car/truck road driving (shared wheeled controls).
+ * False on foot, in boats/planes, carriers with an interior, or while a flyable vehicle is in flight.
+ */
+export function isRoadTouchDriving(
+  vehicle: TouchDrivingVehicleSpec | null | undefined,
+  flightMode = false,
+): boolean {
+  return !!vehicle && !flightMode && !vehicle.boat && !vehicle.plane && !vehicle.interior
+}
+
 export interface TouchDrivingInput {
   forward: number
   right: number
@@ -127,6 +145,10 @@ const styles = `
 .touch-driving[data-visibility="always"] { display: flex; }
 .touch-driving[data-visibility="hidden"] { display: none; }
 @media (pointer: coarse) { .touch-driving[data-visibility="auto"] { display: flex; } }
+/* Wheel / accel / handbrake / pilot only while seated in a road vehicle (car/truck). */
+.touch-driving:not(.is-driving) .touch-driving-stack,
+.touch-driving:not(.is-driving) .touch-driving-wheel,
+.touch-driving:not(.is-driving) .touch-driving-pilot { display: none; }
 :has(> .touch-driving[data-visibility="always"]) > .nabla-game-hud { bottom: auto; top: 16px; }
 @media (pointer: coarse) {
   :has(> .touch-driving[data-visibility="auto"]) > .nabla-game-hud { bottom: auto; top: 16px; }
@@ -138,6 +160,7 @@ export class TouchDriving {
   readonly root = document.createElement('div')
   private held = new Map<number, string>()
   private enabled = false
+  private driving = false
   private disposed = false
   private pad = { throttle: 0, steer: 0, handbrake: false, turbo: false }
   private leverPull = 0
@@ -385,6 +408,18 @@ export class TouchDriving {
     this.root.classList.toggle('is-pilot', pilot)
   }
 
+  /**
+   * Show wheel / accelerator / handbrake only while seated in a road vehicle.
+   * Enter / Camera stay available on foot and in ships so touch hosts can board.
+   */
+  setDriving(driving: boolean): void {
+    const next = driving && !this.disposed
+    if (this.driving === next) return
+    this.driving = next
+    this.root.classList.toggle('is-driving', next)
+    if (!next) this.clear()
+  }
+
   clear(): void {
     const pointers = [...this.held.keys()]
     this.held.clear()
@@ -403,6 +438,7 @@ export class TouchDriving {
   busy(): boolean {
     return (
       this.enabled &&
+      this.driving &&
       (this.held.size > 0 ||
         this.pad.handbrake ||
         this.pad.turbo ||
@@ -414,7 +450,10 @@ export class TouchDriving {
   setActive(active: boolean): void {
     this.enabled = active && !this.disposed
     this.root.classList.toggle('is-idle', !this.enabled)
-    if (!active) this.clear()
+    if (!active) {
+      this.setDriving(false)
+      this.clear()
+    }
   }
 
   dispose(): void {
@@ -426,7 +465,7 @@ export class TouchDriving {
   }
 
   input(): TouchDrivingInput {
-    if (!this.enabled) return { forward: 0, right: 0, brake: false, sprint: false }
+    if (!this.enabled || !this.driving) return { forward: 0, right: 0, brake: false, sprint: false }
     return {
       forward: this.pad.throttle,
       right: this.pad.steer,
