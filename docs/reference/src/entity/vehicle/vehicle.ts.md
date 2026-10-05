@@ -13,7 +13,7 @@
 
 ## validateVehicle
 
-[Implementation, line 25](../../../../../src/entity/vehicle/vehicle.ts#L25)
+[Implementation, line 27](../../../../../src/entity/vehicle/vehicle.ts#L27)
 
 ```ts
 validateVehicle(entity: Entity): void
@@ -39,33 +39,33 @@ Explicit throws in this body:
 - `new Error('Vehicles must be dynamic roots')`
 - `new Error('Vehicle is too small')`
 
-## validateVehicle.callback@43
+## validateVehicle.callback@45
 
-[Implementation, line 43](../../../../../src/entity/vehicle/vehicle.ts#L43)
+[Implementation, line 45](../../../../../src/entity/vehicle/vehicle.ts#L45)
 
 ```ts
-callback@43(n, i): inferred by TypeScript; see implementation
+callback@45(n, i): inferred by TypeScript; see implementation
 ```
 
-## validateVehicle.callback@44
+## validateVehicle.callback@46
 
-[Implementation, line 44](../../../../../src/entity/vehicle/vehicle.ts#L44)
+[Implementation, line 46](../../../../../src/entity/vehicle/vehicle.ts#L46)
 
 ```ts
-callback@44(n, i): inferred by TypeScript; see implementation
+callback@46(n, i): inferred by TypeScript; see implementation
 ```
 
-## validateVehicle.callback@47
+## validateVehicle.callback@49
 
-[Implementation, line 47](../../../../../src/entity/vehicle/vehicle.ts#L47)
+[Implementation, line 49](../../../../../src/entity/vehicle/vehicle.ts#L49)
 
 ```ts
-callback@47(v, i): inferred by TypeScript; see implementation
+callback@49(v, i): inferred by TypeScript; see implementation
 ```
 
 ## vehicleDefinition
 
-[Implementation, line 57](../../../../../src/entity/vehicle/vehicle.ts#L57)
+[Implementation, line 59](../../../../../src/entity/vehicle/vehicle.ts#L59)
 
 Defaults for procedural cars. Asset names are not physics configuration.
 

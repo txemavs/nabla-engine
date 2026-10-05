@@ -1,5 +1,5 @@
 import type { DrivetrainState } from '../../simulation/vehicles/drivetrain.js'
-import type { Body, RaycastVehicle } from '../../simulation/physics.js'
+import type { Body, Box, RaycastVehicle } from '../../simulation/physics.js'
 import type { Entity } from '../schema.js'
 import type { VehicleDefinition } from './field.js'
 
@@ -9,6 +9,8 @@ export interface Vehicle {
   raycast: RaycastVehicle
   entity: Entity
   steer: number
+  /** Installed landing-leg colliders while a free trailer is unhitched. */
+  landingGear: Box[]
   /** Outboard throttle, −1..1. Lags the stick so the hull carries speed. */
   drivetrain: DrivetrainState
   prop: number

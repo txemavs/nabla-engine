@@ -294,5 +294,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sim.shiftVehicle`
 - `sim.toggleDock`
 - `sim.toggleFlight`
+- `sim.toggleHitch`
 - `sim.transferControls`
 - `this.text`

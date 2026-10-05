@@ -45,6 +45,16 @@ import {
 import { isMapBuilding, type Entity, type Transform, type Vec3Tuple } from '../entity/schema.js'
 import { parseScene, replaceMapScene, type SceneDocument } from '../scene/document.js'
 import { SceneGraph } from '../scene/graph.js'
+import { addLandingGearShapes, hasLandingGear, removeLandingGearShapes } from './landing-gear.js'
+import {
+  addTrailerJoint,
+  bindTrailerTow,
+  clearTrailerTow,
+  createTrailerJoint,
+  hitchCandidate as findHitchCandidate,
+  removeJointsFor,
+  trailerTowedBy,
+} from './trailer-hitch.js'
 
 export const FIXED_STEP = simulationDefaults.fixedStepSeconds
 const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
@@ -186,21 +196,7 @@ export class Simulation {
     this.world.defaultContactMaterial.friction = simulationDefaults.solidFriction
     this.world.defaultContactMaterial.restitution = 0
     for (const e of this.document.entities) this.addEntityBody(e)
-    for (const v of this.vehicles.values()) {
-      const tow = v.definition.tow
-      if (!tow) continue
-      const tractor = this.vehicles.get(tow.vehicleId)!
-      this.alignTrailer(v, tractor)
-      const joint = new HingeConstraint(
-        tractor.body,
-        v.body,
-        new Vec3(...tow.hitch),
-        new Vec3(...tow.anchor),
-      )
-      joint.collideConnected = true
-      this.world.addConstraint(joint)
-      this.trailerJoints.push(joint)
-    }
+    for (const v of this.vehicles.values()) this.attachTrailerJoint(v)
     for (const mouth of this.portalEntities) if (mouth.parentId) this.rebuildPortalCollider(mouth)
     for (const v of this.vehicles.values())
       if (v.definition.garage) {
@@ -355,29 +351,42 @@ export class Simulation {
     )
   }
   /**
-   * Add plain vehicles to a running simulation (the game menu spawns cars and trucks).
-   * Added vehicles are never towed and cannot be portals; use `removeVehicle` to take them out.
+   * Add plain vehicles to a running simulation (the game menu and host `placeVehicle`).
+   * Tow joints are kept when the tractor is in this batch or already in the world.
    */
   addVehicles(added: Entity[]): void {
     for (const e of added) {
       if (e.kind !== 'vehicle' || !e.vehicle || e.portal)
         throw new Error(`Entity ${e.id} is not a plain vehicle`)
       if (this.entitiesById.has(e.id)) throw new Error(`Entity id already in use: ${e.id}`)
+      if (e.vehicle.tow) {
+        const tractor =
+          added.find((other) => other.id === e.vehicle!.tow!.vehicleId) ??
+          this.entitiesById.get(e.vehicle.tow.vehicleId)
+        if (!tractor?.vehicle || tractor.vehicle.passive || tractor.id === e.id)
+          throw new Error('Trailer requires a powered towing vehicle')
+      }
     }
-    const copies = structuredClone(added).map((e) => {
-      if (e.vehicle?.tow) delete e.vehicle.tow
-      return e
-    })
+    const copies = structuredClone(added)
     this.document.entities = [...this.document.entities, ...copies]
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
     for (const e of copies) this.addEntityBody(e)
+    for (const e of copies) {
+      const vehicle = this.vehicles.get(e.id)
+      if (vehicle) this.attachTrailerJoint(vehicle)
+    }
   }
   /** Remove a vehicle added with `addVehicles`. The player must not be inside it. */
   removeVehicle(id: string): void {
     const v = this.vehicles.get(id)
     if (!v) throw new Error(`No vehicle ${id}`)
     if (this.vehicleId === id) throw new Error('Leave the vehicle before removing it')
+    this.detachTrailerJoints(v)
+    for (const trailer of this.vehicles.values()) {
+      if (trailer.definition.tow?.vehicleId !== id) continue
+      this.releaseTrailer(trailer)
+    }
     v.raycast.removeFromWorld(this.world)
     if (v.body.world === this.world) this.world.removeBody(v.body)
     this.vehicles.delete(id)
@@ -386,6 +395,97 @@ export class Simulation {
     this.document.entities = this.document.entities.filter((e) => e.id !== id)
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
+  }
+  private attachTrailerJoint(trailer: Vehicle): void {
+    const tow = trailer.definition.tow
+    if (!tow || this.trailerJoints.some((joint) => joint.bodyB === trailer.body)) return
+    const tractor = this.vehicles.get(tow.vehicleId)
+    if (!tractor) throw new Error('Trailer requires a powered towing vehicle')
+    this.setLandingGear(trailer, false)
+    this.alignTrailer(trailer, tractor)
+    addTrailerJoint(this.world, this.trailerJoints, createTrailerJoint(tractor, trailer))
+  }
+  private detachTrailerJoints(vehicle: Vehicle): void {
+    removeJointsFor(this.world, this.trailerJoints, vehicle)
+  }
+  private releaseTrailer(trailer: Vehicle): void {
+    this.detachTrailerJoints(trailer)
+    clearTrailerTow(trailer)
+    this.setLandingGear(trailer, true)
+    trailer.body.wakeUp()
+  }
+  private setLandingGear(vehicle: Vehicle, deployed: boolean): void {
+    if (!hasLandingGear(vehicle.definition)) return
+    if (deployed) {
+      if (vehicle.landingGear.length) return
+      vehicle.landingGear = addLandingGearShapes(vehicle.body, vehicle.definition)
+      return
+    }
+    if (!vehicle.landingGear.length) return
+    removeLandingGearShapes(vehicle.body, vehicle.landingGear)
+    vehicle.landingGear = []
+  }
+  /**
+   * Couple `trailerId` to `tractorId`. Omit the trailer to use the nearest hitchable one.
+   * Retracts landing legs on the trailer.
+   */
+  hitchTrailer(tractorId: string, trailerId?: string): string {
+    if (this.disposed) throw new Error('Simulation is disposed')
+    const tractor = this.vehicles.get(tractorId)
+    if (!tractor?.definition.hitch || tractor.definition.passive)
+      throw new Error('Hitch requires a powered tractor with a fifth-wheel mount')
+    const trailer = trailerId
+      ? this.vehicles.get(trailerId)
+      : findHitchCandidate(tractor, this.vehicles.values())
+    if (!trailer) throw new Error('No free trailer in hitch range')
+    if (trailer.entity.id === tractorId) throw new Error('A tractor cannot hitch to itself')
+    if (!trailer.definition.passive || !trailer.definition.towAnchor)
+      throw new Error('Only a free trailer with a kingpin can be hitched')
+    if (trailer.definition.tow) throw new Error(`Trailer ${trailer.entity.id} is already hitched`)
+    bindTrailerTow(tractor, trailer)
+    this.attachTrailerJoint(trailer)
+    return trailer.entity.id
+  }
+  /** Uncouple a trailer. Omit the id to release every trailer on the occupied tractor. */
+  unhitchTrailer(trailerId?: string): string[] {
+    if (this.disposed) throw new Error('Simulation is disposed')
+    const ids = trailerId
+      ? [trailerId]
+      : [...this.vehicles.values()]
+          .filter((v) => this.vehicleId !== null && trailerTowedBy(v, this.vehicleId))
+          .map((v) => v.entity.id)
+    const released: string[] = []
+    for (const id of ids) {
+      const trailer = this.vehicles.get(id)
+      if (!trailer?.definition.tow) continue
+      this.releaseTrailer(trailer)
+      released.push(id)
+    }
+    return released
+  }
+  /** Occupied tractor: hitch a nearby free trailer, or uncouple the attached one. */
+  toggleHitch(): string | null {
+    if (this.disposed) throw new Error('Simulation is disposed')
+    const id = this.vehicleId
+    if (!id) return null
+    const tractor = this.vehicles.get(id)
+    if (!tractor?.definition.hitch || tractor.definition.passive) return null
+    const attached = [...this.vehicles.values()].find((v) => trailerTowedBy(v, id))
+    if (attached) {
+      this.releaseTrailer(attached)
+      return 'Remolque suelto'
+    }
+    const trailer = findHitchCandidate(tractor, this.vehicles.values())
+    if (!trailer) return 'Acerca el plato al kingpin y detén el camión'
+    bindTrailerTow(tractor, trailer)
+    this.attachTrailerJoint(trailer)
+    return 'Remolque enganchado'
+  }
+  hitchCandidate(tractorId = this.vehicleId): string | null {
+    if (!tractorId) return null
+    const tractor = this.vehicles.get(tractorId)
+    if (!tractor) return null
+    return findHitchCandidate(tractor, this.vehicles.values())?.entity.id ?? null
   }
   private addEntityBody(e: Entity): void {
     const created = createEntityBody(
@@ -475,9 +575,10 @@ export class Simulation {
       body.angularDamping = 0.35
       this.world.addBody(body)
     } else car.addToWorld(this.world)
-    this.vehicles.set(entity.id, {
+    const vehicle: Vehicle = {
       ...wheeled,
       entity,
+      landingGear: [],
       prop: 0,
       definition,
       flight: null,
@@ -487,7 +588,9 @@ export class Simulation {
       rampPortalActive: false,
       cruiseSpeed: 1000,
       helm: 'car',
-    })
+    }
+    this.vehicles.set(entity.id, vehicle)
+    if (!definition.tow) this.setLandingGear(vehicle, true)
   }
   get player(): PlayerSnapshot {
     const vehicle = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
@@ -660,11 +763,7 @@ export class Simulation {
         this.world.removeConstraint(joint)
         this.trailerJoints.splice(i, 1)
         for (const trailer of this.vehicles.values())
-          if (trailer.body === joint.bodyB) {
-            delete trailer.definition.tow
-            if (trailer.entity.vehicle) delete trailer.entity.vehicle.tow
-            trailer.body.wakeUp()
-          }
+          if (trailer.body === joint.bodyB) this.releaseTrailer(trailer)
       }
       this.constrainTerrainBoundary()
       if (carry && host) {
@@ -1409,6 +1508,8 @@ export class Simulation {
     /** Per-vehicle clack sound; null selects the audio layer's car default. */
     gearClack: GearClackProfile | null
     towVehicleId: string | null
+    /** True while a free trailer is resting on its landing legs. */
+    landingGear: boolean
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
@@ -1454,6 +1555,7 @@ export class Simulation {
       shifting: ground.shifting,
       gearClack: ground.clack ?? null,
       towVehicleId: v.definition.tow?.vehicleId ?? null,
+      landingGear: v.landingGear.length > 0,
     }
   }
 

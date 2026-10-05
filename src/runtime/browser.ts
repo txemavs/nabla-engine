@@ -1007,6 +1007,28 @@ export class GameRuntime {
       void this.renderer.compileAsync(group, this.camera, this.scene).catch(() => undefined)
     return id
   }
+  /**
+   * Couple a free trailer to a tractor. Omit `trailerId` to use the nearest hitchable trailer.
+   * Retracts landing legs. The tractor/trailer must already be in the live simulation.
+   */
+  hitchTrailer(tractorId: string, trailerId?: string): string {
+    this.assertAlive()
+    const sim = this.session.simulation
+    if (!sim) throw new Error('A running game is required')
+    return sim.hitchTrailer(tractorId, trailerId)
+  }
+  /** Uncouple a trailer and deploy its landing legs. Omit the id to release the occupied tractor's trailer. */
+  unhitchTrailer(trailerId?: string): string[] {
+    this.assertAlive()
+    const sim = this.session.simulation
+    if (!sim) throw new Error('A running game is required')
+    return sim.unhitchTrailer(trailerId)
+  }
+  /** Occupied tractor: hitch a nearby free trailer, or uncouple the attached one. */
+  toggleHitch(): string | null {
+    this.assertAlive()
+    return this.session.simulation?.toggleHitch() ?? null
+  }
   /** Remove a vehicle added with `spawnVehicle`. The player must be outside it. */
   removeSpawnedVehicle(id: string): void {
     this.assertAlive()

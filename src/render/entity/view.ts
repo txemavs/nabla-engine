@@ -22,6 +22,12 @@ import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
 import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
+import {
+  mountLandingGear,
+  landingGearMeshBounds,
+  type LandingGearVisual,
+} from '../vehicle-presentation/landing-gear.js'
+import { hasLandingGear, trailerWheelContactY } from '../../simulation/landing-gear.js'
 import { VehicleLightRig } from '../vehicle-presentation/light-rig.js'
 import type { CarMirrors, MirrorPolicy } from './car-mirrors.js'
 import { poseSteeringWheel, steeringAxis } from './steering-wheel.js'
@@ -84,6 +90,7 @@ export class SceneView {
   private readonly carLights = new Map<string, CarLights>()
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
+  private readonly landingGear = new Map<string, LandingGearVisual>()
   private readonly propellers = new Map<string, THREE.Object3D>()
   readonly shipHuds = new Map<string, ShipHud>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
@@ -399,6 +406,7 @@ export class SceneView {
       this.systemScreens,
       this.headOffsets,
       this.authoredLights,
+      this.landingGear,
       this.ramps,
       this.mapBounds,
     ] as Map<string, unknown>[])
@@ -775,6 +783,17 @@ export class SceneView {
         this.options.mirrorPolicy,
       )
       this.authoredLights.set(e.id, new AuthoredVehicleLights(model, equipment?.lights?.controller))
+      if (e.vehicle && hasLandingGear(e.vehicle)) {
+        const bounds = landingGearMeshBounds(model)
+        const visual = bounds
+          ? mountLandingGear(model, trailerWheelContactY(e.vehicle) - bounds.min.y)
+          : undefined
+        if (visual) {
+          visual.setDeployed(!e.vehicle.tow, 0)
+          visual.update(0)
+          this.landingGear.set(e.id, visual)
+        }
+      }
       adapter?.preparePart?.(model, 'body')
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
       if (equipment?.mirrors) this.carMirrors.set(e.id, equipment.mirrors)
@@ -1047,6 +1066,11 @@ export class SceneView {
         lightNow,
         controller,
       )
+    }
+    const now = performance.now()
+    for (const [id, gear] of this.landingGear) {
+      gear.setDeployed(sim.vehicleInfo(id).landingGear, now)
+      gear.update(now)
     }
     for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
     for (const [id, wheel] of this.steering)
