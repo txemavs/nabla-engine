@@ -8,20 +8,25 @@
 
 - `three`
 - `../../config/lighting.js`
+- `../vehicle-presentation/light-controller.js`
 
 ## CarLights.constructor
 
-[Implementation, line 22](../../../../../src/render/entity/car-lights.ts#L22)
+[Implementation, line 21](../../../../../src/render/entity/car-lights.ts#L21)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
 ```ts
-constructor(private readonly lamps: readonly LampBinding[], private readonly flashMs = 450, private readonly courtesy: readonly CourtesyWell[] = []): instance
+constructor(private readonly lamps: readonly LampBinding[], flashMs = lightingDefaults.signalFlashMs, private readonly courtesy: readonly CourtesyWell[] = []): instance
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `VehicleLightController`
 
 ## CarLights.toggle
 
-[Implementation, line 27](../../../../../src/render/entity/car-lights.ts#L27)
+[Implementation, line 28](../../../../../src/render/entity/car-lights.ts#L28)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
@@ -29,15 +34,23 @@ Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 toggle(side: number): void
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.controller.toggleSignal`
+
 ## CarLights.toggleHeadlights
 
-[Implementation, line 31](../../../../../src/render/entity/car-lights.ts#L31)
+[Implementation, line 32](../../../../../src/render/entity/car-lights.ts#L32)
 
 Toggle position/front lamps without disabling brake, reverse or signal lamps.
 
 ```ts
 toggleHeadlights(): boolean
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.controller.toggleLights`
 
 ## CarLights.update
 
@@ -51,6 +64,7 @@ update(state: CarLampState, now: number, night = false): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.floor`
 - `lamp.material.color.set`
 - `lamp.material.emissive.set`
+- `this.controller.indicating`
+- `this.controller.level`

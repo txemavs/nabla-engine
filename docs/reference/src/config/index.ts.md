@@ -12,6 +12,7 @@ Public, topic-based Engine tuning catalog. See docs/configuration.md for overrid
 - `./display.js`
 - `./controls.js`
 - `./lighting.js`
+- `./audio.js`
 - `./streaming.js`
 - `./simulation.js`
 - `./performance.js`

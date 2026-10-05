@@ -10,10 +10,21 @@ Switch authored GLB lights as a group, using asset intensities and starting dark
 
 - `three`
 - `../../config/lighting.js`
+- `./light-controller.js`
+
+## channel
+
+[Implementation, line 19](../../../../../src/render/vehicle-presentation/authored-lights.ts#L19)
+
+Translate the GLB contract once at load time; rendering uses common channels.
+
+```ts
+channel(value?: string): VehicleLightChannel
+```
 
 ## lowBeamMask
 
-[Implementation, line 14](../../../../../src/render/vehicle-presentation/authored-lights.ts#L14)
+[Implementation, line 34](../../../../../src/render/vehicle-presentation/authored-lights.ts#L34)
 
 Project a soft horizontal cutoff; texture +Y is up in the spotlight projection.
 
@@ -33,44 +44,46 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.constructor
 
-[Implementation, line 50](../../../../../src/render/vehicle-presentation/authored-lights.ts#L50)
+[Implementation, line 74](../../../../../src/render/vehicle-presentation/authored-lights.ts#L74)
 
 ```ts
-constructor(model: Object3D): instance
+constructor(model: Object3D, readonly controller = new VehicleLightController()): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `VehicleLightController`
 - `model.traverse`
 
-## AuthoredVehicleLights.constructor.callback@51
+## AuthoredVehicleLights.constructor.callback@78
 
-[Implementation, line 51](../../../../../src/render/vehicle-presentation/authored-lights.ts#L51)
+[Implementation, line 78](../../../../../src/render/vehicle-presentation/authored-lights.ts#L78)
 
 ```ts
-callback@51(node): inferred by TypeScript; see implementation
+callback@78(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Array.isArray`
 - `Number.isFinite`
+- `channel`
 - `lowBeamMask`
 - `this.emitters.push`
 - `this.emitters.some`
 - `this.lamps.push`
 
-## AuthoredVehicleLights.constructor.callback@51.callback@58
+## AuthoredVehicleLights.constructor.callback@78.callback@85
 
-[Implementation, line 58](../../../../../src/render/vehicle-presentation/authored-lights.ts#L58)
+[Implementation, line 85](../../../../../src/render/vehicle-presentation/authored-lights.ts#L85)
 
 ```ts
-callback@58(entry): inferred by TypeScript; see implementation
+callback@85(entry): inferred by TypeScript; see implementation
 ```
 
 ## AuthoredVehicleLights.toggle
 
-[Implementation, line 80](../../../../../src/render/vehicle-presentation/authored-lights.ts#L80)
+[Implementation, line 118](../../../../../src/render/vehicle-presentation/authored-lights.ts#L118)
 
 Null means this asset has no controllable authored light sources.
 
@@ -80,11 +93,12 @@ toggle(): boolean | null
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.controller.toggleLights`
 - `this.update`
 
 ## AuthoredVehicleLights.isEnabled
 
-[Implementation, line 87](../../../../../src/render/vehicle-presentation/authored-lights.ts#L87)
+[Implementation, line 125](../../../../../src/render/vehicle-presentation/authored-lights.ts#L125)
 
 Current light switch, also used by attached trailers.
 
@@ -94,7 +108,7 @@ isEnabled(): boolean
 
 ## AuthoredVehicleLights.toggleHighBeam
 
-[Implementation, line 91](../../../../../src/render/vehicle-presentation/authored-lights.ts#L91)
+[Implementation, line 129](../../../../../src/render/vehicle-presentation/authored-lights.ts#L129)
 
 Select high/low beams independently of the master light switch.
 
@@ -104,20 +118,21 @@ toggleHighBeam(): boolean | null
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.controller.toggleHighBeam`
 - `this.lamps.some`
 - `this.update`
 
-## AuthoredVehicleLights.toggleHighBeam.callback@92
+## AuthoredVehicleLights.toggleHighBeam.callback@130
 
-[Implementation, line 92](../../../../../src/render/vehicle-presentation/authored-lights.ts#L92)
+[Implementation, line 130](../../../../../src/render/vehicle-presentation/authored-lights.ts#L130)
 
 ```ts
-callback@92(lamp): inferred by TypeScript; see implementation
+callback@130(lamp): inferred by TypeScript; see implementation
 ```
 
 ## AuthoredVehicleLights.dispose
 
-[Implementation, line 98](../../../../../src/render/vehicle-presentation/authored-lights.ts#L98)
+[Implementation, line 136](../../../../../src/render/vehicle-presentation/authored-lights.ts#L136)
 
 Release the per-vehicle beam texture on scene disposal.
 
@@ -131,22 +146,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.update
 
-[Implementation, line 104](../../../../../src/render/vehicle-presentation/authored-lights.ts#L104)
+[Implementation, line 142](../../../../../src/render/vehicle-presentation/authored-lights.ts#L142)
 
 Reverse lamps follow the engaged gear independently of the driving-light switch.
 
 ```ts
-update(reversing: boolean, enabled = this.enabled): void
+update(reversing: boolean, enabled = this.controller.enabled): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `active`
+- `this.apply`
 
-## AuthoredVehicleLights.update.active
+## AuthoredVehicleLights.apply
 
-[Implementation, line 107](../../../../../src/render/vehicle-presentation/authored-lights.ts#L107)
+[Implementation, line 148](../../../../../src/render/vehicle-presentation/authored-lights.ts#L148)
+
+Render authored bindings using the same controller as cars, or the towing vehicle's controller.
 
 ```ts
-active(channel?: string): inferred by TypeScript; see implementation
+apply(state: VehicleLampState, now: number, controller = this.controller): void
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `controller.level`

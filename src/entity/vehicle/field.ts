@@ -130,6 +130,8 @@ export const vehicleField = z
       .optional(),
     /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
     mirrorTilt: finite.min(-5).max(12).optional(),
+    /** Enable the audible warning while this vehicle has reverse gear engaged. */
+    reverseAlarm: z.boolean().optional(),
     flight: z.boolean().optional(),
     /** Light airplane: plane-helm uses wing lift instead of the carrier's cruise. */
     plane: z.boolean().optional(),
