@@ -11,7 +11,8 @@ const styles = `
 .touch-driving { display: none; position: absolute; inset: auto 10px 16px; z-index: 45;
  width: calc(100% - 20px); pointer-events: none; gap: 10px; align-items: end;
  grid-template-columns: 1fr auto 1fr; }
-.touch-driving-bar { grid-column: 2; display: flex; flex-direction: column; gap: 8px; }
+.touch-driving-bar { grid-column: 2; display: flex; flex-direction: row; flex-wrap: wrap;
+ justify-content: center; gap: 8px; max-width: 220px; }
 .touch-dpad[data-hand="left"] { grid-column: 1; }
 .touch-dpad[data-hand="right"] { grid-column: 3; }
 .touch-dpad { width: min(42vw, 148px); height: min(42vw, 148px); justify-self: start;
