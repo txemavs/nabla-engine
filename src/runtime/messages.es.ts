@@ -1,9 +1,11 @@
 /** Spanish translations for Engine-owned gameplay UI. English message templates are stable keys. */
 export const spanishMessages: Readonly<Record<string, string>> = {
+  'Indicators: Z left · X right · press again to cancel':
+    'Intermitentes: Z izquierda · X derecha · repetir para apagar',
   'High beams selected': 'Largas seleccionadas',
   'Low beams selected': 'Cortas seleccionadas',
-  'E exit · C camera · H lights · G high/low · K GPS · F9 wheel diagnostics':
-    'E salir · C cámara · H luces · G cortas/largas · K GPS · F9 diagnóstico de ruedas',
+  'E exit · C camera · H lights · G high/low · K GPS · Z/X indicators · F9 wheel diagnostics':
+    'E salir · C cámara · H luces · G cortas/largas · K GPS · Z/X intermitentes · F9 diagnóstico de ruedas',
   'WASD move · Space jump · E enter · C camera':
     'WASD mover · Espacio saltar · E entrar · C cámara',
   'Remote window open': 'Ventana remota abierta',

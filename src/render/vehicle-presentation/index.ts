@@ -15,6 +15,11 @@ export type {
 export { CarInstruments } from '../entity/car-instruments.js'
 export { CarLights, type CarLampState, type LampBinding } from '../entity/car-lights.js'
 export {
+  VehicleLightController,
+  type VehicleLampState,
+  type VehicleLightChannel,
+} from './light-controller.js'
+export {
   CarMirrors,
   authoredMirrorSurfaces,
   fitMirrorCamera,

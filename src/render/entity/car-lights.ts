@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 import { lightingDefaults } from '../../config/lighting.js'
-export interface CarLampState {
-  powered: boolean
-  braking: boolean
-  reversing: boolean
-}
+import {
+  VehicleLightController,
+  type VehicleLampState,
+} from '../vehicle-presentation/light-controller.js'
+export type CarLampState = VehicleLampState
 export interface LampBinding {
   material: THREE.MeshStandardMaterial
   kind: 'position' | 'brake' | 'reverse' | 'signal' | 'front-signal'
@@ -17,20 +17,20 @@ export interface CourtesyWell {
 }
 /** Prepared lens bindings; no model names, lights, shadows or extra scene passes. */
 export class CarLights {
-  private signal = 0
-  private headlights = false
+  readonly controller: VehicleLightController
   constructor(
     private readonly lamps: readonly LampBinding[],
-    private readonly flashMs = 450,
+    flashMs = lightingDefaults.signalFlashMs,
     private readonly courtesy: readonly CourtesyWell[] = [],
-  ) {}
+  ) {
+    this.controller = new VehicleLightController(flashMs)
+  }
   toggle(side: number): void {
-    this.signal = this.signal === side ? 0 : side
+    this.controller.toggleSignal(side)
   }
   /** Toggle position/front lamps without disabling brake, reverse or signal lamps. */
   toggleHeadlights(): boolean {
-    this.headlights = !this.headlights
-    return this.headlights
+    return this.controller.toggleLights()
   }
   update(state: CarLampState, now: number, night = false): void {
     const footwell = state.powered && night
@@ -38,41 +38,18 @@ export class CarLights {
       well.lamp.intensity = footwell ? lightingDefaults.courtesyIntensity : 0
       well.lens.emissiveIntensity = footwell ? lightingDefaults.courtesyLensIntensity : 0
     }
-    if (!state.powered) this.signal = 0
-    const flash = Math.floor(now / this.flashMs) % 2 === 0
     for (const lamp of this.lamps) {
       if (lamp.kind === 'front-signal') {
-        const indicating = this.signal === lamp.side
+        const indicating = this.controller.indicating(lamp.side, state)
         lamp.material.emissive.set(indicating ? '#ff7300' : '#e5f2ff')
         lamp.material.color.set(indicating ? '#ff9a32' : '#ebf2ff')
-        lamp.material.emissiveIntensity = !state.powered
-          ? 0
-          : indicating
-            ? flash
-              ? 2
-              : 0
-            : this.headlights
-              ? 0.65
-              : 0
+        lamp.material.emissiveIntensity =
+          this.controller.level(lamp.kind, lamp.side, state, now) * (indicating ? 2 : 0.65)
         continue
       }
-      lamp.material.emissiveIntensity = !state.powered
-        ? 0
-        : lamp.kind === 'position'
-          ? this.headlights
-            ? 0.65
-            : 0
-          : lamp.kind === 'brake'
-            ? state.braking
-              ? 3
-              : 0
-            : lamp.kind === 'reverse'
-              ? state.reversing
-                ? 2
-                : 0
-              : this.signal === lamp.side && flash
-                ? 2
-                : 0
+      const intensity = lamp.kind === 'position' ? 0.65 : lamp.kind === 'brake' ? 3 : 2
+      lamp.material.emissiveIntensity =
+        this.controller.level(lamp.kind, lamp.side, state, now) * intensity
       if (lamp.mesh) lamp.mesh.visible = lamp.material.emissiveIntensity > 0
     }
   }

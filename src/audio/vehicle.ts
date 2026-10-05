@@ -4,12 +4,13 @@ import { Powertrain } from './powertrain.js'
 import { Propeller } from './propeller.js'
 import { TireSqueal } from './tires.js'
 import { Turbine } from './turbine.js'
+import { ReverseAlarm } from './reverse-alarm.js'
 
 /**
- * One browser audio context, five independent voices.
+ * One browser audio context, six independent voices.
  *
  * The context has to be created from a click or a key press (`unlock`).
- * Turbine, propeller, tires, powertrain and gear clack each own their nodes; they only
+ * Turbine, propeller, tires, powertrain, reverse alarm and gear clack own their nodes; they only
  * share that context and one noise buffer. Studio owns the mute button.
  * Audio never throws into the host loop.
  */
@@ -20,6 +21,7 @@ export class VehicleAudio {
   private tireVoice?: TireSqueal
   private powertrainVoice?: Powertrain
   private gearVoice?: GearClack
+  private reverseVoice?: ReverseAlarm
   private clacks = 0
   private enabled = true
   private suspended = false
@@ -109,6 +111,11 @@ export class VehicleAudio {
     if (!frame || !this.tireVoice) return
     this.tireVoice.update(frame.time, frame.audible, slip, speedKmh)
   }
+  /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */
+  reverseAlarm(active: boolean): void {
+    const frame = this.frame()
+    if (frame) this.reverseVoice?.update(frame.time, frame.audible && active)
+  }
 
   private build(): void {
     const context = new AudioContext()
@@ -118,6 +125,7 @@ export class VehicleAudio {
     this.propellerVoice = new Propeller(context)
     this.tireVoice = new TireSqueal(context, noise)
     this.powertrainVoice = new Powertrain(context, noise)
+    this.reverseVoice = new ReverseAlarm(context)
     this.gearVoice = new GearClack(context, noise)
   }
 
@@ -134,5 +142,6 @@ export class VehicleAudio {
     this.tireVoice?.silence(time)
     this.powertrainVoice?.silence(time)
     this.gearVoice?.silence(time)
+    this.reverseVoice?.silence(time)
   }
 }

@@ -78,12 +78,31 @@ scene render. Texture parameters live in `src/config/lighting.ts`. This is a vis
 approximation, not a certified photometric headlight profile. Rear red lenses are
 emissive only, with no rear punctual floodlights; attached trailers inherit the
 tractor's switch. Materials declare `extras.vehicleLightChannel` (`Tail_Stop`,
-`Reverse`, or `Marker`). Red and amber marker lenses glow steadily with the light
+`Reverse`, `Indicator`, or `Marker`). Red and amber marker lenses glow steadily with the light
 switch, including the trailer; the amber punctual light sources remain off.
 Reverse lenses follow the engaged R gear independently
 of the switch, so reverse input during the direction-change delay does not light
-them. Flashing turn signals require a dedicated signal controller.
+them. Z toggles the left indicator and X the right; selecting the same side again
+cancels it. Indicator lenses stay dark unless signalling, even with headlights on.
+The selected amber side blinks, while separate marker lenses retain
+their position-light behavior. Stop lamps brighten when braking, independently
+of the driving-light switch. Attached trailers sample the tractor's switches,
+brake/R telemetry and frame timestamp; detached trailers have no electrical feed.
 The stock rear-light authoring is recorded in `scripts/author-truck-rear-lights.mjs`.
+
+`VehicleLightController` is the common renderer-independent state machine exported
+from `@nabla/engine/vehicle-presentation`. Both `CarLights` (legacy Audi lens bindings)
+and `AuthoredVehicleLights` (GLB bindings) evaluate its channels; neither implements
+separate blinking or brake/reverse rules. The GLB material metadata
+`vehicleLightChannel` selects a channel and `vehicleLightSide: "L" | "R"` selects
+the indicator side. Left and right trailer clusters have independent materials.
+Timing and stop-lamp boost are documented in `src/config/lighting.ts`.
+
+The tractor enables `vehicle.reverseAlarm`. Its synthesized warning beeps only
+while the occupied, powered vehicle has R engaged, including when stationary.
+Leaving R, exiting the vehicle, muting or hiding the page stops the warning.
+Audio defaults (frequency, gain and cadence) live in `src/config/audio.ts` and
+are exported through `@nabla/engine/config`; cars omit the opt-in flag.
 
 The tractor's `mirror.left` and `mirror.right` anchors are children of their
 door meshes. Each owns a planar lens tagged `extras.nabla.mirror` with its side.

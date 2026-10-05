@@ -264,7 +264,9 @@ export function wheeledTelemetry(
     gear: v.drivetrain.gear,
     manualTransmission: v.drivetrain.manual,
     engineLoad: v.drivetrain.load,
-    braking: active && (input.handbrake || input.throttle * signedSpeed < -0.8),
+    braking:
+      active &&
+      (input.handbrake || input.throttle * signedSpeed < -0.8 || v.drivetrain.changingDirection),
     reversing: active && v.drivetrain.gear < 0,
     shiftCount: v.drivetrain.shiftCount,
     clackCount: v.drivetrain.clackCount,

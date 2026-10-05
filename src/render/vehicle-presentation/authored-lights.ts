@@ -9,6 +9,26 @@ import {
   type Object3D,
 } from 'three'
 import { lightingDefaults } from '../../config/lighting.js'
+import {
+  VehicleLightController,
+  type VehicleLampState,
+  type VehicleLightChannel,
+} from './light-controller.js'
+
+/** Translate the GLB contract once at load time; rendering uses common channels. */
+function channel(value?: string): VehicleLightChannel {
+  const channels: Record<string, VehicleLightChannel> = {
+    Tail_Stop: 'tail-stop',
+    Reverse: 'reverse',
+    Indicator: 'signal',
+    Marker: 'marker',
+    LowBeam: 'low',
+    HighBeam: 'high',
+    Fog: 'fog',
+    Brake: 'brake',
+  }
+  return channels[value ?? ''] ?? 'position'
+}
 
 /** Project a soft horizontal cutoff; texture +Y is up in the spotlight projection. */
 export function lowBeamMask(): DataTexture {
@@ -37,17 +57,24 @@ export function lowBeamMask(): DataTexture {
 }
 
 export class AuthoredVehicleLights {
-  private enabled = false
   private reversing = false
-  private highBeam = false
   private mask?: DataTexture
-  private readonly lamps: { light: Light; intensity: number; channel?: string }[] = []
+  private readonly lamps: {
+    light: Light
+    intensity: number
+    channel: VehicleLightChannel
+    side: number
+  }[] = []
   private readonly emitters: {
     material: MeshStandardMaterial
     intensity: number
-    channel?: string
+    channel: VehicleLightChannel
+    side: number
   }[] = []
-  constructor(model: Object3D) {
+  constructor(
+    model: Object3D,
+    readonly controller = new VehicleLightController(),
+  ) {
     model.traverse((node) => {
       if (node instanceof Mesh) {
         for (const material of Array.isArray(node.material) ? node.material : [node.material])
@@ -59,7 +86,13 @@ export class AuthoredVehicleLights {
             this.emitters.push({
               material,
               intensity: material.emissiveIntensity,
-              channel: material.userData.vehicleLightChannel,
+              channel: channel(material.userData.vehicleLightChannel),
+              side:
+                material.userData.vehicleLightSide === 'L'
+                  ? -1
+                  : material.userData.vehicleLightSide === 'R'
+                    ? 1
+                    : 0,
             })
             material.emissiveIntensity = 0
           }
@@ -70,7 +103,12 @@ export class AuthoredVehicleLights {
       if (!owner) return
       const intensity = owner.userData.onIntensity
       if (!Number.isFinite(intensity) || intensity < 0) return
-      this.lamps.push({ light: node, intensity, channel: owner.userData.channel })
+      this.lamps.push({
+        light: node,
+        intensity,
+        channel: channel(owner.userData.channel),
+        side: owner.userData.side === 'L' ? -1 : owner.userData.side === 'R' ? 1 : 0,
+      })
       if (node instanceof SpotLight && owner.userData.beamPattern === 'low-beam')
         node.map = this.mask ??= lowBeamMask()
       node.intensity = 0
@@ -79,20 +117,20 @@ export class AuthoredVehicleLights {
   /** Null means this asset has no controllable authored light sources. */
   toggle(): boolean | null {
     if (!this.lamps.length && !this.emitters.length) return null
-    this.enabled = !this.enabled
+    this.controller.toggleLights()
     this.update(this.reversing)
-    return this.enabled
+    return this.controller.enabled
   }
   /** Current light switch, also used by attached trailers. */
   get isEnabled(): boolean {
-    return this.enabled
+    return this.controller.enabled
   }
   /** Select high/low beams independently of the master light switch. */
   toggleHighBeam(): boolean | null {
-    if (!this.lamps.some((lamp) => lamp.channel === 'HighBeam')) return null
-    this.highBeam = !this.highBeam
+    if (!this.lamps.some((lamp) => lamp.channel === 'high')) return null
+    this.controller.toggleHighBeam()
     this.update(this.reversing)
-    return this.highBeam
+    return this.controller.highBeam
   }
   /** Release the per-vehicle beam texture on scene disposal. */
   dispose(): void {
@@ -101,21 +139,18 @@ export class AuthoredVehicleLights {
     this.mask?.dispose()
   }
   /** Reverse lamps follow the engaged gear independently of the driving-light switch. */
-  update(reversing: boolean, enabled = this.enabled): void {
+  update(reversing: boolean, enabled = this.controller.enabled): void {
     this.reversing = reversing
-    this.enabled = enabled
-    const active = (channel?: string) =>
-      channel === 'Reverse'
-        ? reversing
-        : channel === 'Indicator' || channel === 'Fog'
-          ? false
-          : channel === 'HighBeam'
-            ? enabled && this.highBeam
-            : channel === 'LowBeam'
-              ? enabled && !this.highBeam
-              : enabled
-    for (const lamp of this.lamps) lamp.light.intensity = active(lamp.channel) ? lamp.intensity : 0
+    this.controller.enabled = enabled
+    this.apply({ powered: true, braking: false, reversing }, 0)
+  }
+  /** Render authored bindings using the same controller as cars, or the towing vehicle's controller. */
+  apply(state: VehicleLampState, now: number, controller = this.controller): void {
+    this.reversing = state.reversing
+    for (const lamp of this.lamps)
+      lamp.light.intensity = controller.level(lamp.channel, lamp.side, state, now) * lamp.intensity
     for (const emitter of this.emitters)
-      emitter.material.emissiveIntensity = active(emitter.channel) ? emitter.intensity : 0
+      emitter.material.emissiveIntensity =
+        controller.level(emitter.channel, emitter.side, state, now) * emitter.intensity
   }
 }

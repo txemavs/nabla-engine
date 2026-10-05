@@ -14,6 +14,10 @@ export const lightingDefaults = Object.freeze({
   courtesyReach: 0.65,
   /** Small courtesy-lens emissive multiplier, independent of the fill light. */
   courtesyLensIntensity: 0.025,
+  /** Indicator half-cycle in milliseconds, shared by tractor and attached trailers. */
+  signalFlashMs: 450,
+  /** Stop-lamp emission relative to the same lens used as a tail light. */
+  brakeBoost: 3,
   /** Resolution and normalized upper edge of the low-beam projection texture. */
   lowBeamMaskSize: 128,
   lowBeamCutoff: 0.5,

@@ -56,6 +56,9 @@ export class VehicleEffects {
         : null
     this.playGearChanges(car ? pilot! : null, car)
     this.audio.powertrain(car?.helm !== 'off' ? (car?.rpm ?? 0) : 0, car?.engineLoad ?? 0)
+    this.audio.reverseAlarm(
+      !!(piloted?.vehicle?.reverseAlarm && car?.reversing && car.helm !== 'off'),
+    )
   }
 
   /** One clack per audible gear change (D/R engagement or manual shift, never an automatic shift); the first sample of a vehicle only sets the baseline. */

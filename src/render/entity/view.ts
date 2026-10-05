@@ -701,8 +701,8 @@ export class SceneView {
     const fallback = box(e.size, e.color)
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
-      this.authoredLights.set(e.id, new AuthoredVehicleLights(model))
       const equipment = adapter?.mount(model, e, this.options.carInstruments)
+      this.authoredLights.set(e.id, new AuthoredVehicleLights(model, equipment?.lights?.controller))
       adapter?.preparePart?.(model, 'body')
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
       if (equipment?.mirrors) this.carMirrors.set(e.id, equipment.mirrors)
@@ -960,12 +960,20 @@ export class SceneView {
       thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now(), this.night)
     }
     for (const lights of this.shipLights.values()) lights.update(performance.now())
+    const lightNow = performance.now()
     for (const [id, lights] of this.authoredLights) {
       const info = sim.vehicleInfo(id)
       const tractor = info.towVehicleId
-      lights.update(
-        tractor ? sim.vehicleInfo(tractor).reversing : info.reversing,
-        tractor ? (this.authoredLights.get(tractor)?.isEnabled ?? false) : lights.isEnabled,
+      const source = tractor ? sim.vehicleInfo(tractor) : info
+      const controller = tractor ? this.authoredLights.get(tractor)?.controller : lights.controller
+      lights.apply(
+        {
+          powered: (tractor ?? id) === sim.player.vehicleId,
+          braking: source.braking,
+          reversing: source.reversing,
+        },
+        lightNow,
+        controller,
       )
     }
     for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
@@ -979,7 +987,7 @@ export class SceneView {
       const info = sim.vehicleInfo(id)
       lights.update(
         { powered: sim.player.vehicleId === id, braking: info.braking, reversing: info.reversing },
-        performance.now(),
+        lightNow,
         this.night,
       )
     }
@@ -1058,7 +1066,7 @@ export class SceneView {
   }
   private readonly surfaceTextures: THREE.Texture[] = []
   signal(id: string, side: number): void {
-    this.carLights.get(id)?.toggle(side)
+    this.authoredLights.get(id)?.controller.toggleSignal(side)
   }
   renderMirrors(
     renderer: THREE.WebGLRenderer,
