@@ -14,7 +14,7 @@ Buildings stay in their own grid so the ground set can load without them.
 
 ## planetCollisionChunks
 
-[Implementation, line 8](../../../../../src/planet/collisions/chunks.ts#L8)
+[Implementation, line 12](../../../../../src/planet/collisions/chunks.ts#L12)
 
 ```ts
 planetCollisionChunks(meshes: PlanetMesh[]): PlanetCollisionChunk[]
@@ -31,16 +31,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `group.values.push`
 - `groups.get`
 - `groups.set`
-- `isCandidateRoadMesh`
+- `isInspectRoadCollisionMesh`
 - `mesh.position.subarray`
 - `p.push`
 
-## planetCollisionChunks.callback@45
+## planetCollisionChunks.callback@49
 
-[Implementation, line 45](../../../../../src/planet/collisions/chunks.ts#L45)
+[Implementation, line 49](../../../../../src/planet/collisions/chunks.ts#L49)
 
 ```ts
-callback@45([key, g]): inferred by TypeScript; see implementation
+callback@49([key, g]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

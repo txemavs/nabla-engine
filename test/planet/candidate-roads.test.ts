@@ -89,7 +89,7 @@ describe('candidate road contract', () => {
     expect(planetTileRevision(manifest)).toBe('a'.repeat(64) + ':' + 'b'.repeat(64))
   })
 
-  it('loads asphalt and supports, keeps collision inspect-only, and rejects drivable: true', () => {
+  it('loads asphalt and supports even when marked drivable: false', () => {
     const source = baseManifest()
     source.roads = {
       drivable: false,
@@ -121,8 +121,11 @@ describe('candidate road contract', () => {
     expect(planetTileRevision(manifest)).toBe(
       'a'.repeat(64) + ':' + 'b'.repeat(64) + ':fb1a685e-d9fe-4e31-9cc2-129bb9dfe8d2',
     )
-    source.roads = { ...source.roads, drivable: true as unknown as false }
-    expect(() => validatePlanetManifest(source, tile)).toThrow(/cannot be marked drivable/)
+    source.roads = { ...source.roads, drivable: true }
+    expect(validatePlanetManifest(source, tile).roads?.drivable).toBe(true)
+    expect(
+      planetTileGlbLayers(validatePlanetManifest(source, tile)).map((entry) => entry.kind),
+    ).toEqual(['terrain', 'buildings-osm', 'asphalt', 'supports'])
   })
 
   it('lifts files.roads-* and derives revision from layer hashes', () => {
@@ -131,7 +134,6 @@ describe('candidate road contract', () => {
     source.files['roads-supports'] = layer('supports-2222222222222222.glb', supportHash)
     const manifest = validatePlanetManifest(source, tile)
     expect(manifest.roads).toMatchObject({
-      drivable: false,
       files: {
         asphalt: { path: 'asphalt-candidate.glb', sha256: asphaltHash, drivable: false },
         supports: { path: 'supports-2222222222222222.glb', sha256: supportHash },
@@ -153,15 +155,20 @@ describe('candidate road contract', () => {
 })
 
 describe('candidate road collision', () => {
-  it('keeps approved Roads driveable and skips candidate asphalt/supports/collision', () => {
+  it('uses candidate asphalt/supports in driving collision and skips only the inspect GLB', () => {
     const approved = triangle('Roads')
-    const asphalt = triangle('Roads', tagCandidateRoadMesh({}, 'asphalt'))
-    const supports = triangle('Roads', tagCandidateRoadMesh({}, 'supports'))
+    const asphalt = triangle('Roads', tagCandidateRoadMesh({ drivable: false }, 'asphalt'))
+    const supports = triangle('Roads', tagCandidateRoadMesh({ drivable: false }, 'supports'))
     const inspect = triangle('Roads', tagCandidateRoadMesh({ category: 'Roads' }, 'collision'))
     const lidar = triangle('Terrain', { drivable: false, nablaTerrainLidar: true })
     expect(inspect.metadata.category).toBe('RoadCollision')
     const chunks = planetCollisionChunks([approved, asphalt, supports, inspect, lidar])
     const vertices = chunks.reduce((n, chunk) => n + chunk.triangles.length, 0)
-    expect(vertices).toBe(approved.position.length + lidar.position.length)
+    expect(vertices).toBe(
+      approved.position.length +
+        asphalt.position.length +
+        supports.position.length +
+        lidar.position.length,
+    )
   })
 })

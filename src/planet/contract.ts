@@ -2,9 +2,10 @@
  * Published planet tile: the GLB manifest and the collision chunk shape.
  * Labels live in `places.ts`. The metre frame and the source grid live in `tiles.ts`.
  *
- * Optional candidate road layers (asphalt + bridge supports) are visual only. Atlas
- * writes them with `drivable: false`, hash-named files and provenance; see `roads`.
- * Candidate collision is a separate inspect file and is never the default driveable mesh.
+ * Optional candidate road layers (asphalt + bridge supports). Atlas may mark them
+ * `drivable: false` as provenance/acceptance metadata; the engine still loads,
+ * renders and uses those meshes. The separate candidate collision GLB stays
+ * inspect-only and is not the default driving collider.
  */
 import type { GeoPoint } from '../math/geo/sphere.js'
 import {
@@ -40,25 +41,25 @@ export interface PlanetLayerFile {
   sha256: string
 }
 
-/** One candidate road GLB. `drivable` is always false after validation. */
+/** One candidate road GLB. `drivable` is Atlas provenance only and does not gate the loader. */
 export interface PlanetCandidateRoadFile extends PlanetLayerFile {
-  drivable?: false
+  drivable?: boolean
 }
 
 /**
  * Candidate road layers published beside terrain/buildings.
  *
  * Expected keys (Atlas publisher / manual Zaisa patch):
- * - `drivable: false` (required meaning; explicit `true` is rejected)
- * - `files.asphalt` / `files.supports` — visual GLBs, hash-named
- * - `files.collision` — inspect-only; the loader does not use it for driving
+ * - `drivable` — provenance/acceptance only; `false` does not skip load, render or use
+ * - `files.asphalt` / `files.supports` — loaded, rendered and used in-engine when present
+ * - `files.collision` — inspect-only GLB; not the default driving collider
  * - `revision` / `recipe` / `evidenceId` / `provenance` — cache identity and audit
  *
  * A producer may also place the same files on `files.roads-asphalt` (etc.);
  * validation lifts them into this object.
  */
 export interface PlanetCandidateRoads {
-  drivable: false
+  drivable?: boolean
   revision?: string
   recipe?: string
   evidenceId?: string
@@ -160,20 +161,26 @@ export function isCandidateRoadKind(kind: string): kind is PlanetCandidateRoadKi
   return kind === 'asphalt' || kind === 'supports' || kind === 'collision'
 }
 
-/** True when extras mark a mesh as Atlas/engine candidate road (never driveable). */
+/** True when extras mark a mesh as an Atlas/engine candidate road layer. */
 export function isCandidateRoadMesh(
   metadata: { nablaCandidateRoad?: unknown } | undefined,
 ): boolean {
   return isCandidateRoadKind(String(metadata?.nablaCandidateRoad ?? ''))
 }
 
-/** Stamp worker extras so visual candidates render and stay out of driving collision. */
+/** True only for the inspect collision GLB. Asphalt/supports stay in driving collision. */
+export function isInspectRoadCollisionMesh(
+  metadata: { nablaCandidateRoad?: unknown } | undefined,
+): boolean {
+  return metadata?.nablaCandidateRoad === 'collision'
+}
+
+/** Stamp worker extras. Asphalt/supports keep category Roads so they render and collide. */
 export function tagCandidateRoadMesh(
   metadata: Record<string, any>,
   kind: PlanetCandidateRoadKind,
 ): Record<string, any> {
   metadata.nablaCandidateRoad = kind
-  metadata.drivable = false
   if (kind === 'collision') metadata.category = 'RoadCollision'
   else if (!metadata.category) metadata.category = 'Roads'
   return metadata
@@ -202,15 +209,15 @@ function layerFile(
   }
 }
 
-function rejectDrivable(value: unknown, label: string): void {
-  if (value === true) throw Error(label)
+function publishedDrivable(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined
 }
 
 function candidateRoadFile(value: unknown): PlanetCandidateRoadFile {
   const raw = value as PlanetCandidateRoadFile
-  rejectDrivable(raw?.drivable, 'Candidate road layers cannot be marked drivable')
   const file = layerFile(raw, isCandidateRoadGlbPath, 'Invalid planet road layer')
-  return { ...file, drivable: false }
+  const drivable = publishedDrivable(raw?.drivable)
+  return drivable === undefined ? file : { ...file, drivable }
 }
 
 function optionalText(value: unknown): string | undefined {
@@ -218,14 +225,13 @@ function optionalText(value: unknown): string | undefined {
 }
 
 /**
- * Normalize `roads` plus optional `files.roads-*` keys. Missing `drivable` becomes false;
- * explicit `true` is rejected so candidates cannot become the default driveable mesh.
+ * Normalize `roads` plus optional `files.roads-*` keys.
+ * `drivable` is kept as published provenance and does not skip any visual layer.
  */
 export function readCandidateRoads(manifest: PlanetManifest): PlanetCandidateRoads | undefined {
   const block = manifest.roads
   if (block !== undefined && (!block || typeof block !== 'object'))
     throw Error('Invalid planet road layers')
-  rejectDrivable(block?.drivable, 'Candidate road layers cannot be marked drivable')
   const files: PlanetCandidateRoads['files'] = { ...(block?.files ?? {}) }
   for (const kind of ['asphalt', 'supports', 'collision'] as const) {
     const lifted = manifest.files?.[FILE_ROAD_KEYS[kind]]
@@ -237,7 +243,7 @@ export function readCandidateRoads(manifest: PlanetManifest): PlanetCandidateRoa
   const normalized: PlanetCandidateRoads['files'] = {}
   for (const kind of present) normalized[kind] = candidateRoadFile(files[kind])
   return {
-    drivable: false,
+    drivable: publishedDrivable(block?.drivable),
     revision: optionalText(block?.revision),
     recipe: optionalText(block?.recipe),
     evidenceId: optionalText(block?.evidenceId),

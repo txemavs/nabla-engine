@@ -232,7 +232,7 @@ file names only) and returns a manifest the unchanged loader worker consumes.
 | `files.terrain` / `files.buildings-osm`                       | the loader's own layers (`engine.terrain`, `engine.buildings`; the package must name the same path and hash)                                             |
 | `terrain.lidar`                                               | with `relief=lidar` replaces `files.terrain`; the worker declares it category `Terrain`, so it is rendered, collided with and draped like engine terrain |
 | `ground.composite` / `.lo`                                    | `manifest.photo`; draped over terrain, roads, land use and roofs by the existing "Drape" mechanism, replacing the ArcGIS download (`imagery: 'package'`) |
-| `roads.asphalt` / `roads.supports`                            | `manifest.roads` visual candidates (`drivable: false`); rendered, never default driving collision                                                        |
+| `roads.asphalt` / `roads.supports`                            | `manifest.roads`; loaded, rendered and used in-engine when present. `drivable: false` is provenance only and does not skip them                          |
 | `roads.collision`                                             | inspect-only; loaded only with `&inspectRoads=collision` / `inspectRoadCollision: true`                                                                  |
 | instances, masks, classes, roofs, roof-ids, far, OSM snapshot | listed (`atlasCompatibilityNotes`) but **not consumed yet**                                                                                              |
 
@@ -258,12 +258,11 @@ file names only) and returns a manifest the unchanged loader worker consumes.
 6. Extra manifest fields (`z15Package`, `groundImagery`, `source`, `collision`,
    `palette`, `units`, `axes`, `attribution`, `retrievedAt`) are not rejected by the
    validator and are ignored apart from `z15Package` and optional `roads`.
-7. **Candidate roads are visual overlays, not driving mesh.** Atlas may add
-   `manifest.roads` (`drivable: false`, `revision` / `recipe` / `evidenceId`,
-   hash-named `files.asphalt` / `supports` / `collision`) or the same files on
-   `files.roads-asphalt` etc. The engine renders asphalt and supports when present.
-   Candidate collision stays out of `planetCollisionChunks` and is fetched only
-   with `&inspectRoads=collision`. Road revision is part of the tile cache key.
+7. **Candidate asphalt/supports load even when marked `drivable: false`.** That flag
+   is Atlas provenance/acceptance, not an engine skip. The worker renders and uses
+   those meshes (Roads collision included). The separate `files.collision` GLB stays
+   inspect-only (`&inspectRoads=collision`) and is not the default driving collider.
+   Road revision is part of the tile cache key.
 
 Same frame as the engine: origin at the cell centre, +X east, +Y up (absolute
 elevation), +Z south. Terrain GLBs are 7.6–55.5 MB (loader cap 64 MB); on a plain

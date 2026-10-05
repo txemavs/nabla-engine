@@ -25,7 +25,7 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
   &distance=<m>            load radius (also in the menu, remembered); farther cells are not loaded.
                            &cache=<MB> disk cache and &memory=<cells> cells in memory work the same way
   &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
-  &inspectRoads=collision  load candidate road collision GLBs for inspection (default off; never driveable)
+  &inspectRoads=collision  load the candidate collision GLB for inspection (default off; not the driving collider)
 
 A bare URL (no query, or only display options) starts the default tile of the dev-server mount.
 

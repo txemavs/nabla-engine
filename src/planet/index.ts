@@ -9,6 +9,7 @@ export {
   isCandidateRoadGlbPath,
   isCandidateRoadKind,
   isCandidateRoadMesh,
+  isInspectRoadCollisionMesh,
   tagCandidateRoadMesh,
   readCandidateRoads,
 } from './contract.js'

@@ -16,8 +16,8 @@ module adds only what the loader cannot know:
     role engine.terrain / engine.buildings -> manifest.files.terrain / 'buildings-osm' (identical)
     role terrain.lidar                      -> optional replacement for files.terrain
     role ground.composite / .lo             -> `manifest.photo` (orthophoto draped on the tile)
-    role roads.asphalt / roads.supports     -> `manifest.roads` visual candidates (`drivable: false`)
-    role roads.collision                    -> inspect-only; not loaded unless inspectRoadCollision
+    role roads.asphalt / roads.supports     -> `manifest.roads` (loaded/used even if `drivable: false`)
+    role roads.collision                    -> inspect-only GLB; not loaded unless inspectRoadCollision
   every other role (masks, classes, instances, roofs, OSM snapshot, licences) is
   listed but not consumed by the engine yet; see docs/atlas-z15-terrain.md.
 

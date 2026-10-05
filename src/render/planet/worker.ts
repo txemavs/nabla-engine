@@ -41,7 +41,7 @@ self.onmessage = async (
     manifest: PlanetManifest
     directory: string
     buildings?: boolean
-    /** Load `roads.files.collision` as an inspect mesh. Default off; never driveable. */
+    /** Load `roads.files.collision` as an inspect mesh. Default off; not the driving collider. */
     inspectRoadCollision?: boolean
     /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */
     drape?: { layers: string[]; width: number }
