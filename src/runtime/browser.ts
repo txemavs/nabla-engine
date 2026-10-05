@@ -207,8 +207,12 @@ export class GameRuntime {
   private spawnSequence = 0
   private weaponDrawn = false
   private fireRequested = false
-  /** True while the pointer lock on the canvas was requested for the drawn sidearm. */
-  private weaponPointerLock = false
+  /**
+   * Free-mouse mode. While playing, the game owns the pointer (pointer lock on the canvas);
+   * Escape, a menu taking focus, or a click on an in-world monitor release it, and it stays
+   * released until the player clicks the game again.
+   */
+  private pointerFree = false
   private readonly touchDriving: TouchDriving | null
   private readonly touchFlight: TouchFlight | null
   private readonly monitors: VehicleMonitors
@@ -237,8 +241,6 @@ export class GameRuntime {
   private lastTime: number | null = null
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
-  /** False until the first hover move after the mouse enters the canvas (its delta is a jump). */
-  private hoverLookPrimed = false
   private readonly originalTabIndex: string | null
   private disposed = false
   private readonly hud: GameHud | null
@@ -600,6 +602,7 @@ export class GameRuntime {
     this.touchDriving?.setActive(false)
     this.touchFlight?.setActive(false)
     this.monitors.hide()
+    this.pointerFree = false
     this.remoteViews.dispose()
     this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
@@ -788,8 +791,6 @@ export class GameRuntime {
       this.view.laser.enabled = false
     }
     this.fireRequested = false
-    // Boarding a vehicle (or any other path that leaves weapon mode) gives the mouse back.
-    this.syncWeaponPointer(false)
     const eye = this.camera.position.clone()
     this.origin.set(0, 0, 0)
     if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
@@ -1510,9 +1511,8 @@ export class GameRuntime {
     this.game.releaseInput()
     this.previousButtons = []
     this.previousPad = null
-    if (document.pointerLockElement === this.options.canvas) document.exitPointerLock()
+    this.releasePointer()
   }
-  /** Weapon mode: sidearm drawn while playing on foot. The mouse is captured only then. */
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
   private updateSidearmLaser(sim: Simulation, time: number): void {
     if (!this.sidearm?.laserEnabled || !this.weaponDrawn || sim.player.vehicleId) {
@@ -1534,46 +1534,39 @@ export class GameRuntime {
       0,
     )
     const end = (
-      aimed
-        ? aimed.point
-        : origin.clone().addScaledVector(direction, this.sidearm.range).toArray()
+      aimed ? aimed.point : origin.clone().addScaledVector(direction, this.sidearm.range).toArray()
     ) as Vec3Tuple
     this.view.laser.set(origin.toArray() as Vec3Tuple, end, !!aimed)
   }
 
-  private weaponMode(): boolean {
-    return (
-      this.weaponDrawn &&
-      this.session.state === 'playing' &&
-      !!this.session.simulation &&
-      !this.session.simulation.player.vehicleId
-    )
+  private pointerLocked(): boolean {
+    return document.pointerLockElement === this.options.canvas
+  }
+  /** Pointer lock is unavailable (old or embedded browsers): fall back to drag-to-look. */
+  private pointerLockUnsupported(): boolean {
+    return typeof this.options.canvas.requestPointerLock !== 'function'
   }
   /**
-   * FPS-style mouse capture for the sidearm. Outside weapon mode, release a lock this owner
-   * requested. In weapon mode, request the lock only when `gesture` is true: browsers grant
-   * pointer lock from a keyboard or mouse event handler, never from the frame loop.
+   * The single pointer rule: while playing, the game owns the mouse. Browsers grant pointer
+   * lock only from a user gesture handler (click or key), never from the frame loop, so this
+   * is called from input handlers only. A refused request is harmless; the next click retries.
    */
-  private syncWeaponPointer(gesture: boolean): void {
+  private capturePointer(): void {
     const canvas = this.options.canvas
-    const locked = document.pointerLockElement === canvas
-    if (!this.weaponMode()) {
-      if (this.weaponPointerLock && locked) document.exitPointerLock()
-      this.weaponPointerLock = false
+    if (this.session.state !== 'playing' || this.pointerLocked() || this.pointerLockUnsupported())
       return
-    }
-    if (!gesture || locked || typeof canvas.requestPointerLock !== 'function') return
-    this.weaponPointerLock = true
-    const failed = () => {
-      this.weaponPointerLock = false
-    }
+    this.pointerFree = false
     try {
       // Promise in current browsers, undefined in older ones; a refusal must not throw.
       const request = canvas.requestPointerLock() as unknown as Promise<void> | undefined
-      if (request && typeof request.catch === 'function') request.catch(failed)
+      if (request && typeof request.catch === 'function') request.catch(() => undefined)
     } catch {
-      failed()
+      // Ignored: the player stays in free-mouse mode until the next click.
     }
+  }
+  /** Give the mouse back (free-mouse mode); the next click on the game recaptures it. */
+  private releasePointer(): void {
+    if (this.pointerLocked()) document.exitPointerLock()
   }
   private cycleCamera(): void {
     const message = this.game.action('KeyC')
@@ -1680,6 +1673,9 @@ export class GameRuntime {
           event.preventDefault()
           canvas.focus()
           this.effects.audio.unlock()
+          // Free mouse over interactive monitors: the canvas lets clicks through, so a click
+          // outside every monitor lands here and hands the mouse back to the game.
+          if (event.pointerType === 'mouse') this.capturePointer()
         }
       },
       options,
@@ -1689,17 +1685,27 @@ export class GameRuntime {
       (event) => {
         canvas.focus()
         this.effects.audio.unlock()
-        const onFoot =
-          this.weaponDrawn && !this.session.simulation?.player.vehicleId
-        if (event.button === 0 && onFoot) {
-          this.fireRequested = true
-          // Re-capture after Esc: the click fires and locks the mouse again.
-          if (event.pointerType === 'mouse') this.syncWeaponPointer(true)
+        const mouse = event.pointerType === 'mouse'
+        if (mouse && this.session.state === 'playing') {
+          if (this.pointerLocked()) {
+            // Clicking an in-world monitor under the crosshair frees the mouse for that UI.
+            if (event.button === 0 && this.monitors.panelAt(innerWidth / 2, innerHeight / 2)) {
+              event.preventDefault()
+              this.releasePointer()
+              return
+            }
+          } else if (!this.pointerLockUnsupported()) {
+            // Free-mouse mode: this click only recaptures the pointer; it does not shoot.
+            event.preventDefault()
+            this.capturePointer()
+            return
+          }
         }
+        const onFoot = this.weaponDrawn && !this.session.simulation?.player.vehicleId
+        if (event.button === 0 && onFoot) this.fireRequested = true
         if (event.button === 2 && onFoot) {
           event.preventDefault()
           this.sidearm?.setAiming(true)
-          if (event.pointerType === 'mouse') this.syncWeaponPointer(true)
         }
       },
       options,
@@ -1721,7 +1727,7 @@ export class GameRuntime {
     canvas.addEventListener(
       'contextmenu',
       (event) => {
-        if (this.weaponDrawn && !this.session.simulation?.player.vehicleId) event.preventDefault()
+        if (this.session.state === 'playing') event.preventDefault()
       },
       options,
     )
@@ -1729,6 +1735,10 @@ export class GameRuntime {
       'keydown',
       (event) => {
         if (!this.hasInput() || this.session.state !== 'playing') return
+        // Escape while unlocked asks for the free mouse; any other key while the game should
+        // own the pointer (first keypress after loading, or a refused lock) captures it.
+        if (event.code === 'Escape') this.pointerFree = true
+        else if (!this.pointerFree && !event.repeat) this.capturePointer()
         if (
           ['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)
         )
@@ -1759,8 +1769,6 @@ export class GameRuntime {
         this.effects.audio.unlock()
         if (!event.repeat) {
           this.action(event.code)
-          // Tab draws or holsters; E leaves a vehicle with the weapon still drawn.
-          this.syncWeaponPointer(event.code === 'Tab' || event.code === 'KeyE')
         }
       },
       options,
@@ -1770,17 +1778,20 @@ export class GameRuntime {
       capture: true,
     })
     window.addEventListener('pagehide', () => this.releaseInput(), options)
-    // Leaving pointer lock (Escape, browser UI) can swallow the keyups of held controls.
+    // Losing pointer lock (Escape, menus, monitors, browser UI) enters free-mouse mode until the
+    // next click, and can swallow the keyups of held controls.
     document.addEventListener(
       'pointerlockchange',
       () => {
-        if (document.pointerLockElement === canvas) return
-        this.weaponPointerLock = false
+        if (document.pointerLockElement === canvas) {
+          this.pointerFree = false
+          return
+        }
+        if (this.session.state === 'playing') this.pointerFree = true
         this.releaseInput()
       },
       options,
     )
-    document.addEventListener('pointerlockerror', () => (this.weaponPointerLock = false), options)
     canvas.addEventListener('blur', () => this.releaseInput(), options)
     window.addEventListener('blur', () => this.releaseInput(), options)
     document.addEventListener(
@@ -1792,13 +1803,8 @@ export class GameRuntime {
       },
       options,
     )
-    // Hover look: in chase, first-person and driver views the mouse looks around with no
-    // button held. Re-entering the canvas resets priming so its first delta cannot jerk the view.
-    // A single hover delta above this many CSS pixels is a cursor warp, not a look gesture.
-    const hoverLookMaxJump = 250
-    const unprime = () => (this.hoverLookPrimed = false)
-    canvas.addEventListener('pointerenter', unprime, options)
-    canvas.addEventListener('pointerleave', unprime, options)
+    // Mouse look runs only while the game owns the pointer. In free-mouse mode the cursor is for
+    // UI; touch, pen and browsers without pointer lock look by dragging instead.
     canvas.addEventListener(
       'pointermove',
       (event) => {
@@ -1806,11 +1812,9 @@ export class GameRuntime {
         const state = this.cameraState
         const seated = !!this.session.simulation?.player.vehicleId
         if (!mouseLooksWithoutButton(state, seated)) return
-        if (!(event.buttons & 1) && document.pointerLockElement !== canvas) {
-          if (event.pointerType !== 'mouse') return
-          const primed = this.hoverLookPrimed
-          this.hoverLookPrimed = true
-          if (!primed || Math.hypot(event.movementX, event.movementY) > hoverLookMaxJump) return
+        if (!this.pointerLocked()) {
+          const dragging = !!(event.buttons & 1)
+          if (!dragging || (event.pointerType === 'mouse' && !this.pointerLockUnsupported())) return
         }
         state.lastLookTime = performance.now()
         if (state.mode === 'cockpit' && seated) {

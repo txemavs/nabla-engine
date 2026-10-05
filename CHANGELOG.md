@@ -3,12 +3,15 @@
 ## Unreleased
 
 ### Added
+
 - Compact game settings HUD (icon + GTA-style tabs) for Planeta visuals: artistic cloud amount, cloud pressure, sun lens flare, and related sky/sea toggles. Shares the ship-monitor stylesheet; panel root is remountable on a monitor later. Config keys documented in `docs/planet-visual-settings.md`.
 - `GameRuntime` cloud pressure persistence, `lensFlareAmount` / `planetVisualConfig()`, and reattached sun lens flare in Play after the Studio extraction.
 
 ## Unreleased
 
 ### Changed
+
+- **Single mouse-capture rule:** while playing, the game always owns the pointer (pointer lock) in every mode — on foot, sidearm, chase, cockpit and flight. **Esc** (or a menu/settings panel taking focus) frees the mouse until the next click on the viewport, which only recaptures it and does not fire. Clicking an in-world monitor keeps the mouse free for that monitor until a click outside it. This replaces the sidearm-only lock, the lock release on boarding a vehicle, the hover-look without capture, the monitors' own lock request and the settings panels' explicit `exitPointerLock` calls. The portal panel hint now reads "Esc releases the mouse".
 - Disable the cockpit circular touch ring around the steering wheel by default (`controlDefaults.showPilotTouchRing: false`). The ring drew a circle while its hit target stayed square, so touches outside the circle still steered; DOM/CSS and `TouchDriving.setPilot` stay so it can be re-enabled later.
 - **White-truck power/brakes:** tractor preset `engineForce`/`powerCv`/`torqueNm`/`maxWheelForceN` +20% and `brakeForce` +40% (engineForce 12000→14400, brakeForce 120→168, powerCv 420→504, torqueNm 2000→2400, maxWheelForceN 60000→72000). Cars and ships unchanged.
 - **Sidearm hit marks on buildings:** physics hits without a scene `entityId` (planet building colliders, static world) now spawn a world-anchored mark under `SceneView.root`, not only entity-parented marks on cars/props. Marks use a dark core plus light ring so they read on both light and dark surfaces.

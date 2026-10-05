@@ -157,11 +157,25 @@ speed and turn telemetry are filtered to avoid projection/framing vibration.
 In flight mode the chase view leans back about 7° (`flightChaseTilt`), easing in
 and out, so the vehicle sits lower in frame and more of the route ahead shows.
 
-Mouse look needs no click or held button in the chase/third-person view, on-foot
-first person and the cockpit view: moving the mouse over the focused viewport
-orbits or turns the head. Only the overhead view leaves the cursor alone for wheel
-zoom. Pointer lock (where a host or the sidearm requests it) still works; without it
-the look stops when the cursor reaches the viewport edge.
+### Mouse capture
+
+One rule covers every mode (on foot, sidearm, chase, cockpit, flight): **while playing,
+the game owns the mouse** with pointer lock. The first click on the viewport (or the
+first key press after loading) captures it; it stays captured when drawing or holstering
+the sidearm, boarding or leaving vehicles and changing camera views. Mouse look then
+needs no held button; the overhead view ignores mouse movement and keeps wheel zoom.
+
+**Esc** releases the mouse into free-cursor mode. It stays free (mouse movement does not
+turn the camera) until the next **click** on the viewport, which only recaptures it: that
+click does not fire. Pausing, stopping, opening the settings or display panels, or any
+other UI taking focus from the canvas also frees the mouse; menus never request or fight
+the lock themselves.
+
+**In-world monitors** (ship helm, telemetry, place and systems screens, Stargate panels)
+are the one exception. Clicking a monitor under the view centre while captured, or
+clicking it after **Esc**, keeps the mouse free for that monitor's buttons. The next
+click **outside** every monitor recaptures it. Touch, pen and browsers without pointer
+lock look by dragging instead.
 
 The on-foot avatar uses Agency's floating CRT monitor. It leans with movement and
 acceleration, levels after braking and hovers gently. While driving, the monitor
@@ -194,13 +208,13 @@ above the surface below to recover normal clearance. **Space** gives one upward
 impulse followed by a fall; it does not select a permanent height. The library's default walking controller remains available; the playground
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
-The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. Drawing the weapon captures the mouse
-like an FPS (pointer lock): the mouse aims without holding a button and **left-click** fires. Hold **right-click** for aim-down-sights
+The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. With the mouse captured
+(see [Mouse capture](#mouse-capture)) the mouse aims without holding a button and **left-click** fires. Hold **right-click** for aim-down-sights
 (raises and centres the pistol for iron sights); release to return to the hip pose. There is **no UI crosshair** — aim with the pistol.
 **H** toggles a laser sight (beam from the muzzle plus a surface pin) while the weapon is drawn; in a vehicle **H** still toggles lights.
 Each shot plays a synthesized gunshot, applies viewmodel **recoil**, and on a hit leaves a visible surface mark (buildings, vehicles, props) plus a brief spark burst (no bullet
-tracer trail). Holstering, boarding a vehicle, pausing or stopping play releases the mouse; **Esc** releases it too, and the next click on
-the viewport fires and captures it again. Leaving a vehicle with **E** while the weapon is still drawn captures it again. Studio equips the
+tracer trail). Drawing, holstering and boarding do not change mouse capture; **Esc** frees the mouse and the next click on the viewport
+recaptures it without firing. Studio equips the
 first weapon preset (`assets/library/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
 220 ms interval, 150 m range and impulse 12. Another pistol is another JSON file. Shots stop at the first
 physical solid and push dynamic props. In third person, a second ray from the
@@ -212,7 +226,7 @@ aim and hit detection. There is no damage, ammunition or multiplayer yet.
 
 The container's bow and stern frames now carry their own mouths. Walk/hover up to
 a frame: its nearby panel offers a destination selector and **Abrir / Cerrar**.
-Use **K** to release the captured mouse for the buttons. Destinations are the
+Click the panel (or press **Esc**) to free the mouse for its buttons; click outside it to recapture. Destinations are the
 compatible Stargates already present in this scene; add road mouths with
 **ESCENA + → Stargates** while stopped. Choose a destination, then open the connection.
 Closing retains its address; switching destinations closes old links atomically.

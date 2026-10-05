@@ -55,10 +55,8 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
   document.getElementById('game-canvas')?.addEventListener('nabla:resolution-scale', () => sync())
   quality.value = new URLSearchParams(location.search).get('quality') ?? 'custom'
   if (!quality.value) quality.value = 'custom'
-  const releaseFocus = () => {
-    document.exitPointerLock?.()
-    document.getElementById('game-canvas')?.blur()
-  }
+  // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
+  const releaseFocus = () => document.getElementById('game-canvas')?.blur()
   panel.addEventListener('toggle', () => {
     if (panel.open) {
       releaseFocus()

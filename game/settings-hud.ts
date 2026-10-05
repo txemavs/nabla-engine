@@ -234,7 +234,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const open = () => {
     win.hidden = false
     toggle.setAttribute('aria-expanded', 'true')
-    document.exitPointerLock?.()
+    // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
+    doc.getElementById('game-canvas')?.blur()
     planetPanel?.refresh()
   }
   const close = () => {
