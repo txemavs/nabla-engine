@@ -163,8 +163,14 @@ export class TouchFlight {
   private bindStick(el: HTMLElement, hand: 'left' | 'right') {
     const apply = (e: PointerEvent) => {
       const r = el.getBoundingClientRect()
-      const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2 || 1)))
-      const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 2 || 1)))
+      const nx = Math.max(
+        -1,
+        Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2 || 1)),
+      )
+      const ny = Math.max(
+        -1,
+        Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 2 || 1)),
+      )
       if (hand === 'left') {
         this.pad.yaw = nx
         this.pad.throttle = Math.max(0, Math.min(1, 0.5 - ny / 2))

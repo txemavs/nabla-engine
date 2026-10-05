@@ -62,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.update
 
-[Implementation, line 70](../../../../../src/render/entity/shot-sparks.ts#L70)
+[Implementation, line 68](../../../../../src/render/entity/shot-sparks.ts#L68)
 
 Brief pin-spark bursts at bullet impact points.
 
@@ -78,17 +78,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.computeBoundingSphere`
 - `this.geometry.setDrawRange`
 
-## ShotSparks.update.callback@72
+## ShotSparks.update.callback@70
 
-[Implementation, line 72](../../../../../src/render/entity/shot-sparks.ts#L72)
+[Implementation, line 70](../../../../../src/render/entity/shot-sparks.ts#L70)
 
 ```ts
-callback@72(b): inferred by TypeScript; see implementation
+callback@70(b): inferred by TypeScript; see implementation
 ```
 
 ## ShotSparks.clear
 
-[Implementation, line 96](../../../../../src/render/entity/shot-sparks.ts#L96)
+[Implementation, line 92](../../../../../src/render/entity/shot-sparks.ts#L92)
 
 Brief pin-spark bursts at bullet impact points.
 
@@ -102,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.dispose
 
-[Implementation, line 102](../../../../../src/render/entity/shot-sparks.ts#L102)
+[Implementation, line 98](../../../../../src/render/entity/shot-sparks.ts#L98)
 
 Brief pin-spark bursts at bullet impact points.
 

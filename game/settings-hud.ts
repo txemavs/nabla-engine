@@ -98,10 +98,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   console.append(title, tabBar, panes, closeBtn)
   win.append(console)
 
+  // Planeta opens with the time of day (Hora), before clouds, pressure and lens flare.
+  const planetPane = paneEls.get('planet')!
+  const timeGroup = doc.getElementById('scene-time')
+  if (timeGroup) planetPane.append(timeGroup)
   let planetPanel: PlanetSettingsPanel | null = createPlanetSettingsPanel(doc)
-  paneEls.get('planet')!.append(planetPanel.root)
+  planetPane.append(planetPanel.root)
 
-  // Relocate existing menu sections into tabs (Calidad / Capas / Vehículos / leftover Planeta clock/sea).
+  // Relocate existing menu sections into tabs (Calidad / Capas / Vehículos / leftover Planeta sky/sea).
   const qualityPane = paneEls.get('quality')!
   for (const id of ['display-quality-section', 'display-performance']) {
     const el = doc.getElementById(id)
@@ -116,14 +120,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const vehicles = doc.getElementById('scene-vehicles')
   if (vehicles) vehiclesPane.append(vehicles)
 
-  // Keep time/sea groups from the legacy Planeta section under Capas as "Escena".
+  // Keep the remaining legacy Planeta groups (sky, sun, sea, clouds) under Capas; Hora moved to Planeta.
   const legacyPlanet = doc.getElementById('scene-planet')
   if (legacyPlanet) {
     const sceneBox = doc.createElement('fieldset')
     sceneBox.className = 'menu-section'
     sceneBox.id = 'settings-scene-extras'
     const legend = doc.createElement('legend')
-    legend.textContent = 'Hora y mar'
+    legend.textContent = 'Cielo y mar'
     sceneBox.append(legend)
     while (legacyPlanet.firstChild) sceneBox.append(legacyPlanet.firstChild)
     layersPane.append(sceneBox)

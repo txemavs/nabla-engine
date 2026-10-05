@@ -8,6 +8,7 @@ import {
   saveHiddenLayers,
   setHiddenTileLayers,
   tileMeshHidden,
+  PLACE_LABEL_CATEGORY,
 } from '../../src/render/planet/tile-layers.js'
 import { GROUND_DRAPE_LIFT, ROOF_DRAPE_LIFT } from '../../src/render/planet/world.js'
 
@@ -35,6 +36,34 @@ describe('tile layers', () => {
     setHiddenTileLayers(['photo'])
     expect(tileMeshHidden({ drape: 'terrain' })).toBe(true)
     expect(tileMeshHidden({ drape: 'roads' })).toBe(false)
+  })
+
+  it('hides the floating city names as the places layer', () => {
+    expect(TILE_LAYERS.map((layer) => layer.id)).toContain('places')
+    const label = { category: PLACE_LABEL_CATEGORY }
+    expect(tileMeshHidden(label)).toBe(false)
+    setHiddenTileLayers(['places'])
+    expect(tileMeshHidden(label)).toBe(true)
+    expect(tileMeshHidden({ category: 'Roads' })).toBe(false)
+  })
+
+  it('writes and reads choices relative to a host default', () => {
+    const base = ['places']
+    expect(formatLayerSpec(['places'], base)).toBe('')
+    expect(formatLayerSpec([], base)).toBe('+places')
+    expect(formatLayerSpec(['road', 'places'], base)).toBe('-road')
+    expect(parseLayerSpec('', base)).toEqual(['places'])
+    expect(parseLayerSpec('+places', base)).toEqual([])
+    expect(parseLayerSpec('-road', base)).toEqual(['road', 'places'])
+    const memory = new Map<string, string>()
+    const storage = {
+      getItem: (k: string) => memory.get(k) ?? null,
+      setItem: (k: string, v: string) => void memory.set(k, v),
+    }
+    expect(loadHiddenLayers(storage, 'k', base)).toEqual(['places'])
+    saveHiddenLayers(storage, 'k', [], base)
+    expect(memory.get('k')).toBe('+places')
+    expect(loadHiddenLayers(storage, 'k', base)).toEqual([])
   })
 
   it('ignores unknown ids and shows everything by default', () => {

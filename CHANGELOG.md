@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Added
+
+- **City labels toggle:** the floating OSM city / town / village names (~1 km above the ground)
+  are now the tile layer `places` ("Nombres de poblaciones" in Ajustes → Capas). Hide them with
+  `layers=-places`, `runtime.setHiddenLayers(['places'])` or the standalone game's host flag
+  `NABLA_BOOT.cityLabels: false` (default stays on; the player's stored choice is kept relative to
+  the host default).
+- **Mark-only pre-attract splash:** `layout: 'mark'` (or `NABLA_BOOT.preAttract: true`) shows a
+  black screen with only the small Nabla ▽ mark bottom-right (`NABLA_MARK_SVG` / `nablaMarkUrl`),
+  no title, no load texts, then the planet attract view behind the mark. New skin slot
+  `status: false` hides every load text in any layout.
+
+### Fixed
+
+- Splash `messages: []` no longer falls back to the default Nabla loading lines, and `title: ''`
+  clears the title. The early boot lines in `game/main.ts` use the host's messages.
+- `terrain-main.ts` only installs host vehicles when the scene has geography and vehicles (the
+  guard had lost its braces; fixes the typecheck error on main).
+
 ### Changed
 
 - **S3 headlights like the truck:** the S3 now has real low and high beams at its two front lamp
@@ -12,6 +31,9 @@
   `lightingDefaults.headlightIntensityScale` (0.85) with a slightly wider penumbra
   (`headlightPenumbraBoost` 0.1); the low-beam cut-off edge is softer (`lowBeamCutoffSoftness`
   0.025 → 0.04, `lowBeamSpreadPower` 4 → 3.5).
+- **Settings UI:** the Planeta tab puts **Hora** (time of day) first, before clouds, pressure and
+  lens flare; the leftover legacy groups move to Capas → "Cielo y mar". The quality section no
+  longer mentions DLSS; only the real resolution scaling is shown.
 
 - **Cloud style by quality:** artistic 3-layer clouds are the default only on the **Ultra**
   performance preset. Mobile, minimal, low, balanced, high and custom start on cheap (`low`)

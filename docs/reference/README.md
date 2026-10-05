@@ -6,11 +6,11 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **293 modules; 2925 executable function definitions**.
+Coverage: **293 modules; 2926 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
-| [game/boot.ts](game/boot.ts.md) | 3 |
+| [game/boot.ts](game/boot.ts.md) | 4 |
 | [game/config.ts](game/config.ts.md) | 4 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 14 |
 | [game/drive.ts](game/drive.ts.md) | 16 |
@@ -19,7 +19,7 @@ Coverage: **293 modules; 2925 executable function definitions**.
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 21 |
-| [game/main.ts](game/main.ts.md) | 0 |
+| [game/main.ts](game/main.ts.md) | 1 |
 | [game/menu.ts](game/menu.ts.md) | 4 |
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 41 |
@@ -204,7 +204,7 @@ Coverage: **293 modules; 2925 executable function definitions**.
 | [src/render/planet/static-tiles.ts](src/render/planet/static-tiles.ts.md) | 12 |
 | [src/render/planet/sun-disc.ts](src/render/planet/sun-disc.ts.md) | 2 |
 | [src/render/planet/tile-asset.ts](src/render/planet/tile-asset.ts.md) | 5 |
-| [src/render/planet/tile-layers.ts](src/render/planet/tile-layers.ts.md) | 16 |
+| [src/render/planet/tile-layers.ts](src/render/planet/tile-layers.ts.md) | 15 |
 | [src/render/planet/vegetation.ts](src/render/planet/vegetation.ts.md) | 6 |
 | [src/render/planet/visibility.ts](src/render/planet/visibility.ts.md) | 1 |
 | [src/render/planet/water-geometry.ts](src/render/planet/water-geometry.ts.md) | 17 |

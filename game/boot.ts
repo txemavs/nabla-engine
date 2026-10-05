@@ -18,10 +18,22 @@ export interface HostBootConfig {
   splash?: EngineSplashSkin
   /** Planet-from-orbit boot view while terrain and vehicles stream; true uses defaults. */
   attract?: boolean | AttractOptions
+  /**
+   * Black, mark-only pre-attract: shorthand for `attract: true` (unless set) with
+   * `splash: { layout: 'mark', messages: [], status: false }`. Only the small Nabla ▽ (or
+   * `splash.logoUrl`) shows bottom-right, then the planet attract view behind it.
+   */
+  preAttract?: boolean
   /** Run the ~3 s machine probe when resolution is auto (default true). */
   probe?: boolean
   /** Probe length in milliseconds (default 3000). */
   probeMs?: number
+  /**
+   * Floating city / town / village names over the terrain (layer `places`). Default true.
+   * `false` starts with them hidden; the player can still switch them on in Ajustes → Capas,
+   * and `?layers=+places` / `?layers=-places` override for one visit.
+   */
+  cityLabels?: boolean
 }
 
 declare global {
@@ -58,9 +70,19 @@ export function readBootConfig(
   const merged: HostBootConfig = { ...url, ...built, ...host }
   // An explicit URL ?boot= still wins so testers can compare both modes on a skinned host.
   if (boot === 'attract' || boot === 'classic') merged.attract = url.attract
-  merged.splash = { ...(built.splash ?? {}), ...(host.splash ?? {}) }
-  if (merged.attract && !merged.splash.layout) merged.splash.layout = 'corner'
+  let splash: EngineSplashSkin = { ...(built.splash ?? {}), ...(host.splash ?? {}) }
+  if (merged.preAttract) {
+    if (merged.attract === undefined) merged.attract = true
+    splash = { layout: 'mark', messages: [], status: false, ...splash }
+  }
+  if (merged.attract && !splash.layout) splash.layout = 'corner'
+  merged.splash = splash
   return merged
+}
+
+/** The host's default hidden terrain layers, the base for the URL and the stored player choice. */
+export function bootHiddenLayers(config: HostBootConfig): string[] {
+  return config.cityLabels === false ? ['places'] : []
 }
 
 /**

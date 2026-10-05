@@ -36,7 +36,16 @@ export const TILE_LAYERS: readonly TileLayer[] = [
       'pitches',
     ],
   },
+  /**
+   * Floating OSM city / town / village names (~1 km above the ground). Shown by default; hosts that
+   * do not want them pass `-places` (URL `layers=`, `runtime.setHiddenLayers(['places'])`, or the
+   * standalone game's `NABLA_BOOT.cityLabels: false`). The ship navigation HUD is not affected.
+   */
+  { id: 'places', label: 'Nombres de poblaciones', categories: ['Places'], drapes: [] },
 ]
+
+/** `userData.category` of the floating place-name sprites (layer `places`). */
+export const PLACE_LABEL_CATEGORY = 'Places'
 
 const hidden = new Set<string>()
 
@@ -86,12 +95,21 @@ export function parseLayerSpec(
   return TILE_LAYERS.filter((layer) => out.has(layer.id)).map((layer) => layer.id)
 }
 
-/** Inverse of `parseLayerSpec` for URLs: `-road,-photo`, or '' when everything is shown. */
-export function formatLayerSpec(hiddenIds: Iterable<string>): string {
+/**
+ * Inverse of `parseLayerSpec` for URLs: `-road,-photo`, or '' when everything is shown.
+ * With a `base` (a host's default hidden set) only the differences are written: `-id` for a layer
+ * hidden beyond the base, `+id` for a base layer the player switched back on.
+ */
+export function formatLayerSpec(hiddenIds: Iterable<string>, base: Iterable<string> = []): string {
   const set = new Set(hiddenIds)
-  return TILE_LAYERS.filter((layer) => set.has(layer.id))
-    .map((layer) => '-' + layer.id)
-    .join(',')
+  const fallback = new Set(base)
+  return TILE_LAYERS.flatMap((layer) =>
+    set.has(layer.id) && !fallback.has(layer.id)
+      ? ['-' + layer.id]
+      : !set.has(layer.id) && fallback.has(layer.id)
+        ? ['+' + layer.id]
+        : [],
+  ).join(',')
 }
 
 /** Minimal storage surface (a `Storage`, or a stub in tests). */
@@ -100,12 +118,20 @@ export interface LayerStorage {
   setItem(key: string, value: string): void
 }
 
-/** Stored choice; a broken or unavailable store behaves as "everything shown". */
-export function loadHiddenLayers(storage: LayerStorage | undefined, key: string): string[] {
+/**
+ * Stored choice over the host's default hidden set (`base`, default none); a broken or unavailable
+ * store behaves as "the defaults".
+ */
+export function loadHiddenLayers(
+  storage: LayerStorage | undefined,
+  key: string,
+  base: Iterable<string> = [],
+): string[] {
+  const defaults = [...base]
   try {
-    return parseLayerSpec(storage?.getItem(key), [])
+    return parseLayerSpec(storage?.getItem(key), defaults)
   } catch {
-    return []
+    return parseLayerSpec('', defaults)
   }
 }
 
@@ -113,9 +139,10 @@ export function saveHiddenLayers(
   storage: LayerStorage | undefined,
   key: string,
   hiddenIds: Iterable<string>,
+  base: Iterable<string> = [],
 ): void {
   try {
-    storage?.setItem(key, formatLayerSpec(hiddenIds))
+    storage?.setItem(key, formatLayerSpec(hiddenIds, base))
   } catch {
     // Private mode or a full quota: the choice just does not persist.
   }

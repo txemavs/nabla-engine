@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.stubGlobal('location', { search: '' })
-const { readBootConfig } = await import('../../game/boot.js')
+const { bootHiddenLayers, readBootConfig } = await import('../../game/boot.js')
 
 describe('standalone boot config', () => {
   it('defaults to the classic splash without attract', () => {
@@ -16,6 +16,30 @@ describe('standalone boot config', () => {
     const boot = readBootConfig('', page)
     expect(boot.attract).toBe(true)
     expect(boot.splash).toMatchObject({ title: 'EUSKADI ONLINE', layout: 'corner' })
+  })
+
+  it('keeps the mark-only layout under attract and maps cityLabels to the places layer', () => {
+    const page = {
+      NABLA_BOOT: {
+        attract: true,
+        cityLabels: false,
+        splash: { layout: 'mark' as const, messages: [] },
+      },
+    }
+    const boot = readBootConfig('', page)
+    expect(boot.splash).toMatchObject({ layout: 'mark', messages: [] })
+    expect(bootHiddenLayers(boot)).toEqual(['places'])
+    expect(bootHiddenLayers(readBootConfig('', {}))).toEqual([])
+  })
+
+  it('preAttract is black + mark only, quiet, with attract on', () => {
+    const boot = readBootConfig('', { NABLA_BOOT: { preAttract: true } })
+    expect(boot.attract).toBe(true)
+    expect(boot.splash).toEqual({ layout: 'mark', messages: [], status: false })
+    // A tester can still compare the classic boot.
+    expect(readBootConfig('?boot=classic', { NABLA_BOOT: { preAttract: true } }).attract).toBe(
+      false,
+    )
   })
 
   it('URL ?boot= wins for testers and ?probe=0 skips the probe', () => {

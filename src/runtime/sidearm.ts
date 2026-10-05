@@ -114,7 +114,10 @@ export class Sidearm {
       this.flashAt[2] - 2.5,
     ])
     this.laserLine = new THREE.Line(
-      new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(laserPositions, 3)),
+      new THREE.BufferGeometry().setAttribute(
+        'position',
+        new THREE.BufferAttribute(laserPositions, 3),
+      ),
       new THREE.LineBasicMaterial({
         color: '#ff2a2a',
         transparent: true,

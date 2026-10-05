@@ -86,10 +86,11 @@ The engine exposes splash slots in `@nabla/engine/runtime/splash`:
 ```ts
 interface EngineSplashSkin {
   logoUrl?: string // image shown above the title
-  title?: string // default "NABLA ENGINE"
-  messages?: readonly string[] // load lines, chosen by boot phase
+  title?: string // default "NABLA ENGINE"; '' hides the title
+  messages?: readonly string[] // load lines, chosen by boot phase; [] = no host load texts
+  status?: boolean // false hides every load text (status + detail lines), any layout
   themeCss?: string // injected once as <style data-nabla-splash-theme>
-  layout?: 'centered' | 'corner' // classic card or bottom-left (attract) status
+  layout?: 'centered' | 'corner' | 'mark' // classic card, bottom-left status, or mark-only
 }
 ```
 
@@ -115,6 +116,40 @@ that a theme can override without forking the markup:
 
 Detailed streaming lines (`describeLoading`: cells ready, requests, last error) still replace
 the host message as soon as terrain progress arrives, so a skin never hides real failures.
+The only exception is the `mark` layout below, which hides every text; failures still reach
+the player through the error overlay (`#error-message`).
+
+### Mark-only pre-attract (`layout: 'mark'`)
+
+For a TV-style boot with no branding other than the engine's own mark:
+
+- the screen is **black** (`--splash-mark-bg`, default `#000`) with only the logo, **small in the
+  bottom-right corner** (`--splash-mark-size`, default 40px; `--splash-mark-inset`, default 24px);
+- the default logo is the **Nabla mark** (hollow, tip-down ▽ in ice blue), exported as
+  `NABLA_MARK_SVG` / `nablaMarkUrl`; a `logoUrl` replaces it;
+- title, status, detail lines, progress bar and tile grid are not shown, nor are the demo menu,
+  the controls hint, the engine HUD or the touch rigs while the splash is up;
+- with `attract`, the black curtain fades out as soon as the canvas reports
+  `data-boot-mode="attract"`, so the planet appears behind the mark; the mark stays until play
+  starts and the splash hides.
+
+```html
+<head>
+  <script>
+    // Shorthand for { attract: true, splash: { layout: 'mark', messages: [], status: false } }
+    window.NABLA_BOOT = { preAttract: true }
+  </script>
+</head>
+```
+
+`messages: []` never falls back to the default Nabla lines, and `status: false` hides every load
+text (including the engine's streaming lines) in the `centered` and `corner` layouts too.
+
+Set `NABLA_BOOT` in `<head>`: an inline script in the demo page then applies the mark layout at
+first paint, before `main.ts` loads, so neither "NABLA ENGINE" nor "Cargando el motor…" flashes.
+(With `VITE_NABLA_BOOT` the skin is applied when `main.ts` starts.) `messages: []` also makes the
+early boot lines empty in any layout; a host that sets messages sees its first message instead of
+the demo's Spanish lines.
 
 ## 4. Attract boot view
 
@@ -183,8 +218,16 @@ The bundled game reads a boot config ([game/boot.ts](../game/boot.ts)), highest 
 2. `VITE_NABLA_BOOT` with the same JSON at build time.
 3. URL: `?boot=attract` / `?boot=classic` (testers; wins over the host), `?probe=0` skips the probe.
 
-`attract: true` defaults the splash to `layout: 'corner'`. `probe` (default true) runs only in
-auto resolution; `probeMs` changes its length.
+`attract: true` defaults the splash to `layout: 'corner'` (an explicit `layout: 'mark'` is kept).
+`probe` (default true) runs only in auto resolution; `probeMs` changes its length.
+
+`cityLabels` (default `true`) controls the floating city / town / village names drawn ~1 km
+above the terrain (tile layer `places`, see [real-world.md](real-world.md)). `cityLabels: false`
+starts with them hidden; the player can switch them back on in **Ajustes → Capas → Nombres de
+poblaciones**, and the choice is stored relative to the host default. `?layers=+places` /
+`?layers=-places` override both for one visit. Library hosts call
+`runtime.setHiddenLayers([...runtime.hiddenLayers, 'places'])` (or `setHiddenTileLayers` from
+`@nabla/engine/render` before constructing the runtime).
 
 The demo menu (**Rendimiento**) has an **Escala automática (50–100%)** checkbox; moving the
 slider switches to manual. URL `scale=auto` or no `scale` keeps auto; `scale=0.75` fixes it.
