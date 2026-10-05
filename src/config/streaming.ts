@@ -10,6 +10,12 @@ export const streamingDefaults = Object.freeze({
   mapInstallBudgetMs: 4,
   /** Maximum map objects installed in one frame. */
   mapInstallCount: 24,
+  /** Install budget while play() blocks on waitForGround (ms/tick). Larger than the
+   * per-frame budget: the loop is not rendering yet, and 1.5ms/100ms made LiDAR cells
+   * take minutes to stage. */
+  blockingInstallBudgetMs: 12,
+  /** Poll interval while play() blocks on waitForGround (ms). */
+  blockingPollMs: 16,
   /** Distance from scene origin before rebasing render coordinates, metres. */
   floatingOriginDistance: 10_000,
 })

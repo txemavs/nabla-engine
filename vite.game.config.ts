@@ -8,7 +8,15 @@ export default defineConfig(({ mode }) => {
     plugins: [terrainFolder(env)],
     optimizeDeps: {
       entries: ['index.html'],
-      include: ['lerc'],
+      // Pre-bundle the heavy graph so the first «Initializing...» visit is not an optimizeDeps run.
+      include: [
+        'lerc',
+        'three',
+        'three/addons/loaders/GLTFLoader.js',
+        '@dimforge/rapier3d-compat/rapier.es.js',
+        'zod',
+        'polygon-clipping',
+      ],
     },
     publicDir: '../assets',
     build: {

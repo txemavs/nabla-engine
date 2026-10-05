@@ -1278,14 +1278,15 @@ export class PlanetWorld {
   }
 
   async ensureGround(position: Vec3Tuple): Promise<void> {
+    const { streamingDefaults } = await import('../../config/streaming.js')
     const started = Date.now()
     while (this.groundHeight(position) === undefined) {
       if (this.disposed) throw Error('Carga cancelada')
       if (Date.now() - started > 120000)
         throw Error('El terreno todavía se está preparando. Espera a que aparezca antes de jugar.')
-      this.flushInstall(1.5)
       this.update(position, [0, 0, 0])
-      await new Promise((r) => setTimeout(r, 200))
+      this.flushInstall(streamingDefaults.blockingInstallBudgetMs)
+      await new Promise((r) => setTimeout(r, streamingDefaults.blockingPollMs))
     }
   }
   private selection?: THREE.Mesh
