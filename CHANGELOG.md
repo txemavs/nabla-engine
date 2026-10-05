@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Boot / play ground wait:** `waitForGround` (and `PlanetWorld.ensureGround`) now stage
+  terrain with a blocking install budget (12 ms/tick, ~rAF poll) instead of the 1.5 ms/frame
+  gameplay budget polled every 100–200 ms. That drip-feed left ~15 ms of mesh staging per
+  second before the frame loop started, so ~11 MB LiDAR cells could sit on loading for
+  minutes. Gameplay frames keep the small budget.
+- **Game host boot status:** `game/main.ts` replaces the HTML «Initializing...» placeholder
+  immediately, uses analyzable `import()` paths so Vite can pre-transform both hosts, and
+  `terrain-main` logs `[nabla-boot]` phase timings. `vite.game.config` pre-bundles three /
+  Rapier / zod so the first visit is not an optimizeDeps discovery run.
+
 - `installHostVehicles` skips (with a console warning) any host vehicle whose ground footprint overlaps an earlier one, including a hitched trailer at its towed position and a `tow: true` trailer whose tractor was skipped. Bodies spawned inside each other were flipped by the physics, so a stall grid laid out for another heading left free trailers standing on end with their axles in the air.
 - `createTerrainDriveScene({ includeDemoFleet: false })` skips the built-in parked row (car, a3, white-truck, carrier). The terrain game passes that when `?vehicles=` is non-empty so a host fleet does not stack a second carrier.
 - Split `white-trailer` into `trailer.chassis.glb` + `trailer.box.glb`. `white-trailer` still spawns chassis + `white-box`; `white-trailer-chassis` is the bare frame. Host `box: false | "white-box"` and `presetVehicle(..., { box })` compose at spawn. Other box types can replace only the cargo GLB.

@@ -110,3 +110,24 @@ test('a position over a tile the host does not have fails at once instead of wai
   })
   expect(world.update).toHaveBeenCalledTimes(1)
 })
+
+test('blocking wait stages with the blocking install budget, not the 1.5 ms frame budget', async () => {
+  vi.useFakeTimers()
+  let height: number | undefined
+  const world = {
+    update: vi.fn(),
+    flushInstall: vi.fn(),
+    groundHeight: () => height,
+    status: 'instalando…',
+    loadProgress: '0',
+  }
+  const waiting = waitForGround(world, [0, 0, 0], { timeoutMs: 5_000 })
+  await vi.advanceTimersByTimeAsync(16)
+  expect(world.flushInstall).toHaveBeenCalled()
+  const budgets = world.flushInstall.mock.calls.map((call) => call[0])
+  expect(budgets.every((ms) => ms === 12)).toBe(true)
+  expect(budgets.every((ms) => ms !== 1.5)).toBe(true)
+  height = 3
+  await vi.advanceTimersByTimeAsync(16)
+  await expect(waiting).resolves.toBe(3)
+})

@@ -26,6 +26,9 @@ const CONTROLS =
   '<kbd>Tab</kbd> Arma'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
+const bootMark = performance.now()
+const bootLog = (label: string) =>
+  console.info(`[nabla-boot] ${label} +${(performance.now() - bootMark).toFixed(0)}ms`)
 bindTerrainSelector()
 bindPosition()
 const attachSceneControls = bindSceneControls()
@@ -53,6 +56,7 @@ function showCells(): void {
 try {
   const params = new URLSearchParams(location.search)
   const config = await startFromIndex(parseTerrainConfig())
+  bootLog(`config ready (${config.vehicles.length} host vehicles)`)
   startBase = config.base
   const vehicle = config.scene.vehicle ?? 'car'
   if (!hasVehiclePreset(vehicle)) throw new Error(`Vehículo desconocido: ${vehicle}`)
@@ -77,6 +81,7 @@ try {
   document.getElementById('controls-hint')!.innerHTML = CONTROLS
   if (config.atlas.photo !== 'none') projectGroundPhoto()
   setHiddenTileLayers(initialHiddenLayers())
+  bootLog('GameRuntime construct start')
   runtime = new GameRuntime({
     locale: 'es',
     hud: true,
@@ -127,6 +132,7 @@ try {
       document.getElementById('game-message')!.textContent = message
     },
   })
+  bootLog('GameRuntime construct done')
   bindTerrainCache(runtime)
   // Headless checks read where vehicles and the player sit against the ground.
   if (params.has('diagnostics'))
@@ -135,9 +141,14 @@ try {
   loading.setStatus(
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
   )
+  bootLog('play() start')
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
+  bootLog('play() done (ground + physics)')
   if (scene.geography && config.vehicles.length)
+    bootLog(`installHostVehicles start (${config.vehicles.length})`)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
+    bootLog('installHostVehicles done')
+  bootLog('loading screen hide')
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)

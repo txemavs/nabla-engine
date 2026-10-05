@@ -1,4 +1,5 @@
 import type { Vec3Tuple } from '../entity/schema.js'
+import { streamingDefaults } from '../config/streaming.js'
 import { mapTileId, type MapTile } from '../scene/mercator.js'
 
 /** The tile host has no tile under the position: waiting cannot help. `tile` names the missing cell. */
@@ -41,24 +42,73 @@ export function groundAtSeam(
   return undefined
 }
 
+/** Yield until the next animation frame, or `fallbackMs` when rAF is unavailable (tests / Node). */
+function waitTick(fallbackMs: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let raf = 0
+    const finish = () => {
+      if (settled) return
+      settled = true
+      if (timer !== undefined) clearTimeout(timer)
+      if (raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf)
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }
+    const onAbort = () => {
+      if (settled) return
+      settled = true
+      if (timer !== undefined) clearTimeout(timer)
+      if (raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf)
+      reject(signal?.reason ?? new Error('Ground loading cancelled'))
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+    if (signal?.aborted) {
+      onAbort()
+      return
+    }
+    // Cap the wait so a backgrounded tab (rAF paused) still polls downloads.
+    timer = setTimeout(finish, fallbackMs)
+    if (typeof requestAnimationFrame === 'function') raf = requestAnimationFrame(finish)
+  })
+}
+
 /**
  * Wait for usable ground, not a fixed count of neighbouring tiles. Never starts after a timeout.
  * `timeoutMs` is a stall limit: it restarts whenever the provider reports progress (`loadProgress`),
  * so a slow link that keeps delivering cells is never reported as an error.
+ *
+ * While blocked (before the gameplay frame loop runs), staging uses
+ * {@link streamingDefaults.blockingInstallBudgetMs} so large LiDAR cells are not drip-fed at the
+ * 1.5 ms/frame gameplay budget.
  */
 export async function waitForGround(
   world: GroundProvider,
   position: Vec3Tuple,
-  options: { signal?: AbortSignal; timeoutMs?: number; onProgress?: (status: string) => void } = {},
+  options: {
+    signal?: AbortSignal
+    timeoutMs?: number
+    onProgress?: (status: string) => void
+    /** Override the blocking install budget (ms/tick). */
+    installBudgetMs?: number
+    /** Override the poll interval (ms) when rAF is unavailable. */
+    pollMs?: number
+  } = {},
 ): Promise<number> {
   const timeout = options.timeoutMs ?? 120000
   if (!Number.isFinite(timeout) || timeout <= 0) throw new Error('Invalid ground timeout')
+  const installBudget = options.installBudgetMs ?? streamingDefaults.blockingInstallBudgetMs
+  const pollMs = options.pollMs ?? streamingDefaults.blockingPollMs
+  if (!Number.isFinite(installBudget) || installBudget <= 0)
+    throw new Error('Invalid ground install budget')
+  if (!Number.isFinite(pollMs) || pollMs <= 0) throw new Error('Invalid ground poll interval')
   let started = performance.now()
   let progress = world.loadProgress
   while (true) {
     options.signal?.throwIfAborted()
     world.update(position, [0, 0, 0])
-    world.flushInstall(1.5)
+    world.flushInstall(installBudget)
     const height = groundAtSeam(world, position)
     if (height !== undefined && Number.isFinite(height)) return height
     options.onProgress?.(world.status)
@@ -70,19 +120,6 @@ export async function waitForGround(
     }
     const remaining = timeout - (performance.now() - started)
     if (remaining <= 0) throw new Error(`Ground unavailable: ${world.status}`)
-    await new Promise<void>((resolve, reject) => {
-      const finish = () => {
-        options.signal?.removeEventListener('abort', abort)
-        resolve()
-      }
-      const timer = setTimeout(finish, Math.min(100, remaining))
-      const abort = () => {
-        clearTimeout(timer)
-        options.signal?.removeEventListener('abort', abort)
-        reject(options.signal?.reason ?? new Error('Ground loading cancelled'))
-      }
-      options.signal?.addEventListener('abort', abort, { once: true })
-      if (options.signal?.aborted) abort()
-    })
+    await waitTick(Math.min(pollMs, remaining), options.signal)
   }
 }
