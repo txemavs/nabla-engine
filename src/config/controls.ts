@@ -18,4 +18,11 @@ export const controlDefaults = Object.freeze({
   steeringMaxStepSeconds: 0.1,
   /** Snap residual normalized steering to zero below this magnitude. */
   steeringSnapThreshold: 0.001,
+  /**
+   * Cockpit circular touch ring around the on-screen steering wheel.
+   * Kept in code but off by default: the ring draws a circle while the hit
+   * target remains a square, so corners outside the circle still accept touch.
+   * Set true to restore the Studio pilot twist overlay.
+   */
+  showPilotTouchRing: false,
 })

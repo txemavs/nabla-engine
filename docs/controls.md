@@ -45,10 +45,14 @@ leave the player inside and display a status message.
 The standalone game keeps Studio's tactile driving HUD visible (`touchControls:
 'always'`): the agency-ui drive rig — steering wheel, accelerator slider, red
 handbrake and turbo — plus enter/exit and camera. Keyboard and gamepad still mix
-through the same `GameInput` path. Cockpit view adds the twist ring on the wheel.
-In cockpit view the helm touchscreen d-pads use that same mapping in road mode
-(WASD and arrows steer and accelerate; Brake holds). Coarse-pointer hosts that
-leave visibility on `auto` show the overlay only on touch devices.
+through the same `GameInput` path. The cockpit circular twist ring around the
+wheel (`controlDefaults.showPilotTouchRing`) stays disabled by default: its
+visual is circular while the hit target is a square, so touches outside the
+circle still registered. The ring DOM/CSS and `setPilot` path remain so it can
+be re-enabled later. In cockpit view the helm touchscreen d-pads use that same
+mapping in road mode (WASD and arrows steer and accelerate; Brake holds).
+Coarse-pointer hosts that leave visibility on `auto` show the overlay only on
+touch devices.
 Which overlay and HUD readouts appear in each seat is decided by the vehicle's
 [control profile](vehicle-controls.md).
 
