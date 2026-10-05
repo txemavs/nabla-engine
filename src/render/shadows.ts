@@ -7,6 +7,8 @@
  *
  * CSM shader injection is automatic via Three.js's CSMShader patches.
  * Materials must be registered with setupMaterial() to receive CSM uniforms.
+ * Adjacent cascades fade across a distance-scaled band so the 140 m / 500 m
+ * splits do not read as hard rings from the air.
  */
 import { CSM } from 'three/addons/csm/CSM.js'
 import * as THREE from 'three'
@@ -31,6 +33,42 @@ export function cascadedLighting(standard: string, cascaded: string): string {
     standard.slice(end)
   )
 }
+
+/** Near-heavy cuts: the car and the façade that shades it stay in cascade 0. */
+function cascadeCutMetres(count: number): number[] {
+  return count >= 4 ? [140, 420, 1200] : count === 3 ? [140, 500] : [160]
+}
+
+// Three.js fade uses 0.25 * edge^2, ~1 m at the 140 m split. Grow the band with
+// distance so flying shows a blend, not two hard rings, without eating the car.
+const blendMin = 28
+const blendMax = 120
+const blendFraction = 0.18
+
+/** World-space blend at a cascade edge. Zero at the near plane so contact stays sharp. */
+export function cascadeBlendMetres(edgeMetres: number): number {
+  if (edgeMetres <= 0) return 0
+  return Math.min(blendMax, Math.max(blendMin, edgeMetres * blendFraction))
+}
+
+/** Extra ortho metres so the fade band can still sample this cascade. */
+export function cascadeBoundPad(index: number, cascades: number, far: number): number {
+  const cuts = cascadeCutMetres(cascades)
+  const farEdge = index < cascades - 1 ? (cuts[index] ?? far) : far
+  const facade = index === 0 ? 48 : index === 1 ? 24 : 0
+  return Math.max(facade, cascadeBlendMetres(farEdge))
+}
+
+/** Widen the addon fade; the stock band is invisible at Nabla's near-heavy splits. */
+export function softenCascadeSeams(source: string): string {
+  const from = 'margin = 0.25 * pow( closestEdge, 2.0 );'
+  if (!source.includes(from)) throw new Error('Unsupported Three.js CSM fade layout')
+  return source.replaceAll(
+    from,
+    `margin = max( 0.25 * pow( closestEdge, 2.0 ), closestEdge <= 0.0 ? 0.0 : min( ${blendMax.toFixed(1)}, max( ${blendMin.toFixed(1)}, closestEdge * ( shadowFar - cameraNear ) * ${blendFraction.toFixed(2)} ) ) / ( shadowFar - cameraNear ) );`,
+  )
+}
+
 const standardLighting = THREE.ShaderChunk.lights_fragment_begin
 
 // Three rotates the PCF kernel with screen-space noise. The pattern changes
@@ -91,15 +129,14 @@ export class ShadowManager {
       // A 40 m cut follows the view, so turning drops the building out of the map.
       mode: 'custom',
       customSplitsCallback: (count, _near, far, breaks) => {
-        const distances = count >= 4 ? [140, 420, 1200] : count === 3 ? [140, 500] : [160]
+        const distances = cascadeCutMetres(count)
         for (let i = 0; i < count - 1; i++)
           breaks.push(Math.min(distances[i] / far, (i + 1) / count))
         breaks.push(1)
       },
     })
-    THREE.ShaderChunk.lights_fragment_begin = cascadedLighting(
-      standardLighting,
-      THREE.ShaderChunk.lights_fragment_begin,
+    THREE.ShaderChunk.lights_fragment_begin = softenCascadeSeams(
+      cascadedLighting(standardLighting, THREE.ShaderChunk.lights_fragment_begin),
     )
     this.csm.fade = true
     this.csm.updateFrustums()
@@ -214,11 +251,11 @@ export class ShadowManager {
     }
   }
 
-  /** Keep façades just outside the frustum casting onto the car. */
+  /** Keep façades and the cascade fade band inside each shadow map. */
   private padShadowBounds(): void {
-    const margins = [48, 24]
-    this.csm?.lights.forEach((light, index) => {
-      const margin = margins[index] ?? 0
+    if (!this.csm || !this.tier) return
+    this.csm.lights.forEach((light, index) => {
+      const margin = cascadeBoundPad(index, this.tier!.cascades, this.tier!.maxFar)
       if (!margin) return
       const cam = light.shadow.camera
       cam.left -= margin
