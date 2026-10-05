@@ -76,7 +76,12 @@ Low beams are selected initially; fog lights remain off. The tractor's GLB decla
 `beamPattern: "low-beam"`, 1800 cd and a 55 m range. A projected texture removes the
 upper half of the low-beam cone with a soft cutoff; it needs no shadow map or extra
 scene render. Texture parameters live in `src/config/lighting.ts`. This is a visual
-approximation, not a certified photometric headlight profile. Rear red lenses are
+approximation, not a certified photometric headlight profile. All driving beams
+(authored or built) are scaled by `headlightIntensityScale` and get a slightly wider
+penumbra (`headlightPenumbraBoost`) for a softer edge. The S3 has no GLB lamps, so
+`createA3Lights` builds the same setup in code at its two front lamp units (low beams
+with the cut-off projection, high beams 18000 cd / 130 m, both aimed slightly down)
+as ordinary `vehicle-light` nodes. Rear red lenses are
 emissive only, with no rear punctual floodlights; attached trailers inherit the
 tractor's switch. Materials declare `extras.vehicleLightChannel` (`Tail_Stop`,
 `Reverse`, `Indicator`, or `Marker`). Red and amber marker lenses glow steadily with the light

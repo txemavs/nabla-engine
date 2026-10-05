@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **293 modules; 2924 executable function definitions**.
+Coverage: **293 modules; 2926 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -46,7 +46,7 @@ Coverage: **293 modules; 2924 executable function definitions**.
 | [src/catalog/monitors/s3-cluster.ts](src/catalog/monitors/s3-cluster.ts.md) | 0 |
 | [src/catalog/monitors/s3-instruments.ts](src/catalog/monitors/s3-instruments.ts.md) | 2 |
 | [src/catalog/palette.ts](src/catalog/palette.ts.md) | 4 |
-| [src/catalog/presentation/a3-lamps.ts](src/catalog/presentation/a3-lamps.ts.md) | 10 |
+| [src/catalog/presentation/a3-lamps.ts](src/catalog/presentation/a3-lamps.ts.md) | 12 |
 | [src/catalog/presentation/a3-mounts.ts](src/catalog/presentation/a3-mounts.ts.md) | 10 |
 | [src/catalog/presentation/police-equipment.ts](src/catalog/presentation/police-equipment.ts.md) | 14 |
 | [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 19 |

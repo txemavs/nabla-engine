@@ -23,6 +23,14 @@
 
 ### Changed
 
+- **S3 headlights like the truck:** the S3 now has real low and high beams at its two front lamp
+  units, built with the white truck's lamp setup (1800 / 18000 cd, 55 / 130 m, same cones, aimed
+  slightly down; low beams use the shared cut-off projection). They light the road ahead only, are
+  switched by the car's light controller and only drawn while the car is occupied.
+- **Softer, slightly dimmer beams (truck + S3):** driving beams are scaled by
+  `lightingDefaults.headlightIntensityScale` (0.85) with a slightly wider penumbra
+  (`headlightPenumbraBoost` 0.1); the low-beam cut-off edge is softer (`lowBeamCutoffSoftness`
+  0.025 → 0.04, `lowBeamSpreadPower` 4 → 3.5).
 - **Settings UI:** the Planeta tab puts **Hora** (time of day) first, before clouds, pressure and
   lens flare; the leftover legacy groups move to Capas → "Cielo y mar". The quality section no
   longer mentions DLSS; only the real resolution scaling is shown.

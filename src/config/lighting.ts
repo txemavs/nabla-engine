@@ -22,8 +22,29 @@ export const lightingDefaults = Object.freeze({
   lowBeamMaskSize: 128,
   lowBeamCutoff: 0.5,
   /** Normalized transition width at the cutoff and horizontal falloff exponent. */
-  lowBeamCutoffSoftness: 0.025,
-  lowBeamSpreadPower: 4,
+  lowBeamCutoffSoftness: 0.04,
+  lowBeamSpreadPower: 3.5,
+  /**
+   * Multiplier on every driving beam (LowBeam / HighBeam / Fog), authored GLB lamps and the
+   * code-built car beams alike. Slightly under 1 so the pool does not burn out the road.
+   */
+  headlightIntensityScale: 0.85,
+  /** Added to each beam spot's penumbra (capped at 1) for a softer cone edge. */
+  headlightPenumbraBoost: 0.1,
+  /**
+   * Code-built car beams (S3), matching the white truck's authored GLB lamps: candela, reach in
+   * metres, inner/outer cone half-angles in radians (glTF convention), decay 2, aimed slightly down.
+   */
+  lowBeamIntensity: 1800,
+  lowBeamRange: 55,
+  lowBeamInnerCone: 0.35,
+  lowBeamOuterCone: 0.65,
+  highBeamIntensity: 18000,
+  highBeamRange: 130,
+  highBeamInnerCone: 0.16,
+  highBeamOuterCone: 0.38,
+  /** Downward aim of code-built beams in radians (the truck's lamps tilt by the same 0.035). */
+  headlightTilt: 0.035,
   /** Show geographic street lamps and navigation marks when field lights are enabled. */
   lamps: true,
   navigation: true,

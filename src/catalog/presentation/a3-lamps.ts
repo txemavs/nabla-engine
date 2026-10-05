@@ -117,7 +117,62 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
   })
 
   if (!lamps.length) console.warn('S3 lamps omitted: no matching lens nodes')
+  headBeams(model)
   return new CarLights(lamps, 450, footwells(model))
+}
+
+/**
+ * Focused low and high beams at the two front lamp units, set up like the white truck's GLB lamps
+ * (same candela, reach and cones; low beams use the shared cut-off projection). They are plain
+ * `vehicle-light` nodes, so `AuthoredVehicleLights` switches them with the car's light controller
+ * and the shared vehicle light rig copies them only while the car is occupied.
+ */
+/** The truck lamps' glTF colour (linear 1, 0.95, 0.87). */
+const BEAM_COLOR = new THREE.Color().setRGB(1, 0.95, 0.87, THREE.LinearSRGBColorSpace)
+
+export function headBeams(model: THREE.Object3D): THREE.SpotLight[] {
+  const units: { side: 'L' | 'R'; center: THREE.Vector3 }[] = []
+  model.updateWorldMatrix(true, true)
+  const box = new THREE.Box3()
+  model.traverse((object) => {
+    const name = object.name.replaceAll('_', ' ').toLowerCase()
+    if (name !== 'foco izquierdo' && name !== 'foco derecho') return
+    box.setFromObject(object)
+    if (box.isEmpty()) return
+    const center = model.worldToLocal(box.getCenter(new THREE.Vector3()))
+    units.push({ side: name === 'foco derecho' ? 'R' : 'L', center })
+  })
+  if (!units.length) return []
+  // The lamp units sit at the nose: that end of the model's Z axis is forward.
+  const forward = Math.sign(units[0].center.z) || 1
+  const tilt = lightingDefaults.headlightTilt
+  const beams: THREE.SpotLight[] = []
+  for (const { side, center } of units)
+    for (const high of [false, true]) {
+      const owner = new THREE.Object3D()
+      owner.name = `${high ? 'HighBeam' : 'LowBeam'}_Light_${side}`
+      owner.userData = {
+        role: 'vehicle-light',
+        channel: high ? 'HighBeam' : 'LowBeam',
+        side,
+        onIntensity: high ? lightingDefaults.highBeamIntensity : lightingDefaults.lowBeamIntensity,
+        ...(high ? {} : { beamPattern: 'low-beam' }),
+      }
+      owner.position.copy(center).add(new THREE.Vector3(0, 0, 0.05 * forward))
+      const inner = high ? lightingDefaults.highBeamInnerCone : lightingDefaults.lowBeamInnerCone
+      const outer = high ? lightingDefaults.highBeamOuterCone : lightingDefaults.lowBeamOuterCone
+      const range = high ? lightingDefaults.highBeamRange : lightingDefaults.lowBeamRange
+      // glTF cone convention, as GLTFLoader builds the truck's lamps.
+      const light = new THREE.SpotLight(BEAM_COLOR, 0, range, outer, 1 - inner / outer, 2)
+      light.castShadow = false
+      light.visible = false
+      light.target.position.set(0, -Math.sin(tilt), Math.cos(tilt) * forward)
+      light.add(light.target)
+      owner.add(light)
+      model.add(owner)
+      beams.push(light)
+    }
+  return beams
 }
 
 /** Soft cabin fill from each footwell up to the seat. Model +X is the driver. */

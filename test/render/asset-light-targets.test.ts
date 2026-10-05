@@ -5,6 +5,7 @@ import {
   AuthoredVehicleLights,
   lowBeamMask,
 } from '../../src/render/vehicle-presentation/authored-lights.js'
+import { lightingDefaults } from '../../src/config/lighting.js'
 
 it('starts in low beams, alternates high beams and masks the upper projection without shadows', () => {
   const root = new Group(),
@@ -24,14 +25,18 @@ it('starts in low beams, alternates high beams and masks the upper projection wi
     }
     root.add(light)
   }
+  const penumbra = low.penumbra
   const control = new AuthoredVehicleLights(root)
+  // Driving beams share the global level and a slightly softer edge.
+  const on = 10 * lightingDefaults.headlightIntensityScale
+  expect(low.penumbra).toBeCloseTo(Math.min(1, penumbra + lightingDefaults.headlightPenumbraBoost))
   control.toggle()
-  expect([low.intensity, high.intensity, fog.intensity]).toEqual([10, 0, 0])
+  expect([low.intensity, high.intensity, fog.intensity]).toEqual([on, 0, 0])
   expect(low.map).toBeTruthy()
   expect(low.castShadow).toBe(false)
   expect([low, high, fog].every((light) => light.visible === false)).toBe(true)
   expect(control.toggleHighBeam()).toBe(true)
-  expect([low.intensity, high.intensity, fog.intensity]).toEqual([0, 10, 0])
+  expect([low.intensity, high.intensity, fog.intensity]).toEqual([0, on, 0])
   control.toggle()
   expect(high.intensity).toBe(0)
   control.dispose()
