@@ -36,6 +36,17 @@ const definition = (): WheeledDefinition => ({
 const chassis = (x = 0) =>
   new Body({ mass: 900, position: new Vec3(x, 0.8, 0), shape: new Box(new Vec3(0.8, 0.25, 1.5)) })
 
+it('reports reverse only after R engages, not on reverse input or backward rolling in D', () => {
+  const car = createWheeledVehicle(chassis(), definition())
+  const input = { ...idleWheeledInput(), throttle: -1 }
+  expect(wheeledTelemetry(car, input, true).reversing).toBe(false)
+  car.body.velocity.set(0, 0, 1)
+  expect(wheeledTelemetry(car, input, true).reversing).toBe(false)
+  car.drivetrain.gear = -1
+  expect(wheeledTelemetry(car, idleWheeledInput(), true).reversing).toBe(true)
+  expect(wheeledTelemetry(car, input, false).reversing).toBe(false)
+})
+
 it('drives two custom rigs in one Rapier world and can detach one without disturbing the other', () => {
   const world = new World()
   const floor = new Body({

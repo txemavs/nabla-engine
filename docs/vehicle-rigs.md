@@ -67,10 +67,32 @@ metadata for preset compatibility and cannot be boarded.
   monitor mounts; missing metadata reports a clear error.
 
 Truck punctual lights and tagged emissive surfaces start off. In the browser
-runtime, L toggles the occupied vehicle's authored light group. Intensities come
+runtime, H toggles the occupied vehicle's authored light group. Intensities come
 from GLB `onIntensity` metadata. Cloning rebinds spot/directional targets into
 that vehicle's hierarchy so beams turn with it and separate instances stay
-independent. This is a group switch, not separate low/high/indicator controls.
+independent. H switches driving lights, G selects low/high beams, and K toggles GPS.
+Low beams are selected initially; fog lights remain off. The tractor's GLB declares
+`beamPattern: "low-beam"`, 1800 cd and a 55 m range. A projected texture removes the
+upper half of the low-beam cone with a soft cutoff; it needs no shadow map or extra
+scene render. Texture parameters live in `src/config/lighting.ts`. This is a visual
+approximation, not a certified photometric headlight profile. Rear red lenses are
+emissive only, with no rear punctual floodlights; attached trailers inherit the
+tractor's switch. Materials declare `extras.vehicleLightChannel` (`Tail_Stop`,
+`Reverse`, or `Marker`). Red and amber marker lenses glow steadily with the light
+switch, including the trailer; the amber punctual light sources remain off.
+Reverse lenses follow the engaged R gear independently
+of the switch, so reverse input during the direction-change delay does not light
+them. Flashing turn signals require a dedicated signal controller.
+The stock rear-light authoring is recorded in `scripts/author-truck-rear-lights.mjs`.
+
+The tractor's `mirror.left` and `mirror.right` anchors are children of their
+door meshes. Each owns a planar lens tagged `extras.nabla.mirror` with its side.
+The lens contour is extracted from the original glass faces, retaining the
+housing and door hierarchy. Engine discovers these surfaces by metadata and
+uses the shared cockpit-only reflection renderer (384×256, at most 8 Hz).
+No truck mirror placement is supplied by the runtime. `mirrorTilt` is an
+optional user adjustment relative to the authored orientation (zero for the truck).
+`scripts/author-truck-mirrors.mjs` records the idempotent stock asset migration.
 
 Collision boxes, mirror tuning, A3 lamp fitting and ramp definitions still use
 existing configuration or adapters. This migration does not claim those remaining

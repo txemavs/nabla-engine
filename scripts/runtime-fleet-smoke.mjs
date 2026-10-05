@@ -38,13 +38,13 @@ try {
     assert.ok([...assets].some((a) => a.endsWith('/ship.container.5x10.glb')))
     await page.locator('#game-container').click({ position: { x: 640, y: 300 } })
     if (vehicle === 'white-truck') {
-      await page.keyboard.press('KeyL')
+      await page.keyboard.press('KeyH')
       assert.equal(await page.locator('#game-message').textContent(), 'Luces encendidas')
-      await page.keyboard.press('KeyL')
+      await page.keyboard.press('KeyH')
       assert.equal(await page.locator('#game-message').textContent(), 'Luces apagadas')
     }
     if (vehicle === 'car') {
-      await page.keyboard.press('KeyH')
+      await page.keyboard.press('KeyK')
       assert.equal(await page.locator('#game-message').textContent(), 'GPS encendido')
       await page.waitForTimeout(1000)
     }

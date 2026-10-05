@@ -1,7 +1,9 @@
 /** Spanish translations for Engine-owned gameplay UI. English message templates are stable keys. */
 export const spanishMessages: Readonly<Record<string, string>> = {
-  'E exit · C camera · L lights · F9 wheel diagnostics':
-    'E salir · C cámara · L luces · F9 diagnóstico de ruedas',
+  'High beams selected': 'Largas seleccionadas',
+  'Low beams selected': 'Cortas seleccionadas',
+  'E exit · C camera · H lights · G high/low · K GPS · F9 wheel diagnostics':
+    'E salir · C cámara · H luces · G cortas/largas · K GPS · F9 diagnóstico de ruedas',
   'WASD move · Space jump · E enter · C camera':
     'WASD mover · Espacio saltar · E entrar · C cámara',
   'Remote window open': 'Ventana remota abierta',

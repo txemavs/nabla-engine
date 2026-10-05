@@ -73,7 +73,7 @@ export const generatedVehicleRigs: Record<
   },
   'white-trailer': {
     source: '/library/trucks/white-truck/assets/trailer.anchored.glb',
-    sha256: 'e13f4c799584a990353f66e98a5faab6fa3854c9be23e03c7343c7638e90a32e',
+    sha256: '550be33ad596454e727206f355088978fa396b827ed2d0cf512c993a83566e20',
     hubs: [
       [-0.8920750849989497, -0.6276177768713792, 1.775093997560098],
       [-0.8920751181276269, -0.6276177768713792, 3.0726903836142947],
@@ -97,7 +97,7 @@ export const generatedVehicleRigs: Record<
   },
   'white-truck': {
     source: '/library/trucks/white-truck/assets/tractor.modern.glb',
-    sha256: '7c650b7027c237ce8152d5049fa1cd5fcfab33f03b5d8b8feac75745d10d10e0',
+    sha256: 'fd6768f44299d79dd1d622f6c11b341f1ff741b97283fc44527c356c310f32ef',
     hubs: [
       [-1.0751686096191406, -0.622534990310669, -1.3792321681976318],
       [1.080893874168396, -0.622534990310669, -1.3792320489883423],

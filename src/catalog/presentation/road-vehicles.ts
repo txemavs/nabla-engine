@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { CarMirrors } from '../../render/entity/car-mirrors.js'
+import { CarMirrors, authoredMirrorSurfaces } from '../../render/entity/car-mirrors.js'
 import { CarInstruments } from '../../render/entity/car-instruments.js'
 import { PoliceEquipment } from './police-equipment.js'
 import type {
@@ -129,10 +129,19 @@ const stock = new Map<string, VehiclePresentationAdapter>([
   [
     'nabla.truck',
     {
-      mount(model, _entity, definition) {
+      mount(model, entity, definition) {
         const mounts = definition ? authoredScreenMounts(model, definition.cluster) : undefined
+        const instruments =
+          mounts && definition ? new CarInstruments(mounts, definition) : undefined
+        const tilt = entity.vehicle?.mirrorTilt ?? 0
+        if (instruments) instruments.mirrorTilt = tilt
+        model.updateWorldMatrix(true, true)
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
+          model.getWorldQuaternion(new THREE.Quaternion()),
+        )
         return {
-          instruments: mounts && definition ? new CarInstruments(mounts, definition) : undefined,
+          instruments,
+          mirrors: new CarMirrors(authoredMirrorSurfaces(model), up, tilt),
         }
       },
     },

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { lightingDefaults } from '../../config/lighting.js'
 export interface CarLampState {
   powered: boolean
   braking: boolean
@@ -17,6 +18,7 @@ export interface CourtesyWell {
 /** Prepared lens bindings; no model names, lights, shadows or extra scene passes. */
 export class CarLights {
   private signal = 0
+  private headlights = false
   constructor(
     private readonly lamps: readonly LampBinding[],
     private readonly flashMs = 450,
@@ -25,11 +27,16 @@ export class CarLights {
   toggle(side: number): void {
     this.signal = this.signal === side ? 0 : side
   }
+  /** Toggle position/front lamps without disabling brake, reverse or signal lamps. */
+  toggleHeadlights(): boolean {
+    this.headlights = !this.headlights
+    return this.headlights
+  }
   update(state: CarLampState, now: number, night = false): void {
     const footwell = state.powered && night
     for (const well of this.courtesy) {
-      well.lamp.intensity = footwell ? 6 : 0
-      well.lens.emissiveIntensity = footwell ? 0.45 : 0
+      well.lamp.intensity = footwell ? lightingDefaults.courtesyIntensity : 0
+      well.lens.emissiveIntensity = footwell ? lightingDefaults.courtesyLensIntensity : 0
     }
     if (!state.powered) this.signal = 0
     const flash = Math.floor(now / this.flashMs) % 2 === 0
@@ -38,13 +45,23 @@ export class CarLights {
         const indicating = this.signal === lamp.side
         lamp.material.emissive.set(indicating ? '#ff7300' : '#e5f2ff')
         lamp.material.color.set(indicating ? '#ff9a32' : '#ebf2ff')
-        lamp.material.emissiveIntensity = !state.powered ? 0 : indicating ? (flash ? 2 : 0) : 0.65
+        lamp.material.emissiveIntensity = !state.powered
+          ? 0
+          : indicating
+            ? flash
+              ? 2
+              : 0
+            : this.headlights
+              ? 0.65
+              : 0
         continue
       }
       lamp.material.emissiveIntensity = !state.powered
         ? 0
         : lamp.kind === 'position'
-          ? 0.65
+          ? this.headlights
+            ? 0.65
+            : 0
           : lamp.kind === 'brake'
             ? state.braking
               ? 3

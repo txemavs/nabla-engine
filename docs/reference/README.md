@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **241 modules; 2168 executable function definitions**.
+Coverage: **241 modules; 2180 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -122,8 +122,8 @@ Coverage: **241 modules; 2168 executable function definitions**.
 | [src/render/entity/billboard.ts](src/render/entity/billboard.ts.md) | 7 |
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 0 |
 | [src/render/entity/car-instruments.ts](src/render/entity/car-instruments.ts.md) | 14 |
-| [src/render/entity/car-lights.ts](src/render/entity/car-lights.ts.md) | 3 |
-| [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 10 |
+| [src/render/entity/car-lights.ts](src/render/entity/car-lights.ts.md) | 4 |
+| [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 12 |
 | [src/render/entity/carrier-interior.ts](src/render/entity/carrier-interior.ts.md) | 6 |
 | [src/render/entity/carrier-thrusters.ts](src/render/entity/carrier-thrusters.ts.md) | 2 |
 | [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 6 |
@@ -137,7 +137,7 @@ Coverage: **241 modules; 2168 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 11 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 7 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 85 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 86 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
@@ -184,7 +184,7 @@ Coverage: **241 modules; 2168 executable function definitions**.
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
 | [src/render/shadows.ts](src/render/shadows.ts.md) | 21 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
-| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 3 |
+| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 11 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |

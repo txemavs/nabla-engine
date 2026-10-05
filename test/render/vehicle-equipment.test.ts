@@ -56,6 +56,32 @@ it('camera and avatar accept the same driver-local mount under body rotation', (
   const head = driverHeadPose([1, 2, 3], q.toArray(), false, 0, 0, [0, 0.25, -0.5])
   expect(head.position.distanceTo(new Vector3(0.5, 2.25, 3))).toBeLessThan(1e-8)
 })
+it('switches driving lamps independently from braking and reverse lamps', () => {
+  const front = new MeshStandardMaterial(),
+    position = new MeshStandardMaterial(),
+    brake = new MeshStandardMaterial(),
+    reverse = new MeshStandardMaterial()
+  const lights = new CarLights([
+    { material: front, kind: 'front-signal', side: -1 },
+    { material: position, kind: 'position', side: 0 },
+    { material: brake, kind: 'brake', side: 0 },
+    { material: reverse, kind: 'reverse', side: 0 },
+  ])
+  const state = { powered: true, braking: true, reversing: true }
+  lights.update(state, 0)
+  expect(front.emissiveIntensity).toBe(0)
+  expect(position.emissiveIntensity).toBe(0)
+  expect(lights.toggleHeadlights()).toBe(true)
+  lights.update(state, 0)
+  expect(front.emissiveIntensity).toBe(0.65)
+  expect(position.emissiveIntensity).toBe(0.65)
+  expect(lights.toggleHeadlights()).toBe(false)
+  lights.update(state, 0)
+  expect(position.emissiveIntensity).toBe(0)
+  expect(brake.emissiveIntensity).toBe(3)
+  expect(reverse.emissiveIntensity).toBe(2)
+  for (const material of [front, position, brake, reverse]) material.dispose()
+})
 it.skipIf(!['jeep', 'police'].every(hasLocalPreset))(
   'resolves explicit IDs independent of filenames, requires IDs and preserves authored properties',
   () => {

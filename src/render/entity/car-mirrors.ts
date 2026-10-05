@@ -1,5 +1,14 @@
 import * as THREE from 'three'
 import { Reflector } from 'three/addons/objects/Reflector.js'
+/** Discover GLB-authored lens meshes without depending on material or node names. */
+export function authoredMirrorSurfaces(model: THREE.Object3D): THREE.Mesh[] {
+  const surfaces: THREE.Mesh[] = []
+  model.traverse((node) => {
+    if (node instanceof THREE.Mesh && typeof node.userData.nabla?.mirror === 'string')
+      surfaces.push(node)
+  })
+  return surfaces
+}
 /** Fit the whole mirror from the eye position, independently of head rotation.
  * The viewer's orientation only decides whether the mirror is visible.
  */

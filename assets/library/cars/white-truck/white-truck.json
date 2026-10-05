@@ -9,6 +9,7 @@
   "size": [2.55, 4, 6.2],
   "mass": 7500,
   "vehicle": {
+    "mirrorTilt": 0,
     "colliders": [
       {
         "size": [2.2, 2.8, 2.7],

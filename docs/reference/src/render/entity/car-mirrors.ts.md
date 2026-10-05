@@ -9,9 +9,35 @@
 - `three`
 - `three/addons/objects/Reflector.js`
 
-## fitMirrorCamera
+## authoredMirrorSurfaces
+
+[Implementation, line 4](../../../../../src/render/entity/car-mirrors.ts#L4)
+
+Discover GLB-authored lens meshes without depending on material or node names.
+
+```ts
+authoredMirrorSurfaces(model: THREE.Object3D): THREE.Mesh[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `model.traverse`
+
+## authoredMirrorSurfaces.callback@6
 
 [Implementation, line 6](../../../../../src/render/entity/car-mirrors.ts#L6)
+
+```ts
+callback@6(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `surfaces.push`
+
+## fitMirrorCamera
+
+[Implementation, line 15](../../../../../src/render/entity/car-mirrors.ts#L15)
 
 Fit the whole mirror from the eye position, independently of head rotation.
 The viewer's orientation only decides whether the mirror is visible.
@@ -39,7 +65,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## raisedMirrorNormal
 
-[Implementation, line 38](../../../../../src/render/entity/car-mirrors.ts#L38)
+[Implementation, line 47](../../../../../src/render/entity/car-mirrors.ts#L47)
 
 Optical elevation follows the car rather than the driver's head pitch.
 
@@ -64,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarMirrors.constructor
 
-[Implementation, line 66](../../../../../src/render/entity/car-mirrors.ts#L66)
+[Implementation, line 75](../../../../../src/render/entity/car-mirrors.ts#L75)
 
 Side mirrors render only in the occupied cockpit, at most 8 Hz.
 
@@ -110,29 +136,29 @@ Explicit throws in this body:
 
 - `new Error('Invalid mirror policy')`
 
-## CarMirrors.constructor.callback@74
+## CarMirrors.constructor.callback@83
 
-[Implementation, line 74](../../../../../src/render/entity/car-mirrors.ts#L74)
+[Implementation, line 83](../../../../../src/render/entity/car-mirrors.ts#L83)
 
 ```ts
-callback@74(v): inferred by TypeScript; see implementation
+callback@83(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number.isFinite`
 
-## CarMirrors.constructor.callback@127
+## CarMirrors.constructor.callback@136
 
-[Implementation, line 127](../../../../../src/render/entity/car-mirrors.ts#L127)
+[Implementation, line 136](../../../../../src/render/entity/car-mirrors.ts#L136)
 
 ```ts
-callback@127(): inferred by TypeScript; see implementation
+callback@136(): inferred by TypeScript; see implementation
 ```
 
 ## CarMirrors.setTilt
 
-[Implementation, line 139](../../../../../src/render/entity/car-mirrors.ts#L139)
+[Implementation, line 148](../../../../../src/render/entity/car-mirrors.ts#L148)
 
 Side mirrors render only in the occupied cockpit, at most 8 Hz.
 
@@ -149,7 +175,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarMirrors.render
 
-[Implementation, line 152](../../../../../src/render/entity/car-mirrors.ts#L152)
+[Implementation, line 161](../../../../../src/render/entity/car-mirrors.ts#L161)
 
 Side mirrors render only in the occupied cockpit, at most 8 Hz.
 
@@ -179,25 +205,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.entries.forEach`
 - `this.entries.map`
 
-## CarMirrors.render.callback@176
+## CarMirrors.render.callback@185
 
-[Implementation, line 176](../../../../../src/render/entity/car-mirrors.ts#L176)
+[Implementation, line 185](../../../../../src/render/entity/car-mirrors.ts#L185)
 
 ```ts
-callback@176(e): inferred by TypeScript; see implementation
+callback@185(e): inferred by TypeScript; see implementation
 ```
 
-## CarMirrors.render.callback@213
+## CarMirrors.render.callback@222
 
-[Implementation, line 213](../../../../../src/render/entity/car-mirrors.ts#L213)
+[Implementation, line 222](../../../../../src/render/entity/car-mirrors.ts#L222)
 
 ```ts
-callback@213(e, i): inferred by TypeScript; see implementation
+callback@222(e, i): inferred by TypeScript; see implementation
 ```
 
 ## CarMirrors.dispose
 
-[Implementation, line 220](../../../../../src/render/entity/car-mirrors.ts#L220)
+[Implementation, line 229](../../../../../src/render/entity/car-mirrors.ts#L229)
 
 Side mirrors render only in the occupied cockpit, at most 8 Hz.
 

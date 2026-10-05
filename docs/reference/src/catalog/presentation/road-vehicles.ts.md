@@ -207,17 +207,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 132](../../../../../src/catalog/presentation/road-vehicles.ts#L132)
 
 ```ts
-mount(model, _entity, definition): inferred by TypeScript; see implementation
+mount(model, entity, definition): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `CarInstruments`
+- `CarMirrors`
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `authoredMirrorSurfaces`
 - `authoredScreenMounts`
+- `model.getWorldQuaternion`
+- `model.updateWorldMatrix`
+- `new THREE.Vector3(0, 1, 0).applyQuaternion`
 
 ## stockVehiclePresentation
 
-[Implementation, line 144](../../../../../src/catalog/presentation/road-vehicles.ts#L144)
+[Implementation, line 153](../../../../../src/catalog/presentation/road-vehicles.ts#L153)
 
 ```ts
 stockVehiclePresentation(entity): inferred by TypeScript; see implementation

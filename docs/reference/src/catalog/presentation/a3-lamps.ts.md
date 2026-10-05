@@ -7,11 +7,12 @@
 ## Module dependencies
 
 - `three`
+- `../../config/lighting.js`
 - `../../render/entity/car-lights.js`
 
 ## createA3Lights
 
-[Implementation, line 4](../../../../../src/catalog/presentation/a3-lamps.ts#L4)
+[Implementation, line 5](../../../../../src/catalog/presentation/a3-lamps.ts#L5)
 
 ```ts
 createA3Lights(model: THREE.Object3D): CarLights
@@ -26,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createA3Lights.masked
 
-[Implementation, line 6](../../../../../src/catalog/presentation/a3-lamps.ts#L6)
+[Implementation, line 7](../../../../../src/catalog/presentation/a3-lamps.ts#L7)
 
 ```ts
 masked(material: THREE.MeshStandardMaterial, kind: 'brake' | 'reverse' | 'signal', color: string, condition: string, side: number): void
@@ -37,12 +38,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `lamps.push`
 - `material.emissive.set`
 
-## createA3Lights.masked.callback@15
+## createA3Lights.masked.callback@16
 
-[Implementation, line 15](../../../../../src/catalog/presentation/a3-lamps.ts#L15)
+[Implementation, line 16](../../../../../src/catalog/presentation/a3-lamps.ts#L16)
 
 ```ts
-callback@15(shader): inferred by TypeScript; see implementation
+callback@16(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -50,20 +51,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `shader.fragmentShader.replace`
 - `shader.vertexShader.replace`
 
-## createA3Lights.masked.callback@29
+## createA3Lights.masked.callback@30
 
-[Implementation, line 29](../../../../../src/catalog/presentation/a3-lamps.ts#L29)
+[Implementation, line 30](../../../../../src/catalog/presentation/a3-lamps.ts#L30)
 
 ```ts
-callback@29(): inferred by TypeScript; see implementation
+callback@30(): inferred by TypeScript; see implementation
 ```
 
-## createA3Lights.callback@32
+## createA3Lights.callback@33
 
-[Implementation, line 32](../../../../../src/catalog/presentation/a3-lamps.ts#L32)
+[Implementation, line 33](../../../../../src/catalog/presentation/a3-lamps.ts#L33)
 
 ```ts
-callback@32(object): inferred by TypeScript; see implementation
+callback@33(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -90,32 +91,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `source.getAttribute`
 - `source.getIndex`
 
-## createA3Lights.callback@32.callback@42
+## createA3Lights.callback@33.callback@43
 
-[Implementation, line 42](../../../../../src/catalog/presentation/a3-lamps.ts#L42)
+[Implementation, line 43](../../../../../src/catalog/presentation/a3-lamps.ts#L43)
 
 ```ts
-callback@42(n): inferred by TypeScript; see implementation
+callback@43(n): inferred by TypeScript; see implementation
 ```
 
-## createA3Lights.callback@32.callback@79
+## createA3Lights.callback@33.callback@80
 
-[Implementation, line 79](../../../../../src/catalog/presentation/a3-lamps.ts#L79)
+[Implementation, line 80](../../../../../src/catalog/presentation/a3-lamps.ts#L80)
 
 ```ts
-callback@79(j): inferred by TypeScript; see implementation
+callback@80(j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `index.getX`
 
-## createA3Lights.callback@32.callback@80
+## createA3Lights.callback@33.callback@81
 
-[Implementation, line 80](../../../../../src/catalog/presentation/a3-lamps.ts#L80)
+[Implementation, line 81](../../../../../src/catalog/presentation/a3-lamps.ts#L81)
 
 ```ts
-callback@80(sum, id): inferred by TypeScript; see implementation
+callback@81(sum, id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -124,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## footwells
 
-[Implementation, line 123](../../../../../src/catalog/presentation/a3-lamps.ts#L123)
+[Implementation, line 124](../../../../../src/catalog/presentation/a3-lamps.ts#L124)
 
 Soft cabin fill from each footwell up to the seat. Model +X is the driver.
 
@@ -136,12 +137,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `[0.32, -0.32].map`
 
-## footwells.callback@124
+## footwells.callback@125
 
-[Implementation, line 124](../../../../../src/catalog/presentation/a3-lamps.ts#L124)
+[Implementation, line 125](../../../../../src/catalog/presentation/a3-lamps.ts#L125)
 
 ```ts
-callback@124(x): inferred by TypeScript; see implementation
+callback@125(x): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

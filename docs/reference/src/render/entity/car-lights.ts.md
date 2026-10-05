@@ -7,10 +7,11 @@
 ## Module dependencies
 
 - `three`
+- `../../config/lighting.js`
 
 ## CarLights.constructor
 
-[Implementation, line 20](../../../../../src/render/entity/car-lights.ts#L20)
+[Implementation, line 22](../../../../../src/render/entity/car-lights.ts#L22)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
@@ -20,7 +21,7 @@ constructor(private readonly lamps: readonly LampBinding[], private readonly fla
 
 ## CarLights.toggle
 
-[Implementation, line 25](../../../../../src/render/entity/car-lights.ts#L25)
+[Implementation, line 27](../../../../../src/render/entity/car-lights.ts#L27)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
@@ -28,9 +29,19 @@ Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 toggle(side: number): void
 ```
 
+## CarLights.toggleHeadlights
+
+[Implementation, line 31](../../../../../src/render/entity/car-lights.ts#L31)
+
+Toggle position/front lamps without disabling brake, reverse or signal lamps.
+
+```ts
+toggleHeadlights(): boolean
+```
+
 ## CarLights.update
 
-[Implementation, line 28](../../../../../src/render/entity/car-lights.ts#L28)
+[Implementation, line 35](../../../../../src/render/entity/car-lights.ts#L35)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
