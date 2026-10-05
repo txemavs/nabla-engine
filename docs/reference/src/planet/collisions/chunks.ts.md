@@ -31,15 +31,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `group.values.push`
 - `groups.get`
 - `groups.set`
+- `isCandidateRoadMesh`
 - `mesh.position.subarray`
 - `p.push`
 
-## planetCollisionChunks.callback@42
+## planetCollisionChunks.callback@45
 
-[Implementation, line 42](../../../../../src/planet/collisions/chunks.ts#L42)
+[Implementation, line 45](../../../../../src/planet/collisions/chunks.ts#L45)
 
 ```ts
-callback@42([key, g]): inferred by TypeScript; see implementation
+callback@45([key, g]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

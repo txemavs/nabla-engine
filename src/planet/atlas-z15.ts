@@ -152,6 +152,7 @@ function atlasRoadFile(
     const file = atlasFile(pkg, role)
     if (file) return file
   }
+  return undefined
 }
 
 function candidateFromAtlas(file: AtlasZ15File): PlanetCandidateRoadFile {
