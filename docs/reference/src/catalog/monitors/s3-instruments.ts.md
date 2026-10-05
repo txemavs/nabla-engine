@@ -31,5 +31,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 25](../../../../../src/catalog/monitors/s3-instruments.ts#L25)
 
 ```ts
-menuData(menu, { mirrorTilt, mapFollow = true }): inferred by TypeScript; see implementation
+menuData(menu, { mirrorTilt, mapFollow = true, heading = 0, longitude, latitude, altitude = 0, geography = false, }): inferred by TypeScript; see implementation
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+- `Number.isFinite`
+- `String`
+- `String(heading).padStart`
+- `latitude.toFixed`
+- `longitude.toFixed`

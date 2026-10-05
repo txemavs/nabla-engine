@@ -1,6 +1,8 @@
 import { expect, it } from 'vitest'
+import { Euler, Quaternion } from 'three'
 import { s3Instruments } from '../../src/catalog/monitors/s3-instruments.js'
 import { s3ClusterDefinition } from '../../src/catalog/monitors/s3-cluster.js'
+import { vehicleRumbo } from '../../src/render/entity/car-instruments.js'
 import { MonitorMenu } from '../../src/render/monitors/menu.js'
 it('preserves speed, manual/reverse gear and dial bindings without a vehicle instance', () => {
   expect(s3Instruments.cluster).toBe(s3ClusterDefinition)
@@ -40,4 +42,50 @@ it('each menu owns its navigation while the shared recipe formats three rows and
   expect(s3Instruments.menuData(b, { mirrorTilt: 0, mapFollow: false }).values.title).toBe(
     'CLAVADO AL NORTE',
   )
+  expect(s3Instruments.menuData(b, { mirrorTilt: 0 }).bars.selection).toBe(1)
+})
+it('opens POSICION from the car menu and formats live GPS bindings', () => {
+  const menu = new MonitorMenu(s3Instruments.menuItems, s3Instruments.menuTitle)
+  menu.open = true
+  for (let i = 0; i < 3; i++) menu.key('ArrowDown')
+  expect(menu.items[menu.selected]?.id).toBe('gps')
+  menu.key('Enter')
+  expect(menu.title).toBe('POSICION')
+  const live = s3Instruments.menuData(menu, {
+    mirrorTilt: 0,
+    heading: 7,
+    longitude: -3.70379,
+    latitude: 40.416775,
+    altitude: 650.4,
+    geography: true,
+  })
+  expect(live.values).toMatchObject({
+    title: 'RUMBO',
+    heading: '007',
+    lon: 'LON -3.703790',
+    lat: 'LAT 40.416775',
+    alt: 'ALT 650 M',
+    row0: '',
+    row1: '',
+    row2: '',
+  })
+  expect(live.bars.selection).toBe(0)
+  const missing = s3Instruments.menuData(menu, { mirrorTilt: 0, heading: 359, altitude: 12 })
+  expect(missing.values.heading).toBe('359')
+  expect(missing.values.lon).toBe('LON SIN GEO')
+  expect(missing.values.lat).toBe('LAT SIN GEO')
+  expect(missing.values.alt).toBe('ALT 12 M')
+})
+it('uses the helm sys-rumbo heading convention', () => {
+  const quat = (yaw: number) =>
+    new Quaternion().setFromEuler(new Euler(0, yaw, 0)).toArray() as [
+      number,
+      number,
+      number,
+      number,
+    ]
+  expect(vehicleRumbo(quat(0))).toBe(0)
+  expect(vehicleRumbo(quat(-Math.PI / 2))).toBe(90)
+  expect(vehicleRumbo(quat(Math.PI))).toBe(180)
+  expect(vehicleRumbo(quat(Math.PI / 2))).toBe(270)
 })

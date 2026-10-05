@@ -12,13 +12,14 @@
 - `three`
 - `../../scene/document.js`
 - `../../entity/schema.js`
+- `../../math/geo/sphere.js`
 - `./helm-map.js`
 - `../vehicle-presentation/retractable.js`
 - `../vehicle-presentation/mounts.js`
 
 ## CarInstruments.toggleMenu
 
-[Implementation, line 28](../../../../../src/render/entity/car-instruments.ts#L28)
+[Implementation, line 29](../../../../../src/render/entity/car-instruments.ts#L29)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -36,12 +37,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.mounts.support.add`
 - `this.toggleGps`
 
-## CarInstruments.toggleMenu.callback@36
+## CarInstruments.toggleMenu.callback@37
 
-[Implementation, line 36](../../../../../src/render/entity/car-instruments.ts#L36)
+[Implementation, line 37](../../../../../src/render/entity/car-instruments.ts#L37)
 
 ```ts
-callback@36(error): inferred by TypeScript; see implementation
+callback@37(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -50,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarInstruments.gpsOpen
 
-[Implementation, line 49](../../../../../src/render/entity/car-instruments.ts#L49)
+[Implementation, line 50](../../../../../src/render/entity/car-instruments.ts#L50)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -60,7 +61,7 @@ gpsOpen(): inferred by TypeScript; see implementation
 
 ## CarInstruments.gpsState
 
-[Implementation, line 52](../../../../../src/render/entity/car-instruments.ts#L52)
+[Implementation, line 53](../../../../../src/render/entity/car-instruments.ts#L53)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -70,7 +71,7 @@ gpsState(): inferred by TypeScript; see implementation
 
 ## CarInstruments.toggleGps
 
-[Implementation, line 59](../../../../../src/render/entity/car-instruments.ts#L59)
+[Implementation, line 60](../../../../../src/render/entity/car-instruments.ts#L60)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -86,7 +87,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarInstruments.setMapFollow
 
-[Implementation, line 71](../../../../../src/render/entity/car-instruments.ts#L71)
+[Implementation, line 72](../../../../../src/render/entity/car-instruments.ts#L72)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -96,7 +97,7 @@ setMapFollow(follow: boolean): void
 
 ## CarInstruments.setSecondary
 
-[Implementation, line 77](../../../../../src/render/entity/car-instruments.ts#L77)
+[Implementation, line 78](../../../../../src/render/entity/car-instruments.ts#L78)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -111,7 +112,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarInstruments.constructor
 
-[Implementation, line 82](../../../../../src/render/entity/car-instruments.ts#L82)
+[Implementation, line 83](../../../../../src/render/entity/car-instruments.ts#L83)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -136,12 +137,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.retraction.update`
 - `this.speedMonitor.ready.catch`
 
-## CarInstruments.constructor.callback@105
+## CarInstruments.constructor.callback@106
 
-[Implementation, line 105](../../../../../src/render/entity/car-instruments.ts#L105)
+[Implementation, line 106](../../../../../src/render/entity/car-instruments.ts#L106)
 
 ```ts
-callback@105(error): inferred by TypeScript; see implementation
+callback@106(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -150,7 +151,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarInstruments.setPowered
 
-[Implementation, line 122](../../../../../src/render/entity/car-instruments.ts#L122)
+[Implementation, line 123](../../../../../src/render/entity/car-instruments.ts#L123)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -166,18 +167,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarInstruments.update
 
-[Implementation, line 135](../../../../../src/render/entity/car-instruments.ts#L135)
+[Implementation, line 136](../../../../../src/render/entity/car-instruments.ts#L136)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
 ```ts
-update(doc: SceneDocument, pose: Transform, speedKmh: number, now: number, rpm = 900, gear = 1, load = 0, manual = false, parked = false): void
+update(doc: SceneDocument, pose: Transform, speedKmh: number, now: number, rpm = 900, gear = 1, load = 0, manual = false, parked = false, altitude = 0): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
 - `Math.min`
+- `gpsFix`
 - `pose.position.map`
 - `pose.rotation.map`
 - `this.chart.update`
@@ -186,25 +188,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.menuDisplay.update`
 - `this.retraction.update`
 - `this.speedMonitor.update`
+- `vehicleRumbo`
 
-## CarInstruments.update.callback@165
+## CarInstruments.update.callback@175
 
-[Implementation, line 165](../../../../../src/render/entity/car-instruments.ts#L165)
+[Implementation, line 175](../../../../../src/render/entity/car-instruments.ts#L175)
 
 ```ts
-callback@165(v): inferred by TypeScript; see implementation
+callback@175(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.round`
 
-## CarInstruments.update.callback@166
+## CarInstruments.update.callback@176
 
-[Implementation, line 166](../../../../../src/render/entity/car-instruments.ts#L166)
+[Implementation, line 176](../../../../../src/render/entity/car-instruments.ts#L176)
 
 ```ts
-callback@166(v): inferred by TypeScript; see implementation
+callback@176(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -213,7 +216,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarInstruments.dispose
 
-[Implementation, line 175](../../../../../src/render/entity/car-instruments.ts#L175)
+[Implementation, line 185](../../../../../src/render/entity/car-instruments.ts#L185)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -230,3 +233,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.navigator.material.dispose`
 - `this.navigator.removeFromParent`
 - `this.speedMonitor.dispose`
+
+## vehicleRumbo
+
+[Implementation, line 199](../../../../../src/render/entity/car-instruments.ts#L199)
+
+Yaw from the entity quaternion, same convention as helm `sys-rumbo`.
+
+```ts
+vehicleRumbo(rotation: readonly [number, number, number, number]): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+- `THREE.Euler`
+- `THREE.Quaternion`
+- `new THREE.Euler().setFromQuaternion`
+
+## gpsFix
+
+[Implementation, line 204](../../../../../src/render/entity/car-instruments.ts#L204)
+
+```ts
+gpsFix(doc: SceneDocument, position: readonly [number, number, number]): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+- `localToGeo`

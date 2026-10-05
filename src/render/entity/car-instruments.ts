@@ -4,6 +4,7 @@ import { MonitorMenu } from '../monitors/menu.js'
 import * as THREE from 'three'
 import type { SceneDocument } from '../../scene/document.js'
 import type { Transform } from '../../entity/schema.js'
+import { localToGeo } from '../../math/geo/sphere.js'
 import { HelmMap } from './helm-map.js'
 import { RetractableMount } from '../vehicle-presentation/retractable.js'
 import {
@@ -142,6 +143,7 @@ export class CarInstruments {
     load = 0,
     manual = false,
     parked = false,
+    altitude = 0,
   ): void {
     if (this.disposed || !this.powered) return
     if (this.lastUpdate !== undefined)
@@ -152,7 +154,15 @@ export class CarInstruments {
     if (this.mounts.sharedSurface) this.speedMonitor.root.visible = !this.menu.open && !this.gpsOpen
     if (this.menuDisplay) {
       this.menuDisplay.root.visible = this.menu.open
-      this.menuDisplay.update(this.definition.menuData(this.menu, this), now)
+      this.menuDisplay.update(
+        this.definition.menuData(this.menu, {
+          ...this,
+          heading: vehicleRumbo(pose.rotation),
+          ...gpsFix(doc, pose.position),
+          altitude,
+        }),
+        now,
+      )
     }
     this.speedMonitor.update(
       this.definition.clusterData({ speedKmh, rpm, gear, load, manual, parked }),
@@ -183,4 +193,18 @@ export class CarInstruments {
     this.navigator.material.dispose()
     this.mounts.dispose()
   }
+}
+
+/** Yaw from the entity quaternion, same convention as helm `sys-rumbo`. */
+export function vehicleRumbo(rotation: readonly [number, number, number, number]): number {
+  const yaw = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(...rotation)).y
+  return (Math.round(((-yaw * 180) / Math.PI) % 360) + 360) % 360
+}
+
+function gpsFix(doc: SceneDocument, position: readonly [number, number, number]) {
+  if (!doc.geography) return { geography: false as const }
+  const gps = localToGeo(doc.geography, [...position])
+  if (!Number.isFinite(gps.latitude) || !Number.isFinite(gps.longitude))
+    return { geography: false as const }
+  return { geography: true as const, longitude: gps.longitude, latitude: gps.latitude }
 }
