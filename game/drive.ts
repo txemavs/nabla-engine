@@ -1,0 +1,190 @@
+import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime'
+import { GameRuntime } from '@nabla/engine/runtime/browser'
+import {
+  createFlatTestScene,
+  FLAT_TEST_BASE,
+  FLAT_TEST_TILES,
+} from '@nabla/engine/examples/flat-tile'
+import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
+import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
+import { parseGameConfig, requireGeographicTileBase } from './config.js'
+import { LoadingScreen, showError } from './loading.js'
+import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
+import { browserStorage } from './entry.js'
+import { describeLoading } from './loading-text.js'
+import { bindTerrainSelector } from './terrain-selector.js'
+import { bindTerrainCache } from './terrain-cache.js'
+import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
+
+// Bound first, so a terrain that fails to load can still be swapped from the menu.
+bindTerrainSelector()
+let runtime: GameRuntime | undefined
+try {
+  const config = parseGameConfig()
+  const flat = new URLSearchParams(location.search).get('example') === 'flat'
+  const tilesBase = flat ? FLAT_TEST_BASE : requireGeographicTileBase(config)
+  if (!hasVehiclePreset(config.vehicle))
+    throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
+  const vehicle = presetVehicle(config.vehicle, 'player-vehicle', [0, 2, 0])
+  const scene: SceneDocument = flat
+    ? createFlatTestScene(vehicle)
+    : {
+        version: 1,
+        name: 'Drive',
+        sky: { mode: 'live' },
+        geography: { ...config.spawn, imagery: 'offline', planetary: true },
+        entities: [createEntity('spawn', 'spawn', [-4, 2, 0]), vehicle],
+      }
+  if (flat) {
+    const fleet = ['car', 'white-truck', 'carrier']
+    scene.entities = [
+      createEntity('spawn', 'spawn', [-4, 2, 0]),
+      ...fleet.flatMap((preset, index) =>
+        presetEntities(preset, preset === config.vehicle ? vehicle.id : `demo-${preset}`, [
+          index * 10,
+          2,
+          0,
+        ]),
+      ),
+      ...(fleet.includes(config.vehicle) ? [] : [vehicle]),
+    ]
+    const tractor = scene.entities.find(
+      (e) => e.id === (config.vehicle === 'white-truck' ? vehicle.id : 'demo-white-truck'),
+    )!
+    tractor.groundOffset = 1.45
+    tractor.vehicle!.cameraDistance = 24
+    const trailer = presetVehicle('white-trailer', 'demo-trailer', [10, 2, 7.33])
+    trailer.vehicle!.tow = {
+      vehicleId: tractor.id,
+      hitch: tractor.vehicle!.hitch!,
+      anchor: trailer.vehicle!.towAnchor!,
+    }
+    scene.entities.push(trailer)
+  }
+  if (
+    flat &&
+    (new URLSearchParams(location.search).has('gallery') ||
+      new URLSearchParams(location.search).has('remote'))
+  )
+    scene.entities.push(...createGallery('demo-gallery'))
+  let world: WorldContent | undefined
+  if (flat && new URLSearchParams(location.search).has('remote')) {
+    const remote = structuredClone(scene)
+    remote.name = 'Galería remota'
+    remote.geography!.longitude = 0.001
+    remote.entities = remote.entities.filter(
+      (e) => e.id.startsWith('demo-gallery-') && e.id !== 'demo-gallery-window',
+    )
+    remote.entities.push(createEntity('remote-spawn', 'spawn', [0, 2, 0]))
+    scene.entities = scene.entities.filter(
+      (e) => !e.id.startsWith('demo-gallery-') || e.id === 'demo-gallery-window',
+    )
+    for (const doc of [scene, remote])
+      for (const e of doc.entities)
+        if (e.portal) {
+          e.portal.pairId = null
+          e.portal.mode = 'closed'
+        }
+    world = {
+      activeLocation: 'drive',
+      locations: [
+        { id: 'drive', scene },
+        { id: 'gallery', scene: remote },
+      ],
+      objects: [],
+    }
+    const registry = portalRegistry(world)
+    world.connections = [
+      {
+        source: registry.find(
+          (p) => p.locationId === 'drive' && p.entityId === 'demo-gallery-window',
+        )!.id,
+        destination: registry.find((p) => p.locationId === 'gallery')!.id,
+        mode: 'window',
+      },
+    ]
+  }
+  const lights = flat && new URLSearchParams(location.search).has('lights')
+  if (lights) scene.sky = { mode: 'fixed', at: '2026-03-20T00:00:00.000Z' }
+  const loading = new LoadingScreen()
+  loading.setTiles(
+    flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
+  )
+  runtime = new GameRuntime({
+    locale: 'es',
+    hud: true,
+    display: readDisplaySettings(),
+    canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
+    scene,
+    world,
+    sea: !flat,
+    fieldLights: lights
+      ? {
+          look: { level: 20 },
+          source: async (tile) =>
+            [
+              { lat: 0.0001, lon: -0.00007, tags: { highway: 'street_lamp' } },
+              { lat: 0.0001, lon: 0.00007, tags: { highway: 'street_lamp' } },
+            ].filter((mark) => {
+              const at = mapTileAt(mark.lat, mark.lon, 15)
+              return at.x === tile.x && at.y === tile.y && tile.z === 15
+            }),
+        }
+      : undefined,
+    depthOfField: new URLSearchParams(location.search).has('dof') ? true : undefined,
+    performance: { preset: new URLSearchParams(location.search).get('quality') ?? 'custom' },
+    tiles: flat
+      ? { baseUrl: FLAT_TEST_BASE, mode: 'static', tiles: FLAT_TEST_TILES, horizon: false }
+      : {
+          baseUrl: tilesBase,
+          apiUrl: '/prepare',
+          mode: config.staticTiles ? 'static' : 'dynamic',
+          // Atlas packages (terrain, photo) are read when a manifest names one; plain tiles ignore this.
+          ...(config.staticTiles && {
+            atlas: { relief: 'engine' as const, photo: 'full' as const },
+            imagery: 'package' as const,
+            missing: new MissingTiles({
+              key: `nabla.terrain.missing:${tilesBase}`,
+              storage: browserStorage(),
+            }),
+          }),
+        },
+    onDiagnostics: new URLSearchParams(location.search).has('diagnostics')
+      ? (sample) =>
+          document
+            .getElementById('game-canvas')!
+            .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
+      : undefined,
+    onProgress(status, tiles) {
+      const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
+      loading.setStatus(runtime?.cellStats ? text.status : status)
+      loading.setDetail(text.detail)
+      for (const tile of tiles ?? []) loading.markTileLoaded(tile)
+    },
+    onFrame(frame) {
+      document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
+      document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
+      document.getElementById('location-display')!.textContent = frame.location
+        ? frame.location.latitude.toFixed(5) + '°, ' + frame.location.longitude.toFixed(5) + '°'
+        : ''
+    },
+    onError(error) {
+      showError(error instanceof Error ? error.message : String(error))
+    },
+    onMessage(message) {
+      document.getElementById('game-message')!.textContent = message
+    },
+  })
+  window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
+  bindTerrainCache(runtime)
+  if (new URLSearchParams(location.search).has('diagnostics'))
+    Object.assign(window, { nablaRuntime: runtime })
+  await runtime.play({ vehicleId: vehicle.id })
+  loading.hide()
+  bindDisplaySettings(runtime)
+  document.getElementById('game-hud')!.classList.remove('hidden')
+  document.getElementById('game-canvas')!.focus()
+} catch (error) {
+  runtime?.dispose()
+  showError(error instanceof Error ? error.message : String(error))
+}

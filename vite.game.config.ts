@@ -1,9 +1,11 @@
 import { defineConfig, loadEnv } from 'vite'
+import { terrainFolder } from './scripts/vite-terrain-folder.js'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     root: 'game',
+    plugins: [terrainFolder(env)],
     optimizeDeps: {
       entries: ['index.html'],
       include: ['lerc'],

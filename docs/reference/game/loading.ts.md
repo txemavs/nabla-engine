@@ -163,9 +163,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 setStatus(message: string): void
 ```
 
+## LoadingScreen.setDetail
+
+[Implementation, line 115](../../../game/loading.ts#L115)
+
+Extra lines under the status (requests in flight, last error); empty hides them.
+
+```ts
+setDetail(message: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `detail.setAttribute`
+- `document.createElement`
+- `document.getElementById`
+- `this.status.after`
+
 ## LoadingScreen.hide
 
-[Implementation, line 114](../../../game/loading.ts#L114)
+[Implementation, line 127](../../../game/loading.ts#L127)
 
 ```ts
 hide(): void
@@ -176,17 +193,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `setTimeout`
 - `this.screen.classList.add`
 
-## LoadingScreen.hide.callback@116
+## LoadingScreen.hide.callback@129
 
-[Implementation, line 116](../../../game/loading.ts#L116)
+[Implementation, line 129](../../../game/loading.ts#L129)
 
 ```ts
-callback@116(): inferred by TypeScript; see implementation
+callback@129(): inferred by TypeScript; see implementation
 ```
 
 ## LoadingScreen.show
 
-[Implementation, line 121](../../../game/loading.ts#L121)
+[Implementation, line 134](../../../game/loading.ts#L134)
 
 ```ts
 show(): void
@@ -198,13 +215,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## showError
 
-[Implementation, line 127](../../../game/loading.ts#L127)
+[Implementation, line 145](../../../game/loading.ts#L145)
 
 ```ts
-showError(message: string): void
+showError(message: string, buttons: readonly ErrorButton[] = []): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `button.addEventListener`
+- `document.createElement`
 - `document.getElementById`
 - `errorEl.classList.add`
+- `errorEl.insertBefore`
+- `errorEl.querySelector`
+- `errorEl.querySelectorAll`
+- `errorEl.querySelectorAll('button.recovery').forEach`
+
+## showError.callback@150
+
+[Implementation, line 150](../../../game/loading.ts#L150)
+
+```ts
+callback@150(button): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `button.remove`

@@ -27,8 +27,10 @@ import {
   normalizePerformance,
   performancePresets,
   streamBudget,
+  tileBudget,
   type PerformanceSettings,
 } from './performance.js'
+import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
@@ -42,6 +44,8 @@ import { SceneView } from '../presentation/scene-view.js'
 import { GeographicView } from '../render/planet/sky.js'
 import {
   PlanetWorld,
+  type TileTiming,
+  type LoadDiagnostics,
   type TileDiscoveryMode,
   type PlanetSourceOptions,
 } from '../render/planet/world.js'
@@ -56,6 +60,8 @@ import { createGameCameraState } from './game-camera.js'
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
+import { hiddenTileLayers, setHiddenTileLayers } from '../render/planet/tile-layers.js'
+import { auditGround, type GroundAudit } from './ground-audit.js'
 import { FrameLoop } from './frame-loop.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { VehicleEffects } from './vehicle-effects.js'
@@ -91,6 +97,12 @@ export interface GameRuntimeOptions {
   tiles?: { baseUrl: string; apiUrl?: string; mode?: TileDiscoveryMode } & PlanetSourceOptions
   /** Disable only the visible water sheet for a synthetic sea-level test surface. */
   sea?: boolean
+  /**
+   * Also rest every other vehicle of the scene on the loaded ground before play (the player's
+   * vehicle always is). Needed on real terrain, where a fixed authored height is wrong.
+   * Towed trailers keep their offset from the tractor.
+   */
+  restParkedOnGround?: boolean
   clock?: 'automatic' | 'manual'
   /** Frame cap and additional resolution scaling; caps apply only to the automatic clock. */
   display?: Partial<DisplaySettings>
@@ -128,7 +140,7 @@ export class GameRuntime {
   private readonly worldContent: WorldContent | undefined
   private readonly fieldLighting: FieldLighting | null
   private display: DisplaySettings
-  private readonly quality: PerformanceSettings
+  private quality: PerformanceSettings
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
@@ -381,6 +393,29 @@ export class GameRuntime {
           onProgress: progress,
         })
         spawn.transform.position[1] = ground + playGroundClearance(spawn)
+        if (this.options.restParkedOnGround) {
+          const authored = new Map(
+            this.document.entities.map((entity) => [entity.id, entity.transform.position[1]]),
+          )
+          const towed = document.entities.filter((entity) => entity.vehicle?.tow)
+          for (const entity of document.entities) {
+            if (entity === spawn || !entity.vehicle || entity.vehicle.tow) continue
+            entity.transform.position[1] =
+              (await waitForGround(this.world, entity.transform.position, {
+                signal: controller.signal,
+                onProgress: progress,
+              })) + playGroundClearance(entity)
+          }
+          for (const trailer of towed) {
+            const tractor = document.entities.find(
+              (entity) => entity.id === trailer.vehicle!.tow!.vehicleId,
+            )
+            if (!tractor) continue
+            trailer.transform.position[1] =
+              tractor.transform.position[1] +
+              (authored.get(trailer.id)! - authored.get(tractor.id)!)
+          }
+        }
         progress('Ground ready')
       }
       controller.signal.throwIfAborted()
@@ -737,6 +772,78 @@ export class GameRuntime {
     })
   }
 
+  /** Terrain cells loaded and drawn of the known dataset; null without tiles. */
+  get cellStats(): {
+    loaded: number
+    visible: number
+    missing: number
+    pending: number
+    failed: number
+  } | null {
+    return this.world?.cellStats ?? null
+  }
+  /**
+   * Change how far terrain is loaded and how many cells stay in memory, live. Unset fields keep their value,
+   * except that a new distance without `cells` resets the cells to the quality profile for that distance.
+   * The disk cache is separate (`setMapCacheBudget`, `clearMapCache`).
+   */
+  setStreaming(options: { distance?: number; cells?: number }): void {
+    this.assertAlive()
+    if (options.distance !== undefined) {
+      if (!Number.isFinite(options.distance) || options.distance < 500 || options.distance > 20000)
+        throw new Error('Load distance must be 500–20000 m')
+      this.quality = { ...this.quality, distance: options.distance }
+      this.world?.setDistance(options.distance)
+      // A longer radius needs more cells resident, unless the caller sets the number.
+      if (options.cells === undefined) this.world?.setMaxTiles(tileBudget(options.distance))
+    }
+    if (options.cells !== undefined) this.world?.setMaxTiles(options.cells)
+  }
+  /** Current load radius (metres) and cells kept in memory. */
+  get streaming(): { distance: number; cells: number } {
+    return { distance: this.quality.distance, cells: this.world?.maxCells ?? 0 }
+  }
+  /** What the loading screen needs: requests in flight, failures, holes and the last error. */
+  get loadDiagnostics(): LoadDiagnostics | null {
+    return this.world?.loadDiagnostics ?? null
+  }
+  /** Tiles the host does not have (z/x/y, HTTP status, when): holes in the map, kept for the tile producer. */
+  get missingTiles(): MissingTile[] {
+    return this.world?.missingTiles ?? []
+  }
+  clearMissingTiles(): void {
+    this.world?.clearMissingTiles()
+  }
+  /** Per-cell load timings (worker phases, install steps, photo), keyed by cell id; empty without tiles. */
+  get cellTimings(): [string, TileTiming][] {
+    return [...(this.world?.tileTimings ?? [])]
+  }
+  /** Ids of the terrain layers switched off (see `TILE_LAYERS`). */
+  get hiddenLayers(): string[] {
+    return hiddenTileLayers()
+  }
+  /** Show or hide terrain layers live; only drawing changes, never collision. */
+  setHiddenLayers(ids: Iterable<string>): void {
+    this.assertAlive()
+    setHiddenTileLayers(ids)
+    this.world?.applyLayers()
+  }
+  /** Where every vehicle and the player sit against the loaded ground; null when not playing. */
+  groundAudit(): GroundAudit | null {
+    const sim = this.session.simulation
+    if (!sim || !this.world) return null
+    const world = this.world
+    return auditGround(
+      sim,
+      this.document.entities.flatMap((entity) =>
+        entity.vehicle
+          ? [{ id: entity.id, name: entity.name, wheelRadius: entity.vehicle.wheelRadius }]
+          : [],
+      ),
+      (position) => world.groundHeight(position),
+      sim.options.playerMode === 'hover' ? 0.28 : simulationDefaults.playerHalfHeight,
+    )
+  }
   /** Return per-instance presentation settings without exposing mutable internal state. */
   get displaySettings(): DisplaySettings {
     return { ...this.display }

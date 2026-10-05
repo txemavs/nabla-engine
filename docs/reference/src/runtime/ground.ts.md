@@ -7,10 +7,26 @@
 ## Module dependencies
 
 - `../entity/schema.js`
+- `../scene/mercator.js`
+
+## GroundMissingError.constructor
+
+[Implementation, line 6](../../../../src/runtime/ground.ts#L6)
+
+The tile host has no tile under the position: waiting cannot help. `tile` names the missing cell.
+
+```ts
+constructor(readonly tile: MapTile): instance
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mapTileId`
+- `super`
 
 ## groundAtSeam
 
-[Implementation, line 13](../../../../src/runtime/ground.ts#L13)
+[Implementation, line 26](../../../../src/runtime/ground.ts#L26)
 
 GLB float32 vertices can leave sub-millimetre gaps at shared tile corners.
 Probe only 1 mm around the same location; never substitute a plane or a distant tile.
@@ -26,9 +42,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## waitForGround
 
-[Implementation, line 32](../../../../src/runtime/ground.ts#L32)
+[Implementation, line 49](../../../../src/runtime/ground.ts#L49)
 
 Wait for usable ground, not a fixed count of neighbouring tiles. Never starts after a timeout.
+`timeoutMs` is a stall limit: it restarts whenever the provider reports progress (`loadProgress`),
+so a slow link that keeps delivering cells is never reported as an error.
 
 ```ts
 waitForGround(world: GroundProvider, position: Vec3Tuple, options: { signal?: AbortSignal; timeoutMs?: number; onProgress?: (status: string) => void } = {}): Promise<number>
@@ -37,6 +55,7 @@ waitForGround(world: GroundProvider, position: Vec3Tuple, options: { signal?: Ab
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
+- `GroundMissingError`
 - `Number.isFinite`
 - `Promise`
 - `groundAtSeam`
@@ -44,19 +63,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.signal?.throwIfAborted`
 - `performance.now`
 - `world.flushInstall`
+- `world.missingTileAt`
 - `world.update`
 
 Explicit throws in this body:
 
 - `new Error('Invalid ground timeout')`
+- `new GroundMissingError(hole)`
 - `new Error(\`Ground unavailable: ${world.status}\`)`
 
-## waitForGround.callback@49
+## waitForGround.callback@73
 
-[Implementation, line 49](../../../../src/runtime/ground.ts#L49)
+[Implementation, line 73](../../../../src/runtime/ground.ts#L73)
 
 ```ts
-callback@49(resolve, reject): inferred by TypeScript; see implementation
+callback@73(resolve, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -66,9 +87,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.signal?.addEventListener`
 - `setTimeout`
 
-## waitForGround.callback@49.finish
+## waitForGround.callback@73.finish
 
-[Implementation, line 50](../../../../src/runtime/ground.ts#L50)
+[Implementation, line 74](../../../../src/runtime/ground.ts#L74)
 
 ```ts
 finish(): inferred by TypeScript; see implementation
@@ -79,9 +100,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.signal?.removeEventListener`
 - `resolve`
 
-## waitForGround.callback@49.abort
+## waitForGround.callback@73.abort
 
-[Implementation, line 55](../../../../src/runtime/ground.ts#L55)
+[Implementation, line 79](../../../../src/runtime/ground.ts#L79)
 
 ```ts
 abort(): inferred by TypeScript; see implementation

@@ -202,6 +202,29 @@ describe('static-tiles', () => {
       expect(await fetchTileManifest(tile, opts)).toBeUndefined()
     })
 
+    it('treats the listed statuses as holes and reports them, 403 included on S3-style hosts', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<Error/>', { status: 403 })))
+      const seen: number[] = []
+      const manifest = await fetchTileManifest(tile, {
+        ...opts,
+        missingStatuses: [403, 404],
+        onMissing: (status) => seen.push(status),
+      })
+      expect(manifest).toBeUndefined()
+      expect(seen).toEqual([403])
+      // A 500 is still an error, never a hole.
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })))
+      const error = await failure(
+        fetchTileManifest(tile, {
+          ...opts,
+          missingStatuses: [403, 404],
+          onMissing: () => seen.push(0),
+        }),
+      )
+      expect(error.kind).toBe('http')
+      expect(seen).toEqual([403])
+    })
+
     it('reports HTTP 403 with the URL and the S3/CloudFront hint', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<Error/>', { status: 403 })))
       const error = await failure(fetchTileManifest(tile, opts))

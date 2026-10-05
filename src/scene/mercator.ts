@@ -73,7 +73,10 @@ export function publishedGlbName(
   const stamp = at.toISOString().replace(/\D/g, '').slice(0, 12)
   return `${publishedStem[layer]}-${tile.z}-${tile.x}-${tile.y}-${stamp}.glb`
 }
-/** A stored GLB: the readable stamp, or a hash name from before that stamp existed. */
+/**
+ * A stored GLB: the readable stamp, or a hash name from before that stamp existed.
+ * Atlas Z15 packages also publish `terrain-lidar-<hash>.glb` for the terrain layer.
+ */
 export function isPublishedGlbPath(
   tile: MapTile,
   layer: 'terrain' | 'buildings-osm',
@@ -81,6 +84,7 @@ export function isPublishedGlbPath(
 ): boolean {
   return (
     new RegExp(`^${layer}-[a-f0-9]{16}\\.glb$`).test(path) ||
+    (layer === 'terrain' && /^terrain-lidar-[a-f0-9]{16}\.glb$/.test(path)) ||
     new RegExp(`^${publishedStem[layer]}-${tile.z}-${tile.x}-${tile.y}-\\d{12}\\.glb$`).test(path)
   )
 }

@@ -9,7 +9,10 @@
 - `./debug.js`
 - `./place-label.js`
 - `../../planet/index.js`
+- `../../planet/contract.js`
 - `./static-tiles.js`
+- `../../planet/atlas-z15.js`
+- `../../util/sha256.js`
 - `./horizon.js`
 - `./ground-material.js`
 - `./vegetation.js`
@@ -21,10 +24,42 @@
 - `../../simulation/simulation.js`
 - `../../entity/schema.js`
 - `./tile-asset.js`
+- `../../planet/missing-tiles.js`
+- `./drape.js`
+- `./tile-layers.js`
+
+## drapeShown
+
+[Implementation, line 79](../../../../../src/render/planet/world.ts#L79)
+
+```ts
+drapeShown(id: unknown): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `projectedLayers.has`
+- `tileMeshHidden`
+
+## projectGroundPhoto
+
+[Implementation, line 86](../../../../../src/render/planet/world.ts#L86)
+
+Show the tile photo (see `PlanetSourceOptions.imagery`) over the ground as well as over roofs: terrain,
+roads and every land-use surface except inland water, which keeps its own shader.
+
+```ts
+projectGroundPhoto(enabled = true): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `projectedLayers[enabled ? 'add' : 'delete']`
 
 ## inlandWater
 
-[Implementation, line 55](../../../../../src/render/planet/world.ts#L55)
+[Implementation, line 90](../../../../../src/render/planet/world.ts#L90)
 
 ```ts
 inlandWater(metadata: { category?: string; groundLayer?: number }): inferred by TypeScript; see implementation
@@ -32,7 +67,7 @@ inlandWater(metadata: { category?: string; groundLayer?: number }): inferred by 
 
 ## drapeBias
 
-[Implementation, line 58](../../../../../src/render/planet/world.ts#L58)
+[Implementation, line 93](../../../../../src/render/planet/world.ts#L93)
 
 ```ts
 drapeBias(id: string): number
@@ -42,27 +77,66 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `drapeLayers.find`
 
-## drapeBias.callback@63
+## drapeBias.callback@98
 
-[Implementation, line 63](../../../../../src/render/planet/world.ts#L63)
+[Implementation, line 98](../../../../../src/render/planet/world.ts#L98)
 
 ```ts
-callback@63(layer): inferred by TypeScript; see implementation
+callback@98(layer): inferred by TypeScript; see implementation
 ```
 
-## dressSatelliteRoofs
+## loadPackagePhoto
 
-[Implementation, line 65](../../../../../src/render/planet/world.ts#L65)
+[Implementation, line 101](../../../../../src/render/planet/world.ts#L101)
+
+Decode a verified package orthophoto, flipped so the texture needs no `flipY` (north-up, v up).
 
 ```ts
-dressSatelliteRoofs(group: THREE.Group, manifest: PlanetManifest, changed: () => void, setupMaterial: (material: THREE.Material) => void): inferred by TypeScript; see implementation
+loadPackagePhoto(url: string, photo: PlanetPhoto, mark?: (name: string, ms: number) => void): Promise<ImageBitmap>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Float32Array`
+- `AbortSignal.timeout`
+- `Blob`
+- `Error`
+- `createImageBitmap`
+- `fetch`
+- `lap`
+- `performance.now`
+- `response.arrayBuffer`
+- `sha256`
+
+Explicit throws in this body:
+
+- `new Error(\`Photo ${url}: HTTP ${response.status}\`)`
+- `new Error(\`Photo ${url}: size mismatch\`)`
+- `new Error(\`Photo ${url}: checksum mismatch\`)`
+
+## loadPackagePhoto.lap
+
+[Implementation, line 107](../../../../../src/render/planet/world.ts#L107)
+
+```ts
+lap(name: string): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mark`
+- `performance.now`
+
+## dressSatelliteRoofs
+
+[Implementation, line 130](../../../../../src/render/planet/world.ts#L130)
+
+```ts
+dressSatelliteRoofs(group: THREE.Group, manifest: PlanetManifest, changed: () => void, setupMaterial: (material: THREE.Material) => void, imagery: 'online' | 'package' | 'none' = 'online', photoUrl?: string, onPhotoError?: (error: unknown) => void, mark?: (name: string, ms: number) => void, prepared?: { drapes: DrapeGeometry[]; photo?: ImageBitmap }): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `Image`
-- `Map`
 - `Set`
 - `String`
 - `THREE.BufferAttribute`
@@ -70,66 +144,38 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.CanvasTexture`
 - `THREE.Mesh`
 - `THREE.MeshStandardMaterial`
+- `THREE.Texture`
 - `baked.add`
-- `canvas.getContext`
+- `buildDrapes`
+- `canvas?.getContext`
 - `document.createElement`
 - `drapeBias`
-- `drapeLayers.find`
 - `draped.push`
 - `geometry.setAttribute`
 - `group.add`
+- `group.children.flatMap`
+- `loadPackagePhoto`
+- `mark`
+- `performance.now`
 - `planetTileFrame`
-- `position.set`
 - `setupMaterial`
-- `take`
-- `uv.set`
-- `xyz.slice`
+- `show`
 
-## dressSatelliteRoofs.take
+## dressSatelliteRoofs.callback@161
 
-[Implementation, line 87](../../../../../src/render/planet/world.ts#L87)
+[Implementation, line 161](../../../../../src/render/planet/world.ts#L161)
 
 ```ts
-take(id: string, mesh: THREE.Mesh, roofs: boolean): inferred by TypeScript; see implementation
+callback@161(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `[0, 1, 2].map`
-- `baked.has`
-- `buckets.get`
-- `buckets.set`
-- `mesh.geometry.getAttribute`
-- `normal.getY`
-- `position.getX`
-- `position.getY`
-- `position.getZ`
-- `projectedLayers.has`
-- `xyz.push`
-
-## dressSatelliteRoofs.take.callback@95
-
-[Implementation, line 95](../../../../../src/render/planet/world.ts#L95)
-
-```ts
-callback@95(k): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `index.getX`
-
-## dressSatelliteRoofs.callback@119
-
-[Implementation, line 119](../../../../../src/render/planet/world.ts#L119)
-
-```ts
-callback@119(item): inferred by TypeScript; see implementation
-```
+- `g.getAttribute`
 
 ## dressSatelliteRoofs.show
 
-[Implementation, line 164](../../../../../src/render/planet/world.ts#L164)
+[Implementation, line 213](../../../../../src/render/planet/world.ts#L213)
 
 ```ts
 show(): inferred by TypeScript; see implementation
@@ -138,27 +184,54 @@ show(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `changed`
-- `projectedLayers.has`
+- `drapeShown`
 
-## dressSatelliteRoofs.callback@176
+## dressSatelliteRoofs.callback@232
 
-[Implementation, line 176](../../../../../src/render/planet/world.ts#L176)
+[Implementation, line 232](../../../../../src/render/planet/world.ts#L232)
 
 ```ts
-callback@176(): inferred by TypeScript; see implementation
+callback@232(bitmap): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `ctx.drawImage`
+- `bitmap.close`
+- `mark`
+- `performance.now`
 - `show`
 
-## dressSatelliteRoofs.callback@183
+## dressSatelliteRoofs.callback@246
 
-[Implementation, line 183](../../../../../src/render/planet/world.ts#L183)
+[Implementation, line 246](../../../../../src/render/planet/world.ts#L246)
 
 ```ts
-callback@183(): inferred by TypeScript; see implementation
+callback@246(error): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `onPhotoError`
+
+## dressSatelliteRoofs.callback@254
+
+[Implementation, line 254](../../../../../src/render/planet/world.ts#L254)
+
+```ts
+callback@254(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `ctx!.drawImage`
+- `show`
+
+## dressSatelliteRoofs.callback@261
+
+[Implementation, line 261](../../../../../src/render/planet/world.ts#L261)
+
+```ts
+callback@261(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -167,7 +240,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tileRevision
 
-[Implementation, line 191](../../../../../src/render/planet/world.ts#L191)
+[Implementation, line 269](../../../../../src/render/planet/world.ts#L269)
 
 ```ts
 tileRevision(manifest: PlanetManifest): inferred by TypeScript; see implementation
@@ -175,7 +248,7 @@ tileRevision(manifest: PlanetManifest): inferred by TypeScript; see implementati
 
 ## roofTexture
 
-[Implementation, line 195](../../../../../src/render/planet/world.ts#L195)
+[Implementation, line 278](../../../../../src/render/planet/world.ts#L278)
 
 ```ts
 roofTexture(bitmap: ImageBitmap): inferred by TypeScript; see implementation
@@ -185,9 +258,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.Texture`
 
+## describeStreamError
+
+[Implementation, line 333](../../../../../src/render/planet/world.ts#L333)
+
+```ts
+describeStreamError(error: unknown): StreamError
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+
 ## PlanetWorld.activeTiles
 
-[Implementation, line 216](../../../../../src/render/planet/world.ts#L216)
+[Implementation, line 343](../../../../../src/render/planet/world.ts#L343)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -199,12 +284,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.visible.map`
 
-## PlanetWorld.activeTiles.callback@218
+## PlanetWorld.activeTiles.callback@345
 
-[Implementation, line 218](../../../../../src/render/planet/world.ts#L218)
+[Implementation, line 345](../../../../../src/render/planet/world.ts#L345)
 
 ```ts
-callback@218(key): inferred by TypeScript; see implementation
+callback@345(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -213,7 +298,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.chartTiles
 
-[Implementation, line 226](../../../../../src/render/planet/world.ts#L226)
+[Implementation, line 353](../../../../../src/render/planet/world.ts#L353)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -225,12 +310,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.visible.flatMap`
 
-## PlanetWorld.chartTiles.callback@227
+## PlanetWorld.chartTiles.callback@354
 
-[Implementation, line 227](../../../../../src/render/planet/world.ts#L227)
+[Implementation, line 354](../../../../../src/render/planet/world.ts#L354)
 
 ```ts
-callback@227(key): inferred by TypeScript; see implementation
+callback@354(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -240,7 +325,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.navigationPlaces
 
-[Implementation, line 234](../../../../../src/render/planet/world.ts#L234)
+[Implementation, line 361](../../../../../src/render/planet/world.ts#L361)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -253,12 +338,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `this.visible.flatMap`
 
-## PlanetWorld.navigationPlaces.callback@236
+## PlanetWorld.navigationPlaces.callback@363
 
-[Implementation, line 236](../../../../../src/render/planet/world.ts#L236)
+[Implementation, line 363](../../../../../src/render/planet/world.ts#L363)
 
 ```ts
-callback@236(key): inferred by TypeScript; see implementation
+callback@363(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -268,12 +353,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `validPlanetPlaces`
 - `validPlanetPlaces(manifest.places).flatMap`
 
-## PlanetWorld.navigationPlaces.callback@236.callback@240
+## PlanetWorld.navigationPlaces.callback@363.callback@367
 
-[Implementation, line 240](../../../../../src/render/planet/world.ts#L240)
+[Implementation, line 367](../../../../../src/render/planet/world.ts#L367)
 
 ```ts
-callback@240(place): inferred by TypeScript; see implementation
+callback@367(place): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -282,9 +367,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `seen.add`
 - `seen.has`
 
+## PlanetWorld.stamp
+
+[Implementation, line 390](../../../../../src/render/planet/world.ts#L390)
+
+One planetary stream for editor, rendering and physics. Only tile roots change frame.
+
+```ts
+stamp(key: string): TileTiming
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.tileTimings.get`
+- `this.tileTimings.set`
+
 ## PlanetWorld.createSea
 
-[Implementation, line 282](../../../../../src/render/planet/world.ts#L282)
+[Implementation, line 426](../../../../../src/render/planet/world.ts#L426)
 
 ```ts
 createSea(): inferred by TypeScript; see implementation
@@ -296,7 +396,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.constructor
 
-[Implementation, line 289](../../../../../src/render/planet/world.ts#L289)
+[Implementation, line 433](../../../../../src/render/planet/world.ts#L433)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -306,34 +406,38 @@ constructor(private origin: GeoPoint, private changed: () => void, private setup
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `MissingTiles`
 - `PlanetHorizon`
 - `this.root.add`
 
-## PlanetWorld.constructor.callback@300
+## PlanetWorld.constructor.callback@445
 
-[Implementation, line 300](../../../../../src/render/planet/world.ts#L300)
+[Implementation, line 445](../../../../../src/render/planet/world.ts#L445)
 
 ```ts
-callback@300(event: MessageEvent<{ id: number; payload?: PlanetPayload; error?: string }>): inferred by TypeScript; see implementation
+callback@445(event: MessageEvent<{ id: number; payload?: PlanetPayload; error?: string }>): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Date.now`
+- `Object.assign`
 - `event.data.payload?.chart?.bitmap.close`
+- `performance.now`
 - `this.changed`
 - `this.installQueue.push`
 - `this.pump`
 - `this.requests.delete`
 - `this.requests.get`
 - `this.retry.set`
+- `this.stamp`
 
-## PlanetWorld.constructor.callback@322
+## PlanetWorld.constructor.callback@478
 
-[Implementation, line 322](../../../../../src/render/planet/world.ts#L322)
+[Implementation, line 478](../../../../../src/render/planet/world.ts#L478)
 
 ```ts
-callback@322(): inferred by TypeScript; see implementation
+callback@478(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -343,7 +447,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.setStreamMode
 
-[Implementation, line 334](../../../../../src/render/planet/world.ts#L334)
+[Implementation, line 494](../../../../../src/render/planet/world.ts#L494)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -351,9 +455,111 @@ One planetary stream for editor, rendering and physics. Only tile roots change f
 setStreamMode(mode: 'ground' | 'flight' | 'model'): void
 ```
 
+## PlanetWorld.cellStats
+
+[Implementation, line 502](../../../../../src/render/planet/world.ts#L502)
+
+Cells resident in memory, drawn now, wanted but missing on the host (holes), still arriving, and
+failed (will be retried). There is no "total": streaming never needs an index of the host.
+
+```ts
+cellStats(): {
+    loaded: number
+    visible: number
+    missing: number
+    pending: number
+    failed: number
+  }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `this.missing.countAmong`
+
+## PlanetWorld.loadDiagnostics
+
+[Implementation, line 518](../../../../../src/render/planet/world.ts#L518)
+
+What the loading screen needs to explain a slow or failing load.
+
+```ts
+loadDiagnostics(): LoadDiagnostics
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Date.now`
+- `Number`
+- `[...this.failedManifests.values()].filter`
+- `this.failedManifests.values`
+- `this.missing.countAmong`
+
+## PlanetWorld.loadDiagnostics.callback@525
+
+[Implementation, line 525](../../../../../src/render/planet/world.ts#L525)
+
+```ts
+callback@525(f): inferred by TypeScript; see implementation
+```
+
+## PlanetWorld.missingTiles
+
+[Implementation, line 531](../../../../../src/render/planet/world.ts#L531)
+
+Tiles the host lacks (z/x/y, status, when), oldest first, kept across sessions when storage was given.
+
+```ts
+missingTiles(): MissingTile[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.missing.list`
+
+## PlanetWorld.clearMissingTiles
+
+[Implementation, line 535](../../../../../src/render/planet/world.ts#L535)
+
+Forget the recorded holes so they are requested again.
+
+```ts
+clearMissingTiles(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.missing.clear`
+
+## PlanetWorld.missingTileAt
+
+[Implementation, line 540](../../../../../src/render/planet/world.ts#L540)
+
+The tile the host lacks under this position: nothing will ever load there.
+
+```ts
+missingTileAt(position: Vec3Tuple): MapTile | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `localToGeo`
+- `mapTileAt`
+- `this.missing.has`
+
+## PlanetWorld.loadProgress
+
+[Implementation, line 546](../../../../../src/render/planet/world.ts#L546)
+
+Changes whenever a cell finishes loading or fails; stays equal while nothing is happening.
+
+```ts
+loadProgress(): string
+```
+
 ## PlanetWorld.installMilliseconds
 
-[Implementation, line 338](../../../../../src/render/planet/world.ts#L338)
+[Implementation, line 549](../../../../../src/render/planet/world.ts#L549)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -363,7 +569,7 @@ installMilliseconds(): number
 
 ## PlanetWorld.diagnostics
 
-[Implementation, line 341](../../../../../src/render/planet/world.ts#L341)
+[Implementation, line 552](../../../../../src/render/planet/world.ts#L552)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -386,40 +592,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.resident.values`
 - `this.wanted.map`
 
-## PlanetWorld.diagnostics.callback@342
+## PlanetWorld.diagnostics.callback@553
 
-[Implementation, line 342](../../../../../src/render/planet/world.ts#L342)
+[Implementation, line 553](../../../../../src/render/planet/world.ts#L553)
 
 ```ts
-callback@342(tile): inferred by TypeScript; see implementation
+callback@553(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mapTileId`
 
-## PlanetWorld.diagnostics.callback@347
+## PlanetWorld.diagnostics.callback@558
 
-[Implementation, line 347](../../../../../src/render/planet/world.ts#L347)
+[Implementation, line 558](../../../../../src/render/planet/world.ts#L558)
 
 ```ts
-callback@347(r): inferred by TypeScript; see implementation
+callback@558(r): inferred by TypeScript; see implementation
 ```
 
-## PlanetWorld.diagnostics.callback@348
+## PlanetWorld.diagnostics.callback@559
 
-[Implementation, line 348](../../../../../src/render/planet/world.ts#L348)
+[Implementation, line 559](../../../../../src/render/planet/world.ts#L559)
 
 ```ts
-callback@348(r): inferred by TypeScript; see implementation
+callback@559(r): inferred by TypeScript; see implementation
 ```
 
-## PlanetWorld.diagnostics.callback@351
+## PlanetWorld.diagnostics.callback@562
 
-[Implementation, line 351](../../../../../src/render/planet/world.ts#L351)
+[Implementation, line 562](../../../../../src/render/planet/world.ts#L562)
 
 ```ts
-callback@351([key, tile]): inferred by TypeScript; see implementation
+callback@562([key, tile]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -430,17 +636,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.retry.has`
 - `visible.has`
 
-## PlanetWorld.diagnostics.callback@368
+## PlanetWorld.diagnostics.callback@579
 
-[Implementation, line 368](../../../../../src/render/planet/world.ts#L368)
+[Implementation, line 579](../../../../../src/render/planet/world.ts#L579)
 
 ```ts
-callback@368(sum, r): inferred by TypeScript; see implementation
+callback@579(sum, r): inferred by TypeScript; see implementation
 ```
 
 ## PlanetWorld.flushInstall
 
-[Implementation, line 377](../../../../../src/render/planet/world.ts#L377)
+[Implementation, line 588](../../../../../src/render/planet/world.ts#L588)
 
 Time-sliced mesh staging; publication remains atomic. A single mesh is an indivisible task.
 
@@ -456,10 +662,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.installQueue.shift`
 - `this.installing.steps.next`
 - `this.pump`
+- `this.stamp`
 
 ## PlanetWorld.setQuality
 
-[Implementation, line 398](../../../../../src/render/planet/world.ts#L398)
+[Implementation, line 617](../../../../../src/render/planet/world.ts#L617)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -475,7 +682,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.setDistance
 
-[Implementation, line 404](../../../../../src/render/planet/world.ts#L404)
+[Implementation, line 623](../../../../../src/render/planet/world.ts#L623)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -483,9 +690,35 @@ One planetary stream for editor, rendering and physics. Only tile roots change f
 setDistance(distance: number): inferred by TypeScript; see implementation
 ```
 
+## PlanetWorld.maxCells
+
+[Implementation, line 627](../../../../../src/render/planet/world.ts#L627)
+
+Cells kept in memory.
+
+```ts
+maxCells(): number
+```
+
+## PlanetWorld.setMaxTiles
+
+[Implementation, line 631](../../../../../src/render/planet/world.ts#L631)
+
+Cells kept in memory (same limits as the quality presets); applied from the next plan.
+
+```ts
+setMaxTiles(maxTiles: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Math.round`
+
 ## PlanetWorld.setRelief
 
-[Implementation, line 407](../../../../../src/render/planet/world.ts#L407)
+[Implementation, line 635](../../../../../src/render/planet/world.ts#L635)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -495,7 +728,7 @@ setRelief(span: number): inferred by TypeScript; see implementation
 
 ## PlanetWorld.setOcean
 
-[Implementation, line 410](../../../../../src/render/planet/world.ts#L410)
+[Implementation, line 638](../../../../../src/render/planet/world.ts#L638)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -509,7 +742,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.applyViewLayers
 
-[Implementation, line 414](../../../../../src/render/planet/world.ts#L414)
+[Implementation, line 642](../../../../../src/render/planet/world.ts#L642)
 
 Applied after streaming, which turns groups back on every frame.
 
@@ -525,7 +758,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.useSea
 
-[Implementation, line 437](../../../../../src/render/planet/world.ts#L437)
+[Implementation, line 665](../../../../../src/render/planet/world.ts#L665)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -544,7 +777,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.riverMaterial
 
-[Implementation, line 452](../../../../../src/render/planet/world.ts#L452)
+[Implementation, line 680](../../../../../src/render/planet/world.ts#L680)
 
 Same sea shader. The glint stays; the wave also tints the body so it reads from above.
 
@@ -557,9 +790,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `material.color.set`
 - `this.createSea`
 
+## PlanetWorld.applyLayers
+
+[Implementation, line 691](../../../../../src/render/planet/world.ts#L691)
+
+Re-apply the hidden tile layers (see `setHiddenTileLayers`) to everything already loaded.
+
+```ts
+applyLayers(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.applyProjection`
+- `this.cover`
+
 ## PlanetWorld.applyProjection
 
-[Implementation, line 462](../../../../../src/render/planet/world.ts#L462)
+[Implementation, line 695](../../../../../src/render/planet/world.ts#L695)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -572,21 +820,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.changed`
 - `this.root.traverse`
 
-## PlanetWorld.applyProjection.callback@463
+## PlanetWorld.applyProjection.callback@696
 
-[Implementation, line 463](../../../../../src/render/planet/world.ts#L463)
+[Implementation, line 696](../../../../../src/render/planet/world.ts#L696)
 
 ```ts
-callback@463(node): inferred by TypeScript; see implementation
+callback@696(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `projectedLayers.has`
+- `drapeShown`
 
 ## PlanetWorld.update
 
-[Implementation, line 470](../../../../../src/render/planet/world.ts#L470)
+[Implementation, line 703](../../../../../src/render/planet/world.ts#L703)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -602,6 +850,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `[center, ...protectedTiles, ...corridor, ...plan.requests, future].map`
 - `corridor.push`
+- `known.map`
 - `localToGeo`
 - `mapTileAt`
 - `mapTileId`
@@ -620,61 +869,60 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.resident.has`
 - `this.retry.delete`
 - `this.retry.keys`
-- `this.sourceOptions.tiles.map`
 - `this.wanted.filter`
 - `this.wanted.map`
 - `this.worker.postMessage`
 
-## PlanetWorld.update.callback@511
+## PlanetWorld.update.callback@745
 
-[Implementation, line 511](../../../../../src/render/planet/world.ts#L511)
+[Implementation, line 745](../../../../../src/render/planet/world.ts#L745)
 
 ```ts
-callback@511(p): inferred by TypeScript; see implementation
+callback@745(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `localToGeo`
 
-## PlanetWorld.update.callback@512
+## PlanetWorld.update.callback@746
 
-[Implementation, line 512](../../../../../src/render/planet/world.ts#L512)
+[Implementation, line 746](../../../../../src/render/planet/world.ts#L746)
 
 ```ts
-callback@512(p): inferred by TypeScript; see implementation
+callback@746(p): inferred by TypeScript; see implementation
 ```
 
-## PlanetWorld.update.callback@513
+## PlanetWorld.update.callback@747
 
-[Implementation, line 513](../../../../../src/render/planet/world.ts#L513)
+[Implementation, line 747](../../../../../src/render/planet/world.ts#L747)
 
 ```ts
-callback@513(p): inferred by TypeScript; see implementation
+callback@747(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mapTileAt`
 
-## PlanetWorld.update.callback@525
+## PlanetWorld.update.callback@759
 
-[Implementation, line 525](../../../../../src/render/planet/world.ts#L525)
+[Implementation, line 759](../../../../../src/render/planet/world.ts#L759)
 
 ```ts
-callback@525(t): inferred by TypeScript; see implementation
+callback@759(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mapTileId`
 
-## PlanetWorld.update.callback@533
+## PlanetWorld.update.callback@768
 
-[Implementation, line 533](../../../../../src/render/planet/world.ts#L533)
+[Implementation, line 768](../../../../../src/render/planet/world.ts#L768)
 
 ```ts
-callback@533(tile): inferred by TypeScript; see implementation
+callback@768(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -682,12 +930,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `available.has`
 - `mapTileId`
 
-## PlanetWorld.update.callback@536
+## PlanetWorld.update.callback@771
 
-[Implementation, line 536](../../../../../src/render/planet/world.ts#L536)
+[Implementation, line 771](../../../../../src/render/planet/world.ts#L771)
 
 ```ts
-callback@536(job): inferred by TypeScript; see implementation
+callback@771(job): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -698,7 +946,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.discover
 
-[Implementation, line 554](../../../../../src/render/planet/world.ts#L554)
+[Implementation, line 789](../../../../../src/render/planet/world.ts#L789)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -718,24 +966,27 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pump`
 - `this.wanted.filter`
 
-## PlanetWorld.discover.callback@557
+## PlanetWorld.discover.callback@793
 
-[Implementation, line 557](../../../../../src/render/planet/world.ts#L557)
+[Implementation, line 793](../../../../../src/render/planet/world.ts#L793)
 
 ```ts
-callback@557(t): inferred by TypeScript; see implementation
+callback@793(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mapTileId`
+- `this.failedManifests.get`
+- `this.missing.suppressed`
+- `this.photoQuality`
 - `this.ready.get`
 - `this.ready.has`
 - `this.resident.has`
 
 ## PlanetWorld.discoverDynamic
 
-[Implementation, line 589](../../../../../src/render/planet/world.ts#L589)
+[Implementation, line 839](../../../../../src/render/planet/world.ts#L839)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -761,9 +1012,23 @@ Explicit throws in this body:
 
 - `Error(\`HTTP ${response.status}\`)`
 
+## PlanetWorld.photoQuality
+
+[Implementation, line 862](../../../../../src/render/planet/world.ts#L862)
+
+`atlas.photo`, except `lo` for cells farther than `nearCells` from the player.
+
+```ts
+photoQuality(tile: MapTile): 'full' | 'lo' | 'none'
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `atlasPhotoFor`
+
 ## PlanetWorld.discoverStatic
 
-[Implementation, line 611](../../../../../src/render/planet/world.ts#L611)
+[Implementation, line 870](../../../../../src/render/planet/world.ts#L870)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -776,30 +1041,45 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Promise.all`
 - `batch.filter`
 - `batch.map`
+- `batch.some`
 
-## PlanetWorld.discoverStatic.callback@615
+## PlanetWorld.discoverStatic.callback@873
 
-[Implementation, line 615](../../../../../src/render/planet/world.ts#L615)
+[Implementation, line 873](../../../../../src/render/planet/world.ts#L873)
 
 ```ts
-callback@615(tile): inferred by TypeScript; see implementation
+callback@873(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Error`
-- `String`
-- `failures.push`
+- `Date.now`
+- `describeStreamError`
 - `fetchTileManifest`
 - `mapTileId`
+- `this.changed`
+- `this.failedManifests.delete`
+- `this.failedManifests.set`
+- `this.missing.record`
+- `this.missing.resolve`
+- `this.photoQuality`
+- `this.pump`
 - `this.ready.set`
 
-## PlanetWorld.discoverStatic.callback@630
+## PlanetWorld.discoverStatic.callback@873.onMissing
 
-[Implementation, line 630](../../../../../src/render/planet/world.ts#L630)
+[Implementation, line 883](../../../../../src/render/planet/world.ts#L883)
 
 ```ts
-callback@630(t): inferred by TypeScript; see implementation
+onMissing(value): inferred by TypeScript; see implementation
+```
+
+## PlanetWorld.discoverStatic.callback@910
+
+[Implementation, line 910](../../../../../src/render/planet/world.ts#L910)
+
+```ts
+callback@910(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -807,9 +1087,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mapTileId`
 - `this.ready.has`
 
+## PlanetWorld.discoverStatic.callback@913
+
+[Implementation, line 913](../../../../../src/render/planet/world.ts#L913)
+
+```ts
+callback@913(t): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mapTileId`
+- `this.failedManifests.has`
+
 ## PlanetWorld.pump
 
-[Implementation, line 638](../../../../../src/render/planet/world.ts#L638)
+[Implementation, line 918](../../../../../src/render/planet/world.ts#L918)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -824,6 +1117,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...this.requests.values()].some`
 - `mapTileId`
 - `mapTilePath`
+- `performance.now`
+- `planetTileFrame`
 - `this.base.replace`
 - `this.installQueue.some`
 - `this.ready.get`
@@ -832,28 +1127,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.resident.get`
 - `this.resident.has`
 - `this.retry.get`
+- `this.stamp`
 - `this.worker.postMessage`
 - `tileRevision`
 
-## PlanetWorld.pump.callback@651
+## PlanetWorld.pump.callback@931
 
-[Implementation, line 651](../../../../../src/render/planet/world.ts#L651)
+[Implementation, line 931](../../../../../src/render/planet/world.ts#L931)
 
 ```ts
-callback@651(job): inferred by TypeScript; see implementation
+callback@931(job): inferred by TypeScript; see implementation
 ```
 
-## PlanetWorld.pump.callback@655
+## PlanetWorld.pump.callback@935
 
-[Implementation, line 655](../../../../../src/render/planet/world.ts#L655)
+[Implementation, line 935](../../../../../src/render/planet/world.ts#L935)
 
 ```ts
-callback@655(r): inferred by TypeScript; see implementation
+callback@935(r): inferred by TypeScript; see implementation
 ```
 
 ## PlanetWorld.install
 
-[Implementation, line 669](../../../../../src/render/planet/world.ts#L669)
+[Implementation, line 956](../../../../../src/render/planet/world.ts#L956)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -863,7 +1159,6 @@ install(key: string, manifest: PlanetManifest, payload: PlanetPayload): Generato
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `String`
 - `THREE.BufferAttribute`
 - `THREE.BufferGeometry`
 - `THREE.Group`
@@ -871,7 +1166,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MeshStandardMaterial`
 - `THREE.TextureLoader`
 - `['Terrain', 'Buildings'].includes`
+- `atlasFileUrl`
 - `carriagewayTint`
+- `console.warn`
+- `drapeShown`
 - `dressSatelliteRoofs`
 - `geoToLocal`
 - `geometry.computeBoundingSphere`
@@ -889,8 +1187,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `payload.chunks.reduce`
 - `payload.meshes.reduce`
 - `payload.vegetation.flatMap`
+- `performance.now`
 - `placeLabel`
-- `projectedLayers.has`
 - `restoreSupport`
 - `restoreTileLayers`
 - `roofTexture`
@@ -904,97 +1202,121 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.simulation?.capturePlanetSupport`
 - `this.staging.add`
 - `this.staging.delete`
+- `this.stamp`
+- `tileMeshHidden`
 - `tileRevision`
 - `treeInstances`
 - `validPlanetPlaces`
+- `withMap`
 
-## PlanetWorld.install.callback@693
+## PlanetWorld.install.callback@980
 
-[Implementation, line 693](../../../../../src/render/planet/world.ts#L693)
+[Implementation, line 980](../../../../../src/render/planet/world.ts#L980)
 
 ```ts
-callback@693(p: THREE.MeshStandardMaterialParameters): inferred by TypeScript; see implementation
+callback@980(p: THREE.MeshStandardMaterialParameters): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.MeshStandardMaterial`
 
-## PlanetWorld.install.callback@722
+## PlanetWorld.install.callback@1014
 
-[Implementation, line 722](../../../../../src/render/planet/world.ts#L722)
+[Implementation, line 1014](../../../../../src/render/planet/world.ts#L1014)
 
 ```ts
-callback@722(): inferred by TypeScript; see implementation
+callback@1014(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.changed`
 
-## PlanetWorld.install.callback@723
+## PlanetWorld.install.callback@1015
 
-[Implementation, line 723](../../../../../src/render/planet/world.ts#L723)
+[Implementation, line 1015](../../../../../src/render/planet/world.ts#L1015)
 
 ```ts
-callback@723(material): inferred by TypeScript; see implementation
+callback@1015(material): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.setupMaterial`
 
-## PlanetWorld.install.callback@741
+## PlanetWorld.install.callback@1018
 
-[Implementation, line 741](../../../../../src/render/planet/world.ts#L741)
+[Implementation, line 1018](../../../../../src/render/planet/world.ts#L1018)
 
 ```ts
-callback@741(): inferred by TypeScript; see implementation
+callback@1018(error): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `this.changed`
+
+## PlanetWorld.install.callback@1022
+
+[Implementation, line 1022](../../../../../src/render/planet/world.ts#L1022)
+
+```ts
+callback@1022(name, ms): inferred by TypeScript; see implementation
+```
+
+## PlanetWorld.install.callback@1050
+
+[Implementation, line 1050](../../../../../src/render/planet/world.ts#L1050)
+
+```ts
+callback@1050(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.changed`
 
-## PlanetWorld.install.callback@754
+## PlanetWorld.install.callback@1063
 
-[Implementation, line 754](../../../../../src/render/planet/world.ts#L754)
+[Implementation, line 1063](../../../../../src/render/planet/world.ts#L1063)
 
 ```ts
-callback@754(p): inferred by TypeScript; see implementation
+callback@1063(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.groundHeight`
 
-## PlanetWorld.install.callback@766
+## PlanetWorld.install.callback@1075
 
-[Implementation, line 766](../../../../../src/render/planet/world.ts#L766)
+[Implementation, line 1075](../../../../../src/render/planet/world.ts#L1075)
 
 ```ts
-callback@766(v, i): inferred by TypeScript; see implementation
+callback@1075(v, i): inferred by TypeScript; see implementation
 ```
 
-## PlanetWorld.install.callback@793
+## PlanetWorld.install.callback@1102
 
-[Implementation, line 793](../../../../../src/render/planet/world.ts#L793)
+[Implementation, line 1102](../../../../../src/render/planet/world.ts#L1102)
 
 ```ts
-callback@793(n, m): inferred by TypeScript; see implementation
+callback@1102(n, m): inferred by TypeScript; see implementation
 ```
 
-## PlanetWorld.install.callback@806
+## PlanetWorld.install.callback@1115
 
-[Implementation, line 806](../../../../../src/render/planet/world.ts#L806)
+[Implementation, line 1115](../../../../../src/render/planet/world.ts#L1115)
 
 ```ts
-callback@806(n, c): inferred by TypeScript; see implementation
+callback@1115(n, c): inferred by TypeScript; see implementation
 ```
 
 ## PlanetWorld.cover
 
-[Implementation, line 814](../../../../../src/render/planet/world.ts#L814)
+[Implementation, line 1123](../../../../../src/render/planet/world.ts#L1123)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1008,43 +1330,44 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...new Set(this.visible.map((k) => k.split('/')[1]))].join`
 - `[...this.resident.values()].reduce`
 - `active.has`
+- `drapeShown`
 - `planetReadyCover`
 - `planetReadyCover(this.plan, new Set(this.resident.keys())).map`
-- `projectedLayers.has`
 - `this.horizon.setCoverage`
 - `this.remove`
 - `this.resident.keys`
 - `this.resident.values`
 - `this.visible.map`
 - `this.wanted.map`
+- `tileMeshHidden`
 - `wanted.has`
 
-## PlanetWorld.cover.callback@819
+## PlanetWorld.cover.callback@1128
 
-[Implementation, line 819](../../../../../src/render/planet/world.ts#L819)
+[Implementation, line 1128](../../../../../src/render/planet/world.ts#L1128)
 
 ```ts
-callback@819(key): inferred by TypeScript; see implementation
+callback@1128(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.ready.get`
 
-## PlanetWorld.cover.callback@832
+## PlanetWorld.cover.callback@1143
 
-[Implementation, line 832](../../../../../src/render/planet/world.ts#L832)
+[Implementation, line 1143](../../../../../src/render/planet/world.ts#L1143)
 
 ```ts
-callback@832(n, r): inferred by TypeScript; see implementation
+callback@1143(n, r): inferred by TypeScript; see implementation
 ```
 
-## PlanetWorld.cover.callback@839
+## PlanetWorld.cover.callback@1150
 
-[Implementation, line 839](../../../../../src/render/planet/world.ts#L839)
+[Implementation, line 1150](../../../../../src/render/planet/world.ts#L1150)
 
 ```ts
-callback@839(k): inferred by TypeScript; see implementation
+callback@1150(k): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1053,7 +1376,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.renderUpdate
 
-[Implementation, line 841](../../../../../src/render/planet/world.ts#L841)
+[Implementation, line 1152](../../../../../src/render/planet/world.ts#L1152)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1080,12 +1403,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.position.copy`
 - `this.root.position.copy(origin).negate`
 
-## PlanetWorld.renderUpdate.callback@861
+## PlanetWorld.renderUpdate.callback@1172
 
-[Implementation, line 861](../../../../../src/render/planet/world.ts#L861)
+[Implementation, line 1172](../../../../../src/render/planet/world.ts#L1172)
 
 ```ts
-callback@861(key): inferred by TypeScript; see implementation
+callback@1172(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1094,12 +1417,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mapTileId`
 - `this.ready.get`
 
-## PlanetWorld.renderUpdate.callback@877
+## PlanetWorld.renderUpdate.callback@1188
 
-[Implementation, line 877](../../../../../src/render/planet/world.ts#L877)
+[Implementation, line 1188](../../../../../src/render/planet/world.ts#L1188)
 
 ```ts
-callback@877(k): inferred by TypeScript; see implementation
+callback@1188(k): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1108,7 +1431,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.groundAltitude
 
-[Implementation, line 880](../../../../../src/render/planet/world.ts#L880)
+[Implementation, line 1191](../../../../../src/render/planet/world.ts#L1191)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1123,7 +1446,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.groundHeight
 
-[Implementation, line 886](../../../../../src/render/planet/world.ts#L886)
+[Implementation, line 1197](../../../../../src/render/planet/world.ts#L1197)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1153,12 +1476,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `worldRay.clone`
 - `worldRay.clone().applyMatrix4`
 
-## PlanetWorld.groundHeight.callback@903
+## PlanetWorld.groundHeight.callback@1214
 
-[Implementation, line 903](../../../../../src/render/planet/world.ts#L903)
+[Implementation, line 1214](../../../../../src/render/planet/world.ts#L1214)
 
 ```ts
-callback@903(key): inferred by TypeScript; see implementation
+callback@1214(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1167,7 +1490,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.ensureGround
 
-[Implementation, line 932](../../../../../src/render/planet/world.ts#L932)
+[Implementation, line 1243](../../../../../src/render/planet/world.ts#L1243)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1189,12 +1512,12 @@ Explicit throws in this body:
 - `Error('Carga cancelada')`
 - `Error('El terreno todavía se está preparando. Espera a que aparezca antes de jugar.')`
 
-## PlanetWorld.ensureGround.callback@940
+## PlanetWorld.ensureGround.callback@1251
 
-[Implementation, line 940](../../../../../src/render/planet/world.ts#L940)
+[Implementation, line 1251](../../../../../src/render/planet/world.ts#L1251)
 
 ```ts
-callback@940(r): inferred by TypeScript; see implementation
+callback@1251(r): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1203,7 +1526,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.selectedSurface
 
-[Implementation, line 946](../../../../../src/render/planet/world.ts#L946)
+[Implementation, line 1257](../../../../../src/render/planet/world.ts#L1257)
 
 Geometry-only selection for the host overlay; never drawn into world or portal views.
 
@@ -1218,7 +1541,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.clearSelection
 
-[Implementation, line 959](../../../../../src/render/planet/world.ts#L959)
+[Implementation, line 1270](../../../../../src/render/planet/world.ts#L1270)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1234,7 +1557,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.inspect
 
-[Implementation, line 967](../../../../../src/render/planet/world.ts#L967)
+[Implementation, line 1278](../../../../../src/render/planet/world.ts#L1278)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1261,25 +1584,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.clearSelection`
 - `this.root.updateMatrixWorld`
 
-## PlanetWorld.inspect.callback@969
+## PlanetWorld.inspect.callback@1280
 
-[Implementation, line 969](../../../../../src/render/planet/world.ts#L969)
+[Implementation, line 1280](../../../../../src/render/planet/world.ts#L1280)
 
 ```ts
-callback@969(h): inferred by TypeScript; see implementation
+callback@1280(h): inferred by TypeScript; see implementation
 ```
 
-## PlanetWorld.inspect.callback@988
+## PlanetWorld.inspect.callback@1299
 
-[Implementation, line 988](../../../../../src/render/planet/world.ts#L988)
+[Implementation, line 1299](../../../../../src/render/planet/world.ts#L1299)
 
 ```ts
-callback@988(p: { start: number; count: number }): inferred by TypeScript; see implementation
+callback@1299(p: { start: number; count: number }): inferred by TypeScript; see implementation
 ```
 
 ## PlanetWorld.refreshTile
 
-[Implementation, line 1031](../../../../../src/render/planet/world.ts#L1031)
+[Implementation, line 1342](../../../../../src/render/planet/world.ts#L1342)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1293,7 +1616,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.remove
 
-[Implementation, line 1035](../../../../../src/render/planet/world.ts#L1035)
+[Implementation, line 1346](../../../../../src/render/planet/world.ts#L1346)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1309,16 +1632,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.resident.delete`
 - `this.resident.get`
 
-## PlanetWorld.remove.callback@1040
+## PlanetWorld.remove.callback@1352
 
-[Implementation, line 1040](../../../../../src/render/planet/world.ts#L1040)
+[Implementation, line 1352](../../../../../src/render/planet/world.ts#L1352)
 
 ```ts
-callback@1040(n): inferred by TypeScript; see implementation
+callback@1352(n): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(mat as THREE.MeshStandardMaterial).map?.dispose`
 - `Array.isArray`
 - `m.geometry.dispose`
 - `mat.dispose`
@@ -1327,7 +1651,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetWorld.dispose
 
-[Implementation, line 1053](../../../../../src/render/planet/world.ts#L1053)
+[Implementation, line 1369](../../../../../src/render/planet/world.ts#L1369)
 
 One planetary stream for editor, rendering and physics. Only tile roots change frame.
 
@@ -1351,12 +1675,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.treeTexture?.dispose`
 - `this.worker.terminate`
 
-## PlanetWorld.dispose.callback@1065
+## PlanetWorld.dispose.callback@1381
 
-[Implementation, line 1065](../../../../../src/render/planet/world.ts#L1065)
+[Implementation, line 1381](../../../../../src/render/planet/world.ts#L1381)
 
 ```ts
-callback@1065(node): inferred by TypeScript; see implementation
+callback@1381(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
