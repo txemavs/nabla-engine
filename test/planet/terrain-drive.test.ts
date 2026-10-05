@@ -32,7 +32,7 @@ describe('terrain drive example', () => {
       createTerrainDriveScene({ latitude: 43.2954, longitude: -1.8949, heading: 118 }),
     )
     expect(scene.geography).toMatchObject({ altitude: 0, imagery: 'offline', planetary: true })
-    expect(scene.sky).toEqual({ mode: 'fixed', at: '2026-06-21T10:30:00.000Z' })
+    expect(scene.sky).toEqual({ mode: 'live' })
     const vehicles = scene.entities.filter((e) => e.vehicle)
     expect(vehicles.map((v) => v.id).sort()).toEqual([
       'demo-a3',
@@ -92,6 +92,10 @@ describe('terrain drive example', () => {
   })
 
   it('selects the sun', () => {
+    expect(createTerrainDriveScene({ latitude: 0, longitude: 0, sky: 'day' }).sky).toEqual({
+      mode: 'fixed',
+      at: '2026-06-21T10:30:00.000Z',
+    })
     expect(createTerrainDriveScene({ latitude: 0, longitude: 0, sky: 'live' }).sky).toEqual({
       mode: 'live',
     })

@@ -1,3 +1,4 @@
+import { controlDefaults } from '../config/controls.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 import { resolveControlProfile, type ControlProfileVehicle } from './control-profiles.js'
 
@@ -122,6 +123,7 @@ const styles = `
  background: radial-gradient(circle at 35% 30%, #f4f7fb, #b8c4d0 70%);
  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.7);
  transition: top 40ms linear; }
+/* Cockpit twist ring (circular visual; square hit target). Gated by showPilotTouchRing. */
 .touch-driving-pilot { position: absolute; left: 50%; top: auto; bottom: 52%; width: 180px;
  height: 180px; margin: 0 0 0 -90px; display: none; }
 .touch-driving.is-pilot .touch-driving-pilot { display: block; }
@@ -174,6 +176,8 @@ export class TouchDriving {
     private readonly actions: TouchDrivingActions,
     visibility: TouchDrivingVisibility = 'auto',
     private readonly text: RuntimeText = createRuntimeText(),
+    /** When false (default), keep the pilot ring DOM/CSS but do not show or hit-test it. */
+    private readonly showPilotTouchRing: boolean = controlDefaults.showPilotTouchRing,
   ) {
     this.root.className = 'touch-driving'
     this.root.dataset.visibility = visibility
@@ -401,9 +405,13 @@ export class TouchDriving {
     })
   }
 
-  /** Show the cockpit twist ring used in Studio pilot view. */
+  /**
+   * Show the cockpit twist ring used in Studio pilot view.
+   * No-op while `showPilotTouchRing` / `controlDefaults.showPilotTouchRing` is false
+   * (code retained so the ring can be re-enabled later).
+   */
   setPilot(pilot: boolean): void {
-    this.root.classList.toggle('is-pilot', pilot)
+    this.root.classList.toggle('is-pilot', this.showPilotTouchRing && pilot)
   }
 
   /**

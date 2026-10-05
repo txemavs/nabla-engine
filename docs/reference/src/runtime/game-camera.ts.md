@@ -18,7 +18,7 @@ Shared gameplay camera with configurable manual-look recovery. Times are millise
 
 ## createGameCameraState
 
-[Implementation, line 36](../../../../src/runtime/game-camera.ts#L36)
+[Implementation, line 38](../../../../src/runtime/game-camera.ts#L38)
 
 Create independent camera state and validate per-consumer recovery overrides.
 
@@ -31,9 +31,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `DrivingTelemetry`
 - `resolveGameCameraSettings`
 
+## mouseLooksWithoutButton
+
+[Implementation, line 62](../../../../src/runtime/game-camera.ts#L62)
+
+Views where plain mouse movement looks around with no button held: the exterior
+chase/third-person camera, on-foot first person and the seated driver view. Only the
+vehicle overhead map keeps the cursor free (wheel zoom, UI).
+
+```ts
+mouseLooksWithoutButton(state: Pick<GameCameraState, 'mode'>, seated: boolean): boolean
+```
+
 ## updateGameCamera
 
-[Implementation, line 57](../../../../src/runtime/game-camera.ts#L57)
+[Implementation, line 72](../../../../src/runtime/game-camera.ts#L72)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -65,6 +77,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.quaternion.clone`
 - `camera.quaternion.copy`
 - `camera.quaternion.slerp`
+- `camera.rotateX`
 - `camera.up.copy`
 - `camera.up.set`
 - `camera.up.set(0, 1, 0).applyQuaternion`
@@ -90,10 +103,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.objects.get`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@163
+## updateGameCamera.callback@180
 
-[Implementation, line 163](../../../../src/runtime/game-camera.ts#L163)
+[Implementation, line 180](../../../../src/runtime/game-camera.ts#L180)
 
 ```ts
-callback@163(entity): inferred by TypeScript; see implementation
+callback@180(entity): inferred by TypeScript; see implementation
 ```

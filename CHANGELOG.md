@@ -2,12 +2,26 @@
 
 ## Unreleased
 
-### Changed
+### Added
+- Compact game settings HUD (icon + GTA-style tabs) for Planeta visuals: artistic cloud amount, cloud pressure, sun lens flare, and related sky/sea toggles. Shares the ship-monitor stylesheet; panel root is remountable on a monitor later. Config keys documented in `docs/planet-visual-settings.md`.
+- `GameRuntime` cloud pressure persistence, `lensFlareAmount` / `planetVisualConfig()`, and reattached sun lens flare in Play after the Studio extraction.
 
+## Unreleased
+
+### Changed
+- Disable the cockpit circular touch ring around the steering wheel by default (`controlDefaults.showPilotTouchRing: false`). The ring drew a circle while its hit target stayed square, so touches outside the circle still steered; DOM/CSS and `TouchDriving.setPilot` stay so it can be re-enabled later.
+- **White-truck power/brakes:** tractor preset `engineForce`/`powerCv`/`torqueNm`/`maxWheelForceN` +20% and `brakeForce` +40% (engineForce 12000→14400, brakeForce 120→168, powerCv 420→504, torqueNm 2000→2400, maxWheelForceN 60000→72000). Cars and ships unchanged.
 - **Sidearm hit marks on buildings:** physics hits without a scene `entityId` (planet building colliders, static world) now spawn a world-anchored mark under `SceneView.root`, not only entity-parented marks on cars/props. Marks use a dark core plus light ring so they read on both light and dark surfaces.
 - **Sidearm FPS feel:** no UI reticle; **RMB** holds aim-down-sights (centred iron-sight pose) vs hip fire; viewmodel **recoil** on each shot; **H** toggles a muzzle laser while on foot (vehicle **H** still lights); hits spawn brief spark bursts and keep surface impact marks; the bullet tracer trail is no longer drawn.
 
 ### Fixed
+
+- **Planet boot placeholder / default clock:** `GeographicView` keeps a plain black Earth sphere
+  (and suppresses the sun disc, lens flare and daylight) until `earth.jpg` is applied, so attract
+  and early frames never show a pale/white or half-textured globe or a melted-sun flash. The
+  terrain drive default sky is now `{ mode: 'live' }` (browser local wall clock); pass `sky: 'day'`
+  or `&sky=day` for the previous fixed midday sun. Hosts can still override with `&time=` /
+  Planeta → Hora.
 
 - **Boot / play ground wait:** `waitForGround` (and `PlanetWorld.ensureGround`) now stage
   terrain with a blocking install budget (12 ms/tick, ~rAF poll) instead of the 1.5 ms/frame
@@ -208,6 +222,18 @@
 - Transfer walkers and vehicles within the existing simulation, with aperture
   checks, box-collider exit clearance, velocity rotation and retained driver state.
 - Document the prototype limits and the design for hosted gates and CSS interiors.
+
+### Changed
+
+- **Mouse look without a click:** in the chase/third-person view, on-foot first person and
+  the cockpit view, moving the mouse over the focused viewport orbits or turns the head with
+  no button held. The vehicle overhead view still leaves the cursor for wheel zoom. The first
+  hover delta after the cursor re-enters the canvas (and any single warp-sized jump) is
+  ignored so the view does not jerk.
+- **Flight chase perspective:** while a vehicle is in flight mode the chase camera leans back
+  `flightChaseTilt` (0.12 rad, about 7°), eased by `flightTiltDamping`, so the aircraft sits
+  lower in frame with more of the route ahead visible. The tilt fades out with the
+  high-altitude top-down travel pitch and never applies to the cockpit or overhead views.
 
 ## 0.2.0 — Working foundation
 
