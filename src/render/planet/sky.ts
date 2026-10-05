@@ -140,6 +140,10 @@ export class GeographicView {
   private key = ''
   private earthTexture?: THREE.Texture
   private moonTexture?: THREE.Texture
+  /** False until earth.jpg is applied (or textures are disabled). */
+  private earthReady = false
+  /** Last sun layer choice from setLayers; sun disc/flare stay off until earthReady. */
+  private sunWanted = true
   private readonly sunDisc: { value: THREE.Color }
   private readonly clouds: ReturnType<typeof createCloudLayer>
   private readonly artistic: ReturnType<typeof createArtisticClouds>
@@ -179,7 +183,8 @@ export class GeographicView {
       : undefined
     this.earth = new THREE.Mesh(
       new THREE.SphereGeometry(EARTH_RADIUS * SCALE, 128, 96),
-      new THREE.MeshLambertMaterial({ color: '#c4d8e9' }),
+      // Plain black until earth.jpg is ready — never a pale/white or half-textured ball.
+      new THREE.MeshLambertMaterial({ color: '#000000' }),
     )
     this.space.add(this.earth)
     this.moon = new THREE.Mesh(new THREE.SphereGeometry(1.7374, 48, 36), moonMaterial(this.moonSun))
@@ -199,6 +204,10 @@ export class GeographicView {
     )
     this.air = createAirGlow(this.sunDirection, earthRadius + 0.14)
     this.flare = createLensFlare(this.sunDirection)
+    // No bright sun disc/flare while the planet is still the black placeholder.
+    this.sunDisc.value.set('#000000')
+    this.flare.mesh.visible = false
+    this.daylight.intensity = 0
     this.space.add(this.moon)
     this.night = new NightSky()
     this.space.add(this.night.root)
@@ -241,15 +250,34 @@ export class GeographicView {
           }
           texture.colorSpace = THREE.SRGBColorSpace
           this.earthTexture = texture
-          const material = this.earth.material as THREE.MeshLambertMaterial
-          material.color.set('#ffffff')
-          material.map = texture
-          material.needsUpdate = true
-          this.changed()
+          this.revealEarth(texture)
         },
         undefined,
         () => this.changed(),
       )
+    else this.revealEarth()
+  }
+  /**
+   * Swap the black placeholder for the textured planet (when a map is provided) and allow the
+   * sun disc / flare / daylight. Keeps the black ball if textures were disabled or failed.
+   */
+  private revealEarth(texture?: THREE.Texture): void {
+    if (this.disposed || this.earthReady) return
+    const material = this.earth.material as THREE.MeshLambertMaterial
+    if (texture) {
+      material.color.set('#ffffff')
+      material.map = texture
+      material.needsUpdate = true
+    }
+    this.earthReady = true
+    this.daylight.intensity = 2.5
+    this.syncSunPresentation()
+    this.changed()
+  }
+  private syncSunPresentation(): void {
+    const show = this.earthReady && this.sunWanted
+    this.sunDisc.value.set(show ? '#ffffff' : '#000000')
+    this.flare.mesh.visible = show
   }
   get enabled() {
     return Boolean(this.origin)
@@ -477,8 +505,8 @@ export class GeographicView {
     this.air.visible = layers.sky
     this.moon.visible = layers.planets && layers.moon !== false
     this.night.root.visible = layers.planets
-    this.sunDisc.value.set(layers.sun ? '#ffffff' : '#000000')
-    this.flare.mesh.visible = layers.sun
+    this.sunWanted = layers.sun
+    this.syncSunPresentation()
   }
   render(
     renderer: THREE.WebGLRenderer,

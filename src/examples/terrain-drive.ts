@@ -15,7 +15,7 @@ export interface TerrainDriveOptions {
   heading?: number
   /** Preset the player starts in. Default `car`. */
   vehicle?: string
-  /** `day` (default, fixed local-noon sun), `live` (real clock) or an ISO date-time. */
+  /** `live` (default, browser local wall clock), `day` (fixed local-noon sun) or an ISO date-time. */
   sky?: string
   /**
    * Parked demo row (car, a3, white-truck, carrier). Default true.
@@ -50,8 +50,8 @@ export function tileOffsetToGeo(tile: MapTile, east = 0, south = 0): GeoPoint {
 }
 
 function skyFor(value: string | undefined): NonNullable<SceneDocument['sky']> {
-  if (value === 'live') return { mode: 'live' }
-  if (!value || value === 'day') return { mode: 'fixed', at: TERRAIN_DRIVE_DAY }
+  if (!value || value === 'live') return { mode: 'live' }
+  if (value === 'day') return { mode: 'fixed', at: TERRAIN_DRIVE_DAY }
   if (Number.isNaN(Date.parse(value)) || !/[zZ]|[+-]\d\d:?\d\d$/.test(value))
     throw new Error(`Invalid sky "${value}": use day, live or an ISO date-time with zone`)
   return { mode: 'fixed', at: new Date(value).toISOString() }
