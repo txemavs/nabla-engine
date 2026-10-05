@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Drawing the sidearm (**Tab** on foot) captures the mouse like an FPS with pointer lock; holstering, boarding a vehicle, pausing or stopping releases it, and a click re-captures after **Esc**. Each sidearm shot plays a synthesized gunshot (`VehicleAudio.gunshot`, `src/audio/gunshot.ts`): crack, boom, thump and a short tail, scheduled on nodes built once.
 - `installHostVehicles` skips (with a console warning) any host vehicle whose ground footprint overlaps an earlier one, including a hitched trailer at its towed position and a `tow: true` trailer whose tractor was skipped. Bodies spawned inside each other were flipped by the physics, so a stall grid laid out for another heading left free trailers standing on end with their axles in the air.
 - `createTerrainDriveScene({ includeDemoFleet: false })` skips the built-in parked row (car, a3, white-truck, carrier). The terrain game passes that when `?vehicles=` is non-empty so a host fleet does not stack a second carrier.
 - Split `white-trailer` into `trailer.chassis.glb` + `trailer.box.glb`. `white-trailer` still spawns chassis + `white-box`; `white-trailer-chassis` is the bare frame. Host `box: false | "white-box"` and `presetVehicle(..., { box })` compose at spawn. Other box types can replace only the cargo GLB.
