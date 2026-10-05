@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **289 modules; 2851 executable function definitions**.
+Coverage: **289 modules; 2853 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -227,12 +227,12 @@ Coverage: **289 modules; 2851 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 154 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 155 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
-| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 3 |
+| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 4 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 18 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 7 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 7 |

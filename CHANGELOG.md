@@ -210,6 +210,18 @@
   checks, box-collider exit clearance, velocity rotation and retained driver state.
 - Document the prototype limits and the design for hosted gates and CSS interiors.
 
+### Changed
+
+- **Mouse look without a click:** in the chase/third-person view, on-foot first person and
+  the cockpit view, moving the mouse over the focused viewport orbits or turns the head with
+  no button held. The vehicle overhead view still leaves the cursor for wheel zoom. The first
+  hover delta after the cursor re-enters the canvas (and any single warp-sized jump) is
+  ignored so the view does not jerk.
+- **Flight chase perspective:** while a vehicle is in flight mode the chase camera leans back
+  `flightChaseTilt` (0.12 rad, about 7°), eased by `flightTiltDamping`, so the aircraft sits
+  lower in frame with more of the route ahead visible. The tilt fades out with the
+  high-altitude top-down travel pitch and never applies to the cockpit or overhead views.
+
 ## 0.2.0 — Working foundation
 
 This baseline replaces the earlier Agency extraction with an independent engine

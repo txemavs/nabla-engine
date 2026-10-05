@@ -83,7 +83,7 @@ import { shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
-import { createGameCameraState } from './game-camera.js'
+import { createGameCameraState, mouseLooksWithoutButton } from './game-camera.js'
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
@@ -237,6 +237,8 @@ export class GameRuntime {
   private lastTime: number | null = null
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
+  /** False until the first hover move after the mouse enters the canvas (its delta is a jump). */
+  private hoverLookPrimed = false
   private readonly originalTabIndex: string | null
   private disposed = false
   private readonly hud: GameHud | null
@@ -1721,15 +1723,28 @@ export class GameRuntime {
       },
       options,
     )
+    // Hover look: in chase, first-person and driver views the mouse looks around with no
+    // button held. Re-entering the canvas resets priming so its first delta cannot jerk the view.
+    // A single hover delta above this many CSS pixels is a cursor warp, not a look gesture.
+    const hoverLookMaxJump = 250
+    const unprime = () => (this.hoverLookPrimed = false)
+    canvas.addEventListener('pointerenter', unprime, options)
+    canvas.addEventListener('pointerleave', unprime, options)
     canvas.addEventListener(
       'pointermove',
       (event) => {
-        if (!this.hasInput() || (!(event.buttons & 1) && document.pointerLockElement !== canvas))
-          return
+        if (!this.hasInput()) return
         const state = this.cameraState
-        if (state.mode === 'map' && this.session.simulation?.player.vehicleId) return
+        const seated = !!this.session.simulation?.player.vehicleId
+        if (!mouseLooksWithoutButton(state, seated)) return
+        if (!(event.buttons & 1) && document.pointerLockElement !== canvas) {
+          if (event.pointerType !== 'mouse') return
+          const primed = this.hoverLookPrimed
+          this.hoverLookPrimed = true
+          if (!primed || Math.hypot(event.movementX, event.movementY) > hoverLookMaxJump) return
+        }
         state.lastLookTime = performance.now()
-        if (state.mode === 'cockpit' && this.session.simulation?.player.vehicleId) {
+        if (state.mode === 'cockpit' && seated) {
           state.headYaw -= event.movementX * controlDefaults.mouseSensitivity
           state.headPitch = THREE.MathUtils.clamp(
             state.headPitch + event.movementY * controlDefaults.mouseSensitivity,
