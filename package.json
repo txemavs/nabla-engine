@@ -71,6 +71,14 @@
       "types": "./dist/runtime/browser.d.ts",
       "import": "./dist/runtime/browser.js"
     },
+    "./runtime/splash": {
+      "types": "./dist/runtime/splash.d.ts",
+      "import": "./dist/runtime/splash.js"
+    },
+    "./runtime/resolution-scale": {
+      "types": "./dist/runtime/resolution-scale.d.ts",
+      "import": "./dist/runtime/resolution-scale.js"
+    },
     "./examples/terrain-drive": {
       "types": "./dist/examples/terrain-drive.d.ts",
       "import": "./dist/examples/terrain-drive.js"

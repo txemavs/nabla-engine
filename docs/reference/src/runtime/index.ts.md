@@ -10,6 +10,8 @@
 - `./game.js`
 - `./placement.js`
 - `./frame-loop.js`
+- `./resolution-scale.js`
+- `./splash.js`
 - `./messages.js`
 - `./hud.js`
 - `../diagnostics/wheel-debug.js`
