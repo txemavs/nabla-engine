@@ -1,19 +1,24 @@
 /**
- * Menu sections "Hora", "Nivel del mar" and "Vehículos". They only call the engine runtime: the sky clock
- * (sun, sky and lighting), the sea level (ocean sheet and physics) and `spawnVehicle` (a catalog vehicle
- * on the ground ahead of the player). The URL follows the choices (`&time=`, `&sea=`) so a link repeats them.
+ * Menu sections "Planeta" (Hora, Cielo, Sol, Mar, Nubes) and "Vehículos". They only call the engine
+ * runtime: the sky clock (sun, sky and lighting), planetary layer flags, the sea level (ocean sheet
+ * and physics) and `spawnVehicle` (a catalog vehicle on the ground ahead of the player). The URL
+ * follows the choices (`&time=`, `&timeSpeed=`, `&sea=`) so a link repeats them.
  */
 import {
   formatClockTime,
+  liveSkyClock,
   localMinutes,
   parseClockTime,
   skyClockAtMinutes,
+  skyClockAtRate,
+  skyRate,
   skyTime,
+  SKY_RATE,
   type SkyClock,
 } from '@nabla/engine/planet/sky'
 import { presetVehicle, vehiclePresets } from '@nabla/engine/vehicles'
 import type { Entity } from '@nabla/engine/scene'
-import { menuSection } from './menu.js'
+import { menuSection, menuSubtitle } from './menu.js'
 
 /** Sea level limits in metres, as in Studio's sea-surface controls. */
 export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
@@ -25,6 +30,14 @@ export interface SceneRuntime {
   readonly waterSettings: { mode: 'manual' | 'tide'; level: number; amplitude: number } | undefined
   readonly sea: { level: number; state: string }
   setWater(water: { mode: 'manual' | 'tide'; level: number; amplitude: number } | undefined): void
+  readonly planetLayers: { sky: boolean; sun: boolean; clouds: boolean; sea: boolean }
+  setPlanetLayers(
+    layers: Partial<{ sky: boolean; sun: boolean; clouds: boolean; sea: boolean }>,
+  ): void
+  readonly cloudStyle: 'low' | 'artistic'
+  setCloudStyle(style: 'low' | 'artistic'): void
+  readonly cloudAmount: number
+  setCloudWeather(amount: number): void
   readonly spawnedVehicles: { id: string; name: string }[]
   spawnVehicle(template: Entity): Promise<string>
   removeSpawnedVehicle(id: string): void
@@ -55,15 +68,19 @@ export function seaStatus(sea: { level: number; state: string }, manual: boolean
     : `Marea automática: ${formatMetres(sea.level)} (${sea.state})`
 }
 
-/** The URL with `time` and `sea` set to the current choice (or removed), other parameters kept. */
+/** The URL with `time`, `timeSpeed` and `sea` set to the current choice (or removed), other parameters kept. */
 export function withSceneParams(
   search: string,
-  state: { time?: string | null; sea?: number | null },
+  state: { time?: string | null; timeSpeed?: number | null; sea?: number | null },
 ): string {
   const params = new URLSearchParams(search)
   if (state.time !== undefined) {
     if (state.time === null) params.delete('time')
     else params.set('time', state.time)
+  }
+  if (state.timeSpeed !== undefined) {
+    if (state.timeSpeed == null || state.timeSpeed === 1) params.delete('timeSpeed')
+    else params.set('timeSpeed', String(state.timeSpeed))
   }
   if (state.sea !== undefined) {
     if (state.sea === null) params.delete('sea')
@@ -74,7 +91,11 @@ export function withSceneParams(
   return text ? '?' + text : ''
 }
 
-function rememberInUrl(state: { time?: string | null; sea?: number | null }): void {
+function rememberInUrl(state: {
+  time?: string | null
+  timeSpeed?: number | null
+  sea?: number | null
+}): void {
   const url = new URL(location.href)
   url.search = withSceneParams(url.search, state)
   history.replaceState(null, '', url)
@@ -107,19 +128,48 @@ function field(
   return input
 }
 
+function check(
+  id: string,
+  text: string,
+  checked = true,
+): {
+  label: HTMLLabelElement
+  box: HTMLInputElement
+} {
+  const label = document.createElement('label')
+  const box = document.createElement('input')
+  box.type = 'checkbox'
+  box.id = id
+  box.checked = checked
+  label.append(box, ' ' + text)
+  return { label, box }
+}
+
+function group(title: string, id: string, ...children: HTMLElement[]): HTMLDivElement {
+  const wrap = document.createElement('div')
+  wrap.className = 'planet-group'
+  wrap.id = id
+  wrap.append(menuSubtitle(title), ...children)
+  return wrap
+}
+
 /**
- * Create the three menu sections now (so they sit under "Posición") and return a function that connects them
- * to the runtime once it exists. Until then the controls are disabled. `rememberInUrl: false` leaves the URL
- * alone, for pages that do not read `&time=` and `&sea=`.
+ * Create Planeta and Vehículos now (so they sit under Posición / Capas) and return a function that
+ * connects them to the runtime once it exists. Until then the controls are disabled.
+ * `rememberInUrl: false` leaves the URL alone, for pages that do not read `&time=` and `&sea=`.
  */
 export function bindSceneControls(
   options: { rememberInUrl?: boolean } = {},
 ): (runtime: SceneRuntime) => void {
-  const remember = (state: { time?: string | null; sea?: number | null }) => {
+  const remember = (state: {
+    time?: string | null
+    timeSpeed?: number | null
+    sea?: number | null
+  }) => {
     if (options.rememberInUrl !== false) rememberInUrl(state)
   }
-  // --- Hora
-  const time = menuSection('scene-time', 'Hora')
+  const planet = menuSection('scene-planet', 'Planeta')
+
   const timeNow = document.createElement('p')
   timeNow.id = 'time-now'
   timeNow.setAttribute('role', 'status')
@@ -144,15 +194,33 @@ export function bindSceneControls(
   )
   const timeRow = document.createElement('label')
   timeRow.append('Hora del día', timeRange, timeInput)
+  const timeSpeed = field(
+    'time-speed',
+    'range',
+    {
+      min: String(SKY_RATE.min),
+      max: String(SKY_RATE.max),
+      step: '1',
+      value: '1',
+    },
+    'Velocidad del tiempo',
+  )
+  const timeSpeedLabel = document.createElement('span')
+  timeSpeedLabel.id = 'time-speed-label'
+  timeSpeedLabel.textContent = '×1'
+  const timeSpeedRow = document.createElement('label')
+  timeSpeedRow.append('Velocidad del tiempo ', timeSpeedLabel, timeSpeed)
   const timeLive = button('time-live', 'Ahora')
   timeLive.title = 'Usar la hora real: el sol sigue al reloj'
-  time.append(timeNow, timeRow, timeLive)
 
-  // --- Nivel del mar
-  const sea = menuSection('scene-sea', 'Nivel del mar')
+  const sky = check('planet-sky', 'Cielo')
+  const sun = check('planet-sun', 'Sol y destello')
+  sun.label.title = 'Disco solar, destello y luz direccional'
+
   const seaNow = document.createElement('p')
   seaNow.id = 'sea-now'
   seaNow.setAttribute('role', 'status')
+  const seaEnabled = check('planet-sea', 'Mostrar el mar')
   const seaAttrs = {
     min: String(SEA_RANGE.min),
     max: String(SEA_RANGE.max),
@@ -164,9 +232,29 @@ export function bindSceneControls(
   seaRow.append('Nivel (m)', seaRange, seaInput)
   const seaTide = button('sea-tide', 'Marea automática')
   seaTide.title = 'Volver a la marea simplificada (±1 m)'
-  sea.append(seaNow, seaRow, seaTide)
 
-  // --- Vehículos
+  const clouds = check('planet-clouds', 'Nubes')
+  const artistic = check('planet-clouds-artistic', 'Nubes artísticas')
+  const cloudAmount = field(
+    'planet-cloud-amount',
+    'range',
+    { min: '0', max: '100', step: '1', value: '35' },
+    'Cantidad de nubes',
+  )
+  const cloudAmountLabel = document.createElement('span')
+  cloudAmountLabel.id = 'planet-cloud-amount-label'
+  cloudAmountLabel.textContent = '35%'
+  const cloudAmountRow = document.createElement('label')
+  cloudAmountRow.append('Cantidad de nubes ', cloudAmountLabel, cloudAmount)
+
+  planet.append(
+    group('Hora', 'scene-time', timeNow, timeRow, timeSpeedRow, timeLive),
+    group('Cielo', 'scene-sky', sky.label),
+    group('Sol', 'scene-sun', sun.label),
+    group('Mar', 'scene-sea', seaNow, seaEnabled.label, seaRow, seaTide),
+    group('Nubes', 'scene-clouds', clouds.label, artistic.label, cloudAmountRow),
+  )
+
   const vehicles = menuSection('scene-vehicles', 'Vehículos')
   const choice = document.createElement('select')
   choice.id = 'vehicle-choice'
@@ -182,26 +270,52 @@ export function bindSceneControls(
   vehicleList.id = 'vehicle-list'
   vehicles.append(choiceRow, add, vehicleMessage, vehicleList)
 
-  isolateKeys(timeRange, timeInput, seaRange, seaInput, choice)
-  const controls = [timeRange, timeInput, timeLive, seaRange, seaInput, seaTide, choice, add]
+  isolateKeys(timeRange, timeInput, timeSpeed, seaRange, seaInput, cloudAmount, choice)
+  const controls = [
+    timeRange,
+    timeInput,
+    timeSpeed,
+    timeLive,
+    sky.box,
+    sun.box,
+    seaEnabled.box,
+    seaRange,
+    seaInput,
+    seaTide,
+    clouds.box,
+    artistic.box,
+    cloudAmount,
+    choice,
+    add,
+  ]
   for (const control of controls) (control as HTMLInputElement).disabled = true
 
   return (runtime) => {
     for (const control of controls) (control as HTMLInputElement).disabled = false
 
-    // Hora
+    const showSpeed = () => {
+      const rate = skyRate(runtime.skyClock)
+      timeSpeed.value = String(rate)
+      timeSpeedLabel.textContent = `×${rate}`
+    }
     const showTime = () => {
       const clock = runtime.skyClock
       const minutes = localMinutes(skyTime(clock))
+      const rate = skyRate(clock)
       timeRange.value = String(minutes)
       timeInput.value = formatClockTime(minutes)
       timeNow.textContent =
-        clock.mode === 'live'
+        clock.mode === 'live' && rate === 1
           ? `Hora real: ${formatClockTime(minutes)} (sigue al reloj)`
-          : `Hora fija: ${formatClockTime(minutes)}`
+          : clock.mode === 'live'
+            ? `Hora en marcha ×${rate}: ${formatClockTime(minutes)}`
+            : `Hora fija: ${formatClockTime(minutes)}`
+      showSpeed()
     }
     const setMinutes = (minutes: number) => {
-      runtime.setSkyClock(skyClockAtMinutes(runtime.skyClock, minutes))
+      const next = skyClockAtMinutes(runtime.skyClock, minutes)
+      const rate = skyRate(runtime.skyClock)
+      runtime.setSkyClock(rate === 1 ? next : skyClockAtRate(next, rate))
       remember({ time: formatClockTime(minutes) })
       showTime()
     }
@@ -211,18 +325,32 @@ export function bindSceneControls(
       if (minutes === undefined) showTime()
       else setMinutes(minutes)
     })
+    timeSpeed.addEventListener('input', () => {
+      const rate = Number(timeSpeed.value)
+      runtime.setSkyClock(skyClockAtRate(runtime.skyClock, rate))
+      remember({ timeSpeed: rate })
+      showTime()
+    })
     timeLive.addEventListener('click', () => {
-      runtime.setSkyClock({ mode: 'live' })
+      runtime.setSkyClock(liveSkyClock(skyRate(runtime.skyClock)))
       remember({ time: 'ahora' })
       showTime()
     })
     showTime()
 
-    // Nivel del mar
+    sky.box.checked = runtime.planetLayers.sky
+    sun.box.checked = runtime.planetLayers.sun
+    sky.box.addEventListener('change', () => runtime.setPlanetLayers({ sky: sky.box.checked }))
+    sun.box.addEventListener('change', () => runtime.setPlanetLayers({ sun: sun.box.checked }))
+
     const showSea = (syncFields: boolean) => {
       const manual = runtime.waterSettings?.mode === 'manual'
       const current = runtime.sea
       seaNow.textContent = seaStatus(current, manual)
+      seaEnabled.box.checked = runtime.planetLayers.sea
+      seaRange.disabled = !runtime.planetLayers.sea
+      seaInput.disabled = !runtime.planetLayers.sea
+      seaTide.disabled = !runtime.planetLayers.sea
       if (syncFields) {
         seaRange.value = String(current.level)
         seaInput.value = String(Number(current.level.toFixed(1)))
@@ -235,6 +363,10 @@ export function bindSceneControls(
       remember({ sea: clamped })
       showSea(true)
     }
+    seaEnabled.box.addEventListener('change', () => {
+      runtime.setPlanetLayers({ sea: seaEnabled.box.checked })
+      showSea(false)
+    })
     seaRange.addEventListener('input', () => setLevel(Number(seaRange.value)))
     seaInput.addEventListener('change', () =>
       seaInput.value.trim() === '' ? showSea(true) : setLevel(Number(seaInput.value)),
@@ -245,14 +377,35 @@ export function bindSceneControls(
       showSea(true)
     })
     showSea(true)
-    // The tide moves with the clock, so refresh the status line.
+
+    const showClouds = () => {
+      clouds.box.checked = runtime.planetLayers.clouds
+      artistic.box.checked = runtime.cloudStyle === 'artistic'
+      cloudAmount.value = String(Math.round(runtime.cloudAmount * 100))
+      cloudAmountLabel.textContent = `${cloudAmount.value}%`
+      artistic.box.disabled = !runtime.planetLayers.clouds
+      cloudAmount.disabled = !runtime.planetLayers.clouds
+    }
+    clouds.box.addEventListener('change', () => {
+      runtime.setPlanetLayers({ clouds: clouds.box.checked })
+      showClouds()
+    })
+    artistic.box.addEventListener('change', () => {
+      runtime.setCloudStyle(artistic.box.checked ? 'artistic' : 'low')
+      showClouds()
+    })
+    cloudAmount.addEventListener('input', () => {
+      runtime.setCloudWeather(Number(cloudAmount.value) / 100)
+      showClouds()
+    })
+    showClouds()
+
     const timer = setInterval(() => {
       showSea(false)
       if (runtime.skyClock.mode === 'live') showTime()
     }, 1000)
     window.addEventListener('pagehide', () => clearInterval(timer), { once: true })
 
-    // Vehículos
     const renderList = () => {
       vehicleList.replaceChildren()
       for (const spawned of runtime.spawnedVehicles) {

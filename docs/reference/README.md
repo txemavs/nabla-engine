@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **277 modules; 2654 executable function definitions**.
+Coverage: **277 modules; 2680 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -19,14 +19,14 @@ Coverage: **277 modules; 2654 executable function definitions**.
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 18 |
 | [game/main.ts](game/main.ts.md) | 0 |
-| [game/menu.ts](game/menu.ts.md) | 1 |
+| [game/menu.ts](game/menu.ts.md) | 4 |
 | [game/position.ts](game/position.ts.md) | 11 |
-| [game/scene-controls.ts](game/scene-controls.ts.md) | 30 |
+| [game/scene-controls.ts](game/scene-controls.ts.md) | 41 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 10 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
-| [game/terrain.ts](game/terrain.ts.md) | 11 |
+| [game/terrain.ts](game/terrain.ts.md) | 12 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 9 |
@@ -133,7 +133,7 @@ Coverage: **277 modules; 2654 executable function definitions**.
 | [src/planet/osm-snapshot.ts](src/planet/osm-snapshot.ts.md) | 8 |
 | [src/planet/places.ts](src/planet/places.ts.md) | 4 |
 | [src/planet/sea-coverage.ts](src/planet/sea-coverage.ts.md) | 2 |
-| [src/planet/sky.ts](src/planet/sky.ts.md) | 8 |
+| [src/planet/sky.ts](src/planet/sky.ts.md) | 12 |
 | [src/planet/terrain-cache.ts](src/planet/terrain-cache.ts.md) | 11 |
 | [src/planet/terrain-source.ts](src/planet/terrain-source.ts.md) | 9 |
 | [src/planet/tide.ts](src/planet/tide.ts.md) | 1 |
@@ -221,7 +221,7 @@ Coverage: **277 modules; 2654 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 122 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 129 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |

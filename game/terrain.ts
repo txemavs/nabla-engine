@@ -16,9 +16,10 @@
  *   &photo=full|lo|none      orthophoto draped on the ground (default full)
  *   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
  *   &time=HH:MM|ahora        time of day (the viewer's time zone) on the day of &sky; `ahora` (or `now`) follows
- *                            the real clock. Also in the menu section "Hora"
+ *                            the real clock. Also in the menu section Planeta → Hora
+ *   &timeSpeed=1..24         live clock multiplier (1 = wall time). Also in Planeta → Hora
  *   &sea=<m>                 sea level in metres, -5 to 50 (default: the simplified tide). Also in the menu
- *                            section "Nivel del mar"
+ *                            section Planeta → Mar
  *   &distance=<m>            load radius (also in the menu, remembered); farther cells are not loaded.
  *                            &cache=<MB> disk cache and &memory=<cells> cells in memory work the same way
  *   &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
@@ -108,6 +109,8 @@ export interface TerrainConfig {
   inspectRoadCollision: boolean
   /** `&time=`: minutes after local midnight, or `live` for the real clock. Undefined keeps `&sky=`. */
   timeOfDay?: number | 'live'
+  /** `&timeSpeed=`: live clock multiplier, 1–24. Undefined keeps 1×. */
+  timeSpeed?: number
   /** `&sea=`: manual sea level in metres. Undefined keeps the simplified tide. */
   seaLevel?: number
 }
@@ -123,6 +126,16 @@ export function parseTimeParam(raw: string): number | 'live' {
   if (minutes === undefined)
     throw new Error(`time debe ser una hora HH:MM (por ejemplo time=21:30) o ahora, no "${raw}"`)
   return minutes
+}
+
+/** Parse `&timeSpeed=`: live clock multiplier, 1–24. */
+export function parseTimeSpeedParam(raw: string): number {
+  const value = Number(raw.trim().replace(',', '.'))
+  if (raw.trim() === '' || !Number.isFinite(value) || value < 1 || value > 24)
+    throw new Error(
+      `timeSpeed debe ser un número entre 1 y 24 (por ejemplo timeSpeed=12), no "${raw}"`,
+    )
+  return value
 }
 
 /** Parse `&sea=`: metres within the engine's sea-surface range. */
@@ -217,6 +230,7 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
     playerMode: player,
     inspectRoadCollision: params.get('inspectRoads') === 'collision',
     timeOfDay: params.has('time') ? parseTimeParam(params.get('time')!) : undefined,
+    timeSpeed: params.has('timeSpeed') ? parseTimeSpeedParam(params.get('timeSpeed')!) : undefined,
     seaLevel: params.has('sea') ? parseSeaParam(params.get('sea')!) : undefined,
   }
 }

@@ -65,16 +65,16 @@ road start instead of being mixed with it.
 
 ## Time, sea and vehicles
 
-Three menu sections (Spanish) reuse what Studio and the engine already have; no new system was added.
+The **Planeta** and **Vehículos** menu sections (Spanish) reuse what Studio and the engine already have; no new system was added.
 
-- **Hora.** A slider (00:00-23:59), an hour field and an _Ahora_ button. They change `SceneDocument.sky` through
+- **Hora** (inside Planeta). A slider (00:00-23:59), an hour field, a time-speed slider (×1–×24) and an _Ahora_ button. They change `SceneDocument.sky` through
   `GameRuntime.setSkyClock`, so the sun, sky, stars, fog and lighting follow on the next frame (the frame loop already
-  reads the document every frame). _Ahora_ is the `live` clock. The hour is the viewer's local time on the calendar
+  reads the document every frame). _Ahora_ is the `live` clock. ×1 is wall time; ×24 advances a day per hour from the current sky instant. The hour is the viewer's local time on the calendar
   day of the current clock (21 June by default, today after _Ahora_); the sun position is computed for the player's
-  real latitude/longitude. Helpers: `parseClockTime`, `formatClockTime`, `skyClockAtMinutes` in `src/planet/sky.ts`
-  (export `./planet/sky`). URL: `&time=21:30`, or `&time=ahora`; the menu keeps the URL in step, so a copied link
+  real latitude/longitude. Helpers: `parseClockTime`, `formatClockTime`, `skyClockAtMinutes`, `skyClockAtRate` in `src/planet/sky.ts`
+  (export `./planet/sky`). URL: `&time=21:30`, or `&time=ahora`, and `&timeSpeed=12`; the menu keeps the URL in step, so a copied link
   repeats the choice. The default tide is computed from the same clock, so changing the hour also moves the tide.
-- **Nivel del mar.** A slider and a number field (-5 to 50 m, 0.1 m steps, as in Studio) set a manual sea level through
+- **Mar** (inside Planeta). A show/hide toggle, a slider and a number field (-5 to 50 m, 0.1 m steps, as in Studio) set a manual sea level through
   `GameRuntime.setWater`: the ocean sheet (`OceanSheet.setLevel`) and the physics water level (boat buoyancy) use the
   same value. _Marea automática_ goes back to the simplified tide (`worldWater`). URL: `&sea=3`. The sea only shows
   where the terrain lies below that level, so use a coastal start (Hondarribia is near the Irun package) and a level
@@ -122,7 +122,7 @@ served from that host or through a same-origin mount.
 
 ## Choosing the terrain at runtime
 
-The in-game menu (top right, _Pantalla y rendimiento_) starts with a **Terreno** section:
+The in-game menu (top right, _Menú_) includes a **Terreno** section:
 
 | Option                  | Meaning                                                       | URL it applies                        |
 | ----------------------- | ------------------------------------------------------------- | ------------------------------------- |
