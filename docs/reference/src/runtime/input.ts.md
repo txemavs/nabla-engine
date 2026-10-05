@@ -10,10 +10,11 @@
 - `../simulation/vehicles/keyboard-steering.js`
 - `../simulation/simulation.js`
 - `../scene/document.js`
+- `./touch-driving.js`
 
 ## availableGamepads
 
-[Implementation, line 6](../../../../src/runtime/input.ts#L6)
+[Implementation, line 7](../../../../src/runtime/input.ts#L7)
 
 Gamepad access may be absent or denied on HTTP LAN origins and embedded views.
 
@@ -27,7 +28,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## deadzone
 
-[Implementation, line 21](../../../../src/runtime/input.ts#L21)
+[Implementation, line 22](../../../../src/runtime/input.ts#L22)
 
 Remove the configured dead band and rescale the remaining signed range; non-finite input becomes zero.
 
@@ -44,7 +45,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gamepadAxes
 
-[Implementation, line 32](../../../../src/runtime/input.ts#L32)
+[Implementation, line 33](../../../../src/runtime/input.ts#L33)
 
 Map standard gamepad controls; flight uses mode 2 sticks, road driving uses trigger throttle.
 
@@ -59,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gamepadAxes.axis
 
-[Implementation, line 33](../../../../src/runtime/input.ts#L33)
+[Implementation, line 34](../../../../src/runtime/input.ts#L34)
 
 ```ts
 axis(i: number): inferred by TypeScript; see implementation
@@ -71,7 +72,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finiteInput
 
-[Implementation, line 57](../../../../src/runtime/input.ts#L57)
+[Implementation, line 58](../../../../src/runtime/input.ts#L58)
 
 A single non-finite axis (a faulty gamepad, a touch source) would make `Simulation.setInput`
 throw and stop the frame loop, freezing every control. Treat it as released instead.
@@ -86,7 +87,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finiteInput.safe
 
-[Implementation, line 58](../../../../src/runtime/input.ts#L58)
+[Implementation, line 59](../../../../src/runtime/input.ts#L59)
 
 ```ts
 safe(value: number | undefined): inferred by TypeScript; see implementation
@@ -98,7 +99,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.reset
 
-[Implementation, line 73](../../../../src/runtime/input.ts#L73)
+[Implementation, line 74](../../../../src/runtime/input.ts#L74)
 
 Forget keyboard steering interpolation after focus loss or a session boundary.
 
@@ -112,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read
 
-[Implementation, line 82](../../../../src/runtime/input.ts#L82)
+[Implementation, line 83](../../../../src/runtime/input.ts#L83)
 
 Combine keyboard, gamepad, touch and monitor commands into one physics input.
 Elapsed time is seconds and yaw is radians. Disabled/menu input resets steering;
@@ -130,6 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `finiteInput`
 - `gamepadAxes`
 - `idleInput`
+- `isRoadTouchDriving`
 - `keys.has`
 - `sim?.vehicleInfo`
 - `this.reset`
@@ -137,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read.axis
 
-[Implementation, line 95](../../../../src/runtime/input.ts#L95)
+[Implementation, line 96](../../../../src/runtime/input.ts#L96)
 
 ```ts
 axis(positive: string, negative: string): inferred by TypeScript; see implementation
@@ -148,10 +150,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `keys.has`
 
-## GameInput.read.callback@105
+## GameInput.read.callback@106
 
-[Implementation, line 105](../../../../src/runtime/input.ts#L105)
+[Implementation, line 106](../../../../src/runtime/input.ts#L106)
 
 ```ts
-callback@105(e): inferred by TypeScript; see implementation
+callback@106(e): inferred by TypeScript; see implementation
 ```

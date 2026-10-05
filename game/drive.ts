@@ -9,6 +9,7 @@ import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { headingRotation, installHostVehicles } from './host-vehicles.js'
+import { showTelemetry } from './telemetry.js'
 import { LoadingScreen, showError } from './loading.js'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
@@ -177,8 +178,7 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
-      document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
-      document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
+      showTelemetry(frame)
       showLocation(frame.location)
     },
     onError(error) {

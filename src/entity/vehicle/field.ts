@@ -132,6 +132,14 @@ export const vehicleField = z
     mirrorTilt: finite.min(-5).max(12).optional(),
     /** Enable the audible warning while this vehicle has reverse gear engaged. */
     reverseAlarm: z.boolean().optional(),
+    /**
+     * Control profile id: `road`, `flight`, `none` or a host-registered profile. Picks the
+     * touch rig and HUD readouts while seated (docs/vehicle-controls.md). Omitted infers one.
+     */
+    controls: z
+      .string()
+      .regex(/^[a-z0-9-]{1,40}$/)
+      .optional(),
     flight: z.boolean().optional(),
     /** Light airplane: plane-helm uses wing lift instead of the carrier's cruise. */
     plane: z.boolean().optional(),

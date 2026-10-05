@@ -8,6 +8,7 @@ import { browserStorage } from './entry.js'
 import { LoadingScreen, showError } from './loading.js'
 import { startError } from './start-error.js'
 import { bindPosition, showLocation } from './position.js'
+import { showTelemetry } from './telemetry.js'
 import { bindSceneControls } from './scene-controls.js'
 import { skyClockAtMinutes, skyClockAtRate } from '@nabla/engine/planet/sky'
 import { bindTerrainSelector } from './terrain-selector.js'
@@ -120,8 +121,7 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
-      document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
-      document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
+      showTelemetry(frame)
       showCells()
       showLocation(frame.location)
     },

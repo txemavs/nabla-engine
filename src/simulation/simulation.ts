@@ -31,6 +31,7 @@ import { portalColliders, portalLocal } from '../entity/portal/portal.js'
 import { EARTH_RADIUS, geoToLocal, localFrame, localToGeo } from '../math/geo/sphere.js'
 import { Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition, type Vehicle } from '../entity/vehicle/vehicle.js'
+import type { VehicleDefinition } from '../entity/vehicle/field.js'
 import {
   AABB,
   Body,
@@ -376,6 +377,10 @@ export class Simulation {
       const vehicle = this.vehicles.get(e.id)
       if (vehicle) this.attachTrailerJoint(vehicle)
     }
+  }
+  /** Authored definition of a live vehicle, including ones added with `addVehicles`; null if unknown. */
+  vehicleSpec(id: string): VehicleDefinition | null {
+    return this.vehicles.get(id)?.definition ?? null
   }
   /** Remove a vehicle added with `addVehicles`. The player must not be inside it. */
   removeVehicle(id: string): void {

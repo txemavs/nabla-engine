@@ -9,6 +9,7 @@
   "size": [2.55, 1.4, 13.5],
   "mass": 4000,
   "vehicle": {
+    "controls": "none",
     "passive": true,
     "colliders": [
       {
