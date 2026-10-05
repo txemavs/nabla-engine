@@ -1,10 +1,20 @@
+import fs from 'node:fs/promises'
 import { expect, it } from 'vitest'
-import { Group, PointLight, Scene, SpotLight } from 'three'
+import { Group, Light, PointLight, Scene, SpotLight, type Object3D } from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { AuthoredVehicleLights } from '../../src/render/vehicle-presentation/authored-lights.js'
 import {
   VehicleLightRig,
   vehicleLightBudget,
 } from '../../src/render/vehicle-presentation/light-rig.js'
+
+function visibleLights(root: Object3D): number {
+  let count = 0
+  root.traverseVisible((node) => {
+    if (node instanceof Light) count++
+  })
+  return count
+}
 
 function authoredTruck(): { root: Group; lights: AuthoredVehicleLights } {
   const root = new Group()
@@ -51,5 +61,35 @@ it('keeps a fixed renderer light count while the occupied vehicle changes', () =
   expect(rig.lights.every((light) => light.intensity === 0)).toBe(true)
   expect(rig.lights).toHaveLength(vehicleLightBudget.spots + vehicleLightBudget.points)
   expect(first.lights.illuminators().spots.every((light) => light.visible === false)).toBe(true)
+  rig.dispose()
+})
+
+it('keeps the visible light count stable on a real tractor when binding another copy', async () => {
+  const bytes = await fs.readFile('assets/library/trucks/white-truck/assets/tractor.modern.glb')
+  const gltf = await new GLTFLoader().parseAsync(
+    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    '',
+  )
+  const scene = new Scene()
+  const rig = new VehicleLightRig()
+  scene.add(rig.root)
+  const first = new AuthoredVehicleLights(gltf.scene)
+  scene.add(gltf.scene)
+  expect(first.illuminators().spots.length + first.illuminators().points.length).toBe(15)
+  expect(first.illuminators().spots.every((light) => light.visible === false)).toBe(true)
+  const before = visibleLights(scene)
+  first.toggle()
+  rig.capture(first.illuminators().spots, first.illuminators().points)
+  const clone = gltf.scene.clone(true)
+  const second = new AuthoredVehicleLights(clone)
+  scene.add(clone)
+  second.toggle()
+  rig.capture(second.illuminators().spots, second.illuminators().points)
+  expect(visibleLights(scene)).toBe(before)
+  expect(visibleLights(scene)).toBe(vehicleLightBudget.spots + vehicleLightBudget.points)
+  rig.capture([], [])
+  expect(visibleLights(scene)).toBe(before)
+  first.dispose()
+  second.dispose()
   rig.dispose()
 })
