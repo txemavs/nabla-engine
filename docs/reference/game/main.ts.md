@@ -137,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onError
 
-[Implementation, line 154](../../../game/main.ts#L154)
+[Implementation, line 153](../../../game/main.ts#L153)
 
 ```ts
 onError(error): inferred by TypeScript; see implementation
@@ -150,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onMessage
 
-[Implementation, line 157](../../../game/main.ts#L157)
+[Implementation, line 156](../../../game/main.ts#L156)
 
 ```ts
 onMessage(message): inferred by TypeScript; see implementation
@@ -160,12 +160,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `document.getElementById`
 
-## callback@161
+## callback@160
 
-[Implementation, line 161](../../../game/main.ts#L161)
+[Implementation, line 160](../../../game/main.ts#L160)
 
 ```ts
-callback@161(): inferred by TypeScript; see implementation
+callback@160(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -1,3 +1,4 @@
+import { GearClack, type GearClackSound } from './gear-clack.js'
 import { loopingNoise } from './graph.js'
 import { Powertrain } from './powertrain.js'
 import { Propeller } from './propeller.js'
@@ -5,10 +6,10 @@ import { TireSqueal } from './tires.js'
 import { Turbine } from './turbine.js'
 
 /**
- * One browser audio context, four independent voices.
+ * One browser audio context, five independent voices.
  *
  * The context has to be created from a click or a key press (`unlock`).
- * Turbine, propeller, tires and powertrain each own their nodes; they only
+ * Turbine, propeller, tires, powertrain and gear clack each own their nodes; they only
  * share that context and one noise buffer. Studio owns the mute button.
  * Audio never throws into the host loop.
  */
@@ -18,6 +19,8 @@ export class VehicleAudio {
   private propellerVoice?: Propeller
   private tireVoice?: TireSqueal
   private powertrainVoice?: Powertrain
+  private gearVoice?: GearClack
+  private clacks = 0
   private enabled = true
   private suspended = false
 
@@ -64,6 +67,11 @@ export class VehicleAudio {
     return this.tireVoice?.level ?? 0
   }
 
+  /** Number of gear clacks played so far, for tests and the renderer dataset. */
+  get gearClackCount(): number {
+    return this.clacks
+  }
+
   /** `level` is 0..1. `speed` is km/h. */
   turbine(level: number, speed: number): void {
     const frame = this.frame()
@@ -85,6 +93,17 @@ export class VehicleAudio {
     this.powertrainVoice.update(frame.time, frame.audible, rpm, load)
   }
 
+  /**
+   * One mechanical clack for a gear change or D/R engagement. `sound` is the vehicle's own
+   * profile (a truck passes a heavier, lower one); omitted fields use the car sound.
+   */
+  gearChange(sound?: GearClackSound | null): void {
+    const frame = this.frame()
+    if (!frame || !this.gearVoice || !frame.audible) return
+    this.gearVoice.trigger(frame.time, true, sound)
+    this.clacks++
+  }
+
   tires(slip: number, speedKmh: number): void {
     const frame = this.frame()
     if (!frame || !this.tireVoice) return
@@ -99,6 +118,7 @@ export class VehicleAudio {
     this.propellerVoice = new Propeller(context)
     this.tireVoice = new TireSqueal(context, noise)
     this.powertrainVoice = new Powertrain(context, noise)
+    this.gearVoice = new GearClack(context, noise)
   }
 
   private frame(): { time: number; audible: boolean } | undefined {
@@ -113,5 +133,6 @@ export class VehicleAudio {
     this.propellerVoice?.silence(time)
     this.tireVoice?.silence(time)
     this.powertrainVoice?.silence(time)
+    this.gearVoice?.silence(time)
   }
 }

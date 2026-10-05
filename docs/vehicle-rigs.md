@@ -83,3 +83,17 @@ The former `assets/studio` name did not represent an editor dependency. Scene
 parsing migrates only known local stock URL prefixes and the old truck folder
 name, on the validated copy. Custom URLs, remote URLs, tuning and caller data are
 unchanged. This narrow path migration does not upgrade vehicle recipes or anchors.
+
+## Steering wheel axis and authored mirrors
+
+The steering wheel turns about the model's +Z (S3 convention, column pointing away from
+the driver). A steering GLB whose rim is tilted inside the file declares the real column axis
+with `visual.steering.axis` (unit vector in the steering model's space, pointing away from
+the driver); otherwise the wheel wobbles instead of spinning. The white truck uses
+`[0, -0.81915, -0.57358]`, the 35° rim normal of `steering.glb`. Full lock is ±90°.
+
+A body GLB without a mirror lens material (the S3 uses material `Llanta 2`) lists flat lenses
+in `vehicle.mirrors` (`position`, `normal`, `width`, `height`, body-model metres). The
+`nabla.truck` presentation turns each into a `CarMirrors` reflection, so the driver sees a live
+rear view and the menu's mirror tilt applies. The truck's two lenses sit on the rear face of
+the door-mounted housings; authoring `nabla.mirror.*` anchors in the GLB would replace them.

@@ -8,6 +8,17 @@ const assetPart = z
   })
   .strict()
 
+/** Steering wheel model. `axis` is the column axis in the model's own space, pointing away
+ * from the driver; omit it when the rim already turns about the model's +Z. */
+const steeringPart = assetPart
+  .extend({
+    axis: z
+      .tuple([finite, finite, finite])
+      .refine((v) => Math.hypot(...v) > 1e-6, 'Steering axis must not be zero')
+      .optional(),
+  })
+  .strict()
+
 /** Chassis, four hubs, and the optional cabin, garage and flight flag. */
 export const vehicleField = z
   .object({
@@ -46,6 +57,36 @@ export const vehicleField = z
         maxRpm: finite.min(2000).max(10000).optional(),
         reverseRatio: finite.positive().max(20).optional(),
         maxSpeedKmh: finite.positive().max(400).optional(),
+        /** Traction/clutch ceiling on the force at the wheels, newtons. */
+        maxWheelForceN: finite.positive().max(1000000).optional(),
+        /** Shift timing, shift points, engine response and the gear-change sound. */
+        shift: z
+          .object({
+            seconds: finite.min(0.02).max(2).optional(),
+            cooldownSeconds: finite.min(0.05).max(5).optional(),
+            upshiftRpm: finite.min(400).max(10000).optional(),
+            downshiftRpm: finite.min(300).max(9000).optional(),
+            torqueFraction: finite.min(0).max(1).optional(),
+            rpmResponse: finite.min(1).max(40).optional(),
+            launchRpm: finite.min(300).max(6000).optional(),
+            directionSeconds: finite.min(0).max(3).optional(),
+            directionShiftSeconds: finite.min(0).max(2).optional(),
+            neutralSeconds: finite.min(0).max(10).optional(),
+            parkSeconds: finite.min(0).max(30).optional(),
+            clack: z
+              .object({
+                clunkHz: finite.min(30).max(500).optional(),
+                clickHz: finite.min(200).max(8000).optional(),
+                gain: finite.min(0).max(2).optional(),
+                decaySeconds: finite.min(0.02).max(0.8).optional(),
+                echoSeconds: finite.min(0).max(0.5).optional(),
+                airSeconds: finite.min(0).max(1.5).optional(),
+              })
+              .strict()
+              .optional(),
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .optional(),
@@ -69,6 +110,23 @@ export const vehicleField = z
           })
           .strict(),
       )
+      .optional(),
+    /**
+     * Flat mirror lenses in body-model space for presentations whose GLB has no lens material.
+     * `normal` is the direction the glass faces; width and height are metres.
+     */
+    mirrors: z
+      .array(
+        z
+          .object({
+            position: vector,
+            normal: vector,
+            width: finite.positive().max(5),
+            height: finite.positive().max(5),
+          })
+          .strict(),
+      )
+      .max(8)
       .optional(),
     /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
     mirrorTilt: finite.min(-5).max(12).optional(),
@@ -120,7 +178,7 @@ export const visualField = z
         z.tuple([assetPart, assetPart, assetPart, assetPart, assetPart, assetPart]),
       ])
       .optional(),
-    steering: assetPart.optional(),
+    steering: steeringPart.optional(),
     wheelRotations: z
       .union([
         z.tuple([rotation, rotation, rotation, rotation]),

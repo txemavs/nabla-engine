@@ -141,6 +141,7 @@ export class CarInstruments {
     gear = 1,
     load = 0,
     manual = false,
+    parked = false,
   ): void {
     if (this.disposed || !this.powered) return
     if (this.lastUpdate !== undefined)
@@ -154,7 +155,7 @@ export class CarInstruments {
       this.menuDisplay.update(this.definition.menuData(this.menu, this), now)
     }
     this.speedMonitor.update(
-      this.definition.clusterData({ speedKmh, rpm, gear, load, manual }),
+      this.definition.clusterData({ speedKmh, rpm, gear, load, manual, parked }),
       now,
     )
     if (this.gpsOpen && !this.menu.open && now >= this.nextMap) {

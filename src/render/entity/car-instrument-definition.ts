@@ -9,6 +9,8 @@ export interface CarInstrumentTelemetry {
   gear: number
   load: number
   manual: boolean
+  /** P selected: gear is 0 and the cluster shows P instead of N. */
+  parked?: boolean
 }
 
 /** A stock-car adapter receives this recipe; neither renderer nor monitor chooses a preset. */

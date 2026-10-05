@@ -13,7 +13,7 @@
 
 ## clamp
 
-[Implementation, line 19](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L19)
+[Implementation, line 21](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L21)
 
 ```ts
 clamp(n: number, low: number, high: number): inferred by TypeScript; see implementation
@@ -24,9 +24,46 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 
-## createWheeledVehicle
+## validGearbox
+
+[Implementation, line 24](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L24)
+
+Gearbox timing, shift points and clack numbers must be finite and mutually consistent.
+
+```ts
+validGearbox(spec: PowertrainDefinition): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.values`
+- `[...Object.values(numbers), ...Object.values(clack ?? {})].filter`
+- `gearboxTuning`
+- `values.every`
+
+## validGearbox.callback@30
 
 [Implementation, line 30](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L30)
+
+```ts
+callback@30(value): inferred by TypeScript; see implementation
+```
+
+## validGearbox.callback@32
+
+[Implementation, line 32](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L32)
+
+```ts
+callback@32(value): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+
+## createWheeledVehicle
+
+[Implementation, line 51](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L51)
 
 Create a four-wheel rig around a supplied body. Host attaches it with raycast.addToWorld(world).
 
@@ -47,6 +84,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `definition.hubs.every`
 - `positive`
 - `spec.ratios.every`
+- `validGearbox`
 
 Explicit throws in this body:
 
@@ -54,7 +92,7 @@ Explicit throws in this body:
 
 ## createWheeledVehicle.positive
 
-[Implementation, line 31](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L31)
+[Implementation, line 52](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L52)
 
 ```ts
 positive(value: number): inferred by TypeScript; see implementation
@@ -64,24 +102,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Number.isFinite`
 
-## createWheeledVehicle.callback@36
+## createWheeledVehicle.callback@57
 
-[Implementation, line 36](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L36)
+[Implementation, line 57](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L57)
 
 ```ts
-callback@36(hub): inferred by TypeScript; see implementation
+callback@57(hub): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `hub.every`
 
-## createWheeledVehicle.callback@51
+## createWheeledVehicle.callback@72
 
-[Implementation, line 51](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L51)
+[Implementation, line 72](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L72)
 
 ```ts
-callback@51(value): inferred by TypeScript; see implementation
+callback@72(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -90,7 +128,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## syncWheeledDamping
 
-[Implementation, line 86](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L86)
+[Implementation, line 108](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L108)
 
 A docked car must share the carrier's damping; the host decides attachment/mode.
 
@@ -100,7 +138,7 @@ syncWheeledDamping(v: WheeledVehicle, dockedDamping?: number): void
 
 ## stepWheeledVehicle
 
-[Implementation, line 90](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L90)
+[Implementation, line 112](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L112)
 
 Apply one fixed tick of forces/steering; call before the shared world's step.
 
@@ -120,6 +158,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `driven`
 - `engineBrakingForce`
 - `forward.scale`
+- `gearboxTuning`
 - `selectDriveDirection`
 - `stepDrivetrain`
 - `v.body.applyForce`
@@ -137,17 +176,17 @@ Explicit throws in this body:
 
 - `new Error('Expected finite nonnegative tick and normalized wheeled input')`
 
-## stepWheeledVehicle.callback@110
+## stepWheeledVehicle.callback@132
 
-[Implementation, line 110](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L110)
+[Implementation, line 132](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L132)
 
 ```ts
-callback@110(wheel): inferred by TypeScript; see implementation
+callback@132(wheel): inferred by TypeScript; see implementation
 ```
 
 ## stepWheeledVehicle.driven
 
-[Implementation, line 127](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L127)
+[Implementation, line 149](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L149)
 
 ```ts
 driven(i: number): inferred by TypeScript; see implementation
@@ -157,25 +196,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `isDriven`
 
-## stepWheeledVehicle.callback@154
+## stepWheeledVehicle.callback@176
 
-[Implementation, line 154](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L154)
+[Implementation, line 176](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L176)
 
 ```ts
-callback@154(w): inferred by TypeScript; see implementation
+callback@176(w): inferred by TypeScript; see implementation
 ```
 
-## stepWheeledVehicle.callback@162
+## stepWheeledVehicle.callback@184
 
-[Implementation, line 162](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L162)
+[Implementation, line 184](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L184)
 
 ```ts
-callback@162(wheel): inferred by TypeScript; see implementation
+callback@184(wheel): inferred by TypeScript; see implementation
 ```
 
 ## shiftWheeledVehicle
 
-[Implementation, line 211](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L211)
+[Implementation, line 236](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L236)
 
 Gear requests return domain results; UI messages belong to the facade/host.
 
@@ -192,7 +231,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## automaticWheeledTransmission
 
-[Implementation, line 222](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L222)
+[Implementation, line 247](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L247)
 
 ```ts
 automaticWheeledTransmission(v: WheeledVehicle): boolean
@@ -200,7 +239,7 @@ automaticWheeledTransmission(v: WheeledVehicle): boolean
 
 ## wheeledTelemetry
 
-[Implementation, line 227](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L227)
+[Implementation, line 252](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L252)
 
 ```ts
 wheeledTelemetry(v: WheeledVehicle, input: WheeledInput, active: boolean, tireEffects = true): WheeledTelemetry
@@ -217,7 +256,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tuple
 
-[Implementation, line 255](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L255)
+[Implementation, line 285](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L285)
 
 ```ts
 tuple(v: Vec3): WheelVector
@@ -225,7 +264,7 @@ tuple(v: Vec3): WheelVector
 
 ## wheelContacts
 
-[Implementation, line 256](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L256)
+[Implementation, line 286](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L286)
 
 ```ts
 wheelContacts(v: WheeledVehicle, input: WheeledInput, active: boolean, tireEffects = true): WheelContactSnapshot[]
@@ -236,12 +275,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.raycast.wheelInfos.map`
 - `wheeledTelemetry`
 
-## wheelContacts.callback@263
+## wheelContacts.callback@293
 
-[Implementation, line 263](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L263)
+[Implementation, line 293](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L293)
 
 ```ts
-callback@263(wheel, i): inferred by TypeScript; see implementation
+callback@293(wheel, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

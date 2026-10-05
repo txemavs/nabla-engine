@@ -13,8 +13,13 @@ export class KeyboardSteering {
       this.vehicle = vehicle
     }
     if (!vehicle) return demand
-    demand = Math.max(-1, Math.min(1, demand))
-    const dt = Math.min(controlDefaults.steeringMaxStepSeconds, Math.max(0, elapsed))
+    // A non-finite demand or frame time must never poison the filter state: NaN would stay in
+    // `value` forever and freeze steering until the vehicle changes.
+    demand = Number.isFinite(demand) ? Math.max(-1, Math.min(1, demand)) : 0
+    if (!Number.isFinite(this.value)) this.value = 0
+    const dt = Number.isFinite(elapsed)
+      ? Math.min(controlDefaults.steeringMaxStepSeconds, Math.max(0, elapsed))
+      : 0
     // Build steering gently; release/countersteer promptly so the filter never feels stuck.
     const tau =
       demand === 0 || demand * this.value < 0

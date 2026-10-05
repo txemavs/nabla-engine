@@ -12,7 +12,7 @@ Shared gameplay HUD. Hosts choose its visibility; gameplay text and telemetry ha
 
 ## GameHud.constructor
 
-[Implementation, line 17](../../../../src/runtime/hud.ts#L17)
+[Implementation, line 19](../../../../src/runtime/hud.ts#L19)
 
 ```ts
 constructor(host: HTMLElement, private readonly text: RuntimeText = createRuntimeText()): instance
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameHud.update
 
-[Implementation, line 29](../../../../src/runtime/hud.ts#L29)
+[Implementation, line 31](../../../../src/runtime/hud.ts#L31)
 
 Render the same frame model in any browser host without reading the simulation again.
 
@@ -41,7 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameHud.dispose
 
-[Implementation, line 38](../../../../src/runtime/hud.ts#L38)
+[Implementation, line 40](../../../../src/runtime/hud.ts#L40)
 
 Remove only the DOM owned by this HUD.
 

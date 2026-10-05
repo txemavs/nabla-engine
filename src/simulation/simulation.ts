@@ -18,7 +18,11 @@ import {
   shiftWheeledVehicle,
   automaticWheeledTransmission,
 } from './vehicles/wheeled/runtime.js'
-import type { WheeledInput, WheelContactSnapshot } from './vehicles/wheeled/contracts.js'
+import type {
+  GearClackProfile,
+  WheeledInput,
+  WheelContactSnapshot,
+} from './vehicles/wheeled/contracts.js'
 import { stepBoatInWater } from './vehicles/boat.js'
 import { stepFlight } from './vehicles/flight.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
@@ -46,6 +50,7 @@ export const FIXED_STEP = simulationDefaults.fixedStepSeconds
 const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
 const PLAYER_RADIUS = simulationDefaults.playerRadius
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
+import { gearLabel } from '../entity/vehicle/gear-label.js'
 import { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 const vec = (v: Vec3): Vec3Tuple => [v.x, v.y, v.z]
 const pose = (b: Body): Transform => ({
@@ -1337,6 +1342,16 @@ export class Simulation {
     manualTransmission: boolean
     engineLoad: number
     tireSlip: number
+    /** Counts every gear change, automatic included, and D/R engagements. */
+    gearShifts: number
+    /** Counts audible changes (D/R engagement, manual shifts); play one clack per increase. */
+    gearClacks: number
+    /** True in P (gear is then 0): the brakes hold the vehicle until W or S. */
+    parked: boolean
+    /** True while torque is cut for a gear change or D/R waits for standstill. */
+    shifting: boolean
+    /** Per-vehicle clack sound; null selects the audio layer's car default. */
+    gearClack: GearClackProfile | null
     towVehicleId: string | null
   } {
     const v = this.vehicles.get(id)
@@ -1377,6 +1392,11 @@ export class Simulation {
       manualTransmission: ground.manualTransmission,
       engineLoad: ground.engineLoad,
       tireSlip: ground.tireSlip,
+      gearShifts: ground.shiftCount,
+      gearClacks: ground.clackCount,
+      parked: ground.parked,
+      shifting: ground.shifting,
+      gearClack: ground.clack ?? null,
       towVehicleId: v.definition.tow?.vehicleId ?? null,
     }
   }
@@ -1387,7 +1407,7 @@ export class Simulation {
     const result = shiftWheeledVehicle(v, direction)
     if (result === 'unavailable') return 'Este vehículo no tiene cambio secuencial'
     return result === 'shifted'
-      ? `Manual · M${v.drivetrain.gear}`
+      ? `Manual · ${gearLabel(v.drivetrain.gear, true)}`
       : 'Cambio protegido · marcha no disponible'
   }
   automaticTransmission(): string {

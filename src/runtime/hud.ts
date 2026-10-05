@@ -2,6 +2,8 @@
 export interface GameHudState {
   speedKmh: number
   gear: number | null
+  /** Display text such as R, N, P, D or M3; falls back to the raw gear number. */
+  gearLabel?: string | null
   vehicle: string | null
   cameraMode: string
   interaction: string
@@ -28,7 +30,7 @@ export class GameHud {
   /** Render the same frame model in any browser host without reading the simulation again. */
   update(state: GameHudState): void {
     this.telemetry.textContent = state.vehicle
-      ? `${state.vehicle} · ${Math.round(state.speedKmh)} km/h${state.gear === null ? '' : ` · ${state.gear < 0 ? 'R' : 'D' + state.gear}`}`
+      ? `${state.vehicle} · ${Math.round(state.speedKmh)} km/h${state.gear === null ? '' : ` · ${state.gearLabel ?? (state.gear < 0 ? 'R' : 'D' + state.gear)}`}`
       : this.text(state.cameraMode)
     this.hint.textContent = this.text(state.interaction)
     this.debug.textContent = state.wheelDebug

@@ -347,8 +347,9 @@ Carrier screens stay active throughout the occupied interior, without a proximit
 The grey cabrio keeps its lightweight body and Nabla emblems, with a custom 400 CV
 (294.2 kW crank power), 520 N·m AWD powertrain and seven-speed DSG-style automatic.
 These are game tuning values, not a manufacturer specification. Drive with W/S
-and A/D; the HUD shows D1–D7 or R and engine RPM. Opposite throttle brakes before
-reverse engages. Space briefly loosens the rear axle to initiate a slide; release
+and A/D; the HUD shows D1–D7 or R and engine RPM. Opposite throttle brakes to a
+standstill, holds for a moment, then engages reverse with an audible clack; every gear
+change clacks too. Space briefly loosens the rear axle to initiate a slide; release
 it to recover grip. Hold W + Space near rest for a rear-tire burnout (front brakes
 hold the car, the AWD coupling sends torque rearward). Smoke is contact-gated and
 limited to 96 particles. The sound button also mutes the synthesized car exhaust.

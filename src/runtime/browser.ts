@@ -59,6 +59,7 @@ import { playGroundClearance } from './placement.js'
 import { FrameLoop } from './frame-loop.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { VehicleEffects } from './vehicle-effects.js'
+import { gearLabel } from '../entity/vehicle/gear-label.js'
 
 import { waitForGround } from './ground.js'
 import { GameHud } from './hud.js'
@@ -68,6 +69,8 @@ import { createRuntimeText, type RuntimeLocale } from './messages.js'
 export interface GameFrame {
   speedKmh: number
   gear: number | null
+  /** HUD text: `R`, `D3` in automatic mode, `M3` in manual mode; null outside a gearbox vehicle. */
+  gearLabel: string | null
   location: ReturnType<typeof localToGeo> | null
 }
 export interface GameRuntimeOptions {
@@ -507,6 +510,7 @@ export class GameRuntime {
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
+    this.canvasDiagnostics(frameMs)
     const pad = this.pollGamepad()
     const installStart = measuring ? performance.now() : 0
     this.world?.flushInstall(
@@ -600,6 +604,7 @@ export class GameRuntime {
     this.hud?.update({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
+      gearLabel: info ? gearLabel(info.gear, info.manualTransmission, info.parked) : null,
       vehicle:
         this.document.entities.find((entity) => entity.id === player.vehicleId)?.name ?? null,
       cameraMode: canvas.dataset.cameraMode!,
@@ -725,6 +730,7 @@ export class GameRuntime {
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
+      gearLabel: info ? gearLabel(info.gear, info.manualTransmission, info.parked) : null,
       location: this.document.geography
         ? localToGeo(this.document.geography, player.position)
         : null,
@@ -771,6 +777,14 @@ export class GameRuntime {
       !document.hidden &&
       (this.options.acceptsInput?.() ?? true)
     )
+  }
+  /** Expose input health on the canvas so a stuck-control report can be checked in devtools. */
+  private canvasDiagnostics(frameMs: number): void {
+    const data = this.options.canvas.dataset
+    data.heldKeys = [...this.keys.values].join(' ')
+    data.keyExpirations = String(this.keys.expirations)
+    if (frameMs > 100) data.longFrames = String(Number(data.longFrames ?? 0) + 1)
+    data.lastFrameMs = frameMs.toFixed(1)
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
@@ -924,6 +938,14 @@ export class GameRuntime {
       capture: true,
     })
     window.addEventListener('pagehide', () => this.releaseInput(), options)
+    // Leaving pointer lock (Escape, browser UI) can swallow the keyups of held controls.
+    document.addEventListener(
+      'pointerlockchange',
+      () => {
+        if (document.pointerLockElement !== canvas) this.releaseInput()
+      },
+      options,
+    )
     canvas.addEventListener('blur', () => this.releaseInput(), options)
     window.addEventListener('blur', () => this.releaseInput(), options)
     document.addEventListener(

@@ -7,9 +7,11 @@ import {
   shiftGear,
   engineBrakingForce,
   selectDriveDirection,
+  gearboxTuning,
   type DrivetrainState,
 } from '../drivetrain.js'
 import type {
+  PowertrainDefinition,
   WheeledDefinition,
   WheeledInput,
   WheeledTelemetry,
@@ -17,6 +19,25 @@ import type {
   WheelVector,
 } from './contracts.js'
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n))
+
+/** Gearbox timing, shift points and clack numbers must be finite and mutually consistent. */
+function validGearbox(spec: PowertrainDefinition): boolean {
+  if (spec.maxWheelForceN !== undefined && !(spec.maxWheelForceN > 0)) return false
+  const shift = spec.shift
+  if (!shift) return true
+  const { clack, ...numbers } = shift
+  const values = [...Object.values(numbers), ...Object.values(clack ?? {})].filter(
+    (value) => value !== undefined,
+  )
+  if (!values.every((value) => Number.isFinite(value) && value >= 0)) return false
+  const tuning = gearboxTuning(spec)
+  return (
+    tuning.torqueFraction <= 1 &&
+    tuning.rpmResponse > 0 &&
+    tuning.upshiftRpm > tuning.downshiftRpm &&
+    tuning.upshiftRpm <= (spec.maxRpm ?? 6900) + 100
+  )
+}
 
 /** Borrowed body/rig in the host's single world; this module never steps or owns that world. */
 export interface WheeledVehicle {
@@ -50,7 +71,8 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
         [spec.idleRpm, spec.maxRpm, spec.reverseRatio, spec.maxSpeedKmh].some(
           (value) => value !== undefined && !positive(value),
         ) ||
-        (spec.idleRpm ?? 900) >= (spec.maxRpm ?? 6900)))
+        (spec.idleRpm ?? 900) >= (spec.maxRpm ?? 6900) ||
+        !validGearbox(spec)))
   )
     throw new Error('Invalid wheeled vehicle definition')
   const car = new RaycastVehicle({
@@ -164,9 +186,12 @@ export function stepWheeledVehicle(
       : 0
     v.body.applyForce(velocity.scale(-0.42 * magnitude - rolling / Math.max(1, magnitude)))
   } else {
-    const changing = selectDriveDirection(v.drivetrain, speed, throttle, dt)
-    v.drivetrain.force = changing ? 0 : throttle * v.definition.engineForce
-    v.drivetrain.load = changing ? 0 : Math.abs(throttle)
+    const gearbox = gearboxTuning()
+    const changing = selectDriveDirection(v.drivetrain, speed, throttle, dt, gearbox)
+    v.drivetrain.shiftRemaining = Math.max(0, v.drivetrain.shiftRemaining - dt)
+    const share = v.drivetrain.shiftRemaining > 0 ? gearbox.torqueFraction : 1
+    v.drivetrain.force = changing ? 0 : throttle * v.definition.engineForce * share
+    v.drivetrain.load = changing ? 0 : Math.abs(throttle) * share
     v.drivetrain.rpm +=
       ((powered ? roadVehicleDefaults.idleRpm + v.drivetrain.load * 1800 : 0) - v.drivetrain.rpm) *
       Math.min(1, dt * 8)
@@ -198,7 +223,7 @@ export function stepWheeledVehicle(
       ? v.definition.brakeForce * 0.4
       : input.handbrake
         ? v.definition.brakeForce * (i >= 2 ? 1.5 : 0.4)
-        : opposing || v.drivetrain.pendingDirection !== null
+        : opposing || v.drivetrain.changingDirection || v.drivetrain.parked
           ? v.definition.brakeForce
           : 0
     v.raycast.setBrake(
@@ -242,6 +267,11 @@ export function wheeledTelemetry(
     braking: active && (input.handbrake || input.throttle * signedSpeed < -0.8),
     reversing:
       active && (signedSpeed < -0.15 || (input.throttle < 0 && Math.abs(signedSpeed) <= 0.15)),
+    shiftCount: v.drivetrain.shiftCount,
+    clackCount: v.drivetrain.clackCount,
+    parked: v.drivetrain.parked,
+    shifting: v.drivetrain.shiftRemaining > 0 || v.drivetrain.changingDirection,
+    clack: v.definition.powertrain?.shift?.clack,
     tireSlip: !tireEffects
       ? 0
       : active && v.drivetrain.burnout

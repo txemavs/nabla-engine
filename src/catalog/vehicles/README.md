@@ -44,7 +44,7 @@ that folder. Do not duplicate the binary models into Studio.
 - `src/simulation/simulation.ts`: shared fixed step, boarding, driving and flight.
 - `src/simulation/physics.ts`: Rapier adapter; all games use this same implementation.
 - `src/render/entity/view.ts`: model presentation, wheels, steering and propellers.
-- `src/audio/vehicle.ts`: shared audio context. Each voice is its own file beside it (turbine, propeller, powertrain, tires).
+- `src/audio/vehicle.ts`: shared audio context. Each voice is its own file beside it (turbine, propeller, powertrain, tires, gear clack).
 - `studio/vehicle-audio.ts`: Studio sound button, preference and browser activation.
 
 Import this folder or the public package. A new vehicle is a JSON preset plus its GLB.
