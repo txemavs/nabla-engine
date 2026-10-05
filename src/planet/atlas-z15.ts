@@ -11,8 +11,10 @@
  *     role engine.terrain / engine.buildings -> manifest.files.terrain / 'buildings-osm' (identical)
  *     role terrain.lidar                      -> optional replacement for files.terrain
  *     role ground.composite / .lo             -> `manifest.photo` (orthophoto draped on the tile)
- *     role roads.asphalt / roads.supports     -> `manifest.roads` (loaded/used even if `drivable: false`)
- *     role roads.collision                    -> inspect-only GLB; not loaded unless inspectRoadCollision
+ *     role roads.asphalt / road.asphalt.candidate   -> `manifest.roads` (loaded/used even if `drivable: false`)
+ *     role roads.supports / road.supports.candidate -> same; `engineLoad` is provenance, not a skip
+ *     role roads.collision / road.collision.candidate -> inspect-only GLB; not loaded unless inspectRoadCollision
+ *   manifest.roadCandidates (schema nabla-road-candidates/1) -> same `manifest.roads` mapping
  *   every other role (masks, classes, instances, roofs, OSM snapshot, licences) is
  *   listed but not consumed by the engine yet; see docs/atlas-z15-terrain.md.
  *
@@ -58,11 +60,11 @@ export interface AtlasZ15Package {
   roads?: { revision?: string; recipe?: string; evidenceId?: string }
 }
 
-/** Package roles the engine maps onto `manifest.roads.files`. */
+/** Package roles the engine maps onto `manifest.roads.files`. Atlas `#49` uses `road.*.candidate`. */
 export const ATLAS_ROAD_ROLES: Record<PlanetCandidateRoadKind, readonly string[]> = {
-  asphalt: ['roads.asphalt', 'roads.asphalt-candidate'],
-  supports: ['roads.supports', 'roads.supports-candidate'],
-  collision: ['roads.collision', 'roads.collision-candidate'],
+  asphalt: ['road.asphalt.candidate', 'roads.asphalt', 'roads.asphalt-candidate'],
+  supports: ['road.supports.candidate', 'roads.supports', 'roads.supports-candidate'],
+  collision: ['road.collision.candidate', 'roads.collision', 'roads.collision-candidate'],
 }
 
 const ATLAS_CONSUMED_ROLES = new Set([
@@ -204,6 +206,8 @@ function mergeCandidateRoads(
     revision: existing.revision ?? fromPackage.revision,
     recipe: existing.recipe ?? fromPackage.recipe,
     evidenceId: existing.evidenceId ?? fromPackage.evidenceId,
+    evidenceSha256: existing.evidenceSha256 ?? fromPackage.evidenceSha256,
+    engineLoad: existing.engineLoad ?? fromPackage.engineLoad,
     provenance: existing.provenance,
     files,
   }

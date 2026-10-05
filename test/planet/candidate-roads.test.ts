@@ -13,7 +13,9 @@ import {
 } from '../../src/planet/index.js'
 import {
   PLANET_GEOMETRY_REVISION,
+  ROAD_CANDIDATES_SCHEMA,
   type PlanetCandidateRoadFile,
+  type PlanetRoadCandidates,
 } from '../../src/planet/contract.js'
 import { mapTileBounds, mapTileId, mapTileSample, type MapTile } from '../../src/scene/mercator.js'
 
@@ -58,6 +60,44 @@ function baseManifest(): PlanetManifest {
   }
 }
 
+function atlasRoadCandidates(): PlanetRoadCandidates {
+  return {
+    schema: ROAD_CANDIDATES_SCHEMA,
+    review: 'unreviewed',
+    drivable: false,
+    engineLoad: { asphalt: 'immediate', supports: 'immediate', collision: 'opt-in' },
+    recipe: 'asphalt-ground-junction-experiment-10',
+    evidenceId: 'fb1a685e-d9fe-4e31-9cc2-129bb9dfe8d2',
+    evidenceSha256: 'e'.repeat(64),
+    layers: {
+      asphalt: {
+        path: 'asphalt-candidate-1111111111111111.glb',
+        bytes: 597856,
+        sha256: asphaltHash,
+        role: 'road.asphalt.candidate',
+        engineLoad: 'immediate',
+        drivable: false,
+      },
+      supports: {
+        path: 'supports-candidate-2222222222222222.glb',
+        bytes: 23916,
+        sha256: supportHash,
+        role: 'road.supports.candidate',
+        engineLoad: 'immediate',
+        drivable: false,
+      },
+      collision: {
+        path: 'road-collision-candidate-3333333333333333.glb',
+        bytes: 597864,
+        sha256: collisionHash,
+        role: 'road.collision.candidate',
+        engineLoad: 'opt-in',
+        drivable: false,
+      },
+    },
+  }
+}
+
 function triangle(category: string, extras: Record<string, unknown> = {}): PlanetMesh {
   return {
     name: category,
@@ -72,6 +112,7 @@ function triangle(category: string, extras: Record<string, unknown> = {}): Plane
 describe('candidate road contract', () => {
   it('accepts hash-named and evidence-named road GLBs', () => {
     expect(isCandidateRoadGlbPath('asphalt-81c80882fd923967.glb')).toBe(true)
+    expect(isCandidateRoadGlbPath('asphalt-candidate-81c80882fd923967.glb')).toBe(true)
     expect(isCandidateRoadGlbPath('supports-candidate.glb')).toBe(true)
     expect(isCandidateRoadGlbPath('road-collision-candidate.glb')).toBe(true)
     expect(isCandidateRoadGlbPath('roads-asphalt-' + 'c'.repeat(64) + '.glb')).toBe(true)
@@ -151,6 +192,98 @@ describe('candidate road contract', () => {
     expect(planetGlbCacheKey('/z/15/16222/11998/terrain.glb', file, 'terrain')).toBe(
       '/z/15/16222/11998/terrain.glb',
     )
+  })
+
+  it('maps Atlas #49 roadCandidates.layers onto the same load set as roads.files', () => {
+    const source = baseManifest()
+    source.roadCandidates = atlasRoadCandidates()
+    const manifest = validatePlanetManifest(source, tile)
+    expect(manifest.roads).toMatchObject({
+      drivable: false,
+      recipe: 'asphalt-ground-junction-experiment-10',
+      evidenceId: 'fb1a685e-d9fe-4e31-9cc2-129bb9dfe8d2',
+      evidenceSha256: 'e'.repeat(64),
+      engineLoad: { asphalt: 'immediate', supports: 'immediate', collision: 'opt-in' },
+      files: {
+        asphalt: { path: 'asphalt-candidate-1111111111111111.glb', sha256: asphaltHash },
+        supports: { path: 'supports-candidate-2222222222222222.glb', sha256: supportHash },
+        collision: { path: 'road-collision-candidate-3333333333333333.glb', sha256: collisionHash },
+      },
+    })
+    expect(planetTileGlbLayers(manifest).map((entry) => entry.kind)).toEqual([
+      'terrain',
+      'buildings-osm',
+      'asphalt',
+      'supports',
+    ])
+    expect(
+      planetTileGlbLayers(manifest, { inspectRoadCollision: true }).map((entry) => entry.kind),
+    ).toEqual(['terrain', 'buildings-osm', 'asphalt', 'supports', 'collision'])
+    expect(planetTileRevision(manifest)).toBe(
+      'a'.repeat(64) + ':' + 'b'.repeat(64) + ':' + 'e'.repeat(64),
+    )
+    expect(Object.keys(source.files)).toEqual(['terrain', 'buildings-osm'])
+    expect(manifest.roadCandidates?.schema).toBe(ROAD_CANDIDATES_SCHEMA)
+  })
+
+  it('does not treat drivable: false or engineLoad as skip gates for asphalt/supports', () => {
+    const source = baseManifest()
+    const candidates = atlasRoadCandidates()
+    candidates.engineLoad = { asphalt: 'opt-in', supports: 'opt-in', collision: 'opt-in' }
+    candidates.layers.asphalt = {
+      ...candidates.layers.asphalt!,
+      engineLoad: 'opt-in',
+      drivable: false,
+    }
+    candidates.layers.supports = {
+      ...candidates.layers.supports!,
+      engineLoad: 'opt-in',
+      drivable: false,
+    }
+    source.roadCandidates = candidates
+    const manifest = validatePlanetManifest(source, tile)
+    expect(planetTileGlbLayers(manifest).map((entry) => entry.kind)).toEqual([
+      'terrain',
+      'buildings-osm',
+      'asphalt',
+      'supports',
+    ])
+    expect(manifest.roads?.engineLoad?.asphalt).toBe('opt-in')
+  })
+
+  it('keeps both published shapes when they name the same files', () => {
+    const source = baseManifest()
+    source.roads = {
+      drivable: false,
+      files: {
+        asphalt: layer('asphalt-candidate-1111111111111111.glb', asphaltHash),
+        supports: layer('supports-candidate-2222222222222222.glb', supportHash),
+      },
+    }
+    source.roadCandidates = atlasRoadCandidates()
+    delete source.roadCandidates.layers.collision
+    const manifest = validatePlanetManifest(source, tile)
+    expect(planetTileGlbLayers(manifest).map((entry) => entry.kind)).toEqual([
+      'terrain',
+      'buildings-osm',
+      'asphalt',
+      'supports',
+    ])
+  })
+
+  it('rejects a mismatched pair of roads.files and roadCandidates.layers', () => {
+    const source = baseManifest()
+    source.roads = {
+      files: { asphalt: layer('asphalt-candidate.glb', asphaltHash) },
+    }
+    source.roadCandidates = atlasRoadCandidates()
+    expect(() => validatePlanetManifest(source, tile)).toThrow(/Invalid planet road layers/)
+  })
+
+  it('rejects an unknown roadCandidates schema', () => {
+    const source = baseManifest()
+    source.roadCandidates = { ...atlasRoadCandidates(), schema: 'nabla-road-candidates/2' as never }
+    expect(() => validatePlanetManifest(source, tile)).toThrow(/Invalid planet road layers/)
   })
 })
 
