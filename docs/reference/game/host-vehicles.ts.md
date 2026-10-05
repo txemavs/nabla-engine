@@ -29,7 +29,7 @@ Example:
 
 ## headingYaw
 
-[Implementation, line 50](../../../game/host-vehicles.ts#L50)
+[Implementation, line 51](../../../game/host-vehicles.ts#L51)
 
 Gameplay yaw (radians) for a compass heading in degrees clockwise from north.
 
@@ -39,7 +39,7 @@ headingYaw(headingDegrees: number): number
 
 ## headingRotation
 
-[Implementation, line 55](../../../game/host-vehicles.ts#L55)
+[Implementation, line 56](../../../game/host-vehicles.ts#L56)
 
 Unit quaternion [x, y, z, w] that faces `headingDegrees` (clockwise from north).
 
@@ -55,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finiteNumber
 
-[Implementation, line 60](../../../game/host-vehicles.ts#L60)
+[Implementation, line 61](../../../game/host-vehicles.ts#L61)
 
 ```ts
 finiteNumber(value: unknown, field: string): number
@@ -74,7 +74,7 @@ Explicit throws in this body:
 
 ## parseHostVehicle
 
-[Implementation, line 69](../../../game/host-vehicles.ts#L69)
+[Implementation, line 70](../../../game/host-vehicles.ts#L70)
 
 ```ts
 parseHostVehicle(value: unknown, index: number): HostVehicle
@@ -96,7 +96,7 @@ Explicit throws in this body:
 
 ## parseHostVehicles
 
-[Implementation, line 86](../../../game/host-vehicles.ts#L86)
+[Implementation, line 87](../../../game/host-vehicles.ts#L87)
 
 ```ts
 parseHostVehicles(raw: string): HostVehicle[]
@@ -115,7 +115,7 @@ Explicit throws in this body:
 
 ## viteHostVehicles
 
-[Implementation, line 99](../../../game/host-vehicles.ts#L99)
+[Implementation, line 100](../../../game/host-vehicles.ts#L100)
 
 Build-time default from `VITE_NABLA_VEHICLES` (same JSON as `?vehicles=`).
 
@@ -130,7 +130,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostVehiclesFromSearch
 
-[Implementation, line 109](../../../game/host-vehicles.ts#L109)
+[Implementation, line 110](../../../game/host-vehicles.ts#L110)
 
 ```ts
 hostVehiclesFromSearch(search: string, fallback: readonly HostVehicle[] = []): HostVehicle[]
@@ -145,7 +145,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostVehicleLocalPose
 
-[Implementation, line 120](../../../game/host-vehicles.ts#L120)
+[Implementation, line 121](../../../game/host-vehicles.ts#L121)
 
 Convert one geographic entry to local metres relative to the scene origin.
 
@@ -160,7 +160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## installHostVehicles
 
-[Implementation, line 135](../../../game/host-vehicles.ts#L135)
+[Implementation, line 136](../../../game/host-vehicles.ts#L136)
 
 After `runtime.play()`, rest each extra vehicle on loaded ground at its
 geographic place. Validates presets first so a typo does not leave a partial fleet.
@@ -172,11 +172,12 @@ installHostVehicles(runtime: HostVehicleRuntime, origin: GeoPoint, vehicles: rea
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
-- `hasVehiclePreset`
+- `hasSpawnChoice`
 - `hostVehicleLocalPose`
 - `ids.push`
-- `presetVehicle`
 - `runtime.placeVehicle`
+- `runtime.placeVehicles`
+- `spawnChoiceEntities`
 - `vehicles.entries`
 
 Explicit throws in this body:

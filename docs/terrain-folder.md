@@ -79,19 +79,21 @@ Three menu sections (Spanish) reuse what Studio and the engine already have; no 
   same value. _Marea automática_ goes back to the simplified tide (`worldWater`). URL: `&sea=3`. The sea only shows
   where the terrain lies below that level, so use a coastal start (Hondarribia is near the Irun package) and a level
   of a few metres to see it.
-- **Vehículos.** _Añadir vehículo_ puts the chosen catalog vehicle (`vehiclePresets()`: the S3, the A3 cabrio, the white
-  truck and the flying container; the passive trailer is left out; the catalog has no plane or helicopter) on the
-  real ground in front of the player, facing the same way. `GameRuntime.spawnVehicle(template)` waits for ground
-  ahead (`waitForGround`), rests the vehicle at `ground + playGroundClearance(entity)` exactly like the parked fleet,
-  then adds it to the running view (`SceneView.addVehicles`), simulation (`Simulation.addVehicles`) and input mixer.
-  It can be boarded with `E` like any other vehicle. Each added vehicle is listed with _Quitar vehículo_
-  (`GameRuntime.removeSpawnedVehicle`); removal is refused while the player is inside. Limits: added vehicles are
-  never towed, and the container has no stern portal (that gate belongs to the editor's catalog entry).
+- **Vehículos.** _Añadir vehículo_ puts the chosen catalog vehicle (`vehicleSpawnChoices()`: the S3, the A3 cabrio, the
+  white truck, **Camión con remolque**, the free **Remolque blanco**, and the flying container; the catalog has no
+  plane or helicopter) on the real ground in front of the player, facing the same way. The combo reuses the stock
+  white-truck / white-trailer GLBs and the authored hitch / kingpin (`hitch` + `towAnchor`). `GameRuntime.spawnVehicle`
+  waits for ground ahead (`waitForGround`), rests each body at `ground + playGroundClearance(entity)` exactly like the
+  parked fleet, then adds the group to the running view (`SceneView.addVehicles`), simulation (`Simulation.addVehicles`)
+  and input mixer. Driveable spawns can be boarded with `E`. Each added body is listed with _Quitar vehículo_
+  (`GameRuntime.removeSpawnedVehicle`); removal is refused while the player is inside. The container still has no
+  stern portal (that gate belongs to the editor's catalog entry). `?vehicle=white-truck-trailer` starts in the truck
+  with its trailer already coupled; `?vehicle=white-trailer` starts on foot next to a free trailer.
   On `/drive` the menu has the same controls, but that page does not read `&time=`/`&sea=`.
   Operators can also declare extra vehicles in `&vehicles=` (or `VITE_NABLA_VEHICLES`) as WGS84
   `{lat, lon, heading, vehicle, alt?}` entries; after `play()` the page converts them to local metres
-  and calls `GameRuntime.placeVehicle`. The single-vehicle `lat`/`lon`/`heading`/`vehicle` params stay
-  the possessed start.
+  and calls `GameRuntime.placeVehicles` (a `white-truck-trailer` entry is a coupled pair). The
+  single-vehicle `lat`/`lon`/`heading`/`vehicle` params stay the possessed start.
 
 ## No index: holes and the missing list
 

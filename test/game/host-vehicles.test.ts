@@ -140,6 +140,35 @@ describe('installHostVehicles', () => {
     expect(calls[1]!.yaw).toBeCloseTo(0, 6)
   })
 
+  it('places a coupled truck+trailer through placeVehicles', async () => {
+    const calls: { ids: string[]; count: number; towed: boolean }[] = []
+    const ids = await installHostVehicles(
+      {
+        async placeVehicle() {
+          throw new Error('combo must use placeVehicles')
+        },
+        async placeVehicles(templates) {
+          calls.push({
+            ids: templates.map((template) => template.id),
+            count: templates.length,
+            towed: Boolean(templates[1]?.vehicle?.tow),
+          })
+          return templates.map((_, index) => `spawned-${index + 1}`)
+        },
+      },
+      irun,
+      [{ lat: irun.latitude, lon: irun.longitude, heading: 0, vehicle: 'white-truck-trailer' }],
+    )
+    expect(ids).toEqual(['spawned-1', 'spawned-2'])
+    expect(calls).toEqual([
+      {
+        ids: ['host-white-truck-trailer-0', 'host-white-truck-trailer-0-trailer'],
+        count: 2,
+        towed: true,
+      },
+    ])
+  })
+
   it('rejects an unknown preset before placing anything', async () => {
     const calls: string[] = []
     await expect(

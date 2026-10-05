@@ -142,6 +142,16 @@ export {
   vehiclePresets,
   type VehiclePreset,
 } from './catalog/vehicles/library.js'
+export {
+  WHITE_TRAILER_PLACEMENT_OFFSET,
+  WHITE_TRUCK_TRAILER_CHOICE,
+  WHITE_TRUCK_TRAILER_LABEL,
+  hasSpawnChoice,
+  hitchTrailer,
+  spawnChoiceEntities,
+  spawnChoicePlayerPreset,
+  vehicleSpawnChoices,
+} from './catalog/vehicles/spawn.js'
 
 export {
   hasWeaponPreset,

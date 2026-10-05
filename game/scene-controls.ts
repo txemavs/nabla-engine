@@ -1,7 +1,8 @@
 /**
  * Menu sections "Hora", "Nivel del mar" and "Vehículos". They only call the engine runtime: the sky clock
  * (sun, sky and lighting), the sea level (ocean sheet and physics) and `spawnVehicle` (a catalog vehicle
- * on the ground ahead of the player). The URL follows the choices (`&time=`, `&sea=`) so a link repeats them.
+ * or the coupled truck+trailer pair on the ground ahead of the player). The URL follows the choices
+ * (`&time=`, `&sea=`) so a link repeats them.
  */
 import {
   formatClockTime,
@@ -11,7 +12,7 @@ import {
   skyTime,
   type SkyClock,
 } from '@nabla/engine/planet/sky'
-import { presetVehicle, vehiclePresets } from '@nabla/engine/vehicles'
+import { spawnChoiceEntities, vehicleSpawnChoices } from '@nabla/engine/vehicles'
 import type { Entity } from '@nabla/engine/scene'
 import { menuSection } from './menu.js'
 
@@ -26,21 +27,19 @@ export interface SceneRuntime {
   readonly sea: { level: number; state: string }
   setWater(water: { mode: 'manual' | 'tide'; level: number; amplitude: number } | undefined): void
   readonly spawnedVehicles: { id: string; name: string }[]
-  spawnVehicle(template: Entity): Promise<string>
+  spawnVehicle(template: Entity | readonly Entity[]): Promise<string>
   removeSpawnedVehicle(id: string): void
 }
 
-/** A vehicle that can be added: the catalog presets a player can drive (trailers are passive). */
+/** A vehicle the menu can add: a catalog preset (including the passive trailer) or the coupled combo. */
 export interface VehicleChoice {
   id: string
   label: string
 }
 
-/** The vehicles the menu offers, in catalog order. The catalog has no planes or helicopters. */
+/** The vehicles the menu offers, in catalog order, plus "Camión con remolque". */
 export function vehicleChoices(): VehicleChoice[] {
-  return vehiclePresets()
-    .filter((preset) => !preset.vehicle.passive)
-    .map((preset) => ({ id: preset.id, label: preset.label }))
+  return vehicleSpawnChoices()
 }
 
 /** Metres as shown to the player: one decimal and a decimal comma. */
@@ -280,8 +279,11 @@ export function bindSceneControls(
       add.disabled = true
       vehicleMessage.textContent = 'Añadiendo…'
       try {
-        await runtime.spawnVehicle(presetVehicle(entry.id, 'spawn-template'))
-        vehicleMessage.textContent = `${entry.label} añadido delante de ti. Acércate y pulsa E para entrar.`
+        await runtime.spawnVehicle(spawnChoiceEntities(entry.id, 'spawn-template'))
+        vehicleMessage.textContent =
+          entry.id === 'white-trailer'
+            ? `${entry.label} añadido delante de ti.`
+            : `${entry.label} añadido delante de ti. Acércate y pulsa E para entrar.`
       } catch (error) {
         vehicleMessage.textContent = /ground/i.test(
           String(error instanceof Error ? error.message : error),

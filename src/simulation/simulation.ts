@@ -186,21 +186,7 @@ export class Simulation {
     this.world.defaultContactMaterial.friction = simulationDefaults.solidFriction
     this.world.defaultContactMaterial.restitution = 0
     for (const e of this.document.entities) this.addEntityBody(e)
-    for (const v of this.vehicles.values()) {
-      const tow = v.definition.tow
-      if (!tow) continue
-      const tractor = this.vehicles.get(tow.vehicleId)!
-      this.alignTrailer(v, tractor)
-      const joint = new HingeConstraint(
-        tractor.body,
-        v.body,
-        new Vec3(...tow.hitch),
-        new Vec3(...tow.anchor),
-      )
-      joint.collideConnected = true
-      this.world.addConstraint(joint)
-      this.trailerJoints.push(joint)
-    }
+    for (const v of this.vehicles.values()) this.attachTrailerJoint(v)
     for (const mouth of this.portalEntities) if (mouth.parentId) this.rebuildPortalCollider(mouth)
     for (const v of this.vehicles.values())
       if (v.definition.garage) {
@@ -355,29 +341,44 @@ export class Simulation {
     )
   }
   /**
-   * Add plain vehicles to a running simulation (the game menu spawns cars and trucks).
-   * Added vehicles are never towed and cannot be portals; use `removeVehicle` to take them out.
+   * Add plain vehicles to a running simulation (the game menu spawns cars, trucks and trailers).
+   * A trailer may already be towed to a tractor in this batch or already in the world; hitch
+   * joints are created after the bodies exist. Portals are refused.
    */
   addVehicles(added: Entity[]): void {
     for (const e of added) {
       if (e.kind !== 'vehicle' || !e.vehicle || e.portal)
         throw new Error(`Entity ${e.id} is not a plain vehicle`)
       if (this.entitiesById.has(e.id)) throw new Error(`Entity id already in use: ${e.id}`)
+      if (e.vehicle.tow) {
+        const tractor =
+          added.find((other) => other.id === e.vehicle!.tow!.vehicleId) ??
+          this.entitiesById.get(e.vehicle.tow.vehicleId)
+        if (!tractor?.vehicle || tractor.vehicle.passive || tractor.id === e.id)
+          throw new Error('Trailer requires a powered towing vehicle')
+      }
     }
-    const copies = structuredClone(added).map((e) => {
-      if (e.vehicle?.tow) delete e.vehicle.tow
-      return e
-    })
+    const copies = structuredClone(added)
     this.document.entities = [...this.document.entities, ...copies]
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
     for (const e of copies) this.addEntityBody(e)
+    for (const e of copies) {
+      const vehicle = this.vehicles.get(e.id)
+      if (vehicle) this.attachTrailerJoint(vehicle)
+    }
   }
   /** Remove a vehicle added with `addVehicles`. The player must not be inside it. */
   removeVehicle(id: string): void {
     const v = this.vehicles.get(id)
     if (!v) throw new Error(`No vehicle ${id}`)
     if (this.vehicleId === id) throw new Error('Leave the vehicle before removing it')
+    this.detachTrailerJoints(v)
+    for (const trailer of this.vehicles.values()) {
+      if (trailer.definition.tow?.vehicleId !== id) continue
+      delete trailer.definition.tow
+      if (trailer.entity.vehicle) delete trailer.entity.vehicle.tow
+    }
     v.raycast.removeFromWorld(this.world)
     if (v.body.world === this.world) this.world.removeBody(v.body)
     this.vehicles.delete(id)
@@ -386,6 +387,30 @@ export class Simulation {
     this.document.entities = this.document.entities.filter((e) => e.id !== id)
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
+  }
+  private attachTrailerJoint(trailer: Vehicle): void {
+    const tow = trailer.definition.tow
+    if (!tow) return
+    const tractor = this.vehicles.get(tow.vehicleId)
+    if (!tractor) throw new Error('Trailer requires a powered towing vehicle')
+    this.alignTrailer(trailer, tractor)
+    const joint = new HingeConstraint(
+      tractor.body,
+      trailer.body,
+      new Vec3(...tow.hitch),
+      new Vec3(...tow.anchor),
+    )
+    joint.collideConnected = true
+    this.world.addConstraint(joint)
+    this.trailerJoints.push(joint)
+  }
+  private detachTrailerJoints(vehicle: Vehicle): void {
+    for (let i = this.trailerJoints.length - 1; i >= 0; i--) {
+      const joint = this.trailerJoints[i]
+      if (joint.bodyA !== vehicle.body && joint.bodyB !== vehicle.body) continue
+      this.world.removeConstraint(joint)
+      this.trailerJoints.splice(i, 1)
+    }
   }
   private addEntityBody(e: Entity): void {
     const created = createEntityBody(

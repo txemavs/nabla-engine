@@ -64,6 +64,21 @@ describe('terrain drive example', () => {
     expect(2 * Math.atan2(y, w)).toBeCloseTo(-Math.PI / 2, 6)
   })
 
+  it('treats white-truck-trailer as the player truck with its trailer already coupled', () => {
+    const scene = createTerrainDriveScene({
+      latitude: 0,
+      longitude: 0,
+      vehicle: 'white-truck-trailer',
+    })
+    const ids = scene.entities.filter((e) => e.vehicle).map((e) => e.id)
+    expect(ids).toContain('player-vehicle')
+    expect(ids).toContain('player-vehicle-trailer')
+    expect(ids).not.toContain('demo-white-truck')
+    const trailer = scene.entities.find((e) => e.id === 'player-vehicle-trailer')!
+    expect(trailer.vehicle!.tow?.vehicleId).toBe('player-vehicle')
+    parseScene(scene)
+  })
+
   it('swaps the player vehicle without duplicating it', () => {
     const scene = createTerrainDriveScene({ latitude: 0, longitude: 0, vehicle: 'white-truck' })
     const ids = scene.entities.filter((e) => e.vehicle).map((e) => e.id)

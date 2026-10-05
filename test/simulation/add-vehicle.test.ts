@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { Vector3, Quaternion } from 'three'
 import { Simulation } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
+import { spawnChoiceEntities } from '../../src/catalog/vehicles/spawn.js'
 
 const scene = () => ({
   version: 1 as const,
@@ -63,6 +65,27 @@ describe('Simulation.addVehicles / removeVehicle', () => {
     expect(() => sim.addVehicles([trailer])).not.toThrow()
     for (let i = 0; i < 120; i++) sim.step(1 / 60)
     expect(sim.entityTransform('added-t').position[1]).toBeGreaterThan(0.5)
+    sim.dispose()
+  })
+
+  it('adds a coupled truck+trailer and keeps the hitch aligned', () => {
+    const sim = new Simulation(scene(), { playerMode: 'walk' })
+    const [truck, trailer] = spawnChoiceEntities('white-truck-trailer', 'added-rig', [0, 1.6, -8])
+    sim.addVehicles([truck, trailer])
+    expect(sim.vehicleInfo(trailer.id).towVehicleId).toBe(truck.id)
+    for (let i = 0; i < 180; i++) sim.step(1 / 60)
+    expect(sim.vehicleInfo(trailer.id).towVehicleId).toBe(truck.id)
+    const hitch = trailer.vehicle!.tow!.hitch
+    const anchor = trailer.vehicle!.tow!.anchor
+    const point = (id: string, local: number[]) => {
+      const pose = sim.entityTransform(id)
+      return new Vector3(...local)
+        .applyQuaternion(new Quaternion(...pose.rotation))
+        .add(new Vector3(...pose.position))
+    }
+    expect(point(truck.id, hitch).distanceTo(point(trailer.id, anchor))).toBeLessThan(0.15)
+    sim.removeVehicle(truck.id)
+    expect(sim.vehicleInfo(trailer.id).towVehicleId).toBeNull()
     sim.dispose()
   })
 })

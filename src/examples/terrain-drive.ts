@@ -2,7 +2,13 @@ import { createEntity, type Entity, type Vec3Tuple } from '../entity/schema.js'
 import { localToGeo, type GeoPoint } from '../math/geo/sphere.js'
 import { mapTileSample, type MapTile } from '../scene/mercator.js'
 import type { SceneDocument } from '../scene/document.js'
-import { presetEntities, presetVehicle } from '../catalog/vehicles/index.js'
+import {
+  WHITE_TRAILER_PLACEMENT_OFFSET,
+  WHITE_TRUCK_TRAILER_CHOICE,
+  hitchTrailer,
+  presetEntities,
+  presetVehicle,
+} from '../catalog/vehicles/index.js'
 
 /** Same parked fleet and play rules as the flat example, but on whatever terrain a tile host serves. */
 export interface TerrainDriveOptions {
@@ -20,8 +26,6 @@ export interface TerrainDriveOptions {
 }
 
 export const TERRAIN_DRIVE_DAY = '2026-06-21T10:30:00.000Z'
-/** Distance between the tractor hitch and the trailer origin (metres), as in the flat example. */
-const TRAILER_OFFSET = 7.33
 /** Parked vehicles in a row along the heading, in metres ahead of the player (negative = behind). */
 const PARKED = [
   { preset: 'car', ahead: -22 },
@@ -57,7 +61,8 @@ function skyFor(value: string | undefined): NonNullable<SceneDocument['sky']> {
  * ahead, all facing `heading`. Heights are authored as 0: run with `restParkedOnGround`.
  */
 export function createTerrainDriveScene(options: TerrainDriveOptions): SceneDocument {
-  const player = options.vehicle ?? 'car'
+  const player =
+    options.vehicle === WHITE_TRUCK_TRAILER_CHOICE ? 'white-truck' : (options.vehicle ?? 'car')
   const bearing = ((options.heading ?? 0) * Math.PI) / 180
   const forward: Vec3Tuple = [Math.sin(bearing), 0, -Math.cos(bearing)]
   const right: Vec3Tuple = [Math.cos(bearing), 0, Math.sin(bearing)]
@@ -86,15 +91,11 @@ export function createTerrainDriveScene(options: TerrainDriveOptions): SceneDocu
   const tow = (tractor: Entity, ahead: number) => {
     const trailer = place(
       [presetVehicle('white-trailer', `${tractor.id}-trailer`)],
-      ahead - TRAILER_OFFSET,
+      ahead - WHITE_TRAILER_PLACEMENT_OFFSET,
     )[0]
     tractor.groundOffset = 1.45
     tractor.vehicle!.cameraDistance = 24
-    trailer.vehicle!.tow = {
-      vehicleId: tractor.id,
-      hitch: tractor.vehicle!.hitch!,
-      anchor: trailer.vehicle!.towAnchor!,
-    }
+    hitchTrailer(tractor, trailer)
     return trailer
   }
   const playerEntities = parked(player, 0)

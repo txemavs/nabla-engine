@@ -9,7 +9,8 @@
  *   &ll=<lat>,<lon>          ... the same in one value, as Google Maps shows it (ll=43.3386,-1.7899)
  *   &alt=<m>                 origin altitude, default 0 (terrain files carry absolute elevations)
  *   &heading=<deg>           compass heading the fleet faces (default 0 = north)
- *   &vehicle=<preset>        vehicle the player starts in (default car)
+ *   &vehicle=<preset>        vehicle the player starts in (default car). Also `white-truck-trailer`
+ *                            (coupled pair) or `white-trailer` (on foot next to a free trailer)
  *   &vehicles=<json>         extra host vehicles after terrain is ready: JSON array of
  *                            {lat, lon, heading, vehicle, alt?} (WGS84). Also VITE_NABLA_VEHICLES.
  *   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
