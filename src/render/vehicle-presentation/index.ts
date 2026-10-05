@@ -32,3 +32,11 @@ export type {
   CarInstrumentDefinition,
   CarInstrumentTelemetry,
 } from '../entity/car-instrument-definition.js'
+export { authoredMirrorLenses } from './mirror-lenses.js'
+export {
+  poseSteeringWheel,
+  steeringAxis,
+  steeringWheelAngle,
+  steeringFullLockSteer,
+  steeringWheelLock,
+} from '../entity/steering-wheel.js'

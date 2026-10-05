@@ -171,7 +171,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
 ```ts
-update(doc: SceneDocument, pose: Transform, speedKmh: number, now: number, rpm = 900, gear = 1, load = 0, manual = false): void
+update(doc: SceneDocument, pose: Transform, speedKmh: number, now: number, rpm = 900, gear = 1, load = 0, manual = false, parked = false): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -187,18 +187,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.retraction.update`
 - `this.speedMonitor.update`
 
-## CarInstruments.update.callback@164
-
-[Implementation, line 164](../../../../../src/render/entity/car-instruments.ts#L164)
-
-```ts
-callback@164(v): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Math.round`
-
 ## CarInstruments.update.callback@165
 
 [Implementation, line 165](../../../../../src/render/entity/car-instruments.ts#L165)
@@ -211,9 +199,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.round`
 
+## CarInstruments.update.callback@166
+
+[Implementation, line 166](../../../../../src/render/entity/car-instruments.ts#L166)
+
+```ts
+callback@166(v): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+
 ## CarInstruments.dispose
 
-[Implementation, line 174](../../../../../src/render/entity/car-instruments.ts#L174)
+[Implementation, line 175](../../../../../src/render/entity/car-instruments.ts#L175)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 

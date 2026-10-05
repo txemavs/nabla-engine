@@ -8,3 +8,4 @@ test-results
 playwright-report
 
 assets/geography/irun-ventas.json
+test/planet/fixtures/

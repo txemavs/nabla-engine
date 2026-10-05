@@ -69,9 +69,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `deadzone`
 
-## GameInput.reset
+## finiteInput
 
 [Implementation, line 57](../../../../src/runtime/input.ts#L57)
+
+A single non-finite axis (a faulty gamepad, a touch source) would make `Simulation.setInput`
+throw and stop the frame loop, freezing every control. Treat it as released instead.
+
+```ts
+finiteInput(input: PlayerInput): PlayerInput
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `safe`
+
+## finiteInput.safe
+
+[Implementation, line 58](../../../../src/runtime/input.ts#L58)
+
+```ts
+safe(value: number | undefined): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+
+## GameInput.reset
+
+[Implementation, line 73](../../../../src/runtime/input.ts#L73)
 
 Forget keyboard steering interpolation after focus loss or a session boundary.
 
@@ -85,7 +112,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read
 
-[Implementation, line 66](../../../../src/runtime/input.ts#L66)
+[Implementation, line 82](../../../../src/runtime/input.ts#L82)
 
 Combine keyboard, gamepad, touch and monitor commands into one physics input.
 Elapsed time is seconds and yaw is radians. Disabled/menu input resets steering;
@@ -100,6 +127,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Boolean`
 - `axis`
 - `document.entities.find`
+- `finiteInput`
 - `gamepadAxes`
 - `idleInput`
 - `keys.has`
@@ -109,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read.axis
 
-[Implementation, line 79](../../../../src/runtime/input.ts#L79)
+[Implementation, line 95](../../../../src/runtime/input.ts#L95)
 
 ```ts
 axis(positive: string, negative: string): inferred by TypeScript; see implementation
@@ -120,10 +148,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `keys.has`
 
-## GameInput.read.callback@89
+## GameInput.read.callback@105
 
-[Implementation, line 89](../../../../src/runtime/input.ts#L89)
+[Implementation, line 105](../../../../src/runtime/input.ts#L105)
 
 ```ts
-callback@89(e): inferred by TypeScript; see implementation
+callback@105(e): inferred by TypeScript; see implementation
 ```

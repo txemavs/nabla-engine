@@ -14,5 +14,7 @@
 - `../entity/car-mirrors.js`
 - `../entity/driving-camera.js`
 - `../entity/car-instrument-definition.js`
+- `./mirror-lenses.js`
+- `../entity/steering-wheel.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

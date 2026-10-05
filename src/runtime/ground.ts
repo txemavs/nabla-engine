@@ -1,10 +1,23 @@
 import type { Vec3Tuple } from '../entity/schema.js'
+import { mapTileId, type MapTile } from '../scene/mercator.js'
+
+/** The tile host has no tile under the position: waiting cannot help. `tile` names the missing cell. */
+export class GroundMissingError extends Error {
+  constructor(readonly tile: MapTile) {
+    super(`Ground unavailable: the tile host has no terrain at ${mapTileId(tile)}`)
+    this.name = 'GroundMissingError'
+  }
+}
 
 export interface GroundProvider {
   update(position: Vec3Tuple, velocity: Vec3Tuple): void
   flushInstall(budget: number): unknown
   groundHeight(position: Vec3Tuple): number | undefined
   readonly status: string
+  /** Changes whenever loading advances (a cell arrives or fails); lets the wait tell slow from stuck. */
+  readonly loadProgress?: string
+  /** The tile the host lacks under this position, if any: waiting cannot help. */
+  missingTileAt?(position: Vec3Tuple): MapTile | undefined
 }
 
 /** GLB float32 vertices can leave sub-millimetre gaps at shared tile corners.
@@ -28,7 +41,11 @@ export function groundAtSeam(
   return undefined
 }
 
-/** Wait for usable ground, not a fixed count of neighbouring tiles. Never starts after a timeout. */
+/**
+ * Wait for usable ground, not a fixed count of neighbouring tiles. Never starts after a timeout.
+ * `timeoutMs` is a stall limit: it restarts whenever the provider reports progress (`loadProgress`),
+ * so a slow link that keeps delivering cells is never reported as an error.
+ */
 export async function waitForGround(
   world: GroundProvider,
   position: Vec3Tuple,
@@ -36,7 +53,8 @@ export async function waitForGround(
 ): Promise<number> {
   const timeout = options.timeoutMs ?? 120000
   if (!Number.isFinite(timeout) || timeout <= 0) throw new Error('Invalid ground timeout')
-  const started = performance.now()
+  let started = performance.now()
+  let progress = world.loadProgress
   while (true) {
     options.signal?.throwIfAborted()
     world.update(position, [0, 0, 0])
@@ -44,6 +62,12 @@ export async function waitForGround(
     const height = groundAtSeam(world, position)
     if (height !== undefined && Number.isFinite(height)) return height
     options.onProgress?.(world.status)
+    const hole = world.missingTileAt?.(position)
+    if (hole) throw new GroundMissingError(hole)
+    if (world.loadProgress !== progress) {
+      progress = world.loadProgress
+      started = performance.now()
+    }
     const remaining = timeout - (performance.now() - started)
     if (remaining <= 0) throw new Error(`Ground unavailable: ${world.status}`)
     await new Promise<void>((resolve, reject) => {

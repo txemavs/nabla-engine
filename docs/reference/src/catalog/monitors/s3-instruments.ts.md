@@ -7,15 +7,16 @@
 ## Module dependencies
 
 - `../../render/entity/car-instrument-definition.js`
+- `../../entity/vehicle/gear-label.js`
 - `./car.js`
 - `./s3-cluster.js`
 
 ## clusterData
 
-[Implementation, line 11](../../../../../src/catalog/monitors/s3-instruments.ts#L11)
+[Implementation, line 12](../../../../../src/catalog/monitors/s3-instruments.ts#L12)
 
 ```ts
-clusterData({ speedKmh, rpm, gear, load, manual }): inferred by TypeScript; see implementation
+clusterData({ speedKmh, rpm, gear, load, manual, parked }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -23,10 +24,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.abs`
 - `Math.round`
 - `String`
+- `gearLabel`
 
 ## menuData
 
-[Implementation, line 24](../../../../../src/catalog/monitors/s3-instruments.ts#L24)
+[Implementation, line 25](../../../../../src/catalog/monitors/s3-instruments.ts#L25)
 
 ```ts
 menuData(menu, { mirrorTilt, mapFollow = true }): inferred by TypeScript; see implementation

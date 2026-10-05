@@ -1,0 +1,69 @@
+{
+  "format": "nabla-planet-tile-v1",
+  "id": "WebMercatorQuad/15/16211/12003",
+  "tile": {
+    "z": 15,
+    "x": 16211,
+    "y": 12003
+  },
+  "bounds": {
+    "west": -1.900634765625,
+    "east": -1.8896484375,
+    "north": 43.30119623257965,
+    "south": 43.29320031385282
+  },
+  "anchor": {
+    "longitude": -1.8951416015625,
+    "latitude": 43.29719840464635,
+    "altitude": 0
+  },
+  "units": "metres",
+  "axes": "+X east, +Y up, +Z south",
+  "generator": "native-xyz-v2",
+  "geometryRevision": "native-surfaces-v2",
+  "places": [],
+  "retrievedAt": "2026-09-24T18:45:47.285557+00:00",
+  "source": {
+    "path": "source-b5699a968f730846.json",
+    "sha256": "b5699a968f7308461589cc43a74c2324b842fdc7cef4b73b32974cbad7ceb4d2"
+  },
+  "files": {
+    "terrain": {
+      "path": "terrain-ad8550fe0459ce7d.glb",
+      "download": "earth-WebMercatorQuad-z15-x16211-y12003-terrain.glb",
+      "sha256": "ad8550fe0459ce7d9056888f64a7acdc3f871d9a97ba5b65151192f64ad44725",
+      "bytes": 10938756
+    },
+    "buildings-osm": {
+      "path": "buildings-osm-8b7a0e12579eb3ab.glb",
+      "download": "earth-WebMercatorQuad-z15-x16211-y12003-buildings-osm.glb",
+      "sha256": "8b7a0e12579eb3ab2c757f62977837746cfc29884b556a562914da7a72691477",
+      "bytes": 202508
+    }
+  },
+  "collision": "render-triangle-prisms-v1",
+  "attribution": "© OpenStreetMap contributors; elevation: Esri; Obra derivada de Ortofoto 2025 © Eusko Jaurlaritza / Gobierno Vasco (geoEuskadi), CC BY; Obra derivada de MDT LiDAR © Eusko Jaurlaritza / Gobierno Vasco (geoEuskadi), CC BY",
+  "palette": "source",
+  "groundImagery": {
+    "file": "ground-84ad1def609c2916.webp",
+    "crs": "EPSG:3857",
+    "bounds": {
+      "west": -1.900634765625,
+      "east": -1.8896484375,
+      "north": 43.30119623257965,
+      "south": 43.29320031385282
+    },
+    "sizePx": 4096,
+    "metersPerPixel": 0.21706679598793374,
+    "encoding": "webp",
+    "attribution": "Obra derivada de Ortofoto 2025 © Eusko Jaurlaritza / Gobierno Vasco (geoEuskadi), CC BY",
+    "pipelineRevision": "nabla-atlas@8fb43458ec5826bf5e1e098213bb6bf99d97aea7"
+  },
+  "z15Package": {
+    "schema": "nabla-z15-package/1",
+    "file": "z15-059a2665959db8a9.json",
+    "sha256": "059a2665959db8a9703a4cee47dcce5b293397e14632e140a59115f5155130a6",
+    "bytes": 14381,
+    "packageVersion": 1
+  }
+}

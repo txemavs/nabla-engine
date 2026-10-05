@@ -60,7 +60,7 @@ metadata for preset compatibility and cannot be boarded.
   GLTFLoader name sanitization. Parent transforms are composed. The authored
   interior metadata also contains the casing selection bounds and retract travel.
 - Tractor: its `dynamic-dashboard-display` mesh defines position, rotation,
-  width and height. Cluster, GPS (H) and menu share the surface exclusively.
+  width and height. Cluster, GPS (K) and menu share the surface exclusively.
 - Container: six `monitor.*` anchors carry `extras.nabla.screen` dimensions and
   ids (helm0–2, door0–1, touch). Generated poses place the rendered and interactive
   displays. Older saved container entities need their preset refreshed to acquire
@@ -105,3 +105,17 @@ The former `assets/studio` name did not represent an editor dependency. Scene
 parsing migrates only known local stock URL prefixes and the old truck folder
 name, on the validated copy. Custom URLs, remote URLs, tuning and caller data are
 unchanged. This narrow path migration does not upgrade vehicle recipes or anchors.
+
+## Steering wheel axis and authored mirrors
+
+The steering wheel turns about the model's +Z (S3 convention, column pointing away from
+the driver). A steering GLB whose rim is tilted inside the file declares the real column axis
+with `visual.steering.axis` (unit vector in the steering model's space, pointing away from
+the driver); otherwise the wheel wobbles instead of spinning. The white truck uses
+`[0, -0.81915, -0.57358]`, the 35° rim normal of `steering.glb`. Full lock is ±90°.
+
+A body GLB without a mirror lens material (the S3 uses material `Llanta 2`) lists flat lenses
+in `vehicle.mirrors` (`position`, `normal`, `width`, `height`, body-model metres). The
+`nabla.truck` presentation uses this as a compatibility fallback only when no tagged
+GLB lenses exist. The stock truck uses its GLB anchors and contains no duplicated
+mirror placement in its preset. Authored GLB lenses take precedence in older saved scenes.

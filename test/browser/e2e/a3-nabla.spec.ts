@@ -40,9 +40,13 @@ test('A3 Nabla shares four wheel geometries and stays within its draw budget', a
     camera.position.set(-4, 2.5, -4.5)
     camera.lookAt(0, 0.9, 0)
     renderer.render(scene, camera)
-    const seals = new T.Raycaster(new T.Vector3(0, 0.05, 0), new T.Vector3(0, 1, 0), 0, 1)
+    // The corrected body (2026-10-04) closes the floor with its own base mesh; the generated
+    // 'A3 closed underfloor' liner no longer exists. A ray from under the car must hit that
+    // upward-facing floor first, long before it could reach the cabin interior.
+    const floorHit = new T.Raycaster(new T.Vector3(0, 0.05, 0), new T.Vector3(0, 1, 0), 0, 1)
       .intersectObject(body, true)
-      .some((hit: import('three').Intersection) => hit.object.name.includes('underfloor'))
+      .at(0)
+    const seals = floorHit !== undefined && floorHit.distance < 0.3 && floorHit.face.normal.y > 0.9
     const paintSides: boolean[] = []
     body.traverse((node: import('three').Object3D) => {
       if (!(node instanceof T.Mesh)) return

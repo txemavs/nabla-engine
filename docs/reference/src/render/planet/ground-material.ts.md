@@ -9,9 +9,20 @@
 - `../../planet/land/surface.js`
 - `three`
 
+## withMap
+
+[Implementation, line 8](../../../../../src/render/planet/ground-material.ts#L8)
+
+`{ map }` when there is a texture, else `{}`: three.js warns "parameter 'map' has value of undefined"
+for a key that is present but undefined, once per material.
+
+```ts
+withMap(map: THREE.Texture | undefined): { map?: THREE.Texture }
+```
+
 ## matteGroundMaterial
 
-[Implementation, line 5](../../../../../src/render/planet/ground-material.ts#L5)
+[Implementation, line 13](../../../../../src/render/planet/ground-material.ts#L13)
 
 Diffuse ground: roughness alone still leaves a broad dielectric sun highlight.
 
@@ -25,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isChartCarriageway
 
-[Implementation, line 21](../../../../../src/render/planet/ground-material.ts#L21)
+[Implementation, line 29](../../../../../src/render/planet/ground-material.ts#L29)
 
 Carriageways paint white on the GPS. Paths, tracks and rails stay blue.
 
@@ -39,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## liftFootLayer
 
-[Implementation, line 34](../../../../../src/render/planet/ground-material.ts#L34)
+[Implementation, line 42](../../../../../src/render/planet/ground-material.ts#L42)
 
 Feet stay under the carriageway and the rails. 17 is the layer that briefly drew them on top.
 
@@ -49,7 +60,7 @@ liftFootLayer(layer: number): number
 
 ## footBuried
 
-[Implementation, line 40](../../../../../src/render/planet/ground-material.ts#L40)
+[Implementation, line 48](../../../../../src/render/planet/ground-material.ts#L48)
 
 ```ts
 footBuried(layer: number): boolean
@@ -57,7 +68,7 @@ footBuried(layer: number): boolean
 
 ## transportLayer
 
-[Implementation, line 45](../../../../../src/render/planet/ground-material.ts#L45)
+[Implementation, line 53](../../../../../src/render/planet/ground-material.ts#L53)
 
 Order only coplanar transport surfaces; physical bridge/tunnel heights still apply.
 
@@ -71,7 +82,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## carriagewayTint
 
-[Implementation, line 57](../../../../../src/render/planet/ground-material.ts#L57)
+[Implementation, line 65](../../../../../src/render/planet/ground-material.ts#L65)
 
 Delete after the next GLB regen. Bake carriageway `#33393c` (`#525c60` × 0.62) into COLOR_0.
 
@@ -87,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## groundDepthBias
 
-[Implementation, line 71](../../../../../src/render/planet/ground-material.ts#L71)
+[Implementation, line 79](../../../../../src/render/planet/ground-material.ts#L79)
 
 ```ts
 groundDepthBias(layer: number): inferred by TypeScript; see implementation

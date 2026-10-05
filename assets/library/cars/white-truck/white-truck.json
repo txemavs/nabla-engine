@@ -42,7 +42,29 @@
       "idleRpm": 650,
       "maxRpm": 2400,
       "reverseRatio": 13.6,
-      "maxSpeedKmh": 120
+      "maxSpeedKmh": 120,
+      "maxWheelForceN": 60000,
+      "shift": {
+        "seconds": 0.55,
+        "cooldownSeconds": 1.1,
+        "upshiftRpm": 1950,
+        "downshiftRpm": 1000,
+        "torqueFraction": 0.04,
+        "rpmResponse": 6,
+        "launchRpm": 1500,
+        "directionSeconds": 0.6,
+        "directionShiftSeconds": 0.5,
+        "neutralSeconds": 0.8,
+        "parkSeconds": 2.5,
+        "clack": {
+          "clunkHz": 58,
+          "clickHz": 850,
+          "gain": 1.5,
+          "decaySeconds": 0.22,
+          "echoSeconds": 0.16,
+          "airSeconds": 0.5
+        }
+      }
     }
   },
   "visual": {
@@ -84,7 +106,8 @@
       }
     ],
     "steering": {
-      "url": "/library/trucks/white-truck/assets/steering.glb"
+      "url": "/library/trucks/white-truck/assets/steering.glb",
+      "axis": [0, -0.81915, -0.57358]
     },
     "presentation": "nabla.truck"
   },

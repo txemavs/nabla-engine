@@ -23,6 +23,7 @@ import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
 import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
 import type { CarMirrors } from './car-mirrors.js'
+import { poseSteeringWheel, steeringAxis } from './steering-wheel.js'
 import type { CarInstruments } from './car-instruments.js'
 import type { CarInstrumentDefinition } from './car-instrument-definition.js'
 import { mountPropeller } from './propeller.js'
@@ -167,6 +168,7 @@ export class SceneView {
   readonly portals = new Map<string, PortalSurface>()
   readonly wheels = new Map<string, THREE.Group[]>()
   readonly steering = new Map<string, THREE.Group>()
+  private readonly steeringAxes = new Map<string, THREE.Vector3>()
   readonly ramps = new Map<string, THREE.Group>()
   readonly ready: Promise<void>
   private readonly loading: Promise<void>[] = []
@@ -763,6 +765,7 @@ export class SceneView {
         },
       )
       this.steering.set(e.id, spin)
+      this.steeringAxes.set(e.id, steeringAxis(visual.steering.axis))
     }
   }
   private outboard(e: Entity, group: THREE.Group): void {
@@ -967,8 +970,7 @@ export class SceneView {
     }
     for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
     for (const [id, wheel] of this.steering)
-      wheel.rotation.z =
-        -THREE.MathUtils.clamp(sim.vehicleInfo(id).steer / 0.45, -1, 1) * (Math.PI / 2)
+      poseSteeringWheel(wheel, this.steeringAxes.get(id)!, sim.vehicleInfo(id).steer)
     for (const [id, propeller] of this.propellers)
       propeller.rotation.z += sim.vehicleInfo(id).engine * 78 * Math.min(elapsed, 0.05)
     for (const [id, equipment] of this.beacons)
@@ -994,6 +996,7 @@ export class SceneView {
           sim.vehicleInfo(id).gear,
           sim.vehicleInfo(id).engineLoad,
           sim.vehicleInfo(id).manualTransmission,
+          sim.vehicleInfo(id).parked,
         )
     }
     const vehicleId = sim.player.vehicleId

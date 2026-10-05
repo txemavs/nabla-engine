@@ -1,5 +1,54 @@
 /** Metres, Y-up, front = -Z; front hubs 0/1, rear hubs 2/3. Plain configuration. */
 export type WheelVector = [number, number, number]
+/**
+ * Synthesized gear-change sound ("clack"). Every field is optional; omitted fields use the
+ * light road-car sound. A truck lowers `clunkHz`/`clickHz`, lengthens the decays and adds air.
+ * The audio layer renders it; the simulation only carries the numbers.
+ */
+export interface GearClackProfile {
+  /** Body of the thump, Hz. Car ~150, truck ~60. */
+  clunkHz?: number
+  /** Centre of the metallic click band, Hz. Car ~2400, truck ~900. */
+  clickHz?: number
+  /** Loudness multiplier, 0..2. */
+  gain?: number
+  /** Decay of the main hit, seconds. */
+  decaySeconds?: number
+  /** Delay of the second (engagement) hit, seconds. 0 disables it. */
+  echoSeconds?: number
+  /** Length of an air-release hiss after the hit, seconds. 0 disables it (cars). */
+  airSeconds?: number
+}
+/** Gearbox feel. Omitted fields use `roadVehicleDefaults`; rpm limits derive from `maxRpm`. */
+export interface GearboxTuning {
+  /** Torque-cut time of a gear change, seconds. */
+  seconds?: number
+  /** Minimum time between two automatic changes, seconds. */
+  cooldownSeconds?: number
+  /** Automatic upshift above this engine speed, rpm. Default 92.8 % of maxRpm. */
+  upshiftRpm?: number
+  /** Automatic downshift below this engine speed, rpm. Default one third of maxRpm. */
+  downshiftRpm?: number
+  /** Share of the throttle that reaches the wheels during a change, 0..1. */
+  torqueFraction?: number
+  /** Engine speed response, 1/s. Lower values fall and rise more slowly. */
+  rpmResponse?: number
+  /**
+   * Engine speed of a fully pressed pedal at rest, rpm. When set, this floor only applies in
+   * first and reverse gear; omitted keeps the car's floor in every gear.
+   */
+  launchRpm?: number
+  /** Standstill dwell before D/R is engaged, seconds. */
+  directionSeconds?: number
+  /** Seconds stopped with the handbrake on and no pedal before D/R drops to N. */
+  neutralSeconds?: number
+  /** Further seconds stopped in N with the handbrake on before P engages. */
+  parkSeconds?: number
+  /** Torque-cut time after D/R is engaged, seconds. */
+  directionShiftSeconds?: number
+  /** Sound of every gear change and D/R engagement. */
+  clack?: GearClackProfile
+}
 export interface PowertrainDefinition {
   powerCv: number
   torqueNm: number
@@ -11,6 +60,9 @@ export interface PowertrainDefinition {
   maxRpm?: number
   reverseRatio?: number
   maxSpeedKmh?: number
+  /** Traction/clutch limit on the force at the wheels, newtons. Omitted: torque limited only. */
+  maxWheelForceN?: number
+  shift?: GearboxTuning
 }
 export interface WheeledDefinition {
   hubs:
@@ -50,6 +102,16 @@ export interface WheeledTelemetry {
   readonly braking: boolean
   readonly reversing: boolean
   readonly tireSlip: number
+  /** Counts every gear change (automatic, manual) and D/R engagement. */
+  readonly shiftCount: number
+  /** True in P: gear is 0 and the vehicle is held by its brakes. */
+  readonly parked: boolean
+  /** Counts audible changes only (D/R engagement, manual shifts); hosts play one clack per increase. */
+  readonly clackCount: number
+  /** True while torque is cut for a gear change or while D/R waits for standstill. */
+  readonly shifting: boolean
+  /** Clack sound of this vehicle; undefined uses the audio layer's car default. */
+  readonly clack: GearClackProfile | undefined
 }
 /** Fresh copies in absolute physics-world metres, before render-origin subtraction. */
 export interface WheelContactSnapshot {

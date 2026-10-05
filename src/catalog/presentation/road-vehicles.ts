@@ -8,6 +8,7 @@ import type {
 } from '../../render/vehicle-presentation/adapter.js'
 import { createA3Lights } from './a3-lamps.js'
 import { createA3Mounts } from './a3-mounts.js'
+import { authoredMirrorLenses } from '../../render/vehicle-presentation/mirror-lenses.js'
 import { authoredScreenMounts } from '../../render/vehicle-presentation/screen-mounts.js'
 function shineVehicle(model: THREE.Object3D): void {
   model.traverse((object) => {
@@ -135,13 +136,17 @@ const stock = new Map<string, VehiclePresentationAdapter>([
           mounts && definition ? new CarInstruments(mounts, definition) : undefined
         const tilt = entity.vehicle?.mirrorTilt ?? 0
         if (instruments) instruments.mirrorTilt = tilt
+        const authored = authoredMirrorSurfaces(model)
+        const lenses = authored.length
+          ? authored
+          : authoredMirrorLenses(model, entity.vehicle?.mirrors)
         model.updateWorldMatrix(true, true)
         const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
           model.getWorldQuaternion(new THREE.Quaternion()),
         )
         return {
           instruments,
-          mirrors: new CarMirrors(authoredMirrorSurfaces(model), up, tilt),
+          mirrors: lenses.length ? new CarMirrors(lenses, up, tilt) : undefined,
         }
       },
     },

@@ -18,7 +18,11 @@ import {
   shiftWheeledVehicle,
   automaticWheeledTransmission,
 } from './vehicles/wheeled/runtime.js'
-import type { WheeledInput, WheelContactSnapshot } from './vehicles/wheeled/contracts.js'
+import type {
+  GearClackProfile,
+  WheeledInput,
+  WheelContactSnapshot,
+} from './vehicles/wheeled/contracts.js'
 import { stepBoatInWater } from './vehicles/boat.js'
 import { stepFlight } from './vehicles/flight.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
@@ -46,6 +50,7 @@ export const FIXED_STEP = simulationDefaults.fixedStepSeconds
 const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
 const PLAYER_RADIUS = simulationDefaults.playerRadius
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
+import { gearLabel } from '../entity/vehicle/gear-label.js'
 import { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 const vec = (v: Vec3): Vec3Tuple => [v.x, v.y, v.z]
 const pose = (b: Body): Transform => ({
@@ -1137,6 +1142,26 @@ export class Simulation {
     )
   }
 
+  /** Closest point of a vehicle's hull box to `from`: where a hand can reach it. */
+  private hullPoint(v: Vehicle, from: Vec3): Vec3 {
+    const local = v.body.pointToLocalFrame(from)
+    const half = v.entity.size.map((size) => Math.max(0.1, size / 2))
+    return v.body.pointToWorldFrame(
+      new Vec3(
+        clamp(local.x, -half[0], half[0]),
+        clamp(local.y, -half[1], half[1]),
+        clamp(local.z, -half[2], half[2]),
+      ),
+    )
+  }
+  /** True when a wall, building or hill stands between `from` and the vehicle hull point. */
+  private hullBlocked(v: Vehicle, from: Vec3, target: Vec3): boolean {
+    let blocked = false
+    this.world.raycastAll(from, target, { skipBackfaces: true }, (hit) => {
+      if (hit.body !== this.playerBody && hit.body !== v.body) blocked = true
+    })
+    return blocked
+  }
   nearestVehicle(): string | null {
     if (this.vehicleId) return null
     let nearest: string | null = null,
@@ -1145,14 +1170,7 @@ export class Simulation {
       // Reach the hull/doors, not an arbitrary model origin or distant pilot seat.
       if (v.definition.passive) continue
       const local = v.body.pointToLocalFrame(this.playerBody.position)
-      const half = v.entity.size.map((size) => Math.max(0.1, size / 2))
-      const target = v.body.pointToWorldFrame(
-        new Vec3(
-          clamp(local.x, -half[0], half[0]),
-          clamp(local.y, -half[1], half[1]),
-          clamp(local.z, -half[2], half[2]),
-        ),
-      )
+      const target = this.hullPoint(v, this.playerBody.position)
       const reach = target.distanceTo(this.playerBody.position)
       // A carrier hull encloses its cargo: prefer the car beside the monitor,
       // while keeping the helm reachable around the hull when no car is nearer.
@@ -1169,11 +1187,7 @@ export class Simulation {
         d < distance &&
         (v.body.velocity.length() < 1.5 || (this.interiorId === id && relativeSpeed < 2))
       ) {
-        let blocked = false
-        this.world.raycastAll(this.playerBody.position, target, { skipBackfaces: true }, (hit) => {
-          if (hit.body !== this.playerBody && hit.body !== v.body) blocked = true
-        })
-        if (blocked) continue
+        if (this.hullBlocked(v, this.playerBody.position, target)) continue
         nearest = id
         distance = d
       }
@@ -1260,6 +1274,7 @@ export class Simulation {
       }
       return 'El pasillo interior está ocupado'
     }
+    let fallbackExit: Vec3 | null = null
     for (const side of [-1, 1]) {
       const offset = v.body.quaternion.vmult(new Vec3(side * (v.entity.size[0] / 2 + 0.8), 0, 0))
       const candidate = v.body.position.vadd(offset)
@@ -1290,17 +1305,30 @@ export class Simulation {
       })
       const blocked = this.overlapsBody(bounds)
       if (blocked) continue
-      this.playerBody.position.copy(candidate)
-      this.playerBody.previousPosition.copy(candidate)
-      this.playerBody.velocity.setZero()
-      this.playerBody.angularVelocity.setZero()
-      this.playerBody.aabbNeedsUpdate = true
-      this.world.addBody(this.playerBody)
-      this.playerBody.wakeUp()
-      this.vehicleId = null
+      // Prefer the side from which the vehicle can be boarded again: a hollow building collider
+      // does not overlap the player, yet its wall would make every vehicle unreachable.
+      if (this.hullBlocked(v, candidate, this.hullPoint(v, candidate))) {
+        fallbackExit ??= candidate
+        continue
+      }
+      this.placeOnFoot(candidate)
+      return this.options.playerMode === 'hover' ? 'Monitor volante' : 'A pie'
+    }
+    if (fallbackExit) {
+      this.placeOnFoot(fallbackExit)
       return this.options.playerMode === 'hover' ? 'Monitor volante' : 'A pie'
     }
     return 'Las salidas están bloqueadas'
+  }
+  private placeOnFoot(candidate: Vec3): void {
+    this.playerBody.position.copy(candidate)
+    this.playerBody.previousPosition.copy(candidate)
+    this.playerBody.velocity.setZero()
+    this.playerBody.angularVelocity.setZero()
+    this.playerBody.aabbNeedsUpdate = true
+    this.world.addBody(this.playerBody)
+    this.playerBody.wakeUp()
+    this.vehicleId = null
   }
   private overlapsBody(bounds: AABB): boolean {
     const center = bounds.lowerBound.vadd(bounds.upperBound).scale(0.5)
@@ -1337,6 +1365,16 @@ export class Simulation {
     manualTransmission: boolean
     engineLoad: number
     tireSlip: number
+    /** Counts every gear change, automatic included, and D/R engagements. */
+    gearShifts: number
+    /** Counts audible changes (D/R engagement, manual shifts); play one clack per increase. */
+    gearClacks: number
+    /** True in P (gear is then 0): the brakes hold the vehicle until W or S. */
+    parked: boolean
+    /** True while torque is cut for a gear change or D/R waits for standstill. */
+    shifting: boolean
+    /** Per-vehicle clack sound; null selects the audio layer's car default. */
+    gearClack: GearClackProfile | null
     towVehicleId: string | null
   } {
     const v = this.vehicles.get(id)
@@ -1377,6 +1415,11 @@ export class Simulation {
       manualTransmission: ground.manualTransmission,
       engineLoad: ground.engineLoad,
       tireSlip: ground.tireSlip,
+      gearShifts: ground.shiftCount,
+      gearClacks: ground.clackCount,
+      parked: ground.parked,
+      shifting: ground.shifting,
+      gearClack: ground.clack ?? null,
       towVehicleId: v.definition.tow?.vehicleId ?? null,
     }
   }
@@ -1387,7 +1430,7 @@ export class Simulation {
     const result = shiftWheeledVehicle(v, direction)
     if (result === 'unavailable') return 'Este vehículo no tiene cambio secuencial'
     return result === 'shifted'
-      ? `Manual · M${v.drivetrain.gear}`
+      ? `Manual · ${gearLabel(v.drivetrain.gear, true)}`
       : 'Cambio protegido · marcha no disponible'
   }
   automaticTransmission(): string {
