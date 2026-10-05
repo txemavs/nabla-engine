@@ -84,7 +84,7 @@ import {
   buildDrapes,
   type DrapeGeometry,
 } from './drape.js'
-import { tileMeshHidden } from './tile-layers.js'
+import { PLACE_LABEL_CATEGORY, tileMeshHidden } from './tile-layers.js'
 /** Satellite painted over the z15 GLB. Roofs, runways and pitches on by default. */
 export const projectedLayers = new Set(['roofs', 'runways', 'pitches'])
 /** A drape is drawn when it is projected and its layer (road, photo, ...) is not switched off. */
@@ -1051,6 +1051,9 @@ export class PlanetWorld {
     for (const place of validPlanetPlaces(manifest.places)) {
       const label = placeLabel(place.text)
       label.name = place.text
+      // Layer `places`: hidden with the rest of the layer, live, through cover().
+      label.userData.category = PLACE_LABEL_CATEGORY
+      label.visible = !tileMeshHidden(label.userData)
       const gps = localToGeo(manifest.anchor, place.position)
       // Cached label metadata is 20m above ground; display at 1000m AGL.
       label.position.fromArray(

@@ -22,12 +22,13 @@ browserStorage(): LayerStorage | undefined
 
 ## initialHiddenLayers
 
-[Implementation, line 24](../../../game/layers-ui.ts#L24)
+[Implementation, line 27](../../../game/layers-ui.ts#L27)
 
-The layers to start with: an explicit `&layers=` wins over the stored choice.
+The layers to start with: an explicit `&layers=` wins over the stored choice. Both apply over
+`defaults`, the host's default hidden layers (e.g. `['places']` from `NABLA_BOOT.cityLabels: false`).
 
 ```ts
-initialHiddenLayers(search: string = location.search, storage: LayerStorage | undefined = browserStorage()): string[]
+initialHiddenLayers(search: string = location.search, storage: LayerStorage | undefined = browserStorage(), defaults: readonly string[] = []): string[]
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -40,12 +41,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindLayerSelector
 
-[Implementation, line 33](../../../game/layers-ui.ts#L33)
+[Implementation, line 42](../../../game/layers-ui.ts#L42)
 
-Add one checkbox per layer (road first) to the Capas menu section; changes apply live and persist.
+Add one checkbox per layer (road first) to the Capas menu section; changes apply live and persist
+as differences from `defaults` (the same host defaults given to `initialHiddenLayers`).
 
 ```ts
-bindLayerSelector(runtime: GameRuntime, storage = browserStorage()): void
+bindLayerSelector(runtime: GameRuntime, storage = browserStorage(), defaults: readonly string[] = []): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -63,7 +65,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindLayerSelector.sync
 
-[Implementation, line 36](../../../game/layers-ui.ts#L36)
+[Implementation, line 49](../../../game/layers-ui.ts#L49)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -81,22 +83,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `url.searchParams.delete`
 - `url.searchParams.set`
 
-## bindLayerSelector.sync.callback@37
+## bindLayerSelector.sync.callback@50
 
-[Implementation, line 37](../../../game/layers-ui.ts#L37)
+[Implementation, line 50](../../../game/layers-ui.ts#L50)
 
 ```ts
-callback@37(layer): inferred by TypeScript; see implementation
+callback@50(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `boxes.get`
 
-## bindLayerSelector.sync.callback@37
+## bindLayerSelector.sync.callback@50
 
-[Implementation, line 37](../../../game/layers-ui.ts#L37)
+[Implementation, line 50](../../../game/layers-ui.ts#L50)
 
 ```ts
-callback@37(l): inferred by TypeScript; see implementation
+callback@50(l): inferred by TypeScript; see implementation
 ```

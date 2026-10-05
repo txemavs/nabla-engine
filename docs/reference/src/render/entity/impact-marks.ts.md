@@ -11,19 +11,65 @@
 
 ## ImpactMarks.count
 
-[Implementation, line 15](../../../../../src/render/entity/impact-marks.ts#L15)
+[Implementation, line 32](../../../../../src/render/entity/impact-marks.ts#L32)
 
-Bounded, surface-aligned shot marks, attached in the hit entity's local frame.
+Bounded shot marks. Entity hits parent into the hit object's local frame so they
+ride with vehicles; world hits (buildings and other static colliders without an
+entity id) parent under a scene root that shares the floating-origin shift.
 
 ```ts
 count(): number
 ```
 
+## ImpactMarks.take
+
+[Implementation, line 36](../../../../../src/render/entity/impact-marks.ts#L36)
+
+Bounded shot marks. Entity hits parent into the hit object's local frame so they
+ride with vehicles; world hits (buildings and other static colliders without an
+entity id) parent under a scene root that shares the floating-origin shift.
+
+```ts
+take(): THREE.Group
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Group`
+- `THREE.Mesh`
+- `group.add`
+- `oldest.removeFromParent`
+- `this.marks.shift`
+
+## ImpactMarks.place
+
+[Implementation, line 52](../../../../../src/render/entity/impact-marks.ts#L52)
+
+Bounded shot marks. Entity hits parent into the hit object's local frame so they
+ride with vehicles; world hits (buildings and other static colliders without an
+entity id) parent under a scene root that shares the floating-origin shift.
+
+```ts
+place(mark: THREE.Group, point: Vec3Tuple, normal: Vec3Tuple, local: boolean): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.random`
+- `THREE.Vector3`
+- `mark.position.fromArray`
+- `mark.position.fromArray(point).addScaledVector`
+- `mark.quaternion.setFromUnitVectors`
+- `mark.rotateZ`
+- `n.lengthSq`
+- `n.set`
+- `new THREE.Vector3(...normal).normalize`
+
 ## ImpactMarks.add
 
-[Implementation, line 18](../../../../../src/render/entity/impact-marks.ts#L18)
+[Implementation, line 63](../../../../../src/render/entity/impact-marks.ts#L63)
 
-Bounded, surface-aligned shot marks, attached in the hit entity's local frame.
+Mark on a scene entity (car, prop, authored mesh) in that entity's local frame.
 
 ```ts
 add(parent: THREE.Object3D, pose: Transform, point: Vec3Tuple, normal: Vec3Tuple): void
@@ -31,23 +77,48 @@ add(parent: THREE.Object3D, pose: Transform, point: Vec3Tuple, normal: Vec3Tuple
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `THREE.Mesh`
+- `Math.random`
 - `THREE.Quaternion`
 - `THREE.Vector3`
 - `mark.quaternion.setFromUnitVectors`
 - `mark.removeFromParent`
+- `mark.rotateZ`
+- `n.lengthSq`
+- `n.set`
 - `new THREE.Quaternion(...pose.rotation).invert`
 - `new THREE.Vector3(...normal).normalize`
 - `new THREE.Vector3(...normal).normalize().applyQuaternion`
 - `parent.add`
 - `this.marks.push`
-- `this.marks.shift`
+- `this.take`
+
+## ImpactMarks.addWorld
+
+[Implementation, line 85](../../../../../src/render/entity/impact-marks.ts#L85)
+
+Mark on static world geometry (planet buildings, ground colliders, …).
+`root` must share the floating-origin shift with the hit meshes (e.g. `SceneView.root`
+or `PlanetWorld.root`).
+
+```ts
+addWorld(root: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mark.removeFromParent`
+- `root.add`
+- `this.marks.push`
+- `this.place`
+- `this.take`
 
 ## ImpactMarks.removeFor
 
-[Implementation, line 35](../../../../../src/render/entity/impact-marks.ts#L35)
+[Implementation, line 93](../../../../../src/render/entity/impact-marks.ts#L93)
 
-Bounded, surface-aligned shot marks, attached in the hit entity's local frame.
+Bounded shot marks. Entity hits parent into the hit object's local frame so they
+ride with vehicles; world hits (buildings and other static colliders without an
+entity id) parent under a scene root that shares the floating-origin shift.
 
 ```ts
 removeFor(parent: THREE.Object3D): void
@@ -57,12 +128,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.marks.filter`
 
-## ImpactMarks.removeFor.callback@36
+## ImpactMarks.removeFor.callback@94
 
-[Implementation, line 36](../../../../../src/render/entity/impact-marks.ts#L36)
+[Implementation, line 94](../../../../../src/render/entity/impact-marks.ts#L94)
 
 ```ts
-callback@36(mark): inferred by TypeScript; see implementation
+callback@94(mark): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -71,9 +142,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.clear
 
-[Implementation, line 44](../../../../../src/render/entity/impact-marks.ts#L44)
+[Implementation, line 103](../../../../../src/render/entity/impact-marks.ts#L103)
 
-Bounded, surface-aligned shot marks, attached in the hit entity's local frame.
+Bounded shot marks. Entity hits parent into the hit object's local frame so they
+ride with vehicles; world hits (buildings and other static colliders without an
+entity id) parent under a scene root that shares the floating-origin shift.
 
 ```ts
 clear(): void
@@ -85,9 +158,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.dispose
 
-[Implementation, line 48](../../../../../src/render/entity/impact-marks.ts#L48)
+[Implementation, line 108](../../../../../src/render/entity/impact-marks.ts#L108)
 
-Bounded, surface-aligned shot marks, attached in the hit entity's local frame.
+Bounded shot marks. Entity hits parent into the hit object's local frame so they
+ride with vehicles; world hits (buildings and other static colliders without an
+entity id) parent under a scene root that shares the floating-origin shift.
 
 ```ts
 dispose(): void
@@ -96,5 +171,7 @@ dispose(): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.clear`
-- `this.geometry.dispose`
-- `this.material.dispose`
+- `this.coreGeom.dispose`
+- `this.coreMat.dispose`
+- `this.ringGeom.dispose`
+- `this.ringMat.dispose`

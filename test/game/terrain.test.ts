@@ -214,4 +214,12 @@ describe('layer selector start state', () => {
     expect(initialHiddenLayers('', store('-road'))).toEqual(['road'])
     expect(initialHiddenLayers('', store(null))).toEqual([])
   })
+  it('starts from the host defaults (cityLabels: false hides places)', async () => {
+    const { initialHiddenLayers } = await import('../../game/layers-ui.js')
+    const places = ['places']
+    expect(initialHiddenLayers('', store(null), places)).toEqual(['places'])
+    expect(initialHiddenLayers('', store('+places'), places)).toEqual([])
+    expect(initialHiddenLayers('?layers=+places', store(null), places)).toEqual([])
+    expect(initialHiddenLayers('?layers=-road', store(null), places)).toEqual(['road', 'places'])
+  })
 })

@@ -568,6 +568,13 @@ and spelling. Labels use canvas text (not HTML), a fixed apparent text size, and
 are discarded with their streamed zone. Only loaded settlements can be named;
 this is not a worldwide geocoding database.
 
+In the planet stream the names float about 1 km above the ground and form the
+toggleable tile layer **`places`** ("Nombres de poblaciones"), shown by default.
+Hide them with `runtime.setHiddenLayers(['places'])` (live), `?layers=-places`
+in the demo, or the standalone game's host flag `NABLA_BOOT.cityLabels: false`
+([boot-and-splash.md](boot-and-splash.md)). Only the floating labels are
+affected; the ship navigation HUD keeps its place list.
+
 Inland water is visual only. Centerline fallback is generated as water geometry,
 not as a road; mapped areas take precedence over covered centerline triangles.
 The shore transition remains approximate at terrain-triangle resolution. Missing

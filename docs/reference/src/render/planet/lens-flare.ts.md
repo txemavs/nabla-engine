@@ -29,12 +29,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `geometry.setAttribute`
 - `scene.add`
 
-## createLensFlare.callback@70
+## createLensFlare.callback@73
 
-[Implementation, line 70](../../../../../src/render/planet/lens-flare.ts#L70)
+[Implementation, line 73](../../../../../src/render/planet/lens-flare.ts#L73)
 
 ```ts
-callback@70(_renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@73(_renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -43,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createLensFlare.dispose
 
-[Implementation, line 91](../../../../../src/render/planet/lens-flare.ts#L91)
+[Implementation, line 95](../../../../../src/render/planet/lens-flare.ts#L95)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation
