@@ -126,7 +126,8 @@ await runtime.play({ vehicleId }) // stops attract once the simulation starts
 
 Attract renders **only the sky and planet** (the planetary `GeographicView`: Earth texture,
 atmosphere, clouds, sun, moon, stars) from a slow orbit around the scene's origin — a
-TV-style "waiting" shot. Terrain cells, roads, buildings and vehicles continue to stream and
+TV-style "waiting" shot. Until `earth.jpg` is ready the globe is a plain black sphere and the
+sun disc / flare stay off, so there is no pale placeholder or bright-sun flash. Terrain cells, roads, buildings and vehicles continue to stream and
 install in the background through `play()`'s ground wait; none of them are drawn until play
 begins. `stopAttract()` and `attracting` are available; `dispose()` stops it too. The canvas
 reports `data-boot-mode="attract" | "play"`.

@@ -15,9 +15,9 @@
  *                            A non-empty list replaces the built-in parked demo row. Also VITE_NABLA_VEHICLES.
  *   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
  *   &photo=full|lo|none      orthophoto draped on the ground (default full)
- *   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
+ *   &sky=live|day|<ISO>      real local wall clock (default), fixed midday sun, or a given instant
  *   &time=HH:MM|ahora        time of day (the viewer's time zone) on the day of &sky; `ahora` (or `now`) follows
- *                            the real clock. Also in the menu section Planeta → Hora
+ *                            the real clock (also the default when &sky=/&time= are omitted). Planeta → Hora
  *   &timeSpeed=1..24         live clock multiplier (1 = wall time). Also in Planeta → Hora
  *   &sea=<m>                 sea level in metres, -5 to 50 (default: the simplified tide). Also in the menu
  *                            section Planeta → Mar

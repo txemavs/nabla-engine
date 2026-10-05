@@ -10,8 +10,16 @@
 
 ### Changed
 - Disable the cockpit circular touch ring around the steering wheel by default (`controlDefaults.showPilotTouchRing: false`). The ring drew a circle while its hit target stayed square, so touches outside the circle still steered; DOM/CSS and `TouchDriving.setPilot` stay so it can be re-enabled later.
+- **White-truck power/brakes:** tractor preset `engineForce`/`powerCv`/`torqueNm`/`maxWheelForceN` +20% and `brakeForce` +40% (engineForce 12000→14400, brakeForce 120→168, powerCv 420→504, torqueNm 2000→2400, maxWheelForceN 60000→72000). Cars and ships unchanged.
 
 ### Fixed
+
+- **Planet boot placeholder / default clock:** `GeographicView` keeps a plain black Earth sphere
+  (and suppresses the sun disc, lens flare and daylight) until `earth.jpg` is applied, so attract
+  and early frames never show a pale/white or half-textured globe or a melted-sun flash. The
+  terrain drive default sky is now `{ mode: 'live' }` (browser local wall clock); pass `sky: 'day'`
+  or `&sky=day` for the previous fixed midday sun. Hosts can still override with `&time=` /
+  Planeta → Hora.
 
 - **Boot / play ground wait:** `waitForGround` (and `PlanetWorld.ensureGround`) now stage
   terrain with a blocking install budget (12 ms/tick, ~rAF poll) instead of the 1.5 ms/frame
