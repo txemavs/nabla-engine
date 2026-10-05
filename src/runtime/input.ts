@@ -45,7 +45,7 @@ export interface GameInputSources {
   yaw: number
   pad?: Pick<Gamepad, 'axes' | 'buttons'> | null
   touch?: { forward: number; right: number; lift: number; turn: number; brake: boolean }
-  driving?: { forward: number; right: number; brake: boolean }
+  driving?: { forward: number; right: number; brake: boolean; sprint?: boolean }
   enabled?: boolean
   menuOpen?: boolean
 }
@@ -120,7 +120,11 @@ export class GameInput {
       lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
       turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
       yaw,
-      sprint: keys.has('ShiftLeft') || keys.has('ShiftRight') || Boolean(pad?.buttons[10]?.pressed),
+      sprint:
+        keys.has('ShiftLeft') ||
+        keys.has('ShiftRight') ||
+        Boolean(pad?.buttons[10]?.pressed) ||
+        !!driving.sprint,
       jump: false,
       brake: keys.has('Space') || analog.brake || touch.brake || driving.brake,
     }

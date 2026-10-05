@@ -112,8 +112,8 @@ export interface GameRuntimeOptions {
   /** Frame cap and additional resolution scaling; caps apply only to the automatic clock. */
   display?: Partial<DisplaySettings>
   /**
-   * Auto shows driving controls on coarse-pointer devices. `always` keeps the
-   * Studio helm-style pads visible for mouse and touch. `false` disables them.
+   * Auto shows the Studio drive rig on coarse-pointer devices. `always` keeps the
+   * wheel, accelerator and handbrake visible for mouse and touch. `false` disables them.
    */
   touchControls?: TouchDrivingVisibility | false
   depthOfField?: boolean
@@ -606,6 +606,8 @@ export class GameRuntime {
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
+    this.touchDriving?.setPilot(!!sim.player.vehicleId && this.cameraState.mode === 'cockpit')
+    this.touchDriving?.reflect(input)
     const water = worldWater(this.document.water, this.document.sky)
     this.environment.ocean.setLevel(water.level)
     const physicsStart = measuring ? performance.now() : 0

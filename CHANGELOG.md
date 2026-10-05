@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace the invented circular Volante/Pedales pads with Studio's agency-ui drive rig: CSS steering wheel, accelerator slider, red handbrake and turbo, using the same pad mapping as `drive.ts`.
+
 - Write ocean-sheet depth from a few centimetres inward along the planet normal instead of pulling `clip.w` 1.4 m toward the camera, so the shoreline stays on the true sea contour in overhead and map views.
 
 - Add a terrain-folder game mode (`/?terrain=<base>&tile=<x>/<y>`) that plays the Studio play mode on real nabla-atlas Z15 packages: `@nabla/engine/planet/atlas-z15` adapts `nabla-z15-package/1` cells (LiDAR terrain name, orthophoto, package verification), static tile hosts no longer re-poll older geometry revisions or 404 neighbours, `imagery: 'package'` replaces the ArcGIS roof/ground photo, `GameRuntime` can rest every parked vehicle on the loaded ground, and the game dev server can mount a terrain folder read-only (`NABLA_TERRAIN_DIR`). See docs/terrain-folder.md.
