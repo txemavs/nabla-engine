@@ -6,7 +6,15 @@ import {
   FLAT_TEST_TILES,
 } from '@nabla/engine/examples/flat-tile'
 import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
-import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
+import {
+  WHITE_TRUCK_TRAILER_CHOICE,
+  hasSpawnChoice,
+  hitchTrailer,
+  presetEntities,
+  presetVehicle,
+  spawnChoiceEntities,
+  spawnChoicePlayerPreset,
+} from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { headingRotation, installHostVehicles } from './host-vehicles.js'
 import { LoadingScreen, showError } from './loading.js'
@@ -28,9 +36,11 @@ try {
   const config = parseGameConfig()
   const flat = new URLSearchParams(location.search).get('example') === 'flat'
   const tilesBase = flat ? FLAT_TEST_BASE : requireGeographicTileBase(config)
-  if (!hasVehiclePreset(config.vehicle))
-    throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
-  const vehicle = presetVehicle(config.vehicle, 'player-vehicle', [0, 2, 0])
+  if (!hasSpawnChoice(config.vehicle)) throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
+  const playerPreset =
+    config.vehicle === WHITE_TRUCK_TRAILER_CHOICE ? 'white-truck' : config.vehicle
+  const playerEntities = spawnChoiceEntities(config.vehicle, 'player-vehicle', [0, 2, 0])
+  const vehicle = playerEntities[0]
   const scene: SceneDocument = flat
     ? createFlatTestScene(vehicle)
     : {
@@ -44,32 +54,28 @@ try {
           imagery: 'offline',
           planetary: true,
         },
-        entities: [createEntity('spawn', 'spawn', [-4, 2, 0]), vehicle],
+        entities: [createEntity('spawn', 'spawn', [-4, 2, 0]), ...playerEntities],
       }
   if (flat) {
     const fleet = ['car', 'white-truck', 'carrier']
     scene.entities = [
       createEntity('spawn', 'spawn', [-4, 2, 0]),
       ...fleet.flatMap((preset, index) =>
-        presetEntities(preset, preset === config.vehicle ? vehicle.id : `demo-${preset}`, [
+        presetEntities(preset, preset === playerPreset ? vehicle.id : `demo-${preset}`, [
           index * 10,
           2,
           0,
         ]),
       ),
-      ...(fleet.includes(config.vehicle) ? [] : [vehicle]),
+      ...(fleet.includes(playerPreset) ? [] : [vehicle]),
     ]
     const tractor = scene.entities.find(
-      (e) => e.id === (config.vehicle === 'white-truck' ? vehicle.id : 'demo-white-truck'),
+      (e) => e.id === (playerPreset === 'white-truck' ? vehicle.id : 'demo-white-truck'),
     )!
     tractor.groundOffset = 1.45
     tractor.vehicle!.cameraDistance = 24
     const trailer = presetVehicle('white-trailer', 'demo-trailer', [10, 2, 7.33])
-    trailer.vehicle!.tow = {
-      vehicleId: tractor.id,
-      hitch: tractor.vehicle!.hitch!,
-      anchor: trailer.vehicle!.towAnchor!,
-    }
+    hitchTrailer(tractor, trailer)
     scene.entities.push(trailer)
   }
   if (
@@ -191,7 +197,9 @@ try {
   bindTerrainCache(runtime)
   if (new URLSearchParams(location.search).has('diagnostics'))
     Object.assign(window, { nablaRuntime: runtime })
-  await runtime.play({ vehicleId: vehicle.id })
+  await runtime.play({
+    vehicleId: spawnChoicePlayerPreset(config.vehicle) ? vehicle.id : undefined,
+  })
   if (scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
   loading.hide()

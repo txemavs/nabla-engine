@@ -33,7 +33,10 @@ Its yaw hinge is intended for this flat test surface; interactive coupling and
 pitch/roll articulation are not yet implemented. Models come from `1cca41f`,
 using Engine's existing physics world rather than the prototype's standalone rig.
 For automated scenarios, `&vehicle=white-truck` or `&vehicle=carrier` selects the
-initial occupied vehicle. Unknown presets report an error.
+initial occupied vehicle. `&vehicle=white-truck-trailer` starts in the truck with
+the trailer already coupled; `&vehicle=white-trailer` starts on foot next to a
+free trailer. Unknown presets report an error. The in-game _Qué añadir_ menu can
+also spawn those two options onto the ground ahead.
 
 Controls: WASD, Space to brake/jump, C for cameras, E to enter/exit, R for recovery,
 H for vehicle lights, G for the car's retractable GPS, K for high/low beams, V for supported flight, F for docking and T for control transfer. On-screen

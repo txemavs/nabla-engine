@@ -17,7 +17,7 @@
  */
 import { geoToLocal, type GeoPoint } from '@nabla/engine'
 import { isValidLatLon } from '@nabla/engine/planet/lat-lon'
-import { hasVehiclePreset, presetVehicle } from '@nabla/engine/vehicles'
+import { hasSpawnChoice, spawnChoiceEntities } from '@nabla/engine/vehicles'
 import type { Entity, Vec3Tuple } from '@nabla/engine/scene'
 
 /** One extra vehicle, authored in geographic coordinates. */
@@ -30,7 +30,7 @@ export interface HostVehicle {
   heading: number
   /** Orthometric altitude in metres. Omitted uses the scene origin altitude. */
   alt?: number
-  /** Catalog preset id (`car`, `white-truck`, `a3`, `carrier`, …). */
+  /** Catalog preset id, or `white-truck-trailer` for a coupled pair. */
   vehicle: string
 }
 
@@ -44,6 +44,7 @@ export interface HostVehiclePose {
 /** What {@link installHostVehicles} needs from the browser runtime. */
 export interface HostVehicleRuntime {
   placeVehicle(template: Entity, position: Vec3Tuple, yaw?: number): Promise<string>
+  placeVehicles?(templates: readonly Entity[], position: Vec3Tuple, yaw?: number): Promise<string[]>
 }
 
 /** Gameplay yaw (radians) for a compass heading in degrees clockwise from north. */
@@ -138,13 +139,17 @@ export async function installHostVehicles(
   vehicles: readonly HostVehicle[],
 ): Promise<string[]> {
   for (const spec of vehicles) {
-    if (!hasVehiclePreset(spec.vehicle)) throw new Error(`Unknown vehicle preset: ${spec.vehicle}`)
+    if (!hasSpawnChoice(spec.vehicle)) throw new Error(`Unknown vehicle preset: ${spec.vehicle}`)
   }
   const ids: string[] = []
   for (const [index, spec] of vehicles.entries()) {
     const pose = hostVehicleLocalPose(origin, spec)
-    const template = presetVehicle(spec.vehicle, `host-${spec.vehicle}-${index}`)
-    ids.push(await runtime.placeVehicle(template, pose.position, pose.yaw))
+    const templates = spawnChoiceEntities(spec.vehicle, `host-${spec.vehicle}-${index}`)
+    if (runtime.placeVehicles) {
+      ids.push(...(await runtime.placeVehicles(templates, pose.position, pose.yaw)))
+    } else {
+      ids.push(await runtime.placeVehicle(templates[0], pose.position, pose.yaw))
+    }
   }
   return ids
 }

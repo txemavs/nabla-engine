@@ -45,6 +45,7 @@
 - `./audio/vehicle.js`
 - `./render/capture.js`
 - `./catalog/vehicles/library.js`
+- `./catalog/vehicles/spawn.js`
 - `./catalog/weapons/library.js`
 - `./render/monitors/html-monitor.js`
 - `./render/monitors/layered-monitor.js`

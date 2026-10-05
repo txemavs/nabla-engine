@@ -22,6 +22,8 @@ ready to publish. `presentation` still names a code adapter (`nabla.s3`,
 omits that field.
 
 Spawn one by the `id` in its JSON. The folder name is not the catalog id.
+`white-truck-trailer` is a spawn-choice id, not a catalog preset: `hasVehiclePreset`
+stays false and `spawnChoiceEntities` builds the truck plus a hitched trailer.
 
 ```ts
 import { presetVehicle } from '@nabla/engine/vehicles'

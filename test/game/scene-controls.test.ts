@@ -69,10 +69,19 @@ describe('menu helpers', () => {
     expect(seaStatus({ level: 3, state: 'Manual' }, true)).toBe('Nivel fijo: 3,0 m')
   })
 
-  it('offers the drivable catalog vehicles and leaves out the passive trailer', () => {
+  it('offers catalog vehicles, the free trailer and the coupled truck+trailer', () => {
     const ids = vehicleChoices().map((choice) => choice.id)
-    expect(ids).toEqual(expect.arrayContaining(['car', 'a3', 'white-truck', 'carrier']))
-    expect(ids).not.toContain('white-trailer')
+    expect(ids).toEqual(
+      expect.arrayContaining(['car', 'a3', 'white-truck', 'white-truck-trailer', 'carrier']),
+    )
+    expect(ids).toContain('white-trailer')
+    expect(ids.indexOf('white-truck-trailer')).toBe(ids.indexOf('white-truck') + 1)
+    expect(vehicleChoices().find((choice) => choice.id === 'white-truck-trailer')?.label).toBe(
+      'Camión con remolque',
+    )
+    expect(vehicleChoices().find((choice) => choice.id === 'white-trailer')?.label).toBe(
+      'Remolque blanco',
+    )
     for (const choice of vehicleChoices()) expect(choice.label.length).toBeGreaterThan(0)
   })
 })

@@ -1,7 +1,7 @@
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
-import { hasVehiclePreset } from '@nabla/engine/vehicles'
+import { hasSpawnChoice, spawnChoicePlayerPreset } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
@@ -55,7 +55,7 @@ try {
   const config = await startFromIndex(parseTerrainConfig())
   startBase = config.base
   const vehicle = config.scene.vehicle ?? 'car'
-  if (!hasVehiclePreset(vehicle)) throw new Error(`Vehículo desconocido: ${vehicle}`)
+  if (!hasSpawnChoice(vehicle)) throw new Error(`Vehículo desconocido: ${vehicle}`)
   const scene = createTerrainDriveScene({
     ...config.scene,
     latitude: config.start!.latitude,
@@ -132,7 +132,11 @@ try {
   loading.setStatus(
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
   )
-  await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
+  const boarded = spawnChoicePlayerPreset(vehicle)
+  await runtime.play({
+    vehicleId: boarded ? 'player-vehicle' : undefined,
+    playerMode: boarded ? config.playerMode : 'walk',
+  })
   if (scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
   loading.hide()

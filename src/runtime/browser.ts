@@ -845,20 +845,23 @@ export class GameRuntime {
     }))
   }
   /**
-   * Add a vehicle on the real ground in front of the player, facing the same way, and
-   * return its id. `template` is a complete vehicle entity (for example `presetVehicle`);
-   * its position and id are replaced. Throws when no ground is available ahead.
+   * Add one vehicle, or a towed group, on the real ground in front of the player, facing
+   * the same way, and return the first (driveable) id. `template` is a complete vehicle
+   * entity or a coupled pair (for example `spawnChoiceEntities`); positions and ids are
+   * replaced. Throws when no ground is available ahead.
    */
-  async spawnVehicle(template: Entity, distance?: number): Promise<string> {
+  async spawnVehicle(template: Entity | readonly Entity[], distance?: number): Promise<string> {
     this.assertAlive()
     const sim = this.session.simulation
     if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
+    const templates = Array.isArray(template) ? template : [template]
+    if (!templates.length) throw new Error('spawnVehicle requires at least one vehicle')
     const player = sim.player
     const own = player.vehicleId
       ? this.document.entities.find((e) => e.id === player.vehicleId)
       : undefined
     const yaw = own ? player.yaw : this.cameraState.yaw
-    const [width, length] = [template.size[0], template.size[2]]
+    const { width, length } = groupFootprint(templates)
     const ahead = distance ?? (own ? 4 + (own.size[2] + length) / 2 : 4 + length / 2)
     // Free spot: straight ahead first, then beside it, then farther along the heading.
     const radius = (size: readonly number[]) => Math.hypot(size[0], size[2]) / 2
@@ -886,7 +889,8 @@ export class GameRuntime {
       )
     const chosen = candidates.find((c) => free(spot(c.extra, c.side))) ?? candidates[0]
     const [x, , z] = spot(chosen.extra, chosen.side)
-    return this.placeVehicle(template, [x, 0, z], yaw, 8000)
+    const [id] = await this.placeVehicles(templates, [x, 0, z], yaw, 8000)
+    return id
   }
   /**
    * Rest `template` on loaded ground at a local-metre position and install it on the
@@ -900,32 +904,64 @@ export class GameRuntime {
     yaw = 0,
     timeoutMs?: number,
   ): Promise<string> {
+    const [id] = await this.placeVehicles([template], position, yaw, timeoutMs)
+    return id
+  }
+  /**
+   * Rest a vehicle or a towed group on loaded ground. Extra templates keep their
+   * authored offset from the first, rotated by `yaw`. Tow `vehicleId`s inside the
+   * batch are remapped to the new spawned ids.
+   */
+  async placeVehicles(
+    templates: readonly Entity[],
+    position: Vec3Tuple,
+    yaw = 0,
+    timeoutMs?: number,
+  ): Promise<string[]> {
     this.assertAlive()
     const sim = this.session.simulation
     if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
+    if (!templates.length) throw new Error('placeVehicles requires at least one vehicle')
+    const root = templates[0]
     const [x, , z] = position
     const ground = await waitForGround(this.world, [x, 0, z], {
       timeoutMs: timeoutMs ?? 120_000,
     })
-    const id = `spawned-${++this.spawnSequence}`
-    const entity: Entity = {
-      ...structuredClone(template),
-      id,
-      parentId: null,
-      transform: {
-        position: [x, 0, z],
-        rotation: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],
-      },
+    const idMap = new Map<string, string>()
+    for (const template of templates) idMap.set(template.id, `spawned-${++this.spawnSequence}`)
+    const rotation: [number, number, number, number] = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
+    const sin = Math.sin(yaw)
+    const cos = Math.cos(yaw)
+    const entities = templates.map((template) => {
+      const dx = template.transform.position[0] - root.transform.position[0]
+      const dz = template.transform.position[2] - root.transform.position[2]
+      const entity: Entity = {
+        ...structuredClone(template),
+        id: idMap.get(template.id)!,
+        parentId: null,
+        transform: {
+          position: [x + dx * cos + dz * sin, 0, z - dx * sin + dz * cos],
+          rotation: [...rotation],
+        },
+      }
+      if (entity.vehicle?.tow) {
+        const mapped = idMap.get(entity.vehicle.tow.vehicleId)
+        if (mapped) entity.vehicle.tow.vehicleId = mapped
+      }
+      entity.transform.position[1] = ground + playGroundClearance(entity)
+      return entity
+    })
+    this.view.addVehicles(entities)
+    sim.addVehicles(entities)
+    this.game.addVehicles(entities)
+    const ids = entities.map((entity) => entity.id)
+    this.spawned.push(...ids)
+    for (const id of ids) {
+      const group = this.view.objects.get(id)
+      if (group)
+        void this.renderer.compileAsync(group, this.camera, this.scene).catch(() => undefined)
     }
-    entity.transform.position[1] = ground + playGroundClearance(entity)
-    this.view.addVehicles([entity])
-    sim.addVehicles([entity])
-    this.game.addVehicles([entity])
-    this.spawned.push(id)
-    const group = this.view.objects.get(id)
-    if (group)
-      void this.renderer.compileAsync(group, this.camera, this.scene).catch(() => undefined)
-    return id
+    return ids
   }
   /** Remove a vehicle added with `spawnVehicle`. The player must be outside it. */
   removeSpawnedVehicle(id: string): void {
@@ -1269,4 +1305,24 @@ export class GameRuntime {
   private assertAlive(): void {
     if (this.disposed) throw new Error('Game runtime disposed')
   }
+}
+
+/** Axis-aligned footprint of a spawn group in the first vehicle's authored frame. */
+function groupFootprint(templates: readonly Entity[]): { width: number; length: number } {
+  const root = templates[0].transform.position
+  let minX = Infinity
+  let maxX = -Infinity
+  let minZ = Infinity
+  let maxZ = -Infinity
+  for (const template of templates) {
+    const dx = template.transform.position[0] - root[0]
+    const dz = template.transform.position[2] - root[2]
+    const hx = template.size[0] / 2
+    const hz = template.size[2] / 2
+    minX = Math.min(minX, dx - hx)
+    maxX = Math.max(maxX, dx + hx)
+    minZ = Math.min(minZ, dz - hz)
+    maxZ = Math.max(maxZ, dz + hz)
+  }
+  return { width: Math.max(0.1, maxX - minX), length: Math.max(0.1, maxZ - minZ) }
 }

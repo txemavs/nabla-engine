@@ -134,17 +134,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `runtime?.dispose`
 
-## callback@150
+## callback@154
 
-[Implementation, line 150](../../../game/terrain-main.ts#L150)
+[Implementation, line 154](../../../game/terrain-main.ts#L154)
 
 ```ts
-callback@150(action): inferred by TypeScript; see implementation
+callback@154(action): inferred by TypeScript; see implementation
 ```
 
-## callback@150.onClick
+## callback@154.onClick
 
-[Implementation, line 152](../../../game/terrain-main.ts#L152)
+[Implementation, line 156](../../../game/terrain-main.ts#L156)
 
 ```ts
 onClick(): inferred by TypeScript; see implementation

@@ -403,6 +403,9 @@ export class SceneView {
       this.mapBounds,
     ] as Map<string, unknown>[])
       map.delete(id)
+    for (const e of this.document.entities) {
+      if (e.vehicle?.tow?.vehicleId === id) delete e.vehicle.tow
+    }
     this.document.entities = this.document.entities.filter((e) => e.id !== id)
     this.graph = SceneGraph.fromValidated(this.document)
   }
