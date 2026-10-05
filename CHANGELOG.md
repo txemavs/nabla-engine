@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+- Compact game settings HUD (icon + GTA-style tabs) for Planeta visuals: artistic cloud amount, cloud pressure, sun lens flare, and related sky/sea toggles. Shares the ship-monitor stylesheet; panel root is remountable on a monitor later. Config keys documented in `docs/planet-visual-settings.md`.
+- `GameRuntime` cloud pressure persistence, `lensFlareAmount` / `planetVisualConfig()`, and reattached sun lens flare in Play after the Studio extraction.
+
+## Unreleased
+
 ### Fixed
 
 - **Boot / play ground wait:** `waitForGround` (and `PlanetWorld.ensureGround`) now stage
