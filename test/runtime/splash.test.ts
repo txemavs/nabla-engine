@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applySplashSkin,
   defaultNablaSplashSkin,
+  nablaMarkUrl,
   resolveSplashSkin,
   splashMessageAt,
 } from '../../src/runtime/splash.js'
@@ -106,6 +107,38 @@ describe('engine splash skin', () => {
     expect(root.classList.contains('splash-corner')).toBe(true)
     expect(root.dataset.splashLayout).toBe('corner')
     expect(doc.head.children[0]?.textContent).toContain('--splash-accent: #00a650')
+  })
+
+  it('mark layout: Nabla mark by default, no title and no load texts', () => {
+    const { root, title, status } = splashDom()
+    status.textContent = 'Cargando el motor…'
+    applySplashSkin(root as never, { layout: 'mark', messages: [] })
+    expect(root.classList.contains('splash-mark')).toBe(true)
+    expect(root.classList.contains('splash-centered')).toBe(false)
+    expect(root.dataset.splashLayout).toBe('mark')
+    expect(root.querySelector('#loading-logo')?.src).toBe(nablaMarkUrl)
+    expect(decodeURIComponent(nablaMarkUrl)).toContain('<svg')
+    expect(title.hidden).toBe(true)
+    expect(status.textContent).toBe('')
+  })
+
+  it('honours an empty title and an empty message list', () => {
+    const { root, title } = splashDom()
+    applySplashSkin(root as never, { title: '', layout: 'corner' })
+    expect(title.textContent).toBe('')
+    expect(title.hidden).toBe(true)
+    expect(splashMessageAt([], 0)).toBe('')
+    expect(splashMessageAt([], 3)).toBe('')
+  })
+
+  it('status: false hides the load texts in any layout', () => {
+    const { root, status } = splashDom()
+    applySplashSkin(root as never, { layout: 'corner', status: false })
+    expect(root.classList.contains('splash-no-status')).toBe(true)
+    expect(status.hidden).toBe(true)
+    applySplashSkin(root as never, { layout: 'corner' })
+    expect(root.classList.contains('splash-no-status')).toBe(false)
+    expect(status.hidden).toBe(false)
   })
 
   it('picks load messages by boot progress', () => {

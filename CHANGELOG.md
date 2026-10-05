@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Added
+
+- **City labels toggle:** the floating OSM city / town / village names (~1 km above the ground)
+  are now the tile layer `places` ("Nombres de poblaciones" in Ajustes → Capas). Hide them with
+  `layers=-places`, `runtime.setHiddenLayers(['places'])` or the standalone game's host flag
+  `NABLA_BOOT.cityLabels: false` (default stays on; the player's stored choice is kept relative to
+  the host default).
+- **Mark-only pre-attract splash:** `layout: 'mark'` (or `NABLA_BOOT.preAttract: true`) shows a
+  black screen with only the small Nabla ▽ mark bottom-right (`NABLA_MARK_SVG` / `nablaMarkUrl`),
+  no title, no load texts, then the planet attract view behind the mark. New skin slot
+  `status: false` hides every load text in any layout.
+
+### Fixed
+
+- Splash `messages: []` no longer falls back to the default Nabla loading lines, and `title: ''`
+  clears the title. The early boot lines in `game/main.ts` use the host's messages.
+- `terrain-main.ts` only installs host vehicles when the scene has geography and vehicles (the
+  guard had lost its braces; fixes the typecheck error on main).
+
 ### Changed
 
 - **Cloud style by quality:** artistic 3-layer clouds are the default only on the **Ultra**
@@ -14,7 +33,6 @@
 - **Cloud amount slider pressure:** `GameRuntime.setCloudWeather(amount)` no longer defaults
   pressure to `0`. Omitting the second argument keeps the current cloud pressure, so the
   Planeta / scene-controls quantity slider does not wipe storm settings.
-
 
 ### Added
 

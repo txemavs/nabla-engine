@@ -15,7 +15,7 @@ import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
-import { readBootConfig, runBootPhase } from './boot.js'
+import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
@@ -84,7 +84,8 @@ try {
   loading.setTiles(config.tile ? [config.tile] : [])
   document.getElementById('controls-hint')!.innerHTML = CONTROLS
   if (config.atlas.photo !== 'none') projectGroundPhoto()
-  setHiddenTileLayers(initialHiddenLayers())
+  const layerDefaults = bootHiddenLayers(boot)
+  setHiddenTileLayers(initialHiddenLayers(location.search, undefined, layerDefaults))
   bootLog('GameRuntime construct start')
   runtime = new GameRuntime({
     locale: 'es',
@@ -152,16 +153,17 @@ try {
   bootLog('play() start')
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
   bootLog('play() done (ground + physics)')
-  if (scene.geography && config.vehicles.length)
+  if (scene.geography && config.vehicles.length) {
     bootLog(`installHostVehicles start (${config.vehicles.length})`)
-  await installHostVehicles(runtime, scene.geography, config.vehicles)
-  bootLog('installHostVehicles done')
+    await installHostVehicles(runtime, scene.geography, config.vehicles)
+    bootLog('installHostVehicles done')
+  }
   bootLog('loading screen hide')
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
   mountSettingsHud(runtime)
-  bindLayerSelector(runtime)
+  bindLayerSelector(runtime, undefined, layerDefaults)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()
 } catch (error) {

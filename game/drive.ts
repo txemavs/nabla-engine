@@ -19,7 +19,8 @@ import { bindTerrainSelector } from './terrain-selector.js'
 import { bindSceneControls } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
-import { readBootConfig, runBootPhase } from './boot.js'
+import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
+import { parseLayerSpec, setHiddenTileLayers } from '@nabla/engine/render'
 import { mountSettingsHud } from './settings-hud.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
@@ -123,6 +124,10 @@ try {
   const lights = flat && new URLSearchParams(location.search).has('lights')
   if (lights) scene.sky = { mode: 'fixed', at: '2026-03-20T00:00:00.000Z' }
   const boot = readBootConfig()
+  // Host defaults (e.g. `cityLabels: false`) and `&layers=`; this page keeps no stored layer choice.
+  setHiddenTileLayers(
+    parseLayerSpec(new URLSearchParams(location.search).get('layers'), bootHiddenLayers(boot)),
+  )
   const loading = new LoadingScreen(boot.splash)
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
