@@ -13,6 +13,10 @@
  *   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
  *   &photo=full|lo|none      orthophoto draped on the ground (default full)
  *   &sky=day|live|<ISO>      fixed midday sun (default), the real clock, or a given instant
+ *   &time=HH:MM|ahora        time of day (the viewer's time zone) on the day of &sky; `ahora` (or `now`) follows
+ *                            the real clock. Also in the menu section "Hora"
+ *   &sea=<m>                 sea level in metres, -5 to 50 (default: the simplified tide). Also in the menu
+ *                            section "Nivel del mar"
  *   &distance=<m>            load radius (also in the menu, remembered); farther cells are not loaded.
  *                            &cache=<MB> disk cache and &memory=<cells> cells in memory work the same way
  *   &player=hover|walk       the on-foot player is Studio's floating monitor (default) or a walker
@@ -27,6 +31,7 @@ import {
 } from '@nabla/engine/examples/terrain-drive'
 import type { AtlasZ15Options } from '@nabla/engine/planet/atlas-z15'
 import type { MapTile } from '@nabla/engine/scene'
+import { parseClockTime } from '@nabla/engine/planet/sky'
 import {
   isValidLatLon,
   parseLatLon,
@@ -93,6 +98,33 @@ export interface TerrainConfig {
   scene: Omit<TerrainDriveOptions, 'latitude' | 'longitude'>
   atlas: Required<AtlasZ15Options>
   playerMode: 'hover' | 'walk'
+  /** `&time=`: minutes after local midnight, or `live` for the real clock. Undefined keeps `&sky=`. */
+  timeOfDay?: number | 'live'
+  /** `&sea=`: manual sea level in metres. Undefined keeps the simplified tide. */
+  seaLevel?: number
+}
+
+/** Sea level limits in metres, as in Studio's sea-surface controls. */
+export const SEA_LEVEL_RANGE = { min: -5, max: 50 } as const
+
+/** Parse `&time=`: `HH:MM` (also `H`, `HH.MM`) or `ahora`/`now` for the real clock. */
+export function parseTimeParam(raw: string): number | 'live' {
+  const text = raw.trim().toLowerCase()
+  if (text === 'ahora' || text === 'now') return 'live'
+  const minutes = parseClockTime(text)
+  if (minutes === undefined)
+    throw new Error(`time debe ser una hora HH:MM (por ejemplo time=21:30) o ahora, no "${raw}"`)
+  return minutes
+}
+
+/** Parse `&sea=`: metres within the engine's sea-surface range. */
+export function parseSeaParam(raw: string): number {
+  const level = Number(raw.trim().replace(',', '.'))
+  if (raw.trim() === '' || !Number.isFinite(level))
+    throw new Error(`sea debe ser un número de metros (por ejemplo sea=3), no "${raw}"`)
+  if (level < SEA_LEVEL_RANGE.min || level > SEA_LEVEL_RANGE.max)
+    throw new Error(`sea debe estar entre ${SEA_LEVEL_RANGE.min} y ${SEA_LEVEL_RANGE.max} m`)
+  return level
 }
 
 /** True when the URL asks for the terrain-folder example. */
@@ -174,6 +206,8 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
     },
     atlas: { relief, photo },
     playerMode: player,
+    timeOfDay: params.has('time') ? parseTimeParam(params.get('time')!) : undefined,
+    seaLevel: params.has('sea') ? parseSeaParam(params.get('sea')!) : undefined,
   }
 }
 

@@ -238,6 +238,29 @@
         margin: 12px 0 0;
         font-weight: 600;
       }
+      #vehicle-list {
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      #vehicle-list li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      #display-settings .menu-section > label:has(input[type='range']) {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      #display-settings input[type='range'] {
+        flex: 1 1 120px;
+        padding: 0;
+      }
+      #display-settings #time-input,
+      #display-settings #sea-input {
+        width: 70px;
+      }
       #terrain-missing-list {
         max-height: 8em;
         overflow: auto;

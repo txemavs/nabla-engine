@@ -14,11 +14,14 @@ import { browserStorage } from './entry.js'
 import { showLocation } from './position.js'
 import { describeLoading } from './loading-text.js'
 import { bindTerrainSelector } from './terrain-selector.js'
+import { bindSceneControls } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
+// This page does not read &time= / &sea=, so the menu keeps the URL as it is.
+const attachSceneControls = bindSceneControls({ rememberInUrl: false })
 let runtime: GameRuntime | undefined
 try {
   const config = parseGameConfig()
@@ -180,6 +183,7 @@ try {
     Object.assign(window, { nablaRuntime: runtime })
   await runtime.play({ vehicleId: vehicle.id })
   loading.hide()
+  attachSceneControls(runtime)
   bindDisplaySettings(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()

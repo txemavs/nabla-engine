@@ -1,0 +1,78 @@
+import { describe, expect, it } from 'vitest'
+import {
+  formatMetres,
+  seaStatus,
+  vehicleChoices,
+  withSceneParams,
+} from '../../game/scene-controls.js'
+import { parseSeaParam, parseTerrainConfig, parseTimeParam } from '../../game/terrain.js'
+
+describe('&time= and &sea= URL parameters', () => {
+  it('reads the time as minutes after midnight, or the real clock', () => {
+    expect(parseTimeParam('21:30')).toBe(1290)
+    expect(parseTimeParam('7')).toBe(420)
+    expect(parseTimeParam('ahora')).toBe('live')
+    expect(parseTimeParam('NOW')).toBe('live')
+  })
+
+  it('explains bad times and sea levels in Spanish', () => {
+    expect(() => parseTimeParam('25:00')).toThrow(/time debe ser una hora HH:MM/)
+    expect(() => parseTimeParam('mediodía')).toThrow(/time debe ser/)
+    expect(() => parseSeaParam('')).toThrow(/sea debe ser un número/)
+    expect(() => parseSeaParam('mucho')).toThrow(/sea debe ser un número/)
+    expect(() => parseSeaParam('51')).toThrow(/entre -5 y 50/)
+    expect(() => parseSeaParam('-5.1')).toThrow(/entre -5 y 50/)
+  })
+
+  it('accepts metres with a decimal point or comma, inside the Studio range', () => {
+    expect(parseSeaParam('3')).toBe(3)
+    expect(parseSeaParam('-2,5')).toBe(-2.5)
+    expect(parseSeaParam('50')).toBe(50)
+    expect(parseSeaParam('-5')).toBe(-5)
+  })
+
+  it('arrives in the terrain configuration, and is absent without the parameters', () => {
+    const config = parseTerrainConfig('?terrain=/terrain&lat=43.3386&lon=-1.7899&time=21:30&sea=3')
+    expect([config.timeOfDay, config.seaLevel]).toEqual([1290, 3])
+    const plain = parseTerrainConfig('?terrain=/terrain&lat=43.3386&lon=-1.7899')
+    expect([plain.timeOfDay, plain.seaLevel]).toEqual([undefined, undefined])
+    expect(() => parseTerrainConfig('?terrain=/terrain&tile=16221/11998&sea=99')).toThrow(/sea/)
+  })
+})
+
+describe('menu helpers', () => {
+  it('writes time and sea into the URL and keeps everything else', () => {
+    const next = withSceneParams('?terrain=/terrain&lat=1&lon=2&quality=low', {
+      time: '21:30',
+      sea: 3.04,
+    })
+    const params = new URLSearchParams(next)
+    expect([params.get('time'), params.get('sea'), params.get('quality')]).toEqual([
+      '21:30',
+      '3',
+      'low',
+    ])
+    expect(next).toContain('time=21:30')
+    const cleared = withSceneParams(next, { sea: null })
+    expect(cleared).not.toContain('sea=')
+    expect(cleared).toContain('time=21:30')
+    expect(withSceneParams('?time=1:00', { time: null })).toBe('')
+    expect(withSceneParams('?a=1', {})).toBe('?a=1')
+  })
+
+  it('shows metres with a decimal comma', () => {
+    expect(formatMetres(3)).toBe('3,0 m')
+    expect(formatMetres(-2.5)).toBe('−2,5 m')
+    expect(seaStatus({ level: 0.4, state: 'Subiendo' }, false)).toBe(
+      'Marea automática: 0,4 m (Subiendo)',
+    )
+    expect(seaStatus({ level: 3, state: 'Manual' }, true)).toBe('Nivel fijo: 3,0 m')
+  })
+
+  it('offers the drivable catalog vehicles and leaves out the passive trailer', () => {
+    const ids = vehicleChoices().map((choice) => choice.id)
+    expect(ids).toEqual(expect.arrayContaining(['car', 'a3', 'white-truck', 'carrier']))
+    expect(ids).not.toContain('white-trailer')
+    for (const choice of vehicleChoices()) expect(choice.label.length).toBeGreaterThan(0)
+  })
+})
