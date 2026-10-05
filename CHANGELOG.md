@@ -23,6 +23,10 @@
 
 ### Changed
 
+- **Settings UI:** the Planeta tab puts **Hora** (time of day) first, before clouds, pressure and
+  lens flare; the leftover legacy groups move to Capas → "Cielo y mar". The quality section no
+  longer mentions DLSS; only the real resolution scaling is shown.
+
 - **Cloud style by quality:** artistic 3-layer clouds are the default only on the **Ultra**
   performance preset. Mobile, minimal, low, balanced, high and custom start on cheap (`low`)
   clouds. Players can still toggle artistic sheets from the Planeta controls. Artistic layer

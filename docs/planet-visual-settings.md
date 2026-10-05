@@ -6,6 +6,10 @@ GTA Online-style tabbed window that shares the ship-monitor stylesheet
 `createPlanetSettingsPanel` so a carrier interior monitor can host the same
 root later; this release only mounts it in the HUD.
 
+The Planeta tab opens with **Hora** (time of day: clock, speed, "Ahora") first,
+followed by the clouds, pressure and lens-flare form. The remaining legacy
+groups (sky, sun, sea) sit under **Capas → Cielo y mar**.
+
 ## Config keys
 
 Pasteable values from the Planeta tab **Copy config** button (also shown live

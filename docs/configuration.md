@@ -68,12 +68,9 @@ Synchronization is managed by the browser through
 There is no exposed native swap-chain/VSync-off control in this WebGL host; zero
 does not promise uncapped rendering beyond the browser/display cadence.
 
-The current renderer uses standard resolution scaling, not DLSS reconstruction.
-[NVIDIA's supported integration](https://developer.nvidia.com/blog/how-to-integrate-nvidia-dlss-4-into-your-game-with-nvidia-streamline/)
-uses native graphics APIs/Streamline. Nabla's WebGL renderer has no such backend;
-an RTX card alone does not enable DLSS in it. A native rendering backend would be
-a separate integration project. Temporal or spatial web upscaling is possible
-future work, but is not implemented or advertised as DLSS here.
+The renderer offers standard resolution scaling only (the **Escala de
+resolución** control and `resolutionScale`); there is no upscaling or
+reconstruction backend, and the settings UI does not advertise one.
 
 ## Scope and precedence
 
