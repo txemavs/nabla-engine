@@ -17,6 +17,11 @@ export interface TerrainDriveOptions {
   vehicle?: string
   /** `day` (default, fixed local-noon sun), `live` (real clock) or an ISO date-time. */
   sky?: string
+  /**
+   * Parked demo row (car, a3, white-truck, carrier). Default true.
+   * Host `?vehicles=` sets this false so the demo row does not stack on the host fleet.
+   */
+  includeDemoFleet?: boolean
 }
 
 export const TERRAIN_DRIVE_DAY = '2026-06-21T10:30:00.000Z'
@@ -53,8 +58,9 @@ function skyFor(value: string | undefined): NonNullable<SceneDocument['sky']> {
 }
 
 /**
- * Player vehicle at the origin plus the car, white truck with trailer and flying container parked
- * ahead, all facing `heading`. Heights are authored as 0: run with `restParkedOnGround`.
+ * Player vehicle at the origin plus, unless `includeDemoFleet` is false, the car, white truck
+ * with trailer and flying container parked ahead, all facing `heading`. Heights are authored
+ * as 0: run with `restParkedOnGround`.
  */
 export function createTerrainDriveScene(options: TerrainDriveOptions): SceneDocument {
   const player = options.vehicle ?? 'car'
@@ -100,11 +106,13 @@ export function createTerrainDriveScene(options: TerrainDriveOptions): SceneDocu
   const playerEntities = parked(player, 0)
   entities.push(...playerEntities)
   if (player === 'white-truck') entities.push(tow(playerEntities[0], 0))
-  for (const slot of PARKED) {
-    if (slot.preset === player) continue
-    const group = parked(slot.preset, slot.ahead)
-    entities.push(...group)
-    if (slot.preset === 'white-truck') entities.push(tow(group[0], slot.ahead))
+  if (options.includeDemoFleet !== false) {
+    for (const slot of PARKED) {
+      if (slot.preset === player) continue
+      const group = parked(slot.preset, slot.ahead)
+      entities.push(...group)
+      if (slot.preset === 'white-truck') entities.push(tow(group[0], slot.ahead))
+    }
   }
   return {
     version: 1,

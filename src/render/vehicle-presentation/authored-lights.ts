@@ -76,6 +76,10 @@ export class AuthoredVehicleLights {
     model: Object3D,
     readonly controller = new VehicleLightController(),
   ) {
+    this.absorb(model)
+  }
+  /** Bind lamps from another GLB (a cargo box) onto this vehicle's light controller. */
+  absorb(model: Object3D): void {
     model.traverse((node) => {
       if (node instanceof Mesh) {
         for (const material of Array.isArray(node.material) ? node.material : [node.material])

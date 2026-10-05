@@ -5,6 +5,7 @@ import { vector } from '../../entity/coords.js'
 import { vehicleField, visualField } from '../../entity/vehicle/field.js'
 import { readVehiclePresetSources } from './preset-source.js'
 import { generatedVehicleRigs } from './generated-rigs.js'
+import { hasTrailerBox, trailerBox } from './trailer-boxes.js'
 
 /**
  * A vehicle preset is a JSON file under assets/library or assets/custom, in
@@ -97,11 +98,45 @@ export function vehiclePreset(id: string): VehiclePreset {
   return preset
 }
 
+/** Optional cargo body when spawning a trailer chassis. */
+export type PresetVehicleOptions = {
+  /** Trailer box id, or `false` for a bare chassis. Omit to keep the preset default. */
+  box?: string | false
+}
+
+const TRAILER_CHASSIS = 'white-trailer-chassis'
+const TRAILER_COMPOSED = 'white-trailer'
+
+function applyTrailerBox(entity: Entity, box: string | false): void {
+  if (!entity.vehicle?.passive || !entity.vehicle.towAnchor || !entity.visual)
+    throw new Error('Trailer box attachments require a trailer chassis')
+  const chassis = vehiclePreset(TRAILER_CHASSIS)
+  if (box === false) {
+    delete entity.visual.attachments
+    entity.vehicle.colliders = structuredClone(chassis.vehicle.colliders)
+    entity.size = structuredClone(chassis.size)
+    entity.mass = chassis.mass
+    return
+  }
+  if (!hasTrailerBox(box)) throw new Error(`No trailer box "${box}"`)
+  const spec = trailerBox(box)
+  entity.visual.attachments = [{ url: spec.url, transform: structuredClone(spec.transform) }]
+  const composed = vehiclePreset(TRAILER_COMPOSED)
+  entity.vehicle.colliders = structuredClone(composed.vehicle.colliders)
+  entity.size = structuredClone(composed.size)
+  entity.mass = chassis.mass + spec.mass
+}
+
 /** One vehicle. Omit position to use the preset's placement. */
-export function presetVehicle(catalogId: string, id: string, position?: Vec3Tuple): Entity {
+export function presetVehicle(
+  catalogId: string,
+  id: string,
+  position?: Vec3Tuple,
+  options?: PresetVehicleOptions,
+): Entity {
   const preset = vehiclePreset(catalogId)
   // Each call gets its own copy. Callers edit hubs and suspension on the entity.
-  return {
+  const entity = {
     ...createEntity(id, 'vehicle', position ?? structuredClone(preset.placement)),
     name: preset.name,
     color: preset.color,
@@ -110,6 +145,8 @@ export function presetVehicle(catalogId: string, id: string, position?: Vec3Tupl
     vehicle: structuredClone(preset.vehicle),
     visual: structuredClone(preset.visual),
   }
+  if (options?.box !== undefined) applyTrailerBox(entity, options.box)
+  return entity
 }
 
 /** The vehicle, plus the carrier stern portal when the preset asks for one. */

@@ -187,6 +187,8 @@ export const visualField = z
         z.tuple([rotation, rotation, rotation, rotation, rotation, rotation]),
       ])
       .optional(),
+    /** Optional cargo or equipment GLBs composed onto the chassis at spawn. */
+    attachments: z.array(assetPart).max(8).optional(),
   })
   .strict()
 

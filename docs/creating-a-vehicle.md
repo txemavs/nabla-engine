@@ -105,8 +105,12 @@ Test real contacts, drive/coast/brake/steer, shared-world rebasing, boarding and
 cleanup. Check two instances together to catch destruction of shared assets.
 Stock `white-truck` / `white-trailer` use the same `entity.color` field as cars
 (`#rrggbb`). The `nabla.truck` adapter paints materials named `White paint` /
-`White paint.001`. Free trailers rest on landing legs; `Simulation.hitchTrailer`
-and `unhitchTrailer` couple them to a tractor at runtime.
+`White paint.001`. `white-trailer` is a chassis (`white-trailer-chassis`) plus the
+`white-box` cargo attachment. Spawn a bare chassis with
+`presetVehicle('white-trailer-chassis', id)` or
+`presetVehicle('white-trailer', id, position, { box: false })`. Attach another
+catalog box with `{ box: 'white-box' }`. Free trailers rest on landing legs;
+`Simulation.hitchTrailer` and `unhitchTrailer` couple them to a tractor at runtime.
 
 For equipment, check missing mounts, power-off behaviour, paint and saved mirror
 settings. Compare draw calls/triangles and secondary update counts with the same

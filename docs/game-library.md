@@ -79,15 +79,16 @@ installs it with `GameRuntime.placeVehicle` (the same `addVehicles` path as
 ?lat=43.3372&lon=-1.7523&heading=118&vehicle=car&color=%232157a5&vehicles=[{"lat":43.3386,"lon":-1.7899,"heading":90,"vehicle":"white-truck","color":"#2157a5"}]
 ```
 
-| Field     | Required | Meaning                                                                 |
-| --------- | -------- | ----------------------------------------------------------------------- |
-| `lat`     | yes      | WGS84 latitude, degrees                                                 |
-| `lon`     | yes      | WGS84 longitude, degrees                                                |
-| `heading` | no       | Compass degrees clockwise from north (default 0)                        |
-| `vehicle` | yes      | Catalog preset id (`car`, `a3`, `white-truck`, `white-trailer`, …)      |
-| `alt`     | no       | Orthometric metres; omitted uses the scene origin altitude              |
-| `color`   | no       | `#rrggbb` body paint (`entity.color`; White paint on truck/trailer)     |
-| `tow`     | no       | `true` hitch this trailer to the previous tractor; or that tractor's id |
+| Field     | Required | Meaning                                                                                                                                |
+| --------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `lat`     | yes      | WGS84 latitude, degrees                                                                                                                |
+| `lon`     | yes      | WGS84 longitude, degrees                                                                                                               |
+| `heading` | no       | Compass degrees clockwise from north (default 0)                                                                                       |
+| `vehicle` | yes      | Catalog preset id (`car`, `a3`, `white-truck`, `white-trailer`, …)                                                                     |
+| `alt`     | no       | Orthometric metres; omitted uses the scene origin altitude                                                                             |
+| `color`   | no       | `#rrggbb` body paint (`entity.color`; White paint on truck/trailer)                                                                    |
+| `tow`     | no       | `true` hitch this trailer to the previous tractor; or that tractor's id                                                                |
+| `box`     | no       | Trailer cargo: omit keeps the preset (`white-trailer` includes `white-box`); `false` is chassis only; `"white-box"` attaches that body |
 
 The same array can be a typed `HostVehicle[]` in game config (`parseGameConfig().vehicles`,
 `installHostVehicles(runtime, origin, list)`) or a Vite build-time define:
@@ -98,7 +99,8 @@ VITE_NABLA_VEHICLES='[{"lat":43.3386,"lon":-1.7899,"heading":90,"vehicle":"white
 
 `?vehicles=` wins over `VITE_NABLA_VEHICLES`. A present empty `vehicles=` means
 no extras. Unknown presets fail at startup. The terrain-folder entry
-(`?terrain=`) uses the same parameter.
+(`?terrain=`) uses the same parameter; a non-empty host list omits the built-in
+parked demo row (`includeDemoFleet: false`) so a second carrier or A3 is not stacked.
 
 To play on real Atlas Z15 cells (LiDAR, orthophoto, buildings) use `?terrain=<base>`; see
 [Terrain folder](terrain-folder.md).

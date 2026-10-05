@@ -60,6 +60,17 @@ describe('trailer landing gear', () => {
     sim.dispose()
   })
 
+  it('keeps a bare chassis level on its legs', () => {
+    const sim = new Simulation(scene(), { playerMode: 'walk' })
+    sim.addVehicles([presetVehicle('white-trailer-chassis', 'bare', [0, 1.4, -8])])
+    expect(sim.vehicleInfo('bare').landingGear).toBe(true)
+    for (let i = 0; i < 240; i++) sim.step(1 / 60)
+    const { pitch, roll } = tilt(sim, 'bare')
+    expect(Math.abs(pitch)).toBeLessThan(0.08)
+    expect(Math.abs(roll)).toBeLessThan(0.08)
+    sim.dispose()
+  })
+
   it('retracts legs when the trailer is spawned already hitched', () => {
     const tractor = presetVehicle('white-truck', 'tractor', [0, 1.45, 0])
     const trailer = presetVehicle('white-trailer', 'trailer', [0, 1.45, 7.33])

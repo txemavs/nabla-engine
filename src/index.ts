@@ -147,8 +147,15 @@ export {
   presetVehicle,
   vehiclePreset,
   vehiclePresets,
+  type PresetVehicleOptions,
   type VehiclePreset,
 } from './catalog/vehicles/library.js'
+export {
+  hasTrailerBox,
+  trailerBox,
+  trailerBoxes,
+  type TrailerBoxPreset,
+} from './catalog/vehicles/trailer-boxes.js'
 
 export {
   hasWeaponPreset,

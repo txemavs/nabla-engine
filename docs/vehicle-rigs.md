@@ -46,9 +46,10 @@ The modern tractor keeps the supplied hub and fifth-wheel positions. Semantic
 metadata was added to those nodes; wheel orientations and the missing steering
 mount were migrated from the previous preset. The optional `tow.hitch` role
 generates `vehicle.hitch`, used by the demo instead of a numeric constant.
-The original tractor and trailer files remain untouched; the trailer preset uses
-an annotated copy, `trailer.anchored.glb`. Its `tow.anchor` node uses the supplied
-kingpin position, removing the remaining coupling coordinate from the demo.
+The original tractor and trailer files remain untouched; `trailer.anchored.glb`
+is the annotated source. `npm run trailer:split` writes `trailer.chassis.glb`
+(frame, Stützbein, `tow.anchor`, wheel hubs) and `trailer.box.glb` (white cargo).
+`white-trailer` composes both; `white-trailer-chassis` uses only the chassis.
 The truck eye anchor was lowered to see the road and dashboard; other driver
 poses preserve the previous camera placement. Passive trailers keep inert driver
 metadata for preset compatibility and cannot be boarded.

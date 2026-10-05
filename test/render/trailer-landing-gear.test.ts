@@ -10,7 +10,7 @@ import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { trailerWheelContactY } from '../../src/simulation/landing-gear.js'
 
 it('drops authored Stützbein meshes to the tyre plane when a free trailer deploys', async () => {
-  const bytes = await fs.readFile('assets/library/trucks/white-truck/assets/trailer.anchored.glb')
+  const bytes = await fs.readFile('assets/library/trucks/white-truck/assets/trailer.chassis.glb')
   const gltf = await new GLTFLoader().parseAsync(
     bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
     '',

@@ -17,7 +17,7 @@
  */
 import { geoToLocal, type GeoPoint } from '@nabla/engine'
 import { isValidLatLon } from '@nabla/engine/planet/lat-lon'
-import { hasVehiclePreset, presetVehicle } from '@nabla/engine/vehicles'
+import { hasTrailerBox, hasVehiclePreset, presetVehicle } from '@nabla/engine/vehicles'
 import type { Entity, Vec3Tuple } from '@nabla/engine/scene'
 
 /** One extra vehicle, authored in geographic coordinates. */
@@ -30,7 +30,7 @@ export interface HostVehicle {
   heading: number
   /** Orthometric altitude in metres. Omitted uses the scene origin altitude. */
   alt?: number
-  /** Catalog preset id (`car`, `white-truck`, `white-trailer`, `a3`, `carrier`, …). */
+  /** Catalog preset id (`car`, `white-truck`, `white-trailer`, `white-trailer-chassis`, …). */
   vehicle: string
   /**
    * Body paint, same `entity.color` field cars already use (`#rrggbb`).
@@ -42,6 +42,11 @@ export interface HostVehicle {
    * (or an explicit tractor id). Free trailers omit it and rest on landing legs.
    */
   tow?: boolean | string
+  /**
+   * Trailer cargo box. `white-trailer` already includes `white-box`.
+   * `false` strips the box (bare chassis). A box id attaches that catalog body.
+   */
+  box?: false | string
 }
 
 /** Local-metre pose for a host vehicle, ready for `placeVehicle`. */
@@ -99,6 +104,14 @@ function parseHostVehicle(value: unknown, index: number): HostVehicle {
     if (raw.tow === true) vehicle.tow = true
     else if (typeof raw.tow === 'string' && raw.tow.trim() !== '') vehicle.tow = raw.tow.trim()
     else throw new Error(`Host vehicle ${index}.tow must be true or a tractor id`)
+  }
+  if (raw.box !== undefined) {
+    if (raw.box === false) vehicle.box = false
+    else if (typeof raw.box === 'string' && raw.box.trim() !== '') {
+      const box = raw.box.trim()
+      if (!hasTrailerBox(box)) throw new Error(`Host vehicle ${index}.box is not a trailer box`)
+      vehicle.box = box
+    } else throw new Error(`Host vehicle ${index}.box must be false or a trailer box id`)
   }
   return vehicle
 }
@@ -166,7 +179,12 @@ export async function installHostVehicles(
   let lastTractorId: string | undefined
   for (const [index, spec] of vehicles.entries()) {
     const pose = hostVehicleLocalPose(origin, spec)
-    const template = presetVehicle(spec.vehicle, `host-${spec.vehicle}-${index}`)
+    const template = presetVehicle(
+      spec.vehicle,
+      `host-${spec.vehicle}-${index}`,
+      undefined,
+      spec.box !== undefined ? { box: spec.box } : undefined,
+    )
     if (spec.color) template.color = spec.color
     if (spec.tow) {
       const tractorId = spec.tow === true ? lastTractorId : spec.tow

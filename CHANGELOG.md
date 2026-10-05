@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `createTerrainDriveScene({ includeDemoFleet: false })` skips the built-in parked row (car, a3, white-truck, carrier). The terrain game passes that when `?vehicles=` is non-empty so a host fleet does not stack a second carrier.
+- Split `white-trailer` into `trailer.chassis.glb` + `trailer.box.glb`. `white-trailer` still spawns chassis + `white-box`; `white-trailer-chassis` is the bare frame. Host `box: false | "white-box"` and `presetVehicle(..., { box })` compose at spawn. Other box types can replace only the cargo GLB.
 - Free `white-trailer` spawns rest on landing legs (Stützbein colliders + visual drop). Hitching retracts the legs; unhitching deploys them. `Simulation.hitchTrailer` / `unhitchTrailer` / `toggleHitch` couple at runtime; **F** on a tractor hitches or releases. Host `?vehicles=` accepts `color` (`#rrggbb`, same `entity.color` as cars) and `tow: true` (hitch to the previous tractor). Truck/trailer paint uses the existing White paint materials via `nabla.truck`.
 - Let the standalone game (drive and terrain-folder entries) spawn extra catalog vehicles from WGS84 `lat`/`lon`/`heading` after terrain is ready, via `?vehicles=` JSON, `VITE_NABLA_VEHICLES`, or a typed `HostVehicle[]`. Existing `lat`/`lon`/`alt`/`heading`/`vehicle` remain the player start. See docs/game-library.md.
 - At Alto/Ultra quality, the truck's authored left mirror captures at 16 Hz and 768×512; the right mirror and cheaper presets stay at 8 Hz / 384×256.
