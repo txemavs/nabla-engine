@@ -140,6 +140,72 @@ describe('Atlas Z15 package adapter', () => {
     expect(adapted.files['buildings-osm'].path).toBe('buildings-osm-8b7a0e12579eb3ab.glb')
   })
 
+  it('maps Atlas #49 package roles and manifest.roadCandidates without a roads block', () => {
+    const published = manifest()
+    published.roadCandidates = {
+      schema: 'nabla-road-candidates/1',
+      drivable: false,
+      engineLoad: { asphalt: 'immediate', supports: 'immediate', collision: 'opt-in' },
+      evidenceSha256: 'e'.repeat(64),
+      recipe: 'asphalt-ground-junction-experiment-10',
+      layers: {
+        asphalt: {
+          path: 'asphalt-candidate-1111111111111111.glb',
+          download: 'asphalt-candidate-1111111111111111.glb',
+          bytes: 597856,
+          sha256: '1'.repeat(64),
+          role: 'road.asphalt.candidate',
+          engineLoad: 'immediate',
+          drivable: false,
+        },
+        supports: {
+          path: 'supports-candidate-2222222222222222.glb',
+          download: 'supports-candidate-2222222222222222.glb',
+          bytes: 23916,
+          sha256: '2'.repeat(64),
+          role: 'road.supports.candidate',
+          engineLoad: 'immediate',
+          drivable: false,
+        },
+      },
+    }
+    expect(validatePlanetManifest(published, tile).roads?.files.asphalt?.path).toBe(
+      'asphalt-candidate-1111111111111111.glb',
+    )
+    const packaged = pkg()
+    packaged.files.push(
+      {
+        path: 'asphalt-candidate-1111111111111111.glb',
+        role: 'road.asphalt.candidate',
+        bytes: 597856,
+        sha256: '1'.repeat(64),
+      },
+      {
+        path: 'supports-candidate-2222222222222222.glb',
+        role: 'road.supports.candidate',
+        bytes: 23916,
+        sha256: '2'.repeat(64),
+      },
+      {
+        path: 'road-collision-candidate-3333333333333333.glb',
+        role: 'road.collision.candidate',
+        bytes: 597864,
+        sha256: '3'.repeat(64),
+      },
+    )
+    const adapted = adaptAtlasManifest(published, validateAtlasZ15Package(packaged, tile))
+    expect(adapted.roads).toMatchObject({
+      drivable: false,
+      evidenceSha256: 'e'.repeat(64),
+      files: {
+        asphalt: { path: 'asphalt-candidate-1111111111111111.glb', sha256: '1'.repeat(64) },
+        supports: { path: 'supports-candidate-2222222222222222.glb' },
+        collision: { path: 'road-collision-candidate-3333333333333333.glb' },
+      },
+    })
+    expect(adapted.files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
+  })
+
   it('rejects a package that belongs to other GLBs or lacks LiDAR', () => {
     const p = validateAtlasZ15Package(pkg(), tile)
     const other = manifest()

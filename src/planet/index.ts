@@ -12,6 +12,7 @@ export {
   isInspectRoadCollisionMesh,
   tagCandidateRoadMesh,
   readCandidateRoads,
+  ROAD_CANDIDATES_SCHEMA,
 } from './contract.js'
 export type {
   PlanetCollisionChunk,
@@ -22,6 +23,8 @@ export type {
   PlanetCandidateRoads,
   PlanetCandidateRoadFile,
   PlanetCandidateRoadKind,
+  PlanetRoadCandidates,
+  PlanetPublishedRoadLayer,
   PlanetGlbLayer,
 } from './contract.js'
 export { planetPlaces, validPlanetPlaces, type PlanetPlace } from './places.js'

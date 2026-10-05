@@ -118,7 +118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 38](../../../../../src/render/planet/worker.ts#L38)
 
 ```ts
-callback@38(event: MessageEvent<{ id: number manifest: PlanetManifest directory: string buildings?: boolean /** Load `roads.files.collision` as an inspect mesh. Default off; not the driving collider. */ inspectRoadCollision?: boolean /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */ drape?: { layers: string[]; width: number } cancel?: boolean }>): inferred by TypeScript; see implementation
+callback@38(event: MessageEvent<{ id: number manifest: PlanetManifest directory: string buildings?: boolean /** Load `roads.files.collision` / `roadCandidates.layers.collision` as an inspect mesh. Default off. */ inspectRoadCollision?: boolean /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */ drape?: { layers: string[]; width: number } cancel?: boolean }>): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
