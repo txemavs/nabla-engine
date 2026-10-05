@@ -1,6 +1,5 @@
 import { expect, it } from 'vitest'
 import { MeshStandardMaterial, PerspectiveCamera, Scene, Vector3, ShaderChunk } from 'three'
-import { CSMShader } from 'three/addons/csm/CSMShader.js'
 import {
   ShadowManager,
   cascadeBlendMetres,
@@ -93,7 +92,7 @@ it('widens the 140 m and 500 m cascade fades without eating the near field', () 
   expect(cascadeBoundPad(0, 3, 4000)).toBe(48)
   expect(cascadeBoundPad(1, 3, 4000)).toBe(90)
   expect(cascadeBoundPad(2, 3, 4000)).toBe(120)
-  const faded = softenCascadeSeams(CSMShader.lights_fragment_begin)
+  const faded = softenCascadeSeams('margin = 0.25 * pow( closestEdge, 2.0 );')
   expect(faded).toContain('closestEdge * ( shadowFar - cameraNear ) * 0.18')
   expect(faded).not.toContain('margin = 0.25 * pow( closestEdge, 2.0 );')
   expect(() => softenCascadeSeams('no fade line')).toThrow('Unsupported')
