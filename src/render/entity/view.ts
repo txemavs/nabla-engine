@@ -1077,6 +1077,7 @@ export class SceneView {
           sim.vehicleInfo(id).engineLoad,
           sim.vehicleInfo(id).manualTransmission,
           sim.vehicleInfo(id).parked,
+          sim.vehicleInfo(id).altitude,
         )
     }
     this.captureOccupiedLights(sim.player.vehicleId)

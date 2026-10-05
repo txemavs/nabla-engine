@@ -28,6 +28,8 @@ In the S3:
 | Escape        | Return to parent, or close the root menu               |
 | Save / Ctrl+S | Persist the scene, including the chosen paint          |
 
+The car menu includes **POSICION**: live heading (RUMBO), longitude, latitude and
+altitude on the GPS screen. Key G remains the street map.
 Cars start with the GPS fully lowered and off on each entry; G raises it on demand.
 Entry shows a 1.2-second overhead-to-seat transition, while the occupied car's
 materials are prepared with the scene lighting. C or driving input cancels the
