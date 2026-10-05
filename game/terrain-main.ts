@@ -14,6 +14,7 @@ import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
+import { readBootConfig, runBootPhase } from './boot.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { describeLoading } from './loading-text.js'
@@ -72,7 +73,8 @@ try {
     scene.sky = skyClockAtRate(scene.sky, config.timeSpeed)
   if (config.seaLevel !== undefined)
     scene.water = { mode: 'manual', level: config.seaLevel, amplitude: 0 }
-  const loading = new LoadingScreen()
+  const boot = readBootConfig()
+  const loading = new LoadingScreen(boot.splash)
   loading.setTiles(config.tile ? [config.tile] : [])
   document.getElementById('controls-hint')!.innerHTML = CONTROLS
   if (config.atlas.photo !== 'none') projectGroundPhoto()
@@ -82,6 +84,10 @@ try {
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),
+    onResolutionScale: (state) =>
+      document
+        .getElementById('game-canvas')!
+        .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
     sea: true,
@@ -135,6 +141,7 @@ try {
   loading.setStatus(
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
   )
+  void runBootPhase(runtime, loading, boot)
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
   if (scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)

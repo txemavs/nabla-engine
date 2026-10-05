@@ -23,7 +23,15 @@
           -apple-system,
           sans-serif;
       }
+      /* Host skins override these variables (see docs/boot-and-splash.md). */
       #loading-screen {
+        --splash-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        --splash-fg: #eee;
+        --splash-muted: #888;
+        --splash-accent: #4a9eff;
+        --splash-accent-2: #7c3aed;
+        --splash-track: #333;
+        --splash-logo-height: 72px;
         position: fixed;
         inset: 0;
         display: flex;
@@ -31,9 +39,46 @@
         align-items: center;
         justify-content: center;
         gap: 24px;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        background: var(--splash-bg);
+        color: var(--splash-fg);
         z-index: 1000;
         transition: opacity 0.5s ease-out;
+      }
+      #loading-logo {
+        height: var(--splash-logo-height);
+        width: auto;
+      }
+      #loading-logo[hidden] {
+        display: none;
+      }
+      /* Attract / TV-style boot: canvas shows the planet; status sits bottom-left. */
+      #loading-screen.splash-corner {
+        inset: auto auto 24px 24px;
+        align-items: flex-start;
+        justify-content: flex-end;
+        gap: 10px;
+        max-width: min(520px, calc(100vw - 48px));
+        padding: 14px 18px;
+        background: rgba(0, 0, 0, 0.45);
+        border-radius: 10px;
+        pointer-events: none;
+      }
+      #loading-screen.splash-corner #loading-logo {
+        height: calc(var(--splash-logo-height) * 0.5);
+      }
+      #loading-screen.splash-corner h1 {
+        font-size: 1.1rem;
+      }
+      #loading-screen.splash-corner #loading-progress {
+        width: 220px;
+      }
+      #loading-screen.splash-corner #loading-tiles {
+        display: none;
+      }
+      /* While the planet attract view runs, keep gameplay overlays out of the shot. */
+      body:has(#game-canvas[data-boot-mode='attract']) :is(.touch-driving, .touch-flight),
+      body:has(#game-canvas[data-boot-mode='attract']) #controls-hint {
+        display: none !important;
       }
       #loading-screen.hidden {
         opacity: 0;
@@ -46,18 +91,18 @@
       }
       #loading-status {
         font-size: 1rem;
-        color: #888;
+        color: var(--splash-muted);
       }
       #loading-progress {
         width: 300px;
         height: 4px;
-        background: #333;
+        background: var(--splash-track);
         border-radius: 2px;
         overflow: hidden;
       }
       #loading-progress-bar {
         height: 100%;
-        background: linear-gradient(90deg, #4a9eff, #7c3aed);
+        background: linear-gradient(90deg, var(--splash-accent), var(--splash-accent-2));
         width: 0%;
         transition: width 0.3s ease-out;
       }
@@ -75,10 +120,10 @@
         transition: background 0.3s;
       }
       .tile-indicator.loaded {
-        background: #4a9eff;
+        background: var(--splash-accent);
       }
       .tile-indicator.center {
-        background: #7c3aed;
+        background: var(--splash-accent-2);
       }
       #game-container {
         width: 100%;
@@ -195,6 +240,12 @@
         gap: 5px;
         margin-top: 14px;
       }
+      #display-settings label.inline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
       #display-settings input,
       #display-settings select,
       #display-settings button {
@@ -302,7 +353,8 @@
   </head>
   <body>
     <div id="loading-screen">
-      <h1>NABLA ENGINE</h1>
+      <img id="loading-logo" alt="" hidden />
+      <h1 id="loading-title">NABLA ENGINE</h1>
       <div id="loading-status">Initializing...</div>
       <div id="loading-progress">
         <div id="loading-progress-bar"></div>
@@ -359,9 +411,13 @@
           <input id="display-fps" type="number" min="0" max="360" step="1" value="0" />
         </label>
         <label
-          >Escala de resolución <span id="display-scale-label">100% del perfil</span>
-          <input id="display-scale" type="range" min="25" max="100" step="1" value="100" />
+          >Escala de resolución <span id="display-scale-label">Auto · 50% del perfil</span>
+          <input id="display-scale" type="range" min="25" max="100" step="1" value="50" />
         </label>
+        <label class="inline"
+          ><input id="display-scale-auto" type="checkbox" checked /> Escala automática
+          (50–100%)</label
+        >
         <p>FPS y escala se aplican durante la partida.</p>
       </fieldset>
       <div id="menu-sections"></div>

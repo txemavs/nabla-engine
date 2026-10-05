@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Dynamic resolution scale.** `DisplaySettings.resolutionScaleMode` is `'auto'` by default: the drawing buffer starts at 50% of the quality profile and moves within 0.5..1 by frame budget (FPS-cap aware). An explicit `resolutionScale` is a fixed **manual** value (0.25..1) the engine never changes. `GameRuntime.resolutionScaleState`, `onResolutionScale` and `AdaptiveResolutionScale` expose it. Behaviour change: hosts that omitted `display` used to render at 100%; pass `display: { resolutionScale: 1 }` to keep that.
+- **Boot probe.** `GameRuntime.probeMachine()` runs a ~3 s planet-render timing probe before play, applies the suggested start scale in auto mode and returns a `qualityTier` hint. It can overlap the terrain wait; `play()` finishes it first.
+- **Skinnable splash.** `@nabla/engine/runtime/splash` (`EngineSplashSkin`: logo URL, title, message list, theme CSS, centred/corner layout) with the Nabla skin as default. The demo splash uses `--splash-*` CSS variables and reads `window.NABLA_BOOT` / `VITE_NABLA_BOOT`.
+- **Attract boot view.** `GameRuntime.startAttract()` renders only sky and planet from a slow orbit while `play()` streams terrain and vehicles; `play()` stops it. The demo enables it with `?boot=attract` or the host boot config. See docs/boot-and-splash.md.
+
 - `installHostVehicles` skips (with a console warning) any host vehicle whose ground footprint overlaps an earlier one, including a hitched trailer at its towed position and a `tow: true` trailer whose tractor was skipped. Bodies spawned inside each other were flipped by the physics, so a stall grid laid out for another heading left free trailers standing on end with their axles in the air.
 - `createTerrainDriveScene({ includeDemoFleet: false })` skips the built-in parked row (car, a3, white-truck, carrier). The terrain game passes that when `?vehicles=` is non-empty so a host fleet does not stack a second carrier.
 - Split `white-trailer` into `trailer.chassis.glb` + `trailer.box.glb`. `white-trailer` still spawns chassis + `white-box`; `white-trailer-chassis` is the bare frame. Host `box: false | "white-box"` and `presetVehicle(..., { box })` compose at spawn. Other box types can replace only the cargo GLB.

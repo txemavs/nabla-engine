@@ -4,7 +4,17 @@
  * monitors and a single frame loop. Hosts supply a canvas and authored planetary
  * scene; dispose releases owned resources without removing the host canvas.
  */
-import { resolveDisplaySettings, type DisplaySettings } from '../config/display.js'
+import {
+  autoResolutionScaleRange,
+  resolveDisplaySettings,
+  type DisplaySettings,
+} from '../config/display.js'
+import {
+  AdaptiveResolutionScale,
+  probeResolutionTier,
+  type ResolutionProbeResult,
+  type ResolutionScaleState,
+} from './resolution-scale.js'
 import type { RuntimeFrameSample } from '../diagnostics/runtime-frame.js'
 export type { RuntimeFrameSample } from '../diagnostics/runtime-frame.js'
 import { controlDefaults } from '../config/controls.js'
@@ -37,11 +47,7 @@ import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm } from './shooting.js'
-import {
-  TouchDriving,
-  isRoadTouchDriving,
-  type TouchDrivingVisibility,
-} from './touch-driving.js'
+import { TouchDriving, isRoadTouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
 import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
@@ -67,7 +73,7 @@ import {
 import { CatchFloor } from '../render/planet/catch-floor.js'
 import { ShadowManager } from '../render/shadows.js'
 import { shadowTiers } from '../render/shadow-tiers.js'
-import { localToGeo, geoToLocal } from '../math/geo/sphere.js'
+import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
 import { createGameCameraState } from './game-camera.js'
@@ -94,6 +100,15 @@ export interface GameFrame {
   gearLabel: string | null
   location: ReturnType<typeof localToGeo> | null
 }
+/** Pre-play attract/boot view: sky and planet only, camera outside the planet (TV-style). */
+export interface AttractOptions {
+  /** Camera distance above the surface, metres (default 18 000 km). */
+  altitude?: number
+  /** Orbit period in seconds; 0 holds still (default 120). */
+  orbitSeconds?: number
+  /** Tilt from local vertical, radians (default 0.45). */
+  tilt?: number
+}
 export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
@@ -119,8 +134,14 @@ export interface GameRuntimeOptions {
    */
   restParkedOnGround?: boolean
   clock?: 'automatic' | 'manual'
-  /** Frame cap and additional resolution scaling; caps apply only to the automatic clock. */
+  /**
+   * Frame cap and resolution scaling; caps apply only to the automatic clock.
+   * Omit `resolutionScale` for auto mode (starts at 0.5, adapts 0.5..1).
+   * Pass `resolutionScale` (or `resolutionScaleMode: 'manual'`) to fix the scale.
+   */
   display?: Partial<DisplaySettings>
+  /** Notified when auto resolution changes scale, or when the host switches mode. */
+  onResolutionScale?: (state: ResolutionScaleState) => void
   /**
    * Auto shows the Studio drive rig on coarse-pointer devices. `always` keeps the
    * wheel, accelerator and handbrake visible for mouse and touch. `false` disables them.
@@ -158,6 +179,14 @@ export class GameRuntime {
   private readonly worldContent: WorldContent | undefined
   private readonly fieldLighting: FieldLighting | null
   private display: DisplaySettings
+  private readonly adaptive: AdaptiveResolutionScale
+  private probing: Promise<unknown> | null = null
+  private attract: {
+    loop: FrameLoop
+    started: number
+    last: number | null
+    options: Required<AttractOptions>
+  } | null = null
   private quality: PerformanceSettings
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
@@ -223,6 +252,11 @@ export class GameRuntime {
     this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
     this.scene.add(this.wheelDebug.root)
     this.display = resolveDisplaySettings(options.display)
+    this.adaptive = new AdaptiveResolutionScale({
+      mode: this.display.resolutionScaleMode,
+      scale: this.display.resolutionScale,
+    })
+    this.adaptive.setTargetFrameMs(this.display.maxFps ? 1000 / this.display.maxFps : null)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
     this.camera.near = this.cameraState.settings.nearClip
     this.camera.far = this.cameraState.settings.farClip
@@ -265,10 +299,7 @@ export class GameRuntime {
     })
     configureWorldRenderer(this.renderer)
     if (options.onDiagnostics) this.renderer.info.autoReset = false
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, this.quality.resolution) *
-        this.display.resolutionScale,
-    )
+    this.applyPixelRatio()
     this.renderer.shadowMap.enabled = this.quality.shadows > 0
     this.renderer.shadowMap.type = THREE.PCFShadowMap
     this.renderer.shadowMap.autoUpdate = false
@@ -472,6 +503,8 @@ export class GameRuntime {
         }
         progress('Ground ready')
       }
+      // A boot probe may run alongside the ground wait; finish it before gameplay frames start.
+      if (this.probing) await this.probing.catch(() => undefined)
       controller.signal.throwIfAborted()
       this.options.onProgress?.('Starting simulation…')
       const simulation = await this.game.play(document, {
@@ -482,6 +515,7 @@ export class GameRuntime {
       simulation.setCollisionDistance(this.quality.collisions)
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
+      this.stopAttract()
       this.view.setPlaying(true)
       this.effects.audio.setSuspended(globalThis.document.hidden)
       this.world?.renderUpdate(this.origin, !!this.quality.buildings, this.session.simulation)
@@ -578,6 +612,7 @@ export class GameRuntime {
   /** Release GPU/audio/DOM listeners and restore canvas tab index. Idempotent and terminal. */
   dispose(): void {
     if (this.disposed) return
+    this.stopAttract()
     this.stop()
     this.disposed = true
     this.lifetime.abort()
@@ -630,6 +665,7 @@ export class GameRuntime {
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
     this.canvasDiagnostics(frameMs)
+    this.observeResolution(frameMs, time)
     const pad = this.pollGamepad()
     const installStart = measuring ? performance.now() : 0
     this.world?.flushInstall(
@@ -1169,19 +1205,198 @@ export class GameRuntime {
     this.assertAlive()
     this.effects.audio.setEnabled(enabled)
   }
-  /** Apply a live automatic-clock cap and drawing-buffer scale; physics keeps its fixed timestep. */
+  /**
+   * Apply a live automatic-clock cap and drawing-buffer scale; physics keeps its fixed timestep.
+   * Passing `resolutionScale` without a mode fixes the scale (manual). Passing
+   * `resolutionScaleMode: 'auto'` resumes adaptation from the current scale (clamped to 0.5..1).
+   */
   setDisplay(settings: Partial<DisplaySettings>): void {
     if (this.disposed) throw new Error('Game runtime is disposed')
-    const next = resolveDisplaySettings({ ...this.display, ...settings })
+    let mode = settings.resolutionScaleMode ?? this.display.resolutionScaleMode
+    if (settings.resolutionScale !== undefined && settings.resolutionScaleMode === undefined)
+      mode = 'manual'
+    let scale = settings.resolutionScale ?? this.display.resolutionScale
+    if (mode === 'auto')
+      scale = Math.min(autoResolutionScaleRange.max, Math.max(autoResolutionScaleRange.min, scale))
+    const next = resolveDisplaySettings({
+      maxFps: settings.maxFps ?? this.display.maxFps,
+      resolutionScale: scale,
+      resolutionScaleMode: mode,
+    })
     const resize = next.resolutionScale !== this.display.resolutionScale
-    if (next.maxFps !== this.display.maxFps) this.loop.setMaxFps(next.maxFps)
+    const modeChanged = next.resolutionScaleMode !== this.display.resolutionScaleMode
+    if (next.maxFps !== this.display.maxFps) {
+      this.loop.setMaxFps(next.maxFps)
+      this.adaptive.setTargetFrameMs(next.maxFps ? 1000 / next.maxFps : null)
+    }
     this.display = next
+    this.adaptive.applyDisplay(next)
     if (resize) {
-      this.renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio || 1, this.quality.resolution) * next.resolutionScale,
-      )
+      this.applyPixelRatio()
       this.resize()
     }
+    if (resize || modeChanged) this.options.onResolutionScale?.(this.adaptive.state)
+  }
+  /** Current auto/manual mode and live drawing-buffer scale. */
+  get resolutionScaleState(): ResolutionScaleState {
+    return this.adaptive.state
+  }
+  /**
+   * Run a short (~3 s by default) machine-speed probe while the host waits (ideally during
+   * `startAttract`). In auto mode the suggested initial scale is applied immediately; manual
+   * scale is never changed. `qualityTier` is a hint for the host (quality presets need a reload).
+   */
+  probeMachine(options: { durationMs?: number } = {}): Promise<ResolutionProbeResult> {
+    this.assertAlive()
+    if (this.session.state === 'playing')
+      return Promise.reject(new Error('probeMachine must run before play() starts the simulation'))
+    const run = this.runProbe(options)
+    this.probing = run
+    void run
+      .finally(() => {
+        if (this.probing === run) this.probing = null
+      })
+      .catch(() => undefined)
+    return run
+  }
+  private async runProbe(options: { durationMs?: number }): Promise<ResolutionProbeResult> {
+    // Probe at the profile's full ratio so slow GPUs show their fill cost.
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.quality.resolution))
+    this.resize()
+    const gl = this.renderer.getContext()
+    const pixel = new Uint8Array(4)
+    let last: number | null = null
+    try {
+      const result = await probeResolutionTier({
+        durationMs: options.durationMs,
+        sample: () =>
+          new Promise<number>((resolve) => {
+            requestAnimationFrame((time) => {
+              if (this.disposed) return resolve(0)
+              const start = performance.now()
+              for (let pass = 0; pass < 3; pass++) this.renderAttractFrame(time)
+              // One-pixel readback waits for the queued GPU work: a CPU+GPU proxy, not a GPU timer.
+              gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
+              const work = performance.now() - start
+              const interval = last === null ? work : Math.max(work, time - last)
+              last = time
+              resolve(interval)
+            })
+          }),
+        sleep: async () => {},
+      })
+      if (this.display.resolutionScaleMode === 'auto') {
+        this.display = { ...this.display, resolutionScale: result.resolutionScale }
+        this.adaptive.setAuto(result.resolutionScale)
+      }
+      this.options.canvas.dataset.probeTier = result.qualityTier
+      this.options.canvas.dataset.probeMedianMs = result.medianFrameMs.toFixed(1)
+      return result
+    } finally {
+      if (!this.disposed) {
+        this.applyPixelRatio()
+        this.resize()
+        this.options.onResolutionScale?.(this.adaptive.state)
+      }
+    }
+  }
+  /**
+   * Boot/attract mode: render only sky and planet from orbit while `play()` streams terrain and
+   * vehicles. `play()` stops it automatically once the simulation starts. Idempotent.
+   */
+  startAttract(options: AttractOptions = {}): void {
+    this.assertAlive()
+    if (!this.document.geography) return
+    if (this.attract) {
+      Object.assign(this.attract.options, options)
+      return
+    }
+    const resolved: Required<AttractOptions> = {
+      altitude: options.altitude ?? 18_000_000,
+      orbitSeconds: options.orbitSeconds ?? 120,
+      tilt: options.tilt ?? 0.45,
+    }
+    const loop = new FrameLoop((time) => {
+      try {
+        const attract = this.attract
+        if (!attract || this.disposed) return
+        const frameMs = attract.last === null ? 0 : time - attract.last
+        attract.last = time
+        this.renderAttractFrame(time)
+        this.observeResolution(frameMs, time)
+      } catch (error) {
+        this.stopAttract()
+        this.options.onError?.(error)
+      }
+    })
+    loop.setMaxFps(this.display.maxFps)
+    this.attract = { loop, started: performance.now(), last: null, options: resolved }
+    this.options.canvas.dataset.bootMode = 'attract'
+    loop.start()
+  }
+  /** Stop the attract view (also called by `play()` and `dispose()`). */
+  stopAttract(): void {
+    if (!this.attract) return
+    this.attract.loop.stop()
+    this.attract = null
+    if (this.options.canvas.dataset.bootMode === 'attract')
+      this.options.canvas.dataset.bootMode = 'play'
+  }
+  /** Whether the pre-play attract view is running. */
+  get attracting(): boolean {
+    return !!this.attract
+  }
+  private renderAttractFrame(time: number): void {
+    if (!this.document.geography) return
+    const options = this.attract?.options ?? { altitude: 18_000_000, orbitSeconds: 120, tilt: 0.45 }
+    const started = this.attract?.started ?? 0
+    const centre = new THREE.Vector3(0, -(EARTH_RADIUS + this.document.geography.altitude), 0)
+    const angle = options.orbitSeconds
+      ? (((time - started) / 1000) * Math.PI * 2) / options.orbitSeconds
+      : 0
+    const distance = EARTH_RADIUS + options.altitude
+    const eye = new THREE.Vector3(
+      Math.sin(options.tilt) * Math.cos(angle),
+      Math.cos(options.tilt),
+      Math.sin(options.tilt) * Math.sin(angle),
+    )
+      .multiplyScalar(distance)
+      .add(centre)
+    this.camera.up.set(0, 1, 0)
+    this.camera.position.copy(eye)
+    this.camera.lookAt(centre)
+    this.camera.updateMatrixWorld()
+    this.environment.updateSky(
+      this.sky,
+      eye,
+      this.origin,
+      this.document.sky ?? { mode: 'live' },
+      this.quality.fog,
+    )
+    this.sky.setViewAspect(this.camera.aspect)
+    const autoClear = this.renderer.autoClear
+    this.renderer.autoClear = true
+    try {
+      this.sky.render(this.renderer, this.camera, eye)
+    } finally {
+      this.renderer.autoClear = autoClear
+    }
+  }
+  private observeResolution(frameMs: number, time: number): void {
+    const changed = this.adaptive.observeFrame(frameMs, time)
+    if (changed === null) return
+    this.display = { ...this.display, resolutionScale: changed }
+    this.applyPixelRatio()
+    this.resize()
+    this.options.onResolutionScale?.(this.adaptive.state)
+  }
+  private applyPixelRatio(): void {
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, this.quality.resolution) *
+        this.display.resolutionScale,
+    )
+    this.options.canvas.dataset.resolutionScale = String(this.display.resolutionScale)
+    this.options.canvas.dataset.resolutionScaleMode = this.display.resolutionScaleMode
   }
 
   private cull(position: THREE.Vector3): void {
