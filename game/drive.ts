@@ -11,13 +11,17 @@ import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { LoadingScreen, showError } from './loading.js'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
+import { showLocation } from './position.js'
 import { describeLoading } from './loading-text.js'
 import { bindTerrainSelector } from './terrain-selector.js'
+import { bindSceneControls } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
+// This page does not read &time= / &sea=, so the menu keeps the URL as it is.
+const attachSceneControls = bindSceneControls({ rememberInUrl: false })
 let runtime: GameRuntime | undefined
 try {
   const config = parseGameConfig()
@@ -164,9 +168,7 @@ try {
     onFrame(frame) {
       document.getElementById('speed-display')!.textContent = Math.round(frame.speedKmh) + ' km/h'
       document.getElementById('gear-display')!.textContent = frame.gearLabel ?? ''
-      document.getElementById('location-display')!.textContent = frame.location
-        ? frame.location.latitude.toFixed(5) + '°, ' + frame.location.longitude.toFixed(5) + '°'
-        : ''
+      showLocation(frame.location)
     },
     onError(error) {
       showError(error instanceof Error ? error.message : String(error))
@@ -181,6 +183,7 @@ try {
     Object.assign(window, { nablaRuntime: runtime })
   await runtime.play({ vehicleId: vehicle.id })
   loading.hide()
+  attachSceneControls(runtime)
   bindDisplaySettings(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()

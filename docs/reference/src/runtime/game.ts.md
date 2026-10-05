@@ -16,6 +16,7 @@ owns session state, held input, camera transitions and local portal events.
 - `./streaming.js`
 - `three`
 - `../scene/document.js`
+- `../entity/schema.js`
 - `../simulation/simulation.js`
 - `../render/entity/driving-camera.js`
 - `./session.js`
@@ -25,7 +26,7 @@ owns session state, held input, camera transitions and local portal events.
 
 ## GameRuntime.constructor
 
-[Implementation, line 35](../../../../src/runtime/game.ts#L35)
+[Implementation, line 36](../../../../src/runtime/game.ts#L36)
 
 Copy per-application camera overrides; replay retains them.
 
@@ -40,7 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.simulation
 
-[Implementation, line 40](../../../../src/runtime/game.ts#L40)
+[Implementation, line 41](../../../../src/runtime/game.ts#L41)
 
 Expose the session-owned simulation for presentation, or null outside a live session.
 
@@ -50,7 +51,7 @@ simulation(): inferred by TypeScript; see implementation
 
 ## GameRuntime.state
 
-[Implementation, line 44](../../../../src/runtime/game.ts#L44)
+[Implementation, line 45](../../../../src/runtime/game.ts#L45)
 
 Read the session phase; this accessor has no lifecycle side effects.
 
@@ -60,7 +61,7 @@ state(): inferred by TypeScript; see implementation
 
 ## GameRuntime.play
 
-[Implementation, line 49](../../../../src/runtime/game.ts#L49)
+[Implementation, line 50](../../../../src/runtime/game.ts#L50)
 
 Copy the authored scene, replace physics and initialize camera yaw from the spawn pose.
 
@@ -82,17 +83,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.session.play`
 - `this.streaming.reset`
 
-## GameRuntime.play.callback@55
+## GameRuntime.play.callback@56
 
-[Implementation, line 55](../../../../src/runtime/game.ts#L55)
+[Implementation, line 56](../../../../src/runtime/game.ts#L56)
 
 ```ts
-callback@55(e): inferred by TypeScript; see implementation
+callback@56(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.releaseInput
 
-[Implementation, line 67](../../../../src/runtime/game.ts#L67)
+[Implementation, line 68](../../../../src/runtime/game.ts#L68)
 
 Clear held controls, steering history and queued jumps, then idle the active simulation.
 
@@ -109,7 +110,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.pause
 
-[Implementation, line 74](../../../../src/runtime/game.ts#L74)
+[Implementation, line 75](../../../../src/runtime/game.ts#L75)
 
 Release controls before suspending physics so resume cannot replay a held command.
 
@@ -124,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.resume
 
-[Implementation, line 79](../../../../src/runtime/game.ts#L79)
+[Implementation, line 80](../../../../src/runtime/game.ts#L80)
 
 Resume a paused session without restoring previously held controls.
 
@@ -138,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.stop
 
-[Implementation, line 83](../../../../src/runtime/game.ts#L83)
+[Implementation, line 84](../../../../src/runtime/game.ts#L84)
 
 Release controls, discard streaming history and close the current simulation.
 
@@ -154,7 +155,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.dispose
 
-[Implementation, line 90](../../../../src/runtime/game.ts#L90)
+[Implementation, line 91](../../../../src/runtime/game.ts#L91)
 
 Stop gameplay and permanently close the session owner.
 
@@ -167,9 +168,46 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.session.dispose`
 - `this.stop`
 
+## GameRuntime.addVehicles
+
+[Implementation, line 97](../../../../src/runtime/game.ts#L97)
+
+Register vehicles added to the live simulation so input mixing sees their definitions.
+
+```ts
+addVehicles(added: Entity[]): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `structuredClone`
+- `this.scene?.entities.push`
+
+## GameRuntime.removeVehicle
+
+[Implementation, line 101](../../../../src/runtime/game.ts#L101)
+
+Forget a vehicle removed from the live simulation.
+
+```ts
+removeVehicle(id: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.scene.entities.filter`
+
+## GameRuntime.removeVehicle.callback@102
+
+[Implementation, line 102](../../../../src/runtime/game.ts#L102)
+
+```ts
+callback@102(e): inferred by TypeScript; see implementation
+```
+
 ## GameRuntime.readInput
 
-[Implementation, line 96](../../../../src/runtime/game.ts#L96)
+[Implementation, line 106](../../../../src/runtime/game.ts#L106)
 
 Mix controls using elapsed seconds; align camera/input yaw when entering a new interior.
 
@@ -183,7 +221,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.step
 
-[Implementation, line 119](../../../../src/runtime/game.ts#L119)
+[Implementation, line 129](../../../../src/runtime/game.ts#L129)
 
 Advance physics and synchronize boarding and local portal camera transitions.
 Elapsed time is seconds, water level is metres and now is milliseconds.
@@ -201,17 +239,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.cameraState.telemetry.update`
 - `this.session.step`
 
-## GameRuntime.step.callback@147
+## GameRuntime.step.callback@157
 
-[Implementation, line 147](../../../../src/runtime/game.ts#L147)
+[Implementation, line 157](../../../../src/runtime/game.ts#L157)
 
 ```ts
-callback@147(e): inferred by TypeScript; see implementation
+callback@157(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.updateCamera
 
-[Implementation, line 169](../../../../src/runtime/game.ts#L169)
+[Implementation, line 179](../../../../src/runtime/game.ts#L179)
 
 Update the host camera from live physics; now is milliseconds and dt is seconds.
 
@@ -230,7 +268,7 @@ Explicit throws in this body:
 
 ## GameRuntime.action
 
-[Implementation, line 180](../../../../src/runtime/game.ts#L180)
+[Implementation, line 190](../../../../src/runtime/game.ts#L190)
 
 Device-independent gameplay actions; presentation-only actions stay with the view.
 

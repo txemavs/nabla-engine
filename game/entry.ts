@@ -3,6 +3,7 @@ import {
   chooseTerrainSource,
   loadTerrainSource,
   parseTerrainSource,
+  POSITION_PARAMS,
   withTerrainSource,
   type SourceStorage,
 } from '@nabla/engine/planet/terrain-source'
@@ -55,6 +56,11 @@ export async function resolveEntry(
   if (choice.source.kind === 'packages') {
     // Start over the default road, then let anything the URL already said win.
     const merged = new URLSearchParams(terrainDefaults(published, choice.source.url))
+    // A URL that names its own position (tile, lat/lon, ll) replaces the default road start entirely,
+    // and keeps that position even though it named no source (withTerrainSource drops positions then).
+    if (['tile', 'lat', 'lon', 'll'].some((key) => params.has(key)))
+      for (const key of ['tile', 'dx', 'dz', 'heading']) merged.delete(key)
+    for (const key of POSITION_PARAMS) if (params.has(key)) next.set(key, params.get(key)!)
     for (const [key, value] of next) merged.set(key, value)
     return { mode: 'terrain', search: '?' + merged.toString() }
   }

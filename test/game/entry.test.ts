@@ -46,6 +46,24 @@ describe('entry point', () => {
     })
   })
 
+  it('keeps a position given on a bare URL (lat/lon, ll, tile) instead of the default road', async () => {
+    for (const search of ['?lat=43.3386&lon=-1.7899', '?ll=43.3386,-1.7899', '?tile=16221/11998']) {
+      const entry = await resolveEntry(search, store(null), published)
+      expect(entry.mode, search).toBe('terrain')
+      const params = new URLSearchParams(entry.search)
+      expect(params.get('terrain')).toBe('/terrain')
+      for (const key of ['dx', 'dz', 'heading']) expect(params.has(key), key).toBe(false)
+      expect(params.get('tile') ?? params.get('ll') ?? params.get('lat')).toBeTruthy()
+      expect(params.get('tile')).toBe(search.includes('tile') ? '16221/11998' : null)
+    }
+    // Other options alone still start on the default road.
+    expect(
+      new URLSearchParams((await resolveEntry('?heading=10', store(null), published)).search).get(
+        'tile',
+      ),
+    ).toBe('16211/12003')
+  })
+
   it('uses the remembered choice on a bare URL', async () => {
     expect(await resolveEntry('', store('{"kind":"flat"}'), published)).toEqual({
       mode: 'drive',

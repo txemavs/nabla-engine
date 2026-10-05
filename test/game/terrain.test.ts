@@ -50,6 +50,36 @@ describe('terrain-folder example config', () => {
     expect(explicit.scene).toMatchObject({ altitude: 12, vehicle: 'white-truck' })
   })
 
+  it('accepts the position as ll=<lat>,<lon> like lat= and lon=, in any common format', () => {
+    const want = { latitude: 43.3386, longitude: -1.7899 }
+    for (const query of [
+      'lat=43.3386&lon=-1.7899',
+      'll=43.3386,-1.7899',
+      'll=43.3386%2C-1.7899',
+      'll=43.3386%2C%20-1.7899',
+      'll=43.3386;-1.7899',
+      'll=43.3386+-1.7899',
+      'll=43%C2%B020%2719.0%22N%201%C2%B047%2723.6%22W',
+    ]) {
+      const c = parseTerrainConfig(`?terrain=/t&${query}`)
+      expect(c.start!.latitude, query).toBeCloseTo(want.latitude, 3)
+      expect(c.start!.longitude, query).toBeCloseTo(want.longitude, 3)
+      expect(c.tile, query).toEqual({ z: 15, x: 16221, y: 11998 })
+    }
+    // The position wins over tile=/dx/dz, which only mean something without it.
+    const both = parseTerrainConfig('?terrain=/t&tile=16211/12003&dx=500&ll=43.3386,-1.7899')
+    expect(both.tile).toEqual({ z: 15, x: 16221, y: 11998 })
+    expect(both.start).toEqual(want)
+  })
+
+  it('explains a bad ll= or a clash between ll= and lat=/lon= in Spanish', () => {
+    expect(() => parseTerrainConfig('?terrain=/t&ll=hola')).toThrow(/ll debe ser <lat>,<lon>/)
+    expect(() => parseTerrainConfig('?terrain=/t&ll=95,0')).toThrow(/Posición inicial no válida/)
+    expect(() => parseTerrainConfig('?terrain=/t&ll=43,-1&lat=43&lon=-1')).toThrow(/no las dos/)
+    expect(() => parseTerrainConfig('?terrain=/t&lat=43.3&lon=200')).toThrow(/fuera de rango/)
+    expect(() => parseTerrainConfig('?terrain=/t&lat=85.5&lon=0')).toThrow(/fuera de rango/)
+  })
+
   it('defaults to the drivable engine relief and the full photo', () => {
     expect(parseTerrainConfig('?terrain=/t&tile=16211/12003').atlas).toEqual({
       relief: 'engine',
