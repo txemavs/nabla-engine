@@ -22,7 +22,7 @@ import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
 import type { FieldLightOptions } from '../render/entity/field-lights.js'
 import { worldWater } from './water.js'
-import type { SkyClock } from '../planet/sky.js'
+import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
 import {
   browserPerformanceDefaults,
@@ -54,7 +54,11 @@ import {
 } from '../render/planet/world.js'
 import { setPlanetCharts } from '../render/entity/helm-map.js'
 import { setNavigationPlaces, setNavigationRoads } from '../render/entity/navigation-places.js'
-import { WorldEnvironment, configureWorldRenderer } from '../render/planet/world-environment.js'
+import {
+  WorldEnvironment,
+  configureWorldRenderer,
+  PLANET_DEFAULTS,
+} from '../render/planet/world-environment.js'
 import { CatchFloor } from '../render/planet/catch-floor.js'
 import { ShadowManager } from '../render/shadows.js'
 import { shadowTiers } from '../render/shadow-tiers.js'
@@ -189,6 +193,21 @@ export class GameRuntime {
   private readonly hud: GameHud | null
   private readonly wheelDebug = new WheelDebugOverlay()
   private readonly text: ReturnType<typeof createRuntimeText>
+  private planet: {
+    sky: boolean
+    sun: boolean
+    clouds: boolean
+    sea: boolean
+    cloudStyle: 'low' | 'artistic'
+    cloudAmount: number
+  } = {
+    sky: PLANET_DEFAULTS.sky,
+    sun: PLANET_DEFAULTS.sun,
+    clouds: PLANET_DEFAULTS.clouds,
+    sea: PLANET_DEFAULTS.sea,
+    cloudStyle: 'artistic',
+    cloudAmount: PLANET_DEFAULTS.cloudAmount,
+  }
 
   constructor(private readonly options: GameRuntimeOptions) {
     // Reject malformed JavaScript callers before allocating browser resources.
@@ -308,6 +327,8 @@ export class GameRuntime {
     this.gallery = new Gallery(options.canvas.parentElement!, this.text)
     this.sky = new GeographicView(this.document, () => {})
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
+    this.planet.sea = this.options.sea !== false
+    this.syncPlanet()
     this.effects = new VehicleEffects(this.scene)
     this.effects.audio.setEnabled(options.audio !== false)
     this.touchDriving =
@@ -698,7 +719,7 @@ export class GameRuntime {
       this.origin,
       Math.max(this.quality.distance, this.quality.fog * 2),
       time,
-      this.options.sea !== false,
+      this.planet.sea,
     )
     const height = this.environment.updateSky(
       this.sky,
@@ -709,7 +730,7 @@ export class GameRuntime {
     )
     const previousFar = this.camera.far
     if (this.sky.enabled) {
-      const direction = this.environment.applyLighting(this.sky)
+      const direction = this.environment.applyLighting(this.sky, this.planet.sun)
       this.shadows.setLightDirection(direction.clone().negate())
       this.shadows.setLightIntensity(this.sun.intensity)
       this.shadows.setLightColor(this.sun.color)
@@ -774,6 +795,7 @@ export class GameRuntime {
         view: this.view,
         sky: this.sky,
         clock: this.document.sky ?? { mode: 'live' },
+        skyVisible: this.planet.sky,
         origin: this.origin,
         eye,
         ambient: this.ambient,
@@ -814,14 +836,72 @@ export class GameRuntime {
     })
   }
 
-  /** The sky clock in use: `live` follows the real clock, `fixed` holds one instant. */
+  /** The sky clock in use: `live` follows the real clock (optionally faster), `fixed` holds one instant. */
   get skyClock(): SkyClock {
     return this.document.sky ?? { mode: 'live' }
   }
   /** Change the time of day live; sun, sky, fog and lighting follow on the next frame. */
   setSkyClock(clock: SkyClock): void {
     this.assertAlive()
-    this.document.sky = clock.mode === 'fixed' ? { mode: 'fixed', at: clock.at } : { mode: 'live' }
+    this.document.sky =
+      clock.mode === 'fixed'
+        ? { mode: 'fixed', at: clock.at }
+        : liveSkyClock(
+            skyRate(clock),
+            clock.since ?? Date.now(),
+            clock.origin ? Date.parse(clock.origin) : Date.now(),
+          )
+  }
+  /** Visible planetary layers (sky, sun, clouds, sea). */
+  get planetLayers(): { sky: boolean; sun: boolean; clouds: boolean; sea: boolean } {
+    return {
+      sky: this.planet.sky,
+      sun: this.planet.sun,
+      clouds: this.planet.clouds,
+      sea: this.planet.sea,
+    }
+  }
+  /** Show or hide planetary layers; wires `GeographicView.setLayers` and the sea sheet. */
+  setPlanetLayers(
+    layers: Partial<{ sky: boolean; sun: boolean; clouds: boolean; sea: boolean }>,
+  ): void {
+    this.assertAlive()
+    if (layers.sky !== undefined) this.planet.sky = layers.sky
+    if (layers.sun !== undefined) this.planet.sun = layers.sun
+    if (layers.clouds !== undefined) this.planet.clouds = layers.clouds
+    if (layers.sea !== undefined) this.planet.sea = layers.sea
+    this.syncPlanet()
+  }
+  get cloudStyle(): 'low' | 'artistic' {
+    return this.planet.cloudStyle
+  }
+  /** Artistic sheets or the simpler globe layer (`GeographicView.setCloudStyle`). */
+  setCloudStyle(style: 'low' | 'artistic'): void {
+    this.assertAlive()
+    this.planet.cloudStyle = style
+    this.sky.setCloudStyle(style)
+  }
+  get cloudAmount(): number {
+    return this.planet.cloudAmount
+  }
+  /** Cloud coverage 0–1 (`GeographicView.setCloudWeather`). */
+  setCloudWeather(amount: number, storm = 0): void {
+    this.assertAlive()
+    if (!Number.isFinite(amount) || amount < 0 || amount > 1)
+      throw new Error('Cloud amount must be between 0 and 1')
+    this.planet.cloudAmount = amount
+    this.sky.setCloudWeather(amount, storm)
+  }
+  private syncPlanet(): void {
+    this.sky.setLayers({
+      sky: this.planet.sky,
+      planets: this.planet.sky,
+      sun: this.planet.sun,
+      moon: this.planet.sky,
+      clouds: this.planet.clouds,
+    })
+    this.sky.setCloudStyle(this.planet.cloudStyle)
+    this.sky.setCloudWeather(this.planet.cloudAmount, 0)
   }
   /** Sea settings in use; undefined means the simplified tide. */
   get waterSettings(): SceneDocument['water'] {

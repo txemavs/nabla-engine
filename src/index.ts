@@ -3,7 +3,14 @@ export { randomUUID } from './util/uuid.js'
 export { triangles } from './math/solid/mesh.js'
 export { isMapEnvironment } from './scene/map-content.js'
 export { treeSprite } from './entity/sprite/sprite.js'
-export { skyTime, localTimeInput, type SkyClock } from './planet/sky.js'
+export {
+  skyTime,
+  localTimeInput,
+  liveSkyClock,
+  skyClockAtRate,
+  skyRate,
+  type SkyClock,
+} from './planet/sky.js'
 export type { SceneDocument } from './scene/document.js'
 export { SceneGraph } from './scene/graph.js'
 export { SceneEditor } from './scene/history.js'

@@ -19,6 +19,12 @@ it('persists and undoes time selection without changing scene entities', () => {
   editor.undo()
   expect(editor.document.sky).toBeUndefined()
   expect(() => editor.load({ ...before, sky: { mode: 'fixed', at: 'invalid' } })).toThrow()
+  expect(
+    parseScene({
+      ...before,
+      sky: { mode: 'live', rate: 12, origin: '2026-09-21T00:00:00.000Z', since: 1 },
+    }).sky,
+  ).toEqual({ mode: 'live', rate: 12, origin: '2026-09-21T00:00:00.000Z', since: 1 })
 })
 it('shares day/night atmosphere and removes ground haze continuously in space', () => {
   const frame = localFrame(MADRID).invert()
