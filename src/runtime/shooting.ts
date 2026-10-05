@@ -25,6 +25,9 @@ export function fireSidearm(
     firing.lookAt(destination)
   }
   firing.updateMatrixWorld(true)
-  sidearm.impact(gallery.shoot(sim, view, firing, sidearm.range, sidearm.impulse))
+  const muzzle = firing.position.toArray() as [number, number, number]
+  const hit = gallery.shoot(sim, view, firing, sidearm.range, sidearm.impulse)
+  sidearm.impact(hit)
+  view.tracers.add(muzzle, destination.toArray() as [number, number, number], now)
   return true
 }

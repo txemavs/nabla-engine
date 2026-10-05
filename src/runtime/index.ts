@@ -31,6 +31,13 @@ export {
   type TouchDrivingVisibility,
   type TouchDrivingInput,
 } from './touch-driving.js'
+export {
+  TouchFlight,
+  flightFromMode2,
+  type TouchFlightActions,
+  type TouchFlightVisibility,
+  type TouchFlightInput,
+} from './touch-flight.js'
 export { GameplayStreaming, type GameplayWorldStream } from './streaming.js'
 export { Sidearm } from './sidearm.js'
 export { Gallery, shotView } from './gallery.js'

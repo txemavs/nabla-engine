@@ -38,6 +38,7 @@ import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm } from './shooting.js'
 import { TouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
+import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
 import * as THREE from 'three'
@@ -162,6 +163,7 @@ export class GameRuntime {
   private weaponDrawn = false
   private fireRequested = false
   private readonly touchDriving: TouchDriving | null
+  private readonly touchFlight: TouchFlight | null
   private readonly monitors: VehicleMonitors
   private readonly view: SceneView
   private readonly sky: GeographicView
@@ -331,19 +333,29 @@ export class GameRuntime {
     this.syncPlanet()
     this.effects = new VehicleEffects(this.scene)
     this.effects.audio.setEnabled(options.audio !== false)
+    const touchActions = {
+      engage: () => {
+        options.canvas.focus()
+        this.effects.audio.unlock()
+      },
+      interact: () => this.action('KeyE'),
+      camera: () => this.cycleCamera(),
+    }
     this.touchDriving =
       options.touchControls === false
         ? null
         : new TouchDriving(
             options.canvas.parentElement!,
-            {
-              engage: () => {
-                options.canvas.focus()
-                this.effects.audio.unlock()
-              },
-              interact: () => this.action('KeyE'),
-              camera: () => this.cycleCamera(),
-            },
+            touchActions,
+            options.touchControls ?? 'auto',
+            this.text,
+          )
+    this.touchFlight =
+      options.touchControls === false
+        ? null
+        : new TouchFlight(
+            options.canvas.parentElement!,
+            touchActions,
             options.touchControls ?? 'auto',
             this.text,
           )
@@ -501,6 +513,7 @@ export class GameRuntime {
   pause(): void {
     this.assertAlive()
     this.touchDriving?.setActive(false)
+    this.touchFlight?.setActive(false)
     this.game.pause()
     this.loop.stop()
     this.releaseInput()
@@ -525,6 +538,7 @@ export class GameRuntime {
     this.loop.stop()
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, null)
     this.touchDriving?.setActive(false)
+    this.touchFlight?.setActive(false)
     this.monitors.hide()
     this.remoteViews.dispose()
     this.fieldLighting?.lights.reset()
@@ -572,6 +586,7 @@ export class GameRuntime {
     this.sidearm?.dispose()
     this.gallery.dispose()
     this.touchDriving?.dispose()
+    this.touchFlight?.dispose()
     this.monitors.dispose()
     this.view.dispose()
     this.sky.dispose()
@@ -602,7 +617,11 @@ export class GameRuntime {
         ? 0
         : Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
     this.lastTime = time
-    this.touchDriving?.setActive(this.session.state === 'playing' && !document.hidden)
+    const playing = this.session.state === 'playing' && !document.hidden
+    const carrier = !!sim.player.vehicleId && sim.vehicleInfo(sim.player.vehicleId).isCarrier
+    this.touchDriving?.setActive(playing && !carrier)
+    if (this.touchDriving) this.touchDriving.root.hidden = !playing || carrier
+    this.touchFlight?.setActive(playing && carrier)
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
@@ -621,12 +640,26 @@ export class GameRuntime {
     )
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
     const installMs = measuring ? performance.now() - installStart : 0
+    const helmTouch = this.monitors.flightInput()
+    const flightTouch = this.touchFlight?.input() ?? {
+      forward: 0,
+      right: 0,
+      lift: 0,
+      turn: 0,
+      brake: false,
+    }
     const input = this.game.readInput(dt, {
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
       pad,
-      touch: this.monitors.flightInput(),
-      driving: this.touchDriving?.input(),
+      touch: {
+        forward: Math.max(-1, Math.min(1, helmTouch.forward + flightTouch.forward)),
+        right: Math.max(-1, Math.min(1, helmTouch.right + flightTouch.right)),
+        lift: Math.max(-1, Math.min(1, helmTouch.lift + flightTouch.lift)),
+        turn: Math.max(-1, Math.min(1, helmTouch.turn + flightTouch.turn)),
+        brake: helmTouch.brake || flightTouch.brake,
+      },
+      driving: carrier ? { forward: 0, right: 0, brake: false } : this.touchDriving?.input(),
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
@@ -663,6 +696,7 @@ export class GameRuntime {
     canvas.dataset.vehicleEntrance = this.cameraState.entrance ? 'active' : 'complete'
     if (crossing) canvas.dataset.portalCrossings = String(crossing.sequence)
     this.gallery.update(this.view, true, dt)
+    this.view.tracers.update(time)
     if (this.sidearm) {
       this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
       if (this.fireRequested && this.hasInput()) {
@@ -1150,6 +1184,7 @@ export class GameRuntime {
       !document.hidden &&
       (this.options.acceptsInput?.() ?? true) &&
       (this.touchDriving?.busy() ||
+        this.touchFlight?.busy() ||
         (document.activeElement === this.options.canvas && document.hasFocus()))
     )
   }
@@ -1165,6 +1200,7 @@ export class GameRuntime {
   releaseInput(): void {
     this.fireRequested = false
     this.touchDriving?.clear()
+    this.touchFlight?.clear()
     this.monitors.releaseInput()
     this.game.releaseInput()
     this.previousButtons = []

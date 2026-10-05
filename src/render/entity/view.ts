@@ -38,6 +38,7 @@ import { RoadBatches } from '../planet/road-batches.js'
 import { LandcoverBatches } from '../planet/landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
+import { ShotTracers } from './shot-tracers.js'
 import { roadGeometry } from '../../planet/land/roads/draped-road.js'
 import { terrainVertices, terrainIndices } from '../../planet/land/terrain.js'
 import { triangles, trianglesWithRoofInfo } from '../../math/solid/mesh.js'
@@ -100,6 +101,7 @@ export class SceneView {
   readonly placeScreens = new Map<string, THREE.Mesh>()
   readonly systemScreens = new Map<string, THREE.Mesh>()
   readonly impacts = new ImpactMarks()
+  readonly tracers = new ShotTracers()
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   night = false
@@ -215,6 +217,7 @@ export class SceneView {
     this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar, this.vehicleLights.root)
+    this.root.add(this.tracers.root)
     this.ready = Promise.all(this.loading).then(() => undefined)
   }
   /** A known pose-only edit; preserve all unrelated entities and render batches. */
@@ -1007,7 +1010,10 @@ export class SceneView {
   setPlaying(playing: boolean): void {
     if (playing) this.simulated = true
     this.avatar.visible = playing
-    if (!playing) this.impacts.clear()
+    if (!playing) {
+      this.impacts.clear()
+      this.tracers.clear()
+    }
     if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
     for (const e of this.document.entities)
       if (
@@ -1223,6 +1229,7 @@ export class SceneView {
     this.buildings.dispose()
     this.landcover.dispose()
     this.impacts.dispose()
+    this.tracers.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()
     this.surfaceTextures.forEach((texture) => texture.dispose())
