@@ -236,9 +236,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## vehicleRumbo
 
-[Implementation, line 199](../../../../../src/render/entity/car-instruments.ts#L199)
+[Implementation, line 201](../../../../../src/render/entity/car-instruments.ts#L201)
 
-Yaw from the entity quaternion, same convention as helm `sys-rumbo`.
+Compass heading 0–359 from the entity quaternion.
+Same `(-yaw·180/π) mod 360` rule as helm `sys-rumbo`, but YXZ so 180° does not fold to 0.
 
 ```ts
 vehicleRumbo(rotation: readonly [number, number, number, number]): number
@@ -253,7 +254,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gpsFix
 
-[Implementation, line 204](../../../../../src/render/entity/car-instruments.ts#L204)
+[Implementation, line 206](../../../../../src/render/entity/car-instruments.ts#L206)
 
 ```ts
 gpsFix(doc: SceneDocument, position: readonly [number, number, number]): inferred by TypeScript; see implementation

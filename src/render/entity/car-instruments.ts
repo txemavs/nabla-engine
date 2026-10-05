@@ -195,9 +195,11 @@ export class CarInstruments {
   }
 }
 
-/** Yaw from the entity quaternion, same convention as helm `sys-rumbo`. */
+/** Compass heading 0–359 from the entity quaternion.
+ * Same `(-yaw·180/π) mod 360` rule as helm `sys-rumbo`, but YXZ so 180° does not fold to 0.
+ */
 export function vehicleRumbo(rotation: readonly [number, number, number, number]): number {
-  const yaw = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(...rotation)).y
+  const yaw = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(...rotation), 'YXZ').y
   return (Math.round(((-yaw * 180) / Math.PI) % 360) + 360) % 360
 }
 
