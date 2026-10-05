@@ -2,7 +2,7 @@
 
 Stock four-wheel Engine preset adapted from the tractor in commit `1cca41f`
 (`codex/white-truck-studio`). Its original GLBs are under
-`assets/studio/trucks/white-truck-studio/assets/`.
+`assets/library/trucks/white-truck/assets/`.
 
 Uses the existing Engine wheeled simulation, with separate front and rear wheel
 models. The shared tyre radius approximates the source's 5 mm front/rear

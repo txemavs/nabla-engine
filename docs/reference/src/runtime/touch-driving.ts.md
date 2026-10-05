@@ -6,34 +6,37 @@
 
 ## Module dependencies
 
+- `./messages.js`
 
 ## TouchDriving.constructor
 
-[Implementation, line 28](../../../../src/runtime/touch-driving.ts#L28)
+[Implementation, line 29](../../../../src/runtime/touch-driving.ts#L29)
 
 Pointer capture supports simultaneous steering/pedals and always releases cancelled input.
 
 ```ts
-constructor(host: HTMLElement, actions: TouchDrivingActions, visibility: TouchDrivingVisibility = 'auto'): instance
+constructor(host: HTMLElement, actions: TouchDrivingActions, visibility: TouchDrivingVisibility = 'auto', private readonly text: RuntimeText = createRuntimeText()): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `button.setAttribute`
+- `createRuntimeText`
 - `document.addEventListener`
 - `document.createElement`
 - `host.append`
 - `this.root.append`
 - `this.root.setAttribute`
 - `this.setActive`
+- `this.text`
 - `window.addEventListener`
 
-## TouchDriving.constructor.callback@56
+## TouchDriving.constructor.callback@58
 
-[Implementation, line 56](../../../../src/runtime/touch-driving.ts#L56)
+[Implementation, line 58](../../../../src/runtime/touch-driving.ts#L58)
 
 ```ts
-callback@56(e): inferred by TypeScript; see implementation
+callback@58(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -47,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.constructor.release
 
-[Implementation, line 69](../../../../src/runtime/touch-driving.ts#L69)
+[Implementation, line 71](../../../../src/runtime/touch-driving.ts#L71)
 
 ```ts
 release(e: PointerEvent): inferred by TypeScript; see implementation
@@ -56,30 +59,6 @@ release(e: PointerEvent): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.held.delete`
-
-## TouchDriving.constructor.callback@79
-
-[Implementation, line 79](../../../../src/runtime/touch-driving.ts#L79)
-
-```ts
-callback@79(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.clear`
-
-## TouchDriving.constructor.callback@80
-
-[Implementation, line 80](../../../../src/runtime/touch-driving.ts#L80)
-
-```ts
-callback@80(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.clear`
 
 ## TouchDriving.constructor.callback@81
 
@@ -93,9 +72,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.clear`
 
+## TouchDriving.constructor.callback@82
+
+[Implementation, line 82](../../../../src/runtime/touch-driving.ts#L82)
+
+```ts
+callback@82(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.clear`
+
+## TouchDriving.constructor.callback@83
+
+[Implementation, line 83](../../../../src/runtime/touch-driving.ts#L83)
+
+```ts
+callback@83(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.clear`
+
 ## TouchDriving.clear
 
-[Implementation, line 84](../../../../src/runtime/touch-driving.ts#L84)
+[Implementation, line 86](../../../../src/runtime/touch-driving.ts#L86)
 
 Pointer capture supports simultaneous steering/pedals and always releases cancelled input.
 
@@ -113,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.setActive
 
-[Implementation, line 93](../../../../src/runtime/touch-driving.ts#L93)
+[Implementation, line 95](../../../../src/runtime/touch-driving.ts#L95)
 
 Pointer capture supports simultaneous steering/pedals and always releases cancelled input.
 
@@ -128,7 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.dispose
 
-[Implementation, line 99](../../../../src/runtime/touch-driving.ts#L99)
+[Implementation, line 101](../../../../src/runtime/touch-driving.ts#L101)
 
 Pointer capture supports simultaneous steering/pedals and always releases cancelled input.
 
@@ -144,7 +147,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.input
 
-[Implementation, line 106](../../../../src/runtime/touch-driving.ts#L106)
+[Implementation, line 108](../../../../src/runtime/touch-driving.ts#L108)
 
 Pointer capture supports simultaneous steering/pedals and always releases cancelled input.
 

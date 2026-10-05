@@ -3,7 +3,7 @@ import { vector } from '../../entity/coords.js'
 import { readWeaponPresetSources } from './weapon-source.js'
 
 /**
- * A weapon preset is a JSON file under assets/studio/weapons or assets/custom/weapons.
+ * A weapon preset is a JSON file under assets/library/weapons or assets/custom/weapons.
  * studio is published. custom is this machine only. The file is one firearm.
  * Hitscan, the reticle and the viewmodel belong to the shared Engine runtime.
  */

@@ -1,3 +1,4 @@
+import { migrateStockAssetUrls } from './asset-urls.js'
 /**
  * A scene document: versioned JSON of entities, geography and sky.
  * External data is parsed before it changes any state. Names never select behavior.
@@ -57,7 +58,9 @@ export function parseScene(raw: unknown, experimentalLargeScene = false): SceneD
   const schema = experimentalLargeScene
     ? documentSchema.extend({ entities: z.array(entitySchema).min(1) })
     : documentSchema
-  return validateScene(schema.parse(raw))
+  const document = schema.parse(raw)
+  migrateStockAssetUrls(document)
+  return validateScene(document)
 }
 
 /** Internal streaming transaction over an already validated, privately owned document.

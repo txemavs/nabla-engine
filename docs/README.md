@@ -41,8 +41,8 @@ preserves the edit/play contract and a single physics owner.
 
 - [geoEuskadi road-area comparison: import, preparation and remaining integration gates](geoeuskadi-pilot.md)
 
-- [Studio Desktop foundation](studio-desktop.md): experimental dockable workspace, runtime boundaries and the migration sequence.
+- [Studio Desktop foundation](https://github.com/txemavs/nabla-studio/blob/main/docs/studio-desktop.md): experimental dockable workspace, runtime boundaries and the migration sequence.
 
-- [Named Studio projects](studio-projects.md): portable files, retained places, consistent geographic navigation and tabbed settings windows.
+- [Named Studio projects](https://github.com/txemavs/nabla-studio/blob/main/docs/studio-projects.md): portable files, retained places, consistent geographic navigation and tabbed settings windows.
 
 - [Planetary world model](planetary-world.md): global object poses, local working frames and destination-specific portal environments.

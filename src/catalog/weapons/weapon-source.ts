@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const buckets = ['studio', 'custom']
+const buckets = ['library', 'custom']
 
 /** assets/ next to this repo, the built package, or a prepare-dist compile. */
 function assetsDir(): string {

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { createRuntimeText, type RuntimeText } from './messages.js'
 import { type Entity } from '../entity/schema.js'
 import { type SceneDocument } from '../scene/document.js'
 import { portalMapping, portalLocal } from '../entity/portal/portal.js'
@@ -71,7 +72,10 @@ export class Gallery {
   private shots = 0
   private respawn = new Map<string, number>()
   private readonly hud = document.createElement('div')
-  constructor(viewport: HTMLElement) {
+  constructor(
+    viewport: HTMLElement,
+    private readonly text: RuntimeText = createRuntimeText(),
+  ) {
     this.hud.className = 'gallery-score'
     Object.assign(this.hud.style, {
       position: 'absolute',
@@ -113,7 +117,12 @@ export class Gallery {
       sprite.visible = this.remaining > 0 && (this.respawn.get(e.id) ?? 0) <= this.elapsed
       sprite.position.x = Math.sin(this.elapsed * 0.8 + i) * 1.5
     })
-    this.hud.textContent = `Galería · ${this.hits}/${this.shots} · ${Math.ceil(this.remaining)} s · N reiniciar`
+    this.hud.textContent = this.text(
+      'Gallery · {0}/{1} · {2} s · N restart',
+      this.hits,
+      this.shots,
+      Math.ceil(this.remaining),
+    )
     this.hud.dataset.hits = String(this.hits)
   }
   shoot(

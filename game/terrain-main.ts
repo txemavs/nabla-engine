@@ -61,6 +61,8 @@ try {
   if (config.atlas.photo !== 'none') projectGroundPhoto()
   setHiddenTileLayers(initialHiddenLayers())
   runtime = new GameRuntime({
+    locale: 'es',
+    hud: true,
     display: readDisplaySettings(),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,

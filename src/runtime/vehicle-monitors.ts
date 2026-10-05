@@ -1,4 +1,5 @@
 import { vehicleMonitorStyles, vehicleMonitorBaseStyles } from './vehicle-monitor-styles.js'
+import { createRuntimeText, type RuntimeText } from './messages.js'
 import * as THREE from 'three'
 import { HelmMap } from '../render/entity/helm-map.js'
 import { localToGeo } from '../math/geo/sphere.js'
@@ -75,6 +76,7 @@ export class VehicleMonitors {
     private viewport: HTMLElement,
     private report: (message: string) => void,
     private canvas: HTMLCanvasElement = viewport.querySelector('canvas')!,
+    private readonly text: RuntimeText = createRuntimeText(),
   ) {
     if (!canvas) throw new Error('Vehicle monitors require a canvas')
     this.originalPointerEvents = canvas.style.pointerEvents
@@ -146,7 +148,7 @@ export class VehicleMonitors {
       const title = window.document.createElement('strong')
       title.textContent = mouth.parentId ? 'PORTAL' : mouth.name
       const select = window.document.createElement('select')
-      select.setAttribute('aria-label', `Destino de ${mouth.name}`)
+      select.setAttribute('aria-label', this.text('Destination of {0}', mouth.name))
       const placeholder = new Option('Elegir destino…', '')
       select.add(placeholder)
       for (const target of mouths
@@ -163,8 +165,8 @@ export class VehicleMonitors {
       const status = window.document.createElement('small')
       const buttons = window.document.createElement('div')
       for (const [label, mode] of [
-        ['Abrir', 'open'],
-        ['Cerrar', 'closed'],
+        [this.text('Open'), 'open'],
+        [this.text('Close'), 'closed'],
       ] as const) {
         const button = window.document.createElement('button')
         button.textContent = label
@@ -187,7 +189,7 @@ export class VehicleMonitors {
               mode === 'closed'
                 ? this.simulation.portalState(mouth.id).pairId
                 : select.value || null
-            if (mode === 'open' && !target) throw new Error('Elige un destino primero')
+            if (mode === 'open' && !target) throw new Error(this.text('Choose a destination first'))
             this.report(this.simulation.configurePortal(mouth.id, target, mode))
           } catch (error) {
             this.report((error as Error).message)
@@ -199,8 +201,9 @@ export class VehicleMonitors {
       if (mouth.parentId) {
         const jump = window.document.createElement('form')
         jump.className = 'portal-jump'
-        jump.innerHTML =
-          '<label>Lat<input name="lat" type="number" step="any" required /></label><label>Lon<input name="lon" type="number" step="any" required /></label><button type="submit">Ir</button>'
+        jump.innerHTML = this.text(
+          '<label>Lat<input name="lat" type="number" step="any" required /></label><label>Lon<input name="lon" type="number" step="any" required /></label><button type="submit">Go</button>',
+        )
         jump.onsubmit = (event) => {
           event.preventDefault()
           if (!this.simulation || panel.dataset.active !== 'true') return
@@ -215,7 +218,7 @@ export class VehicleMonitors {
             longitude < -180 ||
             longitude > 180
           ) {
-            this.report('Coordenadas fuera de rango')
+            this.report(this.text('Coordinates out of range'))
             return
           }
           this.onJump?.(mouth.parentId!, latitude, longitude)
@@ -235,16 +238,19 @@ export class VehicleMonitors {
         panel.dataset.carrier = carrier.id
         panel.hidden = true
         if (kind === 'telemetry')
-          panel.innerHTML = '<strong>TELEMETRÍA</strong><output></output><small></small>'
+          panel.innerHTML = this.text('<strong>TELEMETRY</strong><output></output><small></small>')
         if (kind === 'map')
-          panel.innerHTML =
-            '<strong>NAVEGACIÓN</strong><canvas aria-label="Mapa cenital de carreteras"></canvas><small>Norte arriba · mapa local</small>'
+          panel.innerHTML = this.text(
+            '<strong>NAVIGATION</strong><canvas aria-label="Overhead road map"></canvas><small>North up · local map</small>',
+          )
         if (kind === 'where')
-          panel.innerHTML =
-            '<strong>DÓNDE</strong><output></output><small class="where-detail"></small>'
+          panel.innerHTML = this.text(
+            '<strong>LOCATION</strong><output></output><small class="where-detail"></small>',
+          )
         if (kind === 'systems') {
-          panel.innerHTML =
-            '<strong>SISTEMAS</strong><div class="systems-board"><button type="button" data-helm="off">POWER</button><button type="button" data-ship="nav">NAV</button><button type="button" data-ship="spots">FOCOS</button><button type="button" data-helm="space">SPACE</button><button type="button" data-ship="beacon">FLASH</button><output class="sys-time">--:--</output><output class="sys-rumbo">---°</output><button type="button" data-helm="plane">PLANE</button><button type="button" data-door>PUERTA</button><span></span><span></span><button type="button" data-helm="drone">DRONE</button><button type="button" data-helm="car">LAND</button><button type="button" data-ship="shutters">PERSIANA</button><button type="button" data-helm="auto">AUTO</button><button type="button" data-helm="drone">HOVER</button></div>'
+          panel.innerHTML = this.text(
+            '<strong>SYSTEMS</strong><div class="systems-board"><button type="button" data-helm="off">POWER</button><button type="button" data-ship="nav">NAV</button><button type="button" data-ship="spots">SPOTS</button><button type="button" data-helm="space">SPACE</button><button type="button" data-ship="beacon">FLASH</button><output class="sys-time">--:--</output><output class="sys-rumbo">---°</output><button type="button" data-helm="plane">PLANE</button><button type="button" data-door>DOOR</button><span></span><span></span><button type="button" data-helm="drone">DRONE</button><button type="button" data-helm="car">LAND</button><button type="button" data-ship="shutters">SHUTTER</button><button type="button" data-helm="auto">AUTO</button><button type="button" data-helm="drone">HOVER</button></div>',
+          )
           for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-ship]'))
             button.onclick = () => {
               if (panel.dataset.active !== 'true') return
@@ -278,8 +284,9 @@ export class VehicleMonitors {
           }
         }
         if (kind === 'touch') {
-          panel.innerHTML =
-            '<div class="helm-indicators">NABLA · CONTROL DE VUELO</div><div class="hand-controls"><div class="ship-switches"><button type="button" data-ship="nav">NAV</button><button type="button" data-ship="beacon">FLASH</button><button type="button" data-ship="spots">FOCOS</button><button type="button" data-ship="cabin" class="is-on">CABINA</button></div><div class="dpad" data-hand="left"><span>WASD</span></div><div class="helm-desk"><button type="button" data-helm="off">Apagada</button><button type="button" data-helm="auto">Auto</button><button type="button" data-helm="car">Coche</button><output class="helm-mode">Modo coche</output><button type="button" data-helm="drone">Dron</button><button type="button" data-helm="plane">Avión</button><button type="button" data-helm="space">Espacio</button><button type="button" data-door>Cerrar garaje</button><button type="button" data-brake>Frenar</button></div><div class="dpad" data-hand="right"><span>CURSORES</span></div><div class="ship-switches"><button type="button" data-ship="shutters">PERSIANAS</button></div></div>'
+          panel.innerHTML = this.text(
+            '<div class="helm-indicators">NABLA · FLIGHT CONTROL</div><div class="hand-controls"><div class="ship-switches"><button type="button" data-ship="nav">NAV</button><button type="button" data-ship="beacon">FLASH</button><button type="button" data-ship="spots">SPOTS</button><button type="button" data-ship="cabin" class="is-on">CABIN</button></div><div class="dpad" data-hand="left"><span>WASD</span></div><div class="helm-desk"><button type="button" data-helm="off">Off</button><button type="button" data-helm="auto">Auto</button><button type="button" data-helm="car">Car</button><output class="helm-mode">Road mode</output><button type="button" data-helm="drone">Drone</button><button type="button" data-helm="plane">Aircraft</button><button type="button" data-helm="space">Space</button><button type="button" data-door>Close garage</button><button type="button" data-brake>Brake</button></div><div class="dpad" data-hand="right"><span>ARROW KEYS</span></div><div class="ship-switches"><button type="button" data-ship="shutters">SHUTTERS</button></div></div>',
+          )
           for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-ship]'))
             button.onclick = () => {
               if (
@@ -338,14 +345,14 @@ export class VehicleMonitors {
             button.onlostpointercapture = release
           }
           for (const [hand, position, key, label, action] of [
-            ['left', 'up', 'W', 'Subir', 'lift:1'],
-            ['left', 'left', 'A', 'Girar izquierda', 'turn:-1'],
-            ['left', 'down', 'S', 'Bajar', 'lift:-1'],
-            ['left', 'right', 'D', 'Girar derecha', 'turn:1'],
-            ['right', 'up', '↑', 'Avanzar', 'forward:1'],
-            ['right', 'left', '←', 'Izquierda', 'right:-1'],
-            ['right', 'down', '↓', 'Retroceder', 'forward:-1'],
-            ['right', 'right', '→', 'Derecha', 'right:1'],
+            ['left', 'up', 'W', this.text('Ascend'), 'lift:1'],
+            ['left', 'left', 'A', this.text('Turn left'), 'turn:-1'],
+            ['left', 'down', 'S', this.text('Descend'), 'lift:-1'],
+            ['left', 'right', 'D', this.text('Turn right'), 'turn:1'],
+            ['right', 'up', '↑', this.text('Forward'), 'forward:1'],
+            ['right', 'left', '←', this.text('Left'), 'right:-1'],
+            ['right', 'down', '↓', this.text('Backward'), 'forward:-1'],
+            ['right', 'right', '→', this.text('Right'), 'right:1'],
           ]) {
             const button = window.document.createElement('button')
             button.className = position
@@ -434,7 +441,15 @@ export class VehicleMonitors {
       if (readout)
         entry.status.textContent =
           this.projectRegistry?.status(mouth.id) ??
-          `${state.mode === 'open' ? 'Abierto' : state.mode === 'window' ? 'Ventana' : 'Cerrado'}${destination ? ' · ' + destination : ''} · G libera el ratón`
+          this.text(
+            '{0}{1} · G releases the mouse',
+            state.mode === 'open'
+              ? this.text('Open')
+              : state.mode === 'window'
+                ? this.text('Window')
+                : this.text('Closed'),
+            destination ? ' · ' + destination : '',
+          )
     }
     for (const entry of this.panels.values()) {
       const mesh = (
@@ -484,10 +499,18 @@ export class VehicleMonitors {
             : `${info.altitude.toFixed(0)} m`
         const q = new THREE.Quaternion(...sim.entityTransform(entry.carrier).rotation)
         const euler = new THREE.Euler().setFromQuaternion(q, 'YXZ')
-        entry.panel.querySelector('output')!.textContent =
-          `${info.speedKmh.toFixed(0)} km/h · Altitud ${altitude}`
-        entry.panel.querySelector('small')!.textContent =
-          `${info.flightMode ? 'VUELO · altura asistida' : 'TIERRA'}\nCabeceo ${((euler.x * 180) / Math.PI).toFixed(0)}° · Alabeo ${((euler.z * 180) / Math.PI).toFixed(0)}°\nLímite ${info.cruiseSpeed} km/h`
+        entry.panel.querySelector('output')!.textContent = this.text(
+          '{0} km/h · Altitude {1}',
+          info.speedKmh.toFixed(0),
+          altitude,
+        )
+        entry.panel.querySelector('small')!.textContent = this.text(
+          '{0}\nPitch {1}° · Roll {2}°\nLimit {3} km/h',
+          info.flightMode ? this.text('FLIGHT · assisted altitude') : this.text('GROUND'),
+          ((euler.x * 180) / Math.PI).toFixed(0),
+          ((euler.z * 180) / Math.PI).toFixed(0),
+          info.cruiseSpeed,
+        )
       }
       if (readout && entry.kind === 'where') {
         const pose = sim.entityTransform(entry.carrier)
@@ -507,7 +530,7 @@ export class VehicleMonitors {
           output.textContent = `${mapTilePath(tile)}\nzoom ${tile.z} · x ${tile.x} · y ${tile.y}`
           detail.textContent = `${mapTileFilename(tile, 'terrain')}\n${mapTileFilename(tile, 'buildings-osm')}\n${under}`
         } else {
-          output.textContent = 'sin geografía'
+          output.textContent = this.text('No geography')
           detail.textContent = under
         }
       }
@@ -516,7 +539,7 @@ export class VehicleMonitors {
         const course = entry.panel.querySelector<HTMLOutputElement>('.sys-rumbo')
         const door = entry.panel.querySelector<HTMLButtonElement>('[data-door]')
         if (clock)
-          clock.textContent = new Date().toLocaleTimeString('es-ES', {
+          clock.textContent = new Date().toLocaleTimeString(undefined, {
             hour: '2-digit',
             minute: '2-digit',
           })
@@ -543,41 +566,41 @@ export class VehicleMonitors {
         const readoutMode = entry.panel.querySelector<HTMLOutputElement>('.helm-mode')
         if (readout && readoutMode) {
           const label = info.rampMoving
-            ? 'Puerta en movimiento…'
+            ? this.text('Door moving…')
             : info.rampClosed
-              ? 'Abrir garaje'
-              : 'Cerrar garaje'
+              ? this.text('Open garage')
+              : this.text('Close garage')
           if (door.textContent !== label) door.textContent = label
           const names = {
-            off: 'Nave apagada',
-            auto: 'Piloto automático',
-            car: 'Modo coche',
-            drone: 'Modo dron',
-            plane: 'Modo avión',
-            space: 'Modo nave espacial',
+            off: this.text('Craft off'),
+            auto: this.text('Autopilot'),
+            car: this.text('Road mode'),
+            drone: this.text('Drone mode'),
+            plane: this.text('Aircraft mode'),
+            space: this.text('Spacecraft mode'),
           } as const
           readoutMode.textContent = names[info.helm]
           const plane = info.helm === 'plane'
           const stick: Record<string, string> = plane
             ? {
-                'lift:1': 'Motor',
-                'lift:-1': 'Quitar motor',
-                'turn:-1': 'Timón izquierda',
-                'turn:1': 'Timón derecha',
-                'forward:1': 'Picar',
-                'forward:-1': 'Encabritar',
-                'right:-1': 'Alabeo izquierda',
-                'right:1': 'Alabeo derecha',
+                'lift:1': this.text('Throttle up'),
+                'lift:-1': this.text('Throttle down'),
+                'turn:-1': this.text('Rudder left'),
+                'turn:1': this.text('Rudder right'),
+                'forward:1': this.text('Pitch down'),
+                'forward:-1': this.text('Pitch up'),
+                'right:-1': this.text('Roll left'),
+                'right:1': this.text('Roll right'),
               }
             : {
-                'lift:1': 'Subir',
-                'lift:-1': 'Bajar',
-                'turn:-1': 'Girar izquierda',
-                'turn:1': 'Girar derecha',
-                'forward:1': 'Avanzar',
-                'forward:-1': 'Retroceder',
-                'right:-1': 'Izquierda',
-                'right:1': 'Derecha',
+                'lift:1': this.text('Ascend'),
+                'lift:-1': this.text('Descend'),
+                'turn:-1': this.text('Turn left'),
+                'turn:1': this.text('Turn right'),
+                'forward:1': this.text('Forward'),
+                'forward:-1': this.text('Backward'),
+                'right:-1': this.text('Left'),
+                'right:1': this.text('Right'),
               }
           for (const button of entry.panel.querySelectorAll<HTMLButtonElement>('[data-helm]')) {
             button.classList.toggle('is-on', button.dataset.helm === info.helm)
@@ -664,8 +687,8 @@ function underfoot(document: SceneDocument, x: number, z: number): string {
       }
   }
   return [
-    building ? `Edificio · ${building}` : 'Edificio · ninguno',
-    street ? `Calle · ${street}` : 'Calle · ninguna',
+    building ? `Building · ${building}` : 'Building · none',
+    street ? `Street · ${street}` : 'Street · none',
   ].join('\n')
 }
 

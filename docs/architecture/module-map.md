@@ -29,7 +29,7 @@ parallel proposal-only contracts.
 - Ground dynamics: [wheeled contract](wheeled-runtime.md).
 - Model-specific material names, holes, logos and mount coordinates:
   `src/catalog/presentation/`; [equipment contract](vehicle-equipment.md).
-- Editor keyboard/touch focus, storage and undo actions: `studio/` host.
+- Editor focus, storage and undo commands: the separate `nabla-studio` host.
 - Boundary regressions: `test/architecture/`; inventory command:
   `node scripts/module-inventory.ts` (Node 22.18+).
 
@@ -43,10 +43,8 @@ dependency graph.
 The first #78 extraction adds `/runtime/session` (headless play lifecycle),
 `/runtime` (shared camera, input and vehicle effects), `/runtime/browser`
 (standalone browser composition), `/scene`, and `/examples/flat-tile`.
-`game/` consumes these public entries. Studio uses the extracted components but
-still owns some gameplay orchestration; see the
-[remaining parity inventory](studio-extraction.md) before claiming the editor is
-independent or moving it to another repository.
+`game/` and Studio Play both mount `/runtime/browser`. The editor pauses its own
+viewport frame loop during Play. See the [ownership boundary](studio-extraction.md).
 
 ## Current-format policy
 
@@ -78,8 +76,8 @@ Map cache storage uses IndexedDB directly, without importing historical CacheSto
 - Ship/Cessna mounting and the artificial horizon retain model-specific presentation
   code. Road-model selection has moved to adapters. Do not claim every asset
   selector is gone.
-- Tire effects/audio are reusable source modules, but have no dedicated public
-  package subpath in this release. Studio still schedules their updates.
+- Tire effects/audio are available through `/runtime`; the browser runtime schedules
+  them. Studio does not advance gameplay effects itself.
 - Update intervals and draw budgets are tested; no new phone/XR/FPS performance
   guarantee follows from passing functional tests.
 

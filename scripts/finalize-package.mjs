@@ -38,7 +38,7 @@ for (const [file, name, sources] of [
       ...source,
       file: path.relative(packageRoot, source.file).split(path.sep).join('/'),
     }))
-    .filter((source) => source.file.startsWith('assets/studio/'))
+    .filter((source) => source.file.startsWith('assets/library/'))
   fs.writeFileSync(
     new URL(file, root),
     `// Generated stock catalog. Do not edit.\nexport function ${name}() { return ${JSON.stringify(stock)} }\n`,

@@ -1,6 +1,6 @@
 # Planetary object addresses and portal view environments
 
-> Current Studio implementation: version-3 saves use one owned planet and navigation bookmarks. See [One owned planet](studio-projects.md) for travel and persistence behavior. The remaining sections also describe simulation and streaming work beyond this storage change.
+> Current Studio implementation: version-3 saves use one owned planet and navigation bookmarks. See [One owned planet](https://github.com/txemavs/nabla-studio/blob/main/docs/studio-projects.md) for travel and persistence behavior. The remaining sections also describe simulation and streaming work beyond this storage change.
 
 A scene's geographic origin is a **working frame**, not the address of the world
 and not a constraint on which destinations a project may contain. Rendering and
@@ -64,7 +64,7 @@ In particular, do not feed Sydney coordinates into Madrid's physics scene as
 multi-million-metre floats. Version 2 still validates each cached scene against
 the current local scene bounds; arbitrary reassignment to a distant working frame
 requires the streaming/transfer work above. Full world-object transfer is not yet wired into Studio. Named remote-window routing
-is available; see [the portal registry](studio-projects.md#named-portal-registry-and-remote-windows).
+is available; see [the portal registry](https://github.com/txemavs/nabla-studio/blob/main/docs/studio-projects.md#named-portal-registry-and-remote-windows).
 
 ## Portal sky correction
 
