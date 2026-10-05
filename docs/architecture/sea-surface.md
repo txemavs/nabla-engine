@@ -6,7 +6,10 @@ landcover renderer: three drifting samples of the same normal texture and
 standard Three.js solar lighting/shadows. Planetary water meshes use the same
 material factory through `PlanetWorld.useSea`. No reflection camera is created.
 
-The sea is a single opaque, depth-tested spherical cap. It follows the camera,
+The sea is a single opaque, depth-tested spherical cap. Fragment depth is the
+true sphere hit inset a few centimetres along the planet normal so land at the
+waterline wins without a view-axis pull, which would walk the shoreline inland
+under a look-down camera. The sheet follows the camera,
 with 48 logarithmically spaced rings and 128 angular segments (12,160 triangles).
 Detail concentrates near the boat. View distance changes rebuild the bounded
 geometry; camera motion only updates its transform. Terrain occludes water, so

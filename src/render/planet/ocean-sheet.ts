@@ -8,6 +8,25 @@ export const SEA_ALTITUDE = 0
 const UNDER_CLEARANCE = 0.3
 /** Straight-line cap. The far root is the other side of the planet; the horizon from orbit is inside this. */
 const MAX_HIT = 4_000_000
+/**
+ * Inward metres along the planet normal used only for the sea depth write.
+ * Colour stays on the true sphere. A view-axis pull of ~1.4 m (clip.w - 1.4)
+ * became a vertical error under look-down and walked the shoreline inland.
+ */
+export const SEA_DEPTH_INSET = 0.04
+
+/**
+ * World point written to the depth buffer for a sea hit.
+ * A few centimetres inward keeps land at the waterline in front without a
+ * camera-dependent shoreline. Offset is along `radial`, never the view axis.
+ */
+export function seaDepthPoint(
+  hit: THREE.Vector3,
+  radial: THREE.Vector3,
+  inset = SEA_DEPTH_INSET,
+): THREE.Vector3 {
+  return hit.clone().addScaledVector(radial, -inset)
+}
 
 /** True once the eye has dropped through the sea surface. Above water stays opaque. */
 export function seaSeenFromBelow(
@@ -141,8 +160,9 @@ const seaShader = {
         color = mix(color, fogColor, clamp(smoothstep(fogNear, fogFar, t), 0.0, 1.0));
       }
       color += sunColor * glint * elev * strength;
-      vec4 clipHit = projectionMatrix * viewMatrix * vec4(hit, 1.0);
-      float w = max(clipHit.w - 1.4, 0.0);
+      vec3 depthHit = hit - radial * ${SEA_DEPTH_INSET};
+      vec4 clipHit = projectionMatrix * viewMatrix * vec4(depthHit, 1.0);
+      float w = max(clipHit.w, 0.0);
       #if defined( USE_LOGARITHMIC_DEPTH_BUFFER )
         gl_FragDepth = min(log2(1.0 + max(w, 0.0)) * logDepthBufFC * 0.5, 0.9999);
       #else
