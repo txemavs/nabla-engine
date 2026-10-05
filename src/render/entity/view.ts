@@ -39,6 +39,8 @@ import { LandcoverBatches } from '../planet/landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { ShotTracers } from './shot-tracers.js'
+import { ShotSparks } from './shot-sparks.js'
+import { ShotLaser } from './shot-laser.js'
 import { roadGeometry } from '../../planet/land/roads/draped-road.js'
 import { terrainVertices, terrainIndices } from '../../planet/land/terrain.js'
 import { triangles, trianglesWithRoofInfo } from '../../math/solid/mesh.js'
@@ -102,6 +104,8 @@ export class SceneView {
   readonly systemScreens = new Map<string, THREE.Mesh>()
   readonly impacts = new ImpactMarks()
   readonly tracers = new ShotTracers()
+  readonly sparks = new ShotSparks()
+  readonly laser = new ShotLaser()
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   night = false
@@ -217,7 +221,7 @@ export class SceneView {
     this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar, this.vehicleLights.root)
-    this.root.add(this.tracers.root)
+    this.root.add(this.tracers.root, this.sparks.root, this.laser.root)
     this.ready = Promise.all(this.loading).then(() => undefined)
   }
   /** A known pose-only edit; preserve all unrelated entities and render batches. */
@@ -975,7 +979,11 @@ export class SceneView {
         if (object) {
           object.visible = true
           object.traverse((child) => {
-            if (child instanceof THREE.Mesh && child.name !== 'shot-impact') {
+            if (
+              child instanceof THREE.Mesh &&
+              child.name !== 'shot-impact' &&
+              child.parent?.name !== 'shot-impact'
+            ) {
               if (!this.omittedMeshes.has(child)) this.omittedMeshes.set(child, child.visible)
               child.visible = false
             }
@@ -1020,6 +1028,8 @@ export class SceneView {
     if (!playing) {
       this.impacts.clear()
       this.tracers.clear()
+      this.sparks.clear()
+      this.laser.clear()
     }
     if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
     for (const e of this.document.entities)
@@ -1237,6 +1247,8 @@ export class SceneView {
     this.landcover.dispose()
     this.impacts.dispose()
     this.tracers.dispose()
+    this.sparks.dispose()
+    this.laser.dispose()
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()
     this.surfaceTextures.forEach((texture) => texture.dispose())

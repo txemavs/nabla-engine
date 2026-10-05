@@ -11,6 +11,8 @@
 ### Changed
 - Disable the cockpit circular touch ring around the steering wheel by default (`controlDefaults.showPilotTouchRing: false`). The ring drew a circle while its hit target stayed square, so touches outside the circle still steered; DOM/CSS and `TouchDriving.setPilot` stay so it can be re-enabled later.
 - **White-truck power/brakes:** tractor preset `engineForce`/`powerCv`/`torqueNm`/`maxWheelForceN` +20% and `brakeForce` +40% (engineForce 12000→14400, brakeForce 120→168, powerCv 420→504, torqueNm 2000→2400, maxWheelForceN 60000→72000). Cars and ships unchanged.
+- **Sidearm hit marks on buildings:** physics hits without a scene `entityId` (planet building colliders, static world) now spawn a world-anchored mark under `SceneView.root`, not only entity-parented marks on cars/props. Marks use a dark core plus light ring so they read on both light and dark surfaces.
+- **Sidearm FPS feel:** no UI reticle; **RMB** holds aim-down-sights (centred iron-sight pose) vs hip fire; viewmodel **recoil** on each shot; **H** toggles a muzzle laser while on foot (vehicle **H** still lights); hits spawn brief spark bursts and keep surface impact marks; the bullet tracer trail is no longer drawn.
 
 ### Fixed
 

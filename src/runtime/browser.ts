@@ -764,6 +764,7 @@ export class GameRuntime {
     if (crossing) canvas.dataset.portalCrossings = String(crossing.sequence)
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
+    this.view.sparks.update(time)
     if (this.sidearm) {
       this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
       if (this.fireRequested && this.hasInput()) {
@@ -782,6 +783,9 @@ export class GameRuntime {
         }
         this.options.canvas.dataset.impacts = String(this.view.impacts.count)
       }
+      this.updateSidearmLaser(sim, time)
+    } else {
+      this.view.laser.enabled = false
     }
     this.fireRequested = false
     // Boarding a vehicle (or any other path that leaves weapon mode) gives the mouse back.
@@ -1577,6 +1581,8 @@ export class GameRuntime {
       this.fireRequested = false
       if (this.weaponDrawn && !this.sidearm)
         this.sidearm = new Sidearm(this.options.canvas.parentElement!)
+      this.sidearm?.setAiming(false)
+      this.view.laser.enabled = this.weaponDrawn && !!this.sidearm?.laserEnabled
       this.options.onMessage?.(
         this.weaponDrawn ? this.text('Weapon drawn') : this.text('Weapon holstered'),
       )
@@ -1588,9 +1594,16 @@ export class GameRuntime {
       this.view.signal(sim.player.vehicleId, code === 'KeyZ' ? -1 : 1)
       message = this.text('Indicators: Z left · X right · press again to cancel')
     }
-    if (code === 'KeyH' && sim.player.vehicleId) {
-      const enabled = this.view.toggleVehicleLights(sim.player.vehicleId)
-      if (enabled !== null) message = enabled ? this.text('Lights on') : this.text('Lights off')
+    if (code === 'KeyH') {
+      if (sim.player.vehicleId) {
+        const enabled = this.view.toggleVehicleLights(sim.player.vehicleId)
+        if (enabled !== null) message = enabled ? this.text('Lights on') : this.text('Lights off')
+      } else if (this.weaponDrawn) {
+        if (!this.sidearm) this.sidearm = new Sidearm(this.options.canvas.parentElement!)
+        const on = this.sidearm.toggleLaser()
+        this.view.laser.enabled = on
+        message = on ? this.text('Laser on') : this.text('Laser off')
+      }
     }
     if (code === 'KeyG' && sim.player.vehicleId) {
       const open = this.view.toggleVehicleGps(sim.player.vehicleId)
@@ -1648,11 +1661,39 @@ export class GameRuntime {
       (event) => {
         canvas.focus()
         this.effects.audio.unlock()
-        if (event.button === 0 && this.weaponDrawn && !this.session.simulation?.player.vehicleId) {
+        const onFoot =
+          this.weaponDrawn && !this.session.simulation?.player.vehicleId
+        if (event.button === 0 && onFoot) {
           this.fireRequested = true
           // Re-capture after Esc: the click fires and locks the mouse again.
           if (event.pointerType === 'mouse') this.syncWeaponPointer(true)
         }
+        if (event.button === 2 && onFoot) {
+          event.preventDefault()
+          this.sidearm?.setAiming(true)
+          if (event.pointerType === 'mouse') this.syncWeaponPointer(true)
+        }
+      },
+      options,
+    )
+    canvas.addEventListener(
+      'pointerup',
+      (event) => {
+        if (event.button === 2) this.sidearm?.setAiming(false)
+      },
+      options,
+    )
+    canvas.addEventListener(
+      'pointercancel',
+      () => {
+        this.sidearm?.setAiming(false)
+      },
+      options,
+    )
+    canvas.addEventListener(
+      'contextmenu',
+      (event) => {
+        if (this.weaponDrawn && !this.session.simulation?.player.vehicleId) event.preventDefault()
       },
       options,
     )

@@ -173,9 +173,16 @@ export class Gallery {
       rayView.range,
       impulse,
     )
-    if (hit?.entityId) {
-      const object = view.objects.get(hit.entityId)
-      if (object) view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)
+    if (hit) {
+      // Scene entities (vehicles, props): parent the mark so it rides with them.
+      // Planet buildings and other static colliders have no entity id — anchor in
+      // view.root, which shares the floating-origin shift with world meshes.
+      const object = hit.entityId ? view.objects.get(hit.entityId) : undefined
+      if (object && hit.entityId) {
+        view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)
+      } else {
+        view.impacts.addWorld(view.root, hit.point, hit.normal)
+      }
     }
     return !!hit
   }
