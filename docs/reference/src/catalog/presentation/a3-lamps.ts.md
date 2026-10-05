@@ -23,6 +23,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `CarLights`
 - `console.warn`
 - `footwells`
+- `headBeams`
 - `model.traverse`
 
 ## createA3Lights.masked
@@ -123,9 +124,55 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `pos.getY`
 
+## headBeams
+
+[Implementation, line 133](../../../../../src/catalog/presentation/a3-lamps.ts#L133)
+
+```ts
+headBeams(model: THREE.Object3D): THREE.SpotLight[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.cos`
+- `Math.sign`
+- `Math.sin`
+- `THREE.Box3`
+- `THREE.Object3D`
+- `THREE.SpotLight`
+- `THREE.Vector3`
+- `beams.push`
+- `light.add`
+- `light.target.position.set`
+- `model.add`
+- `model.traverse`
+- `model.updateWorldMatrix`
+- `owner.add`
+- `owner.position.copy`
+- `owner.position.copy(center).add`
+
+## headBeams.callback@137
+
+[Implementation, line 137](../../../../../src/catalog/presentation/a3-lamps.ts#L137)
+
+```ts
+callback@137(object): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Vector3`
+- `box.getCenter`
+- `box.isEmpty`
+- `box.setFromObject`
+- `model.worldToLocal`
+- `object.name.replaceAll`
+- `object.name.replaceAll('_', ' ').toLowerCase`
+- `units.push`
+
 ## footwells
 
-[Implementation, line 124](../../../../../src/catalog/presentation/a3-lamps.ts#L124)
+[Implementation, line 179](../../../../../src/catalog/presentation/a3-lamps.ts#L179)
 
 Soft cabin fill from each footwell up to the seat. Model +X is the driver.
 
@@ -137,12 +184,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `[0.32, -0.32].map`
 
-## footwells.callback@125
+## footwells.callback@180
 
-[Implementation, line 125](../../../../../src/catalog/presentation/a3-lamps.ts#L125)
+[Implementation, line 180](../../../../../src/catalog/presentation/a3-lamps.ts#L180)
 
 ```ts
-callback@125(x): inferred by TypeScript; see implementation
+callback@180(x): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

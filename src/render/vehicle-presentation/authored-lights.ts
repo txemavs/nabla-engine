@@ -106,12 +106,18 @@ export class AuthoredVehicleLights {
       let owner: Object3D | null = node
       while (owner && owner.userData.role !== 'vehicle-light') owner = owner.parent
       if (!owner) return
-      const intensity = owner.userData.onIntensity
-      if (!Number.isFinite(intensity) || intensity < 0) return
+      const authored = owner.userData.onIntensity
+      if (!Number.isFinite(authored) || authored < 0) return
+      const lampChannel = channel(owner.userData.channel)
+      const beam = lampChannel === 'low' || lampChannel === 'high' || lampChannel === 'fog'
+      // Driving beams share one global level and a slightly softer edge than authored.
+      const intensity = beam ? authored * lightingDefaults.headlightIntensityScale : authored
+      if (beam && node instanceof SpotLight)
+        node.penumbra = Math.min(1, node.penumbra + lightingDefaults.headlightPenumbraBoost)
       this.lamps.push({
         light: node,
         intensity,
-        channel: channel(owner.userData.channel),
+        channel: lampChannel,
         side: owner.userData.side === 'L' ? -1 : owner.userData.side === 'R' ? 1 : 0,
       })
       if (node instanceof SpotLight && owner.userData.beamPattern === 'low-beam')

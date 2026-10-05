@@ -14,7 +14,7 @@
 
 ## fireSidearm
 
-[Implementation, line 7](../../../../src/runtime/shooting.ts#L7)
+[Implementation, line 8](../../../../src/runtime/shooting.ts#L8)
 
 Shared aim correction and shot routing. Call before applying the render origin.
 
@@ -27,17 +27,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Vector3`
 - `camera.clone`
 - `camera.position.clone`
-- `camera.position.clone().addScaledVector`
-- `camera.position.toArray`
 - `destination.toArray`
 - `direction.toArray`
 - `firing.lookAt`
+- `firing.position.copy`
 - `firing.position.fromArray`
-- `firing.position.toArray`
 - `firing.updateMatrixWorld`
 - `gallery.shoot`
 - `new Vector3(0, 0, -1).applyQuaternion`
+- `origin.add`
+- `origin.clone`
+- `origin.clone().addScaledVector`
+- `origin.fromArray`
+- `origin.toArray`
 - `sidearm.fire`
 - `sidearm.impact`
+- `sidearm.muzzleViewOffset`
+- `sidearm.muzzleViewOffset(now).applyQuaternion`
 - `sim.shoot`
-- `view.tracers.add`
+- `view.sparks.add`

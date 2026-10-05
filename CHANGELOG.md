@@ -4,6 +4,15 @@
 
 ### Changed
 
+- **S3 headlights like the truck:** the S3 now has real low and high beams at its two front lamp
+  units, built with the white truck's lamp setup (1800 / 18000 cd, 55 / 130 m, same cones, aimed
+  slightly down; low beams use the shared cut-off projection). They light the road ahead only, are
+  switched by the car's light controller and only drawn while the car is occupied.
+- **Softer, slightly dimmer beams (truck + S3):** driving beams are scaled by
+  `lightingDefaults.headlightIntensityScale` (0.85) with a slightly wider penumbra
+  (`headlightPenumbraBoost` 0.1); the low-beam cut-off edge is softer (`lowBeamCutoffSoftness`
+  0.025 → 0.04, `lowBeamSpreadPower` 4 → 3.5).
+
 - **Cloud style by quality:** artistic 3-layer clouds are the default only on the **Ultra**
   performance preset. Mobile, minimal, low, balanced, high and custom start on cheap (`low`)
   clouds. Players can still toggle artistic sheets from the Planeta controls. Artistic layer
@@ -14,7 +23,6 @@
 - **Cloud amount slider pressure:** `GameRuntime.setCloudWeather(amount)` no longer defaults
   pressure to `0`. Omitting the second argument keeps the current cloud pressure, so the
   Planeta / scene-controls quantity slider does not wipe storm settings.
-
 
 ### Added
 
