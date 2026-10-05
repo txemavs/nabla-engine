@@ -76,6 +76,7 @@ try {
   runtime = new GameRuntime({
     locale: 'es',
     hud: true,
+    touchControls: 'always',
     display: readDisplaySettings(),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,

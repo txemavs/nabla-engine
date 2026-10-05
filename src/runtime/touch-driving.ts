@@ -9,15 +9,31 @@ export interface TouchDrivingActions {
 export type TouchDrivingVisibility = 'auto' | 'always' | 'hidden'
 const styles = `
 .touch-driving { display: none; position: absolute; inset: auto 10px 16px; z-index: 45;
- grid-template-columns: repeat(4, 1fr); gap: 8px; pointer-events: none; }
+ width: calc(100% - 20px); pointer-events: none; gap: 10px; align-items: end;
+ grid-template-columns: 1fr 1fr; }
+.touch-driving-bar { grid-column: 1 / -1; display: flex; justify-content: center; gap: 8px; }
+.touch-dpad { width: min(42vw, 148px); height: min(42vw, 148px); justify-self: start;
+ border: 2px solid #66758d; border-radius: 50%; display: grid; place-items: center;
+ grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4px;
+ padding: 10px; box-sizing: border-box; background: #111827aa; }
+.touch-dpad[data-hand="right"] { justify-self: end; }
+.touch-dpad span { grid-area: 2 / 2; font: 11px system-ui, sans-serif; color: #89a7bb;
+ text-align: center; pointer-events: none; }
+.touch-dpad .up { grid-area: 1 / 2; } .touch-dpad .left { grid-area: 2 / 1; }
+.touch-dpad .right { grid-area: 2 / 3; } .touch-dpad .down { grid-area: 3 / 2; }
 .touch-driving button { pointer-events: auto; touch-action: none; user-select: none;
- min-height: 52px; background: #111827dd; color: #fff; border: 1px solid #66758d;
+ min-height: 52px; min-width: 52px; background: #111827dd; color: #fff; border: 1px solid #66758d;
  border-radius: 10px; font: 14px system-ui, sans-serif; }
+.touch-dpad button { border-radius: 12px; min-width: 0; padding: 0; font-size: 18px; }
 .touch-driving button:active { background: #2563eb; }
-.touch-driving button:disabled { opacity: .35; pointer-events: none; }
+.touch-driving.is-idle button { opacity: .55; }
 .touch-driving[data-visibility="always"] { display: grid; }
 .touch-driving[data-visibility="hidden"] { display: none; }
 @media (pointer: coarse) { .touch-driving[data-visibility="auto"] { display: grid; } }
+:has(> .touch-driving[data-visibility="always"]) > .nabla-game-hud { bottom: auto; top: 16px; }
+@media (pointer: coarse) {
+  :has(> .touch-driving[data-visibility="auto"]) > .nabla-game-hud { bottom: auto; top: 16px; }
+}
 `
 /** Pointer capture supports simultaneous steering/pedals and always releases cancelled input. */
 export class TouchDriving {
@@ -38,23 +54,28 @@ export class TouchDriving {
     style.textContent = styles
     this.root.append(style)
     this.root.setAttribute('aria-label', this.text('Touch controls'))
-    const controls = [
-      ['play', this.text('Play')],
-      ['interact', this.text('Enter / exit')],
-      ['camera', this.text('Camera')],
-      ['brake', this.text('Brake')],
-      ['left', '◀'],
-      ['right', '▶'],
-      ['reverse', this.text('Reverse')],
-      ['forward', this.text('Accelerate')],
+    const bar = document.createElement('div')
+    bar.className = 'touch-driving-bar'
+    const steer = this.pad('left', this.text('Steer'))
+    const pedals = this.pad('right', this.text('Pedals'))
+    const controls: [string, string, HTMLElement, string?][] = [
+      ['play', this.text('Play'), bar],
+      ['interact', this.text('Enter / exit'), bar],
+      ['camera', this.text('Camera'), bar],
+      ['brake', this.text('Brake'), bar],
+      ['left', '◀', steer, 'left'],
+      ['right', '▶', steer, 'right'],
+      ['forward', '▲', pedals, 'up'],
+      ['reverse', '▼', pedals, 'down'],
     ]
-    for (const [action, label] of controls) {
+    for (const [action, label, parent, position] of controls) {
       if (action === 'play' && !actions.play) continue
       const button = document.createElement('button')
       button.textContent = label
       button.dataset.drive = action
       button.type = 'button'
       button.setAttribute('aria-label', label)
+      if (position) button.className = position
       button.onpointerdown = (e) => {
         if (this.disposed) return
         e.preventDefault()
@@ -74,14 +95,25 @@ export class TouchDriving {
       button.onpointerup = release
       button.onpointercancel = release
       button.onlostpointercapture = release
-      this.root.append(button)
+      parent.append(button)
     }
+    this.root.append(bar, steer, pedals)
     host.append(this.root)
     const options = { signal: this.lifetime.signal }
     window.addEventListener('blur', () => this.clear(), options)
     window.addEventListener('pagehide', () => this.clear(), options)
     document.addEventListener('visibilitychange', () => this.clear(), options)
     this.setActive(false)
+  }
+  private pad(hand: 'left' | 'right', label: string): HTMLDivElement {
+    const pad = document.createElement('div')
+    pad.className = 'touch-dpad'
+    pad.dataset.hand = hand
+    pad.setAttribute('aria-label', label)
+    const caption = document.createElement('span')
+    caption.textContent = label
+    pad.append(caption)
+    return pad
   }
   clear(): void {
     const pointers = [...this.held.keys()]
@@ -92,10 +124,13 @@ export class TouchDriving {
       }
     }
   }
+  /** True while a steer/pedal/brake pointer is captured. */
+  busy(): boolean {
+    return this.enabled && this.held.size > 0
+  }
   setActive(active: boolean): void {
     this.enabled = active && !this.disposed
-    for (const button of this.root.querySelectorAll<HTMLButtonElement>('button'))
-      button.disabled = button.dataset.drive !== 'play' && !this.enabled
+    this.root.classList.toggle('is-idle', !this.enabled)
     if (!active) this.clear()
   }
   dispose(): void {

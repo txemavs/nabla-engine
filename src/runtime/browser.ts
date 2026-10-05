@@ -111,7 +111,10 @@ export interface GameRuntimeOptions {
   clock?: 'automatic' | 'manual'
   /** Frame cap and additional resolution scaling; caps apply only to the automatic clock. */
   display?: Partial<DisplaySettings>
-  /** Auto shows driving controls on coarse-pointer devices; false disables them. */
+  /**
+   * Auto shows driving controls on coarse-pointer devices. `always` keeps the
+   * Studio helm-style pads visible for mouse and touch. `false` disables them.
+   */
   touchControls?: TouchDrivingVisibility | false
   depthOfField?: boolean
   performance?: Partial<PerformanceSettings>
@@ -575,7 +578,7 @@ export class GameRuntime {
         ? 0
         : Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
     this.lastTime = time
-    this.touchDriving?.setActive(document.hasFocus() && !document.hidden)
+    this.touchDriving?.setActive(this.session.state === 'playing' && !document.hidden)
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
@@ -1017,10 +1020,10 @@ export class GameRuntime {
   }
   private hasInput(): boolean {
     return (
-      document.activeElement === this.options.canvas &&
-      document.hasFocus() &&
       !document.hidden &&
-      (this.options.acceptsInput?.() ?? true)
+      (this.options.acceptsInput?.() ?? true) &&
+      (this.touchDriving?.busy() ||
+        (document.activeElement === this.options.canvas && document.hasFocus()))
     )
   }
   /** Expose input health on the canvas so a stuck-control report can be checked in devtools. */

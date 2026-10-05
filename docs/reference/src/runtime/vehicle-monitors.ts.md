@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `./helm-touch.js`
 - `./vehicle-monitor-styles.js`
 - `./messages.js`
 - `three`
@@ -18,7 +19,7 @@
 
 ## VehicleMonitors.flightInput
 
-[Implementation, line 58](../../../../src/runtime/vehicle-monitors.ts#L58)
+[Implementation, line 59](../../../../src/runtime/vehicle-monitors.ts#L59)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -30,14 +31,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `Math.min`
-- `Number`
-- `action.split`
+- `helmTouchAxis`
 - `this.held.values`
 - `this.simulation.vehicleInfo`
 
 ## VehicleMonitors.constructor
 
-[Implementation, line 75](../../../../src/runtime/vehicle-monitors.ts#L75)
+[Implementation, line 70](../../../../src/runtime/vehicle-monitors.ts#L70)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -61,24 +61,36 @@ Explicit throws in this body:
 
 - `new Error('Vehicle monitors require a canvas')`
 
-## VehicleMonitors.constructor.callback@92
+## VehicleMonitors.constructor.callback@87
 
-[Implementation, line 92](../../../../src/runtime/vehicle-monitors.ts#L92)
+[Implementation, line 87](../../../../src/runtime/vehicle-monitors.ts#L87)
 
 ```ts
-callback@92(): inferred by TypeScript; see implementation
+callback@87(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseInput`
 
-## VehicleMonitors.constructor.callback@93
+## VehicleMonitors.constructor.callback@88
 
-[Implementation, line 93](../../../../src/runtime/vehicle-monitors.ts#L93)
+[Implementation, line 88](../../../../src/runtime/vehicle-monitors.ts#L88)
 
 ```ts
-callback@93(): inferred by TypeScript; see implementation
+callback@88(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.releaseInput`
+
+## VehicleMonitors.constructor.callback@89
+
+[Implementation, line 89](../../../../src/runtime/vehicle-monitors.ts#L89)
+
+```ts
+callback@89(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -90,19 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 94](../../../../src/runtime/vehicle-monitors.ts#L94)
 
 ```ts
-callback@94(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.releaseInput`
-
-## VehicleMonitors.constructor.callback@99
-
-[Implementation, line 99](../../../../src/runtime/vehicle-monitors.ts#L99)
-
-```ts
-callback@99(event): inferred by TypeScript; see implementation
+callback@94(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -111,7 +111,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleMonitors.releaseInput
 
-[Implementation, line 111](../../../../src/runtime/vehicle-monitors.ts#L111)
+[Implementation, line 106](../../../../src/runtime/vehicle-monitors.ts#L106)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -125,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleMonitors.hide
 
-[Implementation, line 114](../../../../src/runtime/vehicle-monitors.ts#L114)
+[Implementation, line 109](../../../../src/runtime/vehicle-monitors.ts#L109)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -142,7 +142,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleMonitors.dispose
 
-[Implementation, line 123](../../../../src/runtime/vehicle-monitors.ts#L123)
+[Implementation, line 118](../../../../src/runtime/vehicle-monitors.ts#L118)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -162,7 +162,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleMonitors.rebuild
 
-[Implementation, line 135](../../../../src/runtime/vehicle-monitors.ts#L135)
+[Implementation, line 130](../../../../src/runtime/vehicle-monitors.ts#L130)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -201,27 +201,51 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.text`
 - `window.document.createElement`
 
-## VehicleMonitors.rebuild.callback@141
+## VehicleMonitors.rebuild.callback@136
 
-[Implementation, line 141](../../../../src/runtime/vehicle-monitors.ts#L141)
+[Implementation, line 136](../../../../src/runtime/vehicle-monitors.ts#L136)
 
 ```ts
-callback@141(e): inferred by TypeScript; see implementation
+callback@136(e): inferred by TypeScript; see implementation
 ```
 
-## VehicleMonitors.rebuild.callback@156
+## VehicleMonitors.rebuild.callback@151
 
-[Implementation, line 156](../../../../src/runtime/vehicle-monitors.ts#L156)
+[Implementation, line 151](../../../../src/runtime/vehicle-monitors.ts#L151)
 
 ```ts
-callback@156(e): inferred by TypeScript; see implementation
+callback@151(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `e.size.every`
 
-## VehicleMonitors.rebuild.callback@156.callback@156
+## VehicleMonitors.rebuild.callback@151.callback@151
+
+[Implementation, line 151](../../../../src/runtime/vehicle-monitors.ts#L151)
+
+```ts
+callback@151(n, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+
+## VehicleMonitors.rebuild.callback@153
+
+[Implementation, line 153](../../../../src/runtime/vehicle-monitors.ts#L153)
+
+```ts
+callback@153(a, b): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+
+## VehicleMonitors.rebuild.callback@156
 
 [Implementation, line 156](../../../../src/runtime/vehicle-monitors.ts#L156)
 
@@ -233,36 +257,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.abs`
 
-## VehicleMonitors.rebuild.callback@158
+## VehicleMonitors.rebuild.callback@168
 
-[Implementation, line 158](../../../../src/runtime/vehicle-monitors.ts#L158)
-
-```ts
-callback@158(a, b): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Number`
-
-## VehicleMonitors.rebuild.callback@161
-
-[Implementation, line 161](../../../../src/runtime/vehicle-monitors.ts#L161)
+[Implementation, line 168](../../../../src/runtime/vehicle-monitors.ts#L168)
 
 ```ts
-callback@161(n, i): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Math.abs`
-
-## VehicleMonitors.rebuild.callback@173
-
-[Implementation, line 173](../../../../src/runtime/vehicle-monitors.ts#L173)
-
-```ts
-callback@173(): inferred by TypeScript; see implementation
+callback@168(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -281,12 +281,12 @@ Explicit throws in this body:
 
 - `new Error(this.text('Choose a destination first'))`
 
-## VehicleMonitors.rebuild.callback@207
+## VehicleMonitors.rebuild.callback@202
 
-[Implementation, line 207](../../../../src/runtime/vehicle-monitors.ts#L207)
+[Implementation, line 202](../../../../src/runtime/vehicle-monitors.ts#L202)
 
 ```ts
-callback@207(event): inferred by TypeScript; see implementation
+callback@202(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -300,20 +300,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.report`
 - `this.text`
 
-## VehicleMonitors.rebuild.callback@234
+## VehicleMonitors.rebuild.callback@229
 
-[Implementation, line 234](../../../../src/runtime/vehicle-monitors.ts#L234)
+[Implementation, line 229](../../../../src/runtime/vehicle-monitors.ts#L229)
 
 ```ts
-callback@234(e): inferred by TypeScript; see implementation
+callback@229(e): inferred by TypeScript; see implementation
 ```
 
-## VehicleMonitors.rebuild.callback@255
+## VehicleMonitors.rebuild.callback@250
 
-[Implementation, line 255](../../../../src/runtime/vehicle-monitors.ts#L255)
+[Implementation, line 250](../../../../src/runtime/vehicle-monitors.ts#L250)
 
 ```ts
-callback@255(): inferred by TypeScript; see implementation
+callback@250(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -321,12 +321,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `button.classList.toggle`
 - `this.onShipSwitch`
 
-## VehicleMonitors.rebuild.callback@264
+## VehicleMonitors.rebuild.callback@259
 
-[Implementation, line 264](../../../../src/runtime/vehicle-monitors.ts#L264)
+[Implementation, line 259](../../../../src/runtime/vehicle-monitors.ts#L259)
 
 ```ts
-callback@264(): inferred by TypeScript; see implementation
+callback@259(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -334,12 +334,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.report`
 - `this.simulation.setHelmMode`
 
-## VehicleMonitors.rebuild.callback@272
+## VehicleMonitors.rebuild.callback@267
 
-[Implementation, line 272](../../../../src/runtime/vehicle-monitors.ts#L272)
+[Implementation, line 267](../../../../src/runtime/vehicle-monitors.ts#L267)
 
 ```ts
-callback@272(): inferred by TypeScript; see implementation
+callback@267(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -348,12 +348,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.simulation.setGarageDoor`
 - `this.simulation.vehicleInfo`
 
-## VehicleMonitors.rebuild.callback@291
+## VehicleMonitors.rebuild.callback@286
 
-[Implementation, line 291](../../../../src/runtime/vehicle-monitors.ts#L291)
+[Implementation, line 286](../../../../src/runtime/vehicle-monitors.ts#L286)
 
 ```ts
-callback@291(): inferred by TypeScript; see implementation
+callback@286(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -361,12 +361,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `button.classList.toggle`
 - `this.onShipSwitch`
 
-## VehicleMonitors.rebuild.callback@304
+## VehicleMonitors.rebuild.callback@299
 
-[Implementation, line 304](../../../../src/runtime/vehicle-monitors.ts#L304)
+[Implementation, line 299](../../../../src/runtime/vehicle-monitors.ts#L299)
 
 ```ts
-callback@304(): inferred by TypeScript; see implementation
+callback@299(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -374,12 +374,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.report`
 - `this.simulation.setHelmMode`
 
-## VehicleMonitors.rebuild.callback@316
+## VehicleMonitors.rebuild.callback@311
 
-[Implementation, line 316](../../../../src/runtime/vehicle-monitors.ts#L316)
+[Implementation, line 311](../../../../src/runtime/vehicle-monitors.ts#L311)
 
 ```ts
-callback@316(): inferred by TypeScript; see implementation
+callback@311(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -390,18 +390,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleMonitors.rebuild.bind
 
-[Implementation, line 329](../../../../src/runtime/vehicle-monitors.ts#L329)
+[Implementation, line 324](../../../../src/runtime/vehicle-monitors.ts#L324)
 
 ```ts
 bind(button: HTMLButtonElement, action: string): inferred by TypeScript; see implementation
 ```
 
-## VehicleMonitors.rebuild.bind.callback@331
+## VehicleMonitors.rebuild.bind.callback@326
 
-[Implementation, line 331](../../../../src/runtime/vehicle-monitors.ts#L331)
+[Implementation, line 326](../../../../src/runtime/vehicle-monitors.ts#L326)
 
 ```ts
-callback@331(event): inferred by TypeScript; see implementation
+callback@326(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -409,11 +409,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `button.setPointerCapture`
 - `event.preventDefault`
 - `this.held.set`
-- `this.simulation.vehicleInfo`
 
 ## VehicleMonitors.rebuild.bind.release
 
-[Implementation, line 342](../../../../src/runtime/vehicle-monitors.ts#L342)
+[Implementation, line 336](../../../../src/runtime/vehicle-monitors.ts#L336)
 
 ```ts
 release(event: PointerEvent): inferred by TypeScript; see implementation
@@ -425,7 +424,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleMonitors.update
 
-[Implementation, line 381](../../../../src/runtime/vehicle-monitors.ts#L381)
+[Implementation, line 375](../../../../src/runtime/vehicle-monitors.ts#L375)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -505,25 +504,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.text`
 - `underfoot`
 
-## VehicleMonitors.update.callback@440
+## VehicleMonitors.update.callback@434
 
-[Implementation, line 440](../../../../src/runtime/vehicle-monitors.ts#L440)
+[Implementation, line 434](../../../../src/runtime/vehicle-monitors.ts#L434)
 
 ```ts
-callback@440(e): inferred by TypeScript; see implementation
+callback@434(e): inferred by TypeScript; see implementation
 ```
 
-## VehicleMonitors.update.callback@622
+## VehicleMonitors.update.callback@616
 
-[Implementation, line 622](../../../../src/runtime/vehicle-monitors.ts#L622)
+[Implementation, line 616](../../../../src/runtime/vehicle-monitors.ts#L616)
 
 ```ts
-callback@622(e): inferred by TypeScript; see implementation
+callback@616(e): inferred by TypeScript; see implementation
 ```
 
 ## VehicleMonitors.prepare
 
-[Implementation, line 640](../../../../src/runtime/vehicle-monitors.ts#L640)
+[Implementation, line 634](../../../../src/runtime/vehicle-monitors.ts#L634)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -545,7 +544,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleMonitors.finish
 
-[Implementation, line 663](../../../../src/runtime/vehicle-monitors.ts#L663)
+[Implementation, line 657](../../../../src/runtime/vehicle-monitors.ts#L657)
 
 Native DOM tablets share the portal pose; activation is limited to one metre.
 
@@ -555,7 +554,7 @@ finish(): void
 
 ## underfoot
 
-[Implementation, line 668](../../../../src/runtime/vehicle-monitors.ts#L668)
+[Implementation, line 662](../../../../src/runtime/vehicle-monitors.ts#L662)
 
 ```ts
 underfoot(document: SceneDocument, x: number, z: number): string
@@ -568,7 +567,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## segmentDistance
 
-[Implementation, line 695](../../../../src/runtime/vehicle-monitors.ts#L695)
+[Implementation, line 689](../../../../src/runtime/vehicle-monitors.ts#L689)
 
 ```ts
 segmentDistance(x: number, z: number, ax: number, az: number, bx: number, bz: number): number

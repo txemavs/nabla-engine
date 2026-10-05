@@ -18,6 +18,7 @@ export { waitForGround, GroundMissingError, type GroundProvider } from './ground
 export { warmGamePresentation, type PresentationWarmup } from './presentation-warmup.js'
 
 export { VehicleMonitors } from './vehicle-monitors.js'
+export { helmTouchAxis, type HelmTouchAxis } from './helm-touch.js'
 export { vehicleMenuKey } from './vehicle-menu.js'
 export {
   TouchDriving,

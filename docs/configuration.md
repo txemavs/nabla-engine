@@ -182,9 +182,12 @@ values. Touch controls, camera notices, equipment menus, monitors and the galler
 use the resolver. Authored entity names and lower-level simulation diagnostics
 remain authored data, not automatic translations.
 
-`hud: true` mounts the shared gameplay HUD. `acceptsInput` lets a host add its
-menu/panel focus policy; Engine still owns keyboard, mouse, gamepad and touch
-bindings. `releaseInput()` clears commands without disposing the session.
+`hud: true` mounts the shared gameplay HUD. `touchControls` selects the Studio
+helm-style driving overlay (`auto` on coarse pointers, `always`, `hidden`, or
+`false`). `acceptsInput` lets a host add its menu/panel focus policy; Engine still
+owns keyboard, mouse, gamepad and touch bindings. `releaseInput()` clears commands
+without disposing the session. The standalone game hosts pass `always` so steer,
+throttle and brake pads stay available beside the keyboard and gamepad.
 
 Mouse sensitivity and map wheel zoom live in `controlDefaults`. F9 toggles the
 Engine wheel diagnostic overlay; markers are allocated on demand for every axle.

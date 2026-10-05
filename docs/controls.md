@@ -42,6 +42,13 @@ speed and a free exit volume. Cars require supporting ground; a carrier with an
 interior places the monitor beside its helm, including while hovering at altitude. Blocked exits
 leave the player inside and display a status message.
 
+The standalone game keeps Studio's tactile driving HUD visible (`touchControls:
+'always'`): circular steer and pedal pads, brake, enter/exit and camera. Keyboard
+and gamepad still mix through the same `GameInput` path. In cockpit view the helm
+touchscreen d-pads use that same mapping in road mode (WASD and arrows steer and
+accelerate; Brake holds). Coarse-pointer hosts that leave visibility on `auto`
+show the overlay only on touch devices.
+
 ## A3 and mobile garage
 
 1. Load **Escena A3**, press **Jugar**, then **E** beside the A3.
