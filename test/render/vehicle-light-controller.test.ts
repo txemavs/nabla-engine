@@ -66,9 +66,12 @@ it('drives real tractor and trailer lenses independently by side, with no rear f
     expect(right.every((m) => m.emissiveIntensity === 0)).toBe(true)
     expect(reverse.every((m) => m.emissiveIntensity === 0)).toBe(true)
     const tailLevel = tail[0].emissiveIntensity
+    expect(tailLevel).toBeCloseTo(0.3)
+    expect(tail.every((m) => !m.toneMapped && m.emissive.r > m.emissive.g * 100)).toBe(true)
     lights.apply({ ...state, braking: true, reversing: true }, 900, controller)
     expect(left.every((m) => m.emissiveIntensity > 0)).toBe(true)
     expect(tail[0].emissiveIntensity).toBeGreaterThan(tailLevel)
+    expect(tail[0].emissiveIntensity).toBeCloseTo(0.9)
     expect(reverse.every((m) => m.emissiveIntensity > 0)).toBe(true)
     controller.toggleSignal(-1)
     lights.apply(state, 900, controller)

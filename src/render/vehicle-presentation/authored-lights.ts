@@ -83,6 +83,12 @@ export class AuthoredVehicleLights {
             (node.userData.role === 'vehicle-emitter' || material.userData.vehicleLightChannel)
           ) {
             if (this.emitters.some((entry) => entry.material === material)) continue
+            // Authored signal lenses may preserve their saturated hue instead of
+            // letting the filmic highlight shoulder turn strong red emission white.
+            if (material.userData.vehicleLightPreserveHue === true) {
+              material.toneMapped = false
+              material.needsUpdate = true
+            }
             this.emitters.push({
               material,
               intensity: material.emissiveIntensity,

@@ -97,6 +97,9 @@ separate blinking or brake/reverse rules. The GLB material metadata
 `vehicleLightChannel` selects a channel and `vehicleLightSide: "L" | "R"` selects
 the indicator side. Left and right trailer clusters have independent materials.
 Timing and stop-lamp boost are documented in `src/config/lighting.ts`.
+Red truck lenses use `vehicleLightPreserveHue: true` to bypass filmic highlight
+desaturation. Their GLB emission is 0.3 at position-light level and 0.9 when braking;
+the darker, rough red base avoids pale specular highlights. They remain emissive-only.
 
 The tractor enables `vehicle.reverseAlarm`. Its synthesized warning beeps only
 while the occupied, powered vehicle has R engaged, including when stationary.

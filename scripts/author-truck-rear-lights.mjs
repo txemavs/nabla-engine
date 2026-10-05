@@ -58,16 +58,25 @@ for (const name of ['tractor.modern', 'trailer.anchored']) {
       ...material.extras,
       vehicleLightChannel: channel,
       ...(side ? { vehicleLightSide: side } : {}),
+      ...(channel === 'Tail_Stop' ? { vehicleLightPreserveHue: true } : {}),
     }
     material.emissiveFactor =
       channel === 'Tail_Stop'
-        ? [1, 0.003, 0.002]
+        ? [1, 0.001, 0.0005]
         : channel === 'Reverse'
           ? [1, 0.95, 0.87]
           : [1, 0.19, 0.005]
     material.extensions = {
       ...material.extensions,
-      KHR_materials_emissive_strength: { emissiveStrength: channel === 'Tail_Stop' ? 2 : 1 },
+      KHR_materials_emissive_strength: { emissiveStrength: channel === 'Tail_Stop' ? 0.3 : 1 },
+    }
+    if (channel === 'Tail_Stop') {
+      material.pbrMetallicRoughness = {
+        ...material.pbrMetallicRoughness,
+        baseColorFactor: [0.22, 0.0002, 0.0001, 1],
+        metallicFactor: 0,
+        roughnessFactor: 0.8,
+      }
     }
   }
   doc.extensionsUsed = [
