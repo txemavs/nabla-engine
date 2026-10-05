@@ -188,7 +188,8 @@
     "build:fixture": "npm run build && node scripts/build-flat-test-tile.mjs",
     "rigs:generate": "node scripts/generate-vehicle-rigs.mjs",
     "rigs:check": "node scripts/generate-vehicle-rigs.mjs --check",
-    "rigs:test": "node --test scripts/lib/vehicle-rig.test.mjs"
+    "rigs:test": "node --test scripts/lib/vehicle-rig.test.mjs",
+    "trailer:split": "node scripts/split-trailer-box.mjs"
   },
   "keywords": [
     "3d",

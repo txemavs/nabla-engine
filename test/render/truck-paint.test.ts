@@ -16,7 +16,7 @@ function paintedModel() {
 
 describe('nabla.truck body color', () => {
   it('paints White paint materials on truck and trailer, leaving chassis alone', () => {
-    for (const id of ['white-truck', 'white-trailer'] as const) {
+    for (const id of ['white-truck', 'white-trailer', 'white-trailer-chassis'] as const) {
       const entity = presetVehicle(id, id)
       entity.color = '#2157a5'
       expect(entity.visual?.presentation).toBe('nabla.truck')

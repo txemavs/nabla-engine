@@ -1,20 +1,20 @@
 {
-  "id": "white-trailer",
-  "label": "Remolque blanco",
+  "id": "white-trailer-chassis",
+  "label": "Chasis de remolque",
   "clearance": 1.2,
   "placement": [10, 1.2, 7.33],
-  "order": 7,
-  "name": "Remolque blanco",
+  "order": 8,
+  "name": "Chasis de remolque",
   "color": "#eeeeee",
-  "size": [2.55, 4, 13.5],
-  "mass": 6500,
+  "size": [2.55, 1.4, 13.5],
+  "mass": 4000,
   "vehicle": {
     "passive": true,
     "colliders": [
       {
-        "size": [2.48, 2.45, 13.45],
+        "size": [2.48, 0.55, 13.45],
         "transform": {
-          "position": [0, 1.55, 0],
+          "position": [0, 0.6, 0],
           "rotation": [0, 0, 0, 1]
         }
       }
@@ -72,15 +72,6 @@
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
-        "transform": {
-          "position": [0, 0, 0],
-          "rotation": [0, 0, 0, 1]
-        }
-      }
-    ],
-    "attachments": [
-      {
-        "url": "/library/trucks/white-truck/assets/trailer.box.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]

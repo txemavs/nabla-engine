@@ -87,6 +87,7 @@ describe('menu helpers', () => {
     const ids = vehicleChoices().map((choice) => choice.id)
     expect(ids).toEqual(expect.arrayContaining(['car', 'a3', 'white-truck', 'carrier']))
     expect(ids).not.toContain('white-trailer')
+    expect(ids).not.toContain('white-trailer-chassis')
     for (const choice of vehicleChoices()) expect(choice.label.length).toBeGreaterThan(0)
   })
 })

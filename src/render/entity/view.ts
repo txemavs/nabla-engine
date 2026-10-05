@@ -811,6 +811,13 @@ export class SceneView {
         if (original) original.visible = false
       }
       this.shipLights.get(e.id)?.mountHull(model)
+      for (const part of visual.attachments ?? []) {
+        this.addAsset(model, part, undefined, (attachment) => {
+          adapter?.paint?.(attachment, e.color)
+          adapter?.preparePart?.(attachment, 'body')
+          this.authoredLights.get(e.id)?.absorb(attachment)
+        })
+      }
       if (!visual.ramp) return
       const hinge = new THREE.Group()
       hinge.position.fromArray(visual.ramp.hinge)

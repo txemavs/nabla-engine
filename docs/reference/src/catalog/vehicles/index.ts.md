@@ -7,5 +7,6 @@
 ## Module dependencies
 
 - `./library.js`
+- `./trailer-boxes.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

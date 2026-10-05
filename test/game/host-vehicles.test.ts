@@ -33,6 +33,34 @@ describe('parseHostVehicles', () => {
     ])
   })
 
+  it('accepts box:false on a trailer and a catalog box id', () => {
+    expect(
+      parseHostVehicles(
+        JSON.stringify([
+          { lat: 43.3386, lon: -1.7899, heading: 0, vehicle: 'white-trailer-chassis' },
+          {
+            lat: 43.339,
+            lon: -1.79,
+            heading: 0,
+            vehicle: 'white-trailer-chassis',
+            box: 'white-box',
+          },
+          { lat: 43.34, lon: -1.791, heading: 0, vehicle: 'white-trailer', box: false },
+        ]),
+      ),
+    ).toEqual([
+      { lat: 43.3386, lon: -1.7899, heading: 0, vehicle: 'white-trailer-chassis' },
+      {
+        lat: 43.339,
+        lon: -1.79,
+        heading: 0,
+        vehicle: 'white-trailer-chassis',
+        box: 'white-box',
+      },
+      { lat: 43.34, lon: -1.791, heading: 0, vehicle: 'white-trailer', box: false },
+    ])
+  })
+
   it('rejects invalid JSON, a non-array, a missing preset, and out-of-range coordinates', () => {
     expect(() => parseHostVehicles('{')).toThrow(/JSON array/)
     expect(() => parseHostVehicles('{"lat":1}')).toThrow(/JSON array/)
@@ -47,6 +75,9 @@ describe('parseHostVehicles', () => {
     expect(() => parseHostVehicles('[{"lat":43,"lon":-1,"vehicle":"car","color":"blue"}]')).toThrow(
       /#rrggbb/,
     )
+    expect(() =>
+      parseHostVehicles('[{"lat":43,"lon":-1,"vehicle":"white-trailer","box":"tanker"}]'),
+    ).toThrow(/trailer box/)
   })
 })
 
@@ -197,5 +228,36 @@ describe('installHostVehicles', () => {
     expect(calls[0]).toMatchObject({ color: '#2157a5' })
     expect(calls[1]).toMatchObject({ color: '#b91929', tow: 'spawned-1' })
     expect(calls[2]).toMatchObject({ color: '#f0f0ea', tow: undefined })
+  })
+
+  it('composes or strips the cargo box when placing trailers', async () => {
+    const calls: { attachments?: string[]; height: number }[] = []
+    await installHostVehicles(
+      {
+        async placeVehicle(template) {
+          calls.push({
+            attachments: template.visual?.attachments?.map((part) => part.url),
+            height: template.size[1],
+          })
+          return `spawned-${calls.length}`
+        },
+      },
+      irun,
+      [
+        { lat: 43.3386, lon: -1.7899, heading: 90, vehicle: 'white-trailer-chassis' },
+        {
+          lat: 43.3386,
+          lon: -1.7899,
+          heading: 90,
+          vehicle: 'white-trailer-chassis',
+          box: 'white-box',
+        },
+        { lat: 43.339, lon: -1.79, heading: 0, vehicle: 'white-trailer', box: false },
+      ],
+    )
+    expect(calls[0]!.attachments).toBeUndefined()
+    expect(calls[0]!.height).toBeLessThan(calls[1]!.height)
+    expect(calls[1]!.attachments?.[0]).toMatch(/trailer\.box\.glb$/)
+    expect(calls[2]!.attachments).toBeUndefined()
   })
 })

@@ -13,7 +13,7 @@ URL parameters:
   - heading: player compass heading, degrees clockwise from north (default 0)
   - vehicle: vehicle preset ID (default: 'car') — the possessed start vehicle
   - color: body paint for the start vehicle (`#rrggbb`, same `entity.color` as cars)
-  - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?, color?, tow?}`
+  - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?, color?, tow?, box?}`
     (WGS84). Also `VITE_NABLA_VEHICLES` at build time. See `host-vehicles.ts`.
   - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json

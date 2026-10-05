@@ -29,7 +29,7 @@ Example:
 
 ## headingYaw
 
-[Implementation, line 61](../../../game/host-vehicles.ts#L61)
+[Implementation, line 66](../../../game/host-vehicles.ts#L66)
 
 Gameplay yaw (radians) for a compass heading in degrees clockwise from north.
 
@@ -39,7 +39,7 @@ headingYaw(headingDegrees: number): number
 
 ## headingRotation
 
-[Implementation, line 66](../../../game/host-vehicles.ts#L66)
+[Implementation, line 71](../../../game/host-vehicles.ts#L71)
 
 Unit quaternion [x, y, z, w] that faces `headingDegrees` (clockwise from north).
 
@@ -55,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finiteNumber
 
-[Implementation, line 71](../../../game/host-vehicles.ts#L71)
+[Implementation, line 76](../../../game/host-vehicles.ts#L76)
 
 ```ts
 finiteNumber(value: unknown, field: string): number
@@ -74,7 +74,7 @@ Explicit throws in this body:
 
 ## parseHostVehicle
 
-[Implementation, line 80](../../../game/host-vehicles.ts#L80)
+[Implementation, line 85](../../../game/host-vehicles.ts#L85)
 
 ```ts
 parseHostVehicle(value: unknown, index: number): HostVehicle
@@ -86,7 +86,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `Error`
 - `finiteNumber`
+- `hasTrailerBox`
 - `isValidLatLon`
+- `raw.box.trim`
 - `raw.tow.trim`
 - `raw.vehicle.trim`
 
@@ -97,10 +99,12 @@ Explicit throws in this body:
 - `new Error(\`Host vehicle ${index} lat/lon is out of range (lat ±85.05°, lon ±180°)\`)`
 - `new Error(\`Host vehicle ${index}.color must be #rrggbb\`)`
 - `new Error(\`Host vehicle ${index}.tow must be true or a tractor id\`)`
+- `new Error(\`Host vehicle ${index}.box is not a trailer box\`)`
+- `new Error(\`Host vehicle ${index}.box must be false or a trailer box id\`)`
 
 ## parseHostVehicles
 
-[Implementation, line 107](../../../game/host-vehicles.ts#L107)
+[Implementation, line 120](../../../game/host-vehicles.ts#L120)
 
 ```ts
 parseHostVehicles(raw: string): HostVehicle[]
@@ -119,7 +123,7 @@ Explicit throws in this body:
 
 ## viteHostVehicles
 
-[Implementation, line 120](../../../game/host-vehicles.ts#L120)
+[Implementation, line 133](../../../game/host-vehicles.ts#L133)
 
 Build-time default from `VITE_NABLA_VEHICLES` (same JSON as `?vehicles=`).
 
@@ -134,7 +138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostVehiclesFromSearch
 
-[Implementation, line 130](../../../game/host-vehicles.ts#L130)
+[Implementation, line 143](../../../game/host-vehicles.ts#L143)
 
 ```ts
 hostVehiclesFromSearch(search: string, fallback: readonly HostVehicle[] = []): HostVehicle[]
@@ -149,7 +153,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostVehicleLocalPose
 
-[Implementation, line 141](../../../game/host-vehicles.ts#L141)
+[Implementation, line 154](../../../game/host-vehicles.ts#L154)
 
 Convert one geographic entry to local metres relative to the scene origin.
 
@@ -164,7 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## installHostVehicles
 
-[Implementation, line 156](../../../game/host-vehicles.ts#L156)
+[Implementation, line 169](../../../game/host-vehicles.ts#L169)
 
 After `runtime.play()`, rest each extra vehicle on loaded ground at its
 geographic place. Validates presets first so a typo does not leave a partial fleet.
