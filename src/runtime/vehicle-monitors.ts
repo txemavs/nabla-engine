@@ -1,3 +1,4 @@
+import { helmTouchAxis } from './helm-touch.js'
 import { vehicleMonitorStyles, vehicleMonitorBaseStyles } from './vehicle-monitor-styles.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 import * as THREE from 'three'
@@ -58,17 +59,11 @@ export class VehicleMonitors {
   flightInput() {
     const result = { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
     for (const { carrier, action } of this.held.values()) {
-      if (
-        this.simulation?.player.vehicleId !== carrier ||
-        !this.simulation.vehicleInfo(carrier).flightMode
-      )
-        continue
-      if (action === 'brake') result.brake = true
-      else {
-        const [axis, sign] = action.split(':')
-        if (axis === 'forward' || axis === 'right' || axis === 'lift' || axis === 'turn')
-          result[axis] = Math.max(-1, Math.min(1, result[axis] + Number(sign)))
-      }
+      if (this.simulation?.player.vehicleId !== carrier) continue
+      const mapped = helmTouchAxis(action, this.simulation.vehicleInfo(carrier).flightMode)
+      if (!mapped) continue
+      if (mapped.axis === 'brake') result.brake = true
+      else result[mapped.axis] = Math.max(-1, Math.min(1, result[mapped.axis] + mapped.sign))
     }
     return result
   }
@@ -331,8 +326,7 @@ export class VehicleMonitors {
             button.onpointerdown = (event) => {
               if (
                 panel.dataset.active !== 'true' ||
-                this.simulation?.player.vehicleId !== carrier.id ||
-                !this.simulation.vehicleInfo(carrier.id).flightMode
+                this.simulation?.player.vehicleId !== carrier.id
               )
                 return
               event.preventDefault()
@@ -616,7 +610,7 @@ export class VehicleMonitors {
         }
         door.disabled = info.rampMoving
         for (const button of entry.panel.querySelectorAll<HTMLButtonElement>('[data-action]'))
-          button.disabled = !piloting || !info.flightMode
+          button.disabled = !piloting
       }
     }
     const active = new Set(this.active.map((e) => e.object))

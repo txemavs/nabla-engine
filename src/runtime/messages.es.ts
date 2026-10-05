@@ -89,6 +89,8 @@ export const spanishMessages: Readonly<Record<string, string>> = {
   Accelerate: 'Acelerar',
   Reverse: 'Atrás',
   Brake: 'Freno',
+  Steer: 'Volante',
+  Pedals: 'Pedales',
   Camera: 'Cámara',
   'Enter / exit': 'Entrar / salir',
   Play: 'Jugar',

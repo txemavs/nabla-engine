@@ -19,6 +19,7 @@
 - `./ground.js`
 - `./presentation-warmup.js`
 - `./vehicle-monitors.js`
+- `./helm-touch.js`
 - `./vehicle-menu.js`
 - `./touch-driving.js`
 - `./streaming.js`
