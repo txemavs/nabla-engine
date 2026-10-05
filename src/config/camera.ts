@@ -74,6 +74,10 @@ export interface GameCameraSettings {
   altitudePitchEnd: number
   /** Maximum downward travel pitch, radians. */
   altitudePitchMax: number
+  /** Upward tilt of the chase view while a vehicle is in flight mode, radians. */
+  flightChaseTilt: number
+  /** Flight chase tilt ease-in/out rate, inverse seconds. */
+  flightTiltDamping: number
   /** Delay before overhead-to-cockpit boarding transition, milliseconds. */
   entranceDelayMs: number
   /** Time after boarding when the cockpit transition finishes, milliseconds. */
@@ -119,6 +123,8 @@ export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   altitudePitchStart: 1000,
   altitudePitchEnd: 500000,
   altitudePitchMax: 1.56,
+  flightChaseTilt: 0.12,
+  flightTiltDamping: 2,
   entranceDelayMs: 150,
   entranceEndMs: 1200,
 })

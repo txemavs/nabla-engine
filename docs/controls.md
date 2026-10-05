@@ -24,18 +24,18 @@ tree. Saving stores the authored document, not the runtime physics state.
 
 ## Hovering and driving
 
-| Action                                            | Keyboard                                |
-| ------------------------------------------------- | --------------------------------------- |
-| Hover / drive                                     | WASD or arrows                          |
-| Look around                                       | Click the viewport, then move the mouse |
-| Release pointer                                   | Esc                                     |
-| Accelerate                                        | Shift                                   |
-| Handbrake in vehicle                              | Space                                   |
-| Enter / exit                                      | E                                       |
-| First / third person; vehicle camera cycle        | C                                       |
-| Latch / release cargo                             | F                                       |
-| Transfer controls between latched car and carrier | T                                       |
-| Restart play                                      | R                                       |
+| Action                                            | Keyboard                          |
+| ------------------------------------------------- | --------------------------------- |
+| Hover / drive                                     | WASD or arrows                    |
+| Look around                                       | Move the mouse (no click or hold) |
+| Release pointer                                   | Esc                               |
+| Accelerate                                        | Shift                             |
+| Handbrake in vehicle                              | Space                             |
+| Enter / exit                                      | E                                 |
+| First / third person; vehicle camera cycle        | C                                 |
+| Latch / release cargo                             | F                                 |
+| Transfer controls between latched car and carrier | T                                 |
+| Restart play                                      | R                                 |
 
 Entering requires proximity and a nearly stopped vehicle. Exiting requires low
 speed and a free exit volume. Cars require supporting ground; a carrier with an
@@ -45,10 +45,14 @@ leave the player inside and display a status message.
 The standalone game keeps Studio's tactile driving HUD visible (`touchControls:
 'always'`): the agency-ui drive rig — steering wheel, accelerator slider, red
 handbrake and turbo — plus enter/exit and camera. Keyboard and gamepad still mix
-through the same `GameInput` path. Cockpit view adds the twist ring on the wheel.
-In cockpit view the helm touchscreen d-pads use that same mapping in road mode
-(WASD and arrows steer and accelerate; Brake holds). Coarse-pointer hosts that
-leave visibility on `auto` show the overlay only on touch devices.
+through the same `GameInput` path. The cockpit circular twist ring around the
+wheel (`controlDefaults.showPilotTouchRing`) stays disabled by default: its
+visual is circular while the hit target is a square, so touches outside the
+circle still registered. The ring DOM/CSS and `setPilot` path remain so it can
+be re-enabled later. In cockpit view the helm touchscreen d-pads use that same
+mapping in road mode (WASD and arrows steer and accelerate; Brake holds).
+Coarse-pointer hosts that leave visibility on `auto` show the overlay only on
+touch devices.
 Which overlay and HUD readouts appear in each seat is decided by the vehicle's
 [control profile](vehicle-controls.md).
 
@@ -150,6 +154,14 @@ changing vehicles resets the head to face forward. Chase view follows heading
 after a short manual-look grace period, increases response with speed, anticipates measured yaw rate,
 and adds a bounded forward look. Field of view and chase distance stay fixed;
 speed and turn telemetry are filtered to avoid projection/framing vibration.
+In flight mode the chase view leans back about 7° (`flightChaseTilt`), easing in
+and out, so the vehicle sits lower in frame and more of the route ahead shows.
+
+Mouse look needs no click or held button in the chase/third-person view, on-foot
+first person and the cockpit view: moving the mouse over the focused viewport
+orbits or turns the head. Only the overhead view leaves the cursor alone for wheel
+zoom. Pointer lock (where a host or the sidearm requests it) still works; without it
+the look stops when the cursor reaches the viewport edge.
 
 The on-foot avatar uses Agency's floating CRT monitor. It leans with movement and
 acceleration, levels after braking and hovers gently. While driving, the monitor

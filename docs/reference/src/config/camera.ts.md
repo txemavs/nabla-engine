@@ -11,7 +11,7 @@ Shared camera recovery settings. Durations carry explicit Ms/Seconds names.
 
 ## resolveGameCameraSettings
 
-[Implementation, line 127](../../../../src/config/camera.ts#L127)
+[Implementation, line 133](../../../../src/config/camera.ts#L133)
 
 Copy overrides and validate finite values and ordered camera ranges before use.
 
@@ -34,7 +34,7 @@ Explicit throws in this body:
 
 ## cameraRecovery
 
-[Implementation, line 155](../../../../src/config/camera.ts#L155)
+[Implementation, line 161](../../../../src/config/camera.ts#L161)
 
 Return recovery strength after the manual-look grace period, including zero-duration ramps.
 

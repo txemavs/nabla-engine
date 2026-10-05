@@ -196,5 +196,9 @@ policy; Engine still owns keyboard, mouse, gamepad and touch bindings.
 game hosts pass `always` so the rig stays available beside the keyboard and
 gamepad.
 
-Mouse sensitivity and map wheel zoom live in `controlDefaults`. F9 toggles the
-Engine wheel diagnostic overlay; markers are allocated on demand for every axle.
+Mouse sensitivity and map wheel zoom live in `controlDefaults`.
+`controlDefaults.showPilotTouchRing` (default `false`) gates the cockpit circular
+touch ring around the on-screen steering wheel; set it `true` (or pass `true` as
+the `TouchDriving` constructor flag) to restore the Studio twist overlay without
+bringing the deleted code back. F9 toggles the Engine wheel diagnostic overlay;
+markers are allocated on demand for every axle.
