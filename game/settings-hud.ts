@@ -109,7 +109,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // Relocate existing menu sections into tabs:
   //   Planeta  — Hora first (#123), planet panel, then sea level/tide from the legacy section
   //   Posición — where you are / go to lat,lon, and the R reset (nearest road) option
-  //   Calidad (profile, performance, «Sombras» bias slider) / Capas (map layers, camera extras) / Vehículos
+  //   Calidad (profile, performance, «Sombras» bias slider) / Capas (map layers, asphalt contrast, camera extras) / Vehículos
   const qualityPane = paneEls.get('quality')!
   for (const id of ['display-quality-section', 'display-performance', 'quality-shadows']) {
     const el = doc.getElementById(id)
@@ -121,7 +121,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     if (el) positionPane.append(el)
   }
   const layersPane = paneEls.get('layers')!
-  for (const id of ['terrain-layers', 'camera-extras']) {
+  for (const id of ['terrain-layers', 'road-style', 'camera-extras']) {
     const el = doc.getElementById(id)
     if (el) layersPane.append(el)
   }

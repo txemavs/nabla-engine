@@ -14,6 +14,7 @@ Rendering services for editor and viewer hosts composing their own viewport.
 - `./entity/navigation-places.js`
 - `./entity/helm-map.js`
 - `./planet/world.js`
+- `./planet/ground-material.js`
 - `./portal/environment.js`
 - `./planet/cache.js`
 - `./planet/geometry.js`

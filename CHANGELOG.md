@@ -4,6 +4,18 @@
 
 ### Added
 
+- **Asphalt contrast:** a draw-time tone curve on the roads photo drape (fragment shader; tile
+  textures untouched, no painter): around a fixed display-space pivot, dark asphalt gets darker
+  and painted markings brighter, on top of the existing carriageway darkening and
+  `ROADS_DRAPE_TINT`. Range 0.5–2.5, engine default 1 (unchanged; the shader skips the curve).
+  One shared uniform, so changes are live without recompiles. Where the asphalt is only part of
+  the terrain orthophoto (`relief=lidar`, no road meshes), the curve follows each cell's OSM
+  carriageways through a small single-channel mask painted on demand (only when the contrast is
+  not 1). Slider **Ajustes → Capas → Asfalto
+  → Contraste del asfalto** (stored, **Por defecto** resets), host default
+  `NABLA_BOOT.asphaltContrast`, one visit `?asphaltContrast=1.6`. Engine API:
+  `GameRuntimeOptions.asphaltContrast`, `runtime.asphaltContrast` / `setAsphaltContrast`,
+  `setAsphaltContrast` / `asphaltContrast` and `ASPHALT_CONTRAST_*` from `@nabla/engine/render`.
 - **S3 steering wheel default moved to Txema's «Volante» choice:** the S3 wheel now sits where
   the sliders put it at «Volante: distancia» +1,0 cm and «Volante: altura» +2,5 cm, baked into
   `s3.steering.glb` (the sliders read 0 there for every host). `scripts/move-s3-steering-wheel.mjs`

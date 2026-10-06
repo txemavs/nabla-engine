@@ -162,9 +162,140 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new THREE.Color(tint).multiplyScalar`
 - `new THREE.Color(tint).multiplyScalar(0.48).getHexString`
 
+## clampAsphaltContrast
+
+[Implementation, line 189](../../../../../src/render/planet/ground-material.ts#L189)
+
+Clamp to `ASPHALT_CONTRAST_MIN`..`ASPHALT_CONTRAST_MAX`; non-finite input is a caller bug.
+
+```ts
+clampAsphaltContrast(value: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+- `RangeError`
+
+Explicit throws in this body:
+
+- `new RangeError(\`Asphalt contrast must be a finite number, got ${value}\`)`
+
+## asphaltContrast
+
+[Implementation, line 196](../../../../../src/render/planet/ground-material.ts#L196)
+
+Current asphalt contrast, shared by every roads drape in the page.
+
+```ts
+asphaltContrast(): number
+```
+
+## setAsphaltContrast
+
+[Implementation, line 201](../../../../../src/render/planet/ground-material.ts#L201)
+
+Set the asphalt contrast live for every roads drape; returns the clamped value applied.
+
+```ts
+setAsphaltContrast(value: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clampAsphaltContrast`
+
+## asphaltContrastTone
+
+[Implementation, line 207](../../../../../src/render/planet/ground-material.ts#L207)
+
+The shader's curve on one linear luminance (0..1); for tests and tooling.
+
+```ts
+asphaltContrastTone(linear: number, contrast = asphaltContrast(), pivot = ASPHALT_CONTRAST_PIVOT): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Math.sqrt`
+- `asphaltContrast`
+
+## asphaltTone
+
+[Implementation, line 218](../../../../../src/render/planet/ground-material.ts#L218)
+
+```ts
+asphaltTone(weight: string): inferred by TypeScript; see implementation
+```
+
+## asphaltContrastShader
+
+[Implementation, line 238](../../../../../src/render/planet/ground-material.ts#L238)
+
+Add the asphalt curve to a fragment shader: it runs on the map texel right before the texel
+multiplies the material colour. `masked` weights it by the `asphaltMask` texture (red channel,
+same UVs as the map) instead of applying it to every pixel. Shaders without `map_fragment`
+come back unchanged.
+
+```ts
+asphaltContrastShader(fragmentShader: string, masked = false): string
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `asphaltTone`
+- `chunk.includes`
+- `chunk.replace`
+- `fragmentShader.includes`
+- `fragmentShader.replace`
+
+## withAsphaltContrast
+
+[Implementation, line 260](../../../../../src/render/planet/ground-material.ts#L260)
+
+Give a photo-drape material the asphalt contrast curve. Without `mask` every pixel is asphalt
+(the roads drape, cut to the road surfaces); with `mask` the curve follows that per-material
+road mask (the terrain drape, see `asphalt-mask.ts`); swap `mask.value` later without a
+recompile. Call it before shadow setup, which chains `onBeforeCompile`. The program cache key
+keeps these apart from the other drapes, whose shadow wrappers have the same source text.
+
+```ts
+withAsphaltContrast(material: T, mask?: { value: THREE.Texture }): T
+```
+
+## withAsphaltContrast.callback@265
+
+[Implementation, line 265](../../../../../src/render/planet/ground-material.ts#L265)
+
+```ts
+callback@265(shader, renderer): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.assign`
+- `asphaltContrastShader`
+- `previous.call`
+
+## withAsphaltContrast.callback@272
+
+[Implementation, line 272](../../../../../src/render/planet/ground-material.ts#L272)
+
+```ts
+callback@272(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `material.onBeforeCompile.toString`
+
 ## groundDepthBias
 
-[Implementation, line 162](../../../../../src/render/planet/ground-material.ts#L162)
+[Implementation, line 278](../../../../../src/render/planet/ground-material.ts#L278)
 
 ```ts
 groundDepthBias(layer: number): inferred by TypeScript; see implementation

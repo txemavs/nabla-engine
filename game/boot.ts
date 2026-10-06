@@ -51,6 +51,12 @@ export interface HostBootConfig {
    * a value the player saved in the menu wins over all of them.
    */
   shadowBias?: number
+  /**
+   * Host default asphalt contrast on the roads photo drape, 0.5–2.5 (omitted = 1, unchanged).
+   * The player's slider in Ajustes → Capas → Asfalto is stored and wins over it;
+   * `?asphaltContrast=1.6` overrides both for one visit.
+   */
+  asphaltContrast?: number
 }
 
 declare global {

@@ -5,6 +5,7 @@ const MENU_SECTION_ORDER = [
   'quality-shadows',
   'terrain-position',
   'terrain-layers',
+  'road-style',
   'camera-extras',
   'driving-extras',
   'scene-planet',

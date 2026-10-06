@@ -5,6 +5,14 @@ export { TileDebugView, type TileDebugMode } from './planet/debug.js'
 export { setNavigationPlaces, setNavigationRoads } from './entity/navigation-places.js'
 export { setPlanetCharts } from './entity/helm-map.js'
 export { PlanetWorld, projectedLayers, projectGroundPhoto } from './planet/world.js'
+export {
+  ASPHALT_CONTRAST_DEFAULT,
+  ASPHALT_CONTRAST_MAX,
+  ASPHALT_CONTRAST_MIN,
+  ASPHALT_CONTRAST_PIVOT,
+  asphaltContrast,
+  setAsphaltContrast,
+} from './planet/ground-material.js'
 export type { LoadDiagnostics, StreamError } from './planet/world.js'
 export { portalEnvironment } from './portal/environment.js'
 export { mapCacheStats, setMapCacheBudget, clearMapCache } from './planet/cache.js'

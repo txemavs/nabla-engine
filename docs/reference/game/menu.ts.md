@@ -11,7 +11,7 @@ The in-game menu is the existing `#display-settings` panel; features add titled 
 
 ## menuSections
 
-[Implementation, line 14](../../../game/menu.ts#L14)
+[Implementation, line 15](../../../game/menu.ts#L15)
 
 ```ts
 menuSections(): HTMLElement
@@ -25,7 +25,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## menuSection
 
-[Implementation, line 25](../../../game/menu.ts#L25)
+[Implementation, line 26](../../../game/menu.ts#L26)
 
 ```ts
 menuSection(id: string, title: string): HTMLFieldSetElement
@@ -41,12 +41,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sections.append`
 - `sections.insertBefore`
 
-## menuSection.callback@34
+## menuSection.callback@35
 
-[Implementation, line 34](../../../game/menu.ts#L34)
+[Implementation, line 35](../../../game/menu.ts#L35)
 
 ```ts
-callback@34(el): inferred by TypeScript; see implementation
+callback@35(el): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -55,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## menuSubtitle
 
-[Implementation, line 44](../../../game/menu.ts#L44)
+[Implementation, line 45](../../../game/menu.ts#L45)
 
 Nested heading inside a menu section (Cielo, Sol, Mar, …).
 

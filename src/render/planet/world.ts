@@ -18,6 +18,7 @@ import {
 import { StaticTileError, fetchTileManifest } from './static-tiles.js'
 import { atlasFileUrl, atlasPhotoFor, type AtlasZ15Options } from '../../planet/atlas-z15.js'
 import { fetchOsmSnapshot } from './osm-roads.js'
+import { NO_ASPHALT_MASK, asphaltMaskTexture } from './asphalt-mask.js'
 import { sha256 } from '../../util/sha256.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
@@ -64,6 +65,8 @@ import {
   matteGroundMaterial,
   ROADS_DRAPE_TINT,
   tileMeshSide,
+  asphaltContrast,
+  withAsphaltContrast,
   withMap,
 } from './ground-material.js'
 import { treeInstances } from './vegetation.js'
@@ -207,19 +210,21 @@ function dressSatelliteRoofs(
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
     geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
-    const mesh = new THREE.Mesh(
-      geometry,
-      new THREE.MeshStandardMaterial({
-        map: texture,
-        color: id === 'roads' ? ROADS_DRAPE_TINT : '#ffffff',
-        roughness: 1,
-        metalness: 0,
-        polygonOffset: true,
-        polygonOffsetFactor: drapeBias(id),
-        polygonOffsetUnits: drapeBias(id),
-        depthWrite: false,
-      }),
-    )
+    const material = new THREE.MeshStandardMaterial({
+      map: texture,
+      color: id === 'roads' ? ROADS_DRAPE_TINT : '#ffffff',
+      roughness: 1,
+      metalness: 0,
+      polygonOffset: true,
+      polygonOffsetFactor: drapeBias(id),
+      polygonOffsetUnits: drapeBias(id),
+      depthWrite: false,
+    })
+    // Asphalt contrast (draw time) before shadow setup, which chains onBeforeCompile. The terrain
+    // photo gets it only through its cell's OSM road mask (relief=lidar has no road meshes).
+    if (id === 'roads') withAsphaltContrast(material)
+    else if (id === 'terrain') withAsphaltContrast(material, { value: NO_ASPHALT_MASK })
+    const mesh = new THREE.Mesh(geometry, material)
     setupMaterial(mesh.material)
     mesh.name = 'Drape'
     mesh.userData.drape = id
@@ -328,6 +333,8 @@ interface Resident {
   revision: string
   buildings: boolean
   roads?: OsmChartRoad[]
+  /** OSM carriageway mask for the terrain drape's asphalt contrast; painted on demand. */
+  asphaltMask?: THREE.DataTexture
 }
 /** The last thing that went wrong while loading cells, structured so a host can phrase it. */
 export interface StreamError {
@@ -1005,6 +1012,7 @@ export class PlanetWorld {
             roughness: 1,
             side: tileMeshSide(data.side as THREE.Side, data.metadata, data.position, data.index),
           })
+      if (data.metadata.drape === 'roads') withAsphaltContrast(material)
       if (data.metadata.drape) {
         material.depthWrite = false
         material.polygonOffset = true
@@ -1159,6 +1167,7 @@ export class PlanetWorld {
         if (!resident || ac.signal.aborted || this.disposed) return
         resident.roads = projectOsmRoads(osmSnapshotHighways(json), this.origin)
         resident.bytes += resident.roads.reduce((n, road) => n + road.points.length * 16, 0)
+        this.paintAsphaltMask(resident)
         this.changed()
       })
       .catch((error) => {
@@ -1393,11 +1402,54 @@ export class PlanetWorld {
     this.next = 0
     await this.discover()
   }
+  /**
+   * Paint the terrain drape's road mask for the asphalt contrast: only when the contrast is not
+   * neutral and the cell's OSM roads are loaded; once per cell. See `asphalt-mask.ts`.
+   */
+  private paintAsphaltMask(resident: Resident) {
+    if (resident.asphaltMask || !resident.roads?.length || asphaltContrast() === 1) return
+    const drapes: THREE.Mesh[] = []
+    resident.group.traverse((node) => {
+      const mesh = node as THREE.Mesh
+      if (mesh.isMesh && mesh.name === 'Drape' && mesh.userData.drape === 'terrain') {
+        const material = mesh.material as THREE.Material
+        if (material.userData.asphaltMask) drapes.push(mesh)
+      }
+    })
+    if (!drapes.length) return
+    const manifest = resident.group.userData.planetTile?.manifest as PlanetManifest | undefined
+    if (!manifest) return
+    resident.group.updateMatrix()
+    const toCell = resident.group.matrix.clone().invert()
+    const y = resident.group.position.y
+    const point = new THREE.Vector3()
+    const roads = resident.roads
+      .filter((road) => road.carriageway)
+      .map((road) => ({
+        width: road.width,
+        points: road.points.map((p) => {
+          point.set(p.x, y, p.z).applyMatrix4(toCell)
+          return { x: point.x, z: point.z }
+        }),
+      }))
+    const mask = asphaltMaskTexture(roads, planetTileFrame(manifest.tile).width)
+    if (!mask) return
+    resident.asphaltMask = mask
+    for (const mesh of drapes)
+      ((mesh.material as THREE.Material).userData.asphaltMask as { value: THREE.Texture }).value =
+        mask
+    this.changed()
+  }
+  /** Paint missing road masks after the asphalt contrast leaves neutral (runtime slider). */
+  refreshAsphaltMasks() {
+    for (const resident of this.resident.values()) this.paintAsphaltMask(resident)
+  }
   private remove(key: string) {
     this.osmLoads.get(key)?.abort()
     this.osmLoads.delete(key)
     const r = this.resident.get(key)
     if (!r) return
+    r.asphaltMask?.dispose()
     r.chart?.bitmap.close()
     r.group.removeFromParent()
     r.group.userData.disposed = true

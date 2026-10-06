@@ -241,6 +241,16 @@ corrección de rayas**, a factor on the engine's texel-scaled shadow bias
 `localStorage` (`nabla.shadowBias`) and wins over every host default until **Restablecer**
 forgets it.
 
+`asphaltContrast` (default `1`, unchanged; range 0.5–2.5) is the host default for the asphalt
+contrast on the roads photo drape: a draw-time curve in the fragment shader around a fixed
+display-space pivot, so dark asphalt gets darker and painted markings brighter while the tile
+texture stays untouched. It applies to the roads photo drape and, where the asphalt is only part
+of the terrain orthophoto (`relief=lidar`), to the terrain photo through a per-cell mask of the
+OSM carriageways. Players move it in **Ajustes → Capas → Asfalto → Contraste del asfalto**
+(stored, wins over the host default; **Por defecto** forgets it), and `?asphaltContrast=1.6`
+overrides both for one visit. Library hosts pass `GameRuntimeOptions.asphaltContrast` or call
+`runtime.setAsphaltContrast(1.6)` (also `setAsphaltContrast` from `@nabla/engine/render`).
+
 The demo menu (**Rendimiento**) has an **Escala automática (50–100%)** checkbox; moving the
 slider switches to manual. Without `scale` the slider starts at the quality preset's fixed
 step (table in [configuration.md](configuration.md#display-synchronization-and-scaling)). The
