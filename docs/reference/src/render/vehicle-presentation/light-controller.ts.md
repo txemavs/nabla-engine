@@ -12,7 +12,7 @@ Renderer-independent vehicle light switches and channel evaluation, shared by ev
 
 ## VehicleLightController.constructor
 
-[Implementation, line 26](../../../../../src/render/vehicle-presentation/light-controller.ts#L26)
+[Implementation, line 35](../../../../../src/render/vehicle-presentation/light-controller.ts#L35)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -20,19 +20,57 @@ A trailer samples its tractor's controller and telemetry, without copying switch
 constructor(readonly flashMs = lightingDefaults.signalFlashMs): instance
 ```
 
-## VehicleLightController.toggleLights
+## VehicleLightController.enabled
 
-[Implementation, line 27](../../../../../src/render/vehicle-presentation/light-controller.ts#L27)
+[Implementation, line 37](../../../../../src/render/vehicle-presentation/light-controller.ts#L37)
+
+Any driving light on (position or dipped). Setting true from `off` selects dipped beams.
+
+```ts
+enabled(): boolean
+```
+
+## VehicleLightController.enabled
+
+[Implementation, line 40](../../../../../src/render/vehicle-presentation/light-controller.ts#L40)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
+
+```ts
+enabled(on: boolean): inferred by TypeScript; see implementation
+```
+
+## VehicleLightController.cycleLights
+
+[Implementation, line 44](../../../../../src/render/vehicle-presentation/light-controller.ts#L44)
+
+Step the light switch: off → position → low (dipped) → off. Returns the new mode.
+
+```ts
+cycleLights(): VehicleLightMode
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `vehicleLightCycle.indexOf`
+
+## VehicleLightController.toggleLights
+
+[Implementation, line 49](../../../../../src/render/vehicle-presentation/light-controller.ts#L49)
+
+`cycleLights`, reporting whether any driving light is now on.
 
 ```ts
 toggleLights(): boolean
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.cycleLights`
+
 ## VehicleLightController.toggleHighBeam
 
-[Implementation, line 30](../../../../../src/render/vehicle-presentation/light-controller.ts#L30)
+[Implementation, line 53](../../../../../src/render/vehicle-presentation/light-controller.ts#L53)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -42,7 +80,7 @@ toggleHighBeam(): boolean
 
 ## VehicleLightController.toggleSignal
 
-[Implementation, line 33](../../../../../src/render/vehicle-presentation/light-controller.ts#L33)
+[Implementation, line 56](../../../../../src/render/vehicle-presentation/light-controller.ts#L56)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -52,7 +90,7 @@ toggleSignal(side: number): void
 
 ## VehicleLightController.indicating
 
-[Implementation, line 37](../../../../../src/render/vehicle-presentation/light-controller.ts#L37)
+[Implementation, line 60](../../../../../src/render/vehicle-presentation/light-controller.ts#L60)
 
 Report a selected side independently of the on/off blink phase.
 
@@ -62,7 +100,7 @@ indicating(side: number, state: VehicleLampState): boolean
 
 ## VehicleLightController.level
 
-[Implementation, line 41](../../../../../src/render/vehicle-presentation/light-controller.ts#L41)
+[Implementation, line 64](../../../../../src/render/vehicle-presentation/light-controller.ts#L64)
 
 Return a multiplier for an authored lamp intensity; no geometry or material names are used.
 
@@ -75,3 +113,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.floor`
 - `Number`
 - `this.indicating`
+
+## VehicleLightController.glow
+
+[Implementation, line 93](../../../../../src/render/vehicle-presentation/light-controller.ts#L93)
+
+Like `level`, for a lens emitter rather than a light source: in position mode a low-beam lens
+keeps a faint `positionLensGlow`, so a lamp unit without its own position bulb still glows.
+
+```ts
+glow(channel: VehicleLightChannel, side: number, state: VehicleLampState, now: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.level`

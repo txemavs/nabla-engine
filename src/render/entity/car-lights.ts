@@ -3,6 +3,7 @@ import { lightingDefaults } from '../../config/lighting.js'
 import {
   VehicleLightController,
   type VehicleLampState,
+  type VehicleLightMode,
 } from '../vehicle-presentation/light-controller.js'
 export type CarLampState = VehicleLampState
 export interface LampBinding {
@@ -33,9 +34,13 @@ export class CarLights {
   toggle(side: number): void {
     this.controller.toggleSignal(side)
   }
-  /** Toggle position/front lamps without disabling brake, reverse or signal lamps. */
+  /** Step the light switch (off → position → low → off) without touching brake, reverse or signal lamps. */
   toggleHeadlights(): boolean {
     return this.controller.toggleLights()
+  }
+  /** `toggleHeadlights`, returning the new switch position. */
+  cycleLights(): VehicleLightMode {
+    return this.controller.cycleLights()
   }
   update(state: CarLampState, now: number, night = false): void {
     const footwell = state.powered && night

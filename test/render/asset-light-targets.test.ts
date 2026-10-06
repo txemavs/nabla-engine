@@ -7,7 +7,7 @@ import {
 } from '../../src/render/vehicle-presentation/authored-lights.js'
 import { lightingDefaults } from '../../src/config/lighting.js'
 
-it('starts in low beams, alternates high beams and masks the upper projection without shadows', () => {
+it('steps position then low beams, alternates high beams and masks the upper projection without shadows', () => {
   const root = new Group(),
     low = new SpotLight(),
     high = new SpotLight(),
@@ -30,14 +30,17 @@ it('starts in low beams, alternates high beams and masks the upper projection wi
   // Driving beams share the global level and a slightly softer edge.
   const on = 10 * lightingDefaults.headlightIntensityScale
   expect(low.penumbra).toBeCloseTo(Math.min(1, penumbra + lightingDefaults.headlightPenumbraBoost))
-  control.toggle()
+  // H: position lights first (no beam), then dipped beams.
+  expect(control.cycle()).toBe('position')
+  expect([low.intensity, high.intensity, fog.intensity]).toEqual([0, 0, 0])
+  expect(control.cycle()).toBe('low')
   expect([low.intensity, high.intensity, fog.intensity]).toEqual([on, 0, 0])
   expect(low.map).toBeTruthy()
   expect(low.castShadow).toBe(false)
   expect([low, high, fog].every((light) => light.visible === false)).toBe(true)
   expect(control.toggleHighBeam()).toBe(true)
   expect([low.intensity, high.intensity, fog.intensity]).toEqual([0, on, 0])
-  control.toggle()
+  expect(control.toggle()).toBe(false)
   expect(high.intensity).toBe(0)
   control.dispose()
   expect(low.map).toBeNull()
@@ -99,6 +102,9 @@ it('cloned GLB beams keep their local direction through vehicle translation and 
     const controls = new AuthoredVehicleLights(first)
     expect(lamp.intensity).toBe(0)
     expect(lamp.visible).toBe(false)
+    // An untagged lamp is a position lamp: lit in position and dipped, dark when off.
+    expect(controls.toggle()).toBe(true)
+    expect(lamp.intensity).toBe(42)
     expect(controls.toggle()).toBe(true)
     expect(lamp.intensity).toBe(42)
     expect(controls.toggle()).toBe(false)
