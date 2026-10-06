@@ -9,6 +9,7 @@ import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
 import { headingRotation, installHostVehicles } from './host-vehicles.js'
+import { installHostPortals } from './host-portals.js'
 import { showTelemetry } from './telemetry.js'
 import { LoadingScreen, showError } from './loading.js'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
@@ -207,6 +208,8 @@ try {
   await runtime.play({ vehicleId: vehicle.id })
   if (scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
+  if (scene.geography && config.portals?.length)
+    await installHostPortals(runtime, scene.geography, config.portals)
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)

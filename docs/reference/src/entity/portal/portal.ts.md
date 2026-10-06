@@ -167,9 +167,44 @@ Explicit throws in this body:
 callback@94(v): inferred by TypeScript; see implementation
 ```
 
+## assertPlaceable
+
+[Implementation, line 109](../../../../../src/entity/portal/portal.ts#L109)
+
+Entities placed while playing (`addPlaced`): standalone portals, sprites, lamps and static
+boxes without parents. Portals must be unlinked and closed, or linked to another portal of
+the same batch. Throws before anything is installed.
+
+```ts
+assertPlaceable(added: readonly Entity[], existing: ReadonlyMap<string, Entity>): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `Map`
+- `added.some`
+- `byId.has`
+- `byId.set`
+- `validatePortal`
+
+Explicit throws in this body:
+
+- `new Error(\`Entity id already in use: ${e.id}\`)`
+- `new Error(\`Entity ${e.id} cannot be placed while playing\`)`
+- `new Error(\`Portal ${e.id} can only be linked to a portal of the same batch\`)`
+
+## assertPlaceable.callback@130
+
+[Implementation, line 130](../../../../../src/entity/portal/portal.ts#L130)
+
+```ts
+callback@130(other): inferred by TypeScript; see implementation
+```
+
 ## createPortal
 
-[Implementation, line 105](../../../../../src/entity/portal/portal.ts#L105)
+[Implementation, line 137](../../../../../src/entity/portal/portal.ts#L137)
 
 One independent, closed mouth. Its transform origin is the aperture centre.
 
@@ -183,7 +218,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createPortalPair
 
-[Implementation, line 114](../../../../../src/entity/portal/portal.ts#L114)
+[Implementation, line 146](../../../../../src/entity/portal/portal.ts#L146)
 
 ```ts
 createPortalPair(firstId: string, secondId: string, first: Vec3Tuple = [4, 1.455, 0], second: Vec3Tuple = [-4, 1.455, 24]): Entity[]
@@ -193,12 +228,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `[first, second].map`
 
-## createPortalPair.callback@120
+## createPortalPair.callback@152
 
-[Implementation, line 120](../../../../../src/entity/portal/portal.ts#L120)
+[Implementation, line 152](../../../../../src/entity/portal/portal.ts#L152)
 
 ```ts
-callback@120(position, i): inferred by TypeScript; see implementation
+callback@152(position, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -208,7 +243,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createCarrierPortal
 
-[Implementation, line 131](../../../../../src/entity/portal/portal.ts#L131)
+[Implementation, line 163](../../../../../src/entity/portal/portal.ts#L163)
 
 The stern is the only stock carrier portal; the bow is an armoured window.
 

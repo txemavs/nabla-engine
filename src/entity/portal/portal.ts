@@ -101,6 +101,38 @@ export function assertHostedMouths(
   }
 }
 
+/**
+ * Entities placed while playing (`addPlaced`): standalone portals, sprites, lamps and static
+ * boxes without parents. Portals must be unlinked and closed, or linked to another portal of
+ * the same batch. Throws before anything is installed.
+ */
+export function assertPlaceable(
+  added: readonly Entity[],
+  existing: ReadonlyMap<string, Entity>,
+): void {
+  const byId = new Map(existing)
+  for (const e of added) {
+    if (byId.has(e.id)) throw new Error(`Entity id already in use: ${e.id}`)
+    byId.set(e.id, e)
+  }
+  for (const e of added) {
+    if (
+      e.parentId ||
+      e.kind === 'vehicle' ||
+      e.kind === 'spawn' ||
+      e.terrain ||
+      e.road ||
+      e.source ||
+      e.motion === 'dynamic'
+    )
+      throw new Error(`Entity ${e.id} cannot be placed while playing`)
+    if (!e.portal) continue
+    if (e.portal.pairId !== null && !added.some((other) => other.id === e.portal!.pairId))
+      throw new Error(`Portal ${e.id} can only be linked to a portal of the same batch`)
+    validatePortal(e, byId, true)
+  }
+}
+
 /** One independent, closed mouth. Its transform origin is the aperture centre. */
 export function createPortal(id: string, position: Vec3Tuple = [0, 0, 0]): Entity {
   return {

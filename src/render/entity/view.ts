@@ -48,7 +48,7 @@ import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
 import { createPortalSurface, type PortalSurface } from '../portal/portals.js'
-import { assertHostedMouths, PORTAL_BAR } from '../../entity/portal/portal.js'
+import { assertHostedMouths, assertPlaceable, PORTAL_BAR } from '../../entity/portal/portal.js'
 import { assets, disposeObject } from './assets.js'
 import { vehicleDefinition } from '../../entity/vehicle/vehicle.js'
 import type { VisualDefinition, Entity, Transform } from '../../entity/schema.js'
@@ -381,6 +381,39 @@ export class SceneView {
     this.graph = SceneGraph.fromValidated(this.document)
     this.addEntities([...vehicles, ...mouths])
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
+  }
+  /**
+   * Install scenery placed while running: standalone portals (Stargate frame), sprites, lamps and
+   * static boxes. The entities join the shared document; pair with `Simulation.addPlaced`.
+   */
+  addPlaced(added: Entity[]): void {
+    assertPlaceable(added, new Map(this.document.entities.map((e) => [e.id, e])))
+    this.document.entities = [...this.document.entities, ...added]
+    this.graph = SceneGraph.fromValidated(this.document)
+    this.addEntities(added)
+    void Promise.all(this.loading.splice(0)).catch(() => undefined)
+  }
+  /** Remove entities installed by `addPlaced`, releasing meshes, portal targets and lamp lights. */
+  removePlaced(ids: readonly string[]): void {
+    const removing = new Set(ids)
+    for (const id of ids) {
+      this.portals.get(id)?.target.dispose()
+      this.streetlights.remove(id)
+      const object = this.objects.get(id)
+      if (object) {
+        this.impacts.removeFor(object)
+        object.removeFromParent()
+        disposeObject(object)
+      }
+      for (const map of [this.objects, this.portals, this.portalTablets, this.sprites] as Map<
+        string,
+        unknown
+      >[])
+        map.delete(id)
+      this.spritePixels.delete(id)
+    }
+    this.document.entities = this.document.entities.filter((e) => !removing.has(e.id))
+    this.graph = SceneGraph.fromValidated(this.document)
   }
   /** Remove a vehicle installed by `addVehicles`, releasing its meshes and per-vehicle equipment. */
   removeVehicle(id: string): void {

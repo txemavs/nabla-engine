@@ -13,6 +13,9 @@
  *   &vehicles=<json>         extra host vehicles after terrain is ready: JSON array of
  *                            {lat, lon, heading, vehicle, alt?, color?, tow?, box?} (WGS84).
  *                            A non-empty list replaces the built-in parked demo row. Also VITE_NABLA_VEHICLES.
+ *   &portals=<json>          standalone Stargate portals after terrain is ready: JSON array of
+ *                            {name, lat, lon, heading, alt?, to?, mode?}. `to` links two entries
+ *                            (open unless mode=window). Also VITE_NABLA_PORTALS. See host-portals.ts.
  *   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
  *   &photo=full|lo|none      orthophoto draped on the ground (default full)
  *   &sky=live|day|<ISO>      real local wall clock (default), fixed midday sun, or a given instant
@@ -44,6 +47,7 @@ import {
   type LatLon,
 } from '@nabla/engine/planet/lat-lon'
 import { hostVehiclesFromSearch, viteHostVehicles, type HostVehicle } from './host-vehicles.js'
+import { hostPortalsFromSearch, viteHostPortals, type HostPortal } from './host-portals.js'
 
 /**
  * Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
@@ -104,6 +108,8 @@ export interface TerrainConfig {
   scene: Omit<TerrainDriveOptions, 'latitude' | 'longitude'>
   /** Extra vehicles placed after terrain is ready. Empty when none were declared. */
   vehicles: HostVehicle[]
+  /** Standalone portals placed after terrain is ready (`?portals=`). Empty when none. */
+  portals?: HostPortal[]
   atlas: Required<AtlasZ15Options>
   playerMode: 'hover' | 'walk'
   /** `&inspectRoads=collision`: show the candidate collision GLB. Not the driving collider. */
@@ -227,6 +233,7 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
       sky: params.get('sky') ?? undefined,
     },
     vehicles: hostVehiclesFromSearch(search, viteHostVehicles()),
+    ...portalsConfig(search),
     atlas: { relief, photo },
     playerMode: player,
     inspectRoadCollision: params.get('inspectRoads') === 'collision',
@@ -258,4 +265,10 @@ export function formatCells(stats: { loaded: number; missing: number; pending: n
     (stats.missing ? ` · ${stats.missing} ${stats.missing === 1 ? 'falta' : 'faltan'}` : '') +
     (stats.pending ? ` · cargando ${stats.pending}…` : '')
   )
+}
+
+/** `portals` only when the host listed some, so configs without portals keep their shape. */
+function portalsConfig(search: string): { portals?: HostPortal[] } {
+  const portals = hostPortalsFromSearch(search, viteHostPortals())
+  return portals.length ? { portals } : {}
 }

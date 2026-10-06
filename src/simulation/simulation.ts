@@ -27,7 +27,12 @@ import { stepBoatInWater } from './vehicles/boat.js'
 import { stepFlight } from './vehicles/flight.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
 import { SceneEditor } from '../scene/history.js'
-import { assertHostedMouths, portalColliders, portalLocal } from '../entity/portal/portal.js'
+import {
+  assertHostedMouths,
+  assertPlaceable,
+  portalColliders,
+  portalLocal,
+} from '../entity/portal/portal.js'
 import { EARTH_RADIUS, geoToLocal, localFrame, localToGeo } from '../math/geo/sphere.js'
 import { Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition, type Vehicle } from '../entity/vehicle/vehicle.js'
@@ -386,6 +391,46 @@ export class Simulation {
       this.portalEntities.push(mouth)
       this.rebuildPortalCollider(mouth)
     }
+  }
+  /**
+   * Add placed scenery to a running simulation: standalone portals, sprites, lamps and static
+   * boxes (the game add menu and host `placeEntities`). Portals may be linked within the batch;
+   * links to existing mouths are made afterwards with `configurePortal`.
+   */
+  addPlaced(added: Entity[]): void {
+    assertPlaceable(added, this.entitiesById)
+    const copies = structuredClone(added)
+    this.document.entities = [...this.document.entities, ...copies]
+    this.graph = SceneGraph.fromValidated(this.document)
+    this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
+    for (const e of copies) this.addEntityBody(e)
+    for (const e of copies) if (e.portal) this.portalEntities.push(e)
+  }
+  /**
+   * Remove entities installed by `addPlaced`. A mouth linked to a portal that stays is unlinked
+   * (and closed) first, so the partner never points at a missing mouth.
+   */
+  removePlaced(ids: readonly string[]): void {
+    const removing = new Set(ids)
+    const entities = ids.map((id) => {
+      const e = this.entitiesById.get(id)
+      if (!e) throw new Error(`Unknown entity: ${id}`)
+      if (e.kind === 'vehicle' || e.parentId) throw new Error(`Not a placed entity: ${id}`)
+      return e
+    })
+    for (const e of entities)
+      if (e.portal?.pairId && !removing.has(e.portal.pairId))
+        this.configurePortal(e.id, null, 'closed')
+    for (const e of entities) {
+      const body = this.bodies.get(e.id)
+      if (body?.world === this.world) this.world.removeBody(body)
+      this.bodies.delete(e.id)
+      this.mapBodies.delete(e.id)
+      if (e.portal) this.portalEntities.splice(this.portalEntities.indexOf(e), 1)
+    }
+    this.document.entities = this.document.entities.filter((e) => !removing.has(e.id))
+    this.graph = SceneGraph.fromValidated(this.document)
+    this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
   }
   /** Authored definition of a live vehicle, including ones added with `addVehicles`; null if unknown. */
   vehicleSpec(id: string): VehicleDefinition | null {
@@ -1175,12 +1220,20 @@ export class Simulation {
       longitude,
       altitude: Math.max(here.altitude, 15),
     })
+    const delta = new Vec3(...next).vsub(v.body.position)
     v.body.position.set(...next)
     v.body.previousPosition.copy(v.body.position)
     v.body.interpolatedPosition.copy(v.body.position)
     v.body.velocity.setZero()
     v.body.angularVelocity.setZero()
     v.body.wakeUp()
+    // Someone standing in the cabin travels with the ship instead of being left behind.
+    if (this.interiorId === id && !this.vehicleId) {
+      this.playerBody.position.vadd(delta, this.playerBody.position)
+      this.playerBody.previousPosition.copy(this.playerBody.position)
+      this.playerBody.interpolatedPosition.copy(this.playerBody.position)
+      this.playerBody.velocity.setZero()
+    }
     return 'En destino'
   }
 

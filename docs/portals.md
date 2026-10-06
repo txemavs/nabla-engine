@@ -33,6 +33,27 @@ the closed visual door uses a horizontal collision apron. Its collider transform
 is updated in Rapier alongside the animation. Opening the garage door first
 closes the portal. Hosted frame colliders belong to the existing carrier body.
 
+## Placing portals while playing
+
+The game add menu («Añadir…», group **Objetos**) offers engine placeables from
+`src/catalog/placeables.ts`: **Portal** (one closed Stargate mouth), **Galería 2.5D** (the
+gallery example: a window-linked pair with its 2.5D sprite figures), **Sprite**, **Farola de
+autopista** and **Farola de barrio**. `GameRuntime.spawnEntities(entities, ahead)` stands the
+batch on the ground in front of the player or the driven vehicle, facing them, with fresh ids;
+`placeEntities` takes an explicit pose, `placedObjects` lists the batches and `removePlaced`
+takes one away. Simulation and view install them with `addPlaced` / `removePlaced`
+(`assertPlaceable`: no parents, vehicles, terrain or dynamic bodies; links only inside the
+batch). Removing a linked portal closes the partner that stays.
+
+A placed portal starts closed and unlinked. Its panel lists every portal in the scene —
+other placed portals, host portals and carrier sterns — and links/opens them through
+`configurePortal`, exactly as authored mouths do. Hosts list fixed portals with `?portals=`
+(see [Game library → Host portals](game-library.md#host-portals)).
+
+The carrier PORTAL panel's Lat/Lon **Ir** form now calls `Simulation.relocateVehicle`: the ship
+(and anyone in its cabin) moves to that point, keeping its current altitude (at least 15 m
+orthometric) with velocity cleared, and settles from there.
+
 ## Playing
 
 Studio uses the hovering monitor. Its small body follows a support cushion about

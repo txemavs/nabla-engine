@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addLabel,
   formatMetres,
+  objectChoices,
   seaStatus,
   vehicleChoices,
   withSceneParams,
@@ -89,5 +91,26 @@ describe('menu helpers', () => {
     expect(ids).not.toContain('white-trailer')
     expect(ids).not.toContain('white-trailer-chassis')
     for (const choice of vehicleChoices()) expect(choice.label.length).toBeGreaterThan(0)
+  })
+})
+
+describe('add menu objects', () => {
+  it('offers Portal, Galería 2.5D, Sprite and both lamps after the vehicles', () => {
+    expect(objectChoices().map((choice) => choice.label)).toEqual([
+      'Portal',
+      'Galería 2.5D',
+      'Sprite',
+      'Farola de autopista',
+      'Farola de barrio',
+    ])
+    const vehicles = new Set(vehicleChoices().map((choice) => choice.id))
+    for (const choice of objectChoices()) expect(vehicles.has(choice.id)).toBe(false)
+  })
+
+  it('names the button after the selected entry', () => {
+    expect(addLabel('portal')).toBe('Añadir portal')
+    expect(addLabel('gallery')).toBe('Añadir galería 2.5D')
+    expect(addLabel('globe')).toBe('Añadir farola de barrio')
+    expect(addLabel('carrier')).toBe('Añadir vehículo')
   })
 })

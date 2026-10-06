@@ -18,6 +18,9 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
   &vehicles=<json>         extra host vehicles after terrain is ready: JSON array of
                            {lat, lon, heading, vehicle, alt?, color?, tow?, box?} (WGS84).
                            A non-empty list replaces the built-in parked demo row. Also VITE_NABLA_VEHICLES.
+  &portals=<json>          standalone Stargate portals after terrain is ready: JSON array of
+                           {name, lat, lon, heading, alt?, to?, mode?}. `to` links two entries
+                           (open unless mode=window). Also VITE_NABLA_PORTALS. See host-portals.ts.
   &relief=engine|lidar     drivable engine terrain (default) or the 2 m LiDAR mesh
   &photo=full|lo|none      orthophoto draped on the ground (default full)
   &sky=live|day|<ISO>      real local wall clock (default), fixed midday sun, or a given instant
@@ -42,10 +45,11 @@ A bare URL (no query, or only display options) starts the default tile of the de
 - `@nabla/engine/planet/sky`
 - `@nabla/engine/planet/lat-lon`
 - `./host-vehicles.js`
+- `./host-portals.js`
 
 ## fetchCoverage
 
-[Implementation, line 52](../../../game/terrain.ts#L52)
+[Implementation, line 56](../../../game/terrain.ts#L56)
 
 Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
 it has none. Only used to pick a start cell when the URL names none; streaming never needs it.
@@ -60,17 +64,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `index.tiles?.filter`
 - `response.json`
 
-## fetchCoverage.callback@57
+## fetchCoverage.callback@61
 
-[Implementation, line 57](../../../game/terrain.ts#L57)
+[Implementation, line 61](../../../game/terrain.ts#L61)
 
 ```ts
-callback@57(t): inferred by TypeScript; see implementation
+callback@61(t): inferred by TypeScript; see implementation
 ```
 
 ## terrainDefaults
 
-[Implementation, line 75](../../../game/terrain.ts#L75)
+[Implementation, line 79](../../../game/terrain.ts#L79)
 
 Default query for a package folder: the default start when its cell is published, else just the folder.
 
@@ -80,7 +84,7 @@ terrainDefaults(defaultCellPublished: boolean, base: string = DEFAULT_TERRAIN_QU
 
 ## probeTerrainFolder
 
-[Implementation, line 86](../../../game/terrain.ts#L86)
+[Implementation, line 90](../../../game/terrain.ts#L90)
 
 True when the folder publishes the default start cell. This asks for one manifest, like the engine
 does for any tile; no index file is needed.
@@ -95,7 +99,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseTimeParam
 
-[Implementation, line 123](../../../game/terrain.ts#L123)
+[Implementation, line 129](../../../game/terrain.ts#L129)
 
 Parse `&time=`: `HH:MM` (also `H`, `HH.MM`) or `ahora`/`now` for the real clock.
 
@@ -116,7 +120,7 @@ Explicit throws in this body:
 
 ## parseTimeSpeedParam
 
-[Implementation, line 133](../../../game/terrain.ts#L133)
+[Implementation, line 139](../../../game/terrain.ts#L139)
 
 Parse `&timeSpeed=`: live clock multiplier, 1–24.
 
@@ -138,7 +142,7 @@ Explicit throws in this body:
 
 ## parseSeaParam
 
-[Implementation, line 143](../../../game/terrain.ts#L143)
+[Implementation, line 149](../../../game/terrain.ts#L149)
 
 Parse `&sea=`: metres within the engine's sea-surface range.
 
@@ -161,7 +165,7 @@ Explicit throws in this body:
 
 ## wantsTerrain
 
-[Implementation, line 153](../../../game/terrain.ts#L153)
+[Implementation, line 159](../../../game/terrain.ts#L159)
 
 True when the URL asks for the terrain-folder example.
 
@@ -177,7 +181,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 158](../../../game/terrain.ts#L158)
+[Implementation, line 164](../../../game/terrain.ts#L164)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -197,7 +201,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 167](../../../game/terrain.ts#L167)
+[Implementation, line 173](../../../game/terrain.ts#L173)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -222,6 +226,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parseTileSpec`
 - `parseTimeParam`
 - `parseTimeSpeedParam`
+- `portalsConfig`
 - `raw.trim`
 - `tileOffsetFromGeo`
 - `tileOffsetToGeo`
@@ -241,7 +246,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 243](../../../game/terrain.ts#L243)
+[Implementation, line 250](../../../game/terrain.ts#L250)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -262,10 +267,25 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 255](../../../game/terrain.ts#L255)
+[Implementation, line 262](../../../game/terrain.ts#L262)
 
 Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving.
 
 ```ts
 formatCells(stats: { loaded: number; missing: number; pending: number }): string
 ```
+
+## portalsConfig
+
+[Implementation, line 271](../../../game/terrain.ts#L271)
+
+`portals` only when the host listed some, so configs without portals keep their shape.
+
+```ts
+portalsConfig(search: string): { portals?: HostPortal[] }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hostPortalsFromSearch`
+- `viteHostPortals`

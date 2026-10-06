@@ -48,9 +48,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.ensurePool`
 - `this.entries.push`
 
+## Streetlights.remove
+
+[Implementation, line 57](../../../../../src/render/entity/streetlights.ts#L57)
+
+Forget a lamp whose group was removed; its pooled spot light is reassigned next update.
+
+```ts
+remove(entityId: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `entry.point?.dispose`
+- `entry.point?.removeFromParent`
+- `this.entries.filter`
+
+## Streetlights.remove.callback@58
+
+[Implementation, line 58](../../../../../src/render/entity/streetlights.ts#L58)
+
+```ts
+callback@58(e): inferred by TypeScript; see implementation
+```
+
+## Streetlights.remove.callback@62
+
+[Implementation, line 62](../../../../../src/render/entity/streetlights.ts#L62)
+
+```ts
+callback@62(e): inferred by TypeScript; see implementation
+```
+
 ## Streetlights.addGlobe
 
-[Implementation, line 56](../../../../../src/render/entity/streetlights.ts#L56)
+[Implementation, line 64](../../../../../src/render/entity/streetlights.ts#L64)
 
 Shared fixed light budget: no shadow passes, regardless of the number of poles.
 
@@ -74,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Streetlights.ensurePool
 
-[Implementation, line 79](../../../../../src/render/entity/streetlights.ts#L79)
+[Implementation, line 87](../../../../../src/render/entity/streetlights.ts#L87)
 
 Shared fixed light budget: no shadow passes, regardless of the number of poles.
 
@@ -90,7 +122,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Streetlights.update
 
-[Implementation, line 88](../../../../../src/render/entity/streetlights.ts#L88)
+[Implementation, line 96](../../../../../src/render/entity/streetlights.ts#L96)
 
 Shared fixed light budget: no shadow passes, regardless of the number of poles.
 
@@ -113,30 +145,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Streetlights.update.lit
 
-[Implementation, line 91](../../../../../src/render/entity/streetlights.ts#L91)
+[Implementation, line 99](../../../../../src/render/entity/streetlights.ts#L99)
 
 ```ts
 lit(e: (typeof this.entries)[number]): inferred by TypeScript; see implementation
 ```
 
-## Streetlights.update.callback@94
+## Streetlights.update.callback@102
 
-[Implementation, line 94](../../../../../src/render/entity/streetlights.ts#L94)
+[Implementation, line 102](../../../../../src/render/entity/streetlights.ts#L102)
 
 ```ts
-callback@94(e): inferred by TypeScript; see implementation
+callback@102(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `lit`
 
-## Streetlights.update.callback@95
+## Streetlights.update.callback@103
 
-[Implementation, line 95](../../../../../src/render/entity/streetlights.ts#L95)
+[Implementation, line 103](../../../../../src/render/entity/streetlights.ts#L103)
 
 ```ts
-callback@95(e): inferred by TypeScript; see implementation
+callback@103(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -144,24 +176,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Vector3`
 - `e.source.getWorldPosition`
 
-## Streetlights.update.callback@96
+## Streetlights.update.callback@104
 
-[Implementation, line 96](../../../../../src/render/entity/streetlights.ts#L96)
+[Implementation, line 104](../../../../../src/render/entity/streetlights.ts#L104)
 
 ```ts
-callback@96(e): inferred by TypeScript; see implementation
+callback@104(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `e.position.distanceTo`
 
-## Streetlights.update.callback@97
+## Streetlights.update.callback@105
 
-[Implementation, line 97](../../../../../src/render/entity/streetlights.ts#L97)
+[Implementation, line 105](../../../../../src/render/entity/streetlights.ts#L105)
 
 ```ts
-callback@97(a, b): inferred by TypeScript; see implementation
+callback@105(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -169,12 +201,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `a.position.distanceToSquared`
 - `b.position.distanceToSquared`
 
-## Streetlights.update.callback@113
+## Streetlights.update.callback@121
 
-[Implementation, line 113](../../../../../src/render/entity/streetlights.ts#L113)
+[Implementation, line 121](../../../../../src/render/entity/streetlights.ts#L121)
 
 ```ts
-callback@113(light, i): inferred by TypeScript; see implementation
+callback@121(light, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

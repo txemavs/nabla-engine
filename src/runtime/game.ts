@@ -110,6 +110,14 @@ export class GameRuntime {
   addVehicles(added: Entity[]): void {
     this.scene?.entities.push(...structuredClone(added))
   }
+  /** Register scenery placed in the live simulation (portals, sprites, lamps). */
+  addPlaced(added: Entity[]): void {
+    this.scene?.entities.push(...structuredClone(added))
+  }
+  /** Forget scenery removed from the live simulation. */
+  removePlaced(ids: readonly string[]): void {
+    if (this.scene) this.scene.entities = this.scene.entities.filter((e) => !ids.includes(e.id))
+  }
   /** Forget a vehicle removed from the live simulation. */
   removeVehicle(id: string): void {
     if (this.scene)

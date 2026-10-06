@@ -31,6 +31,7 @@
 - `./gallery.js`
 - `./shooting.js`
 - `../examples/gallery.js`
+- `../catalog/placeables.js`
 - `./render-pipeline.js`
 - `./performance.js`
 - `./water.js`

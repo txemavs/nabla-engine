@@ -4,6 +4,20 @@
 
 ### Added
 
+- **Add menu objects — Portal, Galería 2.5D, Sprite, Farola de autopista, Farola de barrio:**
+  the game add menu now has a **Objetos** group after the vehicles. The button reads «Añadir
+  portal», «Añadir galería 2.5D», …; the entry stands in front of the player or driven vehicle
+  and appears in the placed list with a remove button. A placed portal is the Stargate frame
+  (`portal.frame.glb`), starts closed and can be linked/opened from its panel to any other
+  portal, including the carrier stern. Engine API: `placeables`, `createPlaceable`,
+  `GameRuntime.spawnEntities` / `placeEntities` / `placedObjects` / `removePlaced` /
+  `configurePortal`, `Simulation.addPlaced` / `removePlaced`, `SceneView.addPlaced` /
+  `removePlaced`. See docs/portals.md → Placing portals while playing.
+- **Host portals (`?portals=`):** hosts list standalone portals like host vehicles — WGS84
+  `{name, lat, lon, heading, alt?, to?, mode?}`, linked in pairs with `to`; also
+  `VITE_NABLA_PORTALS` and `installHostPortals`. See docs/game-library.md → Host portals.
+- **Carrier portal «Ir»:** the Lat/Lon form on the PORTAL panel now relocates the ship (and
+  anyone in its cabin) instead of doing nothing.
 - **Overhead (cenital) and cinematic cameras for every player state:** **C** (gamepad **B**)
   now cycles exterior → driver → overhead → cinematic in vehicles and first person → third
   person → overhead → cinematic on foot. The overhead view looks straight down, follows

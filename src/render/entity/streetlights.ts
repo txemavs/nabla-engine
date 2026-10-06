@@ -53,6 +53,14 @@ export class Streetlights {
     this.entries.push({ entity, group, lens, source, target })
     this.ensurePool()
   }
+  /** Forget a lamp whose group was removed; its pooled spot light is reassigned next update. */
+  remove(entityId: string): void {
+    for (const entry of this.entries.filter((e) => e.entity.id === entityId)) {
+      entry.point?.removeFromParent()
+      entry.point?.dispose()
+    }
+    this.entries = this.entries.filter((e) => e.entity.id !== entityId)
+  }
   private addGlobe(entity: Entity, group: THREE.Group): void {
     const metal = new THREE.MeshStandardMaterial({
       color: entity.color,

@@ -10,6 +10,8 @@
  *   - color: body paint for the start vehicle (`#rrggbb`, same `entity.color` as cars)
  *   - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?, color?, tow?, box?}`
  *     (WGS84). Also `VITE_NABLA_VEHICLES` at build time. See `host-vehicles.ts`.
+ *   - portals: JSON array of standalone portals `{name, lat, lon, heading, alt?, to?, mode?}`.
+ *     Also `VITE_NABLA_PORTALS`. See `host-portals.ts`.
  *   - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
  *            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
  *   - static: use static tile mode ('true' or '1')
@@ -17,6 +19,7 @@
 
 import { normalizeTilesBase } from '@nabla/engine/planet/static-tiles'
 import { hostVehiclesFromSearch, viteHostVehicles, type HostVehicle } from './host-vehicles.js'
+import { hostPortalsFromSearch, viteHostPortals, type HostPortal } from './host-portals.js'
 
 export interface GameConfig {
   spawn: {
@@ -30,6 +33,8 @@ export interface GameConfig {
   color?: string
   /** Extra vehicles placed after terrain is ready. Empty when none were declared. */
   vehicles: HostVehicle[]
+  /** Standalone portals placed after terrain is ready (`?portals=`). Empty when none. */
+  portals?: HostPortal[]
   /** Undefined means unconfigured; empty string explicitly selects this origin. */
   tilesBaseUrl: string | undefined
   staticTiles: boolean
@@ -78,6 +83,7 @@ export function parseGameConfig(search: string = location.search): GameConfig {
     vehicle,
     ...(color ? { color } : {}),
     vehicles: hostVehiclesFromSearch(search, viteHostVehicles()),
+    ...portalsConfig(search),
     tilesBaseUrl,
     staticTiles,
   }
@@ -102,6 +108,9 @@ export function configToUrl(config: GameConfig): string {
   if (config.vehicles.length) {
     params.set('vehicles', JSON.stringify(config.vehicles))
   }
+  if (config.portals?.length) {
+    params.set('portals', JSON.stringify(config.portals))
+  }
   if (config.tilesBaseUrl !== undefined) {
     params.set('tiles', config.tilesBaseUrl || '/')
   }
@@ -120,4 +129,10 @@ export function requireGeographicTileBase(config: GameConfig): string {
       'Terrain source missing: set ?tiles=<tile-base-url> for geographic mode, or use ?example=flat for the local planetary demo.',
     )
   return config.tilesBaseUrl
+}
+
+/** `portals` only when the host listed some, so configs without portals keep their shape. */
+function portalsConfig(search: string): { portals?: HostPortal[] } {
+  const portals = hostPortalsFromSearch(search, viteHostPortals())
+  return portals.length ? { portals } : {}
 }
