@@ -3,13 +3,16 @@ import { convertPlanetGlbMesh } from './convert-mesh.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, Mesh } from 'three'
 import {
+  isCandidateRoadKind,
   planetCollisionChunks,
   planetGlbCacheKey,
   planetTileGlbLayers,
+  type PlanetLayerFile,
   type PlanetManifest,
   type PlanetMesh,
   type PlanetPayload,
 } from '../../planet/index.js'
+import type { PlanetGlbKind } from '../../planet/contract.js'
 import { mapCache } from './cache.js'
 import { sha256 } from '../../util/sha256.js'
 import { buildDrapes } from './drape.js'
@@ -57,6 +60,8 @@ self.onmessage = async (
   const photos: { mesh: PlanetMesh; image: CanvasImageSource }[] = []
   let vegetation: { position: [number, number, number]; size: [number, number] }[] = []
   let bytesTotal = 0
+  /** Road layer files that failed (the cell still loads; a fallback file may have been used). */
+  const roadErrors: string[] = []
   /** Milliseconds per phase, reported with the payload so slow cells can be explained. */
   const timings = { fetch: 0, verify: 0, parse: 0, photo: 0, collision: 0 }
   const phase = async <T>(name: keyof typeof timings, work: () => Promise<T> | T): Promise<T> => {
@@ -75,10 +80,8 @@ self.onmessage = async (
       throw Error('Planet GLBs must be self-contained')
     })
     const loader = new GLTFLoader(manager)
-    for (const { name, file, kind } of planetTileGlbLayers(manifest, {
-      buildings: event.data.buildings !== false,
-      inspectRoadCollision: event.data.inspectRoadCollision === true,
-    })) {
+    /** Download, verify (size + SHA-256, in the worker) and convert one GLB layer into `meshes`. */
+    const loadLayer = async (name: string, file: PlanetLayerFile, kind: PlanetGlbKind) => {
       const url = directory + file.path
       const cache = mapCache('nabla-planet-glb-v2')
       const cacheKey = planetGlbCacheKey(url, file, kind)
@@ -141,6 +144,30 @@ self.onmessage = async (
         })
       }
     }
+    for (const layer of planetTileGlbLayers(manifest, {
+      buildings: event.data.buildings !== false,
+      inspectRoadCollision: event.data.inspectRoadCollision === true,
+    })) {
+      if (!isCandidateRoadKind(layer.kind)) {
+        // Terrain and buildings are the cell: a failure fails the cell.
+        await loadLayer(layer.name, layer.file, layer.kind)
+        continue
+      }
+      // Road layers (asphalt, bridge supports) fall back per layer and never fail the cell.
+      const files = layer.fallback ? [layer.file, layer.fallback] : [layer.file]
+      for (const file of files) {
+        const before = meshes.length
+        try {
+          await loadLayer(layer.name, file, layer.kind)
+          break
+        } catch (error) {
+          if (controller.signal.aborted) throw error
+          meshes.length = before
+          roadErrors.push(`${layer.name} ${file.path}: ${String(error)}`)
+        }
+      }
+    }
+    if (roadErrors.length) console.warn('Planet road layers:', manifest.id, roadErrors)
     // The orthophoto drape: geometry cut here, photo downloaded, verified and decoded here, so the
     // main thread only wraps the arrays. A photo failure leaves the cell playable without it.
     let drape: PlanetPayload['drape']
@@ -193,6 +220,7 @@ self.onmessage = async (
           vegetation,
           timings,
           drape,
+          ...(roadErrors.length ? { roadErrors } : {}),
         },
       },
       { transfer: [...transfers, ...(chart ? [chart.bitmap] : [])] },

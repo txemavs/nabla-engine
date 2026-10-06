@@ -121,6 +121,19 @@
 
 ### Fixed
 
+- **Bridges no longer vanish with a road pointer mismatch:** when `manifest.json` and the Atlas
+  package (or `roads.files` and `roadCandidates.layers`) name different files for a road layer,
+  the cell used to fail validation and load nothing, bridges included. Each road layer now
+  resolves on its own: the manifest file wins, the other is kept as `fallback` and reported in
+  `roads.warnings`; an invalid road entry is ignored with a warning instead of rejecting the
+  cell. The worker tries the fallback when a road file fails to download, verify or parse, then
+  skips only that layer (`PlanetPayload.roadErrors`); terrain and buildings failures still fail
+  the cell. Bridge supports and asphalt are exempt from the sea-coverage triangle filter, so decks
+  and piers over the water are never stripped. Engine API: `PlanetCandidateRoadFile.fallback`,
+  `PlanetCandidateRoads.warnings`, `PlanetGlbLayer.fallback`, `PlanetPayload.roadErrors`.
+- **«Carretera» hidden hint:** with **Capas → Carretera** off, a small chip at the top of the
+  screen reads «Carretera oculta: no se ven asfalto ni puentes» with a «Mostrar» button, so a
+  stored hidden layer (`localStorage` / `?layers=`) can no longer silently hide every bridge.
 - **Ajustes → Capas showed no map layers in the terrain game:** the layer list (Carretera,
   Edificios y techos, Foto del suelo, Nombres de poblaciones) is bound after the settings window
   mounts, so it stayed in the hidden legacy menu and could not be switched back on; the «Terreno»

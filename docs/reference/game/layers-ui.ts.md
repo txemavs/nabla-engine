@@ -14,7 +14,7 @@ Terrain layer selector (menu section "Capas"). Engine owns the layers and the dr
 
 ## browserStorage
 
-[Implementation, line 15](../../../game/layers-ui.ts#L15)
+[Implementation, line 16](../../../game/layers-ui.ts#L16)
 
 ```ts
 browserStorage(): LayerStorage | undefined
@@ -22,7 +22,7 @@ browserStorage(): LayerStorage | undefined
 
 ## initialHiddenLayers
 
-[Implementation, line 27](../../../game/layers-ui.ts#L27)
+[Implementation, line 28](../../../game/layers-ui.ts#L28)
 
 The layers to start with: an explicit `&layers=` wins over the stored choice. Both apply over
 `defaults`, the host's default hidden layers (e.g. `['places']` from `NABLA_BOOT.cityLabels: false`).
@@ -39,12 +39,59 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new URLSearchParams(search).get`
 - `parseLayerSpec`
 
+## roadHiddenHint
+
+[Implementation, line 40](../../../game/layers-ui.ts#L40)
+
+HUD text while the road layer ('Carretera') is hidden; undefined when roads are drawn.
+
+```ts
+roadHiddenHint(hidden: readonly string[]): string | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hidden.includes`
+
+## mountRoadHiddenHint
+
+[Implementation, line 48](../../../game/layers-ui.ts#L48)
+
+Small HUD chip shown while 'Carretera' is hidden (a stored `-road` survives reloads, and
+roads and bridges then vanish without any other sign). «Mostrar» turns the layer back on.
+
+```ts
+mountRoadHiddenHint(onShow: () => void): (hidden: readonly string[]) => void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.body.append`
+- `document.createElement`
+- `hint.append`
+- `hint.setAttribute`
+- `show.addEventListener`
+
+## mountRoadHiddenHint.callback@59
+
+[Implementation, line 59](../../../game/layers-ui.ts#L59)
+
+```ts
+callback@59(hidden): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hint.classList.toggle`
+- `roadHiddenHint`
+
 ## bindLayerSelector
 
-[Implementation, line 42](../../../game/layers-ui.ts#L42)
+[Implementation, line 71](../../../game/layers-ui.ts#L71)
 
 Add one checkbox per layer (road first) to the Capas menu section; changes apply live and persist
 as differences from `defaults` (the same host defaults given to `initialHiddenLayers`).
+A HUD chip says when 'Carretera' is hidden.
 
 ```ts
 bindLayerSelector(runtime: GameRuntime, storage = browserStorage(), defaults: readonly string[] = []): void
@@ -62,10 +109,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hidden.has`
 - `label.append`
 - `menuSection`
+- `mountRoadHiddenHint`
+- `updateHint`
+
+## bindLayerSelector.showRoad
+
+[Implementation, line 78](../../../game/layers-ui.ts#L78)
+
+```ts
+showRoad(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `boxes.get`
+- `sync`
 
 ## bindLayerSelector.sync
 
-[Implementation, line 49](../../../game/layers-ui.ts#L49)
+[Implementation, line 85](../../../game/layers-ui.ts#L85)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -80,25 +142,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `history.replaceState`
 - `runtime.setHiddenLayers`
 - `saveHiddenLayers`
+- `updateHint`
 - `url.searchParams.delete`
 - `url.searchParams.set`
 
-## bindLayerSelector.sync.callback@50
+## bindLayerSelector.sync.callback@86
 
-[Implementation, line 50](../../../game/layers-ui.ts#L50)
+[Implementation, line 86](../../../game/layers-ui.ts#L86)
 
 ```ts
-callback@50(layer): inferred by TypeScript; see implementation
+callback@86(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `boxes.get`
 
-## bindLayerSelector.sync.callback@50
+## bindLayerSelector.sync.callback@86
 
-[Implementation, line 50](../../../game/layers-ui.ts#L50)
+[Implementation, line 86](../../../game/layers-ui.ts#L86)
 
 ```ts
-callback@50(l): inferred by TypeScript; see implementation
+callback@86(l): inferred by TypeScript; see implementation
 ```

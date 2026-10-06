@@ -116,3 +116,27 @@ describe('convertPlanetGlbMesh', () => {
     expect(converted?.mesh.normal[2]).toBeCloseTo(1)
   })
 })
+
+describe('candidate roads are never trimmed client-side', () => {
+  /** Two triangles at sea level, tagged like a water surface (what the sea filter removes). */
+  function seaLevelMesh() {
+    const geometry = new BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new BufferAttribute(new Float32Array([0, 0, 0, 10, 0, 0, 0, 0, 10, 10, 0, 10]), 3),
+    )
+    geometry.setIndex([0, 2, 1, 1, 2, 3])
+    const mesh = new Mesh(geometry, new MeshStandardMaterial())
+    mesh.userData = { category: 'Surfaces', groundLayer: 1 }
+    mesh.updateMatrixWorld(true)
+    return mesh
+  }
+
+  it('keeps every bridge supports and asphalt triangle, even at sea level', () => {
+    for (const kind of ['supports', 'asphalt'] as const) {
+      const converted = convertPlanetGlbMesh(seaLevelMesh(), { kind, anchorAltitude: 0 })
+      expect(converted?.mesh.index?.length).toBe(6)
+      expect(converted?.mesh.metadata.nablaCandidateRoad).toBe(kind)
+    }
+  })
+})

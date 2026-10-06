@@ -8,7 +8,8 @@ Flatten one planet GLB mesh into transferred typed arrays.
 
 Atlas candidate road GLBs (`asphalt-candidate-*.glb`, `road-collision-candidate-*.glb`,
 `supports-candidate-*.glb`) publish POSITION only. Missing NORMALs are computed here so the
-worker can install the layer instead of failing the whole cell.
+worker can install the layer instead of failing the whole cell. Their triangles are kept as
+published: no client-side filter removes asphalt or bridge supports.
 
 ## Module dependencies
 
@@ -18,7 +19,7 @@ worker can install the layer instead of failing the whole cell.
 
 ## preparePlanetMeshGeometry
 
-[Implementation, line 15](../../../../../src/render/planet/convert-mesh.ts#L15)
+[Implementation, line 16](../../../../../src/render/planet/convert-mesh.ts#L16)
 
 Compute missing vertex normals, then reject meshes without POSITION or with too many verts.
 
@@ -38,7 +39,7 @@ Explicit throws in this body:
 
 ## convertPlanetGlbMesh
 
-[Implementation, line 30](../../../../../src/render/planet/convert-mesh.ts#L30)
+[Implementation, line 31](../../../../../src/render/planet/convert-mesh.ts#L31)
 
 Same conversion the planet worker applies to every GLB mesh in a cell.
 

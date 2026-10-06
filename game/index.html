@@ -105,12 +105,19 @@
         pointer-events: none;
       }
       body:has(#loading-screen.splash-mark:not(.hidden))
-        :is(#display-settings, #controls-hint, .nabla-game-hud, .touch-driving, .touch-flight) {
+        :is(
+          #display-settings,
+          #controls-hint,
+          #road-hidden-hint,
+          .nabla-game-hud,
+          .touch-driving,
+          .touch-flight
+        ) {
         display: none !important;
       }
       /* While the planet attract view runs, keep gameplay overlays out of the shot. */
       body:has(#game-canvas[data-boot-mode='attract']) :is(.touch-driving, .touch-flight),
-      body:has(#game-canvas[data-boot-mode='attract']) #controls-hint {
+      body:has(#game-canvas[data-boot-mode='attract']) :is(#controls-hint, #road-hidden-hint) {
         display: none !important;
       }
       #loading-screen.hidden {
@@ -210,6 +217,33 @@
       }
       body:has(.touch-driving[data-visibility='always']) #controls-hint {
         display: none;
+      }
+      #road-hidden-hint {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 11;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #ddd;
+        font-size: 13px;
+      }
+      #road-hidden-hint.hidden {
+        display: none;
+      }
+      #road-hidden-hint button {
+        font: inherit;
+        padding: 2px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 4px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
       }
       #controls-hint kbd {
         display: inline-block;

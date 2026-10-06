@@ -185,6 +185,8 @@ The section is bound before anything loads, so a terrain that fails to load can 
   building collider is hollow, so the old rule could drop you behind a wall where E found nothing.
 - **Layers.** The display menu lists the terrain layers (`TILE_LAYERS`, road first). Turning _Carretera_ off hides
   the road mesh and its photo; the ground photo underneath remains and collision is unchanged.
+  Bridge decks and supports are part of _Carretera_, so a small chip at the top of the screen says
+  «Carretera oculta: no se ven asfalto ni puentes» with a «Mostrar» button while the layer is off.
 
 ## Serving the folder from the dev server
 
@@ -272,6 +274,18 @@ file names only) and returns a manifest the unchanged loader worker consumes.
    or `roadCandidates.layers`. The separate collision GLB stays inspect-only
    (`&inspectRoads=collision`) and is not the default driving collider. Road revision
    / `evidenceSha256` is part of the tile cache key.
+8. **Bridges are never dropped by the client.** A road pointer that disagrees between
+   `manifest.json` and the Atlas package (or between `roads.files` and
+   `roadCandidates.layers`) used to throw, so the whole cell stopped loading and every
+   bridge in it disappeared. Now each layer is resolved on its own: the
+   `roadCandidates.layers` / `manifest.json` file wins, the other file is kept as
+   `fallback`, and the problem is listed in `roads.warnings`. An invalid road entry is
+   ignored with a warning; a manifest with no usable road layer still loads its terrain
+   and buildings. In the worker, a road layer that fails to download, verify or parse
+   tries its fallback and is then skipped (`payload.roadErrors`, `console.warn`); only a
+   terrain or buildings failure fails the cell. Supports and asphalt are never culled by
+   the sea-coverage filter, so a deck or pier over water or at sea level keeps every
+   triangle.
 
 Same frame as the engine: origin at the cell centre, +X east, +Y up (absolute
 elevation), +Z south. Terrain GLBs are 7.6–55.5 MB (loader cap 64 MB); on a plain

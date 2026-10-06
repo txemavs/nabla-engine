@@ -3,7 +3,8 @@
  *
  * Atlas candidate road GLBs (`asphalt-candidate-*.glb`, `road-collision-candidate-*.glb`,
  * `supports-candidate-*.glb`) publish POSITION only. Missing NORMALs are computed here so the
- * worker can install the layer instead of failing the whole cell.
+ * worker can install the layer instead of failing the whole cell. Their triangles are kept as
+ * published: no client-side filter removes asphalt or bridge supports.
  */
 import { Matrix3, Mesh, MeshStandardMaterial, Vector3, type BufferGeometry } from 'three'
 import { seaCoverageIndex } from '../../planet/sea-coverage.js'
@@ -55,7 +56,11 @@ export function convertPlanetGlbMesh(
     Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
   ) as MeshStandardMaterial
   const originalIndex = g.index ? new Uint32Array(g.index.array) : undefined
-  const index = seaCoverageIndex(p, originalIndex, mesh.userData, options.anchorAltitude)
+  // Candidate roads and bridge supports are never trimmed client-side (a deck over the sea or a
+  // river stays whole); the sea filter only applies to water surfaces and marine terrain fill.
+  const index = isCandidateRoadKind(options.kind)
+    ? originalIndex
+    : seaCoverageIndex(p, originalIndex, mesh.userData, options.anchorAltitude)
   if (index?.length === 0) return
   const metadata = { ...mesh.userData }
   // Atlas LiDAR terrain (`terrain-lidar-*.glb`) has no category: it is one 2 m grid mesh. Declare
