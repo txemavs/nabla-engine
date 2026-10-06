@@ -2,6 +2,9 @@ import { expect, test } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'
 import {
   createGameCameraState,
+  cycleGameCamera,
+  gameCameraView,
+  isFirstPersonView,
   mouseLooksWithoutButton,
   updateGameCamera,
 } from '../../src/runtime/game-camera.js'
@@ -95,10 +98,141 @@ test('chase, first-person and driver views look with the mouse without a held bu
   state.firstPerson = false
   state.mode = 'chase'
   expect(mouseLooksWithoutButton(state, false)).toBe(true)
-  // The vehicle overhead map keeps the cursor for wheel zoom and UI.
+  // The vehicle overhead and cinematic views ignore mouse movement (wheel zoom only).
+  for (const mode of ['map', 'cinematic'] as const) {
+    state.mode = mode
+    expect(mouseLooksWithoutButton(state, true)).toBe(false)
+    // On foot the mouse keeps turning the walking heading.
+    expect(mouseLooksWithoutButton(state, false)).toBe(true)
+  }
+})
+
+test('C cycles exterior → driver → overhead → cinematic seated, and adds overhead/cinematic on foot', () => {
+  const state = createGameCameraState()
+  state.mode = 'chase'
+  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, true))).toEqual([
+    'cockpit',
+    'map',
+    'cinematic',
+    'chase',
+  ])
+  state.mode = 'chase'
+  state.firstPerson = true
+  expect(gameCameraView(state, false)).toBe('first-person')
+  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, false))).toEqual([
+    'chase',
+    'map',
+    'cinematic',
+    'first-person',
+  ])
+  expect(state.firstPerson).toBe(true)
+  // Leaving a car keeps the mode it had; a leftover cockpit mode reads as on-foot first person.
+  state.mode = 'cockpit'
+  expect(gameCameraView(state, false)).toBe('first-person')
+  expect(cycleGameCamera(state, false)).toBe('chase')
+  // Entering cinematic starts the orbit behind the current heading.
+  state.yaw = 1.2
+  cycleGameCamera(state, false)
+  cycleGameCamera(state, false)
+  expect(state.mode).toBe('cinematic')
+  expect(state.cinematicAngle).toBe(1.2)
+})
+
+test('overhead and cinematic views never count as first person', () => {
+  const state = createGameCameraState()
+  for (const mode of ['map', 'cinematic'] as const) {
+    state.mode = mode
+    state.firstPerson = true
+    expect(isFirstPersonView(state, false)).toBe(false)
+    expect(isFirstPersonView(state, true)).toBe(false)
+  }
+  state.mode = 'chase'
+  expect(isFirstPersonView(state, false)).toBe(true)
+  state.mode = 'cockpit'
+  expect(isFirstPersonView(state, true)).toBe(true)
+})
+
+test('on-foot overhead looks straight down, heading-up, with wheel-adjustable height', async () => {
+  const session = new PlaySession()
+  const floor = createEntity('floor', 'box', [0, -0.5, 0])
+  floor.size = [200, 1, 200]
+  const document: SceneDocument = {
+    version: 1,
+    name: 'Foot overhead',
+    entities: [floor, createEntity('spawn', 'spawn', [3, 0.1, -2])],
+  }
+  const sim = await session.play(document)
+  const view = { document, objects: new Map(), vehicleHeadOffset: () => undefined }
+  const camera = new PerspectiveCamera()
+  const state = createGameCameraState()
   state.mode = 'map'
-  expect(mouseLooksWithoutButton(state, true)).toBe(false)
-  expect(mouseLooksWithoutButton(state, false)).toBe(true)
+  state.yaw = Math.PI / 2 // facing −X
+  let now = 1000
+  const settle = () => {
+    for (let i = 0; i < 60; i++) updateGameCamera(sim, view, camera, state, (now += 100), 0.1)
+  }
+  settle()
+  const player = new Vector3(...sim.renderPlayerPosition)
+  expect(camera.position.x).toBeCloseTo(player.x, 3)
+  expect(camera.position.z).toBeCloseTo(player.z, 3)
+  expect(camera.position.y - player.y).toBeCloseTo(state.settings.footMapHeight, 0)
+  const look = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+  expect(look.y).toBeCloseTo(-1, 5)
+  // Screen top points along the walking heading.
+  const screenUp = new Vector3(0, 1, 0).applyQuaternion(camera.quaternion)
+  expect(screenUp.x).toBeCloseTo(-1, 3)
+  expect(camera.fov).toBe(state.settings.chaseFov)
+  state.mapZoom = 3
+  settle()
+  expect(camera.position.y - player.y).toBeCloseTo(state.settings.footMapHeight * 3, 0)
+  state.mapZoom = 0.75
+  settle()
+  expect(camera.position.y - player.y).toBeCloseTo(state.settings.footMapHeight * 0.75, 0)
+  session.dispose()
+})
+
+test('cinematic camera orbits slowly around the vehicle and keeps it framed', async () => {
+  const session = new PlaySession()
+  const floor = createEntity('floor', 'box', [0, -0.5, 0])
+  floor.size = [400, 1, 400]
+  const document: SceneDocument = {
+    version: 1,
+    name: 'Cinematic',
+    entities: [floor, createEntity('spawn', 'spawn'), presetVehicle('car', 'car', [0, 0.7, 0])],
+  }
+  const sim = await session.play(document, { vehicleId: 'car' })
+  const view = { document, objects: new Map(), vehicleHeadOffset: () => undefined }
+  const camera = new PerspectiveCamera()
+  const state = createGameCameraState()
+  state.mode = 'chase'
+  cycleGameCamera(state, true)
+  cycleGameCamera(state, true)
+  expect(cycleGameCamera(state, true)).toBe('cinematic')
+  const start = state.cinematicAngle
+  const result = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
+  expect(result.cinematic).toBe(true)
+  expect(camera.fov).toBe(state.settings.cinematicFov)
+  const target = new Vector3(...sim.renderPlayerPosition)
+  const flat = camera.position.clone().sub(target).setY(0).length()
+  expect(flat).toBeGreaterThanOrEqual(state.settings.cinematicMinDistance - 0.5)
+  expect(camera.position.y).toBeGreaterThan(target.y + 1)
+  // The vehicle sits at the centre of the frame.
+  const look = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+  const toCar = target
+    .clone()
+    .add(new Vector3(0, state.settings.targetHeight, 0))
+    .sub(camera.position)
+    .normalize()
+  expect(look.angleTo(toCar)).toBeLessThan(0.05)
+  // Ten seconds advance the orbit by 10 / cinematicOrbitSeconds of a turn.
+  for (let i = 0; i < 100; i++) updateGameCamera(sim, view, camera, state, 1000 + i * 100, 0.1)
+  const turned = state.cinematicAngle - start
+  expect(turned).toBeCloseTo((10 / state.settings.cinematicOrbitSeconds) * Math.PI * 2, 1)
+  // Leaving the mode drops the smoothed anchor so the next shot re-seeds without a jump.
+  state.mode = 'chase'
+  updateGameCamera(sim, view, camera, state, 20000, 1 / 60)
+  expect(state.cinematicAnchorY).toBeNull()
+  session.dispose()
 })
 
 test('flight chase camera leans back for forward perspective and eases out on landing mode', async () => {

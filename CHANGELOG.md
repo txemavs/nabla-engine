@@ -4,6 +4,16 @@
 
 ### Added
 
+- **Overhead (cenital) and cinematic cameras for every player state:** **C** (gamepad **B**)
+  now cycles exterior → driver → overhead → cinematic in vehicles and first person → third
+  person → overhead → cinematic on foot. The overhead view looks straight down, follows
+  without lag and is heading-up; on foot it centres the player at `footMapHeight` (18 m) with
+  wheel zoom 0.75–3×, and the mouse turns the walking heading. The new cinematic view is a slow
+  drone orbit (48 s per turn, ~2.4× chase distance, 38° lens, wheel distance 0.5–2.5×) that
+  keeps the vehicle or player centred. Both keep the pointer-lock rule (game owns the mouse,
+  Esc frees it). Engine API: `cycleGameCamera`, `gameCameraView`, `isFirstPersonView`,
+  `GameCameraMode`, `cinematicOrbitPose` and `overheadFootHeight`; `data-camera-mode` reports
+  `map` / `cinematic` on foot too. See docs/controls.md → Camera modes.
 - **City labels toggle:** the floating OSM city / town / village names (~1 km above the ground)
   are now the tile layer `places` ("Nombres de poblaciones" in Ajustes → Capas). Hide them with
   `layers=-places`, `runtime.setHiddenLayers(['places'])` or the standalone game's host flag

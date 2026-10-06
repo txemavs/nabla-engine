@@ -25,7 +25,16 @@ export { createRuntimeText, type RuntimeText, type RuntimeLocale } from './messa
 export { GameHud, hudTelemetry, type GameHudState } from './hud.js'
 export { WheelDebugOverlay, type WheelDebugData } from '../diagnostics/wheel-debug.js'
 export { VehicleEffects } from './vehicle-effects.js'
-export { createGameCameraState, updateGameCamera, type GameCameraState } from './game-camera.js'
+export {
+  createGameCameraState,
+  cycleGameCamera,
+  gameCameraView,
+  isFirstPersonView,
+  updateGameCamera,
+  type GameCameraMode,
+  type GameCameraState,
+  type GameCameraView,
+} from './game-camera.js'
 export {
   GameInput,
   gamepadAxes,

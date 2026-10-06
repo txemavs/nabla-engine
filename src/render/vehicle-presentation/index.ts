@@ -36,9 +36,16 @@ export {
   driverHeadPose,
   overheadDrivingPose,
   overheadDrivingHeight,
+  overheadFootHeight,
   followDrivingHeading,
   DrivingTelemetry,
 } from '../entity/driving-camera.js'
+export {
+  advanceCinematicAngle,
+  cinematicOrbitPose,
+  cinematicOrbitRadius,
+  type CinematicOrbitInput,
+} from '../entity/cinematic-camera.js'
 export type {
   CarInstrumentDefinition,
   CarInstrumentTelemetry,
