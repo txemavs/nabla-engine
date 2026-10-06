@@ -5,6 +5,7 @@ import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { TireMarks } from '../../src/render/entity/tire-marks.js'
 import { hasLocalPreset } from '../local-presets.js'
+import { finishStartUp } from '../start-up.js'
 
 for (const catalogId of ['car', 'police'] as const)
   it.skipIf(!hasLocalPreset(catalogId))(
@@ -60,6 +61,7 @@ it('Shift launches the S3 without holding the front brakes and releases wheelspi
   try {
     for (let i = 0; i < 180; i++) sim.step(1 / 60)
     sim.startInVehicle('car')
+    finishStartUp(sim)
     sim.setInput({ ...idleInput(), sprint: true })
     let rearSlip = 0
     for (let i = 0; i < 120; i++) {

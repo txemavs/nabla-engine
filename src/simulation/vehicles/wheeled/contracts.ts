@@ -112,6 +112,12 @@ export interface WheeledTelemetry {
   readonly shifting: boolean
   /** Clack sound of this vehicle; undefined uses the audio layer's car default. */
   readonly clack: GearClackProfile | undefined
+  /** Start-up phase after entering: `sweep` (needle self-test), `cranking`, then `running`. */
+  readonly ignition: 'sweep' | 'cranking' | 'running'
+  /** Increments on every start-up; hosts play one starter sound per increase. */
+  readonly ignitionCount: number
+  /** Needle self-test position 0..1 during `sweep`, else 0. Dials show this fraction of full scale. */
+  readonly gaugeSweep: number
 }
 /** Fresh copies in absolute physics-world metres, before render-origin subtraction. */
 export interface WheelContactSnapshot {

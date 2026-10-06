@@ -16,7 +16,7 @@
 
 ## VehicleEffects.constructor
 
-[Implementation, line 19](../../../../src/runtime/vehicle-effects.ts#L19)
+[Implementation, line 21](../../../../src/runtime/vehicle-effects.ts#L21)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -31,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleEffects.updateAudio
 
-[Implementation, line 25](../../../../src/runtime/vehicle-effects.ts#L25)
+[Implementation, line 27](../../../../src/runtime/vehicle-effects.ts#L27)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -52,19 +52,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.audio.propeller`
 - `this.audio.reverseAlarm`
 - `this.audio.turbine`
+- `this.playEngineStart`
 - `this.playGearChanges`
 
-## VehicleEffects.updateAudio.callback@47
+## VehicleEffects.updateAudio.callback@49
 
-[Implementation, line 47](../../../../src/runtime/vehicle-effects.ts#L47)
+[Implementation, line 49](../../../../src/runtime/vehicle-effects.ts#L49)
 
 ```ts
-callback@47(entity): inferred by TypeScript; see implementation
+callback@49(entity): inferred by TypeScript; see implementation
 ```
 
 ## VehicleEffects.playGearChanges
 
-[Implementation, line 65](../../../../src/runtime/vehicle-effects.ts#L65)
+[Implementation, line 72](../../../../src/runtime/vehicle-effects.ts#L72)
 
 One clack per audible gear change (D/R engagement or manual shift, never an automatic shift); the first sample of a vehicle only sets the baseline.
 
@@ -76,9 +77,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.audio.gearChange`
 
+## VehicleEffects.playEngineStart
+
+[Implementation, line 89](../../../../src/runtime/vehicle-effects.ts#L89)
+
+One starter sound per start-up, when its cranking phase begins. Lower idle cranks lower.
+
+```ts
+playEngineStart(id: string | null, info: { ignition: string; ignitionCount: number; helm: string } | null, idleRpm: number | undefined): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.audio.engineStart`
+
 ## VehicleEffects.updateTires
 
-[Implementation, line 81](../../../../src/runtime/vehicle-effects.ts#L81)
+[Implementation, line 101](../../../../src/runtime/vehicle-effects.ts#L101)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -98,33 +113,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.smoke.clear`
 - `this.smoke.update`
 
-## VehicleEffects.updateTires.callback@89
+## VehicleEffects.updateTires.callback@109
 
-[Implementation, line 89](../../../../src/runtime/vehicle-effects.ts#L89)
+[Implementation, line 109](../../../../src/runtime/vehicle-effects.ts#L109)
 
 ```ts
-callback@89(wheel): inferred by TypeScript; see implementation
+callback@109(wheel): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateTires.callback@93
+## VehicleEffects.updateTires.callback@113
 
-[Implementation, line 93](../../../../src/runtime/vehicle-effects.ts#L93)
+[Implementation, line 113](../../../../src/runtime/vehicle-effects.ts#L113)
 
 ```ts
-callback@93(wheel): inferred by TypeScript; see implementation
+callback@113(wheel): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateTires.callback@94
+## VehicleEffects.updateTires.callback@114
 
-[Implementation, line 94](../../../../src/runtime/vehicle-effects.ts#L94)
+[Implementation, line 114](../../../../src/runtime/vehicle-effects.ts#L114)
 
 ```ts
-callback@94(wheel): inferred by TypeScript; see implementation
+callback@114(wheel): inferred by TypeScript; see implementation
 ```
 
 ## VehicleEffects.dispose
 
-[Implementation, line 102](../../../../src/runtime/vehicle-effects.ts#L102)
+[Implementation, line 122](../../../../src/runtime/vehicle-effects.ts#L122)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 

@@ -4,6 +4,7 @@ import { s3Instruments } from '../../src/catalog/monitors/s3-instruments.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { gearLabel } from '../../src/entity/vehicle/gear-label.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
+import { finishStartUp } from '../start-up.js'
 
 describe('gear indicator text', () => {
   it('shows R, D<n> in automatic and M<n> in manual', () => {
@@ -41,9 +42,12 @@ describe('gear indicator text', () => {
       sim.startInVehicle('s3')
       const label = () => {
         const info = sim.vehicleInfo('s3')
-        return gearLabel(info.gear, info.manualTransmission)
+        return gearLabel(info.gear, info.manualTransmission, info.parked)
       }
-      expect(label()).toBe('D1')
+      // Entering always shows P, during and after the start-up.
+      expect(label()).toBe('P')
+      finishStartUp(sim)
+      expect(label()).toBe('P')
       sim.setInput({ ...idleInput(), forward: 1 })
       for (let i = 0; i < 60 * 4; i++) sim.step(1 / 60)
       const auto = sim.vehicleInfo('s3').gear

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { createEntity, type Entity, rotationDegrees } from '../../src/entity/schema.js'
 import { type SceneDocument } from '../../src/scene/document.js'
+import { finishStartUp } from '../start-up.js'
 
 function scene(
   extra: Entity[] = [],
@@ -68,6 +69,7 @@ describe('shared simulation', () => {
     advance(sim, 1)
     expect(sim.interact()).toContain('Conduciendo')
     expect(sim.player.vehicleId).toBe('car')
+    finishStartUp(sim)
     sim.setInput({ ...idleInput(), forward: 1 })
     advance(sim, 2)
     expect(sim.entityTransform('car').position[2]).toBeLessThan(-2)
@@ -174,8 +176,10 @@ describe('vehicle safety and orientation', () => {
     const sim = new Simulation(scene([car()], [2, 0.05, 0]))
     advance(sim, 1)
     sim.interact()
+    finishStartUp(sim)
     sim.setInput({ ...idleInput(), forward: 1, right: 1 })
-    advance(sim, 2)
+    // Plus the P -> D engagement dwell and torque cut.
+    advance(sim, 2.5)
     expect(sim.player.position[0]).toBeGreaterThan(2)
     expect(sim.player.position[2]).toBeLessThan(-2)
     sim.dispose()

@@ -27,9 +27,24 @@ export interface DrivetrainState {
    * Automatic up/down shifts are silent; the audio layer plays one clack per increase.
    */
   clackCount: number
+  /**
+   * Start-up sequence after a driver gets in (`startIgnition`): `sweep` (needle self-test,
+   * engine off), then `cranking` (starter motor), then `running`. Anything but `running`
+   * keeps the selector in P and cuts drive torque.
+   */
+  ignition: IgnitionPhase
+  /** Seconds spent in the current ignition phase. */
+  ignitionElapsed: number
+  /** Increments on every `startIgnition`; the audio layer plays one starter sound per increase. */
+  ignitionCount: number
+  /** Metres crept along the vehicle's forward axis since P started holding; see `parkHold*`. */
+  parkOffset: number
 }
+/** See `DrivetrainState.ignition`. */
+export type IgnitionPhase = 'sweep' | 'cranking' | 'running'
+/** Every wheeled vehicle is created in P (gear 0, parked) with its engine running. */
 export const createDrivetrain = (): DrivetrainState => ({
-  gear: 1,
+  gear: 0,
   manual: false,
   rpm: 900,
   shiftRemaining: 0,
@@ -41,11 +56,100 @@ export const createDrivetrain = (): DrivetrainState => ({
   pendingDirection: null,
   directionRemaining: 0,
   changingDirection: false,
-  parked: false,
+  parked: true,
   holdSeconds: 0,
   shiftCount: 0,
   clackCount: 0,
+  ignition: 'running',
+  ignitionElapsed: 0,
+  ignitionCount: 0,
+  parkOffset: 0,
 })
+
+/**
+ * Select P: gear 0, parked, automatic mode, any pending D/R request and torque cut cleared.
+ * The wheeled runtime then holds the vehicle with its full service brake until the driver's
+ * W or S leaves P. Counts one shift when the selector actually moves; never a clack.
+ */
+export function engagePark(state: DrivetrainState): void {
+  if (state.gear !== 0 || !state.parked) state.shiftCount++
+  state.gear = 0
+  state.parked = true
+  state.manual = false
+  state.pendingDirection = null
+  state.directionRemaining = 0
+  state.changingDirection = false
+  state.holdSeconds = 0
+  state.shiftRemaining = 0
+  state.cooldown = 0
+  state.force = 0
+  state.load = 0
+  state.burnout = false
+  state.launchSlip = 0
+}
+
+/** Begin the start-up sequence: needle sweep, then cranking, then idle. Engine speed drops to 0. */
+export function startIgnition(state: DrivetrainState): void {
+  state.ignition = 'sweep'
+  state.ignitionElapsed = 0
+  state.ignitionCount++
+  state.rpm = 0
+}
+
+/** True while the start-up sequence runs (`sweep` or `cranking`). */
+export const isStarting = (state: DrivetrainState): boolean => state.ignition !== 'running'
+
+/**
+ * Advance the start-up sequence by `dt`. While it runs, P is kept, drive torque is zero and
+ * engine speed follows the sequence (0 during the sweep, a cranking wobble, then the catch at
+ * `ignitionFlare` x idle which the drivetrain settles to idle). Returns true while starting.
+ */
+export function stepIgnition(state: DrivetrainState, dt: number, idleRpm: number): boolean {
+  if (state.ignition === 'running') return false
+  state.ignitionElapsed += dt
+  if (
+    state.ignition === 'sweep' &&
+    state.ignitionElapsed >= roadVehicleDefaults.ignitionSweepSeconds
+  ) {
+    state.ignition = 'cranking'
+    state.ignitionElapsed -= roadVehicleDefaults.ignitionSweepSeconds
+  }
+  if (
+    state.ignition === 'cranking' &&
+    state.ignitionElapsed >= roadVehicleDefaults.ignitionCrankSeconds
+  ) {
+    state.ignition = 'running'
+    state.ignitionElapsed = 0
+    state.rpm = idleRpm * roadVehicleDefaults.ignitionFlare
+    return false
+  }
+  engagePark(state)
+  state.rpm = ignitionRpm(state)
+  return true
+}
+
+/** Engine speed during the start-up sequence: 0 in the sweep, a pulsing starter speed while cranking. */
+export function ignitionRpm(state: Pick<DrivetrainState, 'ignition' | 'ignitionElapsed'>): number {
+  if (state.ignition !== 'cranking') return 0
+  // Two compression strokes per crank revolution make the starter speed pulse.
+  return (
+    roadVehicleDefaults.crankingRpm * (1 + 0.25 * Math.sin(state.ignitionElapsed * Math.PI * 2 * 9))
+  )
+}
+
+/**
+ * Needle self-test position, 0..1: smooth (cosine) rise to full scale, a short hold, and a
+ * smooth fall back to 0 over `ignitionSweepSeconds`. 0 outside the sweep phase.
+ */
+export function gaugeSweep(state: Pick<DrivetrainState, 'ignition' | 'ignitionElapsed'>): number {
+  if (state.ignition !== 'sweep') return 0
+  const t = Math.max(
+    0,
+    Math.min(1, state.ignitionElapsed / roadVehicleDefaults.ignitionSweepSeconds),
+  )
+  const ease = (u: number) => 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, Math.min(1, u)))
+  return t < 0.45 ? ease(t / 0.45) : t < 0.55 ? 1 : ease((1 - t) / 0.45)
+}
 
 /** Gearbox feel with every default applied; see `GearboxTuning` and `roadVehicleDefaults`. */
 export interface ResolvedGearbox {

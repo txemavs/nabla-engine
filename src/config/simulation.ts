@@ -57,6 +57,28 @@ export const roadVehicleDefaults = Object.freeze({
   launchRpm: 2400,
   /** Generic petrol-engine idle speed; vehicle powertrains may override it. */
   idleRpm: 900,
+  /**
+   * Instrument self-test on entering a vehicle: every needle sweeps to full scale and back,
+   * seconds. The vehicle is in P and held by its brakes; the engine is still off.
+   */
+  ignitionSweepSeconds: 1,
+  /** Starter-motor cranking after the needle sweep, seconds. Still in P, no drive torque. */
+  ignitionCrankSeconds: 1,
+  /** Engine speed shown while the starter cranks, rpm. */
+  crankingRpm: 250,
+  /** Engine speed of the catch when the engine fires; it then settles to idle, x idle rpm. */
+  ignitionFlare: 1.6,
+  /**
+   * P holds like a parking pawl: a stiff, damped longitudinal spring (per unit mass, 1/s^2 and
+   * 1/s) on the distance crept since P engaged. The wheel brakes alone resolve velocity before
+   * gravity is integrated, so a braked car otherwise creeps g*sin(slope)*dt per step downhill.
+   */
+  parkHoldStiffness: 400,
+  parkHoldDamping: 40,
+  /** Holding force limit as a tyre friction coefficient (0.8 holds about a 38 degree slope). */
+  parkHoldFriction: 0.8,
+  /** Above this speed relative to the ground the hold lets go (pushed hard or sliding), m/s. */
+  parkHoldSlipSpeed: 1.5,
   /** Maximum tractor/trailer yaw either side of straight ahead, radians (65 degrees). */
   trailerArticulationRadians: (65 * Math.PI) / 180,
   /** Sustained horizontal contact load that breaks a reversing trailer coupling, newtons. */

@@ -10,4 +10,19 @@
 - `../monitors/data.js`
 - `../monitors/menu.js`
 
-This module contains declarations, data or re-exports; it defines no executable functions.
+## sweepCluster
+
+[Implementation, line 43](../../../../../src/render/entity/car-instrument-definition.ts#L43)
+
+Instrument self-test overlay: every needle of `cluster` points at `sweep` (0..1) of its own
+scale, and the bar with the same binding (if any) fills to `sweep`. Readouts such as the
+digital speed and the gear letter keep their real values. `sweep` 0 returns `data` unchanged,
+so any cluster artwork (car, truck, custom) gets the sweep without per-vehicle code.
+
+```ts
+sweepCluster(cluster: MonitorDefinition, data: MonitorData, sweep: number): MonitorData
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.min`

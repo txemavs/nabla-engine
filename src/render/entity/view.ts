@@ -1234,19 +1234,22 @@ export class SceneView {
     for (const [id, instruments] of this.instruments) {
       instruments.setPowered(sim.player.vehicleId === id)
       instruments.setSecondary(!cockpit)
-      if (sim.player.vehicleId === id)
+      if (sim.player.vehicleId === id) {
+        const info = sim.vehicleInfo(id)
         instruments.update(
           this.document,
           sim.entityTransform(id, true),
           sim.vehicleInfo(id, true).speedKmh,
           performance.now(),
-          sim.vehicleInfo(id).rpm,
-          sim.vehicleInfo(id).gear,
-          sim.vehicleInfo(id).engineLoad,
-          sim.vehicleInfo(id).manualTransmission,
-          sim.vehicleInfo(id).parked,
-          sim.vehicleInfo(id).altitude,
+          info.rpm,
+          info.gear,
+          info.engineLoad,
+          info.manualTransmission,
+          info.parked,
+          info.altitude,
+          info.gaugeSweep,
         )
+      }
     }
     this.captureOccupiedLights(sim.player.vehicleId)
     const vehicleId = sim.player.vehicleId

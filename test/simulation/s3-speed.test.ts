@@ -3,6 +3,7 @@ import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { parseScene } from '../../src/scene/document.js'
+import { finishStartUp } from '../start-up.js'
 
 it('delivers strong launch and reaches 250 km/h on a level straight', () => {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
@@ -21,6 +22,7 @@ it('delivers strong launch and reaches 250 km/h on a level straight', () => {
   try {
     for (let i = 0; i < 180; i++) sim.step(1 / 60)
     sim.startInVehicle('s3')
+    finishStartUp(sim)
     sim.setInput({ ...idleInput(), forward: 1 })
     let to100 = 0,
       to200 = 0,

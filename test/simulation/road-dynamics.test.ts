@@ -5,9 +5,10 @@ import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Body, Box, Vec3, World } from '../../src/simulation/physics.js'
+import { finishStartUp } from '../start-up.js'
 
 it('holds the pedal back while rolling, then needs a short planted dwell before engaging', () => {
-  const state = createDrivetrain()
+  const state = { ...createDrivetrain(), gear: 1, parked: false }
   const dwell = roadVehicleDefaults.directionChangeSeconds
   expect(dwell).toBeLessThan(0.5)
   // Still rolling forward at 3 m/s: the request is refused and no dwell clock runs.
@@ -81,6 +82,7 @@ function convoy(wall = false, bump = false) {
   })
   for (let i = 0; i < 180; i++) sim.step(1 / 60)
   sim.startInVehicle(bump ? 'car' : 'truck')
+  finishStartUp(sim)
   return sim
 }
 
