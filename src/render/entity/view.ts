@@ -7,6 +7,7 @@ import { ShipHud } from './ship-hud.js'
 import { entityMapArtifact } from '../planet/map-artifact.js'
 import { isMapEnvironment } from '../../scene/map-content.js'
 import {
+  castShadowFromBackFaces,
   matteGroundMaterial,
   groundDepthBias,
   transportLayer,
@@ -22,6 +23,8 @@ import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
 import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
+import type { VehicleLightMode } from '../vehicle-presentation/light-controller.js'
+import { StartLights } from '../vehicle-presentation/start-lights.js'
 import {
   mountLandingGear,
   landingGearMeshBounds,
@@ -108,6 +111,11 @@ export interface SceneViewOptions {
    * vehicle of that model loads and no `setMirrorAdjustment` came before.
    */
   mirrorAdjustment?: (model: string) => Readonly<Record<string, Partial<MirrorAngle>>> | undefined
+  /**
+   * Light switch position once the occupied vehicle's engine runs (after the start-up, or at once
+   * with `ignition: false`): `position` (default), `low` (dipped, e.g. a night scene) or `off`.
+   */
+  startLights?: VehicleLightMode
 }
 
 /** Bare renderer. The public package SceneView supplies stock presentation recipes. */
@@ -238,10 +246,23 @@ export class SceneView {
     return [...this.carMirrors.keys()]
   }
   toggleVehicleLights(id: string): boolean | null {
+    const mode = this.cycleVehicleLights(id)
+    return mode === null ? null : mode !== 'off'
+  }
+  /** H: step the vehicle's light switch off → position → low (dipped) → off; null without lights. */
+  cycleVehicleLights(id: string): VehicleLightMode | null {
+    return this.carLights.get(id)?.cycleLights() ?? this.authoredLights.get(id)?.cycle() ?? null
+  }
+  /** Current light switch position of a vehicle; null while its model loads or it has no lights. */
+  vehicleLightMode(id: string): VehicleLightMode | null {
     return (
-      this.carLights.get(id)?.toggleHeadlights() ?? this.authoredLights.get(id)?.toggle() ?? null
+      this.carLights.get(id)?.controller.mode ??
+      this.authoredLights.get(id)?.controller.mode ??
+      null
     )
   }
+  /** Lights after the start-up (`SceneViewOptions.startLights`); change `mode` to override. */
+  readonly startLights = new StartLights()
   toggleVehicleHighBeam(id: string): boolean | null {
     return this.authoredLights.get(id)?.toggleHighBeam() ?? null
   }
@@ -310,6 +331,7 @@ export class SceneView {
     validated = false,
     private readonly options: SceneViewOptions = {},
   ) {
+    if (options.startLights) this.startLights.mode = options.startLights
     this.graph = SceneGraph.fromValidated(
       validated ? document : parseScene(document, experimentalLargeScene),
     )
@@ -769,9 +791,11 @@ export class SceneView {
           )
         const surface = new THREE.Mesh(
           g,
-          matteGroundMaterial({
-            color: e.terrain.colors ? '#ffffff' : e.color,
-          }),
+          castShadowFromBackFaces(
+            matteGroundMaterial({
+              color: e.terrain.colors ? '#ffffff' : e.color,
+            }),
+          ),
         )
         surface.castShadow = true
         surface.receiveShadow = true
@@ -1261,6 +1285,15 @@ export class SceneView {
     }
     for (const lights of this.shipLights.values()) lights.update(performance.now())
     const lightNow = performance.now()
+    const occupied = sim.player.vehicleId
+    this.startLights.update(
+      occupied,
+      occupied ? sim.vehicleInfo(occupied) : null,
+      occupied
+        ? (this.carLights.get(occupied)?.controller ??
+            this.authoredLights.get(occupied)?.controller)
+        : undefined,
+    )
     for (const [id, lights] of this.authoredLights) {
       const info = sim.vehicleInfo(id)
       const tractor = info.towVehicleId

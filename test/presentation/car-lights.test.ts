@@ -82,7 +82,11 @@ it('builds focused, forward-only low and high beams at the S3 lamp units like th
   // Switched by the car's own controller through the authored-light path, with the cut-off mask.
   const authored = new AuthoredVehicleLights(model, lights.controller)
   expect(low.map).toBeTruthy()
-  lights.toggleHeadlights()
+  // H: position lights first (no beam), then dipped beams.
+  expect(lights.cycleLights()).toBe('position')
+  authored.apply({ powered: true, braking: false, reversing: false }, 0)
+  expect(low.intensity).toBe(0)
+  expect(lights.cycleLights()).toBe('low')
   authored.apply({ powered: true, braking: false, reversing: false }, 0)
   expect(low.intensity).toBeCloseTo(
     lightingDefaults.lowBeamIntensity * lightingDefaults.headlightIntensityScale,

@@ -233,6 +233,14 @@ Nombres de poblaciones**, and the choice is stored relative to the host default.
 `runtime.setHiddenLayers([...runtime.hiddenLayers, 'places'])` (or `setHiddenTileLayers` from
 `@nabla/engine/render` before constructing the runtime).
 
+`shadowBias` (default `1`, range 0–3) is the host default for **Ajustes → Calidad → Sombras:
+corrección de rayas**, a factor on the engine's texel-scaled shadow bias
+([performance.md](performance.md#shadow-bias-and-acne)). Set it in `NABLA_BOOT`,
+`VITE_NABLA_BOOT`, the dedicated `VITE_NABLA_SHADOW_BIAS` build variable or `?shadowBias=1.5`
+(the URL wins over the host). The slider applies live; the player's choice is saved in
+`localStorage` (`nabla.shadowBias`) and wins over every host default until **Restablecer**
+forgets it.
+
 `asphaltContrast` (default `1`, unchanged; range 0.5–2.5) is the host default for the asphalt
 contrast on the roads photo drape: a draw-time curve in the fragment shader around a fixed
 display-space pivot, so dark asphalt gets darker and painted markings brighter while the tile
@@ -242,6 +250,39 @@ OSM carriageways. Players move it in **Ajustes → Calidad → Asfalto → Contr
 (stored, wins over the host default; **Por defecto** forgets it), and `?asphaltContrast=1.6`
 overrides both for one visit. Library hosts pass `GameRuntimeOptions.asphaltContrast` or call
 `runtime.setAsphaltContrast(1.6)` (also `setAsphaltContrast` from `@nabla/engine/render`).
+
+`startCameras` (default none: the driver view from the first frame, as before) is the camera
+sequence of a start in a vehicle. Each step is a view name or `{ view, after, transitionMs }`:
+
+- `view`: `'overhead'` (alias `'map'`), `'driver'` (alias `'cockpit'`), `'chase'` or
+  `'cinematic'`. `'chase'` is the fixed third-person camera behind the vehicle, following its
+  heading; `'cinematic'` is the slow orbit, normally only chosen by the player with C, so end a
+  sequence on `'chase'`. The first step shows from the first frame.
+- `after`: when to move on to this step once the previous one has been reached, in milliseconds
+  (default 600), or `'engine'` to wait until the engine start-up (starter, needle sweep) has
+  finished. With an `'engine'` step the engine stays off, silent and in P until the camera
+  reaches the step before it, and starts there.
+- `transitionMs`: the blend into this step (default `modeTransitionMs`, 700 ms).
+
+```js
+window.NABLA_BOOT = {
+  startCameras: [
+    'overhead',
+    { view: 'driver', after: 800, transitionMs: 1800 },
+    { view: 'chase', after: 'engine', transitionMs: 1400 },
+  ],
+}
+```
+
+That one starts overhead, moves down into the driver's seat, plays the start-up there (P,
+starter, needle sweep) and then moves out to the chase camera. Driving input (W/S/A/D, brake)
+ends the sequence and blends to its last view; C ends it and cycles as usual; a held engine
+starts either way. The canvas carries `data-start-cameras="active|complete|none"`. Library
+hosts pass `GameRuntimeOptions.startCameras`, and `runtime.skipStartCameras()` ends it.
+
+Every camera change while the player stays in the same vehicle (or on foot) now blends
+position, orientation and field of view with an ease-in-out over `modeTransitionMs` (camera
+setting, default 700 ms; `0` cuts as before). Boarding keeps its own overhead-to-seat entrance.
 
 The demo menu (**Rendimiento**) has an **Escala automática (50–100%)** checkbox; moving the
 slider switches to manual. Without `scale` the slider starts at the quality preset's fixed

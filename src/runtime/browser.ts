@@ -31,6 +31,7 @@ import {
 import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
 import type { FieldLightOptions } from '../render/entity/field-lights.js'
+import type { VehicleLightMode } from '../render/vehicle-presentation/light-controller.js'
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
@@ -102,7 +103,7 @@ import {
   setAsphaltContrast as applyAsphaltContrast,
 } from '../render/planet/ground-material.js'
 import { ShadowManager } from '../render/shadows.js'
-import { shadowTiers } from '../render/shadow-tiers.js'
+import { shadowBiasRange, shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
@@ -111,7 +112,16 @@ import {
   gameCameraView,
   isFirstPersonView,
   mouseLooksWithoutButton,
+  setGameCameraView,
 } from './game-camera.js'
+import {
+  StartCameraSequencer,
+  resolveStartCameras,
+  type ResolvedStartCamera,
+  type StartCameraAction,
+  type StartCameraSequence,
+} from './start-cameras.js'
+export type { StartCameraName, StartCameraSequence, StartCameraStep } from './start-cameras.js'
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
@@ -185,6 +195,13 @@ export interface MirrorState {
   /** True when the player's own choice is saved for this model. */
   saved: boolean
 }
+/** H notices per light switch position (English keys, see messages.es.ts). */
+const lightModeNotice: Record<VehicleLightMode, string> = {
+  off: 'Lights off',
+  position: 'Position lights',
+  low: 'Dipped beams',
+}
+
 export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
@@ -234,10 +251,23 @@ export interface GameRuntimeOptions {
    */
   recoverToRoad?: boolean
   /**
+   * Factor on the quality tier's texel-scaled shadow bias, 0..3 (default 1). Higher removes
+   * residual shadow stripes (acne) at the cost of slightly detached shadows; live via `setShadowBias`.
+   */
+  shadowBias?: number
+  /**
    * Asphalt contrast on the roads photo drape, applied at draw time (tile textures untouched):
    * 0.5–2.5, 1 = unchanged (default). Shared by every runtime in the page; see `setAsphaltContrast`.
    */
   asphaltContrast?: number
+  /**
+   * Start camera sequence for a start in a vehicle (`play({ vehicleId })`), e.g.
+   * `['overhead', { view: 'driver', after: 800, transitionMs: 1800 }, { view: 'chase', after: 'engine' }]`:
+   * overhead first, down into the driver's seat, the engine start-up there, then out to the chase
+   * camera. Driving input or C ends it early. Default none: the driver view from the first frame.
+   * See `StartCameraStep`.
+   */
+  startCameras?: StartCameraSequence
   depthOfField?: boolean
   performance?: Partial<PerformanceSettings>
   /** Explicit opt-in; omit to keep offline games independent of external light data. */
@@ -258,6 +288,13 @@ export interface GameRuntimeOptions {
    * is saved (pass `localStorage` to keep it between visits). See `setMirrorAngle`.
    */
   mirrors?: MirrorSettings
+  /**
+   * Light switch position once a vehicle's engine runs (after the start-up sequence, or at entry
+   * with `ignition: false`): `position` (posición, default), `low` (cruce / dipped, e.g. a night
+   * scene) or `off`. Lights stay off before and during the start-up. H then cycles
+   * off → position → low → off.
+   */
+  startLights?: VehicleLightMode
 }
 
 /** Browser composition over the same session, camera, input and effects used by Studio.
@@ -306,6 +343,10 @@ export class GameRuntime {
   private pointerFree = false
   private readonly touchDriving: TouchDriving | null
   private readonly flipCinematic = new FlipCinematic()
+  /** Resolved `startCameras`; validated once at construction. */
+  private readonly startCameras: ResolvedStartCamera[]
+  /** The start camera sequence of the current play, while it runs. */
+  private startSequence: StartCameraSequencer | null = null
   private readonly touchFlight: TouchFlight | null
   private readonly monitors: VehicleMonitors
   private readonly view: SceneView
@@ -360,6 +401,7 @@ export class GameRuntime {
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
+    this.startCameras = resolveStartCameras(options.startCameras)
     this.flipCinematic.enabled = options.flipCinematic !== false
     applyAsphaltContrast(options.asphaltContrast ?? 1)
     // Reject malformed JavaScript callers before allocating browser resources.
@@ -430,6 +472,7 @@ export class GameRuntime {
       mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
       steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
       mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
+      startLights: options.startLights,
     })
     this.scene.add(this.view.root)
     this.monitors = new VehicleMonitors(
@@ -523,6 +566,7 @@ export class GameRuntime {
             options.touchControls ?? 'auto',
             this.text,
           )
+    this.shadows.setBiasScale(options.shadowBias ?? shadowBiasRange.default)
     if (this.quality.shadows > 0)
       this.shadows.init({
         camera: this.camera,
@@ -644,6 +688,15 @@ export class GameRuntime {
       simulation.setCollisionDistance(this.quality.collisions)
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
+      this.startSequence =
+        options.vehicleId && this.startCameras.length
+          ? new StartCameraSequencer(this.startCameras)
+          : null
+      if (this.startSequence) {
+        setGameCameraView(this.cameraState, this.startSequence.first, true)
+        if (this.startSequence.holdsEngine) simulation.holdEngine()
+      }
+      this.options.canvas.dataset.startCameras = this.startSequence ? 'active' : 'none'
       this.stopAttract()
       this.view.setPlaying(true)
       this.effects.audio.setSuspended(globalThis.document.hidden)
@@ -836,6 +889,8 @@ export class GameRuntime {
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
+    if (this.startSequence && (input.forward || input.right || input.brake))
+      this.applyStartCamera(this.startSequence.skip(), sim)
     const vehicleId = sim.player.vehicleId
     this.touchDriving?.setDriving(rigs.driving.seatedRoad)
     this.touchDriving?.setPilot(!!vehicleId && this.cameraState.mode === 'cockpit')
@@ -858,6 +913,7 @@ export class GameRuntime {
       this.cameraState.headYaw,
       this.cameraState.headPitch,
     )
+    this.advanceStartCameras(sim, time)
     const { player, info } = this.game.updateCamera(this.view, this.camera, time, dt)
     const canvas = this.options.canvas
     canvas.dataset.vehicle = player.vehicleId ?? ''
@@ -1667,6 +1723,15 @@ export class GameRuntime {
     this.assertAlive()
     this.game.recover.snapToRoad = enabled
   }
+  /** Factor on the quality tier's shadow bias (1 = tuned default; see `shadowBiasRange`). */
+  get shadowBias(): number {
+    return this.shadows.shadowBiasScale
+  }
+  /** Change the shadow bias factor live (clamped to 0..3): bias is a receiver uniform, no reload or rebuild. */
+  setShadowBias(scale: number): void {
+    this.assertAlive()
+    this.shadows.setBiasScale(scale)
+  }
   /** Asphalt contrast on the roads photo drape (1 = unchanged). */
   get asphaltContrast(): number {
     return currentAsphaltContrast()
@@ -1983,7 +2048,50 @@ export class GameRuntime {
   private releasePointer(): void {
     if (this.pointerLocked()) document.exitPointerLock()
   }
+  /** True while a start camera sequence (`startCameras`) is running. */
+  get startCamerasActive(): boolean {
+    return !!this.startSequence
+  }
+  /** End a running start camera sequence: a held engine starts and the camera blends to the last view. */
+  skipStartCameras(): void {
+    const sim = this.session.simulation
+    if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(), sim)
+  }
+  private advanceStartCameras(sim: Simulation, now: number): void {
+    const sequence = this.startSequence
+    if (!sequence) return
+    const id = sim.player.vehicleId
+    if (!id) {
+      this.applyStartCamera(sequence.skip(false), sim)
+      return
+    }
+    const info = sim.vehicleInfo(id)
+    this.applyStartCamera(
+      sequence.update({
+        now,
+        arrived: !this.cameraState.transition && !this.cameraState.entrance,
+        engineRunning: info.ignition === 'running' && info.helm !== 'off',
+      }),
+      sim,
+    )
+  }
+  private applyStartCamera(action: StartCameraAction, sim: Simulation): void {
+    if (action.startEngine) sim.startEngine()
+    if (action.view && sim.player.vehicleId) {
+      if (action.view !== gameCameraView(this.cameraState, true)) {
+        this.cameraState.nextTransitionMs = action.transitionMs ?? null
+        setGameCameraView(this.cameraState, action.view, true)
+      }
+    }
+    if (action.done) {
+      this.startSequence = null
+      this.options.canvas.dataset.startCameras = 'complete'
+    }
+  }
   private cycleCamera(): void {
+    // C during the start sequence hands the camera to the player (a held engine starts).
+    const sim = this.session.simulation
+    if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(false), sim)
     const message = this.game.action('KeyC')
     if (message) this.options.onMessage?.(message)
   }
@@ -2032,8 +2140,8 @@ export class GameRuntime {
     }
     if (code === 'KeyH') {
       if (sim.player.vehicleId) {
-        const enabled = this.view.toggleVehicleLights(sim.player.vehicleId)
-        if (enabled !== null) message = enabled ? this.text('Lights on') : this.text('Lights off')
+        const mode = this.view.cycleVehicleLights(sim.player.vehicleId)
+        if (mode !== null) message = this.text(lightModeNotice[mode])
       } else if (this.weaponDrawn) {
         if (!this.sidearm) this.sidearm = new Sidearm(this.options.canvas.parentElement!)
         const on = this.sidearm.toggleLaser()

@@ -17,6 +17,7 @@
 - `../diagnostics/wheel-debug.js`
 - `./vehicle-effects.js`
 - `./game-camera.js`
+- `./start-cameras.js`
 - `./input.js`
 - `./ground.js`
 - `./presentation-warmup.js`

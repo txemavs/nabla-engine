@@ -20,6 +20,7 @@ import {
   automaticWheeledTransmission,
   enterWheeledVehicle,
 } from './vehicles/wheeled/runtime.js'
+import { startIgnition } from './vehicles/drivetrain.js'
 import type {
   GearClackProfile,
   WheeledInput,
@@ -1508,6 +1509,31 @@ export class Simulation {
     const v = this.vehicles.get(id)
     if (!v || !hasGearSelector(v.definition)) return
     enterWheeledVehicle(v, this.options.ignition ?? true)
+  }
+  /**
+   * Keep the player's road vehicle switched off (silent, no drive torque, still in P and held by
+   * its brakes) until `startEngine()`; a start-up already under way is cancelled. For hosts that
+   * play the start-up later, e.g. a start camera sequence. False when the player is not at the
+   * wheel of a road vehicle.
+   */
+  holdEngine(): boolean {
+    const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
+    if (!v || !hasGearSelector(v.definition)) return false
+    v.helm = 'off'
+    v.drivetrain.ignition = 'running'
+    v.drivetrain.ignitionElapsed = 0
+    return true
+  }
+  /**
+   * Switch a held road vehicle back on and run the normal start-up sequence (starter, needle
+   * sweep, idle; all in P). False when the player is not at the wheel of a road vehicle.
+   */
+  startEngine(): boolean {
+    const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
+    if (!v || !hasGearSelector(v.definition)) return false
+    if (v.helm === 'off') v.helm = 'car'
+    startIgnition(v.drivetrain)
+    return true
   }
   private exitVehicle(): string {
     const v = this.vehicles.get(this.vehicleId!)!

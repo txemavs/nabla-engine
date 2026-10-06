@@ -4,6 +4,20 @@
 
 ### Added
 
+- **Position lights after the engine start-up:** entering a car, the S3, the A3, the truck or
+  any vehicle with lights, the lights stay off through P, the starter and the needle sweep, then
+  switch to _posición_ as the engine runs: front white glow (S3/A3 `FocoC` lenses; truck
+  low-beam lenses at `lightingDefaults.positionLensGlow` 0.15) and rear red tail lamps, no beam.
+  With `ignition: false` they come on at entry; switching the engine off turns them off. **H**
+  now steps a three-position switch, _posición_ → _cruce_ (dipped) → _apagadas_, with the
+  notices «Luces de posición» / «Luces de cruce» / «Luces apagadas»; **K** (high/low) only acts
+  on _cruce_. Before, H was a plain on/off where «on» lit position lamps and dipped beams
+  together, and nothing switched them on at start. Hosts pick the state after the start-up with
+  `GameRuntimeOptions.startLights` / `SceneViewOptions.startLights` (`'position'` default,
+  `'low'`, `'off'`). Engine API: `VehicleLightMode`, `VehicleLightController.mode` /
+  `cycleLights` / `glow`, `vehicleLightCycle`, `StartLights`, `engineRunning`,
+  `SceneView.cycleVehicleLights` / `vehicleLightMode` / `startLights`, `CarLights.cycleLights`,
+  `AuthoredVehicleLights.cycle`.
 - **Mirror angles from the game menu («Espejos»):** **Ajustes → Vehículos**, below «Volante»,
   turns each mirror glass of the vehicle you drive, live: «Espejo izquierdo / derecho: giro»
   (yaw ±15°, + outward / − inward) and «… : inclinación» (tilt ±10°, + up), 0.5° steps, plus
@@ -18,6 +32,18 @@
   `GameRuntime.mirrors` / `setMirrorAngle` / `resetMirrorAdjustment`,
   `GameRuntimeOptions.mirrors`, `SceneView.setMirrorAdjustment`, `CarMirrors.setAdjustment`,
   `mirrorAngleRange`, `mirrorModelKey`, `mirrorSideOf`.
+
+- **Start camera sequence (`startCameras`):** a start in a vehicle can run through camera views
+  before the player takes over, e.g. `['overhead', { view: 'driver', after: 800, transitionMs:
+1800 }, { view: 'chase', after: 'engine', transitionMs: 1400 }]`: overhead, down into the
+  driver's seat, the engine start-up there (P, starter, needle sweep), then out to the chase
+  camera. `after` is a hold in milliseconds or `'engine'` (the engine stays off until the camera
+  reaches the step before it, then starts). Driving input or C ends it early. Host config
+  `NABLA_BOOT.startCameras`; engine API `GameRuntimeOptions.startCameras`,
+  `runtime.startCamerasActive` / `skipStartCameras()`, `resolveStartCameras`,
+  `StartCameraSequencer`, `setGameCameraView`; `Simulation.holdEngine()` / `startEngine()` hold
+  a seated road vehicle switched off and run the normal start-up later. Default none: unchanged.
+
 - **Asphalt contrast:** a draw-time tone curve on the roads photo drape (fragment shader; tile
   textures untouched, no painter): around a fixed display-space pivot, dark asphalt gets darker
   and painted markings brighter, on top of the existing carriageway darkening and
@@ -52,7 +78,12 @@
   `ignitionCount` / `gaugeSweep`, `Simulation` option `ignition` (default true) and
   `roadVehicleDefaults.ignition*` / `crankingRpm` / `parkHold*`. See docs/configuration.md →
   Park on entering.
-
+- **Shadow stripe correction setting:** Ajustes → Calidad → «Sombras: corrección de rayas»
+  (0–300 %, live, with «Restablecer») scales the shadow bias. Host default via
+  `NABLA_BOOT.shadowBias`, `VITE_NABLA_BOOT`, `VITE_NABLA_SHADOW_BIAS` or `?shadowBias=`; the
+  player's saved choice (`localStorage` `nabla.shadowBias`) wins. Engine API:
+  `GameRuntimeOptions.shadowBias`, `GameRuntime.shadowBias` / `setShadowBias`,
+  `ShadowManager.setBiasScale`, `shadowBiasRange`, `normalizeShadowBias`, `cascadeShadowBias`.
 - **Icon-only touch HUD with a place block:** the touch driving and flight action buttons
   (Entrar/salir, Cámara, Jugar) are now 52 px icons (`touchActionIcon`); the label stays as
   `aria-label` and tooltip. The driving rig shows the nearest city (large) and street next to the
@@ -134,6 +165,11 @@
 - **«Carretera» hidden hint:** with **Capas → Carretera** off, a small chip at the top of the
   screen reads «Carretera oculta: no se ven asfalto ni puentes» with a «Mostrar» button, so a
   stored hidden layer (`localStorage` / `?layers=`) can no longer silently hide every bridge.
+- **Cars no longer start dark:** until 2026-10-05 the S3/A3 position lamps (front `FocoC`, rear
+  `PilotoP`) lit whenever the car was occupied. Commit `fa48503` («Author truck mirrors and tune
+  vehicle lighting and beam controls», shipped before #85) put them behind the new H headlight
+  switch, which starts off, so every car started with its lights off. #135/#137 (start-up
+  sequence) did not touch the lights. The position lights now come back on after the start-up.
 - **Ajustes → Capas showed no map layers in the terrain game:** the layer list (Carretera,
   Edificios y techos, Foto del suelo, Nombres de poblaciones) is bound after the settings window
   mounts, so it stayed in the hidden legacy menu and could not be switched back on; the «Terreno»
@@ -163,6 +199,18 @@
   crept downhill at g x sin(slope) x dt per step because the Rapier wheel brake resolves velocity
   before gravity is integrated. P now applies the full service brake (occupied or not) plus a
   parking-pawl hold, so a parked vehicle stays put even on steep slopes.
+- **Shadow acne on terrain (stripes over every gentle slope):** under a low sun the ground,
+  its draped roads and photos showed dense contour stripes, worst with `relief=lidar` (the
+  Euskadi host default). The Atlas LiDAR terrain is exported double-sided, so its sunlit faces
+  wrote into the shadow map and shadowed themselves; the fixed 2 cm depth / 4–8 cm normal bias was
+  a fraction of a texel (0.2–0.7 m per texel at cascade 0). Terrain now casts shadows from back
+  faces only (`castShadowFromBackFaces`) and is drawn single-sided: `tileMeshSide` overrides the
+  GLB `doubleSided` flag to `FrontSide` for up-facing ground (terrain, land use, ground-photo
+  drapes) at load time; road meshes (bridge decks), skirts, buildings and water keep their side.
+  Each cascade's bias scales with its texel size
+  (`ShadowTier.normalBiasTexels` / `depthBiasTexels`, replacing `normalBias`): Baja/Equilibrada
+  ≈ 21 cm normal / 21 cm depth, Alta ≈ 17 / 13 cm, Ultra ≈ 10 / 6 cm, clamped to 50 cm on far
+  cascades. The car's contact shadow stays attached. See docs/performance.md → Shadow bias and acne.
 
 - **S3 steering wheel too far from the dashboard:** the rim sat ~2–3 cm back toward the
   driver. It now sits 3 cm further along the steering column toward the gauges (chassis: 2.8 cm
@@ -199,6 +247,13 @@
   are unchanged. Placement is one table, `SECTION_TABS` in `game/settings-hud.ts`, which already
   lists #138's `quality-shadows` («Sombras», Calidad). `PlanetSettingsPanel` gains `config` (the
   config block, mountable apart from `root`). See docs/controls.md → Settings menu.
+
+- **Camera changes move instead of cutting:** C / gamepad B and every other view change while
+  the player stays in the same vehicle (or on foot) blend position, orientation and field of view
+  with an ease-in-out (`smootherstep`) over the new camera setting `modeTransitionMs` (default
+  700 ms; `0` cuts as before). The blend starts from the pose actually shown, relative to the
+  player, so it follows a moving car and a second C mid-blend continues smoothly. Boarding keeps
+  its overhead-to-seat entrance.
 
 - **Idle at ~1,000 RPM with a less rumbly engine note.** Car idle (`roadVehicleDefaults.idleRpm`,
   S3, A3 and procedural cars) 900 → 1,000 RPM, so the rev counter rests on 1,000 at a

@@ -129,6 +129,12 @@ export interface GameCameraSettings {
   entranceDelayMs: number
   /** Time after boarding when the cockpit transition finishes, milliseconds. */
   entranceEndMs: number
+  /**
+   * Eased blend (position, orientation and field of view) when the view changes while the
+   * player stays in the same vehicle or on foot: C / gamepad B, start camera sequences, host
+   * calls. Milliseconds; 0 cuts as before.
+   */
+  modeTransitionMs: number
 }
 
 /** Immutable defaults; each camera receives its own settings copy. */
@@ -193,6 +199,7 @@ export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   cinematicDamping: 4,
   entranceDelayMs: 150,
   entranceEndMs: 1200,
+  modeTransitionMs: 700,
 })
 
 /** Copy overrides and validate finite values and ordered camera ranges before use. */

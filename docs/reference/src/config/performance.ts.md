@@ -12,7 +12,7 @@ Quality defaults, supported choices and named rendering/streaming presets.
 
 ## normalizePerformance
 
-[Implementation, line 56](../../../../src/config/performance.ts#L56)
+[Implementation, line 63](../../../../src/config/performance.ts#L63)
 
 Validate serialized settings against supported quality choices; return an independent copy.
 
@@ -27,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## normalizePerformance.choose
 
-[Implementation, line 59](../../../../src/config/performance.ts#L59)
+[Implementation, line 66](../../../../src/config/performance.ts#L66)
 
 ```ts
 choose(value: unknown, allowed: number[], fallback: number): inferred by TypeScript; see implementation
@@ -39,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cloudStyleForPerformancePreset
 
-[Implementation, line 225](../../../../src/config/performance.ts#L225)
+[Implementation, line 232](../../../../src/config/performance.ts#L232)
 
 Cloud renderer for a named quality preset. Artistic 3-layer sheets only on Ultra; all other tiers use the cheaper globe layer.
 
@@ -49,7 +49,7 @@ cloudStyleForPerformancePreset(preset: string): 'low' | 'artistic'
 
 ## tileBudget
 
-[Implementation, line 230](../../../../src/config/performance.ts#L230)
+[Implementation, line 237](../../../../src/config/performance.ts#L237)
 
 z15 meshes for a custom draw distance. Named presets carry their own cap.
 
@@ -59,7 +59,7 @@ tileBudget(distance: number): number
 
 ## streamBudget
 
-[Implementation, line 238](../../../../src/config/performance.ts#L238)
+[Implementation, line 245](../../../../src/config/performance.ts#L245)
 
 ```ts
 streamBudget(settings: PerformanceSettings): inferred by TypeScript; see implementation
@@ -72,7 +72,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## performanceProfile
 
-[Implementation, line 248](../../../../src/config/performance.ts#L248)
+[Implementation, line 255](../../../../src/config/performance.ts#L255)
 
 ```ts
 performanceProfile(settings: PerformanceSettings): inferred by TypeScript; see implementation

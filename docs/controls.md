@@ -37,6 +37,9 @@ tree. Saving stores the authored document, not the runtime physics state.
 | Latch / release cargo                             | F                                 |
 | Transfer controls between latched car and carrier | T                                 |
 | Restart play                                      | R                                 |
+| Lights: posición → cruce → apagadas               | H                                 |
+| High / low beams (with cruce)                     | K                                 |
+| Indicators left / right                           | Z / X                             |
 
 Entering requires proximity and a nearly stopped vehicle. Exiting requires low
 speed and a free exit volume. Cars require supporting ground; a carrier with an
@@ -56,6 +59,23 @@ Coarse-pointer hosts that leave visibility on `auto` show the overlay only on
 touch devices.
 Which overlay and HUD readouts appear in each seat is decided by the vehicle's
 [control profile](vehicle-controls.md).
+
+### Vehicle lights
+
+Getting into a car, the S3, the A3, the truck or any other vehicle with lights, the lights stay
+off while the vehicle selects P and starts (starter, needle sweep). As soon as the engine runs
+they switch to **position lights** (_posición_): the front lamps glow white and the rear lamps
+red, with no beam on the road. On the truck, which has no separate front position bulb, the
+low-beam lenses glow faintly instead. Hosts that skip the start-up (`ignition: false`) get
+position lights at once on entry. If the engine is switched off again, the lights go off with it.
+
+**H** then steps through the switch: _posición_ → _cruce_ (dipped beams, «Luces de cruce») →
+_apagadas_ («Luces apagadas») → _posición_ («Luces de posición»). **K** swaps dipped for main
+beams while _cruce_ is selected. A choice made with **H** during the start-up is kept. Brake,
+reverse and indicator lamps work in every position. Hosts choose the position after the start-up
+with `GameRuntimeOptions.startLights` (`'position'` by default, `'low'` for a night scene,
+`'off'`); `SceneViewOptions.startLights` and `SceneView.startLights.mode` do the same on a bare
+view.
 
 ## A3 and mobile garage
 
@@ -307,7 +327,7 @@ selects `new Simulation(scene, { playerMode: 'hover' })`.
 The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. With the mouse captured
 (see [Mouse capture](#mouse-capture)) the mouse aims without holding a button and **left-click** fires. Hold **right-click** for aim-down-sights
 (raises and centres the pistol for iron sights); release to return to the hip pose. There is **no UI crosshair** — aim with the pistol.
-**H** toggles a laser sight (beam from the muzzle plus a surface pin) while the weapon is drawn; in a vehicle **H** still toggles lights.
+**H** toggles a laser sight (beam from the muzzle plus a surface pin) while the weapon is drawn; in a vehicle **H** still steps the lights (posición → cruce → apagadas).
 Each shot plays a synthesized gunshot, applies viewmodel **recoil**, and on a hit leaves a visible surface mark (buildings, vehicles, props) plus a brief spark burst (no bullet
 tracer trail). Drawing, holstering and boarding do not change mouse capture; **Esc** frees the mouse and the next click on the viewport
 recaptures it without firing. Studio equips the
