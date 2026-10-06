@@ -2,14 +2,42 @@ import { describe, expect, it } from 'vitest'
 import {
   autoResolutionScaleRange,
   displayDefaults,
+  presetResolutionScale,
+  presetResolutionScales,
   resolveDisplaySettings,
 } from '../../src/config/display.js'
 import { AdaptiveResolutionScale, probeResolutionTier } from '../../src/runtime/resolution-scale.js'
 
 describe('display resolution modes', () => {
-  it('defaults to auto at 50% with a 0.5..1 auto clamp', () => {
-    expect(displayDefaults).toMatchObject({ resolutionScale: 0.5, resolutionScaleMode: 'auto' })
+  it('defaults to a fixed scale ladder per quality preset', () => {
+    expect(displayDefaults).toMatchObject({ resolutionScale: 0.8, resolutionScaleMode: 'manual' })
     expect(resolveDisplaySettings()).toEqual({
+      maxFps: 0,
+      resolutionScale: 0.8,
+      resolutionScaleMode: 'manual',
+    })
+    expect(presetResolutionScales).toEqual({
+      ultra: 1,
+      high: 0.9,
+      balanced: 0.8,
+      low: 0.5,
+      mobile: 0.45,
+      minimal: 0.4,
+    })
+    for (const [preset, scale] of Object.entries(presetResolutionScales))
+      expect(resolveDisplaySettings({}, preset)).toEqual({
+        maxFps: 0,
+        resolutionScale: scale,
+        resolutionScaleMode: 'manual',
+      })
+    for (const preset of ['custom', 'unknown', 'toString', undefined])
+      expect(presetResolutionScale(preset)).toBe(0.8)
+    // An explicit host or player choice wins over the preset step.
+    expect(resolveDisplaySettings({ resolutionScale: 0.6 }, 'ultra').resolutionScale).toBe(0.6)
+  })
+
+  it('keeps auto selectable: starts at 50% with a 0.5..1 auto clamp', () => {
+    expect(resolveDisplaySettings({ resolutionScaleMode: 'auto' }, 'ultra')).toEqual({
       maxFps: 0,
       resolutionScale: 0.5,
       resolutionScaleMode: 'auto',

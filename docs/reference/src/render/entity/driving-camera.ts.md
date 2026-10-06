@@ -104,9 +104,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `up.lengthSq`
 - `up.normalize`
 
+## overheadFootHeight
+
+[Implementation, line 119](../../../../../src/render/entity/driving-camera.ts#L119)
+
+On-foot overhead height: `footMapHeight` × zoom (0.75–3× by default, so about 13–54 m),
+plus the same speed allowance as driving. Unlike the vehicle map, zooming in below the
+base height is allowed because a walking player fills very little of the frame.
+
+```ts
+overheadFootHeight(speed: number, zoom = 1, settings: Readonly<GameCameraSettings> = gameCameraDefaults): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `MathUtils.clamp`
+
 ## overheadDrivingHeight
 
-[Implementation, line 115](../../../../../src/render/entity/driving-camera.ts#L115)
+[Implementation, line 133](../../../../../src/render/entity/driving-camera.ts#L133)
 
 Driving map: roughly 30 m ahead at rest, with two seconds of extra road at speed.
 

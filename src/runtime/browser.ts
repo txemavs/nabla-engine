@@ -154,8 +154,8 @@ export interface GameRuntimeOptions {
   clock?: 'automatic' | 'manual'
   /**
    * Frame cap and resolution scaling; caps apply only to the automatic clock.
-   * Omit `resolutionScale` for auto mode (starts at 0.5, adapts 0.5..1).
-   * Pass `resolutionScale` (or `resolutionScaleMode: 'manual'`) to fix the scale.
+   * Omit the resolution fields for a fixed preset step (`presetResolutionScales`).
+   * `resolutionScaleMode: 'auto'` adapts (starts at 0.5, 0.5..1); `resolutionScale` fixes it.
    */
   display?: Partial<DisplaySettings>
   /** Notified when auto resolution changes scale, or when the host switches mode. */
@@ -280,7 +280,7 @@ export class GameRuntime {
     this.game.text = this.text
     this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
     this.scene.add(this.wheelDebug.root)
-    this.display = resolveDisplaySettings(options.display)
+    this.display = resolveDisplaySettings(options.display, options.performance?.preset)
     this.adaptive = new AdaptiveResolutionScale({
       mode: this.display.resolutionScaleMode,
       scale: this.display.resolutionScale,

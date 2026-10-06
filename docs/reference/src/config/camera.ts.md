@@ -11,7 +11,7 @@ Shared camera recovery settings. Durations carry explicit Ms/Seconds names.
 
 ## resolveGameCameraSettings
 
-[Implementation, line 133](../../../../src/config/camera.ts#L133)
+[Implementation, line 157](../../../../src/config/camera.ts#L157)
 
 Copy overrides and validate finite values and ordered camera ranges before use.
 
@@ -30,11 +30,12 @@ Explicit throws in this body:
 - `new RangeError(\`${name} must be finite and non-negative\`)`
 - `new RangeError(\`${key} must be positive\`)`
 - `new RangeError(\`${high} must exceed ${low}\`)`
+- `new RangeError('mapMaxHeight must exceed footMapHeight')`
 - `new RangeError('Camera field of view must be below 180 degrees')`
 
 ## cameraRecovery
 
-[Implementation, line 161](../../../../src/config/camera.ts#L161)
+[Implementation, line 194](../../../../src/config/camera.ts#L194)
 
 Return recovery strength after the manual-look grace period, including zero-duration ramps.
 
