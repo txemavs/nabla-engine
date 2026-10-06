@@ -64,3 +64,34 @@ it('at Alto quality doubles only the truck left Reflector', async () => {
   expect(sizes).toEqual({ left: '768x512', right: '384x256' })
   mirrors.dispose()
 })
+
+it('aims both truck mirrors back along their own flank from the left-hand-drive seat', async () => {
+  const bytes = await fs.readFile('assets/library/trucks/white-truck/assets/tractor.modern.glb')
+  const gltf = await new GLTFLoader().parseAsync(
+    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    '',
+  )
+  gltf.scene.updateMatrixWorld(true)
+  let eyes: Vector3 | undefined
+  gltf.scene.traverse((node) => {
+    if (node.userData.nabla?.anchor === 'driver.eyes') eyes = node.getWorldPosition(new Vector3())
+  })
+  expect(eyes).toBeDefined()
+  const view = Object.fromEntries(
+    authoredMirrorSurfaces(gltf.scene).map((lens) => {
+      const centre = lens.getWorldPosition(new Vector3())
+      const normal = new Vector3(0, 0, 1).transformDirection(lens.matrixWorld)
+      const d = centre.sub(eyes!).normalize()
+      return [lens.userData.nabla.mirror, d.addScaledVector(normal, -2 * d.dot(normal))]
+    }),
+  )
+  // Forward is -Z: both reflected views look rearward, not out to the roadside.
+  for (const side of ['left', 'right']) {
+    expect(view[side].z).toBeGreaterThan(0.9)
+    expect(Math.abs(view[side].x)).toBeLessThan(0.05)
+  }
+  // The right view is the left one mirrored about the centre line.
+  expect(view.right.x).toBeCloseTo(-view.left.x, 3)
+  expect(view.right.y).toBeCloseTo(view.left.y, 3)
+  expect(view.right.z).toBeCloseTo(view.left.z, 3)
+})

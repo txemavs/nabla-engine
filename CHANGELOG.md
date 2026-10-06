@@ -16,6 +16,10 @@
 
 ### Fixed
 
+- **Truck right mirror aim:** the white truck's right wing mirror pointed ~28° out to the
+  roadside (its glass was a centre-line copy of the left one, ignoring the left-hand-drive seat).
+  The `mirror.right` glass is now turned ~14° toward the driver, so it shows the road behind the
+  truck along the right flank, mirroring the left view (`scripts/aim-truck-mirrors.mjs`).
 - Splash `messages: []` no longer falls back to the default Nabla loading lines, and `title: ''`
   clears the title. The early boot lines in `game/main.ts` use the host's messages.
 - `terrain-main.ts` only installs host vehicles when the scene has geography and vehicles (the

@@ -118,6 +118,10 @@ uses the shared cockpit-only reflection renderer (384×256, at most 8 Hz).
 No truck mirror placement is supplied by the runtime. `mirrorTilt` is an
 optional user adjustment relative to the authored orientation (zero for the truck).
 `scripts/author-truck-mirrors.mjs` records the idempotent stock asset migration.
+The stock right lens was a copy of the left one mirrored about the centre line, but the
+driver sits on the left, so it looked ~28° out to the roadside. `scripts/aim-truck-mirrors.mjs`
+(idempotent, JSON chunk only) turns the `mirror.right` anchor ~14.4° toward the driver so that,
+from `driver.eyes`, its reflected view is the left mirror's view mirrored: back along its flank.
 
 Collision boxes, mirror tuning, A3 lamp fitting and ramp definitions still use
 existing configuration or adapters. This migration does not claim those remaining
