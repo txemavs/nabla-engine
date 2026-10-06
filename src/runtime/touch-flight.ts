@@ -1,4 +1,5 @@
 import { createRuntimeText, type RuntimeText } from './messages.js'
+import { touchActionIcon } from './touch-icons.js'
 
 export interface TouchFlightActions {
   play?: () => void
@@ -51,8 +52,11 @@ const styles = `
  border-radius: 50%; background: #ffbb00; pointer-events: none;
  box-shadow: 0 0 10px rgba(255, 187, 0, 0.45); left: 50%; top: 50%; }
 .touch-flight button { pointer-events: auto; touch-action: none; user-select: none;
- min-height: 48px; min-width: 52px; background: #111827dd; color: #fff;
+ min-height: 48px; min-width: 52px; width: 52px; height: 52px; padding: 0;
+ display: inline-flex; align-items: center; justify-content: center;
+ background: #111827dd; color: #fff;
  border: 1px solid #66758d; border-radius: 10px; font: 14px system-ui, sans-serif; }
+.touch-flight button svg { display: block; }
 .touch-flight button:active { background: #2563eb; }
 .touch-flight.is-idle button, .touch-flight.is-idle .touch-flight-stick { opacity: .55; }
 .touch-flight[data-visibility="always"] { display: flex; }
@@ -102,9 +106,10 @@ export class TouchFlight {
       if (action === 'play' && !actions.play) continue
       const button = document.createElement('button')
       button.type = 'button'
-      button.textContent = label
+      button.innerHTML = touchActionIcon(action)
       button.dataset.flight = action
       button.setAttribute('aria-label', label)
+      button.title = label
       button.onpointerdown = (e) => {
         if (this.disposed) return
         e.preventDefault()
