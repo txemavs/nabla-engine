@@ -57,6 +57,31 @@ export interface GameCameraState {
   groundHeading: GroundHeading
   /** Critically damped overhead anchor that follows the vehicle. */
   mapFollow: CriticalFollow
+  /** Active eased blend from the previous view into the current one, or null. */
+  transition: GameCameraTransition | null
+  /** Blend length for the next view change only (start sequences); null uses `modeTransitionMs`. */
+  nextTransitionMs: number | null
+  /** Last rendered pose and view; a view change blends from here. */
+  lastPose: {
+    position: THREE.Vector3
+    quaternion: THREE.Quaternion
+    fov: number
+    anchor: THREE.Vector3
+  } | null
+  lastView: { view: GameCameraView; vehicleId: string | null } | null
+}
+
+/**
+ * Blend from the pose shown before a view change. The start position is kept relative to the
+ * player (`offset` from the player's position), so it travels with a moving vehicle.
+ */
+export interface GameCameraTransition {
+  offset: THREE.Vector3
+  quaternion: THREE.Quaternion
+  fov: number
+  /** Milliseconds, same clock as `updateGameCamera`'s `now`. */
+  started: number
+  duration: number
 }
 
 /** Create independent camera state and validate per-consumer recovery overrides. */
@@ -81,6 +106,10 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     flightTilt: 0,
     groundHeading: new GroundHeading(resolved),
     mapFollow: new CriticalFollow(),
+    transition: null,
+    nextTransitionMs: null,
+    lastPose: null,
+    lastView: null,
   }
 }
 
@@ -145,6 +174,19 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
         cinematic: 'first-person',
       }
   const wanted = next[view]
+  setGameCameraView(state, wanted, seated)
+  return wanted
+}
+
+/**
+ * Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
+ * `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
+ */
+export function setGameCameraView(
+  state: GameCameraState,
+  wanted: GameCameraView,
+  seated: boolean,
+): void {
   state.entrance = null
   if (wanted === 'first-person') {
     state.mode = 'chase'
@@ -163,7 +205,6 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
     state.headYaw = 0
     state.headPitch = state.settings.headPitch
   }
-  return wanted
 }
 
 /** Shared gameplay camera, independent of editor UI and renderer ownership.
@@ -432,6 +473,50 @@ export function updateGameCamera(
     if (body) prepareVehicle?.(body, camera)
     if (elapsed >= tuning.entranceEndMs) vehicleEntrance = null
   } else vehicleEntrance = null
+
+  // View changes blend from the last rendered pose (eased position, orientation and fov) while
+  // the player stays in the same vehicle or on foot; boarding keeps its own entrance move.
+  const cameraView = gameCameraView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
+  const vehicleKey = p.vehicleId ?? null
+  const anchor = new THREE.Vector3(...p.position)
+  let transition = state.transition
+  const last = state.lastView
+  if (last && state.lastPose && last.view !== cameraView) {
+    const duration = state.nextTransitionMs ?? tuning.modeTransitionMs
+    transition =
+      last.vehicleId === vehicleKey && duration > 0
+        ? {
+            offset: state.lastPose.position.clone().sub(state.lastPose.anchor),
+            quaternion: state.lastPose.quaternion.clone(),
+            fov: state.lastPose.fov,
+            started: now,
+            duration,
+          }
+        : null
+  }
+  if (vehicleEntrance || (last && last.vehicleId !== vehicleKey)) transition = null
+  if (transition) {
+    const t = THREE.MathUtils.clamp((now - transition.started) / transition.duration, 0, 1)
+    const k = THREE.MathUtils.smootherstep(t, 0, 1)
+    const target = camera.position.clone()
+    camera.position.copy(anchor).add(transition.offset).lerp(target, k)
+    camera.quaternion.slerpQuaternions(transition.quaternion, camera.quaternion.clone(), k)
+    const blendedFov = THREE.MathUtils.lerp(transition.fov, camera.fov, k)
+    if (camera.fov !== blendedFov) {
+      camera.fov = blendedFov
+      camera.updateProjectionMatrix()
+    }
+    if (t >= 1) transition = null
+  }
+  state.transition = transition
+  state.nextTransitionMs = null
+  state.lastPose = {
+    position: camera.position.clone(),
+    quaternion: camera.quaternion.clone(),
+    fov: camera.fov,
+    anchor,
+  }
+  state.lastView = { view: cameraView, vehicleId: vehicleKey }
 
   state.yaw = yaw
   state.mapHeight = mapHeight

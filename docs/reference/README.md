@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **311 modules; 3218 executable function definitions**.
+Coverage: **312 modules; 3234 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -243,13 +243,13 @@ Coverage: **311 modules; 3218 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 203 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 207 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
-| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 8 |
+| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 9 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 21 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 7 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 7 |
@@ -271,6 +271,7 @@ Coverage: **311 modules; 3218 executable function definitions**.
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 1 |
 | [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 16 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
+| [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 9 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
 | [src/runtime/streaming.ts](src/runtime/streaming.ts.md) | 6 |
 | [src/runtime/touch-driving.ts](src/runtime/touch-driving.ts.md) | 45 |
@@ -305,7 +306,7 @@ Coverage: **311 modules; 3218 executable function definitions**.
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 1 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 195 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 197 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |

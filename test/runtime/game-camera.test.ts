@@ -60,8 +60,9 @@ test('Studio cameras work without editor DOM and cover cockpit, chase and overhe
   }
   const sim = await session.play(document, { vehicleId: 'car' })
   const view = { document, objects: new Map(), vehicleHeadOffset: () => undefined }
+  // Each view's settled pose, frame-exact: cut between views (blends: camera-transitions.test.ts).
   const camera = new PerspectiveCamera(),
-    state = createGameCameraState()
+    state = createGameCameraState({ modeTransitionMs: 0 })
   state.mode = 'cockpit'
   const cockpit = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
   const driver = camera.position.clone()
