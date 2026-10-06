@@ -91,6 +91,17 @@ export { Sidearm } from './sidearm.js'
 export { Gallery, shotView } from './gallery.js'
 export { fireSidearm } from './shooting.js'
 export { createGallery } from '../examples/gallery.js'
+export {
+  placeables,
+  placeable,
+  hasPlaceable,
+  createPlaceable,
+  createPlaceablePortal,
+  createPlaceableSprite,
+  createPlaceableGallery,
+  type PlaceableEntry,
+  type PlaceableId,
+} from '../catalog/placeables.js'
 export { GameRenderPipeline, type GameRenderFrame } from './render-pipeline.js'
 export {
   normalizePerformance,

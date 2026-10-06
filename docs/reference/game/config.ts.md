@@ -15,6 +15,8 @@ URL parameters:
   - color: body paint for the start vehicle (`#rrggbb`, same `entity.color` as cars)
   - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?, color?, tow?, box?}`
     (WGS84). Also `VITE_NABLA_VEHICLES` at build time. See `host-vehicles.ts`.
+  - portals: JSON array of standalone portals `{name, lat, lon, heading, alt?, to?, mode?}`.
+    Also `VITE_NABLA_PORTALS`. See `host-portals.ts`.
   - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
            manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
   - static: use static tile mode ('true' or '1')
@@ -23,10 +25,11 @@ URL parameters:
 
 - `@nabla/engine/planet/static-tiles`
 - `./host-vehicles.js`
+- `./host-portals.js`
 
 ## parseGameConfig
 
-[Implementation, line 44](../../../game/config.ts#L44)
+[Implementation, line 49](../../../game/config.ts#L49)
 
 ```ts
 parseGameConfig(search: string = location.search): GameConfig
@@ -42,12 +45,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hostVehiclesFromSearch`
 - `normalizeTilesBase`
 - `params.get`
+- `portalsConfig`
 - `tilesParam.trim`
 - `viteHostVehicles`
 
 ## parseGameConfig.coordinate
 
-[Implementation, line 47](../../../game/config.ts#L47)
+[Implementation, line 52](../../../game/config.ts#L52)
 
 ```ts
 coordinate(key: string, fallback: number): inferred by TypeScript; see implementation
@@ -61,7 +65,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## configToUrl
 
-[Implementation, line 86](../../../game/config.ts#L86)
+[Implementation, line 92](../../../game/config.ts#L92)
 
 ```ts
 configToUrl(config: GameConfig): string
@@ -80,7 +84,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## requireGeographicTileBase
 
-[Implementation, line 115](../../../game/config.ts#L115)
+[Implementation, line 124](../../../game/config.ts#L124)
 
 Validate geographic terrain before allocating a renderer or starting any requests.
 
@@ -95,3 +99,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Explicit throws in this body:
 
 - `new Error( 'Terrain source missing: set ?tiles=<tile-base-url> for geographic mode, or use ?example=flat for the local planetary demo.', )`
+
+## portalsConfig
+
+[Implementation, line 135](../../../game/config.ts#L135)
+
+`portals` only when the host listed some, so configs without portals keep their shape.
+
+```ts
+portalsConfig(search: string): { portals?: HostPortal[] }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hostPortalsFromSearch`
+- `viteHostPortals`

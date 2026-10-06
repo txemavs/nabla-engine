@@ -104,6 +104,35 @@ instead of being spawned inside it. The terrain-folder entry
 (`?terrain=`) uses the same parameter; a non-empty host list omits the built-in
 parked demo row (`includeDemoFleet: false`) so a second carrier or A3 is not stacked.
 
+### Host portals
+
+Standalone Stargate portals (the black-frame `portal.frame.glb`) are listed the same way.
+After terrain is ready (and after the host vehicles) each entry is converted with `geoToLocal`
+and installed with `GameRuntime.placeEntities` — the same path as **Añadir portal** in the
+add menu, so players can remove them from the list like anything they placed. An entry whose
+`to` names another entry is linked to it once both stand; the rest stay closed and are linked
+from the panel on the back of the frame, where every portal in the scene (standalone and the
+carrier stern) is a destination.
+
+```text
+?portals=[{"name":"Plaza","lat":43.3381,"lon":-1.7667,"heading":60,"to":"Puerto"},{"name":"Puerto","lat":43.3392,"lon":-1.7631,"heading":240}]
+```
+
+| Field     | Required | Meaning                                                               |
+| --------- | -------- | --------------------------------------------------------------------- |
+| `name`    | yes      | Unique label shown in portal panels and the placed list               |
+| `lat`     | yes      | WGS84 latitude, degrees                                               |
+| `lon`     | yes      | WGS84 longitude, degrees                                              |
+| `heading` | no       | Compass degrees clockwise from north you walk through it (default 0)  |
+| `alt`     | no       | Accepted like host vehicles; frames always stand on the loaded ground |
+| `to`      | no       | `name` of another entry to link to (each portal links at most once)   |
+| `mode`    | no       | Link mode with `to`: `open` (traversable, default) or `window` (view) |
+
+Typed alternatives: `parseGameConfig().portals` / `installHostPortals(runtime, origin, list)`,
+or `VITE_NABLA_PORTALS` at build time. `?portals=` wins over the build value; a present empty
+`portals=` means none. Invalid JSON, repeated names or unknown links fail at startup. The
+terrain-folder entry (`?terrain=`) reads the same parameter.
+
 To play on real Atlas Z15 cells (LiDAR, orthophoto, buildings) use `?terrain=<base>`; see
 [Terrain folder](terrain-folder.md).
 

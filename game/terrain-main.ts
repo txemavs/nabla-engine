@@ -19,6 +19,7 @@ import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
+import { installHostPortals } from './host-portals.js'
 import { describeLoading } from './loading-text.js'
 
 /** Spanish controls for the terrain example (the original hint is shared with the flat demo). */
@@ -157,6 +158,11 @@ try {
     bootLog(`installHostVehicles start (${config.vehicles.length})`)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
     bootLog('installHostVehicles done')
+  }
+  if (scene.geography && config.portals?.length) {
+    bootLog(`installHostPortals start (${config.portals?.length})`)
+    await installHostPortals(runtime, scene.geography, config.portals)
+    bootLog('installHostPortals done')
   }
   bootLog('loading screen hide')
   loading.hide()

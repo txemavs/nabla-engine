@@ -17,6 +17,7 @@ import {
   type SkyClock,
 } from '@nabla/engine/planet/sky'
 import { presetEntities, vehiclePresets } from '@nabla/engine/vehicles'
+import { createPlaceable, placeables, type PlaceableId } from '@nabla/engine/runtime'
 import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
 
@@ -43,6 +44,28 @@ export interface SceneRuntime {
   readonly spawnedVehicles: { id: string; name: string }[]
   spawnVehicle(template: Entity | Entity[]): Promise<string>
   removeSpawnedVehicle(id: string): void
+  readonly placedObjects: { id: string; name: string }[]
+  spawnEntities(entities: Entity[], distance?: number, name?: string): Promise<string>
+  removePlaced(id: string): void
+}
+
+/** Scenery the same menu can add: Portal, Galería 2.5D, Sprite and the two street lamps. */
+export interface ObjectChoice {
+  id: PlaceableId
+  label: string
+  ahead: number
+}
+
+/** The scenery the menu offers after the vehicles (engine `placeables`). */
+export function objectChoices(): ObjectChoice[] {
+  return placeables.map((entry) => ({ id: entry.id, label: entry.label, ahead: entry.ahead }))
+}
+
+/** Button text for the selected entry: "Añadir vehículo", "Añadir portal", … */
+export function addLabel(choiceId: string): string {
+  const object = objectChoices().find((item) => item.id === choiceId)
+  if (!object) return 'Añadir vehículo'
+  return `Añadir ${object.label.charAt(0).toLowerCase()}${object.label.slice(1)}`
 }
 
 /** A vehicle that can be added: the catalog presets a player can drive (trailers are passive). */
@@ -261,10 +284,17 @@ export function bindSceneControls(
   const choice = document.createElement('select')
   choice.id = 'vehicle-choice'
   choice.setAttribute('aria-label', 'Vehículo para añadir')
-  for (const item of vehicleChoices()) choice.add(new Option(item.label, item.id))
+  const vehicleGroup = document.createElement('optgroup')
+  vehicleGroup.label = 'Vehículos'
+  for (const item of vehicleChoices()) vehicleGroup.append(new Option(item.label, item.id))
+  const objectGroup = document.createElement('optgroup')
+  objectGroup.label = 'Objetos'
+  for (const item of objectChoices()) objectGroup.append(new Option(item.label, item.id))
+  choice.append(vehicleGroup, objectGroup)
   const choiceRow = document.createElement('label')
   choiceRow.append('Qué añadir', choice)
   const add = button('vehicle-add', 'Añadir vehículo')
+  choice.addEventListener('change', () => (add.textContent = addLabel(choice.value)))
   const vehicleMessage = document.createElement('p')
   vehicleMessage.id = 'vehicle-message'
   vehicleMessage.setAttribute('role', 'status')
@@ -428,8 +458,53 @@ export function bindSceneControls(
         item.append(name, remove)
         vehicleList.append(item)
       }
+      for (const placed of runtime.placedObjects) {
+        const item = document.createElement('li')
+        item.dataset.placedId = placed.id
+        const name = document.createElement('span')
+        name.textContent = placed.name
+        const remove = button(`placed-remove-${placed.id}`, 'Quitar')
+        remove.addEventListener('click', () => {
+          try {
+            runtime.removePlaced(placed.id)
+            vehicleMessage.textContent = `${placed.name} quitado.`
+          } catch (error) {
+            vehicleMessage.textContent =
+              'No se pudo quitar: ' + (error instanceof Error ? error.message : String(error))
+          }
+          renderList()
+        })
+        item.append(name, remove)
+        vehicleList.append(item)
+      }
     }
+    const groundError = (error: unknown, what: string) =>
+      /ground/i.test(String(error instanceof Error ? error.message : error))
+        ? 'No hay terreno cargado delante de ti. Espera a que cargue o muévete e inténtalo de nuevo.'
+        : `No se pudo añadir ${what}: ` + (error instanceof Error ? error.message : String(error))
     add.addEventListener('click', async () => {
+      const object = objectChoices().find((item) => item.id === choice.value)
+      if (object) {
+        add.disabled = true
+        vehicleMessage.textContent = 'Añadiendo…'
+        try {
+          await runtime.spawnEntities(
+            createPlaceable(object.id, `place-${object.id}`),
+            object.ahead,
+            object.label,
+          )
+          vehicleMessage.textContent =
+            object.id === 'portal'
+              ? 'Portal añadido delante de ti. Su panel está detrás del marco: elige destino y pulsa Abrir.'
+              : `${object.label} añadido delante de ti.`
+        } catch (error) {
+          vehicleMessage.textContent = groundError(error, object.label.toLowerCase())
+        } finally {
+          add.disabled = false
+          renderList()
+        }
+        return
+      }
       const entry = vehicleChoices().find((item) => item.id === choice.value)
       if (!entry) return
       add.disabled = true
@@ -439,12 +514,7 @@ export function bindSceneControls(
         await runtime.spawnVehicle(presetEntities(entry.id, 'spawn-template'))
         vehicleMessage.textContent = `${entry.label} añadido delante de ti. Acércate y pulsa E para entrar.`
       } catch (error) {
-        vehicleMessage.textContent = /ground/i.test(
-          String(error instanceof Error ? error.message : error),
-        )
-          ? 'No hay terreno cargado delante de ti. Espera a que cargue o muévete e inténtalo de nuevo.'
-          : 'No se pudo añadir el vehículo: ' +
-            (error instanceof Error ? error.message : String(error))
+        vehicleMessage.textContent = groundError(error, 'el vehículo')
       } finally {
         add.disabled = false
         renderList()

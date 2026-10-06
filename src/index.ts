@@ -67,6 +67,17 @@ export type {
 
 export { entityCapabilities, type EntityCapability } from './entity/capability.js'
 export { entityCatalog, createCatalogEntities, type CatalogId } from './catalog/palette.js'
+export {
+  placeables,
+  placeable,
+  hasPlaceable,
+  createPlaceable,
+  createPlaceablePortal,
+  createPlaceableSprite,
+  createPlaceableGallery,
+  type PlaceableEntry,
+  type PlaceableId,
+} from './catalog/placeables.js'
 
 export {
   classifySurface,

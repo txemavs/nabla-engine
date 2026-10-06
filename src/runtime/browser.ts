@@ -100,7 +100,7 @@ import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { VehicleEffects } from './vehicle-effects.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 
-import { waitForGround } from './ground.js'
+import { groundAtSeam, waitForGround } from './ground.js'
 import { warmGamePresentation } from './presentation-warmup.js'
 import { GameHud } from './hud.js'
 import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
@@ -211,6 +211,8 @@ export class GameRuntime {
   private sidearm: Sidearm | null = null
   private spawned: string[] = []
   private spawnSequence = 0
+  private placed: { id: string; name: string; ids: string[] }[] = []
+  private placeSequence = 0
   private weaponDrawn = false
   private fireRequested = false
   /**
@@ -347,6 +349,11 @@ export class GameRuntime {
       this.text,
     )
     this.monitors.onShipSwitch = (id, kind) => this.view.pressShipSwitch(id, kind)
+    // The PORTAL panel's Lat/Lon «Ir» form moves the ship (and anyone in its cabin).
+    this.monitors.onJump = (carrier, latitude, longitude) => {
+      const sim = this.session.simulation
+      if (sim) options.onMessage?.(sim.relocateVehicle(carrier, latitude, longitude))
+    }
     if (this.worldContent) {
       const world = this.worldContent
       const source = (id: string) =>
@@ -1218,6 +1225,115 @@ export class GameRuntime {
     this.game.removeVehicle(id)
     this.spawned = this.spawned.filter((other) => other !== id)
     this.monitors.rebuild(this.document)
+  }
+
+  /** Groups added with `placeEntities` / `spawnEntities`, oldest first. */
+  get placedObjects(): { id: string; name: string; ids: string[] }[] {
+    return this.placed.map((entry) => ({ ...entry, ids: [...entry.ids] }))
+  }
+  /**
+   * Place scenery in front of the player, like `spawnVehicle`: `entities` are in a local frame
+   * whose origin is the ground contact point and whose −Z points away from the player (see
+   * `createPlaceable`). `distance` is metres ahead of the player, or of the occupied vehicle's
+   * nose. Returns the group id for `removePlaced`.
+   */
+  async spawnEntities(entities: readonly Entity[], distance = 4, name?: string): Promise<string> {
+    this.assertAlive()
+    const sim = this.session.simulation
+    if (!sim) throw new Error('A running game on loaded terrain is required')
+    const player = sim.player
+    const own = player.vehicleId
+      ? this.document.entities.find((e) => e.id === player.vehicleId)
+      : undefined
+    const yaw = own ? player.yaw : this.cameraState.yaw
+    const ahead = distance + (own ? own.size[2] / 2 : 0)
+    const position: Vec3Tuple = [
+      player.position[0] - Math.sin(yaw) * ahead,
+      0,
+      player.position[2] - Math.cos(yaw) * ahead,
+    ]
+    return this.placeEntities(entities, position, yaw, 8000, name)
+  }
+  /**
+   * Install scenery (standalone portals, sprites, lamps, static boxes) on loaded ground at a
+   * local-metre `position`, turned by gameplay `yaw` (0 faces north, −Z). Each top-level entity
+   * keeps its local height above the terrain under it. Ids are replaced (`placed-N-…`) and
+   * portal links inside the batch follow. Every portal is listed in every portal panel.
+   * Returns the group id for `removePlaced`.
+   */
+  async placeEntities(
+    entities: readonly Entity[],
+    position: Vec3Tuple,
+    yaw = 0,
+    timeoutMs?: number,
+    name?: string,
+  ): Promise<string> {
+    this.assertAlive()
+    const sim = this.session.simulation
+    if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
+    if (!entities.length) throw new Error('Nothing to place')
+    const world = this.world
+    const [x, , z] = position
+    const ground = await waitForGround(world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 })
+    const group = `placed-${++this.placeSequence}`
+    const ids = new Map(entities.map((e, i) => [e.id, `${group}-${i}`]))
+    const turn = new THREE.Quaternion(0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2))
+    const added = entities.map((template): Entity => {
+      const e = structuredClone(template)
+      e.id = ids.get(template.id)!
+      if (e.portal?.pairId) e.portal.pairId = ids.get(e.portal.pairId) ?? null
+      const local = new THREE.Vector3(...e.transform.position)
+      const offset = new THREE.Vector3(local.x, 0, local.z).applyQuaternion(turn)
+      const at: Vec3Tuple = [x + offset.x, 0, z + offset.z]
+      // Nearby stage pieces read loaded ground directly; far ones fall back to the origin.
+      const below = offset.lengthSq() < 0.01 ? ground : (groundAtSeam(world, at) ?? ground)
+      at[1] = below + local.y
+      e.transform = {
+        position: at,
+        rotation: turn
+          .clone()
+          .multiply(new THREE.Quaternion(...e.transform.rotation))
+          .toArray() as [number, number, number, number],
+      }
+      return e
+    })
+    this.view.addPlaced(added)
+    sim.addPlaced(added)
+    this.game.addPlaced(added)
+    if (added.some((e) => e.portal)) this.monitors.rebuild(this.document)
+    this.placed.push({ id: group, name: name ?? added[0].name, ids: added.map((e) => e.id) })
+    for (const e of added) {
+      const object = this.view.objects.get(e.id)
+      if (object)
+        void this.renderer.compileAsync(object, this.camera, this.scene).catch(() => undefined)
+    }
+    return group
+  }
+  /**
+   * Link, relink or close a portal mouth in the running game (what the portal panel's Abrir /
+   * Cerrar do). Both mouths need equal apertures; carrier sterns need the garage door closed.
+   */
+  configurePortal(
+    id: string,
+    destinationId: string | null,
+    mode: 'closed' | 'window' | 'open',
+  ): string {
+    this.assertAlive()
+    const sim = this.session.simulation
+    if (!sim) throw new Error('A running game is required')
+    return sim.configurePortal(id, destinationId, mode)
+  }
+  /** Remove a group added with `placeEntities` / `spawnEntities`, unlinking its portals. */
+  removePlaced(id: string): void {
+    this.assertAlive()
+    const entry = this.placed.find((item) => item.id === id)
+    if (!entry) throw new Error(`Not a placed object: ${id}`)
+    const portals = this.document.entities.some((e) => e.portal && entry.ids.includes(e.id))
+    this.session.simulation?.removePlaced(entry.ids)
+    this.view.removePlaced(entry.ids)
+    this.game.removePlaced(entry.ids)
+    this.placed = this.placed.filter((item) => item !== entry)
+    if (portals) this.monitors.rebuild(this.document)
   }
 
   /** Terrain cells loaded and drawn of the known dataset; null without tiles. */

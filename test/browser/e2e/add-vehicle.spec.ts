@@ -100,3 +100,44 @@ test('SceneView maps a late carrier stern portal onto its door monitor and drops
   })
   expect(result.removed).toEqual({ portal: false, tablet: false, object: false, inDocument: false })
 })
+
+test('SceneView installs and removes placed portals, gallery, sprite and lamps', async ({
+  page,
+}) => {
+  await page.route('**/add-placed', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<!doctype html><body></body>' }),
+  )
+  await page.goto('/add-placed')
+  const result = await page.evaluate(async (root) => {
+    const { SceneView } = await import(`/@fs/${root}/src/presentation/scene-view.ts`)
+    const { createPlaceable } = await import(`/@fs/${root}/src/catalog/placeables.ts`)
+    const { createEntity } = await import(`/@fs/${root}/src/entity/schema.ts`)
+    const view = new SceneView({
+      version: 1,
+      name: 'Add placed',
+      entities: [createEntity('spawn', 'spawn')],
+    })
+    await view.ready
+    const kinds = ['portal', 'gallery', 'sprite', 'streetlight', 'globe']
+    const batches = kinds.map((kind) => createPlaceable(kind, `p-${kind}`))
+    for (const batch of batches) view.addPlaced(batch)
+    await view.ready
+    const ids = batches.flat().map((e: { id: string }) => e.id)
+    const added = {
+      objects: ids.every((id: string) => view.objects.has(id)),
+      portal: view.portals.has('p-portal'),
+      tablet: view.portalTablets.has('p-portal'),
+      gallery: view.portals.has('p-gallery-window') && view.portals.has('p-gallery-back'),
+    }
+    for (const batch of batches) view.removePlaced(batch.map((e: { id: string }) => e.id))
+    const removed = {
+      objects: ids.some((id: string) => view.objects.has(id)),
+      portals: view.portals.has('p-portal') || view.portals.has('p-gallery-window'),
+      inDocument: view.document.entities.some((e: { id: string }) => ids.includes(e.id)),
+    }
+    view.dispose()
+    return { added, removed }
+  }, process.cwd())
+  expect(result.added).toEqual({ objects: true, portal: true, tablet: true, gallery: true })
+  expect(result.removed).toEqual({ objects: false, portals: false, inDocument: false })
+})

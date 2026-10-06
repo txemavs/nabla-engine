@@ -27,6 +27,7 @@
 - `./planet/land/roads/draped-road.js`
 - `./entity/capability.js`
 - `./catalog/palette.js`
+- `./catalog/placeables.js`
 - `./planet/land/surface.js`
 - `./math/planar/polygon.js`
 - `./planet/extract/multipolygon.js`
