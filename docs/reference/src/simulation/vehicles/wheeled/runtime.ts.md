@@ -261,11 +261,11 @@ callback@247(wheel): inferred by TypeScript; see implementation
 
 ## enterWheeledVehicle
 
-[Implementation, line 308](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L308)
+[Implementation, line 309](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L309)
 
 A driver gets in (spawned in the seat, entered with E, or took over the controls): the
 selector goes to P, the full service brake holds the vehicle, and, when `ignition` is true,
-the start-up sequence runs (needle sweep, starter cranking, idle). The driver leaves P with
+the start-up sequence runs (starter cranking, needle sweep, idle). The driver leaves P with
 the normal controls (W for D, S for R) once the engine is running. Passive trailers ignore it.
 
 ```ts
@@ -279,7 +279,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shiftWheeledVehicle
 
-[Implementation, line 314](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L314)
+[Implementation, line 315](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L315)
 
 Gear requests return domain results; UI messages belong to the facade/host.
 
@@ -296,7 +296,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## automaticWheeledTransmission
 
-[Implementation, line 325](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L325)
+[Implementation, line 326](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L326)
 
 ```ts
 automaticWheeledTransmission(v: WheeledVehicle): boolean
@@ -304,7 +304,7 @@ automaticWheeledTransmission(v: WheeledVehicle): boolean
 
 ## wheeledTelemetry
 
-[Implementation, line 330](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L330)
+[Implementation, line 331](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L331)
 
 ```ts
 wheeledTelemetry(v: WheeledVehicle, input: WheeledInput, active: boolean, tireEffects = true): WheeledTelemetry
@@ -322,7 +322,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tuple
 
-[Implementation, line 367](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L367)
+[Implementation, line 368](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L368)
 
 ```ts
 tuple(v: Vec3): WheelVector
@@ -330,7 +330,7 @@ tuple(v: Vec3): WheelVector
 
 ## wheelContacts
 
-[Implementation, line 368](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L368)
+[Implementation, line 369](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L369)
 
 ```ts
 wheelContacts(v: WheeledVehicle, input: WheeledInput, active: boolean, tireEffects = true): WheelContactSnapshot[]
@@ -341,12 +341,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.raycast.wheelInfos.map`
 - `wheeledTelemetry`
 
-## wheelContacts.callback@375
+## wheelContacts.callback@376
 
-[Implementation, line 375](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L375)
+[Implementation, line 376](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L376)
 
 ```ts
-callback@375(wheel, i): inferred by TypeScript; see implementation
+callback@376(wheel, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

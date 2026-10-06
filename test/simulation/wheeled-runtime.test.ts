@@ -103,10 +103,13 @@ it('spawns in P: no drive force, full service brake occupied or not, W leaves P'
   expect(car.raycast.wheelInfos.every((w) => w.brake === 50)).toBe(true)
   // Entering runs the start-up: P is kept and the pedal is ignored until the engine runs.
   enterWheeledVehicle(car)
-  expect(car.drivetrain.ignition).toBe('sweep')
+  expect(car.drivetrain.ignition).toBe('cranking')
   const pedal = { ...idleWheeledInput(), throttle: 1 }
-  for (let i = 0; i < 115; i++) stepWheeledVehicle(car, pedal, 1 / 60)
+  // 0.6 s of cranking, then the 1 s needle sweep: still P at 1.5 s.
+  for (let i = 0; i < 90; i++) stepWheeledVehicle(car, pedal, 1 / 60)
+  expect(car.drivetrain.ignition).toBe('sweep')
   expect([car.drivetrain.gear, car.drivetrain.parked]).toEqual([0, true])
+  expect(car.raycast.wheelInfos.every((w) => w.engineForce === 0)).toBe(true)
   for (let i = 0; i < 40; i++) stepWheeledVehicle(car, pedal, 1 / 60)
   expect(car.drivetrain.ignition).toBe('running')
   expect(car.drivetrain.gear).toBe(1)

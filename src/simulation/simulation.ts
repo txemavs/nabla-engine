@@ -198,8 +198,9 @@ export class Simulation {
       experimentalLargeScene?: boolean
       planetaryTerrain?: boolean
       /**
-       * Start-up sequence when a driver gets into a geared road vehicle: needle sweep, then
-       * starter cranking, then idle, all in P (default true). False only selects P.
+       * Start-up sequence when a driver gets into a geared road vehicle: starter cranking, then
+       * the needle sweep while the engine settles to idle, all in P (default true). False only
+       * selects P.
        */
       ignition?: boolean
     } = {},
@@ -1664,8 +1665,8 @@ export class Simulation {
     shifting: boolean
     /** Per-vehicle clack sound; null selects the audio layer's car default. */
     gearClack: GearClackProfile | null
-    /** Start-up phase after entering: `sweep` (needle self-test), `cranking`, `running`. */
-    ignition: 'sweep' | 'cranking' | 'running'
+    /** Start-up phase after entering: `cranking`, `sweep` (needle self-test), `running`. */
+    ignition: 'cranking' | 'sweep' | 'running'
     /** Increments on every start-up; play one starter sound per increase. */
     ignitionCount: number
     /** Needle self-test 0..1 while `ignition` is `sweep`; dials show this share of full scale. */

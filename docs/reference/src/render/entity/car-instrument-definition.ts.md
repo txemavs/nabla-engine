@@ -12,12 +12,14 @@
 
 ## sweepCluster
 
-[Implementation, line 43](../../../../../src/render/entity/car-instrument-definition.ts#L43)
+[Implementation, line 45](../../../../../src/render/entity/car-instrument-definition.ts#L45)
 
-Instrument self-test overlay: every needle of `cluster` points at `sweep` (0..1) of its own
-scale, and the bar with the same binding (if any) fills to `sweep`. Readouts such as the
-digital speed and the gear letter keep their real values. `sweep` 0 returns `data` unchanged,
-so any cluster artwork (car, truck, custom) gets the sweep without per-vehicle code.
+Instrument self-test overlay: every needle of `cluster` travels from its real reading to full
+scale as `sweep` goes 0 to 1 (and back as it returns), and the bar with the same binding (if
+any) fills the same way. The sweep therefore starts and ends on the live value (an idling
+rev counter, a speedometer at 0) without a jump. Readouts such as the digital speed and the
+gear letter keep their real values. `sweep` 0 returns `data` unchanged, so any cluster
+artwork (car, truck, custom) gets the sweep without per-vehicle code.
 
 ```ts
 sweepCluster(cluster: MonitorDefinition, data: MonitorData, sweep: number): MonitorData
@@ -25,4 +27,6 @@ sweepCluster(cluster: MonitorDefinition, data: MonitorData, sweep: number): Moni
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
 - `Math.min`
+- `Number.isFinite`

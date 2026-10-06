@@ -214,7 +214,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 130](../../../../src/audio/vehicle.ts#L130)
 
-One ~1 s starter-motor crank ending in the engine catching (`ignitionCrankSeconds`). The
+One ~0.6 s starter-motor crank ending in the engine catching (`ignitionCrankSeconds`). The
 host keeps `powertrain` at rpm 0 meanwhile and then feeds the settling idle speed.
 
 ```ts

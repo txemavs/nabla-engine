@@ -23,8 +23,9 @@ existing supported exits and the carrier retains its interior exit. Boat visual
 cabin geometry is not automatically converted into collision geometry.
 
 Entering a road vehicle (E, `startInVehicle`, `transferControls`) always lands in P with the
-vehicle held by its brakes, then plays the start-up: needle sweep, about 1 s of starter cranking,
-idle. The driver leaves P with W (D) or S (R) once the engine runs; see `configuration.md` →
+vehicle held by its brakes, then plays the start-up: about 0.6 s of starter cranking, then the
+needle sweep while the engine settles to idle (1.6 s in total). The driver leaves P with W (D) or
+S (R) once the sequence ends; see `configuration.md` →
 Park on entering. Boats and aircraft are unaffected.
 
 The HUD uses the same candidate query as the action. Keyboard E, controller

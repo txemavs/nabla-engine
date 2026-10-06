@@ -16,9 +16,9 @@
 - **Vehicles start in P, with an instrument sweep and an engine start:** every road vehicle (car,
   S3, A3, truck, procedural cars, host-spawned vehicles) now spawns in P and every way into the
   driver's seat (E, `startInVehicle`/`?vehicle=`, `transferControls`) selects P again, held by the
-  brakes; the HUD and cluster show `P`. Then the instrument needles sweep to full scale and back
-  (~1 s, eased), a synthesized starter cranks for ~1 s (`VehicleAudio.engineStart`, no sample
-  file) and the engine settles to idle, still in P. Pedals are deferred during the start-up (the
+  brakes; the HUD and cluster show `P`. Then a synthesized starter cranks (`VehicleAudio.engineStart`,
+  no sample file), the engine catches and the instrument needles sweep to full scale and back
+  (~1 s, eased) while it settles to idle, still in P (order and timing: see Changed below). Pedals are deferred during the start-up (the
   vehicle stays in P; a pedal still held when the engine runs engages D/R through the normal
   dwell). W/S leave P as before. Boats, planes and flight-capable vehicles are unchanged. Engine
   API: `enterWheeledVehicle`, `engagePark`, `startIgnition`, `stepIgnition`, `gaugeSweep`,
@@ -138,6 +138,24 @@
   guard had lost its braces; fixes the typecheck error on main).
 
 ### Changed
+
+- **Idle at ~1,000 RPM with a less rumbly engine note.** Car idle (`roadVehicleDefaults.idleRpm`,
+  S3, A3 and procedural cars) 900 → 1,000 RPM, so the rev counter rests on 1,000 at a
+  standstill; the white truck's diesel idle 650 → 750 RPM. The engine note is pitched a little
+  higher, like an engine at low revs rather than a sub-bass rumble: `engineNoteHz` rpm / 30
+  (30 Hz floor) → rpm / 24 (25 Hz floor), lowpass cutoff 180 + 0.1 x rpm → 260 + 0.14 x rpm Hz.
+  Car idle: 30 Hz / 270 Hz → 41.7 Hz / 400 Hz; truck idle: 30 Hz / 245 Hz → 31.3 Hz / 365 Hz.
+  The engine-start sound now ends its catch on the vehicle's idle note
+  (`EngineStartSound.idleRpm`; pitch reference 900 → 1,000 RPM) so it hands over to the idle
+  engine sound seamlessly.
+- **Start-up order on entering a vehicle: engine first, then the needle sweep.** The sequence is
+  now P and held → starter sound, shorter (`ignitionCrankSeconds` 1 → 0.6 s) → needle sweep up
+  and back (`ignitionSweepSeconds`, 1 s) → running. The engine catches at the end of the crank,
+  so its normal sound fades in and settles from the catch flare to idle during the sweep instead
+  of after it, and the whole sequence takes 1.6 s instead of 2 s. `vehicleInfo().ignition` now
+  goes `cranking` → `sweep` → `running`. The needles leave from and return to their live reading
+  (the idling rev counter, a speedometer at 0) instead of dropping to zero first
+  (`sweepCluster`). Input rules are unchanged: P and no drive torque until the sequence ends.
 
 - **Settings layout:** new **Posición** tab (where you are / go to lat,lon and the R option).
   Planeta keeps Hora first and now ends with sea level / tide; the legacy sky / sun / clouds /
