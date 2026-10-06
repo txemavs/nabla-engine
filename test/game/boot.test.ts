@@ -78,4 +78,16 @@ describe('standalone boot config', () => {
     )
     expect(readBootConfig('?shadowBias=abc', {}).shadowBias).toBeUndefined()
   })
+
+  it('passes the host start camera sequence through', () => {
+    const startCameras = [
+      'overhead',
+      { view: 'driver', after: 800 },
+      { view: 'chase', after: 'engine' },
+    ]
+    expect(readBootConfig('', { NABLA_BOOT: { startCameras } as never }).startCameras).toEqual(
+      startCameras,
+    )
+    expect(readBootConfig('', {}).startCameras).toBeUndefined()
+  })
 })

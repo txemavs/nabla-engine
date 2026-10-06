@@ -251,6 +251,39 @@ OSM carriageways. Players move it in **Ajustes → Calidad → Asfalto → Contr
 overrides both for one visit. Library hosts pass `GameRuntimeOptions.asphaltContrast` or call
 `runtime.setAsphaltContrast(1.6)` (also `setAsphaltContrast` from `@nabla/engine/render`).
 
+`startCameras` (default none: the driver view from the first frame, as before) is the camera
+sequence of a start in a vehicle. Each step is a view name or `{ view, after, transitionMs }`:
+
+- `view`: `'overhead'` (alias `'map'`), `'driver'` (alias `'cockpit'`), `'chase'` or
+  `'cinematic'`. `'chase'` is the fixed third-person camera behind the vehicle, following its
+  heading; `'cinematic'` is the slow orbit, normally only chosen by the player with C, so end a
+  sequence on `'chase'`. The first step shows from the first frame.
+- `after`: when to move on to this step once the previous one has been reached, in milliseconds
+  (default 600), or `'engine'` to wait until the engine start-up (starter, needle sweep) has
+  finished. With an `'engine'` step the engine stays off, silent and in P until the camera
+  reaches the step before it, and starts there.
+- `transitionMs`: the blend into this step (default `modeTransitionMs`, 700 ms).
+
+```js
+window.NABLA_BOOT = {
+  startCameras: [
+    'overhead',
+    { view: 'driver', after: 800, transitionMs: 1800 },
+    { view: 'chase', after: 'engine', transitionMs: 1400 },
+  ],
+}
+```
+
+That one starts overhead, moves down into the driver's seat, plays the start-up there (P,
+starter, needle sweep) and then moves out to the chase camera. Driving input (W/S/A/D, brake)
+ends the sequence and blends to its last view; C ends it and cycles as usual; a held engine
+starts either way. The canvas carries `data-start-cameras="active|complete|none"`. Library
+hosts pass `GameRuntimeOptions.startCameras`, and `runtime.skipStartCameras()` ends it.
+
+Every camera change while the player stays in the same vehicle (or on foot) now blends
+position, orientation and field of view with an ease-in-out over `modeTransitionMs` (camera
+setting, default 700 ms; `0` cuts as before). Boarding keeps its own overhead-to-seat entrance.
+
 The demo menu (**Rendimiento**) has an **Escala automática (50–100%)** checkbox; moving the
 slider switches to manual. Without `scale` the slider starts at the quality preset's fixed
 step (table in [configuration.md](configuration.md#display-synchronization-and-scaling)). The

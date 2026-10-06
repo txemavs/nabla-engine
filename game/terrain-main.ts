@@ -114,6 +114,7 @@ try {
       storage: mirrorStorage(),
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
+    startCameras: boot.startCameras,
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),

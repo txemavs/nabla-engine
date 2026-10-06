@@ -10,7 +10,11 @@
  * Defaults keep the classic centred Nabla splash, no attract, probe on in auto scale.
  */
 import type { EngineSplashSkin } from '@nabla/engine/runtime/splash'
-import type { AttractOptions, GameRuntime } from '@nabla/engine/runtime/browser'
+import type {
+  AttractOptions,
+  GameRuntime,
+  StartCameraSequence,
+} from '@nabla/engine/runtime/browser'
 import type { LoadingScreen } from './loading.js'
 import { wantsAutoResolution } from './display-settings.js'
 
@@ -57,6 +61,13 @@ export interface HostBootConfig {
    * `?asphaltContrast=1.6` overrides both for one visit.
    */
   asphaltContrast?: number
+  /**
+   * Start camera sequence when the game starts in a vehicle; omitted = the driver view from the
+   * first frame. E.g. `['overhead', { view: 'driver', after: 800, transitionMs: 1800 },
+   * { view: 'chase', after: 'engine', transitionMs: 1400 }]`: overhead, down into the driver's
+   * seat, the engine start-up there, then out to the chase camera. See `StartCameraStep`.
+   */
+  startCameras?: StartCameraSequence
 }
 
 declare global {
