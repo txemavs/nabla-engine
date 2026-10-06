@@ -39,6 +39,10 @@ export {
   overheadFootHeight,
   followDrivingHeading,
   DrivingTelemetry,
+  GroundHeading,
+  CriticalFollow,
+  criticalStep,
+  headingDirection,
 } from '../entity/driving-camera.js'
 export {
   advanceCinematicAngle,
