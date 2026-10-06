@@ -57,11 +57,25 @@ with `createGameCameraState` so telemetry and framing share the same settings.
 ## Display, synchronization and scaling
 
 [display.ts](../src/config/display.ts) owns `maxFps`, `resolutionScale` and
-`resolutionScaleMode`. Resolution defaults to **auto**: it starts at 50% and adapts within
-0.5..1 by frame budget. Passing an explicit `resolutionScale` (for example
-`display: { maxFps: 60, resolutionScale: 0.75 }`) fixes the scale (**manual**, 0.25..1).
-Call `runtime.setDisplay({ maxFps: 30 })` during play, or
-`setDisplay({ resolutionScaleMode: 'auto' })` to resume adaptation. The auto controller,
+`resolutionScaleMode`. Without a host or player choice the resolution scale is **fixed**
+at the quality preset's step (`presetResolutionScales`; the runtime reads
+`performance.preset`):
+
+| Quality preset (`quality=`) | Default scale (fixed) |
+| --------------------------- | --------------------- |
+| `ultra` — Ultra             | 100%                  |
+| `high` — Alta               | 90%                   |
+| `balanced` — Equilibrada    | 80%                   |
+| `low` — Baja                | 50%                   |
+| `mobile` — Móvil            | 45%                   |
+| `minimal` — Mínima          | 40%                   |
+| `custom` — Predeterminada   | 80%                   |
+
+Passing an explicit `resolutionScale` (for example
+`display: { maxFps: 60, resolutionScale: 0.75 }`) fixes that scale instead (**manual**,
+0.25..1). **Auto** stays available: `display: { resolutionScaleMode: 'auto' }` starts at 50%
+and adapts within 0.5..1 by frame budget. Call `runtime.setDisplay({ maxFps: 30 })` during
+play, or `setDisplay({ resolutionScaleMode: 'auto' })` to switch to adaptation. The auto controller,
 the ~3 s boot probe, the skinnable splash and the attract boot view are documented in
 [Boot, splash and dynamic resolution](boot-and-splash.md). A cap of zero follows
 browser cadence; positive caps are integers from 30 to 360. The automatic loop

@@ -49,6 +49,12 @@
 
 ### Changed
 
+- **Resolution scale defaults to a fixed step per quality preset instead of Auto:** Ultra
+  100%, Alta 90%, Equilibrada 80%, Baja 50%, Móvil 45%, Mínima 40% (`custom` / Predeterminada
+  80%). **Escala automática** stays selectable (`scale=auto`, `resolutionScaleMode: 'auto'`) and
+  a saved player choice (`scale=` in the URL) still wins. The boot probe now runs only in auto.
+  Engine API: `presetResolutionScales`, `presetResolutionScale`, and
+  `resolveDisplaySettings(value, preset)`; `displayDefaults` is now manual 0.8.
 - **S3 headlights like the truck:** the S3 now has real low and high beams at its two front lamp
   units, built with the white truck's lamp setup (1800 / 18000 cd, 55 / 130 m, same cones, aimed
   slightly down; low beams use the shared cut-off projection). They light the road ahead only, are

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **293 modules; 2938 executable function definitions**.
+Coverage: **294 modules; 2947 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -63,7 +63,7 @@ Coverage: **293 modules; 2938 executable function definitions**.
 | [src/config/audio.ts](src/config/audio.ts.md) | 0 |
 | [src/config/camera.ts](src/config/camera.ts.md) | 2 |
 | [src/config/controls.ts](src/config/controls.ts.md) | 0 |
-| [src/config/display.ts](src/config/display.ts.md) | 1 |
+| [src/config/display.ts](src/config/display.ts.md) | 2 |
 | [src/config/index.ts](src/config/index.ts.md) | 0 |
 | [src/config/lighting.ts](src/config/lighting.ts.md) | 0 |
 | [src/config/performance.ts](src/config/performance.ts.md) | 6 |
@@ -155,7 +155,8 @@ Coverage: **293 modules; 2938 executable function definitions**.
 | [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 17 |
 | [src/render/entity/carrier-interior.ts](src/render/entity/carrier-interior.ts.md) | 6 |
 | [src/render/entity/carrier-thrusters.ts](src/render/entity/carrier-thrusters.ts.md) | 2 |
-| [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 6 |
+| [src/render/entity/cinematic-camera.ts](src/render/entity/cinematic-camera.ts.md) | 3 |
+| [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 7 |
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 46 |
 | [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 14 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 9 |
@@ -235,7 +236,7 @@ Coverage: **293 modules; 2938 executable function definitions**.
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
-| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 4 |
+| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 8 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 18 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 7 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 7 |

@@ -16,6 +16,7 @@
 - `./light-rig.js`
 - `../entity/car-mirrors.js`
 - `../entity/driving-camera.js`
+- `../entity/cinematic-camera.js`
 - `../entity/car-instrument-definition.js`
 - `./mirror-lenses.js`
 - `../entity/steering-wheel.js`

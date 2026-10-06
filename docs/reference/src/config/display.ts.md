@@ -9,16 +9,24 @@ Browser presentation settings; the browser owns actual display synchronization.
 ## Module dependencies
 
 
-## resolveDisplaySettings
+## presetResolutionScale
 
-[Implementation, line 39](../../../../src/config/display.ts#L39)
-
-Validate per-runtime overrides; the minimum FPS cap preserves normal fixed-step catch-up.
-An explicit `resolutionScale` without `resolutionScaleMode` selects `manual` so hosts that
-pass a fixed scale keep that scale. Omitting both keeps the auto default (0.5 start).
+[Implementation, line 30](../../../../src/config/display.ts#L30)
 
 ```ts
-resolveDisplaySettings(value: Partial<DisplaySettings> = {}): DisplaySettings
+presetResolutionScale(preset?: string): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.hasOwn`
+
+## resolveDisplaySettings
+
+[Implementation, line 70](../../../../src/config/display.ts#L70)
+
+```ts
+resolveDisplaySettings(value: Partial<DisplaySettings> = {}, preset?: string): DisplaySettings
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -26,6 +34,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `Number.isInteger`
 - `RangeError`
+- `presetResolutionScale`
 
 Explicit throws in this body:
 

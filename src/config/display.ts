@@ -9,6 +9,32 @@ export const autoResolutionScaleRange = Object.freeze({ min: 0.5, max: 1 })
 /** Inclusive clamps for an explicit host/manual scale. */
 export const manualResolutionScaleRange = Object.freeze({ min: 0.25, max: 1 })
 
+/** Where auto mode starts when the host gives no scale. */
+export const autoResolutionScaleStart = 0.5
+
+/**
+ * Fixed (manual) scale per quality preset when the host leaves resolution unset — a ladder
+ * from Ultra down. Presets without a step of their own (`custom` "Predeterminada", unknown
+ * names, no preset) use the Medium step. Auto stays available (`resolutionScaleMode: 'auto'`).
+ */
+export const presetResolutionScales: Readonly<Record<string, number>> = Object.freeze({
+  ultra: 1,
+  high: 0.9,
+  balanced: 0.8,
+  low: 0.5,
+  mobile: 0.45,
+  minimal: 0.4,
+})
+
+/** {@link presetResolutionScales} entry for `preset`, 0.8 (Medium) when it has none. */
+export function presetResolutionScale(preset?: string): number {
+  return (
+    (preset !== undefined && Object.hasOwn(presetResolutionScales, preset)
+      ? presetResolutionScales[preset]
+      : undefined) ?? presetResolutionScales.balanced
+  )
+}
+
 export interface DisplaySettings {
   /** Maximum automatic frame submissions per second; 0 follows browser cadence. */
   maxFps: number
@@ -16,6 +42,7 @@ export interface DisplaySettings {
    * Drawing-buffer multiplier relative to the selected quality profile.
    * In `manual` mode this is the host-fixed value (0.25..1).
    * In `auto` mode this is the live adapted value, starting at 0.5 and clamped to 0.5..1.
+   * Unset, it is the preset's fixed {@link presetResolutionScales} step (Ultra 1 … Mínima 0.4).
    */
   resolutionScale: number
   /**
@@ -25,31 +52,36 @@ export interface DisplaySettings {
   resolutionScaleMode: ResolutionScaleMode
 }
 
+/** Defaults without a quality preset: a fixed 80% (see {@link presetResolutionScale}). */
 export const displayDefaults: Readonly<DisplaySettings> = Object.freeze({
   maxFps: 0,
-  resolutionScale: 0.5,
-  resolutionScaleMode: 'auto',
+  resolutionScale: presetResolutionScale(),
+  resolutionScaleMode: 'manual',
 })
 
 /**
  * Validate per-runtime overrides; the minimum FPS cap preserves normal fixed-step catch-up.
  * An explicit `resolutionScale` without `resolutionScaleMode` selects `manual` so hosts that
- * pass a fixed scale keep that scale. Omitting both keeps the auto default (0.5 start).
+ * pass a fixed scale keep that scale. Omitting both fixes the quality preset's default
+ * ({@link presetResolutionScales}: Ultra 1, Alta 0.9, Equilibrada 0.8, Baja 0.5, Móvil 0.45,
+ * Mínima 0.4; others 0.8). `resolutionScaleMode: 'auto'` without a scale starts adaptation
+ * at 0.5; `'manual'` without a scale is 1.
  */
-export function resolveDisplaySettings(value: Partial<DisplaySettings> = {}): DisplaySettings {
-  const hasScale = value.resolutionScale !== undefined
+export function resolveDisplaySettings(
+  value: Partial<DisplaySettings> = {},
+  preset?: string,
+): DisplaySettings {
   const hasMode = value.resolutionScaleMode !== undefined
-  const resolutionScaleMode: ResolutionScaleMode = hasMode
-    ? value.resolutionScaleMode!
-    : hasScale
-      ? 'manual'
-      : displayDefaults.resolutionScaleMode
+  // An explicit scale, or none at all (preset step), is fixed unless auto is asked for.
+  const resolutionScaleMode: ResolutionScaleMode = value.resolutionScaleMode ?? 'manual'
   const resolutionScale =
     value.resolutionScale !== undefined
       ? value.resolutionScale
       : resolutionScaleMode === 'auto'
-        ? displayDefaults.resolutionScale
-        : 1
+        ? autoResolutionScaleStart
+        : hasMode
+          ? 1
+          : presetResolutionScale(preset)
   const result: DisplaySettings = {
     maxFps: value.maxFps !== undefined ? value.maxFps : displayDefaults.maxFps,
     resolutionScale,

@@ -12,19 +12,23 @@ override the branding and turn on attract mode.
 
 | Field                 | Meaning                                                                  |
 | --------------------- | ------------------------------------------------------------------------ |
-| `resolutionScaleMode` | `'auto'` (default) adapts live; `'manual'` keeps a fixed host value      |
+| `resolutionScaleMode` | `'manual'` (default) keeps a fixed value; `'auto'` adapts live           |
 | `resolutionScale`     | Multiplier on the quality profile's pixel ratio. Live value in auto mode |
 | `maxFps`              | Unchanged: 0 follows the browser, 30..360 caps automatic submissions     |
 
 Clamps:
 
+- **Default:** manual at the quality preset's step (`presetResolutionScales`): Ultra 1, Alta
+  0.9, Equilibrada 0.8, Baja 0.5, Móvil 0.45, Mínima 0.4; `custom` and unknown presets 0.8.
 - **Auto:** starts at **0.5** and moves within `autoResolutionScaleRange` = **0.5..1**.
 - **Manual:** any value in `manualResolutionScaleRange` = **0.25..1**, never changed by the engine.
 
 Precedence when creating a `GameRuntime`:
 
 ```ts
-new GameRuntime({ display: {} }) // auto, starts at 0.5
+new GameRuntime({ display: {} }) // manual 0.8 (no preset / custom)
+new GameRuntime({ display: {}, performance: { preset: 'ultra' } }) // manual 1 (preset step)
+new GameRuntime({ display: { resolutionScaleMode: 'auto' } }) // auto, starts at 0.5
 new GameRuntime({ display: { resolutionScale: 0.75 } }) // manual 0.75 (explicit scale = fixed)
 new GameRuntime({ display: { resolutionScaleMode: 'auto', resolutionScale: 0.7 } }) // auto from 0.7
 ```
@@ -189,9 +193,9 @@ applySplashSkin(document.getElementById('loading-screen')!, {
   layout: 'corner',
   themeCss: `#loading-screen { --splash-accent: #00a650; --splash-accent-2: #d52b1e; }`,
 })
-const runtime = new GameRuntime({ canvas, scene, tiles /* display omitted → auto 50% */ })
+const runtime = new GameRuntime({ canvas, scene, tiles /* display omitted → fixed 80% */ })
 runtime.startAttract()
-void runtime.probeMachine()
+void runtime.probeMachine() // adjusts the start scale only in auto mode
 await runtime.play({ vehicleId: 'player-vehicle' })
 ```
 
@@ -219,7 +223,7 @@ The bundled game reads a boot config ([game/boot.ts](../game/boot.ts)), highest 
 3. URL: `?boot=attract` / `?boot=classic` (testers; wins over the host), `?probe=0` skips the probe.
 
 `attract: true` defaults the splash to `layout: 'corner'` (an explicit `layout: 'mark'` is kept).
-`probe` (default true) runs only in auto resolution; `probeMs` changes its length.
+`probe` (default true) runs only in auto resolution (`scale=auto`); `probeMs` changes its length.
 
 `cityLabels` (default `true`) controls the floating city / town / village names drawn ~1 km
 above the terrain (tile layer `places`, see [real-world.md](real-world.md)). `cityLabels: false`
@@ -230,4 +234,8 @@ poblaciones**, and the choice is stored relative to the host default. `?layers=+
 `@nabla/engine/render` before constructing the runtime).
 
 The demo menu (**Rendimiento**) has an **Escala automática (50–100%)** checkbox; moving the
-slider switches to manual. URL `scale=auto` or no `scale` keeps auto; `scale=0.75` fixes it.
+slider switches to manual. Without `scale` the slider starts at the quality preset's fixed
+step (table in [configuration.md](configuration.md#display-synchronization-and-scaling)). The
+player's choice is saved in the URL (`scale=auto` or `scale=0.75`) and wins over the preset
+step, also after **Aplicar calidad**; an untouched scale is not saved, so a new quality picks its
+own step.

@@ -4,27 +4,33 @@ import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
 /**
  * Read shareable URL overrides, falling back to Engine defaults for invalid input.
- * `scale=<0.25..1>` fixes the resolution (manual); `scale=auto` or no `scale` keeps auto mode.
+ * The player's saved `scale` wins: `scale=<0.25..1>` fixes it, `scale=auto` adapts live.
+ * Without `scale` the quality preset's fixed step decides (`presetResolutionScales`).
  */
 export function readDisplaySettings(search = location.search): DisplaySettings {
   const params = new URLSearchParams(search)
   const scale = params.get('scale')
+  const preset = params.get('quality') ?? 'custom'
   try {
-    return resolveDisplaySettings({
-      maxFps: Number(params.get('fps') ?? 0),
-      ...(scale !== null && scale !== 'auto'
-        ? { resolutionScale: Number(scale), resolutionScaleMode: 'manual' as const }
-        : { resolutionScaleMode: 'auto' as const }),
-    })
+    return resolveDisplaySettings(
+      {
+        maxFps: Number(params.get('fps') ?? 0),
+        ...(scale === 'auto'
+          ? { resolutionScaleMode: 'auto' as const }
+          : scale !== null
+            ? { resolutionScale: Number(scale), resolutionScaleMode: 'manual' as const }
+            : {}),
+      },
+      preset,
+    )
   } catch {
-    return resolveDisplaySettings()
+    return resolveDisplaySettings({}, preset)
   }
 }
 
-/** True when the URL leaves resolution to auto mode (the boot probe may pick the start scale). */
+/** True when the player chose auto resolution (`scale=auto`); the boot probe then picks the start. */
 export function wantsAutoResolution(search = location.search): boolean {
-  const scale = new URLSearchParams(search).get('scale')
-  return scale === null || scale === 'auto'
+  return new URLSearchParams(search).get('scale') === 'auto'
 }
 
 function scaleLabel(runtime: GameRuntime): string {
@@ -63,11 +69,14 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
       sync()
     } else document.getElementById('game-canvas')?.focus()
   })
+  // Only a scale the player picked is saved; otherwise a later quality change keeps its default.
+  let scaleChosen = new URLSearchParams(location.search).has('scale')
   const persist = () => {
     const url = new URL(location.href)
     const state = runtime.resolutionScaleState
     url.searchParams.set('fps', String(runtime.displaySettings.maxFps))
-    url.searchParams.set('scale', state.mode === 'auto' ? 'auto' : String(state.scale))
+    if (scaleChosen)
+      url.searchParams.set('scale', state.mode === 'auto' ? 'auto' : String(state.scale))
     history.replaceState(null, '', url)
   }
   const applyFps = () => {
@@ -83,6 +92,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
   }
   const applyScale = () => {
     if (!scale.checkValidity()) return
+    scaleChosen = true
     runtime.setDisplay({
       resolutionScale: Number(scale.value) / 100,
       resolutionScaleMode: 'manual',
@@ -94,6 +104,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
   fps.addEventListener('change', applyFps)
   scale.addEventListener('change', applyScale)
   auto?.addEventListener('change', () => {
+    scaleChosen = true
     if (auto.checked) runtime.setDisplay({ resolutionScaleMode: 'auto' })
     else
       runtime.setDisplay({
