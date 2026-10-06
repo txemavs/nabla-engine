@@ -103,6 +103,12 @@ import { gearLabel } from '../entity/vehicle/gear-label.js'
 import { groundAtSeam, waitForGround } from './ground.js'
 import { warmGamePresentation } from './presentation-warmup.js'
 import { GameHud } from './hud.js'
+import { FlipCinematic } from './flip-cinematic.js'
+import {
+  navigationRoads,
+  nearestLocality,
+  nearestStreet,
+} from '../render/entity/navigation-places.js'
 import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
 import { createRuntimeText, type RuntimeLocale } from './messages.js'
 
@@ -165,6 +171,16 @@ export interface GameRuntimeOptions {
    * wheel, accelerator and handbrake visible for mouse and touch. `false` disables them.
    */
   touchControls?: TouchDrivingVisibility | false
+  /**
+   * Cinematic camera after two barrel rolls / flips in under a second.
+   * Default on; hosts and the in-game menu can turn it off.
+   */
+  flipCinematic?: boolean
+  /**
+   * R reset puts the vehicle on the nearest road/vía (scene roads + streamed OSM roads)
+   * instead of uprighting it in place. Default on; hosts and the in-game menu can turn it off.
+   */
+  recoverToRoad?: boolean
   depthOfField?: boolean
   performance?: Partial<PerformanceSettings>
   /** Explicit opt-in; omit to keep offline games independent of external light data. */
@@ -222,6 +238,7 @@ export class GameRuntime {
    */
   private pointerFree = false
   private readonly touchDriving: TouchDriving | null
+  private readonly flipCinematic = new FlipCinematic()
   private readonly touchFlight: TouchFlight | null
   private readonly monitors: VehicleMonitors
   private readonly view: SceneView
@@ -276,10 +293,13 @@ export class GameRuntime {
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
+    this.flipCinematic.enabled = options.flipCinematic !== false
     // Reject malformed JavaScript callers before allocating browser resources.
     if (options.tiles) normalizeTilesBase(options.tiles.baseUrl)
     this.text = createRuntimeText(options.locale, options.messages)
     this.game.text = this.text
+    this.game.recover.snapToRoad = options.recoverToRoad !== false
+    this.game.recover.roads = () => navigationRoads().filter((road) => road.carriageway)
     this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
     this.scene.add(this.wheelDebug.root)
     this.display = resolveDisplaySettings(options.display, options.performance?.preset)
@@ -822,6 +842,45 @@ export class GameRuntime {
       })
       this.wheelDebug.setTerrainMeshes(surfaces)
       this.wheelDebug.update(sim, player.vehicleId, this.origin)
+    }
+    {
+      const city = nearestLocality(player.position).replace(/^Cerca de /, '')
+      const street = nearestStreet(player.position) ?? ''
+      this.touchDriving?.setPlace(city, street)
+      const vid = player.vehicleId
+      const sim = this.session.simulation
+      if (vid && sim) {
+        try {
+          const xf = sim.entityTransform(vid)
+          const [px, py, pz] = xf.position
+          const [qx, qy, qz, qw] = xf.rotation
+          const speed = player.speed
+          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
+            new THREE.Quaternion(qx, qy, qz, qw),
+          )
+          const vel = forward.multiplyScalar(speed)
+          this.flipCinematic.update(
+            time,
+            dt,
+            true,
+            {
+              position: { x: px, y: py, z: pz },
+              quaternion: { x: qx, y: qy, z: qz, w: qw },
+              linvel: () => ({ x: vel.x, y: vel.y, z: vel.z }),
+              angvel: () => {
+                // Best-effort: derive spin from recent up-axis change inside FlipCinematic window.
+                return { x: 0, y: 0, z: 0 }
+              },
+            },
+            this.camera,
+            this.cameraState,
+          )
+        } catch {
+          this.flipCinematic.update(time, dt, false, null, this.camera, this.cameraState)
+        }
+      } else {
+        this.flipCinematic.update(time, dt, false, null, this.camera, this.cameraState)
+      }
     }
     this.hud?.update({
       showSpeed: controls.speed,
@@ -1411,6 +1470,24 @@ export class GameRuntime {
   /** Return per-instance presentation settings without exposing mutable internal state. */
   get displaySettings(): DisplaySettings {
     return { ...this.display }
+  }
+  /** Whether the post-flip cinematic camera is allowed (default on). */
+  get flipCinematicEnabled(): boolean {
+    return this.flipCinematic.enabled
+  }
+  /** Enable or disable the post-flip cinematic camera; aborts an in-flight shot. */
+  setFlipCinematicEnabled(enabled: boolean): void {
+    this.assertAlive()
+    this.flipCinematic.enabled = enabled
+  }
+  /** Whether R reset snaps to the nearest road/vía (default on). */
+  get recoverToRoadEnabled(): boolean {
+    return this.game.recover.snapToRoad
+  }
+  /** Choose between R reset on the nearest road/vía (true) or upright in place (false). */
+  setRecoverToRoadEnabled(enabled: boolean): void {
+    this.assertAlive()
+    this.game.recover.snapToRoad = enabled
   }
   /** Change the host's mute preference without replacing the audio graph. */
   setAudioEnabled(enabled: boolean): void {

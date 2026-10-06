@@ -4,6 +4,8 @@
 const MENU_SECTION_ORDER = [
   'terrain-position',
   'terrain-layers',
+  'camera-extras',
+  'driving-extras',
   'scene-planet',
   'scene-vehicles',
 ] as const
