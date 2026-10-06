@@ -36,7 +36,7 @@ export function saveRecoverToRoadEnabled(
   }
 }
 
-/** Checkbox in its own «Conducción» section (shown under the Posición tab). */
+/** Checkbox in its own «Conducción» section (shown under Ajustes → Opciones). */
 export function bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserStorage()): void {
   const group = menuSection('driving-extras', 'Conducción')
   const label = document.createElement('label')
@@ -52,6 +52,4 @@ export function bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserS
   })
   label.append(box, ' R: reaparecer en la vía más cercana')
   group.append(label)
-  const positionPane = document.getElementById('settings-pane-position')
-  if (positionPane && group.parentElement !== positionPane) positionPane.append(group)
 }

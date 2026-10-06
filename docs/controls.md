@@ -70,6 +70,24 @@ The car must fit completely inside the bay with all four suspension rays support
 by that carrier. Control transfer is a prototype convenience, without a walking
 animation. The ramp changes pose immediately rather than animating gradually.
 
+## Settings menu (Ajustes)
+
+The gear icon (top right) opens **Ajustes**, a tabbed window; **Esc** or «Cerrar» closes it.
+A tab with nothing to show in the current game is hidden (Posición and Capas on the flat demo).
+
+| Tab               | Contents                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Planeta**       | Hora (clock, speed, «Ahora») first; sky / sun / sea / cloud switches; cloud amount and pressure, sun flare; sea level and tide |
+| **Posición**      | current `lat, lon`, «Copiar posición», «Ir a latitud, longitud»                                                                |
+| **Calidad**       | quality profile, FPS limit and resolution scale; «Asfalto» (asphalt contrast)                                                  |
+| **Capas**         | map layers: «Carretera», «Edificios y techos», «Foto del suelo»                                                                |
+| **Vehículos**     | add a vehicle or object; «Volante» (below)                                                                                     |
+| **Opciones**      | «Cámara cinematográfica al volcar», «R: reaparecer en la vía más cercana», «Nombres de poblaciones»                            |
+| **Configuración** | «Valores del planeta» (config text + «Copiar config»); «Terreno» (source, cache, missing cells)                                |
+
+Every control keeps its storage key, URL parameter and host default (`NABLA_BOOT`); only its
+place in the window changed. The placement table is `SECTION_TABS` in `game/settings-hud.ts`.
+
 ## Steering wheel position
 
 Sit in the driver view (**C**), open **Ajustes** (the gear icon, top right) and choose

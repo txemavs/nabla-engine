@@ -4,7 +4,7 @@
 
 [Source](../../../game/asphalt-contrast-ui.ts)
 
-Ajustes → Capas → Asfalto: live asphalt contrast slider (draw time; tile textures untouched).
+Ajustes → Calidad → Asfalto: live asphalt contrast slider (draw time; tile textures untouched).
 
 ## Module dependencies
 
@@ -72,10 +72,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `browserStorage`
 - `document.createElement`
-- `document.getElementById`
 - `group.append`
 - `label.append`
-- `layersPane.append`
 - `menuSection`
 - `output.htmlFor.add`
 - `reset.addEventListener`

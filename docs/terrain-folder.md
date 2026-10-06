@@ -122,7 +122,8 @@ served from that host or through a same-origin mount.
 
 ## Choosing the terrain at runtime
 
-The in-game menu (top right, _Menú_) includes a **Terreno** section:
+The in-game menu includes a **Terreno** section (**Ajustes → Configuración** once the game is running;
+the plain menu if the terrain failed to load):
 
 | Option                  | Meaning                                                       | URL it applies                        |
 | ----------------------- | ------------------------------------------------------------- | ------------------------------------- |

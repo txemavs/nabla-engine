@@ -1,4 +1,4 @@
-/** Ajustes → Capas → Asfalto: live asphalt contrast slider (draw time; tile textures untouched). */
+/** Ajustes → Calidad → Asfalto: live asphalt contrast slider (draw time; tile textures untouched). */
 import {
   ASPHALT_CONTRAST_DEFAULT,
   ASPHALT_CONTRAST_MAX,
@@ -97,8 +97,5 @@ export function bindAsphaltContrastSlider(
   label.append('Contraste del asfalto ', slider, ' ', output)
   group.append(label, reset)
   show()
-  // If the tabbed settings HUD already relocated Capas, keep this section visible there.
-  const layersPane = document.getElementById('settings-pane-layers')
-  if (layersPane && group.parentElement !== layersPane) layersPane.append(group)
   return group
 }

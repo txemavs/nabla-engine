@@ -1,4 +1,7 @@
-/** The in-game menu is the existing `#display-settings` panel; features add titled sections to it in order. */
+/**
+ * The in-game menu is the existing `#display-settings` panel; features add titled sections to it in order.
+ * Once the game starts, the settings HUD (`settings-hud.ts`, `SECTION_TABS`) moves each section into its tab.
+ */
 
 /** Preferred section order after Calidad / Rendimiento. Unknown ids append after these. */
 const MENU_SECTION_ORDER = [
