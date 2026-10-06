@@ -152,6 +152,24 @@ without a steering mesh and out-of-range values fail at startup. Embedding hosts
 data as `GameRuntimeOptions.steeringWheel = { defaults, storage }` (keys are steering GLB URLs
 there). See [Vehicle anchors](vehicle-rigs.md#driver-steering-wheel-adjustment-runtime).
 
+### Host mirror defaults
+
+`?mirrors=` (or `VITE_NABLA_MIRRORS` at build time) sets the mirror glass angles for each vehicle
+model, on top of its baked aim. It is a JSON object keyed by vehicle preset id (`car` is the
+S3, `a3`, `white-truck`, …) or by mirror model (`mirrorModelKey`). Values are degrees per side:
+`yaw` (+ outward, − inward, ±15) and `tilt` (+ up, ±10):
+
+```text
+?mirrors={"car":{"left":{"yaw":-2},"right":{"yaw":-1.5,"tilt":0.5}}}
+```
+
+A player's own choice from **Ajustes → Vehículos → Espejos** is saved in `localStorage` and wins
+over the host default; «Restablecer espejos» returns to the host default. `?mirrors=` wins over
+the build value; a present empty `mirrors=` means no host defaults. Unknown presets and
+out-of-range values fail at startup. Embedding hosts pass `GameRuntimeOptions.mirrors =
+{ defaults, storage }` (keys are mirror models there). See
+[Vehicle anchors](vehicle-rigs.md#driver-mirror-adjustment-runtime).
+
 To play on real Atlas Z15 cells (LiDAR, orthophoto, buildings) use `?terrain=<base>`; see
 [Terrain folder](terrain-folder.md).
 

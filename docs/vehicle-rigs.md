@@ -121,6 +121,51 @@ updates `spinPivot`, so the baked wheel matches the slider vertex for vertex at 
 angle. After a bake, press «Restablecer volante» (or clear `nabla.steeringWheel:<model>`) so a
 saved runtime value doesn't add on top of the new default.
 
+## Driver mirror adjustment (runtime)
+
+**Ajustes → Vehículos → Espejos** (below «Volante») turns each mirror glass of the vehicle the
+player drives, live: «Espejo izquierdo / derecho: giro» (yaw, ±15°) and «… : inclinación»
+(tilt, ±10°), 0.5° steps, shown in degrees, plus «Restablecer espejos». It works for every
+vehicle with cockpit mirrors: the S3 and the A3 (the `Llanta 2` door lenses), the tractor (its
+tagged GLB lenses) and any preset with `vehicle.mirrors` lenses.
+
+- `yaw` turns the glass about the vehicle vertical: **+ outward** (away from the body; the view
+  swings outward), **− inward** (more of your own flank). `tilt` turns it about the horizontal:
+  **+ up**. The reflected view moves by about twice the glass angle.
+- `CarMirrors` turns the live `Reflector` glass (the outside lens mesh stays put). The
+  reflection is computed from that glass at every capture, and a change forces a capture, so
+  the mirror view follows at once. Order: authored lens → vehicle `mirrorTilt` + tilt → yaw.
+- Sides come from the lens tag (`extras.nabla.mirror`) or, for untagged lenses (S3 / A3),
+  from which side of the chassis the lens sits on (`mirrorSideOf`). The outward direction is
+  the chassis ±X.
+- Adjustments are per **mirror model** (`mirrorModelKey`): the body GLB URL plus the steering
+  GLB when there is one. The S3 and the A3 share a body but keep separate mirror settings.
+- Precedence: the player's saved choice, then the host default, then the baked aim. Saved
+  choices live under `nabla.mirrors:<model>`.
+
+Engine API: `SceneView.setMirrorAdjustment(model, {left: {yaw, tilt}, …})`,
+`mirrorAdjustment(model)`, `mirrorModel(vehicleId)`, `mirrorSides(vehicleId)` and the
+`SceneViewOptions.mirrorAdjustment` resolver; `CarMirrors.setAdjustment` / `sides`;
+`GameRuntime.mirrors`, `setMirrorAngle(side, {yaw, tilt})`, `resetMirrorAdjustment` and
+`GameRuntimeOptions.mirrors` (`defaults` by model in degrees per side, `storage`). The game
+passes `localStorage` and reads host defaults from `?mirrors=` (see
+[Game library mode](game-library.md#host-mirror-defaults)).
+
+Every change is logged with `console.info`, per side and as JSON:
+
+```text
+[nabla] Mirrors /library/cars/a3/a3.cabrio.glb#/library/cars/a3/s3.steering.glb: left yaw -2.0° tilt 0.0°, right yaw -1.5° tilt +0.5° {"left":{"yaw":-2,"tilt":0},"right":{"yaw":-1.5,"tilt":0.5}}
+```
+
+The menu shows the same JSON as «Valores para fijarlo». To make it the default for everyone,
+either set it as a host default (`?mirrors={"car":{"left":{"yaw":-2},…}}`) or bake it into the
+preset with `node scripts/bake-mirror-aim.mjs car '<values>'` (`a3`, `white-truck`, … or a
+preset JSON path). That adds the values to the preset's `vehicle.mirrorAim` (degrees per side,
+yaw ±30°, tilt ±20°), which `CarMirrors` applies under the sliders, identical to the slider
+turn. Then press «Restablecer espejos» (or clear `nabla.mirrors:<model>`) so a saved value
+doesn't add on top. The GLBs are not touched; the earlier tractor right-lens fix
+(`scripts/aim-truck-mirrors.mjs`) stays as the authored aim.
+
 ## Instruments and lights
 
 - A3: `instrument.cluster` and four corner nodes for each GPS/menu surface live

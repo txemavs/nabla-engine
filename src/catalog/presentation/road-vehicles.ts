@@ -83,7 +83,14 @@ export const s3Presentation: VehiclePresentationAdapter = {
     if (instruments) instruments.mirrorTilt = e.vehicle?.mirrorTilt ?? -2
     return {
       lights: createA3Lights(model),
-      mirrors: new CarMirrors(candidates, up, e.vehicle?.mirrorTilt ?? -2, policy),
+      mirrors: new CarMirrors(
+        candidates,
+        up,
+        e.vehicle?.mirrorTilt ?? -2,
+        policy,
+        model.parent ?? model,
+        e.vehicle?.mirrorAim,
+      ),
       instruments,
     }
   },
@@ -156,7 +163,16 @@ const stock = new Map<string, VehiclePresentationAdapter>([
         paintWhiteBody(model, entity.color)
         return {
           instruments,
-          mirrors: lenses.length ? new CarMirrors(lenses, up, tilt, policy) : undefined,
+          mirrors: lenses.length
+            ? new CarMirrors(
+                lenses,
+                up,
+                tilt,
+                policy,
+                model.parent ?? model,
+                entity.vehicle?.mirrorAim,
+              )
+            : undefined,
         }
       },
       paint(model, color) {

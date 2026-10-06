@@ -66,6 +66,15 @@ import {
   type SteeringWheelSettings,
 } from './steering-wheel-offsets.js'
 import type { SteeringWheelOffset } from '../render/entity/steering-wheel.js'
+import {
+  defaultMirrorAdjustment,
+  describeMirrorAdjustment,
+  initialMirrorAdjustment,
+  readMirrorAdjustment,
+  writeMirrorAdjustment,
+  type MirrorSettings,
+} from './mirror-adjustment.js'
+import type { MirrorAdjustment, MirrorAngle } from '../render/entity/car-mirrors.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
 import type { Simulation } from '../simulation/simulation.js'
 import * as THREE from 'three'
@@ -160,6 +169,22 @@ export interface SteeringWheelState {
   /** True when the player's own choice is saved for this model. */
   saved: boolean
 }
+/** The mirrors of the vehicle the player drives (see `GameRuntime.mirrors`). */
+export interface MirrorState {
+  vehicleId: string
+  /** Vehicle name for menus, e.g. "S3 Nabla · 400 CV DSG". */
+  name: string
+  /** Mirror model (`mirrorModelKey`). Adjustments are shared per model. */
+  model: string
+  /** Sides this vehicle has mirrors on (`left`, `right`, …). */
+  sides: string[]
+  /** Current glass adjustment per side on top of the authored aim, degrees (absent = 0°/0°). */
+  adjustment: MirrorAdjustment
+  /** What `resetMirrorAdjustment` returns to: the host default, else the authored aim. */
+  defaultAdjustment: MirrorAdjustment
+  /** True when the player's own choice is saved for this model. */
+  saved: boolean
+}
 export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
@@ -228,6 +253,11 @@ export interface GameRuntimeOptions {
    * choice is saved (pass `localStorage` to keep it between visits). See `setSteeringWheelOffset`.
    */
   steeringWheel?: SteeringWheelSettings
+  /**
+   * Driver mirror glass adjustment per mirror model: host defaults and where the player's choice
+   * is saved (pass `localStorage` to keep it between visits). See `setMirrorAngle`.
+   */
+  mirrors?: MirrorSettings
 }
 
 /** Browser composition over the same session, camera, input and effects used by Studio.
@@ -399,6 +429,7 @@ export class GameRuntime {
     this.view = new SceneView(this.document, false, false, {
       mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
       steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
+      mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
     })
     this.scene.add(this.view.root)
     this.monitors = new VehicleMonitors(
@@ -1362,6 +1393,64 @@ export class GameRuntime {
     )
     console.info(`[nabla] Steering wheel ${model} reset: ${describeSteeringWheelOffset(applied)}`)
     return applied
+  }
+  /**
+   * The mirrors of the vehicle the player is in, or null on foot and in vehicles without cockpit
+   * mirrors. Every vehicle of the same mirror model shares one adjustment.
+   */
+  get mirrors(): MirrorState | null {
+    const vehicleId = this.session.simulation?.player.vehicleId
+    const model = vehicleId ? this.view.mirrorModel(vehicleId) : undefined
+    if (!vehicleId || !model) return null
+    const settings = this.options.mirrors
+    return {
+      vehicleId,
+      name: this.document.entities.find((e) => e.id === vehicleId)?.name ?? vehicleId,
+      model,
+      sides: this.view.mirrorSides(vehicleId),
+      adjustment: this.view.mirrorAdjustment(model),
+      defaultAdjustment: defaultMirrorAdjustment(settings, model),
+      saved: readMirrorAdjustment(settings?.storage, model) !== undefined,
+    }
+  }
+  /**
+   * Turn one mirror glass of `model` (default: the player's vehicle) live, on top of the aim baked
+   * into the asset, and save the choice for that model. Degrees: `yaw` + outward / − inward,
+   * `tilt` + up / − down, clamped to `mirrorAngleRange` and snapped to 0.5°. The reflected view
+   * follows the glass. The applied values are logged with `console.info`, ready to become a host
+   * default or a bake. Returns the model's whole adjustment, or null without mirrors.
+   */
+  setMirrorAngle(
+    side: string,
+    angle: Partial<MirrorAngle>,
+    model = this.mirrors?.model,
+  ): MirrorAdjustment | null {
+    this.assertAlive()
+    if (!model) return null
+    const current = this.view.mirrorAdjustment(model)
+    const next = { ...current, [side]: { ...(current[side] ?? { yaw: 0, tilt: 0 }), ...angle } }
+    const applied = this.view.setMirrorAdjustment(model, next)
+    writeMirrorAdjustment(this.options.mirrors?.storage, model, applied)
+    console.info(
+      `[nabla] Mirrors ${model}: ${describeMirrorAdjustment(applied, this.mirrorSidesOf(model))}`,
+    )
+    return applied
+  }
+  /** Forget the saved mirror choice of `model` (default: the player's vehicle); back to the host default. */
+  resetMirrorAdjustment(model = this.mirrors?.model): MirrorAdjustment | null {
+    this.assertAlive()
+    if (!model) return null
+    const settings = this.options.mirrors
+    writeMirrorAdjustment(settings?.storage, model, undefined)
+    const applied = this.view.setMirrorAdjustment(model, defaultMirrorAdjustment(settings, model))
+    console.info(
+      `[nabla] Mirrors ${model} reset: ${describeMirrorAdjustment(applied, this.mirrorSidesOf(model))}`,
+    )
+    return applied
+  }
+  private mirrorSidesOf(model: string): string[] {
+    const id = this.document.entities.find((e) => this.view.mirrorModel(e.id) === model)?.id
+    return id ? this.view.mirrorSides(id).sort() : ['left', 'right']
   }
   /** Remove a vehicle added with `spawnVehicle`. The player must be outside it. */
   removeSpawnedVehicle(id: string): void {
