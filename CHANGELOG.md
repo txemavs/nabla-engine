@@ -112,6 +112,24 @@
   mounts, so it stayed in the hidden legacy menu and could not be switched back on; the «Terreno»
   source / cache section was unreachable the same way. The window now places sections whenever
   they appear. Also, rows the window hides (the duplicate «Mostrar el mar») no longer show.
+- **Overhead (cenital) and chase cameras no longer shake in a rollover.** Root cause:
+  - The overhead view took its heading straight from the chassis quaternion every frame: the
+    nose projected onto the ground, with no smoothing. In a tumble the nose swings above and
+    below the horizon, so that heading flipped by up to 180° at once (measured up to 226 rad/s
+    in a scripted multiple rollover). The view also sits half a frustum ahead of the car along
+    that heading, so every flip threw the camera 10–20 m to the other side.
+  - The chase view had the same raw heading as its target, plus turn anticipation from the
+    tumbling body's spin, so it swung side to side (up to 32 rad/s, 11 reversals).
+  - Exterior cameras now use `GroundHeading`, a roll-independent heading. While upright it is
+    the nose projected onto the ground, followed critically damped with yaw-rate feed-forward,
+    so driving feel is unchanged. While tumbling (detected with hysteresis) it holds, or aims
+    along the line of travel, turning at most 1.2 rad/s; it then eases round to the new nose.
+  - The overhead view centre follows through `CriticalFollow`, a critically damped spring with
+    velocity feed-forward.
+  - Chase turn anticipation is muted while tumbling. The chase path is otherwise unchanged
+    while driving upright.
+  - New `GameCameraSettings`: `mapHeadingResponse`, `mapFollowResponse`, `mapMaxYawRate` and
+    `tumble*`.
 - **Vehicles no longer roll back when entered:** the drivetrain was created in D1 and kept
   whatever gear it was left in, so entering a vehicle released the unoccupied parking brake with
   the selector in D (or R) and no pedal, and it rolled down any slope. A braked vehicle also

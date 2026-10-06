@@ -15,7 +15,10 @@ import {
   overheadDrivingHeight,
   overheadFootHeight,
   followDrivingHeading,
+  headingDirection,
+  CriticalFollow,
   DrivingTelemetry,
+  GroundHeading,
 } from '../render/entity/driving-camera.js'
 import { advanceCinematicAngle, cinematicOrbitPose } from '../render/entity/cinematic-camera.js'
 
@@ -50,6 +53,10 @@ export interface GameCameraState {
   telemetry: DrivingTelemetry
   /** Current upward tilt of the flight chase camera, radians; eases toward `flightChaseTilt`. */
   flightTilt: number
+  /** Roll-independent smoothed vehicle heading; keeps exterior views calm in a rollover. */
+  groundHeading: GroundHeading
+  /** Critically damped overhead anchor that follows the vehicle. */
+  mapFollow: CriticalFollow
 }
 
 /** Create independent camera state and validate per-consumer recovery overrides. */
@@ -72,6 +79,8 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     entrance: null,
     telemetry: new DrivingTelemetry(resolved),
     flightTilt: 0,
+    groundHeading: new GroundHeading(resolved),
+    mapFollow: new CriticalFollow(),
   }
 }
 
@@ -204,17 +213,46 @@ export function updateGameCamera(
     camera.fov = fov
     camera.updateProjectionMatrix()
   }
-  const vehicleForward = info
-    ? new THREE.Vector3(0, 0, -1).applyQuaternion(
-        new THREE.Quaternion(...sim.entityTransform(p.vehicleId!, true).rotation),
-      )
+  const vehicleRotation = info ? sim.entityTransform(p.vehicleId!, true).rotation : null
+  const vehicleForward = vehicleRotation
+    ? new THREE.Vector3(0, 0, -1).applyQuaternion(new THREE.Quaternion(...vehicleRotation))
     : new THREE.Vector3(0, 0, -1)
+  // Rollovers: the raw chassis heading flips and spins; exterior views use the
+  // roll-independent tracker until the car has settled (`calm` back at 1).
+  const groundHeading = state.groundHeading
+  const frameQ = playerFrame ? playerFrameQ : null
+  if (vehicleRotation) {
+    groundHeading.update(p.vehicleId!, p.position, vehicleRotation, frameQ, dt)
+    // The overhead view centre: half a vertical half-frustum ahead of the car along the smoothed
+    // heading, so the car projects to 75% screen height. Following the centre (not the car)
+    // also filters the look-ahead swing while the heading turns.
+    const lookAhead = mapHeight * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.5
+    state.mapFollow.update(
+      new THREE.Vector3(...p.position).addScaledVector(
+        headingDirection(groundHeading.heading, frameQ),
+        lookAhead,
+      ),
+      dt,
+      THREE.MathUtils.lerp(
+        tuning.tumbleFollowResponse,
+        tuning.mapFollowResponse,
+        groundHeading.calm * groundHeading.calm,
+      ),
+      tuning.maxStepSeconds,
+    )
+  } else {
+    groundHeading.clear()
+    state.mapFollow.reset()
+  }
+  const calm = vehicleRotation ? groundHeading.calm : 1
+  const steadyForward = calm < 1 ? headingDirection(groundHeading.heading, frameQ) : vehicleForward
   if (info && !info.flightMode && !cockpit) {
-    const wanted = Math.atan2(-vehicleForward.x, -vehicleForward.z)
+    const wanted = Math.atan2(-steadyForward.x, -steadyForward.z)
     yaw = followDrivingHeading(
       yaw,
       wanted,
-      drivingTelemetry.turnRate,
+      // Spin about the vertical axis is no cornering cue while the car tumbles.
+      drivingTelemetry.turnRate * calm,
       drivingTelemetry.speed,
       dt,
       now - lastLookTime,
@@ -260,23 +298,21 @@ export function updateGameCamera(
     mapHeight +=
       (wantedHeight - mapHeight) *
       (1 - Math.exp(-tuning.mapDamping * Math.min(dt, tuning.maxStepSeconds)))
-    // Vehicles: offset half a vertical half-frustum so the car projects to 75% screen height.
+    // Vehicles: the followed view centre already sits ahead of the car (see `mapFollow`).
     // On foot the player stays centred; turning would otherwise swing the whole view.
-    const lookAhead = p.vehicleId
-      ? mapHeight * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.5
-      : 0
-    const heading = p.vehicleId
-      ? sim.entityTransform(p.vehicleId, true).rotation
-      : playerFrameQ
-          .clone()
-          .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw))
-          .toArray()
+    // Vehicles: the smoothed, roll-independent heading and the critically damped anchor, so a
+    // rollover never rolls, flips or swings the view. On foot: the walking heading.
+    const headingYaw = p.vehicleId ? groundHeading.heading : yaw
+    const heading = playerFrameQ
+      .clone()
+      .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), headingYaw))
+      .toArray()
     const map = overheadDrivingPose(
-      p.position,
+      p.vehicleId ? state.mapFollow.position.toArray() : p.position,
       heading,
       mapHeight,
       new THREE.Vector3(0, 1, 0).applyQuaternion(playerFrameQ),
-      lookAhead,
+      0,
     )
     camera.up.copy(map.up)
     camera.position.copy(map.position)
@@ -325,8 +361,8 @@ export function updateGameCamera(
       const ahead =
         Math.min(tuning.maxLookAhead, drivingTelemetry.speed * tuning.lookAheadSeconds) *
         cameraRecovery(now - lastLookTime, state.settings)
-      target[0] += vehicleForward.x * ahead
-      target[2] += vehicleForward.z * ahead
+      target[0] += steadyForward.x * ahead
+      target[2] += steadyForward.z * ahead
     }
     const distance =
       (info?.cameraDistance ?? tuning.chaseDistance) *

@@ -250,12 +250,21 @@ gets the same modes.
 | → back to exterior | → back to first person |
 
 - **Overhead (cenital)** looks straight down at the vehicle or player and follows it
-  without lag. It is **heading-up**: the vehicle's nose, or on foot the walking heading,
+  (critically damped, with velocity feed-forward, so there is no lag at steady speed). It is
+  **heading-up**: the vehicle's nose, or on foot the walking heading,
   points to the top of the screen, so W always moves up the screen and the map turns
   around you (north-up would make steering mirror-reversed when driving south). In a
   vehicle it keeps the existing framing (car at 75% of screen height, 45–600 m, height
   grows with speed). On foot the player stays centred at `footMapHeight` (18 m) × wheel zoom
   0.75–3× (about 13–54 m); move the mouse to turn.
+- **Crashes and rollovers.** The overhead and exterior views never inherit the vehicle's roll
+  or pitch. They use a smoothed, roll-independent heading (`GroundHeading`): the nose
+  projected onto the ground while the car is upright. While it tumbles (on its side or roof,
+  nose steeply up or down, or rolling fast), the heading holds or follows the line of travel
+  and turns at most `tumbleMaxYawRate` (1.2 rad/s). Once the car has settled upright it eases
+  round to the new nose. The overhead view follows its centre point with a critically damped
+  spring that is calmer while tumbling, so a multiple rollover is followed smoothly from above
+  instead of shaking side to side.
 - **Cinematic** is a slow drone orbit: one full turn every `cinematicOrbitSeconds` (48 s)
   at about 2.4× the vehicle's chase distance (minimum 9 m), slightly above (`cinematicElevation`)
   with a gentle vertical drift and a longer 38° lens. It starts behind the current heading,
