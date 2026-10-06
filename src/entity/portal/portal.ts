@@ -78,6 +78,29 @@ export function validatePortal(
     throw new Error('Paired portals must have equal apertures and modes')
 }
 
+/**
+ * Runtime installs (`addVehicles`) may bring portal mouths along with their vehicles, such as
+ * the carrier stern portal from `presetEntities`. Each must be an unlinked, closed mouth hosted
+ * on a vehicle of the same batch; ids must be new. Throws before anything is installed.
+ */
+export function assertHostedMouths(
+  mouths: readonly Entity[],
+  vehicles: readonly Entity[],
+  existing: ReadonlyMap<string, Entity>,
+): void {
+  const byId = new Map(existing)
+  for (const e of vehicles) byId.set(e.id, e)
+  for (const mouth of mouths) {
+    if (!mouth.portal || !vehicles.some((v) => v.id === mouth.parentId))
+      throw new Error(`Entity ${mouth.id} must be a portal hosted by a vehicle in the same batch`)
+    if (byId.has(mouth.id)) throw new Error(`Entity id already in use: ${mouth.id}`)
+    if (mouth.portal.pairId !== null || mouth.portal.mode !== 'closed')
+      throw new Error(`Portal ${mouth.id} must be added unlinked and closed`)
+    validatePortal(mouth, byId, true)
+    byId.set(mouth.id, mouth)
+  }
+}
+
 /** One independent, closed mouth. Its transform origin is the aperture centre. */
 export function createPortal(id: string, position: Vec3Tuple = [0, 0, 0]): Entity {
   return {
