@@ -26,6 +26,10 @@
 
 ### Fixed
 
+- **S3 steering wheel too far from the dashboard:** the rim sat ~2–3 cm back toward the
+  driver. It now sits 3 cm further along the steering column toward the gauges (chassis: 2.8 cm
+  forward, 1.1 cm down; column pivot and spin axis unchanged). Only `s3.steering.glb` changes
+  (`scripts/move-s3-steering-wheel.mjs`); the A3 wheel and the shared anchor are untouched.
 - **Carrier portal monitor dark on host-placed ships:** a carrier added after start
   (`?vehicles=` / `installHostVehicles`, or "Añadir vehículo") was installed without its stern
   portal, so the left door monitor (the PORTAL console) stayed black and had no destination,

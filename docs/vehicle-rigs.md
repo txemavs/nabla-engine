@@ -41,6 +41,10 @@ adjust their placement from now on.
 The S3's former presentation-code steering alignment is baked into the dedicated
 `s3.steering.glb` mesh, keeping its animation pivot unchanged. The A3 retains its
 original steering mesh. Both share the body anchors.
+The S3 rim was later moved 3 cm forward along its column (model +Z, toward the
+instrument cluster) by `scripts/move-s3-steering-wheel.mjs`, which slides the alignment root
+of `s3.steering.glb` only (recorded as `extras.nabla.columnForward`); in chassis metres that is
+2.8 cm forward and 1.1 cm down. The shared `steering` anchor and the A3 wheel are unchanged.
 
 The modern tractor keeps the supplied hub and fifth-wheel positions. Semantic
 metadata was added to those nodes; wheel orientations and the missing steering
