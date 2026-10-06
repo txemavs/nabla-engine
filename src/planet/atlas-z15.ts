@@ -15,6 +15,7 @@
  *     role roads.supports / road.supports.candidate -> same; `engineLoad` is provenance, not a skip
  *     role roads.collision / road.collision.candidate -> inspect-only GLB; not loaded unless inspectRoadCollision
  *   manifest.roadCandidates (schema nabla-road-candidates/1) -> same `manifest.roads` mapping
+ *     per layer, manifest.json wins; a disagreeing package file is that layer's `fallback`
  *   role osm.snapshot -> `manifest.osmSnapshot` (gzip Overpass cell; in-car GPS streets)
  *   every other role (masks, classes, instances, roofs, licences) is
  *   listed but not consumed by the engine yet; see docs/terrain-folder.md.
@@ -22,6 +23,7 @@
  * Pure data: no DOM, no network. `fetchTileManifest` performs the (verified) fetches.
  */
 import {
+  readCandidateRoads,
   validatePlanetManifest,
   type PlanetCandidateRoadFile,
   type PlanetCandidateRoadKind,
@@ -185,6 +187,12 @@ function roadsFromPackage(pkg: AtlasZ15Package): PlanetCandidateRoads | undefine
   }
 }
 
+/**
+ * Merge the roads named by manifest.json with the roads named by the package index, per layer.
+ * manifest.json is switched last by the publisher, so its file wins; a package file that
+ * disagrees becomes that layer's `fallback` (loaded if the manifest's file fails). A mismatch
+ * never drops the cell's roads, and a layer only one side lists is kept.
+ */
 function mergeCandidateRoads(
   existing: PlanetCandidateRoads | undefined,
   fromPackage: PlanetCandidateRoads | undefined,
@@ -192,16 +200,15 @@ function mergeCandidateRoads(
   if (!existing) return fromPackage
   if (!fromPackage) return existing
   const files: PlanetCandidateRoads['files'] = { ...fromPackage.files }
+  const warnings = [...(existing.warnings ?? [])]
   for (const kind of ['asphalt', 'supports', 'collision'] as const) {
     const published = existing.files[kind]
     const packaged = fromPackage.files[kind]
-    if (
-      published &&
-      packaged &&
-      (published.path !== packaged.path || published.sha256 !== packaged.sha256)
-    )
-      throw new Error(`Atlas package roads.${kind} does not match manifest.json`)
-    if (published) files[kind] = published
+    if (!published) continue
+    if (packaged && (published.path !== packaged.path || published.sha256 !== packaged.sha256)) {
+      warnings.push(`Atlas package roads.${kind} differs from manifest.json; kept as fallback`)
+      files[kind] = { ...published, fallback: published.fallback ?? packaged }
+    } else files[kind] = published
   }
   return {
     drivable: existing.drivable ?? fromPackage.drivable,
@@ -212,6 +219,7 @@ function mergeCandidateRoads(
     engineLoad: existing.engineLoad ?? fromPackage.engineLoad,
     provenance: existing.provenance,
     files,
+    ...(warnings.length ? { warnings } : {}),
   }
 }
 
@@ -253,7 +261,8 @@ export function adaptAtlasManifest(
       sha256: lidar.sha256,
     }
   }
-  const roads = mergeCandidateRoads(adapted.roads, roadsFromPackage(pkg))
+  // Read manifest.json roads in every published shape (roads, roadCandidates, files.roads-*).
+  const roads = mergeCandidateRoads(readCandidateRoads(adapted), roadsFromPackage(pkg))
   if (roads) adapted.roads = roads
   const osm = atlasFile(pkg, 'osm.snapshot')
   if (osm)

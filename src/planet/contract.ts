@@ -54,6 +54,12 @@ export interface PlanetCandidateRoadFile extends PlanetLayerFile {
   drivable?: boolean
   role?: string
   engineLoad?: string
+  /**
+   * Another published file for the same layer, kept when two pointers disagree (manifest vs
+   * package, or two manifest shapes). The worker loads it when this file fails; a road layer is
+   * never dropped because of a pointer mismatch.
+   */
+  fallback?: PlanetCandidateRoadFile
 }
 
 /** Atlas `#49` layer pointer. `download` is optional; the loader defaults it to `path`. */
@@ -81,6 +87,8 @@ export interface PlanetCandidateRoads {
   engineLoad?: Partial<Record<PlanetCandidateRoadKind, string>>
   provenance?: Record<string, unknown>
   files: Partial<Record<PlanetCandidateRoadKind, PlanetCandidateRoadFile>>
+  /** Per-layer problems that were tolerated (ignored entry, conflicting pointer kept as fallback). */
+  warnings?: string[]
 }
 
 /**
@@ -178,6 +186,8 @@ export interface PlanetPayload {
   }
   /** Worker milliseconds per phase (download, SHA-256, GLB parse, photo decode, collision build). */
   timings?: { fetch: number; verify: number; parse: number; photo: number; collision: number }
+  /** Road layer files that failed to load; the cell loaded anyway (with a fallback when listed). */
+  roadErrors?: string[]
 }
 export interface PlanetCollisionChunk {
   key: string
@@ -190,6 +200,8 @@ export interface PlanetGlbLayer {
   name: PlanetRequiredLayer | PlanetCandidateRoadFileKey
   kind: PlanetGlbKind
   file: PlanetLayerFile
+  /** Road layers only: the alternative published file to load when `file` fails. */
+  fallback?: PlanetLayerFile
 }
 
 /** Hash-named or evidence-named candidate road GLB inside the cell directory. */
@@ -253,11 +265,24 @@ function publishedDrivable(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined
 }
 
+function sameRoadFile(a: PlanetLayerFile, b: PlanetLayerFile): boolean {
+  return a.path === b.path && a.sha256 === b.sha256
+}
+
 function candidateRoadFile(value: unknown): PlanetCandidateRoadFile {
   const raw = value as PlanetCandidateRoadFile
   const file = layerFile(raw, isCandidateRoadGlbPath, 'Invalid planet road layer')
   const drivable = publishedDrivable(raw?.drivable)
-  return drivable === undefined ? file : { ...file, drivable }
+  const out: PlanetCandidateRoadFile = drivable === undefined ? file : { ...file, drivable }
+  if (raw?.fallback !== undefined) {
+    try {
+      const fallback = candidateRoadFile({ ...raw.fallback, fallback: undefined })
+      if (!sameRoadFile(fallback, out)) out.fallback = fallback
+    } catch {
+      // An invalid fallback is ignored; the primary file stays.
+    }
+  }
+  return out
 }
 
 function optionalText(value: unknown): string | undefined {
@@ -276,22 +301,44 @@ function publishedEngineLoad(
   return Object.keys(out).length ? out : undefined
 }
 
+/**
+ * Add one published pointer for a road layer. Bridges and asphalt are never dropped for a
+ * per-layer problem: an invalid entry is ignored (the other sources still count), and a pointer
+ * that disagrees with the first one is kept as that layer's `fallback`.
+ */
 function takeRoadFile(
   files: PlanetCandidateRoads['files'],
   kind: PlanetCandidateRoadKind,
   value: unknown,
+  warnings: string[],
+  source: string,
 ): void {
   if (value === undefined) return
-  const file = candidateRoadFile(value)
+  let file: PlanetCandidateRoadFile
+  try {
+    file = candidateRoadFile(value)
+  } catch {
+    warnings.push(`${source}.${kind}: invalid entry ignored`)
+    return
+  }
   const existing = files[kind]
-  if (existing && (existing.path !== file.path || existing.sha256 !== file.sha256))
-    throw Error('Invalid planet road layers')
-  files[kind] = existing ?? file
+  if (!existing) {
+    files[kind] = file
+    return
+  }
+  if (sameRoadFile(existing, file)) {
+    if (!existing.fallback && file.fallback) files[kind] = { ...existing, fallback: file.fallback }
+    return
+  }
+  warnings.push(`${source}.${kind}: differs from the current publication; kept as fallback`)
+  if (!existing.fallback) files[kind] = { ...existing, fallback: file }
 }
 
 /**
  * Normalize `#88` `roads.files.*`, Atlas `#49` `roadCandidates.layers.*`, and
  * optional `files.roads-*`. `drivable` and `engineLoad` are provenance only.
+ * The first source wins per layer (`roadCandidates.layers`, the current publication); a
+ * disagreeing pointer becomes that layer's fallback instead of failing the whole tile.
  */
 export function readCandidateRoads(manifest: PlanetManifest): PlanetCandidateRoads | undefined {
   const block = manifest.roads
@@ -308,14 +355,17 @@ export function readCandidateRoads(manifest: PlanetManifest): PlanetCandidateRoa
   )
     throw Error('Invalid planet road layers')
   const files: PlanetCandidateRoads['files'] = {}
+  const warnings: string[] = Array.isArray(block?.warnings)
+    ? block.warnings.filter((w): w is string => typeof w === 'string')
+    : []
   for (const kind of ROAD_KINDS) {
-    takeRoadFile(files, kind, published?.layers?.[kind])
-    takeRoadFile(files, kind, manifest.files?.[FILE_ROAD_KEYS[kind]])
-    takeRoadFile(files, kind, block?.files?.[kind])
+    takeRoadFile(files, kind, published?.layers?.[kind], warnings, 'roadCandidates.layers')
+    takeRoadFile(files, kind, manifest.files?.[FILE_ROAD_KEYS[kind]], warnings, 'files')
+    takeRoadFile(files, kind, block?.files?.[kind], warnings, 'roads.files')
   }
   const present = ROAD_KINDS.filter((kind) => files[kind])
-  if (!block && !published && !present.length) return undefined
-  if (!present.length) throw Error('Invalid planet road layers')
+  // No usable road layer: the tile still loads (terrain, buildings), only without candidate roads.
+  if (!present.length) return undefined
   const normalized: PlanetCandidateRoads['files'] = {}
   for (const kind of present) normalized[kind] = files[kind]!
   return {
@@ -329,6 +379,7 @@ export function readCandidateRoads(manifest: PlanetManifest): PlanetCandidateRoa
     provenance:
       block?.provenance && typeof block.provenance === 'object' ? block.provenance : undefined,
     files: normalized,
+    ...(warnings.length ? { warnings: [...new Set(warnings)] } : {}),
   }
 }
 
@@ -367,11 +418,17 @@ export function planetTileGlbLayers(
       file: manifest.files['buildings-osm'],
     })
   const roads = readCandidateRoads(manifest)?.files
-  if (roads?.asphalt) layers.push({ name: 'roads-asphalt', kind: 'asphalt', file: roads.asphalt })
-  if (roads?.supports)
-    layers.push({ name: 'roads-supports', kind: 'supports', file: roads.supports })
+  const road = (
+    name: PlanetCandidateRoadFileKey,
+    kind: PlanetCandidateRoadKind,
+    file: PlanetCandidateRoadFile,
+  ): PlanetGlbLayer =>
+    file.fallback ? { name, kind, file, fallback: file.fallback } : { name, kind, file }
+  if (roads?.asphalt) layers.push(road('roads-asphalt', 'asphalt', roads.asphalt))
+  // Bridge supports are always loaded when published: they are never filtered client-side.
+  if (roads?.supports) layers.push(road('roads-supports', 'supports', roads.supports))
   if (options.inspectRoadCollision && roads?.collision)
-    layers.push({ name: 'roads-collision', kind: 'collision', file: roads.collision })
+    layers.push(road('roads-collision', 'collision', roads.collision))
   return layers
 }
 

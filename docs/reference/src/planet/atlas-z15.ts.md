@@ -20,6 +20,7 @@ module adds only what the loader cannot know:
     role roads.supports / road.supports.candidate -> same; `engineLoad` is provenance, not a skip
     role roads.collision / road.collision.candidate -> inspect-only GLB; not loaded unless inspectRoadCollision
   manifest.roadCandidates (schema nabla-road-candidates/1) -> same `manifest.roads` mapping
+    per layer, manifest.json wins; a disagreeing package file is that layer's `fallback`
   role osm.snapshot -> `manifest.osmSnapshot` (gzip Overpass cell; in-car GPS streets)
   every other role (masks, classes, instances, roofs, licences) is
   listed but not consumed by the engine yet; see docs/terrain-folder.md.
@@ -33,7 +34,7 @@ Pure data: no DOM, no network. `fetchTileManifest` performs the (verified) fetch
 
 ## isAtlasFileName
 
-[Implementation, line 88](../../../../src/planet/atlas-z15.ts#L88)
+[Implementation, line 90](../../../../src/planet/atlas-z15.ts#L90)
 
 True for a safe file name inside the cell directory (no separators, no dot files).
 
@@ -48,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atlasPackageRef
 
-[Implementation, line 93](../../../../src/planet/atlas-z15.ts#L93)
+[Implementation, line 95](../../../../src/planet/atlas-z15.ts#L95)
 
 Validate the `z15Package` pointer an Atlas manifest carries. Undefined for a plain engine tile.
 
@@ -69,7 +70,7 @@ Explicit throws in this body:
 
 ## validateAtlasZ15Package
 
-[Implementation, line 111](../../../../src/planet/atlas-z15.ts#L111)
+[Implementation, line 113](../../../../src/planet/atlas-z15.ts#L113)
 
 Strictly validate a parsed `nabla-z15-package/1` document against the tile it was fetched for.
 
@@ -97,7 +98,7 @@ Explicit throws in this body:
 
 ## atlasFile
 
-[Implementation, line 147](../../../../src/planet/atlas-z15.ts#L147)
+[Implementation, line 149](../../../../src/planet/atlas-z15.ts#L149)
 
 First file of a role, or undefined.
 
@@ -109,17 +110,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `pkg.files.find`
 
-## atlasFile.callback@148
+## atlasFile.callback@150
 
-[Implementation, line 148](../../../../src/planet/atlas-z15.ts#L148)
+[Implementation, line 150](../../../../src/planet/atlas-z15.ts#L150)
 
 ```ts
-callback@148(f): inferred by TypeScript; see implementation
+callback@150(f): inferred by TypeScript; see implementation
 ```
 
 ## atlasRoadFile
 
-[Implementation, line 151](../../../../src/planet/atlas-z15.ts#L151)
+[Implementation, line 153](../../../../src/planet/atlas-z15.ts#L153)
 
 ```ts
 atlasRoadFile(pkg: AtlasZ15Package, kind: PlanetCandidateRoadKind): AtlasZ15File | undefined
@@ -131,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## candidateFromAtlas
 
-[Implementation, line 162](../../../../src/planet/atlas-z15.ts#L162)
+[Implementation, line 164](../../../../src/planet/atlas-z15.ts#L164)
 
 ```ts
 candidateFromAtlas(file: AtlasZ15File): PlanetCandidateRoadFile
@@ -139,7 +140,7 @@ candidateFromAtlas(file: AtlasZ15File): PlanetCandidateRoadFile
 
 ## roadsFromPackage
 
-[Implementation, line 172](../../../../src/planet/atlas-z15.ts#L172)
+[Implementation, line 174](../../../../src/planet/atlas-z15.ts#L174)
 
 ```ts
 roadsFromPackage(pkg: AtlasZ15Package): PlanetCandidateRoads | undefined
@@ -152,7 +153,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mergeCandidateRoads
 
-[Implementation, line 188](../../../../src/planet/atlas-z15.ts#L188)
+[Implementation, line 196](../../../../src/planet/atlas-z15.ts#L196)
+
+Merge the roads named by manifest.json with the roads named by the package index, per layer.
+manifest.json is switched last by the publisher, so its file wins; a package file that
+disagrees becomes that layer's `fallback` (loaded if the manifest's file fails). A mismatch
+never drops the cell's roads, and a layer only one side lists is kept.
 
 ```ts
 mergeCandidateRoads(existing: PlanetCandidateRoads | undefined, fromPackage: PlanetCandidateRoads | undefined): PlanetCandidateRoads | undefined
@@ -160,15 +166,11 @@ mergeCandidateRoads(existing: PlanetCandidateRoads | undefined, fromPackage: Pla
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Error`
-
-Explicit throws in this body:
-
-- `new Error(\`Atlas package roads.${kind} does not match manifest.json\`)`
+- `warnings.push`
 
 ## adaptAtlasManifest
 
-[Implementation, line 223](../../../../src/planet/atlas-z15.ts#L223)
+[Implementation, line 231](../../../../src/planet/atlas-z15.ts#L231)
 
 Build the manifest the standard loader consumes. The input is not mutated.
 The engine terrain/buildings listed by the package must be the very files the manifest
@@ -183,6 +185,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Error`
 - `atlasFile`
 - `mergeCandidateRoads`
+- `readCandidateRoads`
 - `roadsFromPackage`
 - `structuredClone`
 - `validatePlanetManifest`
@@ -195,7 +198,7 @@ Explicit throws in this body:
 
 ## atlasCompatibilityNotes
 
-[Implementation, line 283](../../../../src/planet/atlas-z15.ts#L283)
+[Implementation, line 292](../../../../src/planet/atlas-z15.ts#L292)
 
 Human-readable differences between an Atlas cell and what the engine produces itself.
 
@@ -211,20 +214,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pkg.files.map`
 - `unused.join`
 
-## atlasCompatibilityNotes.callback@296
+## atlasCompatibilityNotes.callback@305
 
-[Implementation, line 296](../../../../src/planet/atlas-z15.ts#L296)
+[Implementation, line 305](../../../../src/planet/atlas-z15.ts#L305)
 
 ```ts
-callback@296(f): inferred by TypeScript; see implementation
+callback@305(f): inferred by TypeScript; see implementation
 ```
 
-## atlasCompatibilityNotes.callback@297
+## atlasCompatibilityNotes.callback@306
 
-[Implementation, line 297](../../../../src/planet/atlas-z15.ts#L297)
+[Implementation, line 306](../../../../src/planet/atlas-z15.ts#L306)
 
 ```ts
-callback@297(r): inferred by TypeScript; see implementation
+callback@306(r): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -233,7 +236,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atlasPackageUrl
 
-[Implementation, line 304](../../../../src/planet/atlas-z15.ts#L304)
+[Implementation, line 313](../../../../src/planet/atlas-z15.ts#L313)
 
 URL of the package JSON, next to manifest.json.
 
@@ -248,7 +251,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atlasFileUrl
 
-[Implementation, line 308](../../../../src/planet/atlas-z15.ts#L308)
+[Implementation, line 317](../../../../src/planet/atlas-z15.ts#L317)
 
 URL of a file inside the cell directory.
 
@@ -269,7 +272,7 @@ Explicit throws in this body:
 
 ## atlasPhotoFor
 
-[Implementation, line 317](../../../../src/planet/atlas-z15.ts#L317)
+[Implementation, line 326](../../../../src/planet/atlas-z15.ts#L326)
 
 Photo quality for one cell: the wanted quality near the player, the small `lo` photo farther away
 (16x fewer pixels to download, decode and keep on the GPU). `none` and `lo` are never upgraded.
