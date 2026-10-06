@@ -5,6 +5,62 @@ import type { Transform, Vec3Tuple } from '../../entity/schema.js'
 export const MAX_IMPACT_MARKS = 96
 /** Distance a mark stands off the hit surface along its normal, metres (keeps it out of z-fighting). */
 export const IMPACT_MARK_STANDOFF = 0.012
+/** Radius of the opaque bullet hole, metres. */
+export const IMPACT_MARK_HOLE_RADIUS = 0.04
+/** Outer radius of the mark (hole plus scorch, fading to fully transparent), metres. */
+export const IMPACT_MARK_RADIUS = 0.085
+/** Side of the generated square mark texture, texels. */
+export const IMPACT_MARK_TEXTURE_SIZE = 64
+/** Peak opacity of the dark scorch just outside the hole; it fades to 0 at the rim. */
+const SCORCH_ALPHA = 0.55
+/** Width of the anti-aliased hole edge, as a fraction of the mark radius. */
+const HOLE_EDGE = 0.06
+/** Hole and scorch colours (sRGB 0–255). Dark everywhere, also under alpha 0, so texture
+ * filtering and mipmaps never bleed a light fringe. */
+const HOLE_RGB = [10, 10, 10] as const
+const SCORCH_RGB = [22, 18, 14] as const
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * RGBA texels of a shot mark: an opaque near-black hole with a soft dark scorch that fades
+ * to alpha 0 at the rim. No light pixels anywhere, so it only darkens the surface it sits on
+ * (light ground or dark walls alike). Row-major, `size × size × 4`.
+ */
+export function impactMarkPixels(size = IMPACT_MARK_TEXTURE_SIZE): Uint8Array {
+  const data = new Uint8Array(size * size * 4)
+  const hole = IMPACT_MARK_HOLE_RADIUS / IMPACT_MARK_RADIUS
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      // Texel centre in [-1, 1]; r = 1 is the mark rim.
+      const u = ((x + 0.5) / size) * 2 - 1,
+        v = ((y + 0.5) / size) * 2 - 1
+      const r = Math.hypot(u, v)
+      const inHole = 1 - smoothstep(hole - HOLE_EDGE / 2, hole + HOLE_EDGE / 2, r)
+      const fade = 1 - smoothstep(hole, 1, r)
+      const scorch = SCORCH_ALPHA * fade * fade
+      const alpha = inHole + (1 - inHole) * scorch
+      const at = (y * size + x) * 4
+      for (let c = 0; c < 3; c++)
+        data[at + c] = Math.round(HOLE_RGB[c] * inHole + SCORCH_RGB[c] * (1 - inHole))
+      data[at + 3] = r >= 1 ? 0 : Math.round(255 * Math.min(1, alpha))
+    }
+  return data
+}
+
+/** Shot mark texture (see {@link impactMarkPixels}), mipmapped so far marks stay soft. */
+export function impactMarkTexture(size = IMPACT_MARK_TEXTURE_SIZE): THREE.DataTexture {
+  const texture = new THREE.DataTexture(impactMarkPixels(size), size, size)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.magFilter = THREE.LinearFilter
+  texture.minFilter = THREE.LinearMipmapLinearFilter
+  texture.generateMipmaps = true
+  texture.needsUpdate = true
+  return texture
+}
 
 /**
  * Bounded shot marks. Entity hits parent into the hit object's local frame so they
@@ -12,24 +68,20 @@ export const IMPACT_MARK_STANDOFF = 0.012
  * entity id) parent under a scene root that shares the floating-origin shift.
  */
 export class ImpactMarks {
-  private readonly coreGeom = new THREE.CircleGeometry(0.04, 14)
-  private readonly ringGeom = new THREE.RingGeometry(0.04, 0.085, 18)
-  private readonly coreMat = new THREE.MeshBasicMaterial({
-    color: '#141414',
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -2,
-    polygonOffsetUnits: -2,
-  })
-  private readonly ringMat = new THREE.MeshBasicMaterial({
-    color: '#d8d2c4',
-    depthWrite: false,
+  private readonly geom = new THREE.PlaneGeometry(IMPACT_MARK_RADIUS * 2, IMPACT_MARK_RADIUS * 2)
+  private readonly texture = impactMarkTexture()
+  /**
+   * One alpha-blended quad per mark: hole and scorch come from the texture, the surround is
+   * transparent. No depth write (marks never occlude each other or the surface), and a
+   * polygon offset on top of the standoff keeps them out of z-fighting.
+   */
+  private readonly material = new THREE.MeshBasicMaterial({
+    map: this.texture,
     transparent: true,
-    opacity: 0.9,
+    depthWrite: false,
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
-    side: THREE.DoubleSide,
   })
   private marks: THREE.Group[] = []
   get count(): number {
@@ -44,11 +96,9 @@ export class ImpactMarks {
     }
     const group = new THREE.Group()
     group.name = 'shot-impact'
-    const core = new THREE.Mesh(this.coreGeom, this.coreMat)
-    const ring = new THREE.Mesh(this.ringGeom, this.ringMat)
-    core.renderOrder = 2
-    ring.renderOrder = 2
-    group.add(core, ring)
+    const mark = new THREE.Mesh(this.geom, this.material)
+    mark.renderOrder = 2
+    group.add(mark)
     return group
   }
 
@@ -110,9 +160,8 @@ export class ImpactMarks {
 
   dispose(): void {
     this.clear()
-    this.coreGeom.dispose()
-    this.ringGeom.dispose()
-    this.coreMat.dispose()
-    this.ringMat.dispose()
+    this.geom.dispose()
+    this.texture.dispose()
+    this.material.dispose()
   }
 }

@@ -9,9 +9,55 @@
 - `three`
 - `../../entity/schema.js`
 
+## smoothstep
+
+[Implementation, line 23](../../../../../src/render/entity/impact-marks.ts#L23)
+
+```ts
+smoothstep(edge0: number, edge1: number, x: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+
+## impactMarkPixels
+
+[Implementation, line 33](../../../../../src/render/entity/impact-marks.ts#L33)
+
+RGBA texels of a shot mark: an opaque near-black hole with a soft dark scorch that fades
+to alpha 0 at the rim. No light pixels anywhere, so it only darkens the surface it sits on
+(light ground or dark walls alike). Row-major, `size × size × 4`.
+
+```ts
+impactMarkPixels(size = IMPACT_MARK_TEXTURE_SIZE): Uint8Array
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.hypot`
+- `Math.min`
+- `Math.round`
+- `Uint8Array`
+- `smoothstep`
+
+## impactMarkTexture
+
+[Implementation, line 55](../../../../../src/render/entity/impact-marks.ts#L55)
+
+```ts
+impactMarkTexture(size = IMPACT_MARK_TEXTURE_SIZE): THREE.DataTexture
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.DataTexture`
+- `impactMarkPixels`
+
 ## ImpactMarks.count
 
-[Implementation, line 35](../../../../../src/render/entity/impact-marks.ts#L35)
+[Implementation, line 87](../../../../../src/render/entity/impact-marks.ts#L87)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -23,7 +69,7 @@ count(): number
 
 ## ImpactMarks.take
 
-[Implementation, line 39](../../../../../src/render/entity/impact-marks.ts#L39)
+[Implementation, line 91](../../../../../src/render/entity/impact-marks.ts#L91)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -43,7 +89,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.place
 
-[Implementation, line 55](../../../../../src/render/entity/impact-marks.ts#L55)
+[Implementation, line 105](../../../../../src/render/entity/impact-marks.ts#L105)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -67,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.add
 
-[Implementation, line 66](../../../../../src/render/entity/impact-marks.ts#L66)
+[Implementation, line 116](../../../../../src/render/entity/impact-marks.ts#L116)
 
 Mark on a scene entity (car, prop, authored mesh) in that entity's local frame.
 
@@ -94,7 +140,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.addWorld
 
-[Implementation, line 88](../../../../../src/render/entity/impact-marks.ts#L88)
+[Implementation, line 138](../../../../../src/render/entity/impact-marks.ts#L138)
 
 Mark on static world geometry (planet buildings, ground colliders, …).
 `root` must share the floating-origin shift with the hit meshes (e.g. `SceneView.root`
@@ -114,7 +160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.removeFor
 
-[Implementation, line 96](../../../../../src/render/entity/impact-marks.ts#L96)
+[Implementation, line 146](../../../../../src/render/entity/impact-marks.ts#L146)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -128,12 +174,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.marks.filter`
 
-## ImpactMarks.removeFor.callback@97
+## ImpactMarks.removeFor.callback@147
 
-[Implementation, line 97](../../../../../src/render/entity/impact-marks.ts#L97)
+[Implementation, line 147](../../../../../src/render/entity/impact-marks.ts#L147)
 
 ```ts
-callback@97(mark): inferred by TypeScript; see implementation
+callback@147(mark): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -142,7 +188,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.clear
 
-[Implementation, line 106](../../../../../src/render/entity/impact-marks.ts#L106)
+[Implementation, line 156](../../../../../src/render/entity/impact-marks.ts#L156)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -158,7 +204,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.dispose
 
-[Implementation, line 111](../../../../../src/render/entity/impact-marks.ts#L111)
+[Implementation, line 161](../../../../../src/render/entity/impact-marks.ts#L161)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -171,7 +217,6 @@ dispose(): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.clear`
-- `this.coreGeom.dispose`
-- `this.coreMat.dispose`
-- `this.ringGeom.dispose`
-- `this.ringMat.dispose`
+- `this.geom.dispose`
+- `this.material.dispose`
+- `this.texture.dispose`
