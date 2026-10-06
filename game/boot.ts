@@ -44,6 +44,12 @@ export interface HostBootConfig {
    * URL `?recoverToRoad=0|1` (alias `?roadReset=`); players can toggle it in Ajustes → Posición.
    */
   recoverToRoad?: boolean
+  /**
+   * Host default asphalt contrast on the roads photo drape, 0.5–2.5 (omitted = 1, unchanged).
+   * The player's slider in Ajustes → Capas → Asfalto is stored and wins over it;
+   * `?asphaltContrast=1.6` overrides both for one visit.
+   */
+  asphaltContrast?: number
 }
 
 declare global {

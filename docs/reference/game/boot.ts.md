@@ -22,7 +22,7 @@ Defaults keep the classic centred Nabla splash, no attract, probe on in auto sca
 
 ## buildTimeBoot
 
-[Implementation, line 55](../../../game/boot.ts#L55)
+[Implementation, line 61](../../../game/boot.ts#L61)
 
 ```ts
 buildTimeBoot(): HostBootConfig
@@ -35,7 +35,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readBootConfig
 
-[Implementation, line 68](../../../game/boot.ts#L68)
+[Implementation, line 74](../../../game/boot.ts#L74)
 
 Merge URL, build-time and page-supplied boot configuration.
 
@@ -51,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bootHiddenLayers
 
-[Implementation, line 102](../../../game/boot.ts#L102)
+[Implementation, line 108](../../../game/boot.ts#L108)
 
 The host's default hidden terrain layers, the base for the URL and the stored player choice.
 
@@ -61,7 +61,7 @@ bootHiddenLayers(config: HostBootConfig): string[]
 
 ## runBootPhase
 
-[Implementation, line 111](../../../game/boot.ts#L111)
+[Implementation, line 117](../../../game/boot.ts#L117)
 
 Start attract and the probe; call right before `play()` without awaiting the probe.
 The probe overlaps the terrain wait and `play()` finishes it before gameplay frames start.

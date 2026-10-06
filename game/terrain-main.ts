@@ -24,6 +24,7 @@ import {
   steeringWheelStorage,
   viteHostSteeringWheels,
 } from './host-steering-wheel.js'
+import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
@@ -104,6 +105,7 @@ try {
       defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
       storage: steeringWheelStorage(),
     },
+    asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),
@@ -184,6 +186,7 @@ try {
   bindDisplaySettings(runtime)
   bindFlipCinematicToggle(runtime)
   bindRecoverToRoadToggle(runtime)
+  bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
   mountSettingsHud(runtime)
   bindLayerSelector(runtime, undefined, layerDefaults)
   document.getElementById('game-hud')!.classList.remove('hidden')

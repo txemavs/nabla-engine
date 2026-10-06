@@ -30,6 +30,7 @@ import {
   steeringWheelStorage,
   viteHostSteeringWheels,
 } from './host-steering-wheel.js'
+import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
@@ -149,6 +150,7 @@ try {
       defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
       storage: steeringWheelStorage(),
     },
+    asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),
@@ -229,6 +231,7 @@ try {
   bindDisplaySettings(runtime)
   bindFlipCinematicToggle(runtime)
   bindRecoverToRoadToggle(runtime)
+  bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
   mountSettingsHud(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()

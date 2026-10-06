@@ -88,6 +88,10 @@ import {
   PLANET_DEFAULTS,
 } from '../render/planet/world-environment.js'
 import { CatchFloor } from '../render/planet/catch-floor.js'
+import {
+  asphaltContrast as currentAsphaltContrast,
+  setAsphaltContrast as applyAsphaltContrast,
+} from '../render/planet/ground-material.js'
 import { ShadowManager } from '../render/shadows.js'
 import { shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
@@ -204,6 +208,11 @@ export interface GameRuntimeOptions {
    * instead of uprighting it in place. Default on; hosts and the in-game menu can turn it off.
    */
   recoverToRoad?: boolean
+  /**
+   * Asphalt contrast on the roads photo drape, applied at draw time (tile textures untouched):
+   * 0.5–2.5, 1 = unchanged (default). Shared by every runtime in the page; see `setAsphaltContrast`.
+   */
+  asphaltContrast?: number
   depthOfField?: boolean
   performance?: Partial<PerformanceSettings>
   /** Explicit opt-in; omit to keep offline games independent of external light data. */
@@ -322,6 +331,7 @@ export class GameRuntime {
 
   constructor(private readonly options: GameRuntimeOptions) {
     this.flipCinematic.enabled = options.flipCinematic !== false
+    applyAsphaltContrast(options.asphaltContrast ?? 1)
     // Reject malformed JavaScript callers before allocating browser resources.
     if (options.tiles) normalizeTilesBase(options.tiles.baseUrl)
     this.text = createRuntimeText(options.locale, options.messages)
@@ -1567,6 +1577,20 @@ export class GameRuntime {
   setRecoverToRoadEnabled(enabled: boolean): void {
     this.assertAlive()
     this.game.recover.snapToRoad = enabled
+  }
+  /** Asphalt contrast on the roads photo drape (1 = unchanged). */
+  get asphaltContrast(): number {
+    return currentAsphaltContrast()
+  }
+  /**
+   * Set the asphalt contrast live, clamped to 0.5–2.5; a uniform change, no shader recompile. On
+   * photo-draped terrain without road meshes (`relief=lidar`) it follows each cell's OSM
+   * carriageways, whose masks are painted the first time it leaves 1.
+   */
+  setAsphaltContrast(value: number): void {
+    this.assertAlive()
+    applyAsphaltContrast(value)
+    this.world?.refreshAsphaltMasks()
   }
   /** Change the host's mute preference without replacing the audio graph. */
   setAudioEnabled(enabled: boolean): void {
