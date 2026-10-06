@@ -6,6 +6,7 @@ import type { Entity, Vec3Tuple } from '../entity/schema.js'
 import type { SceneGraph } from '../scene/graph.js'
 import { terrainHeight } from '../planet/land/terrain.js'
 import { nearestRoadCenterline } from '../planet/land/roads/draped-road.js'
+import type { RoadCenterline } from './road-snap.js'
 export class RoadAssist {
   private assistSource?: readonly Entity[]
   private readonly assistCells = new Map<string, { paths: Vec3Tuple[][]; width: number }[]>()
@@ -32,7 +33,46 @@ export class RoadAssist {
     if (speed < 0.5 || speed > 40) return
 
     if (v.definition.flight || Math.abs(steering) > 0.1) return
+    this.index(entities, graph, entitiesById)
+    const roads =
+      this.assistCells.get(
+        `${Math.floor(v.body.position.x / 64)}:${Math.floor(v.body.position.z / 64)}`,
+      ) ?? []
+
+    const position: Vec3Tuple = [v.body.position.x, v.body.position.y, v.body.position.z]
+    const nearest = nearestRoadCenterline(position, roads, 20, 3)
+
+    if (!nearest || nearest.onRoad) return
+
+    const effectiveStrength = this.roadAssistStrength * Math.min(1, (nearest.distance - 1) / 5)
+    if (effectiveStrength < 0.01) return
+
+    const force = effectiveStrength * v.body.mass * 2
+    v.body.applyForce(new Vec3(nearest.direction[0] * force, 0, nearest.direction[2] * force))
+  }
+
+  /**
+   * Drivable scene-road centrelines in world X/Z (terrain-level, no footways/paths), for the
+   * R reset snap. Shares the assist's per-revision cache.
+   */
+  centerlines(
+    entities: readonly Entity[],
+    graph: SceneGraph,
+    entitiesById: ReadonlyMap<string, Entity>,
+  ): RoadCenterline[] {
+    this.index(entities, graph, entitiesById)
+    return this.lines
+  }
+
+  private lines: RoadCenterline[] = []
+
+  private index(
+    entities: readonly Entity[],
+    graph: SceneGraph,
+    entitiesById: ReadonlyMap<string, Entity>,
+  ): void {
     if (this.assistSource !== entities) {
+      this.lines = []
       this.assistCells.clear()
       for (const e of entities) {
         if (!e.road || (e.road.elevation && e.road.elevation !== 'terrain')) continue
@@ -52,6 +92,10 @@ export class RoadAssist {
                 .toArray() as Vec3Tuple
             })
             const road = { paths: [points], width: e.road.width }
+            this.lines.push({
+              points: points.map((p) => ({ x: p[0], z: p[2] })),
+              width: e.road.width,
+            })
             for (
               let x = Math.floor((Math.min(points[0][0], points[1][0]) - 20) / 64);
               x <= Math.floor((Math.max(points[0][0], points[1][0]) + 20) / 64);
@@ -71,20 +115,5 @@ export class RoadAssist {
       }
       this.assistSource = entities
     }
-    const roads =
-      this.assistCells.get(
-        `${Math.floor(v.body.position.x / 64)}:${Math.floor(v.body.position.z / 64)}`,
-      ) ?? []
-
-    const position: Vec3Tuple = [v.body.position.x, v.body.position.y, v.body.position.z]
-    const nearest = nearestRoadCenterline(position, roads, 20, 3)
-
-    if (!nearest || nearest.onRoad) return
-
-    const effectiveStrength = this.roadAssistStrength * Math.min(1, (nearest.distance - 1) / 5)
-    if (effectiveStrength < 0.01) return
-
-    const force = effectiveStrength * v.body.mass * 2
-    v.body.applyForce(new Vec3(nearest.direction[0] * force, 0, nearest.direction[2] * force))
   }
 }

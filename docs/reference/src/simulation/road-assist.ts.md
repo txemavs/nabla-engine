@@ -15,10 +15,11 @@ Optional road-centre attraction with a scene-revision spatial index.
 - `../scene/graph.js`
 - `../planet/land/terrain.js`
 - `../planet/land/roads/draped-road.js`
+- `./road-snap.js`
 
 ## RoadAssist.configure
 
-[Implementation, line 15](../../../../src/simulation/road-assist.ts#L15)
+[Implementation, line 16](../../../../src/simulation/road-assist.ts#L16)
 
 Enable guidance with a normalized strength; manual steering always wins.
 
@@ -33,7 +34,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RoadAssist.settings
 
-[Implementation, line 20](../../../../src/simulation/road-assist.ts#L20)
+[Implementation, line 21](../../../../src/simulation/road-assist.ts#L21)
 
 Return settings without exposing the mutable spatial index.
 
@@ -43,7 +44,7 @@ settings(): inferred by TypeScript; see implementation
 
 ## RoadAssist.apply
 
-[Implementation, line 24](../../../../src/simulation/road-assist.ts#L24)
+[Implementation, line 25](../../../../src/simulation/road-assist.ts#L25)
 
 Apply an optional force to one vehicle; positions are metres, speed is metres/second.
 
@@ -55,31 +56,71 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.abs`
 - `Math.floor`
+- `Math.min`
+- `Vec3`
+- `nearestRoadCenterline`
+- `this.assistCells.get`
+- `this.index`
+- `v.body.applyForce`
+- `v.body.velocity.length`
+
+## RoadAssist.centerlines
+
+[Implementation, line 58](../../../../src/simulation/road-assist.ts#L58)
+
+Drivable scene-road centrelines in world X/Z (terrain-level, no footways/paths), for the
+R reset snap. Shares the assist's per-revision cache.
+
+```ts
+centerlines(entities: readonly Entity[], graph: SceneGraph, entitiesById: ReadonlyMap<string, Entity>): RoadCenterline[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.index`
+
+## RoadAssist.index
+
+[Implementation, line 69](../../../../src/simulation/road-assist.ts#L69)
+
+```ts
+index(entities: readonly Entity[], graph: SceneGraph, entitiesById: ReadonlyMap<string, Entity>): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
 - `Math.max`
 - `Math.min`
 - `RenderQuaternion`
-- `Vec3`
 - `['footway', 'path', 'pedestrian', 'cycleway', 'steps'].includes`
 - `[path[i - 1], path[i]].map`
 - `cell.push`
 - `entitiesById.get`
 - `graph.worldTransform`
-- `nearestRoadCenterline`
+- `points.map`
 - `this.assistCells.clear`
 - `this.assistCells.get`
 - `this.assistCells.set`
-- `v.body.applyForce`
-- `v.body.velocity.length`
+- `this.lines.push`
 
-## RoadAssist.apply.callback@47
+## RoadAssist.index.callback@87
 
-[Implementation, line 47](../../../../src/simulation/road-assist.ts#L47)
+[Implementation, line 87](../../../../src/simulation/road-assist.ts#L87)
 
 ```ts
-callback@47(p): inferred by TypeScript; see implementation
+callback@87(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Vector3`
 - `terrainHeight`
+
+## RoadAssist.index.callback@96
+
+[Implementation, line 96](../../../../src/simulation/road-assist.ts#L96)
+
+```ts
+callback@96(p): inferred by TypeScript; see implementation
+```

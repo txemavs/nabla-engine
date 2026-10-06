@@ -11,6 +11,7 @@ import { Quaternion, Vector3 } from 'three'
 import type { SceneDocument } from '../scene/document.js'
 import type { Entity } from '../entity/schema.js'
 import { idleInput, type PlayerInput } from '../simulation/simulation.js'
+import type { RoadCenterline } from '../simulation/road-snap.js'
 import { overheadDrivingHeight } from '../render/entity/driving-camera.js'
 import { PlaySession, type PlayOptions } from './session.js'
 import { GameInput, type GameInputSources } from './input.js'
@@ -42,6 +43,13 @@ export class GameRuntime {
   private portalSequence = 0
   private jumpRequested = false
   private readonly boarded = new Set<string>()
+  /**
+   * R reset policy. `snapToRoad` moves the car to the nearest road/vía before uprighting;
+   * `roads` lets the host add streamed centrelines (OSM navigation roads) to the scene roads.
+   */
+  readonly recover: { snapToRoad: boolean; roads?: () => Iterable<RoadCenterline> } = {
+    snapToRoad: false,
+  }
 
   /** Copy per-application camera overrides; replay retains them. */
   constructor(options: { camera?: Partial<GameCameraSettings> } = {}) {
@@ -238,7 +246,11 @@ export class GameRuntime {
     if (code === 'KeyF') return sim.toggleHitch() ?? sim.toggleDock()
     if (code === 'KeyM') return sim.cycleHelmMode()
     if (code === 'KeyB') return sim.automaticTransmission()
-    if (code === 'KeyR') return sim.recoverVehicle()
+    if (code === 'KeyR')
+      return sim.recoverVehicle({
+        snapToRoad: this.recover.snapToRoad,
+        roads: this.recover.snapToRoad ? this.recover.roads?.() : undefined,
+      })
     if (code === 'PageUp' || code === 'PageDown')
       return sim.shiftVehicle(code === 'PageUp' ? 1 : -1)
     if (code === 'KeyT') {
