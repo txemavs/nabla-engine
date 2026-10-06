@@ -4,6 +4,20 @@
 
 ### Added
 
+- **Position lights after the engine start-up:** entering a car, the S3, the A3, the truck or
+  any vehicle with lights, the lights stay off through P, the starter and the needle sweep, then
+  switch to _posición_ as the engine runs: front white glow (S3/A3 `FocoC` lenses; truck
+  low-beam lenses at `lightingDefaults.positionLensGlow` 0.15) and rear red tail lamps, no beam.
+  With `ignition: false` they come on at entry; switching the engine off turns them off. **H**
+  now steps a three-position switch, _posición_ → _cruce_ (dipped) → _apagadas_, with the
+  notices «Luces de posición» / «Luces de cruce» / «Luces apagadas»; **K** (high/low) only acts
+  on _cruce_. Before, H was a plain on/off where «on» lit position lamps and dipped beams
+  together, and nothing switched them on at start. Hosts pick the state after the start-up with
+  `GameRuntimeOptions.startLights` / `SceneViewOptions.startLights` (`'position'` default,
+  `'low'`, `'off'`). Engine API: `VehicleLightMode`, `VehicleLightController.mode` /
+  `cycleLights` / `glow`, `vehicleLightCycle`, `StartLights`, `engineRunning`,
+  `SceneView.cycleVehicleLights` / `vehicleLightMode` / `startLights`, `CarLights.cycleLights`,
+  `AuthoredVehicleLights.cycle`.
 - **Mirror angles from the game menu («Espejos»):** **Ajustes → Vehículos**, below «Volante»,
   turns each mirror glass of the vehicle you drive, live: «Espejo izquierdo / derecho: giro»
   (yaw ±15°, + outward / − inward) and «… : inclinación» (tilt ±10°, + up), 0.5° steps, plus
@@ -133,6 +147,11 @@
 
 ### Fixed
 
+- **Cars no longer start dark:** until 2026-10-05 the S3/A3 position lamps (front `FocoC`, rear
+  `PilotoP`) lit whenever the car was occupied. Commit `fa48503` («Author truck mirrors and tune
+  vehicle lighting and beam controls», shipped before #85) put them behind the new H headlight
+  switch, which starts off, so every car started with its lights off. #135/#137 (start-up
+  sequence) did not touch the lights. The position lights now come back on after the start-up.
 - **Ajustes → Capas showed no map layers in the terrain game:** the layer list (Carretera,
   Edificios y techos, Foto del suelo, Nombres de poblaciones) is bound after the settings window
   mounts, so it stayed in the hidden legacy menu and could not be switched back on; the «Terreno»

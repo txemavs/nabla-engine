@@ -31,6 +31,7 @@ import {
 import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
 import type { FieldLightOptions } from '../render/entity/field-lights.js'
+import type { VehicleLightMode } from '../render/vehicle-presentation/light-controller.js'
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
@@ -194,6 +195,13 @@ export interface MirrorState {
   /** True when the player's own choice is saved for this model. */
   saved: boolean
 }
+/** H notices per light switch position (English keys, see messages.es.ts). */
+const lightModeNotice: Record<VehicleLightMode, string> = {
+  off: 'Lights off',
+  position: 'Position lights',
+  low: 'Dipped beams',
+}
+
 export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
@@ -275,6 +283,13 @@ export interface GameRuntimeOptions {
    * is saved (pass `localStorage` to keep it between visits). See `setMirrorAngle`.
    */
   mirrors?: MirrorSettings
+  /**
+   * Light switch position once a vehicle's engine runs (after the start-up sequence, or at entry
+   * with `ignition: false`): `position` (posición, default), `low` (cruce / dipped, e.g. a night
+   * scene) or `off`. Lights stay off before and during the start-up. H then cycles
+   * off → position → low → off.
+   */
+  startLights?: VehicleLightMode
 }
 
 /** Browser composition over the same session, camera, input and effects used by Studio.
@@ -452,6 +467,7 @@ export class GameRuntime {
       mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
       steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
       mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
+      startLights: options.startLights,
     })
     this.scene.add(this.view.root)
     this.monitors = new VehicleMonitors(
@@ -2109,8 +2125,8 @@ export class GameRuntime {
     }
     if (code === 'KeyH') {
       if (sim.player.vehicleId) {
-        const enabled = this.view.toggleVehicleLights(sim.player.vehicleId)
-        if (enabled !== null) message = enabled ? this.text('Lights on') : this.text('Lights off')
+        const mode = this.view.cycleVehicleLights(sim.player.vehicleId)
+        if (mode !== null) message = this.text(lightModeNotice[mode])
       } else if (this.weaponDrawn) {
         if (!this.sidearm) this.sidearm = new Sidearm(this.options.canvas.parentElement!)
         const on = this.sidearm.toggleLaser()

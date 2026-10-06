@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **311 modules; 3223 executable function definitions**.
+Coverage: **312 modules; 3234 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -161,7 +161,7 @@ Coverage: **311 modules; 3223 executable function definitions**.
 | [src/render/entity/billboard.ts](src/render/entity/billboard.ts.md) | 7 |
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 1 |
 | [src/render/entity/car-instruments.ts](src/render/entity/car-instruments.ts.md) | 16 |
-| [src/render/entity/car-lights.ts](src/render/entity/car-lights.ts.md) | 6 |
+| [src/render/entity/car-lights.ts](src/render/entity/car-lights.ts.md) | 7 |
 | [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 26 |
 | [src/render/entity/carrier-interior.ts](src/render/entity/carrier-interior.ts.md) | 6 |
 | [src/render/entity/carrier-thrusters.ts](src/render/entity/carrier-thrusters.ts.md) | 2 |
@@ -181,7 +181,7 @@ Coverage: **311 modules; 3223 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 14 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 7 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 112 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 114 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
@@ -233,15 +233,16 @@ Coverage: **311 modules; 3223 executable function definitions**.
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
 | [src/render/shadows.ts](src/render/shadows.ts.md) | 25 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
-| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 14 |
+| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 15 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
 | [src/render/vehicle-presentation/landing-gear.ts](src/render/vehicle-presentation/landing-gear.ts.md) | 7 |
-| [src/render/vehicle-presentation/light-controller.ts](src/render/vehicle-presentation/light-controller.ts.md) | 6 |
+| [src/render/vehicle-presentation/light-controller.ts](src/render/vehicle-presentation/light-controller.ts.md) | 10 |
 | [src/render/vehicle-presentation/light-rig.ts](src/render/vehicle-presentation/light-rig.ts.md) | 7 |
 | [src/render/vehicle-presentation/mirror-lenses.ts](src/render/vehicle-presentation/mirror-lenses.ts.md) | 2 |
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
+| [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
 | [src/runtime/browser.ts](src/runtime/browser.ts.md) | 207 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |

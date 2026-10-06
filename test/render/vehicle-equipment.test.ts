@@ -71,9 +71,13 @@ it('switches driving lamps independently from braking and reverse lamps', () => 
   lights.update(state, 0)
   expect(front.emissiveIntensity).toBe(0)
   expect(position.emissiveIntensity).toBe(0)
+  // H: position, then dipped (the same lamps stay lit), then off.
   expect(lights.toggleHeadlights()).toBe(true)
   lights.update(state, 0)
   expect(front.emissiveIntensity).toBe(0.65)
+  expect(position.emissiveIntensity).toBe(0.65)
+  expect(lights.toggleHeadlights()).toBe(true)
+  lights.update(state, 0)
   expect(position.emissiveIntensity).toBe(0.65)
   expect(lights.toggleHeadlights()).toBe(false)
   lights.update(state, 0)
