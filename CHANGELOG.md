@@ -4,6 +4,28 @@
 
 ### Added
 
+- **Icon-only touch HUD with a place block:** the touch driving and flight action buttons
+  (Entrar/salir, Cámara, Jugar) are now 52 px icons (`touchActionIcon`); the label stays as
+  `aria-label` and tooltip. The driving rig shows the nearest city (large) and street next to the
+  accelerator (`TouchDriving.setPlace`, fed every frame from the navigation places). The wheel,
+  accelerator and handbrake keep their slots on foot so the button bar never jumps, and the rig no
+  longer moves `.nabla-game-hud` to the top (hosts own the top-left).
+- **Post-flip cinematic camera:** two barrel rolls / flips in under a second from the driver
+  (cockpit) view cut to a held side shot looking ahead of the car, then a short orbit, then back to
+  the driver view. It complements the C-cycle cinematic drone: it never fires from the exterior,
+  overhead or cinematic views, and pressing C mid-shot hands the camera straight back. Default on;
+  toggle with Ajustes → Capas «Cámara cinematográfica al volcar», `GameRuntimeOptions.flipCinematic`,
+  `NABLA_BOOT.flipCinematic`, `?flipcam=0` / `?flipCinematic=0` or
+  `runtime.setFlipCinematicEnabled`.
+- **R recovers onto the nearest road:** R now moves the car to the closest point of the nearest
+  drivable road (scene roads plus streamed OSM carriageways) within `ROAD_SNAP_MAX_DISTANCE`
+  (400 m), facing along the road in the direction closest to the old heading, then uprights it as
+  before; with no road nearby it uprights in place («Sin vía cerca · coche enderezado»). Flying
+  craft and boats never snap. Toggle in the new Ajustes → **Posición** tab,
+  `GameRuntimeOptions.recoverToRoad`, `NABLA_BOOT.recoverToRoad`, `?recoverToRoad=0` (alias
+  `?roadReset=`) or `runtime.setRecoverToRoadEnabled`. Engine API:
+  `Simulation.recoverVehicle({ snapToRoad, roads, maxRoadDistance })`, `nearestRoadPoint`,
+  `RoadCenterline`.
 - **Add menu objects — Portal, Galería 2.5D, Sprite, Farola de autopista, Farola de barrio:**
   the game add menu now has a **Objetos** group after the vehicles. The button reads «Añadir
   portal», «Añadir galería 2.5D», …; the entry stands in front of the player or driven vehicle
@@ -63,6 +85,12 @@
 
 ### Changed
 
+- **Settings layout:** new **Posición** tab (where you are / go to lat,lon and the R option).
+  Planeta keeps Hora first and now ends with sea level / tide; the legacy sky / sun / clouds /
+  sea toggles that duplicate the planet panel are hidden, so «Cielo y mar» leaves Capas, which now
+  holds the map layers and the camera extras.
+- **Darker carriageways:** the baked carriageway tint is `#525c60` × 0.48 (was × 0.62) and the
+  roads photo drape gets a `#c2c2c2` multiply (`ROADS_DRAPE_TINT`).
 - **Resolution scale defaults to a fixed step per quality preset instead of Auto:** Ultra
   100%, Alta 90%, Equilibrada 80%, Baja 50%, Móvil 45%, Mínima 40% (`custom` / Predeterminada
   80%). **Escala automática** stays selectable (`scale=auto`, `resolutionScaleMode: 'auto'`) and

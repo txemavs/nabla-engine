@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **296 modules; 3009 executable function definitions**.
+Coverage: **301 modules; 3042 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -15,6 +15,7 @@ Coverage: **296 modules; 3009 executable function definitions**.
 | [game/display-settings.ts](game/display-settings.ts.md) | 14 |
 | [game/drive.ts](game/drive.ts.md) | 16 |
 | [game/entry.ts](game/entry.ts.md) | 3 |
+| [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
 | [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
@@ -23,8 +24,9 @@ Coverage: **296 modules; 3009 executable function definitions**.
 | [game/main.ts](game/main.ts.md) | 1 |
 | [game/menu.ts](game/menu.ts.md) | 4 |
 | [game/position.ts](game/position.ts.md) | 11 |
+| [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 49 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 9 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 11 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
 | [game/telemetry.ts](game/telemetry.ts.md) | 1 |
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
@@ -233,9 +235,10 @@ Coverage: **296 modules; 3009 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 181 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 189 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
+| [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 8 |
@@ -260,8 +263,9 @@ Coverage: **296 modules; 3009 executable function definitions**.
 | [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 16 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/streaming.ts](src/runtime/streaming.ts.md) | 6 |
-| [src/runtime/touch-driving.ts](src/runtime/touch-driving.ts.md) | 44 |
+| [src/runtime/touch-driving.ts](src/runtime/touch-driving.ts.md) | 45 |
 | [src/runtime/touch-flight.ts](src/runtime/touch-flight.ts.md) | 21 |
+| [src/runtime/touch-icons.ts](src/runtime/touch-icons.ts.md) | 1 |
 | [src/runtime/vehicle-effects.ts](src/runtime/vehicle-effects.ts.md) | 9 |
 | [src/runtime/vehicle-menu.ts](src/runtime/vehicle-menu.ts.md) | 2 |
 | [src/runtime/vehicle-monitor-styles.ts](src/runtime/vehicle-monitor-styles.ts.md) | 2 |
@@ -289,8 +293,9 @@ Coverage: **296 modules; 3009 executable function definitions**.
 | [src/simulation/physics.ts](src/simulation/physics.ts.md) | 117 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 12 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
-| [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 4 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 190 |
+| [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
+| [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 1 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 193 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |

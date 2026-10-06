@@ -23,6 +23,8 @@ import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { parseLayerSpec, setHiddenTileLayers } from '@nabla/engine/render'
 import { mountSettingsHud } from './settings-hud.js'
+import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
+import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
@@ -135,6 +137,8 @@ try {
   )
   runtime = new GameRuntime({
     locale: 'es',
+    flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
+    recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),
@@ -213,6 +217,8 @@ try {
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
+  bindFlipCinematicToggle(runtime)
+  bindRecoverToRoadToggle(runtime)
   mountSettingsHud(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()

@@ -58,7 +58,12 @@ export interface PlanetSourceOptions {
   inspectRoadCollision?: boolean
 }
 import { PlanetHorizon } from './horizon.js'
-import { carriagewayTint, matteGroundMaterial, withMap } from './ground-material.js'
+import {
+  carriagewayTint,
+  matteGroundMaterial,
+  ROADS_DRAPE_TINT,
+  withMap,
+} from './ground-material.js'
 import { treeInstances } from './vegetation.js'
 import * as THREE from 'three'
 import {
@@ -204,6 +209,7 @@ function dressSatelliteRoofs(
       geometry,
       new THREE.MeshStandardMaterial({
         map: texture,
+        color: id === 'roads' ? ROADS_DRAPE_TINT : '#ffffff',
         roughness: 1,
         metalness: 0,
         polygonOffset: true,

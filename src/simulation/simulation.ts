@@ -6,6 +6,7 @@ import { MapCollisions } from './map-collisions.js'
 import { PlanetCatchFloor } from './catch-floor.js'
 import { createEntityBody } from './entity-body.js'
 import { RoadAssist } from './road-assist.js'
+import { nearestRoadPoint, ROAD_SNAP_MAX_DISTANCE, type RoadCenterline } from './road-snap.js'
 import { portalEnvelope, portalExitBlocked } from './portal-clearance.js'
 import { constrainTerrainBoundary } from './terrain-boundary.js'
 import { simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
@@ -63,6 +64,16 @@ import {
 } from './trailer-hitch.js'
 
 export const FIXED_STEP = simulationDefaults.fixedStepSeconds
+
+/** R reset options; see `Simulation.recoverVehicle`. */
+export interface RecoverVehicleOptions {
+  /** Move to the nearest road centreline before uprighting (default false). */
+  snapToRoad?: boolean
+  /** Extra centrelines in the simulation frame, e.g. streamed OSM navigation roads. */
+  roads?: Iterable<RoadCenterline>
+  /** Search radius in metres (default `ROAD_SNAP_MAX_DISTANCE`). */
+  maxRoadDistance?: number
+}
 const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
 const PLAYER_RADIUS = simulationDefaults.playerRadius
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
@@ -1237,8 +1248,14 @@ export class Simulation {
     return 'En destino'
   }
 
-  /** Upright the occupied car and drop it from 3 m. Keeps yaw and the XZ spot. */
-  recoverVehicle(): string {
+  /**
+   * Upright the occupied car and drop it from 3 m. Keeps yaw and the XZ spot by default.
+   * With `snapToRoad`, it first moves to the closest point of the nearest road centreline
+   * (scene roads plus host-supplied `roads`, e.g. OSM navigation roads) within
+   * `maxRoadDistance` metres, facing along the road in the direction closest to the old heading.
+   * Flying craft in flight and boats never snap; no road or no ground under it keeps the spot.
+   */
+  recoverVehicle(options: RecoverVehicleOptions = {}): string {
     const id = this.vehicleId
     const v = id ? this.vehicles.get(id) : undefined
     if (!v) return 'Monta en un coche'
@@ -1251,9 +1268,30 @@ export class Simulation {
       forward = up.cross(right).negate()
     }
     forward.normalize()
+    let snapped: { x: number; y: number; z: number } | null = null
+    let roadMissing = false
+    if (options.snapToRoad && !v.flight && !v.definition.boat) {
+      const road = nearestRoadPoint(
+        v.body.position.x,
+        v.body.position.z,
+        [
+          ...(options.roads ?? []),
+          ...this.roadGuidance.centerlines(this.document.entities, this.graph, this.entitiesById),
+        ],
+        options.maxRoadDistance ?? ROAD_SNAP_MAX_DISTANCE,
+      )
+      const ground = road ? this.groundUnder(road.x, road.z, v.body.position.y) : null
+      if (road && ground !== null) {
+        // Face along the road, keeping whichever direction is closer to the old heading.
+        const sign = road.dx * forward.x + road.dz * forward.z < 0 ? -1 : 1
+        forward = new Vec3(road.dx * sign, 0, road.dz * sign)
+        snapped = { x: road.x, y: ground, z: road.z }
+      } else roadMissing = true
+    }
     v.body.quaternion.setFromAxisAngle(up, Math.atan2(-forward.x, -forward.z))
     v.body.previousQuaternion.copy(v.body.quaternion)
-    v.body.position.y += 3
+    if (snapped) v.body.position.set(snapped.x, snapped.y + 3, snapped.z)
+    else v.body.position.y += 3
     v.body.previousPosition.copy(v.body.position)
     v.body.interpolatedPosition.copy(v.body.position)
     v.body.velocity.setZero()
@@ -1262,7 +1300,27 @@ export class Simulation {
     for (const trailer of this.vehicles.values()) {
       if (trailer.definition.tow?.vehicleId === id) this.alignTrailer(trailer, v)
     }
-    return 'Coche enderezado'
+    if (snapped) return 'En la vía más cercana'
+    return roadMissing ? 'Sin vía cerca · coche enderezado' : 'Coche enderezado'
+  }
+  /**
+   * Highest static, upward-facing surface at (x, z) within ±600 m of `nearY`, ignoring
+   * vehicles; null where no collision is loaded.
+   */
+  private groundUnder(x: number, z: number, nearY: number): number | null {
+    const vehicleBodies = new Set<Body>([...this.vehicles.values()].map((v) => v.body))
+    let best: number | null = null
+    this.world.raycastAll(
+      new Vec3(x, nearY + 600, z),
+      new Vec3(x, nearY - 600, z),
+      { skipBackfaces: true },
+      (hit) => {
+        if (!hit.body || hit.body.mass !== 0 || vehicleBodies.has(hit.body)) return
+        if (hit.hitNormalWorld.y < 0.5) return
+        if (best === null || hit.hitPointWorld.y > best) best = hit.hitPointWorld.y
+      },
+    )
+    return best
   }
   private alignTrailer(trailer: Vehicle, tractor: Vehicle): void {
     const tow = trailer.definition.tow!

@@ -1,5 +1,6 @@
 import { controlDefaults } from '../config/controls.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
+import { touchActionIcon } from './touch-icons.js'
 import { resolveControlProfile, type ControlProfileVehicle } from './control-profiles.js'
 
 export interface TouchDrivingActions {
@@ -92,8 +93,8 @@ const styles = `
  width: calc(100% - 16px); pointer-events: none; justify-content: space-between;
  align-items: flex-end; }
 .touch-driving > style { display: none; }
-.touch-driving-bar { display: flex; flex-direction: row; justify-content: center; gap: 8px;
- align-self: end; margin-bottom: 8px; }
+.touch-driving-bar { display: flex; flex-direction: row; justify-content: flex-start; gap: 8px;
+ align-self: end; margin-bottom: 8px; pointer-events: none; }
 .touch-driving-stack, .touch-driving-gas, .touch-driving-lever, .touch-driving-turbo,
 .touch-driving-wheel, .touch-driving-pilot { pointer-events: auto; touch-action: none;
  user-select: none; -webkit-user-select: none; }
@@ -147,14 +148,22 @@ const styles = `
 @media (pointer: coarse) { .touch-driving[data-visibility="auto"] { display: flex; } }
 /* The visibility rules above beat the UA [hidden] style, so hiding needs its own rule. */
 .touch-driving[hidden] { display: none !important; }
-/* Wheel / accel / handbrake / pilot only while seated in a road vehicle (car/truck). */
+/* Fixed HUD chrome: accel + wheel slots always reserve space so entering a car does not jump the button row. */
+.touch-driving-chrome { display: flex; flex-direction: row; align-items: flex-end; gap: 10px;
+ pointer-events: none; }
+.touch-driving-place { pointer-events: none; min-width: 120px; max-width: 220px; margin: 0 0 10px;
+ color: #fff; text-shadow: 0 1px 4px #000; font-family: system-ui, sans-serif; }
+.touch-driving-city { font-size: clamp(18px, 2.4vw, 26px); font-weight: 700; line-height: 1.1; }
+.touch-driving-street { font-size: 13px; opacity: 0.9; margin-top: 2px; }
 .touch-driving:not(.is-driving) .touch-driving-stack,
 .touch-driving:not(.is-driving) .touch-driving-wheel,
-.touch-driving:not(.is-driving) .touch-driving-pilot { display: none; }
-:has(> .touch-driving[data-visibility="always"]) > .nabla-game-hud { bottom: auto; top: 16px; }
-@media (pointer: coarse) {
-  :has(> .touch-driving[data-visibility="auto"]) > .nabla-game-hud { bottom: auto; top: 16px; }
-}
+.touch-driving:not(.is-driving) .touch-driving-pilot {
+ visibility: hidden; pointer-events: none; }
+.touch-driving button.touch-driving-action { display: inline-flex; align-items: center; justify-content: center;
+ padding: 0; width: 52px; height: 52px; }
+.touch-driving button.touch-driving-action svg { display: block; }
+/* Host brand owns the top-left; do not bump .nabla-game-hud up. */
+
 `
 
 /** Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases. */
@@ -173,6 +182,8 @@ export class TouchDriving {
   private readonly lever: HTMLElement
   private readonly hb: HTMLElement
   private readonly turbo: HTMLButtonElement
+  private readonly placeCity: HTMLElement
+  private readonly placeStreet: HTMLElement
   constructor(
     host: HTMLElement,
     private readonly actions: TouchDrivingActions,
@@ -238,6 +249,17 @@ export class TouchDriving {
 
     stack.append(this.lever, this.turbo, gas)
 
+    const place = document.createElement('div')
+    place.className = 'touch-driving-place'
+    this.placeCity = document.createElement('div')
+    this.placeCity.className = 'touch-driving-city'
+    this.placeStreet = document.createElement('div')
+    this.placeStreet.className = 'touch-driving-street'
+    place.append(this.placeCity, this.placeStreet)
+
+    const chrome = document.createElement('div')
+    chrome.className = 'touch-driving-chrome'
+
     const bar = document.createElement('div')
     bar.className = 'touch-driving-bar'
     for (const [action, label] of [
@@ -247,11 +269,12 @@ export class TouchDriving {
     ] as const) {
       if (action === 'play' && !actions.play) continue
       const button = document.createElement('button')
-      button.textContent = label
+      button.innerHTML = touchActionIcon(action)
       button.dataset.drive = action
       button.type = 'button'
       button.className = 'touch-driving-action'
       button.setAttribute('aria-label', label)
+      button.title = label
       button.onpointerdown = (e) => {
         if (this.disposed) return
         e.preventDefault()
@@ -268,6 +291,7 @@ export class TouchDriving {
       button.onlostpointercapture = release
       bar.append(button)
     }
+    chrome.append(stack, place, bar)
 
     const pilot = document.createElement('div')
     pilot.className = 'touch-driving-pilot'
@@ -297,7 +321,7 @@ export class TouchDriving {
       () => this.releaseSteer(),
     )
 
-    this.root.append(stack, bar, pilot, wheel)
+    this.root.append(chrome, pilot, wheel)
     host.append(this.root)
     const options = { signal: this.lifetime.signal }
     window.addEventListener('blur', () => this.clear(), options)
@@ -462,6 +486,14 @@ export class TouchDriving {
       this.setDriving(false)
       this.clear()
     }
+  }
+
+  /** City (large) + street under it, to the right of the accelerator. */
+  setPlace(city: string, street: string = ''): void {
+    if (this.disposed) return
+    this.placeCity.textContent = city
+    this.placeStreet.textContent = street
+    this.placeStreet.hidden = !street
   }
 
   dispose(): void {

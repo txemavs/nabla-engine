@@ -17,6 +17,8 @@ import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
+import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
+import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
@@ -90,6 +92,8 @@ try {
   bootLog('GameRuntime construct start')
   runtime = new GameRuntime({
     locale: 'es',
+    flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
+    recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),
@@ -168,6 +172,8 @@ try {
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
+  bindFlipCinematicToggle(runtime)
+  bindRecoverToRoadToggle(runtime)
   mountSettingsHud(runtime)
   bindLayerSelector(runtime, undefined, layerDefaults)
   document.getElementById('game-hud')!.classList.remove('hidden')

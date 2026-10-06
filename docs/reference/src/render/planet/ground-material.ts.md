@@ -84,7 +84,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 65](../../../../../src/render/planet/ground-material.ts#L65)
 
-Delete after the next GLB regen. Bake carriageway `#33393c` (`#525c60` × 0.62) into COLOR_0.
+Delete after the next GLB regen. Bake carriageway `#272c2e` (`#525c60` × 0.48) into COLOR_0.
 
 ```ts
 carriagewayTint(metadata: { category?: string; groundLayer?: number; transport?: string }, tint: string): string
@@ -94,11 +94,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.Color`
 - `new THREE.Color(tint).multiplyScalar`
-- `new THREE.Color(tint).multiplyScalar(0.62).getHexString`
+- `new THREE.Color(tint).multiplyScalar(0.48).getHexString`
 
 ## groundDepthBias
 
-[Implementation, line 79](../../../../../src/render/planet/ground-material.ts#L79)
+[Implementation, line 82](../../../../../src/render/planet/ground-material.ts#L82)
 
 ```ts
 groundDepthBias(layer: number): inferred by TypeScript; see implementation

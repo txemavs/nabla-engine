@@ -34,6 +34,16 @@ export interface HostBootConfig {
    * and `?layers=+places` / `?layers=-places` override for one visit.
    */
   cityLabels?: boolean
+  /**
+   * Post-flip cinematic camera (two rolls in under a second). Default on when omitted.
+   * Hosts set this on `window.NABLA_BOOT`; players can also toggle it in Ajustes.
+   */
+  flipCinematic?: boolean
+  /**
+   * R reset puts the vehicle on the nearest road/vía. Default on when omitted.
+   * URL `?recoverToRoad=0|1` (alias `?roadReset=`); players can toggle it in Ajustes → Posición.
+   */
+  recoverToRoad?: boolean
 }
 
 declare global {
@@ -67,7 +77,15 @@ export function readBootConfig(
   if (boot === 'attract') url.attract = true
   else if (boot === 'classic') url.attract = false
   if (params.get('probe') === '0') url.probe = false
+  const flip = params.get('flipCinematic') ?? params.get('flipcam')
+  if (flip === '0' || flip === 'false') url.flipCinematic = false
+  else if (flip === '1' || flip === 'true') url.flipCinematic = true
+  const road = params.get('recoverToRoad') ?? params.get('roadReset')
+  if (road === '0' || road === 'false') url.recoverToRoad = false
+  else if (road === '1' || road === 'true') url.recoverToRoad = true
   const merged: HostBootConfig = { ...url, ...built, ...host }
+  if (url.flipCinematic !== undefined) merged.flipCinematic = url.flipCinematic
+  if (url.recoverToRoad !== undefined) merged.recoverToRoad = url.recoverToRoad
   // An explicit URL ?boot= still wins so testers can compare both modes on a skinned host.
   if (boot === 'attract' || boot === 'classic') merged.attract = url.attract
   let splash: EngineSplashSkin = { ...(built.splash ?? {}), ...(host.splash ?? {}) }

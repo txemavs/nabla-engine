@@ -50,4 +50,18 @@ describe('standalone boot config', () => {
       probe: false,
     })
   })
+
+  it('reads flipCinematic from NABLA_BOOT and URL', () => {
+    expect(readBootConfig('', { NABLA_BOOT: { flipCinematic: false } }).flipCinematic).toBe(false)
+    expect(readBootConfig('?flipCinematic=0', {}).flipCinematic).toBe(false)
+    expect(readBootConfig('?flipcam=1', {}).flipCinematic).toBe(true)
+  })
+
+  it('reads recoverToRoad from NABLA_BOOT and URL', () => {
+    expect(readBootConfig('', { NABLA_BOOT: { recoverToRoad: false } }).recoverToRoad).toBe(false)
+    expect(readBootConfig('?recoverToRoad=0', {}).recoverToRoad).toBe(false)
+    expect(
+      readBootConfig('?roadReset=1', { NABLA_BOOT: { recoverToRoad: false } }).recoverToRoad,
+    ).toBe(true)
+  })
 })

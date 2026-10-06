@@ -61,7 +61,7 @@ export function transportLayer(entity: {
 
 const carriagewayLayer = firstTransportLayer + 1
 
-/** Delete after the next GLB regen. Bake carriageway `#33393c` (`#525c60` × 0.62) into COLOR_0. */
+/** Delete after the next GLB regen. Bake carriageway `#272c2e` (`#525c60` × 0.48) into COLOR_0. */
 export function carriagewayTint(
   metadata: { category?: string; groundLayer?: number; transport?: string },
   tint: string,
@@ -73,8 +73,11 @@ export function carriagewayTint(
     metadata.groundLayer !== carriagewayLayer
   )
     return tint
-  return '#' + new THREE.Color(tint).multiplyScalar(0.62).getHexString()
+  return '#' + new THREE.Color(tint).multiplyScalar(0.48).getHexString()
 }
+
+/** Multiply on the roads photo drape (vehicle-paint style). */
+export const ROADS_DRAPE_TINT = '#c2c2c2'
 
 export function groundDepthBias(layer: number) {
   return {
