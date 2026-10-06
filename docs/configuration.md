@@ -35,18 +35,27 @@ input. During the grace period automatic exterior heading and road look-ahead
 remain suspended. After ten seconds recovery ramps up over half a second.
 Ground and flight recovery use the same settings. Cockpit look stays manual;
 overhead view intentionally follows vehicle orientation (heading-up; on foot it follows the
-walking heading). Replay retains overrides.
+walking heading), but only its roll-independent ground heading: while the vehicle tumbles the
+overhead and exterior views hold a calm heading (see the `tumble*` settings below and
+[camera modes](controls.md#camera-modes)). Replay retains overrides.
 
 Overhead and cinematic tuning (see [camera modes](controls.md#camera-modes)):
 
-| Setting                                              | Default             | Meaning                                         |
-| ---------------------------------------------------- | ------------------- | ----------------------------------------------- |
-| `mapHeight` / `mapMaxHeight`                         | 45 / 600 m          | Vehicle overhead base and maximum height        |
-| `footMapHeight`                                      | 18 m                | On-foot overhead height at wheel zoom 1         |
-| `cinematicDistanceScale` / `cinematicMinDistance`    | 2.4 / 9 m           | Orbit radius vs. chase distance, minimum        |
-| `cinematicElevation`                                 | 0.32                | Height above the target as a fraction of radius |
-| `cinematicOrbitSeconds`                              | 48 s                | One full orbit; 0 holds the angle still         |
-| `cinematicBob` / `cinematicFov` / `cinematicDamping` | 0.8 m / 38° / 4 s⁻¹ | Drift, lens, height smoothing                   |
+| Setting                                              | Default             | Meaning                                          |
+| ---------------------------------------------------- | ------------------- | ------------------------------------------------ |
+| `mapHeight` / `mapMaxHeight`                         | 45 / 600 m          | Vehicle overhead base and maximum height         |
+| `footMapHeight`                                      | 18 m                | On-foot overhead height at wheel zoom 1          |
+| `mapHeadingResponse` / `mapMaxYawRate`               | 12 s⁻¹ / 6 rad/s    | Driving heading follower (yaw-rate feed-forward) |
+| `mapFollowResponse`                                  | 8 s⁻¹               | Driving position follower (critically damped)    |
+| `tumbleHeadingResponse` / `tumbleMaxYawRate`         | 2.5 s⁻¹ / 1.2 rad/s | Heading follower while the vehicle tumbles       |
+| `tumbleFollowResponse`                               | 3 s⁻¹               | Overhead position follower while tumbling        |
+| `tumbleUprightness` / `tumbleTiltRate`               | 0.5 / 3 rad/s       | Tumbling: up axis past 60°, or swinging faster   |
+| `tumbleSettleSeconds` / `tumbleRecoverySeconds`      | 0.4 s / 1.5 s       | Upright time to end a tumble; ease back after    |
+| `tumbleTrackSpeed`                                   | 3 m/s               | Tumbling faster than this aims along the travel  |
+| `cinematicDistanceScale` / `cinematicMinDistance`    | 2.4 / 9 m           | Orbit radius vs. chase distance, minimum         |
+| `cinematicElevation`                                 | 0.32                | Height above the target as a fraction of radius  |
+| `cinematicOrbitSeconds`                              | 48 s                | One full orbit; 0 holds the angle still          |
+| `cinematicBob` / `cinematicFov` / `cinematicDamping` | 0.8 m / 38° / 4 s⁻¹ | Drift, lens, height smoothing                    |
 
 `createGameCameraState(overrides)` supports hosts that update cameras directly.
 Camera overrides are validated before use. Durations must be finite and

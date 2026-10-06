@@ -22,6 +22,37 @@ export interface GameCameraSettings {
   mapMaxZoom: number
   /** Overhead height convergence rate, inverse seconds. */
   mapDamping: number
+  /**
+   * Overhead heading response while driving, inverse seconds: a critically damped follower with
+   * yaw-rate feed-forward, so steady turns have no lag and only bump noise is filtered.
+   */
+  mapHeadingResponse: number
+  /** Overhead position response while driving, inverse seconds (critically damped, velocity feed-forward). */
+  mapFollowResponse: number
+  /** Fastest overhead heading change while driving, radians per second. */
+  mapMaxYawRate: number
+  /** Heading response while the vehicle tumbles (rollover, upside down), inverse seconds. */
+  tumbleHeadingResponse: number
+  /** Overhead position response while the vehicle tumbles, inverse seconds. */
+  tumbleFollowResponse: number
+  /** Fastest exterior-camera heading change while the vehicle tumbles, radians per second. */
+  tumbleMaxYawRate: number
+  /**
+   * Tumbling starts when the chassis up axis leans past this cosine from the ground normal
+   * (0.5 = 60 degrees, on its side or upside down) or the nose points steeply up or down.
+   */
+  tumbleUprightness: number
+  /** Tumbling also starts when the chassis up axis swings faster than this, radians per second. */
+  tumbleTiltRate: number
+  /** Upright and calm this long before tumbling ends (hysteresis), seconds. */
+  tumbleSettleSeconds: number
+  /** Blend from the tumble response back to the driving response after landing, seconds. */
+  tumbleRecoverySeconds: number
+  /**
+   * While tumbling, faster horizontal travel than this aims the heading along the line of travel
+   * (whichever direction is nearer the current heading); slower, the heading is held. m/s.
+   */
+  tumbleTrackSpeed: number
   /** First-person/cockpit vertical field of view, degrees. */
   firstPersonFov: number
   /** Exterior vertical field of view, degrees. */
@@ -113,6 +144,17 @@ export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   mapMinZoom: 0.75,
   mapMaxZoom: 3,
   mapDamping: 3,
+  mapHeadingResponse: 12,
+  mapFollowResponse: 8,
+  mapMaxYawRate: 6,
+  tumbleHeadingResponse: 2.5,
+  tumbleFollowResponse: 3,
+  tumbleMaxYawRate: 1.2,
+  tumbleUprightness: 0.5,
+  tumbleTiltRate: 3,
+  tumbleSettleSeconds: 0.4,
+  tumbleRecoverySeconds: 1.5,
+  tumbleTrackSpeed: 3,
   firstPersonFov: 70,
   chaseFov: 48,
   nearClip: 0.1,
@@ -183,6 +225,7 @@ export function resolveGameCameraSettings(
   ] as const) {
     if (settings[high] <= settings[low]) throw new RangeError(`${high} must exceed ${low}`)
   }
+  if (settings.tumbleUprightness >= 1) throw new RangeError('tumbleUprightness must be below 1')
   if (settings.footMapHeight >= settings.mapMaxHeight)
     throw new RangeError('mapMaxHeight must exceed footMapHeight')
   if (settings.firstPersonFov >= 180 || settings.chaseFov >= 180 || settings.cinematicFov >= 180)

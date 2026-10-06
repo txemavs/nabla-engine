@@ -135,3 +135,172 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `MathUtils.clamp`
+
+## wrapAngle
+
+[Implementation, line 146](../../../../../src/render/entity/driving-camera.ts#L146)
+
+```ts
+wrapAngle(angle: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.atan2`
+- `Math.cos`
+- `Math.sin`
+
+## criticalStep
+
+[Implementation, line 153](../../../../../src/render/entity/driving-camera.ts#L153)
+
+One exact step of a critically damped spring: `error` (value minus target) and its rate after
+`dt` seconds at natural frequency `omega`. Unconditionally stable for any step length.
+
+```ts
+criticalStep(error: number, errorRate: number, omega: number, dt: number): [error: number, errorRate: number]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.exp`
+
+## headingDirection
+
+[Implementation, line 165](../../../../../src/render/entity/driving-camera.ts#L165)
+
+World direction of a ground-frame heading (chase-yaw convention: 0 looks along -Z).
+
+```ts
+headingDirection(heading: number, frame: Quaternion | null = null): Vector3
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.cos`
+- `Math.sin`
+- `Vector3`
+- `new Vector3(-Math.sin(heading), 0, -Math.cos(heading)).applyQuaternion`
+
+## GroundHeading.constructor
+
+[Implementation, line 210](../../../../../src/render/entity/driving-camera.ts#L210)
+
+Roll-independent, smoothed horizontal heading of a vehicle for the exterior cameras.
+
+The raw chassis heading is useless in a rollover: projecting the nose onto the ground
+collapses when it points up or down, flips by 180 degrees as the car goes over, and the
+chassis spins far faster than a camera should turn. This tracker therefore:
+
+- aims at the chassis forward axis projected onto the ground plane while the car is upright;
+- detects tumbling (up axis leaning past `tumbleUprightness`, nose steeply up or down, or the
+  up axis swinging faster than `tumbleTiltRate`) and leaves it only after
+  `tumbleSettleSeconds` upright and calm (hysteresis);
+- while tumbling, aims along the line of horizontal travel (the nearer of its two
+  directions) above `tumbleTrackSpeed` and otherwise holds the last heading;
+- follows the aim with a critically damped spring (`mapHeadingResponse`, with yaw-rate
+  feed-forward so steady turns have no lag) and clamps the turn rate (`mapMaxYawRate`);
+  while tumbling it switches to the much calmer `tumbleHeadingResponse` /
+  `tumbleMaxYawRate` and eases back over `tumbleRecoverySeconds` after the car settles.
+
+Headings are measured in the player frame (identity on open ground), in the chase-yaw
+convention `atan2(-forward.x, -forward.z)`.
+
+```ts
+constructor(private readonly settings: Readonly<GameCameraSettings> = gameCameraDefaults): instance
+```
+
+## GroundHeading.clear
+
+[Implementation, line 213](../../../../../src/render/entity/driving-camera.ts#L213)
+
+Forget the vehicle; the next `update` seeds the heading from the chassis.
+
+```ts
+clear(): void
+```
+
+## GroundHeading.update
+
+[Implementation, line 221](../../../../../src/render/entity/driving-camera.ts#L221)
+
+Advance with the vehicle's interpolated pose. `frame` is the player frame rotation (null on
+open ground); `dt` is seconds. A new vehicle id re-seeds every filter.
+
+```ts
+update(id: string, position: readonly number[], rotation: readonly number[], frame: Quaternion | null, dt: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(frame ?? identity).clone`
+- `(frame ?? identity).clone().invert`
+- `Math.abs`
+- `Math.atan2`
+- `Math.exp`
+- `Math.hypot`
+- `Math.max`
+- `Math.min`
+- `MathUtils.clamp`
+- `MathUtils.lerp`
+- `Quaternion`
+- `Vector3`
+- `criticalStep`
+- `inverse.clone`
+- `inverse.clone().multiply`
+- `local.clone`
+- `local.clone().sub`
+- `local.clone().sub(this.position).divideScalar`
+- `new Quaternion().fromArray`
+- `new Vector3().fromArray`
+- `new Vector3().fromArray(position).applyQuaternion`
+- `new Vector3(0, 0, -1).applyQuaternion`
+- `new Vector3(0, 1, 0).applyQuaternion`
+- `this.position.copy`
+- `this.up.angleTo`
+- `this.up.copy`
+- `this.velocity.lerp`
+- `this.velocity.set`
+- `wrapAngle`
+
+## CriticalFollow.reset
+
+[Implementation, line 335](../../../../../src/render/entity/driving-camera.ts#L335)
+
+Snap to `target` with zero velocity.
+
+```ts
+reset(target?: Vector3): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.feed.set`
+- `this.last.copy`
+- `this.position.copy`
+- `this.velocity.set`
+
+## CriticalFollow.update
+
+[Implementation, line 345](../../../../../src/render/entity/driving-camera.ts#L345)
+
+Advance toward `target` over `dt` seconds (capped at `maxStep`) at response `omega`.
+
+```ts
+update(target: Vector3, dt: number, omega: number, maxStep = gameCameraDefaults.maxStepSeconds): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.exp`
+- `Math.max`
+- `Math.min`
+- `criticalStep`
+- `target.clone`
+- `target.clone().addScaledVector`
+- `target.clone().sub`
+- `target.clone().sub(this.last).divideScalar`
+- `this.feed.lerp`
+- `this.last.copy`
+- `this.last.distanceTo`
+- `this.reset`
