@@ -16,6 +16,8 @@ export const spanishMessages: Readonly<Record<string, string>> = {
   'GPS on': 'GPS encendido',
   'Lights off': 'Luces apagadas',
   'Lights on': 'Luces encendidas',
+  'Position lights': 'Luces de posición',
+  'Dipped beams': 'Luces de cruce',
   'Weapon holstered': 'Arma guardada',
   'Weapon drawn': 'Arma desenfundada',
   'Laser on': 'Láser encendido',

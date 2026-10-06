@@ -18,6 +18,11 @@ export const lightingDefaults = Object.freeze({
   signalFlashMs: 450,
   /** Stop-lamp emission relative to the same lens used as a tail light. */
   brakeBoost: 3,
+  /**
+   * Low-beam lens glow in position-light mode ('posición'), relative to its dipped level. Only
+   * the lens glows (the truck has no separate front position lamp); the beam itself stays dark.
+   */
+  positionLensGlow: 0.15,
   /** Resolution and normalized upper edge of the low-beam projection texture. */
   lowBeamMaskSize: 128,
   lowBeamCutoff: 0.5,

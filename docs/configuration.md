@@ -205,7 +205,9 @@ sequence is then:
    cluster rises smoothly (cosine easing) from its live reading to full scale, holds briefly and
    falls back, like a real instrument self-test. `vehicleInfo(id).gaugeSweep` (0..1) drives it;
    digital readouts and the gear letter keep their real values.
-4. **Running.** Idle, still in P; W selects D and S selects R as usual.
+4. **Running.** Idle, still in P; W selects D and S selects R as usual. The lights, off until
+   now, switch to position lights (`GameRuntimeOptions.startLights`, default `'position'`; see
+   [Vehicle lights](controls.md#vehicle-lights)).
 
 The whole sequence takes 1.6 s. `vehicleInfo(id).ignition` reports `cranking`, `sweep` or
 `running`; `ignitionCount` increases once per start. **Input during the start-up is not lost, only deferred:** the vehicle stays in P
