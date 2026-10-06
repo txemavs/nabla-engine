@@ -121,7 +121,7 @@ export const generatedVehicleRigs: Record<
   },
   'white-truck': {
     source: '/library/trucks/white-truck/assets/tractor.modern.glb',
-    sha256: 'd25fe180d4b0d9e0c58cc9cb2f9a3d30f90af9f15121be66aa6ff10b7dad0ebf',
+    sha256: '0c39055110746793c1d9b2003aa8966cfa0da8b8ac72b3fa7273fc01b98e7333',
     hubs: [
       [-1.0751686096191406, -0.622534990310669, -1.3792321681976318],
       [1.080893874168396, -0.622534990310669, -1.3792320489883423],
