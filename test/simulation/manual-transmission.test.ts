@@ -8,10 +8,11 @@ import {
   stepDrivetrain,
   engineBrakingForce,
 } from '../../src/simulation/vehicles/drivetrain.js'
+import { finishStartUp } from '../start-up.js'
 it('holds manual gears, rejects overrev reductions and increases retention in lower gears', () => {
   const v = presetVehicle('car', 's3').vehicle!,
     spec = v.powertrain!,
-    state = createDrivetrain()
+    state = { ...createDrivetrain(), parked: false }
   state.gear = 3
   expect(shiftGear(state, spec, v.wheelRadius, 60, -1)).toBe(false)
   expect(state.gear).toBe(3)
@@ -42,8 +43,10 @@ it('loses speed after throttle release, exposes manual mode and can resume autom
   try {
     ticks(180)
     sim.startInVehicle('s3')
+    finishStartUp(sim)
     sim.setInput({ ...idleInput(), forward: 1 })
-    ticks(240)
+    // Entered in P: the pedal first waits out the D engagement dwell and torque cut.
+    ticks(240 + 27)
     const before = sim.vehicleInfo('s3').speedKmh
     sim.setInput(idleInput())
     sim.shiftVehicle(-1)

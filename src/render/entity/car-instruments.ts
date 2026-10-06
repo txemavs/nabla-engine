@@ -1,4 +1,4 @@
-import type { CarInstrumentDefinition } from './car-instrument-definition.js'
+import { sweepCluster, type CarInstrumentDefinition } from './car-instrument-definition.js'
 import { LayeredMonitor } from '../monitors/layered-monitor.js'
 import { MonitorMenu } from '../monitors/menu.js'
 import * as THREE from 'three'
@@ -144,6 +144,8 @@ export class CarInstruments {
     manual = false,
     parked = false,
     altitude = 0,
+    /** Needle self-test after entering, 0..1 (see `Simulation.vehicleInfo().gaugeSweep`). */
+    gaugeSweep = 0,
   ): void {
     if (this.disposed || !this.powered) return
     if (this.lastUpdate !== undefined)
@@ -165,7 +167,11 @@ export class CarInstruments {
       )
     }
     this.speedMonitor.update(
-      this.definition.clusterData({ speedKmh, rpm, gear, load, manual, parked }),
+      sweepCluster(
+        this.definition.cluster,
+        this.definition.clusterData({ speedKmh, rpm, gear, load, manual, parked }),
+        gaugeSweep,
+      ),
       now,
     )
     if (this.gpsOpen && !this.menu.open && now >= this.nextMap) {

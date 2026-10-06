@@ -171,6 +171,39 @@ From N, W while already rolling forward engages a gear that suits the speed imme
 S while rolling still brakes to a stop first. `vehicleInfo(id).parked` is true in P (gear 0);
 displays use `gearLabel(gear, manual, parked)`: `R`, `N`, `P`, `D<n>`, `M<n>`.
 
+**Park on entering, then start-up.** Every road vehicle (car, S3, A3, truck, procedural car,
+host-spawned vehicle) spawns in P, and every way into the driver's seat selects P again: E,
+`startInVehicle` (scenario/host spawn in the seat, `?vehicle=`) and `transferControls`. The
+sequence is then:
+
+1. **P and held.** Gear 0, parked, automatic mode, pending D/R requests cleared
+   (`engagePark`). The HUD and cluster show `P`.
+2. **Needle sweep** (`ignitionSweepSeconds`, 1 s, engine off): every needle of the vehicle's
+   cluster rises smoothly (cosine easing) to full scale, holds briefly and falls back to 0,
+   like a real instrument self-test. `vehicleInfo(id).gaugeSweep` (0..1) drives it; digital
+   readouts and the gear letter keep their real values.
+3. **Cranking** (`ignitionCrankSeconds`, 1 s): a synthesized starter sound plays
+   (`VehicleAudio.engineStart`, no sample file) and the rev counter shows a pulsing starter speed
+   around `crankingRpm` (250).
+4. **Idle.** The engine catches at `ignitionFlare` x idle (1.6) and the normal engine sound
+   settles to idle. The vehicle is still in P; W selects D and S selects R as usual.
+
+`vehicleInfo(id).ignition` reports `sweep`, `cranking` or `running`; `ignitionCount` increases
+once per start. **Input during the start-up is not lost, only deferred:** the vehicle stays in P
+and the pedals deliver no torque until the engine runs; a pedal still held at that moment then
+engages D/R through the normal dwell. Paddle shifts are refused in P, as always. Hosts that want
+P without the sequence pass `new Simulation(doc, { ignition: false })`. Boats, planes and
+flight-capable vehicles (no gear selector) keep their previous behaviour.
+
+**P really holds.** In P the full service brake is applied to every wheel, occupied or not
+(an unoccupied vehicle left in D/R keeps the light 0.4 x drag brake). The Rapier vehicle brake
+cancels wheel velocity before gravity is integrated, so a braked car on a slope still crept
+downhill by g x sin(slope) x dt every step (about 2.5 cm/s on 10 degrees). P therefore also acts
+as a parking pawl: a stiff damped spring on the distance crept since P engaged
+(`parkHoldStiffness` 400 1/s², `parkHoldDamping` 40 1/s, per unit mass, along the vehicle's
+forward axis, relative to the supporting body), limited to `parkHoldFriction` 0.8 x g (about a
+38 degree slope) and released above `parkHoldSlipSpeed` (1.5 m/s, e.g. rammed).
+
 The stock truck recipe defines its own diesel gearing, 650 RPM idle, 2,400 RPM
 ceiling and 120 km/h forward speed limit, plus a slow heavy gearbox: 0.55 s torque cut,
 shifts at 1,950/1,000 RPM, a heavier flywheel, a 60 kN wheel-force limit and a low,

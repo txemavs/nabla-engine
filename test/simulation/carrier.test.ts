@@ -4,6 +4,7 @@ import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { type SceneDocument } from '../../src/scene/document.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
+import { finishStartUp } from '../start-up.js'
 
 function document(): SceneDocument {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
@@ -29,6 +30,7 @@ function step(sim: Simulation, ticks: number): void {
 function park(sim: Simulation): void {
   step(sim, 120)
   expect(sim.interact()).toContain('Conduciendo')
+  finishStartUp(sim)
   for (let i = 0; i < 600; i++) {
     const z = sim.entityTransform('car').position[2]
     sim.setInput({

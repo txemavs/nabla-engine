@@ -4,6 +4,20 @@
 
 ### Added
 
+- **Vehicles start in P, with an instrument sweep and an engine start:** every road vehicle (car,
+  S3, A3, truck, procedural cars, host-spawned vehicles) now spawns in P and every way into the
+  driver's seat (E, `startInVehicle`/`?vehicle=`, `transferControls`) selects P again, held by the
+  brakes; the HUD and cluster show `P`. Then the instrument needles sweep to full scale and back
+  (~1 s, eased), a synthesized starter cranks for ~1 s (`VehicleAudio.engineStart`, no sample
+  file) and the engine settles to idle, still in P. Pedals are deferred during the start-up (the
+  vehicle stays in P; a pedal still held when the engine runs engages D/R through the normal
+  dwell). W/S leave P as before. Boats, planes and flight-capable vehicles are unchanged. Engine
+  API: `enterWheeledVehicle`, `engagePark`, `startIgnition`, `stepIgnition`, `gaugeSweep`,
+  `sweepCluster`, `createWheeledVehicle(body, def, { parked })`, `vehicleInfo().ignition` /
+  `ignitionCount` / `gaugeSweep`, `Simulation` option `ignition` (default true) and
+  `roadVehicleDefaults.ignition*` / `crankingRpm` / `parkHold*`. See docs/configuration.md →
+  Park on entering.
+
 - **Icon-only touch HUD with a place block:** the touch driving and flight action buttons
   (Entrar/salir, Cámara, Jugar) are now 52 px icons (`touchActionIcon`); the label stays as
   `aria-label` and tooltip. The driving rig shows the nearest city (large) and street next to the
@@ -71,6 +85,13 @@
   `status: false` hides every load text in any layout.
 
 ### Fixed
+
+- **Vehicles no longer roll back when entered:** the drivetrain was created in D1 and kept
+  whatever gear it was left in, so entering a vehicle released the unoccupied parking brake with
+  the selector in D (or R) and no pedal, and it rolled down any slope. A braked vehicle also
+  crept downhill at g x sin(slope) x dt per step because the Rapier wheel brake resolves velocity
+  before gravity is integrated. P now applies the full service brake (occupied or not) plus a
+  parking-pawl hold, so a parked vehicle stays put even on steep slopes.
 
 - **S3 steering wheel too far from the dashboard:** the rim sat ~2–3 cm back toward the
   driver. It now sits 3 cm further along the steering column toward the gauges (chassis: 2.8 cm

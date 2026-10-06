@@ -18,6 +18,7 @@ import {
   wheelContacts,
   shiftWheeledVehicle,
   automaticWheeledTransmission,
+  enterWheeledVehicle,
 } from './vehicles/wheeled/runtime.js'
 import type {
   GearClackProfile,
@@ -85,6 +86,9 @@ const pose = (b: Body): Transform => ({
   rotation: [b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w],
 })
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
+/** Road vehicles (cars, trucks) have an automatic selector; boats and aircraft do not. */
+const hasGearSelector = (d: VehicleDefinition): boolean =>
+  !d.passive && !d.boat && !d.plane && !d.flight
 
 /** Owns exactly one physics world. Scene data is copied and never mutated.
  * The host supplies elapsed seconds and input, and reads snapshots after step(). */
@@ -193,6 +197,11 @@ export class Simulation {
       mapBuildingsEnabled?: boolean
       experimentalLargeScene?: boolean
       planetaryTerrain?: boolean
+      /**
+       * Start-up sequence when a driver gets into a geared road vehicle: needle sweep, then
+       * starter cranking, then idle, all in P (default true). False only selects P.
+       */
+      ignition?: boolean
     } = {},
   ) {
     this.mapBuildingsEnabled = options.mapBuildingsEnabled ?? true
@@ -648,7 +657,9 @@ export class Simulation {
 
   private createVehicle(entity: Entity, body: Body): void {
     const definition = vehicleDefinition(entity)
-    const wheeled = createWheeledVehicle(body, definition)
+    const wheeled = createWheeledVehicle(body, definition, {
+      parked: hasGearSelector(definition),
+    })
     const car = wheeled.raycast
     if (definition.boat) {
       body.linearDamping = 0.01
@@ -1485,6 +1496,17 @@ export class Simulation {
     this.playerBody.velocity.setZero()
     this.grounded = false
     if (this.vehicles.get(id)!.definition.plane) this.setHelmMode('plane')
+    this.takeSeat(id)
+  }
+  /**
+   * Every way into a road vehicle's seat (E, a scenario/host spawn in the seat, a control
+   * transfer) lands in P with the brakes holding it, then runs the start-up sequence.
+   * Boats, planes and flight-capable vehicles have no gear selector and are left alone.
+   */
+  private takeSeat(id: string): void {
+    const v = this.vehicles.get(id)
+    if (!v || !hasGearSelector(v.definition)) return
+    enterWheeledVehicle(v, this.options.ignition ?? true)
   }
   private exitVehicle(): string {
     const v = this.vehicles.get(this.vehicleId!)!
@@ -1642,6 +1664,12 @@ export class Simulation {
     shifting: boolean
     /** Per-vehicle clack sound; null selects the audio layer's car default. */
     gearClack: GearClackProfile | null
+    /** Start-up phase after entering: `sweep` (needle self-test), `cranking`, `running`. */
+    ignition: 'sweep' | 'cranking' | 'running'
+    /** Increments on every start-up; play one starter sound per increase. */
+    ignitionCount: number
+    /** Needle self-test 0..1 while `ignition` is `sweep`; dials show this share of full scale. */
+    gaugeSweep: number
     towVehicleId: string | null
     /** True while a free trailer is resting on its landing legs. */
     landingGear: boolean
@@ -1689,6 +1717,9 @@ export class Simulation {
       parked: ground.parked,
       shifting: ground.shifting,
       gearClack: ground.clack ?? null,
+      ignition: ground.ignition,
+      ignitionCount: ground.ignitionCount,
+      gaugeSweep: ground.gaugeSweep,
       towVehicleId: v.definition.tow?.vehicleId ?? null,
       landingGear: v.landingGear.length > 0,
     }
@@ -1826,6 +1857,7 @@ export class Simulation {
     const active = this.vehicles.get(this.vehicleId)!
     if (active.body.velocity.length() > 0.8) return 'Detén el vehículo antes de cambiar de mando'
     this.vehicleId = target
+    this.takeSeat(target)
     return 'Al mando de ' + this.vehicles.get(target)!.entity.name
   }
 

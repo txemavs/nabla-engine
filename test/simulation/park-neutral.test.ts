@@ -33,7 +33,7 @@ describe('N and P selector, unit level', () => {
   })
 
   it('D -> N after neutralSeconds -> P after parkSeconds, then nothing moves it', () => {
-    const state = createDrivetrain()
+    const state = { ...createDrivetrain(), gear: 1, parked: false }
     const tuning = gearboxTuning()
     let t = 0
     const run = (seconds: number, handbrake: boolean) => {
@@ -68,7 +68,7 @@ describe('N and P selector, unit level', () => {
       [3, 0, true],
       [0, 0, false],
     ] as const) {
-      const state = createDrivetrain()
+      const state = { ...createDrivetrain(), gear: 1, parked: false }
       for (let i = 0; i < 600; i++)
         selectNeutralOrPark(state, speed, throttle, handbrake, dt, tuning)
       expect(state.gear).toBe(1)
@@ -76,7 +76,7 @@ describe('N and P selector, unit level', () => {
   })
 
   it('releasing the handbrake in N keeps N, and the park timer restarts on the next stop', () => {
-    const state = createDrivetrain()
+    const state = { ...createDrivetrain(), gear: 1, parked: false }
     const tuning = gearboxTuning()
     for (let i = 0; i < 60; i++) selectNeutralOrPark(state, 0, 0, true, dt, tuning)
     expect(state.gear).toBe(0)
@@ -128,13 +128,13 @@ describe('N and P selector, unit level', () => {
   it('from N rolling forward W engages immediately in a suitable gear; S still waits for a stop', () => {
     const v = presetVehicle('car', 's3').vehicle!
     const speed = 25 // m/s
-    const state = { ...createDrivetrain(), gear: 0 }
+    const state = { ...createDrivetrain(), gear: 0, parked: false }
     stepDrivetrain(state, v.powertrain!, v.wheelRadius, speed, 1, false, dt)
     expect(state.gear).toBe(
       gearForSpeed(v.powertrain!, v.wheelRadius, speed, gearboxTuning(v.powertrain).upshiftRpm),
     )
     expect(state.gear).toBeGreaterThan(2)
-    const reverse = { ...createDrivetrain(), gear: 0 }
+    const reverse = { ...createDrivetrain(), gear: 0, parked: false }
     for (let i = 0; i < 60; i++)
       stepDrivetrain(reverse, v.powertrain!, v.wheelRadius, speed, -1, false, dt)
     expect(reverse.gear).toBe(0)
