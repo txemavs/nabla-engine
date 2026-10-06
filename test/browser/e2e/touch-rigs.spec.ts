@@ -14,7 +14,12 @@ test('only the active control profile touch rig is displayed', async ({ page }) 
     const actions = { interact: () => {}, camera: () => {} }
     const driving = new TouchDriving(host, actions, 'always')
     const flight = new TouchFlight(host, actions, 'always')
-    const visible = (el: HTMLElement) => getComputedStyle(el).display !== 'none'
+    // On foot the wheel keeps its slot (`visibility: hidden`, #134) so the button row does not
+    // jump; it is shown only when it is both laid out and visible.
+    const visible = (el: HTMLElement) => {
+      const style = getComputedStyle(el)
+      return style.display !== 'none' && style.visibility !== 'hidden'
+    }
     const result: Record<string, { driving: boolean; wheel: boolean; flight: boolean }> = {}
     for (const [name, vehicle] of [
       ['foot', null],
