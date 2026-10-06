@@ -147,6 +147,13 @@
 
 ### Fixed
 
+- **Sidearm hit marks are just a dark hole, no white ring:** the marks left on terrain, buildings
+  and vehicles drew an opaque light ring (`#d8d2c4` at 0.9 opacity) around the black core, added
+  in #117 so they read on dark walls; on light ground it looked like a white washer. A mark is now
+  one alpha-blended quad with a generated texture (`impactMarkTexture` / `impactMarkPixels`): an
+  opaque near-black hole and a soft dark scorch that fades to alpha 0 at the rim, no light texels
+  anywhere (also under alpha 0, so filtering and mipmaps leave no halo). No depth write, polygon
+  offset and the 12 mm standoff are kept against z-fighting. Same 8.5 cm footprint.
 - **Cars no longer start dark:** until 2026-10-05 the S3/A3 position lamps (front `FocoC`, rear
   `PilotoP`) lit whenever the car was occupied. Commit `fa48503` («Author truck mirrors and tune
   vehicle lighting and beam controls», shipped before #85) put them behind the new H headlight
