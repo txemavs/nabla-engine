@@ -63,6 +63,7 @@ import {
   castShadowFromBackFaces,
   matteGroundMaterial,
   ROADS_DRAPE_TINT,
+  tileMeshSide,
   withMap,
 } from './ground-material.js'
 import { treeInstances } from './vegetation.js'
@@ -1002,7 +1003,7 @@ export class PlanetWorld {
             ...withMap(photo),
             vertexColors: !!data.color,
             roughness: 1,
-            side: data.side as THREE.Side,
+            side: tileMeshSide(data.side as THREE.Side, data.metadata, data.position, data.index),
           })
       if (data.metadata.drape) {
         material.depthWrite = false

@@ -111,7 +111,10 @@
   Euskadi host default). The Atlas LiDAR terrain is exported double-sided, so its sunlit faces
   wrote into the shadow map and shadowed themselves; the fixed 2 cm depth / 4–8 cm normal bias was
   a fraction of a texel (0.2–0.7 m per texel at cascade 0). Terrain now casts shadows from back
-  faces only (`castShadowFromBackFaces`), and each cascade's bias scales with its texel size
+  faces only (`castShadowFromBackFaces`) and is drawn single-sided: `tileMeshSide` overrides the
+  GLB `doubleSided` flag to `FrontSide` for up-facing ground (terrain, land use, ground-photo
+  drapes) at load time; road meshes (bridge decks), skirts, buildings and water keep their side.
+  Each cascade's bias scales with its texel size
   (`ShadowTier.normalBiasTexels` / `depthBiasTexels`, replacing `normalBias`): Baja/Equilibrada
   ≈ 21 cm normal / 21 cm depth, Alta ≈ 17 / 13 cm, Ultra ≈ 10 / 6 cm, clamped to 50 cm on far
   cascades. The car's contact shadow stays attached. See docs/performance.md → Shadow bias and acne.

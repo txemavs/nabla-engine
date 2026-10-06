@@ -112,6 +112,15 @@ map shadowed itself. The depth offset is converted to the orthographic depth ran
 
 Previously every tier used a fixed 2 cm depth bias and a 4–8 cm normal bias.
 
+Ground is also drawn single-sided. `tileMeshSide` overrides a GLB's `doubleSided` flag to
+`FrontSide` for bare-ground tile meshes (`Terrain`, `Surfaces` and ground-photo drapes; see
+`isGroundSurface`) whose triangles face up (`upwardWinding` > 0.5); the runtime photo drapes were
+already single-sided. Road meshes keep their side because they carry the bridge decks, which
+must stay visible from below; skirts, buildings, rivers and the sea are untouched, and ground
+wound upside down keeps the GLB side instead of turning into holes. Draw calls and triangle
+counts are unchanged (culling happens after submission); the GPU skips the fragments of the
+LiDAR faces turned away from the camera.
+
 Terrain casts its shadow from back faces only (`castShadowFromBackFaces`, `shadowSide =
 BackSide`). Three.js already does that for single-sided materials, but the Atlas LiDAR terrain
 (`relief=lidar`) is exported `doubleSided`, so its sunlit faces wrote into the shadow map and

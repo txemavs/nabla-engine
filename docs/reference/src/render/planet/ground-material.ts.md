@@ -22,21 +22,73 @@ withMap(map: THREE.Texture | undefined): { map?: THREE.Texture }
 
 ## castShadowFromBackFaces
 
-[Implementation, line 19](../../../../../src/render/planet/ground-material.ts#L19)
+[Implementation, line 20](../../../../../src/render/planet/ground-material.ts#L20)
 
 Terrain casts its shadow from the faces turned away from the sun only. A heightfield's sunlit
 faces then never write into the shadow map, so they cannot shadow themselves (acne: contour
 stripes on every gentle slope under a low sun), while hills still shade the valleys behind them.
-Three.js already does this for single-sided materials; double-sided ground (the Atlas LiDAR mesh
-is exported `doubleSided`) would otherwise write its lit side too. Returns the material.
+Three.js already does this for single-sided materials; it is set explicitly so double-sided
+ground (the Atlas LiDAR mesh is exported `doubleSided`; see `tileMeshSide`) never writes its lit
+side, whatever side it renders with. Returns the material.
 
 ```ts
 castShadowFromBackFaces(material: T): T
 ```
 
+## isGroundSurface
+
+[Implementation, line 33](../../../../../src/render/planet/ground-material.ts#L33)
+
+Whether a streamed tile mesh is bare ground (terrain, land-use surfaces or a ground-photo drape).
+Roads are not: their meshes carry the bridge decks, which must stay visible from below. Skirts,
+buildings and water keep their own sides too.
+
+```ts
+isGroundSurface(metadata: { category?: unknown drape?: unknown skirt?: unknown }): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `GROUND_CATEGORIES.has`
+
+## upwardWinding
+
+[Implementation, line 47](../../../../../src/render/planet/ground-material.ts#L47)
+
+Share of triangles wound counter-clockwise seen from +Y (front face up), from at most `sample`
+evenly spaced triangles. 1 for a heightfield exported the right way up.
+
+```ts
+upwardWinding(position: ArrayLike<number>, index?: ArrayLike<number>, sample = 4096): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `Math.max`
+
+## tileMeshSide
+
+[Implementation, line 82](../../../../../src/render/planet/ground-material.ts#L82)
+
+Render side for a streamed tile mesh. Ground is drawn single-sided (`FrontSide`) even when the
+GLB says `doubleSided` (the Atlas LiDAR terrain does): nobody looks at the ground from below,
+and the hidden sides of hills stop costing fragments. Only ground whose triangles face up is
+changed; anything else (roads with bridges, buildings, water, skirts, ground wound the wrong
+way) keeps the GLB side, so a bad export never turns into holes.
+
+```ts
+tileMeshSide(side: THREE.Side, metadata: { category?: unknown; drape?: unknown; skirt?: unknown }, position: ArrayLike<number>, index?: ArrayLike<number>): THREE.Side
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `isGroundSurface`
+- `upwardWinding`
+
 ## matteGroundMaterial
 
-[Implementation, line 25](../../../../../src/render/planet/ground-material.ts#L25)
+[Implementation, line 93](../../../../../src/render/planet/ground-material.ts#L93)
 
 Diffuse ground: roughness alone still leaves a broad dielectric sun highlight.
 
@@ -50,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isChartCarriageway
 
-[Implementation, line 41](../../../../../src/render/planet/ground-material.ts#L41)
+[Implementation, line 109](../../../../../src/render/planet/ground-material.ts#L109)
 
 Carriageways paint white on the GPS. Paths, tracks and rails stay blue.
 
@@ -64,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## liftFootLayer
 
-[Implementation, line 54](../../../../../src/render/planet/ground-material.ts#L54)
+[Implementation, line 122](../../../../../src/render/planet/ground-material.ts#L122)
 
 Feet stay under the carriageway and the rails. 17 is the layer that briefly drew them on top.
 
@@ -74,7 +126,7 @@ liftFootLayer(layer: number): number
 
 ## footBuried
 
-[Implementation, line 60](../../../../../src/render/planet/ground-material.ts#L60)
+[Implementation, line 128](../../../../../src/render/planet/ground-material.ts#L128)
 
 ```ts
 footBuried(layer: number): boolean
@@ -82,7 +134,7 @@ footBuried(layer: number): boolean
 
 ## transportLayer
 
-[Implementation, line 65](../../../../../src/render/planet/ground-material.ts#L65)
+[Implementation, line 133](../../../../../src/render/planet/ground-material.ts#L133)
 
 Order only coplanar transport surfaces; physical bridge/tunnel heights still apply.
 
@@ -96,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## carriagewayTint
 
-[Implementation, line 77](../../../../../src/render/planet/ground-material.ts#L77)
+[Implementation, line 145](../../../../../src/render/planet/ground-material.ts#L145)
 
 Delete after the next GLB regen. Bake carriageway `#272c2e` (`#525c60` × 0.48) into COLOR_0.
 
@@ -112,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## groundDepthBias
 
-[Implementation, line 94](../../../../../src/render/planet/ground-material.ts#L94)
+[Implementation, line 162](../../../../../src/render/planet/ground-material.ts#L162)
 
 ```ts
 groundDepthBias(layer: number): inferred by TypeScript; see implementation
