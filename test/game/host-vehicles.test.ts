@@ -280,8 +280,9 @@ describe('installHostVehicles', () => {
       irun,
       [
         { lat: 43.3386, lon: -1.7899, heading: 90, vehicle: 'white-trailer-chassis' },
+        // Its own spot: a trailer on top of the first one would be skipped as an overlap.
         {
-          lat: 43.3386,
+          lat: 43.3395,
           lon: -1.7899,
           heading: 90,
           vehicle: 'white-trailer-chassis',
@@ -290,6 +291,7 @@ describe('installHostVehicles', () => {
         { lat: 43.339, lon: -1.79, heading: 0, vehicle: 'white-trailer', box: false },
       ],
     )
+    expect(calls).toHaveLength(3)
     expect(calls[0]!.attachments).toBeUndefined()
     expect(calls[0]!.height).toBeLessThan(calls[1]!.height)
     expect(calls[1]!.attachments?.[0]).toMatch(/trailer\.box\.glb$/)

@@ -1,7 +1,10 @@
 import * as THREE from 'three'
 import type { Transform, Vec3Tuple } from '../../entity/schema.js'
 
-const MAX_MARKS = 96
+/** Most shot marks kept alive at once; the oldest is recycled past this. */
+export const MAX_IMPACT_MARKS = 96
+/** Distance a mark stands off the hit surface along its normal, metres (keeps it out of z-fighting). */
+export const IMPACT_MARK_STANDOFF = 0.012
 
 /**
  * Bounded shot marks. Entity hits parent into the hit object's local frame so they
@@ -34,7 +37,7 @@ export class ImpactMarks {
   }
 
   private take(): THREE.Group {
-    if (this.marks.length >= MAX_MARKS) {
+    if (this.marks.length >= MAX_IMPACT_MARKS) {
       const oldest = this.marks.shift()!
       oldest.removeFromParent()
       return oldest
@@ -52,7 +55,7 @@ export class ImpactMarks {
   private place(mark: THREE.Group, point: Vec3Tuple, normal: Vec3Tuple, local: boolean): void {
     const n = new THREE.Vector3(...normal).normalize()
     if (n.lengthSq() < 1e-8) n.set(0, 1, 0)
-    mark.position.fromArray(point).addScaledVector(n, 0.012)
+    mark.position.fromArray(point).addScaledVector(n, IMPACT_MARK_STANDOFF)
     mark.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n)
     // Slight random roll so overlapping marks do not stack identically.
     mark.rotateZ(Math.random() * Math.PI * 2)
@@ -70,7 +73,7 @@ export class ImpactMarks {
       .fromArray(point)
       .sub(new THREE.Vector3(...pose.position))
       .applyQuaternion(inverse)
-      .addScaledVector(n, 0.012)
+      .addScaledVector(n, IMPACT_MARK_STANDOFF)
     mark.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n)
     mark.rotateZ(Math.random() * Math.PI * 2)
     parent.add(mark)
