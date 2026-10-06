@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **307 modules; 3157 executable function definitions**.
+Coverage: **310 modules; 3207 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -17,6 +17,7 @@ Coverage: **307 modules; 3157 executable function definitions**.
 | [game/drive.ts](game/drive.ts.md) | 16 |
 | [game/entry.ts](game/entry.ts.md) | 3 |
 | [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
+| [game/host-mirrors.ts](game/host-mirrors.ts.md) | 7 |
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
 | [game/host-steering-wheel.ts](game/host-steering-wheel.ts.md) | 6 |
 | [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
@@ -25,6 +26,7 @@ Coverage: **307 modules; 3157 executable function definitions**.
 | [game/loading.ts](game/loading.ts.md) | 21 |
 | [game/main.ts](game/main.ts.md) | 1 |
 | [game/menu.ts](game/menu.ts.md) | 4 |
+| [game/mirror-controls.ts](game/mirror-controls.ts.md) | 15 |
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 49 |
@@ -160,7 +162,7 @@ Coverage: **307 modules; 3157 executable function definitions**.
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 1 |
 | [src/render/entity/car-instruments.ts](src/render/entity/car-instruments.ts.md) | 16 |
 | [src/render/entity/car-lights.ts](src/render/entity/car-lights.ts.md) | 6 |
-| [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 17 |
+| [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 26 |
 | [src/render/entity/carrier-interior.ts](src/render/entity/carrier-interior.ts.md) | 6 |
 | [src/render/entity/carrier-thrusters.ts](src/render/entity/carrier-thrusters.ts.md) | 2 |
 | [src/render/entity/cinematic-camera.ts](src/render/entity/cinematic-camera.ts.md) | 3 |
@@ -179,7 +181,7 @@ Coverage: **307 modules; 3157 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 14 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 7 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 108 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 112 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
@@ -240,7 +242,7 @@ Coverage: **307 modules; 3157 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 196 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 203 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
@@ -257,6 +259,7 @@ Coverage: **307 modules; 3157 executable function definitions**.
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 10 |
 | [src/runtime/messages.es.ts](src/runtime/messages.es.ts.md) | 0 |
 | [src/runtime/messages.ts](src/runtime/messages.ts.md) | 3 |
+| [src/runtime/mirror-adjustment.ts](src/runtime/mirror-adjustment.ts.md) | 8 |
 | [src/runtime/performance.ts](src/runtime/performance.ts.md) | 0 |
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 2 |
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |

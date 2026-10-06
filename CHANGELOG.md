@@ -4,6 +4,20 @@
 
 ### Added
 
+- **Mirror angles from the game menu («Espejos»):** **Ajustes → Vehículos**, below «Volante»,
+  turns each mirror glass of the vehicle you drive, live: «Espejo izquierdo / derecho: giro»
+  (yaw ±15°, + outward / − inward) and «… : inclinación» (tilt ±10°, + up), 0.5° steps, plus
+  «Restablecer espejos» and a «Valores para fijarlo» readout (also logged with `console.info`).
+  The live `Reflector` glass turns, so the mirror view follows (about twice the glass angle).
+  Works for every vehicle with cockpit mirrors: S3 and A3 (door lenses, side from their place
+  on the chassis) and the tractor (tagged GLB lenses). Saved per mirror model in `localStorage`
+  (`nabla.mirrors:<body GLB>#<steering GLB>`, so the S3 and the A3 keep their own); host
+  defaults from `?mirrors=` / `VITE_NABLA_MIRRORS` keyed by preset id. Bake path:
+  `scripts/bake-mirror-aim.mjs <preset> '<values>'` adds the values to the new preset field
+  `vehicle.mirrorAim` (degrees per side), applied under the sliders. Engine API:
+  `GameRuntime.mirrors` / `setMirrorAngle` / `resetMirrorAdjustment`,
+  `GameRuntimeOptions.mirrors`, `SceneView.setMirrorAdjustment`, `CarMirrors.setAdjustment`,
+  `mirrorAngleRange`, `mirrorModelKey`, `mirrorSideOf`.
 - **Asphalt contrast:** a draw-time tone curve on the roads photo drape (fragment shader; tile
   textures untouched, no painter): around a fixed display-space pivot, dark asphalt gets darker
   and painted markings brighter, on top of the existing carriageway darkening and

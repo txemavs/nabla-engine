@@ -9,6 +9,79 @@ export function authoredMirrorSurfaces(model: THREE.Object3D): THREE.Mesh[] {
   })
   return surfaces
 }
+/**
+ * Driver adjustment of one mirror glass, degrees, on top of the angle baked into the asset
+ * (GLB lens / anchor, or `vehicle.mirrors`) and the vehicle's shared `mirrorTilt`.
+ * `yaw` turns the glass about the vehicle vertical: positive outward (away from the body, so the
+ * view swings outward too), negative inward. `tilt` turns it about the horizontal: positive up.
+ * The reflected view moves by twice each glass angle.
+ */
+export interface MirrorAngle {
+  yaw: number
+  tilt: number
+}
+
+/** Adjustment of every mirror of a vehicle model, keyed by side (`left`, `right`, …). */
+export type MirrorAdjustment = Record<string, MirrorAngle>
+
+/** Neutral glass angle: exactly as the asset aims it. */
+export const mirrorAngleCentred: Readonly<MirrorAngle> = Object.freeze({ yaw: 0, tilt: 0 })
+
+/** Limits and step of each glass axis, degrees (yaw ±15°, tilt ±10°, 0.5° steps). */
+export const mirrorAngleRange = Object.freeze({
+  yaw: Object.freeze({ min: -15, max: 15, step: 0.5 }),
+  tilt: Object.freeze({ min: -10, max: 10, step: 0.5 }),
+})
+
+/** Clamp to `mirrorAngleRange` and snap to its step; non-finite values become 0. */
+export function clampMirrorAngle(angle: Partial<MirrorAngle> | undefined): MirrorAngle {
+  const axis = (value: unknown, range: { min: number; max: number; step: number }) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return 0
+    const snapped = Math.round(THREE.MathUtils.clamp(value, range.min, range.max) / range.step)
+    return Number((snapped * range.step).toFixed(2)) || 0
+  }
+  return {
+    yaw: axis(angle?.yaw, mirrorAngleRange.yaw),
+    tilt: axis(angle?.tilt, mirrorAngleRange.tilt),
+  }
+}
+
+/** Clamp every side; sides left at 0° / 0° are dropped, so `{}` means "as authored". */
+export function clampMirrorAdjustment(
+  adjustment: Readonly<Record<string, Partial<MirrorAngle>>> | undefined,
+): MirrorAdjustment {
+  const result: MirrorAdjustment = {}
+  for (const [side, angle] of Object.entries(adjustment ?? {})) {
+    const clamped = clampMirrorAngle(angle)
+    if (clamped.yaw !== 0 || clamped.tilt !== 0) result[side] = clamped
+  }
+  return result
+}
+
+/**
+ * Which side a lens is on: its authored `extras.nabla.mirror` tag, else the sign of its centre
+ * across the vehicle (`root` is the chassis-space group: +X is the driver's right).
+ */
+export function mirrorSideOf(mesh: THREE.Mesh, root?: THREE.Object3D): string | undefined {
+  const tagged = authoredMirrorSide(mesh)
+  if (tagged) return tagged
+  if (!root) return undefined
+  mesh.geometry.computeBoundingBox()
+  const centre = mesh.geometry.boundingBox!.getCenter(new THREE.Vector3())
+  root.updateWorldMatrix(true, false)
+  mesh.updateWorldMatrix(true, false)
+  const local = root.worldToLocal(centre.applyMatrix4(mesh.matrixWorld))
+  return local.x < 0 ? 'left' : 'right'
+}
+
+/**
+ * Key of a vehicle's mirror settings: its body GLB URL, plus its steering GLB when it has one,
+ * so cars that share a body but not a cockpit (the S3 and the A3) keep separate adjustments.
+ */
+export function mirrorModelKey(bodyUrl: string, steeringUrl?: string): string {
+  return steeringUrl ? `${bodyUrl}#${steeringUrl}` : bodyUrl
+}
+
 /** Fit the whole mirror from the eye position, independently of head rotation.
  * The viewer's orientation only decides whether the mirror is visible.
  */
@@ -104,8 +177,11 @@ function authoredMirrorSide(mesh: THREE.Mesh): string | undefined {
 /** Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz. */
 export class CarMirrors {
   private entries: {
+    side: string
     normal: THREE.Vector3
     up: THREE.Vector3
+    /** Unit vector away from the vehicle body, in the lens parent's frame. */
+    outward: THREE.Vector3
     rotation: THREE.Quaternion
     original: THREE.Mesh
     mirror: Reflector
@@ -117,12 +193,22 @@ export class CarMirrors {
     next: number
   }[] = []
   private frames = 0
+  private tilt: number
+  private adjustment: MirrorAdjustment = {}
+  /**
+   * `root` is the vehicle's chassis-space group; it tells untagged lenses their side and gives
+   * the outward direction for yaw (without it, the glass yaw has no reference). `aim` is the
+   * vehicle's baked per-side glass aim (`vehicle.mirrorAim`); `setAdjustment` adds to it.
+   */
   constructor(
     candidates: readonly THREE.Mesh[],
     carUp = new THREE.Vector3(0, 1, 0),
     tilt = -2,
     private readonly policy: MirrorPolicy = {},
+    root?: THREE.Object3D,
+    private readonly aim: Readonly<Record<string, MirrorAngle>> = {},
   ) {
+    this.tilt = tilt
     resolveMirrorCapture(policy)
     for (const side of Object.keys(policy.sides ?? {})) resolveMirrorCapture(policy, side)
     for (const original of candidates) {
@@ -161,49 +247,76 @@ export class CarMirrors {
         clipBias: 0.003,
       })
       mirror.position.copy(centre)
-      // Tilt the glass toward vehicle-up (both GLB housings use different local axes).
-      // The property specifies glass tilt; the reflected view changes at twice that angle.
       const up = carUp
         .clone()
         .applyQuaternion(original.parent!.getWorldQuaternion(new THREE.Quaternion()).invert())
-      const raisedNormal = raisedMirrorNormal(normal, up, tilt)
-      // Preserve the lens roll: reconstructing a quaternion from +Z is ambiguous
-      // near -Z and can rotate the silhouette out of its housing.
-      mirror.quaternion
-        .copy(rotation)
-        .premultiply(new THREE.Quaternion().setFromUnitVectors(normal, raisedNormal))
+      const side = mirrorSideOf(original, root) ?? `mirror${this.entries.length}`
+      const parentRotation = original.parent!.getWorldQuaternion(new THREE.Quaternion()).invert()
+      const across = root
+        ? new THREE.Vector3(1, 0, 0)
+            .applyQuaternion(root.getWorldQuaternion(new THREE.Quaternion()))
+            .applyQuaternion(parentRotation)
+        : new THREE.Vector3()
+      const outward = side === 'left' ? across.negate() : across
       mirror.visible = false
       original.parent!.add(mirror)
       const render = mirror.onBeforeRender
       mirror.onBeforeRender = () => {}
-      this.entries.push({
+      const entry = {
+        side,
         original,
         mirror,
         render,
         normal,
         up,
+        outward,
         rotation,
         capture: new THREE.PerspectiveCamera(),
         width: capture.width,
         height: capture.height,
         intervalMs: capture.intervalMs,
         next: 0,
-      })
+      }
+      this.entries.push(entry)
+      this.orient(entry)
     }
   }
+  /** Sides of the lenses this vehicle has (`left`, `right`, …), in lens order. */
+  get sides(): string[] {
+    return this.entries.map((e) => e.side)
+  }
+  /** Vehicle-wide glass tilt (`vehicle.mirrorTilt`, −5…12°); per-side adjustments add to it. */
   setTilt(degrees: number): void {
-    const tilt = THREE.MathUtils.clamp(degrees, -5, 12)
-    for (const e of this.entries) {
-      e.mirror.quaternion
-        .copy(e.rotation)
-        .premultiply(
-          new THREE.Quaternion().setFromUnitVectors(
-            e.normal,
-            raisedMirrorNormal(e.normal, e.up, tilt),
-          ),
-        )
-      e.next = 0
-    }
+    this.tilt = THREE.MathUtils.clamp(degrees, -5, 12)
+    for (const e of this.entries) this.orient(e)
+  }
+  /**
+   * Turn each side's glass by its `MirrorAngle` (clamped) on top of the authored aim and the
+   * vehicle tilt. The reflection is computed from the glass every capture, so the mirror view
+   * follows at once. Sides not listed return to the authored aim.
+   */
+  setAdjustment(adjustment: Readonly<Record<string, Partial<MirrorAngle>>>): MirrorAdjustment {
+    this.adjustment = clampMirrorAdjustment(adjustment)
+    for (const e of this.entries) this.orient(e)
+    return { ...this.adjustment }
+  }
+  private orient(e: CarMirrors['entries'][number]): void {
+    const adjusted = this.adjustment[e.side] ?? mirrorAngleCentred
+    const baked = this.aim[e.side] ?? mirrorAngleCentred
+    const angle = { yaw: baked.yaw + adjusted.yaw, tilt: baked.tilt + adjusted.tilt }
+    // Tilt the glass toward vehicle-up (both GLB housings use different local axes).
+    // The property specifies glass tilt; the reflected view changes at twice that angle.
+    const raised = raisedMirrorNormal(e.normal, e.up, this.tilt + angle.tilt)
+    // Yaw about vehicle-up; the sign that swings the glass normal toward `outward` is positive.
+    const swing = new THREE.Vector3().crossVectors(e.up, raised).dot(e.outward)
+    const yaw = THREE.MathUtils.degToRad(angle.yaw) * (swing < 0 ? -1 : 1)
+    // Preserve the lens roll: reconstructing a quaternion from +Z is ambiguous
+    // near -Z and can rotate the silhouette out of its housing.
+    e.mirror.quaternion
+      .copy(e.rotation)
+      .premultiply(new THREE.Quaternion().setFromUnitVectors(e.normal, raised))
+      .premultiply(new THREE.Quaternion().setFromAxisAngle(e.up, yaw))
+    e.next = 0
   }
   render(
     renderer: THREE.WebGLRenderer,

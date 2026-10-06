@@ -24,6 +24,7 @@ import {
   steeringWheelStorage,
   viteHostSteeringWheels,
 } from './host-steering-wheel.js'
+import { hostMirrorsFromSearch, mirrorStorage, viteHostMirrors } from './host-mirrors.js'
 import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
@@ -104,6 +105,11 @@ try {
     steeringWheel: {
       defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
       storage: steeringWheelStorage(),
+    },
+    // «Espejos»: host defaults from &mirrors= / VITE_NABLA_MIRRORS; the player's choice is saved.
+    mirrors: {
+      defaults: hostMirrorsFromSearch(location.search, viteHostMirrors()),
+      storage: mirrorStorage(),
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     hud: true,

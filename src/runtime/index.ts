@@ -60,6 +60,17 @@ export {
   type SteeringWheelStorage,
 } from './steering-wheel-offsets.js'
 export {
+  defaultMirrorAdjustment,
+  describeMirrorAdjustment,
+  formatMirrorDegrees,
+  initialMirrorAdjustment,
+  mirrorStorageKey,
+  readMirrorAdjustment,
+  writeMirrorAdjustment,
+  type MirrorSettings,
+  type MirrorStorage,
+} from './mirror-adjustment.js'
+export {
   TouchDriving,
   isRoadTouchDriving,
   driveSliderThrottle,

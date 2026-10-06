@@ -130,6 +130,17 @@ export const vehicleField = z
       .optional(),
     /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
     mirrorTilt: finite.min(-5).max(12).optional(),
+    /**
+     * Baked glass aim per mirror side (`left`, `right`, …), degrees, on top of the asset lens:
+     * `yaw` + outward / − inward about the vehicle vertical, `tilt` + up (added to `mirrorTilt`).
+     * The driver's «Espejos» sliders add to it. `scripts/bake-mirror-aim.mjs` writes it.
+     */
+    mirrorAim: z
+      .record(
+        z.string().min(1).max(32),
+        z.object({ yaw: finite.min(-30).max(30), tilt: finite.min(-20).max(20) }).strict(),
+      )
+      .optional(),
     /** Enable the audible warning while this vehicle has reverse gear engaged. */
     reverseAlarm: z.boolean().optional(),
     /**

@@ -81,7 +81,7 @@ A tab with nothing to show in the current game is hidden (Posición and Capas on
 | **Posición**      | current `lat, lon`, «Copiar posición», «Ir a latitud, longitud»                                                                |
 | **Calidad**       | quality profile, FPS limit and resolution scale; «Asfalto» (asphalt contrast)                                                  |
 | **Capas**         | map layers: «Carretera», «Edificios y techos», «Foto del suelo»                                                                |
-| **Vehículos**     | add a vehicle or object; «Volante» (below)                                                                                     |
+| **Vehículos**     | add a vehicle or object; «Volante» and «Espejos» (below)                                                                       |
 | **Opciones**      | «Cámara cinematográfica al volcar», «R: reaparecer en la vía más cercana», «Nombres de poblaciones»                            |
 | **Configuración** | «Valores del planeta» (config text + «Copiar config»); «Terreno» (source, cache, missing cells)                                |
 
@@ -103,6 +103,21 @@ default. The box under the sliders shows the values to make them the default for
 («Valores para fijarlo», metres), and every change is logged in the browser console. The
 group is disabled on foot and in vehicles without a separate steering mesh. Details:
 [Vehicle anchors](vehicle-rigs.md#driver-steering-wheel-adjustment-runtime).
+
+## Mirror angles
+
+In the same **Vehículos** tab, the **Espejos** group turns the mirror glasses of the vehicle you
+are in, live (cars and the truck):
+
+- «Espejo izquierdo: giro» / «Espejo derecho: giro»: + turns the glass outward (you see more
+  of the roadside), − inward (more of your own flank). ±15° in 0.5° steps.
+- «Espejo izquierdo: inclinación» / «Espejo derecho: inclinación»: + up, − down. ±10°.
+
+The mirror view follows at once (about twice the glass angle). The choice is saved per
+vehicle (the S3, the A3 and the truck keep their own); «Restablecer espejos» returns to the
+default. The box below shows «Valores para fijarlo» (degrees), and every change is logged in
+the browser console. Sliders for a side the vehicle has no mirror on stay disabled. Details:
+[Vehicle anchors](vehicle-rigs.md#driver-mirror-adjustment-runtime).
 
 ## Flight: mode 2
 
