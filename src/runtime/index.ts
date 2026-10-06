@@ -31,10 +31,22 @@ export {
   gameCameraView,
   isFirstPersonView,
   updateGameCamera,
+  setGameCameraView,
+  type GameCameraTransition,
   type GameCameraMode,
   type GameCameraState,
   type GameCameraView,
 } from './game-camera.js'
+export {
+  START_CAMERA_HOLD_MS,
+  StartCameraSequencer,
+  resolveStartCameras,
+  type ResolvedStartCamera,
+  type StartCameraAction,
+  type StartCameraName,
+  type StartCameraSequence,
+  type StartCameraStep,
+} from './start-cameras.js'
 export {
   GameInput,
   gamepadAxes,

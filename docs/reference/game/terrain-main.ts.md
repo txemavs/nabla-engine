@@ -68,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onResolutionScale
 
-[Implementation, line 118](../../../game/terrain-main.ts#L118)
+[Implementation, line 119](../../../game/terrain-main.ts#L119)
 
 ```ts
 onResolutionScale(state): inferred by TypeScript; see implementation
@@ -78,12 +78,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `CustomEvent`
 
-## callback@142
+## callback@143
 
-[Implementation, line 142](../../../game/terrain-main.ts#L142)
+[Implementation, line 143](../../../game/terrain-main.ts#L143)
 
 ```ts
-callback@142(sample): inferred by TypeScript; see implementation
+callback@143(sample): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -92,7 +92,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onProgress
 
-[Implementation, line 147](../../../game/terrain-main.ts#L147)
+[Implementation, line 148](../../../game/terrain-main.ts#L148)
 
 ```ts
 onProgress(_status, tiles): inferred by TypeScript; see implementation
@@ -107,7 +107,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onFrame
 
-[Implementation, line 154](../../../game/terrain-main.ts#L154)
+[Implementation, line 155](../../../game/terrain-main.ts#L155)
 
 ```ts
 onFrame(frame): inferred by TypeScript; see implementation
@@ -121,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onError
 
-[Implementation, line 159](../../../game/terrain-main.ts#L159)
+[Implementation, line 160](../../../game/terrain-main.ts#L160)
 
 ```ts
 onError(error): inferred by TypeScript; see implementation
@@ -134,7 +134,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onMessage
 
-[Implementation, line 162](../../../game/terrain-main.ts#L162)
+[Implementation, line 163](../../../game/terrain-main.ts#L163)
 
 ```ts
 onMessage(message): inferred by TypeScript; see implementation
@@ -146,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nablaGroundAudit
 
-[Implementation, line 170](../../../game/terrain-main.ts#L170)
+[Implementation, line 171](../../../game/terrain-main.ts#L171)
 
 ```ts
 nablaGroundAudit(): inferred by TypeScript; see implementation
@@ -156,29 +156,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `runtime?.groundAudit`
 
-## callback@171
+## callback@172
 
-[Implementation, line 171](../../../game/terrain-main.ts#L171)
+[Implementation, line 172](../../../game/terrain-main.ts#L172)
 
 ```ts
-callback@171(): inferred by TypeScript; see implementation
+callback@172(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime?.dispose`
 
-## callback@206
+## callback@207
 
-[Implementation, line 206](../../../game/terrain-main.ts#L206)
+[Implementation, line 207](../../../game/terrain-main.ts#L207)
 
 ```ts
-callback@206(action): inferred by TypeScript; see implementation
+callback@207(action): inferred by TypeScript; see implementation
 ```
 
-## callback@206.onClick
+## callback@207.onClick
 
-[Implementation, line 208](../../../game/terrain-main.ts#L208)
+[Implementation, line 209](../../../game/terrain-main.ts#L209)
 
 ```ts
 onClick(): inferred by TypeScript; see implementation

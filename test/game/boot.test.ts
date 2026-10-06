@@ -69,4 +69,15 @@ describe('standalone boot config', () => {
       readBootConfig('?roadReset=1', { NABLA_BOOT: { recoverToRoad: false } }).recoverToRoad,
     ).toBe(true)
   })
+  it('passes the host start camera sequence through', () => {
+    const startCameras = [
+      'overhead',
+      { view: 'driver', after: 800 },
+      { view: 'chase', after: 'engine' },
+    ]
+    expect(readBootConfig('', { NABLA_BOOT: { startCameras } as never }).startCameras).toEqual(
+      startCameras,
+    )
+    expect(readBootConfig('', {}).startCameras).toBeUndefined()
+  })
 })

@@ -18,6 +18,18 @@
   `GameRuntime.mirrors` / `setMirrorAngle` / `resetMirrorAdjustment`,
   `GameRuntimeOptions.mirrors`, `SceneView.setMirrorAdjustment`, `CarMirrors.setAdjustment`,
   `mirrorAngleRange`, `mirrorModelKey`, `mirrorSideOf`.
+
+- **Start camera sequence (`startCameras`):** a start in a vehicle can run through camera views
+  before the player takes over, e.g. `['overhead', { view: 'driver', after: 800, transitionMs:
+1800 }, { view: 'chase', after: 'engine', transitionMs: 1400 }]`: overhead, down into the
+  driver's seat, the engine start-up there (P, starter, needle sweep), then out to the chase
+  camera. `after` is a hold in milliseconds or `'engine'` (the engine stays off until the camera
+  reaches the step before it, then starts). Driving input or C ends it early. Host config
+  `NABLA_BOOT.startCameras`; engine API `GameRuntimeOptions.startCameras`,
+  `runtime.startCamerasActive` / `skipStartCameras()`, `resolveStartCameras`,
+  `StartCameraSequencer`, `setGameCameraView`; `Simulation.holdEngine()` / `startEngine()` hold
+  a seated road vehicle switched off and run the normal start-up later. Default none: unchanged.
+
 - **Asphalt contrast:** a draw-time tone curve on the roads photo drape (fragment shader; tile
   textures untouched, no painter): around a fixed display-space pivot, dark asphalt gets darker
   and painted markings brighter, on top of the existing carriageway darkening and
@@ -186,6 +198,13 @@
   are unchanged. Placement is one table, `SECTION_TABS` in `game/settings-hud.ts`, which already
   lists #138's `quality-shadows` («Sombras», Calidad). `PlanetSettingsPanel` gains `config` (the
   config block, mountable apart from `root`). See docs/controls.md → Settings menu.
+
+- **Camera changes move instead of cutting:** C / gamepad B and every other view change while
+  the player stays in the same vehicle (or on foot) blend position, orientation and field of view
+  with an ease-in-out (`smootherstep`) over the new camera setting `modeTransitionMs` (default
+  700 ms; `0` cuts as before). The blend starts from the pose actually shown, relative to the
+  player, so it follows a moving car and a second C mid-blend continues smoothly. Boarding keeps
+  its overhead-to-seat entrance.
 
 - **Idle at ~1,000 RPM with a less rumbly engine note.** Car idle (`roadVehicleDefaults.idleRpm`,
   S3, A3 and procedural cars) 900 → 1,000 RPM, so the rev counter rests on 1,000 at a
