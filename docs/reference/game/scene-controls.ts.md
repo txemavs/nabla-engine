@@ -611,7 +611,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `/ground/i.test`
 - `String`
-- `presetVehicle`
+- `presetEntities`
 - `renderList`
 - `runtime.spawnVehicle`
 - `vehicleChoices`

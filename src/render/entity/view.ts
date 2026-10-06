@@ -48,7 +48,7 @@ import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
 import { createMonitorAvatar, MonitorMotion } from './avatar.js'
 import { createPortalSurface, type PortalSurface } from '../portal/portals.js'
-import { PORTAL_BAR } from '../../entity/portal/portal.js'
+import { assertHostedMouths, PORTAL_BAR } from '../../entity/portal/portal.js'
 import { assets, disposeObject } from './assets.js'
 import { vehicleDefinition } from '../../entity/vehicle/vehicle.js'
 import type { VisualDefinition, Entity, Transform } from '../../entity/schema.js'
@@ -366,15 +366,20 @@ export class SceneView {
    * The entities join the shared document; pair with `Simulation.addVehicles`.
    */
   addVehicles(added: Entity[]): void {
-    for (const e of added) {
-      if (e.kind !== 'vehicle' || !e.vehicle || e.portal)
+    const vehicles = added.filter((e) => !e.portal)
+    // Hosted mouths (the carrier stern portal) follow their vehicle: the carrier maps its
+    // portal monitor to them, so they join the document before the meshes are built.
+    const mouths = added.filter((e) => e.portal)
+    for (const e of vehicles) {
+      if (e.kind !== 'vehicle' || !e.vehicle)
         throw new Error(`Entity ${e.id} is not a plain vehicle`)
       if (this.document.entities.some((o) => o.id === e.id))
         throw new Error(`Entity id already in use: ${e.id}`)
     }
-    this.document.entities = [...this.document.entities, ...added]
+    assertHostedMouths(mouths, vehicles, new Map(this.document.entities.map((e) => [e.id, e])))
+    this.document.entities = [...this.document.entities, ...vehicles, ...mouths]
     this.graph = SceneGraph.fromValidated(this.document)
-    this.addEntities(added)
+    this.addEntities([...vehicles, ...mouths])
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
   }
   /** Remove a vehicle installed by `addVehicles`, releasing its meshes and per-vehicle equipment. */
@@ -418,7 +423,22 @@ export class SceneView {
       this.mapBounds,
     ] as Map<string, unknown>[])
       map.delete(id)
-    this.document.entities = this.document.entities.filter((e) => e.id !== id)
+    // Hosted mouths (the carrier stern portal) leave with their vehicle.
+    const mouths = this.document.entities.filter((e) => e.parentId === id && e.portal)
+    for (const mouth of mouths) {
+      this.portals.get(mouth.id)?.target.dispose()
+      const object = this.objects.get(mouth.id)
+      if (object) {
+        object.removeFromParent()
+        disposeObject(object)
+      }
+      this.portals.delete(mouth.id)
+      this.objects.delete(mouth.id)
+      this.portalTablets.delete(mouth.id)
+    }
+    this.document.entities = this.document.entities.filter(
+      (e) => e.id !== id && !mouths.includes(e),
+    )
     this.graph = SceneGraph.fromValidated(this.document)
   }
   get pendingMapInstall(): number {

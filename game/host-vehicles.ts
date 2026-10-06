@@ -17,7 +17,12 @@
  */
 import { geoToLocal, type GeoPoint } from '@nabla/engine'
 import { isValidLatLon } from '@nabla/engine/planet/lat-lon'
-import { hasTrailerBox, hasVehiclePreset, presetVehicle } from '@nabla/engine/vehicles'
+import {
+  hasTrailerBox,
+  hasVehiclePreset,
+  presetEntities,
+  presetVehicle,
+} from '@nabla/engine/vehicles'
 import type { Entity, Vec3Tuple } from '@nabla/engine/scene'
 
 /** One extra vehicle, authored in geographic coordinates. */
@@ -58,7 +63,8 @@ export interface HostVehiclePose {
 
 /** What {@link installHostVehicles} needs from the browser runtime. */
 export interface HostVehicleRuntime {
-  placeVehicle(template: Entity, position: Vec3Tuple, yaw?: number): Promise<string>
+  /** `template` is the vehicle, or the vehicle followed by the entities it hosts. */
+  placeVehicle(template: Entity | Entity[], position: Vec3Tuple, yaw?: number): Promise<string>
   hitchTrailer?(tractorId: string, trailerId: string): string
 }
 
@@ -283,7 +289,14 @@ export async function installHostVehicles(
       if (isTractor) lastTractorSkipped = true
       continue
     }
-    const id = await runtime.placeVehicle(template, pose.position, pose.yaw)
+    // Hosted entities from the preset (the carrier stern portal) travel with the vehicle;
+    // without them the carrier's portal monitor is dark and has no portal controls.
+    const hosted = presetEntities(spec.vehicle, template.id).slice(1)
+    const id = await runtime.placeVehicle(
+      hosted.length ? [template, ...hosted] : template,
+      pose.position,
+      pose.yaw,
+    )
     ids.push(id)
     footprints.push({ index, id, footprint })
     const hitch = template.vehicle?.hitch

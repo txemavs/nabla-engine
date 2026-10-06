@@ -1081,11 +1081,14 @@ export class GameRuntime {
   }
   /**
    * Add a vehicle on the real ground in front of the player, facing the same way, and
-   * return its id. `template` is a complete vehicle entity (for example `presetVehicle`);
-   * its position and id are replaced. Throws when no ground is available ahead.
+   * return its id. `template` is a complete vehicle entity (for example `presetVehicle`),
+   * or the vehicle followed by the entities it hosts (`presetEntities`, e.g. the carrier
+   * stern portal); ids and position are replaced. Throws when no ground is available ahead.
    */
-  async spawnVehicle(template: Entity, distance?: number): Promise<string> {
+  async spawnVehicle(template: Entity | readonly Entity[], distance?: number): Promise<string> {
     this.assertAlive()
+    const vehicle = Array.isArray(template) ? template[0] : (template as Entity)
+    if (!vehicle) throw new Error('A vehicle template is required')
     const sim = this.session.simulation
     if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
     const player = sim.player
@@ -1093,7 +1096,7 @@ export class GameRuntime {
       ? this.document.entities.find((e) => e.id === player.vehicleId)
       : undefined
     const yaw = own ? player.yaw : this.cameraState.yaw
-    const [width, length] = [template.size[0], template.size[2]]
+    const [width, length] = [vehicle.size[0], vehicle.size[2]]
     const ahead = distance ?? (own ? 4 + (own.size[2] + length) / 2 : 4 + length / 2)
     // Free spot: straight ahead first, then beside it, then farther along the heading.
     const radius = (size: readonly number[]) => Math.hypot(size[0], size[2]) / 2
@@ -1128,14 +1131,22 @@ export class GameRuntime {
    * live view, simulation and input mixer (the same path as `spawnVehicle`).
    * `yaw` is gameplay radians; 0 faces north (−Z). Hosts convert WGS84 lat/lon with
    * `geoToLocal` and compass degrees with `headingYaw` before calling.
+   * `template` may be `presetEntities` output: the vehicle first, then entities hosted on it
+   * (`parentId` = the template id). The carrier needs its stern portal this way, or its
+   * portal monitor stays dark and has no destination/open/close controls.
    */
   async placeVehicle(
-    template: Entity,
+    template: Entity | readonly Entity[],
     position: Vec3Tuple,
     yaw = 0,
     timeoutMs?: number,
   ): Promise<string> {
     this.assertAlive()
+    const [vehicle, ...hostedTemplates] = Array.isArray(template) ? template : [template as Entity]
+    if (!vehicle) throw new Error('A vehicle template is required')
+    for (const child of hostedTemplates)
+      if (child.parentId !== vehicle.id)
+        throw new Error(`Entity ${child.id} must be hosted by ${vehicle.id}`)
     const sim = this.session.simulation
     if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
     const [x, , z] = position
@@ -1144,7 +1155,7 @@ export class GameRuntime {
     })
     const id = `spawned-${++this.spawnSequence}`
     const entity: Entity = {
-      ...structuredClone(template),
+      ...structuredClone(vehicle),
       id,
       parentId: null,
       transform: {
@@ -1153,12 +1164,22 @@ export class GameRuntime {
       },
     }
     entity.transform.position[1] = ground + playGroundClearance(entity)
-    this.view.addVehicles([entity])
-    sim.addVehicles([entity])
-    this.game.addVehicles([entity])
-    // Ships with an interior (carrier) get their helm/telemetry/map/systems monitor panels
-    // from the document; a carrier placed after start needs them rebuilt or its screens stay dark.
-    if (entity.vehicle?.interior) this.monitors.rebuild(this.document)
+    // `carrier-stern` becomes `spawned-N-stern`; local transforms stay relative to the host.
+    const hosted = hostedTemplates.map((child): Entity => ({
+      ...structuredClone(child),
+      id:
+        id + (child.id.startsWith(vehicle.id) ? child.id.slice(vehicle.id.length) : `-${child.id}`),
+      parentId: id,
+    }))
+    const added = [entity, ...hosted]
+    this.view.addVehicles(added)
+    sim.addVehicles(added)
+    this.game.addVehicles(added)
+    // Ships with an interior (carrier) get their helm/telemetry/map/systems/portal monitor
+    // panels from the document; a carrier placed after start needs them rebuilt or its screens
+    // stay dark.
+    if (entity.vehicle?.interior || hosted.some((e) => e.portal))
+      this.monitors.rebuild(this.document)
     this.spawned.push(id)
     const group = this.view.objects.get(id)
     if (group)

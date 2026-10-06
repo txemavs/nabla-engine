@@ -16,7 +16,7 @@ import {
   SKY_RATE,
   type SkyClock,
 } from '@nabla/engine/planet/sky'
-import { presetVehicle, vehiclePresets } from '@nabla/engine/vehicles'
+import { presetEntities, vehiclePresets } from '@nabla/engine/vehicles'
 import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
 
@@ -41,7 +41,7 @@ export interface SceneRuntime {
   /** Amount 0–1; omit pressure to leave storm/deck pressure unchanged. */
   setCloudWeather(amount: number, pressure?: number): void
   readonly spawnedVehicles: { id: string; name: string }[]
-  spawnVehicle(template: Entity): Promise<string>
+  spawnVehicle(template: Entity | Entity[]): Promise<string>
   removeSpawnedVehicle(id: string): void
 }
 
@@ -435,7 +435,8 @@ export function bindSceneControls(
       add.disabled = true
       vehicleMessage.textContent = 'Añadiendo…'
       try {
-        await runtime.spawnVehicle(presetVehicle(entry.id, 'spawn-template'))
+        // `presetEntities` keeps hosted parts such as the carrier stern portal.
+        await runtime.spawnVehicle(presetEntities(entry.id, 'spawn-template'))
         vehicleMessage.textContent = `${entry.label} añadido delante de ti. Acércate y pulsa E para entrar.`
       } catch (error) {
         vehicleMessage.textContent = /ground/i.test(

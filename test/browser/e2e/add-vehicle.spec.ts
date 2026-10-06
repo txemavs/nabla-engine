@@ -54,3 +54,49 @@ test('SceneView installs a vehicle added while running and releases it on remova
     children: result.children,
   })
 })
+
+test('SceneView maps a late carrier stern portal onto its door monitor and drops it on removal', async ({
+  page,
+}) => {
+  await page.route('**/add-carrier', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<!doctype html><body></body>' }),
+  )
+  await page.goto('/add-carrier')
+  const result = await page.evaluate(async (root) => {
+    const { SceneView } = await import(`/@fs/${root}/src/presentation/scene-view.ts`)
+    const { presetEntities } = await import(`/@fs/${root}/src/catalog/vehicles/library.ts`)
+    const { createEntity } = await import(`/@fs/${root}/src/entity/schema.ts`)
+    const view = new SceneView({
+      version: 1,
+      name: 'Add carrier',
+      entities: [createEntity('spawn', 'spawn')],
+    })
+    await view.ready
+    view.addVehicles(presetEntities('carrier', 'late-ship', [0, 1.2, -20]))
+    await view.ready
+    const tablet = view.portalTablets.get('late-ship-stern')?.[0]
+    const added = {
+      portal: view.portals.has('late-ship-stern'),
+      tablet: !!tablet,
+      // The portal console shares the left door screen of the carrier interior.
+      sharesDoorScreen: !!tablet && tablet !== view.placeScreens.get('late-ship'),
+      inDocument: view.document.entities.some((e: { id: string }) => e.id === 'late-ship-stern'),
+    }
+    view.removeVehicle('late-ship')
+    const removed = {
+      portal: view.portals.has('late-ship-stern'),
+      tablet: view.portalTablets.has('late-ship-stern'),
+      object: view.objects.has('late-ship-stern'),
+      inDocument: view.document.entities.some((e: { id: string }) => e.id === 'late-ship-stern'),
+    }
+    view.dispose()
+    return { added, removed }
+  }, process.cwd())
+  expect(result.added).toEqual({
+    portal: true,
+    tablet: true,
+    sharesDoorScreen: true,
+    inDocument: true,
+  })
+  expect(result.removed).toEqual({ portal: false, tablet: false, object: false, inDocument: false })
+})
