@@ -6,7 +6,11 @@
  */
 import type { GameCameraView } from './game-camera.js'
 
-/** View names: host-friendly aliases (`overhead`, `driver`) plus the engine's own names. */
+/**
+ * View names: host-friendly aliases (`overhead`, `driver`) plus the engine's own names. `chase` is
+ * the fixed third-person camera behind the vehicle (follows its heading); `cinematic` is the slow
+ * orbit the player can pick with C.
+ */
 export type StartCameraName = 'overhead' | 'driver' | 'chase' | 'cinematic' | 'map' | 'cockpit'
 
 export interface StartCameraStep {

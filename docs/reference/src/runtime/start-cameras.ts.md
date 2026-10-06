@@ -15,7 +15,7 @@ without it the game starts in the driver view as before. Times are milliseconds.
 
 ## nonNegative
 
-[Implementation, line 47](../../../../src/runtime/start-cameras.ts#L47)
+[Implementation, line 51](../../../../src/runtime/start-cameras.ts#L51)
 
 ```ts
 nonNegative(value: unknown): value is number
@@ -27,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveStartCameras
 
-[Implementation, line 51](../../../../src/runtime/start-cameras.ts#L51)
+[Implementation, line 55](../../../../src/runtime/start-cameras.ts#L55)
 
 Validate a host sequence and map view names to camera views; `undefined` is no sequence.
 
@@ -45,12 +45,12 @@ Explicit throws in this body:
 
 - `new TypeError('startCameras must be an array of views')`
 
-## resolveStartCameras.callback@56
+## resolveStartCameras.callback@60
 
-[Implementation, line 56](../../../../src/runtime/start-cameras.ts#L56)
+[Implementation, line 60](../../../../src/runtime/start-cameras.ts#L60)
 
 ```ts
-callback@56(entry, index): inferred by TypeScript; see implementation
+callback@60(entry, index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -68,7 +68,7 @@ Explicit throws in this body:
 
 ## StartCameraSequencer.constructor
 
-[Implementation, line 97](../../../../src/runtime/start-cameras.ts#L97)
+[Implementation, line 101](../../../../src/runtime/start-cameras.ts#L101)
 
 Steps through a resolved sequence. Each frame the runtime reports whether the camera has
 reached the current view (no blend running) and whether the engine is running; the sequencer
@@ -87,17 +87,17 @@ Explicit throws in this body:
 
 - `new RangeError('startCameras needs at least one view')`
 
-## StartCameraSequencer.constructor.callback@99
+## StartCameraSequencer.constructor.callback@103
 
-[Implementation, line 99](../../../../src/runtime/start-cameras.ts#L99)
+[Implementation, line 103](../../../../src/runtime/start-cameras.ts#L103)
 
 ```ts
-callback@99(step, index): inferred by TypeScript; see implementation
+callback@103(step, index): inferred by TypeScript; see implementation
 ```
 
 ## StartCameraSequencer.first
 
-[Implementation, line 105](../../../../src/runtime/start-cameras.ts#L105)
+[Implementation, line 109](../../../../src/runtime/start-cameras.ts#L109)
 
 The view shown from the first frame.
 
@@ -107,7 +107,7 @@ first(): GameCameraView
 
 ## StartCameraSequencer.done
 
-[Implementation, line 108](../../../../src/runtime/start-cameras.ts#L108)
+[Implementation, line 112](../../../../src/runtime/start-cameras.ts#L112)
 
 Steps through a resolved sequence. Each frame the runtime reports whether the camera has
 reached the current view (no blend running) and whether the engine is running; the sequencer
@@ -119,7 +119,7 @@ done(): boolean
 
 ## StartCameraSequencer.update
 
-[Implementation, line 112](../../../../src/runtime/start-cameras.ts#L112)
+[Implementation, line 116](../../../../src/runtime/start-cameras.ts#L116)
 
 Steps through a resolved sequence. Each frame the runtime reports whether the camera has
 reached the current view (no blend running) and whether the engine is running; the sequencer
@@ -131,7 +131,7 @@ update(frame: { now: number; arrived: boolean; engineRunning: boolean }): StartC
 
 ## StartCameraSequencer.skip
 
-[Implementation, line 143](../../../../src/runtime/start-cameras.ts#L143)
+[Implementation, line 147](../../../../src/runtime/start-cameras.ts#L147)
 
 End now (player input): starts a held engine. `toLast` also asks for the last view, for
 driving input; C keeps the player's own camera choice.

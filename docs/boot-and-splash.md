@@ -247,7 +247,9 @@ overrides both for one visit. Library hosts pass `GameRuntimeOptions.asphaltCont
 sequence of a start in a vehicle. Each step is a view name or `{ view, after, transitionMs }`:
 
 - `view`: `'overhead'` (alias `'map'`), `'driver'` (alias `'cockpit'`), `'chase'` or
-  `'cinematic'`. The first step shows from the first frame.
+  `'cinematic'`. `'chase'` is the fixed third-person camera behind the vehicle, following its
+  heading; `'cinematic'` is the slow orbit, normally only chosen by the player with C, so end a
+  sequence on `'chase'`. The first step shows from the first frame.
 - `after`: when to move on to this step once the previous one has been reached, in milliseconds
   (default 600), or `'engine'` to wait until the engine start-up (starter, needle sweep) has
   finished. With an `'engine'` step the engine stays off, silent and in P until the camera
