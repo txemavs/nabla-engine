@@ -133,6 +133,25 @@ or `VITE_NABLA_PORTALS` at build time. `?portals=` wins over the build value; a 
 `portals=` means none. Invalid JSON, repeated names or unknown links fail at startup. The
 terrain-folder entry (`?terrain=`) reads the same parameter.
 
+### Host steering-wheel defaults
+
+`?wheel=` (or `VITE_NABLA_STEERING_WHEEL` at build time) sets where the steering wheel starts
+for each vehicle model, on top of its GLB pose. It is a JSON object keyed by vehicle preset id
+(`car` is the S3, `a3`, `white-truck`, …) or by steering GLB URL. Values are metres along the
+steering column (`distance`, + toward the instrument cluster) and vertically (`height`, + up),
+each between -0.08 and 0.08:
+
+```text
+?wheel={"car":{"distance":0.015,"height":-0.005}}
+```
+
+A player's own choice from **Ajustes → Vehículos → Volante** is saved in `localStorage` and wins
+over the host default; «Restablecer volante» returns to the host default. `?wheel=` wins over
+the build value; a present empty `wheel=` means no host defaults. Unknown presets, presets
+without a steering mesh and out-of-range values fail at startup. Embedding hosts pass the same
+data as `GameRuntimeOptions.steeringWheel = { defaults, storage }` (keys are steering GLB URLs
+there). See [Vehicle anchors](vehicle-rigs.md#driver-steering-wheel-adjustment-runtime).
+
 To play on real Atlas Z15 cells (LiDAR, orthophoto, buildings) use `?terrain=<base>`; see
 [Terrain folder](terrain-folder.md).
 

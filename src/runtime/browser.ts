@@ -57,6 +57,15 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
+import {
+  defaultSteeringWheelOffset,
+  describeSteeringWheelOffset,
+  initialSteeringWheelOffset,
+  readSteeringWheelOffset,
+  writeSteeringWheelOffset,
+  type SteeringWheelSettings,
+} from './steering-wheel-offsets.js'
+import type { SteeringWheelOffset } from '../render/entity/steering-wheel.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
 import type { Simulation } from '../simulation/simulation.js'
 import * as THREE from 'three'
@@ -133,6 +142,20 @@ export interface AttractOptions {
   /** Tilt from local vertical, radians (default 0.45). */
   tilt?: number
 }
+/** The steering wheel of the vehicle the player drives (see `GameRuntime.steeringWheel`). */
+export interface SteeringWheelState {
+  vehicleId: string
+  /** Vehicle name for menus, e.g. "S3 Nabla · 400 CV DSG". */
+  name: string
+  /** Steering model: the URL of its steering GLB. Adjustments are shared per model. */
+  model: string
+  /** Current adjustment on top of the GLB pose, metres. */
+  offset: SteeringWheelOffset
+  /** What `resetSteeringWheelOffset` returns to: the host default, else centred. */
+  defaultOffset: SteeringWheelOffset
+  /** True when the player's own choice is saved for this model. */
+  saved: boolean
+}
 export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
@@ -191,6 +214,11 @@ export interface GameRuntimeOptions {
   onDiagnostics?: (sample: RuntimeFrameSample) => void
   onMessage?: (message: string) => void
   onError?: (error: unknown) => void
+  /**
+   * Driver steering-wheel adjustment per steering model: host defaults and where the player's
+   * choice is saved (pass `localStorage` to keep it between visits). See `setSteeringWheelOffset`.
+   */
+  steeringWheel?: SteeringWheelSettings
 }
 
 /** Browser composition over the same session, camera, input and effects used by Studio.
@@ -360,6 +388,7 @@ export class GameRuntime {
     if (this.fieldLighting) this.scene.add(this.fieldLighting.lights.root)
     this.view = new SceneView(this.document, false, false, {
       mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
+      steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
     })
     this.scene.add(this.view.root)
     this.monitors = new VehicleMonitors(
@@ -1273,6 +1302,56 @@ export class GameRuntime {
   toggleHitch(): string | null {
     this.assertAlive()
     return this.session.simulation?.toggleHitch() ?? null
+  }
+  /**
+   * The steering wheel of the vehicle the player is in, or null on foot and in vehicles without
+   * a separate steering mesh. Every car of the same model shares one adjustment.
+   */
+  get steeringWheel(): SteeringWheelState | null {
+    const vehicleId = this.session.simulation?.player.vehicleId
+    const model = vehicleId ? this.view.steeringWheelModel(vehicleId) : undefined
+    if (!vehicleId || !model) return null
+    const settings = this.options.steeringWheel
+    return {
+      vehicleId,
+      name: this.document.entities.find((e) => e.id === vehicleId)?.name ?? vehicleId,
+      model,
+      offset: this.view.steeringWheelOffset(model),
+      defaultOffset: defaultSteeringWheelOffset(settings, model),
+      saved: readSteeringWheelOffset(settings?.storage, model) !== undefined,
+    }
+  }
+  /**
+   * Move the steering wheel of `model` (default: the player's vehicle) live, on top of the pose
+   * baked into its GLB, and save the choice for that model. Values are metres, clamped to
+   * ±8 cm and snapped to 0.5 cm (`steeringWheelOffsetRange`). The applied values are logged with
+   * `console.info` in centimetres and metres, ready to become a host default or a GLB bake.
+   * Returns the applied offset, or null when there is no steering wheel to adjust.
+   */
+  setSteeringWheelOffset(
+    offset: Partial<SteeringWheelOffset>,
+    model = this.steeringWheel?.model,
+  ): SteeringWheelOffset | null {
+    this.assertAlive()
+    if (!model) return null
+    const current = this.view.steeringWheelOffset(model)
+    const applied = this.view.setSteeringWheelOffset(model, { ...current, ...offset })
+    writeSteeringWheelOffset(this.options.steeringWheel?.storage, model, applied)
+    console.info(`[nabla] Steering wheel ${model}: ${describeSteeringWheelOffset(applied)}`)
+    return applied
+  }
+  /** Forget the saved choice of `model` (default: the player's vehicle) and return to the host default. */
+  resetSteeringWheelOffset(model = this.steeringWheel?.model): SteeringWheelOffset | null {
+    this.assertAlive()
+    if (!model) return null
+    const settings = this.options.steeringWheel
+    writeSteeringWheelOffset(settings?.storage, model, undefined)
+    const applied = this.view.setSteeringWheelOffset(
+      model,
+      defaultSteeringWheelOffset(settings, model),
+    )
+    console.info(`[nabla] Steering wheel ${model} reset: ${describeSteeringWheelOffset(applied)}`)
+    return applied
   }
   /** Remove a vehicle added with `spawnVehicle`. The player must be outside it. */
   removeSpawnedVehicle(id: string): void {

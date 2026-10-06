@@ -26,6 +26,16 @@
   `?roadReset=`) or `runtime.setRecoverToRoadEnabled`. Engine API:
   `Simulation.recoverVehicle({ snapToRoad, roads, maxRoadDistance })`, `nearestRoadPoint`,
   `RoadCenterline`.
+- **Steering wheel position from the game menu («Volante»):** **Ajustes → Vehículos** has
+  «Volante: distancia» (along the steering column) and «Volante: altura» (vertical) sliders,
+  ±8 cm in 0.5 cm steps with the value in cm, and «Restablecer volante». The wheel moves live
+  on top of its baked GLB pose and keeps turning about its own column. Adjustments are per
+  steering model (S3, A3, tractor, …), saved in `localStorage` and logged in cm and metres so
+  they can become defaults. Hosts set defaults with `?wheel=` / `VITE_NABLA_STEERING_WHEEL`.
+  Engine API: `SceneView.setSteeringWheelOffset` / `steeringWheelOffset` /
+  `steeringWheelModel`, `GameRuntime.steeringWheel` / `setSteeringWheelOffset` /
+  `resetSteeringWheelOffset`, `GameRuntimeOptions.steeringWheel`. See docs/vehicle-rigs.md →
+  Driver steering-wheel adjustment.
 - **Add menu objects — Portal, Galería 2.5D, Sprite, Farola de autopista, Farola de barrio:**
   the game add menu now has a **Objetos** group after the vehicles. The button reads «Añadir
   portal», «Añadir galería 2.5D», …; the entry stands in front of the player or driven vehicle

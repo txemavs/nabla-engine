@@ -70,6 +70,22 @@ The car must fit completely inside the bay with all four suspension rays support
 by that carrier. Control transfer is a prototype convenience, without a walking
 animation. The ramp changes pose immediately rather than animating gradually.
 
+## Steering wheel position
+
+Sit in the driver view (**C**), open **Ajustes** (the gear icon, top right) and choose
+**Vehículos**. The **Volante** group adjusts the wheel of the car you are in, live:
+
+- «Volante: distancia»: + moves the wheel away from you toward the instrument cluster, along
+  the steering column; − brings it closer.
+- «Volante: altura»: + raises it, − lowers it.
+
+Both range ±8 cm in 0.5 cm steps and show the value in cm. The choice is saved per model (the
+S3 and the A3 keep their own) and comes back next time; «Restablecer volante» returns to the
+default. The box under the sliders shows the values to make them the default for everyone
+(«Valores para fijarlo», metres), and every change is logged in the browser console. The
+group is disabled on foot and in vehicles without a separate steering mesh. Details:
+[Vehicle anchors](vehicle-rigs.md#driver-steering-wheel-adjustment-runtime).
+
 ## Flight: mode 2
 
 While piloting the 10×5 carrier, the on-screen car wheel/accelerator HUD is replaced by

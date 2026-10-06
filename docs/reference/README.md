@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **301 modules; 3042 executable function definitions**.
+Coverage: **304 modules; 3078 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -17,6 +17,7 @@ Coverage: **301 modules; 3042 executable function definitions**.
 | [game/entry.ts](game/entry.ts.md) | 3 |
 | [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
+| [game/host-steering-wheel.ts](game/host-steering-wheel.ts.md) | 6 |
 | [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
@@ -28,6 +29,7 @@ Coverage: **301 modules; 3042 executable function definitions**.
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 49 |
 | [game/settings-hud.ts](game/settings-hud.ts.md) | 11 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
+| [game/steering-wheel-controls.ts](game/steering-wheel-controls.ts.md) | 11 |
 | [game/telemetry.ts](game/telemetry.ts.md) | 1 |
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 12 |
@@ -171,11 +173,11 @@ Coverage: **301 modules; 3042 executable function definitions**.
 | [src/render/entity/shot-laser.ts](src/render/entity/shot-laser.ts.md) | 7 |
 | [src/render/entity/shot-sparks.ts](src/render/entity/shot-sparks.ts.md) | 7 |
 | [src/render/entity/shot-tracers.ts](src/render/entity/shot-tracers.ts.md) | 6 |
-| [src/render/entity/steering-wheel.ts](src/render/entity/steering-wheel.ts.md) | 3 |
+| [src/render/entity/steering-wheel.ts](src/render/entity/steering-wheel.ts.md) | 6 |
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 14 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 7 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 104 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 108 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
@@ -235,7 +237,7 @@ Coverage: **301 modules; 3042 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 189 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 194 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
@@ -262,6 +264,7 @@ Coverage: **301 modules; 3042 executable function definitions**.
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 1 |
 | [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 16 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
+| [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
 | [src/runtime/streaming.ts](src/runtime/streaming.ts.md) | 6 |
 | [src/runtime/touch-driving.ts](src/runtime/touch-driving.ts.md) | 45 |
 | [src/runtime/touch-flight.ts](src/runtime/touch-flight.ts.md) | 21 |

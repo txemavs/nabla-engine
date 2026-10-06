@@ -49,6 +49,17 @@ export { VehicleMonitors } from './vehicle-monitors.js'
 export { helmTouchAxis, type HelmTouchAxis } from './helm-touch.js'
 export { vehicleMenuKey } from './vehicle-menu.js'
 export {
+  defaultSteeringWheelOffset,
+  describeSteeringWheelOffset,
+  formatSteeringWheelCm,
+  initialSteeringWheelOffset,
+  readSteeringWheelOffset,
+  steeringWheelStorageKey,
+  writeSteeringWheelOffset,
+  type SteeringWheelSettings,
+  type SteeringWheelStorage,
+} from './steering-wheel-offsets.js'
+export {
   TouchDriving,
   isRoadTouchDriving,
   driveSliderThrottle,

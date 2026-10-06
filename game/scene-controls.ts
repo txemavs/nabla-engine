@@ -1,8 +1,9 @@
 /**
  * Menu sections "Planeta" (Hora, Cielo, Sol, Mar, Nubes) and "Vehículos". They only call the engine
  * runtime: the sky clock (sun, sky and lighting), planetary layer flags, the sea level (ocean sheet
- * and physics) and `spawnVehicle` (a catalog vehicle on the ground ahead of the player). The URL
- * follows the choices (`&time=`, `&timeSpeed=`, `&sea=`) so a link repeats them.
+ * and physics), `spawnVehicle` (a catalog vehicle on the ground ahead of the player) and the
+ * steering-wheel adjustment («Volante», see `steering-wheel-controls.ts`). The URL follows the
+ * choices (`&time=`, `&timeSpeed=`, `&sea=`) so a link repeats them.
  */
 import {
   formatClockTime,
@@ -20,12 +21,16 @@ import { presetEntities, vehiclePresets } from '@nabla/engine/vehicles'
 import { createPlaceable, placeables, type PlaceableId } from '@nabla/engine/runtime'
 import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
+import { steeringWheelControls, type SteeringWheelRuntime } from './steering-wheel-controls.js'
 
 /** Sea level limits in metres, as in Studio's sea-surface controls. */
 export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
 
-/** What the controls need from the engine's `GameRuntime`; tests pass a fake. */
-export interface SceneRuntime {
+/**
+ * What the controls need from the engine's `GameRuntime`; tests pass a fake. The steering-wheel
+ * members are optional: without them «Volante» stays disabled.
+ */
+export interface SceneRuntime extends Partial<SteeringWheelRuntime> {
   readonly skyClock: SkyClock
   setSkyClock(clock: SkyClock): void
   readonly waterSettings: { mode: 'manual' | 'tide'; level: number; amplitude: number } | undefined
@@ -300,7 +305,9 @@ export function bindSceneControls(
   vehicleMessage.setAttribute('role', 'status')
   const vehicleList = document.createElement('ul')
   vehicleList.id = 'vehicle-list'
-  vehicles.append(choiceRow, add, vehicleMessage, vehicleList)
+  // «Volante»: per-model steering-wheel position of the vehicle the player drives.
+  const wheel = steeringWheelControls()
+  vehicles.append(choiceRow, add, vehicleMessage, vehicleList, wheel.root)
 
   isolateKeys(timeRange, timeInput, timeSpeed, seaRange, seaInput, cloudAmount, choice)
   const controls = [
@@ -432,7 +439,9 @@ export function bindSceneControls(
     })
     showClouds()
 
+    const refreshWheel = wheel.bind(runtime)
     const timer = setInterval(() => {
+      refreshWheel()
       showSea(false)
       if (runtime.skyClock.mode === 'live') showTime()
     }, 1000)

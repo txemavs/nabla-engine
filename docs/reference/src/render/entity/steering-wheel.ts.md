@@ -62,3 +62,56 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `spin.quaternion.setFromAxisAngle`
 - `steeringWheelAngle`
+
+## clampSteeringWheelOffset
+
+[Implementation, line 55](../../../../../src/render/entity/steering-wheel.ts#L55)
+
+Clamp to `steeringWheelOffsetRange` and snap to its step; non-finite values become 0.
+
+```ts
+clampSteeringWheelOffset(offset: Partial<SteeringWheelOffset> | undefined): SteeringWheelOffset
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `axis`
+
+## clampSteeringWheelOffset.axis
+
+[Implementation, line 59](../../../../../src/render/entity/steering-wheel.ts#L59)
+
+```ts
+axis(value: unknown): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+- `MathUtils.clamp`
+- `Number`
+- `Number.isFinite`
+- `snapped.toFixed`
+
+## steeringWheelOffsetPosition
+
+[Implementation, line 74](../../../../../src/render/entity/steering-wheel.ts#L74)
+
+Translation, in the steering mount's frame, that applies `offset` to a wheel whose spin axis
+is `axis` (model space, see `steeringAxis`). `mount` is the mount's rotation relative to the
+chassis, used to express the chassis vertical in that frame. The spin group is translated as a
+whole, so the rim keeps turning about its own column: the pivot moves with the wheel.
+
+```ts
+steeringWheelOffsetPosition(axis: Vector3, mount: Quaternion, offset: SteeringWheelOffset, target = new Vector3()): Vector3
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Vector3`
+- `mount.clone`
+- `mount.clone().invert`
+- `new Vector3(0, 1, 0).applyQuaternion`
+- `target.copy`
+- `target.copy(axis).multiplyScalar`
+- `target.copy(axis).multiplyScalar(offset.distance).addScaledVector`

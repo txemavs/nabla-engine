@@ -58,6 +58,51 @@ The truck eye anchor was lowered to see the road and dashboard; other driver
 poses preserve the previous camera placement. Passive trailers keep inert driver
 metadata for preset compatibility and cannot be boarded.
 
+## Driver steering-wheel adjustment (runtime)
+
+Players can move the wheel live without editing any GLB: **Ajustes → Vehículos → Volante** has
+two sliders, «Volante: distancia» and «Volante: altura» (±8 cm, 0.5 cm steps, shown in cm),
+and «Restablecer volante». The offset is applied on top of the baked GLB pose and the
+`steering` anchor, so it works for the S3, the A3, the tractor and any preset with
+`visual.steering`:
+
+- `SceneView` puts a translation-only `steering-adjust` group between the authored mount and
+  the spin group (mount → adjust → spin → GLB). The spin group moves as a whole, so steering
+  still turns the rim about its own column; the pivot moves with the rim.
+- `distance` runs along the steering axis (`visual.steering.axis`, default model +Z, the same
+  axis the wheel spins about): positive moves the wheel away from the driver toward the
+  instrument cluster, like `columnForward`. On the S3 and A3 that axis points 22° below level,
+  so +1 cm is about 0.93 cm forward and 0.38 cm down in the chassis. `height` is the chassis
+  vertical (+Y): positive raises the wheel.
+- Adjustments are per steering model, keyed by the steering GLB URL
+  (`/library/cars/a3/s3.steering.glb`, `/library/cars/a3/a3.steering.glb`, …). Every car of a
+  model shares one adjustment.
+- Precedence: the player's saved choice, then the host default, then the GLB pose.
+  «Restablecer volante» forgets the saved choice and goes back to the host default.
+
+Engine API: `SceneView.setSteeringWheelOffset(model, {distance, height})`,
+`steeringWheelOffset(model)`, `steeringWheelModel(vehicleId)` and the
+`SceneViewOptions.steeringWheelOffset` resolver; `GameRuntime.steeringWheel`,
+`setSteeringWheelOffset`, `resetSteeringWheelOffset` and the
+`GameRuntimeOptions.steeringWheel` settings (`defaults` by model in metres, `storage` such as
+`localStorage`). Saved choices live under `nabla.steeringWheel:<model>`. The game passes
+`localStorage` and reads host defaults from `?wheel=` (see
+[Game library mode](game-library.md#host-steering-wheel-defaults)).
+
+Every change is logged with `console.info`, in cm and in metres:
+
+```text
+[nabla] Steering wheel /library/cars/a3/s3.steering.glb: distance +1.5 cm, height -0.5 cm {"distance":0.015,"height":-0.005}
+```
+
+The menu also shows «Valores para fijarlo» in metres. To make a choice the default for
+everyone, either set it as a host default (`?wheel={"car":{"distance":0.015,"height":-0.005}}`)
+or bake it into the steering GLB. For the S3, `scripts/move-s3-steering-wheel.mjs` already
+slides the alignment root along model +Z, so a `distance` is baked by adding it to its `forward`
+constant (0.03 m + distance). A `height` must be expressed in model space first (the chassis +Y
+rotated by the inverse steering mount rotation); that script does not handle it yet. After a
+bake, reset the runtime value to 0 so the two don't add up.
+
 ## Instruments and lights
 
 - A3: `instrument.cluster` and four corner nodes for each GPS/menu surface live
