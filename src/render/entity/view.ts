@@ -30,7 +30,14 @@ import {
 import { hasLandingGear, trailerWheelContactY } from '../../simulation/landing-gear.js'
 import { VehicleLightRig } from '../vehicle-presentation/light-rig.js'
 import type { CarMirrors, MirrorPolicy } from './car-mirrors.js'
-import { poseSteeringWheel, steeringAxis } from './steering-wheel.js'
+import {
+  clampSteeringWheelOffset,
+  poseSteeringWheel,
+  steeringAxis,
+  steeringWheelCentred,
+  steeringWheelOffsetPosition,
+  type SteeringWheelOffset,
+} from './steering-wheel.js'
 import type { CarInstruments } from './car-instruments.js'
 import type { CarInstrumentDefinition } from './car-instrument-definition.js'
 import { mountPropeller } from './propeller.js'
@@ -83,6 +90,11 @@ export interface SceneViewOptions {
   carInstruments?: CarInstrumentDefinition | null
   /** Capture size/interval for vehicle mirrors; high/ultra boosts the authored left lens. */
   mirrorPolicy?: MirrorPolicy
+  /**
+   * Starting driver adjustment of a steering model (its GLB URL), asked once, when the first
+   * vehicle with that steering mesh loads and no `setSteeringWheelOffset` came before.
+   */
+  steeringWheelOffset?: (model: string) => Partial<SteeringWheelOffset> | undefined
 }
 
 /** Bare renderer. The public package SceneView supplies stock presentation recipes. */
@@ -129,6 +141,39 @@ export class SceneView {
     if (entity) entity.color = color
     const model = this.objects.get(id)
     if (entity && model) this.options.vehiclePresentation?.(entity)?.paint?.(model, color)
+  }
+  /** Steering model (GLB URL) of a vehicle with a separate steering mesh, else undefined. */
+  steeringWheelModel(id: string): string | undefined {
+    return this.steeringAdjust.get(id)?.model
+  }
+  /** Current adjustment of a steering model; centred when none was set. */
+  steeringWheelOffset(model: string): SteeringWheelOffset {
+    return { ...(this.steeringOffsets.get(model) ?? steeringWheelCentred) }
+  }
+  /**
+   * Move every steering wheel of `model`, now and when more vehicles of it load, by `offset`
+   * (clamped to `steeringWheelOffsetRange`) on top of the GLB pose. The spin pivot moves with
+   * the rim, so steering still turns it about its own column. Returns the applied offset.
+   */
+  setSteeringWheelOffset(model: string, offset: Partial<SteeringWheelOffset>): SteeringWheelOffset {
+    const applied = clampSteeringWheelOffset(offset)
+    this.steeringModels.add(model)
+    if (applied.distance === 0 && applied.height === 0) this.steeringOffsets.delete(model)
+    else this.steeringOffsets.set(model, applied)
+    for (const [id, entry] of this.steeringAdjust)
+      if (entry.model === model) this.applySteeringOffset(id)
+    return { ...applied }
+  }
+  private applySteeringOffset(id: string): void {
+    const entry = this.steeringAdjust.get(id)
+    const axis = this.steeringAxes.get(id)
+    if (!entry || !axis) return
+    steeringWheelOffsetPosition(
+      axis,
+      entry.mount.quaternion,
+      this.steeringOffsets.get(entry.model) ?? steeringWheelCentred,
+      entry.adjust.position,
+    )
   }
   setVehicleMirrorTilt(id: string, degrees: number): void {
     const entity = this.document.entities.find((e) => e.id === id)
@@ -190,6 +235,15 @@ export class SceneView {
   readonly wheels = new Map<string, THREE.Group[]>()
   readonly steering = new Map<string, THREE.Group>()
   private readonly steeringAxes = new Map<string, THREE.Vector3>()
+  /** Per vehicle: the group between the authored mount and the spin group, and its model. */
+  private readonly steeringAdjust = new Map<
+    string,
+    { adjust: THREE.Group; mount: THREE.Group; model: string }
+  >()
+  /** Driver adjustments by steering model (its GLB URL); absent models stay where the GLB puts them. */
+  private readonly steeringOffsets = new Map<string, SteeringWheelOffset>()
+  /** Models whose starting adjustment was already resolved (from the option or a setter). */
+  private readonly steeringModels = new Set<string>()
   readonly ramps = new Map<string, THREE.Group>()
   readonly ready: Promise<void>
   private readonly loading: Promise<void>[] = []
@@ -435,6 +489,7 @@ export class SceneView {
       this.wheels,
       this.steering,
       this.steeringAxes,
+      this.steeringAdjust,
       this.thrusters,
       this.shipLights,
       this.beacons,
@@ -906,10 +961,14 @@ export class SceneView {
       this.wheels.set(e.id, wheels)
     }
     if (visual.steering) {
+      // mount (authored anchor) → adjust (driver offset, translation only) → spin (steer angle).
       const mount = new THREE.Group(),
+        adjust = new THREE.Group(),
         spin = new THREE.Group()
+      adjust.name = 'steering-adjust'
       applyPose(mount, visual.steering.transform)
-      mount.add(spin)
+      adjust.add(spin)
+      mount.add(adjust)
       group.add(mount)
       this.addAsset(
         spin,
@@ -924,6 +983,15 @@ export class SceneView {
       )
       this.steering.set(e.id, spin)
       this.steeringAxes.set(e.id, steeringAxis(visual.steering.axis))
+      const model = visual.steering.url
+      this.steeringAdjust.set(e.id, { adjust, mount, model })
+      if (!this.steeringModels.has(model)) {
+        const initial = this.options.steeringWheelOffset?.(model)
+        // The setter marks the model resolved and applies to this vehicle too.
+        if (initial) this.setSteeringWheelOffset(model, initial)
+        else this.steeringModels.add(model)
+      }
+      this.applySteeringOffset(e.id)
     }
   }
   private outboard(e: Entity, group: THREE.Group): void {

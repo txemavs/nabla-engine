@@ -52,9 +52,14 @@ export type {
 } from '../entity/car-instrument-definition.js'
 export { authoredMirrorLenses } from './mirror-lenses.js'
 export {
+  clampSteeringWheelOffset,
   poseSteeringWheel,
   steeringAxis,
   steeringWheelAngle,
+  steeringWheelCentred,
   steeringFullLockSteer,
   steeringWheelLock,
+  steeringWheelOffsetPosition,
+  steeringWheelOffsetRange,
+  type SteeringWheelOffset,
 } from '../entity/steering-wheel.js'

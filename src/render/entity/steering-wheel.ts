@@ -1,4 +1,4 @@
-import { MathUtils, Vector3, type Object3D } from 'three'
+import { MathUtils, Vector3, type Object3D, type Quaternion } from 'three'
 
 /** Wheel angle (radians) at which the physical steering wheel reaches full lock. */
 export const steeringFullLockSteer = 0.45
@@ -29,4 +29,54 @@ export function steeringWheelAngle(steer: number): number {
 /** Rotate the spin group about the column axis only, never about the model origin's axes. */
 export function poseSteeringWheel(spin: Object3D, axis: Vector3, steer: number): void {
   spin.quaternion.setFromAxisAngle(axis, steeringWheelAngle(steer))
+}
+
+/**
+ * Driver adjustment of a steering wheel, metres, applied on top of the pose baked into the GLB
+ * and its `steering` anchor. `distance` slides the rim along the steering column (the spin axis):
+ * positive moves it away from the driver, toward the instrument cluster. `height` moves it along
+ * the vehicle's vertical (chassis +Y): positive raises it.
+ */
+export interface SteeringWheelOffset {
+  distance: number
+  height: number
+}
+
+/** Neutral adjustment: the wheel exactly where the GLB puts it. */
+export const steeringWheelCentred: Readonly<SteeringWheelOffset> = Object.freeze({
+  distance: 0,
+  height: 0,
+})
+
+/** Limits and step of each adjustment axis, metres (±8 cm in 0.5 cm steps). */
+export const steeringWheelOffsetRange = Object.freeze({ min: -0.08, max: 0.08, step: 0.005 })
+
+/** Clamp to `steeringWheelOffsetRange` and snap to its step; non-finite values become 0. */
+export function clampSteeringWheelOffset(
+  offset: Partial<SteeringWheelOffset> | undefined,
+): SteeringWheelOffset {
+  const { min, max, step } = steeringWheelOffsetRange
+  const axis = (value: unknown) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return 0
+    const snapped = Math.round(MathUtils.clamp(value, min, max) / step) * step
+    // Keep values like 0.015 exact enough to print and compare (no 0.015000000000000001).
+    return Number(snapped.toFixed(4)) || 0
+  }
+  return { distance: axis(offset?.distance), height: axis(offset?.height) }
+}
+
+/**
+ * Translation, in the steering mount's frame, that applies `offset` to a wheel whose spin axis
+ * is `axis` (model space, see `steeringAxis`). `mount` is the mount's rotation relative to the
+ * chassis, used to express the chassis vertical in that frame. The spin group is translated as a
+ * whole, so the rim keeps turning about its own column: the pivot moves with the wheel.
+ */
+export function steeringWheelOffsetPosition(
+  axis: Vector3,
+  mount: Quaternion,
+  offset: SteeringWheelOffset,
+  target = new Vector3(),
+): Vector3 {
+  const up = new Vector3(0, 1, 0).applyQuaternion(mount.clone().invert())
+  return target.copy(axis).multiplyScalar(offset.distance).addScaledVector(up, offset.height)
 }

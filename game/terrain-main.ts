@@ -19,6 +19,11 @@ import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
+import {
+  hostSteeringWheelsFromSearch,
+  steeringWheelStorage,
+  viteHostSteeringWheels,
+} from './host-steering-wheel.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
@@ -94,6 +99,11 @@ try {
     locale: 'es',
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
+    // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
+    steeringWheel: {
+      defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
+      storage: steeringWheelStorage(),
+    },
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),

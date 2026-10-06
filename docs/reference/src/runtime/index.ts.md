@@ -23,6 +23,7 @@
 - `./vehicle-monitors.js`
 - `./helm-touch.js`
 - `./vehicle-menu.js`
+- `./steering-wheel-offsets.js`
 - `./touch-driving.js`
 - `./control-profiles.js`
 - `./touch-flight.js`
