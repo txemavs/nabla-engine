@@ -102,7 +102,10 @@ export class GameRuntime {
   }
   /** Forget a vehicle removed from the live simulation. */
   removeVehicle(id: string): void {
-    if (this.scene) this.scene.entities = this.scene.entities.filter((e) => e.id !== id)
+    if (this.scene)
+      this.scene.entities = this.scene.entities.filter(
+        (e) => e.id !== id && !(e.parentId === id && e.portal),
+      )
   }
 
   /** Mix controls using elapsed seconds; align camera/input yaw when entering a new interior. */

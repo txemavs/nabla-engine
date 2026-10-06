@@ -11,6 +11,11 @@ import {
   parseHostVehicles,
   type HostVehicle,
 } from '../../game/host-vehicles.js'
+import type { Entity } from '../../src/entity/schema.js'
+
+/** `placeVehicle` receives the vehicle, or the vehicle followed by the entities it hosts. */
+const vehicleOf = (template: Entity | Entity[]): Entity =>
+  Array.isArray(template) ? template[0]! : template
 
 const irun = { latitude: 43.3372, longitude: -1.7523, altitude: 50 }
 
@@ -155,7 +160,8 @@ describe('installHostVehicles', () => {
     const calls: { id: string; position: number[]; yaw: number }[] = []
     const ids = await installHostVehicles(
       {
-        async placeVehicle(template, position, yaw = 0) {
+        async placeVehicle(arg, position, yaw = 0) {
+          const template = vehicleOf(arg)
           calls.push({ id: template.id, position: [...position], yaw })
           return `spawned-${calls.length}`
         },
@@ -182,12 +188,37 @@ describe('installHostVehicles', () => {
     expect(calls[1]!.yaw).toBeCloseTo(0, 6)
   })
 
+  it('places the carrier with its stern portal so the portal monitor has a mouth', async () => {
+    const calls: Entity[][] = []
+    await installHostVehicles(
+      {
+        async placeVehicle(arg) {
+          calls.push(Array.isArray(arg) ? arg : [arg])
+          return `spawned-${calls.length}`
+        },
+      },
+      irun,
+      [
+        { lat: irun.latitude, lon: irun.longitude, heading: 60, vehicle: 'carrier' },
+        { lat: 43.34, lon: -1.75, heading: 0, vehicle: 'car' },
+      ],
+    )
+    expect(calls[0]!.map((e) => e.id)).toEqual(['host-carrier-0', 'host-carrier-0-stern'])
+    expect(calls[0]![1]).toMatchObject({
+      parentId: 'host-carrier-0',
+      portal: { pairId: null, mode: 'closed', clearsRamp: true },
+    })
+    // Presets without hosted parts still pass a single entity.
+    expect(calls[1]!.map((e) => e.id)).toEqual(['host-car-1'])
+  })
+
   it('rejects an unknown preset before placing anything', async () => {
     const calls: string[] = []
     await expect(
       installHostVehicles(
         {
-          async placeVehicle(template) {
+          async placeVehicle(arg) {
+            const template = vehicleOf(arg)
             calls.push(template.id)
             return 'spawned-1'
           },
@@ -203,7 +234,8 @@ describe('installHostVehicles', () => {
     const calls: { id: string; color: string; tow?: string }[] = []
     const ids = await installHostVehicles(
       {
-        async placeVehicle(template) {
+        async placeVehicle(arg) {
+          const template = vehicleOf(arg)
           calls.push({
             id: template.id,
             color: template.color,
@@ -236,7 +268,8 @@ describe('installHostVehicles', () => {
     const calls: { attachments?: string[]; height: number }[] = []
     await installHostVehicles(
       {
-        async placeVehicle(template) {
+        async placeVehicle(arg) {
+          const template = vehicleOf(arg)
           calls.push({
             attachments: template.visual?.attachments?.map((part) => part.url),
             height: template.size[1],
@@ -296,7 +329,8 @@ describe('host vehicle footprints', () => {
     const placed: { id: string; tow?: string }[] = []
     const ids = await installHostVehicles(
       {
-        async placeVehicle(template) {
+        async placeVehicle(arg) {
+          const template = vehicleOf(arg)
           placed.push({ id: template.id, tow: template.vehicle?.tow?.vehicleId })
           return `spawned-${placed.length}`
         },
@@ -340,7 +374,7 @@ describe('host vehicle footprints', () => {
       const p = localToGeo(irun, at(r, f))
       return { lat: p.latitude, lon: p.longitude, heading: 330 }
     }
-    const ids = await installHostVehicles({ placeVehicle: async (t) => t.id }, irun, [
+    const ids = await installHostVehicles({ placeVehicle: async (t) => vehicleOf(t).id }, irun, [
       // Free trailer parked 12 m behind the tractor (clear of the cab): the towed trailer lands on it.
       { ...geo(0, -12), vehicle: 'white-trailer' },
       { ...geo(0, 0), vehicle: 'white-truck' },

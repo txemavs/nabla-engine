@@ -27,7 +27,7 @@ import { stepBoatInWater } from './vehicles/boat.js'
 import { stepFlight } from './vehicles/flight.js'
 import { PlanetCollisions, type PlanetCollisionTile } from '../planet/index.js'
 import { SceneEditor } from '../scene/history.js'
-import { portalColliders, portalLocal } from '../entity/portal/portal.js'
+import { assertHostedMouths, portalColliders, portalLocal } from '../entity/portal/portal.js'
 import { EARTH_RADIUS, geoToLocal, localFrame, localToGeo } from '../math/geo/sphere.js'
 import { Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { vehicleDefinition, type Vehicle } from '../entity/vehicle/vehicle.js'
@@ -354,10 +354,14 @@ export class Simulation {
   /**
    * Add plain vehicles to a running simulation (the game menu and host `placeVehicle`).
    * Tow joints are kept when the tractor is in this batch or already in the world.
+   * The batch may also carry unlinked, closed portal mouths hosted on one of its vehicles
+   * (the carrier stern portal from `presetEntities`); they join the portal system closed.
    */
   addVehicles(added: Entity[]): void {
-    for (const e of added) {
-      if (e.kind !== 'vehicle' || !e.vehicle || e.portal)
+    const vehicles = added.filter((e) => !e.portal)
+    const mouths = added.filter((e) => e.portal)
+    for (const e of vehicles) {
+      if (e.kind !== 'vehicle' || !e.vehicle)
         throw new Error(`Entity ${e.id} is not a plain vehicle`)
       if (this.entitiesById.has(e.id)) throw new Error(`Entity id already in use: ${e.id}`)
       if (e.vehicle.tow) {
@@ -368,14 +372,19 @@ export class Simulation {
           throw new Error('Trailer requires a powered towing vehicle')
       }
     }
-    const copies = structuredClone(added)
+    assertHostedMouths(mouths, vehicles, this.entitiesById)
+    const copies = structuredClone([...vehicles, ...mouths])
     this.document.entities = [...this.document.entities, ...copies]
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
-    for (const e of copies) this.addEntityBody(e)
+    for (const e of copies) if (!e.portal) this.addEntityBody(e)
     for (const e of copies) {
       const vehicle = this.vehicles.get(e.id)
       if (vehicle) this.attachTrailerJoint(vehicle)
+    }
+    for (const mouth of copies.filter((e) => e.portal)) {
+      this.portalEntities.push(mouth)
+      this.rebuildPortalCollider(mouth)
     }
   }
   /** Authored definition of a live vehicle, including ones added with `addVehicles`; null if unknown. */
@@ -387,6 +396,14 @@ export class Simulation {
     const v = this.vehicles.get(id)
     if (!v) throw new Error(`No vehicle ${id}`)
     if (this.vehicleId === id) throw new Error('Leave the vehicle before removing it')
+    const mouths = this.portalEntities.filter((e) => e.parentId === id)
+    // A linked partner must not keep pointing at a mouth that is about to disappear.
+    for (const mouth of mouths)
+      if (mouth.portal!.pairId !== null) this.configurePortal(mouth.id, null, 'closed')
+    for (const mouth of mouths) {
+      this.portalEntities.splice(this.portalEntities.indexOf(mouth), 1)
+      this.hostedShapes.delete(mouth.id)
+    }
     this.detachTrailerJoints(v)
     for (const trailer of this.vehicles.values()) {
       if (trailer.definition.tow?.vehicleId !== id) continue
@@ -397,7 +414,9 @@ export class Simulation {
     this.vehicles.delete(id)
     this.bodies.delete(id)
     this.previousWheels.delete(id)
-    this.document.entities = this.document.entities.filter((e) => e.id !== id)
+    this.document.entities = this.document.entities.filter(
+      (e) => e.id !== id && !mouths.includes(e),
+    )
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
   }

@@ -16,7 +16,11 @@ portal simulation to activate.
 
 `createCarrierPortal(hostId, sternId)` creates the single stock stern mouth.
 Use it explicitly when composing a carrier scene. The palette, sample and planet
-factories already include the stern mouth. The plural factory and saved-scene
+factories already include the stern mouth. Carriers placed while playing get it too: pass
+`presetEntities('carrier', id)` (vehicle first, then the hosted mouth) to
+`GameRuntime.placeVehicle` / `spawnVehicle`, as the host fleet (`?vehicles=`) and the
+add-vehicle menu do. A bare `presetVehicle('carrier')` has no mouth, so its portal monitor
+(left door screen) stays dark and offers no portal controls. The plural factory and saved-scene
 migration have been removed: loading never rewrites authored portals or glass.
 
 ## Carrier and saved scenes

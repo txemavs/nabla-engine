@@ -16,6 +16,14 @@
 
 ### Fixed
 
+- **Carrier portal monitor dark on host-placed ships:** a carrier added after start
+  (`?vehicles=` / `installHostVehicles`, or "Añadir vehículo") was installed without its stern
+  portal, so the left door monitor (the PORTAL console) stayed black and had no destination,
+  Open/Close or Lat/Lon controls. `GameRuntime.placeVehicle` / `spawnVehicle` now also accept
+  `presetEntities` output (the vehicle followed by its hosted entities); `SceneView`, `Simulation`
+  and `Game` `addVehicles` accept unlinked, closed portal mouths hosted on a vehicle of the same
+  batch, and `removeVehicle` removes them (unlinking a partner first). The host fleet and the
+  add-vehicle menu pass the preset's stern portal.
 - Splash `messages: []` no longer falls back to the default Nabla loading lines, and `title: ''`
   clears the title. The early boot lines in `game/main.ts` use the host's messages.
 - `terrain-main.ts` only installs host vehicles when the scene has geography and vehicles (the

@@ -199,17 +199,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.scene.entities.filter`
 
-## GameRuntime.removeVehicle.callback@105
+## GameRuntime.removeVehicle.callback@107
 
-[Implementation, line 105](../../../../src/runtime/game.ts#L105)
+[Implementation, line 107](../../../../src/runtime/game.ts#L107)
 
 ```ts
-callback@105(e): inferred by TypeScript; see implementation
+callback@107(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.readInput
 
-[Implementation, line 109](../../../../src/runtime/game.ts#L109)
+[Implementation, line 112](../../../../src/runtime/game.ts#L112)
 
 Mix controls using elapsed seconds; align camera/input yaw when entering a new interior.
 
@@ -223,7 +223,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.step
 
-[Implementation, line 132](../../../../src/runtime/game.ts#L132)
+[Implementation, line 135](../../../../src/runtime/game.ts#L135)
 
 Advance physics and synchronize boarding and local portal camera transitions.
 Elapsed time is seconds, water level is metres and now is milliseconds.
@@ -243,17 +243,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.cameraState.telemetry.update`
 - `this.session.step`
 
-## GameRuntime.step.callback@160
+## GameRuntime.step.callback@163
 
-[Implementation, line 160](../../../../src/runtime/game.ts#L160)
+[Implementation, line 163](../../../../src/runtime/game.ts#L163)
 
 ```ts
-callback@160(e): inferred by TypeScript; see implementation
+callback@163(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.updateCamera
 
-[Implementation, line 185](../../../../src/runtime/game.ts#L185)
+[Implementation, line 188](../../../../src/runtime/game.ts#L188)
 
 Update the host camera from live physics; now is milliseconds and dt is seconds.
 
@@ -272,7 +272,7 @@ Explicit throws in this body:
 
 ## GameRuntime.action
 
-[Implementation, line 196](../../../../src/runtime/game.ts#L196)
+[Implementation, line 199](../../../../src/runtime/game.ts#L199)
 
 Device-independent gameplay actions; presentation-only actions stay with the view.
 
