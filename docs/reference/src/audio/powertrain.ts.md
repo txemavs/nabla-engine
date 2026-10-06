@@ -8,12 +8,31 @@
 
 - `./graph.js`
 
+## engineNoteHz
+
+[Implementation, line 9](../../../../src/audio/powertrain.ts#L9)
+
+```ts
+engineNoteHz(rpm: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+
+## engineNoteCutoffHz
+
+[Implementation, line 11](../../../../src/audio/powertrain.ts#L11)
+
+```ts
+engineNoteCutoffHz(rpm: number, load = 0): number
+```
+
 ## EngineNote.constructor
 
-[Implementation, line 12](../../../../src/audio/powertrain.ts#L12)
+[Implementation, line 19](../../../../src/audio/powertrain.ts#L19)
 
-Road-car engine. One sawtooth at the four-cylinder firing rate:
-a four-stroke fires twice per revolution, so the tone is rpm / 30.
+Road-car engine. One sawtooth at `engineNoteHz`, through a lowpass at `engineNoteCutoffHz`.
 
 ```ts
 constructor(context: AudioContext): instance
@@ -30,10 +49,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EngineNote.silence
 
-[Implementation, line 26](../../../../src/audio/powertrain.ts#L26)
+[Implementation, line 33](../../../../src/audio/powertrain.ts#L33)
 
-Road-car engine. One sawtooth at the four-cylinder firing rate:
-a four-stroke fires twice per revolution, so the tone is rpm / 30.
+Road-car engine. One sawtooth at `engineNoteHz`, through a lowpass at `engineNoteCutoffHz`.
 
 ```ts
 silence(time: number): void
@@ -45,10 +63,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EngineNote.update
 
-[Implementation, line 30](../../../../src/audio/powertrain.ts#L30)
+[Implementation, line 37](../../../../src/audio/powertrain.ts#L37)
 
-Road-car engine. One sawtooth at the four-cylinder firing rate:
-a four-stroke fires twice per revolution, so the tone is rpm / 30.
+Road-car engine. One sawtooth at `engineNoteHz`, through a lowpass at `engineNoteCutoffHz`.
 
 ```ts
 update(time: number, audible: boolean, rpm: number, load: number): void
@@ -56,14 +73,15 @@ update(time: number, audible: boolean, rpm: number, load: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.max`
+- `engineNoteCutoffHz`
+- `engineNoteHz`
 - `this.filter.frequency.setTargetAtTime`
 - `this.oscillator.frequency.setTargetAtTime`
 - `this.output.gain.setTargetAtTime`
 
 ## Turbo.constructor
 
-[Implementation, line 50](../../../../src/audio/powertrain.ts#L50)
+[Implementation, line 57](../../../../src/audio/powertrain.ts#L57)
 
 Turbo on that same engine. A sine whistle plus a slice of the shared noise.
 No new nodes per gear change. A hard drop in load vents the stored boost once:
@@ -85,7 +103,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Turbo.silence
 
-[Implementation, line 67](../../../../src/audio/powertrain.ts#L67)
+[Implementation, line 74](../../../../src/audio/powertrain.ts#L74)
 
 Turbo on that same engine. A sine whistle plus a slice of the shared noise.
 No new nodes per gear change. A hard drop in load vents the stored boost once:
@@ -102,7 +120,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Turbo.update
 
-[Implementation, line 75](../../../../src/audio/powertrain.ts#L75)
+[Implementation, line 82](../../../../src/audio/powertrain.ts#L82)
 
 Turbo on that same engine. A sine whistle plus a slice of the shared noise.
 No new nodes per gear change. A hard drop in load vents the stored boost once:
@@ -123,7 +141,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.constructor
 
-[Implementation, line 105](../../../../src/audio/powertrain.ts#L105)
+[Implementation, line 112](../../../../src/audio/powertrain.ts#L112)
 
 Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence.
 
@@ -138,7 +156,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.silence
 
-[Implementation, line 110](../../../../src/audio/powertrain.ts#L110)
+[Implementation, line 117](../../../../src/audio/powertrain.ts#L117)
 
 Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence.
 
@@ -153,7 +171,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.update
 
-[Implementation, line 115](../../../../src/audio/powertrain.ts#L115)
+[Implementation, line 122](../../../../src/audio/powertrain.ts#L122)
 
 Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence.
 

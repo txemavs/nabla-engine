@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **305 modules; 3105 executable function definitions**.
+Coverage: **305 modules; 3107 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -39,7 +39,7 @@ Coverage: **305 modules; 3105 executable function definitions**.
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
-| [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 9 |
+| [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 11 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
 | [src/audio/reverse-alarm.ts](src/audio/reverse-alarm.ts.md) | 3 |
 | [src/audio/tires.ts](src/audio/tires.ts.md) | 4 |

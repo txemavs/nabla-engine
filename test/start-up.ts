@@ -1,6 +1,6 @@
 import { roadVehicleDefaults } from '../src/config/simulation.js'
 
-/** Seconds from entering a road vehicle until its engine runs (needle sweep, then cranking). */
+/** Seconds from entering a road vehicle until the start-up ends (cranking, then needle sweep). */
 export const START_UP_SECONDS =
   roadVehicleDefaults.ignitionSweepSeconds + roadVehicleDefaults.ignitionCrankSeconds
 

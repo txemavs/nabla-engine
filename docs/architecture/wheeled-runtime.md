@@ -78,7 +78,7 @@ Simulation container still shares wheel state for ground/flight coordination.
 - `createWheeledVehicle` spawns the rig in P (gear 0, parked); pass `{ parked: false }` for a
   rig without a gear selector. In P the full service brake and a parking-pawl hold keep the
   vehicle where it stopped, even on a slope. Call `enterWheeledVehicle(car)` when a driver gets
-  in: it selects P and starts the start-up sequence (needle sweep, cranking, idle; see
+  in: it selects P and starts the start-up sequence (cranking, then needle sweep while idling; see
   `docs/configuration.md` → Park on entering). While it runs, `stepWheeledVehicle` keeps P and
   ignores the pedals; telemetry reports `ignition`, `ignitionCount` and `gaugeSweep`.
   `enterWheeledVehicle(car, false)` selects P only.

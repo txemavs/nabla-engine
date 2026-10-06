@@ -1,9 +1,16 @@
 import { silentOutput } from './graph.js'
 
 /**
- * Road-car engine. One sawtooth at the four-cylinder firing rate:
- * a four-stroke fires twice per revolution, so the tone is rpm / 30.
+ * Pitch of the engine note at `rpm`, Hz. Slightly above the bare four-cylinder firing rate
+ * (rpm / 30) so idle reads as an engine at low revs rather than a sub-bass rumble: 1,000 rpm
+ * idle = 41.7 Hz, 750 rpm diesel idle = 31.3 Hz, 6,900 rpm = 288 Hz. The engine-start voice ends
+ * its catch on this pitch at idle so the hand-over is seamless.
  */
+export const engineNoteHz = (rpm: number): number => Math.max(25, rpm / 24)
+/** Lowpass cutoff of the engine note, Hz. It opens with rpm and load. */
+export const engineNoteCutoffHz = (rpm: number, load = 0): number => 260 + rpm * 0.14 + load * 700
+
+/** Road-car engine. One sawtooth at `engineNoteHz`, through a lowpass at `engineNoteCutoffHz`. */
 class EngineNote {
   private readonly output: GainNode
   private readonly oscillator: OscillatorNode
@@ -29,8 +36,8 @@ class EngineNote {
 
   update(time: number, audible: boolean, rpm: number, load: number): void {
     this.output.gain.setTargetAtTime(audible ? 0.025 + load * 0.055 : 0, time, 0.035)
-    this.oscillator.frequency.setTargetAtTime(Math.max(30, rpm / 30), time, 0.035)
-    this.filter.frequency.setTargetAtTime(180 + rpm * 0.1 + load * 700, time, 0.04)
+    this.oscillator.frequency.setTargetAtTime(engineNoteHz(rpm), time, 0.035)
+    this.filter.frequency.setTargetAtTime(engineNoteCutoffHz(rpm, load), time, 0.04)
   }
 }
 

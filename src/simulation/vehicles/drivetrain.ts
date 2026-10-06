@@ -28,9 +28,9 @@ export interface DrivetrainState {
    */
   clackCount: number
   /**
-   * Start-up sequence after a driver gets in (`startIgnition`): `sweep` (needle self-test,
-   * engine off), then `cranking` (starter motor), then `running`. Anything but `running`
-   * keeps the selector in P and cuts drive torque.
+   * Start-up sequence after a driver gets in (`startIgnition`): `cranking` (starter motor),
+   * then `sweep` (needle self-test while the engine settles from its catch to idle), then
+   * `running`. Anything but `running` keeps the selector in P and cuts drive torque.
    */
   ignition: IgnitionPhase
   /** Seconds spent in the current ignition phase. */
@@ -41,12 +41,12 @@ export interface DrivetrainState {
   parkOffset: number
 }
 /** See `DrivetrainState.ignition`. */
-export type IgnitionPhase = 'sweep' | 'cranking' | 'running'
+export type IgnitionPhase = 'cranking' | 'sweep' | 'running'
 /** Every wheeled vehicle is created in P (gear 0, parked) with its engine running. */
 export const createDrivetrain = (): DrivetrainState => ({
   gear: 0,
   manual: false,
-  rpm: 900,
+  rpm: roadVehicleDefaults.idleRpm,
   shiftRemaining: 0,
   cooldown: 0,
   force: 0,
@@ -88,47 +88,51 @@ export function engagePark(state: DrivetrainState): void {
   state.launchSlip = 0
 }
 
-/** Begin the start-up sequence: needle sweep, then cranking, then idle. Engine speed drops to 0. */
+/**
+ * Begin the start-up sequence: starter cranking, then the needle sweep while the engine settles
+ * to idle, then running. Engine speed drops to the cranking speed.
+ */
 export function startIgnition(state: DrivetrainState): void {
-  state.ignition = 'sweep'
+  state.ignition = 'cranking'
   state.ignitionElapsed = 0
   state.ignitionCount++
-  state.rpm = 0
+  state.rpm = ignitionRpm(state)
 }
 
-/** True while the start-up sequence runs (`sweep` or `cranking`). */
+/** True while the start-up sequence runs (`cranking` or `sweep`). */
 export const isStarting = (state: DrivetrainState): boolean => state.ignition !== 'running'
 
 /**
- * Advance the start-up sequence by `dt`. While it runs, P is kept, drive torque is zero and
- * engine speed follows the sequence (0 during the sweep, a cranking wobble, then the catch at
- * `ignitionFlare` x idle which the drivetrain settles to idle). Returns true while starting.
+ * Advance the start-up sequence by `dt`. While it runs, P is kept and drive torque is zero.
+ * Engine speed is a pulsing starter speed while cranking, jumps to the catch at
+ * `ignitionFlare` x idle when the engine fires, and settles to idle (normal drivetrain idle
+ * control) during the needle sweep. Returns true while starting.
  */
 export function stepIgnition(state: DrivetrainState, dt: number, idleRpm: number): boolean {
   if (state.ignition === 'running') return false
   state.ignitionElapsed += dt
   if (
-    state.ignition === 'sweep' &&
-    state.ignitionElapsed >= roadVehicleDefaults.ignitionSweepSeconds
-  ) {
-    state.ignition = 'cranking'
-    state.ignitionElapsed -= roadVehicleDefaults.ignitionSweepSeconds
-  }
-  if (
     state.ignition === 'cranking' &&
     state.ignitionElapsed >= roadVehicleDefaults.ignitionCrankSeconds
   ) {
+    state.ignition = 'sweep'
+    state.ignitionElapsed -= roadVehicleDefaults.ignitionCrankSeconds
+    state.rpm = idleRpm * roadVehicleDefaults.ignitionFlare
+  }
+  if (
+    state.ignition === 'sweep' &&
+    state.ignitionElapsed >= roadVehicleDefaults.ignitionSweepSeconds
+  ) {
     state.ignition = 'running'
     state.ignitionElapsed = 0
-    state.rpm = idleRpm * roadVehicleDefaults.ignitionFlare
     return false
   }
   engagePark(state)
-  state.rpm = ignitionRpm(state)
+  if (state.ignition === 'cranking') state.rpm = ignitionRpm(state)
   return true
 }
 
-/** Engine speed during the start-up sequence: 0 in the sweep, a pulsing starter speed while cranking. */
+/** Engine speed while the starter cranks (a pulsing starter speed); 0 in any other phase. */
 export function ignitionRpm(state: Pick<DrivetrainState, 'ignition' | 'ignitionElapsed'>): number {
   if (state.ignition !== 'cranking') return 0
   // Two compression strokes per crank revolution make the starter speed pulse.

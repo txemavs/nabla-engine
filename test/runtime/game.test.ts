@@ -60,7 +60,7 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     expect(game.cameraState.mode).toBe('cinematic')
     game.action('KeyC')
     expect(game.cameraState.mode).toBe('chase')
-    // Re-entering runs the start-up (needle sweep, cranking) in P before W can select D.
+    // Re-entering runs the start-up (cranking, needle sweep) in P before W can select D.
     for (let i = 0; i < Math.ceil((START_UP_SECONDS + 2) * 60); i++)
       game.step(1 / 60, { ...idleInput(), forward: 1 }, 0, 2200 + (i * 1000) / 60)
     expect(game.simulation!.player.speed).toBeGreaterThan(1)
