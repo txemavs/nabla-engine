@@ -17,18 +17,29 @@ export { CarInstruments } from '../entity/car-instruments.js'
 export { CarLights, type CarLampState, type LampBinding } from '../entity/car-lights.js'
 export {
   VehicleLightController,
+  vehicleLightCycle,
   type VehicleLampState,
   type VehicleLightChannel,
+  type VehicleLightMode,
 } from './light-controller.js'
+export { StartLights, engineRunning, type EngineState } from './start-lights.js'
 export { VehicleLightRig, vehicleLightBudget } from './light-rig.js'
 export {
   CarMirrors,
   authoredMirrorSurfaces,
+  clampMirrorAdjustment,
+  clampMirrorAngle,
   defaultMirrorCapture,
   fitMirrorCamera,
+  mirrorAngleCentred,
+  mirrorAngleRange,
+  mirrorModelKey,
   mirrorPolicyForQuality,
+  mirrorSideOf,
   raisedMirrorNormal,
   resolveMirrorCapture,
+  type MirrorAdjustment,
+  type MirrorAngle,
   type MirrorCapturePolicy,
   type MirrorPolicy,
 } from '../entity/car-mirrors.js'
@@ -39,6 +50,10 @@ export {
   overheadFootHeight,
   followDrivingHeading,
   DrivingTelemetry,
+  GroundHeading,
+  CriticalFollow,
+  criticalStep,
+  headingDirection,
 } from '../entity/driving-camera.js'
 export {
   advanceCinematicAngle,

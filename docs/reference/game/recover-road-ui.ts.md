@@ -51,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 40](../../../game/recover-road-ui.ts#L40)
 
-Checkbox in its own «Conducción» section (shown under the Posición tab).
+Checkbox in its own «Conducción» section (shown under Ajustes → Opciones).
 
 ```ts
 bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserStorage()): void
@@ -62,11 +62,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `box.addEventListener`
 - `browserStorage`
 - `document.createElement`
-- `document.getElementById`
 - `group.append`
 - `label.append`
 - `menuSection`
-- `positionPane.append`
 
 ## bindRecoverToRoadToggle.callback@49
 

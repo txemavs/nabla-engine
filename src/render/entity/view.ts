@@ -23,6 +23,8 @@ import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
 import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
+import type { VehicleLightMode } from '../vehicle-presentation/light-controller.js'
+import { StartLights } from '../vehicle-presentation/start-lights.js'
 import {
   mountLandingGear,
   landingGearMeshBounds,
@@ -30,7 +32,14 @@ import {
 } from '../vehicle-presentation/landing-gear.js'
 import { hasLandingGear, trailerWheelContactY } from '../../simulation/landing-gear.js'
 import { VehicleLightRig } from '../vehicle-presentation/light-rig.js'
-import type { CarMirrors, MirrorPolicy } from './car-mirrors.js'
+import {
+  clampMirrorAdjustment,
+  mirrorModelKey,
+  type CarMirrors,
+  type MirrorAdjustment,
+  type MirrorAngle,
+  type MirrorPolicy,
+} from './car-mirrors.js'
 import {
   clampSteeringWheelOffset,
   poseSteeringWheel,
@@ -97,6 +106,16 @@ export interface SceneViewOptions {
    * vehicle with that steering mesh loads and no `setSteeringWheelOffset` came before.
    */
   steeringWheelOffset?: (model: string) => Partial<SteeringWheelOffset> | undefined
+  /**
+   * Starting glass adjustment of a mirror model (`mirrorModelKey`), asked once, when the first
+   * vehicle of that model loads and no `setMirrorAdjustment` came before.
+   */
+  mirrorAdjustment?: (model: string) => Readonly<Record<string, Partial<MirrorAngle>>> | undefined
+  /**
+   * Light switch position once the occupied vehicle's engine runs (after the start-up, or at once
+   * with `ignition: false`): `position` (default), `low` (dipped, e.g. a night scene) or `off`.
+   */
+  startLights?: VehicleLightMode
 }
 
 /** Bare renderer. The public package SceneView supplies stock presentation recipes. */
@@ -177,6 +196,35 @@ export class SceneView {
       entry.adjust.position,
     )
   }
+  /** Mirror model (`mirrorModelKey`) of a vehicle with cockpit mirrors, else undefined. */
+  mirrorModel(id: string): string | undefined {
+    return this.mirrorModels.get(id)
+  }
+  /** Sides of a vehicle's mirrors (`left`, `right`, …); empty without mirrors. */
+  mirrorSides(id: string): string[] {
+    return this.carMirrors.get(id)?.sides ?? []
+  }
+  /** Current glass adjustment of a mirror model; `{}` when it keeps the authored aim. */
+  mirrorAdjustment(model: string): MirrorAdjustment {
+    return structuredClone(this.mirrorAdjustments.get(model) ?? {})
+  }
+  /**
+   * Turn the mirror glasses of every vehicle of `model`, now and when more load, by `adjustment`
+   * (per side, clamped to `mirrorAngleRange`) on top of the authored aim. Returns the applied
+   * adjustment.
+   */
+  setMirrorAdjustment(
+    model: string,
+    adjustment: Readonly<Record<string, Partial<MirrorAngle>>>,
+  ): MirrorAdjustment {
+    const applied = clampMirrorAdjustment(adjustment)
+    this.mirrorModelsResolved.add(model)
+    if (Object.keys(applied).length) this.mirrorAdjustments.set(model, applied)
+    else this.mirrorAdjustments.delete(model)
+    for (const [id, entry] of this.mirrorModels)
+      if (entry === model) this.carMirrors.get(id)?.setAdjustment(applied)
+    return structuredClone(applied)
+  }
   setVehicleMirrorTilt(id: string, degrees: number): void {
     const entity = this.document.entities.find((e) => e.id === id)
     const tilt = THREE.MathUtils.clamp(degrees, -5, 12)
@@ -198,10 +246,23 @@ export class SceneView {
     return [...this.carMirrors.keys()]
   }
   toggleVehicleLights(id: string): boolean | null {
+    const mode = this.cycleVehicleLights(id)
+    return mode === null ? null : mode !== 'off'
+  }
+  /** H: step the vehicle's light switch off → position → low (dipped) → off; null without lights. */
+  cycleVehicleLights(id: string): VehicleLightMode | null {
+    return this.carLights.get(id)?.cycleLights() ?? this.authoredLights.get(id)?.cycle() ?? null
+  }
+  /** Current light switch position of a vehicle; null while its model loads or it has no lights. */
+  vehicleLightMode(id: string): VehicleLightMode | null {
     return (
-      this.carLights.get(id)?.toggleHeadlights() ?? this.authoredLights.get(id)?.toggle() ?? null
+      this.carLights.get(id)?.controller.mode ??
+      this.authoredLights.get(id)?.controller.mode ??
+      null
     )
   }
+  /** Lights after the start-up (`SceneViewOptions.startLights`); change `mode` to override. */
+  readonly startLights = new StartLights()
   toggleVehicleHighBeam(id: string): boolean | null {
     return this.authoredLights.get(id)?.toggleHighBeam() ?? null
   }
@@ -248,6 +309,12 @@ export class SceneView {
   private readonly steeringOffsets = new Map<string, SteeringWheelOffset>()
   /** Models whose starting adjustment was already resolved (from the option or a setter). */
   private readonly steeringModels = new Set<string>()
+  /** Per vehicle with mirrors: its mirror model (`mirrorModelKey`). */
+  private readonly mirrorModels = new Map<string, string>()
+  /** Glass adjustments by mirror model; absent models keep the authored aim. */
+  private readonly mirrorAdjustments = new Map<string, MirrorAdjustment>()
+  /** Mirror models whose starting adjustment was already resolved. */
+  private readonly mirrorModelsResolved = new Set<string>()
   readonly ramps = new Map<string, THREE.Group>()
   readonly ready: Promise<void>
   private readonly loading: Promise<void>[] = []
@@ -264,6 +331,7 @@ export class SceneView {
     validated = false,
     private readonly options: SceneViewOptions = {},
   ) {
+    if (options.startLights) this.startLights.mode = options.startLights
     this.graph = SceneGraph.fromValidated(
       validated ? document : parseScene(document, experimentalLargeScene),
     )
@@ -481,6 +549,7 @@ export class SceneView {
       disposeObject(wheel)
     }
     this.carMirrors.get(id)?.dispose()
+    this.mirrorModels.delete(id)
     this.instruments.get(id)?.dispose()
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
@@ -918,7 +987,18 @@ export class SceneView {
       }
       adapter?.preparePart?.(model, 'body')
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
-      if (equipment?.mirrors) this.carMirrors.set(e.id, equipment.mirrors)
+      if (equipment?.mirrors) {
+        this.carMirrors.set(e.id, equipment.mirrors)
+        const mirrorModel = mirrorModelKey(visual.body.url, visual.steering?.url)
+        this.mirrorModels.set(e.id, mirrorModel)
+        if (!this.mirrorModelsResolved.has(mirrorModel)) {
+          const initial = this.options.mirrorAdjustment?.(mirrorModel)
+          // The setter marks the model resolved and applies to this vehicle too.
+          if (initial) this.setMirrorAdjustment(mirrorModel, initial)
+          else this.mirrorModelsResolved.add(mirrorModel)
+        }
+        equipment.mirrors.setAdjustment(this.mirrorAdjustments.get(mirrorModel) ?? {})
+      }
       if (equipment?.instruments) this.instruments.set(e.id, equipment.instruments)
       if (equipment?.beacons) {
         this.beacons.set(e.id, equipment.beacons)
@@ -1205,6 +1285,15 @@ export class SceneView {
     }
     for (const lights of this.shipLights.values()) lights.update(performance.now())
     const lightNow = performance.now()
+    const occupied = sim.player.vehicleId
+    this.startLights.update(
+      occupied,
+      occupied ? sim.vehicleInfo(occupied) : null,
+      occupied
+        ? (this.carLights.get(occupied)?.controller ??
+            this.authoredLights.get(occupied)?.controller)
+        : undefined,
+    )
     for (const [id, lights] of this.authoredLights) {
       const info = sim.vehicleInfo(id)
       const tractor = info.towVehicleId

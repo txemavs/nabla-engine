@@ -14,6 +14,7 @@ import {
   VehicleLightController,
   type VehicleLampState,
   type VehicleLightChannel,
+  type VehicleLightMode,
 } from './light-controller.js'
 
 /** Translate the GLB contract once at load time; rendering uses common channels. */
@@ -138,10 +139,14 @@ export class AuthoredVehicleLights {
   }
   /** Null means this asset has no controllable authored light sources. */
   toggle(): boolean | null {
+    return this.cycle() === null ? null : this.controller.enabled
+  }
+  /** Step the light switch (off → position → low → off); null without authored light sources. */
+  cycle(): VehicleLightMode | null {
     if (!this.lamps.length && !this.emitters.length) return null
-    this.controller.toggleLights()
+    this.controller.cycleLights()
     this.update(this.reversing)
-    return this.controller.enabled
+    return this.controller.mode
   }
   /** Current light switch, also used by attached trailers. */
   get isEnabled(): boolean {
@@ -173,6 +178,6 @@ export class AuthoredVehicleLights {
       lamp.light.intensity = controller.level(lamp.channel, lamp.side, state, now) * lamp.intensity
     for (const emitter of this.emitters)
       emitter.material.emissiveIntensity =
-        controller.level(emitter.channel, emitter.side, state, now) * emitter.intensity
+        controller.glow(emitter.channel, emitter.side, state, now) * emitter.intensity
   }
 }

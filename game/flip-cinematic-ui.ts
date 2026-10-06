@@ -36,7 +36,7 @@ export function saveFlipCinematicEnabled(
   }
 }
 
-/** Checkbox under Capas: "Cámara cinematográfica al volcar". */
+/** Checkbox in Ajustes → Opciones → Cámara: "Cámara cinematográfica al volcar". */
 export function bindFlipCinematicToggle(runtime: GameRuntime, storage = browserStorage()): void {
   const group = menuSection('camera-extras', 'Cámara')
   const label = document.createElement('label')
@@ -49,7 +49,4 @@ export function bindFlipCinematicToggle(runtime: GameRuntime, storage = browserS
   })
   label.append(box, ' Cámara cinematográfica al volcar')
   group.append(label)
-  // If the tabbed settings HUD already relocated Capas, keep this section visible there.
-  const layersPane = document.getElementById('settings-pane-layers')
-  if (layersPane && group.parentElement !== layersPane) layersPane.append(group)
 }

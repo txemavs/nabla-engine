@@ -51,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 40](../../../game/flip-cinematic-ui.ts#L40)
 
-Checkbox under Capas: "Cámara cinematográfica al volcar".
+Checkbox in Ajustes → Opciones → Cámara: "Cámara cinematográfica al volcar".
 
 ```ts
 bindFlipCinematicToggle(runtime: GameRuntime, storage = browserStorage()): void
@@ -62,10 +62,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `box.addEventListener`
 - `browserStorage`
 - `document.createElement`
-- `document.getElementById`
 - `group.append`
 - `label.append`
-- `layersPane.append`
 - `menuSection`
 
 ## bindFlipCinematicToggle.callback@46

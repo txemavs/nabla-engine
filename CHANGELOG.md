@@ -4,6 +4,34 @@
 
 ### Added
 
+- **Position lights after the engine start-up:** entering a car, the S3, the A3, the truck or
+  any vehicle with lights, the lights stay off through P, the starter and the needle sweep, then
+  switch to _posición_ as the engine runs: front white glow (S3/A3 `FocoC` lenses; truck
+  low-beam lenses at `lightingDefaults.positionLensGlow` 0.15) and rear red tail lamps, no beam.
+  With `ignition: false` they come on at entry; switching the engine off turns them off. **H**
+  now steps a three-position switch, _posición_ → _cruce_ (dipped) → _apagadas_, with the
+  notices «Luces de posición» / «Luces de cruce» / «Luces apagadas»; **K** (high/low) only acts
+  on _cruce_. Before, H was a plain on/off where «on» lit position lamps and dipped beams
+  together, and nothing switched them on at start. Hosts pick the state after the start-up with
+  `GameRuntimeOptions.startLights` / `SceneViewOptions.startLights` (`'position'` default,
+  `'low'`, `'off'`). Engine API: `VehicleLightMode`, `VehicleLightController.mode` /
+  `cycleLights` / `glow`, `vehicleLightCycle`, `StartLights`, `engineRunning`,
+  `SceneView.cycleVehicleLights` / `vehicleLightMode` / `startLights`, `CarLights.cycleLights`,
+  `AuthoredVehicleLights.cycle`.
+- **Mirror angles from the game menu («Espejos»):** **Ajustes → Vehículos**, below «Volante»,
+  turns each mirror glass of the vehicle you drive, live: «Espejo izquierdo / derecho: giro»
+  (yaw ±15°, + outward / − inward) and «… : inclinación» (tilt ±10°, + up), 0.5° steps, plus
+  «Restablecer espejos» and a «Valores para fijarlo» readout (also logged with `console.info`).
+  The live `Reflector` glass turns, so the mirror view follows (about twice the glass angle).
+  Works for every vehicle with cockpit mirrors: S3 and A3 (door lenses, side from their place
+  on the chassis) and the tractor (tagged GLB lenses). Saved per mirror model in `localStorage`
+  (`nabla.mirrors:<body GLB>#<steering GLB>`, so the S3 and the A3 keep their own); host
+  defaults from `?mirrors=` / `VITE_NABLA_MIRRORS` keyed by preset id. Bake path:
+  `scripts/bake-mirror-aim.mjs <preset> '<values>'` adds the values to the new preset field
+  `vehicle.mirrorAim` (degrees per side), applied under the sliders. Engine API:
+  `GameRuntime.mirrors` / `setMirrorAngle` / `resetMirrorAdjustment`,
+  `GameRuntimeOptions.mirrors`, `SceneView.setMirrorAdjustment`, `CarMirrors.setAdjustment`,
+  `mirrorAngleRange`, `mirrorModelKey`, `mirrorSideOf`.
 - **Asphalt contrast:** a draw-time tone curve on the roads photo drape (fragment shader; tile
   textures untouched, no painter): around a fixed display-space pivot, dark asphalt gets darker
   and painted markings brighter, on top of the existing carriageway darkening and
@@ -11,8 +39,8 @@
   One shared uniform, so changes are live without recompiles. Where the asphalt is only part of
   the terrain orthophoto (`relief=lidar`, no road meshes), the curve follows each cell's OSM
   carriageways through a small single-channel mask painted on demand (only when the contrast is
-  not 1). Slider **Ajustes → Capas → Asfalto
-  → Contraste del asfalto** (stored, **Por defecto** resets), host default
+  not 1). Slider **Ajustes → Calidad →
+  Asfalto → Contraste del asfalto** (stored, **Por defecto** resets), host default
   `NABLA_BOOT.asphaltContrast`, one visit `?asphaltContrast=1.6`. Engine API:
   `GameRuntimeOptions.asphaltContrast`, `runtime.asphaltContrast` / `setAsphaltContrast`,
   `setAsphaltContrast` / `asphaltContrast` and `ASPHALT_CONTRAST_*` from `@nabla/engine/render`.
@@ -54,14 +82,14 @@
   (cockpit) view cut to a held side shot looking ahead of the car, then a short orbit, then back to
   the driver view. It complements the C-cycle cinematic drone: it never fires from the exterior,
   overhead or cinematic views, and pressing C mid-shot hands the camera straight back. Default on;
-  toggle with Ajustes → Capas «Cámara cinematográfica al volcar», `GameRuntimeOptions.flipCinematic`,
+  toggle with Ajustes → Opciones «Cámara cinematográfica al volcar», `GameRuntimeOptions.flipCinematic`,
   `NABLA_BOOT.flipCinematic`, `?flipcam=0` / `?flipCinematic=0` or
   `runtime.setFlipCinematicEnabled`.
 - **R recovers onto the nearest road:** R now moves the car to the closest point of the nearest
   drivable road (scene roads plus streamed OSM carriageways) within `ROAD_SNAP_MAX_DISTANCE`
   (400 m), facing along the road in the direction closest to the old heading, then uprights it as
   before; with no road nearby it uprights in place («Sin vía cerca · coche enderezado»). Flying
-  craft and boats never snap. Toggle in the new Ajustes → **Posición** tab,
+  craft and boats never snap. Toggle in Ajustes → **Opciones**,
   `GameRuntimeOptions.recoverToRoad`, `NABLA_BOOT.recoverToRoad`, `?recoverToRoad=0` (alias
   `?roadReset=`) or `runtime.setRecoverToRoadEnabled`. Engine API:
   `Simulation.recoverVehicle({ snapToRoad, roads, maxRoadDistance })`, `nearestRoadPoint`,
@@ -101,7 +129,7 @@
   `GameCameraMode`, `cinematicOrbitPose` and `overheadFootHeight`; `data-camera-mode` reports
   `map` / `cinematic` on foot too. See docs/controls.md → Camera modes.
 - **City labels toggle:** the floating OSM city / town / village names (~1 km above the ground)
-  are now the tile layer `places` ("Nombres de poblaciones" in Ajustes → Capas). Hide them with
+  are now the tile layer `places` ("Nombres de poblaciones" in Ajustes → Opciones → Mapa). Hide them with
   `layers=-places`, `runtime.setHiddenLayers(['places'])` or the standalone game's host flag
   `NABLA_BOOT.cityLabels: false` (default stays on; the player's stored choice is kept relative to
   the host default).
@@ -112,6 +140,34 @@
 
 ### Fixed
 
+- **Cars no longer start dark:** until 2026-10-05 the S3/A3 position lamps (front `FocoC`, rear
+  `PilotoP`) lit whenever the car was occupied. Commit `fa48503` («Author truck mirrors and tune
+  vehicle lighting and beam controls», shipped before #85) put them behind the new H headlight
+  switch, which starts off, so every car started with its lights off. #135/#137 (start-up
+  sequence) did not touch the lights. The position lights now come back on after the start-up.
+- **Ajustes → Capas showed no map layers in the terrain game:** the layer list (Carretera,
+  Edificios y techos, Foto del suelo, Nombres de poblaciones) is bound after the settings window
+  mounts, so it stayed in the hidden legacy menu and could not be switched back on; the «Terreno»
+  source / cache section was unreachable the same way. The window now places sections whenever
+  they appear. Also, rows the window hides (the duplicate «Mostrar el mar») no longer show.
+- **Overhead (cenital) and chase cameras no longer shake in a rollover.** Root cause:
+  - The overhead view took its heading straight from the chassis quaternion every frame: the
+    nose projected onto the ground, with no smoothing. In a tumble the nose swings above and
+    below the horizon, so that heading flipped by up to 180° at once (measured up to 226 rad/s
+    in a scripted multiple rollover). The view also sits half a frustum ahead of the car along
+    that heading, so every flip threw the camera 10–20 m to the other side.
+  - The chase view had the same raw heading as its target, plus turn anticipation from the
+    tumbling body's spin, so it swung side to side (up to 32 rad/s, 11 reversals).
+  - Exterior cameras now use `GroundHeading`, a roll-independent heading. While upright it is
+    the nose projected onto the ground, followed critically damped with yaw-rate feed-forward,
+    so driving feel is unchanged. While tumbling (detected with hysteresis) it holds, or aims
+    along the line of travel, turning at most 1.2 rad/s; it then eases round to the new nose.
+  - The overhead view centre follows through `CriticalFollow`, a critically damped spring with
+    velocity feed-forward.
+  - Chase turn anticipation is muted while tumbling. The chase path is otherwise unchanged
+    while driving upright.
+  - New `GameCameraSettings`: `mapHeadingResponse`, `mapFollowResponse`, `mapMaxYawRate` and
+    `tumble*`.
 - **Vehicles no longer roll back when entered:** the drivetrain was created in D1 and kept
   whatever gear it was left in, so entering a vehicle released the unoccupied parking brake with
   the selector in D (or R) and no pedal, and it rolled down any slope. A braked vehicle also
@@ -153,6 +209,19 @@
   guard had lost its braces; fixes the typecheck error on main).
 
 ### Changed
+
+- **Settings window (Ajustes) reorganized into seven tabs:** Planeta | Posición | Calidad | Capas |
+  Vehículos | Opciones | Configuración. New **Opciones** holds player preferences: «Cámara
+  cinematográfica al volcar» (from Capas), «R: reaparecer en la vía más cercana» (from Posición)
+  and «Nombres de poblaciones» (the `places` layer, from Capas). New **Configuración** holds the
+  planet config text and «Copiar config» (from Planeta) and the «Terreno» source / cache section.
+  «Asfalto» moved from Capas to **Calidad**. Planeta is compact: Hora with its status and «Ahora»
+  on one line, the sky / sun / sea / cloud switches in a grid, one line per slider (1182 → 480 px
+  tall); selects and sliders share the line with their label in every tab. Tabs with nothing to
+  show are hidden (Posición and Capas on the flat demo). Storage keys, URL parameters and `NABLA_BOOT` defaults
+  are unchanged. Placement is one table, `SECTION_TABS` in `game/settings-hud.ts`, which already
+  lists #138's `quality-shadows` («Sombras», Calidad). `PlanetSettingsPanel` gains `config` (the
+  config block, mountable apart from `root`). See docs/controls.md → Settings menu.
 
 - **Idle at ~1,000 RPM with a less rumbly engine note.** Car idle (`roadVehicleDefaults.idleRpm`,
   S3, A3 and procedural cars) 900 → 1,000 RPM, so the rev counter rests on 1,000 at a

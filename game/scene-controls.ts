@@ -22,6 +22,7 @@ import { createPlaceable, placeables, type PlaceableId } from '@nabla/engine/run
 import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
 import { steeringWheelControls, type SteeringWheelRuntime } from './steering-wheel-controls.js'
+import { mirrorControls, type MirrorRuntime } from './mirror-controls.js'
 
 /** Sea level limits in metres, as in Studio's sea-surface controls. */
 export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
@@ -30,7 +31,7 @@ export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
  * What the controls need from the engine's `GameRuntime`; tests pass a fake. The steering-wheel
  * members are optional: without them «Volante» stays disabled.
  */
-export interface SceneRuntime extends Partial<SteeringWheelRuntime> {
+export interface SceneRuntime extends Partial<SteeringWheelRuntime>, Partial<MirrorRuntime> {
   readonly skyClock: SkyClock
   setSkyClock(clock: SkyClock): void
   readonly waterSettings: { mode: 'manual' | 'tide'; level: number; amplitude: number } | undefined
@@ -307,7 +308,9 @@ export function bindSceneControls(
   vehicleList.id = 'vehicle-list'
   // «Volante»: per-model steering-wheel position of the vehicle the player drives.
   const wheel = steeringWheelControls()
-  vehicles.append(choiceRow, add, vehicleMessage, vehicleList, wheel.root)
+  // «Espejos»: per-model glass angle of each mirror of the vehicle the player drives.
+  const mirrors = mirrorControls()
+  vehicles.append(choiceRow, add, vehicleMessage, vehicleList, wheel.root, mirrors.root)
 
   isolateKeys(timeRange, timeInput, timeSpeed, seaRange, seaInput, cloudAmount, choice)
   const controls = [
@@ -440,8 +443,10 @@ export function bindSceneControls(
     showClouds()
 
     const refreshWheel = wheel.bind(runtime)
+    const refreshMirrors = mirrors.bind(runtime)
     const timer = setInterval(() => {
       refreshWheel()
+      refreshMirrors()
       showSea(false)
       if (runtime.skyClock.mode === 'live') showTime()
     }, 1000)

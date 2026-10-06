@@ -31,18 +31,18 @@ export interface HostBootConfig {
   probeMs?: number
   /**
    * Floating city / town / village names over the terrain (layer `places`). Default true.
-   * `false` starts with them hidden; the player can still switch them on in Ajustes → Capas,
+   * `false` starts with them hidden; the player can still switch them on in Ajustes → Opciones → Mapa,
    * and `?layers=+places` / `?layers=-places` override for one visit.
    */
   cityLabels?: boolean
   /**
    * Post-flip cinematic camera (two rolls in under a second). Default on when omitted.
-   * Hosts set this on `window.NABLA_BOOT`; players can also toggle it in Ajustes.
+   * Hosts set this on `window.NABLA_BOOT`; players can also toggle it in Ajustes → Opciones → Cámara.
    */
   flipCinematic?: boolean
   /**
    * R reset puts the vehicle on the nearest road/vía. Default on when omitted.
-   * URL `?recoverToRoad=0|1` (alias `?roadReset=`); players can toggle it in Ajustes → Posición.
+   * URL `?recoverToRoad=0|1` (alias `?roadReset=`); players can toggle it in Ajustes → Opciones.
    */
   recoverToRoad?: boolean
   /**
@@ -53,7 +53,7 @@ export interface HostBootConfig {
   shadowBias?: number
   /**
    * Host default asphalt contrast on the roads photo drape, 0.5–2.5 (omitted = 1, unchanged).
-   * The player's slider in Ajustes → Capas → Asfalto is stored and wins over it;
+   * The player's slider in Ajustes → Calidad → Asfalto is stored and wins over it;
    * `?asphaltContrast=1.6` overrides both for one visit.
    */
   asphaltContrast?: number

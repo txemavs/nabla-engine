@@ -24,6 +24,7 @@
 - `./helm-touch.js`
 - `./vehicle-menu.js`
 - `./steering-wheel-offsets.js`
+- `./mirror-adjustment.js`
 - `./touch-driving.js`
 - `./control-profiles.js`
 - `./touch-flight.js`

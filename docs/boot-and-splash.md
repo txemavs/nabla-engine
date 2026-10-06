@@ -227,8 +227,8 @@ The bundled game reads a boot config ([game/boot.ts](../game/boot.ts)), highest 
 
 `cityLabels` (default `true`) controls the floating city / town / village names drawn ~1 km
 above the terrain (tile layer `places`, see [real-world.md](real-world.md)). `cityLabels: false`
-starts with them hidden; the player can switch them back on in **Ajustes → Capas → Nombres de
-poblaciones**, and the choice is stored relative to the host default. `?layers=+places` /
+starts with them hidden; the player can switch them back on in **Ajustes → Opciones → Mapa →
+Nombres de poblaciones**, and the choice is stored relative to the host default. `?layers=+places` /
 `?layers=-places` override both for one visit. Library hosts call
 `runtime.setHiddenLayers([...runtime.hiddenLayers, 'places'])` (or `setHiddenTileLayers` from
 `@nabla/engine/render` before constructing the runtime).
@@ -246,7 +246,7 @@ contrast on the roads photo drape: a draw-time curve in the fragment shader arou
 display-space pivot, so dark asphalt gets darker and painted markings brighter while the tile
 texture stays untouched. It applies to the roads photo drape and, where the asphalt is only part
 of the terrain orthophoto (`relief=lidar`), to the terrain photo through a per-cell mask of the
-OSM carriageways. Players move it in **Ajustes → Capas → Asfalto → Contraste del asfalto**
+OSM carriageways. Players move it in **Ajustes → Calidad → Asfalto → Contraste del asfalto**
 (stored, wins over the host default; **Por defecto** forgets it), and `?asphaltContrast=1.6`
 overrides both for one visit. Library hosts pass `GameRuntimeOptions.asphaltContrast` or call
 `runtime.setAsphaltContrast(1.6)` (also `setAsphaltContrast` from `@nabla/engine/render`).

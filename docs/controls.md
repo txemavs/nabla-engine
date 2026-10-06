@@ -37,6 +37,9 @@ tree. Saving stores the authored document, not the runtime physics state.
 | Latch / release cargo                             | F                                 |
 | Transfer controls between latched car and carrier | T                                 |
 | Restart play                                      | R                                 |
+| Lights: posición → cruce → apagadas               | H                                 |
+| High / low beams (with cruce)                     | K                                 |
+| Indicators left / right                           | Z / X                             |
 
 Entering requires proximity and a nearly stopped vehicle. Exiting requires low
 speed and a free exit volume. Cars require supporting ground; a carrier with an
@@ -57,6 +60,23 @@ touch devices.
 Which overlay and HUD readouts appear in each seat is decided by the vehicle's
 [control profile](vehicle-controls.md).
 
+### Vehicle lights
+
+Getting into a car, the S3, the A3, the truck or any other vehicle with lights, the lights stay
+off while the vehicle selects P and starts (starter, needle sweep). As soon as the engine runs
+they switch to **position lights** (_posición_): the front lamps glow white and the rear lamps
+red, with no beam on the road. On the truck, which has no separate front position bulb, the
+low-beam lenses glow faintly instead. Hosts that skip the start-up (`ignition: false`) get
+position lights at once on entry. If the engine is switched off again, the lights go off with it.
+
+**H** then steps through the switch: _posición_ → _cruce_ (dipped beams, «Luces de cruce») →
+_apagadas_ («Luces apagadas») → _posición_ («Luces de posición»). **K** swaps dipped for main
+beams while _cruce_ is selected. A choice made with **H** during the start-up is kept. Brake,
+reverse and indicator lamps work in every position. Hosts choose the position after the start-up
+with `GameRuntimeOptions.startLights` (`'position'` by default, `'low'` for a night scene,
+`'off'`); `SceneViewOptions.startLights` and `SceneView.startLights.mode` do the same on a bare
+view.
+
 ## A3 and mobile garage
 
 1. Load **Escena A3**, press **Jugar**, then **E** beside the A3.
@@ -69,6 +89,24 @@ Which overlay and HUD readouts appear in each seat is decided by the vehicle's
 The car must fit completely inside the bay with all four suspension rays supported
 by that carrier. Control transfer is a prototype convenience, without a walking
 animation. The ramp changes pose immediately rather than animating gradually.
+
+## Settings menu (Ajustes)
+
+The gear icon (top right) opens **Ajustes**, a tabbed window; **Esc** or «Cerrar» closes it.
+A tab with nothing to show in the current game is hidden (Posición and Capas on the flat demo).
+
+| Tab               | Contents                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Planeta**       | Hora (clock, speed, «Ahora») first; sky / sun / sea / cloud switches; cloud amount and pressure, sun flare; sea level and tide |
+| **Posición**      | current `lat, lon`, «Copiar posición», «Ir a latitud, longitud»                                                                |
+| **Calidad**       | quality profile, FPS limit and resolution scale; «Asfalto» (asphalt contrast)                                                  |
+| **Capas**         | map layers: «Carretera», «Edificios y techos», «Foto del suelo»                                                                |
+| **Vehículos**     | add a vehicle or object; «Volante» and «Espejos» (below)                                                                       |
+| **Opciones**      | «Cámara cinematográfica al volcar», «R: reaparecer en la vía más cercana», «Nombres de poblaciones»                            |
+| **Configuración** | «Valores del planeta» (config text + «Copiar config»); «Terreno» (source, cache, missing cells)                                |
+
+Every control keeps its storage key, URL parameter and host default (`NABLA_BOOT`); only its
+place in the window changed. The placement table is `SECTION_TABS` in `game/settings-hud.ts`.
 
 ## Steering wheel position
 
@@ -85,6 +123,21 @@ default. The box under the sliders shows the values to make them the default for
 («Valores para fijarlo», metres), and every change is logged in the browser console. The
 group is disabled on foot and in vehicles without a separate steering mesh. Details:
 [Vehicle anchors](vehicle-rigs.md#driver-steering-wheel-adjustment-runtime).
+
+## Mirror angles
+
+In the same **Vehículos** tab, the **Espejos** group turns the mirror glasses of the vehicle you
+are in, live (cars and the truck):
+
+- «Espejo izquierdo: giro» / «Espejo derecho: giro»: + turns the glass outward (you see more
+  of the roadside), − inward (more of your own flank). ±15° in 0.5° steps.
+- «Espejo izquierdo: inclinación» / «Espejo derecho: inclinación»: + up, − down. ±10°.
+
+The mirror view follows at once (about twice the glass angle). The choice is saved per
+vehicle (the S3, the A3 and the truck keep their own); «Restablecer espejos» returns to the
+default. The box below shows «Valores para fijarlo» (degrees), and every change is logged in
+the browser console. Sliders for a side the vehicle has no mirror on stay disabled. Details:
+[Vehicle anchors](vehicle-rigs.md#driver-mirror-adjustment-runtime).
 
 ## Flight: mode 2
 
@@ -232,12 +285,21 @@ gets the same modes.
 | → back to exterior | → back to first person |
 
 - **Overhead (cenital)** looks straight down at the vehicle or player and follows it
-  without lag. It is **heading-up**: the vehicle's nose, or on foot the walking heading,
+  (critically damped, with velocity feed-forward, so there is no lag at steady speed). It is
+  **heading-up**: the vehicle's nose, or on foot the walking heading,
   points to the top of the screen, so W always moves up the screen and the map turns
   around you (north-up would make steering mirror-reversed when driving south). In a
   vehicle it keeps the existing framing (car at 75% of screen height, 45–600 m, height
   grows with speed). On foot the player stays centred at `footMapHeight` (18 m) × wheel zoom
   0.75–3× (about 13–54 m); move the mouse to turn.
+- **Crashes and rollovers.** The overhead and exterior views never inherit the vehicle's roll
+  or pitch. They use a smoothed, roll-independent heading (`GroundHeading`): the nose
+  projected onto the ground while the car is upright. While it tumbles (on its side or roof,
+  nose steeply up or down, or rolling fast), the heading holds or follows the line of travel
+  and turns at most `tumbleMaxYawRate` (1.2 rad/s). Once the car has settled upright it eases
+  round to the new nose. The overhead view follows its centre point with a critically damped
+  spring that is calmer while tumbling, so a multiple rollover is followed smoothly from above
+  instead of shaking side to side.
 - **Cinematic** is a slow drone orbit: one full turn every `cinematicOrbitSeconds` (48 s)
   at about 2.4× the vehicle's chase distance (minimum 9 m), slightly above (`cinematicElevation`)
   with a gentle vertical drift and a longer 38° lens. It starts behind the current heading,
@@ -265,7 +327,7 @@ selects `new Simulation(scene, { playerMode: 'hover' })`.
 The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. With the mouse captured
 (see [Mouse capture](#mouse-capture)) the mouse aims without holding a button and **left-click** fires. Hold **right-click** for aim-down-sights
 (raises and centres the pistol for iron sights); release to return to the hip pose. There is **no UI crosshair** — aim with the pistol.
-**H** toggles a laser sight (beam from the muzzle plus a surface pin) while the weapon is drawn; in a vehicle **H** still toggles lights.
+**H** toggles a laser sight (beam from the muzzle plus a surface pin) while the weapon is drawn; in a vehicle **H** still steps the lights (posición → cruce → apagadas).
 Each shot plays a synthesized gunshot, applies viewmodel **recoil**, and on a hit leaves a visible surface mark (buildings, vehicles, props) plus a brief spark burst (no bullet
 tracer trail). Drawing, holstering and boarding do not change mouse capture; **Esc** frees the mouse and the next click on the viewport
 recaptures it without firing. Studio equips the
