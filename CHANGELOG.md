@@ -11,8 +11,8 @@
   One shared uniform, so changes are live without recompiles. Where the asphalt is only part of
   the terrain orthophoto (`relief=lidar`, no road meshes), the curve follows each cell's OSM
   carriageways through a small single-channel mask painted on demand (only when the contrast is
-  not 1). Slider **Ajustes → Capas → Asfalto
-  → Contraste del asfalto** (stored, **Por defecto** resets), host default
+  not 1). Slider **Ajustes → Calidad →
+  Asfalto → Contraste del asfalto** (stored, **Por defecto** resets), host default
   `NABLA_BOOT.asphaltContrast`, one visit `?asphaltContrast=1.6`. Engine API:
   `GameRuntimeOptions.asphaltContrast`, `runtime.asphaltContrast` / `setAsphaltContrast`,
   `setAsphaltContrast` / `asphaltContrast` and `ASPHALT_CONTRAST_*` from `@nabla/engine/render`.
@@ -49,14 +49,14 @@
   (cockpit) view cut to a held side shot looking ahead of the car, then a short orbit, then back to
   the driver view. It complements the C-cycle cinematic drone: it never fires from the exterior,
   overhead or cinematic views, and pressing C mid-shot hands the camera straight back. Default on;
-  toggle with Ajustes → Capas «Cámara cinematográfica al volcar», `GameRuntimeOptions.flipCinematic`,
+  toggle with Ajustes → Opciones «Cámara cinematográfica al volcar», `GameRuntimeOptions.flipCinematic`,
   `NABLA_BOOT.flipCinematic`, `?flipcam=0` / `?flipCinematic=0` or
   `runtime.setFlipCinematicEnabled`.
 - **R recovers onto the nearest road:** R now moves the car to the closest point of the nearest
   drivable road (scene roads plus streamed OSM carriageways) within `ROAD_SNAP_MAX_DISTANCE`
   (400 m), facing along the road in the direction closest to the old heading, then uprights it as
   before; with no road nearby it uprights in place («Sin vía cerca · coche enderezado»). Flying
-  craft and boats never snap. Toggle in the new Ajustes → **Posición** tab,
+  craft and boats never snap. Toggle in Ajustes → **Opciones**,
   `GameRuntimeOptions.recoverToRoad`, `NABLA_BOOT.recoverToRoad`, `?recoverToRoad=0` (alias
   `?roadReset=`) or `runtime.setRecoverToRoadEnabled`. Engine API:
   `Simulation.recoverVehicle({ snapToRoad, roads, maxRoadDistance })`, `nearestRoadPoint`,
@@ -96,7 +96,7 @@
   `GameCameraMode`, `cinematicOrbitPose` and `overheadFootHeight`; `data-camera-mode` reports
   `map` / `cinematic` on foot too. See docs/controls.md → Camera modes.
 - **City labels toggle:** the floating OSM city / town / village names (~1 km above the ground)
-  are now the tile layer `places` ("Nombres de poblaciones" in Ajustes → Capas). Hide them with
+  are now the tile layer `places` ("Nombres de poblaciones" in Ajustes → Opciones → Mapa). Hide them with
   `layers=-places`, `runtime.setHiddenLayers(['places'])` or the standalone game's host flag
   `NABLA_BOOT.cityLabels: false` (default stays on; the player's stored choice is kept relative to
   the host default).
@@ -107,6 +107,11 @@
 
 ### Fixed
 
+- **Ajustes → Capas showed no map layers in the terrain game:** the layer list (Carretera,
+  Edificios y techos, Foto del suelo, Nombres de poblaciones) is bound after the settings window
+  mounts, so it stayed in the hidden legacy menu and could not be switched back on; the «Terreno»
+  source / cache section was unreachable the same way. The window now places sections whenever
+  they appear. Also, rows the window hides (the duplicate «Mostrar el mar») no longer show.
 - **Vehicles no longer roll back when entered:** the drivetrain was created in D1 and kept
   whatever gear it was left in, so entering a vehicle released the unoccupied parking brake with
   the selector in D (or R) and no pedal, and it rolled down any slope. A braked vehicle also
@@ -136,6 +141,19 @@
   guard had lost its braces; fixes the typecheck error on main).
 
 ### Changed
+
+- **Settings window (Ajustes) reorganized into seven tabs:** Planeta | Posición | Calidad | Capas |
+  Vehículos | Opciones | Configuración. New **Opciones** holds player preferences: «Cámara
+  cinematográfica al volcar» (from Capas), «R: reaparecer en la vía más cercana» (from Posición)
+  and «Nombres de poblaciones» (the `places` layer, from Capas). New **Configuración** holds the
+  planet config text and «Copiar config» (from Planeta) and the «Terreno» source / cache section.
+  «Asfalto» moved from Capas to **Calidad**. Planeta is compact: Hora with its status and «Ahora»
+  on one line, the sky / sun / sea / cloud switches in a grid, one line per slider (1182 → 480 px
+  tall); selects and sliders share the line with their label in every tab. Tabs with nothing to
+  show are hidden (Posición and Capas on the flat demo). Storage keys, URL parameters and `NABLA_BOOT` defaults
+  are unchanged. Placement is one table, `SECTION_TABS` in `game/settings-hud.ts`, which already
+  lists #138's `quality-shadows` («Sombras», Calidad). `PlanetSettingsPanel` gains `config` (the
+  config block, mountable apart from `root`). See docs/controls.md → Settings menu.
 
 - **Idle at ~1,000 RPM with a less rumbly engine note.** Car idle (`roadVehicleDefaults.idleRpm`,
   S3, A3 and procedural cars) 900 → 1,000 RPM, so the rev counter rests on 1,000 at a

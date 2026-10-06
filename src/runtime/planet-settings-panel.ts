@@ -79,6 +79,12 @@ function pct(n: number): string {
 export type PlanetSettingsPanel = {
   /** Form root — HUD hosts it today; a monitor may append it later. */
   root: HTMLElement
+  /**
+   * The config text (`#ps-config-out`) and «Copiar config» button. Starts at the end of `root`;
+   * a host may move it elsewhere (the game HUD shows it under «Configuración»). `refresh()` keeps
+   * it current wherever it is mounted.
+   */
+  config: HTMLElement
   bind(runtime: PlanetSettingsRuntime): void
   refresh(): void
   snapshot(): PlanetVisualConfig | null
@@ -172,18 +178,27 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   copyBtn.id = 'ps-copy-config'
   copyBtn.textContent = 'Copiar config'
 
-  root.append(
+  // On/off switches share one compact block (a grid in the HUD); sliders follow, one row each.
+  const toggles = doc.createElement('div')
+  toggles.className = 'planet-settings-toggles'
+  toggles.append(
     row('Cielo', sky),
     row('Sol y destello', sun),
     row('Mar', sea),
     row('Nubes', clouds),
     row('Nubes artísticas', artistic),
+  )
+  const config = doc.createElement('div')
+  config.className = 'planet-settings-config-block'
+  config.append(configOut, copyBtn)
+
+  root.append(
+    toggles,
     row('Cantidad de nubes', amount, amountVal),
     row('Modo de presión de nubes', pressureMode),
     row('Presión de nubes', pressure, pressureVal),
     row('Destello del sol', flare, flareVal),
-    configOut,
-    copyBtn,
+    config,
   )
 
   let runtime: PlanetSettingsRuntime | null = null
@@ -274,12 +289,14 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
 
   return {
     root,
+    config,
     bind,
     refresh,
     snapshot: () => (runtime ? planetVisualConfigFromRuntime(runtime) : null),
     destroy: () => {
       runtime = null
       root.remove()
+      config.remove()
     },
   }
 }

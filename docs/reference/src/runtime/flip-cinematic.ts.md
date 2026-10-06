@@ -11,7 +11,7 @@ then restore the previous camera mode. Only triggers from the first-person (cock
 Fires only when the camera was the seated driver view (`cockpit`) at flip time, never from
 the exterior, overhead or the C-cycle `cinematic` drone view (#127), which it complements.
 Pressing C during the shot keeps the player's new choice instead of restoring the old view.
-Toggleable: Ajustes → Capas "Cámara cinematográfica al volcar", localStorage
+Toggleable: Ajustes → Opciones → Cámara "Cámara cinematográfica al volcar", localStorage
 nabla.flipCinematic, boot `flipCinematic`, or URL ?flipcam=0 / ?flipCinematic=0.
 
 ## Module dependencies
