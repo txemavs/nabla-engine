@@ -4,6 +4,15 @@
 
 ### Added
 
+- **S3 steering wheel default moved to Txema's «Volante» choice:** the S3 wheel now sits where
+  the sliders put it at «Volante: distancia» +1,0 cm and «Volante: altura» +2,5 cm, baked into
+  `s3.steering.glb` (the sliders read 0 there for every host). `scripts/move-s3-steering-wheel.mjs`
+  now bakes both slider axes idempotently — `extras.nabla.columnForward` (0.03 → 0.04 m along the
+  column) and the new `extras.nabla.height` (0.025 m, chassis up) — and records the moved spin
+  axis as `extras.nabla.spinPivot`. Steering GLBs may declare that pivot on any node; `SceneView`
+  spins the wheel about it (`steeringPivot`, optional `pivot` argument of `poseSteeringWheel`).
+  The A3 wheel and the shared `steering` anchor are unchanged. Players who saved +1,0 / +2,5 in
+  the menu should press «Restablecer volante» once so the value isn't applied twice.
 - **Vehicles start in P, with an instrument sweep and an engine start:** every road vehicle (car,
   S3, A3, truck, procedural cars, host-spawned vehicles) now spawns in P and every way into the
   driver's seat (E, `startInVehicle`/`?vehicle=`, `transferControls`) selects P again, held by the

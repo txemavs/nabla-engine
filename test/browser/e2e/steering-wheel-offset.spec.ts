@@ -21,7 +21,7 @@ test('steering wheel offset slides along the column and up, per model, keeping t
     const { SceneView } = await import(`/@fs/${root}/src/presentation/scene-view.ts`)
     const { presetVehicle } = await import(`/@fs/${root}/src/catalog/vehicles/library.ts`)
     const { createEntity } = await import(`/@fs/${root}/src/entity/schema.ts`)
-    const { poseSteeringWheel, steeringAxis } = await import(
+    const { poseSteeringWheel, steeringAxis, steeringPivot } = await import(
       `/@fs/${root}/src/render/entity/steering-wheel.ts`
     )
     const { driverHeadPose } = await import(`/@fs/${root}/src/render/entity/driving-camera.ts`)
@@ -122,7 +122,9 @@ test('steering wheel offset slides along the column and up, per model, keeping t
 
     // Steering still turns the rim about its own (moved) column: with and without the offset the
     // turned vertices differ by the same constant translation.
-    poseSteeringWheel(view.steering.get('s3'), steeringAxis(s3.visual!.steering!.axis), 0.3)
+    // The S3 GLB declares its baked spin pivot; SceneView spins about it the same way.
+    const pivot = steeringPivot(view.steering.get('s3'))
+    poseSteeringWheel(view.steering.get('s3'), steeringAxis(s3.visual!.steering!.axis), 0.3, pivot)
     view.root.updateMatrixWorld(true)
     const turnedWithOffset = sample('s3')
     view.setSteeringWheelOffset(s3Model, { distance: 0, height: 0 })
@@ -141,6 +143,7 @@ test('steering wheel offset slides along the column and up, per model, keeping t
       spinError: shiftError(turnedCentred, turnedWithOffset, expected),
       // Sanity: the column runs forward (-Z) and down toward the dashboard, about 21° off level.
       column: columnAxis(s3).toArray(),
+      pivot: pivot?.toArray(),
       vertices: before.s3.length,
     }
   }, process.cwd())
@@ -161,6 +164,7 @@ test('steering wheel offset slides along the column and up, per model, keeping t
   expect(result.applied).toEqual({ distance: -0.06, height: 0.03 })
   expect(result.clamped).toEqual({ distance: 0.08, height: -0.01 })
   expect(result.truckStart).toEqual({ distance: 0, height: 0.03 })
+  expect(result.pivot?.[1]).toBeCloseTo(0.0232, 4)
   expect(result.column[2]).toBeLessThan(-0.9)
   expect(result.column[1]).toBeLessThan(0)
   expect(result.s3Error).toBeLessThan(1e-5)

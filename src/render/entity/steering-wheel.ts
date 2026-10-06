@@ -26,9 +26,39 @@ export function steeringWheelAngle(steer: number): number {
   return -MathUtils.clamp(steer / steeringFullLockSteer, -1, 1) * steeringWheelLock
 }
 
-/** Rotate the spin group about the column axis only, never about the model origin's axes. */
-export function poseSteeringWheel(spin: Object3D, axis: Vector3, steer: number): void {
+/**
+ * Rotate the spin group about the column axis only, never about the model origin's axes.
+ * `pivot` is a point on that axis in the model's space (see `steeringPivot`); the default is the
+ * model origin. The spin group is translated so that point stays put while the wheel turns.
+ */
+export function poseSteeringWheel(
+  spin: Object3D,
+  axis: Vector3,
+  steer: number,
+  pivot?: Vector3,
+): void {
   spin.quaternion.setFromAxisAngle(axis, steeringWheelAngle(steer))
+  if (pivot) spin.position.copy(pivot).sub(pivot.clone().applyQuaternion(spin.quaternion))
+  else spin.position.set(0, 0, 0)
+}
+
+/**
+ * The point a steering GLB spins about, in the GLB scene's own space (the space the engine turns
+ * it in), read from `extras.nabla.spinPivot` (`[x, y, z]`, metres) on any of its nodes; GLTFLoader
+ * keeps node extras in `userData`. Without it the wheel spins about the scene origin. A rim that
+ * was moved across its column inside the file (e.g. the S3 height bake) declares the moved
+ * pivot, so it still turns about its own centre line.
+ */
+export function steeringPivot(model: Object3D): Vector3 | undefined {
+  let pivot: Vector3 | undefined
+  model.traverse((node) => {
+    const value = (node.userData as { nabla?: { spinPivot?: unknown } }).nabla?.spinPivot
+    if (pivot || !Array.isArray(value)) return
+    if (value.length !== 3 || !value.every((v) => typeof v === 'number' && Number.isFinite(v)))
+      throw new Error('Invalid steering spinPivot')
+    pivot = new Vector3(value[0], value[1], value[2])
+  })
+  return pivot
 }
 
 /**
