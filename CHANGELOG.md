@@ -69,6 +69,11 @@
   a saved player choice (`scale=` in the URL) still wins. The boot probe now runs only in auto.
   Engine API: `presetResolutionScales`, `presetResolutionScale`, and
   `resolveDisplaySettings(value, preset)`; `displayDefaults` is now manual 0.8.
+- **One shared water colour for the sea and inland water:** the open sea (horizon sheet) now uses the
+  same Lambert body as rivers, lakes and coastal water, and all share `SURFACE_COLORS.water`
+  `#294050` (was `#102f43`). At noon, before tone mapping, the sea body goes from `#3f525d` to
+  `#263b49` (darker) and rivers from `#0e2b3d` to `#263b49`: about 67.5% river, 32.5% sea. The sea's sun
+  specular and glint (`sunColor`, `#fff0d8`) are unchanged.
 - **S3 headlights like the truck:** the S3 now has real low and high beams at its two front lamp
   units, built with the white truck's lamp setup (1800 / 18000 cd, 55 / 130 m, same cones, aimed
   slightly down; low beams use the shared cut-off projection). They light the road ahead only, are

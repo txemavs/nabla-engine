@@ -77,7 +77,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OceanSheet.setLevel
 
-[Implementation, line 212](../../../../../src/render/planet/ocean-sheet.ts#L212)
+[Implementation, line 211](../../../../../src/render/planet/ocean-sheet.ts#L211)
 
 One triangle. The fragment intersects the same sphere boat buoyancy uses, out to the horizon.
 
@@ -93,7 +93,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OceanSheet.surface
 
-[Implementation, line 217](../../../../../src/render/planet/ocean-sheet.ts#L217)
+[Implementation, line 216](../../../../../src/render/planet/ocean-sheet.ts#L216)
 
 Coastal water and rivers. Same clock and normal map as the horizon sheet.
 
@@ -108,7 +108,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OceanSheet.constructor
 
-[Implementation, line 227](../../../../../src/render/planet/ocean-sheet.ts#L227)
+[Implementation, line 226](../../../../../src/render/planet/ocean-sheet.ts#L226)
 
 One triangle. The fragment intersects the same sphere boat buoyancy uses, out to the horizon.
 
@@ -128,17 +128,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new THREE.Vector3(0.35, 0.85, 0.2).normalize`
 - `seaTriangle`
 
-## OceanSheet.constructor.callback@227
+## OceanSheet.constructor.callback@226
 
-[Implementation, line 227](../../../../../src/render/planet/ocean-sheet.ts#L227)
+[Implementation, line 226](../../../../../src/render/planet/ocean-sheet.ts#L226)
 
 ```ts
-callback@227(): inferred by TypeScript; see implementation
+callback@226(): inferred by TypeScript; see implementation
 ```
 
 ## OceanSheet.setLight
 
-[Implementation, line 273](../../../../../src/render/planet/ocean-sheet.ts#L273)
+[Implementation, line 272](../../../../../src/render/planet/ocean-sheet.ts#L272)
 
 One triangle. The fragment intersects the same sphere boat buoyancy uses, out to the horizon.
 
@@ -155,7 +155,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OceanSheet.fadeWithSky
 
-[Implementation, line 280](../../../../../src/render/planet/ocean-sheet.ts#L280)
+[Implementation, line 279](../../../../../src/render/planet/ocean-sheet.ts#L279)
 
 Same fade as the sky going black. Hides the sheet so the globe texture shows.
 
@@ -171,7 +171,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OceanSheet.paint
 
-[Implementation, line 285](../../../../../src/render/planet/ocean-sheet.ts#L285)
+[Implementation, line 284](../../../../../src/render/planet/ocean-sheet.ts#L284)
 
 One triangle. The fragment intersects the same sphere boat buoyancy uses, out to the horizon.
 
@@ -181,7 +181,7 @@ paint(): void
 
 ## OceanSheet.followFog
 
-[Implementation, line 297](../../../../../src/render/planet/ocean-sheet.ts#L297)
+[Implementation, line 296](../../../../../src/render/planet/ocean-sheet.ts#L296)
 
 One triangle. The fragment intersects the same sphere boat buoyancy uses, out to the horizon.
 
@@ -195,7 +195,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OceanSheet.update
 
-[Implementation, line 307](../../../../../src/render/planet/ocean-sheet.ts#L307)
+[Implementation, line 306](../../../../../src/render/planet/ocean-sheet.ts#L306)
 
 One triangle. The fragment intersects the same sphere boat buoyancy uses, out to the horizon.
 
@@ -220,7 +220,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OceanSheet.dispose
 
-[Implementation, line 332](../../../../../src/render/planet/ocean-sheet.ts#L332)
+[Implementation, line 331](../../../../../src/render/planet/ocean-sheet.ts#L331)
 
 One triangle. The fragment intersects the same sphere boat buoyancy uses, out to the horizon.
 

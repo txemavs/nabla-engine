@@ -10,10 +10,11 @@
 - `../../math/geo/sphere.js`
 - `../../planet/tiles.js`
 - `../../scene/mercator.js`
+- `../../planet/land/surface.js`
 
 ## SeaWater.shadowSetup
 
-[Implementation, line 33](../../../../../src/render/planet/water.ts#L33)
+[Implementation, line 34](../../../../../src/render/planet/water.ts#L34)
 
 ```ts
 shadowSetup(): inferred by TypeScript; see implementation
@@ -21,7 +22,7 @@ shadowSetup(): inferred by TypeScript; see implementation
 
 ## SeaWater.constructor
 
-[Implementation, line 44](../../../../../src/render/planet/water.ts#L44)
+[Implementation, line 45](../../../../../src/render/planet/water.ts#L45)
 
 Coastline tiles render independently of building/road arrivals.
 
@@ -35,24 +36,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.plane.rotateX`
 - `this.root.add`
 
-## SeaWater.constructor.callback@48
+## SeaWater.constructor.callback@49
 
-[Implementation, line 48](../../../../../src/render/planet/water.ts#L48)
+[Implementation, line 49](../../../../../src/render/planet/water.ts#L49)
 
 ```ts
-callback@48(shader): inferred by TypeScript; see implementation
+callback@49(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.shade`
 
-## SeaWater.constructor.callback@56
+## SeaWater.constructor.callback@57
 
-[Implementation, line 56](../../../../../src/render/planet/water.ts#L56)
+[Implementation, line 57](../../../../../src/render/planet/water.ts#L57)
 
 ```ts
-callback@56(event: MessageEvent<{ key: string positions?: Float32Array cells?: Uint8Array error?: string }>): inferred by TypeScript; see implementation
+callback@57(event: MessageEvent<{ key: string positions?: Float32Array cells?: Uint8Array error?: string }>): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -66,20 +67,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.ready.add`
 - `this.wanted.includes`
 
-## SeaWater.constructor.callback@56.callback@70
+## SeaWater.constructor.callback@57.callback@71
 
-[Implementation, line 70](../../../../../src/render/planet/water.ts#L70)
+[Implementation, line 71](../../../../../src/render/planet/water.ts#L71)
 
 ```ts
-callback@70(cell): inferred by TypeScript; see implementation
+callback@71(cell): inferred by TypeScript; see implementation
 ```
 
-## SeaWater.constructor.callback@74
+## SeaWater.constructor.callback@75
 
-[Implementation, line 74](../../../../../src/render/planet/water.ts#L74)
+[Implementation, line 75](../../../../../src/render/planet/water.ts#L75)
 
 ```ts
-callback@74(): inferred by TypeScript; see implementation
+callback@75(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -89,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.setSun
 
-[Implementation, line 79](../../../../../src/render/planet/water.ts#L79)
+[Implementation, line 80](../../../../../src/render/planet/water.ts#L80)
 
 Coastline tiles render independently of building/road arrivals.
 
@@ -104,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.tiles
 
-[Implementation, line 83](../../../../../src/render/planet/water.ts#L83)
+[Implementation, line 84](../../../../../src/render/planet/water.ts#L84)
 
 Coastline tiles render independently of building/road arrivals.
 
@@ -114,7 +115,7 @@ tiles(): number
 
 ## SeaWater.surface
 
-[Implementation, line 87](../../../../../src/render/planet/water.ts#L87)
+[Implementation, line 88](../../../../../src/render/planet/water.ts#L88)
 
 Same surface as the loaded sea, including the shared solar shader.
 
@@ -126,12 +127,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.material.clone`
 
-## SeaWater.surface.callback@90
+## SeaWater.surface.callback@91
 
-[Implementation, line 90](../../../../../src/render/planet/water.ts#L90)
+[Implementation, line 91](../../../../../src/render/planet/water.ts#L91)
 
 ```ts
-callback@90(shader): inferred by TypeScript; see implementation
+callback@91(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -140,7 +141,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.bindShadows
 
-[Implementation, line 94](../../../../../src/render/planet/water.ts#L94)
+[Implementation, line 95](../../../../../src/render/planet/water.ts#L95)
 
 Cascades darken the flat colour. The solar glint stays out of the shadow.
 
@@ -155,7 +156,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.oceanBlocks
 
-[Implementation, line 100](../../../../../src/render/planet/water.ts#L100)
+[Implementation, line 101](../../../../../src/render/planet/water.ts#L101)
 
 z15 cells known to be ocean. The horizon drops these from collision only.
 
@@ -174,7 +175,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.update
 
-[Implementation, line 114](../../../../../src/render/planet/water.ts#L114)
+[Implementation, line 115](../../../../../src/render/planet/water.ts#L115)
 
 Coastline tiles render independently of building/road arrivals.
 
@@ -210,12 +211,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.worker.postMessage`
 - `tileCoordinate`
 
-## SeaWater.update.callback@139
+## SeaWater.update.callback@140
 
-[Implementation, line 139](../../../../../src/render/planet/water.ts#L139)
+[Implementation, line 140](../../../../../src/render/planet/water.ts#L140)
 
 ```ts
-callback@139(a, b): inferred by TypeScript; see implementation
+callback@140(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -226,12 +227,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `b.split`
 - `b.split('/').map`
 
-## SeaWater.update.callback@165
+## SeaWater.update.callback@166
 
-[Implementation, line 165](../../../../../src/render/planet/water.ts#L165)
+[Implementation, line 166](../../../../../src/render/planet/water.ts#L166)
 
 ```ts
-callback@165(key): inferred by TypeScript; see implementation
+callback@166(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -241,7 +242,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.addCoast
 
-[Implementation, line 172](../../../../../src/render/planet/water.ts#L172)
+[Implementation, line 173](../../../../../src/render/planet/water.ts#L173)
 
 Coastline tiles render independently of building/road arrivals.
 
@@ -263,7 +264,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.layoutSea
 
-[Implementation, line 188](../../../../../src/render/planet/water.ts#L188)
+[Implementation, line 189](../../../../../src/render/planet/water.ts#L189)
 
 One plane, instanced on every z12 tile that is entirely ocean.
 
@@ -278,12 +279,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `keys.forEach`
 - `this.cells.keys`
 
-## SeaWater.layoutSea.callback@189
+## SeaWater.layoutSea.callback@190
 
-[Implementation, line 189](../../../../../src/render/planet/water.ts#L189)
+[Implementation, line 190](../../../../../src/render/planet/water.ts#L190)
 
 ```ts
-callback@189(key): inferred by TypeScript; see implementation
+callback@190(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -291,20 +292,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.cells.get`
 - `this.cells.get(key)!.every`
 
-## SeaWater.layoutSea.callback@189.callback@190
+## SeaWater.layoutSea.callback@190.callback@191
 
-[Implementation, line 190](../../../../../src/render/planet/water.ts#L190)
+[Implementation, line 191](../../../../../src/render/planet/water.ts#L191)
 
 ```ts
-callback@190(cell): inferred by TypeScript; see implementation
+callback@191(cell): inferred by TypeScript; see implementation
 ```
 
-## SeaWater.layoutSea.callback@194
+## SeaWater.layoutSea.callback@195
 
-[Implementation, line 194](../../../../../src/render/planet/water.ts#L194)
+[Implementation, line 195](../../../../../src/render/planet/water.ts#L195)
 
 ```ts
-callback@194(key, index): inferred by TypeScript; see implementation
+callback@195(key, index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -324,7 +325,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.shade
 
-[Implementation, line 208](../../../../../src/render/planet/water.ts#L208)
+[Implementation, line 209](../../../../../src/render/planet/water.ts#L209)
 
 Coastline tiles render independently of building/road arrivals.
 
@@ -338,7 +339,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SeaWater.dispose
 
-[Implementation, line 263](../../../../../src/render/planet/water.ts#L263)
+[Implementation, line 264](../../../../../src/render/planet/water.ts#L264)
 
 Coastline tiles render independently of building/road arrivals.
 

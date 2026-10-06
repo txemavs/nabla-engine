@@ -23,7 +23,8 @@ export const SURFACE_COLORS: Record<SurfaceType, string> = {
   farmland: '#947133',
   sand: '#b79960',
   scrub: '#3d5e2e',
-  water: '#102f43',
+  /** One shared water colour for the sea, coastal water, rivers and lakes (was #102f43). */
+  water: '#294050',
   wetland: '#315740',
   rock: '#787a6b',
   residential: '#8c8a86',
