@@ -8,8 +8,10 @@ export interface GameCameraSettings {
   chasePitch: number
   /** Initial seated head pitch, radians. */
   headPitch: number
-  /** Initial/minimum overhead height, metres. */
+  /** Base overhead height above a vehicle at rest and zoom 1, metres. */
   mapHeight: number
+  /** Base overhead height above the player on foot at zoom 1, metres. */
+  footMapHeight: number
   /** Maximum overhead height, metres. */
   mapMaxHeight: number
   /** Extra overhead height per metre/second of speed, seconds. */
@@ -78,6 +80,20 @@ export interface GameCameraSettings {
   flightChaseTilt: number
   /** Flight chase tilt ease-in/out rate, inverse seconds. */
   flightTiltDamping: number
+  /** Cinematic orbit radius as a multiple of the vehicle's chase distance (or `chaseDistance`). */
+  cinematicDistanceScale: number
+  /** Minimum cinematic orbit radius at zoom 1, metres. */
+  cinematicMinDistance: number
+  /** Cinematic camera height above the target, as a fraction of the orbit radius. */
+  cinematicElevation: number
+  /** Time for one full cinematic orbit, seconds; zero holds the angle still. */
+  cinematicOrbitSeconds: number
+  /** Slow vertical drift amplitude of the cinematic camera, metres. */
+  cinematicBob: number
+  /** Cinematic vertical field of view, degrees (slightly long lens). */
+  cinematicFov: number
+  /** Vertical smoothing of the cinematic anchor (filters suspension bounce), inverse seconds. */
+  cinematicDamping: number
   /** Delay before overhead-to-cockpit boarding transition, milliseconds. */
   entranceDelayMs: number
   /** Time after boarding when the cockpit transition finishes, milliseconds. */
@@ -91,6 +107,7 @@ export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   chasePitch: 0.24,
   headPitch: 0.05,
   mapHeight: 45,
+  footMapHeight: 18,
   mapMaxHeight: 600,
   mapSpeedSeconds: 2,
   mapMinZoom: 0.75,
@@ -125,6 +142,13 @@ export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   altitudePitchMax: 1.56,
   flightChaseTilt: 0.12,
   flightTiltDamping: 2,
+  cinematicDistanceScale: 2.4,
+  cinematicMinDistance: 9,
+  cinematicElevation: 0.32,
+  cinematicOrbitSeconds: 48,
+  cinematicBob: 0.8,
+  cinematicFov: 38,
+  cinematicDamping: 4,
   entranceDelayMs: 150,
   entranceEndMs: 1200,
 })
@@ -138,7 +162,14 @@ export function resolveGameCameraSettings(
     if (!Number.isFinite(value) || value < 0)
       throw new RangeError(`${name} must be finite and non-negative`)
   }
-  for (const key of ['speedDampingDivisor', 'nearClip', 'firstPersonFov', 'chaseFov'] as const) {
+  for (const key of [
+    'speedDampingDivisor',
+    'nearClip',
+    'firstPersonFov',
+    'chaseFov',
+    'cinematicFov',
+    'footMapHeight',
+  ] as const) {
     if (settings[key] <= 0) throw new RangeError(`${key} must be positive`)
   }
   for (const [low, high] of [
@@ -152,7 +183,9 @@ export function resolveGameCameraSettings(
   ] as const) {
     if (settings[high] <= settings[low]) throw new RangeError(`${high} must exceed ${low}`)
   }
-  if (settings.firstPersonFov >= 180 || settings.chaseFov >= 180)
+  if (settings.footMapHeight >= settings.mapMaxHeight)
+    throw new RangeError('mapMaxHeight must exceed footMapHeight')
+  if (settings.firstPersonFov >= 180 || settings.chaseFov >= 180 || settings.cinematicFov >= 180)
     throw new RangeError('Camera field of view must be below 180 degrees')
   return settings
 }

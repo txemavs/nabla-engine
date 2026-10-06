@@ -55,6 +55,8 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     expect(game.cameraState.entrance).toBeNull()
     game.action('KeyC')
     expect(game.cameraState.mode).toBe('map')
+    expect(game.action('KeyC')).toMatch(/Cinematic camera/)
+    expect(game.cameraState.mode).toBe('cinematic')
     game.action('KeyC')
     expect(game.cameraState.mode).toBe('chase')
     for (let i = 0; i < 120; i++)

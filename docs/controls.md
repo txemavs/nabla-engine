@@ -32,7 +32,8 @@ tree. Saving stores the authored document, not the runtime physics state.
 | Accelerate                                        | Shift                             |
 | Handbrake in vehicle                              | Space                             |
 | Enter / exit                                      | E                                 |
-| First / third person; vehicle camera cycle        | C                                 |
+| Camera cycle (incl. overhead / cinematic)         | C                                 |
+| Overhead height / cinematic distance              | Mouse wheel                       |
 | Latch / release cargo                             | F                                 |
 | Transfer controls between latched car and carrier | T                                 |
 | Restart play                                      | R                                 |
@@ -163,7 +164,8 @@ One rule covers every mode (on foot, sidearm, chase, cockpit, flight): **while p
 the game owns the mouse** with pointer lock. The first click on the viewport (or the
 first key press after loading) captures it; it stays captured when drawing or holstering
 the sidearm, boarding or leaving vehicles and changing camera views. Mouse look then
-needs no held button; the overhead view ignores mouse movement and keeps wheel zoom.
+needs no held button; in a vehicle the overhead and cinematic views ignore mouse movement
+and keep wheel zoom. On foot the mouse still turns the walking heading in every view.
 
 **Esc** releases the mouse into free-cursor mode. It stays free (mouse movement does not
 turn the camera) until the next **click** on the viewport, which only recaptures it: that
@@ -184,7 +186,8 @@ without hovering or banking independently. It is visible from exterior and overh
 views and hidden in cockpit view to keep the view clear. Portal transfers reset
 visual motion history rather than producing a large tilt.
 
-Press **C** (gamepad **B**) to cycle **exterior → cockpit → overhead**. The overhead
+Press **C** (gamepad **B**) to cycle **exterior → cockpit → overhead → cinematic**
+(see [Camera modes](#camera-modes)). The overhead
 view follows the vehicle heading: its nose stays at the top while the map rotates.
 At rest it sits 45 m above the vehicle, showing about 30 m of road ahead. The car
 stays at 75% of screen height. Camera height grows with speed and eases back after
@@ -198,10 +201,45 @@ anchor (the carrier keeps its separate helm offset). The Wrangler head is centre
 at 1.58 m above the model ground, just ahead of the driver headrest. The monitor screen faces forward (−Z), restoring Agency's
 original orientation.
 
+### Camera modes
+
+One cycle, one key: **C** (gamepad **B**). The engine owns it (`cycleGameCamera` in
+`src/runtime/game-camera.ts`), so every host built on `GameRuntime` (standalone game, Studio)
+gets the same modes.
+
+| Seated (vehicle)   | On foot                |
+| ------------------ | ---------------------- |
+| Exterior (chase)   | First person           |
+| Driver (cockpit)   | Third person           |
+| Overhead (cenital) | Overhead (cenital)     |
+| Cinematic (drone)  | Cinematic (drone)      |
+| → back to exterior | → back to first person |
+
+- **Overhead (cenital)** looks straight down at the vehicle or player and follows it
+  without lag. It is **heading-up**: the vehicle's nose, or on foot the walking heading,
+  points to the top of the screen, so W always moves up the screen and the map turns
+  around you (north-up would make steering mirror-reversed when driving south). In a
+  vehicle it keeps the existing framing (car at 75% of screen height, 45–600 m, height
+  grows with speed). On foot the player stays centred at `footMapHeight` (18 m) × wheel zoom
+  0.75–3× (about 13–54 m); move the mouse to turn.
+- **Cinematic** is a slow drone orbit: one full turn every `cinematicOrbitSeconds` (48 s)
+  at about 2.4× the vehicle's chase distance (minimum 9 m), slightly above (`cinematicElevation`)
+  with a gentle vertical drift and a longer 38° lens. It starts behind the current heading,
+  keeps the vehicle centred, filters suspension bounce from its height and pulls in front of
+  physical obstructions like the chase camera. The wheel scales the distance (0.5–2.5×).
+  Driving controls are unchanged; it is meant for showing the scene off, not for precise
+  driving.
+- Both views keep the pointer rule: the game still owns the mouse while playing and **Esc**
+  frees it. Leaving or boarding a vehicle keeps an overhead or cinematic view (boarding a
+  car still switches to the driver view, as before).
+- Hosts read the active view from `canvas.dataset.cameraMode`: `first-person`, `chase`,
+  `cockpit`, `map` or `cinematic`. Tuning lives in `GameCameraSettings`
+  ([configuration](configuration.md#camera-example)).
+
 ## Monitor flight and sidearm
 
-Play starts in first person outside vehicles. **C** (gamepad **B**) toggles first
-and third person; vehicle camera modes keep their own cycle. The compact monitor
+Play starts in first person outside vehicles. **C** (gamepad **B**) cycles first person,
+third person, overhead and cinematic (see [Camera modes](#camera-modes)). The compact monitor
 body hovers 1.25 m above nearby ground, following curbs and ramps without jumping.
 Walls and ceilings remain solid. Over a drop it falls under gravity, then brakes
 above the surface below to recover normal clearance. **Space** gives one upward

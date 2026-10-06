@@ -8,6 +8,9 @@ export const controlDefaults = Object.freeze({
   mapZoomSensitivity: 0.001,
   mapZoomMin: 0.75,
   mapZoomMax: 3,
+  /** Cinematic orbit distance multiplier bounds; the wheel uses `mapZoomSensitivity`. */
+  cinematicZoomMin: 0.5,
+  cinematicZoomMax: 2.5,
   /** Absolute vertical look limit in radians. */
   pitchLimit: 1.4,
   /** Keyboard steering rise time constant in seconds; must be positive. */

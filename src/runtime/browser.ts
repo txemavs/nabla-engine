@@ -84,7 +84,12 @@ import { shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
-import { createGameCameraState, mouseLooksWithoutButton } from './game-camera.js'
+import {
+  createGameCameraState,
+  gameCameraView,
+  isFirstPersonView,
+  mouseLooksWithoutButton,
+} from './game-camera.js'
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
@@ -752,7 +757,7 @@ export class GameRuntime {
     this.view.sync(
       sim,
       dt,
-      sim.player.vehicleId ? this.cameraState.mode === 'cockpit' : this.cameraState.firstPerson,
+      isFirstPersonView(this.cameraState, !!sim.player.vehicleId),
       this.cameraState.headYaw,
       this.cameraState.headPitch,
     )
@@ -760,11 +765,8 @@ export class GameRuntime {
     const canvas = this.options.canvas
     canvas.dataset.vehicle = player.vehicleId ?? ''
     canvas.dataset.interior = player.interiorId ?? ''
-    canvas.dataset.cameraMode = player.vehicleId
-      ? this.cameraState.mode
-      : this.cameraState.firstPerson
-        ? 'first-person'
-        : 'chase'
+    canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
+    const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
     canvas.dataset.mapHeight = String(Math.round(this.cameraState.mapHeight))
     canvas.dataset.vehicleEntrance = this.cameraState.entrance ? 'active' : 'complete'
     if (crossing) canvas.dataset.portalCrossings = String(crossing.sequence)
@@ -781,7 +783,7 @@ export class GameRuntime {
           this.view,
           this.camera,
           time,
-          this.cameraState.firstPerson,
+          eyes,
         )
         if (fired) {
           this.effects.audio.gunshot()
@@ -893,7 +895,7 @@ export class GameRuntime {
     this.camera.position.sub(this.origin)
     for (const [id, hud] of this.view.shipHuds) {
       const inside =
-        (player.interiorId === id && this.cameraState.firstPerson) ||
+        (player.interiorId === id && eyes) ||
         (player.vehicleId === id && this.cameraState.mode === 'cockpit')
       hud.update(this.camera, this.origin, time, inside ? sim.vehicleInfo(id) : null)
     }
@@ -930,7 +932,7 @@ export class GameRuntime {
       this.camera.position.copy(eye)
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
-    this.sidearm?.render(this.renderer, time, this.camera.aspect, this.cameraState.firstPerson)
+    this.sidearm?.render(this.renderer, time, this.camera.aspect, eyes)
     if (this.options.onDiagnostics)
       this.options.onDiagnostics({
         frameMs,
@@ -1550,7 +1552,7 @@ export class GameRuntime {
     this.view.laser.enabled = true
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
     const origin = this.camera.position.clone()
-    if (this.cameraState.firstPerson) {
+    if (isFirstPersonView(this.cameraState, false)) {
       origin.add(this.sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
     } else {
       origin.fromArray(sim.renderPlayerPosition)
@@ -1671,18 +1673,25 @@ export class GameRuntime {
     canvas.addEventListener(
       'wheel',
       (event) => {
-        if (
-          !this.hasInput() ||
-          !this.session.simulation?.player.vehicleId ||
-          this.cameraState.mode !== 'map'
-        )
-          return
+        // Wheel zoom for the detached views, seated or on foot: overhead height and
+        // cinematic orbit distance. Other views leave the wheel to the page.
+        const state = this.cameraState
+        if (!this.hasInput() || !this.session.simulation) return
+        const scale = Math.exp(event.deltaY * controlDefaults.mapZoomSensitivity)
+        if (state.mode === 'map') {
+          state.mapZoom = THREE.MathUtils.clamp(
+            state.mapZoom * scale,
+            controlDefaults.mapZoomMin,
+            controlDefaults.mapZoomMax,
+          )
+        } else if (state.mode === 'cinematic') {
+          state.cinematicZoom = THREE.MathUtils.clamp(
+            state.cinematicZoom * scale,
+            controlDefaults.cinematicZoomMin,
+            controlDefaults.cinematicZoomMax,
+          )
+        } else return
         event.preventDefault()
-        this.cameraState.mapZoom = THREE.MathUtils.clamp(
-          this.cameraState.mapZoom * Math.exp(event.deltaY * controlDefaults.mapZoomSensitivity),
-          controlDefaults.mapZoomMin,
-          controlDefaults.mapZoomMax,
-        )
       },
       { ...options, passive: false },
     )

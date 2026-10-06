@@ -15,7 +15,17 @@ import { overheadDrivingHeight } from '../render/entity/driving-camera.js'
 import { PlaySession, type PlayOptions } from './session.js'
 import { GameInput, type GameInputSources } from './input.js'
 import { HeldKeys } from './held-keys.js'
-import { createGameCameraState, updateGameCamera } from './game-camera.js'
+import { createGameCameraState, cycleGameCamera, updateGameCamera } from './game-camera.js'
+
+/** Notices shown when C / gamepad B changes the view (English keys, see messages.es.ts). */
+const cameraNotice = {
+  'first-person': 'First person',
+  'third-person': 'Third person',
+  chase: 'Chase camera',
+  cockpit: 'Driver camera',
+  map: 'Overhead camera · scroll to zoom',
+  cinematic: 'Cinematic camera · scroll to change distance',
+} as const
 
 /** Shared game coordination. Hosts supply rendering, device events and editor UI. */
 export class GameRuntime {
@@ -212,21 +222,9 @@ export class GameRuntime {
       return message
     }
     if (code === 'KeyC') {
-      const state = this.cameraState
-      state.entrance = null
-      if (!sim.player.vehicleId) {
-        state.firstPerson = !state.firstPerson
-        return state.firstPerson ? this.text('First person') : this.text('Third person')
-      }
-      state.mode = state.mode === 'chase' ? 'cockpit' : state.mode === 'cockpit' ? 'map' : 'chase'
-      state.pitch = state.mode === 'cockpit' ? state.settings.headPitch : state.settings.chasePitch
-      state.headYaw = 0
-      state.headPitch = state.settings.headPitch
-      return state.mode === 'map'
-        ? this.text('Overhead camera · scroll to zoom')
-        : state.mode === 'cockpit'
-          ? this.text('Driver camera')
-          : this.text('Chase camera')
+      const seated = !!sim.player.vehicleId
+      const view = cycleGameCamera(this.cameraState, seated)
+      return this.text(cameraNotice[view === 'chase' && !seated ? 'third-person' : view])
     }
     if (code === 'KeyV') return sim.toggleFlight()
     if (code === 'KeyF') return sim.toggleHitch() ?? sim.toggleDock()

@@ -111,6 +111,24 @@ export function overheadDrivingPose(
   }
 }
 
+/**
+ * On-foot overhead height: `footMapHeight` × zoom (0.75–3× by default, so about 13–54 m),
+ * plus the same speed allowance as driving. Unlike the vehicle map, zooming in below the
+ * base height is allowed because a walking player fills very little of the frame.
+ */
+export function overheadFootHeight(
+  speed: number,
+  zoom = 1,
+  settings: Readonly<GameCameraSettings> = gameCameraDefaults,
+): number {
+  return MathUtils.clamp(
+    (settings.footMapHeight + Math.max(0, speed) * settings.mapSpeedSeconds) *
+      MathUtils.clamp(zoom, settings.mapMinZoom, settings.mapMaxZoom),
+    settings.footMapHeight * settings.mapMinZoom,
+    settings.mapMaxHeight,
+  )
+}
+
 /** Driving map: roughly 30 m ahead at rest, with two seconds of extra road at speed. */
 export function overheadDrivingHeight(
   speed: number,
