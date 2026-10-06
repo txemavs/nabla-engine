@@ -21,6 +21,7 @@ export type SettingsHud = {
 
 const TABS = [
   { id: 'planet', label: 'Planeta' },
+  { id: 'position', label: 'Posición' },
   { id: 'quality', label: 'Calidad' },
   { id: 'layers', label: 'Capas' },
   { id: 'vehicles', label: 'Vehículos' },
@@ -105,14 +106,22 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   let planetPanel: PlanetSettingsPanel | null = createPlanetSettingsPanel(doc)
   planetPane.append(planetPanel.root)
 
-  // Relocate existing menu sections into tabs (Calidad / Capas / Vehículos / leftover Planeta sky/sea).
+  // Relocate existing menu sections into tabs:
+  //   Planeta  — Hora first (#123), planet panel, then sea level/tide from the legacy section
+  //   Posición — where you are / go to lat,lon, and the R reset (nearest road) option
+  //   Calidad / Capas (map layers, camera extras) / Vehículos
   const qualityPane = paneEls.get('quality')!
   for (const id of ['display-quality-section', 'display-performance']) {
     const el = doc.getElementById(id)
     if (el) qualityPane.append(el)
   }
+  const positionPane = paneEls.get('position')!
+  for (const id of ['terrain-position', 'driving-extras']) {
+    const el = doc.getElementById(id)
+    if (el) positionPane.append(el)
+  }
   const layersPane = paneEls.get('layers')!
-  for (const id of ['terrain-position', 'terrain-layers']) {
+  for (const id of ['terrain-layers', 'camera-extras']) {
     const el = doc.getElementById(id)
     if (el) layersPane.append(el)
   }
@@ -120,18 +129,35 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const vehicles = doc.getElementById('scene-vehicles')
   if (vehicles) vehiclesPane.append(vehicles)
 
-  // Keep the remaining legacy Planeta groups (sky, sun, sea, clouds) under Capas; Hora moved to Planeta.
+  // The legacy Planeta section (scene-controls) duplicates sky / sun / sea / clouds toggles that
+  // the planet panel already has. Keep only what the panel lacks: hour/time speed (already first
+  // in Planeta, #123) and sea level/tide (end of Planeta).
   const legacyPlanet = doc.getElementById('scene-planet')
   if (legacyPlanet) {
-    const sceneBox = doc.createElement('fieldset')
-    sceneBox.className = 'menu-section'
-    sceneBox.id = 'settings-scene-extras'
-    const legend = doc.createElement('legend')
-    legend.textContent = 'Cielo y mar'
-    sceneBox.append(legend)
-    while (legacyPlanet.firstChild) sceneBox.append(legacyPlanet.firstChild)
-    layersPane.append(sceneBox)
-    legacyPlanet.remove()
+    const legacyGroup = (id: string) => doc.getElementById(id)
+    const sea = legacyGroup('scene-sea')
+    for (const id of ['scene-sky', 'scene-sun', 'scene-clouds']) {
+      const el = legacyGroup(id)
+      if (el) el.hidden = true
+    }
+    const seaToggle = doc.getElementById('planet-sea')?.closest('label')
+    if (seaToggle) seaToggle.hidden = true
+    // Each legacy group already carries its own subtitle (Hora / Mar).
+    const box = (id: string, child: HTMLElement | null) => {
+      if (!child) return null
+      const fieldset = doc.createElement('fieldset')
+      fieldset.className = 'menu-section'
+      fieldset.id = id
+      fieldset.append(child)
+      return fieldset
+    }
+    const timeBox = box('settings-planet-time', timeGroup)
+    const seaBox = box('settings-planet-sea', sea)
+    if (timeBox) planetPane.prepend(timeBox)
+    if (seaBox) planetPane.append(seaBox)
+    // Hidden duplicates stay in the DOM (scene-controls keeps its listeners) but off-screen.
+    legacyPlanet.hidden = true
+    planetPane.append(legacyPlanet)
   }
 
   const style = doc.createElement('style')
