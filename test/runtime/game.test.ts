@@ -5,6 +5,7 @@ import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { idleInput } from '../../src/simulation/simulation.js'
 import type { SceneDocument } from '../../src/scene/document.js'
 import { playGroundClearance } from '../../src/runtime/placement.js'
+import { START_UP_SECONDS } from '../start-up.js'
 
 const scene = (): SceneDocument => ({
   version: 1,
@@ -59,7 +60,8 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     expect(game.cameraState.mode).toBe('cinematic')
     game.action('KeyC')
     expect(game.cameraState.mode).toBe('chase')
-    for (let i = 0; i < 120; i++)
+    // Re-entering runs the start-up (cranking, needle sweep) in P before W can select D.
+    for (let i = 0; i < Math.ceil((START_UP_SECONDS + 2) * 60); i++)
       game.step(1 / 60, { ...idleInput(), forward: 1 }, 0, 2200 + (i * 1000) / 60)
     expect(game.simulation!.player.speed).toBeGreaterThan(1)
     expect(game.cameraState.entrance).toBeNull()

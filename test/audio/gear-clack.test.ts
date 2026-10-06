@@ -6,6 +6,7 @@ import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { VehicleEffects } from '../../src/runtime/vehicle-effects.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
+import { finishStartUp } from '../start-up.js'
 
 /** Minimal Web Audio double that records every automation call. */
 class FakeParam {
@@ -164,6 +165,7 @@ describe('gear clack events from the simulation', () => {
     const sim = new Simulation(document)
     for (let i = 0; i < 180; i++) sim.step(1 / 60)
     sim.startInVehicle(entity)
+    finishStartUp(sim)
     const calls: unknown[] = []
     const audio = { gearChange: (profile: unknown) => calls.push(profile) } as never
     const stub = new Proxy(audio as object, {
@@ -194,23 +196,25 @@ describe('gear clack events from the simulation', () => {
         sim.setInput({ ...idleInput(), forward: 1 })
         step(60 * 8)
         const accelerated = sim.vehicleInfo(entity)
-        // Several automatic upshifts were counted, but none of them clacks.
-        expect(accelerated.gearShifts - start.gearShifts).toBeGreaterThanOrEqual(2)
-        expect(accelerated.gearClacks).toBe(start.gearClacks)
-        expect(calls).toHaveLength(0)
+        // Entered in P: engaging D clacks once. Several automatic upshifts were counted,
+        // but none of them clacks.
+        expect(start.parked).toBe(true)
+        expect(accelerated.gearShifts - start.gearShifts).toBeGreaterThanOrEqual(3)
+        expect(accelerated.gearClacks - start.gearClacks).toBe(1)
+        expect(calls).toHaveLength(1)
         // Braking downshifts are automatic too; only engaging R clacks, exactly once.
         sim.setInput({ ...idleInput(), forward: -1 })
         step(60 * 40)
         const reversed = sim.vehicleInfo(entity)
         expect(reversed.gear).toBe(-1)
         expect(reversed.gearShifts - accelerated.gearShifts).toBeGreaterThanOrEqual(1)
-        expect(reversed.gearClacks - start.gearClacks).toBe(1)
-        expect(calls).toHaveLength(1)
+        expect(reversed.gearClacks - start.gearClacks).toBe(2)
+        expect(calls).toHaveLength(2)
         // Selecting drive again after braking to a stop clacks once more.
         sim.setInput({ ...idleInput(), forward: 1 })
         step(60 * 20)
         expect(sim.vehicleInfo(entity).gear).toBeGreaterThan(0)
-        expect(calls).toHaveLength(2)
+        expect(calls).toHaveLength(3)
         const profile = presetVehicle(catalog, entity).vehicle!.powertrain!.shift?.clack ?? null
         for (const played of calls) expect(played).toEqual(profile)
         // Truck uses its own heavy profile, the car's falls back to the audio default.
@@ -235,20 +239,21 @@ describe('gear clack events from the simulation', () => {
         sim.setInput({ ...idleInput(), forward: 1 })
         step(60 * 6)
         expect(sim.vehicleInfo(entity).gearShifts).toBeGreaterThanOrEqual(2)
-        expect(calls).toHaveLength(0)
+        // Only the P -> D engagement clacked.
+        expect(calls).toHaveLength(1)
         sim.shiftVehicle(1)
         step(2)
         expect(sim.vehicleInfo(entity).manualTransmission).toBe(true)
-        expect(calls).toHaveLength(1)
+        expect(calls).toHaveLength(2)
         // Manual mode holds the gear; no further sound until another paddle press.
         step(60 * 3)
-        expect(calls).toHaveLength(1)
+        expect(calls).toHaveLength(2)
         // A protected (refused) change is silent; whichever direction is accepted clacks once.
         const second = sim.shiftVehicle(-1)
         const message = second.startsWith('Manual') ? second : sim.shiftVehicle(1)
         expect(message).toMatch(/^Manual/)
         step(2)
-        expect(calls).toHaveLength(2)
+        expect(calls).toHaveLength(3)
       } finally {
         effects.dispose()
         sim.dispose()
@@ -263,6 +268,12 @@ describe('gear clack events from the simulation', () => {
       sim.step(1 / 60)
       effects.updateAudio(sim, document, eye)
       sim.setInput({ ...idleInput(), forward: 1 })
+      // Leave P first; its D engagement is the one audible change.
+      for (let i = 0; i < 60 && sim.vehicleInfo('s3').gear === 0; i++) {
+        sim.step(1 / 60)
+        effects.updateAudio(sim, document, eye)
+      }
+      expect(calls).toHaveLength(1)
       let gear = sim.vehicleInfo('s3').gear
       let counted = sim.vehicleInfo('s3').gearShifts
       const clacks = sim.vehicleInfo('s3').gearClacks
@@ -279,9 +290,9 @@ describe('gear clack events from the simulation', () => {
         counted = info.gearShifts
       }
       expect(changes).toBeGreaterThanOrEqual(3)
-      expect(counted).toBe(changes + 0)
+      expect(counted).toBe(changes + 1)
       expect(sim.vehicleInfo('s3').gearClacks).toBe(clacks)
-      expect(calls).toHaveLength(0)
+      expect(calls).toHaveLength(1)
     } finally {
       effects.dispose()
       sim.dispose()

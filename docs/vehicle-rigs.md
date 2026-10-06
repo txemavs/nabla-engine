@@ -45,6 +45,21 @@ The S3 rim was later moved 3 cm forward along its column (model +Z, toward the
 instrument cluster) by `scripts/move-s3-steering-wheel.mjs`, which slides the alignment root
 of `s3.steering.glb` only (recorded as `extras.nabla.columnForward`); in chassis metres that is
 2.8 cm forward and 1.1 cm down. The shared `steering` anchor and the A3 wheel are unchanged.
+Txema's runtime «Volante» choice for the S3 (distance +1.0 cm, height +2.5 cm on top of that) is
+now baked too: the same script records `extras.nabla.columnForward: 0.04` (total along the
+column) and `extras.nabla.height: 0.025` (chassis up), so the S3 sliders read 0 with the wheel
+there. Because the column is tilted, the height step also moves the rim across its spin axis by
+about 2.3 cm; the script records the moved axis as `extras.nabla.spinPivot` (see below) so the
+wheel still turns about its own centre line.
+
+### Steering spin pivot (`extras.nabla.spinPivot`)
+
+A steering GLB spins about `visual.steering.axis` (default model +Z) through its scene origin.
+When geometry is moved across that axis inside the file, any node may declare
+`extras.nabla.spinPivot: [x, y, z]` — a point on the new spin axis in the GLB scene's space, in
+metres. `SceneView` reads it from the loaded model (`steeringPivot`, GLTFLoader keeps extras in
+`userData`) and passes it to `poseSteeringWheel`, which translates the spin group so that point
+stays fixed while the wheel turns. Without it, nothing changes.
 
 The modern tractor keeps the supplied hub and fifth-wheel positions. Semantic
 metadata was added to those nodes; wheel orientations and the missing steering
@@ -97,11 +112,14 @@ Every change is logged with `console.info`, in cm and in metres:
 
 The menu also shows «Valores para fijarlo» in metres. To make a choice the default for
 everyone, either set it as a host default (`?wheel={"car":{"distance":0.015,"height":-0.005}}`)
-or bake it into the steering GLB. For the S3, `scripts/move-s3-steering-wheel.mjs` already
-slides the alignment root along model +Z, so a `distance` is baked by adding it to its `forward`
-constant (0.03 m + distance). A `height` must be expressed in model space first (the chassis +Y
-rotated by the inverse steering mount rotation); that script does not handle it yet. After a
-bake, reset the runtime value to 0 so the two don't add up.
+or bake it into the steering GLB. For the S3, `scripts/move-s3-steering-wheel.mjs` uses the
+slider's own axes: add the `distance` to its `columnForward` constant and the `height` to its
+`height` constant, then run `node scripts/move-s3-steering-wheel.mjs`. It converts chassis up
+into model space exactly like the slider (chassis +Y rotated by the inverse `steering` mount
+rotation), applies only the difference from the values recorded in the GLB (idempotent) and
+updates `spinPivot`, so the baked wheel matches the slider vertex for vertex at every steering
+angle. After a bake, press «Restablecer volante» (or clear `nabla.steeringWheel:<model>`) so a
+saved runtime value doesn't add on top of the new default.
 
 ## Instruments and lights
 

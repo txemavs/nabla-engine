@@ -50,22 +50,78 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## poseSteeringWheel
 
-[Implementation, line 30](../../../../../src/render/entity/steering-wheel.ts#L30)
+[Implementation, line 34](../../../../../src/render/entity/steering-wheel.ts#L34)
 
 Rotate the spin group about the column axis only, never about the model origin's axes.
+`pivot` is a point on that axis in the model's space (see `steeringPivot`); the default is the
+model origin. The spin group is translated so that point stays put while the wheel turns.
 
 ```ts
-poseSteeringWheel(spin: Object3D, axis: Vector3, steer: number): void
+poseSteeringWheel(spin: Object3D, axis: Vector3, steer: number, pivot?: Vector3): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `pivot.clone`
+- `pivot.clone().applyQuaternion`
+- `spin.position.copy`
+- `spin.position.copy(pivot).sub`
+- `spin.position.set`
 - `spin.quaternion.setFromAxisAngle`
 - `steeringWheelAngle`
 
+## steeringPivot
+
+[Implementation, line 52](../../../../../src/render/entity/steering-wheel.ts#L52)
+
+The point a steering GLB spins about, in the GLB scene's own space (the space the engine turns
+it in), read from `extras.nabla.spinPivot` (`[x, y, z]`, metres) on any of its nodes; GLTFLoader
+keeps node extras in `userData`. Without it the wheel spins about the scene origin. A rim that
+was moved across its column inside the file (e.g. the S3 height bake) declares the moved
+pivot, so it still turns about its own centre line.
+
+```ts
+steeringPivot(model: Object3D): Vector3 | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `model.traverse`
+
+## steeringPivot.callback@54
+
+[Implementation, line 54](../../../../../src/render/entity/steering-wheel.ts#L54)
+
+```ts
+callback@54(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Array.isArray`
+- `Error`
+- `Vector3`
+- `value.every`
+
+Explicit throws in this body:
+
+- `new Error('Invalid steering spinPivot')`
+
+## steeringPivot.callback@54.callback@57
+
+[Implementation, line 57](../../../../../src/render/entity/steering-wheel.ts#L57)
+
+```ts
+callback@57(v): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+
 ## clampSteeringWheelOffset
 
-[Implementation, line 55](../../../../../src/render/entity/steering-wheel.ts#L55)
+[Implementation, line 85](../../../../../src/render/entity/steering-wheel.ts#L85)
 
 Clamp to `steeringWheelOffsetRange` and snap to its step; non-finite values become 0.
 
@@ -79,7 +135,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## clampSteeringWheelOffset.axis
 
-[Implementation, line 59](../../../../../src/render/entity/steering-wheel.ts#L59)
+[Implementation, line 89](../../../../../src/render/entity/steering-wheel.ts#L89)
 
 ```ts
 axis(value: unknown): inferred by TypeScript; see implementation
@@ -95,7 +151,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## steeringWheelOffsetPosition
 
-[Implementation, line 74](../../../../../src/render/entity/steering-wheel.ts#L74)
+[Implementation, line 104](../../../../../src/render/entity/steering-wheel.ts#L104)
 
 Translation, in the steering mount's frame, that applies `offset` to a wheel whose spin axis
 is `axis` (model space, see `steeringAxis`). `mount` is the mount's rotation relative to the

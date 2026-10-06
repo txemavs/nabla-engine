@@ -1,3 +1,4 @@
+import { EngineStart, type EngineStartSound } from './engine-start.js'
 import { GearClack, type GearClackSound } from './gear-clack.js'
 import { loopingNoise } from './graph.js'
 import { Gunshot } from './gunshot.js'
@@ -8,11 +9,11 @@ import { Turbine } from './turbine.js'
 import { ReverseAlarm } from './reverse-alarm.js'
 
 /**
- * One browser audio context, seven independent voices.
+ * One browser audio context, eight independent voices.
  *
  * The context has to be created from a click or a key press (`unlock`).
- * Turbine, propeller, tires, powertrain, reverse alarm, gear clack and the sidearm gunshot own
- * their nodes; they only
+ * Turbine, propeller, tires, powertrain, engine start, reverse alarm, gear clack and the
+ * sidearm gunshot own their nodes; they only
  * share that context and one noise buffer. Studio owns the mute button.
  * Audio never throws into the host loop.
  */
@@ -23,9 +24,11 @@ export class VehicleAudio {
   private tireVoice?: TireSqueal
   private powertrainVoice?: Powertrain
   private gearVoice?: GearClack
+  private startVoice?: EngineStart
   private reverseVoice?: ReverseAlarm
   private gunshotVoice?: Gunshot
   private clacks = 0
+  private starts = 0
   private shots = 0
   private enabled = true
   private suspended = false
@@ -78,6 +81,11 @@ export class VehicleAudio {
     return this.clacks
   }
 
+  /** Number of engine starts played so far, for tests and the renderer dataset. */
+  get engineStartCount(): number {
+    return this.starts
+  }
+
   /** Number of gunshots played so far, for tests and the renderer dataset. */
   get gunshotCount(): number {
     return this.shots
@@ -115,6 +123,17 @@ export class VehicleAudio {
     this.clacks++
   }
 
+  /**
+   * One ~0.6 s starter-motor crank ending in the engine catching (`ignitionCrankSeconds`). The
+   * host keeps `powertrain` at rpm 0 meanwhile and then feeds the settling idle speed.
+   */
+  engineStart(sound?: EngineStartSound | null): void {
+    const frame = this.frame()
+    if (!frame || !this.startVoice || !frame.audible) return
+    this.startVoice.trigger(frame.time, true, sound)
+    this.starts++
+  }
+
   /** One sidearm shot. Silent before the first gesture, while muted or while suspended. */
   gunshot(): void {
     const frame = this.frame()
@@ -143,6 +162,7 @@ export class VehicleAudio {
     this.tireVoice = new TireSqueal(context, noise)
     this.powertrainVoice = new Powertrain(context, noise)
     this.reverseVoice = new ReverseAlarm(context)
+    this.startVoice = new EngineStart(context, noise)
     this.gearVoice = new GearClack(context, noise)
     this.gunshotVoice = new Gunshot(context, noise)
   }
@@ -160,6 +180,7 @@ export class VehicleAudio {
     this.tireVoice?.silence(time)
     this.powertrainVoice?.silence(time)
     this.gearVoice?.silence(time)
+    this.startVoice?.silence(time)
     this.reverseVoice?.silence(time)
     this.gunshotVoice?.silence(time)
   }

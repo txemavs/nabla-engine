@@ -11,7 +11,7 @@ import {
 
 it('limits delivered power, selects seven gears and reverses without gear hunting', () => {
   const v = presetVehicle('car', 's3').vehicle!
-  const state = createDrivetrain()
+  const state = { ...createDrivetrain(), gear: 1, parked: false }
   const gears = new Set<number>()
   for (let i = 0; i < 6000; i++) {
     const speed = i / 60
@@ -90,9 +90,11 @@ it('keeps reverse while coasting backwards fast and never selects gear zero', ()
 it('recovers invalid gear indices before calculating wheel force', () => {
   const v = presetVehicle('car', 's3').vehicle!
   for (const gear of [-2, 8, 1.5, NaN]) {
-    const state = { ...createDrivetrain(), gear }
+    const state = { ...createDrivetrain(), gear, parked: false }
     stepDrivetrain(state, v.powertrain!, v.wheelRadius, 0, 1, false, 1 / 60)
-    expect(state.gear).toBe(1)
+    // A corrupt selector falls back to P, which holds the vehicle until W or S.
+    expect([state.gear, state.parked]).toEqual([0, true])
+    expect(state.force).toBe(0)
     expect(Number.isFinite(state.force)).toBe(true)
     expect(Number.isFinite(state.rpm)).toBe(true)
   }

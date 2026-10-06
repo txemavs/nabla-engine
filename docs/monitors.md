@@ -56,6 +56,14 @@ its normal history, without recreating the running physics world.
 | Telemetry formatting and stock composition                            | [S3 recipe](../src/catalog/monitors/s3-instruments.ts), [public presenter](../src/presentation/scene-view.ts) |
 | Generic types, examples and integration rules                         | [Library contract](../src/render/monitors/README.md)                                                          |
 
+**Needle self-test.** When the driver gets in, `CarInstruments.update` receives
+`vehicleInfo(id).gaugeSweep` (0..1) and `sweepCluster(cluster, data, sweep)` points every
+`needle` layer of the cluster from its live reading towards full scale by that fraction (and
+fills the bar with the same binding), so needles leave from and return to the real value (an
+idling rev counter, a speedometer at 0) without a jump. The sweep rises to full scale and back
+in about one second, right after the starter has cranked and the engine has caught. It is generic: any cluster definition (car, truck, custom) gets it without
+per-vehicle code; digital readouts and the gear letter keep their real values (`P`).
+
 The preview and the live S3 share artwork, but not a live DOM: changing preview CSS
 alone does **not** change the in-game layout. Edit the layered definition for that,
 and mirror the placement in the preview HTML. Reload Studio after editing assets.

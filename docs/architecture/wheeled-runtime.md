@@ -75,6 +75,13 @@ Simulation container still shares wheel state for ground/flight coordination.
 - `active` selects the occupant's controls; unoccupied cars retain parking braking.
   `powered` gates propulsion/steering. Brake and opposite-direction protections
   preserve the previous behaviour.
+- `createWheeledVehicle` spawns the rig in P (gear 0, parked); pass `{ parked: false }` for a
+  rig without a gear selector. In P the full service brake and a parking-pawl hold keep the
+  vehicle where it stopped, even on a slope. Call `enterWheeledVehicle(car)` when a driver gets
+  in: it selects P and starts the start-up sequence (cranking, then needle sweep while idling; see
+  `docs/configuration.md` → Park on entering). While it runs, `stepWheeledVehicle` keeps P and
+  ignores the pedals; telemetry reports `ignition`, `ignitionCount` and `gaugeSweep`.
+  `enterWheeledVehicle(car, false)` selects P only.
 - Keyboard progressive steering remains `KeyboardSteering`, supplied by the host;
   analog input bypasses it. No specific key names live in vehicle physics.
 - Shift commands return `shifted`, `protected` or `unavailable`. The facade keeps
@@ -106,8 +113,9 @@ world. It imports only public physics/wheeled subpaths: no stock vehicle preset,
 `Simulation`, DOM, WebGL or Studio. It accelerates, requests a manual reduction,
 measures closed-throttle retention and releases resources explicitly.
 
-Measured on this run: 22.412 m/s after acceleration, 19.830 m/s after two seconds
-of retention. These numbers demonstrate the example, not a new tuning target or
+It also enters the car with `enterWheeledVehicle` (P, start-up sequence) before pulling
+away from P. Measured on this run: 20.203 m/s after acceleration (three seconds of throttle
+including the P to D dwell), 17.864 m/s after two seconds of retention. These numbers demonstrate the example, not a new tuning target or
 performance/FPS claim.
 
 ## Equivalence and validation

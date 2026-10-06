@@ -8,6 +8,11 @@ import {
   engineBrakingForce,
   selectDriveDirection,
   gearboxTuning,
+  engagePark,
+  startIgnition,
+  stepIgnition,
+  ignitionRpm,
+  gaugeSweep,
   type DrivetrainState,
 } from '../drivetrain.js'
 import type {
@@ -47,8 +52,16 @@ export interface WheeledVehicle {
   steer: number
   drivetrain: DrivetrainState
 }
-/** Create a four-wheel rig around a supplied body. Host attaches it with raycast.addToWorld(world). */
-export function createWheeledVehicle(body: Body, definition: WheeledDefinition): WheeledVehicle {
+/**
+ * Create a four-wheel rig around a supplied body. Host attaches it with raycast.addToWorld(world).
+ * Road vehicles spawn in P, held by the brakes. `parked: false` keeps the legacy drive-ready
+ * selector (D1) for rigs without a gear selector, such as a flight vehicle's landing wheels.
+ */
+export function createWheeledVehicle(
+  body: Body,
+  definition: WheeledDefinition,
+  options: { parked?: boolean } = {},
+): WheeledVehicle {
   const positive = (value: number) => Number.isFinite(value) && value > 0
   const spec = definition.powertrain
   if (
@@ -71,7 +84,7 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
         [spec.idleRpm, spec.maxRpm, spec.reverseRatio, spec.maxSpeedKmh].some(
           (value) => value !== undefined && !positive(value),
         ) ||
-        (spec.idleRpm ?? 900) >= (spec.maxRpm ?? 6900) ||
+        (spec.idleRpm ?? roadVehicleDefaults.idleRpm) >= (spec.maxRpm ?? 6900) ||
         !validGearbox(spec)))
   )
     throw new Error('Invalid wheeled vehicle definition')
@@ -102,12 +115,58 @@ export function createWheeledVehicle(body: Body, definition: WheeledDefinition):
     })
   }
 
-  return { body, raycast: car, definition, steer: 0, drivetrain: createDrivetrain() }
+  const drivetrain = createDrivetrain()
+  if (options.parked === false) Object.assign(drivetrain, { gear: 1, parked: false })
+  return { body, raycast: car, definition, steer: 0, drivetrain }
 }
 /** A docked car must share the carrier's damping; the host decides attachment/mode. */
 export function syncWheeledDamping(v: WheeledVehicle, dockedDamping?: number): void {
   if (v.definition.powertrain) v.body.linearDamping = dockedDamping ?? 0
 }
+/**
+ * P holds the vehicle where it stopped: a damped spring along the forward axis on the distance
+ * crept since P engaged, limited by tyre friction. Speeds are relative to the supporting body, so
+ * a car parked on a moving deck rides along. A sleeping chassis is left asleep.
+ */
+function holdInPark(v: WheeledVehicle, forward: Vec3, speed: number, dt: number): void {
+  const state = v.drivetrain
+  const wheels = v.raycast.wheelInfos
+  const contacts = wheels.filter((wheel) => wheel.isInContact)
+  if (!state.parked || !contacts.length || !(v.body.mass > 0)) {
+    state.parkOffset = 0
+    return
+  }
+  if (v.body.raw?.isSleeping()) return
+  let relative = speed
+  const ground = contacts.find((wheel) => wheel.raycastResult.body)?.raycastResult.body
+  if (ground && ground !== v.body && ground.mass > 0) {
+    const support = new Vec3()
+    ground.getVelocityAtWorldPoint(v.body.position, support)
+    relative -= support.dot(forward)
+  }
+  if (Math.abs(relative) > roadVehicleDefaults.parkHoldSlipSpeed) {
+    state.parkOffset = 0
+    return
+  }
+  const capacity =
+    roadVehicleDefaults.parkHoldFriction *
+    simulationDefaults.gravity *
+    (contacts.length / wheels.length)
+  const stiffness = roadVehicleDefaults.parkHoldStiffness
+  // Anti-windup: the spring never stores more than the tyres can hold.
+  state.parkOffset = clamp(
+    state.parkOffset + relative * dt,
+    -capacity / stiffness,
+    capacity / stiffness,
+  )
+  const acceleration = clamp(
+    -stiffness * state.parkOffset - roadVehicleDefaults.parkHoldDamping * relative,
+    -capacity,
+    capacity,
+  )
+  v.body.applyForce(forward.scale(acceleration * v.body.mass))
+}
+
 /** Apply one fixed tick of forces/steering; call before the shared world's step. */
 export function stepWheeledVehicle(
   v: WheeledVehicle,
@@ -148,7 +207,10 @@ export function stepWheeledVehicle(
   const opposing = active && input.throttle * speed < -0.8
   const driven = (i: number) => isDriven(v.definition.drivenWheels, i)
   const tune = v.definition.powertrain
+  // Start-up sequence after entering: P is kept and the pedals do nothing until it ends.
+  const starting = stepIgnition(v.drivetrain, dt, tune?.idleRpm ?? roadVehicleDefaults.idleRpm)
   const aggressiveLaunch =
+    !starting &&
     !!tune &&
     v.definition.drivenWheels === 'all' &&
     active &&
@@ -157,7 +219,8 @@ export function stepWheeledVehicle(
     input.throttle >= 0 &&
     !input.handbrake &&
     speed > -0.8
-  const throttle = active && powered && !opposing ? (aggressiveLaunch ? 1 : input.throttle) : 0
+  const throttle =
+    active && powered && !opposing && !starting ? (aggressiveLaunch ? 1 : input.throttle) : 0
   if (tune) {
     stepDrivetrain(
       v.drivetrain,
@@ -196,6 +259,9 @@ export function stepWheeledVehicle(
       ((powered ? roadVehicleDefaults.idleRpm + v.drivetrain.load * 1800 : 0) - v.drivetrain.rpm) *
       Math.min(1, dt * 8)
   }
+  // The starter turns the engine; once it catches, the drivetrain settles it to idle.
+  if (v.drivetrain.ignition === 'cranking') v.drivetrain.rpm = ignitionRpm(v.drivetrain)
+  holdInPark(v, forward, speed, dt)
   for (let i = 0; i < 4; i++) {
     v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
     const rearShare = v.drivetrain.burnout
@@ -219,8 +285,10 @@ export function stepWheeledVehicle(
       const wheel = v.raycast.wheelInfos[i]
       wheel.frictionSlip += (desiredGrip - wheel.frictionSlip) * Math.min(1, dt * 8)
     }
+    // P holds the vehicle with the full service brake, occupied or not, so it cannot roll
+    // away on a slope; an unoccupied vehicle left in a drive gear keeps the light drag brake.
     const brake = !active
-      ? v.definition.brakeForce * 0.4
+      ? v.definition.brakeForce * (v.drivetrain.parked ? 1 : 0.4)
       : input.handbrake
         ? v.definition.brakeForce * (i >= 2 ? 1.5 : 0.4)
         : opposing || v.drivetrain.changingDirection || v.drivetrain.parked
@@ -231,6 +299,17 @@ export function stepWheeledVehicle(
       i,
     )
   }
+}
+/**
+ * A driver gets in (spawned in the seat, entered with E, or took over the controls): the
+ * selector goes to P, the full service brake holds the vehicle, and, when `ignition` is true,
+ * the start-up sequence runs (starter cranking, needle sweep, idle). The driver leaves P with
+ * the normal controls (W for D, S for R) once the engine is running. Passive trailers ignore it.
+ */
+export function enterWheeledVehicle(v: WheeledVehicle, ignition = true): void {
+  if (v.definition.passive) return
+  engagePark(v.drivetrain)
+  if (ignition) startIgnition(v.drivetrain)
 }
 /** Gear requests return domain results; UI messages belong to the facade/host. */
 export function shiftWheeledVehicle(
@@ -273,6 +352,9 @@ export function wheeledTelemetry(
     parked: v.drivetrain.parked,
     shifting: v.drivetrain.shiftRemaining > 0 || v.drivetrain.changingDirection,
     clack: v.definition.powertrain?.shift?.clack,
+    ignition: v.drivetrain.ignition,
+    ignitionCount: v.drivetrain.ignitionCount,
+    gaugeSweep: gaugeSweep(v.drivetrain),
     tireSlip: !tireEffects
       ? 0
       : active && v.drivetrain.burnout

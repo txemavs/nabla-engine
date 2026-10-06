@@ -1,5 +1,6 @@
 import { Vector3, type Scene } from 'three'
 import { VehicleAudio } from '../audio/vehicle.js'
+import { roadVehicleDefaults } from '../config/simulation.js'
 import { TireMarks } from '../render/entity/tire-marks.js'
 import { TireSmoke } from '../render/entity/tire-smoke.js'
 import type { SceneDocument } from '../scene/document.js'
@@ -15,6 +16,8 @@ export class VehicleEffects {
   private disposed = false
   private shiftVehicleId: string | null = null
   private shiftCount = 0
+  /** `vehicleId:ignitionCount` of the last start whose starter sound was played. */
+  private lastStart: string | null = null
 
   constructor(scene: Scene, audio?: VehicleAudio) {
     this.ownsAudio = !audio
@@ -55,7 +58,13 @@ export class VehicleEffects {
         ? sim!.vehicleInfo(pilot)
         : null
     this.playGearChanges(car ? pilot! : null, car)
-    this.audio.powertrain(car?.helm !== 'off' ? (car?.rpm ?? 0) : 0, car?.engineLoad ?? 0)
+    this.playEngineStart(car ? pilot! : null, car, piloted?.vehicle?.powertrain?.idleRpm)
+    // The engine note stays silent while the starter cranks; it fades in at the catch and
+    // settles to idle during the needle sweep.
+    this.audio.powertrain(
+      car?.helm !== 'off' && car?.ignition !== 'cranking' ? (car?.rpm ?? 0) : 0,
+      car?.engineLoad ?? 0,
+    )
     this.audio.reverseAlarm(
       !!(piloted?.vehicle?.reverseAlarm && car?.reversing && car.helm !== 'off'),
     )
@@ -76,6 +85,20 @@ export class VehicleEffects {
     this.shiftCount = info.gearClacks
     if (known && info.gearClacks > previous && info.helm !== 'off')
       this.audio.gearChange(info.gearClack)
+  }
+
+  /** One starter sound per start-up, as soon as its cranking phase (the first one) is seen. Lower idle cranks lower. */
+  private playEngineStart(
+    id: string | null,
+    info: { ignition: string; ignitionCount: number; helm: string } | null,
+    idleRpm: number | undefined,
+  ): void {
+    if (!id || !info || info.ignition !== 'cranking' || info.helm === 'off') return
+    const key = `${id}:${info.ignitionCount}`
+    if (key === this.lastStart) return
+    this.lastStart = key
+    const idle = idleRpm ?? roadVehicleDefaults.idleRpm
+    this.audio.engineStart({ pitch: idle / roadVehicleDefaults.idleRpm, idleRpm: idle })
   }
 
   updateTires(sim: Simulation | null, elapsed: number, origin: Vector3): void {

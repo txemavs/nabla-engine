@@ -12,6 +12,7 @@ import {
 } from '../../src/simulation/vehicles/drivetrain.js'
 import { createWheeledVehicle } from '../../src/simulation/vehicles/wheeled/runtime.js'
 import { Body, Box, Vec3 } from '../../src/simulation/physics.js'
+import { finishStartUp } from '../start-up.js'
 
 const car = () => presetVehicle('car', 's3').vehicle!
 const truck = () => presetVehicle('white-truck', 'truck').vehicle!
@@ -34,6 +35,7 @@ function flatSim(entity: string, catalog: string, withTrailer = false) {
   const sim = new Simulation({ version: 1, name: 'Gear feel', entities })
   for (let i = 0; i < 180; i++) sim.step(dt)
   sim.startInVehicle(entity)
+  finishStartUp(sim)
   return sim
 }
 
@@ -42,7 +44,7 @@ describe('automatic and manual gear changes', () => {
     for (const v of [car(), truck()]) {
       const spec = v.powertrain!
       const tuning = gearboxTuning(spec)
-      const state = createDrivetrain()
+      const state = { ...createDrivetrain(), gear: 1, parked: false }
       // Wheel speed that couples gear 1 just above the upshift point.
       const wheelRpm = (tuning.upshiftRpm * 1.02) / (spec.ratios[0] * spec.finalDrive)
       const speed = (wheelRpm * 2 * Math.PI * v.wheelRadius) / 60
@@ -64,7 +66,7 @@ describe('automatic and manual gear changes', () => {
 
   it('counts manual shifts and refuses a second one during the torque cut', () => {
     const v = car()
-    const state = createDrivetrain()
+    const state = { ...createDrivetrain(), parked: false }
     state.gear = 3
     expect(shiftGear(state, v.powertrain!, v.wheelRadius, 10, 1)).toBe(true)
     expect(state.shiftCount).toBe(1)
@@ -122,6 +124,9 @@ describe('truck gearbox', () => {
     const sim = flatSim('truck', 'white-truck')
     try {
       sim.setInput({ ...idleInput(), forward: 1 })
+      // Entered in P: the held pedal first selects D1 (one counted shift).
+      for (let i = 0; i < 60 && sim.vehicleInfo('truck').gear === 0; i++) sim.step(dt)
+      const base = sim.vehicleInfo('truck').gearShifts
       let gear = 1
       let peak = 0
       let before = 0
@@ -145,7 +150,7 @@ describe('truck gearbox', () => {
         before = info.rpm
       }
       expect(gear).toBe(6)
-      expect(counted).toEqual([1, 2, 3, 4, 5])
+      expect(counted).toEqual([1, 2, 3, 4, 5].map((n) => base + n))
       // Within half a second of every change the engine has visibly dropped. First gear is
       // over in about a quarter of a second, so the slow truck needle (rpmResponse 6) is still
       // climbing towards launchRpm when 1→2 fires: judge that change relative to what the
@@ -153,7 +158,9 @@ describe('truck gearbox', () => {
       expect(drops).toHaveLength(5)
       for (const { before, drop } of drops) expect(drop).toBeGreaterThan(before * 0.1)
       for (const { drop } of drops.slice(1)) expect(drop).toBeGreaterThan(200)
-      expect(peak).toBeLessThan(2300)
+      // Pulling away from P (after the truck's 0.5 s engagement torque cut) reaches about
+      // 2,330 rpm in second gear; it must stay clear of the 2,400 rpm governor.
+      expect(peak).toBeLessThan(truck().powertrain!.maxRpm! - 25)
     } finally {
       sim.dispose()
     }

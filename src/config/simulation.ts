@@ -55,8 +55,36 @@ export const roadVehicleDefaults = Object.freeze({
   engineRpmResponse: 16,
   /** Engine speed commanded by a fully pressed pedal at rest, rpm. `shift.launchRpm`. */
   launchRpm: 2400,
-  /** Generic petrol-engine idle speed; vehicle powertrains may override it. */
-  idleRpm: 900,
+  /**
+   * Generic petrol-engine idle speed (S3, A3, procedural cars); the rev counter rests here at a
+   * standstill. Vehicle powertrains may override it (the diesel truck idles at 750).
+   */
+  idleRpm: 1000,
+  /**
+   * Starter-motor cranking, the first step after entering a vehicle, seconds. The vehicle is in
+   * P and held by its brakes; no drive torque.
+   */
+  ignitionCrankSeconds: 0.6,
+  /**
+   * Instrument self-test once the engine has caught: every needle sweeps to full scale and back,
+   * seconds. The engine settles from its catch to idle meanwhile; still P, no drive torque.
+   */
+  ignitionSweepSeconds: 1,
+  /** Engine speed shown while the starter cranks, rpm. */
+  crankingRpm: 250,
+  /** Engine speed of the catch when the engine fires; it then settles to idle, x idle rpm. */
+  ignitionFlare: 1.6,
+  /**
+   * P holds like a parking pawl: a stiff, damped longitudinal spring (per unit mass, 1/s^2 and
+   * 1/s) on the distance crept since P engaged. The wheel brakes alone resolve velocity before
+   * gravity is integrated, so a braked car otherwise creeps g*sin(slope)*dt per step downhill.
+   */
+  parkHoldStiffness: 400,
+  parkHoldDamping: 40,
+  /** Holding force limit as a tyre friction coefficient (0.8 holds about a 38 degree slope). */
+  parkHoldFriction: 0.8,
+  /** Above this speed relative to the ground the hold lets go (pushed hard or sliding), m/s. */
+  parkHoldSlipSpeed: 1.5,
   /** Maximum tractor/trailer yaw either side of straight ahead, radians (65 degrees). */
   trailerArticulationRadians: (65 * Math.PI) / 180,
   /** Sustained horizontal contact load that breaks a reversing trailer coupling, newtons. */

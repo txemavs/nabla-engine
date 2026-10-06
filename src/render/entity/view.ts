@@ -34,6 +34,7 @@ import {
   clampSteeringWheelOffset,
   poseSteeringWheel,
   steeringAxis,
+  steeringPivot,
   steeringWheelCentred,
   steeringWheelOffsetPosition,
   type SteeringWheelOffset,
@@ -235,6 +236,8 @@ export class SceneView {
   readonly wheels = new Map<string, THREE.Group[]>()
   readonly steering = new Map<string, THREE.Group>()
   private readonly steeringAxes = new Map<string, THREE.Vector3>()
+  /** Spin pivot declared by the steering GLB (`extras.nabla.spinPivot`), when it has one. */
+  private readonly steeringPivots = new Map<string, THREE.Vector3>()
   /** Per vehicle: the group between the authored mount and the spin group, and its model. */
   private readonly steeringAdjust = new Map<
     string,
@@ -489,6 +492,7 @@ export class SceneView {
       this.wheels,
       this.steering,
       this.steeringAxes,
+      this.steeringPivots,
       this.steeringAdjust,
       this.thrusters,
       this.shipLights,
@@ -979,6 +983,8 @@ export class SceneView {
         undefined,
         (model) => {
           adapter?.preparePart?.(model, 'steering')
+          const pivot = steeringPivot(model)
+          if (pivot) this.steeringPivots.set(e.id, pivot)
         },
       )
       this.steering.set(e.id, spin)
@@ -1218,7 +1224,12 @@ export class SceneView {
     }
     for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
     for (const [id, wheel] of this.steering)
-      poseSteeringWheel(wheel, this.steeringAxes.get(id)!, sim.vehicleInfo(id).steer)
+      poseSteeringWheel(
+        wheel,
+        this.steeringAxes.get(id)!,
+        sim.vehicleInfo(id).steer,
+        this.steeringPivots.get(id),
+      )
     for (const [id, propeller] of this.propellers)
       propeller.rotation.z += sim.vehicleInfo(id).engine * 78 * Math.min(elapsed, 0.05)
     for (const [id, equipment] of this.beacons)
@@ -1234,19 +1245,22 @@ export class SceneView {
     for (const [id, instruments] of this.instruments) {
       instruments.setPowered(sim.player.vehicleId === id)
       instruments.setSecondary(!cockpit)
-      if (sim.player.vehicleId === id)
+      if (sim.player.vehicleId === id) {
+        const info = sim.vehicleInfo(id)
         instruments.update(
           this.document,
           sim.entityTransform(id, true),
           sim.vehicleInfo(id, true).speedKmh,
           performance.now(),
-          sim.vehicleInfo(id).rpm,
-          sim.vehicleInfo(id).gear,
-          sim.vehicleInfo(id).engineLoad,
-          sim.vehicleInfo(id).manualTransmission,
-          sim.vehicleInfo(id).parked,
-          sim.vehicleInfo(id).altitude,
+          info.rpm,
+          info.gear,
+          info.engineLoad,
+          info.manualTransmission,
+          info.parked,
+          info.altitude,
+          info.gaugeSweep,
         )
+      }
     }
     this.captureOccupiedLights(sim.player.vehicleId)
     const vehicleId = sim.player.vehicleId

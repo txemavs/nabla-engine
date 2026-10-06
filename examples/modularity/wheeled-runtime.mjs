@@ -9,6 +9,7 @@ import {
   wheelContacts,
   shiftWheeledVehicle,
   automaticWheeledTransmission,
+  enterWheeledVehicle,
 } from '@nabla/engine/vehicles/wheeled'
 
 await initPhysics()
@@ -52,6 +53,12 @@ const step = (input, ticks, active = true) => {
 }
 try {
   step(idleWheeledInput(), 180, false)
+  // A driver gets in: P, held by the brakes, then needle sweep, cranking and idle (about 2 s).
+  enterWheeledVehicle(car)
+  step(idleWheeledInput(), 130)
+  assert.equal(car.drivetrain.ignition, 'running')
+  assert(car.drivetrain.parked)
+  // W leaves P after the usual standstill dwell.
   const input = { ...idleWheeledInput(), throttle: 1 }
   step(input, 180)
   const accelerated = wheeledTelemetry(car, input, true)

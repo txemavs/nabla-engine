@@ -9,6 +9,7 @@ import {
   syncWheeledDamping,
   shiftWheeledVehicle,
   automaticWheeledTransmission,
+  enterWheeledVehicle,
   type WheeledDefinition,
 } from '../../src/simulation/vehicles/wheeled/index.js'
 
@@ -93,8 +94,29 @@ it('drives two custom rigs in one Rapier world and can detach one without distur
     world.raw.free()
   }
 })
-it('applies the driven axle, power/occupancy gates and dock damping without scene data', () => {
+it('spawns in P: no drive force, full service brake occupied or not, W leaves P', () => {
   const car = createWheeledVehicle(chassis(), definition())
+  expect([car.drivetrain.gear, car.drivetrain.parked]).toEqual([0, true])
+  stepWheeledVehicle(car, idleWheeledInput(), 1 / 60)
+  expect(car.raycast.wheelInfos.every((w) => w.engineForce === 0 && w.brake === 50)).toBe(true)
+  stepWheeledVehicle(car, idleWheeledInput(), 1 / 60, false)
+  expect(car.raycast.wheelInfos.every((w) => w.brake === 50)).toBe(true)
+  // Entering runs the start-up: P is kept and the pedal is ignored until the engine runs.
+  enterWheeledVehicle(car)
+  expect(car.drivetrain.ignition).toBe('cranking')
+  const pedal = { ...idleWheeledInput(), throttle: 1 }
+  // 0.6 s of cranking, then the 1 s needle sweep: still P at 1.5 s.
+  for (let i = 0; i < 90; i++) stepWheeledVehicle(car, pedal, 1 / 60)
+  expect(car.drivetrain.ignition).toBe('sweep')
+  expect([car.drivetrain.gear, car.drivetrain.parked]).toEqual([0, true])
+  expect(car.raycast.wheelInfos.every((w) => w.engineForce === 0)).toBe(true)
+  for (let i = 0; i < 40; i++) stepWheeledVehicle(car, pedal, 1 / 60)
+  expect(car.drivetrain.ignition).toBe('running')
+  expect(car.drivetrain.gear).toBe(1)
+  expect(car.raycast.wheelInfos.slice(0, 2).every((w) => w.engineForce > 0)).toBe(true)
+})
+it('applies the driven axle, power/occupancy gates and dock damping without scene data', () => {
+  const car = createWheeledVehicle(chassis(), definition(), { parked: false })
   const input = { ...idleWheeledInput(), throttle: 1, steering: 1 }
   stepWheeledVehicle(car, input, 1 / 60)
   expect(car.raycast.wheelInfos.slice(0, 2).every((w) => w.engineForce > 0)).toBe(true)
@@ -135,7 +157,7 @@ it('normalizes copied contacts and suppresses invalid/airborne contacts and non-
   expect(wheelContacts(car, input, true)[2].slip).toBe(0)
 })
 it('returns transmission domain results and rejects invalid commands before mutating state', () => {
-  const car = createWheeledVehicle(chassis(), definition())
+  const car = createWheeledVehicle(chassis(), definition(), { parked: false })
   expect(shiftWheeledVehicle(car, 1)).toBe('shifted')
   expect(shiftWheeledVehicle(car, -1)).toBe('protected')
   expect(automaticWheeledTransmission(car)).toBe(true)

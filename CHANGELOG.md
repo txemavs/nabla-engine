@@ -16,6 +16,29 @@
   `NABLA_BOOT.asphaltContrast`, one visit `?asphaltContrast=1.6`. Engine API:
   `GameRuntimeOptions.asphaltContrast`, `runtime.asphaltContrast` / `setAsphaltContrast`,
   `setAsphaltContrast` / `asphaltContrast` and `ASPHALT_CONTRAST_*` from `@nabla/engine/render`.
+- **S3 steering wheel default moved to Txema's «Volante» choice:** the S3 wheel now sits where
+  the sliders put it at «Volante: distancia» +1,0 cm and «Volante: altura» +2,5 cm, baked into
+  `s3.steering.glb` (the sliders read 0 there for every host). `scripts/move-s3-steering-wheel.mjs`
+  now bakes both slider axes idempotently — `extras.nabla.columnForward` (0.03 → 0.04 m along the
+  column) and the new `extras.nabla.height` (0.025 m, chassis up) — and records the moved spin
+  axis as `extras.nabla.spinPivot`. Steering GLBs may declare that pivot on any node; `SceneView`
+  spins the wheel about it (`steeringPivot`, optional `pivot` argument of `poseSteeringWheel`).
+  The A3 wheel and the shared `steering` anchor are unchanged. Players who saved +1,0 / +2,5 in
+  the menu should press «Restablecer volante» once so the value isn't applied twice.
+- **Vehicles start in P, with an instrument sweep and an engine start:** every road vehicle (car,
+  S3, A3, truck, procedural cars, host-spawned vehicles) now spawns in P and every way into the
+  driver's seat (E, `startInVehicle`/`?vehicle=`, `transferControls`) selects P again, held by the
+  brakes; the HUD and cluster show `P`. Then a synthesized starter cranks (`VehicleAudio.engineStart`,
+  no sample file), the engine catches and the instrument needles sweep to full scale and back
+  (~1 s, eased) while it settles to idle, still in P (order and timing: see Changed below). Pedals are deferred during the start-up (the
+  vehicle stays in P; a pedal still held when the engine runs engages D/R through the normal
+  dwell). W/S leave P as before. Boats, planes and flight-capable vehicles are unchanged. Engine
+  API: `enterWheeledVehicle`, `engagePark`, `startIgnition`, `stepIgnition`, `gaugeSweep`,
+  `sweepCluster`, `createWheeledVehicle(body, def, { parked })`, `vehicleInfo().ignition` /
+  `ignitionCount` / `gaugeSweep`, `Simulation` option `ignition` (default true) and
+  `roadVehicleDefaults.ignition*` / `crankingRpm` / `parkHold*`. See docs/configuration.md →
+  Park on entering.
+
 - **Icon-only touch HUD with a place block:** the touch driving and flight action buttons
   (Entrar/salir, Cámara, Jugar) are now 52 px icons (`touchActionIcon`); the label stays as
   `aria-label` and tooltip. The driving rig shows the nearest city (large) and street next to the
@@ -84,6 +107,13 @@
 
 ### Fixed
 
+- **Vehicles no longer roll back when entered:** the drivetrain was created in D1 and kept
+  whatever gear it was left in, so entering a vehicle released the unoccupied parking brake with
+  the selector in D (or R) and no pedal, and it rolled down any slope. A braked vehicle also
+  crept downhill at g x sin(slope) x dt per step because the Rapier wheel brake resolves velocity
+  before gravity is integrated. P now applies the full service brake (occupied or not) plus a
+  parking-pawl hold, so a parked vehicle stays put even on steep slopes.
+
 - **S3 steering wheel too far from the dashboard:** the rim sat ~2–3 cm back toward the
   driver. It now sits 3 cm further along the steering column toward the gauges (chassis: 2.8 cm
   forward, 1.1 cm down; column pivot and spin axis unchanged). Only `s3.steering.glb` changes
@@ -106,6 +136,24 @@
   guard had lost its braces; fixes the typecheck error on main).
 
 ### Changed
+
+- **Idle at ~1,000 RPM with a less rumbly engine note.** Car idle (`roadVehicleDefaults.idleRpm`,
+  S3, A3 and procedural cars) 900 → 1,000 RPM, so the rev counter rests on 1,000 at a
+  standstill; the white truck's diesel idle 650 → 750 RPM. The engine note is pitched a little
+  higher, like an engine at low revs rather than a sub-bass rumble: `engineNoteHz` rpm / 30
+  (30 Hz floor) → rpm / 24 (25 Hz floor), lowpass cutoff 180 + 0.1 x rpm → 260 + 0.14 x rpm Hz.
+  Car idle: 30 Hz / 270 Hz → 41.7 Hz / 400 Hz; truck idle: 30 Hz / 245 Hz → 31.3 Hz / 365 Hz.
+  The engine-start sound now ends its catch on the vehicle's idle note
+  (`EngineStartSound.idleRpm`; pitch reference 900 → 1,000 RPM) so it hands over to the idle
+  engine sound seamlessly.
+- **Start-up order on entering a vehicle: engine first, then the needle sweep.** The sequence is
+  now P and held → starter sound, shorter (`ignitionCrankSeconds` 1 → 0.6 s) → needle sweep up
+  and back (`ignitionSweepSeconds`, 1 s) → running. The engine catches at the end of the crank,
+  so its normal sound fades in and settles from the catch flare to idle during the sweep instead
+  of after it, and the whole sequence takes 1.6 s instead of 2 s. `vehicleInfo().ignition` now
+  goes `cranking` → `sweep` → `running`. The needles leave from and return to their live reading
+  (the idling rev counter, a speedometer at 0) instead of dropping to zero first
+  (`sweepCluster`). Input rules are unchanged: P and no drive torque until the sequence ends.
 
 - **Settings layout:** new **Posición** tab (where you are / go to lat,lon and the R option).
   Planeta keeps Hora first and now ends with sea level / tide; the legacy sky / sun / clouds /

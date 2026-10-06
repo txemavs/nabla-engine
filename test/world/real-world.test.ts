@@ -11,6 +11,7 @@ import { terrainHeight } from '../../src/planet/land/terrain.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { SceneEditor } from '../../src/scene/history.js'
 import { parseScene } from '../../src/scene/document.js'
+import { finishStartUp } from '../start-up.js'
 const data = JSON.parse(
   readFileSync(new URL('../../assets/geography/irun-ventas.json', import.meta.url), 'utf8'),
 ) as WorldExtract
@@ -53,6 +54,7 @@ it('settles the A3 on real elevation, enters it and drives with ground support',
   for (let i = 0; i < 120; i++) s.step(1 / 60)
   expect(s.nearestVehicle()).toBe('car-a')
   expect(s.interact()).toContain('Conduciendo')
+  finishStartUp(s)
   const start = s.entityTransform('car-a').position
   s.setInput({ ...idleInput(), forward: 1 })
   for (let i = 0; i < 150; i++) s.step(1 / 60)

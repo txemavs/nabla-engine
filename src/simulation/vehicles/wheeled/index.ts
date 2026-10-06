@@ -6,6 +6,7 @@ export {
   automaticWheeledTransmission,
   wheeledTelemetry,
   wheelContacts,
+  enterWheeledVehicle,
   type WheeledVehicle,
 } from './runtime.js'
 export {
@@ -26,6 +27,13 @@ export {
   engineBrakingForce,
   gearboxTuning,
   isDriven,
+  engagePark,
+  startIgnition,
+  stepIgnition,
+  isStarting,
+  gaugeSweep,
+  ignitionRpm,
   type DrivetrainState,
+  type IgnitionPhase,
 } from '../drivetrain.js'
 export { KeyboardSteering } from '../keyboard-steering.js'
