@@ -55,6 +55,7 @@ export {
   clampSteeringWheelOffset,
   poseSteeringWheel,
   steeringAxis,
+  steeringPivot,
   steeringWheelAngle,
   steeringWheelCentred,
   steeringFullLockSteer,
