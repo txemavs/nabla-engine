@@ -122,6 +122,8 @@ export {
   streamBudget,
   tileBudget,
   shadowTiers,
+  shadowBiasRange,
+  normalizeShadowBias,
   type ShadowTier,
   type PerformanceSettings,
 } from './performance.js'

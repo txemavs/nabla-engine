@@ -92,9 +92,37 @@ passes and memory, so it is an optional distance/detail tradeoff, not a free upg
 
 CSM fits a proxy camera in absolute coordinates, snaps to its shadow texel grid,
 then rebases its lights into render coordinates. Projection changes refresh cascade
-bounds. The depth bias is a fixed 2 cm in world units rather than a constant
-fraction of the shadow-camera depth range; the latter detached or erased small
-vehicle shadows. Low quality prioritizes nearby vehicles without adding a pass.
+bounds. Low quality prioritizes nearby vehicles without adding a pass.
+
+### Shadow bias and acne
+
+Bias is set per cascade from the world size of one shadow-map texel
+(`cascade width / map size`), not as fixed metres: the tier gives `normalBiasTexels` and
+`depthBiasTexels`, `cascadeShadowBias` multiplies them by the texel size and clamps the result
+to `shadowBiasMetres` (normal 4–50 cm, depth 2–50 cm). A fixed offset was a fifth of a texel on
+the 512 map (0.7 m texels) and a quarter of one on Ultra, so ground that writes into the shadow
+map shadowed itself. The depth offset is converted to the orthographic depth range
+(`metres / (far − near)`), so it stays in world units as before.
+
+| Tier key (presets)      | Near texel (1280×800, 60°) | Normal bias       | Depth bias        |
+| ----------------------- | -------------------------- | ----------------- | ----------------- |
+| 512 (Baja, Equilibrada) | ≈ 0.70 m                   | 0.3 texel ≈ 21 cm | 0.3 texel ≈ 21 cm |
+| 1024 (Alta)             | ≈ 0.43 m                   | 0.4 texel ≈ 17 cm | 0.3 texel ≈ 13 cm |
+| 2048 (Ultra), 4096      | ≈ 0.20 m                   | 0.5 texel ≈ 10 cm | 0.3 texel ≈ 6 cm  |
+
+Previously every tier used a fixed 2 cm depth bias and a 4–8 cm normal bias.
+
+Terrain casts its shadow from back faces only (`castShadowFromBackFaces`, `shadowSide =
+BackSide`). Three.js already does that for single-sided materials, but the Atlas LiDAR terrain
+(`relief=lidar`) is exported `doubleSided`, so its sunlit faces wrote into the shadow map and
+striped every gentle slope (and the roads and photos draped on it) under a low sun. With back
+faces only, hills still shade the valleys behind them and the vehicle contact shadow is
+unchanged.
+
+`GameRuntimeOptions.shadowBias` / `runtime.setShadowBias(scale)` multiply the tier bias
+(0–3, default 1, `shadowBiasRange`) live, without a reload: bias is a receiver uniform. The game
+shows it as Ajustes → Calidad → **Sombras: corrección de rayas** (see
+[boot-and-splash.md](boot-and-splash.md#standalone-game-page-this-repositorys-game)).
 Shadow intensity is full occlusion of direct light; ambient lighting still fills
 the shaded areas. Radius-zero PCF retains hardware bilinear comparison without the unstable
 screen-pixel-dependent rotated sampling pattern. Cascades blend at their boundaries.

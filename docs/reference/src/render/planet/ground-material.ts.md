@@ -20,9 +20,23 @@ for a key that is present but undefined, once per material.
 withMap(map: THREE.Texture | undefined): { map?: THREE.Texture }
 ```
 
+## castShadowFromBackFaces
+
+[Implementation, line 19](../../../../../src/render/planet/ground-material.ts#L19)
+
+Terrain casts its shadow from the faces turned away from the sun only. A heightfield's sunlit
+faces then never write into the shadow map, so they cannot shadow themselves (acne: contour
+stripes on every gentle slope under a low sun), while hills still shade the valleys behind them.
+Three.js already does this for single-sided materials; double-sided ground (the Atlas LiDAR mesh
+is exported `doubleSided`) would otherwise write its lit side too. Returns the material.
+
+```ts
+castShadowFromBackFaces(material: T): T
+```
+
 ## matteGroundMaterial
 
-[Implementation, line 13](../../../../../src/render/planet/ground-material.ts#L13)
+[Implementation, line 25](../../../../../src/render/planet/ground-material.ts#L25)
 
 Diffuse ground: roughness alone still leaves a broad dielectric sun highlight.
 
@@ -36,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isChartCarriageway
 
-[Implementation, line 29](../../../../../src/render/planet/ground-material.ts#L29)
+[Implementation, line 41](../../../../../src/render/planet/ground-material.ts#L41)
 
 Carriageways paint white on the GPS. Paths, tracks and rails stay blue.
 
@@ -50,7 +64,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## liftFootLayer
 
-[Implementation, line 42](../../../../../src/render/planet/ground-material.ts#L42)
+[Implementation, line 54](../../../../../src/render/planet/ground-material.ts#L54)
 
 Feet stay under the carriageway and the rails. 17 is the layer that briefly drew them on top.
 
@@ -60,7 +74,7 @@ liftFootLayer(layer: number): number
 
 ## footBuried
 
-[Implementation, line 48](../../../../../src/render/planet/ground-material.ts#L48)
+[Implementation, line 60](../../../../../src/render/planet/ground-material.ts#L60)
 
 ```ts
 footBuried(layer: number): boolean
@@ -68,7 +82,7 @@ footBuried(layer: number): boolean
 
 ## transportLayer
 
-[Implementation, line 53](../../../../../src/render/planet/ground-material.ts#L53)
+[Implementation, line 65](../../../../../src/render/planet/ground-material.ts#L65)
 
 Order only coplanar transport surfaces; physical bridge/tunnel heights still apply.
 
@@ -82,7 +96,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## carriagewayTint
 
-[Implementation, line 65](../../../../../src/render/planet/ground-material.ts#L65)
+[Implementation, line 77](../../../../../src/render/planet/ground-material.ts#L77)
 
 Delete after the next GLB regen. Bake carriageway `#272c2e` (`#525c60` × 0.48) into COLOR_0.
 
@@ -98,7 +112,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## groundDepthBias
 
-[Implementation, line 82](../../../../../src/render/planet/ground-material.ts#L82)
+[Implementation, line 94](../../../../../src/render/planet/ground-material.ts#L94)
 
 ```ts
 groundDepthBias(layer: number): inferred by TypeScript; see implementation

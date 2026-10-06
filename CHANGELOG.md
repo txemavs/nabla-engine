@@ -26,7 +26,12 @@
   `ignitionCount` / `gaugeSweep`, `Simulation` option `ignition` (default true) and
   `roadVehicleDefaults.ignition*` / `crankingRpm` / `parkHold*`. See docs/configuration.md →
   Park on entering.
-
+- **Shadow stripe correction setting:** Ajustes → Calidad → «Sombras: corrección de rayas»
+  (0–300 %, live, with «Restablecer») scales the shadow bias. Host default via
+  `NABLA_BOOT.shadowBias`, `VITE_NABLA_BOOT`, `VITE_NABLA_SHADOW_BIAS` or `?shadowBias=`; the
+  player's saved choice (`localStorage` `nabla.shadowBias`) wins. Engine API:
+  `GameRuntimeOptions.shadowBias`, `GameRuntime.shadowBias` / `setShadowBias`,
+  `ShadowManager.setBiasScale`, `shadowBiasRange`, `normalizeShadowBias`, `cascadeShadowBias`.
 - **Icon-only touch HUD with a place block:** the touch driving and flight action buttons
   (Entrar/salir, Cámara, Jugar) are now 52 px icons (`touchActionIcon`); the label stays as
   `aria-label` and tooltip. The driving rig shows the nearest city (large) and street next to the
@@ -101,6 +106,15 @@
   crept downhill at g x sin(slope) x dt per step because the Rapier wheel brake resolves velocity
   before gravity is integrated. P now applies the full service brake (occupied or not) plus a
   parking-pawl hold, so a parked vehicle stays put even on steep slopes.
+- **Shadow acne on terrain (stripes over every gentle slope):** under a low sun the ground,
+  its draped roads and photos showed dense contour stripes, worst with `relief=lidar` (the
+  Euskadi host default). The Atlas LiDAR terrain is exported double-sided, so its sunlit faces
+  wrote into the shadow map and shadowed themselves; the fixed 2 cm depth / 4–8 cm normal bias was
+  a fraction of a texel (0.2–0.7 m per texel at cascade 0). Terrain now casts shadows from back
+  faces only (`castShadowFromBackFaces`), and each cascade's bias scales with its texel size
+  (`ShadowTier.normalBiasTexels` / `depthBiasTexels`, replacing `normalBias`): Baja/Equilibrada
+  ≈ 21 cm normal / 21 cm depth, Alta ≈ 17 / 13 cm, Ultra ≈ 10 / 6 cm, clamped to 50 cm on far
+  cascades. The car's contact shadow stays attached. See docs/performance.md → Shadow bias and acne.
 
 - **S3 steering wheel too far from the dashboard:** the rim sat ~2–3 cm back toward the
   driver. It now sits 3 cm further along the steering column toward the gauges (chassis: 2.8 cm

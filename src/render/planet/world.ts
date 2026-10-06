@@ -60,6 +60,7 @@ export interface PlanetSourceOptions {
 import { PlanetHorizon } from './horizon.js'
 import {
   carriagewayTint,
+  castShadowFromBackFaces,
   matteGroundMaterial,
   ROADS_DRAPE_TINT,
   withMap,
@@ -1017,6 +1018,7 @@ export class PlanetWorld {
       mesh.userData = data.metadata
       mesh.castShadow =
         !data.metadata.skirt && ['Terrain', 'Buildings'].includes(data.metadata.category)
+      if (data.metadata.category === 'Terrain') castShadowFromBackFaces(material)
       mesh.receiveShadow = true
       group.add(mesh)
       restoreTileLayers(mesh)

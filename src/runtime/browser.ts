@@ -89,7 +89,7 @@ import {
 } from '../render/planet/world-environment.js'
 import { CatchFloor } from '../render/planet/catch-floor.js'
 import { ShadowManager } from '../render/shadows.js'
-import { shadowTiers } from '../render/shadow-tiers.js'
+import { shadowBiasRange, shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
@@ -204,6 +204,11 @@ export interface GameRuntimeOptions {
    * instead of uprighting it in place. Default on; hosts and the in-game menu can turn it off.
    */
   recoverToRoad?: boolean
+  /**
+   * Factor on the quality tier's texel-scaled shadow bias, 0..3 (default 1). Higher removes
+   * residual shadow stripes (acne) at the cost of slightly detached shadows; live via `setShadowBias`.
+   */
+  shadowBias?: number
   depthOfField?: boolean
   performance?: Partial<PerformanceSettings>
   /** Explicit opt-in; omit to keep offline games independent of external light data. */
@@ -482,6 +487,7 @@ export class GameRuntime {
             options.touchControls ?? 'auto',
             this.text,
           )
+    this.shadows.setBiasScale(options.shadowBias ?? shadowBiasRange.default)
     if (this.quality.shadows > 0)
       this.shadows.init({
         camera: this.camera,
@@ -1567,6 +1573,15 @@ export class GameRuntime {
   setRecoverToRoadEnabled(enabled: boolean): void {
     this.assertAlive()
     this.game.recover.snapToRoad = enabled
+  }
+  /** Factor on the quality tier's shadow bias (1 = tuned default; see `shadowBiasRange`). */
+  get shadowBias(): number {
+    return this.shadows.shadowBiasScale
+  }
+  /** Change the shadow bias factor live (clamped to 0..3): bias is a receiver uniform, no reload or rebuild. */
+  setShadowBias(scale: number): void {
+    this.assertAlive()
+    this.shadows.setBiasScale(scale)
   }
   /** Change the host's mute preference without replacing the audio graph. */
   setAudioEnabled(enabled: boolean): void {

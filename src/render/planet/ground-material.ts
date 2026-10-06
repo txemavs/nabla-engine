@@ -9,6 +9,18 @@ export function withMap(map: THREE.Texture | undefined): { map?: THREE.Texture }
   return map ? { map } : {}
 }
 
+/**
+ * Terrain casts its shadow from the faces turned away from the sun only. A heightfield's sunlit
+ * faces then never write into the shadow map, so they cannot shadow themselves (acne: contour
+ * stripes on every gentle slope under a low sun), while hills still shade the valleys behind them.
+ * Three.js already does this for single-sided materials; double-sided ground (the Atlas LiDAR mesh
+ * is exported `doubleSided`) would otherwise write its lit side too. Returns the material.
+ */
+export function castShadowFromBackFaces<T extends THREE.Material>(material: T): T {
+  material.shadowSide = THREE.BackSide
+  return material
+}
+
 /** Diffuse ground: roughness alone still leaves a broad dielectric sun highlight. */
 export function matteGroundMaterial(
   parameters: THREE.MeshStandardMaterialParameters,
