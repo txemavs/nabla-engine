@@ -185,6 +185,8 @@ The section is bound before anything loads, so a terrain that fails to load can 
   building collider is hollow, so the old rule could drop you behind a wall where E found nothing.
 - **Layers.** The display menu lists the terrain layers (`TILE_LAYERS`, road first). Turning _Carretera_ off hides
   the road mesh and its photo; the ground photo underneath remains and collision is unchanged.
+  Bridge decks and supports are part of _Carretera_, so a small chip at the top of the screen says
+  «Carretera oculta: no se ven asfalto ni puentes» with a «Mostrar» button while the layer is off.
 
 ## Serving the folder from the dev server
 
@@ -232,16 +234,16 @@ z/15/16211/12003/
 fetches the package the manifest points to (size and SHA-256 checked, 4 MiB cap, safe
 file names only) and returns a manifest the unchanged loader worker consumes.
 
-| Atlas                                                   | Engine                                                                                                                                                   |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `manifest.json`                                         | read as is: format, generator, id, tile, anchor (= tile centre, checked to 1e-9), bounds, files                                                          |
-| `files.terrain` / `files.buildings-osm`                 | the loader's own layers (`engine.terrain`, `engine.buildings`; the package must name the same path and hash)                                             |
-| `terrain.lidar`                                         | with `relief=lidar` replaces `files.terrain`; the worker declares it category `Terrain`, so it is rendered, collided with and draped like engine terrain |
-| `ground.composite` / `.lo`                              | `manifest.photo`; draped over terrain, roads, land use and roofs by the existing "Drape" mechanism, replacing the ArcGIS download (`imagery: 'package'`) |
-| `roads.asphalt` / `roads.supports` / `road.*.candidate` | `manifest.roads` or Atlas `#49` `roadCandidates.layers`; loaded, rendered and used when present. `drivable` / `engineLoad` are not skip gates            |
-| `roads.collision` / `road.collision.candidate`          | inspect-only; loaded only with `&inspectRoads=collision` / `inspectRoadCollision: true`                                                                  |
-| `osm.snapshot` (`osm-*.json.gz`)                        | `manifest.osmSnapshot`; in-car GPS street names + vector roads. Offline package only; never Overpass at runtime                                          |
-| instances, masks, classes, roofs, roof-ids, far         | listed (`atlasCompatibilityNotes`) but **not consumed yet**                                                                                              |
+| Atlas                                                   | Engine                                                                                                                                                                                                                                  |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest.json`                                         | read as is: format, generator, id, tile, anchor (= tile centre, checked to 1e-9), bounds, files                                                                                                                                         |
+| `files.terrain` / `files.buildings-osm`                 | the loader's own layers (`engine.terrain`, `engine.buildings`; the package must name the same path and hash)                                                                                                                            |
+| `terrain.lidar`                                         | with `relief=lidar` replaces `files.terrain`; the worker declares it category `Terrain`, so it is rendered, collided with and draped like engine terrain. The GLB says `doubleSided`; the engine draws it single-sided (`tileMeshSide`) |
+| `ground.composite` / `.lo`                              | `manifest.photo`; draped over terrain, roads, land use and roofs by the existing "Drape" mechanism, replacing the ArcGIS download (`imagery: 'package'`)                                                                                |
+| `roads.asphalt` / `roads.supports` / `road.*.candidate` | `manifest.roads` or Atlas `#49` `roadCandidates.layers`; loaded, rendered and used when present. `drivable` / `engineLoad` are not skip gates                                                                                           |
+| `roads.collision` / `road.collision.candidate`          | inspect-only; loaded only with `&inspectRoads=collision` / `inspectRoadCollision: true`                                                                                                                                                 |
+| `osm.snapshot` (`osm-*.json.gz`)                        | `manifest.osmSnapshot`; in-car GPS street names + vector roads. Offline package only; never Overpass at runtime                                                                                                                         |
+| instances, masks, classes, roofs, roof-ids, far         | listed (`atlasCompatibilityNotes`) but **not consumed yet**                                                                                                                                                                             |
 
 ### Incompatibilities found (cells 16211, 16212 and all 33 manifests)
 
@@ -272,6 +274,18 @@ file names only) and returns a manifest the unchanged loader worker consumes.
    or `roadCandidates.layers`. The separate collision GLB stays inspect-only
    (`&inspectRoads=collision`) and is not the default driving collider. Road revision
    / `evidenceSha256` is part of the tile cache key.
+8. **Bridges are never dropped by the client.** A road pointer that disagrees between
+   `manifest.json` and the Atlas package (or between `roads.files` and
+   `roadCandidates.layers`) used to throw, so the whole cell stopped loading and every
+   bridge in it disappeared. Now each layer is resolved on its own: the
+   `roadCandidates.layers` / `manifest.json` file wins, the other file is kept as
+   `fallback`, and the problem is listed in `roads.warnings`. An invalid road entry is
+   ignored with a warning; a manifest with no usable road layer still loads its terrain
+   and buildings. In the worker, a road layer that fails to download, verify or parse
+   tries its fallback and is then skipped (`payload.roadErrors`, `console.warn`); only a
+   terrain or buildings failure fails the cell. Supports and asphalt are never culled by
+   the sea-coverage filter, so a deck or pier over water or at sea level keeps every
+   triangle.
 
 Same frame as the engine: origin at the cell centre, +X east, +Y up (absolute
 elevation), +Z south. Terrain GLBs are 7.6–55.5 MB (loader cap 64 MB); on a plain

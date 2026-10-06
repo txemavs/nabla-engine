@@ -211,6 +211,49 @@ describe('Atlas Z15 package adapter', () => {
     expect(adapted.files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
   })
 
+  it('falls back per layer when the package and manifest.json disagree on a road file', () => {
+    const published = manifest()
+    published.roadCandidates = {
+      schema: 'nabla-road-candidates/1',
+      drivable: false,
+      layers: {
+        supports: {
+          path: 'supports-candidate-2222222222222222.glb',
+          bytes: 23916,
+          sha256: '2'.repeat(64),
+          role: 'road.supports.candidate',
+          drivable: false,
+        },
+      },
+    }
+    const packaged = pkg()
+    packaged.files.push(
+      {
+        path: 'asphalt-candidate-1111111111111111.glb',
+        role: 'road.asphalt.candidate',
+        bytes: 597856,
+        sha256: '1'.repeat(64),
+      },
+      {
+        path: 'supports-candidate-4444444444444444.glb',
+        role: 'road.supports.candidate',
+        bytes: 20000,
+        sha256: '4'.repeat(64),
+      },
+    )
+    const adapted = adaptAtlasManifest(published, validateAtlasZ15Package(packaged, tile))
+    const supports = adapted.roads?.files.supports
+    expect(supports?.path).toBe('supports-candidate-2222222222222222.glb')
+    expect(supports?.fallback).toMatchObject({
+      path: 'supports-candidate-4444444444444444.glb',
+      sha256: '4'.repeat(64),
+    })
+    // A layer only the package lists is kept: the mismatch never drops the cell's roads.
+    expect(adapted.roads?.files.asphalt?.path).toBe('asphalt-candidate-1111111111111111.glb')
+    expect(adapted.roads?.warnings?.join(' ')).toMatch(/roads\.supports differs/)
+    expect(adapted.files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
+  })
+
   it('rejects a package that belongs to other GLBs or lacks LiDAR', () => {
     const p = validateAtlasZ15Package(pkg(), tile)
     const other = manifest()

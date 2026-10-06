@@ -271,13 +271,69 @@ describe('candidate road contract', () => {
     ])
   })
 
-  it('rejects a mismatched pair of roads.files and roadCandidates.layers', () => {
+  it('keeps the current publication and a disagreeing pointer as that layer fallback', () => {
     const source = baseManifest()
     source.roads = {
-      files: { asphalt: layer('asphalt-candidate.glb', asphaltHash) },
+      files: { asphalt: layer('asphalt-candidate.glb', '4'.repeat(64)) },
     }
     source.roadCandidates = atlasRoadCandidates()
-    expect(() => validatePlanetManifest(source, tile)).toThrow(/Invalid planet road layers/)
+    const manifest = validatePlanetManifest(source, tile)
+    const asphalt = manifest.roads?.files.asphalt
+    expect(asphalt?.path).toBe('asphalt-candidate-1111111111111111.glb')
+    expect(asphalt?.fallback?.path).toBe('asphalt-candidate.glb')
+    expect(manifest.roads?.files.supports?.path).toBe('supports-candidate-2222222222222222.glb')
+    expect(manifest.roads?.warnings?.[0]).toMatch(/roads\.files\.asphalt.*fallback/)
+    const layers = planetTileGlbLayers(manifest)
+    expect(layers.find((entry) => entry.kind === 'asphalt')?.fallback?.path).toBe(
+      'asphalt-candidate.glb',
+    )
+    expect(layers.find((entry) => entry.kind === 'supports')?.fallback).toBeUndefined()
+    // Revalidating (the Atlas adapter does) keeps the fallback.
+    expect(validatePlanetManifest(manifest, tile).roads?.files.asphalt?.fallback?.path).toBe(
+      'asphalt-candidate.glb',
+    )
+  })
+
+  it('ignores one invalid road entry and keeps the other layers, bridges included', () => {
+    const source = baseManifest()
+    const candidates = atlasRoadCandidates()
+    candidates.layers.asphalt = { ...candidates.layers.asphalt!, sha256: 'not-a-hash' }
+    source.roadCandidates = candidates
+    const manifest = validatePlanetManifest(source, tile)
+    expect(manifest.roads?.files.asphalt).toBeUndefined()
+    expect(manifest.roads?.files.supports?.path).toBe('supports-candidate-2222222222222222.glb')
+    expect(manifest.roads?.warnings).toEqual([
+      'roadCandidates.layers.asphalt: invalid entry ignored',
+    ])
+    expect(planetTileGlbLayers(manifest).map((entry) => entry.kind)).toEqual([
+      'terrain',
+      'buildings-osm',
+      'supports',
+    ])
+  })
+
+  it('loads the tile without roads when no road entry is usable', () => {
+    const source = baseManifest()
+    source.roads = { files: { asphalt: layer('../asphalt.glb', asphaltHash) } }
+    const manifest = validatePlanetManifest(source, tile)
+    expect(manifest.roads).toBeUndefined()
+    expect(planetTileGlbLayers(manifest).map((entry) => entry.kind)).toEqual([
+      'terrain',
+      'buildings-osm',
+    ])
+  })
+
+  it('always lists published bridge supports, whatever drivable or engineLoad say', () => {
+    const source = baseManifest()
+    const candidates = atlasRoadCandidates()
+    candidates.drivable = false
+    candidates.engineLoad = { asphalt: 'opt-in', supports: 'opt-in', collision: 'opt-in' }
+    candidates.layers.supports = { ...candidates.layers.supports!, engineLoad: 'opt-in' }
+    source.roadCandidates = candidates
+    const kinds = planetTileGlbLayers(validatePlanetManifest(source, tile), {
+      buildings: false,
+    }).map((entry) => entry.kind)
+    expect(kinds).toContain('supports')
   })
 
   it('rejects an unknown roadCandidates schema', () => {

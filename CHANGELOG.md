@@ -78,7 +78,12 @@
   `ignitionCount` / `gaugeSweep`, `Simulation` option `ignition` (default true) and
   `roadVehicleDefaults.ignition*` / `crankingRpm` / `parkHold*`. See docs/configuration.md →
   Park on entering.
-
+- **Shadow stripe correction setting:** Ajustes → Calidad → «Sombras: corrección de rayas»
+  (0–300 %, live, with «Restablecer») scales the shadow bias. Host default via
+  `NABLA_BOOT.shadowBias`, `VITE_NABLA_BOOT`, `VITE_NABLA_SHADOW_BIAS` or `?shadowBias=`; the
+  player's saved choice (`localStorage` `nabla.shadowBias`) wins. Engine API:
+  `GameRuntimeOptions.shadowBias`, `GameRuntime.shadowBias` / `setShadowBias`,
+  `ShadowManager.setBiasScale`, `shadowBiasRange`, `normalizeShadowBias`, `cascadeShadowBias`.
 - **Icon-only touch HUD with a place block:** the touch driving and flight action buttons
   (Entrar/salir, Cámara, Jugar) are now 52 px icons (`touchActionIcon`); the label stays as
   `aria-label` and tooltip. The driving rig shows the nearest city (large) and street next to the
@@ -147,6 +152,19 @@
 
 ### Fixed
 
+- **Bridges no longer vanish with a road pointer mismatch:** when `manifest.json` and the Atlas
+  package (or `roads.files` and `roadCandidates.layers`) name different files for a road layer,
+  the cell used to fail validation and load nothing, bridges included. Each road layer now
+  resolves on its own: the manifest file wins, the other is kept as `fallback` and reported in
+  `roads.warnings`; an invalid road entry is ignored with a warning instead of rejecting the
+  cell. The worker tries the fallback when a road file fails to download, verify or parse, then
+  skips only that layer (`PlanetPayload.roadErrors`); terrain and buildings failures still fail
+  the cell. Bridge supports and asphalt are exempt from the sea-coverage triangle filter, so decks
+  and piers over the water are never stripped. Engine API: `PlanetCandidateRoadFile.fallback`,
+  `PlanetCandidateRoads.warnings`, `PlanetGlbLayer.fallback`, `PlanetPayload.roadErrors`.
+- **«Carretera» hidden hint:** with **Capas → Carretera** off, a small chip at the top of the
+  screen reads «Carretera oculta: no se ven asfalto ni puentes» with a «Mostrar» button, so a
+  stored hidden layer (`localStorage` / `?layers=`) can no longer silently hide every bridge.
 - **Sidearm hit marks are just a dark hole, no white ring:** the marks left on terrain, buildings
   and vehicles drew an opaque light ring (`#d8d2c4` at 0.9 opacity) around the black core, added
   in #117 so they read on dark walls; on light ground it looked like a white washer. A mark is now
@@ -188,6 +206,18 @@
   crept downhill at g x sin(slope) x dt per step because the Rapier wheel brake resolves velocity
   before gravity is integrated. P now applies the full service brake (occupied or not) plus a
   parking-pawl hold, so a parked vehicle stays put even on steep slopes.
+- **Shadow acne on terrain (stripes over every gentle slope):** under a low sun the ground,
+  its draped roads and photos showed dense contour stripes, worst with `relief=lidar` (the
+  Euskadi host default). The Atlas LiDAR terrain is exported double-sided, so its sunlit faces
+  wrote into the shadow map and shadowed themselves; the fixed 2 cm depth / 4–8 cm normal bias was
+  a fraction of a texel (0.2–0.7 m per texel at cascade 0). Terrain now casts shadows from back
+  faces only (`castShadowFromBackFaces`) and is drawn single-sided: `tileMeshSide` overrides the
+  GLB `doubleSided` flag to `FrontSide` for up-facing ground (terrain, land use, ground-photo
+  drapes) at load time; road meshes (bridge decks), skirts, buildings and water keep their side.
+  Each cascade's bias scales with its texel size
+  (`ShadowTier.normalBiasTexels` / `depthBiasTexels`, replacing `normalBias`): Baja/Equilibrada
+  ≈ 21 cm normal / 21 cm depth, Alta ≈ 17 / 13 cm, Ultra ≈ 10 / 6 cm, clamped to 50 cm on far
+  cascades. The car's contact shadow stays attached. See docs/performance.md → Shadow bias and acne.
 
 - **S3 steering wheel too far from the dashboard:** the rim sat ~2–3 cm back toward the
   driver. It now sits 3 cm further along the steering column toward the gauges (chassis: 2.8 cm

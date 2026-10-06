@@ -69,6 +69,16 @@ describe('standalone boot config', () => {
       readBootConfig('?roadReset=1', { NABLA_BOOT: { recoverToRoad: false } }).recoverToRoad,
     ).toBe(true)
   })
+
+  it('reads the shadow bias host default; the URL wins over NABLA_BOOT', () => {
+    expect(readBootConfig('', {}).shadowBias).toBeUndefined()
+    expect(readBootConfig('', { NABLA_BOOT: { shadowBias: 2 } }).shadowBias).toBe(2)
+    expect(readBootConfig('?shadowBias=0.5', { NABLA_BOOT: { shadowBias: 2 } }).shadowBias).toBe(
+      0.5,
+    )
+    expect(readBootConfig('?shadowBias=abc', {}).shadowBias).toBeUndefined()
+  })
+
   it('passes the host start camera sequence through', () => {
     const startCameras = [
       'overhead',

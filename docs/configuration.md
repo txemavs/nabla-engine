@@ -5,15 +5,15 @@ public entries from `@nabla/engine/config` or `@nabla/engine/config/<topic>`.
 Values have English source comments describing units and behavior. These modules
 contain data and small validation helpers; they do not create worlds or renderers.
 
-| Topic              | Source                                         | Application mechanism                                                                                             |
-| ------------------ | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Camera             | [camera.ts](../src/config/camera.ts)           | `GameRuntime({ camera: overrides })` in both shared and browser runtimes; independent settings per instance       |
-| Controls           | [controls.ts](../src/config/controls.ts)       | Build-time defaults for mouse sensitivity, gamepad deadzone and keyboard steering                                 |
-| Performance        | [performance.ts](../src/config/performance.ts) | Browser `performance` option; named presets and supported quality choices                                         |
-| Shadows            | [shadows.ts](../src/config/shadows.ts)         | Quality keys select cascade count, map size, reach and bias                                                       |
-| Lighting           | [lighting.ts](../src/config/lighting.ts)       | Browser fallback lights; geographic lights support `fieldLights.layers` and `fieldLights.look` overrides          |
-| Terrain scheduling | [streaming.ts](../src/config/streaming.ts)     | Build-time sampling/install budgets and floating-origin distance; tile/cache limits remain in performance presets |
-| Simulation         | [simulation.ts](../src/config/simulation.ts)   | Build-time fixed stepping, gravity, solver and player movement defaults                                           |
+| Topic              | Source                                         | Application mechanism                                                                                              |
+| ------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Camera             | [camera.ts](../src/config/camera.ts)           | `GameRuntime({ camera: overrides })` in both shared and browser runtimes; independent settings per instance        |
+| Controls           | [controls.ts](../src/config/controls.ts)       | Build-time defaults for mouse sensitivity, gamepad deadzone and keyboard steering                                  |
+| Performance        | [performance.ts](../src/config/performance.ts) | Browser `performance` option; named presets and supported quality choices                                          |
+| Shadows            | [shadows.ts](../src/config/shadows.ts)         | Quality keys select cascade count, map size, reach and texel-scaled bias; `shadowBiasRange` bounds the live factor |
+| Lighting           | [lighting.ts](../src/config/lighting.ts)       | Browser fallback lights; geographic lights support `fieldLights.layers` and `fieldLights.look` overrides           |
+| Terrain scheduling | [streaming.ts](../src/config/streaming.ts)     | Build-time sampling/install budgets and floating-origin distance; tile/cache limits remain in performance presets  |
+| Simulation         | [simulation.ts](../src/config/simulation.ts)   | Build-time fixed stepping, gravity, solver and player movement defaults                                            |
 
 ## Camera example
 

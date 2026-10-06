@@ -9,4 +9,47 @@ CSM configuration per quality tier. The Studio panel stores the key; the rendere
 ## Module dependencies
 
 
-This module contains declarations, data or re-exports; it defines no executable functions.
+## normalizeShadowBias
+
+[Implementation, line 72](../../../../src/config/shadows.ts#L72)
+
+Clamp a host or stored bias factor; anything that is not a finite number gives the default.
+
+```ts
+normalizeShadowBias(value: unknown): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Number`
+- `Number.isFinite`
+- `value.trim`
+
+## cascadeShadowBias
+
+[Implementation, line 79](../../../../src/config/shadows.ts#L79)
+
+Bias of one cascade, in metres, for a shadow-map texel of `texelMetres` and a player factor.
+
+```ts
+cascadeShadowBias(tier: Pick<ShadowTier, 'normalBiasTexels' | 'depthBiasTexels'>, texelMetres: number, scale: number = shadowBiasRange.default): { normal: number; depth: number }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clamp`
+
+## cascadeShadowBias.clamp
+
+[Implementation, line 84](../../../../src/config/shadows.ts#L84)
+
+```ts
+clamp(value: number, range: { min: number; max: number }): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`

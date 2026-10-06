@@ -9,10 +9,19 @@
  * Materials must be registered with setupMaterial() to receive CSM uniforms.
  * Adjacent cascades fade across a distance-scaled band so the 140 m / 500 m
  * splits do not read as hard rings from the air.
+ *
+ * Bias is set per cascade from the world size of one shadow-map texel (see
+ * `cascadeShadowBias`), times a live player factor (`setBiasScale`).
  */
 import { CSM } from 'three/addons/csm/CSM.js'
 import * as THREE from 'three'
-import { shadowTiers, type ShadowTier } from './shadow-tiers.js'
+import {
+  cascadeShadowBias,
+  normalizeShadowBias,
+  shadowBiasRange,
+  shadowTiers,
+  type ShadowTier,
+} from './shadow-tiers.js'
 import { patchGroundCloudShadow } from './planet/artistic-clouds.js'
 
 // The addon ships an older full lighting chunk. Replacing it wholesale drops
@@ -94,6 +103,7 @@ export interface CSMConfig {
 export class ShadowManager {
   private csm: CSM | null = null
   private tier: ShadowTier | null = null
+  private biasScale: number = shadowBiasRange.default
   private readonly projectionCamera = new THREE.PerspectiveCamera()
   private projectionKey = ''
   private readonly originals = new Map<THREE.Material, THREE.Material['onBeforeCompile']>()
@@ -120,8 +130,8 @@ export class ShadowManager {
       shadowMapSize: config.tier.mapSize,
       lightDirection: config.lightDirection.clone().normalize(),
       lightIntensity: config.lightIntensity ?? 3.2,
-      // Keep the depth offset in metres, independent of the tier's depth range.
-      shadowBias: -0.02 / (config.tier.maxFar + 500 - 0.1),
+      // Replaced per cascade by applyBias() once the cascade frusta are known.
+      shadowBias: 0,
       lightNear: 0.1,
       lightFar: config.tier.maxFar + 500,
       lightMargin: 200,
@@ -142,10 +152,10 @@ export class ShadowManager {
     this.csm.updateFrustums()
     this.padShadowBounds()
     for (const light of this.csm.lights) {
-      light.shadow.normalBias = config.tier.normalBias
       light.shadow.radius = config.tier.radius
       light.shadow.intensity = 1
     }
+    this.applyBias()
     for (const material of this.registeredMaterials) {
       this.bind(material)
     }
@@ -157,6 +167,34 @@ export class ShadowManager {
 
   get lights(): THREE.DirectionalLight[] {
     return this.csm?.lights ?? []
+  }
+
+  /** Player factor on the tier's texel-scaled shadow bias (1 = tuned default). */
+  get shadowBiasScale(): number {
+    return this.biasScale
+  }
+
+  /** Change the bias factor live; no shader recompilation, the next shadow pass uses it. */
+  setBiasScale(scale: number): void {
+    this.biasScale = normalizeShadowBias(scale)
+    this.applyBias()
+  }
+
+  /**
+   * Normal and depth bias of every cascade from the world size of one of its texels. A fixed
+   * offset in metres is a fraction of a texel on Baja and several on Ultra: the coarse maps
+   * striped every gentle slope (acne) while the sharp one could lift contact shadows.
+   */
+  private applyBias(): void {
+    if (!this.csm || !this.tier) return
+    for (const light of this.csm.lights) {
+      const cam = light.shadow.camera
+      const texel = (cam.right - cam.left) / this.csm.shadowMapSize
+      const bias = cascadeShadowBias(this.tier, texel, this.biasScale)
+      light.shadow.normalBias = bias.normal
+      // Orthographic shadow depth is linear over [near, far]: metres / range.
+      light.shadow.bias = -bias.depth / Math.max(1e-6, cam.far - cam.near)
+    }
   }
 
   /** Register a material for CSM shadow receiving. */
@@ -232,6 +270,7 @@ export class ShadowManager {
       this.projectionKey = key
       this.csm.updateFrustums()
       this.padShadowBounds()
+      this.applyBias()
     }
     this.csm.update()
     for (const light of this.csm.lights) {
@@ -269,6 +308,7 @@ export class ShadowManager {
   /** Call when camera projection changes. */
   updateFrustums(): void {
     this.csm?.updateFrustums()
+    this.applyBias()
   }
 
   /** Reconfigure CSM when quality setting changes. */

@@ -6,12 +6,12 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **312 modules; 3237 executable function definitions**.
+Coverage: **313 modules; 3269 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
 | [game/asphalt-contrast-ui.ts](game/asphalt-contrast-ui.ts.md) | 8 |
-| [game/boot.ts](game/boot.ts.md) | 4 |
+| [game/boot.ts](game/boot.ts.md) | 6 |
 | [game/config.ts](game/config.ts.md) | 5 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 14 |
 | [game/drive.ts](game/drive.ts.md) | 16 |
@@ -21,7 +21,7 @@ Coverage: **312 modules; 3237 executable function definitions**.
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
 | [game/host-steering-wheel.ts](game/host-steering-wheel.ts.md) | 6 |
 | [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
-| [game/layers-ui.ts](game/layers-ui.ts.md) | 6 |
+| [game/layers-ui.ts](game/layers-ui.ts.md) | 10 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 21 |
 | [game/main.ts](game/main.ts.md) | 1 |
@@ -31,6 +31,7 @@ Coverage: **312 modules; 3237 executable function definitions**.
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 49 |
 | [game/settings-hud.ts](game/settings-hud.ts.md) | 25 |
+| [game/shadow-bias-ui.ts](game/shadow-bias-ui.ts.md) | 10 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
 | [game/steering-wheel-controls.ts](game/steering-wheel-controls.ts.md) | 11 |
 | [game/telemetry.ts](game/telemetry.ts.md) | 1 |
@@ -77,7 +78,7 @@ Coverage: **312 modules; 3237 executable function definitions**.
 | [src/config/index.ts](src/config/index.ts.md) | 0 |
 | [src/config/lighting.ts](src/config/lighting.ts.md) | 0 |
 | [src/config/performance.ts](src/config/performance.ts.md) | 6 |
-| [src/config/shadows.ts](src/config/shadows.ts.md) | 0 |
+| [src/config/shadows.ts](src/config/shadows.ts.md) | 3 |
 | [src/config/simulation.ts](src/config/simulation.ts.md) | 0 |
 | [src/config/streaming.ts](src/config/streaming.ts.md) | 0 |
 | [src/diagnostics/performance-monitor.ts](src/diagnostics/performance-monitor.ts.md) | 10 |
@@ -130,7 +131,7 @@ Coverage: **312 modules; 3237 executable function definitions**.
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
 | [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 21 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
-| [src/planet/contract.ts](src/planet/contract.ts.md) | 23 |
+| [src/planet/contract.ts](src/planet/contract.ts.md) | 26 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
 | [src/planet/extract/multipolygon.ts](src/planet/extract/multipolygon.ts.md) | 8 |
 | [src/planet/extract/source.ts](src/planet/extract/source.ts.md) | 4 |
@@ -200,7 +201,7 @@ Coverage: **312 modules; 3237 executable function definitions**.
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
 | [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 5 |
 | [src/render/planet/geometry.ts](src/render/planet/geometry.ts.md) | 11 |
-| [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 17 |
+| [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 21 |
 | [src/render/planet/horizon.ts](src/render/planet/horizon.ts.md) | 36 |
 | [src/render/planet/horizon.worker.ts](src/render/planet/horizon.worker.ts.md) | 11 |
 | [src/render/planet/landcover-batches.ts](src/render/planet/landcover-batches.ts.md) | 9 |
@@ -223,7 +224,7 @@ Coverage: **312 modules; 3237 executable function definitions**.
 | [src/render/planet/water-material.ts](src/render/planet/water-material.ts.md) | 3 |
 | [src/render/planet/water-worker.ts](src/render/planet/water-worker.ts.md) | 5 |
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
-| [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 28 |
+| [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 29 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
 | [src/render/planet/world.ts](src/render/planet/world.ts.md) | 122 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
@@ -231,7 +232,7 @@ Coverage: **312 modules; 3237 executable function definitions**.
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
 | [src/render/portal/remote.ts](src/render/portal/remote.ts.md) | 10 |
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
-| [src/render/shadows.ts](src/render/shadows.ts.md) | 25 |
+| [src/render/shadows.ts](src/render/shadows.ts.md) | 28 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
 | [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 15 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
@@ -243,7 +244,7 @@ Coverage: **312 modules; 3237 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 207 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 209 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |

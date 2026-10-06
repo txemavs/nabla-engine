@@ -4,8 +4,9 @@
  *
  * Host overrides, highest first:
  *   1. `window.NABLA_BOOT` set by an inline script before `main.ts` loads
- *   2. `VITE_NABLA_BOOT` JSON at build time
+ *   2. `VITE_NABLA_BOOT` JSON at build time (`VITE_NABLA_SHADOW_BIAS` for the shadow bias alone)
  *   3. URL: `?boot=attract` (attract view), `?probe=0` (skip the probe)
+ * Per-setting exceptions (the URL wins) are noted on each field.
  * Defaults keep the classic centred Nabla splash, no attract, probe on in auto scale.
  */
 import type { EngineSplashSkin } from '@nabla/engine/runtime/splash'
@@ -49,6 +50,12 @@ export interface HostBootConfig {
    */
   recoverToRoad?: boolean
   /**
+   * Host default for Ajustes → Calidad «Sombras: corrección de rayas»: factor on the engine's
+   * shadow bias, 0–3 (default 1 = tuned). URL `?shadowBias=1.5` wins over the page and build values;
+   * a value the player saved in the menu wins over all of them.
+   */
+  shadowBias?: number
+  /**
    * Host default asphalt contrast on the roads photo drape, 0.5–2.5 (omitted = 1, unchanged).
    * The player's slider in Ajustes → Calidad → Asfalto is stored and wins over it;
    * `?asphaltContrast=1.6` overrides both for one visit.
@@ -70,7 +77,19 @@ declare global {
 }
 
 function buildTimeBoot(): HostBootConfig {
-  const raw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_NABLA_BOOT
+  const env = (import.meta as { env?: Record<string, string | undefined> }).env
+  const bias = numberOrUndefined(env?.VITE_NABLA_SHADOW_BIAS)
+  const boot = buildTimeBootJson(env?.VITE_NABLA_BOOT)
+  return bias !== undefined && boot.shadowBias === undefined ? { ...boot, shadowBias: bias } : boot
+}
+
+function numberOrUndefined(raw: string | null | undefined): number | undefined {
+  if (raw === null || raw === undefined || raw.trim() === '') return undefined
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : undefined
+}
+
+function buildTimeBootJson(raw: string | undefined): HostBootConfig {
   if (!raw) return {}
   try {
     const parsed = JSON.parse(raw) as unknown
@@ -100,9 +119,12 @@ export function readBootConfig(
   const road = params.get('recoverToRoad') ?? params.get('roadReset')
   if (road === '0' || road === 'false') url.recoverToRoad = false
   else if (road === '1' || road === 'true') url.recoverToRoad = true
+  const shadowBias = numberOrUndefined(params.get('shadowBias'))
+  if (shadowBias !== undefined) url.shadowBias = shadowBias
   const merged: HostBootConfig = { ...url, ...built, ...host }
   if (url.flipCinematic !== undefined) merged.flipCinematic = url.flipCinematic
   if (url.recoverToRoad !== undefined) merged.recoverToRoad = url.recoverToRoad
+  if (url.shadowBias !== undefined) merged.shadowBias = url.shadowBias
   // An explicit URL ?boot= still wins so testers can compare both modes on a skinned host.
   if (boot === 'attract' || boot === 'classic') merged.attract = url.attract
   let splash: EngineSplashSkin = { ...(built.splash ?? {}), ...(host.splash ?? {}) }

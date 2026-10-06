@@ -26,7 +26,14 @@ export interface PerformanceSettings {
   dof: number
 }
 
-export { shadowTiers, type ShadowTier } from './shadows.js'
+export {
+  cascadeShadowBias,
+  normalizeShadowBias,
+  shadowBiasMetres,
+  shadowBiasRange,
+  shadowTiers,
+  type ShadowTier,
+} from './shadows.js'
 
 export const performanceDefaults: Readonly<PerformanceSettings> = Object.freeze({
   preset: 'balanced',

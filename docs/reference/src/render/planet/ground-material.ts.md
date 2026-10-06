@@ -20,9 +20,75 @@ for a key that is present but undefined, once per material.
 withMap(map: THREE.Texture | undefined): { map?: THREE.Texture }
 ```
 
+## castShadowFromBackFaces
+
+[Implementation, line 20](../../../../../src/render/planet/ground-material.ts#L20)
+
+Terrain casts its shadow from the faces turned away from the sun only. A heightfield's sunlit
+faces then never write into the shadow map, so they cannot shadow themselves (acne: contour
+stripes on every gentle slope under a low sun), while hills still shade the valleys behind them.
+Three.js already does this for single-sided materials; it is set explicitly so double-sided
+ground (the Atlas LiDAR mesh is exported `doubleSided`; see `tileMeshSide`) never writes its lit
+side, whatever side it renders with. Returns the material.
+
+```ts
+castShadowFromBackFaces(material: T): T
+```
+
+## isGroundSurface
+
+[Implementation, line 33](../../../../../src/render/planet/ground-material.ts#L33)
+
+Whether a streamed tile mesh is bare ground (terrain, land-use surfaces or a ground-photo drape).
+Roads are not: their meshes carry the bridge decks, which must stay visible from below. Skirts,
+buildings and water keep their own sides too.
+
+```ts
+isGroundSurface(metadata: { category?: unknown drape?: unknown skirt?: unknown }): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `GROUND_CATEGORIES.has`
+
+## upwardWinding
+
+[Implementation, line 47](../../../../../src/render/planet/ground-material.ts#L47)
+
+Share of triangles wound counter-clockwise seen from +Y (front face up), from at most `sample`
+evenly spaced triangles. 1 for a heightfield exported the right way up.
+
+```ts
+upwardWinding(position: ArrayLike<number>, index?: ArrayLike<number>, sample = 4096): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `Math.max`
+
+## tileMeshSide
+
+[Implementation, line 82](../../../../../src/render/planet/ground-material.ts#L82)
+
+Render side for a streamed tile mesh. Ground is drawn single-sided (`FrontSide`) even when the
+GLB says `doubleSided` (the Atlas LiDAR terrain does): nobody looks at the ground from below,
+and the hidden sides of hills stop costing fragments. Only ground whose triangles face up is
+changed; anything else (roads with bridges, buildings, water, skirts, ground wound the wrong
+way) keeps the GLB side, so a bad export never turns into holes.
+
+```ts
+tileMeshSide(side: THREE.Side, metadata: { category?: unknown; drape?: unknown; skirt?: unknown }, position: ArrayLike<number>, index?: ArrayLike<number>): THREE.Side
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `isGroundSurface`
+- `upwardWinding`
+
 ## matteGroundMaterial
 
-[Implementation, line 13](../../../../../src/render/planet/ground-material.ts#L13)
+[Implementation, line 93](../../../../../src/render/planet/ground-material.ts#L93)
 
 Diffuse ground: roughness alone still leaves a broad dielectric sun highlight.
 
@@ -36,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isChartCarriageway
 
-[Implementation, line 29](../../../../../src/render/planet/ground-material.ts#L29)
+[Implementation, line 109](../../../../../src/render/planet/ground-material.ts#L109)
 
 Carriageways paint white on the GPS. Paths, tracks and rails stay blue.
 
@@ -50,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## liftFootLayer
 
-[Implementation, line 42](../../../../../src/render/planet/ground-material.ts#L42)
+[Implementation, line 122](../../../../../src/render/planet/ground-material.ts#L122)
 
 Feet stay under the carriageway and the rails. 17 is the layer that briefly drew them on top.
 
@@ -60,7 +126,7 @@ liftFootLayer(layer: number): number
 
 ## footBuried
 
-[Implementation, line 48](../../../../../src/render/planet/ground-material.ts#L48)
+[Implementation, line 128](../../../../../src/render/planet/ground-material.ts#L128)
 
 ```ts
 footBuried(layer: number): boolean
@@ -68,7 +134,7 @@ footBuried(layer: number): boolean
 
 ## transportLayer
 
-[Implementation, line 53](../../../../../src/render/planet/ground-material.ts#L53)
+[Implementation, line 133](../../../../../src/render/planet/ground-material.ts#L133)
 
 Order only coplanar transport surfaces; physical bridge/tunnel heights still apply.
 
@@ -82,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## carriagewayTint
 
-[Implementation, line 65](../../../../../src/render/planet/ground-material.ts#L65)
+[Implementation, line 145](../../../../../src/render/planet/ground-material.ts#L145)
 
 Delete after the next GLB regen. Bake carriageway `#272c2e` (`#525c60` × 0.48) into COLOR_0.
 
@@ -98,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## clampAsphaltContrast
 
-[Implementation, line 109](../../../../../src/render/planet/ground-material.ts#L109)
+[Implementation, line 189](../../../../../src/render/planet/ground-material.ts#L189)
 
 Clamp to `ASPHALT_CONTRAST_MIN`..`ASPHALT_CONTRAST_MAX`; non-finite input is a caller bug.
 
@@ -119,7 +185,7 @@ Explicit throws in this body:
 
 ## asphaltContrast
 
-[Implementation, line 116](../../../../../src/render/planet/ground-material.ts#L116)
+[Implementation, line 196](../../../../../src/render/planet/ground-material.ts#L196)
 
 Current asphalt contrast, shared by every roads drape in the page.
 
@@ -129,7 +195,7 @@ asphaltContrast(): number
 
 ## setAsphaltContrast
 
-[Implementation, line 121](../../../../../src/render/planet/ground-material.ts#L121)
+[Implementation, line 201](../../../../../src/render/planet/ground-material.ts#L201)
 
 Set the asphalt contrast live for every roads drape; returns the clamped value applied.
 
@@ -143,7 +209,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## asphaltContrastTone
 
-[Implementation, line 127](../../../../../src/render/planet/ground-material.ts#L127)
+[Implementation, line 207](../../../../../src/render/planet/ground-material.ts#L207)
 
 The shader's curve on one linear luminance (0..1); for tests and tooling.
 
@@ -160,7 +226,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## asphaltTone
 
-[Implementation, line 138](../../../../../src/render/planet/ground-material.ts#L138)
+[Implementation, line 218](../../../../../src/render/planet/ground-material.ts#L218)
 
 ```ts
 asphaltTone(weight: string): inferred by TypeScript; see implementation
@@ -168,7 +234,7 @@ asphaltTone(weight: string): inferred by TypeScript; see implementation
 
 ## asphaltContrastShader
 
-[Implementation, line 158](../../../../../src/render/planet/ground-material.ts#L158)
+[Implementation, line 238](../../../../../src/render/planet/ground-material.ts#L238)
 
 Add the asphalt curve to a fragment shader: it runs on the map texel right before the texel
 multiplies the material colour. `masked` weights it by the `asphaltMask` texture (red channel,
@@ -189,7 +255,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## withAsphaltContrast
 
-[Implementation, line 180](../../../../../src/render/planet/ground-material.ts#L180)
+[Implementation, line 260](../../../../../src/render/planet/ground-material.ts#L260)
 
 Give a photo-drape material the asphalt contrast curve. Without `mask` every pixel is asphalt
 (the roads drape, cut to the road surfaces); with `mask` the curve follows that per-material
@@ -201,12 +267,12 @@ keeps these apart from the other drapes, whose shadow wrappers have the same sou
 withAsphaltContrast(material: T, mask?: { value: THREE.Texture }): T
 ```
 
-## withAsphaltContrast.callback@185
+## withAsphaltContrast.callback@265
 
-[Implementation, line 185](../../../../../src/render/planet/ground-material.ts#L185)
+[Implementation, line 265](../../../../../src/render/planet/ground-material.ts#L265)
 
 ```ts
-callback@185(shader, renderer): inferred by TypeScript; see implementation
+callback@265(shader, renderer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -215,12 +281,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `asphaltContrastShader`
 - `previous.call`
 
-## withAsphaltContrast.callback@192
+## withAsphaltContrast.callback@272
 
-[Implementation, line 192](../../../../../src/render/planet/ground-material.ts#L192)
+[Implementation, line 272](../../../../../src/render/planet/ground-material.ts#L272)
 
 ```ts
-callback@192(): inferred by TypeScript; see implementation
+callback@272(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -229,7 +295,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## groundDepthBias
 
-[Implementation, line 198](../../../../../src/render/planet/ground-material.ts#L198)
+[Implementation, line 278](../../../../../src/render/planet/ground-material.ts#L278)
 
 ```ts
 groundDepthBias(layer: number): inferred by TypeScript; see implementation
