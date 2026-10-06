@@ -5,6 +5,7 @@
 
 /** Preferred section order after Calidad / Rendimiento. Unknown ids append after these. */
 const MENU_SECTION_ORDER = [
+  'quality-shadows',
   'terrain-position',
   'terrain-layers',
   'road-style',

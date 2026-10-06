@@ -61,8 +61,10 @@ export interface PlanetSourceOptions {
 import { PlanetHorizon } from './horizon.js'
 import {
   carriagewayTint,
+  castShadowFromBackFaces,
   matteGroundMaterial,
   ROADS_DRAPE_TINT,
+  tileMeshSide,
   asphaltContrast,
   withAsphaltContrast,
   withMap,
@@ -1008,7 +1010,7 @@ export class PlanetWorld {
             ...withMap(photo),
             vertexColors: !!data.color,
             roughness: 1,
-            side: data.side as THREE.Side,
+            side: tileMeshSide(data.side as THREE.Side, data.metadata, data.position, data.index),
           })
       if (data.metadata.drape === 'roads') withAsphaltContrast(material)
       if (data.metadata.drape) {
@@ -1025,6 +1027,7 @@ export class PlanetWorld {
       mesh.userData = data.metadata
       mesh.castShadow =
         !data.metadata.skirt && ['Terrain', 'Buildings'].includes(data.metadata.category)
+      if (data.metadata.category === 'Terrain') castShadowFromBackFaces(material)
       mesh.receiveShadow = true
       group.add(mesh)
       restoreTileLayers(mesh)

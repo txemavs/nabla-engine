@@ -24,6 +24,7 @@ import {
   steeringWheelStorage,
   viteHostSteeringWheels,
 } from './host-steering-wheel.js'
+import { bindShadowBiasControl, resolveShadowBias } from './shadow-bias-ui.js'
 import { hostMirrorsFromSearch, mirrorStorage, viteHostMirrors } from './host-mirrors.js'
 import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
@@ -106,6 +107,7 @@ try {
       defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
       storage: steeringWheelStorage(),
     },
+    shadowBias: resolveShadowBias(boot.shadowBias),
     // «Espejos»: host defaults from &mirrors= / VITE_NABLA_MIRRORS; the player's choice is saved.
     mirrors: {
       defaults: hostMirrorsFromSearch(location.search, viteHostMirrors()),
@@ -193,6 +195,7 @@ try {
   bindDisplaySettings(runtime)
   bindFlipCinematicToggle(runtime)
   bindRecoverToRoadToggle(runtime)
+  bindShadowBiasControl(runtime, boot.shadowBias)
   bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
   mountSettingsHud(runtime)
   bindLayerSelector(runtime, undefined, layerDefaults)

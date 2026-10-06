@@ -7,6 +7,7 @@ import { ShipHud } from './ship-hud.js'
 import { entityMapArtifact } from '../planet/map-artifact.js'
 import { isMapEnvironment } from '../../scene/map-content.js'
 import {
+  castShadowFromBackFaces,
   matteGroundMaterial,
   groundDepthBias,
   transportLayer,
@@ -790,9 +791,11 @@ export class SceneView {
           )
         const surface = new THREE.Mesh(
           g,
-          matteGroundMaterial({
-            color: e.terrain.colors ? '#ffffff' : e.color,
-          }),
+          castShadowFromBackFaces(
+            matteGroundMaterial({
+              color: e.terrain.colors ? '#ffffff' : e.color,
+            }),
+          ),
         )
         surface.castShadow = true
         surface.receiveShadow = true

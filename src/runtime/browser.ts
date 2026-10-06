@@ -103,7 +103,7 @@ import {
   setAsphaltContrast as applyAsphaltContrast,
 } from '../render/planet/ground-material.js'
 import { ShadowManager } from '../render/shadows.js'
-import { shadowTiers } from '../render/shadow-tiers.js'
+import { shadowBiasRange, shadowTiers } from '../render/shadow-tiers.js'
 import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
@@ -250,6 +250,11 @@ export interface GameRuntimeOptions {
    * instead of uprighting it in place. Default on; hosts and the in-game menu can turn it off.
    */
   recoverToRoad?: boolean
+  /**
+   * Factor on the quality tier's texel-scaled shadow bias, 0..3 (default 1). Higher removes
+   * residual shadow stripes (acne) at the cost of slightly detached shadows; live via `setShadowBias`.
+   */
+  shadowBias?: number
   /**
    * Asphalt contrast on the roads photo drape, applied at draw time (tile textures untouched):
    * 0.5–2.5, 1 = unchanged (default). Shared by every runtime in the page; see `setAsphaltContrast`.
@@ -561,6 +566,7 @@ export class GameRuntime {
             options.touchControls ?? 'auto',
             this.text,
           )
+    this.shadows.setBiasScale(options.shadowBias ?? shadowBiasRange.default)
     if (this.quality.shadows > 0)
       this.shadows.init({
         camera: this.camera,
@@ -1716,6 +1722,15 @@ export class GameRuntime {
   setRecoverToRoadEnabled(enabled: boolean): void {
     this.assertAlive()
     this.game.recover.snapToRoad = enabled
+  }
+  /** Factor on the quality tier's shadow bias (1 = tuned default; see `shadowBiasRange`). */
+  get shadowBias(): number {
+    return this.shadows.shadowBiasScale
+  }
+  /** Change the shadow bias factor live (clamped to 0..3): bias is a receiver uniform, no reload or rebuild. */
+  setShadowBias(scale: number): void {
+    this.assertAlive()
+    this.shadows.setBiasScale(scale)
   }
   /** Asphalt contrast on the roads photo drape (1 = unchanged). */
   get asphaltContrast(): number {

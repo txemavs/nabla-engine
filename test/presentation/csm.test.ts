@@ -1,5 +1,20 @@
 import { expect, it } from 'vitest'
-import { MeshStandardMaterial, PerspectiveCamera, Scene, Vector3, ShaderChunk } from 'three'
+import {
+  BackSide,
+  DoubleSide,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  Scene,
+  Vector3,
+  ShaderChunk,
+} from 'three'
+import { castShadowFromBackFaces } from '../../src/render/planet/ground-material.js'
+import {
+  cascadeShadowBias,
+  normalizeShadowBias,
+  shadowBiasMetres,
+  shadowTiers,
+} from '../../src/config/shadows.js'
 import {
   ShadowManager,
   cascadeBlendMetres,
@@ -116,4 +131,55 @@ it('enables cascade fade on materials and keeps the widened blend after reconfig
   )
   material.dispose()
   manager.dispose()
+})
+
+it('scales each cascade bias with its texel size and applies the player factor live', () => {
+  const manager = new ShadowManager(),
+    camera = new PerspectiveCamera(60, 1.6, 0.1, 50000),
+    scene = new Scene()
+  manager.reconfigure(2048, camera, scene, new Vector3(1, -0.3, 0.2), 3)
+  manager.update(camera, new Vector3())
+  const tier = shadowTiers[2048]!
+  const texel = (index: number) => {
+    const cam = manager.lights[index].shadow.camera
+    return (cam.right - cam.left) / tier.mapSize
+  }
+  const near = manager.lights[0].shadow
+  const expected = cascadeShadowBias(tier, texel(0))
+  expect(near.normalBias).toBeCloseTo(expected.normal)
+  expect(near.normalBias).toBeCloseTo(tier.normalBiasTexels * texel(0))
+  const range = near.camera.far - near.camera.near
+  expect(near.bias).toBeCloseTo(-expected.depth / range, 12)
+  // Coarser cascades get a larger offset, but never past the contact-safe ceiling.
+  expect(manager.lights[1].shadow.normalBias).toBeGreaterThan(near.normalBias)
+  expect(manager.lights[2].shadow.normalBias).toBe(shadowBiasMetres.normal.max)
+  manager.setBiasScale(2)
+  expect(manager.shadowBiasScale).toBe(2)
+  expect(manager.lights[0].shadow.normalBias).toBeCloseTo(expected.normal * 2)
+  // The factor survives a quality change.
+  manager.reconfigure(512, camera, scene, new Vector3(1, -0.3, 0.2), 3)
+  manager.update(camera, new Vector3())
+  expect(manager.shadowBiasScale).toBe(2)
+  manager.setBiasScale(0)
+  expect(manager.lights[0].shadow.normalBias).toBe(0)
+  expect(manager.lights[0].shadow.bias === 0).toBe(true)
+  manager.dispose()
+})
+
+it('clamps the shadow bias factor and keeps the floor on tight frusta', () => {
+  expect(normalizeShadowBias(undefined)).toBe(1)
+  expect(normalizeShadowBias('1.5')).toBe(1.5)
+  expect(normalizeShadowBias(Number.NaN)).toBe(1)
+  expect(normalizeShadowBias(7)).toBe(3)
+  expect(normalizeShadowBias(-2)).toBe(0)
+  const tight = cascadeShadowBias(shadowTiers[2048]!, 0.01)
+  expect(tight.normal).toBe(shadowBiasMetres.normal.min)
+  expect(tight.depth).toBe(shadowBiasMetres.depth.min)
+})
+
+it('casts terrain shadows from back faces even when the ground is double-sided', () => {
+  const lidar = new MeshStandardMaterial({ side: DoubleSide })
+  expect(castShadowFromBackFaces(lidar)).toBe(lidar)
+  expect(lidar.shadowSide).toBe(BackSide)
+  expect(lidar.side).toBe(DoubleSide)
 })

@@ -233,6 +233,14 @@ Nombres de poblaciones**, and the choice is stored relative to the host default.
 `runtime.setHiddenLayers([...runtime.hiddenLayers, 'places'])` (or `setHiddenTileLayers` from
 `@nabla/engine/render` before constructing the runtime).
 
+`shadowBias` (default `1`, range 0–3) is the host default for **Ajustes → Calidad → Sombras:
+corrección de rayas**, a factor on the engine's texel-scaled shadow bias
+([performance.md](performance.md#shadow-bias-and-acne)). Set it in `NABLA_BOOT`,
+`VITE_NABLA_BOOT`, the dedicated `VITE_NABLA_SHADOW_BIAS` build variable or `?shadowBias=1.5`
+(the URL wins over the host). The slider applies live; the player's choice is saved in
+`localStorage` (`nabla.shadowBias`) and wins over every host default until **Restablecer**
+forgets it.
+
 `asphaltContrast` (default `1`, unchanged; range 0.5–2.5) is the host default for the asphalt
 contrast on the roads photo drape: a draw-time curve in the fragment shader around a fixed
 display-space pivot, so dark asphalt gets darker and painted markings brighter while the tile
