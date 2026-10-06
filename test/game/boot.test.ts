@@ -57,6 +57,11 @@ describe('standalone boot config', () => {
     expect(readBootConfig('?flipcam=1', {}).flipCinematic).toBe(true)
   })
 
+  it('passes the host asphalt contrast default through', () => {
+    expect(readBootConfig('', { NABLA_BOOT: { asphaltContrast: 1.6 } }).asphaltContrast).toBe(1.6)
+    expect(readBootConfig('', {}).asphaltContrast).toBeUndefined()
+  })
+
   it('reads recoverToRoad from NABLA_BOOT and URL', () => {
     expect(readBootConfig('', { NABLA_BOOT: { recoverToRoad: false } }).recoverToRoad).toBe(false)
     expect(readBootConfig('?recoverToRoad=0', {}).recoverToRoad).toBe(false)

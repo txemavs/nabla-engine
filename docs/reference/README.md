@@ -6,10 +6,11 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **305 modules; 3107 executable function definitions**.
+Coverage: **307 modules; 3135 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
+| [game/asphalt-contrast-ui.ts](game/asphalt-contrast-ui.ts.md) | 8 |
 | [game/boot.ts](game/boot.ts.md) | 4 |
 | [game/config.ts](game/config.ts.md) | 5 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 14 |
@@ -186,6 +187,7 @@ Coverage: **305 modules; 3107 executable function definitions**.
 | [src/render/monitors/layered-monitor.ts](src/render/monitors/layered-monitor.ts.md) | 21 |
 | [src/render/monitors/menu.ts](src/render/monitors/menu.ts.md) | 6 |
 | [src/render/planet/artistic-clouds.ts](src/render/planet/artistic-clouds.ts.md) | 11 |
+| [src/render/planet/asphalt-mask.ts](src/render/planet/asphalt-mask.ts.md) | 3 |
 | [src/render/planet/baked.ts](src/render/planet/baked.ts.md) | 5 |
 | [src/render/planet/building-batches.ts](src/render/planet/building-batches.ts.md) | 11 |
 | [src/render/planet/cache.ts](src/render/planet/cache.ts.md) | 33 |
@@ -196,7 +198,7 @@ Coverage: **305 modules; 3107 executable function definitions**.
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
 | [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 5 |
 | [src/render/planet/geometry.ts](src/render/planet/geometry.ts.md) | 11 |
-| [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 8 |
+| [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 17 |
 | [src/render/planet/horizon.ts](src/render/planet/horizon.ts.md) | 36 |
 | [src/render/planet/horizon.worker.ts](src/render/planet/horizon.worker.ts.md) | 11 |
 | [src/render/planet/landcover-batches.ts](src/render/planet/landcover-batches.ts.md) | 9 |
@@ -221,7 +223,7 @@ Coverage: **305 modules; 3107 executable function definitions**.
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 28 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 116 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 122 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
@@ -238,7 +240,7 @@ Coverage: **305 modules; 3107 executable function definitions**.
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 194 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 196 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
