@@ -1,4 +1,5 @@
 import { roadVehicleDefaults } from '../config/simulation.js'
+import { engineNoteHz } from './powertrain.js'
 
 /**
  * Engine start, fully synthesized: no sample files. A starter motor (filtered sawtooth whose
@@ -12,6 +13,11 @@ export interface EngineStartSound {
   pitch?: number
   /** Loudness multiplier, 0..2. */
   gain?: number
+  /**
+   * Idle speed of the engine being started, rpm (300..2000). The catch fires at the flare above
+   * idle and glides down to the idle engine note (`engineNoteHz`), where `Powertrain` takes over.
+   */
+  idleRpm?: number
 }
 
 const SILENT = 0.0001
@@ -25,6 +31,7 @@ export function resolveEngineStart(sound?: EngineStartSound | null): Required<En
   return {
     pitch: clampNumber(sound?.pitch, 1, 0.4, 2),
     gain: clampNumber(sound?.gain, 1, 0, 2),
+    idleRpm: clampNumber(sound?.idleRpm, roadVehicleDefaults.idleRpm, 300, 2000),
   }
 }
 
@@ -90,7 +97,7 @@ export class EngineStart {
   /** Schedule one start at audio time `time`, lasting `ignitionCrankSeconds`. Silent when not `audible`. */
   trigger(time: number, audible: boolean, sound?: EngineStartSound | null): void {
     if (!audible) return
-    const { pitch, gain } = resolveEngineStart(sound)
+    const { pitch, gain, idleRpm } = resolveEngineStart(sound)
     const seconds = roadVehicleDefaults.ignitionCrankSeconds
     const end = time + seconds
     const catchAt = end - 0.12
@@ -133,8 +140,13 @@ export class EngineStart {
       rattle.linearRampToValueAtTime(0.03 * gain, start + 0.006)
       rattle.exponentialRampToValueAtTime(SILENT, start + period * 0.6)
     })
-    // The engine fires: one strong combustion thump, the starter freewheels away.
-    this.chug.frequency.setValueAtTime(70 * pitch, catchAt)
+    // The engine fires: one strong combustion thump at the flare above idle that glides down to
+    // the idle engine note, where the engine voice takes over; the starter freewheels away.
+    this.chug.frequency.setValueAtTime(
+      engineNoteHz(idleRpm * roadVehicleDefaults.ignitionFlare),
+      catchAt,
+    )
+    this.chug.frequency.exponentialRampToValueAtTime(engineNoteHz(idleRpm), end + 0.12)
     chug.setValueAtTime(SILENT, catchAt)
     chug.linearRampToValueAtTime(0.18 * gain, catchAt + 0.01)
     chug.exponentialRampToValueAtTime(SILENT, end + 0.12)

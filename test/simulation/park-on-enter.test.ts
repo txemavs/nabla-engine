@@ -84,12 +84,18 @@ describe('start-up sequence, unit level', () => {
     expect(gearLabel(state.gear, state.manual, state.parked)).toBe('P')
   })
 
-  it('sweeps the needles up and back with easing, cranks, then fires at a flare above idle', () => {
+  it('cranks briefly, fires at a flare above idle, then sweeps the needles up and back', () => {
     const state = { ...createDrivetrain(), gear: 3, parked: false }
     startIgnition(state)
-    expect([state.ignition, state.ignitionCount, state.rpm]).toEqual(['sweep', 1, 0])
+    expect(state.ignition).toBe('cranking')
+    expect(state.ignitionCount).toBe(1)
+    expect(state.rpm).toBeGreaterThan(100)
+    // The starter is the short first step; the whole sequence stays well under two seconds.
+    expect(crankSeconds).toBeLessThanOrEqual(0.7)
+    expect(startSeconds).toBeLessThan(2)
     const sweep: number[] = []
     const rpm: number[] = []
+    const phases: string[] = []
     let t = 0
     while (stepIgnition(state, dt, 900)) {
       t += dt
@@ -97,24 +103,29 @@ describe('start-up sequence, unit level', () => {
       expect([state.gear, state.parked]).toEqual([0, true])
       sweep.push(gaugeSweep(state))
       rpm.push(state.rpm)
-      if (state.ignition === 'sweep') expect(state.rpm).toBe(0)
+      if (phases.at(-1) !== state.ignition) phases.push(state.ignition)
+      // No needle test while the starter is still turning.
+      if (state.ignition === 'cranking') expect(gaugeSweep(state)).toBe(0)
     }
     t += dt
+    expect(phases).toEqual(['cranking', 'sweep'])
     expect(t).toBeCloseTo(startSeconds, 1)
     expect(state.ignition).toBe('running')
-    expect(state.rpm).toBeCloseTo(900 * roadVehicleDefaults.ignitionFlare)
-    const sweepTicks = Math.round(sweepSeconds / dt)
-    const up = sweep.slice(0, sweepTicks)
+    const crankTicks = Math.round(crankSeconds / dt) - 1
+    // Cranking shows a low, pulsing starter speed.
+    const cranking = rpm.slice(0, crankTicks)
+    expect(Math.min(...cranking)).toBeGreaterThan(100)
+    expect(Math.max(...cranking)).toBeLessThan(400)
+    expect(Math.max(...cranking) - Math.min(...cranking)).toBeGreaterThan(50)
+    // The engine catches at the flare as the sweep begins (stepIgnition leaves idle control to
+    // the drivetrain, which settles it during the sweep).
+    expect(rpm[crankTicks + 1]).toBeCloseTo(900 * roadVehicleDefaults.ignitionFlare)
+    const up = sweep.slice(crankTicks + 1)
     expect(Math.max(...up)).toBeCloseTo(1, 2)
     // Smooth: no jump larger than a few percent between frames, starts and ends near zero.
     for (let i = 1; i < up.length; i++) expect(Math.abs(up[i] - up[i - 1])).toBeLessThan(0.08)
     expect(up[0]).toBeLessThan(0.02)
     expect(up[up.length - 1]).toBeLessThan(0.03)
-    // Cranking shows a low, pulsing starter speed.
-    const cranking = rpm.slice(sweepTicks + 1)
-    expect(Math.min(...cranking)).toBeGreaterThan(100)
-    expect(Math.max(...cranking)).toBeLessThan(400)
-    expect(Math.max(...cranking) - Math.min(...cranking)).toBeGreaterThan(50)
   })
 
   it('needles of any cluster follow the sweep; text readouts keep real values', () => {
@@ -135,6 +146,19 @@ describe('start-up sequence, unit level', () => {
     expect(full.bars.rpm).toBe(1)
     const half = sweepCluster(s3Instruments.cluster, data, 0.5)
     expect(half.values.rpm).toBe(4000)
+    // The engine already idles during the sweep: needles leave from and return to the live
+    // reading instead of dropping to zero first.
+    const idling = s3Instruments.clusterData({
+      speedKmh: 0,
+      rpm: 900,
+      gear: 0,
+      load: 0,
+      manual: false,
+      parked: true,
+    })
+    expect(sweepCluster(s3Instruments.cluster, idling, 0.001).values.rpm).toBeCloseTo(907, 0)
+    expect(sweepCluster(s3Instruments.cluster, idling, 0.5).values.rpm).toBe(4450)
+    expect(sweepCluster(s3Instruments.cluster, idling, 1).values.rpm).toBe(8000)
   })
 })
 
@@ -150,23 +174,23 @@ describe('entering a vehicle: P, held, start-up, then the normal controls', () =
         sim.startInVehicle(id)
         let info = sim.vehicleInfo(id)
         expect(gearLabel(info.gear, info.manualTransmission, info.parked)).toBe('P')
-        expect(info.ignition).toBe('sweep')
+        expect(info.ignition).toBe('cranking')
         expect(info.ignitionCount).toBe(1)
         // The driver floors it straight away: input is kept but P holds until the engine runs.
         sim.setInput({ ...idleInput(), forward: 1 })
         let peakSweep = 0
-        let cranked = false
+        let sweptWhileCranking = false
         for (let i = 0; i < Math.round(startSeconds / dt) - 2; i++) {
           sim.step(dt)
           info = sim.vehicleInfo(id)
           peakSweep = Math.max(peakSweep, info.gaugeSweep)
-          cranked ||= info.ignition === 'cranking'
+          sweptWhileCranking ||= info.ignition === 'cranking' && info.gaugeSweep > 0
           expect(info.gear).toBe(0)
           expect(info.parked).toBe(true)
           expect(info.engineLoad).toBe(0)
         }
         expect(peakSweep).toBeGreaterThan(0.99)
-        expect(cranked).toBe(true)
+        expect(sweptWhileCranking).toBe(false)
         expect(distance(sim.entityTransform(id).position, before)).toBeLessThan(0.05)
         // Once running, the still-held pedal selects D after the normal standstill dwell.
         run(sim, 1)
@@ -247,7 +271,7 @@ describe('entering a vehicle: P, held, start-up, then the normal controls', () =
         run(sim, 0.5)
         sim.startInVehicle('s3')
         const info = sim.vehicleInfo('s3')
-        expect([info.gear, info.parked, info.ignition]).toEqual([0, true, 'sweep'])
+        expect([info.gear, info.parked, info.ignition]).toEqual([0, true, 'cranking'])
         run(sim, startSeconds + 0.1)
         expect(sim.vehicleInfo('s3').gear).toBe(0)
       }

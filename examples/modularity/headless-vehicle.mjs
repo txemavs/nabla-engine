@@ -17,7 +17,8 @@ const sim = new Simulation({
 try {
   for (let i = 0; i < 180; i++) sim.step(1 / 60)
   sim.startInVehicle('car')
-  // Entering selects P and runs the start-up (needle sweep, cranking, idle): about 2 s.
+  // Entering selects P and runs the start-up (starter cranking, then the needle sweep while
+  // the engine settles to idle): 1.6 s.
   for (let i = 0; i < 130; i++) sim.step(1 / 60)
   assert.equal(sim.vehicleInfo('car').ignition, 'running')
   assert(sim.vehicleInfo('car').parked)

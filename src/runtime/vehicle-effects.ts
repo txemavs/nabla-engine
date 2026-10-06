@@ -1,5 +1,6 @@
 import { Vector3, type Scene } from 'three'
 import { VehicleAudio } from '../audio/vehicle.js'
+import { roadVehicleDefaults } from '../config/simulation.js'
 import { TireMarks } from '../render/entity/tire-marks.js'
 import { TireSmoke } from '../render/entity/tire-smoke.js'
 import type { SceneDocument } from '../scene/document.js'
@@ -58,9 +59,10 @@ export class VehicleEffects {
         : null
     this.playGearChanges(car ? pilot! : null, car)
     this.playEngineStart(car ? pilot! : null, car, piloted?.vehicle?.powertrain?.idleRpm)
-    // The engine note stays silent during the needle sweep and while the starter cranks.
+    // The engine note stays silent while the starter cranks; it fades in at the catch and
+    // settles to idle during the needle sweep.
     this.audio.powertrain(
-      car?.helm !== 'off' && car?.ignition === 'running' ? (car?.rpm ?? 0) : 0,
+      car?.helm !== 'off' && car?.ignition !== 'cranking' ? (car?.rpm ?? 0) : 0,
       car?.engineLoad ?? 0,
     )
     this.audio.reverseAlarm(
@@ -85,7 +87,7 @@ export class VehicleEffects {
       this.audio.gearChange(info.gearClack)
   }
 
-  /** One starter sound per start-up, when its cranking phase begins. Lower idle cranks lower. */
+  /** One starter sound per start-up, as soon as its cranking phase (the first one) is seen. Lower idle cranks lower. */
   private playEngineStart(
     id: string | null,
     info: { ignition: string; ignitionCount: number; helm: string } | null,
@@ -95,7 +97,8 @@ export class VehicleEffects {
     const key = `${id}:${info.ignitionCount}`
     if (key === this.lastStart) return
     this.lastStart = key
-    this.audio.engineStart({ pitch: (idleRpm ?? 900) / 900 })
+    const idle = idleRpm ?? roadVehicleDefaults.idleRpm
+    this.audio.engineStart({ pitch: idle / roadVehicleDefaults.idleRpm, idleRpm: idle })
   }
 
   updateTires(sim: Simulation | null, elapsed: number, origin: Vector3): void {

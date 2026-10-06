@@ -55,15 +55,21 @@ export const roadVehicleDefaults = Object.freeze({
   engineRpmResponse: 16,
   /** Engine speed commanded by a fully pressed pedal at rest, rpm. `shift.launchRpm`. */
   launchRpm: 2400,
-  /** Generic petrol-engine idle speed; vehicle powertrains may override it. */
-  idleRpm: 900,
   /**
-   * Instrument self-test on entering a vehicle: every needle sweeps to full scale and back,
-   * seconds. The vehicle is in P and held by its brakes; the engine is still off.
+   * Generic petrol-engine idle speed (S3, A3, procedural cars); the rev counter rests here at a
+   * standstill. Vehicle powertrains may override it (the diesel truck idles at 750).
+   */
+  idleRpm: 1000,
+  /**
+   * Starter-motor cranking, the first step after entering a vehicle, seconds. The vehicle is in
+   * P and held by its brakes; no drive torque.
+   */
+  ignitionCrankSeconds: 0.6,
+  /**
+   * Instrument self-test once the engine has caught: every needle sweeps to full scale and back,
+   * seconds. The engine settles from its catch to idle meanwhile; still P, no drive torque.
    */
   ignitionSweepSeconds: 1,
-  /** Starter-motor cranking after the needle sweep, seconds. Still in P, no drive torque. */
-  ignitionCrankSeconds: 1,
   /** Engine speed shown while the starter cranks, rpm. */
   crankingRpm: 250,
   /** Engine speed of the catch when the engine fires; it then settles to idle, x idle rpm. */

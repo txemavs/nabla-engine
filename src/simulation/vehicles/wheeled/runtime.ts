@@ -84,7 +84,7 @@ export function createWheeledVehicle(
         [spec.idleRpm, spec.maxRpm, spec.reverseRatio, spec.maxSpeedKmh].some(
           (value) => value !== undefined && !positive(value),
         ) ||
-        (spec.idleRpm ?? 900) >= (spec.maxRpm ?? 6900) ||
+        (spec.idleRpm ?? roadVehicleDefaults.idleRpm) >= (spec.maxRpm ?? 6900) ||
         !validGearbox(spec)))
   )
     throw new Error('Invalid wheeled vehicle definition')
@@ -259,7 +259,8 @@ export function stepWheeledVehicle(
       ((powered ? roadVehicleDefaults.idleRpm + v.drivetrain.load * 1800 : 0) - v.drivetrain.rpm) *
       Math.min(1, dt * 8)
   }
-  if (starting) v.drivetrain.rpm = ignitionRpm(v.drivetrain)
+  // The starter turns the engine; once it catches, the drivetrain settles it to idle.
+  if (v.drivetrain.ignition === 'cranking') v.drivetrain.rpm = ignitionRpm(v.drivetrain)
   holdInPark(v, forward, speed, dt)
   for (let i = 0; i < 4; i++) {
     v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
@@ -302,7 +303,7 @@ export function stepWheeledVehicle(
 /**
  * A driver gets in (spawned in the seat, entered with E, or took over the controls): the
  * selector goes to P, the full service brake holds the vehicle, and, when `ignition` is true,
- * the start-up sequence runs (needle sweep, starter cranking, idle). The driver leaves P with
+ * the start-up sequence runs (starter cranking, needle sweep, idle). The driver leaves P with
  * the normal controls (W for D, S for R) once the engine is running. Passive trailers ignore it.
  */
 export function enterWheeledVehicle(v: WheeledVehicle, ignition = true): void {

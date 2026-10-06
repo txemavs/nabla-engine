@@ -142,6 +142,16 @@ gear-shift defaults, idle RPM and trailer coupling limits. These are build-time
 defaults; a vehicle's `powertrain.shift` block (schema in `src/entity/vehicle/field.ts`,
 type `GearboxTuning`) overrides them per recipe.
 
+**Idle.** Cars idle at `roadVehicleDefaults.idleRpm` = 1,000 RPM (S3, A3, procedural cars; it
+was 900): the rev counter rests on 1,000 at a standstill. A recipe's `powertrain.idleRpm`
+overrides it; the stock truck idles at 750 RPM (was 650), a usual heavy-diesel idle. The engine
+note (`engineNoteHz` in `src/audio/powertrain.ts`) is a sawtooth at rpm / 24 through a lowpass
+at 260 + 0.14 x rpm Hz (+700 Hz at full load): 1,000 RPM idle = 41.7 Hz with a 400 Hz cutoff,
+which sounds like an engine at low revs rather than the previous sub-bass rumble (rpm / 30 with a
+30 Hz floor and a 180 + 0.1 x rpm cutoff, i.e. 30 Hz / 270 Hz at the old 900 RPM idle). The
+truck's 750 RPM idle sits at 31.3 Hz. The engine-start voice ends its catch on that idle pitch
+(`EngineStartSound.idleRpm`), so the start hands over to the idle note without a jump.
+
 **D/R changes brake first.** The opposite pedal never engages the other direction
 while the vehicle is rolling: the wheels brake until the speed is below
 `directionChangeSpeed` (0.5 m/s), the vehicle stays planted for `directionChangeSeconds`
@@ -178,19 +188,19 @@ sequence is then:
 
 1. **P and held.** Gear 0, parked, automatic mode, pending D/R requests cleared
    (`engagePark`). The HUD and cluster show `P`.
-2. **Needle sweep** (`ignitionSweepSeconds`, 1 s, engine off): every needle of the vehicle's
-   cluster rises smoothly (cosine easing) to full scale, holds briefly and falls back to 0,
-   like a real instrument self-test. `vehicleInfo(id).gaugeSweep` (0..1) drives it; digital
-   readouts and the gear letter keep their real values.
-3. **Cranking** (`ignitionCrankSeconds`, 1 s): a synthesized starter sound plays
-   (`VehicleAudio.engineStart`, no sample file) and the rev counter shows a pulsing starter speed
-   around `crankingRpm` (250).
-4. **Idle.** The engine catches at `ignitionFlare` x idle (1.6) and the normal engine sound
-   settles to idle. The vehicle is still in P; W selects D and S selects R as usual.
+2. **Cranking** (`ignitionCrankSeconds`, 0.6 s): a short synthesized starter sound plays
+   (`VehicleAudio.engineStart`, no sample file) and the engine turns at a pulsing starter speed
+   around `crankingRpm` (250). The engine note is silent and the needles are still.
+3. **Needle sweep** (`ignitionSweepSeconds`, 1 s): the engine has caught at `ignitionFlare` x
+   idle (1.6); its normal sound fades in and settles to idle while every needle of the vehicle's
+   cluster rises smoothly (cosine easing) from its live reading to full scale, holds briefly and
+   falls back, like a real instrument self-test. `vehicleInfo(id).gaugeSweep` (0..1) drives it;
+   digital readouts and the gear letter keep their real values.
+4. **Running.** Idle, still in P; W selects D and S selects R as usual.
 
-`vehicleInfo(id).ignition` reports `sweep`, `cranking` or `running`; `ignitionCount` increases
-once per start. **Input during the start-up is not lost, only deferred:** the vehicle stays in P
-and the pedals deliver no torque until the engine runs; a pedal still held at that moment then
+The whole sequence takes 1.6 s. `vehicleInfo(id).ignition` reports `cranking`, `sweep` or
+`running`; `ignitionCount` increases once per start. **Input during the start-up is not lost, only deferred:** the vehicle stays in P
+and the pedals deliver no torque until the sequence ends; a pedal still held at that moment then
 engages D/R through the normal dwell. Paddle shifts are refused in P, as always. Hosts that want
 P without the sequence pass `new Simulation(doc, { ignition: false })`. Boats, planes and
 flight-capable vehicles (no gear selector) keep their previous behaviour.
@@ -204,7 +214,7 @@ as a parking pawl: a stiff damped spring on the distance crept since P engaged
 forward axis, relative to the supporting body), limited to `parkHoldFriction` 0.8 x g (about a
 38 degree slope) and released above `parkHoldSlipSpeed` (1.5 m/s, e.g. rammed).
 
-The stock truck recipe defines its own diesel gearing, 650 RPM idle, 2,400 RPM
+The stock truck recipe defines its own diesel gearing, 750 RPM idle, 2,400 RPM
 ceiling and 120 km/h forward speed limit, plus a slow heavy gearbox: 0.55 s torque cut,
 shifts at 1,950/1,000 RPM, a heavier flywheel, a 60 kN wheel-force limit and a low,
 long clack with air release. Passive trailers use wheel rolling
