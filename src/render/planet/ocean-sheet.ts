@@ -150,10 +150,9 @@ const seaShader = {
       float alignment = clamp(dot(reflect(rd, radial), sun), 0.0, 1.0);
       float chop = clamp(length(vec2(waves.x, waves.z)) * 2.4, 0.0, 1.0);
       float glint = (pow(alignment, 720.0) * 1.35 + pow(alignment, 128.0) * 0.22) * mix(1.0, 0.42, chop);
-      float lift = 0.5 + ambient * 3.6 + sunIntensity * ndotl * 0.85;
-      vec3 color = waterColor * lift;
-      float luma = dot(color, vec3(0.22, 0.55, 0.23));
-      color = mix(vec3(luma * 0.55, luma * 0.68, luma * 0.62), color, 0.28);
+      // Same Lambert body as rivers and coastal water (MeshStandardMaterial, metalness 0.15),
+      // so the open sea and inland water share one colour. Specular and glint below unchanged.
+      vec3 color = waterColor * 0.85 * (sunColor * sunIntensity * ndotl + vec3(ambient)) / 3.14159;
       color *= mix(1.0, 0.62, nablaGroundShade(hit.xz + waterOrigin.xz));
       color += sunColor * spec * fresnel * ndotl * strength * 0.42 * (1.0 - sunHigh);
       if (fogOn > 0.5 && fogFar > fogNear) {

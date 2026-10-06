@@ -14,7 +14,7 @@ otherwise be grass. `SURFACE_LAYERS` is the nesting order shared by the editor a
 
 ## classifySurface
 
-[Implementation, line 35](../../../../../src/planet/land/surface.ts#L35)
+[Implementation, line 36](../../../../../src/planet/land/surface.ts#L36)
 
 Classify OSM tags into a surface type. Priority: natural, then landuse, then leisure.
 
@@ -24,7 +24,7 @@ classifySurface(tags: Record<string, string>): SurfaceType
 
 ## isLandcoverFeature
 
-[Implementation, line 97](../../../../../src/planet/land/surface.ts#L97)
+[Implementation, line 98](../../../../../src/planet/land/surface.ts#L98)
 
 A landcover polygon worth rendering. Boundaries and place nodes are metadata.
 
@@ -38,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isWaterFeature
 
-[Implementation, line 106](../../../../../src/planet/land/surface.ts#L106)
+[Implementation, line 107](../../../../../src/planet/land/surface.ts#L107)
 
 Water with animated normals. A centerline river is not an area.
 
@@ -52,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isWaterwayCenterline
 
-[Implementation, line 111](../../../../../src/planet/land/surface.ts#L111)
+[Implementation, line 112](../../../../../src/planet/land/surface.ts#L112)
 
 River or stream drawn as a ribbon when no area polygon exists.
 
@@ -62,7 +62,7 @@ isWaterwayCenterline(tags: Record<string, string>): boolean
 
 ## getWaterwayWidth
 
-[Implementation, line 117](../../../../../src/planet/land/surface.ts#L117)
+[Implementation, line 118](../../../../../src/planet/land/surface.ts#L118)
 
 OSM `width` when it parses, otherwise 15 m for a river and 3 m for a stream. Capped at 100 m.
 

@@ -8,6 +8,7 @@ import {
 } from '../../math/geo/sphere.js'
 import { planetTileFrame } from '../../planet/tiles.js'
 import type { MapTile } from '../../scene/mercator.js'
+import { SURFACE_COLORS } from '../../planet/land/surface.js'
 /** Coastline tiles render independently of building/road arrivals. */
 export class SeaWater {
   readonly root = new THREE.Group()
@@ -32,7 +33,7 @@ export class SeaWater {
   private readonly texture = new THREE.TextureLoader().load('/geography/water-normal.png')
   private shadowSetup: (material: THREE.Material) => void = () => {}
   private readonly material = new THREE.MeshStandardMaterial({
-    color: '#102f43',
+    color: SURFACE_COLORS.water,
     roughness: 0.3,
     metalness: 0.03,
     envMapIntensity: 0,
