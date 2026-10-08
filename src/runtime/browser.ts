@@ -1015,7 +1015,14 @@ export class GameRuntime {
       showGear: controls.gear,
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
-      gearLabel: info ? gearLabel(info.gear, info.manualTransmission, info.parked) : null,
+      gearLabel: info
+        ? gearLabel(
+            info.gear,
+            info.manualTransmission,
+            info.parked,
+            info.engineModes && info.engineMode === 'beast',
+          )
+        : null,
       vehicle:
         this.document.entities.find((entity) => entity.id === player.vehicleId)?.name ?? null,
       cameraMode: canvas.dataset.cameraMode!,
@@ -1142,7 +1149,14 @@ export class GameRuntime {
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
-      gearLabel: info ? gearLabel(info.gear, info.manualTransmission, info.parked) : null,
+      gearLabel: info
+        ? gearLabel(
+            info.gear,
+            info.manualTransmission,
+            info.parked,
+            info.engineModes && info.engineMode === 'beast',
+          )
+        : null,
       location: this.document.geography
         ? localToGeo(this.document.geography, player.position)
         : null,
@@ -2296,6 +2310,9 @@ export class GameRuntime {
               if (entity) Object.assign(entity, patch)
             },
             this.text,
+            (entityId, mode) =>
+              this.session.simulation?.setEngineMode(entityId, mode) ??
+              'Este vehículo tiene un solo modo de motor',
           )
           if (result.handled) {
             event.preventDefault()

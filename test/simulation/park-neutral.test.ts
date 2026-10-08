@@ -9,6 +9,7 @@ import { VehicleEffects } from '../../src/runtime/vehicle-effects.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import {
   createDrivetrain,
+  effectivePowertrain,
   engineBrakingForce,
   gearboxTuning,
   gearForSpeed,
@@ -130,8 +131,10 @@ describe('N and P selector, unit level', () => {
     const speed = 25 // m/s
     const state = { ...createDrivetrain(), gear: 0, parked: false }
     stepDrivetrain(state, v.powertrain!, v.wheelRadius, speed, 1, false, dt)
+    // The S3 starts in Normal: its shift points come from the Normal engine mode.
+    const normal = effectivePowertrain(v.powertrain!, 'normal')
     expect(state.gear).toBe(
-      gearForSpeed(v.powertrain!, v.wheelRadius, speed, gearboxTuning(v.powertrain).upshiftRpm),
+      gearForSpeed(normal, v.wheelRadius, speed, gearboxTuning(normal).upshiftRpm),
     )
     expect(state.gear).toBeGreaterThan(2)
     const reverse = { ...createDrivetrain(), gear: 0, parked: false }

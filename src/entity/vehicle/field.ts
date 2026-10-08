@@ -219,6 +219,72 @@ export const twoWheeledField = z
   })
   .strict()
 
+/** Shift timing, shift points, engine response and the gear-change sound. */
+const gearboxShiftField = z
+  .object({
+    seconds: finite.min(0.02).max(2).optional(),
+    cooldownSeconds: finite.min(0.05).max(5).optional(),
+    upshiftRpm: finite.min(400).max(20000).optional(),
+    downshiftRpm: finite.min(300).max(19000).optional(),
+    torqueFraction: finite.min(0).max(1).optional(),
+    rpmResponse: finite.min(1).max(40).optional(),
+    launchRpm: finite.min(300).max(6000).optional(),
+    directionSeconds: finite.min(0).max(3).optional(),
+    directionShiftSeconds: finite.min(0).max(2).optional(),
+    neutralSeconds: finite.min(0).max(10).optional(),
+    parkSeconds: finite.min(0).max(30).optional(),
+    clack: z
+      .object({
+        clunkHz: finite.min(30).max(500).optional(),
+        clickHz: finite.min(200).max(8000).optional(),
+        gain: finite.min(0).max(2).optional(),
+        decaySeconds: finite.min(0.02).max(0.8).optional(),
+        echoSeconds: finite.min(0).max(0.5).optional(),
+        airSeconds: finite.min(0).max(1.5).optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+
+/** Per-mode powertrain overrides (`powertrain.modes`). */
+const powertrainModeField = z
+  .object({
+    powerCv: finite.min(20).max(2000).optional(),
+    torqueNm: finite.min(20).max(3000).optional(),
+    idleRpm: finite.min(300).max(2000).optional(),
+    maxRpm: finite.min(2000).max(20000).optional(),
+    shift: gearboxShiftField.optional(),
+  })
+  .strict()
+
+/**
+ * Engine voice. `note` (default): the road-car engine note. `v4`: a procedural V4 whose uneven
+ * pulse train follows the firing order of a V4 with `vAngle` between the banks and `crankpin`
+ * degrees between the two crankpins. `inline`: a refined inline engine (default an inline-4
+ * turbo; `cylinders: 5` for the five-cylinder warble) with a subdued turbo.
+ */
+const engineVoiceField = z
+  .object({
+    voice: z.enum(['note', 'v4', 'inline']),
+    /** Angle between the cylinder banks, degrees. Default 90. */
+    vAngle: finite.min(10).max(180).optional(),
+    /** Angle between the two crankpins, degrees. Default 180. */
+    crankpin: finite.min(0).max(360).optional(),
+    /** Inline voice: cylinders (3–6, default 4; 5 gives the five-cylinder warble). */
+    cylinders: z.number().int().min(3).max(6).optional(),
+    /** Inline-5 warble (pulse-strength spread), 0..0.5. Default 0.12. */
+    warble: finite.min(0).max(0.5).optional(),
+    /** Inline voice: turbo whistle and blow-off multipliers, 0..2. */
+    turboWhistle: finite.min(0).max(2).optional(),
+    blowOff: finite.min(0).max(2).optional(),
+    /** Inline voice: chance (0..1) of a soft overrun burble on a high-rpm lift. Default 0. */
+    burble: finite.min(0).max(1).optional(),
+    /** Loudness multiplier, 0..2. Default 1. */
+    volume: finite.min(0).max(2).optional(),
+  })
+  .strict()
+
 /** Chassis, four hubs (two for a `twoWheeled` vehicle), and the optional cabin, garage and flight flag. */
 export const vehicleField = z
   .object({
@@ -271,33 +337,18 @@ export const vehicleField = z
         /** Traction/clutch ceiling on the force at the wheels, newtons. */
         maxWheelForceN: finite.positive().max(1000000).optional(),
         /** Shift timing, shift points, engine response and the gear-change sound. */
-        shift: z
-          .object({
-            seconds: finite.min(0.02).max(2).optional(),
-            cooldownSeconds: finite.min(0.05).max(5).optional(),
-            upshiftRpm: finite.min(400).max(20000).optional(),
-            downshiftRpm: finite.min(300).max(19000).optional(),
-            torqueFraction: finite.min(0).max(1).optional(),
-            rpmResponse: finite.min(1).max(40).optional(),
-            launchRpm: finite.min(300).max(6000).optional(),
-            directionSeconds: finite.min(0).max(3).optional(),
-            directionShiftSeconds: finite.min(0).max(2).optional(),
-            neutralSeconds: finite.min(0).max(10).optional(),
-            parkSeconds: finite.min(0).max(30).optional(),
-            clack: z
-              .object({
-                clunkHz: finite.min(30).max(500).optional(),
-                clickHz: finite.min(200).max(8000).optional(),
-                gain: finite.min(0).max(2).optional(),
-                decaySeconds: finite.min(0.02).max(0.8).optional(),
-                echoSeconds: finite.min(0).max(0.5).optional(),
-                airSeconds: finite.min(0).max(1.5).optional(),
-              })
-              .strict()
-              .optional(),
-          })
+        shift: gearboxShiftField.optional(),
+        /**
+         * Two engine modes on one car: `normal` (selector D) and `beast` (selector S, «Bestia»).
+         * Each overrides power, torque, idle, redline and gearbox points; the engine voice comes
+         * from `audio.engineModes`. Figures are gameplay values unless a preset cites a source.
+         */
+        modes: z
+          .object({ normal: powertrainModeField.optional(), beast: powertrainModeField.optional() })
           .strict()
           .optional(),
+        /** Mode on creation when `modes` is set; default `roadVehicleDefaults.engineMode`. */
+        defaultMode: z.enum(['normal', 'beast']).optional(),
       })
       .strict()
       .optional(),
@@ -397,18 +448,16 @@ export const vehicleField = z
         /**
          * Engine voice. `note` (default): the road-car engine note. `v4`: a procedural V4 whose
          * uneven pulse train follows the firing order of a V4 with `vAngle` between the banks and
-         * `crankpin` degrees between the two crankpins.
+         * `crankpin` degrees between the two crankpins. `inline`: a refined inline engine (default
+         * an inline-4 turbo; `cylinders: 5` for the five-cylinder warble) with a subdued turbo.
          */
-        engine: z
-          .object({
-            voice: z.enum(['note', 'v4']),
-            /** Angle between the cylinder banks, degrees. Default 90. */
-            vAngle: finite.min(10).max(180).optional(),
-            /** Angle between the two crankpins, degrees. Default 180. */
-            crankpin: finite.min(0).max(360).optional(),
-            /** Loudness multiplier, 0..2. Default 1. */
-            volume: finite.min(0).max(2).optional(),
-          })
+        engine: engineVoiceField.optional(),
+        /**
+         * Engine voice per engine mode (`powertrain.modes`): the selected mode's voice replaces
+         * `engine` while that mode is active.
+         */
+        engineModes: z
+          .object({ normal: engineVoiceField.optional(), beast: engineVoiceField.optional() })
           .strict()
           .optional(),
       })

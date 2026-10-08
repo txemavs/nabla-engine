@@ -12,7 +12,7 @@
 
 ## sweepCluster
 
-[Implementation, line 45](../../../../../src/render/entity/car-instrument-definition.ts#L45)
+[Implementation, line 47](../../../../../src/render/entity/car-instrument-definition.ts#L47)
 
 Instrument self-test overlay: every needle of `cluster` travels from its real reading to full
 scale as `sweep` goes 0 to 1 (and back as it returns), and the bar with the same binding (if

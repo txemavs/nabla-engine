@@ -96,14 +96,15 @@ describe('engine voice selection', () => {
     })
   })
 
-  it('the VFR800 preset asks for the 90°/180° V4; cars keep the note', () => {
+  it('the VFR800 preset asks for the 90°/180° V4; other vehicles but the S3 keep the note', () => {
     const bike = presetVehicle('vfr800', 'bike', [0, 1, 0]).vehicle!
     expect(resolveVehicleSound(bike.audio).engine).toEqual({
       voice: 'v4',
       firing: [0, 90, 270, 540],
       volume: 1,
     })
-    const others = vehiclePresets().filter((preset) => preset.id !== 'vfr800')
+    // The S3 (`car`) has its own refined inline voices (test/audio/car-engine-voice.test.ts).
+    const others = vehiclePresets().filter((preset) => !['vfr800', 'car'].includes(preset.id))
     expect(others.length).toBeGreaterThan(0)
     for (const preset of others)
       expect(resolveVehicleSound(preset.vehicle.audio).engine.voice).toBe('note')

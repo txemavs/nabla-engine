@@ -39,6 +39,24 @@ export const v4EngineDefaults = Object.freeze({
   intakeGain: 0.012,
 })
 
+/** Timbre of a firing-pulse voice: the V4 uses `v4EngineDefaults`, the inline voice its own. */
+export interface FiringVoiceTimbre {
+  harmonics: number
+  pulseWidth: number
+  idleGain: number
+  loadGain: number
+  drive: number
+  cutoffBaseHz: number
+  cutoffPerRpm: number
+  cutoffLoadHz: number
+  intakeGain: number
+  /** Lowpass resonance. Default 0.9. */
+  filterQ?: number
+  /** Intake band: base Hz plus this many times the firing rate. Defaults 400 and 3. */
+  intakeBaseHz?: number
+  intakeFiringMultiple?: number
+}
+
 /** Cycle (720°) rate of a four-stroke at `rpm`, Hz: the fundamental of the V4 voice. */
 export const v4CycleHz = (rpm: number): number => Math.max(0, rpm) / 120
 
@@ -108,6 +126,8 @@ export function firingPulseHarmonics(
   angles: readonly number[],
   harmonics: number = v4EngineDefaults.harmonics,
   pulseWidth: number = v4EngineDefaults.pulseWidth,
+  /** Optional pulse strength per firing (default 1 each): unequal pulses add half-orders. */
+  weights?: readonly number[],
 ): { real: Float32Array; imag: Float32Array } {
   if (!Number.isInteger(harmonics) || harmonics < 1) throw new Error('Need at least one harmonic')
   if (!(pulseWidth > 0 && pulseWidth < 0.5)) throw new Error('Pulse width must be in (0, 0.5)')
@@ -116,10 +136,10 @@ export function firingPulseHarmonics(
   const phases = angles.map((angle) => mod(angle, 720) / 720)
   for (let j = 0; j < samples; j++) {
     const t = j / samples
-    for (const phase of phases) {
+    phases.forEach((phase, k) => {
       const x = mod(t - phase, 1) / pulseWidth
-      wave[j] += x * Math.exp(1 - x)
-    }
+      wave[j] += (weights?.[k] ?? 1) * x * Math.exp(1 - x)
+    })
   }
   const real = new Float32Array(harmonics + 1)
   const imag = new Float32Array(harmonics + 1)
@@ -163,23 +183,26 @@ export class V4Engine {
   private readonly intake: GainNode
   private readonly intakeFilter: BiquadFilterNode
   private firingKey = ''
+  private firingCount = 4
 
   constructor(
     private readonly context: AudioContext,
     noise: AudioBufferSourceNode,
     firing: readonly number[] = v4FiringAngles(),
+    private readonly timbre: FiringVoiceTimbre = v4EngineDefaults,
+    weights?: readonly number[],
   ) {
     this.output = silentOutput(context)
     this.filter = context.createBiquadFilter()
     this.filter.type = 'lowpass'
-    this.filter.Q.value = 0.9
+    this.filter.Q.value = timbre.filterQ ?? 0.9
     this.filter.connect(this.output)
     const shaper = context.createWaveShaper()
-    shaper.curve = saturationCurve(v4EngineDefaults.drive) as Float32Array<ArrayBuffer>
+    shaper.curve = saturationCurve(timbre.drive) as Float32Array<ArrayBuffer>
     shaper.oversample = '2x'
     shaper.connect(this.filter)
     this.oscillator = context.createOscillator()
-    this.setFiring(firing)
+    this.setFiring(firing, weights)
     this.oscillator.connect(shaper)
     this.oscillator.start()
 
@@ -192,11 +215,17 @@ export class V4Engine {
   }
 
   /** Swap the firing pattern (a different vehicle preset). No-op when unchanged. */
-  setFiring(firing: readonly number[]): void {
-    const key = firing.join(',')
+  setFiring(firing: readonly number[], weights?: readonly number[]): void {
+    const key = `${firing.join(',')}|${weights?.join(',') ?? ''}`
     if (key === this.firingKey) return
     this.firingKey = key
-    const { real, imag } = firingPulseHarmonics(firing)
+    this.firingCount = Math.max(1, firing.length)
+    const { real, imag } = firingPulseHarmonics(
+      firing,
+      this.timbre.harmonics,
+      this.timbre.pulseWidth,
+      weights,
+    )
     this.oscillator.setPeriodicWave(
       this.context.createPeriodicWave(
         real as Float32Array<ArrayBuffer>,
@@ -211,7 +240,8 @@ export class V4Engine {
   }
 
   update(time: number, audible: boolean, rpm: number, load: number, volume = 1): void {
-    const d = v4EngineDefaults
+    const d = this.timbre
+    const firings = this.firingCount
     const level = audible ? (d.idleGain + load * d.loadGain) * volume : 0
     this.output.gain.setTargetAtTime(level, time, 0.035)
     this.oscillator.frequency.setTargetAtTime(Math.max(1, v4CycleHz(rpm)), time, 0.03)
@@ -221,7 +251,11 @@ export class V4Engine {
       0.04,
     )
     this.intake.gain.setTargetAtTime(audible ? load * d.intakeGain * volume : 0, time, 0.05)
-    // Intake band around a few times the firing rate (4 firings per cycle).
-    this.intakeFilter.frequency.setTargetAtTime(400 + v4CycleHz(rpm) * 4 * 3, time, 0.05)
+    // Intake band around a few times the firing rate.
+    this.intakeFilter.frequency.setTargetAtTime(
+      (d.intakeBaseHz ?? 400) + v4CycleHz(rpm) * firings * (d.intakeFiringMultiple ?? 3),
+      time,
+      0.05,
+    )
   }
 }

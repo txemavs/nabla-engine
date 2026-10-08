@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  engineModeParam,
   fetchCoverage,
   formatCells,
   parseTerrainConfig,
@@ -221,5 +222,18 @@ describe('layer selector start state', () => {
     expect(initialHiddenLayers('', store('+places'), places)).toEqual([])
     expect(initialHiddenLayers('?layers=+places', store(null), places)).toEqual([])
     expect(initialHiddenLayers('?layers=-road', store(null), places)).toEqual(['road', 'places'])
+  })
+})
+
+describe('engine mode parameter', () => {
+  it('reads &engineMode=normal|beast (or bestia) and leaves it unset otherwise', () => {
+    const read = (q: string) => engineModeParam(new URLSearchParams(q))
+    expect(read('engineMode=normal')).toEqual({ engineMode: 'normal' })
+    expect(read('engineMode=beast')).toEqual({ engineMode: 'beast' })
+    expect(read('engineMode=Bestia')).toEqual({ engineMode: 'beast' })
+    expect(read('engineMode=turbo')).toEqual({})
+    expect(read('')).toEqual({})
+    expect(parseTerrainConfig('?terrain=/t&engineMode=beast').scene.engineMode).toBe('beast')
+    expect(parseTerrainConfig('?terrain=/t').scene).not.toHaveProperty('engineMode')
   })
 })

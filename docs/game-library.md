@@ -36,6 +36,9 @@ using Engine's existing physics world rather than the prototype's standalone rig
 For automated scenarios, `&vehicle=white-truck` or `&vehicle=carrier` selects the
 initial occupied vehicle. Unknown presets report an error.
 
+`&engineMode=normal|beast` (or `bestia`) sets the start engine mode of cars that have modes (the
+S3; default `normal`, D). See docs/monitors.md, «Engine modes».
+
 Controls: WASD, Space to brake/jump, C for cameras, E to enter/exit, R for recovery,
 H for vehicle lights, G for the car's retractable GPS, K for high/low beams, V for supported flight, F for trailer hitch / carrier dock and T for control transfer. On-screen
 steer/pedal pads, brake, enter/exit and camera match Studio's tactile driving HUD

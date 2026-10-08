@@ -20,6 +20,11 @@ const presetSchema = z
     clearance: z.number().finite().min(0).max(20),
     placement: vector,
     order: z.number().int().min(0).max(100),
+    /**
+     * Kept for Studio, examples and tests but left out of player-facing lists (the game's add
+     * menu and default parked rows). The A3 Cabrio is hidden: the S3 covers it in Normal mode.
+     */
+    hidden: z.boolean().optional(),
     sternPortal: z.boolean().optional(),
     name: z.string().min(1).max(100),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),

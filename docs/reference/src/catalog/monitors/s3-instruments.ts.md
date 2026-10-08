@@ -16,7 +16,7 @@
 [Implementation, line 12](../../../../../src/catalog/monitors/s3-instruments.ts#L12)
 
 ```ts
-clusterData({ speedKmh, rpm, gear, load, manual, parked }): inferred by TypeScript; see implementation
+clusterData({ speedKmh, rpm, gear, load, manual, parked, sport }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -66,6 +66,11 @@ export const roadVehicleDefaults = Object.freeze({
    */
   idleRpm: 1000,
   /**
+   * Engine mode a car with `powertrain.modes` starts in when its preset sets no `defaultMode`:
+   * `normal` (D) or `beast` (S). Hosts choose per vehicle with `defaultMode` (`?engineMode=`).
+   */
+  engineMode: 'normal' as 'normal' | 'beast',
+  /**
    * Starter-motor cranking, the first step after entering a vehicle, seconds. The vehicle is in
    * P and held by its brakes; no drive torque.
    */
