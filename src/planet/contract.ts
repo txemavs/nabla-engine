@@ -245,10 +245,12 @@ export const BRIDGE_DECK_ROLE = 'bridge-deck'
 export const GROUND_ROAD_ROLE = 'ground-road'
 
 /**
- * Whether a candidate asphalt mesh is drawn for this cell version. Version 2+ cells already
- * carry the ground road inside `terrain.lidar`, so only primitives tagged `ground-road` are
- * skipped. Bridge decks, elevated or unresolved roadway and untagged asphalt are kept (they are
- * not part of the terrain), and supports are never filtered.
+ * Whether a candidate asphalt mesh is kept for this cell version (render, roads drape and
+ * collision). Version 2+ cells already carry the ground road inside `terrain.lidar`, so only
+ * primitives tagged `ground-road` are skipped — otherwise a roads-photo drape cut from that
+ * asphalt floats as a ghost layer over the fused terrain. Bridge decks, elevated or unresolved
+ * roadway and untagged asphalt are kept (they are not part of the terrain); supports are never
+ * filtered.
  */
 export function loadsCandidateAsphaltOnCell(
   cellVersion: PlanetCellVersion,
