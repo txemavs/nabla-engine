@@ -14,9 +14,20 @@
 - `../simulation/weapons/firearm.js`
 - `../simulation/weapons/ballistics.js`
 
+## sidearmButtonAction
+
+[Implementation, line 20](../../../../src/runtime/shooting.ts#L20)
+
+Sidearm button edge. Left click fires even while right-button aim is already held: pointer
+lock often delivers that second press only as `mousedown`, not `pointerdown`.
+
+```ts
+sidearmButtonAction(button: number, down: boolean): 'fire' | 'aim' | 'release' | 'unaim' | null
+```
+
 ## fitted
 
-[Implementation, line 30](../../../../src/runtime/shooting.ts#L30)
+[Implementation, line 43](../../../../src/runtime/shooting.ts#L43)
 
 ```ts
 fitted(load: BallisticLoad): { k: number; angle: number }
@@ -31,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fireSidearm
 
-[Implementation, line 46](../../../../src/runtime/shooting.ts#L46)
+[Implementation, line 59](../../../../src/runtime/shooting.ts#L59)
 
 One trigger press: the firearm decides whether a round goes off; the bullet then flies the
 load's trajectory (drop and drag, `ballistics.ts`) through the world and hands its momentum
@@ -75,12 +86,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `traceBullet`
 - `view.sparks.add`
 
-## fireSidearm.callback@79
+## fireSidearm.callback@92
 
-[Implementation, line 79](../../../../src/runtime/shooting.ts#L79)
+[Implementation, line 92](../../../../src/runtime/shooting.ts#L92)
 
 ```ts
-callback@79(from, dir, length): inferred by TypeScript; see implementation
+callback@92(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

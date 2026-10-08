@@ -48,7 +48,7 @@ import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
-import { fireSidearm } from './shooting.js'
+import { fireSidearm, sidearmButtonAction } from './shooting.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
 import { Casings } from '../render/entity/casings.js'
 import type { FirearmEvent } from '../simulation/weapons/firearm.js'
@@ -2118,6 +2118,19 @@ export class GameRuntime {
     this.view.laser.set(origin.toArray() as Vec3Tuple, end, !!aimed)
   }
 
+  /** Fire or aim from one mouse button edge. Safe to call from both pointer and mouse events. */
+  private applySidearmButton(button: number, down: boolean): void {
+    if (this.session.state !== 'playing') return
+    if (down && !this.pointerLocked() && !this.pointerLockUnsupported()) return
+    const onFoot = this.weaponDrawn && !this.session.simulation?.player.vehicleId
+    if (!onFoot) return
+    const action = sidearmButtonAction(button, down)
+    if (action === 'fire') this.fireRequested = true
+    if (action === 'release') this.triggerReleased = true
+    if (action === 'aim') this.sidearm?.setAiming(true)
+    if (action === 'unaim') this.sidearm?.setAiming(false)
+  }
+
   private pointerLocked(): boolean {
     return document.pointerLockElement === this.options.canvas
   }
@@ -2334,21 +2347,27 @@ export class GameRuntime {
             return
           }
         }
-        const onFoot = this.weaponDrawn && !this.session.simulation?.player.vehicleId
-        if (event.button === 0 && onFoot) this.fireRequested = true
-        if (event.button === 2 && onFoot) {
-          event.preventDefault()
-          this.sidearm?.setAiming(true)
-        }
+        this.applySidearmButton(event.button, true)
       },
       options,
     )
     canvas.addEventListener(
       'pointerup',
       (event) => {
-        if (event.button === 0) this.triggerReleased = true
-        if (event.button === 2) this.sidearm?.setAiming(false)
+        this.applySidearmButton(event.button, false)
       },
+      options,
+    )
+    // Pointer lock does not emit pointerdown/pointerup for a second button. Aim is right click;
+    // left click while it is held must still arrive, so the mouse events are listened to as well.
+    canvas.addEventListener(
+      'mousedown',
+      (event) => this.applySidearmButton(event.button, true),
+      options,
+    )
+    canvas.addEventListener(
+      'mouseup',
+      (event) => this.applySidearmButton(event.button, false),
       options,
     )
     canvas.addEventListener(
