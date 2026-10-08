@@ -57,6 +57,32 @@ Overhead and cinematic tuning (see [camera modes](controls.md#camera-modes)):
 | `cinematicOrbitSeconds`                              | 48 s                | One full orbit; 0 holds the angle still          |
 | `cinematicBob` / `cinematicFov` / `cinematicDamping` | 0.8 m / 38° / 4 s⁻¹ | Drift, lens, height smoothing                    |
 
+### Ride smoothing (road bounce)
+
+At speed every road bump moves the body, and the cameras used to ride it exactly. Now the
+cockpit eye, the chase / cinematic target and the seated avatar (helmet, monitor) follow a
+**smoothed copy of the vehicle's height and pitch / roll** (`SceneView.rideSmoothing`,
+`src/render/entity/ride-smoothing.ts`). The body, physics and suspension are untouched.
+
+- Filter: a critically damped follower with velocity feed-forward (time constant `seconds`).
+  It tracks a steady climb, descent or lean rate with no lag, so slopes and steady cornering
+  pass through, and absorbs bounce faster than `seconds`. Heading and horizontal motion are
+  never filtered.
+- The smoothed pose never strays more than `maxOffset` / `maxTilt` from the real one, so
+  crests, jumps, landings and impacts stay sharp and the avatar stays attached (a few
+  centimetres at most). `strength` is the share of the bounce removed.
+- Crashes, a fallen bike, rollovers (more than 40° of tilt on four wheels) and flight follow the
+  real pose exactly; ejection is unchanged.
+
+| Class (`rideSmoothingDefaults`) | `strength` | `seconds` | `maxOffset` | `maxTilt` |
+| ------------------------------- | ---------- | --------- | ----------- | --------- |
+| `car`                           | 0.65       | 0.2 s     | 5 cm        | 2.5°      |
+| `motorcycle` (`twoWheeled`)     | 0.55       | 0.15 s    | 4 cm        | 1.5°      |
+| `truck` (≥ 3.5 t or > 4 hubs)   | 0.7        | 0.25 s    | 8 cm        | 3°        |
+| `off` (flight, boats, carriers) | 0          |           |             |           |
+
+A preset can set its own strength with `vehicle.rideSmoothing` (0..1; 0 rides every bump).
+
 `createGameCameraState(overrides)` supports hosts that update cameras directly.
 Camera overrides are validated before use. Durations must be finite and
 non-negative; ordered ranges and positive divisors/FOV are checked. Do not mutate

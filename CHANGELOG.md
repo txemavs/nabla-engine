@@ -4,6 +4,13 @@
 
 ### Added
 
+- **Ride smoothing for the view:** at speed, road bumps no longer shake the cockpit, chase and
+  cinematic views. The cameras and the seated avatar (helmet / monitor) follow a smoothed copy of
+  the vehicle's height and pitch / roll: a critically damped filter with velocity feed-forward
+  (0.15–0.25 s) that absorbs small, fast bounce, follows slopes and steady lean without lag,
+  stays within a few centimetres / degrees of the body, and lets crashes, rollovers and flight
+  through exactly. Per class (`rideSmoothingDefaults`: car, motorcycle, truck, off) and per preset
+  (`vehicle.rideSmoothing`). The body, physics and suspension are unchanged.
 - **Motorcycle foot paddling:** stopped (under 2 km/h), holding S (the cars' reverse key) for
   0.4 s walks the VFR backwards with the rider's feet, easing up to 2.5 km/h; released, the feet
   stop it. No reverse gear: the engine, gearbox, selector and dash are untouched
