@@ -122,10 +122,12 @@ describe('vfr800 stoppies', () => {
   }
 
   it('hard on the lever with the weight forward lifts the rear, limited and recovered', () => {
-    const { start, pitch, pose, info } = brakeFromSpeed({ forward: -1, riderForward: 1 })
+    const { start, pitch, pose, info, run } = brakeFromSpeed({ forward: -1, riderForward: 1 })
     expect(start).toBeGreaterThan(80)
     expect(pitch.min).toBeLessThan(-0.07)
     expect(pitch.min).toBeGreaterThan(-(assist.stoppieMaxAngle + 0.1))
+    // Stopped: S still held would now walk the bike back (foot paddling), so let go.
+    run(1, {})
     expect(info().speedKmh).toBeLessThan(2)
     expect(Math.abs(pose().pitch)).toBeLessThan(0.05)
     expect(pose().fallen).toBe(false)

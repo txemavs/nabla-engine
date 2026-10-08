@@ -143,6 +143,13 @@ export interface GameCameraSettings {
   avatarFollowResponse: number
   /** On-foot avatar heading response, inverse seconds (critically damped, turn-rate feed-forward). */
   avatarYawResponse: number
+  /**
+   * Two-wheeler cockpit head response, inverse seconds: the eye follows the rider's body shift
+   * and tuck (keys, steering, automatic position) through a critically damped spring without
+   * feed-forward, settling within 2% in about 5.8 / response seconds (~1.5 s at 4), with no
+   * overshoot and the input jitter filtered out. Presentation only; 0 snaps.
+   */
+  riderHeadResponse: number
 }
 
 /** Immutable defaults; each camera receives its own settings copy. */
@@ -210,6 +217,7 @@ export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   modeTransitionMs: 700,
   avatarFollowResponse: 14,
   avatarYawResponse: 14,
+  riderHeadResponse: 4,
 })
 
 /** Copy overrides and validate finite values and ordered camera ranges before use. */

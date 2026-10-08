@@ -356,6 +356,30 @@ describe('vfr800 rear-view mirrors', () => {
     const raised = views(root, lenses, eye!)
     expect(raised.right.y).toBeGreaterThan(authored.right.y + 0.05)
     expect(degrees(raised.left, authored.left)).toBeLessThan(1e-3)
+
+    // Both capture cameras run upright (vehicle up), so nothing in either mirror is upside down.
+    const scene = new THREE.Scene()
+    scene.add(root)
+    const camera = new THREE.PerspectiveCamera(70, 1.5, 0.05, 1000)
+    camera.position.copy(eye!)
+    camera.updateMatrixWorld(true)
+    const ups: Record<string, number> = {}
+    for (const e of (
+      mirrors as unknown as {
+        entries: { side: string; capture: THREE.Camera; render: () => void }[]
+      }
+    ).entries)
+      e.render = () =>
+        (ups[e.side] = new THREE.Vector3(0, 1, 0).transformDirection(e.capture.matrixWorld).y)
+    mirrors.render(
+      { domElement: { dataset: {} } } as unknown as THREE.WebGLRenderer,
+      scene,
+      camera,
+      true,
+      0,
+    )
+    expect(Object.keys(ups).sort()).toEqual(['left', 'right'])
+    for (const side of ['left', 'right']) expect(ups[side]).toBeGreaterThan(0.95)
     mirrors.dispose()
   })
 })

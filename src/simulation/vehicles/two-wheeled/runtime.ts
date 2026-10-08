@@ -123,6 +123,7 @@ export function twoWheeledTuning(definition: WheeledDefinition): TwoWheeledTunin
     combinedBrakes: Boolean(g.cbs),
     clutchKick: { ...d.clutchKick, ...g.clutchKick },
     hooligan: { ...d.hooligan, ...g.hooligan },
+    paddle: { ...d.paddle },
     crashPitch: g.crashPitch ?? d.crashPitch,
     crash: { ...d.crash },
   }
@@ -268,6 +269,8 @@ export function createTwoWheeledVehicle(
       previousVelocity: null,
       recentSpeed: 0,
       recentVelocity: [0, 0, 0],
+      paddleHold: 0,
+      paddleRelease: 0,
       slideClock: 0,
       comHeight: 0,
       clutchKick: 0,
@@ -294,6 +297,8 @@ export function resetTwoWheeled(state: TwoWheeledState): void {
   state.previousVelocity = null
   state.recentSpeed = 0
   state.recentVelocity = [0, 0, 0]
+  state.paddleHold = 0
+  state.paddleRelease = 0
   state.tuck = 0
   state.tuckAuto = 0
   state.leanReach = 0
@@ -490,6 +495,39 @@ export function stepTwoWheeledVehicle(
   const throttle =
     active && powered && !starting && !state.crashed ? Math.max(0, input.throttle) : 0
   state.lever = active ? clamp(Math.max(-input.throttle, input.lever ?? 0), 0, 1) : 0
+  // Foot paddling: stopped with S (the cars' reverse) held, the rider walks the bike back.
+  // No engine needed: it works with the engine off too, just not during the start-up sequence.
+  const paddle = tuning.paddle
+  const backing =
+    paddle.enabled &&
+    active &&
+    !starting &&
+    !state.crashed &&
+    !state.fallen &&
+    !hooligan &&
+    input.throttle <= -0.5 &&
+    !(input.lever && input.lever > 0.05)
+  state.paddleHold =
+    backing && (state.paddleHold > 0 || Math.abs(speed) < paddle.startKmh / 3.6)
+      ? state.paddleHold + dt
+      : 0
+  const paddling = state.paddleHold >= paddle.delay
+  // Released (or still rolling back slowly): the feet stop it and hold it for a moment.
+  state.paddleRelease = paddling ? 1 : Math.max(0, state.paddleRelease - dt)
+  const footStop =
+    !paddling &&
+    active &&
+    throttle < 0.01 &&
+    (state.paddleRelease > 0 || (speed < -0.05 && speed > -(paddle.maxKmh + 1) / 3.6))
+  if (paddling) {
+    state.lever = 0
+    const push = clamp(
+      (-paddle.maxKmh / 3.6 - speed) * paddle.response,
+      -paddle.accel,
+      paddle.accel,
+    )
+    if (frontContact || rearContact) v.body.applyForce(forward.scale(v.body.mass * push))
+  }
   state.pedal = active && input.handbrake ? 1 : 0
   const brakes = stepCombinedBrakes(
     state.brakeLink,
@@ -516,6 +554,7 @@ export function stepTwoWheeledVehicle(
     stepDrivetrain(v.drivetrain, tune, rearRadius, speed, throttle, state.pedal > 0, dt)
     if (
       powered &&
+      !paddling &&
       throttle < 0.01 &&
       v.drivetrain.shiftRemaining === 0 &&
       (frontContact || rearContact)
@@ -545,7 +584,7 @@ export function stepTwoWheeledVehicle(
       velocity.scale(-tuning.dragFactor * magnitude - rolling / Math.max(1, magnitude)),
     )
   }
-  holdInPark(v, forward, speed, dt)
+  if (!paddling) holdInPark(v, forward, speed, dt)
 
   // Wheelie / stoppie assist: fade the lifting force near the limit, restore past it.
   const assist = tuning.pitchAssist
@@ -670,9 +709,11 @@ export function stepTwoWheeledVehicle(
   v.raycast.applyEngineForce(drive, REAR)
   const hold = !active
     ? v.definition.brakeForce * (v.drivetrain.parked ? 1 : 0.4)
-    : v.drivetrain.parked || v.drivetrain.changingDirection
-      ? v.definition.brakeForce
-      : 0
+    : paddling
+      ? 0
+      : v.drivetrain.parked || v.drivetrain.changingDirection || footStop
+        ? v.definition.brakeForce
+        : 0
   const burnout = Boolean(tune) && v.drivetrain.burnout
   if (stationary) {
     // Front locked, the bike held in place; the rear spins on the spot (rearSpin).
