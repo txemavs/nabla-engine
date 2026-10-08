@@ -15,6 +15,8 @@ Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
   &alt=<m>                 origin altitude, default 0 (terrain files carry absolute elevations)
   &heading=<deg>           compass heading the fleet faces (default 0 = north)
   &vehicle=<preset>        vehicle the player starts in (default car)
+  &engineMode=normal|beast engine mode the S3 starts in (default normal; `bestia` also accepted).
+                           The player switches with B (selector D/S) or J → MOTOR
   &vehicles=<json>         extra host vehicles after terrain is ready: JSON array of
                            {lat, lon, heading, vehicle, alt?, color?, tow?, box?} (WGS84).
                            A non-empty list replaces the built-in parked demo row. Also VITE_NABLA_VEHICLES.
@@ -49,7 +51,7 @@ A bare URL (no query, or only display options) starts the default tile of the de
 
 ## fetchCoverage
 
-[Implementation, line 56](../../../game/terrain.ts#L56)
+[Implementation, line 58](../../../game/terrain.ts#L58)
 
 Tiles listed by the host's optional `index.json` (the dev-server mount offers one), or undefined when
 it has none. Only used to pick a start cell when the URL names none; streaming never needs it.
@@ -64,17 +66,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `index.tiles?.filter`
 - `response.json`
 
-## fetchCoverage.callback@61
+## fetchCoverage.callback@63
 
-[Implementation, line 61](../../../game/terrain.ts#L61)
+[Implementation, line 63](../../../game/terrain.ts#L63)
 
 ```ts
-callback@61(t): inferred by TypeScript; see implementation
+callback@63(t): inferred by TypeScript; see implementation
 ```
 
 ## terrainDefaults
 
-[Implementation, line 79](../../../game/terrain.ts#L79)
+[Implementation, line 81](../../../game/terrain.ts#L81)
 
 Default query for a package folder: the default start when its cell is published, else just the folder.
 
@@ -84,7 +86,7 @@ terrainDefaults(defaultCellPublished: boolean, base: string = DEFAULT_TERRAIN_QU
 
 ## probeTerrainFolder
 
-[Implementation, line 90](../../../game/terrain.ts#L90)
+[Implementation, line 92](../../../game/terrain.ts#L92)
 
 True when the folder publishes the default start cell. This asks for one manifest, like the engine
 does for any tile; no index file is needed.
@@ -99,7 +101,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseTimeParam
 
-[Implementation, line 129](../../../game/terrain.ts#L129)
+[Implementation, line 131](../../../game/terrain.ts#L131)
 
 Parse `&time=`: `HH:MM` (also `H`, `HH.MM`) or `ahora`/`now` for the real clock.
 
@@ -120,7 +122,7 @@ Explicit throws in this body:
 
 ## parseTimeSpeedParam
 
-[Implementation, line 139](../../../game/terrain.ts#L139)
+[Implementation, line 141](../../../game/terrain.ts#L141)
 
 Parse `&timeSpeed=`: live clock multiplier, 1–24.
 
@@ -142,7 +144,7 @@ Explicit throws in this body:
 
 ## parseSeaParam
 
-[Implementation, line 149](../../../game/terrain.ts#L149)
+[Implementation, line 151](../../../game/terrain.ts#L151)
 
 Parse `&sea=`: metres within the engine's sea-surface range.
 
@@ -165,7 +167,7 @@ Explicit throws in this body:
 
 ## wantsTerrain
 
-[Implementation, line 159](../../../game/terrain.ts#L159)
+[Implementation, line 161](../../../game/terrain.ts#L161)
 
 True when the URL asks for the terrain-folder example.
 
@@ -181,7 +183,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 164](../../../game/terrain.ts#L164)
+[Implementation, line 166](../../../game/terrain.ts#L166)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -201,7 +203,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 173](../../../game/terrain.ts#L173)
+[Implementation, line 175](../../../game/terrain.ts#L175)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -214,6 +216,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Error`
 - `String`
 - `URLSearchParams`
+- `engineModeParam`
 - `finite`
 - `hostVehiclesFromSearch`
 - `isValidLatLon`
@@ -246,7 +249,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 250](../../../game/terrain.ts#L250)
+[Implementation, line 253](../../../game/terrain.ts#L253)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -267,7 +270,7 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 262](../../../game/terrain.ts#L262)
+[Implementation, line 265](../../../game/terrain.ts#L265)
 
 Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving.
 
@@ -277,7 +280,7 @@ formatCells(stats: { loaded: number; missing: number; pending: number }): string
 
 ## portalsConfig
 
-[Implementation, line 271](../../../game/terrain.ts#L271)
+[Implementation, line 274](../../../game/terrain.ts#L274)
 
 `portals` only when the host listed some, so configs without portals keep their shape.
 
@@ -289,3 +292,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `hostPortalsFromSearch`
 - `viteHostPortals`
+
+## engineModeParam
+
+[Implementation, line 280](../../../game/terrain.ts#L280)
+
+`&engineMode=normal|beast` (or `bestia`): the start mode of cars with engine modes.
+
+```ts
+engineModeParam(params: URLSearchParams): { engineMode?: 'normal' | 'beast' }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `params.get`
+- `params.get('engineMode')?.toLowerCase`

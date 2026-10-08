@@ -8,11 +8,12 @@
 
 - `./graph.js`
 - `./v4-engine.js`
+- `./inline-engine.js`
 - `./vehicle-sound.js`
 
 ## engineNoteHz
 
-[Implementation, line 11](../../../../src/audio/powertrain.ts#L11)
+[Implementation, line 12](../../../../src/audio/powertrain.ts#L12)
 
 ```ts
 engineNoteHz(rpm: number): number
@@ -24,7 +25,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## engineNoteCutoffHz
 
-[Implementation, line 13](../../../../src/audio/powertrain.ts#L13)
+[Implementation, line 14](../../../../src/audio/powertrain.ts#L14)
 
 ```ts
 engineNoteCutoffHz(rpm: number, load = 0): number
@@ -32,7 +33,7 @@ engineNoteCutoffHz(rpm: number, load = 0): number
 
 ## EngineNote.constructor
 
-[Implementation, line 21](../../../../src/audio/powertrain.ts#L21)
+[Implementation, line 22](../../../../src/audio/powertrain.ts#L22)
 
 Road-car engine. One sawtooth at `engineNoteHz`, through a lowpass at `engineNoteCutoffHz`.
 
@@ -51,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EngineNote.silence
 
-[Implementation, line 35](../../../../src/audio/powertrain.ts#L35)
+[Implementation, line 36](../../../../src/audio/powertrain.ts#L36)
 
 Road-car engine. One sawtooth at `engineNoteHz`, through a lowpass at `engineNoteCutoffHz`.
 
@@ -65,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EngineNote.update
 
-[Implementation, line 39](../../../../src/audio/powertrain.ts#L39)
+[Implementation, line 40](../../../../src/audio/powertrain.ts#L40)
 
 Road-car engine. One sawtooth at `engineNoteHz`, through a lowpass at `engineNoteCutoffHz`.
 
@@ -83,7 +84,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Turbo.constructor
 
-[Implementation, line 59](../../../../src/audio/powertrain.ts#L59)
+[Implementation, line 60](../../../../src/audio/powertrain.ts#L60)
 
 Turbo on that same engine. A sine whistle plus a slice of the shared noise.
 No new nodes per gear change. A hard drop in load vents the stored boost once:
@@ -105,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Turbo.silence
 
-[Implementation, line 76](../../../../src/audio/powertrain.ts#L76)
+[Implementation, line 77](../../../../src/audio/powertrain.ts#L77)
 
 Turbo on that same engine. A sine whistle plus a slice of the shared noise.
 No new nodes per gear change. A hard drop in load vents the stored boost once:
@@ -122,14 +123,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Turbo.update
 
-[Implementation, line 84](../../../../src/audio/powertrain.ts#L84)
+[Implementation, line 85](../../../../src/audio/powertrain.ts#L85)
 
 Turbo on that same engine. A sine whistle plus a slice of the shared noise.
 No new nodes per gear change. A hard drop in load vents the stored boost once:
 that is the short shift cut. The whistle fades out as rpm rises.
 
 ```ts
-update(time: number, dt: number, audible: boolean, rpm: number, load: number): void
+update(time: number, dt: number, audible: boolean, rpm: number, load: number, whistle = 1, blowOff = 1): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -143,15 +144,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.constructor
 
-[Implementation, line 121](../../../../src/audio/powertrain.ts#L121)
+[Implementation, line 134](../../../../src/audio/powertrain.ts#L134)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
-picks the voice: the road-car note (default) or the procedural V4, built on first use; if
-the browser cannot build it the note plays instead.
+picks the voice: the road-car note (default), the procedural V4 or the refined inline voice
+(with its subdued turbo and optional overrun burble), built on first use; if the browser
+cannot build it the note plays instead.
 
 ```ts
-constructor(private readonly context: AudioContext, private readonly noise: AudioBufferSourceNode): instance
+constructor(private readonly context: AudioContext, private readonly noise: AudioBufferSourceNode, private readonly random: () => number = Math.random): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -161,12 +163,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.silence
 
-[Implementation, line 132](../../../../src/audio/powertrain.ts#L132)
+[Implementation, line 147](../../../../src/audio/powertrain.ts#L147)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
-picks the voice: the road-car note (default) or the procedural V4, built on first use; if
-the browser cannot build it the note plays instead.
+picks the voice: the road-car note (default), the procedural V4 or the refined inline voice
+(with its subdued turbo and optional overrun burble), built on first use; if the browser
+cannot build it the note plays instead.
 
 ```ts
 silence(time: number): void
@@ -174,18 +177,21 @@ silence(time: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.burble?.silence`
 - `this.engine.silence`
+- `this.inline?.silence`
 - `this.turbo.silence`
 - `this.v4?.silence`
 
 ## Powertrain.update
 
-[Implementation, line 138](../../../../src/audio/powertrain.ts#L138)
+[Implementation, line 155](../../../../src/audio/powertrain.ts#L155)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
-picks the voice: the road-car note (default) or the procedural V4, built on first use; if
-the browser cannot build it the note plays instead.
+picks the voice: the road-car note (default), the procedural V4 or the refined inline voice
+(with its subdued turbo and optional overrun burble), built on first use; if the browser
+cannot build it the note plays instead.
 
 ```ts
 update(time: number, audible: boolean, rpm: number, load: number, turbo = true, engine?: ResolvedEngineVoice): void
@@ -196,22 +202,49 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number.isFinite`
+- `OverrunBurble`
+- `inline.update`
+- `this.burble.silence`
+- `this.burble.update`
+- `this.burble?.silence`
 - `this.engine.silence`
 - `this.engine.update`
+- `this.inline?.silence`
+- `this.inlineVoice`
 - `this.turbo.silence`
 - `this.turbo.update`
 - `this.v4?.silence`
 - `this.v4Voice`
 - `v4.update`
 
-## Powertrain.v4Voice
+## Powertrain.inlineVoice
 
-[Implementation, line 165](../../../../src/audio/powertrain.ts#L165)
+[Implementation, line 204](../../../../src/audio/powertrain.ts#L204)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
-picks the voice: the road-car note (default) or the procedural V4, built on first use; if
-the browser cannot build it the note plays instead.
+picks the voice: the road-car note (default), the procedural V4 or the refined inline voice
+(with its subdued turbo and optional overrun burble), built on first use; if the browser
+cannot build it the note plays instead.
+
+```ts
+inlineVoice(engine: ResolvedEngineVoice): V4Engine | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `V4Engine`
+- `this.inline.setFiring`
+
+## Powertrain.v4Voice
+
+[Implementation, line 223](../../../../src/audio/powertrain.ts#L223)
+
+Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
+`turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
+picks the voice: the road-car note (default), the procedural V4 or the refined inline voice
+(with its subdued turbo and optional overrun burble), built on first use; if the browser
+cannot build it the note plays instead.
 
 ```ts
 v4Voice(firing: readonly number[]): V4Engine | undefined

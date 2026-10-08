@@ -5,7 +5,8 @@
 [Source](../../../../../src/entity/vehicle/gear-label.ts)
 
 Gear shown on dashboards and HUDs: `R`, `N`, `P`, `D1`..`Dn` in automatic mode and
-`M1`..`Mn` while the driver holds a manual gear. Gear 0 is N, or P when `parked`.
+`M1`..`Mn` while the driver holds a manual gear. Gear 0 is N, or P when `parked`. `sport`
+(engine mode Bestia) shows the automatic selector as `S1`..`Sn` instead of `D`.
 Shared so the game HUD, the car cluster and Studio agree.
 
 ## Module dependencies
@@ -13,12 +14,13 @@ Shared so the game HUD, the car cluster and Studio agree.
 
 ## gearLabel
 
-[Implementation, line 6](../../../../../src/entity/vehicle/gear-label.ts#L6)
+[Implementation, line 7](../../../../../src/entity/vehicle/gear-label.ts#L7)
 
 Gear shown on dashboards and HUDs: `R`, `N`, `P`, `D1`..`Dn` in automatic mode and
-`M1`..`Mn` while the driver holds a manual gear. Gear 0 is N, or P when `parked`.
+`M1`..`Mn` while the driver holds a manual gear. Gear 0 is N, or P when `parked`. `sport`
+(engine mode Bestia) shows the automatic selector as `S1`..`Sn` instead of `D`.
 Shared so the game HUD, the car cluster and Studio agree.
 
 ```ts
-gearLabel(gear: number, manual: boolean, parked = false): string
+gearLabel(gear: number, manual: boolean, parked = false, sport = false): string
 ```

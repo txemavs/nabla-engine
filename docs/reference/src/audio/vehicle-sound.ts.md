@@ -11,10 +11,11 @@ road-car engine note.
 ## Module dependencies
 
 - `./v4-engine.js`
+- `./inline-engine.js`
 
 ## volumeOf
 
-[Implementation, line 51](../../../../src/audio/vehicle-sound.ts#L51)
+[Implementation, line 76](../../../../src/audio/vehicle-sound.ts#L76)
 
 ```ts
 volumeOf(volume: unknown): inferred by TypeScript; see implementation
@@ -28,25 +29,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveEngineVoice
 
-[Implementation, line 55](../../../../src/audio/vehicle-sound.ts#L55)
+[Implementation, line 80](../../../../src/audio/vehicle-sound.ts#L80)
 
 Resolve the engine voice of `vehicle.audio.engine`; omitted = the road-car note.
 
 ```ts
-resolveEngineVoice(engine?: VehicleSoundOptions['engine'] | null): ResolvedEngineVoice
+resolveEngineVoice(engine?: EngineVoiceOptions | null): ResolvedEngineVoice
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
+- `Math.min`
+- `Number.isInteger`
+- `inlineFiringAngles`
+- `inlinePulseWeights`
 - `v4FiringAngles`
 - `volumeOf`
 
 ## resolveVehicleSound
 
-[Implementation, line 69](../../../../src/audio/vehicle-sound.ts#L69)
+[Implementation, line 112](../../../../src/audio/vehicle-sound.ts#L112)
+
+Resolve `vehicle.audio`. `mode` is the vehicle's engine mode: when `engineModes[mode]` is set,
+that voice replaces `engine` (the S3's calm Normal and five-cylinder Bestia).
 
 ```ts
-resolveVehicleSound(options?: VehicleSoundOptions | null): ResolvedVehicleSound
+resolveVehicleSound(options?: VehicleSoundOptions | null, mode?: 'normal' | 'beast'): ResolvedVehicleSound
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

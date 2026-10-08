@@ -212,6 +212,23 @@ rejected and successive shifts respect the DSG shift interval. Closed-throttle
 engine braking depends on selected ratio and RPM, acts only with ground contact,
 and fades near standstill; lower gears give stronger retention.
 
+### Engine modes (S3: Normal / Bestia)
+
+The S3 (`car` preset) has two engine modes, defined in its preset (`vehicle.powertrain.modes`,
+`audio.engineModes`). All figures are gameplay values:
+
+| Mode               | Selector | Power / torque  | Redline                     | Sound                                                       |
+| ------------------ | -------- | --------------- | --------------------------- | ----------------------------------------------------------- |
+| `normal` (default) | D        | 200 CV / 400 Nm | 4,800 RPM (DSG up at 4,200) | refined inline four, TDI-like, soft turbo whistle           |
+| `beast` («Bestia») | S        | 400 CV / 520 Nm | preset `maxRpm`             | inline five warble, more whistle, occasional overrun burble |
+
+Switch it from the car menu (J › MOTOR: `NORMAL · D` / `BESTIA · S`) or with B: while already
+in automatic, B toggles D ↔ S; from manual it returns to automatic in the current mode. The HUD
+and the cluster show D or S (S1…S7 when shifting in Bestia). Power, torque, redline, shift
+points and voice follow the mode at once. `roadVehicleDefaults.engineMode` is the fallback.
+Hosts choose the start mode per vehicle with `powertrain.defaultMode`, or with `&engineMode=normal|beast`
+(`bestia` also accepted) on the terrain page. Vehicles without `modes` (the bikes, trucks…) are unchanged.
+
 ### Per-vehicle mirror elevation
 
 `vehicle.mirrorTilt` stores the glass elevation in degrees (-5 to +12, default -2).
