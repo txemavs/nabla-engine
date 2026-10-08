@@ -1,5 +1,7 @@
+import fs from 'node:fs/promises'
 import { expect, it, vi } from 'vitest'
 import { Group, Mesh, MeshStandardMaterial, PlaneGeometry, Quaternion, Vector3 } from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { RetractableMount } from '../../src/render/vehicle-presentation/retractable.js'
 import { CarLights } from '../../src/render/entity/car-lights.js'
 import { CarMirrors } from '../../src/render/entity/car-mirrors.js'
@@ -143,4 +145,57 @@ it('reports a missing optional stock mount and leaves the asset intact', () => {
   expect(model.children).toHaveLength(0)
   expect(warning).toHaveBeenCalledWith('S3 instruments omitted: missing Interior mount')
   warning.mockRestore()
+})
+
+it('raises the S3 cluster by the preset and keeps the dials inside the binnacle', async () => {
+  const car = presetVehicle('car', 's3')
+  expect(car.vehicle?.clusterOffset).toEqual([0, 0.015, 0])
+  ;(globalThis as { self?: unknown }).self ??= globalThis
+  const bytes = await fs.readFile('assets/library/cars/a3/a3.cabrio.glb')
+  const load = async () => {
+    const gltf = await new GLTFLoader().parseAsync(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+      '',
+    )
+    const chassis = new Group()
+    const model = gltf.scene
+    model.position.fromArray(car.visual!.body.transform.position)
+    model.quaternion.fromArray(car.visual!.body.transform.rotation)
+    chassis.add(model)
+    return model
+  }
+  const plain = createA3Mounts(await load())!
+  const raisedModel = await load()
+  const raised = createA3Mounts(raisedModel, car.vehicle!.clusterOffset)!
+  const [dx, dy, dz] = raised.cluster.position.map((n, i) => n - plain.cluster.position[i]!)
+  // Chassis up, through the body's yaw, lands on the interior's up.
+  expect(dy).toBeCloseTo(0.015, 3)
+  expect(Math.hypot(dx, dz)).toBeLessThan(0.001)
+  const halfH = 160 * raised.cluster.scale
+  const halfW = 320 * raised.cluster.scale
+  const [cx, cy] = raised.cluster.position
+  const interior = raisedModel.getObjectByName('Interior')!
+  const box = { xmin: Infinity, xmax: -Infinity, ymin: Infinity, ymax: -Infinity }
+  const point = new Vector3()
+  interior.updateWorldMatrix(true, true)
+  interior.traverse((node) => {
+    if (!(node instanceof Mesh) || !(node.material instanceof MeshStandardMaterial)) return
+    if (node.material.name !== 'Llanta 8') return
+    const position = node.geometry.getAttribute('position')
+    for (let i = 0; i < position.count; i++) {
+      point.fromBufferAttribute(position, i).applyMatrix4(node.matrixWorld)
+      point.applyMatrix4(interior.matrixWorld.clone().invert())
+      box.xmin = Math.min(box.xmin, point.x)
+      box.xmax = Math.max(box.xmax, point.x)
+      box.ymin = Math.min(box.ymin, point.y)
+      box.ymax = Math.max(box.ymax, point.y)
+    }
+  })
+  expect(box.ymax).toBeGreaterThan(box.ymin)
+  // The dials stay inside the binnacle ring: not out the top, and not past either side.
+  expect(cy + halfH).toBeLessThanOrEqual(box.ymax + 0.001)
+  expect(cx - halfW).toBeGreaterThanOrEqual(box.xmin - 0.001)
+  expect(cx + halfW).toBeLessThanOrEqual(box.xmax + 0.001)
+  plain.dispose()
+  raised.dispose()
 })
