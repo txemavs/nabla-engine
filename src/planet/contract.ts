@@ -23,6 +23,13 @@ import type { PlanetPlace } from './places.js'
 
 /** Bump when a published GLB must be regenerated. v5 drapes pitch photos. */
 export const PLANET_GEOMETRY_REVISION = 'native-surfaces-v5'
+/**
+ * Cell versions this engine renders. A manifest without `cellVersion` is version 1 (every cell
+ * published before the Atlas unified pipeline). Version 2 cells (Atlas `terrain-unified`, 2026-10)
+ * carry roads and tunnel openings inside the terrain GLB and replace v1 cells at the same URL.
+ */
+export const PLANET_CELL_VERSIONS = [1, 2] as const
+export type PlanetCellVersion = (typeof PLANET_CELL_VERSIONS)[number]
 
 const SHA256 = /^[a-f0-9]{64}$/
 const CANDIDATE_ROAD_STEM =
@@ -117,6 +124,8 @@ export interface PlanetManifest {
     sources?: string[]
   }
   places?: PlanetPlace[]
+  /** Cell content version; absent means 1. See `PLANET_CELL_VERSIONS`. */
+  cellVersion?: PlanetCellVersion
   format: 'nabla-planet-tile-v1'
   generator: 'native-xyz-v2'
   geometryRevision?: typeof PLANET_GEOMETRY_REVISION
@@ -393,6 +402,13 @@ export function planetRoadRevision(roads: PlanetCandidateRoads): string {
 }
 
 /** Resident-tile cache identity: terrain, buildings, photo, then candidate road revision. */
+/** The cell version of a manifest: `cellVersion`, or 1 for cells published before versions existed. */
+export function planetCellVersion(
+  manifest: Pick<PlanetManifest, 'cellVersion'>,
+): PlanetCellVersion {
+  return manifest.cellVersion ?? 1
+}
+
 export function planetTileRevision(manifest: PlanetManifest): string {
   const roads = readCandidateRoads(manifest)
   return (
@@ -456,6 +472,13 @@ export function validatePlanetManifest(value: unknown, tile: MapTile): PlanetMan
     )
   )
     throw Error('Invalid native planet manifest')
+  if (
+    m.cellVersion !== undefined &&
+    !(PLANET_CELL_VERSIONS as readonly unknown[]).includes(m.cellVersion)
+  )
+    throw Error(
+      `Unsupported cell version ${JSON.stringify(m.cellVersion)} (this engine renders ${PLANET_CELL_VERSIONS.join(', ')})`,
+    )
   for (const name of ['terrain', 'buildings-osm'] as const) {
     m.files[name] = layerFile(
       m.files?.[name],
