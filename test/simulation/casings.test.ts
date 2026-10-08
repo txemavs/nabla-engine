@@ -51,3 +51,36 @@ it('keeps only the newest casings', () => {
   expect(motion.count).toBeLessThanOrEqual(24)
   expect(motion.poses()[0].position[0]).toBeGreaterThan(10)
 })
+
+it('a dropped magazine falls, rests, and the pool keeps only the newest', () => {
+  const motion = new CasingMotion(
+    { ejectSpeedMs: 1.5, restitution: 0.2, friction: 0.65, lifetimeS: 30 },
+    9.81,
+    8,
+    0.015,
+  )
+  const ground = (from: readonly number[], direction: readonly number[], length: number) => {
+    if (direction[1] >= 0) return null
+    const distance = -from[1] / direction[1]
+    return distance <= length
+      ? {
+          point: [from[0] + direction[0] * distance, 0, from[2] + direction[2] * distance] as [
+            number,
+            number,
+            number,
+          ],
+          normal: [0, 1, 0] as [number, number, number],
+        }
+      : null
+  }
+  motion.release([0.2, 1.2, 0], [0.1, -1.5, 0.2], [0, 0, 0], [0, 0, 0, 1])
+  for (let i = 0; i < 180; i++) motion.update(1 / 60, ground)
+  const resting = motion.poses()[0].position.slice()
+  expect(resting[1]).toBeLessThan(0.03)
+  motion.update(1 / 60, ground)
+  expect(motion.poses()[0].position[0]).toBeCloseTo(resting[0], 3)
+  expect(motion.poses()[0].orientation).toEqual([0, 0, 0, 1])
+  for (let i = 0; i < 20; i++) motion.release([i, 1, 0], [0, -1, 0])
+  expect(motion.count).toBe(8)
+  expect(motion.poses()[0].position[0]).toBeGreaterThan(10)
+})
