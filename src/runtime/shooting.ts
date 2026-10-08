@@ -13,6 +13,19 @@ import {
   type Vec3,
 } from '../simulation/weapons/ballistics.js'
 
+/**
+ * Sidearm button edge. Left click fires even while right-button aim is already held: pointer
+ * lock often delivers that second press only as `mousedown`, not `pointerdown`.
+ */
+export function sidearmButtonAction(
+  button: number,
+  down: boolean,
+): 'fire' | 'aim' | 'release' | 'unaim' | null {
+  if (button === 0) return down ? 'fire' : 'release'
+  if (button === 2) return down ? 'aim' : 'unaim'
+  return null
+}
+
 export interface SidearmShot extends FirearmEvent {
   /** Where the bullet stopped (hit point or end of the trace), world. */
   end?: Vec3

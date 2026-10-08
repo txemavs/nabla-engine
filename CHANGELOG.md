@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Pistol: left click fires while aiming (right button held). Pointer lock does not report that second button as a pointer event, so the mouse button is read as well.
 - Overhead camera: turning at speed no longer rotates the view in small steps. The heading follows the nose continuously (shortest angle, render frame) instead of copying each physics tick.
 
 - S3 instrument cluster: the gauge display sits 1.5 cm higher in the car (chassis up), so the dash lip no longer covers the bottom of the dials. The offset is the preset's `clusterOffset`.
