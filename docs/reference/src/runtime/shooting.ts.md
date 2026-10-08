@@ -11,38 +11,78 @@
 - `../render/entity/view.js`
 - `./sidearm.js`
 - `./gallery.js`
+- `../simulation/weapons/firearm.js`
+- `../simulation/weapons/ballistics.js`
 
-## fireSidearm
+## fitted
 
-[Implementation, line 8](../../../../src/runtime/shooting.ts#L8)
-
-Shared aim correction and shot routing. Call before applying the render origin.
+[Implementation, line 30](../../../../src/runtime/shooting.ts#L30)
 
 ```ts
-fireSidearm(sidearm: Sidearm, gallery: Gallery, sim: Simulation, view: SceneView, camera: PerspectiveCamera, now: number, firstPerson: boolean): boolean
+fitted(load: BallisticLoad): { k: number; angle: number }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `fitDrag`
+- `fits.get`
+- `fits.set`
+- `zeroAngle`
+
+## fireSidearm
+
+[Implementation, line 46](../../../../src/runtime/shooting.ts#L46)
+
+One trigger press: the firearm decides whether a round goes off; the bullet then flies the
+load's trajectory (drop and drag, `ballistics.ts`) through the world and hands its momentum
+to whatever it hits. Presets without ammunition data keep the straight legacy ray.
+Call before applying the render origin.
+
+```ts
+fireSidearm(sidearm: Sidearm, gallery: Gallery, sim: Simulation, view: SceneView, camera: PerspectiveCamera, now: number, firstPerson: boolean): SidearmShot | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
 - `Vector3`
+- `bulletEnergy`
 - `camera.clone`
 - `camera.position.clone`
+- `camera.position.clone().addScaledVector`
+- `camera.position.toArray`
 - `destination.toArray`
 - `direction.toArray`
 - `firing.lookAt`
+- `firing.position.clone`
+- `firing.position.clone().addScaledVector`
 - `firing.position.copy`
-- `firing.position.fromArray`
+- `firing.position.distanceTo`
 - `firing.updateMatrixWorld`
+- `fitted`
 - `gallery.shoot`
+- `look.clone`
+- `look.toArray`
 - `new Vector3(0, 0, -1).applyQuaternion`
-- `origin.add`
 - `origin.clone`
 - `origin.clone().addScaledVector`
-- `origin.fromArray`
 - `origin.toArray`
-- `sidearm.fire`
 - `sidearm.impact`
-- `sidearm.muzzleViewOffset`
-- `sidearm.muzzleViewOffset(now).applyQuaternion`
+- `sidearm.pull`
 - `sim.shoot`
+- `target.sub`
+- `target.sub(origin).normalize`
+- `traceBullet`
 - `view.sparks.add`
+
+## fireSidearm.callback@79
+
+[Implementation, line 79](../../../../src/runtime/shooting.ts#L79)
+
+```ts
+callback@79(from, dir, length): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `sim.shoot`
