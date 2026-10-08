@@ -105,18 +105,39 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setGameCameraView
 
-[Implementation, line 185](../../../../src/runtime/game-camera.ts#L185)
+[Implementation, line 187](../../../../src/runtime/game-camera.ts#L187)
 
 Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
 `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
+Entering the overhead view cuts unless `nextTransitionMs` is set: the blend climbed out
+through the cabin while the field of view lerped, and that frame hitch is the stall.
 
 ```ts
 setGameCameraView(state: GameCameraState, wanted: GameCameraView, seated: boolean): void
 ```
 
+## downwardViewFar
+
+[Implementation, line 218](../../../../src/runtime/game-camera.ts#L218)
+
+Far plane while the camera looks steeply down. The ordinary far plane is 12 km, so a
+zenithal view is a shaft and the cascaded shadow maps size themselves to it. The ground
+under the camera is only about `eyeHeight` metres away; keep enough for relief.
+`viewDown` is the camera's forward Y (−1 is straight down).
+
+```ts
+downwardViewFar(far: number, eyeHeight: number, viewDown: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+
 ## updateGameCamera
 
-[Implementation, line 213](../../../../src/runtime/game-camera.ts#L213)
+[Implementation, line 227](../../../../src/runtime/game-camera.ts#L227)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -199,10 +220,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@408
+## updateGameCamera.callback@422
 
-[Implementation, line 408](../../../../src/runtime/game-camera.ts#L408)
+[Implementation, line 422](../../../../src/runtime/game-camera.ts#L422)
 
 ```ts
-callback@408(entity): inferred by TypeScript; see implementation
+callback@422(entity): inferred by TypeScript; see implementation
 ```

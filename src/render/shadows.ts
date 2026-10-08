@@ -101,6 +101,24 @@ export interface CSMConfig {
   tier: ShadowTier
 }
 
+/**
+ * Identity of the camera projection for cascade rebuilds. Field of view is rounded to a
+ * degree and far to a metre so a view blend does not rebuild the shadow frustums every frame.
+ */
+export function shadowProjectionKey(
+  camera: { fov: number; aspect: number; near: number; far: number; zoom: number },
+  maxFar: number,
+): string {
+  const far = Math.min(camera.far, maxFar)
+  return [
+    Math.round(camera.fov),
+    camera.aspect.toFixed(3),
+    camera.near.toFixed(2),
+    Math.round(far),
+    camera.zoom.toFixed(3),
+  ].join(':')
+}
+
 export class ShadowManager {
   private csm: CSM | null = null
   private tier: ShadowTier | null = null
@@ -262,13 +280,7 @@ export class ShadowManager {
     proxy.copy(camera)
     proxy.position.add(origin)
     proxy.updateMatrixWorld(true)
-    const key = [
-      camera.fov,
-      camera.aspect,
-      camera.near,
-      Math.min(camera.far, this.tier.maxFar),
-      camera.zoom,
-    ].join(':')
+    const key = shadowProjectionKey(camera, this.tier.maxFar)
     if (key !== this.projectionKey) {
       this.projectionKey = key
       this.csm.updateFrustums()

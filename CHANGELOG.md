@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Overhead camera: switching into the zenithal view no longer climbs out through the cabin for 700 ms (that blend lerped the field of view and rebuilt the shadow cascades every frame). The view cuts to the overhead pose, which is already being tracked. A start sequence can still blend by setting its own transition. While the camera looks steeply down, the far plane is capped to the ground under it so the shadow maps are not sized to a 12 km shaft.
+
 - Pistol: left click fires while aiming (right button held). Pointer lock does not report that second button as a pointer event, so the mouse button is read as well.
 - Overhead camera: turning at speed no longer rotates the view in small steps. The heading follows the nose continuously (shortest angle, render frame) instead of copying each physics tick.
 
