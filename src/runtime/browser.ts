@@ -47,6 +47,7 @@ import {
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
+import { magazineInsertClick, magazineReleaseClick } from '../audio/gear-click.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm, sidearmButtonAction } from './shooting.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
@@ -2062,10 +2063,10 @@ export class GameRuntime {
     for (const event of events) {
       if (event.dry) this.effects.audio.gearClick({ volume: 0.6 })
       if (event.magazineDropped) {
-        this.effects.audio.gearClick({ volume: 0.9 })
+        this.effects.audio.gearClick(magazineReleaseClick)
         this.dropMagazine(sim, eyes)
       }
-      if (event.magazineSeated) this.effects.audio.gearClick({ volume: 1.2 })
+      if (event.magazineSeated) this.effects.audio.gearClick(magazineInsertClick)
       if (event.slideReleased) this.effects.audio.gearClick({ volume: 1.6 })
       if (event.locked) this.options.onMessage?.(this.text('Slide locked back · R reload'))
     }

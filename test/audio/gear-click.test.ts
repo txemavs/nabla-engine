@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Scene, Vector3 } from 'three'
-import { gearClickDefaults, resolveGearClickVolume } from '../../src/audio/gear-click.js'
+import {
+  gearClickDefaults,
+  gearClickPeak,
+  magazineInsertClick,
+  magazineReleaseClick,
+  resolveGearClickVolume,
+} from '../../src/audio/gear-click.js'
 import { resolveVehicleSound } from '../../src/audio/vehicle-sound.js'
 import { VehicleAudio } from '../../src/audio/vehicle.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
@@ -130,9 +136,23 @@ describe('gear click synthesis', () => {
     expect(peak).toBeLessThan(0.16 / 4)
     expect(length).toBeGreaterThan(0.01)
     expect(length).toBeLessThan(0.05)
+    const db = (next: number, prev: number) => 20 * Math.log10(next / prev)
+    const oldDrop = gearClickDefaults.peak * 0.9
+    const oldSeat = gearClickDefaults.peak * 1.2
+    expect(db(gearClickPeak(magazineReleaseClick), oldDrop)).toBeGreaterThan(8)
+    expect(db(gearClickPeak(magazineReleaseClick), oldDrop)).toBeLessThan(10)
+    expect(db(gearClickPeak(magazineInsertClick), oldSeat)).toBeGreaterThan(8)
+    expect(db(gearClickPeak(magazineInsertClick), oldSeat)).toBeLessThan(10)
+    expect(magazineReleaseClick.bandHz).not.toBe(magazineInsertClick.bandHz)
     audio.setEnabled(false)
     audio.gearClick()
     expect(audio.gearClickCount).toBe(1)
+    audio.setEnabled(true)
+    audio.gearClick(magazineReleaseClick)
+    const filters = context.nodes.filter((entry) => entry.kind === 'filter')
+    expect(filters.some((entry) => entry.node.frequency.events.some((e) => e.value === 700))).toBe(
+      true,
+    )
   })
 
   it('keeps the turbo silent when the vehicle has none', () => {
