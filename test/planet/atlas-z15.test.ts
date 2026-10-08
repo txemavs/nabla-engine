@@ -18,6 +18,11 @@ import {
   type PlanetManifest,
 } from '../../src/planet/contract.js'
 import { fetchTileManifest, StaticTileError } from '../../src/render/planet/static-tiles.js'
+import {
+  applyCandidateAsphaltPolicy,
+  planetTileGlbLayers,
+  tagCandidateRoadMesh,
+} from '../../src/planet/index.js'
 import type { MapTile } from '../../src/scene/mercator.js'
 
 // Real metadata of the Atlas cell 15/16211/12003 (files stay on the Atlas disk; only JSON is a fixture).
@@ -406,6 +411,27 @@ describe('cell versions', () => {
       const m = manifest()
       ;(m as unknown as { cellVersion: unknown }).cellVersion = bad
       expect(() => validatePlanetManifest(m, tile)).toThrow(/Unsupported cell version/)
+    }
+  })
+})
+
+describe('GPS keeps its OSM road data when the OSM road mesh is hidden', () => {
+  it('osm.snapshot is not a mesh layer, so the asphalt policy cannot remove it', () => {
+    const p = validateAtlasZ15Package(pkg(), tile)
+    for (const relief of ['engine', 'lidar'] as const) {
+      const m = adaptAtlasManifest(manifest(), p, { relief })
+      const v3 = { ...m, cellVersion: 3 as const }
+      // The GPS / navigation source is still published for the cell…
+      expect(v3.osmSnapshot?.path).toBe('osm-3f3939c12c359aab.json.gz')
+      // …and is never one of the GLB layers the worker loads (and the policy filters).
+      const paths = planetTileGlbLayers(v3).map((l) => l.file.path)
+      expect(paths).not.toContain(v3.osmSnapshot!.path)
+      // Hiding every OSM road mesh leaves the manifest's GPS source untouched.
+      applyCandidateAsphaltPolicy(
+        [{ metadata: tagCandidateRoadMesh({ atlasSurfaceRole: 'ground-road' }, 'asphalt') }],
+        3,
+      )
+      expect(v3.osmSnapshot?.path).toBe('osm-3f3939c12c359aab.json.gz')
     }
   })
 })

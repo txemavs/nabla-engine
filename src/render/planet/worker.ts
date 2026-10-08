@@ -3,8 +3,8 @@ import { convertPlanetGlbMesh } from './convert-mesh.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, Mesh } from 'three'
 import {
+  applyCandidateAsphaltPolicy,
   isCandidateRoadKind,
-  loadsCandidateAsphaltOnCell,
   planetCellVersion,
   planetCollisionChunks,
   planetGlbCacheKey,
@@ -46,6 +46,8 @@ self.onmessage = async (
     buildings?: boolean
     /** Load `roads.files.collision` / `roadCandidates.layers.collision` as an inspect mesh. Default off. */
     inspectRoadCollision?: boolean
+    /** Show v2+ OSM road asphalt as an inspect-only mesh (visible, no collision). Default off. */
+    osmRoads?: boolean
     /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */
     drape?: { layers: string[]; width: number }
     cancel?: boolean
@@ -170,18 +172,13 @@ self.onmessage = async (
       }
     }
     if (roadErrors.length) console.warn('Planet road layers:', manifest.id, roadErrors)
-    // v2+ terrain.lidar already has the ground road. Drop ground-road asphalt here — before the
-    // orthophoto drape and collision — so a ghost roads-drape (cut from that asphalt) does not
-    // float above the fused terrain. Bridge-deck / elevated / untagged asphalt stay.
-    const cellVersion = planetCellVersion(manifest)
-    for (let i = meshes.length - 1; i >= 0; i--) {
-      const m = meshes[i]!
-      if (
-        m.metadata.nablaCandidateRoad === 'asphalt' &&
-        !loadsCandidateAsphaltOnCell(cellVersion, m.metadata)
-      )
-        meshes.splice(i, 1)
-    }
+    // v2+ terrain.lidar already has the ground road. The separate OSM road asphalt (ground-road,
+    // elevated-or-unresolved, untagged) is dropped here — before the orthophoto drape and collision
+    // — so no ghost road plane floats over the fused terrain or collides; with `osmRoads` it stays
+    // as an inspect-only mesh. Bridge-deck asphalt and supports always stay (bridges have priority).
+    applyCandidateAsphaltPolicy(meshes, planetCellVersion(manifest), {
+      osmRoads: event.data.osmRoads === true,
+    })
     // The orthophoto drape: geometry cut here, photo downloaded, verified and decoded here, so the
     // main thread only wraps the arrays. A photo failure leaves the cell playable without it.
     let drape: PlanetPayload['drape']
