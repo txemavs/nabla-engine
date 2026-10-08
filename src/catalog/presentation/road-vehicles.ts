@@ -42,8 +42,12 @@ function shineVehicle(model: THREE.Object3D, kind: 'body' | 'wheel' | 'steering'
       }
       if (kind !== 'body' || !s3ChromeMaterial.test(material.name)) continue
       material.metalness = 1
-      // Natural chrome, not a mirror: a little satin (0.3; the GLB's 0.22 read as a mirror).
-      material.roughness = Math.max(material.roughness, 0.3)
+      // Bright chrome like the wheel rim lips, but whiter: the rims' base (0.86-0.93, roughness
+      // 0.18) reads glossy black next to env-lit trim. The reflection follows the light
+      // (`shadeEnvironment`), so a bright base never looks self-lit.
+      material.color.setRGB(0.93, 0.93, 0.93)
+      material.roughness = 0.15
+      material.emissive.set(0, 0, 0)
       material.userData.nabla = { ...material.userData.nabla, reflective: true }
       material.needsUpdate = true
     }
