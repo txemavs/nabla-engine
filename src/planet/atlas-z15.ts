@@ -291,13 +291,29 @@ export function adaptAtlasManifest(
     }
   const quality = options.photo ?? 'full'
   if (quality !== 'none') {
-    const file = atlasFile(pkg, quality === 'full' ? 'ground.composite' : 'ground.composite.lo')
-    if (file?.sizePx && file.frame === 'cell')
+    // PRIMARY: ground.lots has building roofs punched out (empty lots). Fall back to the
+    // compatibility composite only when lots are missing — composite still paints roof pixels
+    // onto the road (ortho lean), which is the "techo suelto" defect.
+    const groundRole = quality === 'full' ? 'ground.lots' : 'ground.lots.lo'
+    const groundFallback = quality === 'full' ? 'ground.composite' : 'ground.composite.lo'
+    const ground = atlasFile(pkg, groundRole) ?? atlasFile(pkg, groundFallback)
+    if (ground?.sizePx && ground.frame === 'cell')
       adapted.photo = {
-        path: file.path,
-        bytes: file.bytes,
-        sha256: file.sha256,
-        sizePx: file.sizePx,
+        path: ground.path,
+        bytes: ground.bytes,
+        sha256: ground.sha256,
+        sizePx: ground.sizePx,
+        level: quality,
+      } satisfies PlanetPhoto
+    // Lean-corrected roofs-only photo for the roofs drape (separate from the ground photo).
+    const roofRole = quality === 'full' ? 'roof' : 'roof.lo'
+    const roof = atlasFile(pkg, roofRole)
+    if (roof?.sizePx)
+      adapted.roofPhoto = {
+        path: roof.path,
+        bytes: roof.bytes,
+        sha256: roof.sha256,
+        sizePx: roof.sizePx,
         level: quality,
       } satisfies PlanetPhoto
   }

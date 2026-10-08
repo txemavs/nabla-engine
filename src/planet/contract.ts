@@ -140,10 +140,15 @@ export interface PlanetManifest {
   /** Present when an external producer (nabla-atlas) published a Z15 package next to this manifest. */
   z15Package?: PlanetZ15PackageRef
   /**
-   * Orthophoto draped over the tile (the compatibility composite of an Atlas package).
+   * Orthophoto draped over the ground (prefer Atlas `ground.lots`: roofs masked out).
    * Set only by the Atlas adapter; the standard preparation service never writes it.
    */
   photo?: PlanetPhoto
+  /**
+   * Lean-corrected roof orthophoto (`roof` / `roof.lo`). Used for the roofs drape so
+   * building tops stay aligned; the ground photo must not carry roof pixels onto roads.
+   */
+  roofPhoto?: PlanetPhoto
   /** Optional candidate asphalt / supports / collision (`#88` shape). Absent on engine-only tiles. */
   roads?: PlanetCandidateRoads
   /** Atlas `#49` shape. Normalized into `roads` by `readCandidateRoads`. */
@@ -192,7 +197,10 @@ export interface PlanetPayload {
   /** Orthophoto drape prepared by the worker: triangles per layer, plus the decoded photo. */
   drape?: {
     layers: { id: string; position: Float32Array; uv: Float32Array }[]
+    /** Ground / roads / land-use photo (`ground.lots` when available). */
     photo?: ImageBitmap
+    /** Lean-corrected roofs-only photo; falls back to `photo` when absent. */
+    roofPhoto?: ImageBitmap
     error?: string
   }
   /** Worker milliseconds per phase (download, SHA-256, GLB parse, photo decode, collision build). */

@@ -388,34 +388,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `buildDrapes`
 
-## callback@41.callback@213
+## callback@41.callback@219
 
-[Implementation, line 213](../../../../../src/render/planet/worker.ts#L213)
+[Implementation, line 219](../../../../../src/render/planet/worker.ts#L219)
 
 ```ts
-callback@213(m): inferred by TypeScript; see implementation
+callback@219(m): inferred by TypeScript; see implementation
 ```
 
-## callback@41.callback@220
+## callback@41.callback@226
 
-[Implementation, line 220](../../../../../src/render/planet/worker.ts#L220)
+[Implementation, line 226](../../../../../src/render/planet/worker.ts#L226)
 
 ```ts
-callback@220(c): inferred by TypeScript; see implementation
+callback@226(c): inferred by TypeScript; see implementation
 ```
 
-## callback@41.callback@221
+## callback@41.callback@227
 
-[Implementation, line 221](../../../../../src/render/planet/worker.ts#L221)
+[Implementation, line 227](../../../../../src/render/planet/worker.ts#L227)
 
 ```ts
-callback@221(m): inferred by TypeScript; see implementation
+callback@227(m): inferred by TypeScript; see implementation
 ```
 
-## callback@41.callback@222
+## callback@41.callback@228
 
-[Implementation, line 222](../../../../../src/render/planet/worker.ts#L222)
+[Implementation, line 228](../../../../../src/render/planet/worker.ts#L228)
 
 ```ts
-callback@222(d): inferred by TypeScript; see implementation
+callback@228(d): inferred by TypeScript; see implementation
 ```

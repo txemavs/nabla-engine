@@ -200,6 +200,12 @@ self.onmessage = async (
       if (layers.length)
         try {
           drape.photo = await loadPhoto(directory + manifest.photo.path, manifest.photo, phase)
+          if (manifest.roofPhoto)
+            drape.roofPhoto = await loadPhoto(
+              directory + manifest.roofPhoto.path,
+              manifest.roofPhoto,
+              phase,
+            )
         } catch (error) {
           drape.error = String(error)
         }
@@ -221,6 +227,7 @@ self.onmessage = async (
       ...meshes.flatMap((m) => (m.map ? [m.map] : [])),
       ...(drape?.layers.flatMap((d) => [d.position.buffer, d.uv.buffer]) ?? []),
       ...(drape?.photo ? [drape.photo] : []),
+      ...(drape?.roofPhoto ? [drape.roofPhoto] : []),
     ] as Transferable[]
     self.postMessage(
       {
