@@ -4,6 +4,12 @@
 
 ### Added
 
+- **VFR800 chrome and windscreen:** the chrome exhaust and discs, brake tracks and mirror glass
+  are neutral silver (base 0.95 grey, metallic 1, low roughness) and the reflection environment
+  is a colourless studio gradient, so chrome no longer reads blue. The windscreen is a
+  see-through neutral smoke grey with a slight reflection (`extras.nabla.envIntensity`, honoured
+  by `applyReflectionEnvironment`). Both via `scripts/prepare-vfr800-cockpit.mjs`.
+
 - **Motorcycles, phase 3 (`vfr800`):** automatic rider (`twoWheeled.rider.auto`: hangs off into
   turns, forward under hard acceleration, back under hard front braking, keys override and hand
   back after ~1 s) and a tuck behind the windscreen from 180 km/h with hysteresis

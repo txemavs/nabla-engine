@@ -15,15 +15,15 @@
   "up": "+Y",
   "forward": "-Z",
   "triangles": 271678,
-  "bytes": 6232732,
-  "sha256": "0a104858d32820afaf570538add4a71a82ae3f1b9522a9f89db99670dbe089f1",
+  "bytes": 6232756,
+  "sha256": "530bf05911bd158d47c1d4e9f8660a9bae3611c82d2fbdd151f7dbc4190173af",
   "provenance": {
     "reworkedBy": "Txema Vicente (manual cleanup), then Codex (AI coding agent) under his direction using data from the Honda manual",
     "source": "Cleaned up by hand by Txema Vicente over several hours, then substantially reworked by Codex under his direction using data from the Honda manual, starting from a low-quality base mesh; almost none of the original geometry remains. Base mesh: the user-supplied interceptor.glb. Prepared and visually approved on 2026-10-08.",
     "sourceSha256": "aba157065d7bc73009ac11dc90a89131d91e7c0e5d2ad8705283df83f05a7efd",
     "preparedOn": "2026-10-08",
     "edits": [
-      "2026-10-08 scripts/prepare-vfr800-cockpit.mjs: the existing fairing mirrors split into mirror_L / mirror_R nodes under Body; static needles, hubs and speedometer tick marks removed for the live instruments; gauge and lamp anchors added; windscreen switched from transmission to alpha blending with a lighter smoked tint."
+      "2026-10-08 scripts/prepare-vfr800-cockpit.mjs: the existing fairing mirrors split into mirror_L / mirror_R nodes under Body; static needles, hubs and speedometer tick marks removed for the live instruments; gauge and lamp anchors added; windscreen switched from transmission to alpha blending with a neutral smoke-grey tint and a slight reflection (extras.nabla.envIntensity 0.35); the chrome exhaust and discs, brake tracks and mirror glass set to neutral silver (base 0.95 grey, metallic 1, low roughness) instead of the authored blue-leaning tint."
     ],
     "note": "Provenance as stated by Txema Vicente. No license name is recorded for the artwork; the repository's MIT code license covers code only."
   }

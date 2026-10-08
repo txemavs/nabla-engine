@@ -16,7 +16,10 @@ import {
   warningLampStates,
   type ClusterInputs,
 } from '../../src/render/vehicle-presentation/motorcycle-instruments.js'
-import { applyReflectionEnvironment } from '../../src/render/vehicle-presentation/reflection-environment.js'
+import {
+  applyReflectionEnvironment,
+  reflectionEnvironmentTexture,
+} from '../../src/render/vehicle-presentation/reflection-environment.js'
 
 const bytes = readFileSync('assets/library/motorcycles/vfr800fi-1999/vfr800fi-1999.glb')
 const load = async () =>
@@ -60,13 +63,25 @@ describe('vfr800 GLB cockpit pass', () => {
     }
   })
 
-  it('keeps the exhaust bright polished chrome and gives it a reflection environment', async () => {
+  it('keeps the exhaust bright neutral silver chrome with a neutral reflection environment', async () => {
     const root = await load()
     const chrome = materialsOf(root).find((m) => m.name.startsWith('Chrome exhaust'))!
     expect(chrome.metalness).toBe(1)
-    expect(chrome.roughness).toBeGreaterThanOrEqual(0.05)
+    expect(chrome.roughness).toBeGreaterThanOrEqual(0.03)
     expect(chrome.roughness).toBeLessThanOrEqual(0.15)
     expect(Math.min(chrome.color.r, chrome.color.g, chrome.color.b)).toBeGreaterThan(0.6)
+    // Neutral silver, no blue tint: on every chrome part, equal channels.
+    for (const name of ['Chrome exhaust', 'Polished chrome', 'Reflector']) {
+      const material = materialsOf(root).find((m) => m.name.startsWith(name))!
+      expect(material.color.b - material.color.r).toBeCloseTo(0, 6)
+      expect(material.color.g - material.color.r).toBeCloseTo(0, 6)
+    }
+    // The reflection environment is colourless too (a blue sky tinted the chrome).
+    const pixels = reflectionEnvironmentTexture().image.data as Uint8Array
+    for (let i = 0; i < pixels.length; i += 4) {
+      expect(pixels[i + 1]).toBe(pixels[i])
+      expect(pixels[i + 2]).toBe(pixels[i])
+    }
     const env = applyReflectionEnvironment(root)
     expect(chrome.envMap).toBeTruthy()
     expect(env.materials).toContain(chrome)
@@ -75,16 +90,23 @@ describe('vfr800 GLB cockpit pass', () => {
     expect(rubber.envMap).toBeNull()
   })
 
-  it('blends a lighter smoked windscreen with reflections', async () => {
+  it('blends a see-through smoke-grey windscreen with a slight reflection', async () => {
     const root = await load()
     const screen = materialsOf(root).find((m) => m.name.startsWith('Smoked translucent'))!
+    // «Gris humo»: a neutral grey tint, neither blue nor brown.
+    expect(screen.color.g - screen.color.r).toBeCloseTo(0, 6)
+    expect(screen.color.b - screen.color.r).toBeCloseTo(0, 6)
     expect(screen.transparent).toBe(true)
     expect(screen.opacity).toBeGreaterThan(0.15)
     expect(screen.opacity).toBeLessThan(0.4)
     expect(screen.depthWrite).toBe(false)
     expect((screen as THREE.MeshPhysicalMaterial).transmission ?? 0).toBe(0)
-    applyReflectionEnvironment(root)
+    const env = applyReflectionEnvironment(root)
     expect(screen.envMap).toBeTruthy()
+    // Slight reflection: a dimmed environment on the screen, full strength on the chrome.
+    expect(screen.envMapIntensity).toBeCloseTo(0.35, 6)
+    env.setLevel(0.5)
+    expect(screen.envMapIntensity).toBeCloseTo(0.175, 6)
   })
 
   it('carries the instrument anchors and binds a live cluster to them', async () => {

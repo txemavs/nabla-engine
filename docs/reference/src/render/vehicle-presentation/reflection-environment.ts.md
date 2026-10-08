@@ -15,9 +15,11 @@ chrome reads as bright polished metal. Matte and painted materials are left alon
 
 ## reflectionEnvironmentTexture
 
-[Implementation, line 12](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L12)
+[Implementation, line 16](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L16)
 
-Equirectangular sky (zenith → bright horizon) over a dark ground, shared by every model.
+Equirectangular neutral studio gradient (light grey overhead, bright horizon band, dark grey
+ground), shared by every model. Deliberately colourless: a blue sky in the reflection tinted the
+chrome blue.
 
 ```ts
 reflectionEnvironmentTexture(): THREE.DataTexture
@@ -35,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## reflectionEnvironmentTexture.mix
 
-[Implementation, line 17](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L17)
+[Implementation, line 21](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L21)
 
 ```ts
 mix(a: number[], b: number[], t: number): inferred by TypeScript; see implementation
@@ -45,17 +47,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `a.map`
 
-## reflectionEnvironmentTexture.mix.callback@17
+## reflectionEnvironmentTexture.mix.callback@21
 
-[Implementation, line 17](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L17)
+[Implementation, line 21](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L21)
 
 ```ts
-callback@17(v, i): inferred by TypeScript; see implementation
+callback@21(v, i): inferred by TypeScript; see implementation
 ```
 
 ## applyReflectionEnvironment
 
-[Implementation, line 49](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L49)
+[Implementation, line 53](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L53)
 
 Give every standard material under `root` with `metalness >= minMetalness`, or tagged
 `extras.nabla.reflective` in the GLB (glossy glass such as a windscreen), the shared reflection
@@ -70,13 +72,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `reflectionEnvironmentTexture`
 - `root.traverse`
+- `scale`
 
-## applyReflectionEnvironment.callback@54
+## applyReflectionEnvironment.callback@58
 
-[Implementation, line 54](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L54)
+[Implementation, line 58](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L58)
 
 ```ts
-callback@54(object): inferred by TypeScript; see implementation
+callback@58(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -84,9 +87,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[mesh.material].flat`
 - `materials.add`
 
+## applyReflectionEnvironment.scale
+
+[Implementation, line 72](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L72)
+
+```ts
+scale(material: THREE.Material): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Number.isFinite`
+
 ## applyReflectionEnvironment.setLevel
 
-[Implementation, line 74](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L74)
+[Implementation, line 84](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L84)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation
@@ -95,3 +111,4 @@ setLevel(level: number): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
+- `scale`

@@ -15,10 +15,13 @@
  *   face; `extras.nabla` carries the size in metres.
  *
  * Selection boxes and sizes come from measuring the authored mesh (see docs/motorcycles.md).
- * - Windscreen: alpha-blended light smoked tint (was transmission), slightly more transparent.
+ * - Windscreen: alpha-blended neutral smoke grey («gris humo», was a bluish transmission tint),
+ *   see-through, with a slight reflection (`extras.nabla.envIntensity`).
+ * - Chrome: the exhaust and discs, the brake tracks and the mirror glass become neutral silver
+ *   (base 0.95 grey, metallic 1, low roughness) instead of their slightly blue authored tint.
  *
- * The exhaust and the mirror glass already use metallic chrome; the renderer gives them (and the
- * windscreen, tagged `extras.nabla.reflective`) a reflection environment.
+ * The renderer gives the chrome (and the windscreen, tagged `extras.nabla.reflective`) a neutral
+ * grey reflection environment.
  */
 import fs from 'node:fs'
 import { readGlb, writeGlb, components } from './lib/glb.mjs'
@@ -255,18 +258,35 @@ for (const [name, position, normal, data] of anchors) {
 
 // --- Windscreen ---------------------------------------------------------------------------------
 // Plain alpha blending instead of transmission (a transmission pass renders the screen from a
-// copy of the opaque scene and can hide or blur the cluster behind it): a light smoked tint, a bit
-// more see-through than before, glossy so the renderer's reflection environment shows on it.
+// copy of the opaque scene and can hide or blur the cluster behind it): a neutral smoke-grey tint
+// (equal RGB, no blue or brown), see-through, glossy with a dimmed reflection environment so it
+// shows a slight reflection without hiding the instruments or the road.
 const screen = json.materials[materialIndex('Smoked translucent windscreen')]
 screen.pbrMetallicRoughness = {
-  baseColorFactor: [0.2, 0.22, 0.25, 0.26],
+  baseColorFactor: [0.16, 0.16, 0.16, 0.26],
   metallicFactor: 0,
   roughnessFactor: 0.05,
 }
 screen.alphaMode = 'BLEND'
 screen.doubleSided = true
 screen.extensions = { KHR_materials_ior: { ior: 1.49 } }
-screen.extras = { ...(screen.extras ?? {}), nabla: { reflective: true } }
+screen.extras = { ...(screen.extras ?? {}), nabla: { reflective: true, envIntensity: 0.35 } }
+
+// --- Chrome -------------------------------------------------------------------------------------
+// Neutral silver chrome: the authored factors lean blue (0.83, 0.86, 0.9).
+for (const [name, roughness] of [
+  ['Chrome exhaust and discs', 0.05],
+  ['Polished chrome brake tracks', 0.16],
+  ['Reflector', 0.04],
+]) {
+  const material = json.materials[materialIndex(name)]
+  material.pbrMetallicRoughness = {
+    ...material.pbrMetallicRoughness,
+    baseColorFactor: [0.95, 0.95, 0.95, 1],
+    metallicFactor: 1,
+    roughnessFactor: roughness,
+  }
+}
 const used = new Set(json.materials.flatMap((m) => Object.keys(m.extensions ?? {})))
 for (const key of ['extensionsUsed', 'extensionsRequired'])
   if (json[key]) json[key] = json[key].filter((e) => !e.startsWith('KHR_materials_') || used.has(e))
