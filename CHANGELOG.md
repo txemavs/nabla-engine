@@ -4,6 +4,21 @@
 
 ### Added
 
+- **Motorcycles, phase 2 (`vfr800` preset):** wheelies and stoppies come from real pitch
+  dynamics: the rider is part of the vehicle mass (`twoWheeled.rider`), drive and brake forces
+  transfer load at the tyre contacts, and a configurable pitch assist (`twoWheeled.pitchAssist`)
+  fades the drive / eases the front brake past a soft angle, pulls the wheel down past a maximum
+  angle and cushions landings; it replaces the phase-1 wheelie guard. Rider counterweight on
+  **U / O** (hang off left / right) and **I / L** (weight forward / back) moves the body centre
+  of mass (`Body.setCenterOfMass`), changes the lean needed in a turn and opens the wheelie or
+  stoppie; the head and cockpit camera follow. **Shift** in first or second gear with the
+  throttle open is a clutch kick (`twoWheeled.clutchKick`). Optional Dual CBS
+  (`twoWheeled.cbs`): lever and pedal each brake both wheels by configurable shares with a lag on
+  the linked circuits; the vfr800's shares are TODO(unverified) piston-count placeholders, not
+  Honda data. New `vehicle.audio.engine` voice `v4`: a procedural 90° V4 with a 180° crank
+  (uneven 90-180-270-180 firing from `vAngle`/`crankpin`), one periodic wave per cycle, no sample
+  files; cars keep the engine note. `vehicleInfo` adds `pitch`; `twoWheeledPose` adds `pitch` and
+  `riderShift`; `PlayerInput` adds `riderRight`/`riderForward`.
 - **Motorcycles, phase 1 (`vfr800` preset):** the Honda VFR800FI 1999 from the asset library is
   drivable. New `vehicle.twoWheeled` schema (two hubs, rear wheel radius, steering head axis,
   lock, optional lean/balance/brake tuning) with a narrow-size exemption and redlines up to

@@ -151,8 +151,12 @@ export class SceneView {
   readonly streetlights = new Streetlights(this.root)
   night = false
   private readonly headOffsets = new Map<string, readonly number[]>()
+  /** Two-wheeler rider offset ([x, z] chassis metres) from the last pose; moves the head. */
+  private readonly riderShifts = new Map<string, readonly [number, number]>()
   vehicleHeadOffset(id: string): readonly number[] | undefined {
-    return this.headOffsets.get(id)
+    const base = this.headOffsets.get(id)
+    const shift = this.riderShifts.get(id)
+    return base && shift ? riderHeadOffset(base, shift) : base
   }
   pressShipSwitch(id: string, kind: ShipSwitch): void {
     this.shipLights.get(id)?.press(kind)
@@ -587,6 +591,7 @@ export class SceneView {
       this.placeScreens,
       this.systemScreens,
       this.headOffsets,
+      this.riderShifts,
       this.authoredLights,
       this.landingGear,
       this.motorcycleRigs,
@@ -1299,7 +1304,10 @@ export class SceneView {
     }
     for (const [id, rig] of this.motorcycleRigs) {
       const pose = sim.twoWheeledPose(id)
-      if (pose) rig.update(pose)
+      if (pose) {
+        rig.update(pose)
+        this.riderShifts.set(id, pose.riderShift)
+      }
     }
     for (const [id, thrusters] of this.thrusters) {
       const info = sim.vehicleInfo(id)
@@ -1506,4 +1514,16 @@ export class SceneView {
     this.root.removeFromParent()
     disposeObject(this.root)
   }
+}
+
+/**
+ * Rider head (and cockpit eye) offset for a two-wheeler rider moved by `shift` ([x, z] chassis
+ * metres, +z back): the head follows the body sideways and fore-aft and drops a little as the
+ * rider tucks forward over the tank.
+ */
+export function riderHeadOffset(
+  base: readonly number[],
+  shift: readonly [number, number],
+): number[] {
+  return [base[0] + shift[0], base[1] - 0.5 * Math.max(0, -shift[1]), base[2] + shift[1]]
 }

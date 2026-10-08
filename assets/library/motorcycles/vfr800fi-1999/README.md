@@ -15,6 +15,8 @@ Original user-supplied Interceptor geometry was simplified and articulated; sour
 
 **Phase 1: drivable.** The `vfr800` preset runs on the engine's two-wheeled controller (`src/simulation/vehicles/two-wheeled/`): two ray-cast wheels with their own radii, steering about the raked head axis, a lean controller with low-speed balance assist, separate front (S / brake input) and rear (handbrake input) brakes, and the shared automatic gearbox. The rig extractor reads `wheel.front` and `wheel.rear`. It has no turbo sound and plays a quiet click on every gear change (`vehicle.audio`).
 
+**Phase 2.** Real wheelies and stoppies with a configurable assist, rider counterweight on U / O (hang off) and I / L (weight forward / back), a clutch kick on Shift in low gears, placeholder Dual CBS (S and Space each brake both wheels; shares TODO(unverified)) and a procedural 90° V4 engine voice with a 180° crank. Details in [docs/motorcycles.md](../../../../docs/motorcycles.md).
+
 Visual kinematics live in the engine: `bindMotorcycleRig(root)` in `src/render/vehicle-presentation/motorcycle-rig.ts` (exported from `@nabla/engine/vehicle-presentation`), ported from the former `vfr800fi-1999-controls.mjs` helper. It reads the steering axis, lock and fork travel from the GLB extras, clones the chain geometry per instance (`dispose()` frees it) and takes the pose from `Simulation.twoWheeledPose(id)`. Visual travel is 100 mm, separate from factory travel.
 
 Which preset values are Honda data and which are placeholders is listed in [docs/motorcycles.md](../../../../docs/motorcycles.md). Every placeholder is marked TODO(unverified) in the engine config; none of them is Honda data.

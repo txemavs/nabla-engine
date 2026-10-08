@@ -4,13 +4,15 @@ import { GearClick, type GearClickSound } from './gear-click.js'
 import { loopingNoise } from './graph.js'
 import { Gunshot } from './gunshot.js'
 import { Powertrain } from './powertrain.js'
+import type { ResolvedEngineVoice } from './vehicle-sound.js'
 import { Propeller } from './propeller.js'
 import { TireSqueal } from './tires.js'
 import { Turbine } from './turbine.js'
 import { ReverseAlarm } from './reverse-alarm.js'
 
 /**
- * One browser audio context, nine independent voices.
+ * One browser audio context, nine independent voices (the powertrain one picks a road-car
+ * note or a procedural V4 per vehicle).
  *
  * The context has to be created from a click or a key press (`unlock`).
  * Turbine, propeller, tires, powertrain, engine start, reverse alarm, gear clack, gear click and the
@@ -115,12 +117,29 @@ export class VehicleAudio {
 
   /**
    * `rpm` is engine speed. `load` is 0..1. Rpm 0 silences the car and the turbo.
-   * `turbo: false` keeps the turbo silent for engines without one (e.g. a motorcycle).
+   * `turbo: false` keeps the turbo silent for engines without one (e.g. a motorcycle);
+   * `engine` picks the voice (`resolveEngineVoice`; default the road-car note).
    */
-  powertrain(rpm: number, load: number, options: { turbo?: boolean } = {}): void {
+  powertrain(
+    rpm: number,
+    load: number,
+    options: { turbo?: boolean; engine?: ResolvedEngineVoice } = {},
+  ): void {
     const frame = this.frame()
     if (!frame || !this.powertrainVoice) return
-    this.powertrainVoice.update(frame.time, frame.audible, rpm, load, options.turbo ?? true)
+    this.powertrainVoice.update(
+      frame.time,
+      frame.audible,
+      rpm,
+      load,
+      options.turbo ?? true,
+      options.engine,
+    )
+  }
+
+  /** Engine voice that played on the last `powertrain` call, for tests and the dataset. */
+  get engineVoice(): 'note' | 'v4' {
+    return this.powertrainVoice?.activeVoice ?? 'note'
   }
 
   /** One short, quiet mechanical click for a gear change (`gearShift.sound: 'click'`). */

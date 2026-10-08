@@ -117,7 +117,10 @@ describe('vfr800 two-wheeled controller', () => {
       expect(result.end).toBeLessThan(2)
       expect(Math.abs(result.lean)).toBeLessThan(0.05)
     }
-    expect(front.drop).toBeGreaterThan(rear.drop * 1.5)
+    // With the combined brakes the pedal also works the front caliper (placeholder shares), and
+    // the lever is held back by the stoppie assist, so the gap is smaller than with independent
+    // brakes; the lever still stops clearly harder.
+    expect(front.drop).toBeGreaterThan(rear.drop * 1.25)
     // No reverse: holding the front brake at a stop never engages R.
     sim.setInput({ ...idleInput(), forward: -1 })
     run(3)

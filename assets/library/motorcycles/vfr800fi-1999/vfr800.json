@@ -39,12 +39,18 @@
       "grip": 4.5,
       "idleRpm": 1200,
       "maxRpm": 11500,
-      "maxWheelForceN": 2600
+      "maxWheelForceN": 2950
     },
     "twoWheeled": {
       "rearWheelRadius": 0.3149,
       "steeringAxis": [0, 0.9106, 0.4133],
-      "steerLimit": 0.610865
+      "steerLimit": 0.610865,
+      "frontBrakeForce": 72,
+      "rearBrakeForce": 9,
+      "rider": {
+        "seat": [0, 0.55, 0.31]
+      },
+      "cbs": {}
     },
     "brakeForce": 20,
     "cameraDistance": 4.5,
@@ -53,6 +59,11 @@
       "gearShift": {
         "sound": "click",
         "volume": 1
+      },
+      "engine": {
+        "voice": "v4",
+        "vAngle": 90,
+        "crankpin": 180
       }
     }
   },

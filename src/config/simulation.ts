@@ -122,7 +122,7 @@ export const twoWheeledDefaults = Object.freeze({
    * Low-pass rate of the roll disturbance observer, 1/s. It estimates the roll acceleration the
    * tyres and gravity add every tick and cancels it, so the lean follows its target in turns.
    */
-  disturbanceResponse: 20,
+  disturbanceResponse: 30,
   /** TODO(unverified): handlebar slew rate, rad/s. */
   steerRate: 2.5,
   /** TODO(unverified): front brake at full lever, same units as `brakeForce`. */
@@ -135,10 +135,110 @@ export const twoWheeledDefaults = Object.freeze({
   dampingRelaxation: 2.6,
   dampingCompression: 4.4,
   /**
-   * Phase-1 wheelie guard: drive force is cut while the front tyre is off the ground under
-   * power. Wheelie and stoppie dynamics are not tuned yet.
+   * Wheelie and stoppie assist (phase 2). The pitch itself is physical: drive and brake forces
+   * act at the tyre contacts below the centre of mass, so the front lifts when
+   * drive force × CoM height exceeds weight × CoM-to-rear-contact distance, and the rear lifts
+   * when braking deceleration exceeds g × CoM-to-front-contact / CoM height. The assist only
+   * keeps it fun and recoverable: between the soft and the maximum angle it fades the drive
+   * (wheelie) or the front brake (stoppie), and past the maximum it adds a restoring pitch
+   * torque. Angles are radians, relative to the ground under the wheel that is still down.
    */
-  wheelieGuard: true,
+  pitchAssist: Object.freeze({
+    /** Wheelie assist on by default. Off: only physics, so the bike can loop out. */
+    wheelie: true,
+    /**
+     * TODO(unverified): wheelie angle where the drive starts to fade with the rider sat fully
+     * back, radians (~15°). With a rider model, the soft and maximum angles blend from 0 and
+     * `wheelieNeutralAngle` (rider centred or forward) to these as the rider moves back, so a
+     * full-throttle start only lifts the front a little unless the rider asks for a wheelie.
+     */
+    wheelieSoftAngle: 0.26,
+    /** TODO(unverified): wheelie angle with no drive left, rider fully back (~30°). */
+    wheelieMaxAngle: 0.52,
+    /** TODO(unverified): largest wheelie angle with the rider centred or forward (~4°). */
+    wheelieNeutralAngle: 0.07,
+    /** Stoppie assist on by default. Off: the front brake can flip the bike over the bar. */
+    stoppie: true,
+    /**
+     * TODO(unverified): stoppie (rear lift) angle where the front brake starts to ease with the
+     * rider fully forward (~7°). Like the wheelie, the angles blend from 0 and
+     * `stoppieNeutralAngle` (rider centred or back) as the rider moves forward.
+     */
+    stoppieSoftAngle: 0.12,
+    /** TODO(unverified): stoppie angle with the front brake eased to `stoppieMinBrake` (~17°). */
+    stoppieMaxAngle: 0.3,
+    /** TODO(unverified): largest stoppie angle with the rider centred or back (~3°). */
+    stoppieNeutralAngle: 0.05,
+    /** TODO(unverified): share of the front brake kept at `stoppieMaxAngle`, 0..1. */
+    stoppieMinBrake: 0.35,
+    /** TODO(unverified): natural frequency of the restoring pitch torque past the maximum, rad/s. */
+    response: 6,
+    /** Damping ratio of that restoring torque (1 = critically damped). */
+    dampingRatio: 1,
+    /**
+     * TODO(unverified): fastest pitch rate back towards the ground before the assist damps the
+     * landing, rad/s. Keeps a dropped wheelie from slamming the fork.
+     */
+    landingRate: 2.5,
+    /** Look-ahead of the fade, seconds: it reacts to where the pitch is heading. */
+    anticipation: 0.15,
+  }),
+  /**
+   * Clutch kick: Shift (the launch input) with the throttle open in a low gear slips the
+   * clutch and dumps the spinning engine's energy into the rear wheel for a moment, which is
+   * how a rider lifts the front in a gear where the steady drive force cannot.
+   * TODO(unverified): gain and duration are gameplay placeholders, not crank-inertia data.
+   */
+  clutchKick: Object.freeze({
+    /** Extra drive force at the start of the kick, as a share of the current drive force. */
+    gain: 0.5,
+    /** Kick length, seconds (linear fade). */
+    seconds: 0.35,
+    /** Highest gear the kick works in. */
+    maxGear: 2,
+  }),
+  /**
+   * Rider counterweight (phase 2). The rider is part of the vehicle mass; moving the rider
+   * moves the chassis centre of mass in Rapier, so weight shift changes load transfer, wheelie
+   * and stoppie thresholds and the lean needed for a turn (hanging off leans the bike less).
+   */
+  rider: Object.freeze({
+    /** TODO(unverified): rider mass inside the vehicle mass, kg (the assumed ~76 kg rider). */
+    mass: 76,
+    /** TODO(unverified): largest sideways rider shift (hanging off), metres. */
+    lateral: 0.25,
+    /** TODO(unverified): largest forward rider shift (chest over the tank), metres. */
+    forward: 0.2,
+    /** TODO(unverified): largest rearward rider shift (sitting back), metres. */
+    back: 0.25,
+    /** TODO(unverified): how fast the rider moves, full travel per second. */
+    rate: 3,
+    /**
+     * TODO(unverified): body steering. A full sideways shift adds this much steering input
+     * (0..1) towards the side the rider moves to.
+     */
+    steer: 0.2,
+  }),
+  /**
+   * Combined braking (Dual CBS style), used only when a preset declares `twoWheeled.cbs`.
+   * Each control feeds both wheels; values are shares of each wheel's full brake force
+   * (`frontBrakeForce`, `rearBrakeForce`). Without `cbs` the lever brakes only the front and the
+   * pedal only the rear (phase-1 behaviour).
+   *
+   * TODO(unverified): these shares are NOT Honda data. They follow the piston allocation
+   * described for the 1998–2001 VFR800 (lever: 4 of 6 front pistons plus 1 of 3 rear pistons
+   * through the secondary master cylinder; pedal: the other 2 front and 2 rear pistons), read as
+   * piston counts only. Real hydraulic shares depend on piston areas, the proportional control
+   * valve and the delay valve, which are not modelled from data.
+   */
+  cbs: Object.freeze({
+    leverFront: 4 / 6,
+    leverRear: 1 / 3,
+    pedalFront: 2 / 6,
+    pedalRear: 2 / 3,
+    /** TODO(unverified): lag of the linked (cross-coupled) circuits, seconds. */
+    linkLag: 0.12,
+  }),
   /** TODO(unverified): aerodynamic drag factor standing in for ½·ρ·CdA, N per (m/s)². */
   dragFactor: 0.3,
 })

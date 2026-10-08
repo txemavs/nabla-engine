@@ -330,6 +330,8 @@ export class Body {
   angularVelocity = new Vec3()
   torque = new Vec3()
   inertia = new Vec3(1, 1, 1)
+  /** Body-local centre of mass (default: the body origin). Change it with `setCenterOfMass`. */
+  readonly centerOfMass = new Vec3()
   shapes: Shape[] = []
   shapeOffsets: Vec3[] = []
   shapeOrientations: Quaternion[] = []
@@ -382,6 +384,25 @@ export class Body {
     this.shapeOrientations.splice(i, 1)
     this.colliders.splice(i, 1)
     this.aabbNeedsUpdate = true
+  }
+  /**
+   * Move the body-local centre of mass (e.g. a rider shifting weight). The inertia tensor is
+   * kept; only the point gravity, contacts and wheel forces act about moves.
+   */
+  setCenterOfMass(x: number, y: number, z: number): void {
+    if (![x, y, z].every(Number.isFinite)) throw new Error('Centre of mass must be finite')
+    const c = this.centerOfMass
+    if (Math.abs(c.x - x) < 1e-5 && Math.abs(c.y - y) < 1e-5 && Math.abs(c.z - z) < 1e-5) return
+    c.set(x, y, z)
+    if (!this.raw || this.mass <= 0) return
+    this.raw.setAdditionalMassProperties(
+      this.mass,
+      { x, y, z },
+      { x: this.inertia.x, y: this.inertia.y, z: this.inertia.z },
+      { x: 0, y: 0, z: 0, w: 1 },
+      true,
+    )
+    this.raw.recomputeMassPropertiesFromColliders()
   }
   updateMassProperties() {
     this.applyInertia()
@@ -573,7 +594,7 @@ export class Body {
     this.inertia.set(ix, iy, iz)
     this.raw.setAdditionalMassProperties(
       this.mass,
-      { x: 0, y: 0, z: 0 },
+      { x: this.centerOfMass.x, y: this.centerOfMass.y, z: this.centerOfMass.z },
       { x: ix, y: iy, z: iz },
       { x: 0, y: 0, z: 0, w: 1 },
       true,

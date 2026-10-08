@@ -1,16 +1,24 @@
 /**
- * Minimal single-track (motorcycle) controller on the shared Rapier world. Phase 1:
+ * Single-track (motorcycle) controller on the shared Rapier world.
  *
+ * Phase 1:
  * - one rigid chassis body and two Rapier ray-cast wheels (front, rear) with their own radii;
  * - the handlebar turns about the raked steering axis; the ground steer angle follows from it;
  * - a lean controller tracks the steady-turn lean for the current speed and steer, with a
  *   disturbance observer for the tyre and gravity roll moments, and a low-speed balance assist
  *   that keeps a stopped or crawling machine upright (configurable, never fake wheel contacts);
- * - separate front (negative throttle) and rear (handbrake input) brakes;
+ * - hand lever (negative throttle) and foot pedal (handbrake input) brakes;
  * - the shared automatic gearbox and engine model (`drivetrain.ts`) on the rear wheel.
  *
- * Not modelled yet: countersteering dynamics, tyre camber/profile, rider weight shift, clutch,
- * combined (CBS) braking, wheelies and stoppies (a guard cuts power when the front lifts).
+ * Phase 2:
+ * - wheelies and stoppies come from the physics (forces at the contacts, below the centre of
+ *   mass); a configurable assist fades drive / front brake near the limit and adds a restoring
+ *   pitch torque past it, so they stay recoverable (`pitch.ts`);
+ * - rider counterweight: the rider input moves the chassis centre of mass (`rider.ts`), which
+ *   changes load transfer, the wheelie/stoppie thresholds and the lean needed in a turn;
+ * - optional combined brakes (Dual CBS style): each control feeds both wheels (`brakes.ts`).
+ *
+ * Not modelled yet: countersteering dynamics, tyre camber/profile, clutch.
  */
 import {
   simulationDefaults,
@@ -41,7 +49,10 @@ import {
   targetLean,
   updateDisturbance,
 } from './balance.js'
+import { independentBrakes, stepCombinedBrakes, validBrakeSplit } from './brakes.js'
 import type { TwoWheeledPose, TwoWheeledState, TwoWheeledTuning } from './contracts.js'
+import { measurePitch, pitchAssist } from './pitch.js'
+import { hangOffLean, riderCentreOfMass, riderTarget, stepRider } from './rider.js'
 
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n))
 const FRONT = 0,
@@ -73,8 +84,22 @@ export function twoWheeledTuning(definition: WheeledDefinition): TwoWheeledTunin
     frictionSlip: g.frictionSlip ?? d.frictionSlip,
     dampingRelaxation: d.dampingRelaxation,
     dampingCompression: d.dampingCompression,
-    wheelieGuard: d.wheelieGuard,
     dragFactor: d.dragFactor,
+    pitchAssist: { ...d.pitchAssist, ...g.pitchAssist },
+    rider: g.rider
+      ? {
+          seat: [...g.rider.seat],
+          mass: g.rider.mass ?? d.rider.mass,
+          lateral: g.rider.lateral ?? d.rider.lateral,
+          forward: g.rider.forward ?? d.rider.forward,
+          back: g.rider.back ?? d.rider.back,
+          rate: g.rider.rate ?? d.rider.rate,
+          steer: g.rider.steer ?? d.rider.steer,
+        }
+      : null,
+    brakes: g.cbs ? { ...d.cbs, ...g.cbs } : { ...independentBrakes },
+    combinedBrakes: Boolean(g.cbs),
+    clutchKick: { ...d.clutchKick, ...g.clutchKick },
   }
 }
 
@@ -120,6 +145,15 @@ export function createTwoWheeledVehicle(
     ].every(positive) ||
     !(tuning.fallLean > tuning.maxLean) ||
     !(tuning.balanceSpeed >= 0) ||
+    !(tuning.pitchAssist.wheelieMaxAngle > tuning.pitchAssist.wheelieSoftAngle) ||
+    !(tuning.pitchAssist.stoppieMaxAngle > tuning.pitchAssist.stoppieSoftAngle) ||
+    !(tuning.pitchAssist.wheelieNeutralAngle > 0) ||
+    !(tuning.pitchAssist.stoppieNeutralAngle > 0) ||
+    !validBrakeSplit(tuning.brakes) ||
+    (tuning.rider &&
+      (!tuning.rider.seat.every(Number.isFinite) ||
+        !positive(tuning.rider.rate) ||
+        !(tuning.rider.mass > 0 && tuning.rider.mass < body.mass))) ||
     (definition.powertrain && !isValidPowertrain(definition.powertrain))
   )
     throw new Error('Invalid two-wheeled vehicle definition')
@@ -150,6 +184,10 @@ export function createTwoWheeledVehicle(
   )
   const drivetrain = createDrivetrain()
   if (options.parked === false) Object.assign(drivetrain, { gear: 1, parked: false })
+  if (tuning.rider)
+    body.setCenterOfMass(
+      ...riderCentreOfMass(tuning.rider.seat, [0, 0], tuning.rider.mass, body.mass),
+    )
   return {
     body,
     raycast,
@@ -167,9 +205,21 @@ export function createTwoWheeledVehicle(
       lean: 0,
       targetLean: 0,
       fallen: false,
+      lever: 0,
+      pedal: 0,
       frontBrake: 0,
       rearBrake: 0,
-      wheelieCut: false,
+      brakeLink: { linkedFront: 0, linkedRear: 0 },
+      pitch: 0,
+      pitchRate: 0,
+      pitchReference: 0,
+      previousPitch: null,
+      wheelieScale: 1,
+      stoppieScale: 1,
+      riderShift: [0, 0],
+      comHeight: 0,
+      clutchKick: 0,
+      launchHeld: false,
       disturbance: 0,
       previousLean: null,
       previousLeanRate: null,
@@ -188,13 +238,21 @@ export function resetTwoWheeled(state: TwoWheeledState): void {
   state.previousLean = null
   state.previousLeanRate = null
   state.previousCommand = 0
-  state.wheelieCut = false
+  state.previousPitch = null
+  state.pitch = 0
+  state.pitchRate = 0
+  state.wheelieScale = 1
+  state.stoppieScale = 1
+  state.brakeLink.linkedFront = 0
+  state.brakeLink.linkedRear = 0
+  state.clutchKick = 0
 }
 
 /**
- * Apply one fixed tick of steering, drive, brakes and lean control; call before the world step.
- * Input: `throttle` > 0 accelerates, < 0 is the front brake (there is no reverse gear);
- * `handbrake` is the rear brake; `steering` is the bar demand (+1 full right).
+ * Apply one fixed tick of rider, steering, drive, brakes, pitch assist and lean control; call
+ * before the world step. Input: `throttle` > 0 accelerates, < 0 is the hand lever (front brake,
+ * or both wheels with CBS; there is no reverse gear); `handbrake` is the foot pedal (rear brake,
+ * or both with CBS); `steering` is the bar demand (+1 full right); `rider` is the counterweight.
  * `gravityUp` is the local vertical (radial on a planet).
  */
 export function stepTwoWheeledVehicle(
@@ -228,10 +286,28 @@ export function stepTwoWheeledVehicle(
   const frontContact = contact(FRONT),
     rearContact = contact(REAR)
 
-  // Handlebar about the steering axis; the ground angle follows through the rake.
+  // Rider counterweight: the rider moves at a finite rate and carries the centre of mass along.
+  const rider = tuning.rider
+  if (rider) {
+    const target =
+      active && powered && input.rider
+        ? riderTarget(input.rider.right, input.rider.forward, rider)
+        : ([0, 0] as [number, number])
+    state.riderShift = stepRider(state.riderShift, target, rider, dt)
+    v.body.setCenterOfMass(
+      ...riderCentreOfMass(rider.seat, state.riderShift, rider.mass, v.body.mass),
+    )
+  }
+  state.comHeight = centreOfMassHeight(v)
+  measureGroundPitch(v, dt, forward, frontContact, rearContact, gravityUp)
+
+  // Handlebar about the steering axis; the ground angle follows through the rake. A sideways
+  // rider shift adds a little body steering towards that side.
+  const bodySteer =
+    rider && rider.lateral > 0 ? (rider.steer * state.riderShift[0]) / rider.lateral : 0
   const barTarget =
     active && powered
-      ? handlebarTarget(input.steering, speed, {
+      ? handlebarTarget(clamp(input.steering + bodySteer, -1, 1), speed, {
           steerLimit: state.geometry.steerLimit,
           maxLean: tuning.maxLean,
           rakeCosine: state.rakeCosine,
@@ -251,10 +327,11 @@ export function stepTwoWheeledVehicle(
   // Start-up sequence after entering: P is kept and the controls do nothing until it ends.
   const starting = stepIgnition(v.drivetrain, dt, tune?.idleRpm ?? roadVehicleDefaults.idleRpm)
   const throttle = active && powered && !starting ? Math.max(0, input.throttle) : 0
-  state.frontBrake = active ? Math.max(0, -input.throttle) : 0
-  state.rearBrake = active && input.handbrake ? 1 : 0
+  state.lever = active ? Math.max(0, -input.throttle) : 0
+  state.pedal = active && input.handbrake ? 1 : 0
+  const brakes = stepCombinedBrakes(state.brakeLink, state.lever, state.pedal, tuning.brakes, dt)
   if (tune) {
-    stepDrivetrain(v.drivetrain, tune, rearRadius, speed, throttle, state.rearBrake > 0, dt)
+    stepDrivetrain(v.drivetrain, tune, rearRadius, speed, throttle, state.pedal > 0, dt)
     if (
       powered &&
       throttle < 0.01 &&
@@ -288,9 +365,72 @@ export function stepTwoWheeledVehicle(
   }
   holdInPark(v, forward, speed, dt)
 
-  // Phase-1 wheelie guard: no drive while the front tyre is off the ground under power.
-  state.wheelieCut = tuning.wheelieGuard && throttle > 0 && rearContact && !frontContact
-  const drive = state.wheelieCut ? 0 : v.drivetrain.force
+  // Wheelie / stoppie assist: fade the lifting force near the limit, restore past it.
+  const assist = tuning.pitchAssist
+  let pitchAcceleration = 0
+  state.wheelieScale = 1
+  state.stoppieScale = 1
+  // With a rider model the assist allows the full wheelie (stoppie) only as far as the rider
+  // has moved back (forward); a centred rider gets a small lift at most.
+  const back = rider && rider.back > 0 ? clamp(state.riderShift[1] / rider.back, 0, 1) : 1
+  const ahead = rider && rider.forward > 0 ? clamp(-state.riderShift[1] / rider.forward, 0, 1) : 1
+  const blend = (neutral: number, full: number, share: number) => neutral + (full - neutral) * share
+  if (rearContact && !frontContact && assist.wheelie) {
+    const out = pitchAssist({
+      angle: state.pitch,
+      rate: state.pitchRate,
+      softAngle: assist.wheelieSoftAngle * back,
+      maxAngle: blend(assist.wheelieNeutralAngle, assist.wheelieMaxAngle, back),
+      floor: 0,
+      response: assist.response,
+      dampingRatio: assist.dampingRatio,
+      landingRate: assist.landingRate,
+      anticipation: assist.anticipation,
+    })
+    state.wheelieScale = out.scale
+    pitchAcceleration = out.acceleration
+  } else if (frontContact && !rearContact && assist.stoppie) {
+    const out = pitchAssist({
+      angle: -state.pitch,
+      rate: -state.pitchRate,
+      softAngle: assist.stoppieSoftAngle * ahead,
+      maxAngle: blend(assist.stoppieNeutralAngle, assist.stoppieMaxAngle, ahead),
+      floor: assist.stoppieMinBrake,
+      response: assist.response,
+      dampingRatio: assist.dampingRatio,
+      landingRate: assist.landingRate,
+      anticipation: assist.anticipation,
+    })
+    state.stoppieScale = out.scale
+    pitchAcceleration = -out.acceleration
+  }
+  state.frontBrake = brakes.front * state.stoppieScale
+  state.rearBrake = brakes.rear
+  if (pitchAcceleration !== 0) {
+    // Nose up is a positive rotation about the chassis +X (right) axis.
+    const right = v.body.quaternion.vmult(new Vec3(1, 0, 0))
+    v.body.applyTorque(right.scale(v.body.inertia.x * pitchAcceleration))
+  }
+  // Clutch kick: on the Shift press with the throttle open in a low gear, a short burst of
+  // extra drive (the engine's stored energy) that fades out linearly.
+  const kick = tuning.clutchKick
+  const launch = active && powered && input.launch
+  if (
+    launch &&
+    !state.launchHeld &&
+    throttle > 0.5 &&
+    kick.gain > 0 &&
+    kick.seconds > 0 &&
+    v.drivetrain.gear >= 1 &&
+    v.drivetrain.gear <= kick.maxGear &&
+    rearContact
+  )
+    state.clutchKick = kick.seconds
+  state.launchHeld = launch
+  const kickShare =
+    state.clutchKick > 0 && throttle > 0.5 ? (kick.gain * state.clutchKick) / kick.seconds : 0
+  state.clutchKick = throttle > 0.5 ? Math.max(0, state.clutchKick - dt) : 0
+  const drive = v.drivetrain.force * (1 + kickShare) * state.wheelieScale
   v.raycast.setSteeringValue(state.groundSteer, FRONT)
   v.raycast.setSteeringValue(0, REAR)
   v.raycast.applyEngineForce(0, FRONT)
@@ -348,13 +488,16 @@ function stepLean(
     state.previousCommand = 0
     return
   }
-  state.targetLean = targetLean({
-    speed,
-    groundSteer: state.groundSteer,
-    wheelbase: state.wheelbase,
-    gravity,
-    maxLean: tuning.maxLean,
-  })
+  // The whole machine plus rider takes the steady-turn lean; a rider shifted sideways moves the
+  // centre of mass off the bike's plane, so the bike itself leans that much less (or more).
+  state.targetLean =
+    targetLean({
+      speed,
+      groundSteer: state.groundSteer,
+      wheelbase: state.wheelbase,
+      gravity,
+      maxLean: tuning.maxLean,
+    }) + hangOffLean(v.body.centerOfMass.x, state.comHeight)
   if (state.previousLeanRate !== null)
     state.disturbance = updateDisturbance(
       state.disturbance,
@@ -383,6 +526,72 @@ function stepLean(
   v.body.applyTorque(new Vec3(-hx, -hy, -hz).scale(inertia * command))
 }
 
+/**
+ * Height of the centre of mass above the ground under the wheels in contact (chassis frame,
+ * along the suspension direction), metres. Falls back to the unloaded geometry in the air.
+ */
+function centreOfMassHeight(v: TwoWheeledVehicle): number {
+  const wheels = v.raycast.wheelInfos
+  const controller = v.raycast.controller
+  const grounds: number[] = []
+  wheels.forEach((wheel, i) => {
+    const touching = controller?.wheelIsInContact(i) ?? wheel.isInContact
+    const length = controller?.wheelSuspensionLength(i) ?? wheel.suspensionRestLength
+    const ground = wheel.connection.y - length - wheel.radius
+    if (touching || !controller) grounds.push(ground)
+  })
+  const fallback = wheels.map(
+    (wheel) => wheel.connection.y - wheel.suspensionRestLength - wheel.radius,
+  )
+  const list = grounds.length ? grounds : fallback
+  const ground = list.reduce((sum, value) => sum + value, 0) / list.length
+  return Math.max(0.05, v.body.centerOfMass.y - ground)
+}
+
+/**
+ * Ground-relative pitch for the wheelie / stoppie assist: the chassis forward axis against the
+ * contact normal of the wheel that is still down (both: their mean), minus the squat measured
+ * while both wheels touch. In the air there is no ground reference and the pitch holds.
+ */
+function measureGroundPitch(
+  v: TwoWheeledVehicle,
+  dt: number,
+  forward: Vec3,
+  frontContact: boolean,
+  rearContact: boolean,
+  gravityUp: Vec3,
+): void {
+  const state = v.twoWheeled
+  const controller = v.raycast.controller
+  const normalOf = (i: number): [number, number, number] => {
+    const n = controller?.wheelContactNormal(i)
+    return n ? [n.x, n.y, n.z] : [gravityUp.x, gravityUp.y, gravityUp.z]
+  }
+  if (!frontContact && !rearContact) {
+    state.pitchRate = 0
+    state.previousPitch = null
+    return
+  }
+  let normal: [number, number, number]
+  if (frontContact && rearContact) {
+    const a = normalOf(FRONT),
+      b = normalOf(REAR)
+    normal = [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+  } else normal = normalOf(frontContact ? FRONT : REAR)
+  const raw = measurePitch([forward.x, forward.y, forward.z], normal)
+  if (frontContact && rearContact) {
+    // Track the squat / dive with both wheels down so `pitch` reads zero on the ground.
+    state.pitchReference =
+      state.previousPitch === null
+        ? raw
+        : state.pitchReference + (raw - state.pitchReference) * (1 - Math.exp(-dt / 0.4))
+  }
+  const pitch = raw - state.pitchReference
+  state.pitchRate = state.previousPitch === null ? 0 : (pitch - state.previousPitch) / dt
+  state.previousPitch = pitch
+  state.pitch = pitch
+}
+
 /** Visual articulation for the presentation rig (`render/vehicle-presentation/motorcycle-rig.ts`). */
 export function twoWheeledPose(v: TwoWheeledVehicle): TwoWheeledPose {
   const controller = v.raycast.controller
@@ -399,5 +608,7 @@ export function twoWheeledPose(v: TwoWheeledVehicle): TwoWheeledPose {
     rearRoll: controller?.wheelRotation(REAR) ?? 0,
     lean: v.twoWheeled.lean,
     fallen: v.twoWheeled.fallen,
+    pitch: v.twoWheeled.pitch,
+    riderShift: [...v.twoWheeled.riderShift],
   }
 }

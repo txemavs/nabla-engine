@@ -85,6 +85,7 @@ Explicit throws in this body:
 - `new Error('Two-wheeled vehicles cannot be trailers, aircraft, boats or carriers')`
 - `new Error('The front hub must be ahead (more negative Z) of the rear hub')`
 - `new Error('Two-wheeled fall lean must exceed the maximum cornering lean')`
+- `new Error('Two-wheeled pitch assist maximum angles must exceed the soft angles')`
 - `new Error('Two-hub rigs must declare vehicle.twoWheeled')`
 - `new Error('Six-wheel rigs must be passive trailers')`
 - `new Error('Only passive trailers can be towed')`
@@ -97,41 +98,41 @@ Explicit throws in this body:
 - `new Error('Vehicles must be dynamic roots')`
 - `new Error('Vehicle is too small')`
 
-## validateVehicle.callback@91
+## validateVehicle.callback@102
 
-[Implementation, line 91](../../../../../src/entity/vehicle/vehicle.ts#L91)
+[Implementation, line 102](../../../../../src/entity/vehicle/vehicle.ts#L102)
 
 ```ts
-callback@91(n, i): inferred by TypeScript; see implementation
+callback@102(n, i): inferred by TypeScript; see implementation
 ```
 
-## validateVehicle.callback@92
+## validateVehicle.callback@103
 
-[Implementation, line 92](../../../../../src/entity/vehicle/vehicle.ts#L92)
+[Implementation, line 103](../../../../../src/entity/vehicle/vehicle.ts#L103)
 
 ```ts
-callback@92(n, i): inferred by TypeScript; see implementation
+callback@103(n, i): inferred by TypeScript; see implementation
 ```
 
-## validateVehicle.callback@95
+## validateVehicle.callback@106
 
-[Implementation, line 95](../../../../../src/entity/vehicle/vehicle.ts#L95)
+[Implementation, line 106](../../../../../src/entity/vehicle/vehicle.ts#L106)
 
 ```ts
-callback@95(v, i): inferred by TypeScript; see implementation
+callback@106(v, i): inferred by TypeScript; see implementation
 ```
 
-## validateVehicle.callback@101
+## validateVehicle.callback@112
 
-[Implementation, line 101](../../../../../src/entity/vehicle/vehicle.ts#L101)
+[Implementation, line 112](../../../../../src/entity/vehicle/vehicle.ts#L112)
 
 ```ts
-callback@101(value, i): inferred by TypeScript; see implementation
+callback@112(value, i): inferred by TypeScript; see implementation
 ```
 
 ## vehicleDefinition
 
-[Implementation, line 105](../../../../../src/entity/vehicle/vehicle.ts#L105)
+[Implementation, line 116](../../../../../src/entity/vehicle/vehicle.ts#L116)
 
 Defaults for procedural cars. Asset names are not physics configuration.
 

@@ -1,4 +1,6 @@
 import { silentOutput } from './graph.js'
+import { V4Engine } from './v4-engine.js'
+import type { ResolvedEngineVoice } from './vehicle-sound.js'
 
 /**
  * Pitch of the engine note at `rpm`, Hz. Slightly above the bare four-cylinder firing rate
@@ -34,8 +36,8 @@ class EngineNote {
     this.output.gain.setTargetAtTime(0, time, 0.05)
   }
 
-  update(time: number, audible: boolean, rpm: number, load: number): void {
-    this.output.gain.setTargetAtTime(audible ? 0.025 + load * 0.055 : 0, time, 0.035)
+  update(time: number, audible: boolean, rpm: number, load: number, volume = 1): void {
+    this.output.gain.setTargetAtTime(audible ? (0.025 + load * 0.055) * volume : 0, time, 0.035)
     this.oscillator.frequency.setTargetAtTime(engineNoteHz(rpm), time, 0.035)
     this.filter.frequency.setTargetAtTime(engineNoteCutoffHz(rpm, load), time, 0.04)
   }
@@ -104,25 +106,43 @@ class Turbo {
 }
 
 /**
- * Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
- * `turbo: false` for an engine without one (the turbo voice then stays silent).
+ * Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
+ * `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
+ * picks the voice: the road-car note (default) or the procedural V4, built on first use; if
+ * the browser cannot build it the note plays instead.
  */
 export class Powertrain {
   private readonly engine: EngineNote
   private readonly turbo: Turbo
+  private v4?: V4Engine
+  private v4Unavailable = false
   private previousTime = 0
 
-  constructor(context: AudioContext, noise: AudioBufferSourceNode) {
+  constructor(
+    private readonly context: AudioContext,
+    private readonly noise: AudioBufferSourceNode,
+  ) {
     this.engine = new EngineNote(context)
     this.turbo = new Turbo(context, noise)
   }
 
+  /** Which voice played on the last update, for tests and diagnostics. */
+  activeVoice: 'note' | 'v4' = 'note'
+
   silence(time: number): void {
     this.engine.silence(time)
     this.turbo.silence(time)
+    this.v4?.silence(time)
   }
 
-  update(time: number, audible: boolean, rpm: number, load: number, turbo = true): void {
+  update(
+    time: number,
+    audible: boolean,
+    rpm: number,
+    load: number,
+    turbo = true,
+    engine?: ResolvedEngineVoice,
+  ): void {
     rpm = Number.isFinite(rpm) ? Math.max(0, Math.min(20000, rpm)) : 0
     load = Number.isFinite(load) ? Math.max(0, Math.min(1, load)) : 0
     const running = audible && rpm > 0
@@ -130,6 +150,27 @@ export class Powertrain {
     this.previousTime = time
     if (turbo) this.turbo.update(time, dt, running, rpm, load)
     else this.turbo.silence(time)
-    this.engine.update(time, running, rpm, load)
+    const v4 = engine?.voice === 'v4' ? this.v4Voice(engine.firing) : undefined
+    if (v4) {
+      this.activeVoice = 'v4'
+      this.engine.silence(time)
+      v4.update(time, running, rpm, load, engine?.volume ?? 1)
+    } else {
+      this.activeVoice = 'note'
+      this.v4?.silence(time)
+      this.engine.update(time, running, rpm, load, engine?.volume ?? 1)
+    }
+  }
+
+  private v4Voice(firing: readonly number[]): V4Engine | undefined {
+    if (this.v4Unavailable) return undefined
+    try {
+      if (!this.v4) this.v4 = new V4Engine(this.context, this.noise, firing)
+      else this.v4.setFiring(firing)
+      return this.v4
+    } catch {
+      this.v4Unavailable = true
+      return undefined
+    }
   }
 }

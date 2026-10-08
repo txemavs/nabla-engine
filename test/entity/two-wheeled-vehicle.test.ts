@@ -92,15 +92,38 @@ describe('two-wheeled vehicle schema and validation', () => {
     }
   })
 
-  it('declares the motorcycle sound: no turbo and a click on gear changes', () => {
+  it('declares the motorcycle sound: no turbo, a click on gear changes and the V4 voice', () => {
     expect(bike().vehicle!.audio).toEqual({
       turbo: false,
       gearShift: { sound: 'click', volume: 1 },
+      engine: { voice: 'v4', vAngle: 90, crankpin: 180 },
     })
+    expect(
+      vehicleField.safeParse({ ...bike().vehicle, audio: { engine: { voice: 'v12' } } }).success,
+    ).toBe(false)
     expect(car().vehicle!.audio).toBeUndefined()
     expect(
       vehicleField.safeParse({ ...bike().vehicle, audio: { gearShift: { sound: 'whoosh' } } })
         .success,
     ).toBe(false)
+  })
+
+  it('validates the phase-2 blocks: rider, pitch assist, clutch kick and CBS', () => {
+    const tw = bike().vehicle!.twoWheeled!
+    expect(tw.rider?.seat).toEqual([0, 0.55, 0.31])
+    expect(tw.cbs).toEqual({})
+    const parse = (patch: Record<string, unknown>) =>
+      vehicleField.safeParse({ ...bike().vehicle, twoWheeled: { ...tw, ...patch } }).success
+    expect(parse({ pitchAssist: { wheelie: false, stoppieMaxAngle: 0.4 } })).toBe(true)
+    expect(parse({ cbs: { leverFront: 0.5, pedalFront: 0.5, linkLag: 0 } })).toBe(true)
+    expect(parse({ cbs: { leverFront: 1.5 } })).toBe(false)
+    expect(parse({ cbs: { abs: true } })).toBe(false)
+    expect(parse({ rider: { mass: 70 } })).toBe(false)
+    expect(parse({ clutchKick: { maxGear: 2, gain: 0.3 } })).toBe(true)
+    expect(parse({ pitchAssist: { wheelieMaxAngle: 2 } })).toBe(false)
+    const inverted = withVehicle(bike(), {
+      twoWheeled: { ...tw, pitchAssist: { wheelieSoftAngle: 0.5, wheelieMaxAngle: 0.3 } },
+    })
+    expect(() => validateVehicle(inverted)).toThrow(/maximum angles must exceed/)
   })
 })

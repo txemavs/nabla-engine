@@ -189,6 +189,23 @@ the clack's level, played on every counted gear change including automatic ones,
 `VehicleAudio.gearClick`) or `none`; `volume` (0..2, default 1) scales either. The `vfr800`
 motorcycle uses `{ "turbo": false, "gearShift": { "sound": "click", "volume": 1 } }`; the
 click's shape is `gearClickDefaults` in `src/audio/gear-click.ts`. No sample files are used.
+`engine: { voice, vAngle, crankpin, volume }` picks the engine voice: `note` (default, the
+sawtooth above) or `v4`, the procedural V4 in `src/audio/v4-engine.ts`. Its firing angles come
+from `vAngle` (degrees between the banks, default 90) and `crankpin` (degrees between the two
+crankpins, default 180): 90/180 fires 90-180-270-180, 90/360 fires 90-270-90-270, 180/180 fires
+evenly. One periodic wave of exhaust pulses plays at the cycle rate (rpm / 120); timbre
+constants are `v4EngineDefaults`. `volume` (0..2) scales either voice. The `vfr800` uses
+`{ "voice": "v4", "vAngle": 90, "crankpin": 180 }`; cars omit it.
+
+**Two-wheelers (`twoWheeledDefaults`).** Lean, balance, steering, brake capacity and drag
+defaults for `vehicle.twoWheeled`, plus the phase-2 blocks a preset can override field by
+field: `pitchAssist` (wheelie/stoppie assist on/off, soft, maximum and rider-centred angles,
+`stoppieMinBrake`, restoring `response`/`dampingRatio`, `landingRate`, `anticipation`),
+`rider` (requires `seat`, the seated rider centre of mass; `mass`, `lateral`/`forward`/`back`
+travel, `rate`, body `steer`), `clutchKick` (`gain`, `seconds`, `maxGear`) and `cbs` (shares
+`leverFront`, `leverRear`, `pedalFront`, `pedalRear` of each wheel's brake force and the linked
+`linkLag`; omit `cbs` for independent brakes). Every value is TODO(unverified); see
+[motorcycles](motorcycles.md) for what each does and where the CBS shares come from.
 
 **Neutral and park.** Stopped (below 0.5 m/s) with the handbrake (Space) on and no pedal
 pressed, D/R drops to N after `shift.neutralSeconds` (default 0.4 s, truck 0.8 s), and N to P
