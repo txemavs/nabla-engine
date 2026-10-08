@@ -76,7 +76,29 @@ describe('roof photo frame', () => {
     expect(photoFrameMargin('cell')).toBe(0)
     expect(photoFrameMargin('cell+margin:0.125')).toBe(0.125)
     expect(photoFrameMargin('cell+margin:0.7')).toBe(0)
-    expect(photoFrameTransform('cell+margin:0.125')).toEqual({ repeat: 0.75, offset: 0.125 })
+    // 5120² roof photo = 4096 cell px + 512 px (1/8 cell) each side.
+    const t = photoFrameTransform('cell+margin:0.125')
+    expect(t.repeat).toBeCloseTo(0.8, 12)
+    expect(t.offset).toBeCloseTo(0.1, 12)
+    expect(photoFrameTransform('cell')).toEqual({ repeat: 1, offset: 0 })
+  })
+
+  it('maps Atlas roofs.json footprints onto their roof pixels (cell 16221/11998)', () => {
+    // Atlas roofs.json frame: 5120 px over boundsM (1.25 cell); roof_bbox_px of building
+    // way/154094132 is [3674,1464]-[3705,1493] for footprint x 241.7..248.3, z -237.7..-231.7 m.
+    // Local cell width 889.5 m (mercator 1222.99 m × cos 43.337°).
+    const width = 889.5
+    const { repeat, offset } = photoFrameTransform('cell+margin:0.125')
+    const toPx = (x: number, z: number) => [
+      ((0.5 + x / width) * repeat + offset) * 5120,
+      (1 - ((0.5 - z / width) * repeat + offset)) * 5120,
+    ]
+    const [x0, y0] = toPx(241.713, -237.699)
+    const [x1, y1] = toPx(248.256, -231.661)
+    expect(Math.abs(x0 - 3674)).toBeLessThan(2)
+    expect(Math.abs(x1 - 3705)).toBeLessThan(2)
+    expect(Math.abs(y0 - 1464)).toBeLessThan(2)
+    expect(Math.abs(y1 - 1493)).toBeLessThan(2)
     expect(drapeMaterialAlpha('roofs', true)).toMatchObject({ transparent: true })
     expect(drapeMaterialAlpha('roofs', true).alphaTest).toBeGreaterThan(0)
     expect(drapeMaterialAlpha('roofs', false).alphaTest).toBe(0)
@@ -87,21 +109,22 @@ describe('roof photo frame', () => {
 /**
  * Render-level check without WebGL: build the drape meshes exactly as the planet world does, then
  * sample each roof vertex through its material's texture matrix in a synthetic roof photo that is
- * RGBA, alpha 0 / RGB 0 off-roof and in the 12.5 % margin (like Atlas `roof`).
+ * RGBA, alpha 0 / RGB 0 off-roof and in the 1/8-cell margin (like Atlas `roof`).
  */
 describe('roof drape renders the roof photo (not black)', () => {
   const width = 800 // cell metres
-  const px = 40 // synthetic roof photo side (margin 5 px each side, inner 30 px = cell)
-  const margin = 0.125
+  const px = 40 // synthetic roof photo side (margin 4 px = 1/8 cell each side, inner 32 px = cell)
+  const margin = 0.125 // of the cell
   const roofImage = new Uint8ClampedArray(px * px * 4) // all alpha 0, RGB 0
-  // A 120 m roof square near the cell's north-east corner, painted in the inner frame only.
-  const roofCell = { u0: 0.7, u1: 0.85, v0: 0.1, v1: 0.25 }
+  // A 56 m roof square at the cell's north-east edge, painted in the inner frame only: far from
+  // the centre so a wrong frame scale (0.75 instead of 0.8) misses it.
+  const roofCell = { u0: 0.88, u1: 0.95, v0: 0.04, v1: 0.11 }
   for (let y = 0; y < px; y++)
     for (let x = 0; x < px; x++) {
       const u = (x + 0.5) / px,
         v = (y + 0.5) / px
-      const cu = (u - margin) / (1 - 2 * margin),
-        cv = (v - margin) / (1 - 2 * margin)
+      const cu = u * (1 + 2 * margin) - margin,
+        cv = v * (1 + 2 * margin) - margin
       if (cu < roofCell.u0 || cu > roofCell.u1 || cv < roofCell.v0 || cv > roofCell.v1) continue
       roofImage.set([180, 120, 100, 255], (y * px + x) * 4)
     }
@@ -112,8 +135,8 @@ describe('roof drape renders the roof photo (not black)', () => {
   }
   // Roof drape vertices at the roof's centre region, with cell UVs as buildDrapes writes them.
   const roofDrape = (): DrapeGeometry => {
-    const us = [0.75, 0.8, 0.775],
-      vs = [0.15, 0.15, 0.2]
+    const us = [0.9, 0.93, 0.915],
+      vs = [0.06, 0.06, 0.09]
     const position = new Float32Array(9),
       uv = new Float32Array(6)
     for (let i = 0; i < 3; i++) {
@@ -187,6 +210,14 @@ describe('roof drape renders the roof photo (not black)', () => {
   it('ignoring the margin frame (c33903c) samples the black transparent texels', () => {
     const black = roofTexels(dress('cell').roofs).filter((t) => t[3] === 0)
     expect(black.length).toBeGreaterThan(0)
+  })
+
+  it('a margin taken as a fraction of the image (5e07ac8: 0.75/0.125) misses the roof', () => {
+    const { roofs } = dress(undefined)
+    roofs.material.map!.repeat.set(0.75, 0.75)
+    roofs.material.map!.offset.set(0.125, 0.125)
+    const miss = roofTexels(roofs).filter((t) => t[3] === 0)
+    expect(miss.length).toBeGreaterThan(0)
   })
 
   it('without a dedicated roof photo, roofs fall back to the opaque ground photo', () => {

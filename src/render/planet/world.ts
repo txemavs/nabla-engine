@@ -217,8 +217,9 @@ export function dressSatelliteRoofs(
   texture.colorSpace = THREE.SRGBColorSpace
   const roofTextureMap: THREE.Texture = packaged ? new THREE.Texture() : texture
   if (packaged) roofTextureMap.colorSpace = THREE.SRGBColorSpace
-  // Roof photo frame is `cell+margin:0.125` (5120² over the 4096 cell): map cell UVs into the
-  // inner frame. Without it roofs sample the transparent (RGB≈0) margin and render black.
+  // Roof photo frame is `cell+margin:0.125` (5120² = 4096 cell px + 512 px each side): map cell
+  // UVs into the inner 80 %. Without it roofs sample the transparent (RGB≈0) margin or the wrong
+  // roof and render black / untextured.
   const useRoofImage = (frame: string | undefined) => {
     const { repeat, offset } = photoFrameTransform(frame)
     roofTextureMap.repeat.set(repeat, repeat)
