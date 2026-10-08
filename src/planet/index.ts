@@ -11,6 +11,8 @@ export {
   isCandidateRoadMesh,
   isInspectRoadCollisionMesh,
   tagCandidateRoadMesh,
+  castsPlanetShadow,
+  BRIDGE_DECK_ROLE,
   readCandidateRoads,
   ROAD_CANDIDATES_SCHEMA,
 } from './contract.js'

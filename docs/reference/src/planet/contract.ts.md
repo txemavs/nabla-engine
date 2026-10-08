@@ -69,9 +69,26 @@ True only for the inspect collision GLB. Asphalt/supports stay in driving collis
 isInspectRoadCollisionMesh(metadata: { nablaCandidateRoad?: unknown } | undefined): boolean
 ```
 
+## castsPlanetShadow
+
+[Implementation, line 248](../../../../src/planet/contract.ts#L248)
+
+Shadow casters among planet meshes. Terrain and buildings always cast. Atlas bridge supports
+(piers, slabs, fascias, abutments) and asphalt primitives tagged `bridge-deck` cast as well, so
+a bridge darkens the road, rail or water below it. Ground-level asphalt never casts (it would
+only self-shadow the terrain it lies on), and skirts never cast.
+
+```ts
+castsPlanetShadow(metadata: Record<string, any> | undefined): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `['Terrain', 'Buildings'].includes`
+
 ## tagCandidateRoadMesh
 
-[Implementation, line 240](../../../../src/planet/contract.ts#L240)
+[Implementation, line 258](../../../../src/planet/contract.ts#L258)
 
 Stamp worker extras. Asphalt/supports keep category Roads so they render and collide.
 
@@ -81,7 +98,7 @@ tagCandidateRoadMesh(metadata: Record<string, any>, kind: PlanetCandidateRoadKin
 
 ## layerFile
 
-[Implementation, line 250](../../../../src/planet/contract.ts#L250)
+[Implementation, line 268](../../../../src/planet/contract.ts#L268)
 
 ```ts
 layerFile(value: unknown, pathOk: (path: string) => boolean, label: string): PlanetLayerFile
@@ -100,7 +117,7 @@ Explicit throws in this body:
 
 ## publishedDrivable
 
-[Implementation, line 273](../../../../src/planet/contract.ts#L273)
+[Implementation, line 291](../../../../src/planet/contract.ts#L291)
 
 ```ts
 publishedDrivable(value: unknown): boolean | undefined
@@ -108,7 +125,7 @@ publishedDrivable(value: unknown): boolean | undefined
 
 ## sameRoadFile
 
-[Implementation, line 277](../../../../src/planet/contract.ts#L277)
+[Implementation, line 295](../../../../src/planet/contract.ts#L295)
 
 ```ts
 sameRoadFile(a: PlanetLayerFile, b: PlanetLayerFile): boolean
@@ -116,7 +133,7 @@ sameRoadFile(a: PlanetLayerFile, b: PlanetLayerFile): boolean
 
 ## candidateRoadFile
 
-[Implementation, line 281](../../../../src/planet/contract.ts#L281)
+[Implementation, line 299](../../../../src/planet/contract.ts#L299)
 
 ```ts
 candidateRoadFile(value: unknown): PlanetCandidateRoadFile
@@ -131,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## optionalText
 
-[Implementation, line 297](../../../../src/planet/contract.ts#L297)
+[Implementation, line 315](../../../../src/planet/contract.ts#L315)
 
 ```ts
 optionalText(value: unknown): string | undefined
@@ -139,7 +156,7 @@ optionalText(value: unknown): string | undefined
 
 ## publishedEngineLoad
 
-[Implementation, line 301](../../../../src/planet/contract.ts#L301)
+[Implementation, line 319](../../../../src/planet/contract.ts#L319)
 
 ```ts
 publishedEngineLoad(value: unknown): Partial<Record<PlanetCandidateRoadKind, string>> | undefined
@@ -151,7 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## takeRoadFile
 
-[Implementation, line 318](../../../../src/planet/contract.ts#L318)
+[Implementation, line 336](../../../../src/planet/contract.ts#L336)
 
 Add one published pointer for a road layer. Bridges and asphalt are never dropped for a
 per-layer problem: an invalid entry is ignored (the other sources still count), and a pointer
@@ -169,7 +186,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readCandidateRoads
 
-[Implementation, line 352](../../../../src/planet/contract.ts#L352)
+[Implementation, line 370](../../../../src/planet/contract.ts#L370)
 
 Normalize `#88` `roads.files.*`, Atlas `#49` `roadCandidates.layers.*`, and
 optional `files.roads-*`. `drivable` and `engineLoad` are provenance only.
@@ -196,25 +213,25 @@ Explicit throws in this body:
 
 - `Error('Invalid planet road layers')`
 
-## readCandidateRoads.callback@368
+## readCandidateRoads.callback@386
 
-[Implementation, line 368](../../../../src/planet/contract.ts#L368)
+[Implementation, line 386](../../../../src/planet/contract.ts#L386)
 
 ```ts
-callback@368(w): w is string
+callback@386(w): w is string
 ```
 
-## readCandidateRoads.callback@375
+## readCandidateRoads.callback@393
 
-[Implementation, line 375](../../../../src/planet/contract.ts#L375)
+[Implementation, line 393](../../../../src/planet/contract.ts#L393)
 
 ```ts
-callback@375(kind): inferred by TypeScript; see implementation
+callback@393(kind): inferred by TypeScript; see implementation
 ```
 
 ## planetRoadRevision
 
-[Implementation, line 396](../../../../src/planet/contract.ts#L396)
+[Implementation, line 414](../../../../src/planet/contract.ts#L414)
 
 Publisher revision, Atlas evidence hash, or concatenated candidate hashes.
 
@@ -226,25 +243,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `ROAD_KINDS.map`
 
-## planetRoadRevision.callback@399
+## planetRoadRevision.callback@417
 
-[Implementation, line 399](../../../../src/planet/contract.ts#L399)
+[Implementation, line 417](../../../../src/planet/contract.ts#L417)
 
 ```ts
-callback@399(kind): inferred by TypeScript; see implementation
+callback@417(kind): inferred by TypeScript; see implementation
 ```
 
-## planetRoadRevision.callback@400
+## planetRoadRevision.callback@418
 
-[Implementation, line 400](../../../../src/planet/contract.ts#L400)
+[Implementation, line 418](../../../../src/planet/contract.ts#L418)
 
 ```ts
-callback@400(hash): hash is string
+callback@418(hash): hash is string
 ```
 
 ## planetCellVersion
 
-[Implementation, line 406](../../../../src/planet/contract.ts#L406)
+[Implementation, line 424](../../../../src/planet/contract.ts#L424)
 
 Resident-tile cache identity: terrain, buildings, photo, then candidate road revision.
 
@@ -256,7 +273,7 @@ planetCellVersion(manifest: Pick<PlanetManifest, 'cellVersion'>): PlanetCellVers
 
 ## planetTileRevision
 
-[Implementation, line 412](../../../../src/planet/contract.ts#L412)
+[Implementation, line 430](../../../../src/planet/contract.ts#L430)
 
 ```ts
 planetTileRevision(manifest: PlanetManifest): string
@@ -269,7 +286,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## planetTileGlbLayers
 
-[Implementation, line 423](../../../../src/planet/contract.ts#L423)
+[Implementation, line 441](../../../../src/planet/contract.ts#L441)
 
 ```ts
 planetTileGlbLayers(manifest: PlanetManifest, options: { buildings?: boolean; inspectRoadCollision?: boolean } = {}): PlanetGlbLayer[]
@@ -283,7 +300,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## planetTileGlbLayers.road
 
-[Implementation, line 437](../../../../src/planet/contract.ts#L437)
+[Implementation, line 455](../../../../src/planet/contract.ts#L455)
 
 ```ts
 road(name: PlanetCandidateRoadFileKey, kind: PlanetCandidateRoadKind, file: PlanetCandidateRoadFile): PlanetGlbLayer
@@ -291,7 +308,7 @@ road(name: PlanetCandidateRoadFileKey, kind: PlanetCandidateRoadKind, file: Plan
 
 ## planetGlbCacheKey
 
-[Implementation, line 452](../../../../src/planet/contract.ts#L452)
+[Implementation, line 470](../../../../src/planet/contract.ts#L470)
 
 Cache Storage key. Road layers include the SHA-256 so an in-place replace cannot reuse stale bytes.
 
@@ -305,7 +322,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## validatePlanetManifest
 
-[Implementation, line 456](../../../../src/planet/contract.ts#L456)
+[Implementation, line 474](../../../../src/planet/contract.ts#L474)
 
 ```ts
 validatePlanetManifest(value: unknown, tile: MapTile): PlanetManifest
@@ -329,12 +346,12 @@ Explicit throws in this body:
 - `Error('Invalid native planet manifest')`
 - `Error( \`Unsupported cell version ${JSON.stringify(m.cellVersion)} (this engine renders ${PLANET_CELL_VERSIONS.join(', ')})\`, )`
 
-## validatePlanetManifest.callback@469
+## validatePlanetManifest.callback@487
 
-[Implementation, line 469](../../../../src/planet/contract.ts#L469)
+[Implementation, line 487](../../../../src/planet/contract.ts#L487)
 
 ```ts
-callback@469([key, n]): inferred by TypeScript; see implementation
+callback@487([key, n]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -342,12 +359,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.abs`
 - `Number.isFinite`
 
-## validatePlanetManifest.callback@485
+## validatePlanetManifest.callback@503
 
-[Implementation, line 485](../../../../src/planet/contract.ts#L485)
+[Implementation, line 503](../../../../src/planet/contract.ts#L503)
 
 ```ts
-callback@485(path): inferred by TypeScript; see implementation
+callback@503(path): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -356,7 +373,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## coversTile
 
-[Implementation, line 496](../../../../src/planet/contract.ts#L496)
+[Implementation, line 514](../../../../src/planet/contract.ts#L514)
 
 True when `child` lies inside `parent` on the Web Mercator quadtree.
 

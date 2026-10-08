@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BRIDGE_DECK_ROLE,
+  castsPlanetShadow,
   isCandidateRoadGlbPath,
   planetCollisionChunks,
   planetGlbCacheKey,
@@ -359,5 +361,22 @@ describe('candidate road collision', () => {
         supports.position.length +
         lidar.position.length,
     )
+  })
+})
+
+describe('bridge shadow casters', () => {
+  it('casts from terrain, buildings, supports and bridge-deck asphalt only', () => {
+    expect(castsPlanetShadow({ category: 'Terrain' })).toBe(true)
+    expect(castsPlanetShadow({ category: 'Buildings' })).toBe(true)
+    expect(castsPlanetShadow({ category: 'Terrain', skirt: true })).toBe(false)
+    const supports = tagCandidateRoadMesh({}, 'supports')
+    expect(castsPlanetShadow(supports)).toBe(true)
+    const deck = tagCandidateRoadMesh({ atlasSurfaceRole: BRIDGE_DECK_ROLE }, 'asphalt')
+    expect(castsPlanetShadow(deck)).toBe(true)
+    const ground = tagCandidateRoadMesh({ atlasSurfaceRole: 'ground-road' }, 'asphalt')
+    expect(castsPlanetShadow(ground)).toBe(false)
+    expect(castsPlanetShadow(tagCandidateRoadMesh({}, 'asphalt'))).toBe(false)
+    expect(castsPlanetShadow(tagCandidateRoadMesh({}, 'collision'))).toBe(false)
+    expect(castsPlanetShadow({ category: 'Roads' })).toBe(false)
   })
 })
