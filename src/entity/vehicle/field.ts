@@ -357,6 +357,11 @@ export const vehicleField = z
     cameraDistance: finite.min(2).max(30),
     /** Optional driver-local eye offset. */
     headOffset: vector.optional(),
+    /**
+     * Camera / avatar ride smoothing strength, 0 (the view rides every bump) .. 1. Omitted uses
+     * the vehicle class default (`rideSmoothingDefaults`). Presentation only.
+     */
+    rideSmoothing: finite.min(0).max(1).optional(),
     /** Neutral eye orientation relative to the chassis, authored in the body GLB. */
     headRotation: rotation.optional(),
     /** Authored carrier display surfaces; dimensions are metres in chassis space. */

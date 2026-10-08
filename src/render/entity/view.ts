@@ -47,8 +47,9 @@ import {
 } from '../vehicle-presentation/reflection-environment.js'
 import { localMinutes, skyTime } from '../../planet/sky.js'
 import { simulationDefaults, twoWheeledDefaults } from '../../config/simulation.js'
-import { gameCameraDefaults } from '../../config/camera.js'
+import { gameCameraDefaults, rideSmoothingDefaults } from '../../config/camera.js'
 import { easeRiderHead, type RiderHeadEase } from './rider-head.js'
+import { RideSmoothing, rideSmoothingSettings } from './ride-smoothing.js'
 import { AvatarFollow, EjectionTumble } from './avatar-motion.js'
 import {
   clampMirrorAdjustment,
@@ -179,6 +180,11 @@ export class SceneView {
   private readonly riderTucks = new Map<string, number>()
   /** Eased rider head inputs per two-wheeler (presentation only; `gameCameraDefaults.riderHeadResponse`). */
   private readonly riderHeadEase = new Map<string, RiderHeadEase>()
+  /**
+   * Ride smoothing of the player's vehicle for the cameras and the seated avatar: the body keeps
+   * every bump, the view and the avatar absorb part of the small, fast bounce.
+   */
+  readonly rideSmoothing = new RideSmoothing()
   vehicleHeadOffset(id: string): readonly number[] | undefined {
     const base = this.headOffsets.get(id)
     const shift = this.riderShifts.get(id)
@@ -1500,6 +1506,7 @@ export class SceneView {
     }
     this.captureOccupiedLights(sim.player.vehicleId)
     const vehicleId = sim.player.vehicleId
+    this.updateRideSmoothing(sim, vehicleId, elapsed)
     setMonitorSunglasses(this.monitor, !this.night)
     if (!cockpit) updateMonitorAvatar(this.monitor, elapsed, !!vehicleId)
     if (vehicleId) {
@@ -1513,6 +1520,8 @@ export class SceneView {
         this.vehicleHeadOffset(vehicleId),
         this.document.entities.find((entity) => entity.id === vehicleId)?.vehicle?.headRotation,
       )
+      // The seated avatar soaks up the bounce like a body on its own suspension.
+      this.rideSmoothing.apply(vehicleId, head.position, head.quaternion)
       this.avatar.position.copy(head.position)
       this.avatar.quaternion.copy(head.quaternion)
       this.monitor.position.set(0, 0, 0)
@@ -1560,6 +1569,33 @@ export class SceneView {
       )
       this.avatar.visible = !cockpit
     }
+  }
+  /**
+   * Advance the ride smoothing with the player's vehicle. Crashes, a fallen bike, rollovers and
+   * flight follow the real pose exactly (and restart the filter).
+   */
+  private updateRideSmoothing(sim: Simulation, vehicleId: string | null, elapsed: number): void {
+    if (!vehicleId) {
+      this.rideSmoothing.reset()
+      return
+    }
+    const entity = this.document.entities.find((e) => e.id === vehicleId)
+    const transform = sim.entityTransform(vehicleId, true)
+    const pose = sim.twoWheeledPose(vehicleId)
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
+      new THREE.Quaternion().fromArray(transform.rotation),
+    )
+    const bypass =
+      sim.vehicleInfo(vehicleId).flightMode ||
+      (pose ? pose.crashed || pose.fallen : up.y < Math.cos(THREE.MathUtils.degToRad(40)))
+    this.rideSmoothing.update(
+      vehicleId,
+      transform.position,
+      transform.rotation,
+      elapsed,
+      entity ? rideSmoothingSettings(entity) : rideSmoothingDefaults.off,
+      bypass,
+    )
   }
   hitSprite(ray: THREE.Raycaster): THREE.Intersection | undefined {
     const renderOffset = this.root.position.clone()
