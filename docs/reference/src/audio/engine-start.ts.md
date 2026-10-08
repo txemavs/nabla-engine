@@ -111,12 +111,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.motor.frequency.setValueAtTime`
 - `this.rattleBand.frequency.setValueAtTime`
 
-## EngineStart.trigger.callback@128
+## EngineStart.trigger.callback@129
 
-[Implementation, line 128](../../../../src/audio/engine-start.ts#L128)
+[Implementation, line 129](../../../../src/audio/engine-start.ts#L129)
 
 ```ts
-callback@128(offset, i): inferred by TypeScript; see implementation
+callback@129(offset, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -132,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EngineStart.silence
 
-[Implementation, line 163](../../../../src/audio/engine-start.ts#L163)
+[Implementation, line 164](../../../../src/audio/engine-start.ts#L164)
 
 ```ts
 silence(time: number): void

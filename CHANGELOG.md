@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Engine start (cars and the VFR, shared starter; the running V4 is unchanged): about 0.95 s of electric-starter whine and compression pulses before the engine catches.
+
 - **VFR800 metal map (Txema's review):** chrome only on the brake discs (their tracks and floating
   buttons) and the stainless end cap of the silencer (`Stainless chrome silencer end cap`, roughness
   0.12, reflections 0.75). The silencer can joins the headers and the engine on the top triple
