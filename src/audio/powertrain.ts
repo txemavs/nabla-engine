@@ -1,4 +1,7 @@
 import { silentOutput } from './graph.js'
+import { V4Engine } from './v4-engine.js'
+import { inlineEngineDefaults, OverrunBurble } from './inline-engine.js'
+import type { ResolvedEngineVoice } from './vehicle-sound.js'
 
 /**
  * Pitch of the engine note at `rpm`, Hz. Slightly above the bare four-cylinder firing rate
@@ -34,8 +37,8 @@ class EngineNote {
     this.output.gain.setTargetAtTime(0, time, 0.05)
   }
 
-  update(time: number, audible: boolean, rpm: number, load: number): void {
-    this.output.gain.setTargetAtTime(audible ? 0.025 + load * 0.055 : 0, time, 0.035)
+  update(time: number, audible: boolean, rpm: number, load: number, volume = 1): void {
+    this.output.gain.setTargetAtTime(audible ? (0.025 + load * 0.055) * volume : 0, time, 0.035)
     this.oscillator.frequency.setTargetAtTime(engineNoteHz(rpm), time, 0.035)
     this.filter.frequency.setTargetAtTime(engineNoteCutoffHz(rpm, load), time, 0.04)
   }
@@ -79,7 +82,15 @@ class Turbo {
     this.previousLoad = 0
   }
 
-  update(time: number, dt: number, audible: boolean, rpm: number, load: number): void {
+  update(
+    time: number,
+    dt: number,
+    audible: boolean,
+    rpm: number,
+    load: number,
+    whistle = 1,
+    blowOff = 1,
+  ): void {
     const target = audible ? load * Math.max(0, Math.min(1, (rpm - 1600) / 3600)) : 0
     const lifted = audible && this.previousLoad > 0.5 && load < 0.25
     if (lifted) this.release = Math.max(this.release, this.boost)
@@ -93,39 +104,131 @@ class Turbo {
     this.previousLoad = audible ? load : 0
 
     const whistleFade = Math.max(0, Math.min(1, (3800 - rpm) / 1400))
-    this.whistleLevel.gain.setTargetAtTime(this.boost * whistleFade * 0.006, time, 0.06)
+    this.whistleLevel.gain.setTargetAtTime(this.boost * whistleFade * 0.006 * whistle, time, 0.06)
     this.whistle.frequency.setTargetAtTime(1100 + this.boost * 1900, time, 0.08)
     this.air.gain.setTargetAtTime(
-      this.boost * whistleFade * 0.003 + this.release * 0.04,
+      this.boost * whistleFade * 0.003 * whistle + this.release * 0.04 * blowOff,
       time,
       0.025,
     )
   }
 }
 
-/** Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence. */
+/**
+ * Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
+ * `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
+ * picks the voice: the road-car note (default), the procedural V4 or the refined inline voice
+ * (with its subdued turbo and optional overrun burble), built on first use; if the browser
+ * cannot build it the note plays instead.
+ */
 export class Powertrain {
   private readonly engine: EngineNote
   private readonly turbo: Turbo
+  private v4?: V4Engine
+  private v4Unavailable = false
+  private inline?: V4Engine
+  private inlineUnavailable = false
+  private burble?: OverrunBurble
   private previousTime = 0
 
-  constructor(context: AudioContext, noise: AudioBufferSourceNode) {
+  constructor(
+    private readonly context: AudioContext,
+    private readonly noise: AudioBufferSourceNode,
+    /** Randomness of the occasional overrun burble; injectable for tests. */
+    private readonly random: () => number = Math.random,
+  ) {
     this.engine = new EngineNote(context)
     this.turbo = new Turbo(context, noise)
   }
 
+  /** Which voice played on the last update, for tests and diagnostics. */
+  activeVoice: 'note' | 'v4' | 'inline' = 'note'
+
   silence(time: number): void {
     this.engine.silence(time)
     this.turbo.silence(time)
+    this.v4?.silence(time)
+    this.inline?.silence(time)
+    this.burble?.silence(time)
   }
 
-  update(time: number, audible: boolean, rpm: number, load: number): void {
-    rpm = Number.isFinite(rpm) ? Math.max(0, Math.min(10000, rpm)) : 0
+  update(
+    time: number,
+    audible: boolean,
+    rpm: number,
+    load: number,
+    turbo = true,
+    engine?: ResolvedEngineVoice,
+  ): void {
+    rpm = Number.isFinite(rpm) ? Math.max(0, Math.min(20000, rpm)) : 0
     load = Number.isFinite(load) ? Math.max(0, Math.min(1, load)) : 0
     const running = audible && rpm > 0
     const dt = Math.min(0.1, Math.max(0, time - this.previousTime))
     this.previousTime = time
-    this.turbo.update(time, dt, running, rpm, load)
-    this.engine.update(time, running, rpm, load)
+    const v4 = engine?.voice === 'v4' ? this.v4Voice(engine.firing) : undefined
+    const inline = engine?.voice === 'inline' ? this.inlineVoice(engine) : undefined
+    if (turbo)
+      this.turbo.update(
+        time,
+        dt,
+        running,
+        rpm,
+        load,
+        inline ? (engine?.turboWhistle ?? 1) : 1,
+        inline ? (engine?.blowOff ?? 1) : 1,
+      )
+    else this.turbo.silence(time)
+    if (v4) {
+      this.activeVoice = 'v4'
+      this.engine.silence(time)
+      this.inline?.silence(time)
+      v4.update(time, running, rpm, load, engine?.volume ?? 1)
+    } else if (inline) {
+      this.activeVoice = 'inline'
+      this.engine.silence(time)
+      this.v4?.silence(time)
+      inline.update(time, running, rpm, load, engine?.volume ?? 1)
+      if (engine?.burble) {
+        this.burble ??= new OverrunBurble(this.context, this.noise, this.random)
+        if (running) this.burble.update(time, dt, rpm, load, engine.burble, engine.volume)
+        else this.burble.silence(time)
+      } else this.burble?.silence(time)
+    } else {
+      this.activeVoice = 'note'
+      this.v4?.silence(time)
+      this.inline?.silence(time)
+      this.engine.update(time, running, rpm, load, engine?.volume ?? 1)
+    }
+  }
+
+  private inlineVoice(engine: ResolvedEngineVoice): V4Engine | undefined {
+    if (this.inlineUnavailable) return undefined
+    try {
+      if (!this.inline)
+        this.inline = new V4Engine(
+          this.context,
+          this.noise,
+          engine.firing,
+          inlineEngineDefaults,
+          engine.weights,
+        )
+      else this.inline.setFiring(engine.firing, engine.weights)
+      return this.inline
+    } catch {
+      this.inlineUnavailable = true
+      return undefined
+    }
+  }
+
+  private v4Voice(firing: readonly number[]): V4Engine | undefined {
+    if (this.v4Unavailable) return undefined
+    try {
+      if (!this.v4) this.v4 = new V4Engine(this.context, this.noise, firing)
+      else this.v4.setFiring(firing)
+      return this.v4
+    } catch {
+      this.v4Unavailable = true
+      return undefined
+    }
   }
 }

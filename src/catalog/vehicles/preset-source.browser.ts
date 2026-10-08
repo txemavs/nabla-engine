@@ -1,7 +1,11 @@
 const modules = import.meta.glob(
   [
-    '../../../assets/library/{cars,planes,ships,boats}/**/*.json',
-    '../../../assets/custom/{cars,planes,ships,boats}/**/*.json',
+    '../../../assets/library/{cars,motorcycles,planes,ships,boats}/**/*.json',
+    '../../../assets/custom/{cars,motorcycles,planes,ships,boats}/**/*.json',
+    // Asset manifests and authoring sidecars are not presets; see preset-source.ts.
+    '!**/asset.json',
+    '!**/*.rig.json',
+    '!**/*.specs.json',
   ],
   { eager: true, import: 'default' },
 )

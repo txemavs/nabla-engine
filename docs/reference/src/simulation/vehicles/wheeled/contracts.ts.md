@@ -4,14 +4,13 @@
 
 [Source](../../../../../../src/simulation/vehicles/wheeled/contracts.ts)
 
-Metres, Y-up, front = -Z; front hubs 0/1, rear hubs 2/3. Plain configuration.
-
 ## Module dependencies
 
+- `../two-wheeled/rider.js`
 
 ## idleWheeledInput
 
-[Implementation, line 88](../../../../../../src/simulation/vehicles/wheeled/contracts.ts#L88)
+[Implementation, line 235](../../../../../../src/simulation/vehicles/wheeled/contracts.ts#L235)
 
 ```ts
 idleWheeledInput(): WheeledInput

@@ -9,6 +9,9 @@ export interface PlayerInput {
   brake: boolean
   lift?: number // -1 descend, +1 ascend; neutral holds altitude
   turn?: number // -1 left, +1 right; independent of camera yaw
+  riderRight?: number // two-wheelers: rider counterweight, -1 hang off left, +1 right
+  riderForward?: number // two-wheelers: -1 sit back, +1 weight over the tank
+  frontBrake?: number // two-wheelers: front lever held with the throttle (Shift + W + S), 0..1
 }
 export const idleInput = (): PlayerInput => ({
   forward: 0,

@@ -9,7 +9,8 @@ import { RoadAssist } from './road-assist.js'
 import { nearestRoadPoint, ROAD_SNAP_MAX_DISTANCE, type RoadCenterline } from './road-snap.js'
 import { portalEnvelope, portalExitBlocked } from './portal-clearance.js'
 import { constrainTerrainBoundary } from './terrain-boundary.js'
-import { simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
+import { ejectionDefaults, simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
+import { slideSpeed, startEjection, stepEjection, type RiderEjection } from './rider-ejection.js'
 import {
   createWheeledVehicle,
   stepWheeledVehicle,
@@ -18,9 +19,19 @@ import {
   wheelContacts,
   shiftWheeledVehicle,
   automaticWheeledTransmission,
+  setWheeledEngineMode,
   enterWheeledVehicle,
 } from './vehicles/wheeled/runtime.js'
-import { startIgnition } from './vehicles/drivetrain.js'
+import { hasEngineModes, startIgnition } from './vehicles/drivetrain.js'
+import type { EngineMode } from './vehicles/wheeled/contracts.js'
+import {
+  createTwoWheeledVehicle,
+  resetTwoWheeled,
+  stepTwoWheeledVehicle,
+  twoWheeledPose,
+  type TwoWheeledPose,
+  type TwoWheeledVehicle,
+} from './vehicles/two-wheeled/index.js'
 import type {
   GearClackProfile,
   WheeledInput,
@@ -174,6 +185,7 @@ export class Simulation {
   private vehicleId: string | null = null
   private interiorId: string | null = null
   private hoverJumpTime = 0
+  private ejection: RiderEjection | null = null
   private disposed = false
   private grounded = false
   private support: Body | null = null
@@ -187,6 +199,13 @@ export class Simulation {
   private lostTime = 0
   private readonly roadGuidance = new RoadAssist()
   private readonly portalTraversal = new PortalTraversal()
+  /**
+   * The rider thrown off a crashed two-wheeler, from the throw until control returns (flying,
+   * down on the ground, getting up); null otherwise. Input is ignored meanwhile.
+   */
+  get playerEjection(): RiderEjection | null {
+    return this.ejection
+  }
   get portalEvent() {
     return this.portalTraversal.event
   }
@@ -659,9 +678,10 @@ export class Simulation {
 
   private createVehicle(entity: Entity, body: Body): void {
     const definition = vehicleDefinition(entity)
-    const wheeled = createWheeledVehicle(body, definition, {
-      parked: hasGearSelector(definition),
-    })
+    const options = { parked: hasGearSelector(definition) }
+    const wheeled = definition.twoWheeled
+      ? createTwoWheeledVehicle(body, definition, options)
+      : createWheeledVehicle(body, definition, options)
     const car = wheeled.raycast
     if (definition.boat) {
       body.linearDamping = 0.01
@@ -712,6 +732,8 @@ export class Simulation {
       right: clamp(input.right, -1, 1),
       lift: clamp(input.lift ?? 0, -1, 1),
       turn: clamp(input.turn ?? 0, -1, 1),
+      riderRight: Number.isFinite(input.riderRight) ? clamp(input.riderRight!, -1, 1) : 0,
+      riderForward: Number.isFinite(input.riderForward) ? clamp(input.riderForward!, -1, 1) : 0,
     }
     this.jumpPending ||= input.jump
   }
@@ -791,6 +813,8 @@ export class Simulation {
       steering: this.input.right,
       handbrake: this.input.brake,
       launch: this.input.sprint,
+      rider: { right: this.input.riderRight ?? 0, forward: this.input.riderForward ?? 0 },
+      lever: this.input.frontBrake ?? 0,
     }
   }
   /** Per-wheel absolute-world contact snapshots for any tyre effect or diagnostic. */
@@ -898,7 +922,12 @@ export class Simulation {
       exitBlocked: (body, position, quaternion, destination) =>
         this.portalExitBlocked(body, position, quaternion, destination),
       refreshCollisions: () => this.updateMapCollisions(),
-      clearWheelHistory: (id) => this.previousWheels.delete(id),
+      clearWheelHistory: (id) => {
+        this.previousWheels.delete(id)
+        // The velocity is now in the exit's frame: not an impact.
+        const twoWheeled = this.vehicles.get(id)?.twoWheeled
+        if (twoWheeled) twoWheeled.previousVelocity = null
+      },
     })
   }
 
@@ -1077,7 +1106,10 @@ export class Simulation {
         v,
         dock ? (this.vehicles.get(dock.carrierId)?.body.linearDamping ?? 0.05) : undefined,
       )
-      if (dock) continue
+      if (dock) {
+        if (v.twoWheeled) v.twoWheeled.previousVelocity = null
+        continue
+      }
       const active = id === this.vehicleId || v.definition.tow?.vehicleId === this.vehicleId
       if (v.definition.plane) this.spoolEngine(v, active)
       if (v.flight) {
@@ -1086,6 +1118,22 @@ export class Simulation {
       }
       if (v.definition.boat) {
         this.pilotBoat(v, active)
+        continue
+      }
+      if (v.twoWheeled) {
+        stepTwoWheeledVehicle(
+          v as TwoWheeledVehicle,
+          drivingInput,
+          FIXED_STEP,
+          active,
+          v.helm !== 'off',
+          this.radialUp(v.body),
+          simulationDefaults.gravity,
+        )
+        if (v.twoWheeled.ejectPending) {
+          v.twoWheeled.ejectPending = false
+          if (id === this.vehicleId) this.ejectRider(v)
+        }
         continue
       }
       stepWheeledVehicle(v, drivingInput, FIXED_STEP, active, v.helm !== 'off')
@@ -1098,7 +1146,8 @@ export class Simulation {
           this.entitiesById,
         )
     }
-    if (!this.vehicleId) {
+    if (!this.vehicleId && this.ejection) this.stepEjection()
+    else if (!this.vehicleId) {
       let x = this.input.right,
         z = this.input.forward
       const len = Math.hypot(x, z)
@@ -1131,6 +1180,60 @@ export class Simulation {
       this.playerBody.wakeUp()
     }
     this.jumpPending = false
+  }
+
+  /**
+   * Throw the rider off a crashed two-wheeler: from just above the driver point, with most of the
+   * machine's velocity from just before the crash and a hop. The player is on foot from now on, without control until
+   * `stepEjection` has them back up.
+   */
+  private ejectRider(v: Vehicle): void {
+    if (!v.twoWheeled) return
+    const up = this.radialUp(v.body)
+    const start = v.body
+      .pointToWorldFrame(new Vec3(...v.definition.driver))
+      .vadd(up.scale(ejectionDefaults.clearance))
+    this.playerBody.position.copy(start)
+    this.playerBody.previousPosition.copy(start)
+    this.playerBody.velocity.copy(
+      new Vec3(...v.twoWheeled.recentVelocity)
+        .scale(ejectionDefaults.carry)
+        .vadd(up.scale(ejectionDefaults.hop)),
+    )
+    this.playerBody.angularVelocity.setZero()
+    this.playerBody.aabbNeedsUpdate = true
+    this.world.addBody(this.playerBody)
+    this.playerBody.wakeUp()
+    this.vehicleId = null
+    this.grounded = false
+    this.hoverJumpTime = 0
+    this.ejection = startEjection(v.entity.id, v.twoWheeled.crashSpeed)
+  }
+  /**
+   * One tick of a thrown rider: no input and no hover cushion while flying and sliding (plain
+   * gravity, ground friction once down), the cushion back on while getting up.
+   */
+  private stepEjection(): void {
+    const body = this.playerBody
+    const up = this.radialUp(body)
+    const vertical = body.velocity.dot(up)
+    const horizontal = body.velocity.vsub(up.scale(vertical))
+    let groundSpeed = horizontal.length()
+    if (this.ejection!.phase === 'down' && this.grounded && groundSpeed > 0) {
+      const left = slideSpeed(groundSpeed, simulationDefaults.gravity, FIXED_STEP)
+      horizontal.scale(left / groundSpeed).vadd(up.scale(vertical), body.velocity)
+      groundSpeed = left
+    }
+    this.ejection = stepEjection(
+      this.ejection!,
+      this.grounded,
+      body.velocity.length(),
+      groundSpeed,
+      FIXED_STEP,
+    )
+    if (this.ejection?.phase !== 'flying' && this.ejection?.phase !== 'down')
+      if (this.options.playerMode === 'hover') this.hover()
+    body.wakeUp()
   }
 
   private radialUp(body: Body): Vec3 {
@@ -1251,6 +1354,7 @@ export class Simulation {
     v.body.velocity.setZero()
     v.body.angularVelocity.setZero()
     v.body.wakeUp()
+    if (v.twoWheeled) v.twoWheeled.previousVelocity = null
     // Someone standing in the cabin travels with the ship instead of being left behind.
     if (this.interiorId === id && !this.vehicleId) {
       this.playerBody.position.vadd(delta, this.playerBody.position)
@@ -1310,6 +1414,7 @@ export class Simulation {
     v.body.velocity.setZero()
     v.body.angularVelocity.setZero()
     v.body.wakeUp()
+    if (v.twoWheeled) resetTwoWheeled(v.twoWheeled)
     for (const trailer of this.vehicles.values()) {
       if (trailer.definition.tow?.vehicleId === id) this.alignTrailer(trailer, v)
     }
@@ -1494,6 +1599,7 @@ export class Simulation {
       throw new Error('Invalid initial vehicle')
     this.setInterior(null)
     this.vehicleId = id
+    this.ejection = null
     this.world.removeBody(this.playerBody)
     this.playerBody.velocity.setZero()
     this.grounded = false
@@ -1679,6 +1785,10 @@ export class Simulation {
     rpm: number
     gear: number
     manualTransmission: boolean
+    /** Engine mode (`powertrain.modes`): `beast` shows S on the selector. */
+    engineMode: EngineMode
+    /** True when the vehicle has the Normal / Bestia engine modes. */
+    engineModes: boolean
     engineLoad: number
     tireSlip: number
     /** Counts every gear change, automatic included, and D/R engagements. */
@@ -1700,6 +1810,17 @@ export class Simulation {
     towVehicleId: string | null
     /** True while a free trailer is resting on its landing legs. */
     landingGear: boolean
+    /** True for a single-track vehicle (motorcycle). */
+    twoWheeled: boolean
+    /** Two-wheeler lean from the local vertical, radians, positive to the left; 0 otherwise. */
+    lean: number
+    /**
+     * Roll a camera or flip detector must treat as intended riding lean, radians: the fall
+     * threshold for two-wheelers, 0 for everything else.
+     */
+    leanAllowance: number
+    /** Two-wheeler pitch against the ground, radians: wheelie > 0, stoppie < 0; 0 otherwise. */
+    pitch: number
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
@@ -1737,6 +1858,8 @@ export class Simulation {
       rpm: ground.rpm,
       gear: ground.gear,
       manualTransmission: ground.manualTransmission,
+      engineMode: ground.engineMode,
+      engineModes: ground.engineModes,
       engineLoad: ground.engineLoad,
       tireSlip: ground.tireSlip,
       gearShifts: ground.shiftCount,
@@ -1749,7 +1872,16 @@ export class Simulation {
       gaugeSweep: ground.gaugeSweep,
       towVehicleId: v.definition.tow?.vehicleId ?? null,
       landingGear: v.landingGear.length > 0,
+      twoWheeled: Boolean(v.twoWheeled),
+      lean: v.twoWheeled?.lean ?? 0,
+      leanAllowance: v.twoWheeled?.tuning.fallLean ?? 0,
+      pitch: v.twoWheeled?.pitch ?? 0,
     }
+  }
+  /** Steering, suspension and wheel spin of a two-wheeler for its presentation rig; else null. */
+  twoWheeledPose(id: string): TwoWheeledPose | null {
+    const v = this.vehicles.get(id)
+    return v?.twoWheeled ? twoWheeledPose(v as TwoWheeledVehicle) : null
   }
 
   shiftVehicle(direction: -1 | 1): string {
@@ -1761,11 +1893,33 @@ export class Simulation {
       ? `Manual · ${gearLabel(v.drivetrain.gear, true)}`
       : 'Cambio protegido · marcha no disponible'
   }
+  /**
+   * The selector key (B). From a manual gear it returns to automatic in the current mode. Already
+   * in automatic, a car with engine modes moves the selector between D (Normal) and S (Bestia).
+   */
   automaticTransmission(): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : null
-    return v && automaticWheeledTransmission(v)
-      ? 'Cambio automático · D'
-      : 'Este vehículo no tiene cambio secuencial'
+    if (!v?.definition.powertrain) return 'Este vehículo no tiene cambio secuencial'
+    const wasManual = v.drivetrain.manual
+    automaticWheeledTransmission(v)
+    if (!wasManual && hasEngineModes(v.definition.powertrain))
+      return this.setEngineMode(this.vehicleId!, v.drivetrain.mode === 'beast' ? 'normal' : 'beast')
+    return `Cambio automático · ${v.drivetrain.mode === 'beast' && hasEngineModes(v.definition.powertrain) ? 'S' : 'D'}`
+  }
+
+  /**
+   * Select a car's engine mode (J menu «Motor», or the selector D/S). Power, torque, redline,
+   * shift points and the engine voice follow. Returns the HUD message.
+   */
+  setEngineMode(id: string, mode: EngineMode): string {
+    const v = this.vehicles.get(id)
+    if (!v || !setWheeledEngineMode(v, mode)) return 'Este vehículo tiene un solo modo de motor'
+    return mode === 'beast' ? 'Motor: Bestia · cambio en S' : 'Motor: Normal · cambio en D'
+  }
+
+  /** Current engine mode of a vehicle; `normal` for vehicles without modes or unknown ids. */
+  engineMode(id: string): EngineMode {
+    return this.vehicles.get(id)?.drivetrain.mode ?? 'normal'
   }
 
   dockingCandidate(id = this.vehicleId): string | null {

@@ -37,7 +37,7 @@ const CONTROLS =
   '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Conducir · <kbd>Espacio</kbd> Freno · ' +
   '<kbd>C</kbd> Cámara · <kbd>J</kbd> Menú · <kbd>H</kbd> Luces · <kbd>G</kbd> GPS · <kbd>E</kbd> Entrar/salir · ' +
   '<kbd>V</kbd> Vuelo · <kbd>F</kbd> Acoplar · <kbd>T</kbd> Transferir · <kbd>R</kbd> Recuperar · ' +
-  '<kbd>Tab</kbd> Arma'
+  '<kbd>Tab</kbd> Arma · <kbd>U</kbd><kbd>O</kbd><kbd>I</kbd><kbd>L</kbd> Peso del piloto (moto)'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 const bootMark = performance.now()

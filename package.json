@@ -43,6 +43,10 @@
       "types": "./dist/simulation/vehicles/wheeled/index.d.ts",
       "import": "./dist/simulation/vehicles/wheeled/index.js"
     },
+    "./vehicles/two-wheeled": {
+      "types": "./dist/simulation/vehicles/two-wheeled/index.d.ts",
+      "import": "./dist/simulation/vehicles/two-wheeled/index.js"
+    },
     "./physics": {
       "types": "./dist/simulation/physics-api.d.ts",
       "import": "./dist/simulation/physics-api.js"

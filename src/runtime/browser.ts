@@ -906,6 +906,7 @@ export class GameRuntime {
       )
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
+    this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     this.view.sync(
       sim,
       dt,
@@ -925,6 +926,7 @@ export class GameRuntime {
     if (crossing) canvas.dataset.portalCrossings = String(crossing.sequence)
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
+    this.view.scrapeSparks(sim, time)
     this.view.sparks.update(time)
     if (this.sidearm) {
       this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
@@ -997,6 +999,7 @@ export class GameRuntime {
                 // Best-effort: derive spin from recent up-axis change inside FlipCinematic window.
                 return { x: 0, y: 0, z: 0 }
               },
+              leanAllowance: sim.vehicleInfo(vid).leanAllowance,
             },
             this.camera,
             this.cameraState,
@@ -1013,7 +1016,14 @@ export class GameRuntime {
       showGear: controls.gear,
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
-      gearLabel: info ? gearLabel(info.gear, info.manualTransmission, info.parked) : null,
+      gearLabel: info
+        ? gearLabel(
+            info.gear,
+            info.manualTransmission,
+            info.parked,
+            info.engineModes && info.engineMode === 'beast',
+          )
+        : null,
       vehicle:
         this.document.entities.find((entity) => entity.id === player.vehicleId)?.name ?? null,
       cameraMode: canvas.dataset.cameraMode!,
@@ -1140,7 +1150,14 @@ export class GameRuntime {
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
-      gearLabel: info ? gearLabel(info.gear, info.manualTransmission, info.parked) : null,
+      gearLabel: info
+        ? gearLabel(
+            info.gear,
+            info.manualTransmission,
+            info.parked,
+            info.engineModes && info.engineMode === 'beast',
+          )
+        : null,
       location: this.document.geography
         ? localToGeo(this.document.geography, player.position)
         : null,
@@ -1694,7 +1711,14 @@ export class GameRuntime {
       sim,
       this.document.entities.flatMap((entity) =>
         entity.vehicle
-          ? [{ id: entity.id, name: entity.name, wheelRadius: entity.vehicle.wheelRadius }]
+          ? [
+              {
+                id: entity.id,
+                name: entity.name,
+                wheelRadius: entity.vehicle.wheelRadius,
+                rearWheelRadius: entity.vehicle.twoWheeled?.rearWheelRadius,
+              },
+            ]
           : [],
       ),
       (position) => world.groundHeight(position),
@@ -2287,6 +2311,9 @@ export class GameRuntime {
               if (entity) Object.assign(entity, patch)
             },
             this.text,
+            (entityId, mode) =>
+              this.session.simulation?.setEngineMode(entityId, mode) ??
+              'Este vehículo tiene un solo modo de motor',
           )
           if (result.handled) {
             event.preventDefault()

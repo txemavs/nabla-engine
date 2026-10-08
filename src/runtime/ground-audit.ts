@@ -52,7 +52,7 @@ export function auditGround(
     Simulation,
     'entityTransform' | 'wheelTransforms' | 'wheelContactInfo' | 'player' | 'nearestVehicle'
   >,
-  vehicles: readonly { id: string; name: string; wheelRadius: number }[],
+  vehicles: readonly { id: string; name: string; wheelRadius: number; rearWheelRadius?: number }[],
   ground: (position: Vec3Tuple) => number | undefined,
   playerHalfHeight: number,
 ): GroundAudit {
@@ -61,7 +61,9 @@ export function auditGround(
     const wheels = sim.wheelTransforms(v.id)
     const contacts = sim.wheelContactInfo(v.id)
     const wheelGround = wheels.map((w) => finite(ground(w.position)))
-    const bottoms = wheels.map((w) => w.position[1] - v.wheelRadius)
+    const radius = (i: number) =>
+      wheels.length === 2 && i === 1 ? (v.rearWheelRadius ?? v.wheelRadius) : v.wheelRadius
+    const bottoms = wheels.map((w, i) => w.position[1] - radius(i))
     const clearances = bottoms.flatMap((bottom, i) =>
       wheelGround[i] === null ? [] : [bottom - wheelGround[i]!],
     )

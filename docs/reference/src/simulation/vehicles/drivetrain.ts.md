@@ -11,15 +11,56 @@
 
 ## createDrivetrain
 
-[Implementation, line 46](../../../../../src/simulation/vehicles/drivetrain.ts#L46)
+[Implementation, line 50](../../../../../src/simulation/vehicles/drivetrain.ts#L50)
 
 ```ts
 createDrivetrain(): DrivetrainState
 ```
 
+## hasEngineModes
+
+[Implementation, line 80](../../../../../src/simulation/vehicles/drivetrain.ts#L80)
+
+```ts
+hasEngineModes(spec?: PowertrainDefinition): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.keys`
+
+## initialEngineMode
+
+[Implementation, line 83](../../../../../src/simulation/vehicles/drivetrain.ts#L83)
+
+```ts
+initialEngineMode(spec?: PowertrainDefinition): EngineMode
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hasEngineModes`
+
+## effectivePowertrain
+
+[Implementation, line 90](../../../../../src/simulation/vehicles/drivetrain.ts#L90)
+
+The powertrain as driven in `mode`: the mode's overrides merged over the base values (gearbox
+tuning merged field by field). Without `modes` (or that mode) the base spec itself. Cached
+per spec object, so the fixed step allocates nothing.
+
+```ts
+effectivePowertrain(spec: PowertrainDefinition, mode: EngineMode = 'normal'): PowertrainDefinition
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `modeCache.get`
+- `modeCache.set`
+
 ## engagePark
 
-[Implementation, line 74](../../../../../src/simulation/vehicles/drivetrain.ts#L74)
+[Implementation, line 114](../../../../../src/simulation/vehicles/drivetrain.ts#L114)
 
 Select P: gear 0, parked, automatic mode, any pending D/R request and torque cut cleared.
 The wheeled runtime then holds the vehicle with its full service brake until the driver's
@@ -31,7 +72,7 @@ engagePark(state: DrivetrainState): void
 
 ## startIgnition
 
-[Implementation, line 95](../../../../../src/simulation/vehicles/drivetrain.ts#L95)
+[Implementation, line 135](../../../../../src/simulation/vehicles/drivetrain.ts#L135)
 
 Begin the start-up sequence: starter cranking, then the needle sweep while the engine settles
 to idle, then running. Engine speed drops to the cranking speed.
@@ -46,7 +87,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isStarting
 
-[Implementation, line 103](../../../../../src/simulation/vehicles/drivetrain.ts#L103)
+[Implementation, line 143](../../../../../src/simulation/vehicles/drivetrain.ts#L143)
 
 ```ts
 isStarting(state: DrivetrainState): boolean
@@ -54,7 +95,7 @@ isStarting(state: DrivetrainState): boolean
 
 ## stepIgnition
 
-[Implementation, line 111](../../../../../src/simulation/vehicles/drivetrain.ts#L111)
+[Implementation, line 151](../../../../../src/simulation/vehicles/drivetrain.ts#L151)
 
 Advance the start-up sequence by `dt`. While it runs, P is kept and drive torque is zero.
 Engine speed is a pulsing starter speed while cranking, jumps to the catch at
@@ -72,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ignitionRpm
 
-[Implementation, line 136](../../../../../src/simulation/vehicles/drivetrain.ts#L136)
+[Implementation, line 176](../../../../../src/simulation/vehicles/drivetrain.ts#L176)
 
 Engine speed while the starter cranks (a pulsing starter speed); 0 in any other phase.
 
@@ -86,7 +127,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gaugeSweep
 
-[Implementation, line 148](../../../../../src/simulation/vehicles/drivetrain.ts#L148)
+[Implementation, line 188](../../../../../src/simulation/vehicles/drivetrain.ts#L188)
 
 Needle self-test position, 0..1: smooth (cosine) rise to full scale, a short hold, and a
 smooth fall back to 0 over `ignitionSweepSeconds`. 0 outside the sweep phase.
@@ -103,7 +144,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gaugeSweep.ease
 
-[Implementation, line 154](../../../../../src/simulation/vehicles/drivetrain.ts#L154)
+[Implementation, line 194](../../../../../src/simulation/vehicles/drivetrain.ts#L194)
 
 ```ts
 ease(u: number): inferred by TypeScript; see implementation
@@ -117,7 +158,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gearboxTuning
 
-[Implementation, line 178](../../../../../src/simulation/vehicles/drivetrain.ts#L178)
+[Implementation, line 218](../../../../../src/simulation/vehicles/drivetrain.ts#L218)
 
 ```ts
 gearboxTuning(spec?: PowertrainDefinition): ResolvedGearbox
@@ -125,7 +166,7 @@ gearboxTuning(spec?: PowertrainDefinition): ResolvedGearbox
 
 ## selectDriveDirection
 
-[Implementation, line 208](../../../../../src/simulation/vehicles/drivetrain.ts#L208)
+[Implementation, line 248](../../../../../src/simulation/vehicles/drivetrain.ts#L248)
 
 Brake-then-shift direction selector. An opposite pedal never engages D/R while the vehicle
 is still rolling: the caller keeps braking (returns true) until `|speed|` drops below
@@ -147,7 +188,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## selectNeutralOrPark
 
-[Implementation, line 257](../../../../../src/simulation/vehicles/drivetrain.ts#L257)
+[Implementation, line 297](../../../../../src/simulation/vehicles/drivetrain.ts#L297)
 
 Realistic selector: stopped with the handbrake on and both pedals released, D/R drops to N
 after `neutralSeconds`, and N to P after a further `parkSeconds`. Nothing here ever returns
@@ -165,7 +206,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gearForSpeed
 
-[Implementation, line 287](../../../../../src/simulation/vehicles/drivetrain.ts#L287)
+[Implementation, line 327](../../../../../src/simulation/vehicles/drivetrain.ts#L327)
 
 Lowest forward gear whose coupled engine speed stays below the upshift point.
 
@@ -179,7 +220,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isDriven
 
-[Implementation, line 298](../../../../../src/simulation/vehicles/drivetrain.ts#L298)
+[Implementation, line 338](../../../../../src/simulation/vehicles/drivetrain.ts#L338)
 
 ```ts
 isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
@@ -187,12 +228,12 @@ isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
 
 ## stepDrivetrain
 
-[Implementation, line 302](../../../../../src/simulation/vehicles/drivetrain.ts#L302)
+[Implementation, line 342](../../../../../src/simulation/vehicles/drivetrain.ts#L342)
 
 Fixed-step, deliberately forgiving DSG-style clutch; no dependency on asset names or Studio.
 
 ```ts
-stepDrivetrain(state: DrivetrainState, spec: PowertrainDefinition, radius: number, speed: number, throttle: number, handbrake: boolean, dt: number, aggressiveLaunch = false): void
+stepDrivetrain(state: DrivetrainState, baseSpec: PowertrainDefinition, radius: number, speed: number, throttle: number, handbrake: boolean, dt: number, aggressiveLaunch = false): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -204,30 +245,44 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.sign`
 - `Number.isInteger`
 - `Object.assign`
+- `applySpeedLimiter`
 - `createDrivetrain`
+- `effectivePowertrain`
 - `gearForSpeed`
 - `gearboxTuning`
 - `selectDriveDirection`
 - `selectNeutralOrPark`
 
+## applySpeedLimiter
+
+[Implementation, line 428](../../../../../src/simulation/vehicles/drivetrain.ts#L428)
+
+Soft speed limiter, ignition-cut style: at the limit the drive (and the engine load the audio
+hears) drops to zero until the speed has fallen `hysteresisKmh` below it, then comes back.
+
+```ts
+applySpeedLimiter(state: DrivetrainState, spec: PowertrainDefinition, speed: number): void
+```
+
 ## shiftGear
 
-[Implementation, line 383](../../../../../src/simulation/vehicles/drivetrain.ts#L383)
+[Implementation, line 449](../../../../../src/simulation/vehicles/drivetrain.ts#L449)
 
 A paddle enters manual mode; reject unsafe reductions instead of over-revving.
 
 ```ts
-shiftGear(state: DrivetrainState, spec: PowertrainDefinition, radius: number, speed: number, direction: -1 | 1): boolean
+shiftGear(state: DrivetrainState, baseSpec: PowertrainDefinition, radius: number, speed: number, direction: -1 | 1): boolean
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
+- `effectivePowertrain`
 - `gearboxTuning`
 
 ## engineBrakingForce
 
-[Implementation, line 406](../../../../../src/simulation/vehicles/drivetrain.ts#L406)
+[Implementation, line 473](../../../../../src/simulation/vehicles/drivetrain.ts#L473)
 
 Closed-throttle pumping losses through the selected gear, fading before standstill.
 

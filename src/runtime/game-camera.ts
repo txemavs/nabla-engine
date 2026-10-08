@@ -212,7 +212,8 @@ export function setGameCameraView(
  */
 export function updateGameCamera(
   sim: Simulation,
-  view: Pick<SceneView, 'document' | 'vehicleHeadOffset' | 'objects'>,
+  view: Pick<SceneView, 'document' | 'vehicleHeadOffset' | 'objects'> &
+    Partial<Pick<SceneView, 'rideSmoothing'>>,
   camera: THREE.PerspectiveCamera,
   state: GameCameraState,
   now: number,
@@ -263,7 +264,15 @@ export function updateGameCamera(
   const groundHeading = state.groundHeading
   const frameQ = playerFrame ? playerFrameQ : null
   if (vehicleRotation) {
-    groundHeading.update(p.vehicleId!, p.position, vehicleRotation, frameQ, dt)
+    // Two-wheelers lean into corners; their lean up to the fall threshold is no rollover.
+    groundHeading.update(
+      p.vehicleId!,
+      p.position,
+      vehicleRotation,
+      frameQ,
+      dt,
+      info?.leanAllowance ?? 0,
+    )
     // The overhead view centre: half a vertical half-frustum ahead of the car along the smoothed
     // heading, so the car projects to 75% screen height. Following the centre (not the car)
     // also filters the look-ahead swing while the heading turns.
@@ -316,6 +325,14 @@ export function updateGameCamera(
     p.position[1] + (info?.isCarrier ? tuning.carrierTargetHeight : tuning.targetHeight),
     p.position[2],
   ]
+  // Ride smoothing (`SceneView.rideSmoothing`): the exterior views follow the smoothed height,
+  // so road bounce at speed does not shake them; the body itself keeps every bump.
+  if (p.vehicleId && !p.interiorId && view.rideSmoothing) {
+    const ride = view.rideSmoothing.offset(p.vehicleId)
+    target[0] += ride.x
+    target[1] += ride.y
+    target[2] += ride.z
+  }
   if (p.interiorId) {
     const anchor = new THREE.Vector3(0, tuning.targetHeight, 0)
       .applyQuaternion(playerFrameQ)
@@ -390,6 +407,8 @@ export function updateGameCamera(
       view.vehicleHeadOffset(p.vehicleId!),
       view.document.entities.find((entity) => entity.id === p.vehicleId)?.vehicle?.headRotation,
     )
+    // The eye rides the smoothed vehicle: small, fast bounce is absorbed, the cockpit keeps it.
+    view.rideSmoothing?.apply(p.vehicleId!, head.position, head.quaternion)
     camera.position.copy(head.position)
     camera.quaternion.copy(head.quaternion)
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(head.quaternion)

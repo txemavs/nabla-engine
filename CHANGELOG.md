@@ -2,8 +2,118 @@
 
 ## Unreleased
 
+### Changed
+
+- **VFR800 metal map (Txema's review):** chrome only on the brake discs (their tracks and floating
+  buttons) and the stainless end cap of the silencer (`Stainless chrome silencer end cap`, roughness
+  0.12, reflections 0.75). The silencer can joins the headers and the engine on the top triple
+  clamp's satin aluminium; the fork stanchions are a polished aluminium grey (base 0.5, roughness
+  0.3), no longer chrome. Headlamp reflector and mirror glass unchanged. Regenerated with
+  `scripts/prepare-vfr800-cockpit.mjs` from the phase-1 GLB.
+
 ### Added
 
+- **Ride smoothing for the view:** at speed, road bumps no longer shake the cockpit, chase and
+  cinematic views. The cameras and the seated avatar (helmet / monitor) follow a smoothed copy of
+  the vehicle's height and pitch / roll: a critically damped filter with velocity feed-forward
+  (0.15–0.25 s) that absorbs small, fast bounce, follows slopes and steady lean without lag,
+  stays within a few centimetres / degrees of the body, and lets crashes, rollovers and flight
+  through exactly. Per class (`rideSmoothingDefaults`: car, motorcycle, truck, off) and per preset
+  (`vehicle.rideSmoothing`). The body, physics and suspension are unchanged.
+- **Motorcycle foot paddling:** stopped (under 2 km/h), holding S (the cars' reverse key) for
+  0.4 s walks the VFR backwards with the rider's feet, easing up to 2.5 km/h; released, the feet
+  stop it. No reverse gear: the engine, gearbox, selector and dash are untouched
+  (`twoWheeledDefaults.paddle`).
+- **Smooth rider head:** the two-wheeler cockpit eye eases towards the rider's body shift and
+  tuck through a critically damped spring (`easeRiderHead`, `riderHeadResponse` 4/s): about
+  1.5 s to settle, no overshoot, no jitter on key presses, steering or the automatic position.
+  The physics shift and the handling are unchanged.
+- **Motorcycle crashes:** a hard impact (over 5 g at 30 km/h or more: walls, barriers, cars) or a
+  lowside at speed now crashes the bike as well as the Shift loop, and every crash kicks it into a
+  violent tumble that grows with speed. At 120 km/h or more the rider is thrown off with the speed
+  from before the hit, flies, takes the hit, slides with friction, lies still for a moment and
+  gets up; the floating monitor rises back to its cushion and control returns
+  (`Simulation.playerEjection`, `twoWheeledDefaults.crash`, `ejectionDefaults`). The V4 sound and
+  the handling are unchanged.
+- **Smoothed on-foot avatar:** the floating monitor (or walker) follows the player body through
+  the same critically damped follower with feed-forward as the cameras (`AvatarFollow`,
+  `avatarFollowResponse` / `avatarYawResponse`): no lag at a steady pace, jitter and snappy turns
+  filtered. A thrown rider's helmet tumbles, squashes on the hit and turns upright as it gets up
+  (`EjectionTumble`).
+- **S3 engine modes (Normal / Bestia):** one S3 (`car`) with NORMAL (D, ~200 CV, refined TDI-like
+  inline-four voice, default) and BESTIA (S, ~400 CV, inline-five warble with an occasional overrun
+  burble). Switch from J › MOTOR or B (D ↔ S); HUD and cluster show D / S; power, torque, redline,
+  shift points and sound follow the mode (`powertrain.modes`, `defaultMode`, `audio.engineModes`,
+  `&engineMode=`). The A3 is hidden from the add-vehicle menu and the demo fleet (`hidden`), and
+  stays available to Studio, the palette, tests and docking.
+- **VFR800 metal and windscreen:** neutral chrome (base 0.95 grey, metallic 1, roughness 0.12,
+  reflections at 0.75; first 0.03 / 1.25, toned down as too mirror-like) only on the fork stanchions, the silencer can and its end
+  cap; the exhaust headers and the engine use the satin grey metal of the top triple clamp, as do
+  the frame and fork lowers; discs, brake tracks, chain, sprockets, radiator and swingarm keep
+  their authored materials. The reflection environment is a colourless studio gradient, so chrome
+  no longer reads blue, and it is no longer upside down (the equirectangular rows were written
+  zenith-first, so chrome reflected the sky from below). The windscreen is a see-through neutral smoke grey with a slight reflection
+  (`extras.nabla.envIntensity`, honoured by `applyReflectionEnvironment`). Both via
+  `scripts/prepare-vfr800-cockpit.mjs`.
+- **VFR800 rear-view mirrors:** the `mirror_L` / `mirror_R` glass is now a live mirror in the
+  cockpit, like the cars', and the existing Vehículos › Espejos sliders adjust it (yaw/tilt per side,
+  in degrees; default 0° / 0°, the glass as modelled; bake in `vehicle.mirrorAim`).
+- **VFR800 full lean ("total estribo"):** holding full steer at the normal 40° limit raises it over
+  2 s to the peg lean measured from the GLB (`twoWheeled.pegLean`: left 52.1° footpeg rubber, right
+  54.2° passenger footrest; `scripts/vfr800-lean-clearance.mjs`); releasing relaxes it in 1 s. The
+  automatic rider hangs off further (`rider.auto.pegHangOff`), and at the peg the bullet-impact
+  sparks stream from the touching point with a light metallic grind (`MetalScrape`).
+- **VFR800 tuck:** the head goes down gradually from 180 km/h to the full tuck at 200 km/h (eased
+  ramp, `twoWheeled.rider.tuck.fullKmh`), comes back up along the same ramp 10 km/h lower
+  (hysteresis, fully up at `releaseKmh` 170), and the forward key follows the same ramp
+  (`manualFromKmh` removed). The full-tuck eye is less deep (−0.22 m down, 0.34 m forward, was
+  −0.32 / 0.44) so the horizon clears the fairing; the tacho stays at the bottom of the view.
+- **Motorcycles, phase 3 (`vfr800`):** automatic rider (`twoWheeled.rider.auto`: hangs off into
+  turns, forward under hard acceleration, back under hard front braking, keys override and hand
+  back after ~1 s) and a tuck behind the windscreen from 180 km/h with hysteresis
+  (`twoWheeled.rider.tuck`; I reaches the full tuck above the blend); the cockpit eye drops
+  behind the screen. Shift is now a hooligan modifier (`twoWheeled.hooligan`, assists and CBS off
+  while held): launch burnout with rear wheelspin, smoke and marks; assist-free wheelie and
+  stoppie that crash when held too long (`twoWheeled.crashPitch`); stationary burnout on
+  Shift + S + Space + W (`PlayerInput.frontBrake`). Live instrument cluster
+  (`MotorcycleInstruments`, `vehicle.cluster`): speedometer, white tachometer, LCD with game
+  clock, gear and distances, green turn-signal tell-tales and four warning lamps. Reflection
+  environment for two-wheelers' chrome and glass (`applyReflectionEnvironment`). GLB cockpit
+  pass (`scripts/prepare-vfr800-cockpit.mjs`): `mirror_L` / `mirror_R` nodes, gauge and lamp
+  anchors, static needles removed, alpha-blended lighter windscreen. `twoWheeledPose` adds
+  `tuck`, `rearWheelSpeed`, `roadSpeed`, `hooligan` and `crashed`.
+- **Motorcycles, phase 2 (`vfr800` preset):** wheelies and stoppies come from real pitch
+  dynamics: the rider is part of the vehicle mass (`twoWheeled.rider`), drive and brake forces
+  transfer load at the tyre contacts, and a configurable pitch assist (`twoWheeled.pitchAssist`)
+  fades the drive / eases the front brake past a soft angle, pulls the wheel down past a maximum
+  angle and cushions landings; it replaces the phase-1 wheelie guard. Rider counterweight on
+  **U / O** (hang off left / right) and **I / L** (weight forward / back) moves the body centre
+  of mass (`Body.setCenterOfMass`), changes the lean needed in a turn and opens the wheelie or
+  stoppie; the head and cockpit camera follow. **Shift** in first or second gear with the
+  throttle open is a clutch kick (`twoWheeled.clutchKick`). Optional Dual CBS
+  (`twoWheeled.cbs`): lever and pedal each brake both wheels by configurable shares with a lag on
+  the linked circuits; the vfr800's shares are TODO(unverified) piston-count placeholders, not
+  Honda data. New `vehicle.audio.engine` voice `v4`: a procedural 90° V4 with a 180° crank
+  (uneven 90-180-270-180 firing from `vAngle`/`crankpin`), one periodic wave per cycle, no sample
+  files; cars keep the engine note. `vehicleInfo` adds `pitch`; `twoWheeledPose` adds `pitch` and
+  `riderShift`; `PlayerInput` adds `riderRight`/`riderForward`. New per-preset `powertrain.speedLimiter` (soft ignition-style cut with hysteresis); the vfr800 reaches and holds ~250 km/h (owner's bike, limiter; not Honda data) with the two-wheeler drag placeholder lowered from 0.3 to 0.18.
+- **Motorcycles, phase 1 (`vfr800` preset):** the Honda VFR800FI 1999 from the asset library is
+  drivable. New `vehicle.twoWheeled` schema (two hubs, rear wheel radius, steering head axis,
+  lock, optional lean/balance/brake tuning) with a narrow-size exemption and redlines up to
+  20,000 rpm; the rig extractor reads `wheel.front`/`wheel.rear`. New two-wheeled controller
+  (`src/simulation/vehicles/two-wheeled/`, export `@nabla/engine/vehicles/two-wheeled`): two
+  Rapier ray-cast wheels, steering through the raked head axis, speed- and steer-driven lean with
+  a low-speed balance assist, front brake on S and rear brake on Space, the shared gearbox. Visual
+  rig `bindMotorcycleRig` (`@nabla/engine/vehicle-presentation`) turns the fork and handlebar,
+  works the suspension and chain and spins the wheels from `Simulation.twoWheeledPose(id)`.
+  `vehicleInfo` adds `twoWheeled`, `lean` and `leanAllowance`; camera rollover detection and the
+  flip cinematic treat lean up to the fall threshold as riding, not a rollover. Unknown physical
+  values are TODO(unverified) placeholders in `twoWheeledDefaults`, not Honda data
+  ([docs/motorcycles.md](docs/motorcycles.md)).
+- **Per-vehicle sound (`vehicle.audio`):** `turbo: false` silences the turbo; `gearShift.sound`
+  `clack` (default) / `click` / `none` with a `volume`. `click` is a new synthesized ~30 ms quiet
+  click on every gear change (`VehicleAudio.gearClick`); the `vfr800` uses it with no turbo.
+  Cars keep their turbo and clack unchanged.
 - **Position lights after the engine start-up:** entering a car, the S3, the A3, the truck or
   any vehicle with lights, the lights stay off through P, the starter and the needle sweep, then
   switch to _posición_ as the engine runs: front white glow (S3/A3 `FocoC` lenses; truck
@@ -152,6 +262,21 @@
 
 ### Fixed
 
+- **S3 / A3 chrome trim reads as chrome:** the window surrounds, beltline, boot trim, grille and
+  badge (`Cromo …`, `Nabla silver chrome`) had no environment to reflect (cars never had one; only
+  the VFR800 got the neutral reflection environment in #156), so they showed little more than the
+  sun's highlight and went dull grey or black with the sun angle and at dusk. They now take the
+  same neutral, right-way-up environment as the VFR800 chrome (`carReflectionOptions`, intensity
+  0.8, roughness at least 0.3: natural chrome, not a mirror). Paint, mirror housings, mirror glass
+  and wheels are unchanged.
+- **Chrome dims with the daylight:** vehicle chrome reflections (car and motorcycle) fade with the
+  atmosphere's daylight (`reflectionLevel`, `lightingDefaults.reflectionNightLevel` 0.08 /
+  `reflectionFullDay` 0.85) instead of switching from full to 0.15 at the night threshold, so the
+  fixed studio gradient no longer glows at dusk or at night.
+- **Right mirror capture upright:** mirror capture cameras now keep the vehicle's up instead of
+  the lens node's own +Y. The S3 / A3 right-door lens is authored under a node rotated 180° about
+  X, so its capture camera ran rolled upside down; both sides now capture upright on every
+  vehicle (`fitMirrorCamera` takes an optional world `up`). Yaw / tilt conventions are unchanged.
 - **Bridges no longer vanish with a road pointer mismatch:** when `manifest.json` and the Atlas
   package (or `roads.files` and `roadCandidates.layers`) name different files for a road layer,
   the cell used to fail validation and load nothing, bridges included. Each road layer now

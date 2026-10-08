@@ -84,16 +84,26 @@ export function mirrorModelKey(bodyUrl: string, steeringUrl?: string): string {
 
 /** Fit the whole mirror from the eye position, independently of head rotation.
  * The viewer's orientation only decides whether the mirror is visible.
+ *
+ * `up` is the world direction the capture camera keeps upright (the vehicle's up). Without it
+ * the lens's own +Y is used, which is only right when the lens is authored upright: a lens node
+ * authored rotated 180° about X (the S3 right door) would roll the capture upside down.
  */
 export function fitMirrorCamera(
   target: THREE.PerspectiveCamera,
   viewer: THREE.PerspectiveCamera,
   mirror: THREE.Mesh,
   aspect = 384 / 256,
+  up?: THREE.Vector3,
 ): void {
   viewer.getWorldPosition(target.position)
-  target.up.set(0, 1, 0).transformDirection(mirror.matrixWorld)
-  target.lookAt(mirror.getWorldPosition(new THREE.Vector3()))
+  const centre = mirror.getWorldPosition(new THREE.Vector3())
+  const view = centre.clone().sub(target.position).normalize()
+  // Near-vertical views cannot keep `up`; fall back to the lens's own +Y.
+  if (up && up.lengthSq() > 0 && Math.abs(view.dot(up.clone().normalize())) < 0.98)
+    target.up.copy(up).normalize()
+  else target.up.set(0, 1, 0).transformDirection(mirror.matrixWorld)
+  target.lookAt(centre)
   target.updateMatrixWorld(true)
   mirror.geometry.computeBoundingBox()
   const box = mirror.geometry.boundingBox!
@@ -364,7 +374,10 @@ export class CarMirrors {
         const eye = camera.position.clone().sub(e.mirror.getWorldPosition(new THREE.Vector3()))
         const normal = new THREE.Vector3(0, 0, 1).transformDirection(e.mirror.matrixWorld)
         if (eye.dot(normal) <= 0) continue
-        fitMirrorCamera(e.capture, camera, e.mirror, e.width / e.height)
+        // Keep the capture upright with the vehicle, whatever roll the lens node was authored with.
+        const up = e.up.clone()
+        if (e.mirror.parent) up.transformDirection(e.mirror.parent.matrixWorld)
+        fitMirrorCamera(e.capture, camera, e.mirror, e.width / e.height, up)
         e.original.visible = false
         e.render.call(
           e.mirror,

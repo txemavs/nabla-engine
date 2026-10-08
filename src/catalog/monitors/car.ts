@@ -38,6 +38,23 @@ export const carMenuItems: MonitorMenuItem[] = [
     label: 'POSICION',
     children: [back],
   },
+  {
+    id: 'engine',
+    label: 'MOTOR',
+    children: [
+      {
+        id: 'engine-normal',
+        label: 'NORMAL · D',
+        action: { type: 'vehicle.engine', value: 'normal' },
+      },
+      {
+        id: 'engine-beast',
+        label: 'BESTIA · S',
+        action: { type: 'vehicle.engine', value: 'beast' },
+      },
+      back,
+    ],
+  },
 ]
 /** Edit the panel, positions and bindings here; no keyboard or game logic in the layout. */
 export const carMenuDefinition: MonitorDefinition = {

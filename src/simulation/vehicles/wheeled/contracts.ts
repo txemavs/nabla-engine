@@ -1,3 +1,4 @@
+import type { AutoRiderSettings, RiderTuckSettings } from '../two-wheeled/rider.js'
 /** Metres, Y-up, front = -Z; front hubs 0/1, rear hubs 2/3. Plain configuration. */
 export type WheelVector = [number, number, number]
 /**
@@ -49,6 +50,25 @@ export interface GearboxTuning {
   /** Sound of every gear change and D/R engagement. */
   clack?: GearClackProfile
 }
+/** See `PowertrainDefinition.speedLimiter`. */
+export interface SpeedLimiterDefinition {
+  kmh: number
+  /** Default `roadVehicleDefaults.limiterHysteresisKmh`. */
+  hysteresisKmh?: number
+}
+/**
+ * Engine mode of a powertrain with `modes`: `normal` (selector D) or `beast` (selector S,
+ * «Bestia»). See `PowertrainDefinition.modes`.
+ */
+export type EngineMode = 'normal' | 'beast'
+/** Per-mode overrides merged over the base powertrain; omitted fields keep the base values. */
+export interface PowertrainModeDefinition {
+  powerCv?: number
+  torqueNm?: number
+  idleRpm?: number
+  maxRpm?: number
+  shift?: GearboxTuning
+}
 export interface PowertrainDefinition {
   powerCv: number
   torqueNm: number
@@ -62,10 +82,125 @@ export interface PowertrainDefinition {
   maxSpeedKmh?: number
   /** Traction/clutch limit on the force at the wheels, newtons. Omitted: torque limited only. */
   maxWheelForceN?: number
+  /**
+   * Soft rev/speed limiter: an ignition-style cut. At `kmh` the drive is cut until the speed
+   * falls `hysteresisKmh` below it, then it comes back, so the vehicle hovers at the limit with
+   * a slight stutter instead of hitting a wall. `maxSpeedKmh` is the older hard governor.
+   */
+  speedLimiter?: SpeedLimiterDefinition
   shift?: GearboxTuning
+  /**
+   * Two engine modes on one car: `normal` (D) and `beast` (S). Each overrides power, torque,
+   * idle, redline and gearbox points; the audio side picks `vehicle.audio.engineModes[mode]`.
+   * Omitted: a single engine (the base values) and the selector only shows D.
+   */
+  modes?: Partial<Record<EngineMode, PowertrainModeDefinition>>
+  /** Mode on creation when `modes` is set. Default `roadVehicleDefaults.engineMode` (normal). */
+  defaultMode?: EngineMode
+}
+/** One side of the full lean: the touch-down lean, radians, and the touching point (chassis m). */
+export interface TwoWheeledPegSide {
+  lean: number
+  point: [number, number, number]
+}
+
+/** Full lean ("total estribo"); see `vehicle.twoWheeled.pegLean`. */
+export interface TwoWheeledPegLeanDefinition {
+  left: TwoWheeledPegSide
+  right: TwoWheeledPegSide
+  seconds?: number
+  relaxSeconds?: number
+  steer?: number
+}
+
+/**
+ * Single-track geometry and tuning; see `vehicle.twoWheeled` in `entity/vehicle/field.ts`.
+ * Omitted tuning uses `twoWheeledDefaults`.
+ */
+export interface TwoWheeledGeometry {
+  rearWheelRadius: number
+  steeringAxis: [number, number, number]
+  steerLimit: number
+  maxLean?: number
+  fallLean?: number
+  /** Full lean per side (`vehicle.twoWheeled.pegLean`). */
+  pegLean?: TwoWheeledPegLeanDefinition
+  balanceSpeed?: number
+  balanceAssist?: boolean
+  leanResponse?: number
+  assistResponse?: number
+  maxLeanAcceleration?: number
+  steerRate?: number
+  frontBrakeForce?: number
+  rearBrakeForce?: number
+  frictionSlip?: number
+  /** Rider counterweight; omitted = no rider model (fixed centre of mass). */
+  rider?: TwoWheeledRiderDefinition
+  /** Wheelie / stoppie assist overrides (`twoWheeledDefaults.pitchAssist`). */
+  pitchAssist?: Partial<TwoWheeledPitchAssistDefinition>
+  /** Clutch kick overrides (`twoWheeledDefaults.clutchKick`). */
+  clutchKick?: Partial<{ gain: number; seconds: number; maxGear: number }>
+  /** Combined braking; omitted = independent front lever and rear pedal. */
+  cbs?: Partial<TwoWheeledCbsDefinition>
+  /** Shift hooligan modifier overrides (`twoWheeledDefaults.hooligan`). */
+  hooligan?: Partial<TwoWheeledHooliganDefinition>
+  /** Pitch that counts as a crash, radians (`twoWheeledDefaults.crashPitch`). */
+  crashPitch?: number
+}
+export interface TwoWheeledHooliganDefinition {
+  enabled: boolean
+  burnoutSpeed: number
+  burnoutFade: number
+  spinSpeed: number
+  spinRate: number
+  burnoutTraction: number
+  slide: number
+  wheelieDrive: number
+  wheelieRate: number
+  stoppieBrake: number
+  stoppieRate: number
+  riseResponse: number
+  wheelieRiderBack: number
+}
+export interface TwoWheeledRiderDefinition {
+  /** Seated rider centre of mass, chassis-local metres. */
+  seat: [number, number, number]
+  mass?: number
+  lateral?: number
+  forward?: number
+  back?: number
+  rate?: number
+  steer?: number
+  /** Automatic rider overrides (`twoWheeledDefaults.rider.auto`). */
+  auto?: Partial<AutoRiderSettings>
+  /** Tuck overrides (`twoWheeledDefaults.rider.tuck`). */
+  tuck?: Partial<RiderTuckSettings>
+}
+export interface TwoWheeledPitchAssistDefinition {
+  wheelie: boolean
+  wheelieSoftAngle: number
+  wheelieMaxAngle: number
+  wheelieNeutralAngle: number
+  stoppie: boolean
+  stoppieSoftAngle: number
+  stoppieMaxAngle: number
+  stoppieNeutralAngle: number
+  stoppieMinBrake: number
+  response: number
+  dampingRatio: number
+  landingRate: number
+  anticipation: number
+}
+export interface TwoWheeledCbsDefinition {
+  leverFront: number
+  leverRear: number
+  pedalFront: number
+  pedalRear: number
+  linkLag: number
 }
 export interface WheeledDefinition {
   hubs:
+    | [WheelVector, WheelVector]
     | [WheelVector, WheelVector, WheelVector, WheelVector]
     | [WheelVector, WheelVector, WheelVector, WheelVector, WheelVector, WheelVector]
   passive?: boolean
@@ -77,6 +212,8 @@ export interface WheeledDefinition {
   brakeForce: number
   drivenWheels?: 'front' | 'rear' | 'all'
   powertrain?: PowertrainDefinition
+  /** Present on a two-wheeler; such a definition is driven by `createTwoWheeledVehicle`. */
+  twoWheeled?: TwoWheeledGeometry
 }
 /** Device-independent commands. Positive throttle drives forward; negative requests reverse/braking. */
 export interface WheeledInput {
@@ -84,6 +221,16 @@ export interface WheeledInput {
   steering: number
   handbrake: boolean
   launch: boolean
+  /**
+   * Rider counterweight on a two-wheeler: `right` −1 (hang off left) … +1 (right), `forward`
+   * −1 (sit back) … +1 (over the tank). Other vehicles ignore it.
+   */
+  rider?: { right: number; forward: number }
+  /**
+   * Two-wheelers: front lever held separately from the throttle (S together with W while Shift
+   * is held), 0..1. Other vehicles ignore it.
+   */
+  lever?: number
 }
 export const idleWheeledInput = (): WheeledInput => ({
   throttle: 0,
@@ -98,6 +245,10 @@ export interface WheeledTelemetry {
   readonly rpm: number
   readonly gear: number
   readonly manualTransmission: boolean
+  /** Engine mode; `beast` shows the selector as S. Always `normal` without `powertrain.modes`. */
+  readonly engineMode: EngineMode
+  /** True when the vehicle has two engine modes (`powertrain.modes`). */
+  readonly engineModes: boolean
   readonly engineLoad: number
   readonly braking: boolean
   readonly reversing: boolean

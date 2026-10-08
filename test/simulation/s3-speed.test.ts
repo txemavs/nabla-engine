@@ -4,6 +4,7 @@ import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { parseScene } from '../../src/scene/document.js'
 import { finishStartUp } from '../start-up.js'
+import { beast } from '../engine-mode.js'
 
 it('delivers strong launch and reaches 250 km/h on a level straight', () => {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
@@ -14,7 +15,7 @@ it('delivers strong launch and reaches 250 km/h on a level straight', () => {
       name: 'Speed benchmark',
       entities: [
         floor,
-        presetVehicle('car', 's3', [0, 0.62, 0]),
+        beast(presetVehicle('car', 's3', [0, 0.62, 0])),
         createEntity('spawn', 'spawn', [0, 1, 4]),
       ],
     }),

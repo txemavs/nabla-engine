@@ -2,8 +2,18 @@ import * as THREE from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
 
 const LIFE_MS = 160
-const MAX_BURSTS = 12
+const MAX_BURSTS = 32
 const PER_BURST = 10
+
+/** Optional shaping of one burst (e.g. a footpeg scrape): spark count, carried velocity, spread. */
+export interface SparkBurstOptions {
+  /** Sparks in the burst, 1…`PER_BURST` (default all). */
+  count?: number
+  /** World velocity every spark carries, m/s (e.g. part of the vehicle's, so they trail). */
+  drift?: Vec3Tuple
+  /** Scales the random spark speed (default 1). */
+  speed?: number
+}
 
 type Burst = {
   birth: number
@@ -11,7 +21,7 @@ type Burst = {
   velocities: THREE.Vector3[]
 }
 
-/** Brief pin-spark bursts at bullet impact points. */
+/** Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`). */
 export class ShotSparks {
   readonly root = new THREE.Group()
   private readonly geometry = new THREE.BufferGeometry()
@@ -40,7 +50,7 @@ export class ShotSparks {
     this.root.raycast = () => undefined
   }
 
-  add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple): void {
+  add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptions = {}): void {
     if (this.disposed || !Number.isFinite(now)) return
     if (this.bursts.length === MAX_BURSTS) this.bursts.shift()
     const n = normal ? new THREE.Vector3(...normal).normalize() : new THREE.Vector3(0, 1, 0)
@@ -48,10 +58,12 @@ export class ShotSparks {
     const bitangent = new THREE.Vector3().crossVectors(n, tangent).normalize()
     tangent.crossVectors(bitangent, n).normalize()
     const velocities: THREE.Vector3[] = []
-    for (let i = 0; i < PER_BURST; i++) {
+    const count = Math.max(1, Math.min(PER_BURST, Math.round(options.count ?? PER_BURST)))
+    const drift = options.drift ? new THREE.Vector3(...options.drift) : null
+    for (let i = 0; i < count; i++) {
       const u = Math.random() * 2 - 1
       const v = Math.random() * 2 - 1
-      const speed = 1.2 + Math.random() * 2.4
+      const speed = (1.2 + Math.random() * 2.4) * (options.speed ?? 1)
       velocities.push(
         n
           .clone()
@@ -59,7 +71,8 @@ export class ShotSparks {
           .addScaledVector(tangent, u)
           .addScaledVector(bitangent, v)
           .normalize()
-          .multiplyScalar(speed),
+          .multiplyScalar(speed)
+          .add(drift ?? new THREE.Vector3()),
       )
     }
     this.bursts.push({ birth: now, origin: new THREE.Vector3(...origin), velocities })

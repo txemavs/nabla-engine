@@ -13,9 +13,13 @@ import {
   stepIgnition,
   ignitionRpm,
   gaugeSweep,
+  effectivePowertrain,
+  hasEngineModes,
+  initialEngineMode,
   type DrivetrainState,
 } from '../drivetrain.js'
 import type {
+  EngineMode,
   PowertrainDefinition,
   WheeledDefinition,
   WheeledInput,
@@ -42,6 +46,34 @@ function validGearbox(spec: PowertrainDefinition): boolean {
     tuning.upshiftRpm > tuning.downshiftRpm &&
     tuning.upshiftRpm <= (spec.maxRpm ?? 6900) + 100
   )
+}
+
+/** Optional powertrain numbers are finite, positive and mutually consistent, in every mode. */
+export function isValidPowertrain(spec: PowertrainDefinition): boolean {
+  if (spec.modes) {
+    const modes = Object.keys(spec.modes) as EngineMode[]
+    if (spec.defaultMode && !spec.modes[spec.defaultMode]) return false
+    if (!modes.every((mode) => validSinglePowertrain(effectivePowertrain(spec, mode)))) return false
+  }
+  return validSinglePowertrain(spec)
+}
+function validSinglePowertrain(spec: PowertrainDefinition): boolean {
+  const positive = (value: number) => Number.isFinite(value) && value > 0
+  return (
+    [spec.powerCv, spec.torqueNm, spec.finalDrive, spec.grip].every(positive) &&
+    spec.ratios.length > 0 &&
+    spec.ratios.every(positive) &&
+    ![spec.idleRpm, spec.maxRpm, spec.reverseRatio, spec.maxSpeedKmh].some(
+      (value) => value !== undefined && !positive(value),
+    ) &&
+    (spec.idleRpm ?? roadVehicleDefaults.idleRpm) < (spec.maxRpm ?? 6900) &&
+    validGearbox(spec)
+  )
+}
+
+/** Radius of the driven tyre used for engine speed: a two-wheeler's rear tyre, else the shared one. */
+export function driveWheelRadius(definition: WheeledDefinition): number {
+  return definition.twoWheeled?.rearWheelRadius ?? definition.wheelRadius
 }
 
 /** Borrowed body/rig in the host's single world; this module never steps or owns that world. */
@@ -77,15 +109,7 @@ export function createWheeledVehicle(
       definition.suspensionTravel ?? 0.3,
     ].every(positive) ||
     ![undefined, 'front', 'rear', 'all'].includes(definition.drivenWheels) ||
-    (spec &&
-      (![spec.powerCv, spec.torqueNm, spec.finalDrive, spec.grip].every(positive) ||
-        !spec.ratios.length ||
-        !spec.ratios.every(positive) ||
-        [spec.idleRpm, spec.maxRpm, spec.reverseRatio, spec.maxSpeedKmh].some(
-          (value) => value !== undefined && !positive(value),
-        ) ||
-        (spec.idleRpm ?? roadVehicleDefaults.idleRpm) >= (spec.maxRpm ?? 6900) ||
-        !validGearbox(spec)))
+    (spec && !isValidPowertrain(spec))
   )
     throw new Error('Invalid wheeled vehicle definition')
   const car = new RaycastVehicle({
@@ -116,6 +140,7 @@ export function createWheeledVehicle(
   }
 
   const drivetrain = createDrivetrain()
+  drivetrain.mode = initialEngineMode(definition.powertrain)
   if (options.parked === false) Object.assign(drivetrain, { gear: 1, parked: false })
   return { body, raycast: car, definition, steer: 0, drivetrain }
 }
@@ -128,7 +153,7 @@ export function syncWheeledDamping(v: WheeledVehicle, dockedDamping?: number): v
  * crept since P engaged, limited by tyre friction. Speeds are relative to the supporting body, so
  * a car parked on a moving deck rides along. A sleeping chassis is left asleep.
  */
-function holdInPark(v: WheeledVehicle, forward: Vec3, speed: number, dt: number): void {
+export function holdInPark(v: WheeledVehicle, forward: Vec3, speed: number, dt: number): void {
   const state = v.drivetrain
   const wheels = v.raycast.wheelInfos
   const contacts = wheels.filter((wheel) => wheel.isInContact)
@@ -208,7 +233,11 @@ export function stepWheeledVehicle(
   const driven = (i: number) => isDriven(v.definition.drivenWheels, i)
   const tune = v.definition.powertrain
   // Start-up sequence after entering: P is kept and the pedals do nothing until it ends.
-  const starting = stepIgnition(v.drivetrain, dt, tune?.idleRpm ?? roadVehicleDefaults.idleRpm)
+  const starting = stepIgnition(
+    v.drivetrain,
+    dt,
+    (tune && effectivePowertrain(tune, v.drivetrain.mode).idleRpm) ?? roadVehicleDefaults.idleRpm,
+  )
   const aggressiveLaunch =
     !starting &&
     !!tune &&
@@ -319,13 +348,23 @@ export function shiftWheeledVehicle(
   const spec = v.definition.powertrain
   if (!spec) return 'unavailable'
   const speed = v.body.velocity.dot(v.body.quaternion.vmult(new Vec3(0, 0, -1)))
-  return shiftGear(v.drivetrain, spec, v.definition.wheelRadius, speed, direction)
+  return shiftGear(v.drivetrain, spec, driveWheelRadius(v.definition), speed, direction)
     ? 'shifted'
     : 'protected'
 }
 export function automaticWheeledTransmission(v: WheeledVehicle): boolean {
   if (!v.definition.powertrain) return false
   v.drivetrain.manual = false
+  return true
+}
+/**
+ * Select an engine mode on a car with `powertrain.modes` (the selector's D = normal, S = beast).
+ * Returns false when the vehicle has a single engine or lacks that mode.
+ */
+export function setWheeledEngineMode(v: WheeledVehicle, mode: EngineMode): boolean {
+  const spec = v.definition.powertrain
+  if (!hasEngineModes(spec) || !spec!.modes![mode]) return false
+  v.drivetrain.mode = mode
   return true
 }
 export function wheeledTelemetry(
@@ -342,6 +381,8 @@ export function wheeledTelemetry(
     rpm: v.drivetrain.rpm,
     gear: v.drivetrain.gear,
     manualTransmission: v.drivetrain.manual,
+    engineMode: v.drivetrain.mode,
+    engineModes: hasEngineModes(v.definition.powertrain),
     engineLoad: v.drivetrain.load,
     braking:
       active &&
@@ -373,6 +414,8 @@ export function wheelContacts(
   tireEffects = true,
 ): WheelContactSnapshot[] {
   const lateralSlip = wheeledTelemetry(v, input, active, tireEffects).tireSlip
+  // Rear hubs: 2/3 (and 4/5 on a six-wheel trailer); a two-wheeler's rear hub is 1.
+  const rear = (i: number) => (v.raycast.wheelInfos.length === 2 ? i === 1 : i >= 2)
   return v.raycast.wheelInfos.map((wheel, i) => {
     const normal = wheel.raycastResult.hitNormalWorld
     const length = normal.length()
@@ -387,8 +430,8 @@ export function wheelContacts(
         contact && tireEffects
           ? Math.max(
               lateralSlip,
-              i >= 2 ? v.drivetrain.launchSlip : 0,
-              active && input.handbrake && i >= 2 ? Math.min(1, v.body.velocity.length() / 5) : 0,
+              rear(i) ? v.drivetrain.launchSlip : 0,
+              active && input.handbrake && rear(i) ? Math.min(1, v.body.velocity.length() / 5) : 0,
             )
           : 0,
       suspensionLength: wheel.suspensionLength,

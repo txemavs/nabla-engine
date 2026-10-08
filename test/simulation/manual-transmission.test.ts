@@ -9,6 +9,7 @@ import {
   engineBrakingForce,
 } from '../../src/simulation/vehicles/drivetrain.js'
 import { finishStartUp } from '../start-up.js'
+import { beast } from '../engine-mode.js'
 it('holds manual gears, rejects overrev reductions and increases retention in lower gears', () => {
   const v = presetVehicle('car', 's3').vehicle!,
     spec = v.powertrain!,
@@ -33,7 +34,7 @@ it('loses speed after throttle release, exposes manual mode and can resume autom
     name: 'Retention',
     entities: [
       floor,
-      presetVehicle('car', 's3', [0, 0.7, 0]),
+      beast(presetVehicle('car', 's3', [0, 0.7, 0])),
       createEntity('spawn', 'spawn', [0, 1, 4]),
     ],
   })

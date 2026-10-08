@@ -58,6 +58,11 @@ export class FlipCinematic {
       quaternion: { x: number; y: number; z: number; w: number }
       linvel: () => { x: number; y: number; z: number }
       angvel: () => { x: number; y: number; z: number }
+      /**
+       * Tilt from the vertical that is intended lean, not a roll (a motorcycle's fall
+       * threshold, radians). Roll rate inside it never counts towards the flip trigger.
+       */
+      leanAllowance?: number
     } | null,
     camera: THREE.PerspectiveCamera,
     state: GameCameraState,
@@ -98,6 +103,8 @@ export class FlipCinematic {
       }
     }
     this.prevQuat = qNow
+    // Leaning a two-wheeler in and out of corners is riding, not a barrel roll.
+    if (body.leanAllowance && up.y > Math.cos(body.leanAllowance)) rollRate = 0
     const upFlip = this.lastUp.dot(up) < -0.15 ? Math.PI : 0
     this.lastUp.copy(up)
 

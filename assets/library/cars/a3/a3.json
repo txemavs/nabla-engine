@@ -4,6 +4,7 @@
   "clearance": 0.62,
   "placement": [8, 0.62, 6],
   "order": 1,
+  "hidden": true,
   "name": "A3 Cabrio",
   "color": "#dadde1",
   "size": [1.994, 1.332, 4.407],

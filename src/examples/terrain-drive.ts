@@ -18,10 +18,15 @@ export interface TerrainDriveOptions {
   /** `live` (default, browser local wall clock), `day` (fixed local-noon sun) or an ISO date-time. */
   sky?: string
   /**
-   * Parked demo row (car, a3, white-truck, carrier). Default true.
+   * Parked demo row (car, white-truck, carrier). Default true.
    * Host `?vehicles=` sets this false so the demo row does not stack on the host fleet.
    */
   includeDemoFleet?: boolean
+  /**
+   * Engine mode for cars with `powertrain.modes` (the S3): `normal` (D, default) or `beast` (S).
+   * Written as each such vehicle's `powertrain.defaultMode`.
+   */
+  engineMode?: 'normal' | 'beast'
 }
 
 export const TERRAIN_DRIVE_DAY = '2026-06-21T10:30:00.000Z'
@@ -30,7 +35,6 @@ const TRAILER_OFFSET = 7.33
 /** Parked vehicles in a row along the heading, in metres ahead of the player (negative = behind). */
 const PARKED = [
   { preset: 'car', ahead: -22 },
-  { preset: 'a3', ahead: 9 },
   { preset: 'white-truck', ahead: 26 },
   { preset: 'carrier', ahead: 46 },
 ] as const
@@ -113,6 +117,11 @@ export function createTerrainDriveScene(options: TerrainDriveOptions): SceneDocu
       if (slot.preset === 'white-truck') entities.push(tow(group[0], slot.ahead))
     }
   }
+  if (options.engineMode)
+    for (const entity of entities) {
+      const powertrain = entity.vehicle?.powertrain
+      if (powertrain?.modes?.[options.engineMode]) powertrain.defaultMode = options.engineMode
+    }
   return {
     version: 1,
     name: 'Terreno Z15 · conducción',

@@ -248,3 +248,7 @@ node scripts/prepare-a3.mjs /path/to/original-a3-backup --wheel-only
 The previous wheel is also backed up locally at
 `/home/txema/backups/nabla-wheel-20260929/car.audi.a3.wheel.glb`.
 The reference photo is not embedded or redistributed as a texture.
+
+## Honda VFR800FI 1999
+
+`library/motorcycles/vfr800fi-1999/` contains a black 1999 VFR800FI model. Cleaned up by hand by Txema Vicente over several hours, then substantially reworked by Codex under his direction using data from the Honda manual, starting from a low-quality base mesh; almost none of the original geometry remains. The base mesh was the user-supplied `interceptor.glb`. It was optimized and visually approved on 2026-10-08. The base mesh SHA-256 and the prepared GLB integrity are recorded in `asset.json`, which records this provenance as stated by Txema Vicente; no license name is recorded for the artwork. This preparation retains the wheel spoke designs, simplifies geometry, authors materials and separates mechanical pivots. The technical JSON links Honda brochure/service-manual sources and marks intermediate power-curve samples as simulation estimates. The asset requires future motorcycle support in Engine.

@@ -83,7 +83,7 @@ export interface VehicleChoice {
 /** The vehicles the menu offers, in catalog order. The catalog has no planes or helicopters. */
 export function vehicleChoices(): VehicleChoice[] {
   return vehiclePresets()
-    .filter((preset) => !preset.vehicle.passive)
+    .filter((preset) => !preset.vehicle.passive && !preset.hidden)
     .map((preset) => ({ id: preset.id, label: preset.label }))
 }
 

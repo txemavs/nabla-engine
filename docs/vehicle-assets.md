@@ -98,3 +98,7 @@ hubs receive the same upgrade once; custom suspension layouts are preserved.
 Physics tests compare settled heights and tyre contact and retain the existing
 loaded-carrier, driving and docking checks. More clearance does not eliminate all
 rollovers or compensate for incorrect source terrain geometry.
+
+## VFR800FI 99 motorcycle
+
+The [VFR800FI 1999](../assets/library/motorcycles/vfr800fi-1999/README.md) adds an articulated motorcycle model, rig, presentation helper and technical data. Motorcycle physics and runtime support are still pending; see [motorcycle integration](motorcycles.md). It is not registered as a four-wheel preset.

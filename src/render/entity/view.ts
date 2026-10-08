@@ -33,9 +33,29 @@ import {
 import { hasLandingGear, trailerWheelContactY } from '../../simulation/landing-gear.js'
 import { VehicleLightRig } from '../vehicle-presentation/light-rig.js'
 import {
+  bindMotorcycleRig,
+  hasMotorcycleRig,
+  motorcycleRigFromModel,
+  type MotorcycleRigBinding,
+} from '../vehicle-presentation/motorcycle-rig.js'
+import { MotorcycleInstruments } from '../vehicle-presentation/motorcycle-instruments.js'
+import { motorcycleMirrorLenses } from '../vehicle-presentation/motorcycle-mirrors.js'
+import {
+  applyReflectionEnvironment,
+  carReflectionOptions,
+  reflectionLevel,
+  type ReflectionEnvironment,
+} from '../vehicle-presentation/reflection-environment.js'
+import { localMinutes, skyTime } from '../../planet/sky.js'
+import { simulationDefaults, twoWheeledDefaults } from '../../config/simulation.js'
+import { gameCameraDefaults, rideSmoothingDefaults } from '../../config/camera.js'
+import { easeRiderHead, type RiderHeadEase } from './rider-head.js'
+import { RideSmoothing, rideSmoothingSettings } from './ride-smoothing.js'
+import { AvatarFollow, EjectionTumble } from './avatar-motion.js'
+import {
   clampMirrorAdjustment,
   mirrorModelKey,
-  type CarMirrors,
+  CarMirrors,
   type MirrorAdjustment,
   type MirrorAngle,
   type MirrorPolicy,
@@ -64,7 +84,13 @@ import { terrainVertices, terrainIndices } from '../../planet/land/terrain.js'
 import { triangles, trianglesWithRoofInfo } from '../../math/solid/mesh.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
-import { createMonitorAvatar, MonitorMotion } from './avatar.js'
+import {
+  createMonitorAvatar,
+  MonitorMotion,
+  updateMonitorAvatar,
+  setMonitorSunglasses,
+  disposeMonitorAvatar,
+} from './avatar.js'
 import { createPortalSurface, type PortalSurface } from '../portal/portals.js'
 import { assertHostedMouths, assertPlaceable, PORTAL_BAR } from '../../entity/portal/portal.js'
 import { assets, disposeObject } from './assets.js'
@@ -127,6 +153,12 @@ export class SceneView {
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
   private readonly landingGear = new Map<string, LandingGearVisual>()
+  /** Fork, swingarm, shock, chain and wheel articulation of two-wheeled GLB bodies. */
+  private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
+  private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
+  private readonly reflections = new Map<string, ReflectionEnvironment>()
+  /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
+  private readonly odometers = new Map<string, number>()
   private readonly propellers = new Map<string, THREE.Object3D>()
   readonly shipHuds = new Map<string, ShipHud>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
@@ -142,9 +174,28 @@ export class SceneView {
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   night = false
+  /** Atmospheric daylight factor (0 night .. 1 day; 1 without a sky), for the chrome reflections. */
+  daylight = 1
   private readonly headOffsets = new Map<string, readonly number[]>()
+  /** Two-wheeler rider offset ([x, z] chassis metres) from the last pose; moves the head. */
+  private readonly riderShifts = new Map<string, readonly [number, number]>()
+  /** Two-wheeler tuck (0..1) from the last pose and the tucked eye offset of its preset. */
+  private readonly riderTucks = new Map<string, number>()
+  /** Eased rider head inputs per two-wheeler (presentation only; `gameCameraDefaults.riderHeadResponse`). */
+  private readonly riderHeadEase = new Map<string, RiderHeadEase>()
+  /**
+   * Ride smoothing of the player's vehicle for the cameras and the seated avatar: the body keeps
+   * every bump, the view and the avatar absorb part of the small, fast bounce.
+   */
+  readonly rideSmoothing = new RideSmoothing()
   vehicleHeadOffset(id: string): readonly number[] | undefined {
-    return this.headOffsets.get(id)
+    const base = this.headOffsets.get(id)
+    const shift = this.riderShifts.get(id)
+    if (!base || !shift) return base
+    const eye =
+      this.document.entities.find((e) => e.id === id)?.vehicle?.twoWheeled?.rider?.tuck?.eye ??
+      twoWheeledDefaults.rider.tuck.eye
+    return riderHeadOffset(base, shift, this.riderTucks.get(id) ?? 0, eye)
   }
   pressShipSwitch(id: string, kind: ShipSwitch): void {
     this.shipLights.get(id)?.press(kind)
@@ -324,6 +375,8 @@ export class SceneView {
   readonly avatar = new THREE.Group()
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
+  private readonly avatarFollow = new AvatarFollow()
+  private readonly ejectionTumble = new EjectionTumble()
   private graph: SceneGraph
   constructor(
     readonly document: SceneDocument,
@@ -551,6 +604,7 @@ export class SceneView {
     this.carMirrors.get(id)?.dispose()
     this.mirrorModels.delete(id)
     this.instruments.get(id)?.dispose()
+    this.motorcycleClusters.get(id)?.dispose()
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
     if (group) {
@@ -579,8 +633,15 @@ export class SceneView {
       this.placeScreens,
       this.systemScreens,
       this.headOffsets,
+      this.riderShifts,
+      this.riderTucks,
+      this.riderHeadEase,
       this.authoredLights,
       this.landingGear,
+      this.motorcycleRigs,
+      this.motorcycleClusters,
+      this.reflections,
+      this.odometers,
       this.ramps,
       this.mapBounds,
     ] as Map<string, unknown>[])
@@ -960,6 +1021,27 @@ export class SceneView {
       }),
     )
   }
+  /**
+   * Live rear-view mirrors for a motorcycle GLB (`mirror_L` / `mirror_R` glass), the same as the
+   * cars': cockpit-only reflections, per-side «Espejos» adjustment and `vehicle.mirrorAim` /
+   * `vehicle.mirrorTilt` (0° default: the glass as modelled).
+   */
+  private motorcycleMirrors(model: THREE.Object3D, e: Entity): CarMirrors | undefined {
+    const lenses = motorcycleMirrorLenses(model)
+    if (!lenses.length) return undefined
+    model.updateWorldMatrix(true, true)
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
+      model.getWorldQuaternion(new THREE.Quaternion()),
+    )
+    return new CarMirrors(
+      lenses,
+      up,
+      e.vehicle?.mirrorTilt ?? 0,
+      this.options.mirrorPolicy,
+      model.parent ?? model,
+      e.vehicle?.mirrorAim,
+    )
+  }
   private assetVehicle(e: Entity, group: THREE.Group): void {
     const visual = e.visual!,
       definition = vehicleDefinition(e)
@@ -986,9 +1068,34 @@ export class SceneView {
         }
       }
       adapter?.preparePart?.(model, 'body')
+      const twoWheeled = e.vehicle?.twoWheeled
+      if (twoWheeled && hasMotorcycleRig(model))
+        this.motorcycleRigs.set(
+          e.id,
+          bindMotorcycleRig(
+            model,
+            motorcycleRigFromModel(model, { steerLimit: twoWheeled.steerLimit }),
+          ),
+        )
+      if (!twoWheeled) {
+        // Cars: only the parts the adapter or GLB tags `reflective` (the S3 / A3 chrome).
+        const chrome = applyReflectionEnvironment(model, carReflectionOptions)
+        if (chrome.materials.length) this.reflections.set(e.id, chrome)
+      }
+      if (twoWheeled) {
+        // Chrome and mirror glass need something to reflect.
+        this.reflections.set(e.id, applyReflectionEnvironment(model))
+        const cluster = MotorcycleInstruments.bind(model, {
+          ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
+          ...e.vehicle?.cluster,
+        })
+        if (cluster) this.motorcycleClusters.set(e.id, cluster)
+      }
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
-      if (equipment?.mirrors) {
-        this.carMirrors.set(e.id, equipment.mirrors)
+      const mirrors =
+        equipment?.mirrors ?? (twoWheeled ? this.motorcycleMirrors(model, e) : undefined)
+      if (mirrors) {
+        this.carMirrors.set(e.id, mirrors)
         const mirrorModel = mirrorModelKey(visual.body.url, visual.steering?.url)
         this.mirrorModels.set(e.id, mirrorModel)
         if (!this.mirrorModelsResolved.has(mirrorModel)) {
@@ -997,7 +1104,7 @@ export class SceneView {
           if (initial) this.setMirrorAdjustment(mirrorModel, initial)
           else this.mirrorModelsResolved.add(mirrorModel)
         }
-        equipment.mirrors.setAdjustment(this.mirrorAdjustments.get(mirrorModel) ?? {})
+        mirrors.setAdjustment(this.mirrorAdjustments.get(mirrorModel) ?? {})
       }
       if (equipment?.instruments) this.instruments.set(e.id, equipment.instruments)
       if (equipment?.beacons) {
@@ -1279,6 +1386,53 @@ export class SceneView {
         applyPose(wheels[i], p)
       })
     }
+    for (const [id, rig] of this.motorcycleRigs) {
+      const pose = sim.twoWheeledPose(id)
+      if (pose) {
+        rig.update(pose)
+        // The head eases towards the rider's shift and tuck rather than snapping to them.
+        const ease = easeRiderHead(
+          this.riderHeadEase.get(id),
+          [pose.riderShift[0], pose.riderShift[1], pose.tuck],
+          gameCameraDefaults.riderHeadResponse,
+          elapsed,
+        )
+        this.riderHeadEase.set(id, ease)
+        this.riderShifts.set(id, [ease.value[0], ease.value[1]])
+        this.riderTucks.set(id, ease.value[2])
+      }
+    }
+    // Chrome reflections fade with the daylight (dusk included), not just on/off at night.
+    const reflectionDim = reflectionLevel(this.night ? 0 : this.daylight)
+    for (const reflection of this.reflections.values()) reflection.setLevel(reflectionDim)
+    if (this.motorcycleClusters.size) {
+      const clockMinutes = localMinutes(skyTime(this.document.sky ?? { mode: 'live' }))
+      const lampNow = performance.now()
+      for (const [id, cluster] of this.motorcycleClusters) {
+        const info = sim.vehicleInfo(id)
+        const powered = sim.player.vehicleId === id
+        const km =
+          (this.odometers.get(id) ?? 0) + (Math.abs(info.speedKmh) * Math.min(elapsed, 0.25)) / 3600
+        this.odometers.set(id, km)
+        const controller = this.authoredLights.get(id)?.controller
+        const lamp = { powered, braking: false, reversing: false }
+        cluster.update({
+          powered,
+          ignition: info.ignition,
+          gaugeSweep: info.gaugeSweep,
+          speedKmh: info.speedKmh,
+          rpm: info.rpm,
+          gear: info.gear,
+          parked: info.parked,
+          highBeam: !!controller && controller.level('high', 0, lamp, lampNow) > 0,
+          signalLeft: !!controller && controller.level('signal', -1, lamp, lampNow) > 0,
+          signalRight: !!controller && controller.level('signal', 1, lamp, lampNow) > 0,
+          clockMinutes,
+          odometerKm: km,
+          tripKm: km,
+        })
+      }
+    }
     for (const [id, thrusters] of this.thrusters) {
       const info = sim.vehicleInfo(id)
       thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now(), this.night)
@@ -1351,11 +1505,15 @@ export class SceneView {
           info.parked,
           info.altitude,
           info.gaugeSweep,
+          info.engineModes && info.engineMode === 'beast',
         )
       }
     }
     this.captureOccupiedLights(sim.player.vehicleId)
     const vehicleId = sim.player.vehicleId
+    this.updateRideSmoothing(sim, vehicleId, elapsed)
+    setMonitorSunglasses(this.monitor, !this.night)
+    if (!cockpit) updateMonitorAvatar(this.monitor, elapsed, !!vehicleId)
     if (vehicleId) {
       const info = sim.vehicleInfo(vehicleId, true)
       const head = driverHeadPose(
@@ -1367,19 +1525,33 @@ export class SceneView {
         this.vehicleHeadOffset(vehicleId),
         this.document.entities.find((entity) => entity.id === vehicleId)?.vehicle?.headRotation,
       )
+      // The seated avatar soaks up the bounce like a body on its own suspension.
+      this.rideSmoothing.apply(vehicleId, head.position, head.quaternion)
       this.avatar.position.copy(head.position)
       this.avatar.quaternion.copy(head.quaternion)
       this.monitor.position.set(0, 0, 0)
       this.monitor.quaternion.identity()
       this.monitor.scale.setScalar(0.7)
       this.monitorMotion.reset()
+      this.avatarFollow.reset()
       this.avatar.visible = !cockpit
     } else {
-      this.avatar.position.fromArray(sim.renderPlayerPosition)
-      this.avatar.quaternion.fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
-      this.avatar.quaternion.multiply(
-        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sim.player.yaw),
+      // Smoothed like the cameras (no lag at steady speed); a thrown rider tumbles.
+      this.avatarFollow.update(
+        new THREE.Vector3().fromArray(sim.renderPlayerPosition),
+        sim.player.yaw,
+        elapsed,
       )
+      this.avatar.position.copy(this.avatarFollow.position)
+      const frame = new THREE.Quaternion().fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
+      this.avatar.quaternion
+        .copy(frame)
+        .multiply(
+          new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            this.avatarFollow.heading,
+          ),
+        )
       this.monitor.scale.setScalar(0.825)
       this.monitorMotion.update(
         this.monitor,
@@ -1389,12 +1561,46 @@ export class SceneView {
               .sub(new THREE.Vector3(...sim.playerFrame.position))
               .applyQuaternion(new THREE.Quaternion(...sim.playerFrame.rotation).invert())
           : this.avatar.position,
-        sim.player.yaw,
+        this.avatarFollow.heading,
         elapsed,
       )
       if (sim.options.playerMode === 'hover') this.monitor.position.y -= 0.35
+      this.ejectionTumble.update(
+        this.monitor,
+        sim.playerEjection,
+        this.avatarFollow.velocity.clone().applyQuaternion(this.avatar.quaternion.clone().invert()),
+        elapsed,
+        sim.options.playerMode === 'hover' ? 0 : simulationDefaults.playerHalfHeight - 0.2,
+      )
       this.avatar.visible = !cockpit
     }
+  }
+  /**
+   * Advance the ride smoothing with the player's vehicle. Crashes, a fallen bike, rollovers and
+   * flight follow the real pose exactly (and restart the filter).
+   */
+  private updateRideSmoothing(sim: Simulation, vehicleId: string | null, elapsed: number): void {
+    if (!vehicleId) {
+      this.rideSmoothing.reset()
+      return
+    }
+    const entity = this.document.entities.find((e) => e.id === vehicleId)
+    const transform = sim.entityTransform(vehicleId, true)
+    const pose = sim.twoWheeledPose(vehicleId)
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
+      new THREE.Quaternion().fromArray(transform.rotation),
+    )
+    const bypass =
+      sim.vehicleInfo(vehicleId).flightMode ||
+      (pose ? pose.crashed || pose.fallen : up.y < Math.cos(THREE.MathUtils.degToRad(40)))
+    this.rideSmoothing.update(
+      vehicleId,
+      transform.position,
+      transform.rotation,
+      elapsed,
+      entity ? rideSmoothingSettings(entity) : rideSmoothingDefaults.off,
+      bypass,
+    )
   }
   hitSprite(ray: THREE.Raycaster): THREE.Intersection | undefined {
     const renderOffset = this.root.position.clone()
@@ -1416,6 +1622,54 @@ export class SceneView {
   signal(id: string, side: number): void {
     this.authoredLights.get(id)?.controller.toggleSignal(side)
   }
+  /**
+   * Footpeg scrape sparks: while a two-wheeler is down on its peg (`TwoWheeledPose.scrape`), the
+   * bullet-impact sparks (`sparks`) stream from the touching point on the inside of the turn,
+   * about 30 bursts a second. They carry part of the machine's velocity, so they trail behind it,
+   * and grow with the scrape (speed). `now` is the same clock as `sparks.update`, ms.
+   */
+  scrapeSparks(sim: Simulation, now: number): void {
+    for (const id of this.motorcycleRigs.keys()) {
+      const pose = sim.twoWheeledPose(id)
+      const group = this.objects.get(id)
+      const last = this.scrapeEmitters.get(id)
+      if (!pose || !group || !pose.scrapePoint || !(pose.scrape > 0)) {
+        if (last) this.scrapeEmitters.delete(id)
+        continue
+      }
+      group.updateWorldMatrix(true, false)
+      const point = group.localToWorld(new THREE.Vector3(...pose.scrapePoint))
+      if (last && now - last.time < 33) continue
+      const velocity =
+        last && now > last.time
+          ? point
+              .clone()
+              .sub(last.point)
+              .multiplyScalar(1000 / (now - last.time))
+          : new THREE.Vector3()
+      // Up and out of the turn, away from the bike.
+      const outward = new THREE.Vector3(Math.sign(pose.scrapePoint[0]), 0, 0)
+        .transformDirection(group.matrixWorld)
+        .setY(0)
+      const normal = outward
+        .multiplyScalar(0.6)
+        .add(new THREE.Vector3(0, 1, 0))
+        .normalize()
+      this.sparks.add(
+        point.toArray() as [number, number, number],
+        now,
+        normal.toArray() as [number, number, number],
+        {
+          count: 4 + 6 * pose.scrape,
+          drift: velocity.multiplyScalar(0.55).toArray() as [number, number, number],
+          speed: 0.6 + 0.8 * pose.scrape,
+        },
+      )
+      this.scrapeEmitters.set(id, { time: now, point })
+    }
+  }
+  /** Last scrape burst per vehicle: time (ms) and world point, for the spark trail velocity. */
+  private readonly scrapeEmitters = new Map<string, { time: number; point: THREE.Vector3 }>()
   renderMirrors(
     renderer: THREE.WebGLRenderer,
     scene: THREE.Scene,
@@ -1479,9 +1733,32 @@ export class SceneView {
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()
     this.surfaceTextures.forEach((texture) => texture.dispose())
+    disposeMonitorAvatar(this.monitor)
     this.disposed = true
     this.pendingMapMeshes = []
     this.root.removeFromParent()
     disposeObject(this.root)
   }
+}
+
+/**
+ * Rider head (and cockpit eye) offset for a two-wheeler rider moved by `shift` ([x, z] chassis
+ * metres, +z back): the head follows the body sideways and fore-aft and drops a little as the
+ * rider leans forward over the tank. `tuck` (0..1) blends the height and fore-aft position to the
+ * tucked eye `base + eye`, low and close behind the windscreen.
+ */
+export function riderHeadOffset(
+  base: readonly number[],
+  shift: readonly [number, number],
+  tuck = 0,
+  eye: readonly number[] = [0, 0, 0],
+): number[] {
+  const t = Math.min(1, Math.max(0, tuck))
+  const y = base[1] - 0.5 * Math.max(0, -shift[1]),
+    z = base[2] + shift[1]
+  return [
+    base[0] + shift[0] + eye[0] * t,
+    y + (base[1] + eye[1] - y) * t,
+    z + (base[2] + eye[2] - z) * t,
+  ]
 }

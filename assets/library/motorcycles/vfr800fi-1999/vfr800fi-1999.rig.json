@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "kind": "motorcycle",
+  "units": "metres",
+  "up": "+Y",
+  "forward": "-Z",
+  "estimatedDimensions": true,
+  "sourceScale": 0.0022,
+  "nodes": {
+    "Body": 1,
+    "Steering_Pivot": 2,
+    "Fork_Slider": 3,
+    "Wheel_Front": 4,
+    "Swingarm_Pivot": 5,
+    "Wheel_Rear": 6,
+    "Chain": 7,
+    "Tire_Front": 8,
+    "Tire_Rear": 9,
+    "Shock_Body": 10,
+    "Shock_Rod": 11
+  },
+  "front": {
+    "hub": [0.00396, 0.2999, -0.72],
+    "radius": 0.2999,
+    "steeringPivot": [0, 0.9139766666666667, -0.44],
+    "axis": [0, 0.9106, 0.4133],
+    "travel": 0.1,
+    "steerLimit": 0.610865
+  },
+  "rear": {
+    "hub": [0.0037400000000000003, 0.3149, 0.7199999999999999],
+    "radius": 0.3149,
+    "swingarmPivot": [0, 0.32927893939393943, 0.24181818181818182],
+    "axis": [-1, 0, 0],
+    "compression": 0.1,
+    "shock": {
+      "upper": [0, 0.6321687121212122, 0.17363636363636364],
+      "lower": [0, 0.35080715909090915, 0.4077272727272727],
+      "procedural": true
+    }
+  },
+  "chain": {
+    "node": "Chain",
+    "frontSprocket": [-0.077, 0.31040053030303033, 0.11909090909090908],
+    "rearSprocket": [-0.077, 0.31665053030303036, 0.719090909090909],
+    "animation": "update-two-spans",
+    "appearance": "smooth black band without link detail",
+    "sourceSpans": [45, 47]
+  },
+  "driver": {
+    "seat": [0, 0.8475810227272728, 0.36681818181818177],
+    "eyes": [0, 1.359234053030303, 0.27590909090909094]
+  },
+  "physics": {
+    "status": "phase-1",
+    "controller": "src/simulation/vehicles/two-wheeled",
+    "preset": "vfr800.json"
+  },
+  "dimensionsCalibration": {
+    "reference": "Honda VFR800FI 1999 ED brochure",
+    "source": "https://www.vfritaliaclubforum.it/wp/files/tecnica/Storia%20VFR/VFR800FI-1998_1999.pdf",
+    "wheelbase": 1.44,
+    "frontTyre": "120/70 ZR17",
+    "rearTyre": "180/55 ZR17",
+    "frontWidth": 0.12,
+    "rearWidth": 0.18,
+    "rimBeadDiameter": 0.4318,
+    "frontRimBeadWidth": 0.0889,
+    "rearRimBeadWidth": 0.1397,
+    "bodyworkWidth": "rear assembly widened for tyre and suspension clearance; no certified tail width",
+    "rearBodyMaximumWidthFactor": 1.45,
+    "exhaustOutwardOffset": 0.032,
+    "nominalTyreDimensions": true
+  },
+  "cockpit": {
+    "instrumentsUnmirrored": true,
+    "rightPowerSwitch": {
+      "sourceMesh": 89,
+      "material": 19,
+      "color": "red"
+    },
+    "ignitionOuterRing": {
+      "sourceMesh": 74,
+      "color": "black"
+    },
+    "higherDetailSurfaces": [140, 160, 161, 229, 230]
+  },
+  "appearance": {
+    "reference": "user supplied black VFR photographs",
+    "body": "deep gloss black with subtle blue undertone",
+    "chassis": "satin aluminium",
+    "engine": "graphite",
+    "seat": "anthracite",
+    "tyres": "black rubber"
+  },
+  "passengerFootrests": {
+    "finish": "satin aluminium",
+    "orientation": "deployed horizontally outward, aligned with widened passenger brackets",
+    "sourceMesh": 276,
+    "attachedTo": "Body"
+  },
+  "exhaust": {
+    "bodyRadius": 0.065,
+    "outletLength": 0.0225,
+    "outletStraight": true,
+    "cutDownwardBias": 0.006
+  },
+  "sideReflectorsRemoved": true,
+  "rims": {
+    "construction": "exact surface of revolution",
+    "segments": 120,
+    "spokes": "original",
+    "sourceSpokeMeshes": [183, 211],
+    "originalSpokeGeometryPreserved": true,
+    "hoopAxialSymmetry": true,
+    "outerRadius": 0.2299
+  },
+  "brakes": {
+    "finish": "polished chrome track, black carrier, rounded triangular windows",
+    "outerSegments": 128,
+    "holeSegments": 20,
+    "planar": true,
+    "discThickness": 0,
+    "front": {
+      "outerRadius": 0.148,
+      "innerRadius": 0.102,
+      "holeDiameter": 0.006,
+      "holeCount": 40,
+      "holeRows": 2,
+      "floatingBobbins": 6,
+      "carrierFinish": "satin champagne from user reference",
+      "carrierOuterRadius": 0.102,
+      "carrierConstruction": "continuous plate with outer ring",
+      "carrierTriangularHoles": 6
+    },
+    "rear": {
+      "outerRadius": 0.128,
+      "innerRadius": 0.078,
+      "holeDiameter": 0,
+      "holeCount": 0,
+      "carrierOuterRadius": 0.078,
+      "carrierConstruction": "simple concealed plate",
+      "carrierTriangularHoles": 0,
+      "detailsOmitted": true
+    },
+    "rearTubularAssemblyRemoved": true,
+    "rearAxleHousingClosed": true,
+    "rearDiscSide": "chain side",
+    "rearDiscAxialPosition": -0.022
+  },
+  "rimStripe": {
+    "width": 0.006,
+    "innerRadius": 0.2234,
+    "outerRadius": 0.2294,
+    "sides": "both",
+    "emissive": "subtle"
+  },
+  "lights": {
+    "mounts": [
+      {
+        "role": "light.indicator.rear.r",
+        "position": [0.12273565419018269, 0.866180003288545, 0.9734698625142908],
+        "side": "R"
+      },
+      {
+        "role": "light.indicator.rear.l",
+        "position": [-0.12513836063444614, 0.8663297757884614, 0.9731280594325261],
+        "side": "L"
+      },
+      {
+        "role": "light.indicator.front.r",
+        "position": [0.2184976190328598, 0.6200488409677657, -0.6234368447922477],
+        "side": "R"
+      },
+      {
+        "role": "light.indicator.front.l",
+        "position": [-0.21976888924837112, 0.6199428043047103, -0.6234368447922477],
+        "side": "L"
+      },
+      {
+        "role": "light.head.low",
+        "position": [0, 0.7781651136363636, -0.805909090909091]
+      },
+      {
+        "role": "light.head.high",
+        "position": [0, 0.7781651136363636, -0.805909090909091]
+      },
+      {
+        "role": "light.tail.brake",
+        "position": [0, 0.8782914393939395, 0.9918181818181817]
+      }
+    ],
+    "channels": ["LowBeam", "HighBeam", "Tail_Stop", "Indicator"],
+    "authoredFor": "AuthoredVehicleLights"
+  },
+  "laterallyMirrored": true
+}

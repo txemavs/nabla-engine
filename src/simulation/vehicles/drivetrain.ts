@@ -1,4 +1,4 @@
-import type { PowertrainDefinition, WheeledDefinition } from './wheeled/contracts.js'
+import type { EngineMode, PowertrainDefinition, WheeledDefinition } from './wheeled/contracts.js'
 import { roadVehicleDefaults } from '../../config/simulation.js'
 
 export interface DrivetrainState {
@@ -39,6 +39,10 @@ export interface DrivetrainState {
   ignitionCount: number
   /** Metres crept along the vehicle's forward axis since P started holding; see `parkHold*`. */
   parkOffset: number
+  /** True while the soft speed limiter (`PowertrainDefinition.speedLimiter`) cuts the drive. */
+  limiterCut: boolean
+  /** Engine mode (`PowertrainDefinition.modes`); `normal` for single-engine vehicles. */
+  mode: EngineMode
 }
 /** See `DrivetrainState.ignition`. */
 export type IgnitionPhase = 'cranking' | 'sweep' | 'running'
@@ -64,7 +68,43 @@ export const createDrivetrain = (): DrivetrainState => ({
   ignitionElapsed: 0,
   ignitionCount: 0,
   parkOffset: 0,
+  limiterCut: false,
+  mode: 'normal',
 })
+
+const modeCache = new WeakMap<
+  PowertrainDefinition,
+  Partial<Record<EngineMode, PowertrainDefinition>>
+>()
+/** True when the powertrain declares engine modes. */
+export const hasEngineModes = (spec?: PowertrainDefinition): boolean =>
+  !!spec?.modes && Object.keys(spec.modes).length > 0
+/** Mode a new vehicle starts in: the preset's `defaultMode`, else `roadVehicleDefaults.engineMode`. */
+export const initialEngineMode = (spec?: PowertrainDefinition): EngineMode =>
+  hasEngineModes(spec) ? (spec!.defaultMode ?? roadVehicleDefaults.engineMode) : 'normal'
+/**
+ * The powertrain as driven in `mode`: the mode's overrides merged over the base values (gearbox
+ * tuning merged field by field). Without `modes` (or that mode) the base spec itself. Cached
+ * per spec object, so the fixed step allocates nothing.
+ */
+export function effectivePowertrain(
+  spec: PowertrainDefinition,
+  mode: EngineMode = 'normal',
+): PowertrainDefinition {
+  const override = spec.modes?.[mode]
+  if (!override) return spec
+  let cached = modeCache.get(spec)
+  if (!cached) modeCache.set(spec, (cached = {}))
+  let resolved = cached[mode]
+  if (!resolved) {
+    const { modes: _modes, defaultMode: _default, ...base } = spec
+    const { shift, ...numbers } = override
+    resolved = { ...base, ...numbers }
+    if (shift || base.shift) resolved.shift = { ...base.shift, ...shift }
+    cached[mode] = resolved
+  }
+  return resolved
+}
 
 /**
  * Select P: gear 0, parked, automatic mode, any pending D/R request and torque cut cleared.
@@ -301,7 +341,7 @@ export function isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number)
 /** Fixed-step, deliberately forgiving DSG-style clutch; no dependency on asset names or Studio. */
 export function stepDrivetrain(
   state: DrivetrainState,
-  spec: PowertrainDefinition,
+  baseSpec: PowertrainDefinition,
   radius: number,
   speed: number,
   throttle: number,
@@ -309,13 +349,14 @@ export function stepDrivetrain(
   dt: number,
   aggressiveLaunch = false,
 ): void {
+  const spec = effectivePowertrain(baseSpec, state.mode)
   // Reverse is a separate ratio, never an index in the forward gear array.
   // Reject a stale/invalid gear before it can introduce NaN forces into Rapier.
   if (
     !Number.isInteger(state.gear) ||
     (state.gear !== -1 && state.gear !== 0 && (state.gear < 1 || state.gear > spec.ratios.length))
   ) {
-    Object.assign(state, createDrivetrain())
+    Object.assign(state, createDrivetrain(), { mode: state.mode })
   }
   state.cooldown = Math.max(0, state.cooldown - dt)
   state.shiftRemaining = Math.max(0, state.shiftRemaining - dt)
@@ -377,16 +418,42 @@ export function stepDrivetrain(
     (spec.maxSpeedKmh !== undefined && speed * 3.6 >= spec.maxSpeedKmh)
   )
     state.force = 0
+  applySpeedLimiter(state, spec, speed)
+}
+
+/**
+ * Soft speed limiter, ignition-cut style: at the limit the drive (and the engine load the audio
+ * hears) drops to zero until the speed has fallen `hysteresisKmh` below it, then comes back.
+ */
+export function applySpeedLimiter(
+  state: DrivetrainState,
+  spec: PowertrainDefinition,
+  speed: number,
+): void {
+  const limiter = spec.speedLimiter
+  if (!limiter) {
+    state.limiterCut = false
+    return
+  }
+  const kmh = speed * 3.6
+  const hysteresis = limiter.hysteresisKmh ?? roadVehicleDefaults.limiterHysteresisKmh
+  if (kmh >= limiter.kmh) state.limiterCut = true
+  else if (kmh <= limiter.kmh - hysteresis) state.limiterCut = false
+  if (state.limiterCut && state.force > 0) {
+    state.force = 0
+    state.load = 0
+  }
 }
 
 /** A paddle enters manual mode; reject unsafe reductions instead of over-revving. */
 export function shiftGear(
   state: DrivetrainState,
-  spec: PowertrainDefinition,
+  baseSpec: PowertrainDefinition,
   radius: number,
   speed: number,
   direction: -1 | 1,
 ): boolean {
+  const spec = effectivePowertrain(baseSpec, state.mode)
   state.manual = true
   if (state.gear < 1 || state.shiftRemaining > 0) return false // not in N, P or R
   const gear = state.gear + direction

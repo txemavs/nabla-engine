@@ -12,7 +12,9 @@ Create meshless nodes in the active GLB scene with
 are `wheel.fl`, `wheel.fr`, `wheel.rl`, `wheel.rr` and `steering`. Left and right
 are from the driver's perspective. Names are for humans; metadata identifies
 the role. Four wheel anchors are required; six-wheel trailers add `wheel.r2l` and
-`wheel.r2r`, in axle order. Steering is optional for assets without a separate
+`wheel.r2r`, in axle order. Single-track vehicles (motorcycles, `vehicle.twoWheeled`) author
+`wheel.front` and `wheel.rear` instead and become two hubs, front first; mixing them with the
+four-wheel roles is an error (see [motorcycles](motorcycles.md)). Steering is optional for assets without a separate
 steering mesh. `driver.seat` and `driver.eyes` are a pair: eye translation and
 orientation define the neutral cockpit view relative to the chassis. Manual
 look is composed after the authored eye orientation.
@@ -138,6 +140,11 @@ tagged GLB lenses) and any preset with `vehicle.mirrors` lenses.
 - Sides come from the lens tag (`extras.nabla.mirror`) or, for untagged lenses (S3 / A3),
   from which side of the chassis the lens sits on (`mirrorSideOf`). The outward direction is
   the chassis ±X.
+- The capture camera is kept upright with the **vehicle** up (`fitMirrorCamera(..., up)`), not
+  the lens node's own +Y. The S3 / A3 right-door lens is authored under a node rotated 180°
+  about X, so its own +Y points down and the right capture used to run rolled upside down;
+  every lens now captures upright whatever roll it was authored with. The yaw / tilt sign
+  convention is unchanged on both sides.
 - Adjustments are per **mirror model** (`mirrorModelKey`): the body GLB URL plus the steering
   GLB when there is one. The S3 and the A3 share a body but keep separate mirror settings.
 - Precedence: the player's saved choice, then the host default, then the baked aim. Saved

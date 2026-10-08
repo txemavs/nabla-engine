@@ -1,5 +1,6 @@
 import { Vector3, type Scene } from 'three'
 import { VehicleAudio } from '../audio/vehicle.js'
+import { resolveVehicleSound, type ResolvedVehicleSound } from '../audio/vehicle-sound.js'
 import { roadVehicleDefaults } from '../config/simulation.js'
 import { TireMarks } from '../render/entity/tire-marks.js'
 import { TireSmoke } from '../render/entity/tire-smoke.js'
@@ -16,6 +17,7 @@ export class VehicleEffects {
   private disposed = false
   private shiftVehicleId: string | null = null
   private shiftCount = 0
+  private gearChangeCount = 0
   /** `vehicleId:ignitionCount` of the last start whose starter sound was played. */
   private lastStart: string | null = null
 
@@ -57,34 +59,59 @@ export class VehicleEffects {
       !piloted.vehicle.flight
         ? sim!.vehicleInfo(pilot)
         : null
-    this.playGearChanges(car ? pilot! : null, car)
+    const sound = resolveVehicleSound(piloted?.vehicle?.audio, car?.engineMode)
+    this.playGearChanges(car ? pilot! : null, car, sound)
     this.playEngineStart(car ? pilot! : null, car, piloted?.vehicle?.powertrain?.idleRpm)
     // The engine note stays silent while the starter cranks; it fades in at the catch and
     // settles to idle during the needle sweep.
     this.audio.powertrain(
       car?.helm !== 'off' && car?.ignition !== 'cranking' ? (car?.rpm ?? 0) : 0,
       car?.engineLoad ?? 0,
+      { turbo: sound.turbo, engine: sound.engine },
     )
     this.audio.reverseAlarm(
       !!(piloted?.vehicle?.reverseAlarm && car?.reversing && car.helm !== 'off'),
     )
   }
 
-  /** One clack per audible gear change (D/R engagement or manual shift, never an automatic shift); the first sample of a vehicle only sets the baseline. */
+  /**
+   * Gear-change sound per the vehicle's `audio.gearShift`. `clack` (default): one clack per
+   * audible change (D/R engagement or manual shift, never an automatic shift). `click`: one
+   * quiet click per counted gear change, automatic ones included. `none`: silent. The first
+   * sample of a vehicle only sets the baseline.
+   */
   private playGearChanges(
     id: string | null,
-    info: { gearClacks: number; gearClack: GearClackProfile | null; helm: string } | null,
+    info: {
+      gearClacks: number
+      gearShifts: number
+      gearClack: GearClackProfile | null
+      helm: string
+    } | null,
+    sound: ResolvedVehicleSound,
   ): void {
     if (!id || !info) {
       this.shiftVehicleId = null
       return
     }
     const known = this.shiftVehicleId === id
-    const previous = this.shiftCount
+    const previousClacks = this.shiftCount,
+      previousShifts = this.gearChangeCount
     this.shiftVehicleId = id
     this.shiftCount = info.gearClacks
-    if (known && info.gearClacks > previous && info.helm !== 'off')
-      this.audio.gearChange(info.gearClack)
+    this.gearChangeCount = info.gearShifts
+    if (!known || info.helm === 'off') return
+    if (sound.gearShift === 'clack' && info.gearClacks > previousClacks)
+      this.audio.gearChange(
+        sound.gearShiftVolume === 1
+          ? info.gearClack
+          : {
+              ...info.gearClack,
+              gain: (info.gearClack?.gain ?? 1) * sound.gearShiftVolume,
+            },
+      )
+    else if (sound.gearShift === 'click' && info.gearShifts > previousShifts)
+      this.audio.gearClick({ volume: sound.gearShiftVolume })
   }
 
   /** One starter sound per start-up, as soon as its cranking phase (the first one) is seen. Lower idle cranks lower. */
@@ -119,7 +146,9 @@ export class VehicleEffects {
       origin,
     )
     this.marks.update(elapsed, pilot ?? null, contacts, origin)
-    this.audio.tires(slip, pilot ? sim!.vehicleInfo(pilot).speedKmh : 0)
+    const speedKmh = pilot ? sim!.vehicleInfo(pilot).speedKmh : 0
+    this.audio.tires(slip, speedKmh)
+    this.audio.scrape(pilot ? (sim!.twoWheeledPose(pilot)?.scrape ?? 0) : 0, speedKmh)
   }
 
   dispose(): void {

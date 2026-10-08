@@ -31,3 +31,26 @@ test('rejects absent, duplicate and scaled anchors instead of guessing', () => {
   scaled.nodes[5].scale = [2, 1, 1]
   assert.throws(() => extractVehicleRig(scaled, identity), /unit-scale/)
 })
+test('reads single-track wheel.front and wheel.rear anchors as two hubs, front first', () => {
+  const nodes = [
+    { extras: { nabla: { anchor: 'wheel.rear' } }, translation: [0, 0.31, 0.72] },
+    { extras: { nabla: { anchor: 'wheel.front' } }, translation: [0, 0.3, -0.72] },
+  ]
+  const rig = extractVehicleRig({ nodes, scenes: [{ nodes: [0, 1] }] }, identity)
+  assert.deepEqual(rig.hubs, [
+    [0, 0.3, -0.72],
+    [0, 0.31, 0.72],
+  ])
+  assert.equal(rig.wheelRotations.length, 2)
+})
+test('rejects half a single-track rig and mixed wheel layouts', () => {
+  const lonely = {
+    nodes: [{ extras: { nabla: { anchor: 'wheel.front' } } }],
+    scenes: [{ nodes: [0] }],
+  }
+  assert.throws(() => extractVehicleRig(lonely, identity), /Missing vehicle anchor: wheel.rear/)
+  const mixed = fixture()
+  mixed.nodes.push({ extras: { nabla: { anchor: 'wheel.front' } } })
+  mixed.nodes[5].children.push(6)
+  assert.throws(() => extractVehicleRig(mixed, identity), /mixes wheel.front/)
+})

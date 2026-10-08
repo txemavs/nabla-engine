@@ -1,18 +1,22 @@
 import { EngineStart, type EngineStartSound } from './engine-start.js'
 import { GearClack, type GearClackSound } from './gear-clack.js'
+import { GearClick, type GearClickSound } from './gear-click.js'
 import { loopingNoise } from './graph.js'
 import { Gunshot } from './gunshot.js'
 import { Powertrain } from './powertrain.js'
+import type { ResolvedEngineVoice } from './vehicle-sound.js'
 import { Propeller } from './propeller.js'
 import { TireSqueal } from './tires.js'
+import { MetalScrape } from './scrape.js'
 import { Turbine } from './turbine.js'
 import { ReverseAlarm } from './reverse-alarm.js'
 
 /**
- * One browser audio context, eight independent voices.
+ * One browser audio context, nine independent voices (the powertrain one picks a road-car
+ * note or a procedural V4 per vehicle).
  *
  * The context has to be created from a click or a key press (`unlock`).
- * Turbine, propeller, tires, powertrain, engine start, reverse alarm, gear clack and the
+ * Turbine, propeller, tires, powertrain, engine start, reverse alarm, gear clack, gear click and the
  * sidearm gunshot own their nodes; they only
  * share that context and one noise buffer. Studio owns the mute button.
  * Audio never throws into the host loop.
@@ -22,12 +26,15 @@ export class VehicleAudio {
   private turbineVoice?: Turbine
   private propellerVoice?: Propeller
   private tireVoice?: TireSqueal
+  private scrapeVoice?: MetalScrape
   private powertrainVoice?: Powertrain
   private gearVoice?: GearClack
+  private clickVoice?: GearClick
   private startVoice?: EngineStart
   private reverseVoice?: ReverseAlarm
   private gunshotVoice?: Gunshot
   private clacks = 0
+  private clicks = 0
   private starts = 0
   private shots = 0
   private enabled = true
@@ -81,6 +88,11 @@ export class VehicleAudio {
     return this.clacks
   }
 
+  /** Number of gear clicks played so far, for tests and the renderer dataset. */
+  get gearClickCount(): number {
+    return this.clicks
+  }
+
   /** Number of engine starts played so far, for tests and the renderer dataset. */
   get engineStartCount(): number {
     return this.starts
@@ -105,11 +117,39 @@ export class VehicleAudio {
     this.propellerVoice.update(frame.time, frame.audible, level)
   }
 
-  /** `rpm` is engine speed. `load` is 0..1. Rpm 0 silences the car and the turbo. */
-  powertrain(rpm: number, load: number): void {
+  /**
+   * `rpm` is engine speed. `load` is 0..1. Rpm 0 silences the car and the turbo.
+   * `turbo: false` keeps the turbo silent for engines without one (e.g. a motorcycle);
+   * `engine` picks the voice (`resolveEngineVoice`; default the road-car note).
+   */
+  powertrain(
+    rpm: number,
+    load: number,
+    options: { turbo?: boolean; engine?: ResolvedEngineVoice } = {},
+  ): void {
     const frame = this.frame()
     if (!frame || !this.powertrainVoice) return
-    this.powertrainVoice.update(frame.time, frame.audible, rpm, load)
+    this.powertrainVoice.update(
+      frame.time,
+      frame.audible,
+      rpm,
+      load,
+      options.turbo ?? true,
+      options.engine,
+    )
+  }
+
+  /** Engine voice that played on the last `powertrain` call, for tests and the dataset. */
+  get engineVoice(): 'note' | 'v4' | 'inline' {
+    return this.powertrainVoice?.activeVoice ?? 'note'
+  }
+
+  /** One short, quiet mechanical click for a gear change (`gearShift.sound: 'click'`). */
+  gearClick(sound?: GearClickSound | null): void {
+    const frame = this.frame()
+    if (!frame || !this.clickVoice || !frame.audible) return
+    this.clickVoice.trigger(frame.time, true, sound)
+    this.clicks++
   }
 
   /**
@@ -147,6 +187,16 @@ export class VehicleAudio {
     if (!frame || !this.tireVoice) return
     this.tireVoice.update(frame.time, frame.audible, slip, speedKmh)
   }
+  /** Footpeg scrape grind, 0 (none) … 1, from the two-wheeler pose. */
+  scrape(level: number, speedKmh: number): void {
+    const frame = this.frame()
+    if (!frame || !this.scrapeVoice) return
+    this.scrapeVoice.update(frame.time, frame.audible, level, speedKmh)
+  }
+  /** Current scrape gain, for tests. */
+  get scrapeLevel(): number {
+    return this.scrapeVoice?.level ?? 0
+  }
   /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */
   reverseAlarm(active: boolean): void {
     const frame = this.frame()
@@ -160,10 +210,12 @@ export class VehicleAudio {
     this.turbineVoice = new Turbine(context, noise)
     this.propellerVoice = new Propeller(context)
     this.tireVoice = new TireSqueal(context, noise)
+    this.scrapeVoice = new MetalScrape(context, noise)
     this.powertrainVoice = new Powertrain(context, noise)
     this.reverseVoice = new ReverseAlarm(context)
     this.startVoice = new EngineStart(context, noise)
     this.gearVoice = new GearClack(context, noise)
+    this.clickVoice = new GearClick(context, noise)
     this.gunshotVoice = new Gunshot(context, noise)
   }
 
@@ -178,8 +230,10 @@ export class VehicleAudio {
     this.turbineVoice?.silence(time)
     this.propellerVoice?.silence(time)
     this.tireVoice?.silence(time)
+    this.scrapeVoice?.silence(time)
     this.powertrainVoice?.silence(time)
     this.gearVoice?.silence(time)
+    this.clickVoice?.silence(time)
     this.startVoice?.silence(time)
     this.reverseVoice?.silence(time)
     this.gunshotVoice?.silence(time)

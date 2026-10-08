@@ -285,3 +285,34 @@ test('flight chase camera leans back for forward perspective and eases out on la
   expect(state.flightTilt).toBe(0)
   session.dispose()
 })
+
+test('cockpit and chase views ride the smoothed vehicle (SceneView.rideSmoothing)', async () => {
+  const { RideSmoothing } = await import('../../src/render/entity/ride-smoothing.js')
+  const session = new PlaySession()
+  const document: SceneDocument = {
+    version: 1,
+    name: 'Ride smoothing',
+    entities: [createEntity('spawn', 'spawn'), presetVehicle('car', 'car', [0, 2, 0])],
+  }
+  const sim = await session.play(document, { vehicleId: 'car' })
+  const plain = { document, objects: new Map(), vehicleHeadOffset: () => undefined }
+  // The body has just bounced 3 cm up; the smoothed vehicle is still 3 cm lower.
+  const rideSmoothing = new RideSmoothing()
+  rideSmoothing.id = 'car'
+  rideSmoothing.raw.fromArray(sim.entityTransform('car', true).position)
+  rideSmoothing.position.copy(rideSmoothing.raw).add(new Vector3(0, -0.03, 0))
+  const smoothed = { ...plain, rideSmoothing }
+  for (const mode of ['cockpit', 'chase'] as const) {
+    const pose = (view: typeof plain) => {
+      const camera = new PerspectiveCamera()
+      const state = createGameCameraState({ modeTransitionMs: 0 })
+      state.mode = mode
+      updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
+      return camera.position.clone()
+    }
+    const drop = pose(plain).sub(pose(smoothed))
+    expect(drop.y).toBeCloseTo(0.03, 3)
+    expect(Math.hypot(drop.x, drop.z)).toBeLessThan(1e-3)
+  }
+  session.dispose()
+})

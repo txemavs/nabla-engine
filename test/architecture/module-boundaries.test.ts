@@ -104,6 +104,18 @@ it('wheeled runtime has no Simulation, entity schema, catalogue, render, boat or
   ).toEqual([])
 })
 
+it('two-wheeled runtime has no Simulation, entity schema, catalogue, render, boat or Studio dependency, including types', () => {
+  const closure = [...reachable(graph, ['src/simulation/vehicles/two-wheeled/index.ts'], true)]
+  expect(
+    closure.filter(
+      (p) =>
+        /^(src\/(catalog|render|entity)|studio)\//.test(p) ||
+        p === 'src/simulation/simulation.ts' ||
+        p === 'src/simulation/vehicles/boat.ts',
+    ),
+  ).toEqual([])
+})
+
 it('boat and flight runtimes do not import cars, scenes or presentation, even as types', () => {
   for (const entry of ['boat', 'flight']) {
     const closure = [...reachable(graph, [`src/simulation/vehicles/${entry}.ts`], true)]

@@ -83,6 +83,8 @@ finiteInput(input: PlayerInput): PlayerInput
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
+- `Math.min`
 - `safe`
 
 ## finiteInput.safe
@@ -99,7 +101,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.reset
 
-[Implementation, line 74](../../../../src/runtime/input.ts#L74)
+[Implementation, line 77](../../../../src/runtime/input.ts#L77)
 
 Forget keyboard steering interpolation after focus loss or a session boundary.
 
@@ -113,7 +115,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read
 
-[Implementation, line 83](../../../../src/runtime/input.ts#L83)
+[Implementation, line 86](../../../../src/runtime/input.ts#L86)
 
 Combine keyboard, gamepad, touch and monitor commands into one physics input.
 Elapsed time is seconds and yaw is radians. Disabled/menu input resets steering;
@@ -139,7 +141,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read.axis
 
-[Implementation, line 96](../../../../src/runtime/input.ts#L96)
+[Implementation, line 99](../../../../src/runtime/input.ts#L99)
 
 ```ts
 axis(positive: string, negative: string): inferred by TypeScript; see implementation
@@ -150,10 +152,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `keys.has`
 
-## GameInput.read.callback@106
+## GameInput.read.callback@109
 
-[Implementation, line 106](../../../../src/runtime/input.ts#L106)
+[Implementation, line 109](../../../../src/runtime/input.ts#L109)
 
 ```ts
-callback@106(e): inferred by TypeScript; see implementation
+callback@109(e): inferred by TypeScript; see implementation
 ```
