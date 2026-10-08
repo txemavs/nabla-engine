@@ -1,10 +1,10 @@
 {
   "id": "white-truck",
-  "label": "Camión blanco",
+  "label": "Cami\u00f3n blanco",
   "clearance": 1.45,
   "placement": [10, 1.45, 0],
   "order": 6,
-  "name": "Camión blanco · tractora",
+  "name": "Cami\u00f3n blanco \u00b7 tractora",
   "color": "#eeeeee",
   "size": [2.55, 4, 6.2],
   "mass": 7500,
@@ -31,13 +31,13 @@
     "wheelRadius": 0.5774650136655582,
     "suspensionRest": 0.22,
     "stiffness": 110,
-    "engineForce": 14400,
+    "engineForce": 15600,
     "brakeForce": 168,
     "drivenWheels": "rear",
     "cameraDistance": 24,
     "powertrain": {
-      "powerCv": 504,
-      "torqueNm": 2400,
+      "powerCv": 530,
+      "torqueNm": 2600,
       "ratios": [14.9, 8.6, 5, 2.9, 1.7, 1],
       "finalDrive": 3.2,
       "grip": 4.5,
@@ -45,7 +45,7 @@
       "maxRpm": 2400,
       "reverseRatio": 13.6,
       "maxSpeedKmh": 120,
-      "maxWheelForceN": 72000,
+      "maxWheelForceN": 78000,
       "shift": {
         "seconds": 0.55,
         "cooldownSeconds": 1.1,
@@ -66,6 +66,17 @@
           "echoSeconds": 0.16,
           "airSeconds": 0.5
         }
+      }
+    },
+    "audio": {
+      "turbo": true,
+      "engine": {
+        "voice": "diesel",
+        "cylinders": 6,
+        "turboWhistle": 0.85,
+        "blowOff": 0.05,
+        "jake": true,
+        "airBrake": true
       }
     }
   },

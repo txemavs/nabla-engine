@@ -8,6 +8,7 @@
 
 ### Changed
 
+- Truck: inline-6 turbo-diesel voice (deep idle, load growl, turbo spool, jake bark on lift-off, air-brake hiss, quiet gear shifts). Pulling power follows the Mercedes-Benz OM 471 390 kW rating: 530 PS and 2,600 Nm (was 504 PS / 2,400 Nm). Timbre is TODO(unverified).
 - Engine start (cars and the VFR, shared starter; the running V4 is unchanged): about 0.95 s of electric-starter whine and compression pulses before the engine catches.
 - **Chrome darkens like the wheel rim lips:** the S3 trim, the VFR silencer end cap and the disc
   buttons took a fixed studio reflection that ignores shadows, so they stayed bright in shade and

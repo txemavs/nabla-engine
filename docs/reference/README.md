@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **341 modules; 3609 executable function definitions**.
+Coverage: **342 modules; 3620 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -40,13 +40,14 @@ Coverage: **341 modules; 3609 executable function definitions**.
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
 | [game/terrain.ts](game/terrain.ts.md) | 14 |
 | [src/audio/casing-tinkle.ts](src/audio/casing-tinkle.ts.md) | 4 |
+| [src/audio/diesel-engine.ts](src/audio/diesel-engine.ts.md) | 6 |
 | [src/audio/engine-start.ts](src/audio/engine-start.ts.md) | 7 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/gear-click.ts](src/audio/gear-click.ts.md) | 4 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
-| [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 13 |
+| [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 14 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
 | [src/audio/reverse-alarm.ts](src/audio/reverse-alarm.ts.md) | 3 |
 | [src/audio/scrape.ts](src/audio/scrape.ts.md) | 4 |
@@ -137,7 +138,7 @@ Coverage: **341 modules; 3609 executable function definitions**.
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
 | [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 21 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
-| [src/planet/contract.ts](src/planet/contract.ts.md) | 27 |
+| [src/planet/contract.ts](src/planet/contract.ts.md) | 28 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
 | [src/planet/extract/multipolygon.ts](src/planet/extract/multipolygon.ts.md) | 8 |
 | [src/planet/extract/source.ts](src/planet/extract/source.ts.md) | 4 |
@@ -255,7 +256,7 @@ Coverage: **341 modules; 3609 executable function definitions**.
 | [src/render/vehicle-presentation/motorcycle-mirrors.ts](src/render/vehicle-presentation/motorcycle-mirrors.ts.md) | 5 |
 | [src/render/vehicle-presentation/motorcycle-rig.ts](src/render/vehicle-presentation/motorcycle-rig.ts.md) | 14 |
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
-| [src/render/vehicle-presentation/reflection-environment.ts](src/render/vehicle-presentation/reflection-environment.ts.md) | 8 |
+| [src/render/vehicle-presentation/reflection-environment.ts](src/render/vehicle-presentation/reflection-environment.ts.md) | 11 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |

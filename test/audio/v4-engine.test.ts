@@ -104,10 +104,15 @@ describe('engine voice selection', () => {
       volume: 1,
     })
     // The S3 (`car`) has its own refined inline voices (test/audio/car-engine-voice.test.ts).
-    const others = vehiclePresets().filter((preset) => !['vfr800', 'car'].includes(preset.id))
+    const others = vehiclePresets().filter(
+      (preset) => !['vfr800', 'car', 'white-truck'].includes(preset.id),
+    )
     expect(others.length).toBeGreaterThan(0)
     for (const preset of others)
       expect(resolveVehicleSound(preset.vehicle.audio).engine.voice).toBe('note')
+    expect(
+      resolveVehicleSound(presetVehicle('white-truck', 'truck').vehicle?.audio).engine.voice,
+    ).toBe('diesel')
   })
 })
 
