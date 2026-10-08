@@ -18,9 +18,10 @@
   "bytes": 7828280,
   "sha256": "2592f40a610fb5ae6f3c670036bf1b477641d015a20faf8f9af08f2ba7b989dc",
   "provenance": {
-    "source": "User-supplied interceptor.glb, prepared and visually approved in this task",
+    "reworkedBy": "Txema Vicente (manual cleanup), then Codex (AI coding agent) under his direction using data from the Honda manual",
+    "source": "Cleaned up by hand by Txema Vicente over several hours, then substantially reworked by Codex under his direction using data from the Honda manual, starting from a low-quality base mesh; almost none of the original geometry remains. Base mesh: the user-supplied interceptor.glb. Prepared and visually approved on 2026-10-08.",
     "sourceSha256": "aba157065d7bc73009ac11dc90a89131d91e7c0e5d2ad8705283df83f05a7efd",
     "preparedOn": "2026-10-08",
-    "license": "Source artwork license not supplied; repository code license does not establish rights to original artwork."
+    "note": "Provenance as stated by Txema Vicente. No license name is recorded for the artwork; the repository's MIT code license covers code only."
   }
 }
