@@ -85,19 +85,17 @@ class FakeContext {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('engine start synthesis', () => {
-  it('resolves profiles safely and pulses faster as the starter spins up', () => {
+  it('resolves profiles safely and engages with one click', () => {
     expect(resolveEngineStart()).toEqual({ pitch: 1, gain: 1, idleRpm: 1000 })
     expect(resolveEngineStart({ pitch: Number.NaN, gain: 9, idleRpm: 50 })).toEqual({
       pitch: 1,
       gain: 2,
       idleRpm: 300,
     })
-    const pulses = crankPulses(roadVehicleDefaults.ignitionCrankSeconds)
-    // A starter crank of under about a second: several compressions before the catch.
-    expect(pulses.length).toBeGreaterThanOrEqual(3)
-    expect(pulses.length).toBeLessThan(14)
-    expect(pulses[1] - pulses[0]).toBeGreaterThan(pulses.at(-1)! - pulses.at(-2)!)
-    expect(pulses.at(-1)!).toBeLessThan(roadVehicleDefaults.ignitionCrankSeconds - 0.1)
+    expect(roadVehicleDefaults.ignitionCrankSeconds).toBeGreaterThanOrEqual(0.15)
+    expect(roadVehicleDefaults.ignitionCrankSeconds).toBeLessThanOrEqual(0.3)
+    expect(crankPulses(roadVehicleDefaults.ignitionCrankSeconds)).toEqual([0.012])
+    expect(crankPulses(0.01)).toEqual([])
   })
 
   it('schedules the starter crank with no new nodes, and nothing when muted or before unlock', () => {
@@ -117,13 +115,13 @@ describe('engine start synthesis', () => {
       .map((event) => event.time - context.currentTime)
     expect(Math.max(...times)).toBeGreaterThan(roadVehicleDefaults.ignitionCrankSeconds - 0.05)
     expect(Math.max(...times)).toBeLessThan(roadVehicleDefaults.ignitionCrankSeconds + 0.3)
-    // The starter is an electric whine, not the low engine note: it climbs well above 300 Hz.
-    const whine = context.nodes.flatMap((entry) =>
-      entry.node.frequency.events
-        .filter((event) => event.kind === 'linear')
-        .map((event) => event.value),
+    // No rising starter whine: frequency is set, never ramped up.
+    const ramps = context.nodes.flatMap((entry) =>
+      entry.node.frequency.events.filter((event) => event.kind === 'linear'),
     )
-    expect(Math.max(...whine)).toBeGreaterThan(300)
+    expect(ramps).toEqual([])
+    const early = times.filter((offset) => offset < 0.05)
+    expect(early.length).toBeGreaterThan(0)
     audio.setEnabled(false)
     audio.engineStart()
     expect(audio.engineStartCount).toBe(1)
