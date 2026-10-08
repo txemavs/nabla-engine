@@ -33,7 +33,7 @@ Target rider offset for inputs `right` (−1 left … +1 right) and `forward` (�
 the tank): chassis-local [x, z] metres (z positive backwards).
 
 ```ts
-riderTarget(right: number, forward: number, limits: RiderLimits): [number, number]
+riderTarget(right: number, forward: number, limits: RiderLimits, reach = 1): [number, number]
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -43,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stepRider
 
-[Implementation, line 33](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L33)
+[Implementation, line 39](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L39)
 
 Move the rider towards `target` at `rate` full travels per second; returns the new offset.
 
@@ -58,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stepRider.step
 
-[Implementation, line 39](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L39)
+[Implementation, line 45](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L45)
 
 ```ts
 step(value: number, goal: number, travel: number): inferred by TypeScript; see implementation
@@ -70,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## riderCentreOfMass
 
-[Implementation, line 51](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L51)
+[Implementation, line 57](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L57)
 
 Chassis centre-of-mass offset (chassis-local metres) for a rider whose seated centre of mass
 is `seat` and who moved by `shift` ([x, z]); the remaining mass stays at the chassis origin.
@@ -89,7 +89,7 @@ Explicit throws in this body:
 
 ## hangOffLean
 
-[Implementation, line 69](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L69)
+[Implementation, line 75](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L75)
 
 Lean offset of the bike for a sideways centre-of-mass offset `lateral` (metres, +right) at
 height `comHeight`, to add to the lean of the whole machine plus rider: atan(lateral / h),
@@ -106,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## autoRiderInput
 
-[Implementation, line 118](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L118)
+[Implementation, line 128](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L128)
 
 Normalised automatic rider input `[right, forward]` (the same scale as the keys): hang off to
 the inside of a turn in proportion to lean and steering, move forward under hard acceleration
@@ -126,7 +126,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stepRiderControl
 
-[Implementation, line 149](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L149)
+[Implementation, line 161](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L161)
 
 Advance the hand-over between keys and automatic rider: a key press takes over within
 `takeover` seconds; after `releaseDelay` seconds without keys the automatic rider blends back
@@ -143,7 +143,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## speedRamp
 
-[Implementation, line 192](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L192)
+[Implementation, line 204](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L204)
 
 Eased 0..1 ramp from `from` to `to` km/h (smoothstep; a step when the span is empty).
 
@@ -157,7 +157,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## autoTuckDepth
 
-[Implementation, line 205](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L205)
+[Implementation, line 217](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L217)
 
 Automatic tuck depth 0..1 with hysteresis. Speeding up, the head goes down along an eased ramp
 from `kmh` (0) to `fullKmh` (1); slowing down, it comes back up along the same ramp shifted
@@ -177,7 +177,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## manualTuckReach
 
-[Implementation, line 222](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L222)
+[Implementation, line 234](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L234)
 
 How far the forward key reaches into the tuck at `speedKmh`: the same eased ramp as the
 automatic tuck, 0 up to `kmh`, 1 from `fullKmh` (no jump).
@@ -192,7 +192,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tuckTarget
 
-[Implementation, line 231](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L231)
+[Implementation, line 243](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L243)
 
 Tuck target 0..1: the automatic depth weighted by the automatic share, plus the forward key
 (0..1) times its reach weighted by the key share.

@@ -23,8 +23,14 @@ export interface RiderLimits {
  * Target rider offset for inputs `right` (−1 left … +1 right) and `forward` (−1 back … +1 over
  * the tank): chassis-local [x, z] metres (z positive backwards).
  */
-export function riderTarget(right: number, forward: number, limits: RiderLimits): [number, number] {
-  const r = clamp(Number.isFinite(right) ? right : 0, -1, 1)
+export function riderTarget(
+  right: number,
+  forward: number,
+  limits: RiderLimits,
+  /** Largest sideways input; above 1 only for the automatic rider's full-lean hang-off. */
+  reach = 1,
+): [number, number] {
+  const r = clamp(Number.isFinite(right) ? right : 0, -reach, reach)
   const f = clamp(Number.isFinite(forward) ? forward : 0, -1, 1)
   return [r * limits.lateral, f >= 0 ? -f * limits.forward : -f * limits.back]
 }
@@ -77,6 +83,8 @@ export interface AutoRiderSettings {
   enabled: boolean
   /** Sideways input (0..1 of the full shift) at the largest lean, past `leanDeadband`. */
   hangOff: number
+  /** Extra sideways input at the full (peg) lean, growing with the lean past `maxLean`. */
+  pegHangOff: number
   /** Sideways input per unit of steering demand (towards the turn). */
   steer: number
   /** Lean below which the rider stays centred, radians. */
@@ -99,6 +107,8 @@ export interface AutoRiderInput {
   /** Measured lean, left-positive, radians. */
   lean: number
   maxLean: number
+  /** Peg (full) lean on the side of the current lean; omitted = no full lean. */
+  pegLean?: number
   /** Bar demand, +1 full right. */
   steering: number
   /** Filtered longitudinal acceleration along the chassis forward axis, m/s². */
@@ -120,11 +130,13 @@ export function autoRiderInput(input: AutoRiderInput, auto: AutoRiderSettings): 
   const span = Math.max(1e-6, input.maxLean - auto.leanDeadband)
   const leanShare = clamp((Math.abs(input.lean) - auto.leanDeadband) / span, 0, 1)
   // Lean is left-positive; hanging off to the left is a negative `right`.
-  const right = clamp(
-    -Math.sign(input.lean) * leanShare * auto.hangOff + input.steering * auto.steer,
-    -1,
-    1,
-  )
+  // Past `maxLean` towards the peg lean the rider hangs off further (up to `pegHangOff` more).
+  const pegSpan = (input.pegLean ?? 0) - input.maxLean
+  const pegShare =
+    pegSpan > 1e-6 ? clamp((Math.abs(input.lean) - input.maxLean) / pegSpan, 0, 1) : 0
+  const right =
+    clamp(-Math.sign(input.lean) * leanShare * auto.hangOff + input.steering * auto.steer, -1, 1) -
+    Math.sign(input.lean) * pegShare * auto.pegHangOff
   const g = input.acceleration / Math.max(1e-6, input.gravity)
   const forward =
     input.throttle > 0.3 && g > auto.accelDeadband

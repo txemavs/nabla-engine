@@ -10,7 +10,7 @@
 
 ## idleWheeledInput
 
-[Implementation, line 197](../../../../../../src/simulation/vehicles/wheeled/contracts.ts#L197)
+[Implementation, line 214](../../../../../../src/simulation/vehicles/wheeled/contracts.ts#L214)
 
 ```ts
 idleWheeledInput(): WheeledInput

@@ -206,6 +206,8 @@ describe('vfr800 rider counterweight', () => {
         sim: s,
       } = ride((bike) => {
         bike.vehicle!.twoWheeled!.rider!.auto = { enabled: false }
+        // Same turn at the normal limit (held full steer would raise it to the peg lean).
+        delete bike.vehicle!.twoWheeled!.pegLean
       })
       run(5, { forward: 1 })
       run(4, { forward: 0.3, right: 1, riderRight })

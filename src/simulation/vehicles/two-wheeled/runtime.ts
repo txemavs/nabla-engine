@@ -80,6 +80,16 @@ export function twoWheeledTuning(definition: WheeledDefinition): TwoWheeledTunin
   return {
     maxLean: g.maxLean ?? d.maxLean,
     fallLean: g.fallLean ?? d.fallLean,
+    pegLean: g.pegLean
+      ? {
+          left: { lean: g.pegLean.left.lean, point: [...g.pegLean.left.point] },
+          right: { lean: g.pegLean.right.lean, point: [...g.pegLean.right.point] },
+          seconds: g.pegLean.seconds ?? d.fullLean.seconds,
+          relaxSeconds: g.pegLean.relaxSeconds ?? d.fullLean.relaxSeconds,
+          steer: g.pegLean.steer ?? d.fullLean.steer,
+          scrapeMargin: d.fullLean.scrapeMargin,
+        }
+      : null,
     balanceSpeed: g.balanceSpeed ?? d.balanceSpeed,
     balanceAssist: g.balanceAssist ?? d.balanceAssist,
     leanResponse: g.leanResponse ?? d.leanResponse,
@@ -157,6 +167,12 @@ export function createTwoWheeledVehicle(
       tuning.frictionSlip,
     ].every(positive) ||
     !(tuning.fallLean > tuning.maxLean) ||
+    (tuning.pegLean !== null &&
+      !(['left', 'right'] as const).every(
+        (side) =>
+          tuning.pegLean![side].lean >= tuning.maxLean &&
+          tuning.pegLean![side].lean < tuning.fallLean,
+      )) ||
     !(tuning.balanceSpeed >= 0) ||
     !(tuning.pitchAssist.wheelieMaxAngle > tuning.pitchAssist.wheelieSoftAngle) ||
     !(tuning.pitchAssist.stoppieMaxAngle > tuning.pitchAssist.stoppieSoftAngle) ||
@@ -235,6 +251,10 @@ export function createTwoWheeledVehicle(
       previousSpeed: null,
       tuck: 0,
       tuckAuto: 0,
+      leanReach: 0,
+      leanSide: 'left',
+      scrape: 0,
+      scrapeSide: 'left',
       hooligan: 'none',
       rearSpin: 0,
       rearSpinAngle: 0,
@@ -260,6 +280,8 @@ export function resetTwoWheeled(state: TwoWheeledState): void {
   state.crashed = false
   state.tuck = 0
   state.tuckAuto = 0
+  state.leanReach = 0
+  state.scrape = 0
   state.hooligan = 'none'
   state.rearSpin = 0
   state.riderControl = { manualShare: 0, manualHold: 0 }
@@ -327,6 +349,36 @@ export function stepTwoWheeledVehicle(
   // Shift hooligan modifier: assists, combined brakes and automatic fore-aft rider moves off.
   const hooligan = tuning.hooligan.enabled && active && powered && input.launch && !state.crashed
 
+  // Full lean: held full steer raises the lean limit towards the peg lean of the turn's side.
+  const peg = tuning.pegLean
+  if (peg) {
+    const held =
+      active &&
+      powered &&
+      !state.fallen &&
+      Math.abs(input.steering) >= peg.steer &&
+      Math.abs(speed) > 2 * tuning.balanceSpeed &&
+      // In the turn at the normal limit (or already past it): a flick of full steer stays normal.
+      // (Machine-plus-rider lean: hanging off, the bike itself leans a little less.)
+      Math.abs(state.lean) + Math.abs(hangOffLean(v.body.centerOfMass.x, state.comHeight)) >=
+        tuning.maxLean - 0.05
+    if (held) {
+      const side = input.steering > 0 ? 'right' : 'left'
+      if (side !== state.leanSide) state.leanReach = 0
+      state.leanSide = side
+    }
+    state.leanReach = clamp(
+      state.leanReach + (held ? dt / peg.seconds : -dt / peg.relaxSeconds),
+      0,
+      1,
+    )
+  }
+  // Hanging off leans the bike less than the whole machine-plus-rider; on the way to the peg the
+  // turn may tighten by that much so the bike itself reaches the peg lean. Normal riding
+  // (no held full steer) keeps the plain `maxLean` turn.
+  const pegCompensation = hangOffCompensation(v, state)
+  const leanLimit = currentLeanLimit(tuning, state) + pegCompensation
+
   // Rider counterweight: the rider moves at a finite rate and carries the centre of mass along.
   // The keys drive it when pressed; otherwise the automatic rider does (see `autoRiderInput`).
   const rider = tuning.rider
@@ -340,6 +392,7 @@ export function stepTwoWheeledVehicle(
         {
           lean: state.lean,
           maxLean: tuning.maxLean,
+          ...(peg ? { pegLean: peg[state.lean > 0 ? 'left' : 'right'].lean } : {}),
           steering: input.steering,
           acceleration: state.acceleration,
           gravity,
@@ -366,6 +419,7 @@ export function stepTwoWheeledVehicle(
         keys.right * share + auto[0] * (1 - share),
         keys.forward * share + auto[1] * (1 - share),
         rider,
+        1 + rider.auto.pegHangOff,
       )
     } else {
       state.riderControl = { manualShare: 0, manualHold: 0 }
@@ -396,7 +450,7 @@ export function stepTwoWheeledVehicle(
     active && powered
       ? handlebarTarget(clamp(input.steering + bodySteer, -1, 1), speed, {
           steerLimit: state.geometry.steerLimit,
-          maxLean: tuning.maxLean,
+          maxLean: leanLimit,
           rakeCosine: state.rakeCosine,
           wheelbase: state.wheelbase,
           gravity,
@@ -614,7 +668,7 @@ export function stepTwoWheeledVehicle(
     v.raycast.setBrake(burnout ? 0 : Math.max(hold, state.rearBrake * tuning.rearBrakeForce), REAR)
   }
 
-  stepLean(v, dt, speed, forward, up, gravityUp, gravity)
+  stepLean(v, dt, speed, forward, up, gravityUp, gravity, frontContact && rearContact)
 }
 
 /** Lean measurement, fall detection and the balance torque for one tick. */
@@ -626,9 +680,11 @@ function stepLean(
   up: Vec3,
   gravityUp: Vec3,
   gravity: number,
+  bothWheelsDown: boolean,
 ): void {
   const state = v.twoWheeled,
     tuning = state.tuning
+  const peg = tuning.pegLean
   const measured = measureLean(
     [forward.x, forward.y, forward.z],
     [up.x, up.y, up.z],
@@ -644,6 +700,16 @@ function stepLean(
       : measureLeanRate([w.x, w.y, w.z], measured.heading)
   state.previousLean = measured.lean
   state.lean = measured.lean
+  // Footpeg scrape: at the peg lean of the side the machine leans to, while rolling on its wheels.
+  state.scrapeSide = state.lean > 0 ? 'left' : 'right'
+  state.scrape =
+    peg &&
+    !state.fallen &&
+    bothWheelsDown &&
+    Math.abs(speed) > 1 &&
+    Math.abs(state.lean) >= peg[state.scrapeSide].lean - peg.scrapeMargin
+      ? clamp(Math.abs(speed) / 30, 0.2, 1)
+      : 0
   if (state.crashed) state.fallen = true
   else if (!state.fallen && Math.abs(state.lean) > tuning.fallLean) state.fallen = true
   else if (state.fallen && Math.abs(state.lean) < tuning.maxLean * 0.5) state.fallen = false
@@ -656,14 +722,18 @@ function stepLean(
   }
   // The whole machine plus rider takes the steady-turn lean; a rider shifted sideways moves the
   // centre of mass off the bike's plane, so the bike itself leans that much less (or more).
-  state.targetLean =
+  // Never past the peg lean: the peg (or first part) is on the ground there.
+  state.targetLean = clamp(
     targetLean({
       speed,
       groundSteer: state.groundSteer,
       wheelbase: state.wheelbase,
       gravity,
-      maxLean: tuning.maxLean,
-    }) + hangOffLean(v.body.centerOfMass.x, state.comHeight)
+      maxLean: currentLeanLimit(tuning, state) + hangOffCompensation(v, state),
+    }) + hangOffLean(v.body.centerOfMass.x, state.comHeight),
+    -(tuning.pegLean?.right.lean ?? tuning.fallLean),
+    tuning.pegLean?.left.lean ?? tuning.fallLean,
+  )
   if (state.previousLeanRate !== null)
     state.disturbance = updateDisturbance(
       state.disturbance,
@@ -780,9 +850,36 @@ export function twoWheeledPose(v: TwoWheeledVehicle): TwoWheeledPose {
     rearWheelSpeed: roadSpeed(v) + v.twoWheeled.rearSpin,
     roadSpeed: roadSpeed(v),
     tuck: v.twoWheeled.tuck,
+    leanLimit: currentLeanLimit(v.twoWheeled.tuning, v.twoWheeled),
+    scrape: v.twoWheeled.scrape,
+    scrapePoint:
+      v.twoWheeled.scrape > 0 && v.twoWheeled.tuning.pegLean
+        ? [...v.twoWheeled.tuning.pegLean[v.twoWheeled.scrapeSide].point]
+        : null,
     hooligan: v.twoWheeled.hooligan,
     crashed: v.twoWheeled.crashed,
   }
+}
+
+/**
+ * Lean limit now: `maxLean`, raised by the held full steer (`leanReach`) towards the peg lean of
+ * `leanSide`; never past it.
+ */
+export function currentLeanLimit(
+  tuning: TwoWheeledTuning,
+  state: Pick<TwoWheeledState, 'leanReach' | 'leanSide'>,
+): number {
+  const peg = tuning.pegLean
+  if (!peg) return tuning.maxLean
+  const t = clamp(state.leanReach, 0, 1)
+  return tuning.maxLean + (peg[state.leanSide].lean - tuning.maxLean) * t * t * (3 - 2 * t)
+}
+
+/** Extra machine-plus-rider lean that offsets the hang-off, scaled by the full-lean reach. */
+function hangOffCompensation(v: TwoWheeledVehicle, state: TwoWheeledState): number {
+  if (!state.tuning.pegLean) return 0
+  const t = clamp(state.leanReach, 0, 1)
+  return Math.abs(hangOffLean(v.body.centerOfMass.x, state.comHeight)) * t * t * (3 - 2 * t)
 }
 
 /** Sign of the ray-cast wheel rotation when rolling forwards (matches `wheelRotation`). */

@@ -11,9 +11,9 @@
 
 ## ShotSparks.constructor
 
-[Implementation, line 32](../../../../../src/render/entity/shot-sparks.ts#L32)
+[Implementation, line 42](../../../../../src/render/entity/shot-sparks.ts#L42)
 
-Brief pin-spark bursts at bullet impact points.
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
 ```ts
 constructor(): instance
@@ -27,28 +27,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.setDrawRange`
 - `this.root.add`
 
-## ShotSparks.constructor.callback@40
+## ShotSparks.constructor.callback@50
 
-[Implementation, line 40](../../../../../src/render/entity/shot-sparks.ts#L40)
+[Implementation, line 50](../../../../../src/render/entity/shot-sparks.ts#L50)
 
 ```ts
-callback@40(): inferred by TypeScript; see implementation
+callback@50(): inferred by TypeScript; see implementation
 ```
 
 ## ShotSparks.add
 
-[Implementation, line 43](../../../../../src/render/entity/shot-sparks.ts#L43)
+[Implementation, line 53](../../../../../src/render/entity/shot-sparks.ts#L53)
 
-Brief pin-spark bursts at bullet impact points.
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
 ```ts
-add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple): void
+add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptions = {}): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
+- `Math.max`
+- `Math.min`
 - `Math.random`
+- `Math.round`
 - `Number.isFinite`
 - `THREE.Vector3`
 - `new THREE.Vector3().crossVectors`
@@ -62,9 +65,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.update
 
-[Implementation, line 68](../../../../../src/render/entity/shot-sparks.ts#L68)
+[Implementation, line 81](../../../../../src/render/entity/shot-sparks.ts#L81)
 
-Brief pin-spark bursts at bullet impact points.
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
 ```ts
 update(now: number): void
@@ -78,19 +81,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.computeBoundingSphere`
 - `this.geometry.setDrawRange`
 
-## ShotSparks.update.callback@70
+## ShotSparks.update.callback@83
 
-[Implementation, line 70](../../../../../src/render/entity/shot-sparks.ts#L70)
+[Implementation, line 83](../../../../../src/render/entity/shot-sparks.ts#L83)
 
 ```ts
-callback@70(b): inferred by TypeScript; see implementation
+callback@83(b): inferred by TypeScript; see implementation
 ```
 
 ## ShotSparks.clear
 
-[Implementation, line 92](../../../../../src/render/entity/shot-sparks.ts#L92)
+[Implementation, line 105](../../../../../src/render/entity/shot-sparks.ts#L105)
 
-Brief pin-spark bursts at bullet impact points.
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
 ```ts
 clear(): void
@@ -102,9 +105,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.dispose
 
-[Implementation, line 98](../../../../../src/render/entity/shot-sparks.ts#L98)
+[Implementation, line 111](../../../../../src/render/entity/shot-sparks.ts#L111)
 
-Brief pin-spark bursts at bullet impact points.
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
 ```ts
 dispose(): void

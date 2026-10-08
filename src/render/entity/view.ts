@@ -1539,6 +1539,54 @@ export class SceneView {
   signal(id: string, side: number): void {
     this.authoredLights.get(id)?.controller.toggleSignal(side)
   }
+  /**
+   * Footpeg scrape sparks: while a two-wheeler is down on its peg (`TwoWheeledPose.scrape`), the
+   * bullet-impact sparks (`sparks`) stream from the touching point on the inside of the turn,
+   * about 30 bursts a second. They carry part of the machine's velocity, so they trail behind it,
+   * and grow with the scrape (speed). `now` is the same clock as `sparks.update`, ms.
+   */
+  scrapeSparks(sim: Simulation, now: number): void {
+    for (const id of this.motorcycleRigs.keys()) {
+      const pose = sim.twoWheeledPose(id)
+      const group = this.objects.get(id)
+      const last = this.scrapeEmitters.get(id)
+      if (!pose || !group || !pose.scrapePoint || !(pose.scrape > 0)) {
+        if (last) this.scrapeEmitters.delete(id)
+        continue
+      }
+      group.updateWorldMatrix(true, false)
+      const point = group.localToWorld(new THREE.Vector3(...pose.scrapePoint))
+      if (last && now - last.time < 33) continue
+      const velocity =
+        last && now > last.time
+          ? point
+              .clone()
+              .sub(last.point)
+              .multiplyScalar(1000 / (now - last.time))
+          : new THREE.Vector3()
+      // Up and out of the turn, away from the bike.
+      const outward = new THREE.Vector3(Math.sign(pose.scrapePoint[0]), 0, 0)
+        .transformDirection(group.matrixWorld)
+        .setY(0)
+      const normal = outward
+        .multiplyScalar(0.6)
+        .add(new THREE.Vector3(0, 1, 0))
+        .normalize()
+      this.sparks.add(
+        point.toArray() as [number, number, number],
+        now,
+        normal.toArray() as [number, number, number],
+        {
+          count: 4 + 6 * pose.scrape,
+          drift: velocity.multiplyScalar(0.55).toArray() as [number, number, number],
+          speed: 0.6 + 0.8 * pose.scrape,
+        },
+      )
+      this.scrapeEmitters.set(id, { time: now, point })
+    }
+  }
+  /** Last scrape burst per vehicle: time (ms) and world point, for the spark trail velocity. */
+  private readonly scrapeEmitters = new Map<string, { time: number; point: THREE.Vector3 }>()
   renderMirrors(
     renderer: THREE.WebGLRenderer,
     scene: THREE.Scene,

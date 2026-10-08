@@ -40,6 +40,27 @@ export const twoWheeledField = z
     maxLean: finite.min(0.05).max(1.2).optional(),
     /** Beyond this lean the machine counts as fallen and balance stops, radians. */
     fallLean: finite.min(0.1).max(1.5).optional(),
+    /**
+     * Full lean ("total estribo") per side: `lean` (radians) at which the footpeg, or the first
+     * part, touches the ground at the static ride height, and that `point` (chassis-local
+     * metres) for the scrape sparks. Holding full steer raises the limit from `maxLean` towards
+     * it (`twoWheeledDefaults.fullLean`). Measure it from the GLB
+     * (`scripts/vfr800-lean-clearance.mjs`); omitted = the limit stays at `maxLean`.
+     */
+    pegLean: z
+      .object({
+        left: z
+          .object({ lean: finite.min(0.1).max(1.4), point: z.tuple([finite, finite, finite]) })
+          .strict(),
+        right: z
+          .object({ lean: finite.min(0.1).max(1.4), point: z.tuple([finite, finite, finite]) })
+          .strict(),
+        seconds: finite.positive().max(20).optional(),
+        relaxSeconds: finite.positive().max(20).optional(),
+        steer: finite.min(0.1).max(1).optional(),
+      })
+      .strict()
+      .optional(),
     /** Below this speed the low-speed balance assist holds the machine upright, m/s. */
     balanceSpeed: finite.min(0).max(30).optional(),
     /** Turn the low-speed balance assist off (the machine then falls over when stopped). */
@@ -82,6 +103,8 @@ export const twoWheeledField = z
             enabled: z.boolean().optional(),
             /** Sideways input (0..1 of the full shift) at the largest lean. */
             hangOff: finite.min(0).max(2).optional(),
+            /** Extra hang-off at the full (peg) lean, share of `lateral` (see `pegLean`). */
+            pegHangOff: finite.min(0).max(1).optional(),
             /** Sideways input per unit of steering demand. */
             steer: finite.min(0).max(2).optional(),
             /** Lean below which the rider stays centred, radians. */

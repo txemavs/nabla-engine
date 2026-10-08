@@ -111,6 +111,23 @@ export const twoWheeledDefaults = Object.freeze({
   maxLean: 0.7,
   /** TODO(unverified): lean beyond which the machine has fallen and balance stops, radians. */
   fallLean: 1.15,
+  /**
+   * Full lean ("total estribo"): holding full steer in a turn raises the lean limit from
+   * `maxLean` towards the preset's `pegLean` for that side (the lean at which the footpeg, or
+   * the first part, touches the ground) over `seconds`; letting go relaxes it back over
+   * `relaxSeconds`. Never beyond the peg: at that lean the peg scrapes (sparks and sound). Off
+   * for presets without `pegLean`. Gameplay timing values.
+   */
+  fullLean: Object.freeze({
+    /** Seconds of held full steer from `maxLean` to the peg lean. */
+    seconds: 2,
+    /** Seconds to relax back to `maxLean` after the steer eases. */
+    relaxSeconds: 1,
+    /** Steering demand that counts as full steer (0..1). */
+    steer: 0.95,
+    /** The peg scrapes within this lean of the peg angle, radians (~0.6°). */
+    scrapeMargin: 0.01,
+  }),
   /** TODO(unverified): below this speed the balance assist holds the machine upright, m/s. */
   balanceSpeed: 3,
   /** Low-speed balance assist on by default, so a stopped machine stays on its wheels. */
@@ -234,6 +251,11 @@ export const twoWheeledDefaults = Object.freeze({
       hangOff: 0.8,
       /** TODO(unverified): sideways input per unit of steering demand. */
       steer: 0.2,
+      /**
+       * TODO(unverified): extra hang-off at the full (peg) lean, as a share of `lateral` on top
+       * of the normal full hang-off; it grows with the lean past `maxLean`.
+       */
+      pegHangOff: 0.35,
       /** TODO(unverified): lean below which the rider stays centred, radians (~6°). */
       leanDeadband: 0.1,
       /** TODO(unverified): forward input per g of acceleration past the deadband. */
