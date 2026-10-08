@@ -7,11 +7,18 @@ function paintedModel() {
   const model = new Group()
   const paint = new MeshStandardMaterial({ name: 'White paint', color: '#eeeeee' })
   const paintCopy = new MeshStandardMaterial({ name: 'White paint.001', color: '#eeeeee' })
+  const box = new MeshStandardMaterial({
+    name: 'Chassis B',
+    color: '#050505',
+    metalness: 0.45,
+    roughness: 0.2,
+  })
   const chrome = new MeshStandardMaterial({ name: 'Chassis', color: '#17191e' })
   model.add(new Mesh(new BoxGeometry(1, 1, 1), paint))
   model.add(new Mesh(new BoxGeometry(1, 1, 1), paintCopy))
+  model.add(new Mesh(new BoxGeometry(1, 1, 1), box))
   model.add(new Mesh(new BoxGeometry(1, 1, 1), chrome))
-  return { model, paint, paintCopy, chrome }
+  return { model, paint, paintCopy, box, chrome }
 }
 
 describe('nabla.truck body color', () => {
@@ -22,17 +29,21 @@ describe('nabla.truck body color', () => {
       expect(entity.visual?.presentation).toBe('nabla.truck')
       const adapter = stockVehiclePresentation(entity)
       expect(adapter?.paint).toBeTypeOf('function')
-      const { model, paint, paintCopy, chrome } = paintedModel()
+      const { model, paint, paintCopy, box, chrome } = paintedModel()
       adapter!.mount(model, entity)
       expect(paint.color.getHexString()).toBe('2157a5')
       expect(paintCopy.color.getHexString()).toBe('2157a5')
+      expect(box.color.getHexString()).toBe('2157a5')
+      expect(box.metalness).toBeLessThan(0.2)
       expect(chrome.color.getHexString()).toBe('17191e')
       adapter!.paint!(model, '#b91929')
       expect(paint.color.getHexString()).toBe('b91929')
       expect(paintCopy.color.getHexString()).toBe('b91929')
+      expect(box.color.getHexString()).toBe('b91929')
       expect(chrome.color.getHexString()).toBe('17191e')
       paint.dispose()
       paintCopy.dispose()
+      box.dispose()
       chrome.dispose()
     }
   })
