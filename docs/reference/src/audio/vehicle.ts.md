@@ -278,7 +278,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 177](../../../../src/audio/vehicle.ts#L177)
 
-One short starter-motor crank ending in the engine catching (`ignitionCrankSeconds`, about 0.5 s). The
+One click and a very brief crank, then the engine catches (`ignitionCrankSeconds`, about 0.2 s). The
 host keeps `powertrain` at rpm 0 meanwhile and then feeds the settling idle speed.
 
 ```ts

@@ -11,7 +11,7 @@
 
 ## clampNumber
 
-[Implementation, line 24](../../../../src/audio/engine-start.ts#L24)
+[Implementation, line 23](../../../../src/audio/engine-start.ts#L23)
 
 ```ts
 clampNumber(value: number | undefined, fallback: number, low: number, high: number): inferred by TypeScript; see implementation
@@ -25,7 +25,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveEngineStart
 
-[Implementation, line 30](../../../../src/audio/engine-start.ts#L30)
+[Implementation, line 29](../../../../src/audio/engine-start.ts#L29)
 
 Fill omitted or invalid fields and clamp them to a safe range.
 
@@ -39,24 +39,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## crankPulses
 
-[Implementation, line 39](../../../../src/audio/engine-start.ts#L39)
+[Implementation, line 38](../../../../src/audio/engine-start.ts#L38)
 
-Compression-stroke times of one start, seconds from the trigger. The rate rises as it spins up.
+Engagement-click time of one start, seconds from the trigger. One click, then the catch.
 
 ```ts
 crankPulses(seconds: number, pitch = 1): number[]
 ```
 
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Math.max`
-- `Math.min`
-- `Math.sqrt`
-- `pulses.push`
-
 ## EngineStart.constructor
 
-[Implementation, line 58](../../../../src/audio/engine-start.ts#L58)
+[Implementation, line 51](../../../../src/audio/engine-start.ts#L51)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -81,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EngineStart.trigger
 
-[Implementation, line 98](../../../../src/audio/engine-start.ts#L98)
+[Implementation, line 91](../../../../src/audio/engine-start.ts#L91)
 
 Schedule one start at audio time `time`, lasting `ignitionCrankSeconds`. Silent when not `audible`.
 
@@ -91,6 +84,7 @@ trigger(time: number, audible: boolean, sound?: EngineStartSound | null): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.min`
 - `chug.exponentialRampToValueAtTime`
 - `chug.linearRampToValueAtTime`
 - `chug.setValueAtTime`
@@ -100,39 +94,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `motor.linearRampToValueAtTime`
 - `motor.setValueAtTime`
 - `param.cancelScheduledValues`
-- `pulses.forEach`
 - `rattle.exponentialRampToValueAtTime`
 - `rattle.linearRampToValueAtTime`
 - `rattle.setValueAtTime`
 - `resolveEngineStart`
 - `this.chug.frequency.exponentialRampToValueAtTime`
 - `this.chug.frequency.setValueAtTime`
-- `this.motor.frequency.linearRampToValueAtTime`
 - `this.motor.frequency.setValueAtTime`
 - `this.rattleBand.frequency.setValueAtTime`
 
-## EngineStart.trigger.callback@129
-
-[Implementation, line 129](../../../../src/audio/engine-start.ts#L129)
-
-```ts
-callback@129(offset, i): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Math.max`
-- `chug.exponentialRampToValueAtTime`
-- `chug.linearRampToValueAtTime`
-- `chug.setValueAtTime`
-- `motor.linearRampToValueAtTime`
-- `rattle.exponentialRampToValueAtTime`
-- `rattle.linearRampToValueAtTime`
-- `rattle.setValueAtTime`
-
 ## EngineStart.silence
 
-[Implementation, line 164](../../../../src/audio/engine-start.ts#L164)
+[Implementation, line 144](../../../../src/audio/engine-start.ts#L144)
 
 ```ts
 silence(time: number): void
