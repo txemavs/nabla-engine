@@ -174,6 +174,12 @@ export interface PlanetPhoto {
   sha256: string
   sizePx: number
   level: 'full' | 'lo'
+  /**
+   * Atlas texture frame. `cell` covers the tile exactly; `cell+margin:0.125` adds a
+   * 12.5 % border each side (roof PRIMARY is 5120² over a 4096 cell). Drape UVs must
+   * shrink to the inner cell or the roofs sample transparent margin and render black.
+   */
+  frame?: string
 }
 export interface PlanetMesh {
   name: string

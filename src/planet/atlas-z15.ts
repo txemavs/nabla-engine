@@ -304,6 +304,7 @@ export function adaptAtlasManifest(
         sha256: ground.sha256,
         sizePx: ground.sizePx,
         level: quality,
+        frame: ground.frame,
       } satisfies PlanetPhoto
     // Lean-corrected roofs-only photo for the roofs drape (separate from the ground photo).
     const roofRole = quality === 'full' ? 'roof' : 'roof.lo'
@@ -315,6 +316,7 @@ export function adaptAtlasManifest(
         sha256: roof.sha256,
         sizePx: roof.sizePx,
         level: quality,
+        frame: roof.frame,
       } satisfies PlanetPhoto
   }
   // Re-run the engine's own validation on the result (path names, hashes, sizes).

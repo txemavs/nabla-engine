@@ -95,6 +95,8 @@ import {
   GROUND_DRAPE_LIFT,
   ROOF_DRAPE_LIFT,
   buildDrapes,
+  drapeMaterialAlpha,
+  photoFrameTransform,
   type DrapeGeometry,
 } from './drape.js'
 import { PLACE_LABEL_CATEGORY, tileMeshHidden } from './tile-layers.js'
@@ -152,7 +154,12 @@ async function loadPackagePhoto(
  * and the player look sunk into the drawn road. polygonOffset alone wins the depth test there.
  */
 export { ROOF_DRAPE_LIFT, GROUND_DRAPE_LIFT }
-function dressSatelliteRoofs(
+/**
+ * Dress a z15 cell with photo drapes: the ground photo (`ground.lots` when the package has it) on
+ * terrain/roads, and the dedicated lean-corrected roof photo (`roof`, frame `cell+margin:0.125`) on
+ * roofs. Exported for the roof-photo regression test.
+ */
+export function dressSatelliteRoofs(
   group: THREE.Group,
   manifest: PlanetManifest,
   changed: () => void,
@@ -210,6 +217,23 @@ function dressSatelliteRoofs(
   texture.colorSpace = THREE.SRGBColorSpace
   const roofTextureMap: THREE.Texture = packaged ? new THREE.Texture() : texture
   if (packaged) roofTextureMap.colorSpace = THREE.SRGBColorSpace
+  // Roof photo frame is `cell+margin:0.125` (5120² over the 4096 cell): map cell UVs into the
+  // inner frame. Without it roofs sample the transparent (RGB≈0) margin and render black.
+  const useRoofImage = (frame: string | undefined) => {
+    const { repeat, offset } = photoFrameTransform(frame)
+    roofTextureMap.repeat.set(repeat, repeat)
+    roofTextureMap.offset.set(offset, offset)
+    roofTextureMap.userData.frame = frame ?? 'cell'
+    // Fallback to the ground photo (no dedicated roof image) stays opaque.
+    if (frame === 'cell' || !frame)
+      for (const mesh of draped)
+        if (mesh.userData.drape === 'roofs') {
+          const material = mesh.material as THREE.MeshStandardMaterial
+          material.transparent = false
+          material.alphaTest = 0
+          material.needsUpdate = true
+        }
+  }
   const draped: THREE.Mesh[] = []
   for (const { id, position, uv } of buckets) {
     const geometry = new THREE.BufferGeometry()
@@ -224,6 +248,7 @@ function dressSatelliteRoofs(
       polygonOffsetFactor: drapeBias(id),
       polygonOffsetUnits: drapeBias(id),
       depthWrite: false,
+      ...drapeMaterialAlpha(id, roofTextureMap !== texture),
     })
     // Asphalt contrast (draw time) before shadow setup, which chains onBeforeCompile. The terrain
     // photo gets it only through its cell's OSM road mask (relief=lidar has no road meshes).
@@ -255,6 +280,7 @@ function dressSatelliteRoofs(
     texture.needsUpdate = true
     const roofBmp = prepared.roofPhoto ?? prepared.photo
     if (roofTextureMap !== texture) {
+      useRoofImage(prepared.roofPhoto ? manifest.roofPhoto?.frame : 'cell')
       roofTextureMap.image = roofBmp
       roofTextureMap.flipY = false
       roofTextureMap.wrapS = roofTextureMap.wrapT = THREE.ClampToEdgeWrapping
@@ -288,6 +314,7 @@ function dressSatelliteRoofs(
         texture.anisotropy = 8
         texture.needsUpdate = true
         if (roofTextureMap !== texture) {
+          useRoofImage(roofBmp ? manifest.roofPhoto?.frame : 'cell')
           roofTextureMap.image = roofBmp ?? bitmap
           roofTextureMap.flipY = false
           roofTextureMap.wrapS = roofTextureMap.wrapT = THREE.ClampToEdgeWrapping
@@ -1093,7 +1120,11 @@ export class PlanetWorld {
         if (name === 'photoShown') timing.atPhotoShown = ms
         else (timing as Record<string, number>)[name] = ms
       },
-      payload.drape && { drapes: payload.drape.layers, photo: payload.drape.photo, roofPhoto: payload.drape.roofPhoto },
+      payload.drape && {
+        drapes: payload.drape.layers,
+        photo: payload.drape.photo,
+        roofPhoto: payload.drape.roofPhoto,
+      },
     )
     if (payload.drape?.error) {
       console.warn('Foto del terreno no disponible · ' + payload.drape.error)

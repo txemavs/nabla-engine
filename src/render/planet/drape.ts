@@ -30,6 +30,39 @@ export const DRAPE_LAYERS: readonly DrapeLayer[] = [
 
 /** Roof photos float a hand above the roof; ground photos must not (see `world.ts`). */
 export const ROOF_DRAPE_LIFT = 0.15
+
+/**
+ * Margin fraction on each side of a package photo frame: `cell` → 0, `cell+margin:0.125` → 0.125.
+ * Atlas roof PRIMARY is 5120² over the 4096 cell (12.5 % border each side).
+ */
+export function photoFrameMargin(frame: string | undefined): number {
+  if (!frame || frame === 'cell') return 0
+  const m = /^cell\+margin:([0-9.]+)$/.exec(frame)
+  const margin = m ? Number(m[1]) : 0
+  return margin > 0 && margin < 0.5 ? margin : 0
+}
+
+/**
+ * Texture transform mapping cell UVs ([0,1] over the tile) into a photo with a margin frame:
+ * `uv * repeat + offset`. Drape geometry keeps cell UVs; the roof texture carries the transform.
+ */
+export function photoFrameTransform(frame: string | undefined): { repeat: number; offset: number } {
+  const margin = photoFrameMargin(frame)
+  return { repeat: 1 - 2 * margin, offset: margin }
+}
+
+/**
+ * Material options for a drape layer. The dedicated roof photo is RGBA with alpha 0 (RGB ≈ 0)
+ * off-roof; drawn opaque those texels are black, so it must alpha-test.
+ */
+export function drapeMaterialAlpha(
+  id: string,
+  dedicatedRoofPhoto: boolean,
+): { transparent: boolean; alphaTest: number } {
+  return id === 'roofs' && dedicatedRoofPhoto
+    ? { transparent: true, alphaTest: 0.5 }
+    : { transparent: false, alphaTest: 0 }
+}
 export const GROUND_DRAPE_LIFT = 0.005
 
 /** The mesh data a drape is cut from (a subset of `PlanetMesh`). */
