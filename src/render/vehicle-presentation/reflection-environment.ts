@@ -42,6 +42,12 @@ export function reflectionEnvironmentTexture(): THREE.DataTexture {
   return (shared = texture)
 }
 
+/**
+ * Cars: only materials tagged `reflective` (by the presentation adapter or the GLB) take the
+ * environment, a little stronger than on the motorcycles so thin chrome trim reads at a distance.
+ */
+export const carReflectionOptions = Object.freeze({ minMetalness: Infinity, intensity: 1.6 })
+
 /** Materials that took the environment; `setLevel` dims the reflections (night). */
 export interface ReflectionEnvironment {
   readonly materials: readonly THREE.MeshStandardMaterial[]

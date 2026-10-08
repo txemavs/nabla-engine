@@ -246,6 +246,12 @@
 
 ### Fixed
 
+- **S3 / A3 chrome trim reads as chrome:** the window surrounds, beltline, boot trim, grille and
+  badge (`Cromo …`, `Nabla silver chrome`) had no environment to reflect (cars never had one; only
+  the VFR800 got the neutral reflection environment in #156), so they showed little more than the
+  sun's highlight and went dull grey or black with the sun angle and at dusk. They now take the
+  same neutral, right-way-up environment as the VFR800 chrome (`carReflectionOptions`, dimmed at
+  night). Paint, mirror housings, mirror glass and wheels are unchanged.
 - **Right mirror capture upright:** mirror capture cameras now keep the vehicle's up instead of
   the lens node's own +Y. The S3 / A3 right-door lens is authored under a node rotated 180° about
   X, so its capture camera ran rolled upside down; both sides now capture upright on every
