@@ -21,6 +21,9 @@ it('ships the approved complete motorcycle asset with matching rig and phase-1 r
   expect(createHash('sha256').update(bytes).digest('hex')).toBe(manifest.sha256)
   expect(manifest.drivable).toBe(true)
   expect(manifest.integrationStatus).toBe('phase-1')
+  // Provenance as stated by Txema Vicente: reworked from a low-quality base mesh.
+  expect(manifest.provenance.reworkedBy).toMatch(/Txema Vicente/)
+  expect(manifest.provenance.source).toMatch(/almost none of the original geometry remains/)
   expect(readJson(manifest.preset).id).toBe('vfr800')
   expect(rig.kind).toBe('motorcycle')
   expect(rig.physics.status).toBe('phase-1')

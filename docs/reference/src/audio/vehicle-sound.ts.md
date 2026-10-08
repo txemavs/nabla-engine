@@ -5,17 +5,19 @@
 [Source](../../../../src/audio/vehicle-sound.ts)
 
 Per-vehicle sound options, resolved from a preset's optional `vehicle.audio` block.
-Omitted fields keep the road-car behaviour: turbo on, clack on audible gear changes.
+Omitted fields keep the road-car behaviour: turbo on, clack on audible gear changes, the
+road-car engine note.
 
 ## Module dependencies
 
+- `./v4-engine.js`
 
-## resolveVehicleSound
+## volumeOf
 
-[Implementation, line 29](../../../../src/audio/vehicle-sound.ts#L29)
+[Implementation, line 51](../../../../src/audio/vehicle-sound.ts#L51)
 
 ```ts
-resolveVehicleSound(options?: VehicleSoundOptions | null): ResolvedVehicleSound
+volumeOf(volume: unknown): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -23,3 +25,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number.isFinite`
+
+## resolveEngineVoice
+
+[Implementation, line 55](../../../../src/audio/vehicle-sound.ts#L55)
+
+Resolve the engine voice of `vehicle.audio.engine`; omitted = the road-car note.
+
+```ts
+resolveEngineVoice(engine?: VehicleSoundOptions['engine'] | null): ResolvedEngineVoice
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `v4FiringAngles`
+- `volumeOf`
+
+## resolveVehicleSound
+
+[Implementation, line 69](../../../../src/audio/vehicle-sound.ts#L69)
+
+```ts
+resolveVehicleSound(options?: VehicleSoundOptions | null): ResolvedVehicleSound
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `resolveEngineVoice`
+- `volumeOf`

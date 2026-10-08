@@ -57,6 +57,72 @@ export const twoWheeledField = z
     rearBrakeForce: finite.positive().max(1000).optional(),
     /** Tyre friction slip coefficient for both wheels. */
     frictionSlip: finite.min(0.1).max(20).optional(),
+    /**
+     * Rider counterweight. The rider mass is part of the vehicle `mass`; moving the rider moves
+     * the chassis centre of mass. Omitted: no rider model and no counterweight input.
+     */
+    rider: z
+      .object({
+        /** Seated rider centre of mass, chassis-local metres. */
+        seat: z.tuple([finite, finite, finite]),
+        /** Rider mass inside the vehicle mass, kg. */
+        mass: finite.positive().max(300).optional(),
+        /** Largest sideways shift (hanging off), metres. */
+        lateral: finite.min(0).max(1).optional(),
+        /** Largest forward and rearward shift, metres. */
+        forward: finite.min(0).max(1).optional(),
+        back: finite.min(0).max(1).optional(),
+        /** Full rider travel per second. */
+        rate: finite.positive().max(50).optional(),
+        /** Body steering: steering input added by a full sideways shift, 0..1. */
+        steer: finite.min(0).max(1).optional(),
+      })
+      .strict()
+      .optional(),
+    /** Wheelie and stoppie assist overrides; angles in radians. */
+    pitchAssist: z
+      .object({
+        wheelie: z.boolean().optional(),
+        wheelieSoftAngle: finite.min(0).max(1.4).optional(),
+        wheelieMaxAngle: finite.min(0.01).max(1.5).optional(),
+        wheelieNeutralAngle: finite.min(0.01).max(1.5).optional(),
+        stoppie: z.boolean().optional(),
+        stoppieSoftAngle: finite.min(0).max(1.4).optional(),
+        stoppieMaxAngle: finite.min(0.01).max(1.5).optional(),
+        stoppieNeutralAngle: finite.min(0.01).max(1.5).optional(),
+        stoppieMinBrake: finite.min(0).max(1).optional(),
+        response: finite.min(0.5).max(40).optional(),
+        dampingRatio: finite.min(0.1).max(4).optional(),
+        landingRate: finite.min(0).max(20).optional(),
+        anticipation: finite.min(0).max(1).optional(),
+      })
+      .strict()
+      .optional(),
+    /** Clutch kick (Shift + throttle in a low gear); `gain` 0 turns it off. */
+    clutchKick: z
+      .object({
+        gain: finite.min(0).max(3).optional(),
+        seconds: finite.min(0).max(2).optional(),
+        maxGear: z.number().int().min(1).max(12).optional(),
+      })
+      .strict()
+      .optional(),
+    /**
+     * Combined braking (Dual CBS style): each control feeds both wheels. Shares of each wheel's
+     * full brake force, 0..1; omitted fields use `twoWheeledDefaults.cbs`. Omit the block for
+     * independent brakes (lever = front, pedal = rear).
+     */
+    cbs: z
+      .object({
+        leverFront: finite.min(0).max(1).optional(),
+        leverRear: finite.min(0).max(1).optional(),
+        pedalFront: finite.min(0).max(1).optional(),
+        pedalRear: finite.min(0).max(1).optional(),
+        /** Lag of the linked circuits, seconds. */
+        linkLag: finite.min(0).max(2).optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
 
@@ -101,6 +167,14 @@ export const vehicleField = z
         maxRpm: finite.min(2000).max(20000).optional(),
         reverseRatio: finite.positive().max(20).optional(),
         maxSpeedKmh: finite.positive().max(400).optional(),
+        /** Soft ignition-style speed limiter (cut at `kmh`, resume `hysteresisKmh` below). */
+        speedLimiter: z
+          .object({
+            kmh: finite.min(5).max(400),
+            hysteresisKmh: finite.min(0).max(30).optional(),
+          })
+          .strict()
+          .optional(),
         /** Traction/clutch ceiling on the force at the wheels, newtons. */
         maxWheelForceN: finite.positive().max(1000000).optional(),
         /** Shift timing, shift points, engine response and the gear-change sound. */
@@ -199,6 +273,23 @@ export const vehicleField = z
           .object({
             /** `clack` (default), `click` (quiet, every gear change) or `none`. */
             sound: z.enum(['clack', 'click', 'none']),
+            /** Loudness multiplier, 0..2. Default 1. */
+            volume: finite.min(0).max(2).optional(),
+          })
+          .strict()
+          .optional(),
+        /**
+         * Engine voice. `note` (default): the road-car engine note. `v4`: a procedural V4 whose
+         * uneven pulse train follows the firing order of a V4 with `vAngle` between the banks and
+         * `crankpin` degrees between the two crankpins.
+         */
+        engine: z
+          .object({
+            voice: z.enum(['note', 'v4']),
+            /** Angle between the cylinder banks, degrees. Default 90. */
+            vAngle: finite.min(10).max(180).optional(),
+            /** Angle between the two crankpins, degrees. Default 180. */
+            crankpin: finite.min(0).max(360).optional(),
             /** Loudness multiplier, 0..2. Default 1. */
             volume: finite.min(0).max(2).optional(),
           })

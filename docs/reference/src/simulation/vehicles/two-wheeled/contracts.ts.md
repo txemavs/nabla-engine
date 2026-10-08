@@ -7,5 +7,7 @@
 ## Module dependencies
 
 - `../wheeled/contracts.js`
+- `./brakes.js`
+- `./rider.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

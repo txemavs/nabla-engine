@@ -71,6 +71,17 @@ export function validateVehicle(entity: Entity): void {
       if (tuning.maxLean !== undefined && tuning.fallLean !== undefined)
         if (tuning.fallLean <= tuning.maxLean)
           throw new Error('Two-wheeled fall lean must exceed the maximum cornering lean')
+      const pitch = tuning.pitchAssist
+      if (
+        pitch &&
+        ((pitch.wheelieSoftAngle !== undefined &&
+          pitch.wheelieMaxAngle !== undefined &&
+          pitch.wheelieMaxAngle <= pitch.wheelieSoftAngle) ||
+          (pitch.stoppieSoftAngle !== undefined &&
+            pitch.stoppieMaxAngle !== undefined &&
+            pitch.stoppieMaxAngle <= pitch.stoppieSoftAngle))
+      )
+        throw new Error('Two-wheeled pitch assist maximum angles must exceed the soft angles')
     } else if (spec.hubs.length === 2)
       throw new Error('Two-hub rigs must declare vehicle.twoWheeled')
     else if (spec.hubs.length !== 4 && !spec.passive)

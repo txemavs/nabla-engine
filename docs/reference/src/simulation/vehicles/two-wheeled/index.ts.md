@@ -8,6 +8,9 @@
 
 - `./runtime.js`
 - `./balance.js`
+- `./brakes.js`
+- `./pitch.js`
+- `./rider.js`
 - `./contracts.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

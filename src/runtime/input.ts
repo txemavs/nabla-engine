@@ -64,6 +64,8 @@ export function finiteInput(input: PlayerInput): PlayerInput {
     lift: safe(input.lift),
     turn: safe(input.turn),
     yaw: safe(input.yaw),
+    riderRight: safe(input.riderRight),
+    riderForward: safe(input.riderForward),
   }
 }
 
@@ -128,6 +130,9 @@ export class GameInput {
         !!driving.sprint,
       jump: false,
       brake: keys.has('Space') || analog.brake || touch.brake || driving.brake,
+      // Two-wheeler rider counterweight: U/O hang off left/right, I over the tank, L sit back.
+      riderRight: flight ? 0 : axis('KeyO', 'KeyU'),
+      riderForward: flight ? 0 : axis('KeyI', 'KeyL'),
     }
     return finiteInput(input)
   }

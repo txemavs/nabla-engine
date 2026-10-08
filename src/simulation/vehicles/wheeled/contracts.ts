@@ -49,6 +49,12 @@ export interface GearboxTuning {
   /** Sound of every gear change and D/R engagement. */
   clack?: GearClackProfile
 }
+/** See `PowertrainDefinition.speedLimiter`. */
+export interface SpeedLimiterDefinition {
+  kmh: number
+  /** Default `roadVehicleDefaults.limiterHysteresisKmh`. */
+  hysteresisKmh?: number
+}
 export interface PowertrainDefinition {
   powerCv: number
   torqueNm: number
@@ -62,6 +68,12 @@ export interface PowertrainDefinition {
   maxSpeedKmh?: number
   /** Traction/clutch limit on the force at the wheels, newtons. Omitted: torque limited only. */
   maxWheelForceN?: number
+  /**
+   * Soft rev/speed limiter: an ignition-style cut. At `kmh` the drive is cut until the speed
+   * falls `hysteresisKmh` below it, then it comes back, so the vehicle hovers at the limit with
+   * a slight stutter instead of hitting a wall. `maxSpeedKmh` is the older hard governor.
+   */
+  speedLimiter?: SpeedLimiterDefinition
   shift?: GearboxTuning
 }
 /**
@@ -83,6 +95,46 @@ export interface TwoWheeledGeometry {
   frontBrakeForce?: number
   rearBrakeForce?: number
   frictionSlip?: number
+  /** Rider counterweight; omitted = no rider model (fixed centre of mass). */
+  rider?: TwoWheeledRiderDefinition
+  /** Wheelie / stoppie assist overrides (`twoWheeledDefaults.pitchAssist`). */
+  pitchAssist?: Partial<TwoWheeledPitchAssistDefinition>
+  /** Clutch kick overrides (`twoWheeledDefaults.clutchKick`). */
+  clutchKick?: Partial<{ gain: number; seconds: number; maxGear: number }>
+  /** Combined braking; omitted = independent front lever and rear pedal. */
+  cbs?: Partial<TwoWheeledCbsDefinition>
+}
+export interface TwoWheeledRiderDefinition {
+  /** Seated rider centre of mass, chassis-local metres. */
+  seat: [number, number, number]
+  mass?: number
+  lateral?: number
+  forward?: number
+  back?: number
+  rate?: number
+  steer?: number
+}
+export interface TwoWheeledPitchAssistDefinition {
+  wheelie: boolean
+  wheelieSoftAngle: number
+  wheelieMaxAngle: number
+  wheelieNeutralAngle: number
+  stoppie: boolean
+  stoppieSoftAngle: number
+  stoppieMaxAngle: number
+  stoppieNeutralAngle: number
+  stoppieMinBrake: number
+  response: number
+  dampingRatio: number
+  landingRate: number
+  anticipation: number
+}
+export interface TwoWheeledCbsDefinition {
+  leverFront: number
+  leverRear: number
+  pedalFront: number
+  pedalRear: number
+  linkLag: number
 }
 export interface WheeledDefinition {
   hubs:
@@ -107,6 +159,11 @@ export interface WheeledInput {
   steering: number
   handbrake: boolean
   launch: boolean
+  /**
+   * Rider counterweight on a two-wheeler: `right` −1 (hang off left) … +1 (right), `forward`
+   * −1 (sit back) … +1 (over the tank). Other vehicles ignore it.
+   */
+  rider?: { right: number; forward: number }
 }
 export const idleWheeledInput = (): WheeledInput => ({
   throttle: 0,

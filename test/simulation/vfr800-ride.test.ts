@@ -71,6 +71,35 @@ describe('vfr800 two-wheeled controller', () => {
     expect(sim.twoWheeledPose('bike')!.rearRoll).toBeLessThan(-10)
   })
 
+  it('reaches ~250 km/h on the flat and the soft limiter holds it there', () => {
+    run(1)
+    ride()
+    sim.setInput({ ...idleInput(), forward: 1 })
+    let max = 0,
+      reached = 0,
+      cuts = 0,
+      wasCut = false
+    const drivetrain = (
+      sim as unknown as { vehicles: Map<string, { drivetrain: { limiterCut: boolean } }> }
+    ).vehicles.get('bike')!.drivetrain
+    run(40, () => {
+      const kmh = info().speedKmh
+      max = Math.max(max, kmh)
+      if (!reached && kmh >= 245) reached = sim.stats.ticks
+      if (drivetrain.limiterCut && !wasCut) cuts++
+      wasCut = drivetrain.limiterCut
+    })
+    // Owner-reported limiter (not Honda data): ~250 km/h.
+    expect(reached).toBeGreaterThan(0)
+    expect(max).toBeGreaterThan(248)
+    expect(max).toBeLessThan(252)
+    // A soft cut: it keeps cutting in and out near the limit instead of stopping at a wall.
+    expect(cuts).toBeGreaterThan(1)
+    expect(info().speedKmh).toBeGreaterThan(245)
+    expect(info().gear).toBe(6)
+    expect(sim.twoWheeledPose('bike')!.fallen).toBe(false)
+  })
+
   it('leans into turns by speed and steer, within maxLean, and does not fall', () => {
     run(1)
     ride()
@@ -117,7 +146,10 @@ describe('vfr800 two-wheeled controller', () => {
       expect(result.end).toBeLessThan(2)
       expect(Math.abs(result.lean)).toBeLessThan(0.05)
     }
-    expect(front.drop).toBeGreaterThan(rear.drop * 1.5)
+    // With the combined brakes the pedal also works the front caliper (placeholder shares), and
+    // the lever is held back by the stoppie assist, so the gap is smaller than with independent
+    // brakes; the lever still stops clearly harder.
+    expect(front.drop).toBeGreaterThan(rear.drop * 1.25)
     // No reverse: holding the front brake at a stop never engages R.
     sim.setInput({ ...idleInput(), forward: -1 })
     run(3)

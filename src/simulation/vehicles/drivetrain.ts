@@ -39,6 +39,8 @@ export interface DrivetrainState {
   ignitionCount: number
   /** Metres crept along the vehicle's forward axis since P started holding; see `parkHold*`. */
   parkOffset: number
+  /** True while the soft speed limiter (`PowertrainDefinition.speedLimiter`) cuts the drive. */
+  limiterCut: boolean
 }
 /** See `DrivetrainState.ignition`. */
 export type IgnitionPhase = 'cranking' | 'sweep' | 'running'
@@ -64,6 +66,7 @@ export const createDrivetrain = (): DrivetrainState => ({
   ignitionElapsed: 0,
   ignitionCount: 0,
   parkOffset: 0,
+  limiterCut: false,
 })
 
 /**
@@ -377,6 +380,31 @@ export function stepDrivetrain(
     (spec.maxSpeedKmh !== undefined && speed * 3.6 >= spec.maxSpeedKmh)
   )
     state.force = 0
+  applySpeedLimiter(state, spec, speed)
+}
+
+/**
+ * Soft speed limiter, ignition-cut style: at the limit the drive (and the engine load the audio
+ * hears) drops to zero until the speed has fallen `hysteresisKmh` below it, then comes back.
+ */
+export function applySpeedLimiter(
+  state: DrivetrainState,
+  spec: PowertrainDefinition,
+  speed: number,
+): void {
+  const limiter = spec.speedLimiter
+  if (!limiter) {
+    state.limiterCut = false
+    return
+  }
+  const kmh = speed * 3.6
+  const hysteresis = limiter.hysteresisKmh ?? roadVehicleDefaults.limiterHysteresisKmh
+  if (kmh >= limiter.kmh) state.limiterCut = true
+  else if (kmh <= limiter.kmh - hysteresis) state.limiterCut = false
+  if (state.limiterCut && state.force > 0) {
+    state.force = 0
+    state.load = 0
+  }
 }
 
 /** A paddle enters manual mode; reject unsafe reductions instead of over-revving. */

@@ -7,4 +7,12 @@ export {
   type TwoWheeledVehicle,
 } from './runtime.js'
 export * from './balance.js'
-export type { TwoWheeledPose, TwoWheeledState, TwoWheeledTuning } from './contracts.js'
+export * from './brakes.js'
+export * from './pitch.js'
+export * from './rider.js'
+export type {
+  TwoWheeledPose,
+  TwoWheeledRiderTuning,
+  TwoWheeledState,
+  TwoWheeledTuning,
+} from './contracts.js'

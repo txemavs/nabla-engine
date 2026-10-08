@@ -97,9 +97,15 @@ const gainEvents = (context: FakeContext) =>
 
 describe('per-vehicle sound options', () => {
   it('defaults to the road-car sound and clamps the volume', () => {
-    expect(resolveVehicleSound()).toEqual({ turbo: true, gearShift: 'clack', gearShiftVolume: 1 })
+    const note = { voice: 'note', firing: [], volume: 1 }
+    expect(resolveVehicleSound()).toEqual({
+      turbo: true,
+      gearShift: 'clack',
+      gearShiftVolume: 1,
+      engine: note,
+    })
     expect(resolveVehicleSound({ turbo: false, gearShift: { sound: 'click', volume: 9 } })).toEqual(
-      { turbo: false, gearShift: 'click', gearShiftVolume: 2 },
+      { turbo: false, gearShift: 'click', gearShiftVolume: 2, engine: note },
     )
     expect(resolveGearClickVolume({ volume: Number.NaN })).toBe(1)
     expect(resolveGearClickVolume({ volume: -1 })).toBe(0)

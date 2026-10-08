@@ -108,6 +108,21 @@ describe('keyboard driving keys never stay stuck', () => {
     r.sim.dispose()
   })
 
+  it('maps U/O/I/L to the two-wheeler rider counterweight', () => {
+    const r = rig()
+    const read = (codes: string[]) =>
+      new GameInput().read(r.sim, { version: 1, name: 'x', entities: [] }, 1 / 60, {
+        keys: new Set(codes),
+        yaw: 0,
+      })
+    expect(read([])).toMatchObject({ riderRight: 0, riderForward: 0 })
+    expect(read(['KeyO'])).toMatchObject({ riderRight: 1, riderForward: 0 })
+    expect(read(['KeyU'])).toMatchObject({ riderRight: -1 })
+    expect(read(['KeyI'])).toMatchObject({ riderForward: 1 })
+    expect(read(['KeyL', 'KeyU'])).toMatchObject({ riderRight: -1, riderForward: -1 })
+    r.sim.dispose()
+  })
+
   it('sanitizes non-finite axes so the frame loop never throws', () => {
     const out = finiteInput({
       forward: Number.NaN,

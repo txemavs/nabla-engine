@@ -721,6 +721,8 @@ export class Simulation {
       right: clamp(input.right, -1, 1),
       lift: clamp(input.lift ?? 0, -1, 1),
       turn: clamp(input.turn ?? 0, -1, 1),
+      riderRight: Number.isFinite(input.riderRight) ? clamp(input.riderRight!, -1, 1) : 0,
+      riderForward: Number.isFinite(input.riderForward) ? clamp(input.riderForward!, -1, 1) : 0,
     }
     this.jumpPending ||= input.jump
   }
@@ -800,6 +802,7 @@ export class Simulation {
       steering: this.input.right,
       handbrake: this.input.brake,
       launch: this.input.sprint,
+      rider: { right: this.input.riderRight ?? 0, forward: this.input.riderForward ?? 0 },
     }
   }
   /** Per-wheel absolute-world contact snapshots for any tyre effect or diagnostic. */
@@ -1731,6 +1734,8 @@ export class Simulation {
      * threshold for two-wheelers, 0 for everything else.
      */
     leanAllowance: number
+    /** Two-wheeler pitch against the ground, radians: wheelie > 0, stoppie < 0; 0 otherwise. */
+    pitch: number
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
@@ -1783,6 +1788,7 @@ export class Simulation {
       twoWheeled: Boolean(v.twoWheeled),
       lean: v.twoWheeled?.lean ?? 0,
       leanAllowance: v.twoWheeled?.tuning.fallLean ?? 0,
+      pitch: v.twoWheeled?.pitch ?? 0,
     }
   }
   /** Steering, suspension and wheel spin of a two-wheeler for its presentation rig; else null. */
