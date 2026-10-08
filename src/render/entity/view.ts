@@ -64,7 +64,13 @@ import { terrainVertices, terrainIndices } from '../../planet/land/terrain.js'
 import { triangles, trianglesWithRoofInfo } from '../../math/solid/mesh.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
-import { createMonitorAvatar, MonitorMotion } from './avatar.js'
+import {
+  createMonitorAvatar,
+  MonitorMotion,
+  updateMonitorAvatar,
+  setMonitorSunglasses,
+  disposeMonitorAvatar,
+} from './avatar.js'
 import { createPortalSurface, type PortalSurface } from '../portal/portals.js'
 import { assertHostedMouths, assertPlaceable, PORTAL_BAR } from '../../entity/portal/portal.js'
 import { assets, disposeObject } from './assets.js'
@@ -1356,6 +1362,8 @@ export class SceneView {
     }
     this.captureOccupiedLights(sim.player.vehicleId)
     const vehicleId = sim.player.vehicleId
+    setMonitorSunglasses(this.monitor, !this.night)
+    if (!cockpit) updateMonitorAvatar(this.monitor, elapsed, !!vehicleId)
     if (vehicleId) {
       const info = sim.vehicleInfo(vehicleId, true)
       const head = driverHeadPose(
@@ -1479,6 +1487,7 @@ export class SceneView {
     for (const portal of this.portals.values()) portal.target.dispose()
     this.portals.clear()
     this.surfaceTextures.forEach((texture) => texture.dispose())
+    disposeMonitorAvatar(this.monitor)
     this.disposed = true
     this.pendingMapMeshes = []
     this.root.removeFromParent()
