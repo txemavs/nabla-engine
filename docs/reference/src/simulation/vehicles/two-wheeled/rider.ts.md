@@ -141,23 +141,46 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `clamp`
 
-## autoTuckLatch
+## speedRamp
 
 [Implementation, line 192](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L192)
 
-Automatic tuck latch with hysteresis: on from `kmh`, off below `releaseKmh` or under hard
-braking (deceleration beyond `brakeG`).
+Eased 0..1 ramp from `from` to `to` km/h (smoothstep; a step when the span is empty).
 
 ```ts
-autoTuckLatch(latched: boolean, speedKmh: number, decelerationG: number, tuck: RiderTuckSettings): boolean
+speedRamp(speedKmh: number, from: number, to: number): number
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clamp`
+
+## autoTuckDepth
+
+[Implementation, line 205](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L205)
+
+Automatic tuck depth 0..1 with hysteresis. Speeding up, the head goes down along an eased ramp
+from `kmh` (0) to `fullKmh` (1); slowing down, it comes back up along the same ramp shifted
+`kmh - releaseKmh` lower (so 1 until `fullKmh - (kmh - releaseKmh)`, 0 at `releaseKmh`). In
+between, `previous` (the last depth) holds. Hard braking (deceleration beyond `brakeG`) sits
+the rider up at any speed.
+
+```ts
+autoTuckDepth(previous: number, speedKmh: number, decelerationG: number, tuck: RiderTuckSettings): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `clamp`
+- `speedRamp`
 
 ## manualTuckReach
 
-[Implementation, line 206](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L206)
+[Implementation, line 222](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L222)
 
-How far the forward key reaches into the tuck at `speedKmh`: 0 below `manualFromKmh`, 1 from
-`kmh`, smooth in between (no jump).
+How far the forward key reaches into the tuck at `speedKmh`: the same eased ramp as the
+automatic tuck, 0 up to `kmh`, 1 from `fullKmh` (no jump).
 
 ```ts
 manualTuckReach(speedKmh: number, tuck: RiderTuckSettings): number
@@ -165,22 +188,21 @@ manualTuckReach(speedKmh: number, tuck: RiderTuckSettings): number
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `clamp`
+- `speedRamp`
 
 ## tuckTarget
 
-[Implementation, line 218](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L218)
+[Implementation, line 231](../../../../../../src/simulation/vehicles/two-wheeled/rider.ts#L231)
 
-Tuck target 0..1: the automatic latch weighted by the automatic share, plus the forward key
+Tuck target 0..1: the automatic depth weighted by the automatic share, plus the forward key
 (0..1) times its reach weighted by the key share.
 
 ```ts
-tuckTarget(autoLatched: boolean, forwardKey: number, speedKmh: number, manualShare: number, tuck: RiderTuckSettings): number
+tuckTarget(autoDepth: number, forwardKey: number, speedKmh: number, manualShare: number, tuck: RiderTuckSettings): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
-- `Number`
 - `clamp`
 - `manualTuckReach`

@@ -21,6 +21,8 @@ import {
   applyReflectionEnvironment,
   reflectionEnvironmentTexture,
 } from '../../src/render/vehicle-presentation/reflection-environment.js'
+import { CarMirrors } from '../../src/render/entity/car-mirrors.js'
+import { motorcycleMirrorLenses } from '../../src/render/vehicle-presentation/motorcycle-mirrors.js'
 
 const bytes = readFileSync('assets/library/motorcycles/vfr800fi-1999/vfr800fi-1999.glb')
 const load = async () =>
@@ -265,5 +267,61 @@ describe('motorcycle instrument logic', () => {
     // In the lower part of a 70° first-person view.
     expect(deg(tacho)).toBeLessThan(-8)
     expect(deg(tacho)).toBeGreaterThan(-32)
+  })
+})
+
+describe('vfr800 rear-view mirrors', () => {
+  /** Where the eye sees through each live glass (`Reflector`), as a reflected unit direction. */
+  const views = (root: THREE.Object3D, lenses: THREE.Mesh[], eye: THREE.Vector3) => {
+    root.updateMatrixWorld(true)
+    return Object.fromEntries(
+      lenses.map((lens) => {
+        const glass = lens.parent!.children.find(
+          (node) => (node as { isReflector?: boolean }).isReflector,
+        )!
+        const centre = glass.getWorldPosition(new THREE.Vector3())
+        const normal = new THREE.Vector3(0, 0, 1).transformDirection(glass.matrixWorld)
+        const d = centre.sub(eye).normalize()
+        return [lens.userData.nabla.mirror as string, d.addScaledVector(normal, -2 * d.dot(normal))]
+      }),
+    )
+  }
+  const degrees = (a: THREE.Vector3, b: THREE.Vector3) => (a.angleTo(b) * 180) / Math.PI
+
+  it('turns the mirror_L / mirror_R glass into live mirrors the «Espejos» sliders adjust', async () => {
+    const root = await load()
+    const lenses = motorcycleMirrorLenses(root)
+    expect(lenses.map((l) => [l.parent!.name, l.userData.nabla.mirror])).toEqual([
+      ['mirror_L', 'left'],
+      ['mirror_R', 'right'],
+    ])
+    for (const lens of lenses)
+      expect((lens.material as THREE.MeshStandardMaterial).name).toBe('Reflector')
+    let eye: THREE.Vector3 | undefined
+    root.updateMatrixWorld(true)
+    root.traverse((node) => {
+      if (node.userData.nabla?.anchor === 'driver.eyes')
+        eye = node.getWorldPosition(new THREE.Vector3())
+    })
+    expect(eye).toBeTruthy()
+    const mirrors = new CarMirrors(lenses, new THREE.Vector3(0, 1, 0), 0, {}, root)
+    expect(mirrors.sides).toEqual(['left', 'right'])
+    const authored = views(root, lenses, eye!)
+    // The glass as modelled shows the road behind (the bike faces −Z), each on its own side.
+    for (const side of ['left', 'right']) expect(authored[side].z).toBeGreaterThan(0.5)
+    expect(authored.left.x).toBeLessThan(authored.right.x)
+
+    mirrors.setAdjustment({ left: { yaw: 5 }, right: { yaw: 5 } })
+    const outward = views(root, lenses, eye!)
+    expect(outward.left.x).toBeLessThan(authored.left.x - 0.1)
+    expect(outward.right.x).toBeGreaterThan(authored.right.x + 0.1)
+    expect(degrees(outward.left, authored.left)).toBeGreaterThan(8)
+    expect(degrees(outward.left, authored.left)).toBeLessThan(12)
+
+    mirrors.setAdjustment({ right: { tilt: 4 } })
+    const raised = views(root, lenses, eye!)
+    expect(raised.right.y).toBeGreaterThan(authored.right.y + 0.05)
+    expect(degrees(raised.left, authored.left)).toBeLessThan(1e-3)
+    mirrors.dispose()
   })
 })

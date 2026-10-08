@@ -54,7 +54,7 @@ import type { TwoWheeledPose, TwoWheeledState, TwoWheeledTuning } from './contra
 import { measurePitch, pitchAssist } from './pitch.js'
 import {
   autoRiderInput,
-  autoTuckLatch,
+  autoTuckDepth,
   tuckTarget,
   hangOffLean,
   riderCentreOfMass,
@@ -234,7 +234,7 @@ export function createTwoWheeledVehicle(
       acceleration: 0,
       previousSpeed: null,
       tuck: 0,
-      tuckLatched: false,
+      tuckAuto: 0,
       hooligan: 'none',
       rearSpin: 0,
       rearSpinAngle: 0,
@@ -259,7 +259,7 @@ export function resetTwoWheeled(state: TwoWheeledState): void {
   state.fallen = false
   state.crashed = false
   state.tuck = 0
-  state.tuckLatched = false
+  state.tuckAuto = 0
   state.hooligan = 'none'
   state.rearSpin = 0
   state.riderControl = { manualShare: 0, manualHold: 0 }
@@ -351,15 +351,15 @@ export function stepTwoWheeledVehicle(
       // With Shift held the rider stays put fore and aft unless the keys move them.
       if (hooligan) auto[1] = 0
       const share = state.riderControl.manualShare
-      // Tuck behind the screen: automatic latch with hysteresis, or the forward key at speed.
+      // Tuck behind the screen: automatic eased ramp with hysteresis, or the forward key at speed.
       const kmh = Math.abs(speed) * 3.6
-      state.tuckLatched = autoTuckLatch(
-        state.tuckLatched,
+      state.tuckAuto = autoTuckDepth(
+        state.tuckAuto,
         kmh,
         Math.max(0, -state.acceleration / gravity),
         rider.tuck,
       )
-      const tuckGoal = tuckTarget(state.tuckLatched, keys.forward, kmh, share, rider.tuck)
+      const tuckGoal = tuckTarget(state.tuckAuto, keys.forward, kmh, share, rider.tuck)
       const tuckStep = dt / Math.max(1e-3, rider.tuck.seconds)
       state.tuck += clamp(tuckGoal - state.tuck, -tuckStep, tuckStep)
       target = riderTarget(
@@ -369,7 +369,7 @@ export function stepTwoWheeledVehicle(
       )
     } else {
       state.riderControl = { manualShare: 0, manualHold: 0 }
-      state.tuckLatched = false
+      state.tuckAuto = 0
       state.tuck = Math.max(0, state.tuck - dt / Math.max(1e-3, rider.tuck.seconds))
     }
     state.riderShift = stepRider(state.riderShift, target, rider, dt)

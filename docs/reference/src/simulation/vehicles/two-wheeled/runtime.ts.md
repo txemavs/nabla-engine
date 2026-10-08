@@ -188,7 +188,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `Vec3`
 - `autoRiderInput`
-- `autoTuckLatch`
+- `autoTuckDepth`
 - `blend`
 - `centreOfMassHeight`
 - `clamp`

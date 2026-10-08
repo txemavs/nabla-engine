@@ -99,9 +99,9 @@ export interface TwoWheeledState {
   /** Filtered longitudinal acceleration (m/s²) and the forward speed of the last tick. */
   acceleration: number
   previousSpeed: number | null
-  /** Tuck behind the screen, 0 (sat up) … 1 (full tuck), and the automatic tuck latch. */
+  /** Tuck behind the screen, 0 (sat up) … 1 (full tuck), and the automatic tuck depth. */
   tuck: number
-  tuckLatched: boolean
+  tuckAuto: number
   /** Shift hooligan effect on the last tick. */
   hooligan: HooliganMode
   /** Rear wheel surface speed above road speed, m/s (wheelspin), and its accumulated angle. */

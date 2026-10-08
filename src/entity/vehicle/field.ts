@@ -102,11 +102,12 @@ export const twoWheeledField = z
         tuck: z
           .object({
             enabled: z.boolean().optional(),
-            /** Automatic tuck from this speed, km/h; sits up below `releaseKmh`. */
+            /** The head starts to go down from this speed, km/h (automatic and forward key). */
             kmh: finite.min(10).max(500).optional(),
+            /** Full tuck from this speed, km/h (eased ramp from `kmh`). */
+            fullKmh: finite.min(10).max(500).optional(),
+            /** Fully sat up again below this speed, km/h (hysteresis on the way down). */
             releaseKmh: finite.min(5).max(500).optional(),
-            /** The forward key's extended (full tuck) range blends in from this speed, km/h. */
-            manualFromKmh: finite.min(0).max(500).optional(),
             /** Seconds for a full tuck. */
             seconds: finite.positive().max(5).optional(),
             /** Deceleration that sits the rider up, g. */
@@ -315,7 +316,7 @@ export const vehicleField = z
       )
       .max(8)
       .optional(),
-    /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
+    /** Vertical mirror tilt in degrees; omitted uses -2 degrees (0 on two-wheelers). */
     mirrorTilt: finite.min(-5).max(12).optional(),
     /**
      * Baked glass aim per mirror side (`left`, `right`, …), degrees, on top of the asset lens:

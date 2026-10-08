@@ -211,8 +211,8 @@ travel, `rate`, body `steer`), `clutchKick` (`gain`, `seconds`, `maxGear`) and `
 `leverFront`, `leverRear`, `pedalFront`, `pedalRear` of each wheel's brake force and the linked
 `linkLag`; omit `cbs` for independent brakes). Phase 3 adds `rider.auto` (automatic rider:
 `enabled`, `hangOff`, `steer`, `leanDeadband`, `accelGain`, `brakeGain`, `accelDeadband`,
-`takeover`, `releaseDelay`, `blend`), `rider.tuck` (`enabled`, `kmh`, `releaseKmh`,
-`manualFromKmh`, `seconds`, `brakeG`, tucked `eye` offset), `hooligan` (the Shift modifier:
+`takeover`, `releaseDelay`, `blend`), `rider.tuck` (`enabled`, `kmh` → `fullKmh` eased ramp,
+`releaseKmh` hysteresis, `seconds`, `brakeG`, tucked `eye` offset), `hooligan` (the Shift modifier:
 `enabled`, `burnoutSpeed`, `burnoutFade`, `spinSpeed`, `spinRate`, `burnoutTraction`, `slide`,
 `wheelieDrive`, `wheelieRate`, `stoppieBrake`, `stoppieRate`, `riseResponse`,
 `wheelieRiderBack`) and `crashPitch`. The `vehicle.cluster` block sets the motorcycle instrument

@@ -250,19 +250,20 @@ export const twoWheeledDefaults = Object.freeze({
       blend: 0.6,
     }),
     /**
-     * Tuck behind the windscreen at speed. The automatic rider tucks from `kmh` and sits up again
-     * below `releaseKmh` (hysteresis) or under hard braking. The forward key (I) can reach the
-     * full tuck from `kmh`, blending in from `manualFromKmh`; below that it keeps its normal
-     * range. `eye` is the tucked cockpit eye relative to the seated one (chassis metres, +y up,
-     * +z back): down and forward behind the screen, but high enough that the horizon clears the
-     * fairing (road through and above the screen, tacho at the bottom of the view). Applies to the
-     * automatic tuck and to a full manual tuck (I) above `kmh`.
+     * Tuck behind the windscreen at speed. The automatic rider's head starts to go down at `kmh`
+     * and reaches the full tuck at `fullKmh` along an eased ramp (no step). Slowing down it comes
+     * back up along the same ramp shifted `kmh - releaseKmh` lower (hysteresis), fully sat up at
+     * `releaseKmh`; hard braking sits it up at once. The forward key (I) reaches into the tuck
+     * along the same `kmh` → `fullKmh` ramp; below `kmh` it keeps its normal range. `eye` is the
+     * full-tuck cockpit eye relative to the seated one (chassis metres, +y up, +z back): down and
+     * forward behind the screen, but high enough that the horizon clears the fairing (road
+     * through and above the screen, tacho at the bottom of the view); partial tucks scale it.
      */
     tuck: Object.freeze({
       enabled: true,
       kmh: 180,
+      fullKmh: 200,
       releaseKmh: 170,
-      manualFromKmh: 165,
       /** Seconds for a full tuck (and back). */
       seconds: 0.6,
       /** Deceleration that counts as hard braking and sits the rider up, g. */

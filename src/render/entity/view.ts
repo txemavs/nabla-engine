@@ -39,6 +39,7 @@ import {
   type MotorcycleRigBinding,
 } from '../vehicle-presentation/motorcycle-rig.js'
 import { MotorcycleInstruments } from '../vehicle-presentation/motorcycle-instruments.js'
+import { motorcycleMirrorLenses } from '../vehicle-presentation/motorcycle-mirrors.js'
 import {
   applyReflectionEnvironment,
   type ReflectionEnvironment,
@@ -48,7 +49,7 @@ import { twoWheeledDefaults } from '../../config/simulation.js'
 import {
   clampMirrorAdjustment,
   mirrorModelKey,
-  type CarMirrors,
+  CarMirrors,
   type MirrorAdjustment,
   type MirrorAngle,
   type MirrorPolicy,
@@ -1002,6 +1003,27 @@ export class SceneView {
       }),
     )
   }
+  /**
+   * Live rear-view mirrors for a motorcycle GLB (`mirror_L` / `mirror_R` glass), the same as the
+   * cars': cockpit-only reflections, per-side «Espejos» adjustment and `vehicle.mirrorAim` /
+   * `vehicle.mirrorTilt` (0° default: the glass as modelled).
+   */
+  private motorcycleMirrors(model: THREE.Object3D, e: Entity): CarMirrors | undefined {
+    const lenses = motorcycleMirrorLenses(model)
+    if (!lenses.length) return undefined
+    model.updateWorldMatrix(true, true)
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
+      model.getWorldQuaternion(new THREE.Quaternion()),
+    )
+    return new CarMirrors(
+      lenses,
+      up,
+      e.vehicle?.mirrorTilt ?? 0,
+      this.options.mirrorPolicy,
+      model.parent ?? model,
+      e.vehicle?.mirrorAim,
+    )
+  }
   private assetVehicle(e: Entity, group: THREE.Group): void {
     const visual = e.visual!,
       definition = vehicleDefinition(e)
@@ -1047,8 +1069,10 @@ export class SceneView {
         if (cluster) this.motorcycleClusters.set(e.id, cluster)
       }
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
-      if (equipment?.mirrors) {
-        this.carMirrors.set(e.id, equipment.mirrors)
+      const mirrors =
+        equipment?.mirrors ?? (twoWheeled ? this.motorcycleMirrors(model, e) : undefined)
+      if (mirrors) {
+        this.carMirrors.set(e.id, mirrors)
         const mirrorModel = mirrorModelKey(visual.body.url, visual.steering?.url)
         this.mirrorModels.set(e.id, mirrorModel)
         if (!this.mirrorModelsResolved.has(mirrorModel)) {
@@ -1057,7 +1081,7 @@ export class SceneView {
           if (initial) this.setMirrorAdjustment(mirrorModel, initial)
           else this.mirrorModelsResolved.add(mirrorModel)
         }
-        equipment.mirrors.setAdjustment(this.mirrorAdjustments.get(mirrorModel) ?? {})
+        mirrors.setAdjustment(this.mirrorAdjustments.get(mirrorModel) ?? {})
       }
       if (equipment?.instruments) this.instruments.set(e.id, equipment.instruments)
       if (equipment?.beacons) {
