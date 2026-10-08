@@ -21,6 +21,14 @@ import {
   enterWheeledVehicle,
 } from './vehicles/wheeled/runtime.js'
 import { startIgnition } from './vehicles/drivetrain.js'
+import {
+  createTwoWheeledVehicle,
+  resetTwoWheeled,
+  stepTwoWheeledVehicle,
+  twoWheeledPose,
+  type TwoWheeledPose,
+  type TwoWheeledVehicle,
+} from './vehicles/two-wheeled/index.js'
 import type {
   GearClackProfile,
   WheeledInput,
@@ -659,9 +667,10 @@ export class Simulation {
 
   private createVehicle(entity: Entity, body: Body): void {
     const definition = vehicleDefinition(entity)
-    const wheeled = createWheeledVehicle(body, definition, {
-      parked: hasGearSelector(definition),
-    })
+    const options = { parked: hasGearSelector(definition) }
+    const wheeled = definition.twoWheeled
+      ? createTwoWheeledVehicle(body, definition, options)
+      : createWheeledVehicle(body, definition, options)
     const car = wheeled.raycast
     if (definition.boat) {
       body.linearDamping = 0.01
@@ -1088,6 +1097,18 @@ export class Simulation {
         this.pilotBoat(v, active)
         continue
       }
+      if (v.twoWheeled) {
+        stepTwoWheeledVehicle(
+          v as TwoWheeledVehicle,
+          drivingInput,
+          FIXED_STEP,
+          active,
+          v.helm !== 'off',
+          this.radialUp(v.body),
+          simulationDefaults.gravity,
+        )
+        continue
+      }
       stepWheeledVehicle(v, drivingInput, FIXED_STEP, active, v.helm !== 'off')
       if (active && this.roadGuidance.enabled)
         this.roadGuidance.apply(
@@ -1310,6 +1331,7 @@ export class Simulation {
     v.body.velocity.setZero()
     v.body.angularVelocity.setZero()
     v.body.wakeUp()
+    if (v.twoWheeled) resetTwoWheeled(v.twoWheeled)
     for (const trailer of this.vehicles.values()) {
       if (trailer.definition.tow?.vehicleId === id) this.alignTrailer(trailer, v)
     }
@@ -1700,6 +1722,15 @@ export class Simulation {
     towVehicleId: string | null
     /** True while a free trailer is resting on its landing legs. */
     landingGear: boolean
+    /** True for a single-track vehicle (motorcycle). */
+    twoWheeled: boolean
+    /** Two-wheeler lean from the local vertical, radians, positive to the left; 0 otherwise. */
+    lean: number
+    /**
+     * Roll a camera or flip detector must treat as intended riding lean, radians: the fall
+     * threshold for two-wheelers, 0 for everything else.
+     */
+    leanAllowance: number
   } {
     const v = this.vehicles.get(id)
     if (!v) throw new Error('Unknown vehicle: ' + id)
@@ -1749,7 +1780,15 @@ export class Simulation {
       gaugeSweep: ground.gaugeSweep,
       towVehicleId: v.definition.tow?.vehicleId ?? null,
       landingGear: v.landingGear.length > 0,
+      twoWheeled: Boolean(v.twoWheeled),
+      lean: v.twoWheeled?.lean ?? 0,
+      leanAllowance: v.twoWheeled?.tuning.fallLean ?? 0,
     }
+  }
+  /** Steering, suspension and wheel spin of a two-wheeler for its presentation rig; else null. */
+  twoWheeledPose(id: string): TwoWheeledPose | null {
+    const v = this.vehicles.get(id)
+    return v?.twoWheeled ? twoWheeledPose(v as TwoWheeledVehicle) : null
   }
 
   shiftVehicle(direction: -1 | 1): string {

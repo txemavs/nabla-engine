@@ -9,7 +9,7 @@ import { hasTrailerBox, trailerBox } from './trailer-boxes.js'
 
 /**
  * A vehicle preset is a JSON file under assets/library or assets/custom, in
- * cars, planes, ships or boats. studio is published. custom is this machine
+ * cars, motorcycles, planes, ships or boats. studio is published. custom is this machine
  * only. GLB-backed stock presets merge generated anchor poses before schema
  * validation. This module stamps an id and position without loading a renderer.
  */

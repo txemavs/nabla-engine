@@ -4,6 +4,23 @@
 
 ### Added
 
+- **Motorcycles, phase 1 (`vfr800` preset):** the Honda VFR800FI 1999 from the asset library is
+  drivable. New `vehicle.twoWheeled` schema (two hubs, rear wheel radius, steering head axis,
+  lock, optional lean/balance/brake tuning) with a narrow-size exemption and redlines up to
+  20,000 rpm; the rig extractor reads `wheel.front`/`wheel.rear`. New two-wheeled controller
+  (`src/simulation/vehicles/two-wheeled/`, export `@nabla/engine/vehicles/two-wheeled`): two
+  Rapier ray-cast wheels, steering through the raked head axis, speed- and steer-driven lean with
+  a low-speed balance assist, front brake on S and rear brake on Space, the shared gearbox. Visual
+  rig `bindMotorcycleRig` (`@nabla/engine/vehicle-presentation`) turns the fork and handlebar,
+  works the suspension and chain and spins the wheels from `Simulation.twoWheeledPose(id)`.
+  `vehicleInfo` adds `twoWheeled`, `lean` and `leanAllowance`; camera rollover detection and the
+  flip cinematic treat lean up to the fall threshold as riding, not a rollover. Unknown physical
+  values are TODO(unverified) placeholders in `twoWheeledDefaults`, not Honda data
+  ([docs/motorcycles.md](docs/motorcycles.md)).
+- **Per-vehicle sound (`vehicle.audio`):** `turbo: false` silences the turbo; `gearShift.sound`
+  `clack` (default) / `click` / `none` with a `volume`. `click` is a new synthesized ~30 ms quiet
+  click on every gear change (`VehicleAudio.gearClick`); the `vfr800` uses it with no turbo.
+  Cars keep their turbo and clack unchanged.
 - **Position lights after the engine start-up:** entering a car, the S3, the A3, the truck or
   any vehicle with lights, the lights stay off through P, the starter and the needle sweep, then
   switch to _posición_ as the engine runs: front white glow (S3/A3 `FocoC` lenses; truck

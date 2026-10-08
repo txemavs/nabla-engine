@@ -64,8 +64,29 @@ export interface PowertrainDefinition {
   maxWheelForceN?: number
   shift?: GearboxTuning
 }
+/**
+ * Single-track geometry and tuning; see `vehicle.twoWheeled` in `entity/vehicle/field.ts`.
+ * Omitted tuning uses `twoWheeledDefaults`.
+ */
+export interface TwoWheeledGeometry {
+  rearWheelRadius: number
+  steeringAxis: [number, number, number]
+  steerLimit: number
+  maxLean?: number
+  fallLean?: number
+  balanceSpeed?: number
+  balanceAssist?: boolean
+  leanResponse?: number
+  assistResponse?: number
+  maxLeanAcceleration?: number
+  steerRate?: number
+  frontBrakeForce?: number
+  rearBrakeForce?: number
+  frictionSlip?: number
+}
 export interface WheeledDefinition {
   hubs:
+    | [WheelVector, WheelVector]
     | [WheelVector, WheelVector, WheelVector, WheelVector]
     | [WheelVector, WheelVector, WheelVector, WheelVector, WheelVector, WheelVector]
   passive?: boolean
@@ -77,6 +98,8 @@ export interface WheeledDefinition {
   brakeForce: number
   drivenWheels?: 'front' | 'rear' | 'all'
   powertrain?: PowertrainDefinition
+  /** Present on a two-wheeler; such a definition is driven by `createTwoWheeledVehicle`. */
+  twoWheeled?: TwoWheeledGeometry
 }
 /** Device-independent commands. Positive throttle drives forward; negative requests reverse/braking. */
 export interface WheeledInput {

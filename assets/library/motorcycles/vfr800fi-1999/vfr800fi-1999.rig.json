@@ -52,8 +52,9 @@
     "eyes": [0, 1.359234053030303, 0.27590909090909094]
   },
   "physics": {
-    "status": "design-only",
-    "requires": "Dedicated two-wheel controller; current four-wheel preset is incompatible"
+    "status": "phase-1",
+    "controller": "src/simulation/vehicles/two-wheeled",
+    "preset": "vfr800.json"
   },
   "dimensionsCalibration": {
     "reference": "Honda VFR800FI 1999 ED brochure",

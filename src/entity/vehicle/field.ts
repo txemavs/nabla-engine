@@ -19,11 +19,53 @@ const steeringPart = assetPart
   })
   .strict()
 
-/** Chassis, four hubs, and the optional cabin, garage and flight flag. */
+/**
+ * Single-track (two-wheeled) vehicle: a motorcycle or scooter. Its presence selects the
+ * two-wheeled controller (`simulation/vehicles/two-wheeled`) and requires exactly two hubs,
+ * front then rear. `wheelRadius` is then the front radius. Vectors are chassis-local metres.
+ * Every optional tuning value falls back to `twoWheeledDefaults` (`config/simulation.ts`); those
+ * defaults are conservative gameplay values, not measured data for any particular machine.
+ */
+export const twoWheeledField = z
+  .object({
+    /** Rear tyre radius, metres. */
+    rearWheelRadius: finite.min(0.05).max(1.5),
+    /** Steering head axis, chassis-local, pointing up the head stock (normalized at runtime). */
+    steeringAxis: z
+      .tuple([finite, finite, finite])
+      .refine((v) => Math.hypot(...v) > 1e-6, 'Steering axis must not be zero'),
+    /** Handlebar lock each side, about the steering axis, radians. */
+    steerLimit: finite.min(0.05).max(1.2),
+    /** Largest cornering lean the rider model aims for, radians. */
+    maxLean: finite.min(0.05).max(1.2).optional(),
+    /** Beyond this lean the machine counts as fallen and balance stops, radians. */
+    fallLean: finite.min(0.1).max(1.5).optional(),
+    /** Below this speed the low-speed balance assist holds the machine upright, m/s. */
+    balanceSpeed: finite.min(0).max(30).optional(),
+    /** Turn the low-speed balance assist off (the machine then falls over when stopped). */
+    balanceAssist: z.boolean().optional(),
+    /** Lean controller natural frequency while riding, rad/s. */
+    leanResponse: finite.min(0.5).max(40).optional(),
+    /** Lean controller natural frequency of the low-speed assist, rad/s. */
+    assistResponse: finite.min(0.5).max(40).optional(),
+    /** Largest roll acceleration the lean controller may command, rad/s². */
+    maxLeanAcceleration: finite.min(1).max(500).optional(),
+    /** Handlebar slew rate, rad/s. */
+    steerRate: finite.min(0.1).max(20).optional(),
+    /** Front and rear service brake at full lever, in the same units as `brakeForce`. */
+    frontBrakeForce: finite.positive().max(1000).optional(),
+    rearBrakeForce: finite.positive().max(1000).optional(),
+    /** Tyre friction slip coefficient for both wheels. */
+    frictionSlip: finite.min(0.1).max(20).optional(),
+  })
+  .strict()
+
+/** Chassis, four hubs (two for a `twoWheeled` vehicle), and the optional cabin, garage and flight flag. */
 export const vehicleField = z
   .object({
     colliders: z.array(boxCollider).min(1).max(32),
     hubs: z.union([
+      z.tuple([vector, vector]),
       z.tuple([vector, vector, vector, vector]),
       z.tuple([vector, vector, vector, vector, vector, vector]),
     ]),
@@ -43,6 +85,8 @@ export const vehicleField = z
     suspensionTravel: finite.min(0.05).max(1.2).optional(),
     stiffness: finite.min(5).max(200),
     engineForce: finite.positive().max(100000),
+    /** Two-wheeled (single-track) controller and geometry; requires exactly two hubs. */
+    twoWheeled: twoWheeledField.optional(),
     /** Front hubs are 0/1; rear hubs 2/3. Omitted keeps rear-wheel drive. */
     drivenWheels: z.enum(['front', 'rear', 'all']).optional(),
     /** Optional automatic powertrain. Power is metric horsepower (CV), torque is N·m. */
@@ -54,7 +98,7 @@ export const vehicleField = z
         finalDrive: finite.min(1).max(8),
         grip: finite.min(0.5).max(8),
         idleRpm: finite.min(300).max(2000).optional(),
-        maxRpm: finite.min(2000).max(10000).optional(),
+        maxRpm: finite.min(2000).max(20000).optional(),
         reverseRatio: finite.positive().max(20).optional(),
         maxSpeedKmh: finite.positive().max(400).optional(),
         /** Traction/clutch ceiling on the force at the wheels, newtons. */
@@ -64,8 +108,8 @@ export const vehicleField = z
           .object({
             seconds: finite.min(0.02).max(2).optional(),
             cooldownSeconds: finite.min(0.05).max(5).optional(),
-            upshiftRpm: finite.min(400).max(10000).optional(),
-            downshiftRpm: finite.min(300).max(9000).optional(),
+            upshiftRpm: finite.min(400).max(20000).optional(),
+            downshiftRpm: finite.min(300).max(19000).optional(),
             torqueFraction: finite.min(0).max(1).optional(),
             rpmResponse: finite.min(1).max(40).optional(),
             launchRpm: finite.min(300).max(6000).optional(),
@@ -144,6 +188,26 @@ export const vehicleField = z
     /** Enable the audible warning while this vehicle has reverse gear engaged. */
     reverseAlarm: z.boolean().optional(),
     /**
+     * Per-vehicle sound options. Omitted keeps the road-car sound: turbo on and a clack on
+     * audible gear changes. See `audio/vehicle-sound.ts`.
+     */
+    audio: z
+      .object({
+        /** Turbo whistle, spool and blow-off. Default true. */
+        turbo: z.boolean().optional(),
+        gearShift: z
+          .object({
+            /** `clack` (default), `click` (quiet, every gear change) or `none`. */
+            sound: z.enum(['clack', 'click', 'none']),
+            /** Loudness multiplier, 0..2. Default 1. */
+            volume: finite.min(0).max(2).optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    /**
      * Control profile id: `road`, `flight`, `none` or a host-registered profile. Picks the
      * touch rig and HUD readouts while seated (docs/vehicle-controls.md). Omitted infers one.
      */
@@ -195,6 +259,7 @@ export const visualField = z
     /** Optional individual wheel models in hub order (front left/right, rear left/right). */
     wheels: z
       .union([
+        z.tuple([assetPart, assetPart]),
         z.tuple([assetPart, assetPart, assetPart, assetPart]),
         z.tuple([assetPart, assetPart, assetPart, assetPart, assetPart, assetPart]),
       ])
@@ -202,6 +267,7 @@ export const visualField = z
     steering: steeringPart.optional(),
     wheelRotations: z
       .union([
+        z.tuple([rotation, rotation]),
         z.tuple([rotation, rotation, rotation, rotation]),
         z.tuple([rotation, rotation, rotation, rotation, rotation, rotation]),
       ])
@@ -212,4 +278,5 @@ export const visualField = z
   .strict()
 
 export type VehicleDefinition = z.infer<typeof vehicleField>
+export type TwoWheeledDefinition = z.infer<typeof twoWheeledField>
 export type VisualDefinition = z.infer<typeof visualField>

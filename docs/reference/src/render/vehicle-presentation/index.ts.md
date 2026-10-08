@@ -21,5 +21,6 @@
 - `../entity/car-instrument-definition.js`
 - `./mirror-lenses.js`
 - `../entity/steering-wheel.js`
+- `./motorcycle-rig.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

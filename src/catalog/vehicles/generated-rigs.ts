@@ -143,6 +143,22 @@ export const generatedVehicleRigs: Record<
     headRotation: [0, 0, 0, 1],
     hitch: [0, 0, 1.7667454481124878],
   },
+  vfr800: {
+    source: '/library/motorcycles/vfr800fi-1999/vfr800fi-1999.glb',
+    sha256: '2592f40a610fb5ae6f3c670036bf1b477641d015a20faf8f9af08f2ba7b989dc',
+    hubs: [
+      [0.00396, -0.25010000000000004, -0.72],
+      [0.0037400000000000003, -0.23510000000000003, 0.7199999999999999],
+    ],
+    wheelRotations: [
+      [0, 0, 0, 1],
+      [0, 0, 0, 1],
+    ],
+    steering: { position: [0, 0.3639766666666666, -0.44], rotation: [0, 0, 0, 1] },
+    driver: [0, 0.2975810227272727, 0.36681818181818177],
+    headOffset: [0, 0.5116530303030303, -0.09090909090909083],
+    headRotation: [0, 0, 0, 1],
+  },
   carrier: {
     source: '/library/ships/container/ship.container.5x10.glb',
     sha256: '09d74dda79794002f2df0916e375386836422acf5067874aa1b6d01b10d3827b',

@@ -103,7 +103,10 @@ class Turbo {
   }
 }
 
-/** Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence. */
+/**
+ * Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
+ * `turbo: false` for an engine without one (the turbo voice then stays silent).
+ */
 export class Powertrain {
   private readonly engine: EngineNote
   private readonly turbo: Turbo
@@ -119,13 +122,14 @@ export class Powertrain {
     this.turbo.silence(time)
   }
 
-  update(time: number, audible: boolean, rpm: number, load: number): void {
-    rpm = Number.isFinite(rpm) ? Math.max(0, Math.min(10000, rpm)) : 0
+  update(time: number, audible: boolean, rpm: number, load: number, turbo = true): void {
+    rpm = Number.isFinite(rpm) ? Math.max(0, Math.min(20000, rpm)) : 0
     load = Number.isFinite(load) ? Math.max(0, Math.min(1, load)) : 0
     const running = audible && rpm > 0
     const dt = Math.min(0.1, Math.max(0, time - this.previousTime))
     this.previousTime = time
-    this.turbo.update(time, dt, running, rpm, load)
+    if (turbo) this.turbo.update(time, dt, running, rpm, load)
+    else this.turbo.silence(time)
     this.engine.update(time, running, rpm, load)
   }
 }

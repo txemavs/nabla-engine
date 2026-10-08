@@ -419,6 +419,11 @@ export class Body {
       )
     else this.raw.addForce(force, true)
   }
+  /** World-frame torque for the next step only (cleared after every world step), N·m. */
+  applyTorque(torque: Vec3) {
+    if (!this.raw || !this.mass) return
+    this.raw.addTorque(torque, true)
+  }
   applyImpulse(impulse: Vec3, relative?: Vec3) {
     if (!this.raw || !this.mass) return
     if (relative)

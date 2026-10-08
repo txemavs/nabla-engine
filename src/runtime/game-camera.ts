@@ -263,7 +263,15 @@ export function updateGameCamera(
   const groundHeading = state.groundHeading
   const frameQ = playerFrame ? playerFrameQ : null
   if (vehicleRotation) {
-    groundHeading.update(p.vehicleId!, p.position, vehicleRotation, frameQ, dt)
+    // Two-wheelers lean into corners; their lean up to the fall threshold is no rollover.
+    groundHeading.update(
+      p.vehicleId!,
+      p.position,
+      vehicleRotation,
+      frameQ,
+      dt,
+      info?.leanAllowance ?? 0,
+    )
     // The overhead view centre: half a vertical half-frustum ahead of the car along the smoothed
     // heading, so the car projects to 75% screen height. Following the centre (not the car)
     // also filters the look-ahead swing while the heading turns.

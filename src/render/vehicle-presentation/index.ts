@@ -79,3 +79,13 @@ export {
   steeringWheelOffsetRange,
   type SteeringWheelOffset,
 } from '../entity/steering-wheel.js'
+export {
+  bindMotorcycleRig,
+  hasMotorcycleRig,
+  motorcycleRigFromJson,
+  motorcycleRigFromModel,
+  type MotorcyclePose,
+  type MotorcycleRig,
+  type MotorcycleRigBinding,
+  type MotorcycleRigState,
+} from './motorcycle-rig.js'

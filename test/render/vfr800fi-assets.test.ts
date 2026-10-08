@@ -1,24 +1,29 @@
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { pathToFileURL } from 'node:url'
-import path from 'node:path'
+import { Box3, Vector3, type BufferAttribute, type Mesh } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { expect, it } from 'vitest'
+import {
+  bindMotorcycleRig,
+  motorcycleRigFromJson,
+  motorcycleRigFromModel,
+} from '../../src/render/vehicle-presentation/motorcycle-rig.js'
 
 const directory = 'assets/library/motorcycles/vfr800fi-1999'
 const readJson = (name: string) => JSON.parse(readFileSync(`${directory}/${name}`, 'utf8'))
 const bytes = readFileSync(`${directory}/vfr800fi-1999.glb`)
 
-it('ships the approved complete motorcycle asset with matching rig and pending runtime status', () => {
+it('ships the approved complete motorcycle asset with matching rig and phase-1 runtime status', () => {
   const manifest = readJson('asset.json')
   const rig = readJson(manifest.rigFile)
   const glb = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString())
   expect(bytes.readUInt32LE(8)).toBe(bytes.length)
   expect(createHash('sha256').update(bytes).digest('hex')).toBe(manifest.sha256)
-  expect(manifest.drivable).toBe(false)
-  expect(manifest.integrationStatus).toBe('asset-only')
+  expect(manifest.drivable).toBe(true)
+  expect(manifest.integrationStatus).toBe('phase-1')
+  expect(readJson(manifest.preset).id).toBe('vfr800')
   expect(rig.kind).toBe('motorcycle')
-  expect(rig.physics.status).toBe('design-only')
+  expect(rig.physics.status).toBe('phase-1')
   for (const name of [
     'Steering_Pivot',
     'Fork_Slider',
@@ -38,11 +43,18 @@ it('animates actual GLB suspension and wheel hierarchy without changing the auth
     bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
     '',
   )
-  const { bindInterceptor } = await import(
-    pathToFileURL(path.resolve(directory, 'vfr800fi-1999-controls.mjs')).href
-  )
   const root = gltf.scene
-  const visual = bindInterceptor(root, rig)
+  // The GLB extras alone reproduce the authored rig file.
+  const fromModel = motorcycleRigFromModel(root),
+    fromJson = motorcycleRigFromJson(rig)
+  expect(fromModel.steeringAxis).toEqual(fromJson.steeringAxis)
+  expect(fromModel.steerLimit).toBeCloseTo(fromJson.steerLimit, 9)
+  expect(fromModel.frontTravel).toBeCloseTo(fromJson.frontTravel, 9)
+  expect(fromModel.rearTravel).toBeCloseTo(fromJson.rearTravel, 9)
+  expect(Math.abs(fromModel.chain!.frontZ - fromJson.chain!.frontZ)).toBeLessThan(0.02)
+  expect(Math.abs(fromModel.chain!.rearZ - fromJson.chain!.rearZ)).toBeLessThan(0.002)
+  const shared = (root.getObjectByName('Chain') as Mesh).geometry
+  const visual = bindMotorcycleRig(root, fromJson)
   const rear = root.getObjectByName('Wheel_Rear')!
   const arm = root.getObjectByName('Swingarm_Pivot')!
   const fork = root.getObjectByName('Fork_Slider')!
@@ -65,11 +77,33 @@ it('animates actual GLB suspension and wheel hierarchy without changing the auth
       expect(root.getObjectByName('Wheel_Front')!.quaternion.x).not.toBe(0)
     }
   }
+  // The handlebar turns the fork about the head axis: a positive (left) angle swings the
+  // front axle's +X end forward (towards −Z).
+  const axle = () =>
+    new Vector3(1, 0, 0).transformDirection(root.getObjectByName('Wheel_Front')!.matrixWorld)
+  visual.update({ steeringAngle: 0 })
+  expect(axle().z).toBeCloseTo(0, 6)
+  visual.update({ steeringAngle: 0.5 })
+  expect(axle().z).toBeLessThan(-0.2)
+  // The chain's rear end follows the swingarm; the front sprocket end stays put.
+  const chain = root.getObjectByName('Chain') as Mesh
+  const span = () => {
+    const box = new Box3().setFromBufferAttribute(
+      chain.geometry.getAttribute('position') as BufferAttribute,
+    )
+    return [box.min.z, box.max.y]
+  }
+  visual.update({ rearCompression: 0 })
+  const [front, high] = span()
+  visual.update({ rearCompression: 0.1 })
+  expect(chain.geometry).not.toBe(shared)
+  expect(span()[0]).toBeCloseTo(front, 6)
+  expect(span()[1]).toBeGreaterThan(high + 0.02)
   visual.update()
   expect(arm.quaternion.angleTo(root.getObjectByName('Wheel_Rear')!.quaternion)).toBeCloseTo(0, 8)
   expect(fork.position.distanceTo(forkRest)).toBeLessThan(1e-8)
-  const chain = root.getObjectByName('Chain') as import('three').Mesh
-  chain.geometry.dispose()
+  visual.dispose()
+  expect(chain.geometry).toBe(shared)
 })
 
 it('keeps the estimated crankshaft power curve physically consistent and preserves exact transmission ratios', () => {

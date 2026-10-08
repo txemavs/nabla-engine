@@ -40,9 +40,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `existsSync`
 
+## isPresetFile
+
+[Implementation, line 23](../../../../../src/catalog/vehicles/preset-source.ts#L23)
+
+Preset JSON only: asset manifests (`asset.json`) and authoring sidecars (`*.rig.json`,
+`*.specs.json`) live next to some models and are not presets.
+
+```ts
+isPresetFile(name: string): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `name.endsWith`
+
 ## jsonFiles
 
-[Implementation, line 19](../../../../../src/catalog/vehicles/preset-source.ts#L19)
+[Implementation, line 32](../../../../../src/catalog/vehicles/preset-source.ts#L32)
 
 ```ts
 jsonFiles(dir: string): string[]
@@ -51,16 +66,16 @@ jsonFiles(dir: string): string[]
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `entry.isDirectory`
-- `entry.name.endsWith`
 - `existsSync`
 - `found.push`
+- `isPresetFile`
 - `join`
 - `jsonFiles`
 - `readdirSync`
 
 ## readVehiclePresetSources
 
-[Implementation, line 30](../../../../../src/catalog/vehicles/preset-source.ts#L30)
+[Implementation, line 43](../../../../../src/catalog/vehicles/preset-source.ts#L43)
 
 ```ts
 readVehiclePresetSources(): { file: string; data: unknown }[]

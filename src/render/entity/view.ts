@@ -33,6 +33,12 @@ import {
 import { hasLandingGear, trailerWheelContactY } from '../../simulation/landing-gear.js'
 import { VehicleLightRig } from '../vehicle-presentation/light-rig.js'
 import {
+  bindMotorcycleRig,
+  hasMotorcycleRig,
+  motorcycleRigFromModel,
+  type MotorcycleRigBinding,
+} from '../vehicle-presentation/motorcycle-rig.js'
+import {
   clampMirrorAdjustment,
   mirrorModelKey,
   type CarMirrors,
@@ -127,6 +133,8 @@ export class SceneView {
   private readonly carMirrors = new Map<string, CarMirrors>()
   private readonly instruments = new Map<string, CarInstruments>()
   private readonly landingGear = new Map<string, LandingGearVisual>()
+  /** Fork, swingarm, shock, chain and wheel articulation of two-wheeled GLB bodies. */
+  private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
   private readonly propellers = new Map<string, THREE.Object3D>()
   readonly shipHuds = new Map<string, ShipHud>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
@@ -581,6 +589,7 @@ export class SceneView {
       this.headOffsets,
       this.authoredLights,
       this.landingGear,
+      this.motorcycleRigs,
       this.ramps,
       this.mapBounds,
     ] as Map<string, unknown>[])
@@ -986,6 +995,15 @@ export class SceneView {
         }
       }
       adapter?.preparePart?.(model, 'body')
+      const twoWheeled = e.vehicle?.twoWheeled
+      if (twoWheeled && hasMotorcycleRig(model))
+        this.motorcycleRigs.set(
+          e.id,
+          bindMotorcycleRig(
+            model,
+            motorcycleRigFromModel(model, { steerLimit: twoWheeled.steerLimit }),
+          ),
+        )
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
       if (equipment?.mirrors) {
         this.carMirrors.set(e.id, equipment.mirrors)
@@ -1278,6 +1296,10 @@ export class SceneView {
         this.root.add(wheels[i])
         applyPose(wheels[i], p)
       })
+    }
+    for (const [id, rig] of this.motorcycleRigs) {
+      const pose = sim.twoWheeledPose(id)
+      if (pose) rig.update(pose)
     }
     for (const [id, thrusters] of this.thrusters) {
       const info = sim.vehicleInfo(id)

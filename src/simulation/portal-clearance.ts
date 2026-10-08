@@ -2,7 +2,7 @@
 import { OBB } from 'three/addons/math/OBB.js'
 import { Matrix3, Matrix4, Quaternion as RenderQuaternion, Vector3 } from 'three'
 import { Body, Box, Quaternion, Vec3 } from './physics.js'
-import type { Vehicle } from '../entity/vehicle/vehicle.js'
+import { hubWheelRadius, type Vehicle } from '../entity/vehicle/vehicle.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
 const vec = (v: Vec3): Vec3Tuple => [v.x, v.y, v.z]
 /** Include authored bodywork, suspension and tyre rims in world-space metres. */
@@ -28,11 +28,13 @@ export function portalEnvelope(body: Body, vehicle?: Vehicle): Vec3Tuple[] {
         (hub, i) =>
           hub[1] +
           vehicle.definition.suspensionRest -
-          vehicle.definition.wheelRadius -
+          hubWheelRadius(vehicle.definition, i) -
           vehicle.raycast.wheelInfos[i].suspensionLength,
       ),
     )
-    const radius = vehicle.definition.wheelRadius
+    const radius = Math.max(
+      ...vehicle.definition.hubs.map((_, i) => hubWheelRadius(vehicle.definition, i)),
+    )
     // Bodywork starts above the tire bottoms. Extending the lowest spring height
     // over the full car length invents corners below the road under pitch.
     addBox(

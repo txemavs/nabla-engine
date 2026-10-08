@@ -1,0 +1,69 @@
+{
+  "id": "vfr800",
+  "label": "Honda VFR800FI 1999",
+  "clearance": 0.6,
+  "placement": [12, 0.6, 6],
+  "order": 2,
+  "name": "Honda VFR800FI 1999",
+  "color": "#b3121b",
+  "size": [0.735, 1.19, 2.095],
+  "mass": 310,
+  "vehicle": {
+    "controls": "road",
+    "colliders": [
+      {
+        "size": [0.28, 0.3, 1.0],
+        "transform": {
+          "position": [0, -0.1, -0.05],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "size": [0.5, 0.55, 1.6],
+        "transform": {
+          "position": [0, 0.3, 0.1],
+          "rotation": [0, 0, 0, 1]
+        }
+      }
+    ],
+    "wheelRadius": 0.2999,
+    "suspensionRest": 0.12,
+    "suspensionTravel": 0.1,
+    "stiffness": 120,
+    "engineForce": 2600,
+    "powertrain": {
+      "powerCv": 110,
+      "torqueNm": 82,
+      "ratios": [2.8462, 2.0625, 1.6316, 1.3333, 1.1538, 1.0357],
+      "finalDrive": 4.9055,
+      "grip": 4.5,
+      "idleRpm": 1200,
+      "maxRpm": 11500,
+      "maxWheelForceN": 2600
+    },
+    "twoWheeled": {
+      "rearWheelRadius": 0.3149,
+      "steeringAxis": [0, 0.9106, 0.4133],
+      "steerLimit": 0.610865
+    },
+    "brakeForce": 20,
+    "cameraDistance": 4.5,
+    "audio": {
+      "turbo": false,
+      "gearShift": {
+        "sound": "click",
+        "volume": 1
+      }
+    }
+  },
+  "visual": {
+    "body": {
+      "url": "/library/motorcycles/vfr800fi-1999/vfr800fi-1999.glb",
+      "transform": {
+        "position": [0, -0.55, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    }
+  },
+  "rig": "glb"
+}

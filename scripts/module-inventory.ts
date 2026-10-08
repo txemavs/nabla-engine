@@ -7,6 +7,7 @@ const entries = {
   boats: ['src/simulation/vehicles/boat.ts'],
   flight: ['src/simulation/vehicles/flight.ts'],
   wheeled: ['src/simulation/vehicles/wheeled/index.ts'],
+  twoWheeled: ['src/simulation/vehicles/two-wheeled/index.ts'],
   drivetrain: ['src/simulation/vehicles/drivetrain.ts'],
   catalog: ['src/catalog/vehicles/index.ts'],
   instruments: ['src/render/entity/car-instruments.ts'],

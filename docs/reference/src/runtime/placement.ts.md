@@ -7,10 +7,11 @@
 ## Module dependencies
 
 - `../entity/schema.js`
+- `../entity/vehicle/vehicle.js`
 
 ## playGroundClearance
 
-[Implementation, line 4](../../../../src/runtime/placement.ts#L4)
+[Implementation, line 5](../../../../src/runtime/placement.ts#L5)
 
 Shared Studio/game clearance above loaded ground, in metres.
 
@@ -20,13 +21,4 @@ playGroundClearance(entity: Entity): number
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.min`
-- `entity.vehicle.hubs.map`
-
-## playGroundClearance.callback@10
-
-[Implementation, line 10](../../../../src/runtime/placement.ts#L10)
-
-```ts
-callback@10(hub): inferred by TypeScript; see implementation
-```
+- `wheelContactY`

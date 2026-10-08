@@ -34,6 +34,7 @@ portalEnvelope(body: Body, vehicle?: Vehicle): Vec3Tuple[]
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
 - `Math.min`
 - `Quaternion`
 - `Vec3`
@@ -79,12 +80,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@28(hub, i): inferred by TypeScript; see implementation
 ```
 
-## portalEnvelope.callback@43
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 43](../../../../src/simulation/portal-clearance.ts#L43)
+- `hubWheelRadius`
+
+## portalEnvelope.callback@36
+
+[Implementation, line 36](../../../../src/simulation/portal-clearance.ts#L36)
 
 ```ts
-callback@43(hub, i): inferred by TypeScript; see implementation
+callback@36(_, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hubWheelRadius`
+
+## portalEnvelope.callback@45
+
+[Implementation, line 45](../../../../src/simulation/portal-clearance.ts#L45)
+
+```ts
+callback@45(hub, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -100,7 +117,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## portalExitBlocked
 
-[Implementation, line 66](../../../../src/simulation/portal-clearance.ts#L66)
+[Implementation, line 68](../../../../src/simulation/portal-clearance.ts#L68)
 
 Check a conservative exit corridor against active and distance-suspended physical obstacles.
 
@@ -129,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## portalExitBlocked.shapeBoxes
 
-[Implementation, line 76](../../../../src/simulation/portal-clearance.ts#L76)
+[Implementation, line 78](../../../../src/simulation/portal-clearance.ts#L78)
 
 ```ts
 shapeBoxes(other: Body): OBB[]
@@ -139,12 +156,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `other.shapes.flatMap`
 
-## portalExitBlocked.shapeBoxes.callback@77
+## portalExitBlocked.shapeBoxes.callback@79
 
-[Implementation, line 77](../../../../src/simulation/portal-clearance.ts#L77)
+[Implementation, line 79](../../../../src/simulation/portal-clearance.ts#L79)
 
 ```ts
-callback@77(shape, i): inferred by TypeScript; see implementation
+callback@79(shape, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -161,28 +178,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `other.quaternion.mult`
 - `vec`
 
-## portalExitBlocked.callback@91
-
-[Implementation, line 91](../../../../src/simulation/portal-clearance.ts#L91)
-
-```ts
-callback@91(b): inferred by TypeScript; see implementation
-```
-
 ## portalExitBlocked.callback@93
 
 [Implementation, line 93](../../../../src/simulation/portal-clearance.ts#L93)
 
 ```ts
-callback@93(s): inferred by TypeScript; see implementation
+callback@93(b): inferred by TypeScript; see implementation
 ```
 
-## portalExitBlocked.callback@119
+## portalExitBlocked.callback@95
 
-[Implementation, line 119](../../../../src/simulation/portal-clearance.ts#L119)
+[Implementation, line 95](../../../../src/simulation/portal-clearance.ts#L95)
 
 ```ts
-callback@119(obstacle): inferred by TypeScript; see implementation
+callback@95(s): inferred by TypeScript; see implementation
+```
+
+## portalExitBlocked.callback@121
+
+[Implementation, line 121](../../../../src/simulation/portal-clearance.ts#L121)
+
+```ts
+callback@121(obstacle): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

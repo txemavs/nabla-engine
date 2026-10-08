@@ -997,6 +997,7 @@ export class GameRuntime {
                 // Best-effort: derive spin from recent up-axis change inside FlipCinematic window.
                 return { x: 0, y: 0, z: 0 }
               },
+              leanAllowance: sim.vehicleInfo(vid).leanAllowance,
             },
             this.camera,
             this.cameraState,
@@ -1694,7 +1695,14 @@ export class GameRuntime {
       sim,
       this.document.entities.flatMap((entity) =>
         entity.vehicle
-          ? [{ id: entity.id, name: entity.name, wheelRadius: entity.vehicle.wheelRadius }]
+          ? [
+              {
+                id: entity.id,
+                name: entity.name,
+                wheelRadius: entity.vehicle.wheelRadius,
+                rearWheelRadius: entity.vehicle.twoWheeled?.rearWheelRadius,
+              },
+            ]
           : [],
       ),
       (position) => world.groundHeight(position),

@@ -182,9 +182,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Vector3`
 - `new Vector3(-Math.sin(heading), 0, -Math.cos(heading)).applyQuaternion`
 
-## GroundHeading.constructor
+## removeLean
 
-[Implementation, line 210](../../../../../src/render/entity/driving-camera.ts#L210)
+[Implementation, line 195](../../../../../src/render/entity/driving-camera.ts#L195)
 
 Roll-independent, smoothed horizontal heading of a vehicle for the exterior cameras.
 
@@ -206,13 +206,36 @@ chassis spins far faster than a camera should turn. This tracker therefore:
 Headings are measured in the player frame (identity on open ground), in the chase-yaw
 convention `atan2(-forward.x, -forward.z)`.
 
+Rotate `up` about the horizontal heading to take out up to `allowance` radians of lean
+(roll from the vertical). Returns `up` itself (modified) for chaining; a nose pointing
+straight up or down, or a zero allowance, leaves it unchanged.
+
+```ts
+removeLean(up: Vector3, forward: Vector3, allowance: number): Vector3
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.atan2`
+- `MathUtils.clamp`
+- `Vector3`
+- `heading.lengthSq`
+- `heading.normalize`
+- `new Vector3().crossVectors`
+- `up.applyAxisAngle`
+- `up.dot`
+
+## GroundHeading.constructor
+
+[Implementation, line 225](../../../../../src/render/entity/driving-camera.ts#L225)
+
 ```ts
 constructor(private readonly settings: Readonly<GameCameraSettings> = gameCameraDefaults): instance
 ```
 
 ## GroundHeading.clear
 
-[Implementation, line 213](../../../../../src/render/entity/driving-camera.ts#L213)
+[Implementation, line 228](../../../../../src/render/entity/driving-camera.ts#L228)
 
 Forget the vehicle; the next `update` seeds the heading from the chassis.
 
@@ -222,13 +245,18 @@ clear(): void
 
 ## GroundHeading.update
 
-[Implementation, line 221](../../../../../src/render/entity/driving-camera.ts#L221)
+[Implementation, line 241](../../../../../src/render/entity/driving-camera.ts#L241)
 
 Advance with the vehicle's interpolated pose. `frame` is the player frame rotation (null on
 open ground); `dt` is seconds. A new vehicle id re-seeds every filter.
 
+`leanAllowance` (radians, default 0) is roll about the horizontal heading that counts as
+intended riding lean rather than a rollover: a motorcycle passes its fall threshold
+(`vehicleInfo(id).leanAllowance`). Lean up to it is removed before the upset tests, so
+cornering, and rolling in and out of a corner, never reads as tumbling.
+
 ```ts
-update(id: string, position: readonly number[], rotation: readonly number[], frame: Quaternion | null, dt: number): void
+update(id: string, position: readonly number[], rotation: readonly number[], frame: Quaternion | null, dt: number, leanAllowance = 0): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -256,6 +284,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new Vector3().fromArray(position).applyQuaternion`
 - `new Vector3(0, 0, -1).applyQuaternion`
 - `new Vector3(0, 1, 0).applyQuaternion`
+- `removeLean`
 - `this.position.copy`
 - `this.up.angleTo`
 - `this.up.copy`
@@ -265,7 +294,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CriticalFollow.reset
 
-[Implementation, line 335](../../../../../src/render/entity/driving-camera.ts#L335)
+[Implementation, line 356](../../../../../src/render/entity/driving-camera.ts#L356)
 
 Snap to `target` with zero velocity.
 
@@ -282,7 +311,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CriticalFollow.update
 
-[Implementation, line 345](../../../../../src/render/entity/driving-camera.ts#L345)
+[Implementation, line 366](../../../../../src/render/entity/driving-camera.ts#L366)
 
 Advance toward `target` over `dt` seconds (capped at `maxStep`) at response `omega`.
 
