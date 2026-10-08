@@ -5,6 +5,7 @@
  */
 import { readFileSync } from 'node:fs'
 import * as THREE from 'three'
+import { ShaderChunk } from 'three'
 import { describe, expect, it } from 'vitest'
 import { lightingDefaults } from '../../src/config/lighting.js'
 import { s3ChromeMaterial, s3Presentation } from '../../src/catalog/presentation/road-vehicles.js'
@@ -88,6 +89,12 @@ describe('S3 chrome', () => {
     expect(housing.metalness).toBe(0.35)
     expect(wheelReflections.materials).toEqual([])
     expect(wheelChrome.envMap).toBeNull()
+    // The env is scaled by the shadowed light, not left as a fixed specular.
+    expect(ShaderChunk.lights_fragment_begin).toContain('nablaIncident')
+    expect(ShaderChunk.lights_fragment_begin).toContain('nablaIncident += irradiance')
+    expect(ShaderChunk.lights_fragment_begin).toContain(
+      'nablaIncident += directLight.color * saturate( dot( geometryNormal, directLight.direction ) )',
+    )
     // No brighter than the metal around it (Txema: the 1.6 trim was far too bright).
     expect(carReflectionOptions.intensity).toBeLessThanOrEqual(1)
     // Night dims the chrome like the motorcycle's.
