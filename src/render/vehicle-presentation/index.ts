@@ -105,5 +105,6 @@ export {
   applyReflectionEnvironment,
   carReflectionOptions,
   reflectionEnvironmentTexture,
+  reflectionLevel,
   type ReflectionEnvironment,
 } from './reflection-environment.js'

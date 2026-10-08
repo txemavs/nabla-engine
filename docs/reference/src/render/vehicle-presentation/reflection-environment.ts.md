@@ -12,10 +12,11 @@ chrome reads as bright polished metal. Matte and painted materials are left alon
 ## Module dependencies
 
 - `three`
+- `../../config/lighting.js`
 
 ## reflectionEnvironmentTexture
 
-[Implementation, line 16](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L16)
+[Implementation, line 17](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L17)
 
 Equirectangular neutral studio gradient (light grey overhead, bright horizon band, dark grey
 ground), shared by every model. Deliberately colourless: a blue sky in the reflection tinted the
@@ -37,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## reflectionEnvironmentTexture.mix
 
-[Implementation, line 21](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L21)
+[Implementation, line 22](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L22)
 
 ```ts
 mix(a: number[], b: number[], t: number): inferred by TypeScript; see implementation
@@ -47,17 +48,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `a.map`
 
-## reflectionEnvironmentTexture.mix.callback@21
+## reflectionEnvironmentTexture.mix.callback@22
 
-[Implementation, line 21](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L21)
+[Implementation, line 22](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L22)
 
 ```ts
-callback@21(v, i): inferred by TypeScript; see implementation
+callback@22(v, i): inferred by TypeScript; see implementation
 ```
+
+## reflectionLevel
+
+[Implementation, line 57](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L57)
+
+Reflection level for the atmosphere's daylight factor `day` (0 night .. 1 full day; 1 without a
+sky): `reflectionNightLevel` up to the night threshold, eased up to 1 at `reflectionFullDay`.
+The environment is a fixed studio gradient, so it must fade with the light it stands for.
+
+```ts
+reflectionLevel(day: number, lighting = lightingDefaults): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+- `THREE.MathUtils.smoothstep`
 
 ## applyReflectionEnvironment
 
-[Implementation, line 62](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L62)
+[Implementation, line 74](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L74)
 
 Give every standard material under `root` with `metalness >= minMetalness`, or tagged
 `extras.nabla.reflective` in the GLB (glossy glass such as a windscreen), the shared reflection
@@ -74,12 +92,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.traverse`
 - `scale`
 
-## applyReflectionEnvironment.callback@67
+## applyReflectionEnvironment.callback@79
 
-[Implementation, line 67](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L67)
+[Implementation, line 79](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L79)
 
 ```ts
-callback@67(object): inferred by TypeScript; see implementation
+callback@79(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -89,7 +107,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.scale
 
-[Implementation, line 81](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L81)
+[Implementation, line 93](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L93)
 
 ```ts
 scale(material: THREE.Material): inferred by TypeScript; see implementation
@@ -102,7 +120,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.setLevel
 
-[Implementation, line 93](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L93)
+[Implementation, line 105](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L105)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation

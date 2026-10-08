@@ -6,11 +6,13 @@
 import { readFileSync } from 'node:fs'
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
+import { lightingDefaults } from '../../src/config/lighting.js'
 import { s3ChromeMaterial, s3Presentation } from '../../src/catalog/presentation/road-vehicles.js'
 import {
   applyReflectionEnvironment,
   carReflectionOptions,
   reflectionEnvironmentTexture,
+  reflectionLevel,
 } from '../../src/render/vehicle-presentation/reflection-environment.js'
 
 type Gltf = {
@@ -72,7 +74,8 @@ describe('S3 chrome', () => {
     expect(new Set(reflections.materials)).toEqual(new Set(trim))
     for (const material of trim) {
       expect(material.metalness).toBe(1)
-      expect(material.roughness).toBeLessThanOrEqual(0.25)
+      // Natural chrome: a little satin, not a mirror.
+      expect(material.roughness).toBeGreaterThanOrEqual(0.3)
       expect(material.envMap).toBe(reflectionEnvironmentTexture())
       expect(material.envMapIntensity).toBeCloseTo(carReflectionOptions.intensity)
     }
@@ -82,8 +85,32 @@ describe('S3 chrome', () => {
     expect(housing.metalness).toBe(0.35)
     expect(wheelReflections.materials).toEqual([])
     expect(wheelChrome.envMap).toBeNull()
+    // Below full strength (Txema: the 1.6 trim was far too bright).
+    expect(carReflectionOptions.intensity).toBeLessThanOrEqual(0.8)
     // Night dims the chrome like the motorcycle's.
-    reflections.setLevel(0.15)
-    expect(trim[0].envMapIntensity).toBeCloseTo(carReflectionOptions.intensity * 0.15)
+    const night = reflectionLevel(0)
+    reflections.setLevel(night)
+    expect(trim[0].envMapIntensity).toBeCloseTo(carReflectionOptions.intensity * night)
+  })
+
+  it('fades the chrome reflections with the daylight, dusk included', () => {
+    const { nightThreshold, reflectionNightLevel, reflectionFullDay } = lightingDefaults
+    expect(reflectionLevel(1)).toBe(1)
+    expect(reflectionLevel(reflectionFullDay)).toBeCloseTo(1, 6)
+    expect(reflectionLevel(nightThreshold)).toBeCloseTo(reflectionNightLevel, 6)
+    expect(reflectionLevel(0)).toBeCloseTo(reflectionNightLevel, 6)
+    expect(reflectionNightLevel).toBeLessThanOrEqual(0.1)
+    // Sunset (the sun on the horizon: day 0.5) is already well dimmed, not full strength.
+    expect(reflectionLevel(0.5)).toBeGreaterThan(reflectionNightLevel)
+    expect(reflectionLevel(0.5)).toBeLessThan(0.6)
+    // Monotonic, no jumps.
+    let last = reflectionLevel(0)
+    for (let day = 0; day <= 1.0001; day += 0.01) {
+      const level = reflectionLevel(day)
+      expect(level).toBeGreaterThanOrEqual(last - 1e-12)
+      expect(level - last).toBeLessThan(0.05)
+      last = level
+    }
+    expect(reflectionLevel(Number.NaN)).toBe(1)
   })
 })

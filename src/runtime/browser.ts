@@ -906,6 +906,7 @@ export class GameRuntime {
       )
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
+    this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     this.view.sync(
       sim,
       dt,
