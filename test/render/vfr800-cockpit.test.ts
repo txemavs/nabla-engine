@@ -1,6 +1,6 @@
 /**
  * VFR800 cockpit pass: the GLB edits from scripts/prepare-vfr800-cockpit.mjs (mirror nodes,
- * instrument anchors, chrome exhaust, blended windscreen), the reflection environment and the live
+ * instrument anchors, metal map, blended windscreen), the reflection environment and the live
  * instrument cluster (needle angles and lamp logic).
  */
 import { readFileSync } from 'node:fs'
@@ -66,42 +66,102 @@ describe('vfr800 GLB cockpit pass', () => {
     }
   })
 
-  it('puts neutral mirror chrome only on the stanchions and the silencer; the rest as mapped', async () => {
+  it('keeps chrome only on the brake discs and the silencer end cap; the rest is satin metal', async () => {
     const root = await load()
     /** Materials drawn by a node's own mesh (not its child nodes). */
-    const own = (name: string) => {
+    const ownMeshes = (name: string) => {
       const node = root.getObjectByName(name)!
-      const meshes = [node, ...node.children].filter((o) => (o as THREE.Mesh).isMesh)
-      return new Set(meshes.flatMap((m) => [(m as THREE.Mesh).material].flat().map((x) => x.name)))
+      return [node, ...node.children].filter((o) => (o as THREE.Mesh).isMesh) as THREE.Mesh[]
     }
-    const CHROME = 'Mirror chrome stanchions and silencer'
+    const own = (name: string) =>
+      new Set(ownMeshes(name).flatMap((m) => [m.material].flat().map((x) => x.name)))
+    const CHROME = 'Stainless chrome silencer end cap'
     const SATIN = 'Satin aluminium chassis, fork and passenger footrests'
-    const chrome = materialsOf(root).find((m) => m.name === CHROME)!
-    expect(chrome.metalness).toBe(1)
-    // Natural chrome, not a mirror (Txema: 0.03 / 1.25 was far too bright).
-    expect(chrome.roughness).toBeCloseTo(0.12, 6)
-    // Neutral silver, no blue tint.
-    expect(chrome.color.r).toBeGreaterThan(0.9)
-    expect(chrome.color.b - chrome.color.r).toBeCloseTo(0, 6)
-    expect(chrome.color.g - chrome.color.r).toBeCloseTo(0, 6)
-    // Stanchions (fork) and silencer + end cap (body): mirror chrome. Fork lowers: satin grey.
-    expect(own('Fork_Slider')).toContain(CHROME)
-    expect(own('Fork_Slider')).toContain(SATIN)
-    expect(own('Body')).toContain(CHROME)
-    // The headers no longer use the old chrome; the triple clamp keeps the satin grey.
-    expect(own('Body')).not.toContain('Chrome exhaust and discs')
-    expect(own('Steering_Pivot')).toContain(SATIN)
-    // Discs, brake tracks, chain and swingarm keep their authored materials.
-    for (const name of ['Wheel_Front', 'Wheel_Rear', 'Chain', 'Swingarm_Pivot'])
-      expect(own(name)).not.toContain(CHROME)
-    expect(own('Wheel_Front')).toContain('Chrome exhaust and discs')
-    expect(own('Wheel_Front')).toContain('Polished chrome brake tracks')
-    expect(own('Chain')).toEqual(new Set(['Black smooth chain band']))
-    const discs = materialsOf(root).find((m) => m.name === 'Chrome exhaust and discs')!
-    expect([discs.color.r, discs.color.g, discs.color.b].map((v) => +v.toFixed(2))).toEqual(
-      [0.83, 0.86, 0.9].map((v) => +new THREE.Color().setRGB(v, v, v).r.toFixed(2)),
+    const STANCHIONS = 'Polished aluminium fork stanchions'
+    const DISCS = 'Polished chrome brake tracks'
+    const BUTTONS = 'Chrome exhaust and discs'
+    const material = (name: string) => materialsOf(root).find((m) => m.name === name)!
+
+    // Every chrome-looking surface (bright, fully metallic, glossy), by node: only the discs and
+    // their floating buttons, the silencer end cap, the headlamp reflector and the mirror glass.
+    const chromeLike = (m: THREE.MeshStandardMaterial) =>
+      m.metalness >= 0.9 && m.roughness < 0.25 && (m.color.r + m.color.g + m.color.b) / 3 > 0.45
+    const nodes = new Set<string>()
+    root.traverse((o) => {
+      // GLB nodes only (three.js names a multi-primitive node's meshes `<node>_<n>`).
+      const primitive =
+        !!o.parent?.name && o.name.startsWith(`${o.parent.name}_`) && /_\d+$/.test(o.name)
+      if (o.name && !primitive && ownMeshes(o.name).length) nodes.add(o.name)
+    })
+    const chrome = [...nodes]
+      .flatMap((node) =>
+        ownMeshes(node).flatMap((mesh) =>
+          [mesh.material]
+            .flat()
+            .filter((m) => chromeLike(m as THREE.MeshStandardMaterial))
+            .map((m) => `${node}: ${m.name}`),
+        ),
+      )
+      .filter((v, i, all) => all.indexOf(v) === i)
+      .sort()
+    expect(chrome).toEqual(
+      [
+        `Body: ${CHROME}`,
+        'Body: Reflector',
+        `Wheel_Front: ${BUTTONS}`,
+        `Wheel_Front: ${DISCS}`,
+        `Wheel_Rear: ${DISCS}`,
+        'mirror_L: Reflector',
+        'mirror_R: Reflector',
+      ].sort(),
     )
-    expect(discs.roughness).toBeCloseTo(0.055, 6)
+    // Body's reflector is the headlamp's, right behind the clear lens.
+    const centreOf = (name: string) =>
+      new THREE.Box3()
+        .setFromObject(ownMeshes('Body').find((m) => [m.material].flat()[0].name === name)!)
+        .getCenter(new THREE.Vector3())
+    expect(centreOf('Reflector').distanceTo(centreOf('Headlamp clear lens'))).toBeLessThan(0.3)
+    // The end cap: the short part at the very end of the silencer, on the right.
+    const cap = ownMeshes('Body').find((m) => [m.material].flat()[0].name === CHROME)!
+    // In Body's own frame (the script's coordinates; the model faces −Z, rider's right is +X).
+    // The primitive shares the exhaust's vertex buffer: measure the indexed vertices only.
+    const capBox = new THREE.Box3()
+    const position = cap.geometry.getAttribute('position')
+    const index = cap.geometry.getIndex()!
+    for (let i = 0; i < index.count; i++)
+      capBox.expandByPoint(new THREE.Vector3().fromBufferAttribute(position, index.getX(i)))
+    expect(capBox.min.z).toBeGreaterThan(0.9)
+    expect(capBox.max.z - capBox.min.z).toBeLessThan(0.1)
+    expect(capBox.min.x).toBeGreaterThan(0)
+    const end = material(CHROME)
+    expect(end.metalness).toBe(1)
+    expect(end.roughness).toBeCloseTo(0.12, 6)
+    expect(end.color.b - end.color.r).toBeCloseTo(0, 6)
+    // The headers, the silencer can and the engine: the triple clamp's satin grey. No authored
+    // chrome is left on the body (the old chrome covered the headers, can and end cap).
+    expect(own('Body')).toContain(SATIN)
+    expect(own('Body')).not.toContain(BUTTONS)
+    expect(own('Steering_Pivot')).toContain(SATIN)
+    const satin = material(SATIN)
+    expect(satin.metalness).toBe(1)
+    expect(satin.roughness).toBeGreaterThanOrEqual(0.35)
+    // Stanchions: polished aluminium grey, not chrome; the fork lowers satin grey.
+    expect(own('Fork_Slider')).toContain(STANCHIONS)
+    expect(own('Fork_Slider')).toContain(SATIN)
+    expect(own('Fork_Slider')).not.toContain(BUTTONS)
+    const stanchions = material(STANCHIONS)
+    // Lighter than the satin (0.36) but far from the chrome (0.95) and not glossy.
+    expect(stanchions.roughness).toBeGreaterThanOrEqual(0.3)
+    expect(stanchions.color.r).toBeLessThan(0.6)
+    expect(stanchions.color.b - stanchions.color.r).toBeCloseTo(0, 6)
+    // The radiator core keeps its graphite; chain and swingarm as authored.
+    expect(own('Body')).toContain('Graphite engine cases')
+    expect(own('Chain')).toEqual(new Set(['Black smooth chain band']))
+    expect(own('Swingarm_Pivot')).toEqual(
+      new Set(['Black upper chain guard', 'Cast grey rear swingarm']),
+    )
+    const buttons = material(BUTTONS)
+    expect(buttons.roughness).toBeCloseTo(0.055, 6)
     // The reflection environment is colourless (a blue sky tinted the chrome).
     const pixels = reflectionEnvironmentTexture().image.data as Uint8Array
     for (let i = 0; i < pixels.length; i += 4) {
@@ -109,10 +169,9 @@ describe('vfr800 GLB cockpit pass', () => {
       expect(pixels[i + 2]).toBe(pixels[i])
     }
     const env = applyReflectionEnvironment(root)
-    expect(env.materials).toContain(chrome)
-    // Toned down: it reads as chrome without glaring.
-    expect(chrome.envMapIntensity).toBeCloseTo(0.75, 6)
-    expect(discs.envMapIntensity).toBeCloseTo(1, 6)
+    expect(env.materials).toContain(end)
+    expect(end.envMapIntensity).toBeCloseTo(0.75, 6)
+    expect(buttons.envMapIntensity).toBeCloseTo(1, 6)
     // Matte paint and rubber are left alone.
     const rubber = materialsOf(root).find((m) => m.name === 'Smooth rubber')!
     expect(rubber.envMap).toBeNull()

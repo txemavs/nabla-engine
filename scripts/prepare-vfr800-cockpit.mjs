@@ -17,12 +17,15 @@
  * Selection boxes and sizes come from measuring the authored mesh (see docs/motorcycles.md).
  * - Windscreen: alpha-blended neutral smoke grey («gris humo», was a bluish transmission tint),
  *   see-through, with a slight reflection (`extras.nabla.envIntensity`).
- * - Metal map (Txema's review): a new neutral mirror chrome (`Mirror chrome stanchions and
- *   silencer`, base 0.95 grey, metallic 1, roughness 0.12, reflections at 0.75: natural chrome, not a mirror) only on
- *   the fork stanchions, the silencer can and its end cap. The exhaust headers and the engine
- *   (the graphite engine cases behind the radiator) take the satin grey metal of the top triple
- *   clamp (`Satin aluminium chassis…`, also the frame and fork lowers). Everything else keeps the
- *   authored material: discs and brake tracks, chain and sprockets, radiator, swingarm, mirrors.
+ * - Metal map (Txema's review): chrome only on the brake discs (their authored `Polished chrome
+ *   brake tracks` and the floating buttons in `Chrome exhaust and discs`) and the stainless end cap
+ *   of the silencer (`Stainless chrome silencer end cap`: base 0.95 grey, metallic 1, roughness
+ *   0.12, reflections at 0.75). The exhaust headers, the silencer can and the engine (the graphite
+ *   cases behind the radiator) take the satin grey metal of the top triple clamp (`Satin
+ *   aluminium chassis…`, also the frame and fork lowers); the fork stanchions a polished
+ *   aluminium grey (`Polished aluminium fork stanchions`: base 0.5, metallic 1, roughness 0.3).
+ *   Everything else keeps the authored material: chain and sprockets, radiator, swingarm, the
+ *   headlamp reflector and the mirror glass.
  *   The script prints the node → material table.
  *
  * The renderer gives metallic materials (and the windscreen, tagged `extras.nabla.reflective`) a
@@ -288,12 +291,13 @@ const sharedPrimitive = ({ primitive, taken }, material) => ({
 })
 
 // --- Metal map ---------------------------------------------------------------------------------
-// Mirror chrome only on the fork stanchions, the silencer can and its end cap; satin grey metal
-// (the top triple clamp's material) on the exhaust headers and the engine; the rest as authored.
+// Chrome only on the brake discs (authored: tracks and floating buttons) and the stainless end cap
+// of the silencer. Satin grey metal (the top triple clamp's material) on the exhaust headers, the
+// silencer can and the engine; polished aluminium grey on the fork stanchions; the rest as authored.
 const SATIN = ALUMINIUM
-const MIRROR_CHROME = json.materials.length
+const CHROME = json.materials.length
 json.materials.push({
-  name: 'Mirror chrome stanchions and silencer',
+  name: 'Stainless chrome silencer end cap',
   pbrMetallicRoughness: {
     baseColorFactor: [0.95, 0.95, 0.95, 1],
     metallicFactor: 1,
@@ -301,28 +305,37 @@ json.materials.push({
   },
   extras: { nabla: { envIntensity: 0.75 } },
 })
+const STANCHIONS = json.materials.length
+json.materials.push({
+  name: 'Polished aluminium fork stanchions',
+  pbrMetallicRoughness: {
+    baseColorFactor: [0.5, 0.5, 0.5, 1],
+    metallicFactor: 1,
+    roughnessFactor: 0.3,
+  },
+})
 const EXHAUST = materialIndex('Chrome exhaust and discs')
 const ENGINE = materialIndex('Graphite engine cases')
 const meshOf = (name) => json.meshes[json.nodes.find((n) => n.name === name).mesh]
 const centre = (c, axis) => (c.min[axis] + c.max[axis]) / 2
 
-// Fork stanchions: the two chrome tubes of Fork_Slider (x ±0.085, 0.4 m long).
+// Fork stanchions: the two tubes of Fork_Slider (x ±0.085, 0.4 m long), polished aluminium grey.
 const fork = meshOf('Fork_Slider').primitives.find((p) => p.material === EXHAUST)
 {
   const parts = components(readAny(fork.attributes.POSITION), readAny(fork.indices).flat())
   if (parts.length !== 2 || parts.some((c) => c.max[1] - c.min[1] < 0.3))
     throw new Error(`expected 2 fork stanchions, got ${parts.length}`)
-  fork.material = MIRROR_CHROME
+  fork.material = STANCHIONS
 }
 
-// Body exhaust: the headers and mid-pipe under the engine (one part, ending at z ≈ 0.57) become
-// satin grey; the silencer can and its end cap (both behind z = 0.5) mirror chrome.
+// Body exhaust: the headers and mid-pipe under the engine (one part, ending at z ≈ 0.57) and the
+// silencer can (z 0.53 → 1.02) become satin grey; only the stainless end cap (the short part at
+// the very end, z 0.97 → 1.01) is chrome.
 {
-  const tail = take(EXHAUST, (c) => c.min[2] > 0.5)
-  if (tail.taken.length !== 2)
-    throw new Error(`expected silencer and end cap, got ${tail.taken.length}`)
-  tail.primitive.material = SATIN
-  body.primitives.push(sharedPrimitive(tail, MIRROR_CHROME))
+  const tip = take(EXHAUST, (c) => c.min[2] > 0.9 && c.max[2] - c.min[2] < 0.1)
+  if (tip.taken.length !== 1) throw new Error(`expected the end cap, got ${tip.taken.length}`)
+  tip.primitive.material = SATIN
+  body.primitives.push(sharedPrimitive(tip, CHROME))
 }
 
 // Engine: the graphite cases behind the radiator (the radiator core, in front of z = −0.3, keeps
