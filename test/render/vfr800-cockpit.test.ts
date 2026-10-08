@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { describe, expect, it } from 'vitest'
+import { twoWheeledDefaults } from '../../src/config/simulation.js'
 import {
   MotorcycleInstruments,
   dialValues,
@@ -232,5 +233,37 @@ describe('motorcycle instrument logic', () => {
     })
     expect(lcdText({ ...inputs, gear: 0 })!.gear).toBe('N')
     expect(lcdText({ ...inputs, powered: false })).toBeNull()
+  })
+
+  it('the tucked eye keeps the horizon clear above the fairing and the tacho low in view', async () => {
+    const root = await load()
+    root.updateMatrixWorld(true)
+    const seated = new THREE.Vector3()
+    root.getObjectByName('drivereyes')!.getWorldPosition(seated)
+    // Auto tuck and a full manual tuck above 180 km/h both reach this eye.
+    const eye = seated.clone().add(new THREE.Vector3(...twoWheeledDefaults.rider.tuck.eye))
+    expect(seated.y - eye.y).toBeGreaterThan(0.15) // still a tuck: down…
+    expect(seated.z - eye.z).toBeGreaterThan(0.2) // …and forward
+    const deg = (v: THREE.Vector3) => (Math.atan2(v.y - eye.y, eye.z - v.z) * 180) / Math.PI
+    // Highest opaque point ahead within the screen's width (mirrors and the screen excluded).
+    let opaque = -90
+    const v = new THREE.Vector3()
+    root.traverse((object) => {
+      const mesh = object as THREE.Mesh
+      if (!mesh.isMesh || /mirror/i.test(mesh.name)) return
+      const name = [mesh.material].flat()[0].name
+      if (name.startsWith('Smoked') || name.startsWith('Reflector')) return
+      const position = mesh.geometry.attributes.position
+      for (let i = 0; i < position.count; i++) {
+        v.fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld)
+        if (v.z < eye.z - 0.05 && Math.abs(v.x) < 0.25) opaque = Math.max(opaque, deg(v))
+      }
+    })
+    expect(opaque).toBeLessThan(-3) // the horizon (0°) is clear
+    const tacho = new THREE.Vector3()
+    root.getObjectByName('gauge_tacho')!.getWorldPosition(tacho)
+    // In the lower part of a 70° first-person view.
+    expect(deg(tacho)).toBeLessThan(-8)
+    expect(deg(tacho)).toBeGreaterThan(-32)
   })
 })

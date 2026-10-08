@@ -9,7 +9,10 @@
   cap; the exhaust headers and the engine use the satin grey metal of the top triple clamp, as do
   the frame and fork lowers; discs, brake tracks, chain, sprockets, radiator and swingarm keep
   their authored materials. The reflection environment is a colourless studio gradient, so chrome
-  no longer reads blue. The windscreen is a
+  no longer reads blue.
+- **VFR800 tuck eye:** less deep (`twoWheeled.rider.tuck.eye` −0.22 m down, 0.34 m forward, was
+  −0.32 / 0.44) so the horizon clears the fairing above 180 km/h, for the automatic and the full
+  manual tuck; the tacho stays at the bottom of the view. The windscreen is a
   see-through neutral smoke grey with a slight reflection (`extras.nabla.envIntensity`, honoured
   by `applyReflectionEnvironment`). Both via `scripts/prepare-vfr800-cockpit.mjs`.
 

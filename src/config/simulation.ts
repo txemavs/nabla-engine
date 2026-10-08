@@ -254,7 +254,9 @@ export const twoWheeledDefaults = Object.freeze({
      * below `releaseKmh` (hysteresis) or under hard braking. The forward key (I) can reach the
      * full tuck from `kmh`, blending in from `manualFromKmh`; below that it keeps its normal
      * range. `eye` is the tucked cockpit eye relative to the seated one (chassis metres, +y up,
-     * +z back): low and close behind the screen, tacho at the bottom of the view.
+     * +z back): down and forward behind the screen, but high enough that the horizon clears the
+     * fairing (road through and above the screen, tacho at the bottom of the view). Applies to the
+     * automatic tuck and to a full manual tuck (I) above `kmh`.
      */
     tuck: Object.freeze({
       enabled: true,
@@ -265,7 +267,7 @@ export const twoWheeledDefaults = Object.freeze({
       seconds: 0.6,
       /** Deceleration that counts as hard braking and sits the rider up, g. */
       brakeG: 0.35,
-      eye: Object.freeze([0, -0.32, -0.44] as [number, number, number]),
+      eye: Object.freeze([0, -0.22, -0.34] as [number, number, number]),
     }),
   }),
   /**
