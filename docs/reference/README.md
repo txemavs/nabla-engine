@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **342 modules; 3629 executable function definitions**.
+Coverage: **344 modules; 3636 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -21,7 +21,7 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
 | [game/host-steering-wheel.ts](game/host-steering-wheel.ts.md) | 6 |
 | [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
-| [game/layers-ui.ts](game/layers-ui.ts.md) | 11 |
+| [game/layers-ui.ts](game/layers-ui.ts.md) | 10 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 21 |
 | [game/main.ts](game/main.ts.md) | 1 |
@@ -41,7 +41,7 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [game/terrain.ts](game/terrain.ts.md) | 14 |
 | [src/audio/casing-tinkle.ts](src/audio/casing-tinkle.ts.md) | 4 |
 | [src/audio/diesel-engine.ts](src/audio/diesel-engine.ts.md) | 6 |
-| [src/audio/engine-start.ts](src/audio/engine-start.ts.md) | 7 |
+| [src/audio/engine-start.ts](src/audio/engine-start.ts.md) | 6 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/gear-click.ts](src/audio/gear-click.ts.md) | 4 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
@@ -138,7 +138,7 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
 | [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 21 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
-| [src/planet/contract.ts](src/planet/contract.ts.md) | 31 |
+| [src/planet/contract.ts](src/planet/contract.ts.md) | 28 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
 | [src/planet/extract/multipolygon.ts](src/planet/extract/multipolygon.ts.md) | 8 |
 | [src/planet/extract/source.ts](src/planet/extract/source.ts.md) | 4 |
@@ -180,6 +180,7 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 46 |
 | [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 14 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 12 |
+| [src/render/entity/magazines.ts](src/render/entity/magazines.ts.md) | 4 |
 | [src/render/entity/monitor-face.ts](src/render/entity/monitor-face.ts.md) | 4 |
 | [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 11 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
@@ -211,7 +212,7 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [src/render/planet/clouds.ts](src/render/planet/clouds.ts.md) | 4 |
 | [src/render/planet/convert-mesh.ts](src/render/planet/convert-mesh.ts.md) | 2 |
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
-| [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 8 |
+| [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 5 |
 | [src/render/planet/geometry.ts](src/render/planet/geometry.ts.md) | 11 |
 | [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 21 |
 | [src/render/planet/horizon.ts](src/render/planet/horizon.ts.md) | 36 |
@@ -238,13 +239,13 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 29 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 123 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 122 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
 | [src/render/portal/remote.ts](src/render/portal/remote.ts.md) | 10 |
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
-| [src/render/shadows.ts](src/render/shadows.ts.md) | 28 |
+| [src/render/shadows.ts](src/render/shadows.ts.md) | 29 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
 | [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 15 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
@@ -260,13 +261,13 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 213 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 218 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
-| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 9 |
+| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 10 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 21 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 7 |
@@ -282,11 +283,12 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 1 |
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 2 |
+| [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 2 |
 | [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 5 |
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
-| [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 3 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 32 |
+| [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 4 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 33 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 9 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -345,7 +347,7 @@ Coverage: **342 modules; 3629 executable function definitions**.
 | [src/simulation/vehicles/wheeled/index.ts](src/simulation/vehicles/wheeled/index.ts.md) | 0 |
 | [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 31 |
 | [src/simulation/weapons/ballistics.ts](src/simulation/weapons/ballistics.ts.md) | 12 |
-| [src/simulation/weapons/casings.ts](src/simulation/weapons/casings.ts.md) | 15 |
+| [src/simulation/weapons/casings.ts](src/simulation/weapons/casings.ts.md) | 16 |
 | [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 6 |
 | [src/simulation/weapons/recoil.ts](src/simulation/weapons/recoil.ts.md) | 7 |
 | [src/util/gzip.ts](src/util/gzip.ts.md) | 1 |

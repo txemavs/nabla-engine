@@ -113,6 +113,7 @@ import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
 import {
   createGameCameraState,
+  downwardViewFar,
   gameCameraView,
   isFirstPersonView,
   mouseLooksWithoutButton,
@@ -316,6 +317,7 @@ export class GameRuntime {
     gameCameraDefaults.nearClip,
     gameCameraDefaults.farClip,
   )
+  private readonly viewForward = new THREE.Vector3()
   private readonly renderer: THREE.WebGLRenderer
   private readonly remoteViews: RemotePortalViews
   private readonly worldContent: WorldContent | undefined
@@ -1057,9 +1059,13 @@ export class GameRuntime {
       this.shadows.setLightDirection(direction.clone().negate())
       this.shadows.setLightIntensity(this.sun.intensity)
       this.shadows.setLightColor(this.sun.color)
-      this.camera.far = Math.hypot(
-        Math.max(height >= 2000 ? 80000 : 12000, this.quality.distance + 500),
-        Math.max(0, height),
+      this.camera.far = downwardViewFar(
+        Math.hypot(
+          Math.max(height >= 2000 ? 80000 : 12000, this.quality.distance + 500),
+          Math.max(0, height),
+        ),
+        eye.y,
+        this.camera.getWorldDirection(this.viewForward).y,
       )
     } else {
       this.scene.background = new THREE.Color('#a6bbd5')
