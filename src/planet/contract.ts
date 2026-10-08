@@ -27,8 +27,10 @@ export const PLANET_GEOMETRY_REVISION = 'native-surfaces-v5'
  * Cell versions this engine renders. A manifest without `cellVersion` is version 1 (every cell
  * published before the Atlas unified pipeline). Version 2 cells (Atlas `terrain-unified`, 2026-10)
  * carry roads and tunnel openings inside the terrain GLB and replace v1 cells at the same URL.
+ * Version 3 is the same ground model after the Atlas surface-cleanup pass (floating fragments
+ * removed, terrain fused under the road).
  */
-export const PLANET_CELL_VERSIONS = [1, 2] as const
+export const PLANET_CELL_VERSIONS = [1, 2, 3] as const
 export type PlanetCellVersion = (typeof PLANET_CELL_VERSIONS)[number]
 
 const SHA256 = /^[a-f0-9]{64}$/
@@ -238,6 +240,22 @@ export function isInspectRoadCollisionMesh(
 
 /** Atlas asphalt primitive role on an elevated structure (`extras.atlasSurfaceRole`). */
 export const BRIDGE_DECK_ROLE = 'bridge-deck'
+
+/** Atlas asphalt primitive role on ground-level roadway (`extras.atlasSurfaceRole`). */
+export const GROUND_ROAD_ROLE = 'ground-road'
+
+/**
+ * Whether a candidate asphalt mesh is drawn for this cell version. Version 2+ cells already
+ * carry the ground road inside `terrain.lidar`, so only bridge-deck asphalt is kept (bridges
+ * stay visible and keep casting). Supports are a separate layer and are never filtered here.
+ */
+export function loadsCandidateAsphaltOnCell(
+  cellVersion: PlanetCellVersion,
+  metadata: Record<string, any> | undefined,
+): boolean {
+  if (cellVersion < 2) return true
+  return metadata?.atlasSurfaceRole === BRIDGE_DECK_ROLE
+}
 
 /**
  * Shadow casters among planet meshes. Terrain and buildings always cast. Atlas bridge supports

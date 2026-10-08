@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **342 modules; 3620 executable function definitions**.
+Coverage: **342 modules; 3621 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -138,7 +138,7 @@ Coverage: **342 modules; 3620 executable function definitions**.
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
 | [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 21 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
-| [src/planet/contract.ts](src/planet/contract.ts.md) | 28 |
+| [src/planet/contract.ts](src/planet/contract.ts.md) | 29 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
 | [src/planet/extract/multipolygon.ts](src/planet/extract/multipolygon.ts.md) | 8 |
 | [src/planet/extract/source.ts](src/planet/extract/source.ts.md) | 4 |

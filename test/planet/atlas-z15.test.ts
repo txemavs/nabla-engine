@@ -383,7 +383,7 @@ describe('cell versions', () => {
     p.files = p.files.filter((f: { role: string }) => f.role !== 'terrain.lidar')
     delete p.terrain.lidar
     expect(() => adaptAtlasManifest(m, validateAtlasZ15Package(p, tile))).toThrow(
-      /version 2 has no unified terrain/,
+      /version 2\+ has no unified terrain/,
     )
   })
 
@@ -395,7 +395,7 @@ describe('cell versions', () => {
   })
 
   it('refuses cell versions this engine does not know', () => {
-    for (const bad of [3, 0, '2', 1.5]) {
+    for (const bad of [4, 0, '2', 1.5]) {
       const m = manifest()
       ;(m as unknown as { cellVersion: unknown }).cellVersion = bad
       expect(() => validatePlanetManifest(m, tile)).toThrow(/Unsupported cell version/)

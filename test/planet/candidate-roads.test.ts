@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   BRIDGE_DECK_ROLE,
+  GROUND_ROAD_ROLE,
+  loadsCandidateAsphaltOnCell,
   castsPlanetShadow,
   isCandidateRoadGlbPath,
   planetCollisionChunks,
@@ -378,5 +380,43 @@ describe('bridge shadow casters', () => {
     expect(castsPlanetShadow(tagCandidateRoadMesh({}, 'asphalt'))).toBe(false)
     expect(castsPlanetShadow(tagCandidateRoadMesh({}, 'collision'))).toBe(false)
     expect(castsPlanetShadow({ category: 'Roads' })).toBe(false)
+  })
+})
+
+describe('v2+ ground asphalt', () => {
+  it('keeps every asphalt mesh on version 1 cells', () => {
+    expect(loadsCandidateAsphaltOnCell(1, tagCandidateRoadMesh({}, 'asphalt'))).toBe(true)
+    expect(
+      loadsCandidateAsphaltOnCell(
+        1,
+        tagCandidateRoadMesh({ atlasSurfaceRole: GROUND_ROAD_ROLE }, 'asphalt'),
+      ),
+    ).toBe(true)
+    expect(
+      loadsCandidateAsphaltOnCell(
+        1,
+        tagCandidateRoadMesh({ atlasSurfaceRole: BRIDGE_DECK_ROLE }, 'asphalt'),
+      ),
+    ).toBe(true)
+  })
+
+  it('keeps only bridge-deck asphalt on version 2 and 3 (terrain.lidar already has the road)', () => {
+    for (const version of [2, 3] as const) {
+      expect(loadsCandidateAsphaltOnCell(version, tagCandidateRoadMesh({}, 'asphalt'))).toBe(false)
+      expect(
+        loadsCandidateAsphaltOnCell(
+          version,
+          tagCandidateRoadMesh({ atlasSurfaceRole: GROUND_ROAD_ROLE }, 'asphalt'),
+        ),
+      ).toBe(false)
+      expect(
+        loadsCandidateAsphaltOnCell(
+          version,
+          tagCandidateRoadMesh({ atlasSurfaceRole: BRIDGE_DECK_ROLE }, 'asphalt'),
+        ),
+      ).toBe(true)
+      // Supports are a separate layer; this helper only gates asphalt.
+      expect(loadsCandidateAsphaltOnCell(version, tagCandidateRoadMesh({}, 'supports'))).toBe(false)
+    }
   })
 })

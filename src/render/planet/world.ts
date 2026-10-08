@@ -3,6 +3,8 @@ import { placeLabel } from './place-label.js'
 import {
   PLANET_GEOMETRY_REVISION,
   castsPlanetShadow,
+  loadsCandidateAsphaltOnCell,
+  planetCellVersion,
   planetTileRevision,
   validPlanetPlaces,
   validatePlanetManifest,
@@ -991,7 +993,15 @@ export class PlanetWorld {
       .toArray()
     group.position.fromArray(position)
     group.quaternion.fromArray(rotation)
+    const cellVersion = planetCellVersion(manifest)
     for (const data of payload.meshes) {
+      // v2+ terrain.lidar already carries the ground road: skip ground asphalt so it does not
+      // double up. Bridge-deck asphalt and supports stay (bridges have priority).
+      if (
+        data.metadata.nablaCandidateRoad === 'asphalt' &&
+        !loadsCandidateAsphaltOnCell(cellVersion, data.metadata)
+      )
+        continue
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute('position', new THREE.BufferAttribute(data.position, 3))
       geometry.setAttribute('normal', new THREE.BufferAttribute(data.normal, 3))

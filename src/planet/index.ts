@@ -13,6 +13,9 @@ export {
   tagCandidateRoadMesh,
   castsPlanetShadow,
   BRIDGE_DECK_ROLE,
+  loadsCandidateAsphaltOnCell,
+  GROUND_ROAD_ROLE,
+  planetCellVersion,
   readCandidateRoads,
   ROAD_CANDIDATES_SCHEMA,
 } from './contract.js'
@@ -25,6 +28,7 @@ export type {
   PlanetCandidateRoads,
   PlanetCandidateRoadFile,
   PlanetCandidateRoadKind,
+  PlanetCellVersion,
   PlanetRoadCandidates,
   PlanetPublishedRoadLayer,
   PlanetGlbLayer,
