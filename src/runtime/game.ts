@@ -167,6 +167,7 @@ export class GameRuntime {
   ) {
     const sim = this.simulation
     if (!sim || this.state !== 'playing') return null
+    sim.setSurfaceRoads(this.recover.roads?.())
     if (input.forward || input.right || input.brake || input.sprint)
       this.cameraState.entrance = null
     const ticks = sim.stats.ticks

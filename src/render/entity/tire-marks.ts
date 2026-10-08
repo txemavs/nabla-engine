@@ -4,6 +4,14 @@ export type TireMarkContact = {
   contactPoint: Vec3Tuple | null
   contactNormal: Vec3Tuple | null
   slip: number
+  /** Grass marks are brown-green. Omitted or asphalt stays the dark road mark. */
+  surface?: 'asphalt' | 'grass' | null
+}
+const ASPHALT_MARK = [0.025, 0.022, 0.02]
+/** Brown-green. Not a measured swatch. */
+const GRASS_MARK = [0.22, 0.3, 0.09]
+function markGate(contact: TireMarkContact): number {
+  return contact.surface === 'grass' ? 0.12 : 0.22
 }
 /** Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe. */
 export class TireMarks {
@@ -11,6 +19,7 @@ export class TireMarks {
   private readonly positions: Float32Array
   private readonly stamps: Float32Array
   private readonly strength: Float32Array
+  private readonly colors: Float32Array
   private readonly anchor = new Vector3()
   private anchored = false
   private time = 0
@@ -30,12 +39,15 @@ export class TireMarks {
     this.positions = new Float32Array(capacity * 18)
     this.stamps = new Float32Array(capacity * 6)
     this.strength = new Float32Array(capacity * 6)
+    this.colors = new Float32Array(capacity * 18)
+    for (let i = 0; i < this.colors.length; i += 3) this.colors.set(ASPHALT_MARK, i)
     const uv = new Float32Array(capacity * 12)
     for (let i = 0; i < capacity; i++) uv.set([0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1], i * 12)
     const geometry = new BufferGeometry()
     geometry.setAttribute('position', new BufferAttribute(this.positions, 3))
     geometry.setAttribute('born', new BufferAttribute(this.stamps, 1))
     geometry.setAttribute('strength', new BufferAttribute(this.strength, 1))
+    geometry.setAttribute('tint', new BufferAttribute(this.colors, 3))
     geometry.setAttribute('uv', new BufferAttribute(uv, 2))
     geometry.setDrawRange(0, 0)
     this.root = new Mesh(
@@ -48,16 +60,16 @@ export class TireMarks {
         vertexShader: `
       #include <common>
       #include <logdepthbuf_pars_vertex>
-      attribute float born; attribute float strength;
-      varying vec2 markUv; varying float age; varying float opacity;
+      attribute float born; attribute float strength; attribute vec3 tint;
+      varying vec2 markUv; varying float age; varying float opacity; varying vec3 vTint;
       uniform float clock;
-      void main(){markUv=uv;age=clock-born;opacity=strength;
+      void main(){markUv=uv;age=clock-born;opacity=strength;vTint=tint;
       gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
       #include <logdepthbuf_vertex>
       }`,
         fragmentShader: `
       #include <logdepthbuf_pars_fragment>
-      varying vec2 markUv; varying float age; varying float opacity;
+      varying vec2 markUv; varying float age; varying float opacity; varying vec3 vTint;
       uniform float lifetime;
       void main(){
       #include <logdepthbuf_fragment>
@@ -65,7 +77,7 @@ export class TireMarks {
       float edge=smoothstep(0.0,0.12,markUv.x)*smoothstep(0.0,0.12,1.0-markUv.x);
       float grooves=0.82+0.18*cos(markUv.x*38.0);
       float alpha=fade*edge*grooves*opacity*0.48;
-      if(alpha<0.005)discard;gl_FragColor=vec4(0.025,0.022,0.02,alpha);
+      if(alpha<0.005)discard;gl_FragColor=vec4(vTint,alpha);
       }`,
       }),
     )
@@ -84,13 +96,13 @@ export class TireMarks {
     this.root.visible = this.time - this.lastMark < this.lifetime
     // Immediately break trails on loss of contact, even between emission ticks.
     contacts.forEach((c, i) => {
-      if (!c.contactPoint || c.slip < 0.22) this.previous.delete(i)
+      if (!c.contactPoint || c.slip < markGate(c)) this.previous.delete(i)
     })
     if (this.time - this.lastEmission < 0.05) return
     this.lastEmission = this.time
     let changed = false
     contacts.forEach((c, i) => {
-      if (!c.contactPoint || !c.contactNormal || c.slip < 0.22) return
+      if (!c.contactPoint || !c.contactNormal || c.slip < markGate(c)) return
       const point = new Vector3(...c.contactPoint),
         normal = new Vector3(...c.contactNormal).normalize()
       if (!this.anchored || point.distanceToSquared(this.anchor) > 4000000) {
@@ -122,13 +134,15 @@ export class TireMarks {
       )
       this.stamps.fill(this.time, slot * 6, slot * 6 + 6)
       this.strength.fill(Math.min(1, c.slip), slot * 6, slot * 6 + 6)
+      const tint = c.surface === 'grass' ? GRASS_MARK : ASPHALT_MARK
+      for (let k = 0; k < 6; k++) this.colors.set(tint, slot * 18 + k * 3)
       this.count = Math.min(this.capacity, this.count + 1)
       this.previous.set(i, { point, normal, left, right })
       this.lastMark = this.time
       changed = true
     })
     if (changed) {
-      for (const key of ['position', 'born', 'strength'])
+      for (const key of ['position', 'born', 'strength', 'tint'])
         this.root.geometry.attributes[key].needsUpdate = true
       this.root.geometry.setDrawRange(0, this.count * 6)
     }

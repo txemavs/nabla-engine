@@ -9,9 +9,17 @@
 - `three`
 - `../../entity/schema.js`
 
+## markGate
+
+[Implementation, line 13](../../../../../src/render/entity/tire-marks.ts#L13)
+
+```ts
+markGate(contact: TireMarkContact): number
+```
+
 ## TireMarks.constructor
 
-[Implementation, line 26](../../../../../src/render/entity/tire-marks.ts#L26)
+[Implementation, line 35](../../../../../src/render/entity/tire-marks.ts#L35)
 
 Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe.
 
@@ -28,11 +36,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `ShaderMaterial`
 - `geometry.setAttribute`
 - `geometry.setDrawRange`
+- `this.colors.set`
 - `uv.set`
 
 ## TireMarks.update
 
-[Implementation, line 76](../../../../../src/render/entity/tire-marks.ts#L76)
+[Implementation, line 88](../../../../../src/render/entity/tire-marks.ts#L88)
 
 Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe.
 
@@ -50,24 +59,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.position.copy`
 - `this.root.position.copy(this.anchor).sub`
 
-## TireMarks.update.callback@86
+## TireMarks.update.callback@98
 
-[Implementation, line 86](../../../../../src/render/entity/tire-marks.ts#L86)
+[Implementation, line 98](../../../../../src/render/entity/tire-marks.ts#L98)
 
 ```ts
-callback@86(c, i): inferred by TypeScript; see implementation
+callback@98(c, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `markGate`
 - `this.previous.delete`
 
-## TireMarks.update.callback@92
+## TireMarks.update.callback@104
 
-[Implementation, line 92](../../../../../src/render/entity/tire-marks.ts#L92)
+[Implementation, line 104](../../../../../src/render/entity/tire-marks.ts#L104)
 
 ```ts
-callback@92(c, i): inferred by TypeScript; see implementation
+callback@104(c, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -75,6 +85,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `Vector3`
 - `[a, b, left, left, b, right].forEach`
+- `markGate`
 - `new Vector3().crossVectors`
 - `new Vector3().crossVectors(direction, normal).normalize`
 - `new Vector3().crossVectors(direction, normal).normalize().multiplyScalar`
@@ -93,17 +104,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `previous.point.distanceTo`
 - `this.anchor.copy`
 - `this.clear`
+- `this.colors.set`
 - `this.previous.get`
 - `this.previous.set`
 - `this.stamps.fill`
 - `this.strength.fill`
 
-## TireMarks.update.callback@92.callback@120
+## TireMarks.update.callback@104.callback@132
 
-[Implementation, line 120](../../../../../src/render/entity/tire-marks.ts#L120)
+[Implementation, line 132](../../../../../src/render/entity/tire-marks.ts#L132)
 
 ```ts
-callback@120(v, k): inferred by TypeScript; see implementation
+callback@132(v, k): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -113,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireMarks.clear
 
-[Implementation, line 138](../../../../../src/render/entity/tire-marks.ts#L138)
+[Implementation, line 152](../../../../../src/render/entity/tire-marks.ts#L152)
 
 Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe.
 
@@ -128,7 +140,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireMarks.dispose
 
-[Implementation, line 146](../../../../../src/render/entity/tire-marks.ts#L146)
+[Implementation, line 160](../../../../../src/render/entity/tire-marks.ts#L160)
 
 Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe.
 
