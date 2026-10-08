@@ -248,3 +248,7 @@ node scripts/prepare-a3.mjs /path/to/original-a3-backup --wheel-only
 The previous wheel is also backed up locally at
 `/home/txema/backups/nabla-wheel-20260929/car.audi.a3.wheel.glb`.
 The reference photo is not embedded or redistributed as a texture.
+
+## Honda VFR800FI 1999
+
+`library/motorcycles/vfr800fi-1999/` contains the user-supplied Interceptor model, optimized and visually approved as a black 1999 VFR800FI on 2026-10-08. The original was supplied as `interceptor.glb`; its SHA-256 and the prepared GLB integrity are recorded in `asset.json`. Source artwork licensing was not supplied. This preparation retains the original wheel spoke designs, simplifies geometry, authors materials and separates mechanical pivots. The technical JSON links Honda brochure/service-manual sources and marks intermediate power-curve samples as simulation estimates. The asset requires future motorcycle support in Engine.

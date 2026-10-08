@@ -67,8 +67,16 @@ export function extractVehicleRig(document, bodyPose) {
     if (!anchors.has(role)) throw new Error(`Missing vehicle anchor: ${role}`)
     return anchors.get(role)
   }
-  const roles = ['wheel.fl', 'wheel.fr', 'wheel.rl', 'wheel.rr']
-  if (anchors.has('wheel.r2l') || anchors.has('wheel.r2r')) roles.push('wheel.r2l', 'wheel.r2r')
+  // Single-track rigs (motorcycles) author wheel.front and wheel.rear instead of four corners.
+  const singleTrack = anchors.has('wheel.front') || anchors.has('wheel.rear')
+  const corners = ['wheel.fl', 'wheel.fr', 'wheel.rl', 'wheel.rr', 'wheel.r2l', 'wheel.r2r']
+  if (singleTrack && corners.some((role) => anchors.has(role)))
+    throw new Error('Vehicle mixes wheel.front/wheel.rear with four-wheel anchors')
+  const roles = singleTrack
+    ? ['wheel.front', 'wheel.rear']
+    : ['wheel.fl', 'wheel.fr', 'wheel.rl', 'wheel.rr']
+  if (!singleTrack && (anchors.has('wheel.r2l') || anchors.has('wheel.r2r')))
+    roles.push('wheel.r2l', 'wheel.r2r')
   const wheels = roles.map(required)
   const seat = anchors.get('driver.seat'),
     eyes = anchors.get('driver.eyes')

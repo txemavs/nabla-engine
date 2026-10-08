@@ -1,4 +1,5 @@
 import type { DrivetrainState } from '../../simulation/vehicles/drivetrain.js'
+import type { TwoWheeledState } from '../../simulation/vehicles/two-wheeled/contracts.js'
 import type { Body, Box, RaycastVehicle } from '../../simulation/physics.js'
 import type { Entity } from '../schema.js'
 import type { VehicleDefinition } from './field.js'
@@ -22,12 +23,57 @@ export interface Vehicle {
   rampPortalActive: boolean
   cruiseSpeed: number
   helm: 'off' | 'auto' | 'car' | 'drone' | 'plane' | 'space'
+  /** Lean controller state; present only on two-wheeled vehicles. */
+  twoWheeled?: TwoWheeledState
+}
+
+/** True for a single-track vehicle (motorcycle) driven by the two-wheeled controller. */
+export function isTwoWheeled(
+  definition: Pick<VehicleDefinition, 'twoWheeled'> | null | undefined,
+): boolean {
+  return Boolean(definition?.twoWheeled)
+}
+
+/** Tyre radius of hub `index`: two-wheelers have their own rear radius; others share one. */
+export function hubWheelRadius(
+  definition: Pick<VehicleDefinition, 'twoWheeled' | 'wheelRadius'>,
+  index: number,
+): number {
+  return definition.twoWheeled && index === 1
+    ? definition.twoWheeled.rearWheelRadius
+    : definition.wheelRadius
+}
+
+/** Lowest tyre contact below the chassis origin (hub centre minus its tyre radius), metres. */
+export function wheelContactY(
+  definition: Pick<VehicleDefinition, 'twoWheeled' | 'wheelRadius' | 'hubs'>,
+): number {
+  return Math.min(...definition.hubs.map((hub, i) => hub[1] - hubWheelRadius(definition, i)))
+}
+
+/** Minimum chassis size [width, height, length] in metres. Two-wheelers are narrow and short. */
+const MIN_SIZE: Readonly<Record<'fourWheeled' | 'twoWheeled', readonly number[]>> = {
+  fourWheeled: [1, 0.3, 2],
+  twoWheeled: [0.3, 0.3, 1],
 }
 
 export function validateVehicle(entity: Entity): void {
   const spec = entity.vehicle
   if (spec) {
-    if (spec.hubs.length !== 4 && !spec.passive)
+    if (spec.twoWheeled) {
+      if (spec.hubs.length !== 2)
+        throw new Error('Two-wheeled vehicles need exactly two hubs, front then rear')
+      if (spec.passive || spec.tow || spec.flight || spec.plane || spec.boat || spec.garage)
+        throw new Error('Two-wheeled vehicles cannot be trailers, aircraft, boats or carriers')
+      if (!(spec.hubs[0][2] < spec.hubs[1][2]))
+        throw new Error('The front hub must be ahead (more negative Z) of the rear hub')
+      const tuning = spec.twoWheeled
+      if (tuning.maxLean !== undefined && tuning.fallLean !== undefined)
+        if (tuning.fallLean <= tuning.maxLean)
+          throw new Error('Two-wheeled fall lean must exceed the maximum cornering lean')
+    } else if (spec.hubs.length === 2)
+      throw new Error('Two-hub rigs must declare vehicle.twoWheeled')
+    else if (spec.hubs.length !== 4 && !spec.passive)
       throw new Error('Six-wheel rigs must be passive trailers')
     if (spec.tow && !spec.passive) throw new Error('Only passive trailers can be towed')
     if (entity.visual?.wheels && entity.visual.wheels.length !== spec.hubs.length)
@@ -51,8 +97,8 @@ export function validateVehicle(entity: Entity): void {
   if (entity.kind !== 'vehicle') return
   if (entity.motion !== 'dynamic' || entity.parentId !== null)
     throw new Error('Vehicles must be dynamic roots')
-  if (entity.size[0] < 1 || entity.size[1] < 0.3 || entity.size[2] < 2)
-    throw new Error('Vehicle is too small')
+  const minimum = MIN_SIZE[spec?.twoWheeled ? 'twoWheeled' : 'fourWheeled']
+  if (entity.size.some((value, i) => value < minimum[i])) throw new Error('Vehicle is too small')
 }
 
 /** Defaults for procedural cars. Asset names are not physics configuration. */

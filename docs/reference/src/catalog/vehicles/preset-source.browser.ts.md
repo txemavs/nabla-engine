@@ -9,7 +9,7 @@
 
 ## readVehiclePresetSources
 
-[Implementation, line 10](../../../../../src/catalog/vehicles/preset-source.browser.ts#L10)
+[Implementation, line 14](../../../../../src/catalog/vehicles/preset-source.browser.ts#L14)
 
 Same files as the node reader. Vite inlines them so the browser never scans the disk.
 
@@ -22,10 +22,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.entries`
 - `Object.entries(modules).map`
 
-## readVehiclePresetSources.callback@11
+## readVehiclePresetSources.callback@15
 
-[Implementation, line 11](../../../../../src/catalog/vehicles/preset-source.browser.ts#L11)
+[Implementation, line 15](../../../../../src/catalog/vehicles/preset-source.browser.ts#L15)
 
 ```ts
-callback@11([file, data]): inferred by TypeScript; see implementation
+callback@15([file, data]): inferred by TypeScript; see implementation
 ```

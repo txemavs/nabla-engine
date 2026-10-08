@@ -36,7 +36,7 @@ isFirstPerson(state: Pick<GameCameraState, 'mode'>): boolean
 Call each frame while seated. Returns true while cinematic owns the camera.
 
 ```ts
-update(now: number, dt: number, seated: boolean, body: { position: { x: number; y: number; z: number } quaternion: { x: number; y: number; z: number; w: number } linvel: () => { x: number; y: number; z: number } angvel: () => { x: number; y: number; z: number } } | null, camera: THREE.PerspectiveCamera, state: GameCameraState): boolean
+update(now: number, dt: number, seated: boolean, body: { position: { x: number; y: number; z: number } quaternion: { x: number; y: number; z: number; w: number } linvel: () => { x: number; y: number; z: number } angvel: () => { x: number; y: number; z: number } /** * Tilt from the vertical that is intended lean, not a roll (a motorcycle's fall * threshold, radians). Roll rate inside it never counts towards the flip trigger. */ leanAllowance?: number } | null, camera: THREE.PerspectiveCamera, state: GameCameraState): boolean
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -82,7 +82,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FlipCinematic.begin
 
-[Implementation, line 168](../../../../src/runtime/flip-cinematic.ts#L168)
+[Implementation, line 175](../../../../src/runtime/flip-cinematic.ts#L175)
 
 ```ts
 begin(now: number, body: { position: { x: number; y: number; z: number } linvel: () => { x: number; y: number; z: number } }, state: GameCameraState, forward: THREE.Vector3): void
@@ -109,7 +109,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FlipCinematic.finish
 
-[Implementation, line 204](../../../../src/runtime/flip-cinematic.ts#L204)
+[Implementation, line 211](../../../../src/runtime/flip-cinematic.ts#L211)
 
 ```ts
 finish(state: GameCameraState): void

@@ -187,6 +187,21 @@ export function headingDirection(heading: number, frame: Quaternion | null = nul
  * Headings are measured in the player frame (identity on open ground), in the chase-yaw
  * convention `atan2(-forward.x, -forward.z)`.
  */
+/**
+ * Rotate `up` about the horizontal heading to take out up to `allowance` radians of lean
+ * (roll from the vertical). Returns `up` itself (modified) for chaining; a nose pointing
+ * straight up or down, or a zero allowance, leaves it unchanged.
+ */
+export function removeLean(up: Vector3, forward: Vector3, allowance: number): Vector3 {
+  if (!(allowance > 0)) return up
+  const heading = new Vector3(forward.x, 0, forward.z)
+  if (heading.lengthSq() < 0.25) return up
+  heading.normalize()
+  const right = new Vector3().crossVectors(heading, new Vector3(0, 1, 0))
+  const lean = Math.atan2(-up.dot(right), up.y)
+  return up.applyAxisAngle(heading, MathUtils.clamp(lean, -allowance, allowance))
+}
+
 export class GroundHeading {
   /** Smoothed heading, radians. */
   heading = 0
@@ -217,6 +232,11 @@ export class GroundHeading {
   /**
    * Advance with the vehicle's interpolated pose. `frame` is the player frame rotation (null on
    * open ground); `dt` is seconds. A new vehicle id re-seeds every filter.
+   *
+   * `leanAllowance` (radians, default 0) is roll about the horizontal heading that counts as
+   * intended riding lean rather than a rollover: a motorcycle passes its fall threshold
+   * (`vehicleInfo(id).leanAllowance`). Lean up to it is removed before the upset tests, so
+   * cornering, and rolling in and out of a corner, never reads as tumbling.
    */
   update(
     id: string,
@@ -224,12 +244,13 @@ export class GroundHeading {
     rotation: readonly number[],
     frame: Quaternion | null,
     dt: number,
+    leanAllowance = 0,
   ): void {
     const s = this.settings
     const inverse = (frame ?? identity).clone().invert()
     const body = inverse.clone().multiply(new Quaternion().fromArray(rotation))
     const forward = new Vector3(0, 0, -1).applyQuaternion(body)
-    const up = new Vector3(0, 1, 0).applyQuaternion(body)
+    const up = removeLean(new Vector3(0, 1, 0).applyQuaternion(body), forward, leanAllowance)
     const local = new Vector3().fromArray(position).applyQuaternion(inverse)
     const flat = Math.hypot(forward.x, forward.z)
     const chassis = Math.atan2(-forward.x, -forward.z)

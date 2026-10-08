@@ -95,6 +95,54 @@ export const roadVehicleDefaults = Object.freeze({
   couplingImpactForce: 250000,
 })
 
+/**
+ * Two-wheeled (motorcycle) controller defaults. A preset's `vehicle.twoWheeled` overrides any of
+ * them. TODO(unverified): every value here is a conservative gameplay placeholder chosen for
+ * stability in the fixed-step Rapier simulation. None is measured or published data for any
+ * machine; calibrate against real rider/tyre data before treating the result as realistic.
+ */
+export const twoWheeledDefaults = Object.freeze({
+  /** TODO(unverified): largest cornering lean the rider model aims for, radians (~40°). */
+  maxLean: 0.7,
+  /** TODO(unverified): lean beyond which the machine has fallen and balance stops, radians. */
+  fallLean: 1.15,
+  /** TODO(unverified): below this speed the balance assist holds the machine upright, m/s. */
+  balanceSpeed: 3,
+  /** Low-speed balance assist on by default, so a stopped machine stays on its wheels. */
+  balanceAssist: true,
+  /** TODO(unverified): lean controller natural frequency while riding, rad/s. */
+  leanResponse: 5,
+  /** TODO(unverified): stiffer natural frequency of the low-speed balance assist, rad/s. */
+  assistResponse: 8,
+  /** Lean controller damping ratio (1 = critically damped, no overshoot). */
+  leanDampingRatio: 1,
+  /** TODO(unverified): largest commanded roll acceleration, rad/s². Caps crash recovery. */
+  maxLeanAcceleration: 60,
+  /**
+   * Low-pass rate of the roll disturbance observer, 1/s. It estimates the roll acceleration the
+   * tyres and gravity add every tick and cancels it, so the lean follows its target in turns.
+   */
+  disturbanceResponse: 20,
+  /** TODO(unverified): handlebar slew rate, rad/s. */
+  steerRate: 2.5,
+  /** TODO(unverified): front brake at full lever, same units as `brakeForce`. */
+  frontBrakeForce: 24,
+  /** TODO(unverified): rear brake at full lever, same units as `brakeForce`. */
+  rearBrakeForce: 6,
+  /** TODO(unverified): tyre friction slip for both wheels. */
+  frictionSlip: 4,
+  /** TODO(unverified): suspension relaxation (rebound) and compression damping. */
+  dampingRelaxation: 2.6,
+  dampingCompression: 4.4,
+  /**
+   * Phase-1 wheelie guard: drive force is cut while the front tyre is off the ground under
+   * power. Wheelie and stoppie dynamics are not tuned yet.
+   */
+  wheelieGuard: true,
+  /** TODO(unverified): aerodynamic drag factor standing in for ½·ρ·CdA, N per (m/s)². */
+  dragFactor: 0.3,
+})
+
 /** Conservative map collision streaming. Safety margins are in metres; budgets are soft. */
 export const mapCollisionDefaults = Object.freeze({
   /** Resort deferred colliders at this interval in milliseconds. */

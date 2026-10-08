@@ -44,6 +44,26 @@ function validGearbox(spec: PowertrainDefinition): boolean {
   )
 }
 
+/** Optional powertrain numbers are finite, positive and mutually consistent. */
+export function isValidPowertrain(spec: PowertrainDefinition): boolean {
+  const positive = (value: number) => Number.isFinite(value) && value > 0
+  return (
+    [spec.powerCv, spec.torqueNm, spec.finalDrive, spec.grip].every(positive) &&
+    spec.ratios.length > 0 &&
+    spec.ratios.every(positive) &&
+    ![spec.idleRpm, spec.maxRpm, spec.reverseRatio, spec.maxSpeedKmh].some(
+      (value) => value !== undefined && !positive(value),
+    ) &&
+    (spec.idleRpm ?? roadVehicleDefaults.idleRpm) < (spec.maxRpm ?? 6900) &&
+    validGearbox(spec)
+  )
+}
+
+/** Radius of the driven tyre used for engine speed: a two-wheeler's rear tyre, else the shared one. */
+export function driveWheelRadius(definition: WheeledDefinition): number {
+  return definition.twoWheeled?.rearWheelRadius ?? definition.wheelRadius
+}
+
 /** Borrowed body/rig in the host's single world; this module never steps or owns that world. */
 export interface WheeledVehicle {
   body: Body
@@ -77,15 +97,7 @@ export function createWheeledVehicle(
       definition.suspensionTravel ?? 0.3,
     ].every(positive) ||
     ![undefined, 'front', 'rear', 'all'].includes(definition.drivenWheels) ||
-    (spec &&
-      (![spec.powerCv, spec.torqueNm, spec.finalDrive, spec.grip].every(positive) ||
-        !spec.ratios.length ||
-        !spec.ratios.every(positive) ||
-        [spec.idleRpm, spec.maxRpm, spec.reverseRatio, spec.maxSpeedKmh].some(
-          (value) => value !== undefined && !positive(value),
-        ) ||
-        (spec.idleRpm ?? roadVehicleDefaults.idleRpm) >= (spec.maxRpm ?? 6900) ||
-        !validGearbox(spec)))
+    (spec && !isValidPowertrain(spec))
   )
     throw new Error('Invalid wheeled vehicle definition')
   const car = new RaycastVehicle({
@@ -128,7 +140,7 @@ export function syncWheeledDamping(v: WheeledVehicle, dockedDamping?: number): v
  * crept since P engaged, limited by tyre friction. Speeds are relative to the supporting body, so
  * a car parked on a moving deck rides along. A sleeping chassis is left asleep.
  */
-function holdInPark(v: WheeledVehicle, forward: Vec3, speed: number, dt: number): void {
+export function holdInPark(v: WheeledVehicle, forward: Vec3, speed: number, dt: number): void {
   const state = v.drivetrain
   const wheels = v.raycast.wheelInfos
   const contacts = wheels.filter((wheel) => wheel.isInContact)
@@ -319,7 +331,7 @@ export function shiftWheeledVehicle(
   const spec = v.definition.powertrain
   if (!spec) return 'unavailable'
   const speed = v.body.velocity.dot(v.body.quaternion.vmult(new Vec3(0, 0, -1)))
-  return shiftGear(v.drivetrain, spec, v.definition.wheelRadius, speed, direction)
+  return shiftGear(v.drivetrain, spec, driveWheelRadius(v.definition), speed, direction)
     ? 'shifted'
     : 'protected'
 }
@@ -373,6 +385,8 @@ export function wheelContacts(
   tireEffects = true,
 ): WheelContactSnapshot[] {
   const lateralSlip = wheeledTelemetry(v, input, active, tireEffects).tireSlip
+  // Rear hubs: 2/3 (and 4/5 on a six-wheel trailer); a two-wheeler's rear hub is 1.
+  const rear = (i: number) => (v.raycast.wheelInfos.length === 2 ? i === 1 : i >= 2)
   return v.raycast.wheelInfos.map((wheel, i) => {
     const normal = wheel.raycastResult.hitNormalWorld
     const length = normal.length()
@@ -387,8 +401,8 @@ export function wheelContacts(
         contact && tireEffects
           ? Math.max(
               lateralSlip,
-              i >= 2 ? v.drivetrain.launchSlip : 0,
-              active && input.handbrake && i >= 2 ? Math.min(1, v.body.velocity.length() / 5) : 0,
+              rear(i) ? v.drivetrain.launchSlip : 0,
+              active && input.handbrake && rear(i) ? Math.min(1, v.body.velocity.length() / 5) : 0,
             )
           : 0,
       suspensionLength: wheel.suspensionLength,

@@ -1,0 +1,22 @@
+# Honda VFR800FI 99
+
+User-approved black VFR800FI (RC46) asset: 273,994 triangles, 7.83 MB, metres, Y-up, −Z forward.
+Original user-supplied Interceptor geometry was simplified and articulated; source SHA-256 and final integrity are in [asset.json](asset.json). Original spoke designs remain. Tyres and chain are smooth, brake tracks are planar, and lenses carry the shared vehicle light channels.
+
+## Files
+
+- [vfr800fi-1999.glb](vfr800fi-1999.glb): complete articulated presentation model.
+- [vfr800fi-1999.rig.json](vfr800fi-1999.rig.json): steering, fork, swingarm, wheels, shock, driver and light anchors.
+- [vfr800.json](vfr800.json): the `vfr800` vehicle preset (spawn it like the car preset).
+- [vfr800fi-1999.specs.json](vfr800fi-1999.specs.json): sourced technical reference and explicitly estimated crankshaft torque/power samples.
+- [vfr800fi-1999-power.csv](vfr800fi-1999-power.csv): the same estimated full-throttle curve in CSV form.
+
+## Runtime status
+
+**Phase 1: drivable.** The `vfr800` preset runs on the engine's two-wheeled controller (`src/simulation/vehicles/two-wheeled/`): two ray-cast wheels with their own radii, steering about the raked head axis, a lean controller with low-speed balance assist, separate front (S / brake input) and rear (handbrake input) brakes, and the shared automatic gearbox. The rig extractor reads `wheel.front` and `wheel.rear`. It has no turbo sound and plays a quiet click on every gear change (`vehicle.audio`).
+
+Visual kinematics live in the engine: `bindMotorcycleRig(root)` in `src/render/vehicle-presentation/motorcycle-rig.ts` (exported from `@nabla/engine/vehicle-presentation`), ported from the former `vfr800fi-1999-controls.mjs` helper. It reads the steering axis, lock and fork travel from the GLB extras, clones the chain geometry per instance (`dispose()` frees it) and takes the pose from `Simulation.twoWheeledPose(id)`. Visual travel is 100 mm, separate from factory travel.
+
+Which preset values are Honda data and which are placeholders is listed in [docs/motorcycles.md](../../../../docs/motorcycles.md). Every placeholder is marked TODO(unverified) in the engine config; none of them is Honda data.
+
+Reference dimensions do not guarantee every reconstructed body contour: rear bodywork was widened for clearance, mirrors exceed the brochure width, and shock attachment points are estimated. These artistic changes do not change the factory specification sheet.

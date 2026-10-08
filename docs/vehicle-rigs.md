@@ -12,7 +12,9 @@ Create meshless nodes in the active GLB scene with
 are `wheel.fl`, `wheel.fr`, `wheel.rl`, `wheel.rr` and `steering`. Left and right
 are from the driver's perspective. Names are for humans; metadata identifies
 the role. Four wheel anchors are required; six-wheel trailers add `wheel.r2l` and
-`wheel.r2r`, in axle order. Steering is optional for assets without a separate
+`wheel.r2r`, in axle order. Single-track vehicles (motorcycles, `vehicle.twoWheeled`) author
+`wheel.front` and `wheel.rear` instead and become two hubs, front first; mixing them with the
+four-wheel roles is an error (see [motorcycles](motorcycles.md)). Steering is optional for assets without a separate
 steering mesh. `driver.seat` and `driver.eyes` are a pair: eye translation and
 orientation define the neutral cockpit view relative to the chassis. Manual
 look is composed after the authored eye orientation.

@@ -181,6 +181,15 @@ The clack is synthesized (no sample file): two impacts plus an optional air rele
 shaped by `shift.clack` (`clunkHz`, `clickHz`, `gain`, `decaySeconds`, `echoSeconds`,
 `airSeconds`). Omitted fields give the light car clack.
 
+**Per-vehicle sound (`vehicle.audio`).** Optional; omitted keeps the road-car sound above.
+`turbo: false` keeps the turbo whistle, spool and blow-off silent (the engine note stays).
+`gearShift: { sound, volume }` picks the gear-change sound: `clack` (default, the behaviour
+above), `click` (a short, quiet synthesized click, ~30 ms of band-passed noise at a fifth of
+the clack's level, played on every counted gear change including automatic ones, via
+`VehicleAudio.gearClick`) or `none`; `volume` (0..2, default 1) scales either. The `vfr800`
+motorcycle uses `{ "turbo": false, "gearShift": { "sound": "click", "volume": 1 } }`; the
+click's shape is `gearClickDefaults` in `src/audio/gear-click.ts`. No sample files are used.
+
 **Neutral and park.** Stopped (below 0.5 m/s) with the handbrake (Space) on and no pedal
 pressed, D/R drops to N after `shift.neutralSeconds` (default 0.4 s, truck 0.8 s), and N to P
 after a further `shift.parkSeconds` (default 1.5 s, truck 2.5 s); reaching P is audible (one

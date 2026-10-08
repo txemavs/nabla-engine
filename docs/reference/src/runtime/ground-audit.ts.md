@@ -30,7 +30,7 @@ the simulation and the ground provider and changes neither. Used by tests and th
 checks of the terrain example to prove nothing is sunk or floating.
 
 ```ts
-auditGround(sim: Pick< Simulation, 'entityTransform' | 'wheelTransforms' | 'wheelContactInfo' | 'player' | 'nearestVehicle' >, vehicles: readonly { id: string; name: string; wheelRadius: number }[], ground: (position: Vec3Tuple) => number | undefined, playerHalfHeight: number): GroundAudit
+auditGround(sim: Pick< Simulation, 'entityTransform' | 'wheelTransforms' | 'wheelContactInfo' | 'player' | 'nearestVehicle' >, vehicles: readonly { id: string; name: string; wheelRadius: number; rearWheelRadius?: number }[], ground: (position: Vec3Tuple) => number | undefined, playerHalfHeight: number): GroundAudit
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -76,26 +76,38 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `finite`
 - `ground`
 
-## auditGround.callback@59.callback@64
+## auditGround.callback@59.radius
 
 [Implementation, line 64](../../../../src/runtime/ground-audit.ts#L64)
 
 ```ts
-callback@64(w): inferred by TypeScript; see implementation
+radius(i: number): inferred by TypeScript; see implementation
 ```
 
-## auditGround.callback@59.callback@65
+## auditGround.callback@59.callback@66
 
-[Implementation, line 65](../../../../src/runtime/ground-audit.ts#L65)
+[Implementation, line 66](../../../../src/runtime/ground-audit.ts#L66)
 
 ```ts
-callback@65(bottom, i): inferred by TypeScript; see implementation
+callback@66(w, i): inferred by TypeScript; see implementation
 ```
 
-## auditGround.callback@59.callback@75
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 75](../../../../src/runtime/ground-audit.ts#L75)
+- `radius`
+
+## auditGround.callback@59.callback@67
+
+[Implementation, line 67](../../../../src/runtime/ground-audit.ts#L67)
 
 ```ts
-callback@75(c): inferred by TypeScript; see implementation
+callback@67(bottom, i): inferred by TypeScript; see implementation
+```
+
+## auditGround.callback@59.callback@77
+
+[Implementation, line 77](../../../../src/runtime/ground-audit.ts#L77)
+
+```ts
+callback@77(c): inferred by TypeScript; see implementation
 ```

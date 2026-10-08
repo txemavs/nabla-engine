@@ -141,9 +141,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.constructor
 
-[Implementation, line 112](../../../../src/audio/powertrain.ts#L112)
+[Implementation, line 115](../../../../src/audio/powertrain.ts#L115)
 
-Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence.
+Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
+`turbo: false` for an engine without one (the turbo voice then stays silent).
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -156,9 +157,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.silence
 
-[Implementation, line 117](../../../../src/audio/powertrain.ts#L117)
+[Implementation, line 120](../../../../src/audio/powertrain.ts#L120)
 
-Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence.
+Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
+`turbo: false` for an engine without one (the turbo voice then stays silent).
 
 ```ts
 silence(time: number): void
@@ -171,12 +173,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.update
 
-[Implementation, line 122](../../../../src/audio/powertrain.ts#L122)
+[Implementation, line 125](../../../../src/audio/powertrain.ts#L125)
 
-Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence.
+Engine note and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
+`turbo: false` for an engine without one (the turbo voice then stays silent).
 
 ```ts
-update(time: number, audible: boolean, rpm: number, load: number): void
+update(time: number, audible: boolean, rpm: number, load: number, turbo = true): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -185,4 +188,5 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `Number.isFinite`
 - `this.engine.update`
+- `this.turbo.silence`
 - `this.turbo.update`

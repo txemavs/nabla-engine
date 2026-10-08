@@ -20,3 +20,15 @@ callback@17(v): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.hypot`
+
+## callback@36
+
+[Implementation, line 36](../../../../../src/entity/vehicle/field.ts#L36)
+
+```ts
+callback@36(v): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.hypot`

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "vfr800fi-1999",
+  "label": "Honda VFR800FI 99",
+  "kind": "motorcycle",
+  "integrationStatus": "phase-1",
+  "drivable": true,
+  "preset": "vfr800.json",
+  "model": "vfr800fi-1999.glb",
+  "rigFile": "vfr800fi-1999.rig.json",
+  "specifications": "vfr800fi-1999.specs.json",
+  "visualController": "src/render/vehicle-presentation/motorcycle-rig.ts",
+  "powerCurveCsv": "vfr800fi-1999-power.csv",
+  "units": "metres",
+  "up": "+Y",
+  "forward": "-Z",
+  "triangles": 273994,
+  "bytes": 7828280,
+  "sha256": "2592f40a610fb5ae6f3c670036bf1b477641d015a20faf8f9af08f2ba7b989dc",
+  "provenance": {
+    "source": "User-supplied interceptor.glb, prepared and visually approved in this task",
+    "sourceSha256": "aba157065d7bc73009ac11dc90a89131d91e7c0e5d2ad8705283df83f05a7efd",
+    "preparedOn": "2026-10-08",
+    "license": "Source artwork license not supplied; repository code license does not establish rights to original artwork."
+  }
+}
