@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "id": "vfr800fi-1999",
+  "name": "Honda VFR800FI 1999",
+  "family": "RC46 fifth generation",
+  "kind": "motorcycle",
+  "status": "reference-data-only",
+  "market": "1999 ED-type, unrestricted DIN output",
+  "units": {
+    "length": "m",
+    "mass": "kg",
+    "torque": "Nm",
+    "power": "W",
+    "speed": "rpm",
+    "volume": "litres",
+    "angles": "degrees"
+  },
+  "sources": [
+    {
+      "id": "honda-1999-ed",
+      "title": "Honda VFR800FI 1998/1999 press dossier, 1999 ED specifications",
+      "url": "https://www.vfritaliaclubforum.it/wp/files/tecnica/Storia%20VFR/VFR800FI-1998_1999.pdf",
+      "pages": "31 (1999 ED specifications); 8 (1998 comparative graph, not digitized)"
+    },
+    {
+      "id": "honda-service-1998-2001",
+      "title": "Honda VFR800FI Interceptor 1998–2001 factory service manual",
+      "url": "https://www.scribd.com/document/444334608/Honda-VFR800FI-Interceptor-98-01-Service-Manual-Www-manuale-reparatie-eu",
+      "pages": "General Information 1-4 to 1-6",
+      "note": "Transmission ratios calculated from tooth counts; text OCR contains incorrect decimal ratios. US mass and front travel are recorded separately from 1999 ED brochure."
+    }
+  ],
+  "engine": {
+    "sourceId": "honda-1999-ed",
+    "layout": "90-degree V4",
+    "cycle": "four-stroke",
+    "cooling": "liquid",
+    "displacementCm3": 781.7,
+    "boreM": 0.072,
+    "strokeM": 0.048,
+    "compressionRatio": 11.6,
+    "valves": 16,
+    "camDrive": "gear-driven DOHC",
+    "fuelSystem": "PGM-FI",
+    "vtec": false,
+    "peakPower": {
+      "watts": 81000,
+      "rpm": 10500,
+      "standard": "DIN",
+      "publishedPs": 110
+    },
+    "peakTorque": {
+      "newtonMetres": 82,
+      "rpm": 8500,
+      "standard": "DIN"
+    },
+    "alternate1998EcRating": {
+      "powerW": 78000,
+      "powerRpm": 10500,
+      "torqueNm": 79,
+      "torqueRpm": 8500,
+      "note": "1998 95/1/EC rating; do not mix with 1999 ED DIN curve."
+    }
+  },
+  "transmission": {
+    "sourceId": "honda-service-1998-2001",
+    "type": "constant-mesh sequential six-speed",
+    "clutch": "hydraulically operated wet multi-plate",
+    "shiftPattern": ["1", "N", "2", "3", "4", "5", "6"],
+    "neutralRatio": 0,
+    "reverseGear": false,
+    "primary": {
+      "drivenTeeth": 64,
+      "drivingTeeth": 33,
+      "ratio": 1.9393939393939394
+    },
+    "gears": [
+      {
+        "gear": 1,
+        "drivenTeeth": 37,
+        "drivingTeeth": 13,
+        "ratio": 2.8461538461538463
+      },
+      {
+        "gear": 2,
+        "drivenTeeth": 33,
+        "drivingTeeth": 16,
+        "ratio": 2.0625
+      },
+      {
+        "gear": 3,
+        "drivenTeeth": 31,
+        "drivingTeeth": 19,
+        "ratio": 1.631578947368421
+      },
+      {
+        "gear": 4,
+        "drivenTeeth": 28,
+        "drivingTeeth": 21,
+        "ratio": 1.3333333333333333
+      },
+      {
+        "gear": 5,
+        "drivenTeeth": 30,
+        "drivingTeeth": 26,
+        "ratio": 1.1538461538461537
+      },
+      {
+        "gear": 6,
+        "drivenTeeth": 29,
+        "drivingTeeth": 28,
+        "ratio": 1.0357142857142858
+      }
+    ],
+    "finalDrive": {
+      "type": "O-ring sealed chain",
+      "frontSprocketTeeth": 17,
+      "rearSprocketTeeth": 43,
+      "ratio": 2.5294117647058822
+    },
+    "driveWheel": "rear"
+  },
+  "chassis": {
+    "sourceId": "honda-1999-ed",
+    "lengthM": 2.095,
+    "widthM": 0.735,
+    "heightM": 1.19,
+    "wheelbaseM": 1.44,
+    "seatHeightM": 0.805,
+    "groundClearanceM": 0.13,
+    "dryMassKg": 208,
+    "fuelCapacityLitres": 21,
+    "riderMassKg": null,
+    "centerOfMassM": null,
+    "inertiaKgM2": null,
+    "serviceManualReference": {
+      "sourceId": "honda-service-1998-2001",
+      "market": "49-state US / Canada",
+      "curbMassKg": 234,
+      "note": "Includes operating fluids; not an ED-certified curb mass. Rider and cargo are additional."
+    },
+    "steering": {
+      "sourceId": "honda-service-1998-2001",
+      "rakeDegrees": 25.5,
+      "trailM": 0.095
+    },
+    "suspension": {
+      "front": {
+        "type": "41 mm H.M.A.S. cartridge telescopic fork",
+        "tubeDiameterM": 0.041,
+        "axleTravelM": 0.109
+      },
+      "rear": {
+        "type": "Pro-Link single-sided Pro-Arm, gas H.M.A.S. shock",
+        "axleTravelM": 0.12
+      },
+      "note": "1999 ED brochure gives 109 mm front axle travel; 1998 service manual gives 120 mm. Asset visual travel is 100 mm per rig, not a factory suspension limit."
+    }
+  },
+  "wheels": {
+    "front": {
+      "tyre": "120/70 ZR17 (58W)",
+      "nominalWidthM": 0.12,
+      "aspectRatio": 0.7,
+      "beadDiameterM": 0.4318,
+      "rimWidthM": 0.0889,
+      "nominalUnloadedRadiusM": 0.2999
+    },
+    "rear": {
+      "tyre": "180/55 ZR17 (73W)",
+      "nominalWidthM": 0.18,
+      "aspectRatio": 0.55,
+      "beadDiameterM": 0.4318,
+      "rimWidthM": 0.1397,
+      "nominalUnloadedRadiusM": 0.3149
+    }
+  },
+  "brakes": {
+    "sourceId": "honda-1999-ed",
+    "system": "Dual CBS combined hydraulic braking",
+    "front": {
+      "discCount": 2,
+      "discDiameterM": 0.296,
+      "physicalDiscThicknessM": 0.0045,
+      "caliperPistons": 3
+    },
+    "rear": {
+      "discCount": 1,
+      "discDiameterM": 0.256,
+      "physicalDiscThicknessM": 0.006,
+      "caliperPistons": 3
+    },
+    "abs": false,
+    "note": "Asset brake tracks are deliberately planar. CBS coupling needs its own implementation; neither independent braking nor optional ABS should be mistaken for the original hydraulic system."
+  },
+  "fullThrottleCurve": {
+    "status": "estimated-for-simulation",
+    "measurementLocation": "crankshaft",
+    "sourcePeakId": "honda-1999-ed",
+    "provenance": "Authored approximation constrained to published 1999 ED DIN peaks. Intermediate samples are estimates, not measured dyno values or digitized Honda graph data.",
+    "interpolation": "linear torque between samples; derive power from torque and rpm",
+    "formula": "powerW = torqueNm * rpm * 2 * pi / 60",
+    "validRpmRange": [1000, 11500],
+    "outsideRange": "undefined; do not extrapolate or infer a rev limiter",
+    "samples": [
+      {
+        "rpm": 1000,
+        "torqueNm": 30,
+        "powerW": 3141.5926535897934
+      },
+      {
+        "rpm": 2000,
+        "torqueNm": 45,
+        "powerW": 9424.77796076938
+      },
+      {
+        "rpm": 3000,
+        "torqueNm": 52,
+        "powerW": 16336.281798666925
+      },
+      {
+        "rpm": 4000,
+        "torqueNm": 60,
+        "powerW": 25132.741228718347
+      },
+      {
+        "rpm": 5000,
+        "torqueNm": 65,
+        "powerW": 34033.92041388943
+      },
+      {
+        "rpm": 6000,
+        "torqueNm": 69,
+        "powerW": 43353.97861953915
+      },
+      {
+        "rpm": 7000,
+        "torqueNm": 74,
+        "powerW": 54244.83315198377
+      },
+      {
+        "rpm": 8000,
+        "torqueNm": 80,
+        "powerW": 67020.64327658225
+      },
+      {
+        "rpm": 8500,
+        "torqueNm": 82,
+        "powerW": 72989.66931840286
+      },
+      {
+        "rpm": 9000,
+        "torqueNm": 81,
+        "powerW": 76340.70148223198
+      },
+      {
+        "rpm": 9500,
+        "torqueNm": 79,
+        "powerW": 78592.17621730464
+      },
+      {
+        "rpm": 10000,
+        "torqueNm": 77,
+        "powerW": 80634.21144213802
+      },
+      {
+        "rpm": 10500,
+        "torqueNm": 73.66600223110585,
+        "powerW": 81000.00000000001
+      },
+      {
+        "rpm": 11000,
+        "torqueNm": 68,
+        "powerW": 78330.3768295055
+      },
+      {
+        "rpm": 11500,
+        "torqueNm": 62,
+        "powerW": 74665.18540031742
+      }
+    ]
+  },
+  "unmeasuredSimulationParameters": {
+    "idleRpm": null,
+    "revLimiterRpm": null,
+    "drivetrainEfficiency": null,
+    "engineInertiaKgM2": null,
+    "engineBrakingCurve": null,
+    "clutchCapacityNm": null,
+    "shiftDurationSeconds": null,
+    "dragAreaM2": null,
+    "tyreFrictionModel": null,
+    "springRatesNPerM": null,
+    "dampingNsPerM": null
+  },
+  "integration": {
+    "drivable": false,
+    "controller": "pending dedicated two-wheel simulation",
+    "assetRig": "vfr800fi-1999.rig.json",
+    "note": "Reference data only; not a four-wheel Engine vehicle preset."
+  }
+}
