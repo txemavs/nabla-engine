@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Fixed
+
+- Trucks and trailers: the cargo-box skin (`Chassis B`, albedo ~0.02, metal 0.45, no environment) rendered as a flat black silhouette. It now takes the same body colour as `White paint`. S3 / A3 cabin cloth and plastic authored under 0.08 linear are floored so the interior is not pure black. TODO(unverified): the cabin floor is not a measured swatch.
+
+### Changed
+
+- Engine start (cars and the VFR, shared starter; the running V4 is unchanged): about 0.95 s of electric-starter whine and compression pulses before the engine catches.
+- **Chrome darkens like the wheel rim lips:** the S3 trim, the VFR silencer end cap and the disc
+  buttons took a fixed studio reflection that ignores shadows, so they stayed bright in shade and
+  at night and read as self-lit. The rim lips never had that environment, which is why they go
+  dark properly (and why their light-grey base read as glossy black beside the glowing trim).
+  Reflections are now multiplied by the surface's own light, the base colour is a whiter 0.93 with
+  roughness 0.15 and metalness 1, and nothing is emissive. Neutral and the right way up, as before.
+
+- **VFR800 metal map (Txema's review):** chrome only on the brake discs (their tracks and floating
+  buttons) and the stainless end cap of the silencer (`Stainless chrome silencer end cap`, roughness
+  0.12, reflections 0.75). The silencer can joins the headers and the engine on the top triple
+  clamp's satin aluminium; the fork stanchions are a polished aluminium grey (base 0.5, roughness
+  0.3), no longer chrome. Headlamp reflector and mirror glass unchanged. Regenerated with
+  `scripts/prepare-vfr800-cockpit.mjs` from the phase-1 GLB.
+
 ### Added
 
 - **HK USP Compact as a firearm:** the assembled model (slide, trigger, magazine, muzzle) replaces the
@@ -45,8 +66,8 @@
   shift points and sound follow the mode (`powertrain.modes`, `defaultMode`, `audio.engineModes`,
   `&engineMode=`). The A3 is hidden from the add-vehicle menu and the demo fleet (`hidden`), and
   stays available to Studio, the palette, tests and docking.
-- **VFR800 metal and windscreen:** neutral mirror chrome (base 0.95 grey, metallic 1, roughness
-  0.03, slightly stronger reflections) only on the fork stanchions, the silencer can and its end
+- **VFR800 metal and windscreen:** neutral chrome (base 0.95 grey, metallic 1, roughness 0.12,
+  reflections at 0.75; first 0.03 / 1.25, toned down as too mirror-like) only on the fork stanchions, the silencer can and its end
   cap; the exhaust headers and the engine use the satin grey metal of the top triple clamp, as do
   the frame and fork lowers; discs, brake tracks, chain, sprockets, radiator and swingarm keep
   their authored materials. The reflection environment is a colourless studio gradient, so chrome
@@ -261,6 +282,17 @@
 
 ### Fixed
 
+- **S3 / A3 chrome trim reads as chrome:** the window surrounds, beltline, boot trim, grille and
+  badge (`Cromo …`, `Nabla silver chrome`) had no environment to reflect (cars never had one; only
+  the VFR800 got the neutral reflection environment in #156), so they showed little more than the
+  sun's highlight and went dull grey or black with the sun angle and at dusk. They now take the
+  same neutral, right-way-up environment as the VFR800 chrome (`carReflectionOptions`, intensity
+  0.8, roughness at least 0.3: natural chrome, not a mirror). Paint, mirror housings, mirror glass
+  and wheels are unchanged.
+- **Chrome dims with the daylight:** vehicle chrome reflections (car and motorcycle) fade with the
+  atmosphere's daylight (`reflectionLevel`, `lightingDefaults.reflectionNightLevel` 0.08 /
+  `reflectionFullDay` 0.85) instead of switching from full to 0.15 at the night threshold, so the
+  fixed studio gradient no longer glows at dusk or at night.
 - **Right mirror capture upright:** mirror capture cameras now keep the vehicle's up instead of
   the lens node's own +Y. The S3 / A3 right-door lens is authored under a node rotated 180° about
   X, so its capture camera ran rolled upside down; both sides now capture upright on every
