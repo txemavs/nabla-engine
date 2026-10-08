@@ -8,14 +8,15 @@
 
 ### Changed
 
-- Truck: inline-6 turbo-diesel voice (deep idle, load growl, turbo spool, jake bark on lift-off, air-brake hiss, quiet gear shifts). Pulling power follows the Mercedes-Benz OM 471 390 kW rating: 530 PS and 2,600 Nm (was 504 PS / 2,400 Nm). Timbre is TODO(unverified).
-- Engine start (cars and the VFR, shared starter; the running V4 is unchanged): about 0.95 s of electric-starter whine and compression pulses before the engine catches.
-- **Chrome darkens like the wheel rim lips:** the S3 trim, the VFR silencer end cap and the disc
-  buttons took a fixed studio reflection that ignores shadows, so they stayed bright in shade and
-  at night and read as self-lit. The rim lips never had that environment, which is why they go
-  dark properly (and why their light-grey base read as glossy black beside the glowing trim).
-  Reflections are now multiplied by the surface's own light, the base colour is a whiter 0.93 with
-  roughness 0.15 and metalness 1, and nothing is emissive. Neutral and the right way up, as before.
+- Starter (every vehicle): the crank is half as long, about 0.5 s (was 0.95 s). The running voices are unchanged.
+- Truck: the diesel pulse train stays, pitched down so its strong partial matches yesterday's note (`rpm/24` instead of `rpm/20`). No jake bark and no turbo blow-off chirp on lift-off; the engine itself stays audible. Air-brake hiss remains.
+
+- Truck pulling power follows the Mercedes-Benz OM 471 390 kW rating: 530 PS and 2,600 Nm (was 504 PS / 2,400 Nm). The diesel timbre is TODO(unverified).
+- **Chrome follows the light on the surface.** The S3 trim, the VFR silencer end cap and the disc
+  buttons use a neutral studio reflection (whiter base 0.93, roughness 0.15, metalness 1, no
+  emissive). That reflection is multiplied by the light that actually arrives: shadowed direct
+  light plus ambient. Sunlit chrome stays bright; shade and night do not glow. The wheel rim lips
+  stay unwrapped, so they still darken on their own.
 
 - **VFR800 metal map (Txema's review):** chrome only on the brake discs (their tracks and floating
   buttons) and the stainless end cap of the silencer (`Stainless chrome silencer end cap`, roughness

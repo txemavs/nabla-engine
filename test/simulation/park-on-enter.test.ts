@@ -90,9 +90,9 @@ describe('start-up sequence, unit level', () => {
     expect(state.ignition).toBe('cranking')
     expect(state.ignitionCount).toBe(1)
     expect(state.rpm).toBeGreaterThan(100)
-    // A real starter turn is about 0.6–1.2 s; the whole sequence stays under about two seconds.
-    expect(crankSeconds).toBeGreaterThanOrEqual(0.6)
-    expect(crankSeconds).toBeLessThanOrEqual(1.2)
+    // Half the previous 0.95 s crank, on every vehicle. The whole sequence stays under about two seconds.
+    expect(crankSeconds).toBeGreaterThanOrEqual(0.4)
+    expect(crankSeconds).toBeLessThanOrEqual(0.55)
     expect(startSeconds).toBeLessThan(2.3)
     const sweep: number[] = []
     const rpm: number[] = []

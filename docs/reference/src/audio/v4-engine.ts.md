@@ -27,7 +27,7 @@ band-passed noise stands in for intake roar under load.
 
 ## v4CycleHz
 
-[Implementation, line 61](../../../../src/audio/v4-engine.ts#L61)
+[Implementation, line 66](../../../../src/audio/v4-engine.ts#L66)
 
 ```ts
 v4CycleHz(rpm: number): number
@@ -39,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mod
 
-[Implementation, line 63](../../../../src/audio/v4-engine.ts#L63)
+[Implementation, line 68](../../../../src/audio/v4-engine.ts#L68)
 
 ```ts
 mod(n: number, m: number): inferred by TypeScript; see implementation
@@ -47,7 +47,7 @@ mod(n: number, m: number): inferred by TypeScript; see implementation
 
 ## v4FiringAngles
 
-[Implementation, line 71](../../../../src/audio/v4-engine.ts#L71)
+[Implementation, line 76](../../../../src/audio/v4-engine.ts#L76)
 
 Firing crank angles in the 720° cycle, ascending from 0, for a V4 with `vAngle` degrees
 between the banks and `crankpin` degrees between its two crankpins (two cylinders, one per
@@ -76,40 +76,40 @@ Explicit throws in this body:
 
 - `new Error('V angle and crankpin offset must be finite')`
 
-## v4FiringAngles.callback@84
+## v4FiringAngles.callback@89
 
-[Implementation, line 84](../../../../src/audio/v4-engine.ts#L84)
+[Implementation, line 89](../../../../src/audio/v4-engine.ts#L89)
 
 ```ts
-callback@84([bank, pin]): inferred by TypeScript; see implementation
+callback@89([bank, pin]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mod`
 
-## v4FiringAngles.callback@92
+## v4FiringAngles.callback@97
 
-[Implementation, line 92](../../../../src/audio/v4-engine.ts#L92)
+[Implementation, line 97](../../../../src/audio/v4-engine.ts#L97)
 
 ```ts
-callback@92(a, b): inferred by TypeScript; see implementation
+callback@97(a, b): inferred by TypeScript; see implementation
 ```
 
 ## v4FiringAngles.earlier
 
-[Implementation, line 95](../../../../src/audio/v4-engine.ts#L95)
+[Implementation, line 100](../../../../src/audio/v4-engine.ts#L100)
 
 ```ts
 earlier(a: number[], b: number[]): inferred by TypeScript; see implementation
 ```
 
-## v4FiringAngles.callback@107
+## v4FiringAngles.callback@112
 
-[Implementation, line 107](../../../../src/audio/v4-engine.ts#L107)
+[Implementation, line 112](../../../../src/audio/v4-engine.ts#L112)
 
 ```ts
-callback@107(angle): inferred by TypeScript; see implementation
+callback@112(angle): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -118,7 +118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## firingIntervals
 
-[Implementation, line 111](../../../../src/audio/v4-engine.ts#L111)
+[Implementation, line 116](../../../../src/audio/v4-engine.ts#L116)
 
 Gaps between consecutive firings around the 720° cycle, degrees (they sum to 720).
 
@@ -132,37 +132,37 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...angles].map((a) => mod(a, 720)).sort`
 - `sorted.map`
 
-## firingIntervals.callback@113
+## firingIntervals.callback@118
 
-[Implementation, line 113](../../../../src/audio/v4-engine.ts#L113)
+[Implementation, line 118](../../../../src/audio/v4-engine.ts#L118)
 
 ```ts
-callback@113(a): inferred by TypeScript; see implementation
+callback@118(a): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mod`
 
-## firingIntervals.callback@113
+## firingIntervals.callback@118
 
-[Implementation, line 113](../../../../src/audio/v4-engine.ts#L113)
+[Implementation, line 118](../../../../src/audio/v4-engine.ts#L118)
 
 ```ts
-callback@113(a, b): inferred by TypeScript; see implementation
+callback@118(a, b): inferred by TypeScript; see implementation
 ```
 
-## firingIntervals.callback@114
+## firingIntervals.callback@119
 
-[Implementation, line 114](../../../../src/audio/v4-engine.ts#L114)
+[Implementation, line 119](../../../../src/audio/v4-engine.ts#L119)
 
 ```ts
-callback@114(angle, i): inferred by TypeScript; see implementation
+callback@119(angle, i): inferred by TypeScript; see implementation
 ```
 
 ## firingPulseHarmonics
 
-[Implementation, line 125](../../../../src/audio/v4-engine.ts#L125)
+[Implementation, line 130](../../../../src/audio/v4-engine.ts#L130)
 
 Fourier series of one 720° cycle of exhaust pulses, one per firing angle, each a
 fast-rise / exponential-decay pressure pulse `pulseWidth` (share of the cycle) long. Returns
@@ -189,24 +189,24 @@ Explicit throws in this body:
 - `new Error('Need at least one harmonic')`
 - `new Error('Pulse width must be in (0, 0.5)')`
 
-## firingPulseHarmonics.callback@136
+## firingPulseHarmonics.callback@141
 
-[Implementation, line 136](../../../../src/audio/v4-engine.ts#L136)
+[Implementation, line 141](../../../../src/audio/v4-engine.ts#L141)
 
 ```ts
-callback@136(angle): inferred by TypeScript; see implementation
+callback@141(angle): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mod`
 
-## firingPulseHarmonics.callback@139
+## firingPulseHarmonics.callback@144
 
-[Implementation, line 139](../../../../src/audio/v4-engine.ts#L139)
+[Implementation, line 144](../../../../src/audio/v4-engine.ts#L144)
 
 ```ts
-callback@139(phase, k): inferred by TypeScript; see implementation
+callback@144(phase, k): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -216,7 +216,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## harmonicMagnitudes
 
-[Implementation, line 161](../../../../src/audio/v4-engine.ts#L161)
+[Implementation, line 166](../../../../src/audio/v4-engine.ts#L166)
 
 Magnitude of each harmonic of a `firingPulseHarmonics` result.
 
@@ -228,12 +228,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Array.from`
 
-## harmonicMagnitudes.callback@162
+## harmonicMagnitudes.callback@167
 
-[Implementation, line 162](../../../../src/audio/v4-engine.ts#L162)
+[Implementation, line 167](../../../../src/audio/v4-engine.ts#L167)
 
 ```ts
-callback@162(re, n): inferred by TypeScript; see implementation
+callback@167(re, n): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -242,7 +242,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saturationCurve
 
-[Implementation, line 165](../../../../src/audio/v4-engine.ts#L165)
+[Implementation, line 170](../../../../src/audio/v4-engine.ts#L170)
 
 ```ts
 saturationCurve(drive: number): Float32Array
@@ -255,7 +255,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## V4Engine.constructor
 
-[Implementation, line 188](../../../../src/audio/v4-engine.ts#L188)
+[Implementation, line 193](../../../../src/audio/v4-engine.ts#L193)
 
 The V4 voice. Nodes are built once; `update` only automates parameters. Building needs
 `createPeriodicWave` and `createWaveShaper` (every browser with Web Audio has them).
@@ -282,7 +282,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## V4Engine.setFiring
 
-[Implementation, line 218](../../../../src/audio/v4-engine.ts#L218)
+[Implementation, line 223](../../../../src/audio/v4-engine.ts#L223)
 
 Swap the firing pattern (a different vehicle preset). No-op when unchanged.
 
@@ -301,7 +301,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## V4Engine.silence
 
-[Implementation, line 237](../../../../src/audio/v4-engine.ts#L237)
+[Implementation, line 242](../../../../src/audio/v4-engine.ts#L242)
 
 The V4 voice. Nodes are built once; `update` only automates parameters. Building needs
 `createPeriodicWave` and `createWaveShaper` (every browser with Web Audio has them).
@@ -317,7 +317,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## V4Engine.update
 
-[Implementation, line 242](../../../../src/audio/v4-engine.ts#L242)
+[Implementation, line 247](../../../../src/audio/v4-engine.ts#L247)
 
 The V4 voice. Nodes are built once; `update` only automates parameters. Building needs
 `createPeriodicWave` and `createWaveShaper` (every browser with Web Audio has them).

@@ -14,9 +14,30 @@ chrome reads as bright polished metal. Matte and painted materials are left alon
 - `three`
 - `../../config/lighting.js`
 
-## shadeEnvironment
+## patchChromeIncidentLight
 
 [Implementation, line 25](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L25)
+
+```ts
+patchChromeIncidentLight(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `source.includes`
+- `source.replace`
+- `source.replaceAll`
+
+Explicit throws in this body:
+
+- `new Error('Unsupported Three.js lighting chunk (no geometryPosition)')`
+- `new Error('Unsupported Three.js lighting chunk (no RE_Direct)')`
+- `new Error('Unsupported Three.js lighting chunk (no indirect specular)')`
+
+## shadeEnvironment
+
+[Implementation, line 59](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L59)
 
 ```ts
 shadeEnvironment(material: THREE.MeshStandardMaterial): void
@@ -25,26 +46,28 @@ shadeEnvironment(material: THREE.MeshStandardMaterial): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `material.customProgramCacheKey?.bind`
+- `patchChromeIncidentLight`
 
-## shadeEnvironment.callback@27
+## shadeEnvironment.callback@62
 
-[Implementation, line 27](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L27)
+[Implementation, line 62](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L62)
 
 ```ts
-callback@27(shader, renderer): inferred by TypeScript; see implementation
+callback@62(shader, renderer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `previous`
+- `shader.fragmentShader.includes`
 - `shader.fragmentShader.replace`
 
-## shadeEnvironment.callback@35
+## shadeEnvironment.callback@71
 
-[Implementation, line 35](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L35)
+[Implementation, line 71](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L71)
 
 ```ts
-callback@35(): inferred by TypeScript; see implementation
+callback@71(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -53,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## reflectionEnvironmentTexture
 
-[Implementation, line 45](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L45)
+[Implementation, line 81](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L81)
 
 Equirectangular neutral studio gradient (light grey overhead, bright horizon band, dark grey
 ground), shared by every model. Deliberately colourless: a blue sky in the reflection tinted the
@@ -75,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## reflectionEnvironmentTexture.mix
 
-[Implementation, line 50](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L50)
+[Implementation, line 86](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L86)
 
 ```ts
 mix(a: number[], b: number[], t: number): inferred by TypeScript; see implementation
@@ -85,17 +108,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `a.map`
 
-## reflectionEnvironmentTexture.mix.callback@50
+## reflectionEnvironmentTexture.mix.callback@86
 
-[Implementation, line 50](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L50)
+[Implementation, line 86](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L86)
 
 ```ts
-callback@50(v, i): inferred by TypeScript; see implementation
+callback@86(v, i): inferred by TypeScript; see implementation
 ```
 
 ## reflectionLevel
 
-[Implementation, line 85](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L85)
+[Implementation, line 121](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L121)
 
 Reflection level for the atmosphere's daylight factor `day` (0 night .. 1 full day; 1 without a
 sky): `reflectionNightLevel` up to the night threshold, eased up to 1 at `reflectionFullDay`.
@@ -112,7 +135,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment
 
-[Implementation, line 102](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L102)
+[Implementation, line 138](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L138)
 
 Give every standard material under `root` with `metalness >= minMetalness`, or tagged
 `extras.nabla.reflective` in the GLB (glossy glass such as a windscreen), the shared reflection
@@ -131,12 +154,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `scale`
 - `shadeEnvironment`
 
-## applyReflectionEnvironment.callback@107
+## applyReflectionEnvironment.callback@143
 
-[Implementation, line 107](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L107)
+[Implementation, line 143](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L143)
 
 ```ts
-callback@107(object): inferred by TypeScript; see implementation
+callback@143(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -146,7 +169,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.scale
 
-[Implementation, line 121](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L121)
+[Implementation, line 157](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L157)
 
 ```ts
 scale(material: THREE.Material): inferred by TypeScript; see implementation
@@ -159,7 +182,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.setLevel
 
-[Implementation, line 137](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L137)
+[Implementation, line 173](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L173)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation

@@ -177,9 +177,13 @@ describe('vfr800 GLB cockpit pass', () => {
     expect(buttons.envMapIntensity).toBeCloseTo(1, 6)
     expect(buttons.roughness).toBeCloseTo(0.15, 6)
     expect(end.emissive.r + end.emissive.g + end.emissive.b).toBe(0)
-    const shader = { fragmentShader: '#include <emissive_fragment>' }
+    const shader = {
+      fragmentShader:
+        'vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;',
+    }
     end.onBeforeCompile(shader as never, {} as never)
-    expect(shader.fragmentShader).toContain('nablaLight')
+    expect(shader.fragmentShader).toContain('nablaIncident')
+    expect(shader.fragmentShader).toContain('indirectSpecular *= saturate( nablaIncident )')
     expect(end.customProgramCacheKey()).toContain('nabla-shaded-env')
     // Matte paint and rubber are left alone.
     const rubber = materialsOf(root).find((m) => m.name === 'Smooth rubber')!
