@@ -26,6 +26,20 @@ the cockpit camera; no visible humanoid is created. Motorcycle mounting will use
 the vehicle head pose once motorcycle simulation is implemented. Hovering
 oscillates by less than 2 mm, slowly, without changing the collider.
 
+On foot the avatar is smoothed like the cameras (`AvatarFollow` in
+`src/render/entity/avatar-motion.ts`): a critically damped follower with velocity
+feed-forward for the position and one with turn-rate feed-forward for the heading
+(`gameCameraDefaults.avatarFollowResponse` and `avatarYawResponse`, 14 /s). Steady
+walking, sprinting and turning have no lag; physics jitter, steps, landings and snappy
+heading changes are filtered. Jumps of more than 2 m (getting off a vehicle, teleports,
+portals) snap. Only the presentation is smoothed; the collider is unchanged.
+
+A rider thrown off a crashed motorcycle (`Simulation.playerEjection`, see
+[motorcycles](motorcycles.md)) is posed by `EjectionTumble`: the helmet tumbles in the air
+and rolls along the ground with the slide, squashes when it first hits the ground, lies
+where it stopped, then turns upright while it rises back to its hover cushion. A walking
+player's head is lowered to the ground meanwhile and comes back up while getting up.
+
 `setMonitorVisorPosition(model, amount)` controls travel from down (0) to up (1).
 `setMonitorVisorTint(model, amount)` regulates clear plastic (0) through black
 sunglasses (1), with the luminous eyes still visible. SceneView lowers the visor

@@ -56,7 +56,25 @@ export interface TwoWheeledTuning {
   hooligan: TwoWheeledHooliganDefinition
   /** Pitch that counts as a crash, radians. */
   crashPitch: number
+  /** Impact and lowside crashes, tumble and ejection (`twoWheeledDefaults.crash`). */
+  crash: TwoWheeledCrashTuning
 }
+
+/** See `twoWheeledDefaults.crash`. */
+export interface TwoWheeledCrashTuning {
+  impactG: number
+  impactSeconds: number
+  minKmh: number
+  speedMemory: number
+  spin: number
+  maxSpin: number
+  hop: number
+  maxHop: number
+  ejectKmh: number
+}
+
+/** What ended the ride: a looped wheelie, over the front, a hard impact or a lowside. */
+export type CrashCause = 'loop' | 'over-the-front' | 'impact' | 'lowside'
 
 /** Which Shift hooligan effect is running on this tick. */
 export type HooliganMode = 'none' | 'burnout' | 'wheelie' | 'stationary-burnout' | 'stoppie'
@@ -125,8 +143,24 @@ export interface TwoWheeledState {
   /** Rear wheel surface speed above road speed, m/s (wheelspin), and its accumulated angle. */
   rearSpin: number
   rearSpinAngle: number
-  /** Looped or went over the front: fallen until reset (R). */
+  /** Looped, went over the front, hit something hard or lowsided: fallen until reset (R). */
   crashed: boolean
+  /** Why it crashed (null while riding). */
+  crashCause: CrashCause | null
+  /** Speed when it crashed, m/s (the fastest of the last moments). */
+  crashSpeed: number
+  /** True from a crash at `crash.ejectKmh` or more until the host throws the rider off. */
+  ejectPending: boolean
+  /** Low-passed horizontal velocity change, m/s², and the velocity it was measured from. */
+  impact: number
+  previousVelocity: [number, number, number] | null
+  /**
+   * Fastest recent speed, m/s, decaying by `crash.speedMemory` m/s per second, and the velocity
+   * the machine had then: an impact is detected after it has slowed the machine down, while
+   * the rider carries on at the speed from before the hit.
+   */
+  recentSpeed: number
+  recentVelocity: [number, number, number]
   /** Seconds of the slide wiggle (phase clock). */
   slideClock: number
   /** Centre-of-mass height above the ground on the last tick, metres. */
@@ -176,6 +210,6 @@ export interface TwoWheeledPose {
   scrapePoint: [number, number, number] | null
   /** Shift hooligan effect running. */
   hooligan: HooliganMode
-  /** Looped or went over the front (until R). */
+  /** Crashed (until R). */
   crashed: boolean
 }

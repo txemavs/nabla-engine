@@ -4,6 +4,18 @@
 
 ### Added
 
+- **Motorcycle crashes:** a hard impact (over 5 g at 30 km/h or more: walls, barriers, cars) or a
+  lowside at speed now crashes the bike as well as the Shift loop, and every crash kicks it into a
+  violent tumble that grows with speed. At 120 km/h or more the rider is thrown off with the speed
+  from before the hit, flies, takes the hit, slides with friction, lies still for a moment and
+  gets up; the floating monitor rises back to its cushion and control returns
+  (`Simulation.playerEjection`, `twoWheeledDefaults.crash`, `ejectionDefaults`). The V4 sound and
+  the handling are unchanged.
+- **Smoothed on-foot avatar:** the floating monitor (or walker) follows the player body through
+  the same critically damped follower with feed-forward as the cameras (`AvatarFollow`,
+  `avatarFollowResponse` / `avatarYawResponse`): no lag at a steady pace, jitter and snappy turns
+  filtered. A thrown rider's helmet tumbles, squashes on the hit and turns upright as it gets up
+  (`EjectionTumble`).
 - **S3 engine modes (Normal / Bestia):** one S3 (`car`) with NORMAL (D, ~200 CV, refined TDI-like
   inline-four voice, default) and BESTIA (S, ~400 CV, inline-five warble with an occasional overrun
   burble). Switch from J › MOTOR or B (D ↔ S); HUD and cluster show D / S; power, torque, redline,

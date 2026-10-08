@@ -45,7 +45,8 @@ import {
   type ReflectionEnvironment,
 } from '../vehicle-presentation/reflection-environment.js'
 import { localMinutes, skyTime } from '../../planet/sky.js'
-import { twoWheeledDefaults } from '../../config/simulation.js'
+import { simulationDefaults, twoWheeledDefaults } from '../../config/simulation.js'
+import { AvatarFollow, EjectionTumble } from './avatar-motion.js'
 import {
   clampMirrorAdjustment,
   mirrorModelKey,
@@ -360,6 +361,8 @@ export class SceneView {
   readonly avatar = new THREE.Group()
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
+  private readonly avatarFollow = new AvatarFollow()
+  private readonly ejectionTumble = new EjectionTumble()
   private graph: SceneGraph
   constructor(
     readonly document: SceneDocument,
@@ -1497,13 +1500,25 @@ export class SceneView {
       this.monitor.quaternion.identity()
       this.monitor.scale.setScalar(0.7)
       this.monitorMotion.reset()
+      this.avatarFollow.reset()
       this.avatar.visible = !cockpit
     } else {
-      this.avatar.position.fromArray(sim.renderPlayerPosition)
-      this.avatar.quaternion.fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
-      this.avatar.quaternion.multiply(
-        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sim.player.yaw),
+      // Smoothed like the cameras (no lag at steady speed); a thrown rider tumbles.
+      this.avatarFollow.update(
+        new THREE.Vector3().fromArray(sim.renderPlayerPosition),
+        sim.player.yaw,
+        elapsed,
       )
+      this.avatar.position.copy(this.avatarFollow.position)
+      const frame = new THREE.Quaternion().fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
+      this.avatar.quaternion
+        .copy(frame)
+        .multiply(
+          new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            this.avatarFollow.heading,
+          ),
+        )
       this.monitor.scale.setScalar(0.825)
       this.monitorMotion.update(
         this.monitor,
@@ -1513,10 +1528,17 @@ export class SceneView {
               .sub(new THREE.Vector3(...sim.playerFrame.position))
               .applyQuaternion(new THREE.Quaternion(...sim.playerFrame.rotation).invert())
           : this.avatar.position,
-        sim.player.yaw,
+        this.avatarFollow.heading,
         elapsed,
       )
       if (sim.options.playerMode === 'hover') this.monitor.position.y -= 0.35
+      this.ejectionTumble.update(
+        this.monitor,
+        sim.playerEjection,
+        this.avatarFollow.velocity.clone().applyQuaternion(this.avatar.quaternion.clone().invert()),
+        elapsed,
+        sim.options.playerMode === 'hover' ? 0 : simulationDefaults.playerHalfHeight - 0.2,
+      )
       this.avatar.visible = !cockpit
     }
   }

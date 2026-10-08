@@ -25,6 +25,33 @@ export const simulationDefaults = Object.freeze({
   jumpSpeed: 5.5,
 })
 
+/**
+ * Rider thrown off a crashed two-wheeler (`twoWheeledDefaults.crash.ejectKmh`). The player
+ * leaves the seat with the machine's velocity and a hop, flies, takes the hit and slides on
+ * the ground with friction, lies still for a moment, then gets up: the floating monitor rises
+ * back to its cushion (or the walker stands up) and control returns. Gameplay values.
+ */
+export const ejectionDefaults = Object.freeze({
+  /** Share of the machine's velocity the rider keeps when thrown. */
+  carry: 0.9,
+  /** Upward speed added when thrown, m/s. */
+  hop: 3,
+  /** Height above the vehicle's driver (head) point where the rider starts, metres. */
+  clearance: 0.5,
+  /** Contacts in the first moments of the flight (the machine, the obstacle) are not the landing, s. */
+  minFlightSeconds: 0.2,
+  /** Sliding friction on the ground, as a share of gravity. */
+  friction: 0.8,
+  /** Speed below which the rider has stopped sliding, m/s. */
+  restSpeed: 0.8,
+  /** Time lying on the ground after the slide stops, seconds. */
+  downSeconds: 1.2,
+  /** Time to get up (the monitor rises back to its cushion), seconds. Input stays off. */
+  riseSeconds: 0.9,
+  /** Safety: control returns after this long even without landing (e.g. off an edge), seconds. */
+  maxSeconds: 10,
+})
+
 /** Road-vehicle selector timing, gear-change feel and baseline engine speed. */
 export const roadVehicleDefaults = Object.freeze({
   /**
@@ -304,6 +331,29 @@ export const twoWheeledDefaults = Object.freeze({
    * near it; only the Shift hooligan modifier (assists off) can.
    */
   crashPitch: 1.3,
+  /**
+   * Crashes besides the hooligan loop (two-wheelers). Gameplay values, not measurements.
+   * - Impact: the horizontal velocity changes faster than `impactG` (low-passed over
+   *   `impactSeconds`) while the machine was doing at least `minKmh`: a wall, a car, a pole.
+   *   Hard braking (~1.3 g) and the steepest turns (~1.4 g) stay far below it.
+   * - Lowside: the machine falls past `fallLean` at `minKmh` or more.
+   * Either one is a crash until R, like a looped wheelie. At the onset the machine gets a spin
+   * of `spin` rad/s per m/s of speed (at most `maxSpin`) and, for impacts, a hop of `hop` s
+   * × speed (at most `maxHop` m/s): it tumbles instead of just lying down. At `ejectKmh` or more
+   * the rider is thrown off (see `ejectionDefaults`).
+   */
+  crash: Object.freeze({
+    impactG: 5,
+    impactSeconds: 0.05,
+    minKmh: 30,
+    /** The crash speed is the fastest of the last moments, decaying by this many m/s per second. */
+    speedMemory: 40,
+    spin: 0.25,
+    maxSpin: 10,
+    hop: 0.1,
+    maxHop: 5,
+    ejectKmh: 120,
+  }),
   /**
    * Shift hooligan modifier (two-wheelers). While Shift is held the wheelie and stoppie assists,
    * the combined brakes and the automatic rider's fore-aft moves are off, and:
