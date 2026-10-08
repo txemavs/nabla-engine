@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Trucks and trailers: the cargo-box skin (`Chassis B`, albedo ~0.02, metal 0.45, no environment) rendered as a flat black silhouette. It now takes the same body colour as `White paint`. S3 / A3 cabin cloth and plastic authored under 0.08 linear are floored so the interior is not pure black. TODO(unverified): the cabin floor is not a measured swatch.
+
 ### Changed
 
 - Truck: inline-6 turbo-diesel voice (deep idle, load growl, turbo spool, jake bark on lift-off, air-brake hiss, quiet gear shifts). Pulling power follows the Mercedes-Benz OM 471 390 kW rating: 530 PS and 2,600 Nm (was 504 PS / 2,400 Nm). Timbre is TODO(unverified).
