@@ -1,109 +1,169 @@
 import * as THREE from 'three'
 import { weaponPresets, type WeaponPreset } from '../catalog/weapons/library.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
+import {
+  advanceFirearm,
+  beginReload,
+  freshFirearm,
+  rounds,
+  trigger,
+  type FirearmEvent,
+  type FirearmSpec,
+  type FirearmState,
+} from '../simulation/weapons/firearm.js'
+import { MuzzleRise } from '../simulation/weapons/recoil.js'
 
-/** Hip (default) and ADS viewmodel poses — centred for upcoming iron sights, no UI reticle. */
+/** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
 const ADS_POSE = { position: [0, -0.038, -0.2] as const, fov: 42 }
 
-/** Viewmodel, cadence, ADS, recoil and laser. Equipped preset comes from assets. */
+/** Presentation rig of an assembled model (`assets/rigs/weapons/*.rig.json`). */
+interface WeaponRig {
+  parts: { slide: string; trigger: string; magazine: string }
+  presentation: {
+    slide: { axis: number[]; travel: number }
+    trigger: { axis: number[]; angle: number }
+    magazine: { axis: number[]; distance: number }
+  }
+}
+const defaultRig: WeaponRig = {
+  parts: { slide: 'Slide', trigger: 'Trigger', magazine: 'Magazine' },
+  presentation: {
+    slide: { axis: [0, 0, 1], travel: 0.012 },
+    trigger: { axis: [1, 0, 0], angle: 0.16 },
+    magazine: { axis: [0, -1, 0], distance: 0.11 },
+  },
+}
+
+/** Legacy behaviour for presets without real-firearm data: a fixed cadence, no ammunition. */
+const legacyFirearm = (preset: WeaponPreset | undefined): FirearmSpec => ({
+  magazineCapacity: Number.MAX_SAFE_INTEGER,
+  chamber: 1,
+  cycleMs: preset?.intervalMs ?? 220,
+  reloadMs: { magazineOut: 1, magazineIn: 2, slideRelease: 3 },
+})
+
+interface Part {
+  object: THREE.Object3D
+  rest: THREE.Vector3
+  restQuaternion: THREE.Quaternion
+}
+
+/**
+ * The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
+ * muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
+ * that shows it (slide, trigger and magazine of the assembled model).
+ */
 export class Sidearm {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.PerspectiveCamera(HIP_POSE.fov, 1, 0.01, 5)
   readonly model = new THREE.Group()
-  private slide: THREE.Group | null = null
+  readonly preset: WeaponPreset | undefined
+  readonly firearm: FirearmSpec
+  readonly state: FirearmState
+  private readonly rise: MuzzleRise | null
+  private rig: WeaponRig = defaultRig
+  private slide: Part | null = null
+  private triggerPart: Part | null = null
+  private magazine: Part | null = null
+  private legacySlide: THREE.Object3D | null = null
   private readonly flash: THREE.Mesh
   private readonly flashAt: [number, number, number]
   private readonly laserLine: THREE.Line
-  private lastShot = -Infinity
-  private hit = false
   private enabled = false
   private disposed = false
   private aiming = false
   private aimBlend = 0
   private laserOn = false
-  private recoilPitch = 0
-  private recoilYaw = 0
   readonly range: number
   readonly impulse: number
-  private readonly intervalMs: number
-  private readonly slideTravel: number
-  private readonly kick: number
-  private readonly pitch: number
+  private readonly legacyTravel: number
 
   constructor(_viewport: HTMLElement, preset: WeaponPreset | undefined = weaponPresets()[0]) {
-    this.range = preset?.range ?? 150
+    this.preset = preset
+    this.range = preset?.ammunition?.maxTraceM ?? preset?.range ?? 150
     this.impulse = preset?.impulse ?? 12
-    this.intervalMs = preset?.intervalMs ?? 220
-    this.slideTravel = preset?.slideTravel ?? 0
-    this.kick = preset?.view.kick ?? 0.03
-    this.pitch = preset?.view.pitch ?? 0.07
-    const metal = new THREE.MeshStandardMaterial({
-      color: '#354359',
-      metalness: 0.7,
-      roughness: 0.3,
-    })
-    const grip = new THREE.MeshStandardMaterial({ color: '#111a28', roughness: 0.85 })
-    const part = (
-      size: [number, number, number],
-      position: [number, number, number],
-      material: THREE.Material,
-    ) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material)
-      mesh.position.set(...position)
-      this.model.add(mesh)
-      return mesh
+    this.legacyTravel = preset?.slideTravel ?? 0
+    this.firearm = preset?.firearm
+      ? {
+          magazineCapacity: preset.firearm.magazineCapacity,
+          chamber: preset.firearm.chamber,
+          cycleMs: preset.firearm.cycleMs,
+          reloadMs: preset.firearm.reloadMs,
+        }
+      : legacyFirearm(preset)
+    this.state = freshFirearm(this.firearm)
+    this.rise = preset?.recoil ? new MuzzleRise(preset.recoil) : null
+    const fallbackMaterial = new THREE.MeshStandardMaterial({ color: '#1b1f24', roughness: 0.6 })
+    const fallback = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.17), fallbackMaterial)
+    fallback.position.set(0, -0.05, -0.05)
+    this.model.add(fallback)
+    const dropFallback = () => {
+      this.model.remove(fallback)
+      fallback.geometry.dispose()
+      fallbackMaterial.dispose()
     }
-    part([0.075, 0.085, 0.27], [0, 0, 0], metal)
-    part([0.065, 0.16, 0.09], [0, -0.09, 0.07], grip).rotation.x = -0.18
-    part([0.02, 0.02, 0.035], [0, 0.052, -0.1], grip)
-    const fallback = [...this.model.children]
-    if (preset)
-      Promise.allSettled([
-        assets.instantiate(preset.body),
+    if (preset?.model) {
+      const model = preset.model
+      Promise.all([assets.instantiate(model), preset.rig ? loadRig(preset.rig) : null])
+        .then(([object, rig]) => {
+          if (this.disposed) return disposeObject(object)
+          if (rig) this.rig = rig
+          const assembly = new THREE.Group()
+          assembly.scale.setScalar(preset.scale)
+          assembly.position.set(...preset.assembly)
+          assembly.add(object)
+          this.model.add(assembly)
+          this.slide = part(object, this.rig.parts.slide)
+          this.triggerPart = part(object, this.rig.parts.trigger)
+          this.magazine = part(object, this.rig.parts.magazine)
+          dropFallback()
+        })
+        .catch(() => {
+          /* the fallback block stays */
+        })
+    } else if (preset?.body) {
+      const body = preset.body
+      Promise.all([
+        assets.instantiate(body),
         preset.slide ? assets.instantiate(preset.slide) : Promise.resolve(null),
       ])
-        .then(([bodyResult, slideResult]) => {
-          if (bodyResult.status === 'rejected' || slideResult.status === 'rejected') {
-            if (bodyResult.status === 'fulfilled') disposeObject(bodyResult.value)
-            if (slideResult.status === 'fulfilled' && slideResult.value)
-              disposeObject(slideResult.value)
-            throw new Error('Weapon asset failed to load')
-          }
-          const body = bodyResult.value,
-            slide = slideResult.value
+        .then(([bodyObject, slideObject]) => {
           if (this.disposed) {
-            disposeObject(body)
-            if (slide) disposeObject(slide)
+            disposeObject(bodyObject)
+            if (slideObject) disposeObject(slideObject)
             return
           }
           const assembly = new THREE.Group()
           assembly.scale.setScalar(preset.scale)
           assembly.position.set(...preset.assembly)
-          assembly.add(body)
-          if (slide) {
-            assembly.add(slide)
-            this.slide = slide
+          assembly.add(bodyObject)
+          if (slideObject) {
+            assembly.add(slideObject)
+            this.legacySlide = slideObject
           }
           this.model.add(assembly)
-          for (const object of fallback) {
-            this.model.remove(object)
-            const mesh = object as THREE.Mesh
-            mesh.geometry.dispose()
-          }
-          metal.dispose()
-          grip.dispose()
+          dropFallback()
         })
         .catch(() => {
-          /* procedural fallback already in the scene */
+          /* the fallback block stays */
         })
+    }
     this.flashAt = (preset?.flash.position ?? [0, 0, -0.135]) as [number, number, number]
+    // A short, small, dim flash: in daylight a 9 mm shows little more than a blink.
     this.flash = new THREE.Mesh(
-      new THREE.ConeGeometry(0.035, 0.13, 6),
-      new THREE.MeshBasicMaterial({ color: '#ffe7ac' }),
+      new THREE.ConeGeometry(0.012, 0.03, 6),
+      new THREE.MeshBasicMaterial({
+        color: '#ffd9a0',
+        transparent: true,
+        opacity: 0.55,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
     )
     this.flash.rotation.x = -Math.PI / 2
-    this.flash.position.set(...this.flashAt)
+    this.flash.position.set(this.flashAt[0], this.flashAt[1], this.flashAt[2] - 0.015)
+    this.flash.visible = false
     this.model.add(this.flash)
     const laserPositions = new Float32Array([
       this.flashAt[0],
@@ -149,6 +209,7 @@ export class Sidearm {
     if (!this.enabled) {
       this.aiming = false
       this.aimBlend = 0
+      this.state.triggerHeld = false
     }
   }
   get visible(): boolean {
@@ -172,78 +233,93 @@ export class Sidearm {
     return this.laserOn
   }
 
+  /** Real-firearm data present (ammunition, reload, ballistics). */
+  get simulated(): boolean {
+    return !!this.preset?.firearm && !!this.preset.ammunition
+  }
+
+  /** Rounds on board (magazine + chamber), e.g. 13 + 1. */
+  get ammo(): { magazine: number; chamber: number; seated: boolean; total: number } {
+    return {
+      magazine: this.state.magazine,
+      chamber: this.state.chamber,
+      seated: this.state.magazineSeated,
+      total: rounds(this.state),
+    }
+  }
+
   reset(): void {
-    this.lastShot = -Infinity
-    this.recoilPitch = 0
-    this.recoilYaw = 0
+    Object.assign(this.state, freshFirearm(this.firearm))
+    this.rise?.reset()
     this.aiming = false
     this.aimBlend = 0
   }
 
+  /** Trigger pressed (fires at most once per press). */
+  pull(now: number): FirearmEvent {
+    if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
+    const event = trigger(this.state, this.firearm, true, now)
+    if (event.fired) this.rise?.shot(now)
+    return event
+  }
+
+  /** Trigger released: resets it for the next shot. */
+  release(): void {
+    trigger(this.state, this.firearm, false, 0)
+  }
+
+  /** Legacy API: a press immediately followed by a release; true when a shot went off. */
   fire(now: number): boolean {
-    if (this.disposed || !Number.isFinite(now) || now - this.lastShot < this.intervalMs)
-      return false
-    this.lastShot = now
-    const ads = this.aimBlend > 0.5
-    this.recoilPitch += ads ? 0.04 : 0.065
-    this.recoilYaw += (Math.random() - 0.5) * (ads ? 0.014 : 0.03)
-    this.recoilPitch = Math.min(this.recoilPitch, ads ? 0.09 : 0.14)
-    this.recoilYaw = THREE.MathUtils.clamp(this.recoilYaw, -0.05, 0.05)
-    return true
+    const fired = this.pull(now).fired
+    this.release()
+    return fired
   }
 
-  impact(hit: boolean): void {
-    this.hit = hit
+  reload(now: number): FirearmEvent {
+    return beginReload(this.state, this.firearm, now)
   }
 
-  /**
-   * Current muzzle tip in the viewmodel camera's local space (eye-relative), including
-   * hip/ADS blend, kick and recoil — used for the world laser and hit rays.
-   */
-  muzzleViewOffset(now = this.lastShot): THREE.Vector3 {
-    const age = Math.max(0, now - this.lastShot)
-    const kick = Math.max(0, 1 - age / 160)
-    const hip = new THREE.Vector3(...HIP_POSE.position)
-    const ads = new THREE.Vector3(...ADS_POSE.position)
-    const pos = hip.lerp(ads, this.aimBlend)
-    pos.z += kick * this.kick * (0.7 + this.aimBlend * 0.4)
-    const flash = new THREE.Vector3(...this.flashAt)
-    const rx = kick * this.pitch + this.recoilPitch
-    const ry = this.recoilYaw
-    flash.applyEuler(new THREE.Euler(rx, ry, 0, 'YXZ'))
-    return pos.add(flash)
+  /** Advance the slide and any reload; call once per frame. */
+  update(now: number): FirearmEvent {
+    return advanceFirearm(this.state, this.firearm, now)
+  }
+
+  /** Muzzle rise since the previous call (rad, positive = up), to add to the aim. */
+  aimRise(now: number): number {
+    return this.rise ? this.rise.step(now) : 0
+  }
+
+  impact(_hit: boolean): void {}
+
+  /** Muzzle tip in the viewmodel camera's space (eye-relative), with the hip/ADS blend. */
+  muzzleViewOffset(_now = 0): THREE.Vector3 {
+    const pos = new THREE.Vector3(...HIP_POSE.position).lerp(
+      new THREE.Vector3(...ADS_POSE.position),
+      this.aimBlend,
+    )
+    return pos.add(new THREE.Vector3(...this.flashAt))
+  }
+
+  /** Ejection port in the viewmodel camera's space: right of and behind the muzzle. */
+  ejectionViewOffset(): THREE.Vector3 {
+    return this.muzzleViewOffset().add(new THREE.Vector3(0.012, 0.01, 0.08))
   }
 
   render(renderer: THREE.WebGLRenderer, now: number, aspect: number, firstPerson: boolean): void {
     if (!this.enabled) return
-    const age = now - this.lastShot
     this.aimBlend += ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
-    this.recoilPitch *= 0.84
-    this.recoilYaw *= 0.84
-    if (Math.abs(this.recoilPitch) < 1e-4) this.recoilPitch = 0
-    if (Math.abs(this.recoilYaw) < 1e-4) this.recoilYaw = 0
     this.laserLine.visible = this.laserOn
     if (!firstPerson) return
     this.camera.aspect = aspect
     this.camera.fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)
     this.camera.updateProjectionMatrix()
-    const kick = Math.max(0, 1 - age / 160)
-    const hip = new THREE.Vector3(...HIP_POSE.position)
-    const ads = new THREE.Vector3(...ADS_POSE.position)
-    const pos = hip.lerp(ads, this.aimBlend)
-    pos.z += kick * this.kick * (0.7 + this.aimBlend * 0.4)
-    this.model.position.copy(pos)
-    this.model.rotation.set(
-      kick * this.pitch + this.recoilPitch,
-      this.recoilYaw,
-      -this.recoilYaw * 0.35,
-      'YXZ',
-    )
-    const slideCycle = age < 100 ? Math.sin((Math.PI * Math.max(0, age)) / 100) : 0
-    if (this.slide) this.slide.position.z = slideCycle * this.slideTravel
-    this.flash.visible = age < 65
-    if (this.hit && age < 90) this.flash.scale.setScalar(1.15)
-    else this.flash.scale.setScalar(1)
+    this.model.position
+      .set(...HIP_POSE.position)
+      .lerp(new THREE.Vector3(...ADS_POSE.position), this.aimBlend)
+    this.model.rotation.set(0, 0, 0)
+    this.pose(now)
+    const age = now - this.state.lastShotMs
+    this.flash.visible = age >= 0 && age < 30
     const autoClear = renderer.autoClear
     renderer.autoClear = false
     try {
@@ -252,5 +328,66 @@ export class Sidearm {
     } finally {
       renderer.autoClear = autoClear
     }
+  }
+
+  /** Slide, trigger and magazine from the firearm state, relative to their rest poses. */
+  private pose(now: number): void {
+    const p = this.rig.presentation
+    if (this.slide)
+      this.slide.object.position
+        .copy(this.slide.rest)
+        .addScaledVector(axis(p.slide.axis), p.slide.travel * this.state.slide)
+    if (this.legacySlide) this.legacySlide.position.z = this.state.slide * this.legacyTravel
+    if (this.triggerPart)
+      this.triggerPart.object.quaternion
+        .copy(this.triggerPart.restQuaternion)
+        .multiply(
+          new THREE.Quaternion().setFromAxisAngle(
+            axis(p.trigger.axis),
+            this.state.triggerHeld ? p.trigger.angle : 0,
+          ),
+        )
+    if (this.magazine) {
+      const { magazineOut, magazineIn } = this.firearm.reloadMs
+      const age = now - this.state.reloadStartMs
+      let out = 0
+      if (this.state.reload === 'magazine-out') out = 0.3 * smooth(age / magazineOut)
+      else if (this.state.reload === 'magazine-in') {
+        const u = (age - magazineOut) / (magazineIn - magazineOut)
+        // The old magazine falls away; the new one comes up from below and seats.
+        out = u < 0.35 ? 0.3 + 6 * u * u : 1 - smooth((u - 0.35) / 0.65)
+      }
+      this.magazine.object.visible = out < 1.5
+      this.magazine.object.position
+        .copy(this.magazine.rest)
+        .addScaledVector(axis(p.magazine.axis), p.magazine.distance * out)
+    }
+  }
+}
+
+function part(root: THREE.Object3D, name: string): Part | null {
+  const object = root.getObjectByName(name)
+  return object
+    ? { object, rest: object.position.clone(), restQuaternion: object.quaternion.clone() }
+    : null
+}
+
+const axis = (v: number[]) => new THREE.Vector3(v[0], v[1], v[2]).normalize()
+const smooth = (t: number) => {
+  const x = Math.min(1, Math.max(0, t))
+  return x * x * (3 - 2 * x)
+}
+
+async function loadRig(url: string): Promise<WeaponRig | null> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const rig = (await response.json()) as Partial<WeaponRig>
+    return {
+      parts: { ...defaultRig.parts, ...rig.parts },
+      presentation: { ...defaultRig.presentation, ...rig.presentation },
+    }
+  } catch {
+    return null
   }
 }
