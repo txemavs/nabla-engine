@@ -37,6 +37,7 @@
       }
     },
     "mirrorTilt": 4,
+    "clusterOffset": [0, 0.015, 0],
     "colliders": [
       {
         "size": [1.75, 0.48, 4.25],

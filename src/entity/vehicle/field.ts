@@ -362,6 +362,13 @@ export const vehicleField = z
     /** Optional driver-local eye offset. */
     headOffset: vector.optional(),
     /**
+     * Nudge for the instrument cluster, metres in chassis space, added to the authored GLB anchor.
+     * +Y is up. Omitted leaves the cluster where it was modelled.
+     */
+    clusterOffset: z
+      .tuple([finite.min(-0.2).max(0.2), finite.min(-0.2).max(0.2), finite.min(-0.2).max(0.2)])
+      .optional(),
+    /**
      * Camera / avatar ride smoothing strength, 0 (the view rides every bump) .. 1. Omitted uses
      * the vehicle class default (`rideSmoothingDefaults`). Presentation only.
      */

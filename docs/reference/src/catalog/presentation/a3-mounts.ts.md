@@ -16,7 +16,7 @@
 Mount instruments using authored GLB nodes and casing metadata.
 
 ```ts
-createA3Mounts(model: THREE.Object3D): InstrumentMounts | undefined
+createA3Mounts(model: THREE.Object3D, clusterOffset?: readonly [number, number, number]): InstrumentMounts | undefined
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -25,20 +25,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Error`
 - `THREE.Group`
 - `THREE.Mesh`
+- `THREE.Quaternion`
+- `THREE.Vector3`
 - `casing.position.copy`
 - `casing.quaternion.copy`
 - `casing.scale.copy`
 - `casingGeometry.setIndex`
+- `chassis.getWorldQuaternion`
+- `chassis.updateWorldMatrix`
+- `cluster.position.add`
 - `cluster.position.toArray`
 - `cluster.quaternion.toArray`
 - `console.warn`
+- `delta.applyQuaternion`
 - `fixedGeometry.setIndex`
 - `geometry.clone`
 - `geometry.getAttribute`
 - `geometry.getIndex`
 - `index.getX`
 - `interior.add`
+- `interior.getWorldQuaternion`
+- `interior.getWorldQuaternion(new THREE.Quaternion()).invert`
 - `interior.traverse`
+- `interior.updateWorldMatrix`
 - `model.getObjectByName`
 - `mount`
 - `quad`
@@ -52,7 +61,7 @@ Explicit throws in this body:
 
 ## createA3Mounts.mount
 
-[Implementation, line 14](../../../../../src/catalog/presentation/a3-mounts.ts#L14)
+[Implementation, line 18](../../../../../src/catalog/presentation/a3-mounts.ts#L18)
 
 ```ts
 mount(role: string): inferred by TypeScript; see implementation
@@ -72,17 +81,17 @@ Explicit throws in this body:
 
 - `new Error('Missing instrument anchor: ' + role)`
 
-## createA3Mounts.mount.callback@16
+## createA3Mounts.mount.callback@20
 
-[Implementation, line 16](../../../../../src/catalog/presentation/a3-mounts.ts#L16)
+[Implementation, line 20](../../../../../src/catalog/presentation/a3-mounts.ts#L20)
 
 ```ts
-callback@16(candidate): inferred by TypeScript; see implementation
+callback@20(candidate): inferred by TypeScript; see implementation
 ```
 
 ## createA3Mounts.quad
 
-[Implementation, line 31](../../../../../src/catalog/presentation/a3-mounts.ts#L31)
+[Implementation, line 35](../../../../../src/catalog/presentation/a3-mounts.ts#L35)
 
 ```ts
 quad(role: string): inferred by TypeScript; see implementation
@@ -92,12 +101,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `[0, 1, 2, 3].map`
 
-## createA3Mounts.quad.callback@32
+## createA3Mounts.quad.callback@36
 
-[Implementation, line 32](../../../../../src/catalog/presentation/a3-mounts.ts#L32)
+[Implementation, line 36](../../../../../src/catalog/presentation/a3-mounts.ts#L36)
 
 ```ts
-callback@32(i): inferred by TypeScript; see implementation
+callback@36(i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -105,24 +114,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mount`
 - `mount(role + '.' + i).position.toArray`
 
-## createA3Mounts.callback@41
+## createA3Mounts.callback@55
 
-[Implementation, line 41](../../../../../src/catalog/presentation/a3-mounts.ts#L41)
+[Implementation, line 55](../../../../../src/catalog/presentation/a3-mounts.ts#L55)
 
 ```ts
-callback@41(node): inferred by TypeScript; see implementation
+callback@55(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `parts.push`
 
-## createA3Mounts.callback@55
+## createA3Mounts.callback@69
 
-[Implementation, line 55](../../../../../src/catalog/presentation/a3-mounts.ts#L55)
+[Implementation, line 69](../../../../../src/catalog/presentation/a3-mounts.ts#L69)
 
 ```ts
-callback@55(v): inferred by TypeScript; see implementation
+callback@69(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -131,12 +140,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `position.getY`
 - `position.getZ`
 
-## createA3Mounts.callback@76
+## createA3Mounts.callback@90
 
-[Implementation, line 76](../../../../../src/catalog/presentation/a3-mounts.ts#L76)
+[Implementation, line 90](../../../../../src/catalog/presentation/a3-mounts.ts#L90)
 
 ```ts
-callback@76(): inferred by TypeScript; see implementation
+callback@90(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -147,7 +156,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createA3Mounts.dispose
 
-[Implementation, line 103](../../../../../src/catalog/presentation/a3-mounts.ts#L103)
+[Implementation, line 117](../../../../../src/catalog/presentation/a3-mounts.ts#L117)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation
@@ -158,12 +167,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `releases.forEach`
 - `support.removeFromParent`
 
-## createA3Mounts.dispose.callback@106
+## createA3Mounts.dispose.callback@120
 
-[Implementation, line 106](../../../../../src/catalog/presentation/a3-mounts.ts#L106)
+[Implementation, line 120](../../../../../src/catalog/presentation/a3-mounts.ts#L120)
 
 ```ts
-callback@106(release): inferred by TypeScript; see implementation
+callback@120(release): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
