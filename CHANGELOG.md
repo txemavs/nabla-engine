@@ -9,7 +9,8 @@
   cap; the exhaust headers and the engine use the satin grey metal of the top triple clamp, as do
   the frame and fork lowers; discs, brake tracks, chain, sprockets, radiator and swingarm keep
   their authored materials. The reflection environment is a colourless studio gradient, so chrome
-  no longer reads blue. The windscreen is a see-through neutral smoke grey with a slight reflection
+  no longer reads blue, and it is no longer upside down (the equirectangular rows were written
+  zenith-first, so chrome reflected the sky from below). The windscreen is a see-through neutral smoke grey with a slight reflection
   (`extras.nabla.envIntensity`, honoured by `applyReflectionEnvironment`). Both via
   `scripts/prepare-vfr800-cockpit.mjs`.
 - **VFR800 rear-view mirrors:** the `mirror_L` / `mirror_R` glass is now a live mirror in the

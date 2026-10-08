@@ -57,7 +57,7 @@ callback@21(v, i): inferred by TypeScript; see implementation
 
 ## applyReflectionEnvironment
 
-[Implementation, line 53](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L53)
+[Implementation, line 56](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L56)
 
 Give every standard material under `root` with `metalness >= minMetalness`, or tagged
 `extras.nabla.reflective` in the GLB (glossy glass such as a windscreen), the shared reflection
@@ -74,12 +74,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.traverse`
 - `scale`
 
-## applyReflectionEnvironment.callback@58
+## applyReflectionEnvironment.callback@61
 
-[Implementation, line 58](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L58)
+[Implementation, line 61](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L61)
 
 ```ts
-callback@58(object): inferred by TypeScript; see implementation
+callback@61(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -89,7 +89,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.scale
 
-[Implementation, line 72](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L72)
+[Implementation, line 75](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L75)
 
 ```ts
 scale(material: THREE.Material): inferred by TypeScript; see implementation
@@ -102,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.setLevel
 
-[Implementation, line 84](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L84)
+[Implementation, line 87](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L87)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation

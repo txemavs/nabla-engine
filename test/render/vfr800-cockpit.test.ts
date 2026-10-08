@@ -270,6 +270,40 @@ describe('motorcycle instrument logic', () => {
   })
 })
 
+describe('reflection environment orientation', () => {
+  it('puts the sky overhead and the ground below (three equirect lookup, unflipped rows)', () => {
+    const texture = reflectionEnvironmentTexture()
+    const { data, width, height } = texture.image as {
+      data: Uint8Array
+      width: number
+      height: number
+    }
+    expect(texture.flipY).toBe(false)
+    expect(texture.mapping).toBe(THREE.EquirectangularReflectionMapping)
+    // three's equirectUv: v = asin(dir.y) / π + 0.5, and row r of an unflipped DataTexture is
+    // v = (r + 0.5) / height. A world direction's row:
+    const rowOf = (dirY: number) =>
+      Math.min(height - 1, Math.floor((Math.asin(dirY) / Math.PI + 0.5) * height))
+    const grey = (row: number) => {
+      const i = (row * width + width / 2) * 4
+      expect(data[i]).toBe(data[i + 1])
+      expect(data[i + 1]).toBe(data[i + 2])
+      return data[i]
+    }
+    const up = grey(rowOf(1)),
+      skyHigh = grey(rowOf(Math.sin(THREE.MathUtils.degToRad(30)))),
+      horizonAbove = grey(rowOf(0.02)),
+      groundNear = grey(rowOf(-0.02)),
+      down = grey(rowOf(-1))
+    // Light overhead, brightest just above the horizon, dark ground, darkest straight down.
+    expect(up).toBeGreaterThan(150)
+    expect(horizonAbove).toBeGreaterThan(skyHigh)
+    expect(skyHigh).toBeGreaterThan(down + 80)
+    expect(groundNear).toBeLessThan(horizonAbove - 100)
+    expect(down).toBeLessThan(60)
+  })
+})
+
 describe('vfr800 rear-view mirrors', () => {
   /** Where the eye sees through each live glass (`Reflector`), as a reflected unit direction. */
   const views = (root: THREE.Object3D, lenses: THREE.Mesh[], eye: THREE.Vector3) => {

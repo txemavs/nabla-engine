@@ -24,7 +24,10 @@ export function reflectionEnvironmentTexture(): THREE.DataTexture {
     ground = [92, 92, 92],
     earth = [48, 48, 48]
   for (let y = 0; y < height; y++) {
-    const elevation = (0.5 - (y + 0.5) / height) * Math.PI
+    // A DataTexture is not flipped: row 0 is v = 0, which three's equirectangular lookup
+    // (v = asin(dir.y) / π + 0.5) maps straight DOWN. So rows run from the ground (row 0) up to
+    // the zenith (last row); writing the zenith first lit chrome from below (sky under it).
+    const elevation = ((y + 0.5) / height - 0.5) * Math.PI
     const c =
       elevation >= 0
         ? mix(horizon, zenith, Math.pow(Math.sin(elevation), 0.6))
