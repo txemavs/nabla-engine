@@ -74,8 +74,11 @@ describe('S3 chrome', () => {
     expect(new Set(reflections.materials)).toEqual(new Set(trim))
     for (const material of trim) {
       expect(material.metalness).toBe(1)
-      // Natural chrome: a little satin, not a mirror.
-      expect(material.roughness).toBeGreaterThanOrEqual(0.3)
+      // Whiter than the wheel rim lips, which read glossy black next to it.
+      expect(material.roughness).toBeCloseTo(0.15, 6)
+      expect(material.color.r).toBeGreaterThan(0.8)
+      expect(material.emissive.r + material.emissive.g + material.emissive.b).toBe(0)
+      expect(material.customProgramCacheKey()).toContain('nabla-shaded-env')
       expect(material.envMap).toBe(reflectionEnvironmentTexture())
       expect(material.envMapIntensity).toBeCloseTo(carReflectionOptions.intensity)
     }
@@ -85,8 +88,8 @@ describe('S3 chrome', () => {
     expect(housing.metalness).toBe(0.35)
     expect(wheelReflections.materials).toEqual([])
     expect(wheelChrome.envMap).toBeNull()
-    // Below full strength (Txema: the 1.6 trim was far too bright).
-    expect(carReflectionOptions.intensity).toBeLessThanOrEqual(0.8)
+    // No brighter than the metal around it (Txema: the 1.6 trim was far too bright).
+    expect(carReflectionOptions.intensity).toBeLessThanOrEqual(1)
     // Night dims the chrome like the motorcycle's.
     const night = reflectionLevel(0)
     reflections.setLevel(night)

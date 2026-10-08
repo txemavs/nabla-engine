@@ -7,6 +7,34 @@
 import * as THREE from 'three'
 import { lightingDefaults } from '../../config/lighting.js'
 
+/**
+ * Environment reflections do not pass through the lighting, so an env map stays bright in shade
+ * and at night and the surface reads as self-lit. This folds the material's own lighting into the
+ * env term: the indirect/ambient part in full, the direct (sun) part scaled by how lit the
+ * fragment is, so chrome goes dark in shadow exactly like a surface with no env map (the wheel
+ * rim lips) while keeping its reflection where the light reaches it.
+ */
+const SHADED_ENV = {
+  emissive_fragment: `
+	vec3 nablaLight = length(totalDiffuse + totalSpecular) < 1e-5
+		? vec3(1.0)
+		: clamp(reflectedLight.indirectDiffuse + reflectedLight.directDiffuse, 0.0, 1.0);
+	reflectedLight.indirectSpecular *= nablaLight;
+`,
+}
+function shadeEnvironment(material: THREE.MeshStandardMaterial): void {
+  const previous = material.onBeforeCompile
+  material.onBeforeCompile = (shader, renderer) => {
+    previous?.(shader, renderer)
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <emissive_fragment>',
+      `#include <emissive_fragment>\n${SHADED_ENV.emissive_fragment}`,
+    )
+  }
+  const key = material.customProgramCacheKey?.bind(material)
+  material.customProgramCacheKey = () => (key ? key() : '') + ' nabla-shaded-env'
+}
+
 let shared: THREE.DataTexture | null = null
 
 /**
@@ -97,6 +125,10 @@ export function applyReflectionEnvironment(
   for (const material of materials) {
     material.envMap = texture
     material.envMapIntensity = intensity * scale(material)
+    // Nothing may glow: chrome reads bright from its base colour and reflection, never emissive.
+    material.emissive.set(0, 0, 0)
+    material.emissiveIntensity = 0
+    shadeEnvironment(material)
     material.needsUpdate = true
   }
   let current = intensity
