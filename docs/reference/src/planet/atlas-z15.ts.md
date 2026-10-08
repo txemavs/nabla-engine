@@ -204,7 +204,7 @@ Explicit throws in this body:
 
 ## atlasCompatibilityNotes
 
-[Implementation, line 325](../../../../src/planet/atlas-z15.ts#L325)
+[Implementation, line 327](../../../../src/planet/atlas-z15.ts#L327)
 
 Human-readable differences between an Atlas cell and what the engine produces itself.
 
@@ -220,20 +220,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pkg.files.map`
 - `unused.join`
 
-## atlasCompatibilityNotes.callback@338
+## atlasCompatibilityNotes.callback@340
 
-[Implementation, line 338](../../../../src/planet/atlas-z15.ts#L338)
+[Implementation, line 340](../../../../src/planet/atlas-z15.ts#L340)
 
 ```ts
-callback@338(f): inferred by TypeScript; see implementation
+callback@340(f): inferred by TypeScript; see implementation
 ```
 
-## atlasCompatibilityNotes.callback@339
+## atlasCompatibilityNotes.callback@341
 
-[Implementation, line 339](../../../../src/planet/atlas-z15.ts#L339)
+[Implementation, line 341](../../../../src/planet/atlas-z15.ts#L341)
 
 ```ts
-callback@339(r): inferred by TypeScript; see implementation
+callback@341(r): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -242,7 +242,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atlasPackageUrl
 
-[Implementation, line 346](../../../../src/planet/atlas-z15.ts#L346)
+[Implementation, line 348](../../../../src/planet/atlas-z15.ts#L348)
 
 URL of the package JSON, next to manifest.json.
 
@@ -257,7 +257,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atlasFileUrl
 
-[Implementation, line 350](../../../../src/planet/atlas-z15.ts#L350)
+[Implementation, line 352](../../../../src/planet/atlas-z15.ts#L352)
 
 URL of a file inside the cell directory.
 
@@ -278,7 +278,7 @@ Explicit throws in this body:
 
 ## atlasPhotoFor
 
-[Implementation, line 359](../../../../src/planet/atlas-z15.ts#L359)
+[Implementation, line 361](../../../../src/planet/atlas-z15.ts#L361)
 
 Photo quality for one cell: the wanted quality near the player, the small `lo` photo farther away
 (16x fewer pixels to download, decode and keep on the GPU). `none` and `lo` are never upgraded.
