@@ -22,6 +22,8 @@ export const spanishMessages: Readonly<Record<string, string>> = {
   'Weapon drawn': 'Arma desenfundada',
   'Laser on': 'Láser encendido',
   'Laser off': 'Láser apagado',
+  Reloading: 'Recargando',
+  'Slide locked back · R reload': 'Corredera atrás · R recargar',
   'Stargate crossed': 'Stargate atravesado',
   'Passage blocked': 'Paso bloqueado',
   'Chase camera': 'Cámara exterior',
