@@ -1,5 +1,6 @@
 import type {
   TwoWheeledGeometry,
+  TwoWheeledPegSide,
   TwoWheeledHooliganDefinition,
   TwoWheeledPitchAssistDefinition,
 } from '../wheeled/contracts.js'
@@ -18,6 +19,15 @@ export interface TwoWheeledRiderTuning extends RiderLimits {
 export interface TwoWheeledTuning {
   maxLean: number
   fallLean: number
+  /** Full lean per side and its timing, or null (the limit stays at `maxLean`). */
+  pegLean: {
+    left: TwoWheeledPegSide
+    right: TwoWheeledPegSide
+    seconds: number
+    relaxSeconds: number
+    steer: number
+    scrapeMargin: number
+  } | null
   balanceSpeed: number
   balanceAssist: boolean
   leanResponse: number
@@ -99,9 +109,17 @@ export interface TwoWheeledState {
   /** Filtered longitudinal acceleration (m/s²) and the forward speed of the last tick. */
   acceleration: number
   previousSpeed: number | null
-  /** Tuck behind the screen, 0 (sat up) … 1 (full tuck), and the automatic tuck latch. */
+  /** Tuck behind the screen, 0 (sat up) … 1 (full tuck), and the automatic tuck depth. */
   tuck: number
-  tuckLatched: boolean
+  tuckAuto: number
+  /**
+   * Full lean: how far the lean limit has risen from `maxLean` to the peg lean of `leanSide`
+   * (0..1), and the footpeg scrape on the last tick (0 = none, up to 1 with speed) and its side.
+   */
+  leanReach: number
+  leanSide: 'left' | 'right'
+  scrape: number
+  scrapeSide: 'left' | 'right'
   /** Shift hooligan effect on the last tick. */
   hooligan: HooliganMode
   /** Rear wheel surface speed above road speed, m/s (wheelspin), and its accumulated angle. */
@@ -151,6 +169,11 @@ export interface TwoWheeledPose {
   roadSpeed: number
   /** Tuck behind the windscreen, 0 … 1. */
   tuck: number
+  /** Lean limit now, radians (rises from `maxLean` to the peg lean with held full steer). */
+  leanLimit: number
+  /** Footpeg scrape strength 0..1 (0 = none) and the touching point, chassis-local metres. */
+  scrape: number
+  scrapePoint: [number, number, number] | null
   /** Shift hooligan effect running. */
   hooligan: HooliganMode
   /** Looped or went over the front (until R). */

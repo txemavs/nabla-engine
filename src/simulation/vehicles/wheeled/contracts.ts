@@ -77,6 +77,21 @@ export interface PowertrainDefinition {
   speedLimiter?: SpeedLimiterDefinition
   shift?: GearboxTuning
 }
+/** One side of the full lean: the touch-down lean, radians, and the touching point (chassis m). */
+export interface TwoWheeledPegSide {
+  lean: number
+  point: [number, number, number]
+}
+
+/** Full lean ("total estribo"); see `vehicle.twoWheeled.pegLean`. */
+export interface TwoWheeledPegLeanDefinition {
+  left: TwoWheeledPegSide
+  right: TwoWheeledPegSide
+  seconds?: number
+  relaxSeconds?: number
+  steer?: number
+}
+
 /**
  * Single-track geometry and tuning; see `vehicle.twoWheeled` in `entity/vehicle/field.ts`.
  * Omitted tuning uses `twoWheeledDefaults`.
@@ -87,6 +102,8 @@ export interface TwoWheeledGeometry {
   steerLimit: number
   maxLean?: number
   fallLean?: number
+  /** Full lean per side (`vehicle.twoWheeled.pegLean`). */
+  pegLean?: TwoWheeledPegLeanDefinition
   balanceSpeed?: number
   balanceAssist?: boolean
   leanResponse?: number

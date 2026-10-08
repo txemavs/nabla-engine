@@ -146,7 +146,9 @@ export class VehicleEffects {
       origin,
     )
     this.marks.update(elapsed, pilot ?? null, contacts, origin)
-    this.audio.tires(slip, pilot ? sim!.vehicleInfo(pilot).speedKmh : 0)
+    const speedKmh = pilot ? sim!.vehicleInfo(pilot).speedKmh : 0
+    this.audio.tires(slip, speedKmh)
+    this.audio.scrape(pilot ? (sim!.twoWheeledPose(pilot)?.scrape ?? 0) : 0, speedKmh)
   }
 
   dispose(): void {

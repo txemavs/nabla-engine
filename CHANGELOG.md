@@ -4,6 +4,28 @@
 
 ### Added
 
+- **VFR800 metal and windscreen:** neutral mirror chrome (base 0.95 grey, metallic 1, roughness
+  0.03, slightly stronger reflections) only on the fork stanchions, the silencer can and its end
+  cap; the exhaust headers and the engine use the satin grey metal of the top triple clamp, as do
+  the frame and fork lowers; discs, brake tracks, chain, sprockets, radiator and swingarm keep
+  their authored materials. The reflection environment is a colourless studio gradient, so chrome
+  no longer reads blue, and it is no longer upside down (the equirectangular rows were written
+  zenith-first, so chrome reflected the sky from below). The windscreen is a see-through neutral smoke grey with a slight reflection
+  (`extras.nabla.envIntensity`, honoured by `applyReflectionEnvironment`). Both via
+  `scripts/prepare-vfr800-cockpit.mjs`.
+- **VFR800 rear-view mirrors:** the `mirror_L` / `mirror_R` glass is now a live mirror in the
+  cockpit, like the cars', and the existing Vehículos › Espejos sliders adjust it (yaw/tilt per side,
+  in degrees; default 0° / 0°, the glass as modelled; bake in `vehicle.mirrorAim`).
+- **VFR800 full lean ("total estribo"):** holding full steer at the normal 40° limit raises it over
+  2 s to the peg lean measured from the GLB (`twoWheeled.pegLean`: left 52.1° footpeg rubber, right
+  54.2° passenger footrest; `scripts/vfr800-lean-clearance.mjs`); releasing relaxes it in 1 s. The
+  automatic rider hangs off further (`rider.auto.pegHangOff`), and at the peg the bullet-impact
+  sparks stream from the touching point with a light metallic grind (`MetalScrape`).
+- **VFR800 tuck:** the head goes down gradually from 180 km/h to the full tuck at 200 km/h (eased
+  ramp, `twoWheeled.rider.tuck.fullKmh`), comes back up along the same ramp 10 km/h lower
+  (hysteresis, fully up at `releaseKmh` 170), and the forward key follows the same ramp
+  (`manualFromKmh` removed). The full-tuck eye is less deep (−0.22 m down, 0.34 m forward, was
+  −0.32 / 0.44) so the horizon clears the fairing; the tacho stays at the bottom of the view.
 - **Motorcycles, phase 3 (`vfr800`):** automatic rider (`twoWheeled.rider.auto`: hangs off into
   turns, forward under hard acceleration, back under hard front braking, keys override and hand
   back after ~1 s) and a tuck behind the windscreen from 180 km/h with hysteresis

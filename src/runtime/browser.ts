@@ -925,6 +925,7 @@ export class GameRuntime {
     if (crossing) canvas.dataset.portalCrossings = String(crossing.sequence)
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
+    this.view.scrapeSparks(sim, time)
     this.view.sparks.update(time)
     if (this.sidearm) {
       this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn

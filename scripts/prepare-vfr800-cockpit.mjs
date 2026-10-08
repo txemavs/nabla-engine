@@ -15,10 +15,18 @@
  *   face; `extras.nabla` carries the size in metres.
  *
  * Selection boxes and sizes come from measuring the authored mesh (see docs/motorcycles.md).
- * - Windscreen: alpha-blended light smoked tint (was transmission), slightly more transparent.
+ * - Windscreen: alpha-blended neutral smoke grey («gris humo», was a bluish transmission tint),
+ *   see-through, with a slight reflection (`extras.nabla.envIntensity`).
+ * - Metal map (Txema's review): a new neutral mirror chrome (`Mirror chrome stanchions and
+ *   silencer`, base 0.95 grey, metallic 1, roughness 0.03, slightly stronger reflections) only on
+ *   the fork stanchions, the silencer can and its end cap. The exhaust headers and the engine
+ *   (the graphite engine cases behind the radiator) take the satin grey metal of the top triple
+ *   clamp (`Satin aluminium chassis…`, also the frame and fork lowers). Everything else keeps the
+ *   authored material: discs and brake tracks, chain and sprockets, radiator, swingarm, mirrors.
+ *   The script prints the node → material table.
  *
- * The exhaust and the mirror glass already use metallic chrome; the renderer gives them (and the
- * windscreen, tagged `extras.nabla.reflective`) a reflection environment.
+ * The renderer gives metallic materials (and the windscreen, tagged `extras.nabla.reflective`) a
+ * neutral grey reflection environment.
  */
 import fs from 'node:fs'
 import { readGlb, writeGlb, components } from './lib/glb.mjs'
@@ -255,18 +263,90 @@ for (const [name, position, normal, data] of anchors) {
 
 // --- Windscreen ---------------------------------------------------------------------------------
 // Plain alpha blending instead of transmission (a transmission pass renders the screen from a
-// copy of the opaque scene and can hide or blur the cluster behind it): a light smoked tint, a bit
-// more see-through than before, glossy so the renderer's reflection environment shows on it.
+// copy of the opaque scene and can hide or blur the cluster behind it): a neutral smoke-grey tint
+// (equal RGB, no blue or brown), see-through, glossy with a dimmed reflection environment so it
+// shows a slight reflection without hiding the instruments or the road.
 const screen = json.materials[materialIndex('Smoked translucent windscreen')]
 screen.pbrMetallicRoughness = {
-  baseColorFactor: [0.2, 0.22, 0.25, 0.26],
+  baseColorFactor: [0.16, 0.16, 0.16, 0.26],
   metallicFactor: 0,
   roughnessFactor: 0.05,
 }
 screen.alphaMode = 'BLEND'
 screen.doubleSided = true
 screen.extensions = { KHR_materials_ior: { ior: 1.49 } }
-screen.extras = { ...(screen.extras ?? {}), nabla: { reflective: true } }
+screen.extras = { ...(screen.extras ?? {}), nabla: { reflective: true, envIntensity: 0.35 } }
+
+/** A primitive drawing the components `take` removed, reusing the source vertices. */
+const sharedPrimitive = ({ primitive, taken }, material) => ({
+  attributes: { ...primitive.attributes },
+  indices: addAccessor(
+    'SCALAR',
+    taken.flatMap((c) => c.indices).map((i) => [i]),
+  ),
+  material,
+})
+
+// --- Metal map ---------------------------------------------------------------------------------
+// Mirror chrome only on the fork stanchions, the silencer can and its end cap; satin grey metal
+// (the top triple clamp's material) on the exhaust headers and the engine; the rest as authored.
+const SATIN = ALUMINIUM
+const MIRROR_CHROME = json.materials.length
+json.materials.push({
+  name: 'Mirror chrome stanchions and silencer',
+  pbrMetallicRoughness: {
+    baseColorFactor: [0.95, 0.95, 0.95, 1],
+    metallicFactor: 1,
+    roughnessFactor: 0.03,
+  },
+  extras: { nabla: { envIntensity: 1.25 } },
+})
+const EXHAUST = materialIndex('Chrome exhaust and discs')
+const ENGINE = materialIndex('Graphite engine cases')
+const meshOf = (name) => json.meshes[json.nodes.find((n) => n.name === name).mesh]
+const centre = (c, axis) => (c.min[axis] + c.max[axis]) / 2
+
+// Fork stanchions: the two chrome tubes of Fork_Slider (x ±0.085, 0.4 m long).
+const fork = meshOf('Fork_Slider').primitives.find((p) => p.material === EXHAUST)
+{
+  const parts = components(readAny(fork.attributes.POSITION), readAny(fork.indices).flat())
+  if (parts.length !== 2 || parts.some((c) => c.max[1] - c.min[1] < 0.3))
+    throw new Error(`expected 2 fork stanchions, got ${parts.length}`)
+  fork.material = MIRROR_CHROME
+}
+
+// Body exhaust: the headers and mid-pipe under the engine (one part, ending at z ≈ 0.57) become
+// satin grey; the silencer can and its end cap (both behind z = 0.5) mirror chrome.
+{
+  const tail = take(EXHAUST, (c) => c.min[2] > 0.5)
+  if (tail.taken.length !== 2)
+    throw new Error(`expected silencer and end cap, got ${tail.taken.length}`)
+  tail.primitive.material = SATIN
+  body.primitives.push(sharedPrimitive(tail, MIRROR_CHROME))
+}
+
+// Engine: the graphite cases behind the radiator (the radiator core, in front of z = −0.3, keeps
+// its graphite) become satin grey.
+{
+  const engine = take(ENGINE, (c) => centre(c, 2) > -0.3)
+  if (engine.taken.length < 40)
+    throw new Error(`expected the engine parts, got ${engine.taken.length}`)
+  body.primitives.push(sharedPrimitive(engine, SATIN))
+}
+
+// Verification: which node draws which material.
+for (const node of json.nodes.filter((n) => n.mesh !== undefined)) {
+  const counts = new Map()
+  for (const p of json.meshes[node.mesh].primitives) {
+    const name = json.materials[p.material].name
+    counts.set(name, (counts.get(name) ?? 0) + readAny(p.indices).length / 3)
+  }
+  console.log(
+    `${node.name}: ` +
+      [...counts].map(([name, tris]) => `${name} (${Math.round(tris)} tris)`).join('; '),
+  )
+}
+
 const used = new Set(json.materials.flatMap((m) => Object.keys(m.extensions ?? {})))
 for (const key of ['extensionsUsed', 'extensionsRequired'])
   if (json[key]) json[key] = json[key].filter((e) => !e.startsWith('KHR_materials_') || used.has(e))

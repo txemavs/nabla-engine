@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   autoRiderInput,
-  autoTuckLatch,
+  autoTuckDepth,
   manualTuckReach,
   stepRiderControl,
   tuckTarget,
@@ -93,38 +93,69 @@ describe('key hand-over', () => {
 describe('tuck behind the windscreen', () => {
   const tuck = twoWheeledDefaults.rider.tuck
 
-  it('latches on at the tuck speed and only releases below the release speed', () => {
-    expect(autoTuckLatch(false, tuck.kmh - 1, 0, tuck)).toBe(false)
-    expect(autoTuckLatch(false, tuck.kmh, 0, tuck)).toBe(true)
-    // Hysteresis: between the two speeds the latch keeps its state.
-    const between = (tuck.kmh + tuck.releaseKmh) / 2
-    expect(autoTuckLatch(true, between, 0, tuck)).toBe(true)
-    expect(autoTuckLatch(false, between, 0, tuck)).toBe(false)
-    expect(autoTuckLatch(true, tuck.releaseKmh - 0.5, 0, tuck)).toBe(false)
-    // Hard braking sits the rider up at any speed.
-    expect(autoTuckLatch(true, 220, tuck.brakeG + 0.1, tuck)).toBe(false)
+  it('ramps the head down from 180 to 200 km/h, eased, with no step', () => {
+    expect(tuck.kmh).toBe(180)
+    expect(tuck.fullKmh).toBe(200)
+    expect(autoTuckDepth(0, tuck.kmh - 1, 0, tuck)).toBe(0)
+    expect(autoTuckDepth(0, tuck.kmh, 0, tuck)).toBe(0)
+    expect(autoTuckDepth(0, 190, 0, tuck)).toBeCloseTo(0.5, 6)
+    expect(autoTuckDepth(0, tuck.fullKmh, 0, tuck)).toBe(1)
+    let depth = 0
+    let previous = 0
+    for (let kmh = 150; kmh <= 230; kmh += 0.25) {
+      depth = autoTuckDepth(depth, kmh, 0, tuck)
+      expect(depth).toBeGreaterThanOrEqual(previous)
+      // Eased: never more than a small change per 0.25 km/h, flat at both ends.
+      expect(depth - previous).toBeLessThan(0.02)
+      previous = depth
+    }
+    expect(autoTuckDepth(0, tuck.kmh + 0.5, 0, tuck)).toBeLessThan(0.01)
+    expect(1 - autoTuckDepth(0, tuck.fullKmh - 0.5, 0, tuck)).toBeLessThan(0.01)
   })
 
-  it('lets the forward key reach the full tuck only at speed, blending in without a jump', () => {
-    expect(manualTuckReach(tuck.manualFromKmh - 1, tuck)).toBe(0)
-    expect(manualTuckReach(tuck.kmh, tuck)).toBe(1)
-    let previous = 0
-    for (let kmh = tuck.manualFromKmh; kmh <= tuck.kmh; kmh += 0.5) {
-      const reach = manualTuckReach(kmh, tuck)
-      expect(reach).toBeGreaterThanOrEqual(previous)
-      expect(reach - previous).toBeLessThan(0.1)
-      previous = reach
+  it('keeps hysteresis on the way down and sits up under hard braking', () => {
+    const gap = tuck.kmh - tuck.releaseKmh
+    expect(gap).toBeGreaterThan(0)
+    // Slowing from a full tuck: still full until fullKmh - gap, then the ramp shifted down.
+    let depth = 1
+    let previous = 1
+    for (let kmh = 230; kmh >= 150; kmh -= 0.25) {
+      depth = autoTuckDepth(depth, kmh, 0, tuck)
+      expect(depth).toBeLessThanOrEqual(previous)
+      expect(previous - depth).toBeLessThan(0.02)
+      if (kmh >= tuck.fullKmh - gap) expect(depth).toBe(1)
+      if (kmh >= tuck.kmh && kmh <= tuck.fullKmh) {
+        // Higher than on the way up at the same speed.
+        expect(depth).toBeGreaterThanOrEqual(autoTuckDepth(0, kmh, 0, tuck))
+      }
+      previous = depth
     }
-    // Keys own the tuck while they are pressed: no tuck below the blend even when latched.
-    expect(tuckTarget(true, 1, 120, 1, tuck)).toBe(0)
-    expect(tuckTarget(false, 1, 200, 1, tuck)).toBe(1)
-    expect(tuckTarget(true, 0, 200, 0, tuck)).toBe(1)
+    expect(autoTuckDepth(1, tuck.releaseKmh, 0, tuck)).toBe(0)
+    // In the band the depth holds: half a tuck at 185 km/h stays half.
+    expect(autoTuckDepth(0.5, 185, 0, tuck)).toBe(0.5)
+    expect(autoTuckDepth(1, 220, tuck.brakeG + 0.1, tuck)).toBe(0)
+  })
+
+  it('lets the forward key follow the same 180 → 200 km/h ramp', () => {
+    expect(manualTuckReach(tuck.kmh, tuck)).toBe(0)
+    expect(manualTuckReach(tuck.fullKmh, tuck)).toBe(1)
+    for (let kmh = 150; kmh <= 230; kmh += 0.5)
+      expect(manualTuckReach(kmh, tuck)).toBeCloseTo(autoTuckDepth(0, kmh, 0, tuck), 9)
+    // Keys own the tuck while they are pressed: no tuck below the ramp even with an auto depth.
+    expect(tuckTarget(1, 1, 120, 1, tuck)).toBe(0)
+    expect(tuckTarget(0, 1, 205, 1, tuck)).toBe(1)
+    expect(tuckTarget(1, 0, 205, 0, tuck)).toBe(1)
+    expect(tuckTarget(0, 1, 190, 1, tuck)).toBeCloseTo(0.5, 6)
   })
 
   it('tucks on the vfr800 above the tuck speed and sits up under hard braking', () => {
     const r = rideVfr()
     let guard = 0
-    while (r.pose().roadSpeed * 3.6 < tuck.kmh + 5 && guard++ < 40 * 60) r.step({ forward: 1 })
+    while (r.pose().roadSpeed * 3.6 < tuck.kmh + 3 && guard++ < 40 * 60) r.step({ forward: 1 })
+    // Just past the start of the ramp: only a little head movement.
+    for (let i = 0; i < 60; i++) r.step({ forward: 1 })
+    if (r.pose().roadSpeed * 3.6 < tuck.kmh + 8) expect(r.pose().tuck).toBeLessThan(0.5)
+    while (r.pose().roadSpeed * 3.6 < tuck.fullKmh + 3 && guard++ < 60 * 60) r.step({ forward: 1 })
     for (let i = 0; i < 60; i++) r.step({ forward: 1 })
     expect(r.pose().tuck).toBeGreaterThan(0.95)
     for (let i = 0; i < 45; i++) r.step({ forward: -1 })
@@ -132,10 +163,10 @@ describe('tuck behind the windscreen', () => {
     r.dispose()
   })
 
-  it('keeps the normal forward-key range below the tuck blend', () => {
+  it('keeps the normal forward-key range below the tuck ramp', () => {
     const r = rideVfr()
     for (let i = 0; i < 4 * 60; i++) r.step({ forward: 1 })
-    expect(r.pose().roadSpeed * 3.6).toBeLessThan(tuck.manualFromKmh)
+    expect(r.pose().roadSpeed * 3.6).toBeLessThan(tuck.kmh)
     for (let i = 0; i < 60; i++) r.step({ forward: 0.3, riderForward: 1 })
     expect(r.pose().tuck).toBe(0)
     r.dispose()

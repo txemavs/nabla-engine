@@ -112,8 +112,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `contacts.map`
+- `sim!.twoWheeledPose`
 - `sim!.vehicleInfo`
 - `sim!.wheelContactInfo`
+- `this.audio.scrape`
 - `this.audio.tires`
 - `this.marks.clear`
 - `this.marks.update`
@@ -146,7 +148,7 @@ callback@144(wheel): inferred by TypeScript; see implementation
 
 ## VehicleEffects.dispose
 
-[Implementation, line 152](../../../../src/runtime/vehicle-effects.ts#L152)
+[Implementation, line 154](../../../../src/runtime/vehicle-effects.ts#L154)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 

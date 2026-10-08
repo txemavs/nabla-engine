@@ -39,6 +39,7 @@ import {
   type MotorcycleRigBinding,
 } from '../vehicle-presentation/motorcycle-rig.js'
 import { MotorcycleInstruments } from '../vehicle-presentation/motorcycle-instruments.js'
+import { motorcycleMirrorLenses } from '../vehicle-presentation/motorcycle-mirrors.js'
 import {
   applyReflectionEnvironment,
   type ReflectionEnvironment,
@@ -48,7 +49,7 @@ import { twoWheeledDefaults } from '../../config/simulation.js'
 import {
   clampMirrorAdjustment,
   mirrorModelKey,
-  type CarMirrors,
+  CarMirrors,
   type MirrorAdjustment,
   type MirrorAngle,
   type MirrorPolicy,
@@ -1002,6 +1003,27 @@ export class SceneView {
       }),
     )
   }
+  /**
+   * Live rear-view mirrors for a motorcycle GLB (`mirror_L` / `mirror_R` glass), the same as the
+   * cars': cockpit-only reflections, per-side «Espejos» adjustment and `vehicle.mirrorAim` /
+   * `vehicle.mirrorTilt` (0° default: the glass as modelled).
+   */
+  private motorcycleMirrors(model: THREE.Object3D, e: Entity): CarMirrors | undefined {
+    const lenses = motorcycleMirrorLenses(model)
+    if (!lenses.length) return undefined
+    model.updateWorldMatrix(true, true)
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
+      model.getWorldQuaternion(new THREE.Quaternion()),
+    )
+    return new CarMirrors(
+      lenses,
+      up,
+      e.vehicle?.mirrorTilt ?? 0,
+      this.options.mirrorPolicy,
+      model.parent ?? model,
+      e.vehicle?.mirrorAim,
+    )
+  }
   private assetVehicle(e: Entity, group: THREE.Group): void {
     const visual = e.visual!,
       definition = vehicleDefinition(e)
@@ -1047,8 +1069,10 @@ export class SceneView {
         if (cluster) this.motorcycleClusters.set(e.id, cluster)
       }
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
-      if (equipment?.mirrors) {
-        this.carMirrors.set(e.id, equipment.mirrors)
+      const mirrors =
+        equipment?.mirrors ?? (twoWheeled ? this.motorcycleMirrors(model, e) : undefined)
+      if (mirrors) {
+        this.carMirrors.set(e.id, mirrors)
         const mirrorModel = mirrorModelKey(visual.body.url, visual.steering?.url)
         this.mirrorModels.set(e.id, mirrorModel)
         if (!this.mirrorModelsResolved.has(mirrorModel)) {
@@ -1057,7 +1081,7 @@ export class SceneView {
           if (initial) this.setMirrorAdjustment(mirrorModel, initial)
           else this.mirrorModelsResolved.add(mirrorModel)
         }
-        equipment.mirrors.setAdjustment(this.mirrorAdjustments.get(mirrorModel) ?? {})
+        mirrors.setAdjustment(this.mirrorAdjustments.get(mirrorModel) ?? {})
       }
       if (equipment?.instruments) this.instruments.set(e.id, equipment.instruments)
       if (equipment?.beacons) {
@@ -1515,6 +1539,54 @@ export class SceneView {
   signal(id: string, side: number): void {
     this.authoredLights.get(id)?.controller.toggleSignal(side)
   }
+  /**
+   * Footpeg scrape sparks: while a two-wheeler is down on its peg (`TwoWheeledPose.scrape`), the
+   * bullet-impact sparks (`sparks`) stream from the touching point on the inside of the turn,
+   * about 30 bursts a second. They carry part of the machine's velocity, so they trail behind it,
+   * and grow with the scrape (speed). `now` is the same clock as `sparks.update`, ms.
+   */
+  scrapeSparks(sim: Simulation, now: number): void {
+    for (const id of this.motorcycleRigs.keys()) {
+      const pose = sim.twoWheeledPose(id)
+      const group = this.objects.get(id)
+      const last = this.scrapeEmitters.get(id)
+      if (!pose || !group || !pose.scrapePoint || !(pose.scrape > 0)) {
+        if (last) this.scrapeEmitters.delete(id)
+        continue
+      }
+      group.updateWorldMatrix(true, false)
+      const point = group.localToWorld(new THREE.Vector3(...pose.scrapePoint))
+      if (last && now - last.time < 33) continue
+      const velocity =
+        last && now > last.time
+          ? point
+              .clone()
+              .sub(last.point)
+              .multiplyScalar(1000 / (now - last.time))
+          : new THREE.Vector3()
+      // Up and out of the turn, away from the bike.
+      const outward = new THREE.Vector3(Math.sign(pose.scrapePoint[0]), 0, 0)
+        .transformDirection(group.matrixWorld)
+        .setY(0)
+      const normal = outward
+        .multiplyScalar(0.6)
+        .add(new THREE.Vector3(0, 1, 0))
+        .normalize()
+      this.sparks.add(
+        point.toArray() as [number, number, number],
+        now,
+        normal.toArray() as [number, number, number],
+        {
+          count: 4 + 6 * pose.scrape,
+          drift: velocity.multiplyScalar(0.55).toArray() as [number, number, number],
+          speed: 0.6 + 0.8 * pose.scrape,
+        },
+      )
+      this.scrapeEmitters.set(id, { time: now, point })
+    }
+  }
+  /** Last scrape burst per vehicle: time (ms) and world point, for the spark trail velocity. */
+  private readonly scrapeEmitters = new Map<string, { time: number; point: THREE.Vector3 }>()
   renderMirrors(
     renderer: THREE.WebGLRenderer,
     scene: THREE.Scene,

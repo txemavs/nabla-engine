@@ -8,19 +8,26 @@ import * as THREE from 'three'
 
 let shared: THREE.DataTexture | null = null
 
-/** Equirectangular sky (zenith → bright horizon) over a dark ground, shared by every model. */
+/**
+ * Equirectangular neutral studio gradient (light grey overhead, bright horizon band, dark grey
+ * ground), shared by every model. Deliberately colourless: a blue sky in the reflection tinted the
+ * chrome blue.
+ */
 export function reflectionEnvironmentTexture(): THREE.DataTexture {
   if (shared) return shared
   const width = 128,
     height = 64,
     data = new Uint8Array(width * height * 4)
   const mix = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t)
-  const zenith = [70, 120, 200],
-    horizon = [235, 240, 245],
-    ground = [95, 92, 88],
-    earth = [55, 52, 50]
+  const zenith = [170, 170, 170],
+    horizon = [245, 245, 245],
+    ground = [92, 92, 92],
+    earth = [48, 48, 48]
   for (let y = 0; y < height; y++) {
-    const elevation = (0.5 - (y + 0.5) / height) * Math.PI
+    // A DataTexture is not flipped: row 0 is v = 0, which three's equirectangular lookup
+    // (v = asin(dir.y) / π + 0.5) maps straight DOWN. So rows run from the ground (row 0) up to
+    // the zenith (last row); writing the zenith first lit chrome from below (sky under it).
+    const elevation = ((y + 0.5) / height - 0.5) * Math.PI
     const c =
       elevation >= 0
         ? mix(horizon, zenith, Math.pow(Math.sin(elevation), 0.6))
@@ -63,9 +70,15 @@ export function applyReflectionEnvironment(
         materials.add(material as THREE.MeshStandardMaterial)
   })
   const texture = reflectionEnvironmentTexture()
+  // Per-material multiplier from the GLB (`extras.nabla.envIntensity`, e.g. a windscreen's
+  // slight reflection); 1 when omitted.
+  const scale = (material: THREE.Material) => {
+    const value = (material.userData as { nabla?: { envIntensity?: number } }).nabla?.envIntensity
+    return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 1
+  }
   for (const material of materials) {
     material.envMap = texture
-    material.envMapIntensity = intensity
+    material.envMapIntensity = intensity * scale(material)
     material.needsUpdate = true
   }
   let current = intensity
@@ -75,7 +88,7 @@ export function applyReflectionEnvironment(
       const next = intensity * Math.max(0, level)
       if (next === current) return
       current = next
-      for (const material of materials) material.envMapIntensity = next
+      for (const material of materials) material.envMapIntensity = next * scale(material)
     },
   }
 }

@@ -13,15 +13,15 @@ let sim: Simulation
 beforeEach(() => {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
   floor.size = [10000, 1, 10000]
+  // The normal controller: held full steer would raise the lean limit to the peg
+  // (`pegLean`, covered by full-lean.test.ts), so these tests ride without it.
+  const bike = presetVehicle('vfr800', 'bike', [0, 0.6, 0])
+  delete bike.vehicle!.twoWheeled!.pegLean
   sim = new Simulation(
     parseScene({
       version: 1,
       name: 'Bike ride',
-      entities: [
-        floor,
-        presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
-        createEntity('spawn', 'spawn', [3, 1, 4]),
-      ],
+      entities: [floor, bike, createEntity('spawn', 'spawn', [3, 1, 4])],
     }),
   )
 })

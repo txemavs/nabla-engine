@@ -40,6 +40,27 @@ export const twoWheeledField = z
     maxLean: finite.min(0.05).max(1.2).optional(),
     /** Beyond this lean the machine counts as fallen and balance stops, radians. */
     fallLean: finite.min(0.1).max(1.5).optional(),
+    /**
+     * Full lean ("total estribo") per side: `lean` (radians) at which the footpeg, or the first
+     * part, touches the ground at the static ride height, and that `point` (chassis-local
+     * metres) for the scrape sparks. Holding full steer raises the limit from `maxLean` towards
+     * it (`twoWheeledDefaults.fullLean`). Measure it from the GLB
+     * (`scripts/vfr800-lean-clearance.mjs`); omitted = the limit stays at `maxLean`.
+     */
+    pegLean: z
+      .object({
+        left: z
+          .object({ lean: finite.min(0.1).max(1.4), point: z.tuple([finite, finite, finite]) })
+          .strict(),
+        right: z
+          .object({ lean: finite.min(0.1).max(1.4), point: z.tuple([finite, finite, finite]) })
+          .strict(),
+        seconds: finite.positive().max(20).optional(),
+        relaxSeconds: finite.positive().max(20).optional(),
+        steer: finite.min(0.1).max(1).optional(),
+      })
+      .strict()
+      .optional(),
     /** Below this speed the low-speed balance assist holds the machine upright, m/s. */
     balanceSpeed: finite.min(0).max(30).optional(),
     /** Turn the low-speed balance assist off (the machine then falls over when stopped). */
@@ -82,6 +103,8 @@ export const twoWheeledField = z
             enabled: z.boolean().optional(),
             /** Sideways input (0..1 of the full shift) at the largest lean. */
             hangOff: finite.min(0).max(2).optional(),
+            /** Extra hang-off at the full (peg) lean, share of `lateral` (see `pegLean`). */
+            pegHangOff: finite.min(0).max(1).optional(),
             /** Sideways input per unit of steering demand. */
             steer: finite.min(0).max(2).optional(),
             /** Lean below which the rider stays centred, radians. */
@@ -102,11 +125,12 @@ export const twoWheeledField = z
         tuck: z
           .object({
             enabled: z.boolean().optional(),
-            /** Automatic tuck from this speed, km/h; sits up below `releaseKmh`. */
+            /** The head starts to go down from this speed, km/h (automatic and forward key). */
             kmh: finite.min(10).max(500).optional(),
+            /** Full tuck from this speed, km/h (eased ramp from `kmh`). */
+            fullKmh: finite.min(10).max(500).optional(),
+            /** Fully sat up again below this speed, km/h (hysteresis on the way down). */
             releaseKmh: finite.min(5).max(500).optional(),
-            /** The forward key's extended (full tuck) range blends in from this speed, km/h. */
-            manualFromKmh: finite.min(0).max(500).optional(),
             /** Seconds for a full tuck. */
             seconds: finite.positive().max(5).optional(),
             /** Deceleration that sits the rider up, g. */
@@ -315,7 +339,7 @@ export const vehicleField = z
       )
       .max(8)
       .optional(),
-    /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
+    /** Vertical mirror tilt in degrees; omitted uses -2 degrees (0 on two-wheelers). */
     mirrorTilt: finite.min(-5).max(12).optional(),
     /**
      * Baked glass aim per mirror side (`left`, `right`, …), degrees, on top of the asset lens:
