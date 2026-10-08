@@ -55,6 +55,11 @@ export interface FiringVoiceTimbre {
   /** Intake band: base Hz plus this many times the firing rate. Defaults 400 and 3. */
   intakeBaseHz?: number
   intakeFiringMultiple?: number
+  /**
+   * Playback rate of the firing wave relative to the true four-stroke cycle (`v4CycleHz`).
+   * 1 keeps the mechanical pitch. The diesel uses less than 1 so its strong partial sits lower.
+   */
+  pitch?: number
 }
 
 /** Cycle (720°) rate of a four-stroke at `rpm`, Hz: the fundamental of the V4 voice. */
@@ -244,7 +249,8 @@ export class V4Engine {
     const firings = this.firingCount
     const level = audible ? (d.idleGain + load * d.loadGain) * volume : 0
     this.output.gain.setTargetAtTime(level, time, 0.035)
-    this.oscillator.frequency.setTargetAtTime(Math.max(1, v4CycleHz(rpm)), time, 0.03)
+    const cycle = v4CycleHz(rpm) * (d.pitch ?? 1)
+    this.oscillator.frequency.setTargetAtTime(Math.max(1, cycle), time, 0.03)
     this.filter.frequency.setTargetAtTime(
       d.cutoffBaseHz + rpm * d.cutoffPerRpm + load * d.cutoffLoadHz,
       time,
@@ -253,7 +259,7 @@ export class V4Engine {
     this.intake.gain.setTargetAtTime(audible ? load * d.intakeGain * volume : 0, time, 0.05)
     // Intake band around a few times the firing rate.
     this.intakeFilter.frequency.setTargetAtTime(
-      (d.intakeBaseHz ?? 400) + v4CycleHz(rpm) * firings * (d.intakeFiringMultiple ?? 3),
+      (d.intakeBaseHz ?? 400) + cycle * firings * (d.intakeFiringMultiple ?? 3),
       time,
       0.05,
     )

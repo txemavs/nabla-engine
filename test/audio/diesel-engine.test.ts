@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { AirBrakeHiss, ExhaustBrake } from '../../src/audio/diesel-engine.js'
+import { AirBrakeHiss, ExhaustBrake, dieselEngineDefaults } from '../../src/audio/diesel-engine.js'
+import { engineNoteHz } from '../../src/audio/powertrain.js'
+import { v4CycleHz } from '../../src/audio/v4-engine.js'
 import { resolveEngineVoice } from '../../src/audio/vehicle-sound.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 
@@ -46,16 +48,26 @@ class Context {
 }
 
 describe('truck diesel voice', () => {
-  it('is an inline-6 with the jake bark and the air brake, from the preset', () => {
+  it('is an inline-6 with the air brake and no lift-off bark, from the preset', () => {
     const voice = resolveEngineVoice({ voice: 'diesel' })
     expect(voice.voice).toBe('diesel')
     expect(voice.firing).toHaveLength(6)
-    expect(voice.jake).toBe(true)
+    expect(voice.jake).toBe(false)
+    expect(voice.blowOff).toBe(0)
     expect(voice.airBrake).toBe(true)
     const truck = presetVehicle('white-truck', 'truck')
     expect(truck.vehicle?.audio?.engine?.voice).toBe('diesel')
+    expect(truck.vehicle?.audio?.engine?.jake).toBe(false)
+    expect(truck.vehicle?.audio?.engine?.blowOff).toBe(0)
     expect(truck.vehicle?.powertrain?.torqueNm).toBe(2600)
     expect(truck.vehicle?.powertrain?.powerCv).toBe(530)
+  })
+
+  it("puts the six-pulse partial on yesterday's note pitch", () => {
+    const rpm = 750
+    const firingHz = 6 * v4CycleHz(rpm) * (dieselEngineDefaults.pitch ?? 1)
+    expect(firingHz).toBeCloseTo(engineNoteHz(rpm))
+    expect(dieselEngineDefaults.pitch!).toBeLessThan(1)
   })
 
   it('barks once when the throttle is lifted and hisses when the brake comes on', () => {

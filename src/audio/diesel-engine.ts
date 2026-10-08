@@ -21,6 +21,12 @@ export const dieselEngineDefaults: FiringVoiceTimbre = Object.freeze({
   intakeGain: 0.012,
   intakeBaseHz: 90,
   intakeFiringMultiple: 1,
+  /**
+   * An even six's strong partial is 6 × (rpm/120) = rpm/20. Yesterday's truck note
+   * (`engineNoteHz`) is rpm/24, the deeper prrrón. 20/24 keeps this pulse train and puts
+   * that partial on the old pitch. TODO(unverified): not a measured spectrum.
+   */
+  pitch: 20 / 24,
 })
 
 /** Turbo spool range for that diesel (the road-car turbo waits until 1,600 rpm). */

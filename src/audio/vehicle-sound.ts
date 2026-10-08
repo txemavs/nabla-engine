@@ -10,7 +10,7 @@ export type GearShiftSoundKind = 'clack' | 'click' | 'none'
 /**
  * `note`: the road-car engine note. `v4`: the procedural V4 voice (`audio/v4-engine.ts`).
  * `inline`: the refined inline-4 turbo (or inline-5) voice (`audio/inline-engine.ts`).
- * `diesel`: the inline-6 turbo-diesel (`audio/diesel-engine.ts`), with a jake bark and air-brake hiss.
+ * `diesel`: the inline-6 turbo-diesel (`audio/diesel-engine.ts`), with an air-brake hiss. No jake bark and no blow-off chirp on lift-off.
  */
 export type EngineVoiceKind = 'note' | 'v4' | 'inline' | 'diesel'
 
@@ -94,8 +94,8 @@ export function resolveEngineVoice(engine?: EngineVoiceOptions | null): Resolved
       volume: volumeOf(engine.volume),
       weights: inlinePulseWeights(cylinders, 0),
       turboWhistle: volumeOf(engine.turboWhistle ?? 0.85),
-      blowOff: volumeOf(engine.blowOff ?? 0.05),
-      jake: engine.jake !== false,
+      blowOff: volumeOf(engine.blowOff ?? 0),
+      jake: engine.jake === true,
       airBrake: engine.airBrake !== false,
     }
   }
