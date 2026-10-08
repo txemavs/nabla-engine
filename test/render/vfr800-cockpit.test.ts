@@ -63,28 +63,52 @@ describe('vfr800 GLB cockpit pass', () => {
     }
   })
 
-  it('keeps the exhaust bright neutral silver chrome with a neutral reflection environment', async () => {
+  it('puts neutral mirror chrome only on the stanchions and the silencer; the rest as mapped', async () => {
     const root = await load()
-    const chrome = materialsOf(root).find((m) => m.name.startsWith('Chrome exhaust'))!
-    expect(chrome.metalness).toBe(1)
-    expect(chrome.roughness).toBeGreaterThanOrEqual(0.03)
-    expect(chrome.roughness).toBeLessThanOrEqual(0.15)
-    expect(Math.min(chrome.color.r, chrome.color.g, chrome.color.b)).toBeGreaterThan(0.6)
-    // Neutral silver, no blue tint: on every chrome part, equal channels.
-    for (const name of ['Chrome exhaust', 'Polished chrome', 'Reflector']) {
-      const material = materialsOf(root).find((m) => m.name.startsWith(name))!
-      expect(material.color.b - material.color.r).toBeCloseTo(0, 6)
-      expect(material.color.g - material.color.r).toBeCloseTo(0, 6)
+    /** Materials drawn by a node's own mesh (not its child nodes). */
+    const own = (name: string) => {
+      const node = root.getObjectByName(name)!
+      const meshes = [node, ...node.children].filter((o) => (o as THREE.Mesh).isMesh)
+      return new Set(meshes.flatMap((m) => [(m as THREE.Mesh).material].flat().map((x) => x.name)))
     }
-    // The reflection environment is colourless too (a blue sky tinted the chrome).
+    const CHROME = 'Mirror chrome stanchions and silencer'
+    const SATIN = 'Satin aluminium chassis, fork and passenger footrests'
+    const chrome = materialsOf(root).find((m) => m.name === CHROME)!
+    expect(chrome.metalness).toBe(1)
+    expect(chrome.roughness).toBeLessThanOrEqual(0.05)
+    // Neutral silver, no blue tint.
+    expect(chrome.color.r).toBeGreaterThan(0.9)
+    expect(chrome.color.b - chrome.color.r).toBeCloseTo(0, 6)
+    expect(chrome.color.g - chrome.color.r).toBeCloseTo(0, 6)
+    // Stanchions (fork) and silencer + end cap (body): mirror chrome. Fork lowers: satin grey.
+    expect(own('Fork_Slider')).toContain(CHROME)
+    expect(own('Fork_Slider')).toContain(SATIN)
+    expect(own('Body')).toContain(CHROME)
+    // The headers no longer use the old chrome; the triple clamp keeps the satin grey.
+    expect(own('Body')).not.toContain('Chrome exhaust and discs')
+    expect(own('Steering_Pivot')).toContain(SATIN)
+    // Discs, brake tracks, chain and swingarm keep their authored materials.
+    for (const name of ['Wheel_Front', 'Wheel_Rear', 'Chain', 'Swingarm_Pivot'])
+      expect(own(name)).not.toContain(CHROME)
+    expect(own('Wheel_Front')).toContain('Chrome exhaust and discs')
+    expect(own('Wheel_Front')).toContain('Polished chrome brake tracks')
+    expect(own('Chain')).toEqual(new Set(['Black smooth chain band']))
+    const discs = materialsOf(root).find((m) => m.name === 'Chrome exhaust and discs')!
+    expect([discs.color.r, discs.color.g, discs.color.b].map((v) => +v.toFixed(2))).toEqual(
+      [0.83, 0.86, 0.9].map((v) => +new THREE.Color().setRGB(v, v, v).r.toFixed(2)),
+    )
+    expect(discs.roughness).toBeCloseTo(0.055, 6)
+    // The reflection environment is colourless (a blue sky tinted the chrome).
     const pixels = reflectionEnvironmentTexture().image.data as Uint8Array
     for (let i = 0; i < pixels.length; i += 4) {
       expect(pixels[i + 1]).toBe(pixels[i])
       expect(pixels[i + 2]).toBe(pixels[i])
     }
     const env = applyReflectionEnvironment(root)
-    expect(chrome.envMap).toBeTruthy()
     expect(env.materials).toContain(chrome)
+    // Slightly more reflective than the other metal.
+    expect(chrome.envMapIntensity).toBeCloseTo(1.25, 6)
+    expect(discs.envMapIntensity).toBeCloseTo(1, 6)
     // Matte paint and rubber are left alone.
     const rubber = materialsOf(root).find((m) => m.name === 'Smooth rubber')!
     expect(rubber.envMap).toBeNull()

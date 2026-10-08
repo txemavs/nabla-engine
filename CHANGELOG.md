@@ -4,9 +4,12 @@
 
 ### Added
 
-- **VFR800 chrome and windscreen:** the chrome exhaust and discs, brake tracks and mirror glass
-  are neutral silver (base 0.95 grey, metallic 1, low roughness) and the reflection environment
-  is a colourless studio gradient, so chrome no longer reads blue. The windscreen is a
+- **VFR800 metal and windscreen:** neutral mirror chrome (base 0.95 grey, metallic 1, roughness
+  0.03, slightly stronger reflections) only on the fork stanchions, the silencer can and its end
+  cap; the exhaust headers and the engine use the satin grey metal of the top triple clamp, as do
+  the frame and fork lowers; discs, brake tracks, chain, sprockets, radiator and swingarm keep
+  their authored materials. The reflection environment is a colourless studio gradient, so chrome
+  no longer reads blue. The windscreen is a
   see-through neutral smoke grey with a slight reflection (`extras.nabla.envIntensity`, honoured
   by `applyReflectionEnvironment`). Both via `scripts/prepare-vfr800-cockpit.mjs`.
 
