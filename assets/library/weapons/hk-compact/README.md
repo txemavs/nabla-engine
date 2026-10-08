@@ -16,6 +16,9 @@ are assembled at rest. `assets/rigs/weapons/hk-compact.rig.json` records their n
 and artistic presentation travel. Always animate relative to each saved rest transform.
 The magazine has no ammunition or internal working mechanism geometry.
 
+The spent magazine that falls out on reload is this `Magazine` node, not a separate mesh.
+`hk-compact.magazine.source.glb` is the user-supplied magazine (also named `hk-usp-compact-magazine` in review); its transform is baked into the assembled model in metres. Do not load the source GLB at runtime: it is still in the author's units.
+
 Exterior references: the user's two supplied side-view photographs and
 [Umarex USP Compact airsoft leaflet](https://www.colosus.cz/projekty/p1/files/4/42072/2.5996.asg.heckler.koch.usp.compact.pdf).
 The leaflet is used only for visual identification; its airsoft operating instructions

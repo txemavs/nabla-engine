@@ -51,6 +51,7 @@ import { Gallery } from './gallery.js'
 import { fireSidearm, sidearmButtonAction } from './shooting.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
 import { Casings } from '../render/entity/casings.js'
+import { DroppedMagazines } from '../render/entity/magazines.js'
 import type { FirearmEvent } from '../simulation/weapons/firearm.js'
 import { TouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
 import {
@@ -342,6 +343,8 @@ export class GameRuntime {
   private reloadRequested = false
   private casingMotion: CasingMotion | null = null
   private casingMeshes: Casings | null = null
+  private magazineMotion: CasingMotion | null = null
+  private magazineMeshes: DroppedMagazines | null = null
   /**
    * Free-mouse mode. While playing, the game owns the pointer (pointer lock on the canvas);
    * Escape, a menu taking focus, or a click on an in-world monitor release it, and it stays
@@ -777,6 +780,8 @@ export class GameRuntime {
     }
     this.casingMotion?.reset()
     this.casingMeshes?.sync([])
+    this.magazineMotion?.reset()
+    this.magazineMeshes?.sync([])
     this.gallery.reset()
     this.gallery.update(this.view, false, 0)
     this.game.stop()
@@ -816,6 +821,7 @@ export class GameRuntime {
     setNavigationRoads(() => [])
     this.sidearm?.dispose()
     this.casingMeshes?.dispose()
+    this.magazineMeshes?.dispose()
     this.gallery.dispose()
     this.touchDriving?.dispose()
     this.touchFlight?.dispose()
@@ -2049,7 +2055,10 @@ export class GameRuntime {
     }
     for (const event of events) {
       if (event.dry) this.effects.audio.gearClick({ volume: 0.6 })
-      if (event.magazineDropped) this.effects.audio.gearClick({ volume: 0.9 })
+      if (event.magazineDropped) {
+        this.effects.audio.gearClick({ volume: 0.9 })
+        this.dropMagazine(sim, eyes)
+      }
       if (event.magazineSeated) this.effects.audio.gearClick({ volume: 1.2 })
       if (event.slideReleased) this.effects.audio.gearClick({ volume: 1.6 })
       if (event.locked) this.options.onMessage?.(this.text('Slide locked back · R reload'))
@@ -2061,6 +2070,13 @@ export class GameRuntime {
       for (const speed of this.casingMotion.bounces.slice(0, 3)) this.effects.audio.casing(speed)
       this.casingMeshes.sync(this.casingMotion.poses())
       canvas.dataset.casings = String(this.casingMotion.count)
+    }
+    if (this.magazineMotion && this.magazineMeshes) {
+      this.magazineMotion.update(dt, (from, direction, length) =>
+        sim.shoot(from, direction, length, 0),
+      )
+      this.magazineMeshes.sync(this.magazineMotion.poses())
+      canvas.dataset.magazines = String(this.magazineMotion.count)
     }
     const ammo = sidearm.ammo
     canvas.dataset.ammo = `${ammo.seated ? ammo.magazine : '-'}+${ammo.chamber}`
@@ -2089,6 +2105,45 @@ export class GameRuntime {
       port.toArray() as Vec3Tuple,
       right.toArray() as Vec3Tuple,
       up.toArray() as Vec3Tuple,
+    )
+  }
+
+  /**
+   * Spent magazine out of the grip. Same bounce, rest and lifetime as a casing, with a small
+   * pool of its own. The mesh is the pistol's `Magazine` node.
+   */
+  private dropMagazine(sim: Simulation, eyes: boolean): void {
+    const sidearm = this.sidearm
+    const casing = sidearm?.preset?.casing
+    if (!sidearm || !casing) return
+    const view = sidearm.magazineDropView()
+    if (!view) return
+    if (!this.magazineMotion)
+      this.magazineMotion = new CasingMotion(
+        { ejectSpeedMs: 1.5, restitution: 0.2, friction: 0.65, lifetimeS: casing.lifetimeS },
+        simulationDefaults.gravity,
+        8,
+        0.015,
+      )
+    if (!this.magazineMeshes) {
+      const clone = sidearm.magazineClone()
+      if (!clone) return
+      this.magazineMeshes = new DroppedMagazines(clone, 8)
+      this.view.root.add(this.magazineMeshes.root)
+    }
+    const camQ = this.camera.quaternion
+    const origin = eyes
+      ? this.camera.position.clone().add(view.position.clone().applyQuaternion(camQ))
+      : new THREE.Vector3(...sim.renderPlayerPosition).add(
+          new THREE.Vector3(0.15, 0.9, 0.2).applyQuaternion(camQ),
+        )
+    const orientation = camQ.clone().multiply(view.quaternion)
+    const velocity = view.direction.clone().applyQuaternion(camQ).normalize().multiplyScalar(1.5)
+    this.magazineMotion.release(
+      origin.toArray() as Vec3Tuple,
+      velocity.toArray() as Vec3Tuple,
+      [0.3, 0.5, 0.2],
+      [orientation.x, orientation.y, orientation.z, orientation.w],
     )
   }
 
