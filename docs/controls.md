@@ -325,18 +325,21 @@ impulse followed by a fall; it does not select a permanent height. The library's
 selects `new Simulation(scene, { playerMode: 'hover' })`.
 
 The weapon starts holstered. **Tab** draws or holsters it while on foot; holstered clicks do not fire. With the mouse captured
-(see [Mouse capture](#mouse-capture)) the mouse aims without holding a button and **left-click** fires. Hold **right-click** for aim-down-sights
-(raises and centres the pistol for iron sights); release to return to the hip pose. There is **no UI crosshair** — aim with the pistol.
-**H** toggles a laser sight (beam from the muzzle plus a surface pin) while the weapon is drawn; in a vehicle **H** still steps the lights (posición → cruce → apagadas).
-Each shot plays a synthesized gunshot, applies viewmodel **recoil**, and on a hit leaves a visible surface mark (buildings, vehicles, props) plus a brief spark burst (no bullet
-tracer trail). Drawing, holstering and boarding do not change mouse capture; **Esc** frees the mouse and the next click on the viewport
-recaptures it without firing. Studio equips the
-first weapon preset (`assets/library/weapons`, then `assets/custom/weapons`). The HK Compact 9mm preset supplies the body, slide,
-220 ms interval, 150 m range and impulse 12. Another pistol is another JSON file. Shots stop at the first
-physical solid and push dynamic props. In third person, a second ray from the
-monitor prevents shooting through an obstruction between the monitor and the aim
-point. Firing is disabled while driving or editing. Shots can cross one open/window portal, with opaque PNG pixels participating in
-aim and hit detection. There is no damage, ammunition or multiplayer yet.
+(see [Mouse capture](#mouse-capture)) the mouse aims without holding a button and **left-click** fires one shot per press (the trigger
+resets on release). Hold **right-click** for aim-down-sights (raises and centres the pistol for iron sights); release to return to the
+hip pose. There is **no UI crosshair** — aim with the pistol. **H** toggles a laser sight (beam from the muzzle plus a surface pin) while
+the weapon is drawn; in a vehicle **H** still steps the lights (posición → cruce → apagadas).
+
+The equipped preset is the **HK USP Compact in 9 mm x 19** (`assets/library/weapons/hk-compact/hk-compact.json`, sources cited there;
+`TODO(unverified)` marks anything without one). It behaves like the pistol: **13 + 1** rounds, semi-automatic, the slide locks back on the
+empty magazine, and **R** reloads (drop the magazine, seat a full one, release the slide — about 1.6 s; a reload with a round still
+chambered keeps it). Each shot plays a synthesized gunshot, ejects a brass case to the right that bounces and tinkles, and adds muzzle
+rise to the aim that only partly comes back on its own. The bullet follows the published trajectory of a Federal American Eagle 124 gr
+FMJ (drag fitted to Federal's velocity table, zeroed at 25 yd) and stops at the first solid, handing it the bullet's momentum; a hit
+leaves the surface mark and a brief spark burst. A short, dim muzzle flash shows in first person. Drawing, holstering and boarding do
+not change mouse capture; **Esc** frees the mouse and the next click on the viewport recaptures it without firing. In third person the
+monitor's aim is checked against obstructions. Firing is disabled while driving or editing. Shots can cross one open/window portal.
+There is no damage model and no multiplayer.
 
 ## Carrier Stargate controls
 
