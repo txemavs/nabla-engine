@@ -32,8 +32,9 @@ export const DRAPE_LAYERS: readonly DrapeLayer[] = [
 export const ROOF_DRAPE_LIFT = 0.15
 
 /**
- * Margin fraction on each side of a package photo frame: `cell` → 0, `cell+margin:0.125` → 0.125.
- * Atlas roof PRIMARY is 5120² over the 4096 cell (12.5 % border each side).
+ * Margin on each side of a package photo frame, as a fraction of the CELL width:
+ * `cell` → 0, `cell+margin:0.125` → 0.125. Atlas roof PRIMARY is 5120² = 4096 cell px + 512 px
+ * (1/8 cell) each side; its roofs.json frame `boundsM` spans 1.25 cell widths.
  */
 export function photoFrameMargin(frame: string | undefined): number {
   if (!frame || frame === 'cell') return 0
@@ -44,11 +45,14 @@ export function photoFrameMargin(frame: string | undefined): number {
 
 /**
  * Texture transform mapping cell UVs ([0,1] over the tile) into a photo with a margin frame:
- * `uv * repeat + offset`. Drape geometry keeps cell UVs; the roof texture carries the transform.
+ * `uv * repeat + offset`. The image spans `1 + 2·margin` cells, so the cell occupies
+ * `1 / (1 + 2·margin)` of it (0.8 for 1/8) starting at `margin / (1 + 2·margin)` (0.1).
+ * Drape geometry keeps cell UVs; the roof texture carries the transform.
  */
 export function photoFrameTransform(frame: string | undefined): { repeat: number; offset: number } {
   const margin = photoFrameMargin(frame)
-  return { repeat: 1 - 2 * margin, offset: margin }
+  const span = 1 + 2 * margin
+  return { repeat: 1 / span, offset: margin / span }
 }
 
 /**
