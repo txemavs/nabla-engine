@@ -162,7 +162,7 @@ function dressSatelliteRoofs(
   onPhotoError?: (error: unknown) => void,
   mark?: (name: string, ms: number) => void,
   /** Drape geometry and photo already prepared by the worker; absent = build and fetch here. */
-  prepared?: { drapes: DrapeGeometry[]; photo?: ImageBitmap },
+  prepared?: { drapes: DrapeGeometry[]; photo?: ImageBitmap; roofPhoto?: ImageBitmap },
 ) {
   const tile = manifest.tile
   if (tile.z !== 15 || imagery === 'none') return
@@ -208,13 +208,15 @@ function dressSatelliteRoofs(
   const ctx = canvas?.getContext('2d') ?? undefined
   const texture: THREE.Texture = canvas ? new THREE.CanvasTexture(canvas) : new THREE.Texture()
   texture.colorSpace = THREE.SRGBColorSpace
+  const roofTextureMap: THREE.Texture = packaged ? new THREE.Texture() : texture
+  if (packaged) roofTextureMap.colorSpace = THREE.SRGBColorSpace
   const draped: THREE.Mesh[] = []
   for (const { id, position, uv } of buckets) {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
     geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
     const material = new THREE.MeshStandardMaterial({
-      map: texture,
+      map: id === 'roofs' ? roofTextureMap : texture,
       color: id === 'roads' ? ROADS_DRAPE_TINT : '#ffffff',
       roughness: 1,
       metalness: 0,
@@ -251,16 +253,33 @@ function dressSatelliteRoofs(
     texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
     texture.anisotropy = 8
     texture.needsUpdate = true
+    const roofBmp = prepared.roofPhoto ?? prepared.photo
+    if (roofTextureMap !== texture) {
+      roofTextureMap.image = roofBmp
+      roofTextureMap.flipY = false
+      roofTextureMap.wrapS = roofTextureMap.wrapT = THREE.ClampToEdgeWrapping
+      roofTextureMap.anisotropy = 8
+      roofTextureMap.needsUpdate = true
+    }
     show()
     mark?.('photoShown', performance.now())
     return
   }
   if (packaged) {
-    loadPackagePhoto(photoUrl!, manifest.photo!, mark)
-      .then((bitmap) => {
+    const groundUrl = photoUrl!
+    const roofUrl = manifest.roofPhoto
+      ? groundUrl.slice(0, groundUrl.lastIndexOf('/') + 1) + manifest.roofPhoto.path
+      : undefined
+    Promise.all([
+      loadPackagePhoto(groundUrl, manifest.photo!, mark),
+      manifest.roofPhoto && roofUrl
+        ? loadPackagePhoto(roofUrl, manifest.roofPhoto, mark)
+        : Promise.resolve(undefined),
+    ])
+      .then(([bitmap, roofBmp]) => {
         if (group.userData.disposed) {
-          // The tile was evicted while the photo downloaded.
           bitmap.close()
+          roofBmp?.close()
           return
         }
         texture.image = bitmap
@@ -268,6 +287,13 @@ function dressSatelliteRoofs(
         texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
         texture.anisotropy = 8
         texture.needsUpdate = true
+        if (roofTextureMap !== texture) {
+          roofTextureMap.image = roofBmp ?? bitmap
+          roofTextureMap.flipY = false
+          roofTextureMap.wrapS = roofTextureMap.wrapT = THREE.ClampToEdgeWrapping
+          roofTextureMap.anisotropy = 8
+          roofTextureMap.needsUpdate = true
+        }
         show()
         mark?.('photoShown', performance.now())
       })
@@ -1067,7 +1093,7 @@ export class PlanetWorld {
         if (name === 'photoShown') timing.atPhotoShown = ms
         else (timing as Record<string, number>)[name] = ms
       },
-      payload.drape && { drapes: payload.drape.layers, photo: payload.drape.photo },
+      payload.drape && { drapes: payload.drape.layers, photo: payload.drape.photo, roofPhoto: payload.drape.roofPhoto },
     )
     if (payload.drape?.error) {
       console.warn('Foto del terreno no disponible · ' + payload.drape.error)

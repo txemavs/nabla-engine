@@ -80,10 +80,15 @@ describe('Atlas Z15 package adapter', () => {
     const engine = adaptAtlasManifest(manifest(), p)
     expect(engine.files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
     expect(engine.photo).toMatchObject({
-      path: 'ground-84ad1def609c2916.webp',
+      path: 'ground-lots-ec58b341916d2b55.webp',
       sizePx: 4096,
       level: 'full',
-      bytes: 847876,
+      bytes: 520676,
+    })
+    expect(engine.roofPhoto).toMatchObject({
+      path: 'roof-0474668251b791ff.webp',
+      sizePx: 5120,
+      level: 'full',
     })
     const lidar = adaptAtlasManifest(manifest(), p, { relief: 'lidar', photo: 'lo' })
     expect(lidar.files.terrain).toMatchObject({
@@ -92,7 +97,8 @@ describe('Atlas Z15 package adapter', () => {
       sha256: '50074696349a001214e09797edb03108c7484c1e439ae2169c5eb24fdd939965',
     })
     expect(lidar.files['buildings-osm'].path).toBe('buildings-osm-8b7a0e12579eb3ab.glb')
-    expect(lidar.photo).toMatchObject({ path: 'ground-lo-93fed02bb5c4abd3.webp', level: 'lo' })
+    expect(lidar.photo).toMatchObject({ path: 'ground-lots-lo-ee41398d57296b08.webp', level: 'lo' })
+    expect(lidar.roofPhoto).toMatchObject({ path: 'roof-lo-6059293a7ebd97a3.webp', level: 'lo' })
     expect(adaptAtlasManifest(manifest(), p, { photo: 'none' }).photo).toBeUndefined()
     expect(engine.osmSnapshot).toMatchObject({
       path: 'osm-3f3939c12c359aab.json.gz',
@@ -312,7 +318,8 @@ describe('fetchTileManifest with Atlas packages', () => {
     const calls = serve()
     const m = await fetchTileManifest(tile, { ...options, atlas: { relief: 'lidar' } })
     expect(m?.files.terrain.path).toBe('terrain-lidar-50074696349a0012.glb')
-    expect(m?.photo?.path).toBe('ground-84ad1def609c2916.webp')
+    expect(m?.photo?.path).toBe('ground-lots-ec58b341916d2b55.webp')
+    expect(m?.roofPhoto?.path).toBe('roof-0474668251b791ff.webp')
     expect(calls).toEqual([
       '/terrain/z/15/16211/12003/manifest.json',
       '/terrain/z/15/16211/12003/z15-059a2665959db8a9.json',
