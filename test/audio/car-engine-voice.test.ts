@@ -132,8 +132,14 @@ describe('car sound selection per engine mode', () => {
         firing: [0, 90, 270, 540],
         volume: 1,
       })
-      for (const preset of vehiclePresets().filter((p) => !['car', 'vfr800'].includes(p.id)))
+      for (const preset of vehiclePresets().filter(
+        (p) => !['car', 'vfr800', 'white-truck'].includes(p.id),
+      ))
         expect(resolveVehicleSound(preset.vehicle.audio, mode).engine.voice).toBe('note')
+      expect(
+        resolveVehicleSound(presetVehicle('white-truck', 'truck').vehicle!.audio, mode).engine
+          .voice,
+      ).toBe('diesel')
     }
   })
 })
