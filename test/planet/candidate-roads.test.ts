@@ -400,9 +400,8 @@ describe('v2+ ground asphalt', () => {
     ).toBe(true)
   })
 
-  it('keeps only bridge-deck asphalt on version 2 and 3 (terrain.lidar already has the road)', () => {
+  it('skips only ground-road asphalt on version 2 and 3 (terrain.lidar already has the road)', () => {
     for (const version of [2, 3] as const) {
-      expect(loadsCandidateAsphaltOnCell(version, tagCandidateRoadMesh({}, 'asphalt'))).toBe(false)
       expect(
         loadsCandidateAsphaltOnCell(
           version,
@@ -415,8 +414,17 @@ describe('v2+ ground asphalt', () => {
           tagCandidateRoadMesh({ atlasSurfaceRole: BRIDGE_DECK_ROLE }, 'asphalt'),
         ),
       ).toBe(true)
-      // Supports are a separate layer; this helper only gates asphalt.
-      expect(loadsCandidateAsphaltOnCell(version, tagCandidateRoadMesh({}, 'supports'))).toBe(false)
+      // Elevated / unresolved roadway is not in terrain.lidar: keep it.
+      expect(
+        loadsCandidateAsphaltOnCell(
+          version,
+          tagCandidateRoadMesh({ atlasSurfaceRole: 'elevated-or-unresolved-road' }, 'asphalt'),
+        ),
+      ).toBe(true)
+      // Untagged asphalt is kept (no role, no evidence it is in the terrain).
+      expect(loadsCandidateAsphaltOnCell(version, tagCandidateRoadMesh({}, 'asphalt'))).toBe(true)
+      // Supports are never filtered.
+      expect(loadsCandidateAsphaltOnCell(version, tagCandidateRoadMesh({}, 'supports'))).toBe(true)
     }
   })
 })

@@ -246,15 +246,16 @@ export const GROUND_ROAD_ROLE = 'ground-road'
 
 /**
  * Whether a candidate asphalt mesh is drawn for this cell version. Version 2+ cells already
- * carry the ground road inside `terrain.lidar`, so only bridge-deck asphalt is kept (bridges
- * stay visible and keep casting). Supports are a separate layer and are never filtered here.
+ * carry the ground road inside `terrain.lidar`, so only primitives tagged `ground-road` are
+ * skipped. Bridge decks, elevated or unresolved roadway and untagged asphalt are kept (they are
+ * not part of the terrain), and supports are never filtered.
  */
 export function loadsCandidateAsphaltOnCell(
   cellVersion: PlanetCellVersion,
   metadata: Record<string, any> | undefined,
 ): boolean {
   if (cellVersion < 2) return true
-  return metadata?.atlasSurfaceRole === BRIDGE_DECK_ROLE
+  return metadata?.atlasSurfaceRole !== GROUND_ROAD_ROLE
 }
 
 /**
