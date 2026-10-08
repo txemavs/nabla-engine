@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **335 modules; 3536 executable function definitions**.
+Coverage: **335 modules; 3539 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -65,7 +65,7 @@ Coverage: **335 modules; 3536 executable function definitions**.
 | [src/catalog/presentation/a3-lamps.ts](src/catalog/presentation/a3-lamps.ts.md) | 12 |
 | [src/catalog/presentation/a3-mounts.ts](src/catalog/presentation/a3-mounts.ts.md) | 10 |
 | [src/catalog/presentation/police-equipment.ts](src/catalog/presentation/police-equipment.ts.md) | 14 |
-| [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 19 |
+| [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 21 |
 | [src/catalog/vehicles/generated-rigs.ts](src/catalog/vehicles/generated-rigs.ts.md) | 0 |
 | [src/catalog/vehicles/index.ts](src/catalog/vehicles/index.ts.md) | 0 |
 | [src/catalog/vehicles/library.ts](src/catalog/vehicles/library.ts.md) | 9 |
@@ -136,7 +136,7 @@ Coverage: **335 modules; 3536 executable function definitions**.
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
 | [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 21 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
-| [src/planet/contract.ts](src/planet/contract.ts.md) | 26 |
+| [src/planet/contract.ts](src/planet/contract.ts.md) | 27 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
 | [src/planet/extract/multipolygon.ts](src/planet/extract/multipolygon.ts.md) | 8 |
 | [src/planet/extract/source.ts](src/planet/extract/source.ts.md) | 4 |

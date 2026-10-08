@@ -10,12 +10,55 @@ import { createA3Lights } from './a3-lamps.js'
 import { createA3Mounts } from './a3-mounts.js'
 import { authoredMirrorLenses } from '../../render/vehicle-presentation/mirror-lenses.js'
 import { authoredScreenMounts } from '../../render/vehicle-presentation/screen-mounts.js'
+/**
+ * Cab and trailer paint (`White paint`) plus the cargo-box skin (`Chassis B`).
+ * The box mesh is named like a missing reference map and is authored at albedo ~0.02 with
+ * metalness 0.45. Cars get no environment except tagged chrome, so that metal reflects
+ * nothing and the trailer is a flat black silhouette (exact 0,0,0 on the shadow side).
+ * The frame (`Chassis`, `Chassis C`) stays as authored.
+ */
+const truckPaintMaterial = /^White paint|^Chassis B/i
+
 function paintWhiteBody(model: THREE.Object3D, color: string): void {
   model.traverse((node) => {
     if (!(node instanceof THREE.Mesh)) return
-    for (const material of Array.isArray(node.material) ? node.material : [node.material])
-      if (material instanceof THREE.MeshStandardMaterial && /^White paint/i.test(material.name))
-        material.color.set(color)
+    for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+      if (
+        !(material instanceof THREE.MeshStandardMaterial) ||
+        !truckPaintMaterial.test(material.name)
+      )
+        continue
+      material.color.set(color)
+      if (/^Chassis B/i.test(material.name)) {
+        material.metalness = 0.08
+        material.roughness = Math.max(material.roughness, 0.34)
+      }
+      material.needsUpdate = true
+    }
+  })
+}
+
+/**
+ * Cabin cloth and plastic in the S3 / A3 GLB are authored at about 0.00–0.04 linear.
+ * With no environment fill they crush to a flat black interior. Floor them to a dark
+ * neutral so the cabin keeps a colour. TODO(unverified): no manufacturer swatch for these
+ * factors; the floor only stops the crush, it is not a measured interior colour.
+ */
+const cabinMaterial = /^(Asiento|Plastico|Tela|Gris \d|Metal \d|Negro)/i
+const cabinFloor = 0.16
+
+function liftCabinColour(model: THREE.Object3D): void {
+  model.traverse((node) => {
+    if (!(node instanceof THREE.Mesh)) return
+    for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+      if (!(material instanceof THREE.MeshStandardMaterial) || !cabinMaterial.test(material.name))
+        continue
+      const { r, g, b } = material.color
+      if (Math.max(r, g, b) >= 0.08) continue
+      material.color.setRGB(cabinFloor, cabinFloor * 0.96, cabinFloor * 0.9)
+      material.metalness = Math.min(material.metalness, 0.08)
+      material.needsUpdate = true
+    }
   })
 }
 
@@ -56,6 +99,7 @@ function shineVehicle(model: THREE.Object3D, kind: 'body' | 'wheel' | 'steering'
 
 export const s3Presentation: VehiclePresentationAdapter = {
   mount(model, e, definition, policy) {
+    liftCabinColour(model)
     model.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
       const materials = Array.isArray(object.material) ? object.material : [object.material]

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Trucks and trailers: the cargo-box skin (`Chassis B`, albedo ~0.02, metal 0.45, no environment) rendered as a flat black silhouette. It now takes the same body colour as `White paint`. S3 / A3 cabin cloth and plastic authored under 0.08 linear are floored so the interior is not pure black. TODO(unverified): the cabin floor is not a measured swatch.
+
 ### Changed
 
 - **Chrome darkens like the wheel rim lips:** the S3 trim, the VFR silencer end cap and the disc
