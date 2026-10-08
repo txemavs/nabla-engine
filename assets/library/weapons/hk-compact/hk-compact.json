@@ -1,21 +1,89 @@
 {
   "id": "hk-compact",
-  "name": "HK Compact 9mm",
+  "name": "HK USP Compact 9mm",
   "order": 0,
-  "body": "/library/weapons/hk-compact/hk-compact.body.glb",
-  "slide": "/library/weapons/hk-compact/hk-compact.slide.glb",
-  "scale": 0.001,
-  "assembly": [0, -0.107, 0.025],
+  "model": "/library/weapons/hk-compact/hk-compact.glb",
+  "rig": "/rigs/weapons/hk-compact.rig.json",
+  "scale": 1,
+  "assembly": [0, -0.108, -0.017],
   "slideTravel": 12,
-  "intervalMs": 220,
-  "range": 150,
-  "impulse": 12,
+  "intervalMs": 100,
+  "range": 400,
+  "impulse": 2.8,
   "view": {
     "position": [0.13, -0.105, -0.3],
-    "kick": 0.025,
-    "pitch": 0.06
+    "kick": 0,
+    "pitch": 0
   },
   "flash": {
     "position": [0, 0, -0.135]
-  }
+  },
+  "firearm": {
+    "variant": "USP Compact 9 mm x 19, V1 DA/SA",
+    "caliber": "9mm x 19",
+    "magazineCapacity": 13,
+    "chamber": 1,
+    "barrelLengthM": 0.091,
+    "massEmptyMagKg": 0.73,
+    "magazineMassKg": 0.085,
+    "triggerPullSingleN": 20,
+    "triggerPullDoubleN": 50,
+    "semiAutomatic": true,
+    "slideLocksOnEmpty": true,
+    "cycleMs": 100,
+    "reloadMs": { "magazineOut": 350, "magazineIn": 1250, "slideRelease": 1600 }
+  },
+  "ammunition": {
+    "load": "Federal American Eagle AE9AP 9mm Luger 124 gr FMJ",
+    "bulletMassKg": 0.00804,
+    "muzzleVelocityMs": 350.5,
+    "testBarrelM": 0.1016,
+    "ballisticCoefficientG1": 0.15,
+    "velocityTable": [
+      { "yards": 0, "fps": 1150 },
+      { "yards": 25, "fps": 1095 },
+      { "yards": 50, "fps": 1049 },
+      { "yards": 75, "fps": 1010 },
+      { "yards": 100, "fps": 977 }
+    ],
+    "zeroRangeM": 22.86,
+    "sightHeightM": 0.02286,
+    "effectiveRangeM": 50,
+    "maxTraceM": 400
+  },
+  "recoil": {
+    "riseDeg": 4,
+    "naturalReturn": 0.7,
+    "climbMs": 35,
+    "returnMs": 180
+  },
+  "casing": {
+    "lengthM": 0.01915,
+    "rimDiameterM": 0.00996,
+    "ejectSpeedMs": 4,
+    "restitution": 0.35,
+    "friction": 0.5,
+    "lifetimeS": 30
+  },
+  "sources": {
+    "hk-manual": "Heckler & Koch, USP Compact operator's manual DE-EN 987794 (technical data: 9 mm x 19, 13 cartridges, barrel 91 mm, 730 g with empty magazine, magazine 85 g, trigger pull SA approx. 20 N / DA approx. 50 N): https://www.heckler-koch.com/Downloads/Bedienungsanleitungen%20Jagd%20und%20Sport/Pistolen/DE/USP%20Compact%20%20OM%20(DE-EN)%20987794%20002.0320.pdf",
+    "hk-usa-manual": "HK USA, USP Series operator's manual (slide release automatically holds the slide open when the last shot is fired; magazine drops free regardless of cartridges inside; fires with the magazine removed): https://hk-usa.com/wp-content/uploads/2026/08/USP-Operators-Manual-8.25.2026-FINAL.pdf",
+    "hk-usa-product": "HK USA, USP Compact product page (USP9 Compact (V1) DA/SA, 13 rd magazines, 3.58 in barrel, 1.60 lb with empty magazine): https://hk-usa.com/product/usp-compact/",
+    "model": "Model provenance: assets/library/weapons/hk-compact/README.md (user photographs; Umarex USP Compact leaflet for identification)",
+    "federal": "Federal Premium, American Eagle AE9AP: 124 gr FMJ, 1150 fps from a 4 in test barrel, velocities at 25/50/75/100 yd 1095/1049/1010/977 fps: https://www.federalpremium.com/handgun/american-eagle/american-eagle-handgun/11-AE9AP.html",
+    "federal-le": "Federal LE data AE9AP: bullet 8.04 g, BC 0.15, trajectory for a 25 yd zero with 0.9 in sight height (-0.9 / -3.8 / -8.8 in at 50 / 75 / 100 yd): http://le.vistaoutdoor.com/ammunition/federal/handgun/details.aspx?id=93",
+    "cip": "9x19 case length 19.15 mm, rim diameter 9.96 mm (CIP TDCC 9 mm Luger, as tabulated in https://en.wikipedia.org/wiki/9%C3%9719mm_Parabellum)",
+    "effective-range": "Effective range 50 m: secondary source only (https://www.weaponspecs.com/systems/heckler-koch/heckler-koch-usp/), not published by HK"
+  },
+  "unverified": [
+    "TODO(unverified): muzzle velocity is Federal's 4 in (101.6 mm) test-barrel figure; the USP Compact's 91 mm barrel is shorter and no sourced value for it was found.",
+    "TODO(unverified): zeroRangeM / sightHeightM are Federal's reference trajectory (25 yd zero, 0.9 in), not an HK factory zero.",
+    "TODO(unverified): effectiveRangeM 50 m from a secondary source; informational only (the trajectory decides).",
+    "TODO(unverified): cycleMs (slide cycle) and reloadMs timings are animation/handling values, not from a source.",
+    "TODO(unverified): recoil riseDeg, naturalReturn, climbMs and returnMs are tuning values; only the bullet momentum (8.04 g x 350.5 m/s = 2.82 N s) is sourced.",
+    "TODO(unverified): casing ejectSpeedMs, restitution, friction and lifetimeS are not from a source.",
+    "TODO(unverified): no penetration model; a bullet stops at the first solid and transfers its momentum.",
+    "TODO(unverified): no dispersion; the pistol shoots to the point of aim.",
+    "TODO(unverified): spare magazines are unlimited; a magazine dropped on a reload is lost with its cartridges."
+  ]
 }

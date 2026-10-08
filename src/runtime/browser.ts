@@ -49,6 +49,9 @@ import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm } from './shooting.js'
+import { CasingMotion } from '../simulation/weapons/casings.js'
+import { Casings } from '../render/entity/casings.js'
+import type { FirearmEvent } from '../simulation/weapons/firearm.js'
 import { TouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
 import {
   controlSurfaces,
@@ -335,6 +338,10 @@ export class GameRuntime {
   private placeSequence = 0
   private weaponDrawn = false
   private fireRequested = false
+  private triggerReleased = false
+  private reloadRequested = false
+  private casingMotion: CasingMotion | null = null
+  private casingMeshes: Casings | null = null
   /**
    * Free-mouse mode. While playing, the game owns the pointer (pointer lock on the canvas);
    * Escape, a menu taking focus, or a click on an in-world monitor release it, and it stays
@@ -768,6 +775,8 @@ export class GameRuntime {
       this.sidearm.visible = false
       this.sidearm.reset()
     }
+    this.casingMotion?.reset()
+    this.casingMeshes?.sync([])
     this.gallery.reset()
     this.gallery.update(this.view, false, 0)
     this.game.stop()
@@ -806,6 +815,7 @@ export class GameRuntime {
     setNavigationPlaces(() => [])
     setNavigationRoads(() => [])
     this.sidearm?.dispose()
+    this.casingMeshes?.dispose()
     this.gallery.dispose()
     this.touchDriving?.dispose()
     this.touchFlight?.dispose()
@@ -930,27 +940,14 @@ export class GameRuntime {
     this.view.sparks.update(time)
     if (this.sidearm) {
       this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
-      if (this.fireRequested && this.hasInput()) {
-        const fired = fireSidearm(
-          this.sidearm,
-          this.gallery,
-          sim,
-          this.view,
-          this.camera,
-          time,
-          eyes,
-        )
-        if (fired) {
-          this.effects.audio.gunshot()
-          this.options.canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
-        }
-        this.options.canvas.dataset.impacts = String(this.view.impacts.count)
-      }
+      this.updateSidearm(sim, time, dt, eyes)
       this.updateSidearmLaser(sim, time)
     } else {
       this.view.laser.enabled = false
     }
     this.fireRequested = false
+    this.triggerReleased = false
+    this.reloadRequested = false
     const eye = this.camera.position.clone()
     this.origin.set(0, 0, 0)
     if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
@@ -2009,6 +2006,7 @@ export class GameRuntime {
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
     this.fireRequested = false
+    this.triggerReleased = true
     this.touchDriving?.clear()
     this.touchFlight?.clear()
     this.monitors.releaseInput()
@@ -2017,6 +2015,84 @@ export class GameRuntime {
     this.previousPad = null
     this.releasePointer()
   }
+  /**
+   * Sidearm frame: trigger press / reset, reload, slide, the muzzle rise added to the aim (the
+   * player pulls it back down), the shot, the ejected brass and the mechanical sounds.
+   */
+  private updateSidearm(sim: Simulation, time: number, dt: number, eyes: boolean): void {
+    const sidearm = this.sidearm!
+    const canvas = this.options.canvas
+    const events: FirearmEvent[] = [sidearm.update(time)]
+    if (this.reloadRequested && sidearm.visible) {
+      const reload = sidearm.reload(time)
+      events.push(reload)
+      if (reload.reloadStarted) this.options.onMessage?.(this.text('Reloading'))
+    }
+    if (this.triggerReleased) sidearm.release()
+    const rise = sidearm.aimRise(time)
+    if (rise && !sim.player.vehicleId)
+      this.cameraState.pitch = THREE.MathUtils.clamp(
+        this.cameraState.pitch - rise,
+        -controlDefaults.pitchLimit,
+        controlDefaults.pitchLimit,
+      )
+    if (this.fireRequested && this.hasInput()) {
+      const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
+      if (shot) events.push(shot)
+      if (shot?.fired) {
+        this.effects.audio.gunshot()
+        canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
+        if (shot.impactJoules !== undefined)
+          canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)
+        this.ejectCasing(sim, eyes)
+      }
+      canvas.dataset.impacts = String(this.view.impacts.count)
+    }
+    for (const event of events) {
+      if (event.dry) this.effects.audio.gearClick({ volume: 0.6 })
+      if (event.magazineDropped) this.effects.audio.gearClick({ volume: 0.9 })
+      if (event.magazineSeated) this.effects.audio.gearClick({ volume: 1.2 })
+      if (event.slideReleased) this.effects.audio.gearClick({ volume: 1.6 })
+      if (event.locked) this.options.onMessage?.(this.text('Slide locked back · R reload'))
+    }
+    if (this.casingMotion && this.casingMeshes) {
+      this.casingMotion.update(dt, (from, direction, length) =>
+        sim.shoot(from, direction, length, 0),
+      )
+      for (const speed of this.casingMotion.bounces.slice(0, 3)) this.effects.audio.casing(speed)
+      this.casingMeshes.sync(this.casingMotion.poses())
+      canvas.dataset.casings = String(this.casingMotion.count)
+    }
+    const ammo = sidearm.ammo
+    canvas.dataset.ammo = `${ammo.seated ? ammo.magazine : '-'}+${ammo.chamber}`
+    canvas.dataset.slide = sidearm.state.slideLocked ? 'locked' : 'forward'
+    canvas.dataset.reload = sidearm.state.reload
+  }
+
+  /** One spent case out of the ejection port, to the shooter's right. */
+  private ejectCasing(sim: Simulation, eyes: boolean): void {
+    const casing = this.sidearm?.preset?.casing
+    if (!casing) return
+    if (!this.casingMotion) this.casingMotion = new CasingMotion(casing)
+    if (!this.casingMeshes) {
+      this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
+      this.view.root.add(this.casingMeshes.root)
+    }
+    const q = this.camera.quaternion
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(q)
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
+    const port = eyes
+      ? this.camera.position.clone().add(this.sidearm!.ejectionViewOffset().applyQuaternion(q))
+      : new THREE.Vector3(...sim.renderPlayerPosition)
+          .addScaledVector(right, 0.2)
+          .addScaledVector(up, 0.3)
+    this.casingMotion.eject(
+      port.toArray() as Vec3Tuple,
+      right.toArray() as Vec3Tuple,
+      up.toArray() as Vec3Tuple,
+    )
+  }
+
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
   private updateSidearmLaser(sim: Simulation, time: number): void {
     if (!this.sidearm?.laserEnabled || !this.weaponDrawn || sim.player.vehicleId) {
@@ -2156,6 +2232,10 @@ export class GameRuntime {
       )
       return
     }
+    if (code === 'KeyR' && this.weaponDrawn && !sim.player.vehicleId) {
+      this.reloadRequested = true
+      return
+    }
     if (code === 'KeyN') this.gallery.reset()
     let message = this.game.action(code)
     if ((code === 'KeyZ' || code === 'KeyX') && sim.player.vehicleId) {
@@ -2267,6 +2347,7 @@ export class GameRuntime {
     canvas.addEventListener(
       'pointerup',
       (event) => {
+        if (event.button === 0) this.triggerReleased = true
         if (event.button === 2) this.sidearm?.setAiming(false)
       },
       options,
@@ -2274,6 +2355,7 @@ export class GameRuntime {
     canvas.addEventListener(
       'pointercancel',
       () => {
+        this.triggerReleased = true
         this.sidearm?.setAiming(false)
       },
       options,
