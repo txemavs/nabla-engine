@@ -13,6 +13,7 @@ import {
 } from '../../src/planet/atlas-z15.js'
 import {
   PLANET_GEOMETRY_REVISION,
+  planetCellVersion,
   validatePlanetManifest,
   type PlanetManifest,
 } from '../../src/planet/contract.js'
@@ -347,5 +348,46 @@ describe('atlasPhotoFor', () => {
     expect(atlasPhotoFor('lo', focus, focus)).toBe('lo')
     expect(atlasPhotoFor('none', focus, focus)).toBe('none')
     expect(atlasPhotoFor('full', { z: 15, x: 900, y: 900 }, undefined)).toBe('full')
+  })
+})
+
+describe('cell versions', () => {
+  const v2 = () => {
+    const m = manifest()
+    m.cellVersion = 2
+    const p = pkg()
+    p.cellVersion = 2
+    return { m, p }
+  }
+
+  it('reads a manifest without cellVersion as version 1 and renders it as before', () => {
+    const m = validatePlanetManifest(manifest(), tile)
+    expect(planetCellVersion(m)).toBe(1)
+    const p = validateAtlasZ15Package(pkg(), tile)
+    expect(adaptAtlasManifest(manifest(), p, { relief: 'lidar' }).files.terrain.path).toBe(
+      'terrain-lidar-50074696349a0012.glb',
+    )
+  })
+
+  it('renders a version 2 cell from its engine terrain even when LiDAR relief is asked for', () => {
+    const { m, p } = v2()
+    const adapted = adaptAtlasManifest(m, validateAtlasZ15Package(p, tile), { relief: 'lidar' })
+    expect(planetCellVersion(adapted)).toBe(2)
+    expect(adapted.files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
+  })
+
+  it('refuses a package whose cell version disagrees with the manifest', () => {
+    const { m } = v2()
+    expect(() => adaptAtlasManifest(m, validateAtlasZ15Package(pkg(), tile))).toThrow(
+      /cell version 1 does not match manifest.json \(2\)/,
+    )
+  })
+
+  it('refuses cell versions this engine does not know', () => {
+    for (const bad of [3, 0, '2', 1.5]) {
+      const m = manifest()
+      ;(m as unknown as { cellVersion: unknown }).cellVersion = bad
+      expect(() => validatePlanetManifest(m, tile)).toThrow(/Unsupported cell version/)
+    }
   })
 })

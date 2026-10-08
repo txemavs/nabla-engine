@@ -292,6 +292,23 @@ elevation), +Z south. Terrain GLBs are 7.6–55.5 MB (loader cap 64 MB); on a pl
 `http:` LAN origin the SHA-256 check runs in JavaScript and takes a few seconds on the
 largest cells.
 
+### Cell versions
+
+`manifest.json` may carry `cellVersion` (absent = 1). Version 2 cells come from the Atlas unified
+pipeline: roads and tunnel openings are part of the engine terrain GLB. They are published at the
+same URL as the v1 cell they replace (`euskadi/terraform/z/15/<x>/<y>/`); there is no versioned
+folder. The engine renders each cell by its own version, so a mix of v1 and v2 cells works:
+
+- v1: unchanged; `relief=lidar` swaps in the LiDAR mesh.
+- v2: the engine terrain is always used (`relief=lidar` is ignored for that cell; the v1 LiDAR mesh
+  would close the tunnel mouths).
+- The package `cellVersion` must equal the manifest's, otherwise the cell is refused (a manifest
+  pointing at another revision's package). An unknown version is refused with
+  `Unsupported cell version`, so an old engine never draws a newer cell half-understood.
+
+Publishing a v2 cell: upload its content-hashed files first, `manifest.json` last (no-cache), so a
+reader never gets a manifest that points at files not uploaded yet.
+
 ## Start positions
 
 The start is computed from package metadata. For cell `16211/12003` the manifest

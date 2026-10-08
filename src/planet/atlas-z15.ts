@@ -17,6 +17,9 @@
  *   manifest.roadCandidates (schema nabla-road-candidates/1) -> same `manifest.roads` mapping
  *     per layer, manifest.json wins; a disagreeing package file is that layer's `fallback`
  *   role osm.snapshot -> `manifest.osmSnapshot` (gzip Overpass cell; in-car GPS streets)
+ *   manifest.cellVersion / package cellVersion -> must agree (absent = 1). Version 2 cells carry the
+ *     roads and tunnel openings in the engine terrain, so `relief=lidar` keeps the engine terrain
+ *     for them (the LiDAR mesh is the v1 ground and would close the tunnel mouths).
  *   every other role (masks, classes, instances, roofs, licences) is
  *   listed but not consumed by the engine yet; see docs/terrain-folder.md.
  *
@@ -28,6 +31,7 @@ import {
   type PlanetCandidateRoadFile,
   type PlanetCandidateRoadKind,
   type PlanetCandidateRoads,
+  planetCellVersion,
   type PlanetManifest,
   type PlanetPhoto,
   type PlanetZ15PackageRef,
@@ -54,6 +58,8 @@ export interface AtlasZ15File {
 export interface AtlasZ15Package {
   schema: typeof ATLAS_Z15_SCHEMA
   packageVersion: number
+  /** Cell content version (absent = 1); must match the manifest's. */
+  cellVersion?: number
   cell: { id: string; x: number; y: number; z: number }
   files: AtlasZ15File[]
   terrain: { engine: string; lidar?: string; note?: string }
@@ -249,8 +255,14 @@ export function adaptAtlasManifest(
       engineBuildings.sha256 !== manifest.files['buildings-osm'].sha256)
   )
     throw new Error('Atlas package engine buildings do not match manifest.json')
+  const version = planetCellVersion(manifest)
+  if ((pkg.cellVersion ?? 1) !== version)
+    throw new Error(
+      `Atlas package cell version ${pkg.cellVersion ?? 1} does not match manifest.json (${version})`,
+    )
   const adapted: PlanetManifest = structuredClone(manifest)
-  if (options.relief === 'lidar') {
+  // v2 terrain already holds the roads and tunnel openings; the LiDAR mesh would undo them.
+  if (options.relief === 'lidar' && version === 1) {
     const lidar = atlasFile(pkg, 'terrain.lidar')
     if (!lidar || lidar.path !== pkg.terrain.lidar)
       throw new Error('Atlas package has no LiDAR terrain (relief=lidar)')
