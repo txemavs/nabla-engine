@@ -23,6 +23,7 @@ import {
   type ShadowTier,
 } from './shadow-tiers.js'
 import { patchGroundCloudShadow } from './planet/artistic-clouds.js'
+import { patchChromeIncidentLight } from './vehicle-presentation/reflection-environment.js'
 
 // The addon ships an older full lighting chunk. Replacing it wholesale drops
 // r186's DFG lookup and multi-scattering initialization, turning metals black.
@@ -148,6 +149,8 @@ export class ShadowManager {
     THREE.ShaderChunk.lights_fragment_begin = softenCascadeSeams(
       cascadedLighting(standardLighting, THREE.ShaderChunk.lights_fragment_begin),
     )
+    // The splice replaces the chunk. Re-apply the chrome incident accumulator on the result.
+    patchChromeIncidentLight()
     this.csm.fade = true
     this.csm.updateFrustums()
     this.padShadowBounds()
