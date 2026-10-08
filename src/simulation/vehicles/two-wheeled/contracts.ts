@@ -1,11 +1,17 @@
-import type { TwoWheeledGeometry, TwoWheeledPitchAssistDefinition } from '../wheeled/contracts.js'
+import type {
+  TwoWheeledGeometry,
+  TwoWheeledHooliganDefinition,
+  TwoWheeledPitchAssistDefinition,
+} from '../wheeled/contracts.js'
 import type { BrakeLinkState, CombinedBrakeSplit } from './brakes.js'
-import type { RiderLimits } from './rider.js'
+import type { AutoRiderSettings, RiderLimits, RiderTuckSettings } from './rider.js'
 
 /** Resolved rider counterweight: limits plus the seated centre of mass and body steering. */
 export interface TwoWheeledRiderTuning extends RiderLimits {
   seat: [number, number, number]
   steer: number
+  auto: AutoRiderSettings
+  tuck: RiderTuckSettings
 }
 
 /** Every two-wheeled tuning value resolved against `twoWheeledDefaults`. */
@@ -36,7 +42,14 @@ export interface TwoWheeledTuning {
   combinedBrakes: boolean
   /** Clutch kick on Shift + throttle in a low gear. */
   clutchKick: { gain: number; seconds: number; maxGear: number }
+  /** Shift hooligan modifier. */
+  hooligan: TwoWheeledHooliganDefinition
+  /** Pitch that counts as a crash, radians. */
+  crashPitch: number
 }
+
+/** Which Shift hooligan effect is running on this tick. */
+export type HooliganMode = 'none' | 'burnout' | 'wheelie' | 'stationary-burnout' | 'stoppie'
 
 /** Mutable controller state carried by a two-wheeled `Vehicle`. Angles are left-positive. */
 export interface TwoWheeledState {
@@ -81,6 +94,23 @@ export interface TwoWheeledState {
   stoppieScale: number
   /** Rider offset from the seat, chassis-local [x, z] metres (+x right, +z back). */
   riderShift: [number, number]
+  /** Key input share against the automatic rider (1 = keys) and the release countdown, s. */
+  riderControl: { manualShare: number; manualHold: number }
+  /** Filtered longitudinal acceleration (m/s²) and the forward speed of the last tick. */
+  acceleration: number
+  previousSpeed: number | null
+  /** Tuck behind the screen, 0 (sat up) … 1 (full tuck), and the automatic tuck latch. */
+  tuck: number
+  tuckLatched: boolean
+  /** Shift hooligan effect on the last tick. */
+  hooligan: HooliganMode
+  /** Rear wheel surface speed above road speed, m/s (wheelspin), and its accumulated angle. */
+  rearSpin: number
+  rearSpinAngle: number
+  /** Looped or went over the front: fallen until reset (R). */
+  crashed: boolean
+  /** Seconds of the slide wiggle (phase clock). */
+  slideClock: number
   /** Centre-of-mass height above the ground on the last tick, metres. */
   comHeight: number
   /** Seconds left of the current clutch kick (0 = none). */
@@ -116,4 +146,13 @@ export interface TwoWheeledPose {
   pitch: number
   /** Rider offset from the seat, chassis-local [x, z] metres (+x right, +z back). */
   riderShift: [number, number]
+  /** Rear wheel surface speed and road speed, m/s; their ratio is the wheelspin. */
+  rearWheelSpeed: number
+  roadSpeed: number
+  /** Tuck behind the windscreen, 0 … 1. */
+  tuck: number
+  /** Shift hooligan effect running. */
+  hooligan: HooliganMode
+  /** Looped or went over the front (until R). */
+  crashed: boolean
 }

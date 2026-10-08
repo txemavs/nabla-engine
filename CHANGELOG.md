@@ -4,6 +4,20 @@
 
 ### Added
 
+- **Motorcycles, phase 3 (`vfr800`):** automatic rider (`twoWheeled.rider.auto`: hangs off into
+  turns, forward under hard acceleration, back under hard front braking, keys override and hand
+  back after ~1 s) and a tuck behind the windscreen from 180 km/h with hysteresis
+  (`twoWheeled.rider.tuck`; I reaches the full tuck above the blend); the cockpit eye drops
+  behind the screen. Shift is now a hooligan modifier (`twoWheeled.hooligan`, assists and CBS off
+  while held): launch burnout with rear wheelspin, smoke and marks; assist-free wheelie and
+  stoppie that crash when held too long (`twoWheeled.crashPitch`); stationary burnout on
+  Shift + S + Space + W (`PlayerInput.frontBrake`). Live instrument cluster
+  (`MotorcycleInstruments`, `vehicle.cluster`): speedometer, white tachometer, LCD with game
+  clock, gear and distances, green turn-signal tell-tales and four warning lamps. Reflection
+  environment for two-wheelers' chrome and glass (`applyReflectionEnvironment`). GLB cockpit
+  pass (`scripts/prepare-vfr800-cockpit.mjs`): `mirror_L` / `mirror_R` nodes, gauge and lamp
+  anchors, static needles removed, alpha-blended lighter windscreen. `twoWheeledPose` adds
+  `tuck`, `rearWheelSpeed`, `roadSpeed`, `hooligan` and `crashed`.
 - **Motorcycles, phase 2 (`vfr800` preset):** wheelies and stoppies come from real pitch
   dynamics: the rider is part of the vehicle mass (`twoWheeled.rider`), drive and brake forces
   transfer load at the tyre contacts, and a configurable pitch assist (`twoWheeled.pitchAssist`)

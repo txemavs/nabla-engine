@@ -76,6 +76,75 @@ export const twoWheeledField = z
         rate: finite.positive().max(50).optional(),
         /** Body steering: steering input added by a full sideways shift, 0..1. */
         steer: finite.min(0).max(1).optional(),
+        /** Automatic rider body movement when the counterweight keys are not pressed. */
+        auto: z
+          .object({
+            enabled: z.boolean().optional(),
+            /** Sideways input (0..1 of the full shift) at the largest lean. */
+            hangOff: finite.min(0).max(2).optional(),
+            /** Sideways input per unit of steering demand. */
+            steer: finite.min(0).max(2).optional(),
+            /** Lean below which the rider stays centred, radians. */
+            leanDeadband: finite.min(0).max(1).optional(),
+            /** Forward input per g of acceleration, rearward per g of front braking. */
+            accelGain: finite.min(0).max(20).optional(),
+            brakeGain: finite.min(0).max(20).optional(),
+            /** Acceleration below which the rider stays centred, g. */
+            accelDeadband: finite.min(0).max(2).optional(),
+            /** Seconds: keys take over, delay after release, blend back to automatic. */
+            takeover: finite.positive().max(5).optional(),
+            releaseDelay: finite.min(0).max(10).optional(),
+            blend: finite.positive().max(10).optional(),
+          })
+          .strict()
+          .optional(),
+        /** Tuck behind the windscreen at speed (automatic and with the forward key). */
+        tuck: z
+          .object({
+            enabled: z.boolean().optional(),
+            /** Automatic tuck from this speed, km/h; sits up below `releaseKmh`. */
+            kmh: finite.min(10).max(500).optional(),
+            releaseKmh: finite.min(5).max(500).optional(),
+            /** The forward key's extended (full tuck) range blends in from this speed, km/h. */
+            manualFromKmh: finite.min(0).max(500).optional(),
+            /** Seconds for a full tuck. */
+            seconds: finite.positive().max(5).optional(),
+            /** Deceleration that sits the rider up, g. */
+            brakeG: finite.min(0).max(3).optional(),
+            /** Tucked cockpit eye relative to the seated one, chassis metres. */
+            eye: z.tuple([finite, finite, finite]).optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    /** Pitch that counts as a crash (looped wheelie, over the front), radians. */
+    crashPitch: finite.min(0.5).max(1.55).optional(),
+    /** Shift hooligan modifier overrides (`twoWheeledDefaults.hooligan`). */
+    hooligan: z
+      .object({
+        enabled: z.boolean().optional(),
+        /** Launch burnout below this speed, m/s, fading out over `burnoutFade`. */
+        burnoutSpeed: finite.min(0).max(50).optional(),
+        burnoutFade: finite.min(0.1).max(50).optional(),
+        /** Rear wheel surface speed above road speed at full spin, m/s, and its rate, m/s². */
+        spinSpeed: finite.min(0).max(100).optional(),
+        spinRate: finite.positive().max(500).optional(),
+        /** Share of the drive that reaches the road while the rear spins. */
+        burnoutTraction: finite.min(0).max(1).optional(),
+        /** Yaw wiggle amplitude while sliding, rad/s². */
+        slide: finite.min(0).max(20).optional(),
+        /** Wheelie drive multiplier and held climb rate, rad/s. */
+        wheelieDrive: finite.min(0).max(5).optional(),
+        wheelieRate: finite.min(0).max(5).optional(),
+        /** Stoppie front brake multiplier and held climb rate, rad/s. */
+        stoppieBrake: finite.min(0).max(5).optional(),
+        stoppieRate: finite.min(0).max(5).optional(),
+        /** How firmly the climb rate is held, 1/s. */
+        riseResponse: finite.min(0).max(200).optional(),
+        /** Rider back share that turns Shift + throttle into a wheelie, 0..1. */
+        wheelieRiderBack: finite.min(0).max(1).optional(),
       })
       .strict()
       .optional(),
@@ -261,6 +330,29 @@ export const vehicleField = z
       .optional(),
     /** Enable the audible warning while this vehicle has reverse gear engaged. */
     reverseAlarm: z.boolean().optional(),
+    /**
+     * Motorcycle instrument cluster drawn on the GLB anchors `gauge_speedo`, `gauge_tacho`,
+     * `gauge_lcd`, `lamp_signal_l|r` and `lamp_warning_1…n` (two-wheelers only). Omitted fields
+     * use `motorcycleClusterDefaults`; the red zone defaults to `powertrain.maxRpm`.
+     */
+    cluster: z
+      .object({
+        /** Speedometer full scale and numbered step, km/h. */
+        speedoMaxKmh: finite.min(40).max(500).optional(),
+        speedoStepKmh: finite.min(5).max(100).optional(),
+        /** Tachometer full scale and start of the red zone, rpm. */
+        tachoMaxRpm: finite.min(1000).max(30000).optional(),
+        redlineRpm: finite.min(500).max(30000).optional(),
+        /** Needle sweep from zero to full scale, radians. */
+        sweep: finite.min(0.5).max(6).optional(),
+        /** Warning lamps in `lamp_warning_1…n` order, left to right. */
+        lamps: z
+          .array(z.enum(['neutral', 'high-beam', 'oil', 'fi']))
+          .max(8)
+          .optional(),
+      })
+      .strict()
+      .optional(),
     /**
      * Per-vehicle sound options. Omitted keeps the road-car sound: turbo on and a clack on
      * audible gear changes. See `audio/vehicle-sound.ts`.

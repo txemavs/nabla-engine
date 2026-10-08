@@ -209,8 +209,16 @@ field: `pitchAssist` (wheelie/stoppie assist on/off, soft, maximum and rider-cen
 `rider` (requires `seat`, the seated rider centre of mass; `mass`, `lateral`/`forward`/`back`
 travel, `rate`, body `steer`), `clutchKick` (`gain`, `seconds`, `maxGear`) and `cbs` (shares
 `leverFront`, `leverRear`, `pedalFront`, `pedalRear` of each wheel's brake force and the linked
-`linkLag`; omit `cbs` for independent brakes). Every value is TODO(unverified); see
-[motorcycles](motorcycles.md) for what each does and where the CBS shares come from.
+`linkLag`; omit `cbs` for independent brakes). Phase 3 adds `rider.auto` (automatic rider:
+`enabled`, `hangOff`, `steer`, `leanDeadband`, `accelGain`, `brakeGain`, `accelDeadband`,
+`takeover`, `releaseDelay`, `blend`), `rider.tuck` (`enabled`, `kmh`, `releaseKmh`,
+`manualFromKmh`, `seconds`, `brakeG`, tucked `eye` offset), `hooligan` (the Shift modifier:
+`enabled`, `burnoutSpeed`, `burnoutFade`, `spinSpeed`, `spinRate`, `burnoutTraction`, `slide`,
+`wheelieDrive`, `wheelieRate`, `stoppieBrake`, `stoppieRate`, `riseResponse`,
+`wheelieRiderBack`) and `crashPitch`. The `vehicle.cluster` block sets the motorcycle instrument
+scales (`speedoMaxKmh`, `speedoStepKmh`, `tachoMaxRpm`, `redlineRpm`, `sweep`) and the warning
+lamp order (`lamps`). Every value is TODO(unverified); see [motorcycles](motorcycles.md) for
+what each does and where the CBS shares come from.
 
 **Neutral and park.** Stopped (below 0.5 m/s) with the handbrake (Space) on and no pedal
 pressed, D/R drops to N after `shift.neutralSeconds` (default 0.4 s, truck 0.8 s), and N to P

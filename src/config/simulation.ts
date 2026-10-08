@@ -223,6 +223,92 @@ export const twoWheeledDefaults = Object.freeze({
      * (0..1) towards the side the rider moves to.
      */
     steer: 0.2,
+    /**
+     * Automatic rider: with no counterweight keys pressed the rider hangs off into turns, moves
+     * forward under hard acceleration and back under hard front braking, and sits centred
+     * when cruising. The keys take over at once and hand back after `releaseDelay`.
+     */
+    auto: Object.freeze({
+      enabled: true,
+      /** TODO(unverified): sideways input (share of `lateral`) at the largest lean. */
+      hangOff: 0.8,
+      /** TODO(unverified): sideways input per unit of steering demand. */
+      steer: 0.2,
+      /** TODO(unverified): lean below which the rider stays centred, radians (~6°). */
+      leanDeadband: 0.1,
+      /** TODO(unverified): forward input per g of acceleration past the deadband. */
+      accelGain: 2.5,
+      /** TODO(unverified): rearward input per g of front-brake deceleration past the deadband. */
+      brakeGain: 2,
+      /** TODO(unverified): acceleration below which the rider stays centred, g. */
+      accelDeadband: 0.12,
+      /** Seconds for the keys to take over from the automatic rider. */
+      takeover: 0.1,
+      /** Seconds without keys before the automatic rider takes back over. */
+      releaseDelay: 1,
+      /** Seconds to blend back to the automatic rider. */
+      blend: 0.6,
+    }),
+    /**
+     * Tuck behind the windscreen at speed. The automatic rider tucks from `kmh` and sits up again
+     * below `releaseKmh` (hysteresis) or under hard braking. The forward key (I) can reach the
+     * full tuck from `kmh`, blending in from `manualFromKmh`; below that it keeps its normal
+     * range. `eye` is the tucked cockpit eye relative to the seated one (chassis metres, +y up,
+     * +z back): low and close behind the screen, tacho at the bottom of the view.
+     */
+    tuck: Object.freeze({
+      enabled: true,
+      kmh: 180,
+      releaseKmh: 170,
+      manualFromKmh: 165,
+      /** Seconds for a full tuck (and back). */
+      seconds: 0.6,
+      /** Deceleration that counts as hard braking and sits the rider up, g. */
+      brakeG: 0.35,
+      eye: Object.freeze([0, -0.32, -0.44] as [number, number, number]),
+    }),
+  }),
+  /**
+   * TODO(unverified): pitch beyond which a wheelie has looped or a stoppie has gone over the
+   * front, radians (~75°): the machine has crashed until R recovers it. The assists never get
+   * near it; only the Shift hooligan modifier (assists off) can.
+   */
+  crashPitch: 1.3,
+  /**
+   * Shift hooligan modifier (two-wheelers). While Shift is held the wheelie and stoppie assists,
+   * the combined brakes and the automatic rider's fore-aft moves are off, and:
+   * - Shift + throttle from standstill or low speed: launch burnout, the rear wheel spins up well
+   *   past road speed (smoke and marks) and the bike still drives forward, sliding a little.
+   * - Shift + rider back (L) + throttle: a bigger wheelie with no assist; held too long it loops.
+   * - Shift + front lever (S) + rear pedal (Space) + throttle: stationary burnout, front locked.
+   * - Shift while braking with the lever: stoppie; held too long it goes over the front.
+   * Without Shift nothing changes.
+   */
+  hooligan: Object.freeze({
+    enabled: true,
+    /** TODO(unverified): launch burnout below this road speed, m/s, fading out over `burnoutFade`. */
+    burnoutSpeed: 6,
+    burnoutFade: 5,
+    /** TODO(unverified): rear wheel surface speed above road speed at full spin, m/s. */
+    spinSpeed: 18,
+    /** TODO(unverified): how fast the rear spins up and down, m/s per second. */
+    spinRate: 30,
+    /** TODO(unverified): share of the drive that still reaches the road while it spins. */
+    burnoutTraction: 0.6,
+    /** TODO(unverified): sideways slide of the spinning rear, yaw acceleration amplitude, rad/s². */
+    slide: 1.5,
+    /** TODO(unverified): drive multiplier for the Shift wheelie (rider back). */
+    wheelieDrive: 1.2,
+    /** Pitch rise the rider holds in the Shift wheelie by feathering the throttle, rad/s (~20°/s). */
+    wheelieRate: 0.35,
+    /** TODO(unverified): front brake multiplier for the Shift stoppie. */
+    stoppieBrake: 1.2,
+    /** Pitch rise the rider holds in the Shift stoppie by feathering the lever, rad/s (~26°/s). */
+    stoppieRate: 0.45,
+    /** How firmly the rise rate is held, 1/s. */
+    riseResponse: 60,
+    /** Rider back share (0..1 of `rider.back`) that turns Shift + throttle into a wheelie. */
+    wheelieRiderBack: 0.3,
   }),
   /**
    * Combined braking (Dual CBS style), used only when a preset declares `twoWheeled.cbs`.

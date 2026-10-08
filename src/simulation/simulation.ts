@@ -803,6 +803,7 @@ export class Simulation {
       handbrake: this.input.brake,
       launch: this.input.sprint,
       rider: { right: this.input.riderRight ?? 0, forward: this.input.riderForward ?? 0 },
+      lever: this.input.frontBrake ?? 0,
     }
   }
   /** Per-wheel absolute-world contact snapshots for any tyre effect or diagnostic. */
