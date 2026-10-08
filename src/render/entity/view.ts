@@ -46,6 +46,8 @@ import {
 } from '../vehicle-presentation/reflection-environment.js'
 import { localMinutes, skyTime } from '../../planet/sky.js'
 import { simulationDefaults, twoWheeledDefaults } from '../../config/simulation.js'
+import { gameCameraDefaults } from '../../config/camera.js'
+import { easeRiderHead, type RiderHeadEase } from './rider-head.js'
 import { AvatarFollow, EjectionTumble } from './avatar-motion.js'
 import {
   clampMirrorAdjustment,
@@ -174,6 +176,8 @@ export class SceneView {
   private readonly riderShifts = new Map<string, readonly [number, number]>()
   /** Two-wheeler tuck (0..1) from the last pose and the tucked eye offset of its preset. */
   private readonly riderTucks = new Map<string, number>()
+  /** Eased rider head inputs per two-wheeler (presentation only; `gameCameraDefaults.riderHeadResponse`). */
+  private readonly riderHeadEase = new Map<string, RiderHeadEase>()
   vehicleHeadOffset(id: string): readonly number[] | undefined {
     const base = this.headOffsets.get(id)
     const shift = this.riderShifts.get(id)
@@ -621,6 +625,7 @@ export class SceneView {
       this.headOffsets,
       this.riderShifts,
       this.riderTucks,
+      this.riderHeadEase,
       this.authoredLights,
       this.landingGear,
       this.motorcycleRigs,
@@ -1370,8 +1375,16 @@ export class SceneView {
       const pose = sim.twoWheeledPose(id)
       if (pose) {
         rig.update(pose)
-        this.riderShifts.set(id, pose.riderShift)
-        this.riderTucks.set(id, pose.tuck)
+        // The head eases towards the rider's shift and tuck rather than snapping to them.
+        const ease = easeRiderHead(
+          this.riderHeadEase.get(id),
+          [pose.riderShift[0], pose.riderShift[1], pose.tuck],
+          gameCameraDefaults.riderHeadResponse,
+          elapsed,
+        )
+        this.riderHeadEase.set(id, ease)
+        this.riderShifts.set(id, [ease.value[0], ease.value[1]])
+        this.riderTucks.set(id, ease.value[2])
       }
     }
     for (const reflection of this.reflections.values()) reflection.setLevel(this.night ? 0.15 : 1)

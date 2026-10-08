@@ -364,6 +364,21 @@ export const twoWheeledDefaults = Object.freeze({
    * - Shift while braking with the lever: stoppie; held too long it goes over the front.
    * Without Shift nothing changes.
    */
+  /**
+   * Foot paddling (two-wheelers have no reverse gear). Stopped (below `startKmh`) with the cars'
+   * reverse key held (S, the front lever) for `delay` seconds, the rider walks the bike backwards
+   * with his feet: the brakes let go and it eases back (at most `accel` m/s², closing on the
+   * target at `response` 1/s) to `maxKmh`. Released, the feet stop it. No engine, no gear: the
+   * selector and the dash are untouched. Gameplay values.
+   */
+  paddle: Object.freeze({
+    enabled: true,
+    startKmh: 2,
+    delay: 0.4,
+    maxKmh: 2.5,
+    accel: 0.8,
+    response: 3,
+  }),
   hooligan: Object.freeze({
     enabled: true,
     /** TODO(unverified): launch burnout below this road speed, m/s, fading out over `burnoutFade`. */

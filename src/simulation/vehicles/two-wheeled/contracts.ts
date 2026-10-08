@@ -54,6 +54,15 @@ export interface TwoWheeledTuning {
   clutchKick: { gain: number; seconds: number; maxGear: number }
   /** Shift hooligan modifier. */
   hooligan: TwoWheeledHooliganDefinition
+  /** Foot paddling backwards at a stop (`twoWheeledDefaults.paddle`). */
+  paddle: {
+    enabled: boolean
+    startKmh: number
+    delay: number
+    maxKmh: number
+    accel: number
+    response: number
+  }
   /** Pitch that counts as a crash, radians. */
   crashPitch: number
   /** Impact and lowside crashes, tumble and ejection (`twoWheeledDefaults.crash`). */
@@ -161,6 +170,10 @@ export interface TwoWheeledState {
    */
   recentSpeed: number
   recentVelocity: [number, number, number]
+  /** Seconds the reverse key has been held at a stop; paddling backwards from `paddle.delay`. */
+  paddleHold: number
+  /** Seconds left of the feet holding the bike after paddling ends. */
+  paddleRelease: number
   /** Seconds of the slide wiggle (phase clock). */
   slideClock: number
   /** Centre-of-mass height above the ground on the last tick, metres. */
