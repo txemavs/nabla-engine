@@ -39,7 +39,10 @@
       "grip": 4.5,
       "idleRpm": 1200,
       "maxRpm": 11500,
-      "maxWheelForceN": 2950
+      "maxWheelForceN": 2950,
+      "speedLimiter": {
+        "kmh": 250
+      }
     },
     "twoWheeled": {
       "rearWheelRadius": 0.3149,

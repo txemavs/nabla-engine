@@ -109,9 +109,13 @@ describe('vfr800 wheelies', () => {
 })
 
 describe('vfr800 stoppies', () => {
-  const brakeFromSpeed = (input: Partial<PlayerInput>, edit?: (bike: Entity) => void) => {
+  const brakeFromSpeed = (
+    input: Partial<PlayerInput>,
+    edit?: (bike: Entity) => void,
+    accelerate = 5,
+  ) => {
     const r = ride(edit)
-    r.run(5, { forward: 1 })
+    r.run(accelerate, { forward: 1 })
     const start = r.info().speedKmh
     const pitch = r.run(6, input)
     return { ...r, start, pitch }
@@ -133,13 +137,16 @@ describe('vfr800 stoppies', () => {
   })
 
   it('without the assist the rear climbs much higher', () => {
-    const assisted = brakeFromSpeed({ forward: -1, riderForward: 1 }).pitch.min
+    const assisted = brakeFromSpeed({ forward: -1, riderForward: 1 }, undefined, 4).pitch.min
     sim?.dispose()
     sim = undefined
-    const free = brakeFromSpeed({ forward: -1, riderForward: 1 }, (bike) =>
-      editTwoWheeled(bike, { pitchAssist: { stoppie: false } }),
+    const free = brakeFromSpeed(
+      { forward: -1, riderForward: 1 },
+      (bike) => editTwoWheeled(bike, { pitchAssist: { stoppie: false } }),
+      4,
     ).pitch.min
-    expect(free).toBeLessThan(assisted - 0.1)
+    // From ~100 km/h: unassisted the rear goes far past the assisted maximum.
+    expect(free).toBeLessThan(assisted - 0.3)
   })
 })
 

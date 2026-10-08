@@ -167,6 +167,14 @@ export const vehicleField = z
         maxRpm: finite.min(2000).max(20000).optional(),
         reverseRatio: finite.positive().max(20).optional(),
         maxSpeedKmh: finite.positive().max(400).optional(),
+        /** Soft ignition-style speed limiter (cut at `kmh`, resume `hysteresisKmh` below). */
+        speedLimiter: z
+          .object({
+            kmh: finite.min(5).max(400),
+            hysteresisKmh: finite.min(0).max(30).optional(),
+          })
+          .strict()
+          .optional(),
         /** Traction/clutch ceiling on the force at the wheels, newtons. */
         maxWheelForceN: finite.positive().max(1000000).optional(),
         /** Shift timing, shift points, engine response and the gear-change sound. */

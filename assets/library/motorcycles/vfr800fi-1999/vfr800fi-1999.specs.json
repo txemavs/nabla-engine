@@ -293,6 +293,14 @@
     "springRatesNPerM": null,
     "dampingNsPerM": null
   },
+  "ownerReports": {
+    "topSpeedKmh": {
+      "value": 250,
+      "approximate": true,
+      "source": "Top speed ~250 km/h (owner's bike, limiter): Txema Vicente's own VFR800FI cuts out there. Not Honda data.",
+      "usedFor": "vfr800 preset powertrain.speedLimiter.kmh"
+    }
+  },
   "integration": {
     "drivable": false,
     "controller": "pending dedicated two-wheel simulation",

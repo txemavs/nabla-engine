@@ -189,6 +189,11 @@ the clack's level, played on every counted gear change including automatic ones,
 `VehicleAudio.gearClick`) or `none`; `volume` (0..2, default 1) scales either. The `vfr800`
 motorcycle uses `{ "turbo": false, "gearShift": { "sound": "click", "volume": 1 } }`; the
 click's shape is `gearClickDefaults` in `src/audio/gear-click.ts`. No sample files are used.
+`powertrain.speedLimiter: { kmh, hysteresisKmh }` is a soft, ignition-style limiter: at `kmh`
+the drive and the engine load cut out until the speed is `hysteresisKmh` lower (default
+`roadVehicleDefaults.limiterHysteresisKmh`, 2 km/h), then come back, so the vehicle hovers just
+under the limit. The older `maxSpeedKmh` (the truck's 120) stays a hard governor. The `vfr800`
+uses `{ "kmh": 250 }` (owner-reported limiter, not Honda data).
 `engine: { voice, vAngle, crankpin, volume }` picks the engine voice: `note` (default, the
 sawtooth above) or `v4`, the procedural V4 in `src/audio/v4-engine.ts`. Its firing angles come
 from `vAngle` (degrees between the banks, default 90) and `crankpin` (degrees between the two

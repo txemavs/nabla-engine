@@ -18,7 +18,7 @@
   Honda data. New `vehicle.audio.engine` voice `v4`: a procedural 90° V4 with a 180° crank
   (uneven 90-180-270-180 firing from `vAngle`/`crankpin`), one periodic wave per cycle, no sample
   files; cars keep the engine note. `vehicleInfo` adds `pitch`; `twoWheeledPose` adds `pitch` and
-  `riderShift`; `PlayerInput` adds `riderRight`/`riderForward`.
+  `riderShift`; `PlayerInput` adds `riderRight`/`riderForward`. New per-preset `powertrain.speedLimiter` (soft ignition-style cut with hysteresis); the vfr800 reaches and holds ~250 km/h (owner's bike, limiter; not Honda data) with the two-wheeler drag placeholder lowered from 0.3 to 0.18.
 - **Motorcycles, phase 1 (`vfr800` preset):** the Honda VFR800FI 1999 from the asset library is
   drivable. New `vehicle.twoWheeled` schema (two hubs, rear wheel radius, steering head axis,
   lock, optional lean/balance/brake tuning) with a narrow-size exemption and redlines up to

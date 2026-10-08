@@ -28,6 +28,11 @@ export const simulationDefaults = Object.freeze({
 /** Road-vehicle selector timing, gear-change feel and baseline engine speed. */
 export const roadVehicleDefaults = Object.freeze({
   /**
+   * Default hysteresis of the soft speed limiter (`powertrain.speedLimiter`), km/h: after a cut
+   * at the limit the drive returns once the speed is this far below it. A gameplay value.
+   */
+  limiterHysteresisKmh: 2,
+  /**
    * Time the vehicle must stay stopped (below `directionChangeSpeed`, brakes held,
    * opposite pedal still down) before D or R is engaged, seconds. The clock only runs
    * once the vehicle has really stopped, so braking from speed is never delayed by it.
@@ -239,8 +244,13 @@ export const twoWheeledDefaults = Object.freeze({
     /** TODO(unverified): lag of the linked (cross-coupled) circuits, seconds. */
     linkLag: 0.12,
   }),
-  /** TODO(unverified): aerodynamic drag factor standing in for ½·ρ·CdA, N per (m/s)². */
-  dragFactor: 0.3,
+  /**
+   * TODO(unverified): aerodynamic drag factor standing in for ½·ρ·CdA, N per (m/s)² (0.18 ≈
+   * CdA 0.29 m² at sea level). Tuned, not measured: low enough that the vfr800 reaches the
+   * ~250 km/h its owner's bike cuts out at (unlimited it would run on to ~262 km/h). Was 0.3,
+   * which held it near 222 km/h.
+   */
+  dragFactor: 0.18,
 })
 
 /** Conservative map collision streaming. Safety margins are in metres; budgets are soft. */

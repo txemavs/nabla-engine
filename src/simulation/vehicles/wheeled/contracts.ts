@@ -49,6 +49,12 @@ export interface GearboxTuning {
   /** Sound of every gear change and D/R engagement. */
   clack?: GearClackProfile
 }
+/** See `PowertrainDefinition.speedLimiter`. */
+export interface SpeedLimiterDefinition {
+  kmh: number
+  /** Default `roadVehicleDefaults.limiterHysteresisKmh`. */
+  hysteresisKmh?: number
+}
 export interface PowertrainDefinition {
   powerCv: number
   torqueNm: number
@@ -62,6 +68,12 @@ export interface PowertrainDefinition {
   maxSpeedKmh?: number
   /** Traction/clutch limit on the force at the wheels, newtons. Omitted: torque limited only. */
   maxWheelForceN?: number
+  /**
+   * Soft rev/speed limiter: an ignition-style cut. At `kmh` the drive is cut until the speed
+   * falls `hysteresisKmh` below it, then it comes back, so the vehicle hovers at the limit with
+   * a slight stutter instead of hitting a wall. `maxSpeedKmh` is the older hard governor.
+   */
+  speedLimiter?: SpeedLimiterDefinition
   shift?: GearboxTuning
 }
 /**
