@@ -1579,14 +1579,21 @@ export class Simulation {
     }
     return nearest
   }
-  /** Interaction returns a useful status; dismount requires a supported, unobstructed exit. */
-  interact(): string {
+  /**
+   * Interaction returns a useful status; dismount requires a supported, unobstructed exit.
+   * Mounting a two-wheeler that is on the ground (crashed or fallen) is the R reset: same
+   * upright and, when `recover` asks for it, the same snap to the nearest road.
+   */
+  interact(recover?: RecoverVehicleOptions): string {
     if (this.disposed) throw new Error('Simulation is disposed')
     if (this.vehicleId) return this.exitVehicle()
     const id = this.nearestVehicle()
     if (!id) return 'Acércate a un vehículo detenido y pulsa E para entrar'
+    const v = this.vehicles.get(id)!
+    const lying = !!v.twoWheeled && (v.twoWheeled.crashed || v.twoWheeled.fallen)
     this.startInVehicle(id)
-    return 'Conduciendo ' + this.vehicles.get(id)!.entity.name
+    if (lying) return this.recoverVehicle(recover)
+    return 'Conduciendo ' + v.entity.name
   }
   /** Explicit scenario entry; ordinary interaction still checks reach and obstructions. */
   startInVehicle(id: string): void {
