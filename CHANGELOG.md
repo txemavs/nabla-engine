@@ -14,6 +14,7 @@
 ### Changed
 
 - Bike: mounting a fallen bike (E, next to it) does the R reset. The rider is seated, the bike stands up and, with road snap on, moves to the nearest road. An upright bike is unchanged.
+- Starter (every vehicle): one mechanical click and a very brief crank (about 0.2 s), then the engine catches on the first try and idles. No starter whine. The running voices are unchanged.
 
 - Pistol reload: the pistol rises, the spent magazine drops out of the grip and stays on the ground (same bounce and lifetime as a shell casing, eight at most), then a fresh magazine is inserted and the pistol comes back down. Timed to the existing reload (magazine out 0.35 s, seated 1.25 s). The magazine is the model's `Magazine` node.
 
