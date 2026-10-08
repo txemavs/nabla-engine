@@ -18,6 +18,8 @@ export interface CasingPose {
   position: Vec3Tuple
   spin: Vec3Tuple
   angle: number
+  /** xyzw. Identity when omitted (brass does not need a rest orientation). */
+  orientation?: [number, number, number, number]
 }
 
 interface Casing {
@@ -27,6 +29,7 @@ interface Casing {
   angle: number
   age: number
   resting: boolean
+  orientation?: [number, number, number, number]
 }
 
 /** World ray query: first solid from `from` along unit `direction` within `length`. */
@@ -50,6 +53,8 @@ export class CasingMotion {
   constructor(
     private readonly spec: CasingSpec,
     private readonly gravity = simulationDefaults.gravity,
+    private readonly capacity = MAX,
+    private readonly standoff = STANDOFF,
   ) {}
 
   get count(): number {
@@ -67,7 +72,7 @@ export class CasingMotion {
     carry: Vec3Tuple = [0, 0, 0],
     random = Math.random,
   ): void {
-    if (this.casings.length >= MAX) this.casings.shift()
+    if (this.casings.length >= this.capacity) this.casings.shift()
     const spread = () => 1 + (random() - 0.5) * 0.3
     const speed = this.spec.ejectSpeedMs * spread()
     const lift = this.spec.ejectSpeedMs * 0.5 * spread()
@@ -82,6 +87,29 @@ export class CasingMotion {
       angle: 0,
       age: 0,
       resting: false,
+    })
+  }
+
+  /**
+   * Let one body go from `origin` with an explicit `velocity` (m/s). Same bounce, rest and
+   * lifetime as an ejection. `orientation` is xyzw. Used for a magazine that drops out of the
+   * grip instead of being thrown sideways.
+   */
+  release(
+    origin: Vec3Tuple,
+    velocity: Vec3Tuple,
+    spin: Vec3Tuple = [0.2, 0.4, 0.15],
+    orientation: [number, number, number, number] = [0, 0, 0, 1],
+  ): void {
+    if (this.casings.length >= this.capacity) this.casings.shift()
+    this.casings.push({
+      position: [...origin],
+      velocity: [...velocity],
+      spin: [...spin],
+      angle: 0,
+      age: 0,
+      resting: false,
+      orientation: [...orientation],
     })
   }
 
@@ -106,7 +134,7 @@ export class CasingMotion {
       casing.angle += Math.hypot(...casing.spin) * 40 * step
       const hit =
         length > 1e-6
-          ? cast(casing.position, move.map((m) => m / length) as Vec3Tuple, length + STANDOFF)
+          ? cast(casing.position, move.map((m) => m / length) as Vec3Tuple, length + this.standoff)
           : null
       if (!hit) {
         casing.position = [0, 1, 2].map((i) => casing.position[i] + move[i]) as [
@@ -118,7 +146,7 @@ export class CasingMotion {
       }
       const n = hit.normal
       const into = v[0] * n[0] + v[1] * n[1] + v[2] * n[2]
-      casing.position = [0, 1, 2].map((i) => hit.point[i] + n[i] * STANDOFF) as [
+      casing.position = [0, 1, 2].map((i) => hit.point[i] + n[i] * this.standoff) as [
         number,
         number,
         number,
@@ -144,6 +172,7 @@ export class CasingMotion {
       position: [...casing.position] as Vec3Tuple,
       spin: [...casing.spin] as Vec3Tuple,
       angle: casing.angle,
+      orientation: casing.orientation ? [...casing.orientation] : undefined,
     }))
   }
 

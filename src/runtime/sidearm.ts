@@ -12,6 +12,7 @@ import {
   type FirearmState,
 } from '../simulation/weapons/firearm.js'
 import { MuzzleRise } from '../simulation/weapons/recoil.js'
+import { reloadPresentation } from './reload-presentation.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
@@ -330,6 +331,32 @@ export class Sidearm {
     }
   }
 
+  /**
+   * Magazine in the viewmodel camera's space, plus the direction it slides out of the grip.
+   * Null until the assembled model has loaded.
+   */
+  magazineDropView(): {
+    position: THREE.Vector3
+    quaternion: THREE.Quaternion
+    direction: THREE.Vector3
+  } | null {
+    if (!this.magazine) return null
+    this.model.updateWorldMatrix(true, true)
+    const position = new THREE.Vector3()
+    const quaternion = new THREE.Quaternion()
+    this.magazine.object.getWorldPosition(position)
+    this.magazine.object.getWorldQuaternion(quaternion)
+    const parent = new THREE.Quaternion()
+    this.magazine.object.parent?.getWorldQuaternion(parent)
+    const direction = axis(this.rig.presentation.magazine.axis).applyQuaternion(parent)
+    return { position, quaternion, direction }
+  }
+
+  /** A detached copy of the `Magazine` node. Geometry and materials stay shared. */
+  magazineClone(): THREE.Object3D | null {
+    return this.magazine ? this.magazine.object.clone(true) : null
+  }
+
   /** Slide, trigger and magazine from the firearm state, relative to their rest poses. */
   private pose(now: number): void {
     const p = this.rig.presentation
@@ -347,20 +374,18 @@ export class Sidearm {
             this.state.triggerHeld ? p.trigger.angle : 0,
           ),
         )
+    const shown = reloadPresentation(
+      this.state.reload,
+      now - this.state.reloadStartMs,
+      this.firearm.reloadMs,
+    )
+    // Negative X raises the muzzle: the model looks down -Z.
+    this.model.rotation.x = -shown.pitch
     if (this.magazine) {
-      const { magazineOut, magazineIn } = this.firearm.reloadMs
-      const age = now - this.state.reloadStartMs
-      let out = 0
-      if (this.state.reload === 'magazine-out') out = 0.3 * smooth(age / magazineOut)
-      else if (this.state.reload === 'magazine-in') {
-        const u = (age - magazineOut) / (magazineIn - magazineOut)
-        // The old magazine falls away; the new one comes up from below and seats.
-        out = u < 0.35 ? 0.3 + 6 * u * u : 1 - smooth((u - 0.35) / 0.65)
-      }
-      this.magazine.object.visible = out < 1.5
+      this.magazine.object.visible = shown.magazineVisible
       this.magazine.object.position
         .copy(this.magazine.rest)
-        .addScaledVector(axis(p.magazine.axis), p.magazine.distance * out)
+        .addScaledVector(axis(p.magazine.axis), p.magazine.distance * shown.travel)
     }
   }
 }
@@ -373,10 +398,6 @@ function part(root: THREE.Object3D, name: string): Part | null {
 }
 
 const axis = (v: number[]) => new THREE.Vector3(v[0], v[1], v[2]).normalize()
-const smooth = (t: number) => {
-  const x = Math.min(1, Math.max(0, t))
-  return x * x * (3 - 2 * x)
-}
 
 async function loadRig(url: string): Promise<WeaponRig | null> {
   try {
