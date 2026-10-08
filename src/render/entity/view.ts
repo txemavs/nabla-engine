@@ -38,6 +38,13 @@ import {
   motorcycleRigFromModel,
   type MotorcycleRigBinding,
 } from '../vehicle-presentation/motorcycle-rig.js'
+import { MotorcycleInstruments } from '../vehicle-presentation/motorcycle-instruments.js'
+import {
+  applyReflectionEnvironment,
+  type ReflectionEnvironment,
+} from '../vehicle-presentation/reflection-environment.js'
+import { localMinutes, skyTime } from '../../planet/sky.js'
+import { twoWheeledDefaults } from '../../config/simulation.js'
 import {
   clampMirrorAdjustment,
   mirrorModelKey,
@@ -141,6 +148,10 @@ export class SceneView {
   private readonly landingGear = new Map<string, LandingGearVisual>()
   /** Fork, swingarm, shock, chain and wheel articulation of two-wheeled GLB bodies. */
   private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
+  private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
+  private readonly reflections = new Map<string, ReflectionEnvironment>()
+  /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
+  private readonly odometers = new Map<string, number>()
   private readonly propellers = new Map<string, THREE.Object3D>()
   readonly shipHuds = new Map<string, ShipHud>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
@@ -159,10 +170,16 @@ export class SceneView {
   private readonly headOffsets = new Map<string, readonly number[]>()
   /** Two-wheeler rider offset ([x, z] chassis metres) from the last pose; moves the head. */
   private readonly riderShifts = new Map<string, readonly [number, number]>()
+  /** Two-wheeler tuck (0..1) from the last pose and the tucked eye offset of its preset. */
+  private readonly riderTucks = new Map<string, number>()
   vehicleHeadOffset(id: string): readonly number[] | undefined {
     const base = this.headOffsets.get(id)
     const shift = this.riderShifts.get(id)
-    return base && shift ? riderHeadOffset(base, shift) : base
+    if (!base || !shift) return base
+    const eye =
+      this.document.entities.find((e) => e.id === id)?.vehicle?.twoWheeled?.rider?.tuck?.eye ??
+      twoWheeledDefaults.rider.tuck.eye
+    return riderHeadOffset(base, shift, this.riderTucks.get(id) ?? 0, eye)
   }
   pressShipSwitch(id: string, kind: ShipSwitch): void {
     this.shipLights.get(id)?.press(kind)
@@ -569,6 +586,7 @@ export class SceneView {
     this.carMirrors.get(id)?.dispose()
     this.mirrorModels.delete(id)
     this.instruments.get(id)?.dispose()
+    this.motorcycleClusters.get(id)?.dispose()
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
     if (group) {
@@ -598,9 +616,13 @@ export class SceneView {
       this.systemScreens,
       this.headOffsets,
       this.riderShifts,
+      this.riderTucks,
       this.authoredLights,
       this.landingGear,
       this.motorcycleRigs,
+      this.motorcycleClusters,
+      this.reflections,
+      this.odometers,
       this.ramps,
       this.mapBounds,
     ] as Map<string, unknown>[])
@@ -1015,6 +1037,15 @@ export class SceneView {
             motorcycleRigFromModel(model, { steerLimit: twoWheeled.steerLimit }),
           ),
         )
+      if (twoWheeled) {
+        // Chrome and mirror glass need something to reflect; cars keep their current look.
+        this.reflections.set(e.id, applyReflectionEnvironment(model))
+        const cluster = MotorcycleInstruments.bind(model, {
+          ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
+          ...e.vehicle?.cluster,
+        })
+        if (cluster) this.motorcycleClusters.set(e.id, cluster)
+      }
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
       if (equipment?.mirrors) {
         this.carMirrors.set(e.id, equipment.mirrors)
@@ -1313,6 +1344,36 @@ export class SceneView {
       if (pose) {
         rig.update(pose)
         this.riderShifts.set(id, pose.riderShift)
+        this.riderTucks.set(id, pose.tuck)
+      }
+    }
+    for (const reflection of this.reflections.values()) reflection.setLevel(this.night ? 0.15 : 1)
+    if (this.motorcycleClusters.size) {
+      const clockMinutes = localMinutes(skyTime(this.document.sky ?? { mode: 'live' }))
+      const lampNow = performance.now()
+      for (const [id, cluster] of this.motorcycleClusters) {
+        const info = sim.vehicleInfo(id)
+        const powered = sim.player.vehicleId === id
+        const km =
+          (this.odometers.get(id) ?? 0) + (Math.abs(info.speedKmh) * Math.min(elapsed, 0.25)) / 3600
+        this.odometers.set(id, km)
+        const controller = this.authoredLights.get(id)?.controller
+        const lamp = { powered, braking: false, reversing: false }
+        cluster.update({
+          powered,
+          ignition: info.ignition,
+          gaugeSweep: info.gaugeSweep,
+          speedKmh: info.speedKmh,
+          rpm: info.rpm,
+          gear: info.gear,
+          parked: info.parked,
+          highBeam: !!controller && controller.level('high', 0, lamp, lampNow) > 0,
+          signalLeft: !!controller && controller.level('signal', -1, lamp, lampNow) > 0,
+          signalRight: !!controller && controller.level('signal', 1, lamp, lampNow) > 0,
+          clockMinutes,
+          odometerKm: km,
+          tripKm: km,
+        })
       }
     }
     for (const [id, thrusters] of this.thrusters) {
@@ -1528,11 +1589,21 @@ export class SceneView {
 /**
  * Rider head (and cockpit eye) offset for a two-wheeler rider moved by `shift` ([x, z] chassis
  * metres, +z back): the head follows the body sideways and fore-aft and drops a little as the
- * rider tucks forward over the tank.
+ * rider leans forward over the tank. `tuck` (0..1) blends the height and fore-aft position to the
+ * tucked eye `base + eye`, low and close behind the windscreen.
  */
 export function riderHeadOffset(
   base: readonly number[],
   shift: readonly [number, number],
+  tuck = 0,
+  eye: readonly number[] = [0, 0, 0],
 ): number[] {
-  return [base[0] + shift[0], base[1] - 0.5 * Math.max(0, -shift[1]), base[2] + shift[1]]
+  const t = Math.min(1, Math.max(0, tuck))
+  const y = base[1] - 0.5 * Math.max(0, -shift[1]),
+    z = base[2] + shift[1]
+  return [
+    base[0] + shift[0] + eye[0] * t,
+    y + (base[1] + eye[1] - y) * t,
+    z + (base[2] + eye[2] - z) * t,
+  ]
 }

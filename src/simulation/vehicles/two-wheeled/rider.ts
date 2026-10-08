@@ -70,3 +70,158 @@ export function hangOffLean(lateral: number, comHeight: number): number {
   if (!(comHeight > 0)) return 0
   return Math.atan2(lateral, comHeight)
 }
+
+/** Automatic rider body movement when the counterweight keys are not pressed. */
+export interface AutoRiderSettings {
+  /** Off: the rider sits centred unless the keys move them (phase-2 behaviour). */
+  enabled: boolean
+  /** Sideways input (0..1 of the full shift) at the largest lean, past `leanDeadband`. */
+  hangOff: number
+  /** Sideways input per unit of steering demand (towards the turn). */
+  steer: number
+  /** Lean below which the rider stays centred, radians. */
+  leanDeadband: number
+  /** Forward input per g of acceleration past `accelDeadband`, with the throttle open. */
+  accelGain: number
+  /** Rearward input per g of deceleration past `accelDeadband`, with the front lever pulled. */
+  brakeGain: number
+  /** Acceleration below which the rider stays centred, g. */
+  accelDeadband: number
+  /** Seconds for the keys to take over from the automatic rider. */
+  takeover: number
+  /** Seconds after the keys are released before the automatic rider takes back over. */
+  releaseDelay: number
+  /** Seconds to blend from the keys back to the automatic rider. */
+  blend: number
+}
+
+export interface AutoRiderInput {
+  /** Measured lean, left-positive, radians. */
+  lean: number
+  maxLean: number
+  /** Bar demand, +1 full right. */
+  steering: number
+  /** Filtered longitudinal acceleration along the chassis forward axis, m/s². */
+  acceleration: number
+  gravity: number
+  /** Throttle 0..1 and front lever 0..1. */
+  throttle: number
+  lever: number
+}
+
+/**
+ * Normalised automatic rider input `[right, forward]` (the same scale as the keys): hang off to
+ * the inside of a turn in proportion to lean and steering, move forward under hard acceleration
+ * (keeps the front down) and back under hard front braking (limits the stoppie), centred while
+ * cruising.
+ */
+export function autoRiderInput(input: AutoRiderInput, auto: AutoRiderSettings): [number, number] {
+  if (!auto.enabled) return [0, 0]
+  const span = Math.max(1e-6, input.maxLean - auto.leanDeadband)
+  const leanShare = clamp((Math.abs(input.lean) - auto.leanDeadband) / span, 0, 1)
+  // Lean is left-positive; hanging off to the left is a negative `right`.
+  const right = clamp(
+    -Math.sign(input.lean) * leanShare * auto.hangOff + input.steering * auto.steer,
+    -1,
+    1,
+  )
+  const g = input.acceleration / Math.max(1e-6, input.gravity)
+  const forward =
+    input.throttle > 0.3 && g > auto.accelDeadband
+      ? clamp((g - auto.accelDeadband) * auto.accelGain, 0, 1)
+      : input.lever > 0.1 && -g > auto.accelDeadband
+        ? -clamp((-g - auto.accelDeadband) * auto.brakeGain, 0, 1)
+        : 0
+  return [right, forward]
+}
+
+/** Share of the key input (1) against the automatic rider (0), and the release countdown. */
+export interface RiderControlState {
+  manualShare: number
+  manualHold: number
+}
+
+/**
+ * Advance the hand-over between keys and automatic rider: a key press takes over within
+ * `takeover` seconds; after `releaseDelay` seconds without keys the automatic rider blends back
+ * in over `blend` seconds.
+ */
+export function stepRiderControl(
+  state: RiderControlState,
+  manual: boolean,
+  auto: AutoRiderSettings,
+  dt: number,
+): RiderControlState {
+  if (!auto.enabled) return { manualShare: 1, manualHold: 0 }
+  if (manual)
+    return {
+      manualShare: clamp(state.manualShare + dt / Math.max(1e-6, auto.takeover), 0, 1),
+      manualHold: auto.releaseDelay,
+    }
+  const hold = Math.max(0, state.manualHold - dt)
+  return {
+    manualShare:
+      hold > 0
+        ? state.manualShare
+        : clamp(state.manualShare - dt / Math.max(1e-6, auto.blend), 0, 1),
+    manualHold: hold,
+  }
+}
+
+/** Tuck behind the windscreen at speed. */
+export interface RiderTuckSettings {
+  enabled: boolean
+  /** Automatic tuck from this speed, km/h. */
+  kmh: number
+  /** Automatic tuck released below this speed, km/h (hysteresis). */
+  releaseKmh: number
+  /** The forward key's full-tuck range blends in from here to `kmh`, km/h. */
+  manualFromKmh: number
+  /** Seconds for a full tuck. */
+  seconds: number
+  /** Deceleration that sits the rider up, g. */
+  brakeG: number
+  /** Tucked cockpit eye relative to the seated one, chassis metres (+y up, +z back). */
+  eye: readonly [number, number, number]
+}
+
+/**
+ * Automatic tuck latch with hysteresis: on from `kmh`, off below `releaseKmh` or under hard
+ * braking (deceleration beyond `brakeG`).
+ */
+export function autoTuckLatch(
+  latched: boolean,
+  speedKmh: number,
+  decelerationG: number,
+  tuck: RiderTuckSettings,
+): boolean {
+  if (!tuck.enabled || decelerationG > tuck.brakeG) return false
+  return latched ? speedKmh >= tuck.releaseKmh : speedKmh >= tuck.kmh
+}
+
+/**
+ * How far the forward key reaches into the tuck at `speedKmh`: 0 below `manualFromKmh`, 1 from
+ * `kmh`, smooth in between (no jump).
+ */
+export function manualTuckReach(speedKmh: number, tuck: RiderTuckSettings): number {
+  if (!tuck.enabled) return 0
+  const span = tuck.kmh - tuck.manualFromKmh
+  if (span <= 0) return speedKmh >= tuck.kmh ? 1 : 0
+  const t = clamp((speedKmh - tuck.manualFromKmh) / span, 0, 1)
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * Tuck target 0..1: the automatic latch weighted by the automatic share, plus the forward key
+ * (0..1) times its reach weighted by the key share.
+ */
+export function tuckTarget(
+  autoLatched: boolean,
+  forwardKey: number,
+  speedKmh: number,
+  manualShare: number,
+  tuck: RiderTuckSettings,
+): number {
+  const manual = Math.max(0, forwardKey) * manualTuckReach(speedKmh, tuck)
+  return clamp(Number(autoLatched) * (1 - manualShare) + manual * manualShare, 0, 1)
+}

@@ -1,3 +1,4 @@
+import type { AutoRiderSettings, RiderTuckSettings } from '../two-wheeled/rider.js'
 /** Metres, Y-up, front = -Z; front hubs 0/1, rear hubs 2/3. Plain configuration. */
 export type WheelVector = [number, number, number]
 /**
@@ -103,6 +104,25 @@ export interface TwoWheeledGeometry {
   clutchKick?: Partial<{ gain: number; seconds: number; maxGear: number }>
   /** Combined braking; omitted = independent front lever and rear pedal. */
   cbs?: Partial<TwoWheeledCbsDefinition>
+  /** Shift hooligan modifier overrides (`twoWheeledDefaults.hooligan`). */
+  hooligan?: Partial<TwoWheeledHooliganDefinition>
+  /** Pitch that counts as a crash, radians (`twoWheeledDefaults.crashPitch`). */
+  crashPitch?: number
+}
+export interface TwoWheeledHooliganDefinition {
+  enabled: boolean
+  burnoutSpeed: number
+  burnoutFade: number
+  spinSpeed: number
+  spinRate: number
+  burnoutTraction: number
+  slide: number
+  wheelieDrive: number
+  wheelieRate: number
+  stoppieBrake: number
+  stoppieRate: number
+  riseResponse: number
+  wheelieRiderBack: number
 }
 export interface TwoWheeledRiderDefinition {
   /** Seated rider centre of mass, chassis-local metres. */
@@ -113,6 +133,10 @@ export interface TwoWheeledRiderDefinition {
   back?: number
   rate?: number
   steer?: number
+  /** Automatic rider overrides (`twoWheeledDefaults.rider.auto`). */
+  auto?: Partial<AutoRiderSettings>
+  /** Tuck overrides (`twoWheeledDefaults.rider.tuck`). */
+  tuck?: Partial<RiderTuckSettings>
 }
 export interface TwoWheeledPitchAssistDefinition {
   wheelie: boolean
@@ -164,6 +188,11 @@ export interface WheeledInput {
    * −1 (sit back) … +1 (over the tank). Other vehicles ignore it.
    */
   rider?: { right: number; forward: number }
+  /**
+   * Two-wheelers: front lever held separately from the throttle (S together with W while Shift
+   * is held), 0..1. Other vehicles ignore it.
+   */
+  lever?: number
 }
 export const idleWheeledInput = (): WheeledInput => ({
   throttle: 0,
