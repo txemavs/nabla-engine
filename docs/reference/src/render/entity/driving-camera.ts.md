@@ -184,7 +184,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## removeLean
 
-[Implementation, line 195](../../../../../src/render/entity/driving-camera.ts#L195)
+[Implementation, line 196](../../../../../src/render/entity/driving-camera.ts#L196)
 
 Roll-independent, smoothed horizontal heading of a vehicle for the exterior cameras.
 
@@ -198,8 +198,9 @@ chassis spins far faster than a camera should turn. This tracker therefore:
   `tumbleSettleSeconds` upright and calm (hysteresis);
 - while tumbling, aims along the line of horizontal travel (the nearer of its two
   directions) above `tumbleTrackSpeed` and otherwise holds the last heading;
-- follows the aim with a critically damped spring (`mapHeadingResponse`, with yaw-rate
-  feed-forward so steady turns have no lag) and clamps the turn rate (`mapMaxYawRate`);
+- while driving, follows the nose with a critically damped spring. The yaw-rate feed-forward
+  is low-passed (shortest-angle sample, render dt) so a steady turn has no lag but one physics
+  tick cannot kick the view. The turn rate is clamped (`mapMaxYawRate`);
   while tumbling it switches to the much calmer `tumbleHeadingResponse` /
   `tumbleMaxYawRate` and eases back over `tumbleRecoverySeconds` after the car settles.
 
@@ -227,7 +228,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GroundHeading.constructor
 
-[Implementation, line 225](../../../../../src/render/entity/driving-camera.ts#L225)
+[Implementation, line 230](../../../../../src/render/entity/driving-camera.ts#L230)
 
 ```ts
 constructor(private readonly settings: Readonly<GameCameraSettings> = gameCameraDefaults): instance
@@ -235,7 +236,7 @@ constructor(private readonly settings: Readonly<GameCameraSettings> = gameCamera
 
 ## GroundHeading.clear
 
-[Implementation, line 228](../../../../../src/render/entity/driving-camera.ts#L228)
+[Implementation, line 233](../../../../../src/render/entity/driving-camera.ts#L233)
 
 Forget the vehicle; the next `update` seeds the heading from the chassis.
 
@@ -245,7 +246,7 @@ clear(): void
 
 ## GroundHeading.update
 
-[Implementation, line 241](../../../../../src/render/entity/driving-camera.ts#L241)
+[Implementation, line 246](../../../../../src/render/entity/driving-camera.ts#L246)
 
 Advance with the vehicle's interpolated pose. `frame` is the player frame rotation (null on
 open ground); `dt` is seconds. A new vehicle id re-seeds every filter.
@@ -294,7 +295,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CriticalFollow.reset
 
-[Implementation, line 356](../../../../../src/render/entity/driving-camera.ts#L356)
+[Implementation, line 372](../../../../../src/render/entity/driving-camera.ts#L372)
 
 Snap to `target` with zero velocity.
 
@@ -311,7 +312,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CriticalFollow.update
 
-[Implementation, line 366](../../../../../src/render/entity/driving-camera.ts#L366)
+[Implementation, line 382](../../../../../src/render/entity/driving-camera.ts#L382)
 
 Advance toward `target` over `dt` seconds (capped at `maxStep`) at response `omega`.
 

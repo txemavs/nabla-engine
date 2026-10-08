@@ -200,8 +200,27 @@ describe('normal driving is unchanged', () => {
       expect(tracker.calm).toBe(1)
       if (t > 0.5) worst = Math.max(worst, Math.abs(wrap(tracker.heading - tracker.target)))
     }
-    // Yaw-rate feed-forward: the smoothed heading stays within ~1 degree of the nose.
+    // Low-passed yaw rate still keeps the view on a smooth nose, within about a degree.
     expect(worst).toBeLessThan(0.02)
+  })
+
+  it('a stepped nose does not kick the overhead heading by the whole step', () => {
+    const tracker = new GroundHeading(settings)
+    const dt = 1 / 60
+    const kick = (2.5 * Math.PI) / 180
+    let previous = 0
+    let maxFrame = 0
+    for (let i = 0; i < 60 * 3; i++) {
+      const t = i * dt
+      const heading = 1.2 * t + kick * Math.floor(t / 0.1)
+      const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), heading)
+      tracker.update('car', [0, 0.6, -t], rotation.toArray(), null, dt)
+      if (i > 30) maxFrame = Math.max(maxFrame, Math.abs(wrap(tracker.heading - previous)))
+      previous = tracker.heading
+    }
+    // The steady 1.2 rad/s turn already moves the view every frame. The extra from each
+    // 2.5° step must stay a fraction of that step, not the whole kick.
+    expect(maxFrame).toBeLessThan(1.2 * dt + kick * 0.45)
   })
 
   it('the follower tracks constant motion without lag and snaps on teleports', () => {
