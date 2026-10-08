@@ -135,6 +135,14 @@ export interface GameCameraSettings {
    * calls. Milliseconds; 0 cuts as before.
    */
   modeTransitionMs: number
+  /**
+   * On-foot avatar (floating monitor or walker) position response, inverse seconds: the same
+   * critically damped follower with velocity feed-forward as the overhead camera, so steady
+   * movement has no lag and only physics jitter, steps and landings are smoothed.
+   */
+  avatarFollowResponse: number
+  /** On-foot avatar heading response, inverse seconds (critically damped, turn-rate feed-forward). */
+  avatarYawResponse: number
 }
 
 /** Immutable defaults; each camera receives its own settings copy. */
@@ -200,6 +208,8 @@ export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   entranceDelayMs: 150,
   entranceEndMs: 1200,
   modeTransitionMs: 700,
+  avatarFollowResponse: 14,
+  avatarYawResponse: 14,
 })
 
 /** Copy overrides and validate finite values and ordered camera ranges before use. */
