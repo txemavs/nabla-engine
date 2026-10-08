@@ -3,6 +3,7 @@ import { GearClack, type GearClackSound } from './gear-clack.js'
 import { GearClick, type GearClickSound } from './gear-click.js'
 import { loopingNoise } from './graph.js'
 import { Gunshot } from './gunshot.js'
+import { CasingTinkle } from './casing-tinkle.js'
 import { Powertrain } from './powertrain.js'
 import type { ResolvedEngineVoice } from './vehicle-sound.js'
 import { Propeller } from './propeller.js'
@@ -33,6 +34,11 @@ export class VehicleAudio {
   private startVoice?: EngineStart
   private reverseVoice?: ReverseAlarm
   private gunshotVoice?: Gunshot
+  private tinkleVoice?: CasingTinkle
+  private tinkles = 0
+  private get tinkle(): CasingTinkle {
+    return (this.tinkleVoice ??= new CasingTinkle(this.context!, loopingNoise(this.context!)))
+  }
   private clacks = 0
   private clicks = 0
   private starts = 0
@@ -183,6 +189,24 @@ export class VehicleAudio {
     this.shots++
   }
 
+  /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */
+  reverseAlarm(active: boolean): void {
+    const frame = this.frame()
+    if (frame) this.reverseVoice?.update(frame.time, frame.audible && active)
+  }
+
+  /** A brass casing hitting the ground at `speed` m/s. */
+  casing(speed: number): void {
+    const frame = this.frame()
+    if (!frame || !frame.audible) return
+    this.tinkle.trigger(frame.time, true, speed)
+    this.tinkles++
+  }
+  /** Casing tinkles played so far, for tests and the renderer dataset. */
+  get casingCount(): number {
+    return this.tinkles
+  }
+
   tires(slip: number, speedKmh: number): void {
     const frame = this.frame()
     if (!frame || !this.tireVoice) return
@@ -198,12 +222,6 @@ export class VehicleAudio {
   get scrapeLevel(): number {
     return this.scrapeVoice?.level ?? 0
   }
-  /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */
-  reverseAlarm(active: boolean): void {
-    const frame = this.frame()
-    if (frame) this.reverseVoice?.update(frame.time, frame.audible && active)
-  }
-
   private build(): void {
     const context = new AudioContext()
     const noise = loopingNoise(context)
@@ -238,5 +256,6 @@ export class VehicleAudio {
     this.startVoice?.silence(time)
     this.reverseVoice?.silence(time)
     this.gunshotVoice?.silence(time)
+    this.tinkleVoice?.silence(time)
   }
 }
