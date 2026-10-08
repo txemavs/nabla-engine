@@ -140,6 +140,11 @@ tagged GLB lenses) and any preset with `vehicle.mirrors` lenses.
 - Sides come from the lens tag (`extras.nabla.mirror`) or, for untagged lenses (S3 / A3),
   from which side of the chassis the lens sits on (`mirrorSideOf`). The outward direction is
   the chassis ±X.
+- The capture camera is kept upright with the **vehicle** up (`fitMirrorCamera(..., up)`), not
+  the lens node's own +Y. The S3 / A3 right-door lens is authored under a node rotated 180°
+  about X, so its own +Y points down and the right capture used to run rolled upside down;
+  every lens now captures upright whatever roll it was authored with. The yaw / tilt sign
+  convention is unchanged on both sides.
 - Adjustments are per **mirror model** (`mirrorModelKey`): the body GLB URL plus the steering
   GLB when there is one. The S3 and the A3 share a body but keep separate mirror settings.
 - Precedence: the player's saved choice, then the host default, then the baked aim. Saved

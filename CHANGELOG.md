@@ -4,6 +4,14 @@
 
 ### Added
 
+- **Motorcycle foot paddling:** stopped (under 2 km/h), holding S (the cars' reverse key) for
+  0.4 s walks the VFR backwards with the rider's feet, easing up to 2.5 km/h; released, the feet
+  stop it. No reverse gear: the engine, gearbox, selector and dash are untouched
+  (`twoWheeledDefaults.paddle`).
+- **Smooth rider head:** the two-wheeler cockpit eye eases towards the rider's body shift and
+  tuck through a critically damped spring (`easeRiderHead`, `riderHeadResponse` 4/s): about
+  1.5 s to settle, no overshoot, no jitter on key presses, steering or the automatic position.
+  The physics shift and the handling are unchanged.
 - **Motorcycle crashes:** a hard impact (over 5 g at 30 km/h or more: walls, barriers, cars) or a
   lowside at speed now crashes the bike as well as the Shift loop, and every crash kicks it into a
   violent tumble that grows with speed. At 120 km/h or more the rider is thrown off with the speed
@@ -238,6 +246,10 @@
 
 ### Fixed
 
+- **Right mirror capture upright:** mirror capture cameras now keep the vehicle's up instead of
+  the lens node's own +Y. The S3 / A3 right-door lens is authored under a node rotated 180° about
+  X, so its capture camera ran rolled upside down; both sides now capture upright on every
+  vehicle (`fitMirrorCamera` takes an optional world `up`). Yaw / tilt conventions are unchanged.
 - **Bridges no longer vanish with a road pointer mismatch:** when `manifest.json` and the Atlas
   package (or `roads.files` and `roadCandidates.layers`) name different files for a road layer,
   the cell used to fail validation and load nothing, bridges included. Each road layer now
