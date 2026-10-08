@@ -1,3 +1,4 @@
+import { roadVehicleDefaults } from '../../src/config/simulation.js'
 import { expect, it } from 'vitest'
 import { Body, Box, Vec3, World } from '../../src/simulation/physics.js'
 import {
@@ -105,12 +106,14 @@ it('spawns in P: no drive force, full service brake occupied or not, W leaves P'
   enterWheeledVehicle(car)
   expect(car.drivetrain.ignition).toBe('cranking')
   const pedal = { ...idleWheeledInput(), throttle: 1 }
-  // 0.6 s of cranking, then the 1 s needle sweep: still P at 1.5 s.
-  for (let i = 0; i < 90; i++) stepWheeledVehicle(car, pedal, 1 / 60)
+  // Part-way through the needle sweep the selector is still in P.
+  const midSweep = Math.round((roadVehicleDefaults.ignitionCrankSeconds + 0.4) * 60)
+  for (let i = 0; i < midSweep; i++) stepWheeledVehicle(car, pedal, 1 / 60)
   expect(car.drivetrain.ignition).toBe('sweep')
   expect([car.drivetrain.gear, car.drivetrain.parked]).toEqual([0, true])
   expect(car.raycast.wheelInfos.every((w) => w.engineForce === 0)).toBe(true)
-  for (let i = 0; i < 40; i++) stepWheeledVehicle(car, pedal, 1 / 60)
+  const toGear = Math.round((roadVehicleDefaults.ignitionSweepSeconds - 0.4 + 0.9) * 60)
+  for (let i = 0; i < toGear; i++) stepWheeledVehicle(car, pedal, 1 / 60)
   expect(car.drivetrain.ignition).toBe('running')
   expect(car.drivetrain.gear).toBe(1)
   expect(car.raycast.wheelInfos.slice(0, 2).every((w) => w.engineForce > 0)).toBe(true)

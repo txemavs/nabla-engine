@@ -19,8 +19,8 @@
  *   see-through, with a slight reflection (`extras.nabla.envIntensity`).
  * - Metal map (Txema's review): chrome only on the brake discs (their authored `Polished chrome
  *   brake tracks` and the floating buttons in `Chrome exhaust and discs`) and the stainless end cap
- *   of the silencer (`Stainless chrome silencer end cap`: base 0.95 grey, metallic 1, roughness
- *   0.12, reflections at 0.75). The exhaust headers, the silencer can and the engine (the graphite
+ *   of the silencer (`Stainless chrome silencer end cap`: base 0.93 grey, metallic 1, roughness
+ *   0.15, no extra reflection). The exhaust headers, the silencer can and the engine (the graphite
  *   cases behind the radiator) take the satin grey metal of the top triple clamp (`Satin
  *   aluminium chassis…`, also the frame and fork lowers); the fork stanchions a polished
  *   aluminium grey (`Polished aluminium fork stanchions`: base 0.5, metallic 1, roughness 0.3).
@@ -299,11 +299,10 @@ const CHROME = json.materials.length
 json.materials.push({
   name: 'Stainless chrome silencer end cap',
   pbrMetallicRoughness: {
-    baseColorFactor: [0.95, 0.95, 0.95, 1],
+    baseColorFactor: [0.93, 0.93, 0.93, 1],
     metallicFactor: 1,
-    roughnessFactor: 0.12,
+    roughnessFactor: 0.15,
   },
-  extras: { nabla: { envIntensity: 0.75 } },
 })
 const STANCHIONS = json.materials.length
 json.materials.push({
@@ -316,6 +315,12 @@ json.materials.push({
 })
 const EXHAUST = materialIndex('Chrome exhaust and discs')
 const ENGINE = materialIndex('Graphite engine cases')
+// The disc floating buttons share the exhaust's material; bright chrome, same as the end cap.
+{
+  const buttons = json.materials[EXHAUST]
+  buttons.pbrMetallicRoughness.baseColorFactor = [0.93, 0.93, 0.93, 1]
+  buttons.pbrMetallicRoughness.roughnessFactor = 0.15
+}
 const meshOf = (name) => json.meshes[json.nodes.find((n) => n.name === name).mesh]
 const centre = (c, axis) => (c.min[axis] + c.max[axis]) / 2
 

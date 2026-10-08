@@ -67,6 +67,10 @@ export function convertPlanetGlbMesh(
   // it as terrain so it is rendered, collided with and draped like the engine's own terrain.
   if (metadata.nablaTerrainLidar && !metadata.category) metadata.category = 'Terrain'
   if (isCandidateRoadKind(options.kind)) tagCandidateRoadMesh(metadata, options.kind)
+  // Atlas splits asphalt into primitives by role (ground-road, bridge-deck, ...) and writes the
+  // role on the primitive material; keep it so the renderer can decide who casts shadows.
+  const role = material?.userData?.atlasSurfaceRole
+  if (typeof role === 'string' && !metadata.atlasSurfaceRole) metadata.atlasSurfaceRole = role
   if (index !== originalIndex) delete metadata.parts
   const converted: PlanetMesh = {
     name: mesh.name,

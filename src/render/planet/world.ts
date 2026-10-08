@@ -2,6 +2,7 @@ import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
 import { placeLabel } from './place-label.js'
 import {
   PLANET_GEOMETRY_REVISION,
+  castsPlanetShadow,
   planetTileRevision,
   validPlanetPlaces,
   validatePlanetManifest,
@@ -1025,9 +1026,13 @@ export class PlanetWorld {
         ? drapeShown(data.metadata.drape)
         : !tileMeshHidden(data.metadata)
       mesh.userData = data.metadata
-      mesh.castShadow =
-        !data.metadata.skirt && ['Terrain', 'Buildings'].includes(data.metadata.category)
-      if (data.metadata.category === 'Terrain') castShadowFromBackFaces(material)
+      mesh.castShadow = castsPlanetShadow(data.metadata)
+      // Back-face casting avoids acne on closed or ground-hugging casters (terrain, bridge slabs,
+      // fascias and abutments). A bridge-deck asphalt sheet is a single surface: it keeps its
+      // default side so its top still reaches the shadow map where no slab lies under it.
+      if (data.metadata.category === 'Terrain' || data.metadata.nablaCandidateRoad === 'supports') {
+        castShadowFromBackFaces(material)
+      }
       mesh.receiveShadow = true
       group.add(mesh)
       restoreTileLayers(mesh)
