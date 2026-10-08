@@ -114,6 +114,12 @@ describe('terrain-folder example config', () => {
     ).toBe(false)
   })
 
+  it('hides the OSM road asphalt unless osmRoads=1 (bridges are not affected)', () => {
+    expect(parseTerrainConfig('?terrain=/t&tile=16211/12003').osmRoads).toBe(false)
+    expect(parseTerrainConfig('?terrain=/t&tile=16211/12003&osmRoads=0').osmRoads).toBe(false)
+    expect(parseTerrainConfig('?terrain=/t&tile=16211/12003&osmRoads=1').osmRoads).toBe(true)
+  })
+
   it('explains bad input in Spanish', () => {
     expect(() => parseTerrainConfig('?terrain=/t&tile=16211/12003&relief=mesh')).toThrow(/relief/)
     expect(() => parseTerrainConfig('?terrain=/t&tile=16211/12003&photo=4k')).toThrow(/photo/)
