@@ -262,13 +262,13 @@ export function adaptAtlasManifest(
       `Atlas package cell version ${pkg.cellVersion ?? 1} does not match manifest.json (${version})`,
     )
   const adapted: PlanetManifest = structuredClone(manifest)
-  // v2: the unified terrain (role terrain.lidar) is the cell's ground, whatever `relief` asks.
-  if (options.relief === 'lidar' || version === 2) {
+  // v2+: the unified terrain (role terrain.lidar) is the cell's ground, whatever `relief` asks.
+  if (options.relief === 'lidar' || version >= 2) {
     const lidar = atlasFile(pkg, 'terrain.lidar')
     if (!lidar || lidar.path !== pkg.terrain.lidar)
       throw new Error(
-        version === 2
-          ? 'Atlas cell version 2 has no unified terrain (terrain.lidar)'
+        version >= 2
+          ? 'Atlas cell version 2+ has no unified terrain (terrain.lidar)'
           : 'Atlas package has no LiDAR terrain (relief=lidar)',
       )
     adapted.files.terrain = {

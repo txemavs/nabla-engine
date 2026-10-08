@@ -200,7 +200,7 @@ Explicit throws in this body:
 - `new Error('Atlas package engine terrain does not match manifest.json')`
 - `new Error('Atlas package engine buildings do not match manifest.json')`
 - `new Error( \`Atlas package cell version ${pkg.cellVersion ?? 1} does not match manifest.json (${version})\`, )`
-- `new Error( version === 2 ? 'Atlas cell version 2 has no unified terrain (terrain.lidar)' : 'Atlas package has no LiDAR terrain (relief=lidar)', )`
+- `new Error( version >= 2 ? 'Atlas cell version 2+ has no unified terrain (terrain.lidar)' : 'Atlas package has no LiDAR terrain (relief=lidar)', )`
 
 ## atlasCompatibilityNotes
 
