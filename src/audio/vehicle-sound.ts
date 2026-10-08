@@ -4,10 +4,14 @@
  * road-car engine note.
  */
 import { v4EngineDefaults, v4FiringAngles } from './v4-engine.js'
+import { inlineEngineDefaults, inlineFiringAngles, inlinePulseWeights } from './inline-engine.js'
 
 export type GearShiftSoundKind = 'clack' | 'click' | 'none'
-/** `note`: the road-car engine note. `v4`: the procedural V4 voice (`audio/v4-engine.ts`). */
-export type EngineVoiceKind = 'note' | 'v4'
+/**
+ * `note`: the road-car engine note. `v4`: the procedural V4 voice (`audio/v4-engine.ts`).
+ * `inline`: the refined inline-4 turbo (or inline-5) voice (`audio/inline-engine.ts`).
+ */
+export type EngineVoiceKind = 'note' | 'v4' | 'inline'
 
 /** Authored form, as in `vehicle.audio` of a preset (see `entity/vehicle/field.ts`). */
 export interface VehicleSoundOptions {
@@ -29,6 +33,13 @@ export interface VehicleSoundOptions {
     vAngle?: number
     /** V4: angle between the two crankpins, degrees. Default 180. */
     crankpin?: number
+    /** Inline: number of cylinders. Default 4; 5 gives the five-cylinder warble. */
+    cylinders?: number
+    /** Inline-5: pulse-strength spread for the warble, 0..0.5. Default 0.12. */
+    warble?: number
+    /** Inline: turbo whistle and blow-off multipliers, 0..2. Defaults 0.5 and 0.12. */
+    turboWhistle?: number
+    blowOff?: number
     /** Loudness multiplier, 0..2. Default 1. */
     volume?: number
   }
@@ -39,6 +50,11 @@ export interface ResolvedEngineVoice {
   voice: EngineVoiceKind
   firing: number[]
   volume: number
+  /** Inline: pulse strength per firing (warble). */
+  weights?: number[]
+  /** Turbo whistle and blow-off multipliers (inline only; others use 1). */
+  turboWhistle?: number
+  blowOff?: number
 }
 
 export interface ResolvedVehicleSound {
@@ -55,6 +71,21 @@ const volumeOf = (volume: unknown) =>
 export function resolveEngineVoice(
   engine?: VehicleSoundOptions['engine'] | null,
 ): ResolvedEngineVoice {
+  if (engine?.voice === 'inline') {
+    const d = inlineEngineDefaults
+    const cylinders =
+      Number.isInteger(engine.cylinders) && engine.cylinders! >= 3 && engine.cylinders! <= 6
+        ? engine.cylinders!
+        : d.cylinders
+    return {
+      voice: 'inline',
+      firing: inlineFiringAngles(cylinders),
+      volume: volumeOf(engine.volume),
+      weights: inlinePulseWeights(cylinders, engine.warble ?? d.warble),
+      turboWhistle: volumeOf(engine.turboWhistle ?? d.turboWhistle),
+      blowOff: volumeOf(engine.blowOff ?? d.blowOff),
+    }
+  }
   if (engine?.voice !== 'v4') return { voice: 'note', firing: [], volume: volumeOf(engine?.volume) }
   return {
     voice: 'v4',

@@ -397,15 +397,23 @@ export const vehicleField = z
         /**
          * Engine voice. `note` (default): the road-car engine note. `v4`: a procedural V4 whose
          * uneven pulse train follows the firing order of a V4 with `vAngle` between the banks and
-         * `crankpin` degrees between the two crankpins.
+         * `crankpin` degrees between the two crankpins. `inline`: a refined inline engine (default
+         * an inline-4 turbo; `cylinders: 5` for the five-cylinder warble) with a subdued turbo.
          */
         engine: z
           .object({
-            voice: z.enum(['note', 'v4']),
+            voice: z.enum(['note', 'v4', 'inline']),
             /** Angle between the cylinder banks, degrees. Default 90. */
             vAngle: finite.min(10).max(180).optional(),
             /** Angle between the two crankpins, degrees. Default 180. */
             crankpin: finite.min(0).max(360).optional(),
+            /** Inline voice: cylinders (3–6, default 4; 5 gives the five-cylinder warble). */
+            cylinders: z.number().int().min(3).max(6).optional(),
+            /** Inline-5 warble (pulse-strength spread), 0..0.5. Default 0.12. */
+            warble: finite.min(0).max(0.5).optional(),
+            /** Inline voice: turbo whistle and blow-off multipliers, 0..2. */
+            turboWhistle: finite.min(0).max(2).optional(),
+            blowOff: finite.min(0).max(2).optional(),
             /** Loudness multiplier, 0..2. Default 1. */
             volume: finite.min(0).max(2).optional(),
           })

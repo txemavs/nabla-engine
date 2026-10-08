@@ -10,6 +10,12 @@
   "mass": 1400,
   "vehicle": {
     "controls": "road",
+    "audio": {
+      "engine": {
+        "voice": "inline",
+        "cylinders": 4
+      }
+    },
     "mirrorTilt": 4,
     "colliders": [
       {
