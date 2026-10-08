@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed
+
+- **VFR800 metal map (Txema's review):** chrome only on the brake discs (their tracks and floating
+  buttons) and the stainless end cap of the silencer (`Stainless chrome silencer end cap`, roughness
+  0.12, reflections 0.75). The silencer can joins the headers and the engine on the top triple
+  clamp's satin aluminium; the fork stanchions are a polished aluminium grey (base 0.5, roughness
+  0.3), no longer chrome. Headlamp reflector and mirror glass unchanged. Regenerated with
+  `scripts/prepare-vfr800-cockpit.mjs` from the phase-1 GLB.
+
 ### Added
 
 - **Ride smoothing for the view:** at speed, road bumps no longer shake the cockpit, chase and
