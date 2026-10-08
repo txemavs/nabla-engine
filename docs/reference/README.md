@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **344 modules; 3636 executable function definitions**.
+Coverage: **345 modules; 3644 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -193,7 +193,7 @@ Coverage: **344 modules; 3636 executable function definitions**.
 | [src/render/entity/shot-tracers.ts](src/render/entity/shot-tracers.ts.md) | 6 |
 | [src/render/entity/steering-wheel.ts](src/render/entity/steering-wheel.ts.md) | 9 |
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 14 |
-| [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 7 |
+| [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
 | [src/render/entity/view.ts](src/render/entity/view.ts.md) | 120 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
@@ -326,7 +326,7 @@ Coverage: **344 modules; 3636 executable function definitions**.
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 1 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 203 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 208 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |
@@ -350,6 +350,7 @@ Coverage: **344 modules; 3636 executable function definitions**.
 | [src/simulation/weapons/casings.ts](src/simulation/weapons/casings.ts.md) | 16 |
 | [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 6 |
 | [src/simulation/weapons/recoil.ts](src/simulation/weapons/recoil.ts.md) | 7 |
+| [src/simulation/wheel-surface.ts](src/simulation/wheel-surface.ts.md) | 2 |
 | [src/util/gzip.ts](src/util/gzip.ts.md) | 1 |
 | [src/util/sha256.ts](src/util/sha256.ts.md) | 5 |
 | [src/util/uuid.ts](src/util/uuid.ts.md) | 4 |

@@ -20,6 +20,7 @@
  *
  * Not modelled yet: countersteering dynamics, tyre camber/profile, clutch.
  */
+import { surfaceGripScale, type WheelSurface } from '../../wheel-surface.js'
 import {
   simulationDefaults,
   roadVehicleDefaults,
@@ -337,6 +338,7 @@ export function stepTwoWheeledVehicle(
   powered = true,
   gravityUp: Vec3 = new Vec3(0, 1, 0),
   gravity: number = simulationDefaults.gravity,
+  surfaces?: readonly (WheelSurface | null)[],
 ): void {
   if (
     !Number.isFinite(dt) ||
@@ -703,6 +705,8 @@ export function stepTwoWheeledVehicle(
     const yaw = Math.sin(state.slideClock * 2 * Math.PI * 0.8) * hoo.slide * spinShare
     v.body.applyTorque(gravityUp.scale(v.body.inertia.y * yaw))
   }
+  for (let i = 0; i < v.raycast.wheelInfos.length; i++)
+    v.raycast.wheelInfos[i].frictionSlip = tuning.frictionSlip * surfaceGripScale(surfaces?.[i])
   v.raycast.setSteeringValue(state.groundSteer, FRONT)
   v.raycast.setSteeringValue(0, REAR)
   v.raycast.applyEngineForce(0, FRONT)

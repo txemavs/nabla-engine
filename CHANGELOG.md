@@ -39,6 +39,8 @@
 
 ### Added
 
+- Wheels know asphalt from grass when road data is loaded. A contact inside a mapped carriageway (scene roads plus the OSM navigation roads used by the R reset, compared with that road's width) is asphalt. Off that carriageway, grip drops to 0.42 of the vehicle's own tyre grip (car, bike and truck share the factor; TODO(unverified), not a measured friction) and the skid marks are brown-green. Marks still fade with the existing tyre-mark lifetime. No road data leaves grip and mark colour unchanged. A paved lot that is not a carriageway reads as grass.
+
 - **HK USP Compact as a firearm:** the assembled model (slide, trigger, magazine, muzzle) replaces the
   split viewmodel, and the preset carries the real pistol's data with sources (HK manual: 9 mm x 19,
   13-round magazine plus chamber, slide lock on empty, magazine drops free; Federal AE9AP: 124 gr at

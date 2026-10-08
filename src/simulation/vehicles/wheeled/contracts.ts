@@ -278,4 +278,6 @@ export interface WheelContactSnapshot {
   readonly slip: number
   readonly suspensionLength: number
   readonly isInContact: boolean
+  /** Asphalt or grass when road data can say; omitted when it cannot. */
+  readonly surface?: 'asphalt' | 'grass' | null
 }

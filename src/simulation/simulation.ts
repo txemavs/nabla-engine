@@ -7,6 +7,7 @@ import { PlanetCatchFloor } from './catch-floor.js'
 import { createEntityBody } from './entity-body.js'
 import { RoadAssist } from './road-assist.js'
 import { nearestRoadPoint, ROAD_SNAP_MAX_DISTANCE, type RoadCenterline } from './road-snap.js'
+import { classifyWheelSurface, type WheelSurface } from './wheel-surface.js'
 import { portalEnvelope, portalExitBlocked } from './portal-clearance.js'
 import { constrainTerrainBoundary } from './terrain-boundary.js'
 import { ejectionDefaults, simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
@@ -198,6 +199,8 @@ export class Simulation {
   private ticks = 0
   private lostTime = 0
   private readonly roadGuidance = new RoadAssist()
+  /** Host carriageways (OSM navigation roads) in the simulation frame. Scene roads are added. */
+  private hostSurfaceRoads: RoadCenterline[] = []
   private readonly portalTraversal = new PortalTraversal()
   /**
    * The rider thrown off a crashed two-wheeler, from the throw until control returns (flying,
@@ -817,12 +820,57 @@ export class Simulation {
       lever: this.input.frontBrake ?? 0,
     }
   }
+  /**
+   * Carriageways used to tell asphalt from grass. Pass the same roads the R reset snaps to
+   * (OSM navigation roads). Scene roads are always included. Omit or pass nothing to clear
+   * the host set. An empty world (no scene roads and no host roads) leaves the surface unknown.
+   */
+  setSurfaceRoads(roads?: Iterable<RoadCenterline> | null): void {
+    this.hostSurfaceRoads = roads ? [...roads] : []
+  }
+  private surfaceRoads(): RoadCenterline[] {
+    const scene = this.roadGuidance.centerlines(
+      this.document.entities,
+      this.graph,
+      this.entitiesById,
+    )
+    return this.hostSurfaceRoads.length ? scene.concat(this.hostSurfaceRoads) : scene
+  }
+  private wheelSurfaces(v: {
+    raycast: {
+      wheelInfos: {
+        isInContact: boolean
+        raycastResult: { hitPointWorld: { x: number; z: number } }
+      }[]
+    }
+  }): (WheelSurface | null)[] | undefined {
+    const roads = this.surfaceRoads()
+    if (!roads.length) return undefined
+    return v.raycast.wheelInfos.map((wheel) =>
+      wheel.isInContact
+        ? classifyWheelSurface(
+            wheel.raycastResult.hitPointWorld.x,
+            wheel.raycastResult.hitPointWorld.z,
+            roads,
+          )
+        : null,
+    )
+  }
   /** Per-wheel absolute-world contact snapshots for any tyre effect or diagnostic. */
   wheelContactInfo(
     id: string,
   ): { -readonly [K in keyof WheelContactSnapshot]: WheelContactSnapshot[K] }[] {
     const v = this.vehicles.get(id)
-    return v ? wheelContacts(v, this.wheeledInput(), id === this.vehicleId, !v.definition.boat) : []
+    if (!v) return []
+    const contacts = wheelContacts(
+      v,
+      this.wheeledInput(),
+      id === this.vehicleId,
+      !v.definition.boat,
+    )
+    const surfaces = this.wheelSurfaces(v)
+    if (!surfaces) return contacts
+    return contacts.map((contact, i) => ({ ...contact, surface: surfaces[i] ?? null }))
   }
 
   step(elapsed: number): void {
@@ -1129,6 +1177,7 @@ export class Simulation {
           v.helm !== 'off',
           this.radialUp(v.body),
           simulationDefaults.gravity,
+          this.wheelSurfaces(v),
         )
         if (v.twoWheeled.ejectPending) {
           v.twoWheeled.ejectPending = false
@@ -1136,7 +1185,14 @@ export class Simulation {
         }
         continue
       }
-      stepWheeledVehicle(v, drivingInput, FIXED_STEP, active, v.helm !== 'off')
+      stepWheeledVehicle(
+        v,
+        drivingInput,
+        FIXED_STEP,
+        active,
+        v.helm !== 'off',
+        this.wheelSurfaces(v),
+      )
       if (active && this.roadGuidance.enabled)
         this.roadGuidance.apply(
           v,
