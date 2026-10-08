@@ -4,6 +4,14 @@
 
 ### Added
 
+- **HK USP Compact as a firearm:** the assembled model (slide, trigger, magazine, muzzle) replaces the
+  split viewmodel, and the preset carries the real pistol's data with sources (HK manual: 9 mm x 19,
+  13-round magazine plus chamber, slide lock on empty, magazine drops free; Federal AE9AP: 124 gr at
+  1150 fps from a 4 in barrel, velocity table, G1 0.15). Semi-automatic with a trigger reset; **R**
+  reloads (a tactical reload keeps the chambered round); muzzle rise goes onto the aim; the bullet
+  flies the published trajectory and transfers its momentum; spent brass ejects to the right, bounces
+  and tinkles. Unsourced values are marked `TODO(unverified)` in the preset.
+
 - **Ride smoothing for the view:** at speed, road bumps no longer shake the cockpit, chase and
   cinematic views. The cameras and the seated avatar (helmet / monitor) follow a smoothed copy of
   the vehicle's height and pitch / roll: a critically damped filter with velocity feed-forward
