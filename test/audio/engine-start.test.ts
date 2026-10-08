@@ -93,14 +93,14 @@ describe('engine start synthesis', () => {
       idleRpm: 300,
     })
     const pulses = crankPulses(roadVehicleDefaults.ignitionCrankSeconds)
-    // A short, brisk crank: a handful of compressions before the catch.
+    // A starter crank of under about a second: several compressions before the catch.
     expect(pulses.length).toBeGreaterThanOrEqual(3)
-    expect(pulses.length).toBeLessThan(10)
+    expect(pulses.length).toBeLessThan(14)
     expect(pulses[1] - pulses[0]).toBeGreaterThan(pulses.at(-1)! - pulses.at(-2)!)
     expect(pulses.at(-1)!).toBeLessThan(roadVehicleDefaults.ignitionCrankSeconds - 0.1)
   })
 
-  it('schedules a ~0.6 s start with no new nodes, and nothing when muted or before unlock', () => {
+  it('schedules the starter crank with no new nodes, and nothing when muted or before unlock', () => {
     const silent = new VehicleAudio()
     silent.engineStart()
     expect(silent.engineStartCount).toBe(0)
@@ -117,6 +117,13 @@ describe('engine start synthesis', () => {
       .map((event) => event.time - context.currentTime)
     expect(Math.max(...times)).toBeGreaterThan(roadVehicleDefaults.ignitionCrankSeconds - 0.05)
     expect(Math.max(...times)).toBeLessThan(roadVehicleDefaults.ignitionCrankSeconds + 0.3)
+    // The starter is an electric whine, not the low engine note: it climbs well above 300 Hz.
+    const whine = context.nodes.flatMap((entry) =>
+      entry.node.frequency.events
+        .filter((event) => event.kind === 'linear')
+        .map((event) => event.value),
+    )
+    expect(Math.max(...whine)).toBeGreaterThan(300)
     audio.setEnabled(false)
     audio.engineStart()
     expect(audio.engineStartCount).toBe(1)

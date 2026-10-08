@@ -8,6 +8,7 @@
 
 ### Changed
 
+- Engine start (cars and the VFR, shared starter; the running V4 is unchanged): about 0.95 s of electric-starter whine and compression pulses before the engine catches.
 - **Chrome darkens like the wheel rim lips:** the S3 trim, the VFR silencer end cap and the disc
   buttons took a fixed studio reflection that ignores shadows, so they stayed bright in shade and
   at night and read as self-lit. The rim lips never had that environment, which is why they go

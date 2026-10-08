@@ -90,9 +90,10 @@ describe('start-up sequence, unit level', () => {
     expect(state.ignition).toBe('cranking')
     expect(state.ignitionCount).toBe(1)
     expect(state.rpm).toBeGreaterThan(100)
-    // The starter is the short first step; the whole sequence stays well under two seconds.
-    expect(crankSeconds).toBeLessThanOrEqual(0.7)
-    expect(startSeconds).toBeLessThan(2)
+    // A real starter turn is about 0.6–1.2 s; the whole sequence stays under about two seconds.
+    expect(crankSeconds).toBeGreaterThanOrEqual(0.6)
+    expect(crankSeconds).toBeLessThanOrEqual(1.2)
+    expect(startSeconds).toBeLessThan(2.3)
     const sweep: number[] = []
     const rpm: number[] = []
     const phases: string[] = []

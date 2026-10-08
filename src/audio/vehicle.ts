@@ -170,7 +170,7 @@ export class VehicleAudio {
   }
 
   /**
-   * One ~0.6 s starter-motor crank ending in the engine catching (`ignitionCrankSeconds`). The
+   * One ~1 s starter-motor crank ending in the engine catching (`ignitionCrankSeconds`). The
    * host keeps `powertrain` at rpm 0 meanwhile and then feeds the settling idle speed.
    */
   engineStart(sound?: EngineStartSound | null): void {

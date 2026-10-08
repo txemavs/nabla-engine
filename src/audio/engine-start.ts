@@ -65,7 +65,7 @@ export class EngineStart {
     this.motorLevel.connect(output)
     const motorFilter = context.createBiquadFilter()
     motorFilter.type = 'lowpass'
-    motorFilter.frequency.value = 900
+    motorFilter.frequency.value = 1600
     motorFilter.Q.value = 0.8
     motorFilter.connect(this.motorLevel)
     this.motor = context.createOscillator()
@@ -110,11 +110,12 @@ export class EngineStart {
     ])
       param.cancelScheduledValues(time)
 
-    // Starter motor: spins up quickly, whines a little higher as it turns, then lets go.
-    this.motor.frequency.setValueAtTime(60 * pitch, time)
-    this.motor.frequency.linearRampToValueAtTime(115 * pitch, time + 0.15)
-    this.motor.frequency.linearRampToValueAtTime(135 * pitch, catchAt)
-    this.motor.frequency.linearRampToValueAtTime(190 * pitch, end)
+    // Electric starter: a gear whine well above the compression chugs, rising as it spins,
+    // then freewheeling off once the engine fires. Not the running engine note.
+    this.motor.frequency.setValueAtTime(240 * pitch, time)
+    this.motor.frequency.linearRampToValueAtTime(320 * pitch, time + 0.2)
+    this.motor.frequency.linearRampToValueAtTime(420 * pitch, catchAt)
+    this.motor.frequency.linearRampToValueAtTime(180 * pitch, end)
     this.chug.frequency.setValueAtTime(55 * pitch, time)
     this.rattleBand.frequency.setValueAtTime(520 * pitch, time)
 
