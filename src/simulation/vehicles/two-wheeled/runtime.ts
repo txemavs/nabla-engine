@@ -62,6 +62,7 @@ import {
   stepRider,
   stepRiderControl,
 } from './rider.js'
+import { crashTrigger, measureImpact, startCrash } from './crash.js'
 
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n))
 const FRONT = 0,
@@ -123,6 +124,7 @@ export function twoWheeledTuning(definition: WheeledDefinition): TwoWheeledTunin
     clutchKick: { ...d.clutchKick, ...g.clutchKick },
     hooligan: { ...d.hooligan, ...g.hooligan },
     crashPitch: g.crashPitch ?? d.crashPitch,
+    crash: { ...d.crash },
   }
 }
 
@@ -259,6 +261,13 @@ export function createTwoWheeledVehicle(
       rearSpin: 0,
       rearSpinAngle: 0,
       crashed: false,
+      crashCause: null,
+      crashSpeed: 0,
+      ejectPending: false,
+      impact: 0,
+      previousVelocity: null,
+      recentSpeed: 0,
+      recentVelocity: [0, 0, 0],
       slideClock: 0,
       comHeight: 0,
       clutchKick: 0,
@@ -278,6 +287,13 @@ export function resetTwoWheeled(state: TwoWheeledState): void {
   state.targetLean = 0
   state.fallen = false
   state.crashed = false
+  state.crashCause = null
+  state.crashSpeed = 0
+  state.ejectPending = false
+  state.impact = 0
+  state.previousVelocity = null
+  state.recentSpeed = 0
+  state.recentVelocity = [0, 0, 0]
   state.tuck = 0
   state.tuckAuto = 0
   state.leanReach = 0
@@ -345,6 +361,7 @@ export function stepTwoWheeledVehicle(
     state.acceleration += (raw - state.acceleration) * Math.min(1, dt / 0.15)
   }
   state.previousSpeed = speed
+  measureImpact(state, v.body.velocity, gravityUp, dt)
 
   // Shift hooligan modifier: assists, combined brakes and automatic fore-aft rider moves off.
   const hooligan = tuning.hooligan.enabled && active && powered && input.launch && !state.crashed
@@ -436,8 +453,11 @@ export function stepTwoWheeledVehicle(
   // Shift held (assists off): looping a wheelie or going over the front is a crash until R.
   // The chassis angle against the horizontal is used, since the wheel rays lose the ground first.
   const nose = Math.asin(clamp(forward.dot(gravityUp), -1, 1))
-  if (hooligan && (Math.abs(nose) > tuning.crashPitch || up.dot(gravityUp) < 0))
-    state.crashed = true
+  if (hooligan && !state.crashed && (Math.abs(nose) > tuning.crashPitch || up.dot(gravityUp) < 0))
+    startCrash(v, nose > 0 ? 'loop' : 'over-the-front', forward, gravityUp)
+  // A hard impact or a lowside at speed is a crash too, with or without Shift.
+  const crashCause = crashTrigger(state, gravity)
+  if (crashCause) startCrash(v, crashCause, forward, gravityUp)
 
   // Handlebar about the steering axis; the ground angle follows through the rake. A sideways
   // rider shift adds a little body steering towards that side.

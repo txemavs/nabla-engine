@@ -17,6 +17,7 @@
 - `./portal-clearance.js`
 - `./terrain-boundary.js`
 - `../config/simulation.js`
+- `./rider-ejection.js`
 - `./vehicles/wheeled/runtime.js`
 - `./vehicles/drivetrain.js`
 - `./vehicles/wheeled/contracts.js`
@@ -41,7 +42,7 @@
 
 ## vec
 
-[Implementation, line 94](../../../../src/simulation/simulation.ts#L94)
+[Implementation, line 95](../../../../src/simulation/simulation.ts#L95)
 
 ```ts
 vec(v: Vec3): Vec3Tuple
@@ -49,7 +50,7 @@ vec(v: Vec3): Vec3Tuple
 
 ## pose
 
-[Implementation, line 95](../../../../src/simulation/simulation.ts#L95)
+[Implementation, line 96](../../../../src/simulation/simulation.ts#L96)
 
 ```ts
 pose(b: Body): Transform
@@ -61,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## clamp
 
-[Implementation, line 99](../../../../src/simulation/simulation.ts#L99)
+[Implementation, line 100](../../../../src/simulation/simulation.ts#L100)
 
 ```ts
 clamp(n: number, min: number, max: number): inferred by TypeScript; see implementation
@@ -74,7 +75,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hasGearSelector
 
-[Implementation, line 101](../../../../src/simulation/simulation.ts#L101)
+[Implementation, line 102](../../../../src/simulation/simulation.ts#L102)
 
 ```ts
 hasGearSelector(d: VehicleDefinition): boolean
@@ -82,7 +83,7 @@ hasGearSelector(d: VehicleDefinition): boolean
 
 ## Simulation.setWaterLevel
 
-[Implementation, line 110](../../../../src/simulation/simulation.ts#L110)
+[Implementation, line 111](../../../../src/simulation/simulation.ts#L111)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -98,7 +99,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.catchDisk
 
-[Implementation, line 114](../../../../src/simulation/simulation.ts#L114)
+[Implementation, line 115](../../../../src/simulation/simulation.ts#L115)
 
 Top face of the gray disk, once the occupied actor has dropped under the sea.
 
@@ -112,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setPlanetTiles
 
-[Implementation, line 128](../../../../src/simulation/simulation.ts#L128)
+[Implementation, line 129](../../../../src/simulation/simulation.ts#L129)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -127,7 +128,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setPoles
 
-[Implementation, line 131](../../../../src/simulation/simulation.ts#L131)
+[Implementation, line 132](../../../../src/simulation/simulation.ts#L132)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -142,7 +143,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.capturePlanetSupport
 
-[Implementation, line 135](../../../../src/simulation/simulation.ts#L135)
+[Implementation, line 136](../../../../src/simulation/simulation.ts#L136)
 
 Keep resting actors above newly refined ground while collision coverage swaps.
 
@@ -156,20 +157,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bodies.push`
 - `this.vehicles.values`
 
-## Simulation.capturePlanetSupport.callback@136
+## Simulation.capturePlanetSupport.callback@137
 
-[Implementation, line 136](../../../../src/simulation/simulation.ts#L136)
+[Implementation, line 137](../../../../src/simulation/simulation.ts#L137)
 
 ```ts
-callback@136(v): inferred by TypeScript; see implementation
+callback@137(v): inferred by TypeScript; see implementation
 ```
 
-## Simulation.capturePlanetSupport.callback@139
+## Simulation.capturePlanetSupport.callback@140
 
-[Implementation, line 139](../../../../src/simulation/simulation.ts#L139)
+[Implementation, line 140](../../../../src/simulation/simulation.ts#L140)
 
 ```ts
-callback@139(body): inferred by TypeScript; see implementation
+callback@140(body): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -177,24 +178,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sample`
 - `vec`
 
-## Simulation.capturePlanetSupport.callback@141
+## Simulation.capturePlanetSupport.callback@142
 
-[Implementation, line 141](../../../../src/simulation/simulation.ts#L141)
+[Implementation, line 142](../../../../src/simulation/simulation.ts#L142)
 
 ```ts
-callback@141({ body, height }): inferred by TypeScript; see implementation
+callback@142({ body, height }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
 
-## Simulation.capturePlanetSupport.callback@146
+## Simulation.capturePlanetSupport.callback@147
 
-[Implementation, line 146](../../../../src/simulation/simulation.ts#L146)
+[Implementation, line 147](../../../../src/simulation/simulation.ts#L147)
 
 ```ts
-callback@146(): inferred by TypeScript; see implementation
+callback@147(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -205,7 +206,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.preparePlanetCollisions
 
-[Implementation, line 159](../../../../src/simulation/simulation.ts#L159)
+[Implementation, line 160](../../../../src/simulation/simulation.ts#L160)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -221,33 +222,44 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.vehicles.values`
 - `vec`
 
-## Simulation.preparePlanetCollisions.callback@163
+## Simulation.preparePlanetCollisions.callback@164
 
-[Implementation, line 163](../../../../src/simulation/simulation.ts#L163)
+[Implementation, line 164](../../../../src/simulation/simulation.ts#L164)
 
 ```ts
-callback@163(v): inferred by TypeScript; see implementation
+callback@164(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `vec`
 
-## Simulation.callback@190
+## Simulation.callback@192
 
-[Implementation, line 190](../../../../src/simulation/simulation.ts#L190)
+[Implementation, line 192](../../../../src/simulation/simulation.ts#L192)
 
 ```ts
-callback@190(v, closed): inferred by TypeScript; see implementation
+callback@192(v, closed): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.setRamp`
 
+## Simulation.playerEjection
+
+[Implementation, line 206](../../../../src/simulation/simulation.ts#L206)
+
+The rider thrown off a crashed two-wheeler, from the throw until control returns (flying,
+down on the ground, getting up); null otherwise. Input is ignored meanwhile.
+
+```ts
+playerEjection(): RiderEjection | null
+```
+
 ## Simulation.portalEvent
 
-[Implementation, line 200](../../../../src/simulation/simulation.ts#L200)
+[Implementation, line 209](../../../../src/simulation/simulation.ts#L209)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -258,7 +270,7 @@ portalEvent(): inferred by TypeScript; see implementation
 
 ## Simulation.constructor
 
-[Implementation, line 204](../../../../src/simulation/simulation.ts#L204)
+[Implementation, line 213](../../../../src/simulation/simulation.ts#L213)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -296,22 +308,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.vehicles.values`
 - `this.world.addBody`
 
-## Simulation.constructor.callback@221
-
-[Implementation, line 221](../../../../src/simulation/simulation.ts#L221)
-
-```ts
-callback@221(e): inferred by TypeScript; see implementation
-```
-
-## Simulation.constructor.callback@228
-
-[Implementation, line 228](../../../../src/simulation/simulation.ts#L228)
-
-```ts
-callback@228(e): inferred by TypeScript; see implementation
-```
-
 ## Simulation.constructor.callback@230
 
 [Implementation, line 230](../../../../src/simulation/simulation.ts#L230)
@@ -320,53 +316,69 @@ callback@228(e): inferred by TypeScript; see implementation
 callback@230(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.constructor.callback@231
+## Simulation.constructor.callback@237
 
-[Implementation, line 231](../../../../src/simulation/simulation.ts#L231)
+[Implementation, line 237](../../../../src/simulation/simulation.ts#L237)
 
 ```ts
-callback@231(e): inferred by TypeScript; see implementation
+callback@237(e): inferred by TypeScript; see implementation
+```
+
+## Simulation.constructor.callback@239
+
+[Implementation, line 239](../../../../src/simulation/simulation.ts#L239)
+
+```ts
+callback@239(e): inferred by TypeScript; see implementation
+```
+
+## Simulation.constructor.callback@240
+
+[Implementation, line 240](../../../../src/simulation/simulation.ts#L240)
+
+```ts
+callback@240(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.graph.worldTransform`
 
-## Simulation.constructor.callback@232
+## Simulation.constructor.callback@241
 
-[Implementation, line 232](../../../../src/simulation/simulation.ts#L232)
+[Implementation, line 241](../../../../src/simulation/simulation.ts#L241)
 
 ```ts
-callback@232(e): inferred by TypeScript; see implementation
+callback@241(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.constructor.callback@242
+## Simulation.constructor.callback@251
 
-[Implementation, line 242](../../../../src/simulation/simulation.ts#L242)
+[Implementation, line 251](../../../../src/simulation/simulation.ts#L251)
 
 ```ts
-callback@242(e): inferred by TypeScript; see implementation
+callback@251(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.constructor.callback@252
+## Simulation.constructor.callback@261
 
-[Implementation, line 252](../../../../src/simulation/simulation.ts#L252)
+[Implementation, line 261](../../../../src/simulation/simulation.ts#L261)
 
 ```ts
-callback@252(e): inferred by TypeScript; see implementation
+callback@261(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.constructor.callback@257
+## Simulation.constructor.callback@266
 
-[Implementation, line 257](../../../../src/simulation/simulation.ts#L257)
+[Implementation, line 266](../../../../src/simulation/simulation.ts#L266)
 
 ```ts
-callback@257(e): inferred by TypeScript; see implementation
+callback@266(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.portalState
 
-[Implementation, line 273](../../../../src/simulation/simulation.ts#L273)
+[Implementation, line 282](../../../../src/simulation/simulation.ts#L282)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -384,17 +396,17 @@ Explicit throws in this body:
 
 - `new Error('Unknown portal')`
 
-## Simulation.portalState.callback@274
+## Simulation.portalState.callback@283
 
-[Implementation, line 274](../../../../src/simulation/simulation.ts#L274)
+[Implementation, line 283](../../../../src/simulation/simulation.ts#L283)
 
 ```ts
-callback@274(e): inferred by TypeScript; see implementation
+callback@283(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.configurePortal
 
-[Implementation, line 280](../../../../src/simulation/simulation.ts#L280)
+[Implementation, line 289](../../../../src/simulation/simulation.ts#L289)
 
 Runtime links are atomic and do not modify the authored document owned by the host.
 
@@ -431,20 +443,20 @@ Explicit throws in this body:
 - `new Error('Cierra por completo la puerta del garaje antes de activar el portal')`
 - `new Error('Paso ocupado: despeja el marco antes de cambiar la conexión')`
 
-## Simulation.configurePortal.callback@286
+## Simulation.configurePortal.callback@295
 
-[Implementation, line 286](../../../../src/simulation/simulation.ts#L286)
+[Implementation, line 295](../../../../src/simulation/simulation.ts#L295)
 
 ```ts
-callback@286(e): inferred by TypeScript; see implementation
+callback@295(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.configurePortal.callback@292
+## Simulation.configurePortal.callback@301
 
-[Implementation, line 292](../../../../src/simulation/simulation.ts#L292)
+[Implementation, line 301](../../../../src/simulation/simulation.ts#L301)
 
 ```ts
-callback@292(e): inferred by TypeScript; see implementation
+callback@301(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -452,80 +464,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `JSON.stringify`
 - `next.entities.find`
 
-## Simulation.configurePortal.callback@292.callback@294
+## Simulation.configurePortal.callback@301.callback@303
 
-[Implementation, line 294](../../../../src/simulation/simulation.ts#L294)
+[Implementation, line 303](../../../../src/simulation/simulation.ts#L303)
 
 ```ts
-callback@294(n): inferred by TypeScript; see implementation
+callback@303(n): inferred by TypeScript; see implementation
 ```
 
-## Simulation.configurePortal.callback@297
+## Simulation.configurePortal.callback@306
 
-[Implementation, line 297](../../../../src/simulation/simulation.ts#L297)
-
-```ts
-callback@297(e): inferred by TypeScript; see implementation
-```
-
-## Simulation.configurePortal.callback@307
-
-[Implementation, line 307](../../../../src/simulation/simulation.ts#L307)
+[Implementation, line 306](../../../../src/simulation/simulation.ts#L306)
 
 ```ts
-callback@307(v): inferred by TypeScript; see implementation
-```
-
-## Simulation.configurePortal.callback@308
-
-[Implementation, line 308](../../../../src/simulation/simulation.ts#L308)
-
-```ts
-callback@308(p): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `portalLocal`
-
-## Simulation.configurePortal.callback@311
-
-[Implementation, line 311](../../../../src/simulation/simulation.ts#L311)
-
-```ts
-callback@311(p): inferred by TypeScript; see implementation
-```
-
-## Simulation.configurePortal.callback@312
-
-[Implementation, line 312](../../../../src/simulation/simulation.ts#L312)
-
-```ts
-callback@312(p): inferred by TypeScript; see implementation
-```
-
-## Simulation.configurePortal.callback@313
-
-[Implementation, line 313](../../../../src/simulation/simulation.ts#L313)
-
-```ts
-callback@313(p): inferred by TypeScript; see implementation
-```
-
-## Simulation.configurePortal.callback@314
-
-[Implementation, line 314](../../../../src/simulation/simulation.ts#L314)
-
-```ts
-callback@314(p): inferred by TypeScript; see implementation
-```
-
-## Simulation.configurePortal.callback@315
-
-[Implementation, line 315](../../../../src/simulation/simulation.ts#L315)
-
-```ts
-callback@315(p): inferred by TypeScript; see implementation
+callback@306(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.configurePortal.callback@316
@@ -533,7 +485,35 @@ callback@315(p): inferred by TypeScript; see implementation
 [Implementation, line 316](../../../../src/simulation/simulation.ts#L316)
 
 ```ts
-callback@316(p): inferred by TypeScript; see implementation
+callback@316(v): inferred by TypeScript; see implementation
+```
+
+## Simulation.configurePortal.callback@317
+
+[Implementation, line 317](../../../../src/simulation/simulation.ts#L317)
+
+```ts
+callback@317(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `portalLocal`
+
+## Simulation.configurePortal.callback@320
+
+[Implementation, line 320](../../../../src/simulation/simulation.ts#L320)
+
+```ts
+callback@320(p): inferred by TypeScript; see implementation
+```
+
+## Simulation.configurePortal.callback@321
+
+[Implementation, line 321](../../../../src/simulation/simulation.ts#L321)
+
+```ts
+callback@321(p): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.configurePortal.callback@322
@@ -541,12 +521,44 @@ callback@316(p): inferred by TypeScript; see implementation
 [Implementation, line 322](../../../../src/simulation/simulation.ts#L322)
 
 ```ts
-callback@322(e): inferred by TypeScript; see implementation
+callback@322(p): inferred by TypeScript; see implementation
+```
+
+## Simulation.configurePortal.callback@323
+
+[Implementation, line 323](../../../../src/simulation/simulation.ts#L323)
+
+```ts
+callback@323(p): inferred by TypeScript; see implementation
+```
+
+## Simulation.configurePortal.callback@324
+
+[Implementation, line 324](../../../../src/simulation/simulation.ts#L324)
+
+```ts
+callback@324(p): inferred by TypeScript; see implementation
+```
+
+## Simulation.configurePortal.callback@325
+
+[Implementation, line 325](../../../../src/simulation/simulation.ts#L325)
+
+```ts
+callback@325(p): inferred by TypeScript; see implementation
+```
+
+## Simulation.configurePortal.callback@331
+
+[Implementation, line 331](../../../../src/simulation/simulation.ts#L331)
+
+```ts
+callback@331(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.rebuildPortalCollider
 
-[Implementation, line 328](../../../../src/simulation/simulation.ts#L328)
+[Implementation, line 337](../../../../src/simulation/simulation.ts#L337)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -575,17 +587,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.hostedShapes.get`
 - `this.hostedShapes.set`
 
-## Simulation.rebuildPortalCollider.callback@339
+## Simulation.rebuildPortalCollider.callback@348
 
-[Implementation, line 339](../../../../src/simulation/simulation.ts#L339)
+[Implementation, line 348](../../../../src/simulation/simulation.ts#L348)
 
 ```ts
-callback@339(n): inferred by TypeScript; see implementation
+callback@348(n): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.replaceMapEntities
 
-[Implementation, line 355](../../../../src/simulation/simulation.ts#L355)
+[Implementation, line 364](../../../../src/simulation/simulation.ts#L364)
 
 Add/remove only static map entities without touching actor state or the physics clock.
 
@@ -623,34 +635,6 @@ Explicit throws in this body:
 
 - `new Error('Streaming only supports static map entities')`
 
-## Simulation.replaceMapEntities.callback@356
-
-[Implementation, line 356](../../../../src/simulation/simulation.ts#L356)
-
-```ts
-callback@356(e): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `remove.has`
-
-## Simulation.replaceMapEntities.callback@362
-
-[Implementation, line 362](../../../../src/simulation/simulation.ts#L362)
-
-```ts
-callback@362(e): inferred by TypeScript; see implementation
-```
-
-## Simulation.replaceMapEntities.callback@364
-
-[Implementation, line 364](../../../../src/simulation/simulation.ts#L364)
-
-```ts
-callback@364(e): inferred by TypeScript; see implementation
-```
-
 ## Simulation.replaceMapEntities.callback@365
 
 [Implementation, line 365](../../../../src/simulation/simulation.ts#L365)
@@ -661,14 +645,42 @@ callback@365(e): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `this.graph.worldTransform`
+- `remove.has`
 
-## Simulation.replaceMapEntities.callback@377
+## Simulation.replaceMapEntities.callback@371
 
-[Implementation, line 377](../../../../src/simulation/simulation.ts#L377)
+[Implementation, line 371](../../../../src/simulation/simulation.ts#L371)
 
 ```ts
-callback@377(r, v): inferred by TypeScript; see implementation
+callback@371(e): inferred by TypeScript; see implementation
+```
+
+## Simulation.replaceMapEntities.callback@373
+
+[Implementation, line 373](../../../../src/simulation/simulation.ts#L373)
+
+```ts
+callback@373(e): inferred by TypeScript; see implementation
+```
+
+## Simulation.replaceMapEntities.callback@374
+
+[Implementation, line 374](../../../../src/simulation/simulation.ts#L374)
+
+```ts
+callback@374(e): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.graph.worldTransform`
+
+## Simulation.replaceMapEntities.callback@386
+
+[Implementation, line 386](../../../../src/simulation/simulation.ts#L386)
+
+```ts
+callback@386(r, v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -676,12 +688,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.hypot`
 - `Math.max`
 
-## Simulation.replaceMapEntities.callback@386
+## Simulation.replaceMapEntities.callback@395
 
-[Implementation, line 386](../../../../src/simulation/simulation.ts#L386)
+[Implementation, line 395](../../../../src/simulation/simulation.ts#L395)
 
 ```ts
-callback@386(e): inferred by TypeScript; see implementation
+callback@395(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -690,7 +702,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.addVehicles
 
-[Implementation, line 397](../../../../src/simulation/simulation.ts#L397)
+[Implementation, line 406](../../../../src/simulation/simulation.ts#L406)
 
 Add plain vehicles to a running simulation (the game menu and host `placeVehicle`).
 Tow joints are kept when the tractor is in this batch or already in the world.
@@ -726,49 +738,49 @@ Explicit throws in this body:
 - `new Error(\`Entity id already in use: ${e.id}\`)`
 - `new Error('Trailer requires a powered towing vehicle')`
 
-## Simulation.addVehicles.callback@398
+## Simulation.addVehicles.callback@407
 
-[Implementation, line 398](../../../../src/simulation/simulation.ts#L398)
+[Implementation, line 407](../../../../src/simulation/simulation.ts#L407)
 
 ```ts
-callback@398(e): inferred by TypeScript; see implementation
+callback@407(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.addVehicles.callback@399
+## Simulation.addVehicles.callback@408
 
-[Implementation, line 399](../../../../src/simulation/simulation.ts#L399)
+[Implementation, line 408](../../../../src/simulation/simulation.ts#L408)
 
 ```ts
-callback@399(e): inferred by TypeScript; see implementation
+callback@408(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.addVehicles.callback@406
+## Simulation.addVehicles.callback@415
 
-[Implementation, line 406](../../../../src/simulation/simulation.ts#L406)
+[Implementation, line 415](../../../../src/simulation/simulation.ts#L415)
 
 ```ts
-callback@406(other): inferred by TypeScript; see implementation
+callback@415(other): inferred by TypeScript; see implementation
 ```
 
-## Simulation.addVehicles.callback@416
+## Simulation.addVehicles.callback@425
 
-[Implementation, line 416](../../../../src/simulation/simulation.ts#L416)
+[Implementation, line 425](../../../../src/simulation/simulation.ts#L425)
 
 ```ts
-callback@416(e): inferred by TypeScript; see implementation
+callback@425(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.addVehicles.callback@422
+## Simulation.addVehicles.callback@431
 
-[Implementation, line 422](../../../../src/simulation/simulation.ts#L422)
+[Implementation, line 431](../../../../src/simulation/simulation.ts#L431)
 
 ```ts
-callback@422(e): inferred by TypeScript; see implementation
+callback@431(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.addPlaced
 
-[Implementation, line 432](../../../../src/simulation/simulation.ts#L432)
+[Implementation, line 441](../../../../src/simulation/simulation.ts#L441)
 
 Add placed scenery to a running simulation: standalone portals, sprites, lamps and static
 boxes (the game add menu and host `placeEntities`). Portals may be linked within the batch;
@@ -788,17 +800,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.document.entities.map`
 - `this.portalEntities.push`
 
-## Simulation.addPlaced.callback@437
+## Simulation.addPlaced.callback@446
 
-[Implementation, line 437](../../../../src/simulation/simulation.ts#L437)
+[Implementation, line 446](../../../../src/simulation/simulation.ts#L446)
 
 ```ts
-callback@437(e): inferred by TypeScript; see implementation
+callback@446(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.removePlaced
 
-[Implementation, line 445](../../../../src/simulation/simulation.ts#L445)
+[Implementation, line 454](../../../../src/simulation/simulation.ts#L454)
 
 Remove entities installed by `addPlaced`. A mouth linked to a portal that stays is unlinked
 (and closed) first, so the partner never points at a missing mouth.
@@ -824,12 +836,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.portalEntities.splice`
 - `this.world.removeBody`
 
-## Simulation.removePlaced.callback@447
+## Simulation.removePlaced.callback@456
 
-[Implementation, line 447](../../../../src/simulation/simulation.ts#L447)
+[Implementation, line 456](../../../../src/simulation/simulation.ts#L456)
 
 ```ts
-callback@447(id): inferred by TypeScript; see implementation
+callback@456(id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -842,29 +854,29 @@ Explicit throws in this body:
 - `new Error(\`Unknown entity: ${id}\`)`
 - `new Error(\`Not a placed entity: ${id}\`)`
 
-## Simulation.removePlaced.callback@463
+## Simulation.removePlaced.callback@472
 
-[Implementation, line 463](../../../../src/simulation/simulation.ts#L463)
+[Implementation, line 472](../../../../src/simulation/simulation.ts#L472)
 
 ```ts
-callback@463(e): inferred by TypeScript; see implementation
+callback@472(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `removing.has`
 
-## Simulation.removePlaced.callback@465
+## Simulation.removePlaced.callback@474
 
-[Implementation, line 465](../../../../src/simulation/simulation.ts#L465)
+[Implementation, line 474](../../../../src/simulation/simulation.ts#L474)
 
 ```ts
-callback@465(e): inferred by TypeScript; see implementation
+callback@474(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.vehicleSpec
 
-[Implementation, line 468](../../../../src/simulation/simulation.ts#L468)
+[Implementation, line 477](../../../../src/simulation/simulation.ts#L477)
 
 Authored definition of a live vehicle, including ones added with `addVehicles`; null if unknown.
 
@@ -878,7 +890,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.removeVehicle
 
-[Implementation, line 472](../../../../src/simulation/simulation.ts#L472)
+[Implementation, line 481](../../../../src/simulation/simulation.ts#L481)
 
 Remove a vehicle added with `addVehicles`. The player must not be inside it.
 
@@ -913,37 +925,37 @@ Explicit throws in this body:
 - `new Error(\`No vehicle ${id}\`)`
 - `new Error('Leave the vehicle before removing it')`
 
-## Simulation.removeVehicle.callback@476
+## Simulation.removeVehicle.callback@485
 
-[Implementation, line 476](../../../../src/simulation/simulation.ts#L476)
+[Implementation, line 485](../../../../src/simulation/simulation.ts#L485)
 
 ```ts
-callback@476(e): inferred by TypeScript; see implementation
+callback@485(e): inferred by TypeScript; see implementation
 ```
 
-## Simulation.removeVehicle.callback@495
+## Simulation.removeVehicle.callback@504
 
-[Implementation, line 495](../../../../src/simulation/simulation.ts#L495)
+[Implementation, line 504](../../../../src/simulation/simulation.ts#L504)
 
 ```ts
-callback@495(e): inferred by TypeScript; see implementation
+callback@504(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mouths.includes`
 
-## Simulation.removeVehicle.callback@498
+## Simulation.removeVehicle.callback@507
 
-[Implementation, line 498](../../../../src/simulation/simulation.ts#L498)
+[Implementation, line 507](../../../../src/simulation/simulation.ts#L507)
 
 ```ts
-callback@498(e): inferred by TypeScript; see implementation
+callback@507(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.attachTrailerJoint
 
-[Implementation, line 500](../../../../src/simulation/simulation.ts#L500)
+[Implementation, line 509](../../../../src/simulation/simulation.ts#L509)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -966,17 +978,17 @@ Explicit throws in this body:
 
 - `new Error('Trailer requires a powered towing vehicle')`
 
-## Simulation.attachTrailerJoint.callback@502
+## Simulation.attachTrailerJoint.callback@511
 
-[Implementation, line 502](../../../../src/simulation/simulation.ts#L502)
+[Implementation, line 511](../../../../src/simulation/simulation.ts#L511)
 
 ```ts
-callback@502(joint): inferred by TypeScript; see implementation
+callback@511(joint): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.detachTrailerJoints
 
-[Implementation, line 509](../../../../src/simulation/simulation.ts#L509)
+[Implementation, line 518](../../../../src/simulation/simulation.ts#L518)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -991,7 +1003,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.releaseTrailer
 
-[Implementation, line 512](../../../../src/simulation/simulation.ts#L512)
+[Implementation, line 521](../../../../src/simulation/simulation.ts#L521)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1009,7 +1021,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setLandingGear
 
-[Implementation, line 518](../../../../src/simulation/simulation.ts#L518)
+[Implementation, line 527](../../../../src/simulation/simulation.ts#L527)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1026,7 +1038,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.hitchTrailer
 
-[Implementation, line 533](../../../../src/simulation/simulation.ts#L533)
+[Implementation, line 542](../../../../src/simulation/simulation.ts#L542)
 
 Couple `trailerId` to `tractorId`. Omit the trailer to use the nearest hitchable one.
 Retracts landing legs on the trailer.
@@ -1055,7 +1067,7 @@ Explicit throws in this body:
 
 ## Simulation.unhitchTrailer
 
-[Implementation, line 551](../../../../src/simulation/simulation.ts#L551)
+[Implementation, line 560](../../../../src/simulation/simulation.ts#L560)
 
 Uncouple a trailer. Omit the id to release every trailer on the occupied tractor.
 
@@ -1075,29 +1087,29 @@ Explicit throws in this body:
 
 - `new Error('Simulation is disposed')`
 
-## Simulation.unhitchTrailer.callback@556
+## Simulation.unhitchTrailer.callback@565
 
-[Implementation, line 556](../../../../src/simulation/simulation.ts#L556)
+[Implementation, line 565](../../../../src/simulation/simulation.ts#L565)
 
 ```ts
-callback@556(v): inferred by TypeScript; see implementation
+callback@565(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `trailerTowedBy`
 
-## Simulation.unhitchTrailer.callback@557
+## Simulation.unhitchTrailer.callback@566
 
-[Implementation, line 557](../../../../src/simulation/simulation.ts#L557)
+[Implementation, line 566](../../../../src/simulation/simulation.ts#L566)
 
 ```ts
-callback@557(v): inferred by TypeScript; see implementation
+callback@566(v): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.toggleHitch
 
-[Implementation, line 568](../../../../src/simulation/simulation.ts#L568)
+[Implementation, line 577](../../../../src/simulation/simulation.ts#L577)
 
 Occupied tractor: hitch a nearby free trailer, or uncouple the attached one.
 
@@ -1120,12 +1132,12 @@ Explicit throws in this body:
 
 - `new Error('Simulation is disposed')`
 
-## Simulation.toggleHitch.callback@574
+## Simulation.toggleHitch.callback@583
 
-[Implementation, line 574](../../../../src/simulation/simulation.ts#L574)
+[Implementation, line 583](../../../../src/simulation/simulation.ts#L583)
 
 ```ts
-callback@574(v): inferred by TypeScript; see implementation
+callback@583(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1134,7 +1146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.hitchCandidate
 
-[Implementation, line 585](../../../../src/simulation/simulation.ts#L585)
+[Implementation, line 594](../../../../src/simulation/simulation.ts#L594)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1151,7 +1163,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.addEntityBody
 
-[Implementation, line 591](../../../../src/simulation/simulation.ts#L591)
+[Implementation, line 600](../../../../src/simulation/simulation.ts#L600)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1171,7 +1183,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setMapBuildingsEnabled
 
-[Implementation, line 607](../../../../src/simulation/simulation.ts#L607)
+[Implementation, line 616](../../../../src/simulation/simulation.ts#L616)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1193,7 +1205,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setCollisionDistance
 
-[Implementation, line 624](../../../../src/simulation/simulation.ts#L624)
+[Implementation, line 633](../../../../src/simulation/simulation.ts#L633)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1216,7 +1228,7 @@ Explicit throws in this body:
 
 ## Simulation.collisionStats
 
-[Implementation, line 632](../../../../src/simulation/simulation.ts#L632)
+[Implementation, line 641](../../../../src/simulation/simulation.ts#L641)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1231,20 +1243,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.document.entities.reduce`
 - `this.mapBodies.values`
 
-## Simulation.collisionStats.callback@634
+## Simulation.collisionStats.callback@643
 
-[Implementation, line 634](../../../../src/simulation/simulation.ts#L634)
+[Implementation, line 643](../../../../src/simulation/simulation.ts#L643)
 
 ```ts
-callback@634(b): inferred by TypeScript; see implementation
+callback@643(b): inferred by TypeScript; see implementation
 ```
 
-## Simulation.collisionStats.callback@636
+## Simulation.collisionStats.callback@645
 
-[Implementation, line 636](../../../../src/simulation/simulation.ts#L636)
+[Implementation, line 645](../../../../src/simulation/simulation.ts#L645)
 
 ```ts
-callback@636(count, e): inferred by TypeScript; see implementation
+callback@645(count, e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1253,7 +1265,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.installNearbyMapBodies
 
-[Implementation, line 642](../../../../src/simulation/simulation.ts#L642)
+[Implementation, line 651](../../../../src/simulation/simulation.ts#L651)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1268,20 +1280,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.mapCollision.install`
 - `this.vehicles.values`
 
-## Simulation.installNearbyMapBodies.callback@645
+## Simulation.installNearbyMapBodies.callback@654
 
-[Implementation, line 645](../../../../src/simulation/simulation.ts#L645)
+[Implementation, line 654](../../../../src/simulation/simulation.ts#L654)
 
 ```ts
-callback@645(v): inferred by TypeScript; see implementation
+callback@654(v): inferred by TypeScript; see implementation
 ```
 
-## Simulation.installNearbyMapBodies.callback@648
+## Simulation.installNearbyMapBodies.callback@657
 
-[Implementation, line 648](../../../../src/simulation/simulation.ts#L648)
+[Implementation, line 657](../../../../src/simulation/simulation.ts#L657)
 
 ```ts
-callback@648(e): inferred by TypeScript; see implementation
+callback@657(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1290,7 +1302,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.updateMapCollisions
 
-[Implementation, line 652](../../../../src/simulation/simulation.ts#L652)
+[Implementation, line 661](../../../../src/simulation/simulation.ts#L661)
 
 Keep terrain, actors and portal colliders. Cull map solids conservatively around every actor.
 
@@ -1304,17 +1316,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.mapCollision.update`
 - `this.vehicles.values`
 
-## Simulation.updateMapCollisions.callback@655
+## Simulation.updateMapCollisions.callback@664
 
-[Implementation, line 655](../../../../src/simulation/simulation.ts#L655)
+[Implementation, line 664](../../../../src/simulation/simulation.ts#L664)
 
 ```ts
-callback@655(v): inferred by TypeScript; see implementation
+callback@664(v): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.constrainTerrainBoundary
 
-[Implementation, line 662](../../../../src/simulation/simulation.ts#L662)
+[Implementation, line 671](../../../../src/simulation/simulation.ts#L671)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1329,17 +1341,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `constrainTerrainBoundary`
 - `this.vehicles.values`
 
-## Simulation.constrainTerrainBoundary.callback@666
+## Simulation.constrainTerrainBoundary.callback@675
 
-[Implementation, line 666](../../../../src/simulation/simulation.ts#L666)
+[Implementation, line 675](../../../../src/simulation/simulation.ts#L675)
 
 ```ts
-callback@666(v): inferred by TypeScript; see implementation
+callback@675(v): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.createVehicle
 
-[Implementation, line 670](../../../../src/simulation/simulation.ts#L670)
+[Implementation, line 679](../../../../src/simulation/simulation.ts#L679)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1361,7 +1373,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.player
 
-[Implementation, line 699](../../../../src/simulation/simulation.ts#L699)
+[Implementation, line 708](../../../../src/simulation/simulation.ts#L708)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1378,7 +1390,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.stats
 
-[Implementation, line 710](../../../../src/simulation/simulation.ts#L710)
+[Implementation, line 719](../../../../src/simulation/simulation.ts#L719)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1389,7 +1401,7 @@ stats(): { ticks: number; droppedSeconds: number; bodies: number }
 
 ## Simulation.setInput
 
-[Implementation, line 713](../../../../src/simulation/simulation.ts#L713)
+[Implementation, line 722](../../../../src/simulation/simulation.ts#L722)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1411,7 +1423,7 @@ Explicit throws in this body:
 
 ## Simulation.displayedPose
 
-[Implementation, line 731](../../../../src/simulation/simulation.ts#L731)
+[Implementation, line 740](../../../../src/simulation/simulation.ts#L740)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1430,7 +1442,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.renderPlayerPosition
 
-[Implementation, line 756](../../../../src/simulation/simulation.ts#L756)
+[Implementation, line 765](../../../../src/simulation/simulation.ts#L765)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1446,7 +1458,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.entityTransform
 
-[Implementation, line 761](../../../../src/simulation/simulation.ts#L761)
+[Implementation, line 770](../../../../src/simulation/simulation.ts#L770)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1479,7 +1491,7 @@ Explicit throws in this body:
 
 ## Simulation.wheelTransforms
 
-[Implementation, line 777](../../../../src/simulation/simulation.ts#L777)
+[Implementation, line 786](../../../../src/simulation/simulation.ts#L786)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1496,12 +1508,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.vehicles.get`
 - `v.raycast.wheelInfos.map`
 
-## Simulation.wheelTransforms.callback@780
+## Simulation.wheelTransforms.callback@789
 
-[Implementation, line 780](../../../../src/simulation/simulation.ts#L780)
+[Implementation, line 789](../../../../src/simulation/simulation.ts#L789)
 
 ```ts
-callback@780(_, i): inferred by TypeScript; see implementation
+callback@789(_, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1509,12 +1521,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.raycast.updateWheelTransform`
 - `vec`
 
-## Simulation.wheelTransforms.callback@791
+## Simulation.wheelTransforms.callback@800
 
-[Implementation, line 791](../../../../src/simulation/simulation.ts#L791)
+[Implementation, line 800](../../../../src/simulation/simulation.ts#L800)
 
 ```ts
-callback@791(p, i): inferred by TypeScript; see implementation
+callback@800(p, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1524,7 +1536,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.wheeledInput
 
-[Implementation, line 801](../../../../src/simulation/simulation.ts#L801)
+[Implementation, line 810](../../../../src/simulation/simulation.ts#L810)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1535,7 +1547,7 @@ wheeledInput(): WheeledInput
 
 ## Simulation.wheelContactInfo
 
-[Implementation, line 812](../../../../src/simulation/simulation.ts#L812)
+[Implementation, line 821](../../../../src/simulation/simulation.ts#L821)
 
 Per-wheel absolute-world contact snapshots for any tyre effect or diagnostic.
 
@@ -1551,7 +1563,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.step
 
-[Implementation, line 819](../../../../src/simulation/simulation.ts#L819)
+[Implementation, line 828](../../../../src/simulation/simulation.ts#L828)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1607,32 +1619,32 @@ Explicit throws in this body:
 - `new Error('Simulation is disposed')`
 - `new Error('Elapsed seconds must be finite and nonnegative')`
 
-## Simulation.step.callback@834
+## Simulation.step.callback@843
 
-[Implementation, line 834](../../../../src/simulation/simulation.ts#L834)
+[Implementation, line 843](../../../../src/simulation/simulation.ts#L843)
 
 ```ts
-callback@834(b): inferred by TypeScript; see implementation
+callback@843(b): inferred by TypeScript; see implementation
 ```
 
-## Simulation.step.callback@835
+## Simulation.step.callback@844
 
-[Implementation, line 835](../../../../src/simulation/simulation.ts#L835)
+[Implementation, line 844](../../../../src/simulation/simulation.ts#L844)
 
 ```ts
-callback@835(body): inferred by TypeScript; see implementation
+callback@844(body): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `vec`
 
-## Simulation.step.callback@839
+## Simulation.step.callback@848
 
-[Implementation, line 839](../../../../src/simulation/simulation.ts#L839)
+[Implementation, line 848](../../../../src/simulation/simulation.ts#L848)
 
 ```ts
-callback@839(e): inferred by TypeScript; see implementation
+callback@848(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1641,7 +1653,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.crossPortals
 
-[Implementation, line 893](../../../../src/simulation/simulation.ts#L893)
+[Implementation, line 902](../../../../src/simulation/simulation.ts#L902)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1656,7 +1668,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.crossPortals.transform
 
-[Implementation, line 906](../../../../src/simulation/simulation.ts#L906)
+[Implementation, line 915](../../../../src/simulation/simulation.ts#L915)
 
 ```ts
 transform(id): inferred by TypeScript; see implementation
@@ -1668,7 +1680,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.crossPortals.interiorBody
 
-[Implementation, line 907](../../../../src/simulation/simulation.ts#L907)
+[Implementation, line 916](../../../../src/simulation/simulation.ts#L916)
 
 ```ts
 interiorBody(): inferred by TypeScript; see implementation
@@ -1680,7 +1692,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.crossPortals.setInteriorId
 
-[Implementation, line 908](../../../../src/simulation/simulation.ts#L908)
+[Implementation, line 917](../../../../src/simulation/simulation.ts#L917)
 
 ```ts
 setInteriorId(id): inferred by TypeScript; see implementation
@@ -1688,7 +1700,7 @@ setInteriorId(id): inferred by TypeScript; see implementation
 
 ## Simulation.crossPortals.isDocked
 
-[Implementation, line 911](../../../../src/simulation/simulation.ts#L911)
+[Implementation, line 920](../../../../src/simulation/simulation.ts#L920)
 
 ```ts
 isDocked(id): inferred by TypeScript; see implementation
@@ -1700,17 +1712,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.docks.has`
 - `this.docks.values`
 
-## Simulation.crossPortals.isDocked.callback@912
+## Simulation.crossPortals.isDocked.callback@921
 
-[Implementation, line 912](../../../../src/simulation/simulation.ts#L912)
+[Implementation, line 921](../../../../src/simulation/simulation.ts#L921)
 
 ```ts
-callback@912(d): inferred by TypeScript; see implementation
+callback@921(d): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.crossPortals.exitBlocked
 
-[Implementation, line 913](../../../../src/simulation/simulation.ts#L913)
+[Implementation, line 922](../../../../src/simulation/simulation.ts#L922)
 
 ```ts
 exitBlocked(body, position, quaternion, destination): inferred by TypeScript; see implementation
@@ -1722,7 +1734,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.crossPortals.refreshCollisions
 
-[Implementation, line 915](../../../../src/simulation/simulation.ts#L915)
+[Implementation, line 924](../../../../src/simulation/simulation.ts#L924)
 
 ```ts
 refreshCollisions(): inferred by TypeScript; see implementation
@@ -1734,7 +1746,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.crossPortals.clearWheelHistory
 
-[Implementation, line 916](../../../../src/simulation/simulation.ts#L916)
+[Implementation, line 925](../../../../src/simulation/simulation.ts#L925)
 
 ```ts
 clearWheelHistory(id): inferred by TypeScript; see implementation
@@ -1743,10 +1755,11 @@ clearWheelHistory(id): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.previousWheels.delete`
+- `this.vehicles.get`
 
 ## Simulation.portalExitBlocked
 
-[Implementation, line 920](../../../../src/simulation/simulation.ts#L920)
+[Implementation, line 934](../../../../src/simulation/simulation.ts#L934)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1759,12 +1772,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `portalExitBlocked`
 
-## Simulation.portalExitBlocked.callback@927
+## Simulation.portalExitBlocked.callback@941
 
-[Implementation, line 927](../../../../src/simulation/simulation.ts#L927)
+[Implementation, line 941](../../../../src/simulation/simulation.ts#L941)
 
 ```ts
-callback@927([id]): inferred by TypeScript; see implementation
+callback@941([id]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1772,17 +1785,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `isMapBuilding`
 - `this.entitiesById.get`
 
-## Simulation.portalExitBlocked.callback@928
+## Simulation.portalExitBlocked.callback@942
 
-[Implementation, line 928](../../../../src/simulation/simulation.ts#L928)
+[Implementation, line 942](../../../../src/simulation/simulation.ts#L942)
 
 ```ts
-callback@928([, body]): inferred by TypeScript; see implementation
+callback@942([, body]): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.playerHalfHeight
 
-[Implementation, line 934](../../../../src/simulation/simulation.ts#L934)
+[Implementation, line 948](../../../../src/simulation/simulation.ts#L948)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1793,7 +1806,7 @@ playerHalfHeight(): number
 
 ## Simulation.playerFrame
 
-[Implementation, line 938](../../../../src/simulation/simulation.ts#L938)
+[Implementation, line 952](../../../../src/simulation/simulation.ts#L952)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1808,7 +1821,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.interiorBody
 
-[Implementation, line 941](../../../../src/simulation/simulation.ts#L941)
+[Implementation, line 955](../../../../src/simulation/simulation.ts#L955)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1823,7 +1836,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setInterior
 
-[Implementation, line 944](../../../../src/simulation/simulation.ts#L944)
+[Implementation, line 958](../../../../src/simulation/simulation.ts#L958)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1848,7 +1861,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.updateInterior
 
-[Implementation, line 955](../../../../src/simulation/simulation.ts#L955)
+[Implementation, line 969](../../../../src/simulation/simulation.ts#L969)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -1867,7 +1880,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.updateInterior.inside
 
-[Implementation, line 957](../../../../src/simulation/simulation.ts#L957)
+[Implementation, line 971](../../../../src/simulation/simulation.ts#L971)
 
 ```ts
 inside(v: Vehicle, margin = 0): inferred by TypeScript; see implementation
@@ -1879,20 +1892,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.body.pointToLocalFrame`
 - `vec`
 
-## Simulation.updateInterior.inside.callback@961
+## Simulation.updateInterior.inside.callback@975
 
-[Implementation, line 961](../../../../src/simulation/simulation.ts#L961)
+[Implementation, line 975](../../../../src/simulation/simulation.ts#L975)
 
 ```ts
-callback@961(n, i): inferred by TypeScript; see implementation
+callback@975(n, i): inferred by TypeScript; see implementation
 ```
 
-## Simulation.updateInterior.callback@966
+## Simulation.updateInterior.callback@980
 
-[Implementation, line 966](../../../../src/simulation/simulation.ts#L966)
+[Implementation, line 980](../../../../src/simulation/simulation.ts#L980)
 
 ```ts
-callback@966(v): inferred by TypeScript; see implementation
+callback@980(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1901,7 +1914,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.hover
 
-[Implementation, line 972](../../../../src/simulation/simulation.ts#L972)
+[Implementation, line 986](../../../../src/simulation/simulation.ts#L986)
 
 Gravity outside the cushion; predictive braking above the supporting surface.
 
@@ -1928,12 +1941,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.world.raycastAll`
 - `up.scale`
 
-## Simulation.hover.callback@985
+## Simulation.hover.callback@999
 
-[Implementation, line 985](../../../../src/simulation/simulation.ts#L985)
+[Implementation, line 999](../../../../src/simulation/simulation.ts#L999)
 
 ```ts
-callback@985(hit): inferred by TypeScript; see implementation
+callback@999(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1943,7 +1956,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.shoot
 
-[Implementation, line 1011](../../../../src/simulation/simulation.ts#L1011)
+[Implementation, line 1025](../../../../src/simulation/simulation.ts#L1025)
 
 Hitscan against physical solids. Shots stop at the first obstruction.
 
@@ -1969,12 +1982,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.world.raycastAll`
 - `vec`
 
-## Simulation.shoot.callback@1033
+## Simulation.shoot.callback@1047
 
-[Implementation, line 1033](../../../../src/simulation/simulation.ts#L1033)
+[Implementation, line 1047](../../../../src/simulation/simulation.ts#L1047)
 
 ```ts
-callback@1033(hit): inferred by TypeScript; see implementation
+callback@1047(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1982,17 +1995,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hit.hitNormalWorld.clone`
 - `hit.hitPointWorld.clone`
 
-## Simulation.shoot.callback@1051
+## Simulation.shoot.callback@1065
 
-[Implementation, line 1051](../../../../src/simulation/simulation.ts#L1051)
+[Implementation, line 1065](../../../../src/simulation/simulation.ts#L1065)
 
 ```ts
-callback@1051([, value]): inferred by TypeScript; see implementation
+callback@1065([, value]): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.updateGrounded
 
-[Implementation, line 1055](../../../../src/simulation/simulation.ts#L1055)
+[Implementation, line 1069](../../../../src/simulation/simulation.ts#L1069)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2006,17 +2019,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Boolean`
 - `this.world.contacts.find`
 
-## Simulation.updateGrounded.callback@1059
+## Simulation.updateGrounded.callback@1073
 
-[Implementation, line 1059](../../../../src/simulation/simulation.ts#L1059)
+[Implementation, line 1073](../../../../src/simulation/simulation.ts#L1073)
 
 ```ts
-callback@1059(c): inferred by TypeScript; see implementation
+callback@1073(c): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.beforeTick
 
-[Implementation, line 1066](../../../../src/simulation/simulation.ts#L1066)
+[Implementation, line 1080](../../../../src/simulation/simulation.ts#L1080)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2046,6 +2059,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `stepWheeledVehicle`
 - `syncWheeledDamping`
 - `this.docks.get`
+- `this.ejectRider`
 - `this.fly`
 - `this.hover`
 - `this.interiorBody`
@@ -2057,12 +2071,64 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.radialUp`
 - `this.roadGuidance.apply`
 - `this.spoolEngine`
+- `this.stepEjection`
 - `this.vehicles.get`
 - `this.wheeledInput`
 
+## Simulation.ejectRider
+
+[Implementation, line 1190](../../../../src/simulation/simulation.ts#L1190)
+
+Throw the rider off a crashed two-wheeler: from just above the driver point, with most of the
+machine's velocity from just before the crash and a hop. The player is on foot from now on, without control until
+`stepEjection` has them back up.
+
+```ts
+ejectRider(v: Vehicle): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Vec3`
+- `startEjection`
+- `this.playerBody.angularVelocity.setZero`
+- `this.playerBody.position.copy`
+- `this.playerBody.previousPosition.copy`
+- `this.playerBody.velocity.copy`
+- `this.playerBody.wakeUp`
+- `this.radialUp`
+- `this.world.addBody`
+- `up.scale`
+
+## Simulation.stepEjection
+
+[Implementation, line 1216](../../../../src/simulation/simulation.ts#L1216)
+
+One tick of a thrown rider: no input and no hover cushion while flying and sliding (plain
+gravity, ground friction once down), the cushion back on while getting up.
+
+```ts
+stepEjection(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `body.velocity.dot`
+- `body.velocity.length`
+- `body.velocity.vsub`
+- `body.wakeUp`
+- `horizontal.length`
+- `horizontal.scale`
+- `horizontal.scale(left / groundSpeed).vadd`
+- `slideSpeed`
+- `stepEjection`
+- `this.hover`
+- `this.radialUp`
+- `up.scale`
+
 ## Simulation.radialUp
 
-[Implementation, line 1163](../../../../src/simulation/simulation.ts#L1163)
+[Implementation, line 1239](../../../../src/simulation/simulation.ts#L1239)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2079,7 +2145,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.height
 
-[Implementation, line 1169](../../../../src/simulation/simulation.ts#L1169)
+[Implementation, line 1245](../../../../src/simulation/simulation.ts#L1245)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2094,7 +2160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.altitude
 
-[Implementation, line 1172](../../../../src/simulation/simulation.ts#L1172)
+[Implementation, line 1248](../../../../src/simulation/simulation.ts#L1248)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2111,7 +2177,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.updateCatchFloor
 
-[Implementation, line 1181](../../../../src/simulation/simulation.ts#L1181)
+[Implementation, line 1257](../../../../src/simulation/simulation.ts#L1257)
 
 Flat slab 30 m under the sea. Tracks the occupied body so a hole cannot drop it forever.
 
@@ -2127,7 +2193,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.spoolEngine
 
-[Implementation, line 1194](../../../../src/simulation/simulation.ts#L1194)
+[Implementation, line 1270](../../../../src/simulation/simulation.ts#L1270)
 
 0 is stopped, 1 is full prop. Idles while occupied and windmills in the slipstream.
 
@@ -2145,7 +2211,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.pilotBoat
 
-[Implementation, line 1211](../../../../src/simulation/simulation.ts#L1211)
+[Implementation, line 1287](../../../../src/simulation/simulation.ts#L1287)
 
 400 CV on a 6 m planing hull. Thrust is applied at the stern, along the
 outboard, so the boat pivots and the stern steps out. The helm and the
@@ -2161,7 +2227,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.pilotBoat.sample
 
-[Implementation, line 1216](../../../../src/simulation/simulation.ts#L1216)
+[Implementation, line 1292](../../../../src/simulation/simulation.ts#L1292)
 
 ```ts
 sample(keel, body): inferred by TypeScript; see implementation
@@ -2174,7 +2240,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.toggleFlight
 
-[Implementation, line 1226](../../../../src/simulation/simulation.ts#L1226)
+[Implementation, line 1302](../../../../src/simulation/simulation.ts#L1302)
 
 Flight keeps the same collision body and cargo constraints; only wheel forces are disabled.
 
@@ -2202,12 +2268,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.raycast.addToWorld`
 - `v.raycast.removeFromWorld`
 
-## Simulation.toggleFlight.callback@1235
+## Simulation.toggleFlight.callback@1311
 
-[Implementation, line 1235](../../../../src/simulation/simulation.ts#L1235)
+[Implementation, line 1311](../../../../src/simulation/simulation.ts#L1311)
 
 ```ts
-callback@1235(hit): inferred by TypeScript; see implementation
+callback@1311(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2215,17 +2281,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hit.hitNormalWorld.dot`
 - `this.radialUp`
 
-## Simulation.toggleFlight.callback@1251
+## Simulation.toggleFlight.callback@1327
 
-[Implementation, line 1251](../../../../src/simulation/simulation.ts#L1251)
+[Implementation, line 1327](../../../../src/simulation/simulation.ts#L1327)
 
 ```ts
-callback@1251(d): inferred by TypeScript; see implementation
+callback@1327(d): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.relocateVehicle
 
-[Implementation, line 1264](../../../../src/simulation/simulation.ts#L1264)
+[Implementation, line 1340](../../../../src/simulation/simulation.ts#L1340)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2255,7 +2321,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.recoverVehicle
 
-[Implementation, line 1298](../../../../src/simulation/simulation.ts#L1298)
+[Implementation, line 1375](../../../../src/simulation/simulation.ts#L1375)
 
 Upright the occupied car and drop it from 3 m. Keeps yaw and the XZ spot by default.
 With `snapToRoad`, it first moves to the closest point of the nearest road centreline
@@ -2298,7 +2364,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.groundUnder
 
-[Implementation, line 1351](../../../../src/simulation/simulation.ts#L1351)
+[Implementation, line 1428](../../../../src/simulation/simulation.ts#L1428)
 
 Highest static, upward-facing surface at (x, z) within ±600 m of `nearY`, ignoring
 vehicles; null where no collision is loaded.
@@ -2315,20 +2381,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.vehicles.values`
 - `this.world.raycastAll`
 
-## Simulation.groundUnder.callback@1352
+## Simulation.groundUnder.callback@1429
 
-[Implementation, line 1352](../../../../src/simulation/simulation.ts#L1352)
+[Implementation, line 1429](../../../../src/simulation/simulation.ts#L1429)
 
 ```ts
-callback@1352(v): inferred by TypeScript; see implementation
+callback@1429(v): inferred by TypeScript; see implementation
 ```
 
-## Simulation.groundUnder.callback@1358
+## Simulation.groundUnder.callback@1435
 
-[Implementation, line 1358](../../../../src/simulation/simulation.ts#L1358)
+[Implementation, line 1435](../../../../src/simulation/simulation.ts#L1435)
 
 ```ts
-callback@1358(hit): inferred by TypeScript; see implementation
+callback@1435(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2337,7 +2403,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.alignTrailer
 
-[Implementation, line 1366](../../../../src/simulation/simulation.ts#L1366)
+[Implementation, line 1443](../../../../src/simulation/simulation.ts#L1443)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2361,7 +2427,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setHelmMode
 
-[Implementation, line 1381](../../../../src/simulation/simulation.ts#L1381)
+[Implementation, line 1458](../../../../src/simulation/simulation.ts#L1458)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2384,7 +2450,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.cycleHelmMode
 
-[Implementation, line 1413](../../../../src/simulation/simulation.ts#L1413)
+[Implementation, line 1490](../../../../src/simulation/simulation.ts#L1490)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2401,7 +2467,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.fly
 
-[Implementation, line 1427](../../../../src/simulation/simulation.ts#L1427)
+[Implementation, line 1504](../../../../src/simulation/simulation.ts#L1504)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2426,7 +2492,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.hullPoint
 
-[Implementation, line 1454](../../../../src/simulation/simulation.ts#L1454)
+[Implementation, line 1531](../../../../src/simulation/simulation.ts#L1531)
 
 Closest point of a vehicle's hull box to `from`: where a hand can reach it.
 
@@ -2442,12 +2508,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.body.pointToWorldFrame`
 - `v.entity.size.map`
 
-## Simulation.hullPoint.callback@1456
+## Simulation.hullPoint.callback@1533
 
-[Implementation, line 1456](../../../../src/simulation/simulation.ts#L1456)
+[Implementation, line 1533](../../../../src/simulation/simulation.ts#L1533)
 
 ```ts
-callback@1456(size): inferred by TypeScript; see implementation
+callback@1533(size): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2456,7 +2522,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.hullBlocked
 
-[Implementation, line 1466](../../../../src/simulation/simulation.ts#L1466)
+[Implementation, line 1543](../../../../src/simulation/simulation.ts#L1543)
 
 True when a wall, building or hill stands between `from` and the vehicle hull point.
 
@@ -2468,17 +2534,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.world.raycastAll`
 
-## Simulation.hullBlocked.callback@1468
+## Simulation.hullBlocked.callback@1545
 
-[Implementation, line 1468](../../../../src/simulation/simulation.ts#L1468)
+[Implementation, line 1545](../../../../src/simulation/simulation.ts#L1545)
 
 ```ts
-callback@1468(hit): inferred by TypeScript; see implementation
+callback@1545(hit): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.nearestVehicle
 
-[Implementation, line 1473](../../../../src/simulation/simulation.ts#L1473)
+[Implementation, line 1550](../../../../src/simulation/simulation.ts#L1550)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2503,7 +2569,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.interact
 
-[Implementation, line 1506](../../../../src/simulation/simulation.ts#L1506)
+[Implementation, line 1583](../../../../src/simulation/simulation.ts#L1583)
 
 Interaction returns a useful status; dismount requires a supported, unobstructed exit.
 
@@ -2525,7 +2591,7 @@ Explicit throws in this body:
 
 ## Simulation.startInVehicle
 
-[Implementation, line 1515](../../../../src/simulation/simulation.ts#L1515)
+[Implementation, line 1592](../../../../src/simulation/simulation.ts#L1592)
 
 Explicit scenario entry; ordinary interaction still checks reach and obstructions.
 
@@ -2550,7 +2616,7 @@ Explicit throws in this body:
 
 ## Simulation.takeSeat
 
-[Implementation, line 1536](../../../../src/simulation/simulation.ts#L1536)
+[Implementation, line 1614](../../../../src/simulation/simulation.ts#L1614)
 
 Every way into a road vehicle's seat (E, a scenario/host spawn in the seat, a control
 transfer) lands in P with the brakes holding it, then runs the start-up sequence.
@@ -2568,7 +2634,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.holdEngine
 
-[Implementation, line 1547](../../../../src/simulation/simulation.ts#L1547)
+[Implementation, line 1625](../../../../src/simulation/simulation.ts#L1625)
 
 Keep the player's road vehicle switched off (silent, no drive torque, still in P and held by
 its brakes) until `startEngine()`; a start-up already under way is cancelled. For hosts that
@@ -2586,7 +2652,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.startEngine
 
-[Implementation, line 1559](../../../../src/simulation/simulation.ts#L1559)
+[Implementation, line 1637](../../../../src/simulation/simulation.ts#L1637)
 
 Switch a held road vehicle back on and run the normal start-up sequence (starter, needle
 sweep, idle; all in P). False when the player is not at the wheel of a road vehicle.
@@ -2603,7 +2669,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.exitVehicle
 
-[Implementation, line 1566](../../../../src/simulation/simulation.ts#L1566)
+[Implementation, line 1644](../../../../src/simulation/simulation.ts#L1644)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2639,20 +2705,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.body.quaternion.vmult`
 - `v.body.velocity.length`
 
-## Simulation.exitVehicle.callback@1572
+## Simulation.exitVehicle.callback@1650
 
-[Implementation, line 1572](../../../../src/simulation/simulation.ts#L1572)
+[Implementation, line 1650](../../../../src/simulation/simulation.ts#L1650)
 
 ```ts
-callback@1572(c): inferred by TypeScript; see implementation
+callback@1650(c): inferred by TypeScript; see implementation
 ```
 
-## Simulation.exitVehicle.callback@1630
+## Simulation.exitVehicle.callback@1708
 
-[Implementation, line 1630](../../../../src/simulation/simulation.ts#L1630)
+[Implementation, line 1708](../../../../src/simulation/simulation.ts#L1708)
 
 ```ts
-callback@1630(hit): inferred by TypeScript; see implementation
+callback@1708(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2661,7 +2727,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.placeOnFoot
 
-[Implementation, line 1667](../../../../src/simulation/simulation.ts#L1667)
+[Implementation, line 1745](../../../../src/simulation/simulation.ts#L1745)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2681,7 +2747,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.overlapsBody
 
-[Implementation, line 1677](../../../../src/simulation/simulation.ts#L1677)
+[Implementation, line 1755](../../../../src/simulation/simulation.ts#L1755)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2700,7 +2766,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.vehicleInfo
 
-[Implementation, line 1683](../../../../src/simulation/simulation.ts#L1683)
+[Implementation, line 1761](../../../../src/simulation/simulation.ts#L1761)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2790,7 +2856,7 @@ Explicit throws in this body:
 
 ## Simulation.twoWheeledPose
 
-[Implementation, line 1804](../../../../src/simulation/simulation.ts#L1804)
+[Implementation, line 1882](../../../../src/simulation/simulation.ts#L1882)
 
 Steering, suspension and wheel spin of a two-wheeler for its presentation rig; else null.
 
@@ -2805,7 +2871,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.shiftVehicle
 
-[Implementation, line 1809](../../../../src/simulation/simulation.ts#L1809)
+[Implementation, line 1887](../../../../src/simulation/simulation.ts#L1887)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2822,7 +2888,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.automaticTransmission
 
-[Implementation, line 1822](../../../../src/simulation/simulation.ts#L1822)
+[Implementation, line 1900](../../../../src/simulation/simulation.ts#L1900)
 
 The selector key (B). From a manual gear it returns to automatic in the current mode. Already
 in automatic, a car with engine modes moves the selector between D (Normal) and S (Bestia).
@@ -2840,7 +2906,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setEngineMode
 
-[Implementation, line 1836](../../../../src/simulation/simulation.ts#L1836)
+[Implementation, line 1914](../../../../src/simulation/simulation.ts#L1914)
 
 Select a car's engine mode (J menu «Motor», or the selector D/S). Power, torque, redline,
 shift points and the engine voice follow. Returns the HUD message.
@@ -2856,7 +2922,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.engineMode
 
-[Implementation, line 1843](../../../../src/simulation/simulation.ts#L1843)
+[Implementation, line 1921](../../../../src/simulation/simulation.ts#L1921)
 
 Current engine mode of a vehicle; `normal` for vehicles without modes or unknown ids.
 
@@ -2870,7 +2936,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.dockingCandidate
 
-[Implementation, line 1847](../../../../src/simulation/simulation.ts#L1847)
+[Implementation, line 1925](../../../../src/simulation/simulation.ts#L1925)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2885,7 +2951,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.toggleDock
 
-[Implementation, line 1851](../../../../src/simulation/simulation.ts#L1851)
+[Implementation, line 1929](../../../../src/simulation/simulation.ts#L1929)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2900,7 +2966,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setCruiseSpeed
 
-[Implementation, line 1855](../../../../src/simulation/simulation.ts#L1855)
+[Implementation, line 1933](../../../../src/simulation/simulation.ts#L1933)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2921,7 +2987,7 @@ Explicit throws in this body:
 
 ## Simulation.setRoadAssist
 
-[Implementation, line 1863](../../../../src/simulation/simulation.ts#L1863)
+[Implementation, line 1941](../../../../src/simulation/simulation.ts#L1941)
 
 Enable/disable road assist (gentle snap to road centerline).
 
@@ -2935,7 +3001,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.roadAssist
 
-[Implementation, line 1867](../../../../src/simulation/simulation.ts#L1867)
+[Implementation, line 1945](../../../../src/simulation/simulation.ts#L1945)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2946,7 +3012,7 @@ roadAssist(): { enabled: boolean; strength: number }
 
 ## Simulation.setGarageDoor
 
-[Implementation, line 1871](../../../../src/simulation/simulation.ts#L1871)
+[Implementation, line 1949](../../../../src/simulation/simulation.ts#L1949)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -2973,20 +3039,20 @@ Explicit throws in this body:
 - `new Error('Nave desconocida')`
 - `new Error('Despeja la puerta del garaje antes de moverla')`
 
-## Simulation.setGarageDoor.callback@1877
+## Simulation.setGarageDoor.callback@1955
 
-[Implementation, line 1877](../../../../src/simulation/simulation.ts#L1877)
+[Implementation, line 1955](../../../../src/simulation/simulation.ts#L1955)
 
 ```ts
-callback@1877(v): inferred by TypeScript; see implementation
+callback@1955(v): inferred by TypeScript; see implementation
 ```
 
-## Simulation.setGarageDoor.callback@1878
+## Simulation.setGarageDoor.callback@1956
 
-[Implementation, line 1878](../../../../src/simulation/simulation.ts#L1878)
+[Implementation, line 1956](../../../../src/simulation/simulation.ts#L1956)
 
 ```ts
-callback@1878(point): inferred by TypeScript; see implementation
+callback@1956(point): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2996,7 +3062,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.setGarageDoor.overlaps
 
-[Implementation, line 1881](../../../../src/simulation/simulation.ts#L1881)
+[Implementation, line 1959](../../../../src/simulation/simulation.ts#L1959)
 
 ```ts
 overlaps(axis: 'x' | 'y' | 'z', low: number, high: number): inferred by TypeScript; see implementation
@@ -3008,33 +3074,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `points.map`
 
-## Simulation.setGarageDoor.overlaps.callback@1882
+## Simulation.setGarageDoor.overlaps.callback@1960
 
-[Implementation, line 1882](../../../../src/simulation/simulation.ts#L1882)
+[Implementation, line 1960](../../../../src/simulation/simulation.ts#L1960)
 
 ```ts
-callback@1882(p): inferred by TypeScript; see implementation
+callback@1960(p): inferred by TypeScript; see implementation
 ```
 
-## Simulation.setGarageDoor.overlaps.callback@1883
+## Simulation.setGarageDoor.overlaps.callback@1961
 
-[Implementation, line 1883](../../../../src/simulation/simulation.ts#L1883)
+[Implementation, line 1961](../../../../src/simulation/simulation.ts#L1961)
 
 ```ts
-callback@1883(p): inferred by TypeScript; see implementation
+callback@1961(p): inferred by TypeScript; see implementation
 ```
 
-## Simulation.setGarageDoor.callback@1897
+## Simulation.setGarageDoor.callback@1975
 
-[Implementation, line 1897](../../../../src/simulation/simulation.ts#L1897)
+[Implementation, line 1975](../../../../src/simulation/simulation.ts#L1975)
 
 ```ts
-callback@1897(e): inferred by TypeScript; see implementation
+callback@1975(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.setRamp
 
-[Implementation, line 1905](../../../../src/simulation/simulation.ts#L1905)
+[Implementation, line 1983](../../../../src/simulation/simulation.ts#L1983)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -3049,17 +3115,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.configurePortal`
 - `this.portalEntities.filter`
 
-## Simulation.setRamp.callback@1911
+## Simulation.setRamp.callback@1989
 
-[Implementation, line 1911](../../../../src/simulation/simulation.ts#L1911)
+[Implementation, line 1989](../../../../src/simulation/simulation.ts#L1989)
 
 ```ts
-callback@1911(e): inferred by TypeScript; see implementation
+callback@1989(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.updateRamp
 
-[Implementation, line 1920](../../../../src/simulation/simulation.ts#L1920)
+[Implementation, line 1998](../../../../src/simulation/simulation.ts#L1998)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -3087,17 +3153,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rotation.vmult(new Vec3(...collider.transform.position).vsub(hinge)).vadd`
 - `this.portalEntities.some`
 
-## Simulation.updateRamp.callback@1929
+## Simulation.updateRamp.callback@2007
 
-[Implementation, line 1929](../../../../src/simulation/simulation.ts#L1929)
+[Implementation, line 2007](../../../../src/simulation/simulation.ts#L2007)
 
 ```ts
-callback@1929(e): inferred by TypeScript; see implementation
+callback@2007(e): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.transferControls
 
-[Implementation, line 1954](../../../../src/simulation/simulation.ts#L1954)
+[Implementation, line 2032](../../../../src/simulation/simulation.ts#L2032)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().
@@ -3114,17 +3180,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.takeSeat`
 - `this.vehicles.get`
 
-## Simulation.transferControls.callback@1957
+## Simulation.transferControls.callback@2035
 
-[Implementation, line 1957](../../../../src/simulation/simulation.ts#L1957)
+[Implementation, line 2035](../../../../src/simulation/simulation.ts#L2035)
 
 ```ts
-callback@1957([, d]): inferred by TypeScript; see implementation
+callback@2035([, d]): inferred by TypeScript; see implementation
 ```
 
 ## Simulation.cameraPosition
 
-[Implementation, line 1968](../../../../src/simulation/simulation.ts#L1968)
+[Implementation, line 2046](../../../../src/simulation/simulation.ts#L2046)
 
 Keeps a third-person camera in front of the nearest physical obstruction.
 
@@ -3145,28 +3211,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `to.vsub`
 - `vec`
 
-## Simulation.cameraPosition.callback@1978
+## Simulation.cameraPosition.callback@2056
 
-[Implementation, line 1978](../../../../src/simulation/simulation.ts#L1978)
+[Implementation, line 2056](../../../../src/simulation/simulation.ts#L2056)
 
 ```ts
-callback@1978(v): inferred by TypeScript; see implementation
+callback@2056(v): inferred by TypeScript; see implementation
 ```
 
-## Simulation.cameraPosition.callback@1979
+## Simulation.cameraPosition.callback@2057
 
-[Implementation, line 1979](../../../../src/simulation/simulation.ts#L1979)
+[Implementation, line 2057](../../../../src/simulation/simulation.ts#L2057)
 
 ```ts
-callback@1979(v): inferred by TypeScript; see implementation
+callback@2057(v): inferred by TypeScript; see implementation
 ```
 
-## Simulation.cameraPosition.callback@1981
+## Simulation.cameraPosition.callback@2059
 
-[Implementation, line 1981](../../../../src/simulation/simulation.ts#L1981)
+[Implementation, line 2059](../../../../src/simulation/simulation.ts#L2059)
 
 ```ts
-callback@1981(hit): inferred by TypeScript; see implementation
+callback@2059(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3177,7 +3243,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Simulation.dispose
 
-[Implementation, line 1987](../../../../src/simulation/simulation.ts#L1987)
+[Implementation, line 2065](../../../../src/simulation/simulation.ts#L2065)
 
 Owns exactly one physics world. Scene data is copied and never mutated.
 The host supplies elapsed seconds and input, and reads snapshots after step().

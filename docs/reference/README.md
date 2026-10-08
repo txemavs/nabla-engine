@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **330 modules; 3497 executable function definitions**.
+Coverage: **333 modules; 3515 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -163,6 +163,7 @@ Coverage: **330 modules; 3497 executable function definitions**.
 | [src/render/capture.ts](src/render/capture.ts.md) | 7 |
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 6 |
 | [src/render/entity/assets.ts](src/render/entity/assets.ts.md) | 13 |
+| [src/render/entity/avatar-motion.ts](src/render/entity/avatar-motion.ts.md) | 8 |
 | [src/render/entity/avatar.ts](src/render/entity/avatar.ts.md) | 23 |
 | [src/render/entity/billboard.ts](src/render/entity/billboard.ts.md) | 7 |
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 1 |
@@ -315,9 +316,10 @@ Coverage: **330 modules; 3497 executable function definitions**.
 | [src/simulation/physics.ts](src/simulation/physics.ts.md) | 119 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 13 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
+| [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 1 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 200 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 203 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |
@@ -329,6 +331,7 @@ Coverage: **330 modules; 3497 executable function definitions**.
 | [src/simulation/vehicles/two-wheeled/balance.ts](src/simulation/vehicles/two-wheeled/balance.ts.md) | 18 |
 | [src/simulation/vehicles/two-wheeled/brakes.ts](src/simulation/vehicles/two-wheeled/brakes.ts.md) | 5 |
 | [src/simulation/vehicles/two-wheeled/contracts.ts](src/simulation/vehicles/two-wheeled/contracts.ts.md) | 0 |
+| [src/simulation/vehicles/two-wheeled/crash.ts](src/simulation/vehicles/two-wheeled/crash.ts.md) | 3 |
 | [src/simulation/vehicles/two-wheeled/index.ts](src/simulation/vehicles/two-wheeled/index.ts.md) | 0 |
 | [src/simulation/vehicles/two-wheeled/pitch.ts](src/simulation/vehicles/two-wheeled/pitch.ts.md) | 9 |
 | [src/simulation/vehicles/two-wheeled/rider.ts](src/simulation/vehicles/two-wheeled/rider.ts.md) | 12 |

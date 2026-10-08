@@ -9,7 +9,8 @@ import { RoadAssist } from './road-assist.js'
 import { nearestRoadPoint, ROAD_SNAP_MAX_DISTANCE, type RoadCenterline } from './road-snap.js'
 import { portalEnvelope, portalExitBlocked } from './portal-clearance.js'
 import { constrainTerrainBoundary } from './terrain-boundary.js'
-import { simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
+import { ejectionDefaults, simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
+import { slideSpeed, startEjection, stepEjection, type RiderEjection } from './rider-ejection.js'
 import {
   createWheeledVehicle,
   stepWheeledVehicle,
@@ -184,6 +185,7 @@ export class Simulation {
   private vehicleId: string | null = null
   private interiorId: string | null = null
   private hoverJumpTime = 0
+  private ejection: RiderEjection | null = null
   private disposed = false
   private grounded = false
   private support: Body | null = null
@@ -197,6 +199,13 @@ export class Simulation {
   private lostTime = 0
   private readonly roadGuidance = new RoadAssist()
   private readonly portalTraversal = new PortalTraversal()
+  /**
+   * The rider thrown off a crashed two-wheeler, from the throw until control returns (flying,
+   * down on the ground, getting up); null otherwise. Input is ignored meanwhile.
+   */
+  get playerEjection(): RiderEjection | null {
+    return this.ejection
+  }
   get portalEvent() {
     return this.portalTraversal.event
   }
@@ -913,7 +922,12 @@ export class Simulation {
       exitBlocked: (body, position, quaternion, destination) =>
         this.portalExitBlocked(body, position, quaternion, destination),
       refreshCollisions: () => this.updateMapCollisions(),
-      clearWheelHistory: (id) => this.previousWheels.delete(id),
+      clearWheelHistory: (id) => {
+        this.previousWheels.delete(id)
+        // The velocity is now in the exit's frame: not an impact.
+        const twoWheeled = this.vehicles.get(id)?.twoWheeled
+        if (twoWheeled) twoWheeled.previousVelocity = null
+      },
     })
   }
 
@@ -1092,7 +1106,10 @@ export class Simulation {
         v,
         dock ? (this.vehicles.get(dock.carrierId)?.body.linearDamping ?? 0.05) : undefined,
       )
-      if (dock) continue
+      if (dock) {
+        if (v.twoWheeled) v.twoWheeled.previousVelocity = null
+        continue
+      }
       const active = id === this.vehicleId || v.definition.tow?.vehicleId === this.vehicleId
       if (v.definition.plane) this.spoolEngine(v, active)
       if (v.flight) {
@@ -1113,6 +1130,10 @@ export class Simulation {
           this.radialUp(v.body),
           simulationDefaults.gravity,
         )
+        if (v.twoWheeled.ejectPending) {
+          v.twoWheeled.ejectPending = false
+          if (id === this.vehicleId) this.ejectRider(v)
+        }
         continue
       }
       stepWheeledVehicle(v, drivingInput, FIXED_STEP, active, v.helm !== 'off')
@@ -1125,7 +1146,8 @@ export class Simulation {
           this.entitiesById,
         )
     }
-    if (!this.vehicleId) {
+    if (!this.vehicleId && this.ejection) this.stepEjection()
+    else if (!this.vehicleId) {
       let x = this.input.right,
         z = this.input.forward
       const len = Math.hypot(x, z)
@@ -1158,6 +1180,60 @@ export class Simulation {
       this.playerBody.wakeUp()
     }
     this.jumpPending = false
+  }
+
+  /**
+   * Throw the rider off a crashed two-wheeler: from just above the driver point, with most of the
+   * machine's velocity from just before the crash and a hop. The player is on foot from now on, without control until
+   * `stepEjection` has them back up.
+   */
+  private ejectRider(v: Vehicle): void {
+    if (!v.twoWheeled) return
+    const up = this.radialUp(v.body)
+    const start = v.body
+      .pointToWorldFrame(new Vec3(...v.definition.driver))
+      .vadd(up.scale(ejectionDefaults.clearance))
+    this.playerBody.position.copy(start)
+    this.playerBody.previousPosition.copy(start)
+    this.playerBody.velocity.copy(
+      new Vec3(...v.twoWheeled.recentVelocity)
+        .scale(ejectionDefaults.carry)
+        .vadd(up.scale(ejectionDefaults.hop)),
+    )
+    this.playerBody.angularVelocity.setZero()
+    this.playerBody.aabbNeedsUpdate = true
+    this.world.addBody(this.playerBody)
+    this.playerBody.wakeUp()
+    this.vehicleId = null
+    this.grounded = false
+    this.hoverJumpTime = 0
+    this.ejection = startEjection(v.entity.id, v.twoWheeled.crashSpeed)
+  }
+  /**
+   * One tick of a thrown rider: no input and no hover cushion while flying and sliding (plain
+   * gravity, ground friction once down), the cushion back on while getting up.
+   */
+  private stepEjection(): void {
+    const body = this.playerBody
+    const up = this.radialUp(body)
+    const vertical = body.velocity.dot(up)
+    const horizontal = body.velocity.vsub(up.scale(vertical))
+    let groundSpeed = horizontal.length()
+    if (this.ejection!.phase === 'down' && this.grounded && groundSpeed > 0) {
+      const left = slideSpeed(groundSpeed, simulationDefaults.gravity, FIXED_STEP)
+      horizontal.scale(left / groundSpeed).vadd(up.scale(vertical), body.velocity)
+      groundSpeed = left
+    }
+    this.ejection = stepEjection(
+      this.ejection!,
+      this.grounded,
+      body.velocity.length(),
+      groundSpeed,
+      FIXED_STEP,
+    )
+    if (this.ejection?.phase !== 'flying' && this.ejection?.phase !== 'down')
+      if (this.options.playerMode === 'hover') this.hover()
+    body.wakeUp()
   }
 
   private radialUp(body: Body): Vec3 {
@@ -1278,6 +1354,7 @@ export class Simulation {
     v.body.velocity.setZero()
     v.body.angularVelocity.setZero()
     v.body.wakeUp()
+    if (v.twoWheeled) v.twoWheeled.previousVelocity = null
     // Someone standing in the cabin travels with the ship instead of being left behind.
     if (this.interiorId === id && !this.vehicleId) {
       this.playerBody.position.vadd(delta, this.playerBody.position)
@@ -1522,6 +1599,7 @@ export class Simulation {
       throw new Error('Invalid initial vehicle')
     this.setInterior(null)
     this.vehicleId = id
+    this.ejection = null
     this.world.removeBody(this.playerBody)
     this.playerBody.velocity.setZero()
     this.grounded = false
