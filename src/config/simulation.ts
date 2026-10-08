@@ -98,12 +98,12 @@ export const roadVehicleDefaults = Object.freeze({
    */
   engineMode: 'normal' as 'normal' | 'beast',
   /**
-   * Starter-motor cranking, the first step after entering a vehicle, seconds. Long enough to hear
-   * the electric starter whine and a few compression strokes before the engine catches (about
-   * 0.6–1.2 s). The vehicle is in P and held by its brakes; no drive torque. Shared by the cars
-   * and the VFR; the running engine voices are unchanged.
+   * Starter-motor cranking, the first step after entering a vehicle, seconds. Half the previous
+   * 0.95 s turn: a short electric-starter whine and a few compression strokes before the engine
+   * catches. The vehicle is in P and held by its brakes; no drive torque. Shared by every vehicle;
+   * the running engine voices are unchanged.
    */
-  ignitionCrankSeconds: 0.95,
+  ignitionCrankSeconds: 0.475,
   /**
    * Instrument self-test once the engine has caught: every needle sweeps to full scale and back,
    * seconds. The engine settles from its catch to idle meanwhile; still P, no drive torque.

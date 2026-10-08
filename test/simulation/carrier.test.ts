@@ -33,11 +33,15 @@ function park(sim: Simulation): void {
   expect(sim.interact()).toContain('Conduciendo')
   finishStartUp(sim)
   for (let i = 0; i < 600; i++) {
-    const z = sim.entityTransform('car').position[2]
+    const [x, , z] = sim.entityTransform('car').position
+    const approaching = z > -9
     sim.setInput({
       ...idleInput(),
-      forward: z > -9 ? 0.28 : 0,
-      brake: z <= -9 || sim.player.speed > 2.5,
+      // Hold the centreline. A shorter starter leaves less settling, and a few centimetres of
+      // drift puts a chassis corner outside the garage bay.
+      right: approaching ? Math.max(-0.4, Math.min(0.4, -x * 4)) : 0,
+      forward: approaching ? 0.28 : 0,
+      brake: !approaching || sim.player.speed > 2.5,
     })
     step(sim, 1)
   }
