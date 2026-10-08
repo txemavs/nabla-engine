@@ -42,6 +42,7 @@ import { MotorcycleInstruments } from '../vehicle-presentation/motorcycle-instru
 import { motorcycleMirrorLenses } from '../vehicle-presentation/motorcycle-mirrors.js'
 import {
   applyReflectionEnvironment,
+  carReflectionOptions,
   type ReflectionEnvironment,
 } from '../vehicle-presentation/reflection-environment.js'
 import { localMinutes, skyTime } from '../../planet/sky.js'
@@ -1067,8 +1068,13 @@ export class SceneView {
             motorcycleRigFromModel(model, { steerLimit: twoWheeled.steerLimit }),
           ),
         )
+      if (!twoWheeled) {
+        // Cars: only the parts the adapter or GLB tags `reflective` (the S3 / A3 chrome).
+        const chrome = applyReflectionEnvironment(model, carReflectionOptions)
+        if (chrome.materials.length) this.reflections.set(e.id, chrome)
+      }
       if (twoWheeled) {
-        // Chrome and mirror glass need something to reflect; cars keep their current look.
+        // Chrome and mirror glass need something to reflect.
         this.reflections.set(e.id, applyReflectionEnvironment(model))
         const cluster = MotorcycleInstruments.bind(model, {
           ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
