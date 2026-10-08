@@ -364,16 +364,27 @@ describe('cell versions', () => {
     const m = validatePlanetManifest(manifest(), tile)
     expect(planetCellVersion(m)).toBe(1)
     const p = validateAtlasZ15Package(pkg(), tile)
+    expect(adaptAtlasManifest(manifest(), p).files.terrain.path).toBe(
+      'terrain-ad8550fe0459ce7d.glb',
+    )
     expect(adaptAtlasManifest(manifest(), p, { relief: 'lidar' }).files.terrain.path).toBe(
       'terrain-lidar-50074696349a0012.glb',
     )
   })
 
-  it('renders a version 2 cell from its engine terrain even when LiDAR relief is asked for', () => {
+  it('renders a version 2 cell from its unified terrain (terrain.lidar) whatever relief asks', () => {
+    for (const relief of [undefined, 'engine', 'lidar'] as const) {
+      const { m, p } = v2()
+      const adapted = adaptAtlasManifest(m, validateAtlasZ15Package(p, tile), { relief })
+      expect(planetCellVersion(adapted)).toBe(2)
+      expect(adapted.files.terrain.path).toBe('terrain-lidar-50074696349a0012.glb')
+    }
     const { m, p } = v2()
-    const adapted = adaptAtlasManifest(m, validateAtlasZ15Package(p, tile), { relief: 'lidar' })
-    expect(planetCellVersion(adapted)).toBe(2)
-    expect(adapted.files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
+    p.files = p.files.filter((f: { role: string }) => f.role !== 'terrain.lidar')
+    delete p.terrain.lidar
+    expect(() => adaptAtlasManifest(m, validateAtlasZ15Package(p, tile))).toThrow(
+      /version 2 has no unified terrain/,
+    )
   })
 
   it('refuses a package whose cell version disagrees with the manifest', () => {

@@ -17,9 +17,10 @@
  *   manifest.roadCandidates (schema nabla-road-candidates/1) -> same `manifest.roads` mapping
  *     per layer, manifest.json wins; a disagreeing package file is that layer's `fallback`
  *   role osm.snapshot -> `manifest.osmSnapshot` (gzip Overpass cell; in-car GPS streets)
- *   manifest.cellVersion / package cellVersion -> must agree (absent = 1). Version 2 cells carry the
- *     roads and tunnel openings in the engine terrain, so `relief=lidar` keeps the engine terrain
- *     for them (the LiDAR mesh is the v1 ground and would close the tunnel mouths).
+ *   manifest.cellVersion / package cellVersion -> must agree (absent = 1). A version 2 cell's ground
+ *     is its `terrain.lidar` file (the Atlas unified terrain: LiDAR relief with the roads and the
+ *     tunnel openings built in), used whatever `relief` asks; `files.terrain` is only the v1 engine
+ *     terrain kept for older engines.
  *   every other role (masks, classes, instances, roofs, licences) is
  *   listed but not consumed by the engine yet; see docs/terrain-folder.md.
  *
@@ -261,11 +262,15 @@ export function adaptAtlasManifest(
       `Atlas package cell version ${pkg.cellVersion ?? 1} does not match manifest.json (${version})`,
     )
   const adapted: PlanetManifest = structuredClone(manifest)
-  // v2 terrain already holds the roads and tunnel openings; the LiDAR mesh would undo them.
-  if (options.relief === 'lidar' && version === 1) {
+  // v2: the unified terrain (role terrain.lidar) is the cell's ground, whatever `relief` asks.
+  if (options.relief === 'lidar' || version === 2) {
     const lidar = atlasFile(pkg, 'terrain.lidar')
     if (!lidar || lidar.path !== pkg.terrain.lidar)
-      throw new Error('Atlas package has no LiDAR terrain (relief=lidar)')
+      throw new Error(
+        version === 2
+          ? 'Atlas cell version 2 has no unified terrain (terrain.lidar)'
+          : 'Atlas package has no LiDAR terrain (relief=lidar)',
+      )
     adapted.files.terrain = {
       path: lidar.path,
       download: lidar.path,

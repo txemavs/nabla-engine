@@ -295,13 +295,15 @@ largest cells.
 ### Cell versions
 
 `manifest.json` may carry `cellVersion` (absent = 1). Version 2 cells come from the Atlas unified
-pipeline: roads and tunnel openings are part of the engine terrain GLB. They are published at the
+pipeline: their ground is the unified terrain GLB (package role `terrain.lidar`: LiDAR relief with
+the roads and the tunnel openings built in). They are published at the
 same URL as the v1 cell they replace (`euskadi/terraform/z/15/<x>/<y>/`); there is no versioned
 folder. The engine renders each cell by its own version, so a mix of v1 and v2 cells works:
 
-- v1: unchanged; `relief=lidar` swaps in the LiDAR mesh.
-- v2: the engine terrain is always used (`relief=lidar` is ignored for that cell; the v1 LiDAR mesh
-  would close the tunnel mouths).
+- v1: unchanged; engine terrain by default, `relief=lidar` swaps in the LiDAR mesh.
+- v2: the unified terrain (`terrain.lidar`) is always the ground, whatever `relief` asks;
+  `files.terrain` (the v1 engine terrain) is kept only so that older engines still show something.
+  A v2 cell without it is refused.
 - The package `cellVersion` must equal the manifest's, otherwise the cell is refused (a manifest
   pointing at another revision's package). An unknown version is refused with
   `Unsupported cell version`, so an old engine never draws a newer cell half-understood.
