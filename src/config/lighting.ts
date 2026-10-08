@@ -8,6 +8,13 @@ export const lightingDefaults = Object.freeze({
   ambientIntensity: 0.22,
   /** Atmospheric daylight factor below which presentation is considered night, [0, 1]. */
   nightThreshold: 0.15,
+  /**
+   * Vehicle chrome reflections (`applyReflectionEnvironment`) follow the daylight: full from
+   * `reflectionFullDay` up, easing down to `reflectionNightLevel` at the night threshold and
+   * below, so chrome does not glow at dusk or at night. `reflectionLevel(day)`.
+   */
+  reflectionNightLevel: 0.08,
+  reflectionFullDay: 0.85,
   /** Subtle vehicle footwell fill: point-light intensity in candela. */
   courtesyIntensity: 0.08,
   /** Local footwell cutoff in metres; prevents broad cabin/exterior spill. */

@@ -43,6 +43,7 @@ import { motorcycleMirrorLenses } from '../vehicle-presentation/motorcycle-mirro
 import {
   applyReflectionEnvironment,
   carReflectionOptions,
+  reflectionLevel,
   type ReflectionEnvironment,
 } from '../vehicle-presentation/reflection-environment.js'
 import { localMinutes, skyTime } from '../../planet/sky.js'
@@ -173,6 +174,8 @@ export class SceneView {
   readonly root = new THREE.Group()
   readonly streetlights = new Streetlights(this.root)
   night = false
+  /** Atmospheric daylight factor (0 night .. 1 day; 1 without a sky), for the chrome reflections. */
+  daylight = 1
   private readonly headOffsets = new Map<string, readonly number[]>()
   /** Two-wheeler rider offset ([x, z] chassis metres) from the last pose; moves the head. */
   private readonly riderShifts = new Map<string, readonly [number, number]>()
@@ -1399,7 +1402,9 @@ export class SceneView {
         this.riderTucks.set(id, ease.value[2])
       }
     }
-    for (const reflection of this.reflections.values()) reflection.setLevel(this.night ? 0.15 : 1)
+    // Chrome reflections fade with the daylight (dusk included), not just on/off at night.
+    const reflectionDim = reflectionLevel(this.night ? 0 : this.daylight)
+    for (const reflection of this.reflections.values()) reflection.setLevel(reflectionDim)
     if (this.motorcycleClusters.size) {
       const clockMinutes = localMinutes(skyTime(this.document.sky ?? { mode: 'live' }))
       const lampNow = performance.now()

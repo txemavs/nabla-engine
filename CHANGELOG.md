@@ -37,8 +37,8 @@
   shift points and sound follow the mode (`powertrain.modes`, `defaultMode`, `audio.engineModes`,
   `&engineMode=`). The A3 is hidden from the add-vehicle menu and the demo fleet (`hidden`), and
   stays available to Studio, the palette, tests and docking.
-- **VFR800 metal and windscreen:** neutral mirror chrome (base 0.95 grey, metallic 1, roughness
-  0.03, slightly stronger reflections) only on the fork stanchions, the silencer can and its end
+- **VFR800 metal and windscreen:** neutral chrome (base 0.95 grey, metallic 1, roughness 0.12,
+  reflections at 0.75; first 0.03 / 1.25, toned down as too mirror-like) only on the fork stanchions, the silencer can and its end
   cap; the exhaust headers and the engine use the satin grey metal of the top triple clamp, as do
   the frame and fork lowers; discs, brake tracks, chain, sprockets, radiator and swingarm keep
   their authored materials. The reflection environment is a colourless studio gradient, so chrome
@@ -257,8 +257,13 @@
   badge (`Cromo …`, `Nabla silver chrome`) had no environment to reflect (cars never had one; only
   the VFR800 got the neutral reflection environment in #156), so they showed little more than the
   sun's highlight and went dull grey or black with the sun angle and at dusk. They now take the
-  same neutral, right-way-up environment as the VFR800 chrome (`carReflectionOptions`, dimmed at
-  night). Paint, mirror housings, mirror glass and wheels are unchanged.
+  same neutral, right-way-up environment as the VFR800 chrome (`carReflectionOptions`, intensity
+  0.8, roughness at least 0.3: natural chrome, not a mirror). Paint, mirror housings, mirror glass
+  and wheels are unchanged.
+- **Chrome dims with the daylight:** vehicle chrome reflections (car and motorcycle) fade with the
+  atmosphere's daylight (`reflectionLevel`, `lightingDefaults.reflectionNightLevel` 0.08 /
+  `reflectionFullDay` 0.85) instead of switching from full to 0.15 at the night threshold, so the
+  fixed studio gradient no longer glows at dusk or at night.
 - **Right mirror capture upright:** mirror capture cameras now keep the vehicle's up instead of
   the lens node's own +Y. The S3 / A3 right-door lens is authored under a node rotated 180° about
   X, so its capture camera ran rolled upside down; both sides now capture upright on every

@@ -42,7 +42,8 @@ function shineVehicle(model: THREE.Object3D, kind: 'body' | 'wheel' | 'steering'
       }
       if (kind !== 'body' || !s3ChromeMaterial.test(material.name)) continue
       material.metalness = 1
-      material.roughness = Math.min(material.roughness, 0.25)
+      // Natural chrome, not a mirror: a little satin (0.3; the GLB's 0.22 read as a mirror).
+      material.roughness = Math.max(material.roughness, 0.3)
       material.userData.nabla = { ...material.userData.nabla, reflective: true }
       material.needsUpdate = true
     }

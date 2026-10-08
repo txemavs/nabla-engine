@@ -18,7 +18,7 @@
  * - Windscreen: alpha-blended neutral smoke grey («gris humo», was a bluish transmission tint),
  *   see-through, with a slight reflection (`extras.nabla.envIntensity`).
  * - Metal map (Txema's review): a new neutral mirror chrome (`Mirror chrome stanchions and
- *   silencer`, base 0.95 grey, metallic 1, roughness 0.03, slightly stronger reflections) only on
+ *   silencer`, base 0.95 grey, metallic 1, roughness 0.12, reflections at 0.75: natural chrome, not a mirror) only on
  *   the fork stanchions, the silencer can and its end cap. The exhaust headers and the engine
  *   (the graphite engine cases behind the radiator) take the satin grey metal of the top triple
  *   clamp (`Satin aluminium chassis…`, also the frame and fork lowers). Everything else keeps the
@@ -297,9 +297,9 @@ json.materials.push({
   pbrMetallicRoughness: {
     baseColorFactor: [0.95, 0.95, 0.95, 1],
     metallicFactor: 1,
-    roughnessFactor: 0.03,
+    roughnessFactor: 0.12,
   },
-  extras: { nabla: { envIntensity: 1.25 } },
+  extras: { nabla: { envIntensity: 0.75 } },
 })
 const EXHAUST = materialIndex('Chrome exhaust and discs')
 const ENGINE = materialIndex('Graphite engine cases')

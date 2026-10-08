@@ -78,7 +78,8 @@ describe('vfr800 GLB cockpit pass', () => {
     const SATIN = 'Satin aluminium chassis, fork and passenger footrests'
     const chrome = materialsOf(root).find((m) => m.name === CHROME)!
     expect(chrome.metalness).toBe(1)
-    expect(chrome.roughness).toBeLessThanOrEqual(0.05)
+    // Natural chrome, not a mirror (Txema: 0.03 / 1.25 was far too bright).
+    expect(chrome.roughness).toBeCloseTo(0.12, 6)
     // Neutral silver, no blue tint.
     expect(chrome.color.r).toBeGreaterThan(0.9)
     expect(chrome.color.b - chrome.color.r).toBeCloseTo(0, 6)
@@ -109,8 +110,8 @@ describe('vfr800 GLB cockpit pass', () => {
     }
     const env = applyReflectionEnvironment(root)
     expect(env.materials).toContain(chrome)
-    // Slightly more reflective than the other metal.
-    expect(chrome.envMapIntensity).toBeCloseTo(1.25, 6)
+    // Toned down: it reads as chrome without glaring.
+    expect(chrome.envMapIntensity).toBeCloseTo(0.75, 6)
     expect(discs.envMapIntensity).toBeCloseTo(1, 6)
     // Matte paint and rubber are left alone.
     const rubber = materialsOf(root).find((m) => m.name === 'Smooth rubber')!
