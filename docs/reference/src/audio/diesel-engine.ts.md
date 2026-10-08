@@ -11,7 +11,7 @@
 
 ## ExhaustBrake.constructor
 
-[Implementation, line 45](../../../../src/audio/diesel-engine.ts#L45)
+[Implementation, line 51](../../../../src/audio/diesel-engine.ts#L51)
 
 Exhaust-brake / jake bark on a sharp lift-off: one low thud, not a petrol burble.
 TODO(unverified): the bark pitch and length are not from a measured retarder.
@@ -29,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ExhaustBrake.silence
 
-[Implementation, line 54](../../../../src/audio/diesel-engine.ts#L54)
+[Implementation, line 60](../../../../src/audio/diesel-engine.ts#L60)
 
 Exhaust-brake / jake bark on a sharp lift-off: one low thud, not a petrol burble.
 TODO(unverified): the bark pitch and length are not from a measured retarder.
@@ -44,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ExhaustBrake.update
 
-[Implementation, line 59](../../../../src/audio/diesel-engine.ts#L59)
+[Implementation, line 65](../../../../src/audio/diesel-engine.ts#L65)
 
 Exhaust-brake / jake bark on a sharp lift-off: one low thud, not a petrol burble.
 TODO(unverified): the bark pitch and length are not from a measured retarder.
@@ -64,7 +64,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AirBrakeHiss.constructor
 
-[Implementation, line 84](../../../../src/audio/diesel-engine.ts#L84)
+[Implementation, line 90](../../../../src/audio/diesel-engine.ts#L90)
 
 Air-brake hiss: a short band of noise when the service brake comes on, and a smaller
 one when it releases. TODO(unverified): the hiss length is not from a measured system.
@@ -82,7 +82,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AirBrakeHiss.silence
 
-[Implementation, line 94](../../../../src/audio/diesel-engine.ts#L94)
+[Implementation, line 100](../../../../src/audio/diesel-engine.ts#L100)
 
 Air-brake hiss: a short band of noise when the service brake comes on, and a smaller
 one when it releases. TODO(unverified): the hiss length is not from a measured system.
@@ -97,7 +97,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AirBrakeHiss.update
 
-[Implementation, line 99](../../../../src/audio/diesel-engine.ts#L99)
+[Implementation, line 105](../../../../src/audio/diesel-engine.ts#L105)
 
 Air-brake hiss: a short band of noise when the service brake comes on, and a smaller
 one when it releases. TODO(unverified): the hiss length is not from a measured system.
