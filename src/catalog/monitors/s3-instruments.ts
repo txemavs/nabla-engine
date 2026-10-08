@@ -9,14 +9,14 @@ export const s3Instruments: CarInstrumentDefinition = {
   menu: carMenuDefinition,
   menuItems: carMenuItems,
   menuTitle: 'MENU COCHE',
-  clusterData({ speedKmh, rpm, gear, load, manual, parked }) {
+  clusterData({ speedKmh, rpm, gear, load, manual, parked, sport }) {
     const speed = Math.round(Math.abs(speedKmh))
     return {
       values: {
         speed: Math.abs(speedKmh),
         speedDisplay: String(speed),
         rpm,
-        gear: gearLabel(gear, manual, parked),
+        gear: gearLabel(gear, manual, parked, sport),
         throttle: `${Math.round(load * 100)} %`,
       },
       bars: { speed: speed / 320, rpm: rpm / 7000, throttle: load },

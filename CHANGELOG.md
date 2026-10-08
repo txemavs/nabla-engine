@@ -4,6 +4,12 @@
 
 ### Added
 
+- **S3 engine modes (Normal / Bestia):** one S3 (`car`) with NORMAL (D, ~200 CV, refined TDI-like
+  inline-four voice, default) and BESTIA (S, ~400 CV, inline-five warble with an occasional overrun
+  burble). Switch from J › MOTOR or B (D ↔ S); HUD and cluster show D / S; power, torque, redline,
+  shift points and sound follow the mode (`powertrain.modes`, `defaultMode`, `audio.engineModes`,
+  `&engineMode=`). The A3 is hidden from the add-vehicle menu and the demo fleet (`hidden`), and
+  stays available to Studio, the palette, tests and docking.
 - **VFR800 metal and windscreen:** neutral mirror chrome (base 0.95 grey, metallic 1, roughness
   0.03, slightly stronger reflections) only on the fork stanchions, the silencer can and its end
   cap; the exhaust headers and the engine use the satin grey metal of the top triple clamp, as do

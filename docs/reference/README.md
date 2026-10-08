@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **329 modules; 3478 executable function definitions**.
+Coverage: **330 modules; 3497 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -38,19 +38,20 @@ Coverage: **329 modules; 3478 executable function definitions**.
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 12 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
-| [game/terrain.ts](game/terrain.ts.md) | 13 |
+| [game/terrain.ts](game/terrain.ts.md) | 14 |
 | [src/audio/engine-start.ts](src/audio/engine-start.ts.md) | 7 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/gear-click.ts](src/audio/gear-click.ts.md) | 4 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
-| [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 12 |
+| [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
+| [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 13 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
 | [src/audio/reverse-alarm.ts](src/audio/reverse-alarm.ts.md) | 3 |
 | [src/audio/scrape.ts](src/audio/scrape.ts.md) | 4 |
 | [src/audio/tires.ts](src/audio/tires.ts.md) | 4 |
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
-| [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 20 |
+| [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
 | [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 27 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
@@ -253,7 +254,7 @@ Coverage: **329 modules; 3478 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 209 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 210 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
@@ -316,13 +317,13 @@ Coverage: **329 modules; 3478 executable function definitions**.
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 1 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 198 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 200 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |
 | [src/simulation/vehicle-docking.ts](src/simulation/vehicle-docking.ts.md) | 9 |
 | [src/simulation/vehicles/boat.ts](src/simulation/vehicles/boat.ts.md) | 5 |
-| [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 17 |
+| [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 20 |
 | [src/simulation/vehicles/flight.ts](src/simulation/vehicles/flight.ts.md) | 3 |
 | [src/simulation/vehicles/keyboard-steering.ts](src/simulation/vehicles/keyboard-steering.ts.md) | 2 |
 | [src/simulation/vehicles/two-wheeled/balance.ts](src/simulation/vehicles/two-wheeled/balance.ts.md) | 18 |
@@ -334,7 +335,7 @@ Coverage: **329 modules; 3478 executable function definitions**.
 | [src/simulation/vehicles/two-wheeled/runtime.ts](src/simulation/vehicles/two-wheeled/runtime.ts.md) | 24 |
 | [src/simulation/vehicles/wheeled/contracts.ts](src/simulation/vehicles/wheeled/contracts.ts.md) | 1 |
 | [src/simulation/vehicles/wheeled/index.ts](src/simulation/vehicles/wheeled/index.ts.md) | 0 |
-| [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 28 |
+| [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 31 |
 | [src/util/gzip.ts](src/util/gzip.ts.md) | 1 |
 | [src/util/sha256.ts](src/util/sha256.ts.md) | 5 |
 | [src/util/uuid.ts](src/util/uuid.ts.md) | 4 |

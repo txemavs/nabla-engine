@@ -217,7 +217,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Engine voice that played on the last `powertrain` call, for tests and the dataset.
 
 ```ts
-engineVoice(): 'note' | 'v4'
+engineVoice(): 'note' | 'v4' | 'inline'
 ```
 
 ## VehicleAudio.gearClick

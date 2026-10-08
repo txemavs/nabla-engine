@@ -1472,6 +1472,7 @@ export class SceneView {
           info.parked,
           info.altitude,
           info.gaugeSweep,
+          info.engineModes && info.engineMode === 'beast',
         )
       }
     }

@@ -13,9 +13,13 @@ import {
   stepIgnition,
   ignitionRpm,
   gaugeSweep,
+  effectivePowertrain,
+  hasEngineModes,
+  initialEngineMode,
   type DrivetrainState,
 } from '../drivetrain.js'
 import type {
+  EngineMode,
   PowertrainDefinition,
   WheeledDefinition,
   WheeledInput,
@@ -44,8 +48,16 @@ function validGearbox(spec: PowertrainDefinition): boolean {
   )
 }
 
-/** Optional powertrain numbers are finite, positive and mutually consistent. */
+/** Optional powertrain numbers are finite, positive and mutually consistent, in every mode. */
 export function isValidPowertrain(spec: PowertrainDefinition): boolean {
+  if (spec.modes) {
+    const modes = Object.keys(spec.modes) as EngineMode[]
+    if (spec.defaultMode && !spec.modes[spec.defaultMode]) return false
+    if (!modes.every((mode) => validSinglePowertrain(effectivePowertrain(spec, mode)))) return false
+  }
+  return validSinglePowertrain(spec)
+}
+function validSinglePowertrain(spec: PowertrainDefinition): boolean {
   const positive = (value: number) => Number.isFinite(value) && value > 0
   return (
     [spec.powerCv, spec.torqueNm, spec.finalDrive, spec.grip].every(positive) &&
@@ -128,6 +140,7 @@ export function createWheeledVehicle(
   }
 
   const drivetrain = createDrivetrain()
+  drivetrain.mode = initialEngineMode(definition.powertrain)
   if (options.parked === false) Object.assign(drivetrain, { gear: 1, parked: false })
   return { body, raycast: car, definition, steer: 0, drivetrain }
 }
@@ -220,7 +233,11 @@ export function stepWheeledVehicle(
   const driven = (i: number) => isDriven(v.definition.drivenWheels, i)
   const tune = v.definition.powertrain
   // Start-up sequence after entering: P is kept and the pedals do nothing until it ends.
-  const starting = stepIgnition(v.drivetrain, dt, tune?.idleRpm ?? roadVehicleDefaults.idleRpm)
+  const starting = stepIgnition(
+    v.drivetrain,
+    dt,
+    (tune && effectivePowertrain(tune, v.drivetrain.mode).idleRpm) ?? roadVehicleDefaults.idleRpm,
+  )
   const aggressiveLaunch =
     !starting &&
     !!tune &&
@@ -340,6 +357,16 @@ export function automaticWheeledTransmission(v: WheeledVehicle): boolean {
   v.drivetrain.manual = false
   return true
 }
+/**
+ * Select an engine mode on a car with `powertrain.modes` (the selector's D = normal, S = beast).
+ * Returns false when the vehicle has a single engine or lacks that mode.
+ */
+export function setWheeledEngineMode(v: WheeledVehicle, mode: EngineMode): boolean {
+  const spec = v.definition.powertrain
+  if (!hasEngineModes(spec) || !spec!.modes![mode]) return false
+  v.drivetrain.mode = mode
+  return true
+}
 export function wheeledTelemetry(
   v: WheeledVehicle,
   input: WheeledInput,
@@ -354,6 +381,8 @@ export function wheeledTelemetry(
     rpm: v.drivetrain.rpm,
     gear: v.drivetrain.gear,
     manualTransmission: v.drivetrain.manual,
+    engineMode: v.drivetrain.mode,
+    engineModes: hasEngineModes(v.definition.powertrain),
     engineLoad: v.drivetrain.load,
     braking:
       active &&

@@ -17,7 +17,7 @@
 
 ## vehiclePresets
 
-[Implementation, line 38](../../../../../src/catalog/vehicles/library.ts#L38)
+[Implementation, line 43](../../../../../src/catalog/vehicles/library.ts#L43)
 
 Every preset found at startup, in menu order. An empty assets folder yields none.
 
@@ -43,12 +43,12 @@ Explicit throws in this body:
 - `new Error(\`Vehicle preset ${source.file} is invalid\`, { cause: error })`
 - `new Error(\`Duplicate vehicle preset id ${preset.id}\`)`
 
-## vehiclePresets.callback@82
+## vehiclePresets.callback@87
 
-[Implementation, line 82](../../../../../src/catalog/vehicles/library.ts#L82)
+[Implementation, line 87](../../../../../src/catalog/vehicles/library.ts#L87)
 
 ```ts
-callback@82(a, b): inferred by TypeScript; see implementation
+callback@87(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -57,7 +57,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hasVehiclePreset
 
-[Implementation, line 91](../../../../../src/catalog/vehicles/library.ts#L91)
+[Implementation, line 96](../../../../../src/catalog/vehicles/library.ts#L96)
 
 ```ts
 hasVehiclePreset(id: string): boolean
@@ -68,17 +68,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vehiclePresets`
 - `vehiclePresets().some`
 
-## hasVehiclePreset.callback@92
+## hasVehiclePreset.callback@97
 
-[Implementation, line 92](../../../../../src/catalog/vehicles/library.ts#L92)
+[Implementation, line 97](../../../../../src/catalog/vehicles/library.ts#L97)
 
 ```ts
-callback@92(preset): inferred by TypeScript; see implementation
+callback@97(preset): inferred by TypeScript; see implementation
 ```
 
 ## vehiclePreset
 
-[Implementation, line 95](../../../../../src/catalog/vehicles/library.ts#L95)
+[Implementation, line 100](../../../../../src/catalog/vehicles/library.ts#L100)
 
 ```ts
 vehiclePreset(id: string): VehiclePreset
@@ -94,17 +94,17 @@ Explicit throws in this body:
 
 - `new Error(\`No vehicle preset "${id}"\`)`
 
-## vehiclePreset.callback@96
+## vehiclePreset.callback@101
 
-[Implementation, line 96](../../../../../src/catalog/vehicles/library.ts#L96)
+[Implementation, line 101](../../../../../src/catalog/vehicles/library.ts#L101)
 
 ```ts
-callback@96(entry): inferred by TypeScript; see implementation
+callback@101(entry): inferred by TypeScript; see implementation
 ```
 
 ## applyTrailerBox
 
-[Implementation, line 110](../../../../../src/catalog/vehicles/library.ts#L110)
+[Implementation, line 115](../../../../../src/catalog/vehicles/library.ts#L115)
 
 ```ts
 applyTrailerBox(entity: Entity, box: string | false): void
@@ -125,7 +125,7 @@ Explicit throws in this body:
 
 ## presetVehicle
 
-[Implementation, line 131](../../../../../src/catalog/vehicles/library.ts#L131)
+[Implementation, line 136](../../../../../src/catalog/vehicles/library.ts#L136)
 
 One vehicle. Omit position to use the preset's placement.
 
@@ -142,7 +142,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## presetEntities
 
-[Implementation, line 153](../../../../../src/catalog/vehicles/library.ts#L153)
+[Implementation, line 158](../../../../../src/catalog/vehicles/library.ts#L158)
 
 The vehicle, plus the carrier stern portal when the preset asks for one.
 

@@ -101,7 +101,8 @@ describe('two-wheeled vehicle schema and validation', () => {
     expect(
       vehicleField.safeParse({ ...bike().vehicle, audio: { engine: { voice: 'v12' } } }).success,
     ).toBe(false)
-    expect(car().vehicle!.audio).toBeUndefined()
+    // The S3 keeps its own refined inline voice; only the bike asks for the V4.
+    expect(car().vehicle!.audio?.engine?.voice).toBe('inline')
     expect(
       vehicleField.safeParse({ ...bike().vehicle, audio: { gearShift: { sound: 'whoosh' } } })
         .success,

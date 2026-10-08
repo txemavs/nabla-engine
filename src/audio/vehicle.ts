@@ -140,7 +140,7 @@ export class VehicleAudio {
   }
 
   /** Engine voice that played on the last `powertrain` call, for tests and the dataset. */
-  get engineVoice(): 'note' | 'v4' {
+  get engineVoice(): 'note' | 'v4' | 'inline' {
     return this.powertrainVoice?.activeVoice ?? 'note'
   }
 

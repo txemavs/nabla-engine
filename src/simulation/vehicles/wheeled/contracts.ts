@@ -56,6 +56,19 @@ export interface SpeedLimiterDefinition {
   /** Default `roadVehicleDefaults.limiterHysteresisKmh`. */
   hysteresisKmh?: number
 }
+/**
+ * Engine mode of a powertrain with `modes`: `normal` (selector D) or `beast` (selector S,
+ * «Bestia»). See `PowertrainDefinition.modes`.
+ */
+export type EngineMode = 'normal' | 'beast'
+/** Per-mode overrides merged over the base powertrain; omitted fields keep the base values. */
+export interface PowertrainModeDefinition {
+  powerCv?: number
+  torqueNm?: number
+  idleRpm?: number
+  maxRpm?: number
+  shift?: GearboxTuning
+}
 export interface PowertrainDefinition {
   powerCv: number
   torqueNm: number
@@ -76,6 +89,14 @@ export interface PowertrainDefinition {
    */
   speedLimiter?: SpeedLimiterDefinition
   shift?: GearboxTuning
+  /**
+   * Two engine modes on one car: `normal` (D) and `beast` (S). Each overrides power, torque,
+   * idle, redline and gearbox points; the audio side picks `vehicle.audio.engineModes[mode]`.
+   * Omitted: a single engine (the base values) and the selector only shows D.
+   */
+  modes?: Partial<Record<EngineMode, PowertrainModeDefinition>>
+  /** Mode on creation when `modes` is set. Default `roadVehicleDefaults.engineMode` (normal). */
+  defaultMode?: EngineMode
 }
 /** One side of the full lean: the touch-down lean, radians, and the touching point (chassis m). */
 export interface TwoWheeledPegSide {
@@ -224,6 +245,10 @@ export interface WheeledTelemetry {
   readonly rpm: number
   readonly gear: number
   readonly manualTransmission: boolean
+  /** Engine mode; `beast` shows the selector as S. Always `normal` without `powertrain.modes`. */
+  readonly engineMode: EngineMode
+  /** True when the vehicle has two engine modes (`powertrain.modes`). */
+  readonly engineModes: boolean
   readonly engineLoad: number
   readonly braking: boolean
   readonly reversing: boolean

@@ -59,7 +59,7 @@ export class VehicleEffects {
       !piloted.vehicle.flight
         ? sim!.vehicleInfo(pilot)
         : null
-    const sound = resolveVehicleSound(piloted?.vehicle?.audio)
+    const sound = resolveVehicleSound(piloted?.vehicle?.audio, car?.engineMode)
     this.playGearChanges(car ? pilot! : null, car, sound)
     this.playEngineStart(car ? pilot! : null, car, piloted?.vehicle?.powertrain?.idleRpm)
     // The engine note stays silent while the starter cranks; it fades in at the catch and
