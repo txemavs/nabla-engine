@@ -87,7 +87,9 @@ describe('menu helpers', () => {
 
   it('offers the drivable catalog vehicles and leaves out the passive trailer', () => {
     const ids = vehicleChoices().map((choice) => choice.id)
-    expect(ids).toEqual(expect.arrayContaining(['car', 'a3', 'white-truck', 'carrier']))
+    expect(ids).toEqual(expect.arrayContaining(['car', 'white-truck', 'carrier']))
+    // The A3 stays an internal preset (Studio, examples, tests); the S3 in Normal mode covers it.
+    expect(ids).not.toContain('a3')
     expect(ids).not.toContain('white-trailer')
     expect(ids).not.toContain('white-trailer-chassis')
     for (const choice of vehicleChoices()) expect(choice.label.length).toBeGreaterThan(0)

@@ -1,6 +1,6 @@
 import { silentOutput } from './graph.js'
 import { V4Engine } from './v4-engine.js'
-import { inlineEngineDefaults } from './inline-engine.js'
+import { inlineEngineDefaults, OverrunBurble } from './inline-engine.js'
 import type { ResolvedEngineVoice } from './vehicle-sound.js'
 
 /**
@@ -117,8 +117,9 @@ class Turbo {
 /**
  * Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
  * `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
- * picks the voice: the road-car note (default) or the procedural V4, built on first use; if
- * the browser cannot build it the note plays instead.
+ * picks the voice: the road-car note (default), the procedural V4 or the refined inline voice
+ * (with its subdued turbo and optional overrun burble), built on first use; if the browser
+ * cannot build it the note plays instead.
  */
 export class Powertrain {
   private readonly engine: EngineNote
@@ -127,11 +128,14 @@ export class Powertrain {
   private v4Unavailable = false
   private inline?: V4Engine
   private inlineUnavailable = false
+  private burble?: OverrunBurble
   private previousTime = 0
 
   constructor(
     private readonly context: AudioContext,
     private readonly noise: AudioBufferSourceNode,
+    /** Randomness of the occasional overrun burble; injectable for tests. */
+    private readonly random: () => number = Math.random,
   ) {
     this.engine = new EngineNote(context)
     this.turbo = new Turbo(context, noise)
@@ -145,6 +149,7 @@ export class Powertrain {
     this.turbo.silence(time)
     this.v4?.silence(time)
     this.inline?.silence(time)
+    this.burble?.silence(time)
   }
 
   update(
@@ -183,6 +188,11 @@ export class Powertrain {
       this.engine.silence(time)
       this.v4?.silence(time)
       inline.update(time, running, rpm, load, engine?.volume ?? 1)
+      if (engine?.burble) {
+        this.burble ??= new OverrunBurble(this.context, this.noise, this.random)
+        if (running) this.burble.update(time, dt, rpm, load, engine.burble, engine.volume)
+        else this.burble.silence(time)
+      } else this.burble?.silence(time)
     } else {
       this.activeVoice = 'note'
       this.v4?.silence(time)

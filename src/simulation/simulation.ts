@@ -18,9 +18,11 @@ import {
   wheelContacts,
   shiftWheeledVehicle,
   automaticWheeledTransmission,
+  setWheeledEngineMode,
   enterWheeledVehicle,
 } from './vehicles/wheeled/runtime.js'
-import { startIgnition } from './vehicles/drivetrain.js'
+import { hasEngineModes, startIgnition } from './vehicles/drivetrain.js'
+import type { EngineMode } from './vehicles/wheeled/contracts.js'
 import {
   createTwoWheeledVehicle,
   resetTwoWheeled,
@@ -1705,6 +1707,10 @@ export class Simulation {
     rpm: number
     gear: number
     manualTransmission: boolean
+    /** Engine mode (`powertrain.modes`): `beast` shows S on the selector. */
+    engineMode: EngineMode
+    /** True when the vehicle has the Normal / Bestia engine modes. */
+    engineModes: boolean
     engineLoad: number
     tireSlip: number
     /** Counts every gear change, automatic included, and D/R engagements. */
@@ -1774,6 +1780,8 @@ export class Simulation {
       rpm: ground.rpm,
       gear: ground.gear,
       manualTransmission: ground.manualTransmission,
+      engineMode: ground.engineMode,
+      engineModes: ground.engineModes,
       engineLoad: ground.engineLoad,
       tireSlip: ground.tireSlip,
       gearShifts: ground.shiftCount,
@@ -1807,11 +1815,33 @@ export class Simulation {
       ? `Manual · ${gearLabel(v.drivetrain.gear, true)}`
       : 'Cambio protegido · marcha no disponible'
   }
+  /**
+   * The selector key (B). From a manual gear it returns to automatic in the current mode. Already
+   * in automatic, a car with engine modes moves the selector between D (Normal) and S (Bestia).
+   */
   automaticTransmission(): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : null
-    return v && automaticWheeledTransmission(v)
-      ? 'Cambio automático · D'
-      : 'Este vehículo no tiene cambio secuencial'
+    if (!v?.definition.powertrain) return 'Este vehículo no tiene cambio secuencial'
+    const wasManual = v.drivetrain.manual
+    automaticWheeledTransmission(v)
+    if (!wasManual && hasEngineModes(v.definition.powertrain))
+      return this.setEngineMode(this.vehicleId!, v.drivetrain.mode === 'beast' ? 'normal' : 'beast')
+    return `Cambio automático · ${v.drivetrain.mode === 'beast' && hasEngineModes(v.definition.powertrain) ? 'S' : 'D'}`
+  }
+
+  /**
+   * Select a car's engine mode (J menu «Motor», or the selector D/S). Power, torque, redline,
+   * shift points and the engine voice follow. Returns the HUD message.
+   */
+  setEngineMode(id: string, mode: EngineMode): string {
+    const v = this.vehicles.get(id)
+    if (!v || !setWheeledEngineMode(v, mode)) return 'Este vehículo tiene un solo modo de motor'
+    return mode === 'beast' ? 'Motor: Bestia · cambio en S' : 'Motor: Normal · cambio en D'
+  }
+
+  /** Current engine mode of a vehicle; `normal` for vehicles without modes or unknown ids. */
+  engineMode(id: string): EngineMode {
+    return this.vehicles.get(id)?.drivetrain.mode ?? 'normal'
   }
 
   dockingCandidate(id = this.vehicleId): string | null {

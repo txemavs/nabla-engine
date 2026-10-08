@@ -6,6 +6,7 @@ import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Body, Box, Vec3, World } from '../../src/simulation/physics.js'
 import { finishStartUp } from '../start-up.js'
+import { beast } from '../engine-mode.js'
 
 it('holds the pedal back while rolling, then needs a short planted dwell before engaging', () => {
   const state = { ...createDrivetrain(), gear: 1, parked: false }
@@ -66,7 +67,7 @@ function convoy(wall = false, bump = false) {
   ground.size = [10000, 1, 10000]
   const obstacle = createEntity('wall', 'box', [0, 2, 18])
   obstacle.size = [8, 4, 1]
-  const car = presetVehicle('car', 'car', [-5, 0.62, -1.4])
+  const car = beast(presetVehicle('car', 'car', [-5, 0.62, -1.4]))
   car.transform.rotation = [0, -Math.SQRT1_2, 0, Math.SQRT1_2]
   const sim = new Simulation({
     version: 1,

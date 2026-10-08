@@ -1,10 +1,10 @@
 {
   "id": "car",
-  "label": "S3 Nabla · 400 CV",
+  "label": "S3 Nabla · Normal / Bestia",
   "clearance": 0.62,
   "placement": [4, 0.62, 6],
   "order": 0,
-  "name": "S3 Nabla · 400 CV DSG",
+  "name": "S3 Nabla · DSG",
   "color": "#dadde1",
   "size": [1.994, 1.332, 4.407],
   "mass": 1400,
@@ -13,7 +13,27 @@
     "audio": {
       "engine": {
         "voice": "inline",
-        "cylinders": 4
+        "cylinders": 4,
+        "volume": 0.75,
+        "turboWhistle": 0.35,
+        "blowOff": 0
+      },
+      "engineModes": {
+        "normal": {
+          "voice": "inline",
+          "cylinders": 4,
+          "volume": 0.75,
+          "turboWhistle": 0.35,
+          "blowOff": 0
+        },
+        "beast": {
+          "voice": "inline",
+          "cylinders": 5,
+          "warble": 0.14,
+          "turboWhistle": 0.5,
+          "blowOff": 0.1,
+          "burble": 0.35
+        }
       }
     },
     "mirrorTilt": 4,
@@ -51,6 +71,22 @@
       "ratios": [3.4, 2.75, 1.77, 1.13, 0.92, 0.76, 0.64],
       "finalDrive": 4.06,
       "grip": 4.8,
+      "defaultMode": "normal",
+      "modes": {
+        "normal": {
+          "powerCv": 200,
+          "torqueNm": 400,
+          "maxRpm": 4800,
+          "shift": {
+            "upshiftRpm": 4200,
+            "downshiftRpm": 1500
+          }
+        },
+        "beast": {
+          "powerCv": 400,
+          "torqueNm": 520
+        }
+      },
       "shift": {
         "seconds": 0.12,
         "cooldownSeconds": 0.45,

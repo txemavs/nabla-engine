@@ -146,6 +146,8 @@ export class CarInstruments {
     altitude = 0,
     /** Needle self-test after entering, 0..1 (see `Simulation.vehicleInfo().gaugeSweep`). */
     gaugeSweep = 0,
+    /** Engine mode Bestia: the selector reads S. */
+    sport = false,
   ): void {
     if (this.disposed || !this.powered) return
     if (this.lastUpdate !== undefined)
@@ -169,7 +171,7 @@ export class CarInstruments {
     this.speedMonitor.update(
       sweepCluster(
         this.definition.cluster,
-        this.definition.clusterData({ speedKmh, rpm, gear, load, manual, parked }),
+        this.definition.clusterData({ speedKmh, rpm, gear, load, manual, parked, sport }),
         gaugeSweep,
       ),
       now,

@@ -35,7 +35,6 @@ describe('terrain drive example', () => {
     expect(scene.sky).toEqual({ mode: 'live' })
     const vehicles = scene.entities.filter((e) => e.vehicle)
     expect(vehicles.map((v) => v.id).sort()).toEqual([
-      'demo-a3',
       'demo-carrier',
       'demo-white-truck',
       'demo-white-truck-trailer',

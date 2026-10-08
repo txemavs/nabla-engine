@@ -5,6 +5,7 @@ import { createEntity } from '../../src/entity/schema.js'
 import { type SceneDocument } from '../../src/scene/document.js'
 import { idleInput, Simulation } from '../../src/simulation/simulation.js'
 import { finishStartUp } from '../start-up.js'
+import { beast } from '../engine-mode.js'
 
 function document(): SceneDocument {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
@@ -15,7 +16,7 @@ function document(): SceneDocument {
     entities: [
       floor,
       createEntity('spawn', 'spawn', [-2.5, 0.05, 6]),
-      presetVehicle('car', 'car', [0, 0.62, 6]),
+      beast(presetVehicle('car', 'car', [0, 0.62, 6])),
       presetVehicle('carrier', 'carrier', [0, 1.2, -12]),
     ],
   }
