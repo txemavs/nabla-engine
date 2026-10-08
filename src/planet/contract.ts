@@ -244,12 +244,15 @@ export const BRIDGE_DECK_ROLE = 'bridge-deck'
 /** Atlas asphalt primitive role on ground-level roadway (`extras.atlasSurfaceRole`). */
 export const GROUND_ROAD_ROLE = 'ground-road'
 
+/** Atlas asphalt role for viaducts / ramps not fused into `terrain.lidar`. */
+export const ELEVATED_OR_UNRESOLVED_ROAD_ROLE = 'elevated-or-unresolved-road'
+
 /**
  * Whether a candidate asphalt mesh is kept for this cell version (render, roads drape and
- * collision). Version 2+ cells already carry the ground road inside `terrain.lidar`, so only
- * primitives tagged `ground-road` are skipped — otherwise a roads-photo drape cut from that
- * asphalt floats as a ghost layer over the fused terrain. Bridge decks, elevated or unresolved
- * roadway and untagged asphalt are kept (they are not part of the terrain); supports are never
+ * collision). Version 2+ cells already carry the ground road inside `terrain.lidar`, so asphalt
+ * is kept only when it is clearly elevated: `bridge-deck` or `elevated-or-unresolved-road`.
+ * Everything else (`ground-road`, untagged, legacy names like "Cell road surface") is skipped —
+ * otherwise a separate OSM road plane floats over / under the fused terrain. Supports are never
  * filtered.
  */
 export function loadsCandidateAsphaltOnCell(
@@ -257,7 +260,10 @@ export function loadsCandidateAsphaltOnCell(
   metadata: Record<string, any> | undefined,
 ): boolean {
   if (cellVersion < 2) return true
-  return metadata?.atlasSurfaceRole !== GROUND_ROAD_ROLE
+  // Supports and non-asphalt layers are not filtered here.
+  if (metadata?.nablaCandidateRoad && metadata.nablaCandidateRoad !== 'asphalt') return true
+  const role = metadata?.atlasSurfaceRole
+  return role === BRIDGE_DECK_ROLE || role === ELEVATED_OR_UNRESOLVED_ROAD_ROLE
 }
 
 /**

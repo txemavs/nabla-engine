@@ -15,6 +15,7 @@ export {
   BRIDGE_DECK_ROLE,
   loadsCandidateAsphaltOnCell,
   GROUND_ROAD_ROLE,
+  ELEVATED_OR_UNRESOLVED_ROAD_ROLE,
   planetCellVersion,
   readCandidateRoads,
   ROAD_CANDIDATES_SCHEMA,
