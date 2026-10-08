@@ -131,7 +131,7 @@ export class VehicleAudio {
   powertrain(
     rpm: number,
     load: number,
-    options: { turbo?: boolean; engine?: ResolvedEngineVoice } = {},
+    options: { turbo?: boolean; engine?: ResolvedEngineVoice; braking?: boolean } = {},
   ): void {
     const frame = this.frame()
     if (!frame || !this.powertrainVoice) return
@@ -142,11 +142,12 @@ export class VehicleAudio {
       load,
       options.turbo ?? true,
       options.engine,
+      options.braking ?? false,
     )
   }
 
   /** Engine voice that played on the last `powertrain` call, for tests and the dataset. */
-  get engineVoice(): 'note' | 'v4' | 'inline' {
+  get engineVoice(): 'note' | 'v4' | 'inline' | 'diesel' {
     return this.powertrainVoice?.activeVoice ?? 'note'
   }
 
