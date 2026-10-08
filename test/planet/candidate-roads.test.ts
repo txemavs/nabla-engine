@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   BRIDGE_DECK_ROLE,
+  ELEVATED_OR_UNRESOLVED_ROAD_ROLE,
   GROUND_ROAD_ROLE,
+  OSM_ROAD_INSPECT_CATEGORY,
+  applyCandidateAsphaltPolicy,
+  candidateAsphaltDisposition,
   loadsCandidateAsphaltOnCell,
   castsPlanetShadow,
   isCandidateRoadGlbPath,
@@ -400,7 +404,7 @@ describe('v2+ ground asphalt', () => {
     ).toBe(true)
   })
 
-  it('on version 2 and 3 keeps only elevated asphalt; ground/untagged is in terrain.lidar', () => {
+  it('on version 2 and 3 keeps only bridge-deck asphalt; the OSM road layer is not drawn', () => {
     for (const version of [2, 3] as const) {
       expect(
         loadsCandidateAsphaltOnCell(
@@ -414,16 +418,77 @@ describe('v2+ ground asphalt', () => {
           tagCandidateRoadMesh({ atlasSurfaceRole: BRIDGE_DECK_ROLE }, 'asphalt'),
         ),
       ).toBe(true)
+      // Atlas v3 16221/11996: elevated-or-unresolved sits at terrain level (p90 +0.03 m) — the
+      // floating / duplicate OSM road plane. Not drawn, not a collider by default.
       expect(
         loadsCandidateAsphaltOnCell(
           version,
           tagCandidateRoadMesh({ atlasSurfaceRole: 'elevated-or-unresolved-road' }, 'asphalt'),
         ),
-      ).toBe(true)
+      ).toBe(false)
       // Untagged / legacy names (e.g. "Cell road surface") are ground roadway: skip.
       expect(loadsCandidateAsphaltOnCell(version, tagCandidateRoadMesh({}, 'asphalt'))).toBe(false)
       // Supports are not asphalt — helper leaves them alone.
       expect(loadsCandidateAsphaltOnCell(version, tagCandidateRoadMesh({}, 'supports'))).toBe(true)
     }
+  })
+})
+
+describe('OSM road layer: hidden and non-colliding by default, bridges always', () => {
+  const asphalt = (role?: string) =>
+    triangle('Roads', tagCandidateRoadMesh(role ? { atlasSurfaceRole: role } : {}, 'asphalt'))
+  const cell = () => ({
+    ground: asphalt(GROUND_ROAD_ROLE),
+    elevated: asphalt(ELEVATED_OR_UNRESOLVED_ROAD_ROLE),
+    untagged: asphalt(),
+    deck: asphalt(BRIDGE_DECK_ROLE),
+    supports: triangle('Roads', tagCandidateRoadMesh({}, 'supports')),
+    terrain: triangle('Terrain', { nablaTerrainLidar: true }),
+  })
+
+  it('default: v2+ OSM asphalt dropped, bridge deck + supports kept and colliding', () => {
+    for (const version of [2, 3] as const) {
+      const c = cell()
+      const meshes = applyCandidateAsphaltPolicy(Object.values(c), version)
+      expect(meshes).not.toContain(c.ground)
+      expect(meshes).not.toContain(c.elevated)
+      expect(meshes).not.toContain(c.untagged)
+      expect(meshes).toEqual(expect.arrayContaining([c.deck, c.supports, c.terrain]))
+      expect(c.deck.metadata.category).toBe('Roads')
+      expect(c.supports.metadata.category).toBe('Roads')
+      const vertices = planetCollisionChunks(meshes).reduce((n, k) => n + k.triangles.length, 0)
+      expect(vertices).toBe(
+        c.deck.position.length + c.supports.position.length + c.terrain.position.length,
+      )
+    }
+  })
+
+  it('opt-in osmRoads: OSM asphalt is drawn as RoadInspect and still never collides', () => {
+    const c = cell()
+    const meshes = applyCandidateAsphaltPolicy(Object.values(c), 3, { osmRoads: true })
+    expect(meshes).toEqual(expect.arrayContaining([c.ground, c.elevated, c.untagged, c.deck]))
+    for (const m of [c.ground, c.elevated, c.untagged])
+      expect(m.metadata.category).toBe(OSM_ROAD_INSPECT_CATEGORY)
+    expect(c.deck.metadata.category).toBe('Roads')
+    const vertices = planetCollisionChunks(meshes).reduce((n, k) => n + k.triangles.length, 0)
+    expect(vertices).toBe(
+      c.deck.position.length + c.supports.position.length + c.terrain.position.length,
+    )
+  })
+
+  it('version 1: the single untagged asphalt carries the bridge decks, so it stays', () => {
+    const c = cell()
+    expect(candidateAsphaltDisposition(1, c.untagged.metadata)).toBe('keep')
+    expect(candidateAsphaltDisposition(1, c.untagged.metadata, { osmRoads: true })).toBe('keep')
+    expect(applyCandidateAsphaltPolicy([c.untagged], 1)).toEqual([c.untagged])
+  })
+
+  it('bridges are never dropped, with or without the opt-in', () => {
+    for (const version of [1, 2, 3] as const)
+      for (const osmRoads of [false, true]) {
+        const c = cell()
+        expect(candidateAsphaltDisposition(version, c.deck.metadata, { osmRoads })).toBe('keep')
+        expect(candidateAsphaltDisposition(version, c.supports.metadata, { osmRoads })).toBe('keep')
+      }
   })
 })

@@ -15,7 +15,8 @@ export interface TileLayer {
 
 /** Draw order of the selector. The first layer is the road, drawn on top of the ground photo. */
 export const TILE_LAYERS: readonly TileLayer[] = [
-  { id: 'road', label: 'Carretera', categories: ['Roads'], drapes: ['roads'] },
+  // `RoadInspect`: OSM road asphalt shown only with the `osmRoads` opt-in (never collides).
+  { id: 'road', label: 'Carretera', categories: ['Roads', 'RoadInspect'], drapes: ['roads'] },
   { id: 'buildings', label: 'Edificios y techos', categories: ['Buildings'], drapes: ['roofs'] },
   {
     id: 'photo',

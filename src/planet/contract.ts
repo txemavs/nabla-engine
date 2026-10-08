@@ -262,22 +262,68 @@ export const GROUND_ROAD_ROLE = 'ground-road'
 export const ELEVATED_OR_UNRESOLVED_ROAD_ROLE = 'elevated-or-unresolved-road'
 
 /**
- * Whether a candidate asphalt mesh is kept for this cell version (render, roads drape and
- * collision). Version 2+ cells already carry the ground road inside `terrain.lidar`, so asphalt
- * is kept only when it is clearly elevated: `bridge-deck` or `elevated-or-unresolved-road`.
- * Everything else (`ground-road`, untagged, legacy names like "Cell road surface") is skipped —
- * otherwise a separate OSM road plane floats over / under the fused terrain. Supports are never
- * filtered.
+ * `userData.category` of OSM road asphalt shown only for inspection (`osmRoads` opt-in): drawn with
+ * its own material, never collides, never draped, never in the cockpit chart.
+ */
+export const OSM_ROAD_INSPECT_CATEGORY = 'RoadInspect'
+
+/**
+ * What the engine does with one candidate asphalt mesh:
+ * - `keep`: render and collide (category Roads).
+ * - `inspect`: render only, no collision (category {@link OSM_ROAD_INSPECT_CATEGORY}).
+ * - `drop`: not installed at all.
+ *
+ * Bridges have priority and are always `keep`: `bridge-deck` asphalt, and every non-asphalt road
+ * layer (supports: piers, fascias, abutments, the deck wall). Version 1 cells publish one untagged
+ * asphalt mesh ("Cell road surface") that is the road surface AND the bridge decks, and their
+ * terrain has no fused road, so it stays `keep` (as in Euskadi Online).
+ *
+ * Version 2+ cells carry the ground road inside `terrain.lidar`; every other asphalt role
+ * (`ground-road`, `elevated-or-unresolved-road`, untagged) is the separate OSM road layer. By
+ * default it is `drop` (no floating plane, no collider); with `osmRoads` it is `inspect`.
+ * The OSM data itself (`osm.snapshot`, GPS / navigation) is a different file and always loads.
+ */
+export function candidateAsphaltDisposition(
+  cellVersion: PlanetCellVersion,
+  metadata: Record<string, any> | undefined,
+  options: { osmRoads?: boolean } = {},
+): 'keep' | 'inspect' | 'drop' {
+  if (cellVersion < 2) return 'keep'
+  // Supports and non-asphalt layers are bridges / structure: never filtered here.
+  if (metadata?.nablaCandidateRoad && metadata.nablaCandidateRoad !== 'asphalt') return 'keep'
+  if (metadata?.atlasSurfaceRole === BRIDGE_DECK_ROLE) return 'keep'
+  return options.osmRoads ? 'inspect' : 'drop'
+}
+
+/**
+ * Whether a candidate asphalt mesh renders and collides by default (see
+ * {@link candidateAsphaltDisposition}): every mesh on version 1 cells; on version 2+ only
+ * `bridge-deck` asphalt and non-asphalt road layers (supports).
  */
 export function loadsCandidateAsphaltOnCell(
   cellVersion: PlanetCellVersion,
   metadata: Record<string, any> | undefined,
 ): boolean {
-  if (cellVersion < 2) return true
-  // Supports and non-asphalt layers are not filtered here.
-  if (metadata?.nablaCandidateRoad && metadata.nablaCandidateRoad !== 'asphalt') return true
-  const role = metadata?.atlasSurfaceRole
-  return role === BRIDGE_DECK_ROLE || role === ELEVATED_OR_UNRESOLVED_ROAD_ROLE
+  return candidateAsphaltDisposition(cellVersion, metadata) === 'keep'
+}
+
+/**
+ * Apply {@link candidateAsphaltDisposition} to a cell's meshes in place: drop the `drop` ones and
+ * move the `inspect` ones to {@link OSM_ROAD_INSPECT_CATEGORY}. Returns the same array.
+ */
+export function applyCandidateAsphaltPolicy<T extends { metadata: Record<string, any> }>(
+  meshes: T[],
+  cellVersion: PlanetCellVersion,
+  options: { osmRoads?: boolean } = {},
+): T[] {
+  for (let i = meshes.length - 1; i >= 0; i--) {
+    const m = meshes[i]!
+    if (m.metadata.nablaCandidateRoad !== 'asphalt') continue
+    const disposition = candidateAsphaltDisposition(cellVersion, m.metadata, options)
+    if (disposition === 'drop') meshes.splice(i, 1)
+    else if (disposition === 'inspect') m.metadata.category = OSM_ROAD_INSPECT_CATEGORY
+  }
+  return meshes
 }
 
 /**

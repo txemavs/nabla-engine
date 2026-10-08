@@ -23,6 +23,7 @@ import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { parseLayerSpec, setHiddenTileLayers } from '@nabla/engine/render'
 import { mountSettingsHud } from './settings-hud.js'
+import { osmRoadsRequested } from './layers-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import {
@@ -192,6 +193,8 @@ try {
           baseUrl: tilesBase,
           apiUrl: '/prepare',
           mode: config.staticTiles ? 'static' : 'dynamic',
+          // Opt-in inspection of the v2+ OSM road asphalt (drawn, never collides). Default hidden.
+          osmRoads: osmRoadsRequested(location.search),
           // Atlas packages (terrain, photo) are read when a manifest names one; plain tiles ignore this.
           ...(config.staticTiles && {
             atlas: { relief: 'engine' as const, photo: 'full' as const },

@@ -3,7 +3,7 @@ import { placeLabel } from './place-label.js'
 import {
   PLANET_GEOMETRY_REVISION,
   castsPlanetShadow,
-  loadsCandidateAsphaltOnCell,
+  candidateAsphaltDisposition,
   planetCellVersion,
   planetTileRevision,
   validPlanetPlaces,
@@ -60,6 +60,13 @@ export interface PlanetSourceOptions {
    * The mesh is never installed as driving collision.
    */
   inspectRoadCollision?: boolean
+  /**
+   * Show the separate OSM road asphalt of version 2+ cells (`ground-road`,
+   * `elevated-or-unresolved-road`) for inspection: drawn, never a collider. Default off (not drawn,
+   * not loaded into collision). Bridges (`bridge-deck`, supports) always render and collide, and
+   * the OSM snapshot for the GPS always loads. URL `osmRoads=1` in the game.
+   */
+  osmRoads?: boolean
 }
 import { PlanetHorizon } from './horizon.js'
 import {
@@ -1029,6 +1036,7 @@ export class PlanetWorld {
         manifest,
         buildings: this.buildings,
         inspectRoadCollision: this.sourceOptions.inspectRoadCollision === true,
+        osmRoads: this.sourceOptions.osmRoads === true,
         drape:
           imagery === 'package' && manifest.photo && tile.z === 15
             ? { layers: [...projectedLayers], width: planetTileFrame(tile).width }
@@ -1049,11 +1057,13 @@ export class PlanetWorld {
     group.quaternion.fromArray(rotation)
     const cellVersion = planetCellVersion(manifest)
     for (const data of payload.meshes) {
-      // v2+ terrain.lidar already carries the ground road: skip ground asphalt so it does not
-      // double up. Bridge-deck asphalt and supports stay (bridges have priority).
+      // The worker already applied the OSM road policy; this guards payloads from elsewhere.
+      // Bridge-deck asphalt and supports always stay (bridges have priority).
       if (
         data.metadata.nablaCandidateRoad === 'asphalt' &&
-        !loadsCandidateAsphaltOnCell(cellVersion, data.metadata)
+        candidateAsphaltDisposition(cellVersion, data.metadata, {
+          osmRoads: this.sourceOptions.osmRoads === true,
+        }) === 'drop'
       )
         continue
       const geometry = new THREE.BufferGeometry()

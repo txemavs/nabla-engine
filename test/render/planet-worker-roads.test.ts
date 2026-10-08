@@ -50,6 +50,48 @@ function triangleGlb(): ArrayBuffer {
   return out
 }
 
+/** Asphalt GLB like Atlas v2+: one primitive per `extras.atlasSurfaceRole` material. */
+function roleGlb(roles: string[]): ArrayBuffer {
+  const positions = new Float32Array(roles.flatMap((_, i) => [i, 0, 0, i + 1, 0, 0, i, 0, 1]))
+  const json = JSON.stringify({
+    asset: { version: '2.0' },
+    scene: 0,
+    scenes: [{ nodes: roles.map((_, i) => i) }],
+    nodes: roles.map((_, i) => ({ mesh: i })),
+    meshes: roles.map((_, i) => ({ primitives: [{ attributes: { POSITION: i }, material: i }] })),
+    materials: roles.map((role) => ({ name: role, extras: { atlasSurfaceRole: role } })),
+    accessors: roles.map((_, i) => ({
+      bufferView: i,
+      componentType: 5126,
+      count: 3,
+      type: 'VEC3',
+      max: [i + 1, 0, 1],
+      min: [i, 0, 0],
+    })),
+    bufferViews: roles.map((_, i) => ({ buffer: 0, byteOffset: i * 36, byteLength: 36 })),
+    buffers: [{ byteLength: positions.byteLength }],
+  })
+  const jsonBytes = new TextEncoder().encode(json)
+  const jsonPad = (4 - (jsonBytes.length % 4)) % 4
+  const jsonChunk = 8 + jsonBytes.length + jsonPad
+  const total = 12 + jsonChunk + 8 + positions.byteLength
+  const out = new ArrayBuffer(total)
+  const view = new DataView(out)
+  const bytes = new Uint8Array(out)
+  view.setUint32(0, 0x46546c67, true)
+  view.setUint32(4, 2, true)
+  view.setUint32(8, total, true)
+  view.setUint32(12, jsonBytes.length + jsonPad, true)
+  view.setUint32(16, 0x4e4f534a, true)
+  bytes.set(jsonBytes, 20)
+  bytes.fill(0x20, 20 + jsonBytes.length, 20 + jsonBytes.length + jsonPad)
+  const binOff = 12 + jsonChunk
+  view.setUint32(binOff, positions.byteLength, true)
+  view.setUint32(binOff + 4, 0x004e4942, true)
+  bytes.set(new Uint8Array(positions.buffer), binOff + 8)
+  return out
+}
+
 const tile: MapTile = { z: 15, x: 16224, y: 11998 }
 const glb = triangleGlb()
 let file: { bytes: number; sha256: string }
@@ -90,9 +132,11 @@ function serve(missing: string[]) {
       : new Response(glb.slice(0))) as typeof fetch
 }
 
-async function run(m: PlanetManifest) {
+async function run(m: PlanetManifest, extra: Record<string, unknown> = {}) {
   posted.length = 0
-  await scope.onmessage!({ data: { id: 1, manifest: m, directory: '/z/15/16224/11998/' } })
+  await scope.onmessage!({
+    data: { id: 1, manifest: m, directory: '/z/15/16224/11998/', ...extra },
+  })
   return posted[0]
 }
 
@@ -140,5 +184,75 @@ describe('planet worker road layers', () => {
     serve(['terra-15-16224-11998-202610051200.glb'])
     const message = await run(manifest(undefined))
     expect(message.error).toMatch(/GLB HTTP 404/)
+  })
+})
+
+describe('planet worker: OSM road asphalt on v2+ cells', () => {
+  const roles = ['ground-road', 'bridge-deck', 'elevated-or-unresolved-road']
+  const asphaltGlb = roleGlb(roles)
+  let asphalt: { path: string; download: string; bytes: number; sha256: string }
+  beforeAll(async () => {
+    const path = 'asphalt-candidate-cccccccccccccccc.glb'
+    asphalt = {
+      path,
+      download: path,
+      bytes: asphaltGlb.byteLength,
+      sha256: await sha256(asphaltGlb),
+    }
+  })
+  const v3 = (): PlanetManifest => ({
+    ...manifest({
+      files: {
+        asphalt,
+        supports: {
+          path: 'supports-candidate-dddddddddddddddd.glb',
+          download: 's.glb',
+          ...file,
+        },
+      },
+    }),
+    cellVersion: 3,
+  })
+  const serveRoles = () => {
+    globalThis.fetch = (async (url: string) =>
+      new Response(url.endsWith(asphalt.path) ? asphaltGlb.slice(0) : glb.slice(0))) as typeof fetch
+  }
+  const asphaltRoles = (message: any) =>
+    message.payload.meshes
+      .filter((m: any) => m.metadata.nablaCandidateRoad === 'asphalt')
+      .map((m: any) => [m.metadata.atlasSurfaceRole, m.metadata.category])
+  /** Collision triangles at the asphalt GLB's x range (role i spans x ∈ [i, i+1]). */
+  const collidingRoles = (message: any) => {
+    const hit = new Set<string>()
+    for (const chunk of message.payload.chunks)
+      for (let i = 0; i < chunk.triangles.length; i += 9) {
+        const xs = [chunk.triangles[i], chunk.triangles[i + 3], chunk.triangles[i + 6]]
+        const zs = [chunk.triangles[i + 2], chunk.triangles[i + 5], chunk.triangles[i + 8]]
+        // Asphalt triangles lie in y=0 with z ∈ {0,1}; terrain/supports use z=0 only.
+        if (zs.some((z: number) => z === 1)) hit.add(roles[Math.min(...xs)]!)
+      }
+    return [...hit].sort()
+  }
+
+  it('default: only the bridge deck (and supports) render and collide', async () => {
+    serveRoles()
+    const message = await run(v3())
+    expect(message.error).toBeUndefined()
+    expect(asphaltRoles(message)).toEqual([['bridge-deck', 'Roads']])
+    expect(
+      message.payload.meshes.some((m: any) => m.metadata.nablaCandidateRoad === 'supports'),
+    ).toBe(true)
+    expect(collidingRoles(message)).toEqual(['bridge-deck'])
+  })
+
+  it('osmRoads opt-in: ground / elevated asphalt drawn as RoadInspect, still not colliding', async () => {
+    serveRoles()
+    const message = await run(v3(), { osmRoads: true })
+    expect(asphaltRoles(message).sort()).toEqual([
+      ['bridge-deck', 'Roads'],
+      ['elevated-or-unresolved-road', 'RoadInspect'],
+      ['ground-road', 'RoadInspect'],
+    ])
+    expect(collidingRoles(message)).toEqual(['bridge-deck'])
   })
 })
