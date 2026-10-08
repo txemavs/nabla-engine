@@ -227,6 +227,24 @@ export function isInspectRoadCollisionMesh(
   return metadata?.nablaCandidateRoad === 'collision'
 }
 
+/** Atlas asphalt primitive role on an elevated structure (`extras.atlasSurfaceRole`). */
+export const BRIDGE_DECK_ROLE = 'bridge-deck'
+
+/**
+ * Shadow casters among planet meshes. Terrain and buildings always cast. Atlas bridge supports
+ * (piers, slabs, fascias, abutments) and asphalt primitives tagged `bridge-deck` cast as well, so
+ * a bridge darkens the road, rail or water below it. Ground-level asphalt never casts (it would
+ * only self-shadow the terrain it lies on), and skirts never cast.
+ */
+export function castsPlanetShadow(metadata: Record<string, any> | undefined): boolean {
+  if (!metadata || metadata.skirt) return false
+  if (['Terrain', 'Buildings'].includes(metadata.category)) return true
+  return (
+    metadata.nablaCandidateRoad === 'supports' ||
+    (metadata.nablaCandidateRoad === 'asphalt' && metadata.atlasSurfaceRole === BRIDGE_DECK_ROLE)
+  )
+}
+
 /** Stamp worker extras. Asphalt/supports keep category Roads so they render and collide. */
 export function tagCandidateRoadMesh(
   metadata: Record<string, any>,
