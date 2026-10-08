@@ -15,6 +15,8 @@
 
 ### Changed
 
+- Pistol reload: the magazine release and the magazine insert are louder (+8 to +10 dB) and not the same tick. The release is a dull knock, the insert a short sharp click. Gearbox clicks are unchanged.
+
 - Bike: mounting a fallen bike (E, next to it) does the R reset. The rider is seated, the bike stands up and, with road snap on, moves to the nearest road. An upright bike is unchanged.
 - Starter (every vehicle): one mechanical click and a very brief crank (about 0.2 s), then the engine catches on the first try and idles. No starter whine. The running voices are unchanged.
 
