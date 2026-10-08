@@ -28,7 +28,9 @@ describe('S3 cabin colour', () => {
     }
     expect(kept.color.getHexString()).toBe('888888')
     expect(chrome.userData.nabla.reflective).toBe(true)
-    expect(chrome.color.getHexString()).toBe('888888')
+    // Whiter chrome base, not the cabin floor and not left at the dark authored grey.
+    expect(chrome.color.r).toBeGreaterThan(0.9)
+    expect(chrome.color.getHexString()).not.toBe('888888')
     for (const material of [seat, plastic, grey, chrome, kept]) material.dispose()
   })
 })

@@ -135,7 +135,8 @@ describe('vfr800 GLB cockpit pass', () => {
     expect(capBox.min.x).toBeGreaterThan(0)
     const end = material(CHROME)
     expect(end.metalness).toBe(1)
-    expect(end.roughness).toBeCloseTo(0.12, 6)
+    expect(end.roughness).toBeCloseTo(0.15, 6)
+    expect(end.color.r).toBeGreaterThan(0.8)
     expect(end.color.b - end.color.r).toBeCloseTo(0, 6)
     // The headers, the silencer can and the engine: the triple clamp's satin grey. No authored
     // chrome is left on the body (the old chrome covered the headers, can and end cap).
@@ -161,7 +162,7 @@ describe('vfr800 GLB cockpit pass', () => {
       new Set(['Black upper chain guard', 'Cast grey rear swingarm']),
     )
     const buttons = material(BUTTONS)
-    expect(buttons.roughness).toBeCloseTo(0.055, 6)
+    expect(buttons.roughness).toBeCloseTo(0.15, 6)
     // The reflection environment is colourless (a blue sky tinted the chrome).
     const pixels = reflectionEnvironmentTexture().image.data as Uint8Array
     for (let i = 0; i < pixels.length; i += 4) {
@@ -170,8 +171,16 @@ describe('vfr800 GLB cockpit pass', () => {
     }
     const env = applyReflectionEnvironment(root)
     expect(env.materials).toContain(end)
-    expect(end.envMapIntensity).toBeCloseTo(0.75, 6)
+    // No private boost: the end cap and the disc buttons reflect like the other metal, and the
+    // reflection is shaded by the surface's own light (so it goes dark in shade and at night).
+    expect(end.envMapIntensity).toBeCloseTo(1, 6)
     expect(buttons.envMapIntensity).toBeCloseTo(1, 6)
+    expect(buttons.roughness).toBeCloseTo(0.15, 6)
+    expect(end.emissive.r + end.emissive.g + end.emissive.b).toBe(0)
+    const shader = { fragmentShader: '#include <emissive_fragment>' }
+    end.onBeforeCompile(shader as never, {} as never)
+    expect(shader.fragmentShader).toContain('nablaLight')
+    expect(end.customProgramCacheKey()).toContain('nabla-shaded-env')
     // Matte paint and rubber are left alone.
     const rubber = materialsOf(root).find((m) => m.name === 'Smooth rubber')!
     expect(rubber.envMap).toBeNull()

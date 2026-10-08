@@ -140,3 +140,14 @@ describe('candidate roads are never trimmed client-side', () => {
     }
   })
 })
+
+describe('Atlas surface roles', () => {
+  it('keeps the primitive material role so bridge decks can cast shadows', () => {
+    const material = new MeshStandardMaterial()
+    material.userData = { atlasSurfaceRole: 'bridge-deck' }
+    const mesh = new Mesh(triangleWithoutNormals(), material)
+    const converted = convertPlanetGlbMesh(mesh, { kind: 'asphalt', anchorAltitude: 0 })
+    expect(converted?.mesh.metadata.atlasSurfaceRole).toBe('bridge-deck')
+    expect(converted?.mesh.metadata.nablaCandidateRoad).toBe('asphalt')
+  })
+})

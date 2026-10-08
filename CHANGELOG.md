@@ -9,6 +9,12 @@
 ### Changed
 
 - Engine start (cars and the VFR, shared starter; the running V4 is unchanged): about 0.95 s of electric-starter whine and compression pulses before the engine catches.
+- **Chrome darkens like the wheel rim lips:** the S3 trim, the VFR silencer end cap and the disc
+  buttons took a fixed studio reflection that ignores shadows, so they stayed bright in shade and
+  at night and read as self-lit. The rim lips never had that environment, which is why they go
+  dark properly (and why their light-grey base read as glossy black beside the glowing trim).
+  Reflections are now multiplied by the surface's own light, the base colour is a whiter 0.93 with
+  roughness 0.15 and metalness 1, and nothing is emissive. Neutral and the right way up, as before.
 
 - **VFR800 metal map (Txema's review):** chrome only on the brake discs (their tracks and floating
   buttons) and the stainless end cap of the silencer (`Stainless chrome silencer end cap`, roughness
