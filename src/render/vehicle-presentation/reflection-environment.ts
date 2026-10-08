@@ -5,6 +5,7 @@
  * chrome reads as bright polished metal. Matte and painted materials are left alone.
  */
 import * as THREE from 'three'
+import { lightingDefaults } from '../../config/lighting.js'
 
 let shared: THREE.DataTexture | null = null
 
@@ -40,6 +41,23 @@ export function reflectionEnvironmentTexture(): THREE.DataTexture {
   texture.magFilter = THREE.LinearFilter
   texture.needsUpdate = true
   return (shared = texture)
+}
+
+/**
+ * Cars: only materials tagged `reflective` (by the presentation adapter or the GLB) take the
+ * environment, a little stronger than on the motorcycles so thin chrome trim reads at a distance.
+ */
+export const carReflectionOptions = Object.freeze({ minMetalness: Infinity, intensity: 0.8 })
+
+/**
+ * Reflection level for the atmosphere's daylight factor `day` (0 night .. 1 full day; 1 without a
+ * sky): `reflectionNightLevel` up to the night threshold, eased up to 1 at `reflectionFullDay`.
+ * The environment is a fixed studio gradient, so it must fade with the light it stands for.
+ */
+export function reflectionLevel(day: number, lighting = lightingDefaults): number {
+  if (!Number.isFinite(day)) return 1
+  const t = THREE.MathUtils.smoothstep(day, lighting.nightThreshold, lighting.reflectionFullDay)
+  return lighting.reflectionNightLevel + (1 - lighting.reflectionNightLevel) * t
 }
 
 /** Materials that took the environment; `setLevel` dims the reflections (night). */
