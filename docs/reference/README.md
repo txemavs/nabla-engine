@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **344 modules; 3634 executable function definitions**.
+Coverage: **344 modules; 3636 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -245,7 +245,7 @@ Coverage: **344 modules; 3634 executable function definitions**.
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
 | [src/render/portal/remote.ts](src/render/portal/remote.ts.md) | 10 |
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
-| [src/render/shadows.ts](src/render/shadows.ts.md) | 28 |
+| [src/render/shadows.ts](src/render/shadows.ts.md) | 29 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
 | [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 15 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
@@ -267,7 +267,7 @@ Coverage: **344 modules; 3634 executable function definitions**.
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
-| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 9 |
+| [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 10 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 21 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 7 |

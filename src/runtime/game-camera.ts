@@ -181,6 +181,8 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
 /**
  * Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
  * `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
+ * Entering the overhead view cuts unless `nextTransitionMs` is set: the blend climbed out
+ * through the cabin while the field of view lerped, and that frame hitch is the stall.
  */
 export function setGameCameraView(
   state: GameCameraState,
@@ -205,6 +207,18 @@ export function setGameCameraView(
     state.headYaw = 0
     state.headPitch = state.settings.headPitch
   }
+}
+
+/**
+ * Far plane while the camera looks steeply down. The ordinary far plane is 12 km, so a
+ * zenithal view is a shaft and the cascaded shadow maps size themselves to it. The ground
+ * under the camera is only about `eyeHeight` metres away; keep enough for relief.
+ * `viewDown` is the camera's forward Y (−1 is straight down).
+ */
+export function downwardViewFar(far: number, eyeHeight: number, viewDown: number): number {
+  if (!(viewDown < -0.65) || !Number.isFinite(far)) return far
+  const height = Number.isFinite(eyeHeight) ? Math.max(0, eyeHeight) : 0
+  return Math.min(far, Math.max(180, height * 3 + 80))
 }
 
 /** Shared gameplay camera, independent of editor UI and renderer ownership.
@@ -501,7 +515,10 @@ export function updateGameCamera(
   let transition = state.transition
   const last = state.lastView
   if (last && state.lastPose && last.view !== cameraView) {
-    const duration = state.nextTransitionMs ?? tuning.modeTransitionMs
+    // Overhead cuts. The pose is already tracked (`mapFollow` runs in every view), and the
+    // old 700 ms climb retargeted cascaded shadows on every frame as the fov lerped from the
+    // cockpit's 70° to 48°. A start sequence can still blend by setting `nextTransitionMs`.
+    const duration = state.nextTransitionMs ?? (cameraView === 'map' ? 0 : tuning.modeTransitionMs)
     transition =
       last.vehicleId === vehicleKey && duration > 0
         ? {
