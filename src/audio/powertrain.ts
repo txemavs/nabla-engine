@@ -1,6 +1,12 @@
 import { silentOutput } from './graph.js'
 import { V4Engine } from './v4-engine.js'
 import { inlineEngineDefaults, OverrunBurble } from './inline-engine.js'
+import {
+  AirBrakeHiss,
+  dieselEngineDefaults,
+  dieselTurboSpool,
+  ExhaustBrake,
+} from './diesel-engine.js'
 import type { ResolvedEngineVoice } from './vehicle-sound.js'
 
 /**
@@ -90,8 +96,14 @@ class Turbo {
     load: number,
     whistle = 1,
     blowOff = 1,
+    spoolFrom = 1600,
+    spoolSpan = 3600,
+    whistleBase = 1100,
+    whistleRise = 1900,
   ): void {
-    const target = audible ? load * Math.max(0, Math.min(1, (rpm - 1600) / 3600)) : 0
+    const target = audible
+      ? load * Math.max(0, Math.min(1, (rpm - spoolFrom) / Math.max(1, spoolSpan)))
+      : 0
     const lifted = audible && this.previousLoad > 0.5 && load < 0.25
     if (lifted) this.release = Math.max(this.release, this.boost)
     if (!audible) {
@@ -105,7 +117,7 @@ class Turbo {
 
     const whistleFade = Math.max(0, Math.min(1, (3800 - rpm) / 1400))
     this.whistleLevel.gain.setTargetAtTime(this.boost * whistleFade * 0.006 * whistle, time, 0.06)
-    this.whistle.frequency.setTargetAtTime(1100 + this.boost * 1900, time, 0.08)
+    this.whistle.frequency.setTargetAtTime(whistleBase + this.boost * whistleRise, time, 0.08)
     this.air.gain.setTargetAtTime(
       this.boost * whistleFade * 0.003 * whistle + this.release * 0.04 * blowOff,
       time,
@@ -128,6 +140,10 @@ export class Powertrain {
   private v4Unavailable = false
   private inline?: V4Engine
   private inlineUnavailable = false
+  private diesel?: V4Engine
+  private dieselUnavailable = false
+  private jake?: ExhaustBrake
+  private air?: AirBrakeHiss
   private burble?: OverrunBurble
   private previousTime = 0
 
@@ -142,13 +158,16 @@ export class Powertrain {
   }
 
   /** Which voice played on the last update, for tests and diagnostics. */
-  activeVoice: 'note' | 'v4' | 'inline' = 'note'
+  activeVoice: 'note' | 'v4' | 'inline' | 'diesel' = 'note'
 
   silence(time: number): void {
     this.engine.silence(time)
     this.turbo.silence(time)
     this.v4?.silence(time)
     this.inline?.silence(time)
+    this.diesel?.silence(time)
+    this.jake?.silence(time)
+    this.air?.silence(time)
     this.burble?.silence(time)
   }
 
@@ -159,6 +178,7 @@ export class Powertrain {
     load: number,
     turbo = true,
     engine?: ResolvedEngineVoice,
+    braking = false,
   ): void {
     rpm = Number.isFinite(rpm) ? Math.max(0, Math.min(20000, rpm)) : 0
     load = Number.isFinite(load) ? Math.max(0, Math.min(1, load)) : 0
@@ -167,6 +187,8 @@ export class Powertrain {
     this.previousTime = time
     const v4 = engine?.voice === 'v4' ? this.v4Voice(engine.firing) : undefined
     const inline = engine?.voice === 'inline' ? this.inlineVoice(engine) : undefined
+    const diesel = engine?.voice === 'diesel' ? this.dieselVoice(engine) : undefined
+    const spool = diesel ? dieselTurboSpool : undefined
     if (turbo)
       this.turbo.update(
         time,
@@ -174,19 +196,41 @@ export class Powertrain {
         running,
         rpm,
         load,
-        inline ? (engine?.turboWhistle ?? 1) : 1,
-        inline ? (engine?.blowOff ?? 1) : 1,
+        inline || diesel ? (engine?.turboWhistle ?? 1) : 1,
+        inline || diesel ? (engine?.blowOff ?? 1) : 1,
+        spool?.fromRpm,
+        spool?.spanRpm,
+        spool?.whistleBaseHz,
+        spool?.whistleRiseHz,
       )
     else this.turbo.silence(time)
+    if (diesel && engine) {
+      this.jake ??= new ExhaustBrake(this.context)
+      this.air ??= new AirBrakeHiss(this.context, this.noise)
+      if (running) this.jake.update(time, true, rpm, load, engine.jake !== false)
+      else this.jake.silence(time)
+      this.air.update(time, running, braking, engine.airBrake !== false)
+    } else {
+      this.jake?.silence(time)
+      this.air?.silence(time)
+    }
     if (v4) {
       this.activeVoice = 'v4'
       this.engine.silence(time)
       this.inline?.silence(time)
+      this.diesel?.silence(time)
       v4.update(time, running, rpm, load, engine?.volume ?? 1)
+    } else if (diesel) {
+      this.activeVoice = 'diesel'
+      this.engine.silence(time)
+      this.v4?.silence(time)
+      this.inline?.silence(time)
+      diesel.update(time, running, rpm, load, engine?.volume ?? 1)
     } else if (inline) {
       this.activeVoice = 'inline'
       this.engine.silence(time)
       this.v4?.silence(time)
+      this.diesel?.silence(time)
       inline.update(time, running, rpm, load, engine?.volume ?? 1)
       if (engine?.burble) {
         this.burble ??= new OverrunBurble(this.context, this.noise, this.random)
@@ -197,6 +241,7 @@ export class Powertrain {
       this.activeVoice = 'note'
       this.v4?.silence(time)
       this.inline?.silence(time)
+      this.diesel?.silence(time)
       this.engine.update(time, running, rpm, load, engine?.volume ?? 1)
     }
   }
@@ -216,6 +261,25 @@ export class Powertrain {
       return this.inline
     } catch {
       this.inlineUnavailable = true
+      return undefined
+    }
+  }
+
+  private dieselVoice(engine: ResolvedEngineVoice): V4Engine | undefined {
+    if (this.dieselUnavailable) return undefined
+    try {
+      if (!this.diesel)
+        this.diesel = new V4Engine(
+          this.context,
+          this.noise,
+          engine.firing,
+          dieselEngineDefaults,
+          engine.weights,
+        )
+      else this.diesel.setFiring(engine.firing, engine.weights)
+      return this.diesel
+    } catch {
+      this.dieselUnavailable = true
       return undefined
     }
   }

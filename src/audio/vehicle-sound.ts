@@ -10,8 +10,9 @@ export type GearShiftSoundKind = 'clack' | 'click' | 'none'
 /**
  * `note`: the road-car engine note. `v4`: the procedural V4 voice (`audio/v4-engine.ts`).
  * `inline`: the refined inline-4 turbo (or inline-5) voice (`audio/inline-engine.ts`).
+ * `diesel`: the inline-6 turbo-diesel (`audio/diesel-engine.ts`), with a jake bark and air-brake hiss.
  */
-export type EngineVoiceKind = 'note' | 'v4' | 'inline'
+export type EngineVoiceKind = 'note' | 'v4' | 'inline' | 'diesel'
 
 /** Authored form, as in `vehicle.audio` of a preset (see `entity/vehicle/field.ts`). */
 export interface VehicleSoundOptions {
@@ -48,6 +49,10 @@ export interface EngineVoiceOptions {
   blowOff?: number
   /** Inline: chance (0..1) of a soft overrun burble when the throttle closes at high rpm. */
   burble?: number
+  /** Diesel: exhaust-brake bark on lift-off. Default true for `diesel`. */
+  jake?: boolean
+  /** Diesel: air-brake hiss when the service brake changes. Default true for `diesel`. */
+  airBrake?: boolean
   /** Loudness multiplier, 0..2. Default 1. */
   volume?: number
 }
@@ -64,6 +69,9 @@ export interface ResolvedEngineVoice {
   blowOff?: number
   /** Inline: overrun burble chance per high-rpm lift, 0..1 (0 = never). */
   burble?: number
+  /** Diesel: jake bark and air-brake hiss. */
+  jake?: boolean
+  airBrake?: boolean
 }
 
 export interface ResolvedVehicleSound {
@@ -78,6 +86,19 @@ const volumeOf = (volume: unknown) =>
 
 /** Resolve the engine voice of `vehicle.audio.engine`; omitted = the road-car note. */
 export function resolveEngineVoice(engine?: EngineVoiceOptions | null): ResolvedEngineVoice {
+  if (engine?.voice === 'diesel') {
+    const cylinders = 6
+    return {
+      voice: 'diesel',
+      firing: inlineFiringAngles(cylinders),
+      volume: volumeOf(engine.volume),
+      weights: inlinePulseWeights(cylinders, 0),
+      turboWhistle: volumeOf(engine.turboWhistle ?? 0.85),
+      blowOff: volumeOf(engine.blowOff ?? 0.05),
+      jake: engine.jake !== false,
+      airBrake: engine.airBrake !== false,
+    }
+  }
   if (engine?.voice === 'inline') {
     const d = inlineEngineDefaults
     const cylinders =

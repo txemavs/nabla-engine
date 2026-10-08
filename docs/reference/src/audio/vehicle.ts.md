@@ -202,7 +202,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 `engine` picks the voice (`resolveEngineVoice`; default the road-car note).
 
 ```ts
-powertrain(rpm: number, load: number, options: { turbo?: boolean; engine?: ResolvedEngineVoice } = {}): void
+powertrain(rpm: number, load: number, options: { turbo?: boolean; engine?: ResolvedEngineVoice; braking?: boolean } = {}): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -212,17 +212,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.engineVoice
 
-[Implementation, line 143](../../../../src/audio/vehicle.ts#L143)
+[Implementation, line 144](../../../../src/audio/vehicle.ts#L144)
 
 Engine voice that played on the last `powertrain` call, for tests and the dataset.
 
 ```ts
-engineVoice(): 'note' | 'v4' | 'inline'
+engineVoice(): 'note' | 'v4' | 'inline' | 'diesel'
 ```
 
 ## VehicleAudio.gearClick
 
-[Implementation, line 148](../../../../src/audio/vehicle.ts#L148)
+[Implementation, line 149](../../../../src/audio/vehicle.ts#L149)
 
 One short, quiet mechanical click for a gear change (`gearShift.sound: 'click'`).
 
@@ -237,7 +237,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.gearChange
 
-[Implementation, line 159](../../../../src/audio/vehicle.ts#L159)
+[Implementation, line 160](../../../../src/audio/vehicle.ts#L160)
 
 One mechanical clack for a gear change or D/R engagement. `sound` is the vehicle's own
 profile (a truck passes a heavier, lower one); omitted fields use the car sound.
@@ -253,7 +253,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.engineStart
 
-[Implementation, line 170](../../../../src/audio/vehicle.ts#L170)
+[Implementation, line 171](../../../../src/audio/vehicle.ts#L171)
 
 One ~0.6 s starter-motor crank ending in the engine catching (`ignitionCrankSeconds`). The
 host keeps `powertrain` at rpm 0 meanwhile and then feeds the settling idle speed.
@@ -269,7 +269,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.gunshot
 
-[Implementation, line 178](../../../../src/audio/vehicle.ts#L178)
+[Implementation, line 179](../../../../src/audio/vehicle.ts#L179)
 
 One sidearm shot. Silent before the first gesture, while muted or while suspended.
 
@@ -284,7 +284,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.tires
 
-[Implementation, line 185](../../../../src/audio/vehicle.ts#L185)
+[Implementation, line 186](../../../../src/audio/vehicle.ts#L186)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).
@@ -306,7 +306,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.scrape
 
-[Implementation, line 191](../../../../src/audio/vehicle.ts#L191)
+[Implementation, line 192](../../../../src/audio/vehicle.ts#L192)
 
 Footpeg scrape grind, 0 (none) … 1, from the two-wheeler pose.
 
@@ -321,7 +321,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.scrapeLevel
 
-[Implementation, line 197](../../../../src/audio/vehicle.ts#L197)
+[Implementation, line 198](../../../../src/audio/vehicle.ts#L198)
 
 Current scrape gain, for tests.
 
@@ -331,7 +331,7 @@ scrapeLevel(): number
 
 ## VehicleAudio.reverseAlarm
 
-[Implementation, line 201](../../../../src/audio/vehicle.ts#L201)
+[Implementation, line 202](../../../../src/audio/vehicle.ts#L202)
 
 Reverse-warning voice, gated by the vehicle profile, gear and global audio preference.
 
@@ -346,7 +346,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.build
 
-[Implementation, line 206](../../../../src/audio/vehicle.ts#L206)
+[Implementation, line 207](../../../../src/audio/vehicle.ts#L207)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).
@@ -378,7 +378,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.frame
 
-[Implementation, line 222](../../../../src/audio/vehicle.ts#L222)
+[Implementation, line 223](../../../../src/audio/vehicle.ts#L223)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).
@@ -395,7 +395,7 @@ frame(): { time: number; audible: boolean } | undefined
 
 ## VehicleAudio.silence
 
-[Implementation, line 227](../../../../src/audio/vehicle.ts#L227)
+[Implementation, line 228](../../../../src/audio/vehicle.ts#L228)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).

@@ -15,7 +15,7 @@ road-car engine note.
 
 ## volumeOf
 
-[Implementation, line 76](../../../../src/audio/vehicle-sound.ts#L76)
+[Implementation, line 84](../../../../src/audio/vehicle-sound.ts#L84)
 
 ```ts
 volumeOf(volume: unknown): inferred by TypeScript; see implementation
@@ -29,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveEngineVoice
 
-[Implementation, line 80](../../../../src/audio/vehicle-sound.ts#L80)
+[Implementation, line 88](../../../../src/audio/vehicle-sound.ts#L88)
 
 Resolve the engine voice of `vehicle.audio.engine`; omitted = the road-car note.
 
@@ -49,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveVehicleSound
 
-[Implementation, line 112](../../../../src/audio/vehicle-sound.ts#L112)
+[Implementation, line 133](../../../../src/audio/vehicle-sound.ts#L133)
 
 Resolve `vehicle.audio`. `mode` is the vehicle's engine mode: when `engineModes[mode]` is set,
 that voice replaces `engine` (the S3's calm Normal and five-cylinder Bestia).

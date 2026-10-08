@@ -266,7 +266,7 @@ const powertrainModeField = z
  */
 const engineVoiceField = z
   .object({
-    voice: z.enum(['note', 'v4', 'inline']),
+    voice: z.enum(['note', 'v4', 'inline', 'diesel']),
     /** Angle between the cylinder banks, degrees. Default 90. */
     vAngle: finite.min(10).max(180).optional(),
     /** Angle between the two crankpins, degrees. Default 180. */
@@ -280,6 +280,10 @@ const engineVoiceField = z
     blowOff: finite.min(0).max(2).optional(),
     /** Inline voice: chance (0..1) of a soft overrun burble on a high-rpm lift. Default 0. */
     burble: finite.min(0).max(1).optional(),
+    /** Diesel: exhaust-brake bark on lift-off. Default on. */
+    jake: z.boolean().optional(),
+    /** Diesel: air-brake hiss on brake apply and release. Default on. */
+    airBrake: z.boolean().optional(),
     /** Loudness multiplier, 0..2. Default 1. */
     volume: finite.min(0).max(2).optional(),
   })

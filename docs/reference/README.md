@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **335 modules; 3533 executable function definitions**.
+Coverage: **336 modules; 3540 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -39,13 +39,14 @@ Coverage: **335 modules; 3533 executable function definitions**.
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 12 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
 | [game/terrain.ts](game/terrain.ts.md) | 14 |
+| [src/audio/diesel-engine.ts](src/audio/diesel-engine.ts.md) | 6 |
 | [src/audio/engine-start.ts](src/audio/engine-start.ts.md) | 7 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/gear-click.ts](src/audio/gear-click.ts.md) | 4 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
-| [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 13 |
+| [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 14 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
 | [src/audio/reverse-alarm.ts](src/audio/reverse-alarm.ts.md) | 3 |
 | [src/audio/scrape.ts](src/audio/scrape.ts.md) | 4 |

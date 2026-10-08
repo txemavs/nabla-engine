@@ -67,7 +67,7 @@ export class VehicleEffects {
     this.audio.powertrain(
       car?.helm !== 'off' && car?.ignition !== 'cranking' ? (car?.rpm ?? 0) : 0,
       car?.engineLoad ?? 0,
-      { turbo: sound.turbo, engine: sound.engine },
+      { turbo: sound.turbo, engine: sound.engine, braking: car?.braking ?? false },
     )
     this.audio.reverseAlarm(
       !!(piloted?.vehicle?.reverseAlarm && car?.reversing && car.helm !== 'off'),

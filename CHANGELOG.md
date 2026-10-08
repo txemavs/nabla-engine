@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Truck: inline-6 turbo-diesel voice (deep idle, load growl, turbo spool, jake bark on lift-off, air-brake hiss, quiet gear shifts). Pulling power follows the Mercedes-Benz OM 471 390 kW rating: 530 PS and 2,600 Nm (was 504 PS / 2,400 Nm). Timbre is TODO(unverified).
+
 - **VFR800 metal map (Txema's review):** chrome only on the brake discs (their tracks and floating
   buttons) and the stainless end cap of the silencer (`Stainless chrome silencer end cap`, roughness
   0.12, reflections 0.75). The silencer can joins the headers and the engine on the top triple
