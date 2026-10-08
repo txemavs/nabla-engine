@@ -48,6 +48,10 @@
       "rearWheelRadius": 0.3149,
       "steeringAxis": [0, 0.9106, 0.4133],
       "steerLimit": 0.610865,
+      "pegLean": {
+        "left": { "lean": 0.9098, "point": [-0.2324, -0.2512, 0.3299] },
+        "right": { "lean": 0.9458, "point": [0.321, -0.105, 0.592] }
+      },
       "frontBrakeForce": 72,
       "rearBrakeForce": 9,
       "rider": {

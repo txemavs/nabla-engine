@@ -11,6 +11,8 @@ export interface CarInstrumentTelemetry {
   manual: boolean
   /** P selected: gear is 0 and the cluster shows P instead of N. */
   parked?: boolean
+  /** Engine mode Bestia: the automatic selector reads S instead of D. */
+  sport?: boolean
 }
 
 /** A stock-car adapter receives this recipe; neither renderer nor monitor chooses a preset. */

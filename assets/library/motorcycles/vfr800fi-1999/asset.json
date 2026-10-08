@@ -14,14 +14,18 @@
   "units": "metres",
   "up": "+Y",
   "forward": "-Z",
-  "triangles": 273994,
-  "bytes": 7828280,
-  "sha256": "2592f40a610fb5ae6f3c670036bf1b477641d015a20faf8f9af08f2ba7b989dc",
+  "triangles": 271678,
+  "bytes": 6233468,
+  "sha256": "60a194887879f0dc95d947c3bcc031a887062bd7ac7bc39328f64f459b2666a5",
   "provenance": {
     "reworkedBy": "Txema Vicente (manual cleanup), then Codex (AI coding agent) under his direction using data from the Honda manual",
     "source": "Cleaned up by hand by Txema Vicente over several hours, then substantially reworked by Codex under his direction using data from the Honda manual, starting from a low-quality base mesh; almost none of the original geometry remains. Base mesh: the user-supplied interceptor.glb. Prepared and visually approved on 2026-10-08.",
     "sourceSha256": "aba157065d7bc73009ac11dc90a89131d91e7c0e5d2ad8705283df83f05a7efd",
     "preparedOn": "2026-10-08",
+    "edits": [
+      "2026-10-08 scripts/prepare-vfr800-cockpit.mjs: the existing fairing mirrors split into mirror_L / mirror_R nodes under Body; static needles, hubs and speedometer tick marks removed for the live instruments; gauge and lamp anchors added; windscreen switched from transmission to alpha blending with a neutral smoke-grey tint and a slight reflection (extras.nabla.envIntensity 0.35); chrome only on the brake discs (authored tracks and floating buttons) and a new stainless end cap on the silencer (base 0.95 grey, metallic 1, roughness 0.12, extras.nabla.envIntensity 0.75); the exhaust headers, the silencer can and the engine cases behind the radiator moved to the satin aluminium of the top triple clamp; the fork stanchions a new polished aluminium grey (base 0.5, metallic 1, roughness 0.3); chain, sprockets, radiator, swingarm, headlamp reflector and mirror glass keep their authored materials.",
+      "2026-10-08 metal map review (Txema): first pass had a mirror chrome (roughness 0.03, envIntensity 1.25, then 0.12 / 0.75) on the fork stanchions, the silencer can and its end cap; now only the end cap keeps it, the can is satin aluminium and the stanchions polished aluminium. Regenerated from the phase-1 GLB (1de7fde) with scripts/prepare-vfr800-cockpit.mjs."
+    ],
     "note": "Provenance as stated by Txema Vicente. No license name is recorded for the artwork; the repository's MIT code license covers code only."
   }
 }

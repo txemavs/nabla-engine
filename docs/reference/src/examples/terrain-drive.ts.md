@@ -14,7 +14,7 @@
 
 ## parseTileSpec
 
-[Implementation, line 39](../../../../src/examples/terrain-drive.ts#L39)
+[Implementation, line 43](../../../../src/examples/terrain-drive.ts#L43)
 
 `16211/12003` or `16211,12003` -> a z15 tile.
 
@@ -35,7 +35,7 @@ Explicit throws in this body:
 
 ## tileOffsetToGeo
 
-[Implementation, line 48](../../../../src/examples/terrain-drive.ts#L48)
+[Implementation, line 52](../../../../src/examples/terrain-drive.ts#L52)
 
 Geographic point `east` metres east and `south` metres south of a tile's centre.
 
@@ -50,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## skyFor
 
-[Implementation, line 52](../../../../src/examples/terrain-drive.ts#L52)
+[Implementation, line 56](../../../../src/examples/terrain-drive.ts#L56)
 
 ```ts
 skyFor(value: string | undefined): NonNullable<SceneDocument['sky']>
@@ -71,7 +71,7 @@ Explicit throws in this body:
 
 ## createTerrainDriveScene
 
-[Implementation, line 65](../../../../src/examples/terrain-drive.ts#L65)
+[Implementation, line 69](../../../../src/examples/terrain-drive.ts#L69)
 
 Player vehicle at the origin plus, unless `includeDemoFleet` is false, the car, white truck
 with trailer and flying container parked ahead, all facing `heading`. Heights are authored
@@ -94,7 +94,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createTerrainDriveScene.at
 
-[Implementation, line 77](../../../../src/examples/terrain-drive.ts#L77)
+[Implementation, line 81](../../../../src/examples/terrain-drive.ts#L81)
 
 ```ts
 at(ahead: number, side = 0): Vec3Tuple
@@ -102,7 +102,7 @@ at(ahead: number, side = 0): Vec3Tuple
 
 ## createTerrainDriveScene.place
 
-[Implementation, line 82](../../../../src/examples/terrain-drive.ts#L82)
+[Implementation, line 86](../../../../src/examples/terrain-drive.ts#L86)
 
 ```ts
 place(entities: Entity[], ahead: number): inferred by TypeScript; see implementation
@@ -114,7 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createTerrainDriveScene.parked
 
-[Implementation, line 89](../../../../src/examples/terrain-drive.ts#L89)
+[Implementation, line 93](../../../../src/examples/terrain-drive.ts#L93)
 
 ```ts
 parked(preset: string, ahead: number): inferred by TypeScript; see implementation
@@ -127,7 +127,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createTerrainDriveScene.tow
 
-[Implementation, line 92](../../../../src/examples/terrain-drive.ts#L92)
+[Implementation, line 96](../../../../src/examples/terrain-drive.ts#L96)
 
 ```ts
 tow(tractor: Entity, ahead: number): inferred by TypeScript; see implementation

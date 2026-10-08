@@ -89,3 +89,22 @@ export {
   type MotorcycleRigBinding,
   type MotorcycleRigState,
 } from './motorcycle-rig.js'
+export {
+  MotorcycleInstruments,
+  dialValues,
+  lcdText,
+  motorcycleClusterDefaults,
+  needleAngle,
+  warningLampColors,
+  warningLampStates,
+  type ClusterInputs,
+  type MotorcycleClusterOptions,
+  type WarningLamp,
+} from './motorcycle-instruments.js'
+export {
+  applyReflectionEnvironment,
+  carReflectionOptions,
+  reflectionEnvironmentTexture,
+  reflectionLevel,
+  type ReflectionEnvironment,
+} from './reflection-environment.js'

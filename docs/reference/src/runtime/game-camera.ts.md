@@ -122,7 +122,7 @@ Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
 
 ```ts
-updateGameCamera(sim: Simulation, view: Pick<SceneView, 'document' | 'vehicleHeadOffset' | 'objects'>, camera: THREE.PerspectiveCamera, state: GameCameraState, now: number, dt: number, prepareVehicle?: (body: THREE.Object3D, camera: THREE.PerspectiveCamera) => void): inferred by TypeScript; see implementation
+updateGameCamera(sim: Simulation, view: Pick<SceneView, 'document' | 'vehicleHeadOffset' | 'objects'> & Partial<Pick<SceneView, 'rideSmoothing'>>, camera: THREE.PerspectiveCamera, state: GameCameraState, now: number, dt: number, prepareVehicle?: (body: THREE.Object3D, camera: THREE.PerspectiveCamera) => void): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -195,12 +195,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `target.splice`
 - `view.document.entities.find`
 - `view.objects.get`
+- `view.rideSmoothing.offset`
+- `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@399
+## updateGameCamera.callback@408
 
-[Implementation, line 399](../../../../src/runtime/game-camera.ts#L399)
+[Implementation, line 408](../../../../src/runtime/game-camera.ts#L408)
 
 ```ts
-callback@399(entity): inferred by TypeScript; see implementation
+callback@408(entity): inferred by TypeScript; see implementation
 ```

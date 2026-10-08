@@ -19,20 +19,32 @@ function paintWhiteBody(model: THREE.Object3D, color: string): void {
   })
 }
 
-function shineVehicle(model: THREE.Object3D): void {
+/**
+ * S3 / A3 body chrome: the window surrounds, beltline and boot trim and the grille (`Cromo …`)
+ * and the badge (`Nabla silver chrome`). A metal shows only what it reflects and the scene has
+ * no environment map, so on their own these parts showed little more than the sun's highlight
+ * (dull grey or near black depending on the sun and the time of day). They are tagged
+ * `reflective` and the entity view gives them the shared neutral reflection environment (the
+ * same one as the VFR800 chrome, `applyReflectionEnvironment`, dimmed at night).
+ */
+export const s3ChromeMaterial = /^cromo|chrome/i
+
+function shineVehicle(model: THREE.Object3D, kind: 'body' | 'wheel' | 'steering'): void {
   model.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     const materials = Array.isArray(object.material) ? object.material : [object.material]
     for (const material of materials) {
       if (!(material instanceof THREE.MeshStandardMaterial)) continue
+      // The door mirror housings (`Llanta 2`, also the live mirror lenses) keep their satin look.
       if (/^llanta/i.test(material.name) && material.metalness > 0.5) {
         material.metalness = 0.35
         material.needsUpdate = true
       }
-      if (!/^cromo/i.test(material.name)) continue
+      if (kind !== 'body' || !s3ChromeMaterial.test(material.name)) continue
       material.metalness = 1
-      material.roughness = Math.min(material.roughness, 0.32)
-      material.envMap = null
+      // Natural chrome, not a mirror: a little satin (0.3; the GLB's 0.22 read as a mirror).
+      material.roughness = Math.max(material.roughness, 0.3)
+      material.userData.nabla = { ...material.userData.nabla, reflective: true }
       material.needsUpdate = true
     }
   })
@@ -94,8 +106,8 @@ export const s3Presentation: VehiclePresentationAdapter = {
       instruments,
     }
   },
-  preparePart(model) {
-    shineVehicle(model)
+  preparePart(model, kind) {
+    shineVehicle(model, kind)
   },
   paint(model, color) {
     model.traverse((node) => {

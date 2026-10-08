@@ -13,15 +13,15 @@ let sim: Simulation
 beforeEach(() => {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
   floor.size = [10000, 1, 10000]
+  // The normal controller: held full steer would raise the lean limit to the peg
+  // (`pegLean`, covered by full-lean.test.ts), so these tests ride without it.
+  const bike = presetVehicle('vfr800', 'bike', [0, 0.6, 0])
+  delete bike.vehicle!.twoWheeled!.pegLean
   sim = new Simulation(
     parseScene({
       version: 1,
       name: 'Bike ride',
-      entities: [
-        floor,
-        presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
-        createEntity('spawn', 'spawn', [3, 1, 4]),
-      ],
+      entities: [floor, bike, createEntity('spawn', 'spawn', [3, 1, 4])],
     }),
   )
 })
@@ -134,8 +134,10 @@ describe('vfr800 two-wheeled controller', () => {
       sim.setInput({ ...idleInput(), ...input })
       run(1.5)
       const drop = start - info().speedKmh
-      run(10)
-      return { start, drop, end: info().speedKmh, lean: info().lean }
+      // Lowest speed reached: held S at a stop then walks the bike back (foot paddling).
+      let end = Infinity
+      run(10, () => (end = Math.min(end, info().speedKmh)))
+      return { start, drop, end, lean: info().lean }
     }
     run(1)
     ride()
@@ -155,6 +157,83 @@ describe('vfr800 two-wheeled controller', () => {
     run(3)
     expect(info().gear).toBeGreaterThanOrEqual(0)
     expect(info().reversing).toBe(false)
+  })
+
+  it('paddles backwards with the feet at a stop: walking pace, no gear, stops on release', () => {
+    const paddle = twoWheeledDefaults.paddle
+    run(1)
+    ride()
+    // Ride off, then stop with the rear brake so the bike is stood in gear/N, not parked.
+    sim.setInput({ ...idleInput(), forward: 0.3 })
+    run(2)
+    sim.setInput({ ...idleInput(), brake: true })
+    run(3)
+    sim.setInput(idleInput())
+    run(0.5)
+    expect(info().speedKmh).toBeLessThan(0.5)
+    // Signed speed along the bike's heading, km/h (vehicleInfo reports the magnitude).
+    const q = sim.entityTransform('bike').rotation
+    const fx = -(2 * (q[0] * q[2] + q[3] * q[1]))
+    const fz = -(1 - 2 * (q[0] * q[0] + q[1] * q[1]))
+    const start = sim.entityTransform('bike').position
+    let last = start
+    let signed = 0
+    const track = () => {
+      const p = sim.entityTransform('bike').position
+      signed = ((p[0] - last[0]) * fx + (p[2] - last[2]) * fz) * 60 * 3.6
+      last = p
+    }
+    // Hold S (the cars' reverse key): after `paddle.delay` the rider walks it back.
+    sim.setInput({ ...idleInput(), forward: -1 })
+    let peak = 0,
+      peakLean = 0,
+      reached = 0
+    const t0 = sim.stats.ticks
+    const gears = new Set<number>()
+    run(5, () => {
+      track()
+      peak = Math.max(peak, -signed)
+      peakLean = Math.max(peakLean, Math.abs(info().lean))
+      gears.add(info().gear)
+      if (!reached && -signed > 2) reached = sim.stats.ticks - t0
+      expect(info().reversing).toBe(false)
+    })
+    // Backwards, gently, at walking pace: no faster than ~3 km/h, built up over a second or more.
+    expect(signed).toBeLessThan(-1.5)
+    expect(peak).toBeLessThanOrEqual(paddle.maxKmh + 0.5)
+    expect(reached / 60).toBeGreaterThan(1)
+    expect(peakLean).toBeLessThan(0.05)
+    expect(sim.twoWheeledPose('bike')!.fallen).toBe(false)
+    expect([...gears].every((gear) => gear >= 0)).toBe(true)
+    const end = sim.entityTransform('bike').position
+    expect((end[0] - start[0]) * fx + (end[2] - start[2]) * fz).toBeLessThan(-1.5)
+    // Released: the feet stop it within a second, and it stays put.
+    sim.setInput(idleInput())
+    let creep = 0
+    run(1, track)
+    run(2, () => {
+      track()
+      creep = Math.max(creep, Math.abs(signed))
+    })
+    expect(creep).toBeLessThan(0.2)
+    // Riding off forward still works straight after.
+    sim.setInput({ ...idleInput(), forward: 0.5 })
+    run(2)
+    expect(info().speedKmh).toBeGreaterThan(5)
+  })
+
+  it('does not paddle while rolling: S above walking pace is only the front brake', () => {
+    run(1)
+    ride()
+    sim.setInput({ ...idleInput(), forward: 1 })
+    run(2)
+    sim.setInput({ ...idleInput(), forward: -1 })
+    run(6)
+    // Braked to a stop, then (still held) the paddle starts only after the delay: never fast.
+    let peak = 0
+    run(3, () => (peak = Math.max(peak, info().speedKmh)))
+    expect(peak).toBeLessThan(twoWheeledDefaults.paddle.maxKmh + 0.5)
+    expect(info().gear).toBeGreaterThanOrEqual(0)
   })
 
   it('crawls and turns at walking pace with the balance assist holding it up', () => {

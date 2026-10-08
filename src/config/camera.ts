@@ -135,6 +135,21 @@ export interface GameCameraSettings {
    * calls. Milliseconds; 0 cuts as before.
    */
   modeTransitionMs: number
+  /**
+   * On-foot avatar (floating monitor or walker) position response, inverse seconds: the same
+   * critically damped follower with velocity feed-forward as the overhead camera, so steady
+   * movement has no lag and only physics jitter, steps and landings are smoothed.
+   */
+  avatarFollowResponse: number
+  /** On-foot avatar heading response, inverse seconds (critically damped, turn-rate feed-forward). */
+  avatarYawResponse: number
+  /**
+   * Two-wheeler cockpit head response, inverse seconds: the eye follows the rider's body shift
+   * and tuck (keys, steering, automatic position) through a critically damped spring without
+   * feed-forward, settling within 2% in about 5.8 / response seconds (~1.5 s at 4), with no
+   * overshoot and the input jitter filtered out. Presentation only; 0 snaps.
+   */
+  riderHeadResponse: number
 }
 
 /** Immutable defaults; each camera receives its own settings copy. */
@@ -200,6 +215,38 @@ export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   entranceDelayMs: 150,
   entranceEndMs: 1200,
   modeTransitionMs: 700,
+  avatarFollowResponse: 14,
+  avatarYawResponse: 14,
+  riderHeadResponse: 4,
+})
+
+/**
+ * Ride smoothing of what the player looks through (cockpit eye, chase target, seated avatar),
+ * not of the body: `RideSmoothing` in the entity view.
+ */
+export interface RideSmoothingSettings {
+  /** Share of the bounce filtered out, 0 (off: the camera rides every bump) .. 1. */
+  strength: number
+  /** Filter time constant, seconds (1 / ω). Bounce faster than this is absorbed. */
+  seconds: number
+  /** Largest height difference from the real vehicle, metres. Beyond it the camera follows. */
+  maxOffset: number
+  /** Largest pitch / roll difference from the real vehicle, degrees. */
+  maxTilt: number
+}
+
+/**
+ * Per vehicle class (`rideSmoothingClass`): cars and trucks absorb road bounce at speed; the bike
+ * slightly less and with a tighter tilt bound, since its roll is the lean; aircraft, boats and
+ * carriers are off. A preset may set its own strength with `vehicle.rideSmoothing` (0..1).
+ */
+export const rideSmoothingDefaults: Readonly<
+  Record<'car' | 'motorcycle' | 'truck' | 'off', Readonly<RideSmoothingSettings>>
+> = Object.freeze({
+  car: Object.freeze({ strength: 0.65, seconds: 0.2, maxOffset: 0.05, maxTilt: 2.5 }),
+  motorcycle: Object.freeze({ strength: 0.55, seconds: 0.15, maxOffset: 0.04, maxTilt: 1.5 }),
+  truck: Object.freeze({ strength: 0.7, seconds: 0.25, maxOffset: 0.08, maxTilt: 3 }),
+  off: Object.freeze({ strength: 0, seconds: 0.2, maxOffset: 0, maxTilt: 0 }),
 })
 
 /** Copy overrides and validate finite values and ordered camera ranges before use. */

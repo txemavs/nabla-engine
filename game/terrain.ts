@@ -10,6 +10,8 @@
  *   &alt=<m>                 origin altitude, default 0 (terrain files carry absolute elevations)
  *   &heading=<deg>           compass heading the fleet faces (default 0 = north)
  *   &vehicle=<preset>        vehicle the player starts in (default car)
+ *   &engineMode=normal|beast engine mode the S3 starts in (default normal; `bestia` also accepted).
+ *                            The player switches with B (selector D/S) or J → MOTOR
  *   &vehicles=<json>         extra host vehicles after terrain is ready: JSON array of
  *                            {lat, lon, heading, vehicle, alt?, color?, tow?, box?} (WGS84).
  *                            A non-empty list replaces the built-in parked demo row. Also VITE_NABLA_VEHICLES.
@@ -231,6 +233,7 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
       heading: finite(params, 'heading') ?? 0,
       vehicle: params.get('vehicle') ?? 'car',
       sky: params.get('sky') ?? undefined,
+      ...engineModeParam(params),
     },
     vehicles: hostVehiclesFromSearch(search, viteHostVehicles()),
     ...portalsConfig(search),
@@ -271,4 +274,12 @@ export function formatCells(stats: { loaded: number; missing: number; pending: n
 function portalsConfig(search: string): { portals?: HostPortal[] } {
   const portals = hostPortalsFromSearch(search, viteHostPortals())
   return portals.length ? { portals } : {}
+}
+
+/** `&engineMode=normal|beast` (or `bestia`): the start mode of cars with engine modes. */
+export function engineModeParam(params: URLSearchParams): { engineMode?: 'normal' | 'beast' } {
+  const value = params.get('engineMode')?.toLowerCase()
+  if (value === 'normal') return { engineMode: 'normal' }
+  if (value === 'beast' || value === 'bestia') return { engineMode: 'beast' }
+  return {}
 }

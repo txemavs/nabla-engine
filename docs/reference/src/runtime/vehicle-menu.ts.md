@@ -17,7 +17,7 @@
 Equipment actions shared by game hosts. Persistence is a host concern.
 
 ```ts
-vehicleMenuKey(view: SceneView, document: SceneDocument, id: string, code: string, repeat: boolean, report: (message: string) => void, update: (id: string, patch: Partial<SceneDocument['entities'][number]>) => void, text: RuntimeText = createRuntimeText()): { handled: boolean; opened?: boolean }
+vehicleMenuKey(view: SceneView, document: SceneDocument, id: string, code: string, repeat: boolean, report: (message: string) => void, update: (id: string, patch: Partial<SceneDocument['entities'][number]>) => void, text: RuntimeText = createRuntimeText(), engineMode?: (id: string, mode: 'normal' | 'beast') => string): { handled: boolean; opened?: boolean }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -27,6 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `createRuntimeText`
 - `document.entities.find`
+- `engineMode`
 - `menu.key`
 - `report`
 - `text`
@@ -37,10 +38,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.toggleVehicleMenu`
 - `view.vehicleMenu`
 
-## vehicleMenuKey.callback@28
+## vehicleMenuKey.callback@30
 
-[Implementation, line 28](../../../../src/runtime/vehicle-menu.ts#L28)
+[Implementation, line 30](../../../../src/runtime/vehicle-menu.ts#L30)
 
 ```ts
-callback@28(e): inferred by TypeScript; see implementation
+callback@30(e): inferred by TypeScript; see implementation
 ```

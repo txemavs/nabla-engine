@@ -122,10 +122,12 @@ describe('vfr800 stoppies', () => {
   }
 
   it('hard on the lever with the weight forward lifts the rear, limited and recovered', () => {
-    const { start, pitch, pose, info } = brakeFromSpeed({ forward: -1, riderForward: 1 })
+    const { start, pitch, pose, info, run } = brakeFromSpeed({ forward: -1, riderForward: 1 })
     expect(start).toBeGreaterThan(80)
     expect(pitch.min).toBeLessThan(-0.07)
     expect(pitch.min).toBeGreaterThan(-(assist.stoppieMaxAngle + 0.1))
+    // Stopped: S still held would now walk the bike back (foot paddling), so let go.
+    run(1, {})
     expect(info().speedKmh).toBeLessThan(2)
     expect(Math.abs(pose().pitch)).toBeLessThan(0.05)
     expect(pose().fallen).toBe(false)
@@ -190,13 +192,25 @@ describe('vfr800 rider counterweight', () => {
     const rider = twoWheeledDefaults.rider
     expect(pose().riderShift[0]).toBeCloseTo(rider.lateral, 6)
     expect(pose().riderShift[1]).toBeCloseTo(-rider.forward, 6)
-    run(2, { forward: 0.3 })
-    expect(pose().riderShift).toEqual([0, 0])
+    // Keys released on a straight at a steady speed: the automatic rider centres again.
+    run(3, { forward: 0.3 })
+    expect(Math.abs(pose().riderShift[0])).toBeLessThan(0.01)
+    expect(Math.abs(pose().riderShift[1])).toBeLessThan(0.01)
   })
 
   it('hanging off to the inside makes the bike lean less in the same turn', () => {
+    // Automatic rider off: compare a centred rider with one hanging off on the keys.
     const lean = (riderRight: number) => {
-      const { run, info, pose, sim: s } = ride()
+      const {
+        run,
+        info,
+        pose,
+        sim: s,
+      } = ride((bike) => {
+        bike.vehicle!.twoWheeled!.rider!.auto = { enabled: false }
+        // Same turn at the normal limit (held full steer would raise it to the peg lean).
+        delete bike.vehicle!.twoWheeled!.pegLean
+      })
       run(5, { forward: 1 })
       run(4, { forward: 0.3, right: 1, riderRight })
       const result = Math.abs(info().lean)
@@ -209,5 +223,57 @@ describe('vfr800 rider counterweight', () => {
       hanging = lean(1)
     expect(upright).toBeGreaterThan(0.3)
     expect(hanging).toBeLessThan(upright - 0.03)
+  })
+})
+
+describe('vfr800 automatic rider', () => {
+  const auto = twoWheeledDefaults.rider.auto
+
+  it('hangs off to the inside of a turn and sits centred when cruising', () => {
+    const { run, pose } = ride()
+    run(5, { forward: 1 })
+    run(3, { forward: 0.25 })
+    expect(Math.abs(pose().riderShift[0])).toBeLessThan(0.01)
+    expect(Math.abs(pose().riderShift[1])).toBeLessThan(0.01)
+    run(3, { forward: 0.3, right: 1 })
+    expect(pose().riderShift[0]).toBeGreaterThan(0.08)
+    expect(pose().fallen).toBe(false)
+  })
+
+  it('moves forward under hard throttle and back under hard front braking', () => {
+    const { run, pose } = ride()
+    run(0.8, { forward: 1 })
+    expect(pose().riderShift[1]).toBeLessThan(-0.05)
+    run(4, { forward: 1 })
+    run(0.8, { forward: -1 })
+    expect(pose().riderShift[1]).toBeGreaterThan(0.05)
+  })
+
+  it('keeps the front lower than a centred rider at full throttle in first', () => {
+    const peak = (enabled: boolean) => {
+      const r = ride((bike) => {
+        bike.vehicle!.twoWheeled!.rider!.auto = { enabled }
+      })
+      const result = r.run(3, { forward: 1 }).max
+      r.sim.dispose()
+      sim = undefined
+      return result
+    }
+    expect(peak(true)).toBeLessThanOrEqual(peak(false) + 1e-3)
+  })
+
+  it('gives way to the keys at once and takes back over after the release delay', () => {
+    const { run, pose } = ride()
+    // A deliberate wheelie: sit back (L) with the throttle open; the automatic rider would
+    // move forward under this acceleration.
+    const held = run(2, { forward: 1, riderForward: -1 })
+    expect(pose().riderShift[1]).toBeGreaterThan(0.2)
+    expect(held.max).toBeGreaterThan(assist.wheelieNeutralAngle * 2)
+    // Released: still the key target (centred) during the delay, then automatic again.
+    run(auto.releaseDelay * 0.5, { forward: 0.3, right: 1 })
+    const during = pose().riderShift[0]
+    run(auto.releaseDelay + auto.blend + 1.5, { forward: 0.3, right: 1 })
+    expect(Math.abs(during)).toBeLessThan(0.05)
+    expect(pose().riderShift[0]).toBeGreaterThan(0.08)
   })
 })

@@ -66,6 +66,7 @@ export function finiteInput(input: PlayerInput): PlayerInput {
     yaw: safe(input.yaw),
     riderRight: safe(input.riderRight),
     riderForward: safe(input.riderForward),
+    frontBrake: Math.min(1, Math.max(0, safe(input.frontBrake))),
   }
 }
 
@@ -107,11 +108,22 @@ export class GameInput {
       : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')
     const vehicle = id ? document.entities.find((e) => e.id === id)?.vehicle : null
     const roadCar = id && isRoadTouchDriving(vehicle, flight)
+    const shift = keys.has('ShiftLeft') || keys.has('ShiftRight')
+    // Two-wheeler with Shift: W and S together are throttle plus front lever (stationary
+    // burnout) instead of cancelling out.
+    const twin =
+      !flight &&
+      shift &&
+      !!vehicle?.twoWheeled &&
+      (keys.has('KeyW') || keys.has('ArrowUp')) &&
+      (keys.has('KeyS') || keys.has('ArrowDown'))
     const input: PlayerInput = {
       forward:
-        (flight
-          ? axis('ArrowUp', 'ArrowDown')
-          : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) +
+        (twin
+          ? 1
+          : flight
+            ? axis('ArrowUp', 'ArrowDown')
+            : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) +
         analog.forward +
         touch.forward +
         driving.forward,
@@ -123,11 +135,8 @@ export class GameInput {
       lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
       turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
       yaw,
-      sprint:
-        keys.has('ShiftLeft') ||
-        keys.has('ShiftRight') ||
-        Boolean(pad?.buttons[10]?.pressed) ||
-        !!driving.sprint,
+      frontBrake: twin ? 1 : 0,
+      sprint: shift || Boolean(pad?.buttons[10]?.pressed) || !!driving.sprint,
       jump: false,
       brake: keys.has('Space') || analog.brake || touch.brake || driving.brake,
       // Two-wheeler rider counterweight: U/O hang off left/right, I over the tank, L sit back.

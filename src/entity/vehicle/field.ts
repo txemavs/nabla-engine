@@ -40,6 +40,27 @@ export const twoWheeledField = z
     maxLean: finite.min(0.05).max(1.2).optional(),
     /** Beyond this lean the machine counts as fallen and balance stops, radians. */
     fallLean: finite.min(0.1).max(1.5).optional(),
+    /**
+     * Full lean ("total estribo") per side: `lean` (radians) at which the footpeg, or the first
+     * part, touches the ground at the static ride height, and that `point` (chassis-local
+     * metres) for the scrape sparks. Holding full steer raises the limit from `maxLean` towards
+     * it (`twoWheeledDefaults.fullLean`). Measure it from the GLB
+     * (`scripts/vfr800-lean-clearance.mjs`); omitted = the limit stays at `maxLean`.
+     */
+    pegLean: z
+      .object({
+        left: z
+          .object({ lean: finite.min(0.1).max(1.4), point: z.tuple([finite, finite, finite]) })
+          .strict(),
+        right: z
+          .object({ lean: finite.min(0.1).max(1.4), point: z.tuple([finite, finite, finite]) })
+          .strict(),
+        seconds: finite.positive().max(20).optional(),
+        relaxSeconds: finite.positive().max(20).optional(),
+        steer: finite.min(0.1).max(1).optional(),
+      })
+      .strict()
+      .optional(),
     /** Below this speed the low-speed balance assist holds the machine upright, m/s. */
     balanceSpeed: finite.min(0).max(30).optional(),
     /** Turn the low-speed balance assist off (the machine then falls over when stopped). */
@@ -76,6 +97,78 @@ export const twoWheeledField = z
         rate: finite.positive().max(50).optional(),
         /** Body steering: steering input added by a full sideways shift, 0..1. */
         steer: finite.min(0).max(1).optional(),
+        /** Automatic rider body movement when the counterweight keys are not pressed. */
+        auto: z
+          .object({
+            enabled: z.boolean().optional(),
+            /** Sideways input (0..1 of the full shift) at the largest lean. */
+            hangOff: finite.min(0).max(2).optional(),
+            /** Extra hang-off at the full (peg) lean, share of `lateral` (see `pegLean`). */
+            pegHangOff: finite.min(0).max(1).optional(),
+            /** Sideways input per unit of steering demand. */
+            steer: finite.min(0).max(2).optional(),
+            /** Lean below which the rider stays centred, radians. */
+            leanDeadband: finite.min(0).max(1).optional(),
+            /** Forward input per g of acceleration, rearward per g of front braking. */
+            accelGain: finite.min(0).max(20).optional(),
+            brakeGain: finite.min(0).max(20).optional(),
+            /** Acceleration below which the rider stays centred, g. */
+            accelDeadband: finite.min(0).max(2).optional(),
+            /** Seconds: keys take over, delay after release, blend back to automatic. */
+            takeover: finite.positive().max(5).optional(),
+            releaseDelay: finite.min(0).max(10).optional(),
+            blend: finite.positive().max(10).optional(),
+          })
+          .strict()
+          .optional(),
+        /** Tuck behind the windscreen at speed (automatic and with the forward key). */
+        tuck: z
+          .object({
+            enabled: z.boolean().optional(),
+            /** The head starts to go down from this speed, km/h (automatic and forward key). */
+            kmh: finite.min(10).max(500).optional(),
+            /** Full tuck from this speed, km/h (eased ramp from `kmh`). */
+            fullKmh: finite.min(10).max(500).optional(),
+            /** Fully sat up again below this speed, km/h (hysteresis on the way down). */
+            releaseKmh: finite.min(5).max(500).optional(),
+            /** Seconds for a full tuck. */
+            seconds: finite.positive().max(5).optional(),
+            /** Deceleration that sits the rider up, g. */
+            brakeG: finite.min(0).max(3).optional(),
+            /** Tucked cockpit eye relative to the seated one, chassis metres. */
+            eye: z.tuple([finite, finite, finite]).optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    /** Pitch that counts as a crash (looped wheelie, over the front), radians. */
+    crashPitch: finite.min(0.5).max(1.55).optional(),
+    /** Shift hooligan modifier overrides (`twoWheeledDefaults.hooligan`). */
+    hooligan: z
+      .object({
+        enabled: z.boolean().optional(),
+        /** Launch burnout below this speed, m/s, fading out over `burnoutFade`. */
+        burnoutSpeed: finite.min(0).max(50).optional(),
+        burnoutFade: finite.min(0.1).max(50).optional(),
+        /** Rear wheel surface speed above road speed at full spin, m/s, and its rate, m/s². */
+        spinSpeed: finite.min(0).max(100).optional(),
+        spinRate: finite.positive().max(500).optional(),
+        /** Share of the drive that reaches the road while the rear spins. */
+        burnoutTraction: finite.min(0).max(1).optional(),
+        /** Yaw wiggle amplitude while sliding, rad/s². */
+        slide: finite.min(0).max(20).optional(),
+        /** Wheelie drive multiplier and held climb rate, rad/s. */
+        wheelieDrive: finite.min(0).max(5).optional(),
+        wheelieRate: finite.min(0).max(5).optional(),
+        /** Stoppie front brake multiplier and held climb rate, rad/s. */
+        stoppieBrake: finite.min(0).max(5).optional(),
+        stoppieRate: finite.min(0).max(5).optional(),
+        /** How firmly the climb rate is held, 1/s. */
+        riseResponse: finite.min(0).max(200).optional(),
+        /** Rider back share that turns Shift + throttle into a wheelie, 0..1. */
+        wheelieRiderBack: finite.min(0).max(1).optional(),
       })
       .strict()
       .optional(),
@@ -123,6 +216,72 @@ export const twoWheeledField = z
       })
       .strict()
       .optional(),
+  })
+  .strict()
+
+/** Shift timing, shift points, engine response and the gear-change sound. */
+const gearboxShiftField = z
+  .object({
+    seconds: finite.min(0.02).max(2).optional(),
+    cooldownSeconds: finite.min(0.05).max(5).optional(),
+    upshiftRpm: finite.min(400).max(20000).optional(),
+    downshiftRpm: finite.min(300).max(19000).optional(),
+    torqueFraction: finite.min(0).max(1).optional(),
+    rpmResponse: finite.min(1).max(40).optional(),
+    launchRpm: finite.min(300).max(6000).optional(),
+    directionSeconds: finite.min(0).max(3).optional(),
+    directionShiftSeconds: finite.min(0).max(2).optional(),
+    neutralSeconds: finite.min(0).max(10).optional(),
+    parkSeconds: finite.min(0).max(30).optional(),
+    clack: z
+      .object({
+        clunkHz: finite.min(30).max(500).optional(),
+        clickHz: finite.min(200).max(8000).optional(),
+        gain: finite.min(0).max(2).optional(),
+        decaySeconds: finite.min(0.02).max(0.8).optional(),
+        echoSeconds: finite.min(0).max(0.5).optional(),
+        airSeconds: finite.min(0).max(1.5).optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+
+/** Per-mode powertrain overrides (`powertrain.modes`). */
+const powertrainModeField = z
+  .object({
+    powerCv: finite.min(20).max(2000).optional(),
+    torqueNm: finite.min(20).max(3000).optional(),
+    idleRpm: finite.min(300).max(2000).optional(),
+    maxRpm: finite.min(2000).max(20000).optional(),
+    shift: gearboxShiftField.optional(),
+  })
+  .strict()
+
+/**
+ * Engine voice. `note` (default): the road-car engine note. `v4`: a procedural V4 whose uneven
+ * pulse train follows the firing order of a V4 with `vAngle` between the banks and `crankpin`
+ * degrees between the two crankpins. `inline`: a refined inline engine (default an inline-4
+ * turbo; `cylinders: 5` for the five-cylinder warble) with a subdued turbo.
+ */
+const engineVoiceField = z
+  .object({
+    voice: z.enum(['note', 'v4', 'inline']),
+    /** Angle between the cylinder banks, degrees. Default 90. */
+    vAngle: finite.min(10).max(180).optional(),
+    /** Angle between the two crankpins, degrees. Default 180. */
+    crankpin: finite.min(0).max(360).optional(),
+    /** Inline voice: cylinders (3–6, default 4; 5 gives the five-cylinder warble). */
+    cylinders: z.number().int().min(3).max(6).optional(),
+    /** Inline-5 warble (pulse-strength spread), 0..0.5. Default 0.12. */
+    warble: finite.min(0).max(0.5).optional(),
+    /** Inline voice: turbo whistle and blow-off multipliers, 0..2. */
+    turboWhistle: finite.min(0).max(2).optional(),
+    blowOff: finite.min(0).max(2).optional(),
+    /** Inline voice: chance (0..1) of a soft overrun burble on a high-rpm lift. Default 0. */
+    burble: finite.min(0).max(1).optional(),
+    /** Loudness multiplier, 0..2. Default 1. */
+    volume: finite.min(0).max(2).optional(),
   })
   .strict()
 
@@ -178,33 +337,18 @@ export const vehicleField = z
         /** Traction/clutch ceiling on the force at the wheels, newtons. */
         maxWheelForceN: finite.positive().max(1000000).optional(),
         /** Shift timing, shift points, engine response and the gear-change sound. */
-        shift: z
-          .object({
-            seconds: finite.min(0.02).max(2).optional(),
-            cooldownSeconds: finite.min(0.05).max(5).optional(),
-            upshiftRpm: finite.min(400).max(20000).optional(),
-            downshiftRpm: finite.min(300).max(19000).optional(),
-            torqueFraction: finite.min(0).max(1).optional(),
-            rpmResponse: finite.min(1).max(40).optional(),
-            launchRpm: finite.min(300).max(6000).optional(),
-            directionSeconds: finite.min(0).max(3).optional(),
-            directionShiftSeconds: finite.min(0).max(2).optional(),
-            neutralSeconds: finite.min(0).max(10).optional(),
-            parkSeconds: finite.min(0).max(30).optional(),
-            clack: z
-              .object({
-                clunkHz: finite.min(30).max(500).optional(),
-                clickHz: finite.min(200).max(8000).optional(),
-                gain: finite.min(0).max(2).optional(),
-                decaySeconds: finite.min(0.02).max(0.8).optional(),
-                echoSeconds: finite.min(0).max(0.5).optional(),
-                airSeconds: finite.min(0).max(1.5).optional(),
-              })
-              .strict()
-              .optional(),
-          })
+        shift: gearboxShiftField.optional(),
+        /**
+         * Two engine modes on one car: `normal` (selector D) and `beast` (selector S, «Bestia»).
+         * Each overrides power, torque, idle, redline and gearbox points; the engine voice comes
+         * from `audio.engineModes`. Figures are gameplay values unless a preset cites a source.
+         */
+        modes: z
+          .object({ normal: powertrainModeField.optional(), beast: powertrainModeField.optional() })
           .strict()
           .optional(),
+        /** Mode on creation when `modes` is set; default `roadVehicleDefaults.engineMode`. */
+        defaultMode: z.enum(['normal', 'beast']).optional(),
       })
       .strict()
       .optional(),
@@ -213,6 +357,11 @@ export const vehicleField = z
     cameraDistance: finite.min(2).max(30),
     /** Optional driver-local eye offset. */
     headOffset: vector.optional(),
+    /**
+     * Camera / avatar ride smoothing strength, 0 (the view rides every bump) .. 1. Omitted uses
+     * the vehicle class default (`rideSmoothingDefaults`). Presentation only.
+     */
+    rideSmoothing: finite.min(0).max(1).optional(),
     /** Neutral eye orientation relative to the chassis, authored in the body GLB. */
     headRotation: rotation.optional(),
     /** Authored carrier display surfaces; dimensions are metres in chassis space. */
@@ -246,7 +395,7 @@ export const vehicleField = z
       )
       .max(8)
       .optional(),
-    /** Vertical mirror tilt in degrees; omitted uses -2 degrees. */
+    /** Vertical mirror tilt in degrees; omitted uses -2 degrees (0 on two-wheelers). */
     mirrorTilt: finite.min(-5).max(12).optional(),
     /**
      * Baked glass aim per mirror side (`left`, `right`, …), degrees, on top of the asset lens:
@@ -261,6 +410,29 @@ export const vehicleField = z
       .optional(),
     /** Enable the audible warning while this vehicle has reverse gear engaged. */
     reverseAlarm: z.boolean().optional(),
+    /**
+     * Motorcycle instrument cluster drawn on the GLB anchors `gauge_speedo`, `gauge_tacho`,
+     * `gauge_lcd`, `lamp_signal_l|r` and `lamp_warning_1…n` (two-wheelers only). Omitted fields
+     * use `motorcycleClusterDefaults`; the red zone defaults to `powertrain.maxRpm`.
+     */
+    cluster: z
+      .object({
+        /** Speedometer full scale and numbered step, km/h. */
+        speedoMaxKmh: finite.min(40).max(500).optional(),
+        speedoStepKmh: finite.min(5).max(100).optional(),
+        /** Tachometer full scale and start of the red zone, rpm. */
+        tachoMaxRpm: finite.min(1000).max(30000).optional(),
+        redlineRpm: finite.min(500).max(30000).optional(),
+        /** Needle sweep from zero to full scale, radians. */
+        sweep: finite.min(0.5).max(6).optional(),
+        /** Warning lamps in `lamp_warning_1…n` order, left to right. */
+        lamps: z
+          .array(z.enum(['neutral', 'high-beam', 'oil', 'fi']))
+          .max(8)
+          .optional(),
+      })
+      .strict()
+      .optional(),
     /**
      * Per-vehicle sound options. Omitted keeps the road-car sound: turbo on and a clack on
      * audible gear changes. See `audio/vehicle-sound.ts`.
@@ -281,18 +453,16 @@ export const vehicleField = z
         /**
          * Engine voice. `note` (default): the road-car engine note. `v4`: a procedural V4 whose
          * uneven pulse train follows the firing order of a V4 with `vAngle` between the banks and
-         * `crankpin` degrees between the two crankpins.
+         * `crankpin` degrees between the two crankpins. `inline`: a refined inline engine (default
+         * an inline-4 turbo; `cylinders: 5` for the five-cylinder warble) with a subdued turbo.
          */
-        engine: z
-          .object({
-            voice: z.enum(['note', 'v4']),
-            /** Angle between the cylinder banks, degrees. Default 90. */
-            vAngle: finite.min(10).max(180).optional(),
-            /** Angle between the two crankpins, degrees. Default 180. */
-            crankpin: finite.min(0).max(360).optional(),
-            /** Loudness multiplier, 0..2. Default 1. */
-            volume: finite.min(0).max(2).optional(),
-          })
+        engine: engineVoiceField.optional(),
+        /**
+         * Engine voice per engine mode (`powertrain.modes`): the selected mode's voice replaces
+         * `engine` while that mode is active.
+         */
+        engineModes: z
+          .object({ normal: engineVoiceField.optional(), beast: engineVoiceField.optional() })
           .strict()
           .optional(),
       })

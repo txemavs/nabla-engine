@@ -37,10 +37,11 @@ Not modelled yet: countersteering dynamics, tyre camber/profile, clutch.
 - `./contracts.js`
 - `./pitch.js`
 - `./rider.js`
+- `./crash.js`
 
 ## clamp
 
-[Implementation, line 57](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L57)
+[Implementation, line 67](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L67)
 
 ```ts
 clamp(n: number, low: number, high: number): inferred by TypeScript; see implementation
@@ -53,7 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## twoWheeledTuning
 
-[Implementation, line 67](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L67)
+[Implementation, line 77](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L77)
 
 Resolve a definition's tuning against `twoWheeledDefaults`.
 
@@ -72,7 +73,7 @@ Explicit throws in this body:
 
 ## createTwoWheeledVehicle
 
-[Implementation, line 111](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L111)
+[Implementation, line 137](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L137)
 
 Create a two-wheel rig around a supplied body. The host attaches it with
 `raycast.addToWorld(world)` and owns the world. Spawns in P (held by the brakes) unless
@@ -84,6 +85,7 @@ createTwoWheeledVehicle(body: Body, definition: WheeledDefinition, options: { pa
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(['left', 'right'] as const).every`
 - `Error`
 - `Math.abs`
 - `Math.hypot`
@@ -108,7 +110,7 @@ Explicit throws in this body:
 
 ## createTwoWheeledVehicle.positive
 
-[Implementation, line 116](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L116)
+[Implementation, line 142](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L142)
 
 ```ts
 positive(value: number): inferred by TypeScript; see implementation
@@ -118,24 +120,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Number.isFinite`
 
-## createTwoWheeledVehicle.callback@125
+## createTwoWheeledVehicle.callback@151
 
-[Implementation, line 125](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L125)
+[Implementation, line 151](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L151)
 
 ```ts
-callback@125(hub): inferred by TypeScript; see implementation
+callback@151(hub): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `hub.every`
 
-## createTwoWheeledVehicle.callback@170
+## createTwoWheeledVehicle.callback@175
 
-[Implementation, line 170](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L170)
+[Implementation, line 175](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L175)
 
 ```ts
-callback@170([x, y, z], i): inferred by TypeScript; see implementation
+callback@175(side): inferred by TypeScript; see implementation
+```
+
+## createTwoWheeledVehicle.callback@202
+
+[Implementation, line 202](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L202)
+
+```ts
+callback@202([x, y, z], i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -143,17 +153,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Vec3`
 - `raycast.addWheel`
 
-## createTwoWheeledVehicle.callback@201
+## createTwoWheeledVehicle.callback@233
 
-[Implementation, line 201](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L201)
+[Implementation, line 233](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L233)
 
 ```ts
-callback@201(v): inferred by TypeScript; see implementation
+callback@233(v): inferred by TypeScript; see implementation
 ```
 
 ## resetTwoWheeled
 
-[Implementation, line 232](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L232)
+[Implementation, line 287](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L287)
 
 Forget transient controller state, e.g. after an R reset uprighted the chassis.
 
@@ -163,7 +173,7 @@ resetTwoWheeled(state: TwoWheeledState): void
 
 ## stepTwoWheeledVehicle
 
-[Implementation, line 258](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L258)
+[Implementation, line 332](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L332)
 
 Apply one fixed tick of rider, steering, drive, brakes, pitch assist and lean control; call
 before the world step. Input: `throttle` > 0 accelerates, < 0 is the hand lever (front brake,
@@ -180,32 +190,48 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Boolean`
 - `Error`
 - `Math.abs`
+- `Math.asin`
+- `Math.exp`
 - `Math.max`
 - `Math.min`
+- `Math.sin`
 - `Number.isFinite`
 - `Vec3`
+- `autoRiderInput`
+- `autoTuckDepth`
 - `blend`
 - `centreOfMassHeight`
 - `clamp`
 - `contact`
+- `crashTrigger`
+- `currentLeanLimit`
 - `engineBrakingForce`
+- `forward.dot`
 - `forward.scale`
 - `gearboxTuning`
+- `gravityUp.scale`
 - `groundSteerAngle`
 - `handlebarTarget`
+- `hangOffCompensation`
+- `hangOffLean`
 - `holdInPark`
 - `ignitionRpm`
 - `measureGroundPitch`
+- `measureImpact`
 - `pitchAssist`
 - `riderCentreOfMass`
 - `riderTarget`
 - `right.scale`
 - `selectDriveDirection`
+- `startCrash`
 - `stepCombinedBrakes`
 - `stepDrivetrain`
 - `stepIgnition`
 - `stepLean`
 - `stepRider`
+- `stepRiderControl`
+- `tuckTarget`
+- `up.dot`
 - `v.body.applyForce`
 - `v.body.applyTorque`
 - `v.body.quaternion.vmult`
@@ -216,6 +242,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.raycast.setSteeringValue`
 - `velocity.length`
 - `velocity.scale`
+- `w.dot`
+- `w.set`
 
 Explicit throws in this body:
 
@@ -223,7 +251,7 @@ Explicit throws in this body:
 
 ## stepTwoWheeledVehicle.contact
 
-[Implementation, line 285](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L285)
+[Implementation, line 359](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L359)
 
 ```ts
 contact(i: number): inferred by TypeScript; see implementation
@@ -235,7 +263,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stepTwoWheeledVehicle.blend
 
-[Implementation, line 377](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L377)
+[Implementation, line 598](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L598)
 
 ```ts
 blend(neutral: number, full: number, share: number): inferred by TypeScript; see implementation
@@ -243,12 +271,12 @@ blend(neutral: number, full: number, share: number): inferred by TypeScript; see
 
 ## stepLean
 
-[Implementation, line 456](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L456)
+[Implementation, line 736](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L736)
 
 Lean measurement, fall detection and the balance torque for one tick.
 
 ```ts
-stepLean(v: TwoWheeledVehicle, dt: number, speed: number, forward: Vec3, up: Vec3, gravityUp: Vec3, gravity: number): void
+stepLean(v: TwoWheeledVehicle, dt: number, speed: number, forward: Vec3, up: Vec3, gravityUp: Vec3, gravity: number, bothWheelsDown: boolean): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -256,6 +284,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.abs`
 - `Vec3`
 - `balanceActive`
+- `clamp`
+- `currentLeanLimit`
+- `hangOffCompensation`
 - `hangOffLean`
 - `leanAcceleration`
 - `leanControlFrequency`
@@ -269,7 +300,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## centreOfMassHeight
 
-[Implementation, line 533](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L533)
+[Implementation, line 830](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L830)
 
 Height of the centre of mass above the ground under the wheels in contact (chassis frame,
 along the suspension direction), metres. Falls back to the unloaded geometry in the air.
@@ -285,12 +316,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wheels.forEach`
 - `wheels.map`
 
-## centreOfMassHeight.callback@537
+## centreOfMassHeight.callback@834
 
-[Implementation, line 537](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L537)
+[Implementation, line 834](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L834)
 
 ```ts
-callback@537(wheel, i): inferred by TypeScript; see implementation
+callback@834(wheel, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -299,25 +330,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `controller?.wheelSuspensionLength`
 - `grounds.push`
 
-## centreOfMassHeight.callback@544
+## centreOfMassHeight.callback@841
 
-[Implementation, line 544](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L544)
+[Implementation, line 841](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L841)
 
 ```ts
-callback@544(wheel): inferred by TypeScript; see implementation
+callback@841(wheel): inferred by TypeScript; see implementation
 ```
 
-## centreOfMassHeight.callback@547
+## centreOfMassHeight.callback@844
 
-[Implementation, line 547](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L547)
+[Implementation, line 844](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L844)
 
 ```ts
-callback@547(sum, value): inferred by TypeScript; see implementation
+callback@844(sum, value): inferred by TypeScript; see implementation
 ```
 
 ## measureGroundPitch
 
-[Implementation, line 556](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L556)
+[Implementation, line 853](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L853)
 
 Ground-relative pitch for the wheelie / stoppie assist: the chassis forward axis against the
 contact normal of the wheel that is still down (both: their mean), minus the squat measured
@@ -335,7 +366,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## measureGroundPitch.normalOf
 
-[Implementation, line 566](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L566)
+[Implementation, line 863](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L863)
 
 ```ts
 normalOf(i: number): [number, number, number]
@@ -347,7 +378,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## twoWheeledPose
 
-[Implementation, line 596](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L596)
+[Implementation, line 893](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L893)
 
 Visual articulation for the presentation rig (`render/vehicle-presentation/motorcycle-rig.ts`).
 
@@ -359,10 +390,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `compression`
 - `controller?.wheelRotation`
+- `currentLeanLimit`
+- `roadSpeed`
 
 ## twoWheeledPose.compression
 
-[Implementation, line 599](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L599)
+[Implementation, line 896](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L896)
 
 ```ts
 compression(i: number): inferred by TypeScript; see implementation
@@ -371,3 +404,50 @@ compression(i: number): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `controller?.wheelSuspensionLength`
+
+## currentLeanLimit
+
+[Implementation, line 929](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L929)
+
+Lean limit now: `maxLean`, raised by the held full steer (`leanReach`) towards the peg lean of
+`leanSide`; never past it.
+
+```ts
+currentLeanLimit(tuning: TwoWheeledTuning, state: Pick<TwoWheeledState, 'leanReach' | 'leanSide'>): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clamp`
+
+## hangOffCompensation
+
+[Implementation, line 940](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L940)
+
+Extra machine-plus-rider lean that offsets the hang-off, scaled by the full-lean reach.
+
+```ts
+hangOffCompensation(v: TwoWheeledVehicle, state: TwoWheeledState): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `clamp`
+- `hangOffLean`
+
+## roadSpeed
+
+[Implementation, line 949](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L949)
+
+Forward road speed of the chassis, m/s.
+
+```ts
+roadSpeed(v: TwoWheeledVehicle): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Vec3`
+- `v.body.quaternion.vmult`
+- `v.body.velocity.dot`

@@ -7,6 +7,7 @@ import { Powertrain } from './powertrain.js'
 import type { ResolvedEngineVoice } from './vehicle-sound.js'
 import { Propeller } from './propeller.js'
 import { TireSqueal } from './tires.js'
+import { MetalScrape } from './scrape.js'
 import { Turbine } from './turbine.js'
 import { ReverseAlarm } from './reverse-alarm.js'
 
@@ -25,6 +26,7 @@ export class VehicleAudio {
   private turbineVoice?: Turbine
   private propellerVoice?: Propeller
   private tireVoice?: TireSqueal
+  private scrapeVoice?: MetalScrape
   private powertrainVoice?: Powertrain
   private gearVoice?: GearClack
   private clickVoice?: GearClick
@@ -138,7 +140,7 @@ export class VehicleAudio {
   }
 
   /** Engine voice that played on the last `powertrain` call, for tests and the dataset. */
-  get engineVoice(): 'note' | 'v4' {
+  get engineVoice(): 'note' | 'v4' | 'inline' {
     return this.powertrainVoice?.activeVoice ?? 'note'
   }
 
@@ -185,6 +187,16 @@ export class VehicleAudio {
     if (!frame || !this.tireVoice) return
     this.tireVoice.update(frame.time, frame.audible, slip, speedKmh)
   }
+  /** Footpeg scrape grind, 0 (none) … 1, from the two-wheeler pose. */
+  scrape(level: number, speedKmh: number): void {
+    const frame = this.frame()
+    if (!frame || !this.scrapeVoice) return
+    this.scrapeVoice.update(frame.time, frame.audible, level, speedKmh)
+  }
+  /** Current scrape gain, for tests. */
+  get scrapeLevel(): number {
+    return this.scrapeVoice?.level ?? 0
+  }
   /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */
   reverseAlarm(active: boolean): void {
     const frame = this.frame()
@@ -198,6 +210,7 @@ export class VehicleAudio {
     this.turbineVoice = new Turbine(context, noise)
     this.propellerVoice = new Propeller(context)
     this.tireVoice = new TireSqueal(context, noise)
+    this.scrapeVoice = new MetalScrape(context, noise)
     this.powertrainVoice = new Powertrain(context, noise)
     this.reverseVoice = new ReverseAlarm(context)
     this.startVoice = new EngineStart(context, noise)
@@ -217,6 +230,7 @@ export class VehicleAudio {
     this.turbineVoice?.silence(time)
     this.propellerVoice?.silence(time)
     this.tireVoice?.silence(time)
+    this.scrapeVoice?.silence(time)
     this.powertrainVoice?.silence(time)
     this.gearVoice?.silence(time)
     this.clickVoice?.silence(time)

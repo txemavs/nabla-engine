@@ -25,6 +25,33 @@ export const simulationDefaults = Object.freeze({
   jumpSpeed: 5.5,
 })
 
+/**
+ * Rider thrown off a crashed two-wheeler (`twoWheeledDefaults.crash.ejectKmh`). The player
+ * leaves the seat with the machine's velocity and a hop, flies, takes the hit and slides on
+ * the ground with friction, lies still for a moment, then gets up: the floating monitor rises
+ * back to its cushion (or the walker stands up) and control returns. Gameplay values.
+ */
+export const ejectionDefaults = Object.freeze({
+  /** Share of the machine's velocity the rider keeps when thrown. */
+  carry: 0.9,
+  /** Upward speed added when thrown, m/s. */
+  hop: 3,
+  /** Height above the vehicle's driver (head) point where the rider starts, metres. */
+  clearance: 0.5,
+  /** Contacts in the first moments of the flight (the machine, the obstacle) are not the landing, s. */
+  minFlightSeconds: 0.2,
+  /** Sliding friction on the ground, as a share of gravity. */
+  friction: 0.8,
+  /** Speed below which the rider has stopped sliding, m/s. */
+  restSpeed: 0.8,
+  /** Time lying on the ground after the slide stops, seconds. */
+  downSeconds: 1.2,
+  /** Time to get up (the monitor rises back to its cushion), seconds. Input stays off. */
+  riseSeconds: 0.9,
+  /** Safety: control returns after this long even without landing (e.g. off an edge), seconds. */
+  maxSeconds: 10,
+})
+
 /** Road-vehicle selector timing, gear-change feel and baseline engine speed. */
 export const roadVehicleDefaults = Object.freeze({
   /**
@@ -65,6 +92,11 @@ export const roadVehicleDefaults = Object.freeze({
    * standstill. Vehicle powertrains may override it (the diesel truck idles at 750).
    */
   idleRpm: 1000,
+  /**
+   * Engine mode a car with `powertrain.modes` starts in when its preset sets no `defaultMode`:
+   * `normal` (D) or `beast` (S). Hosts choose per vehicle with `defaultMode` (`?engineMode=`).
+   */
+  engineMode: 'normal' as 'normal' | 'beast',
   /**
    * Starter-motor cranking, the first step after entering a vehicle, seconds. The vehicle is in
    * P and held by its brakes; no drive torque.
@@ -111,6 +143,23 @@ export const twoWheeledDefaults = Object.freeze({
   maxLean: 0.7,
   /** TODO(unverified): lean beyond which the machine has fallen and balance stops, radians. */
   fallLean: 1.15,
+  /**
+   * Full lean ("total estribo"): holding full steer in a turn raises the lean limit from
+   * `maxLean` towards the preset's `pegLean` for that side (the lean at which the footpeg, or
+   * the first part, touches the ground) over `seconds`; letting go relaxes it back over
+   * `relaxSeconds`. Never beyond the peg: at that lean the peg scrapes (sparks and sound). Off
+   * for presets without `pegLean`. Gameplay timing values.
+   */
+  fullLean: Object.freeze({
+    /** Seconds of held full steer from `maxLean` to the peg lean. */
+    seconds: 2,
+    /** Seconds to relax back to `maxLean` after the steer eases. */
+    relaxSeconds: 1,
+    /** Steering demand that counts as full steer (0..1). */
+    steer: 0.95,
+    /** The peg scrapes within this lean of the peg angle, radians (~0.6°). */
+    scrapeMargin: 0.01,
+  }),
   /** TODO(unverified): below this speed the balance assist holds the machine upright, m/s. */
   balanceSpeed: 3,
   /** Low-speed balance assist on by default, so a stopped machine stays on its wheels. */
@@ -223,6 +272,138 @@ export const twoWheeledDefaults = Object.freeze({
      * (0..1) towards the side the rider moves to.
      */
     steer: 0.2,
+    /**
+     * Automatic rider: with no counterweight keys pressed the rider hangs off into turns, moves
+     * forward under hard acceleration and back under hard front braking, and sits centred
+     * when cruising. The keys take over at once and hand back after `releaseDelay`.
+     */
+    auto: Object.freeze({
+      enabled: true,
+      /** TODO(unverified): sideways input (share of `lateral`) at the largest lean. */
+      hangOff: 0.8,
+      /** TODO(unverified): sideways input per unit of steering demand. */
+      steer: 0.2,
+      /**
+       * TODO(unverified): extra hang-off at the full (peg) lean, as a share of `lateral` on top
+       * of the normal full hang-off; it grows with the lean past `maxLean`.
+       */
+      pegHangOff: 0.35,
+      /** TODO(unverified): lean below which the rider stays centred, radians (~6°). */
+      leanDeadband: 0.1,
+      /** TODO(unverified): forward input per g of acceleration past the deadband. */
+      accelGain: 2.5,
+      /** TODO(unverified): rearward input per g of front-brake deceleration past the deadband. */
+      brakeGain: 2,
+      /** TODO(unverified): acceleration below which the rider stays centred, g. */
+      accelDeadband: 0.12,
+      /** Seconds for the keys to take over from the automatic rider. */
+      takeover: 0.1,
+      /** Seconds without keys before the automatic rider takes back over. */
+      releaseDelay: 1,
+      /** Seconds to blend back to the automatic rider. */
+      blend: 0.6,
+    }),
+    /**
+     * Tuck behind the windscreen at speed. The automatic rider's head starts to go down at `kmh`
+     * and reaches the full tuck at `fullKmh` along an eased ramp (no step). Slowing down it comes
+     * back up along the same ramp shifted `kmh - releaseKmh` lower (hysteresis), fully sat up at
+     * `releaseKmh`; hard braking sits it up at once. The forward key (I) reaches into the tuck
+     * along the same `kmh` → `fullKmh` ramp; below `kmh` it keeps its normal range. `eye` is the
+     * full-tuck cockpit eye relative to the seated one (chassis metres, +y up, +z back): down and
+     * forward behind the screen, but high enough that the horizon clears the fairing (road
+     * through and above the screen, tacho at the bottom of the view); partial tucks scale it.
+     */
+    tuck: Object.freeze({
+      enabled: true,
+      kmh: 180,
+      fullKmh: 200,
+      releaseKmh: 170,
+      /** Seconds for a full tuck (and back). */
+      seconds: 0.6,
+      /** Deceleration that counts as hard braking and sits the rider up, g. */
+      brakeG: 0.35,
+      eye: Object.freeze([0, -0.22, -0.34] as [number, number, number]),
+    }),
+  }),
+  /**
+   * TODO(unverified): pitch beyond which a wheelie has looped or a stoppie has gone over the
+   * front, radians (~75°): the machine has crashed until R recovers it. The assists never get
+   * near it; only the Shift hooligan modifier (assists off) can.
+   */
+  crashPitch: 1.3,
+  /**
+   * Crashes besides the hooligan loop (two-wheelers). Gameplay values, not measurements.
+   * - Impact: the horizontal velocity changes faster than `impactG` (low-passed over
+   *   `impactSeconds`) while the machine was doing at least `minKmh`: a wall, a car, a pole.
+   *   Hard braking (~1.3 g) and the steepest turns (~1.4 g) stay far below it.
+   * - Lowside: the machine falls past `fallLean` at `minKmh` or more.
+   * Either one is a crash until R, like a looped wheelie. At the onset the machine gets a spin
+   * of `spin` rad/s per m/s of speed (at most `maxSpin`) and, for impacts, a hop of `hop` s
+   * × speed (at most `maxHop` m/s): it tumbles instead of just lying down. At `ejectKmh` or more
+   * the rider is thrown off (see `ejectionDefaults`).
+   */
+  crash: Object.freeze({
+    impactG: 5,
+    impactSeconds: 0.05,
+    minKmh: 30,
+    /** The crash speed is the fastest of the last moments, decaying by this many m/s per second. */
+    speedMemory: 40,
+    spin: 0.25,
+    maxSpin: 10,
+    hop: 0.1,
+    maxHop: 5,
+    ejectKmh: 120,
+  }),
+  /**
+   * Shift hooligan modifier (two-wheelers). While Shift is held the wheelie and stoppie assists,
+   * the combined brakes and the automatic rider's fore-aft moves are off, and:
+   * - Shift + throttle from standstill or low speed: launch burnout, the rear wheel spins up well
+   *   past road speed (smoke and marks) and the bike still drives forward, sliding a little.
+   * - Shift + rider back (L) + throttle: a bigger wheelie with no assist; held too long it loops.
+   * - Shift + front lever (S) + rear pedal (Space) + throttle: stationary burnout, front locked.
+   * - Shift while braking with the lever: stoppie; held too long it goes over the front.
+   * Without Shift nothing changes.
+   */
+  /**
+   * Foot paddling (two-wheelers have no reverse gear). Stopped (below `startKmh`) with the cars'
+   * reverse key held (S, the front lever) for `delay` seconds, the rider walks the bike backwards
+   * with his feet: the brakes let go and it eases back (at most `accel` m/s², closing on the
+   * target at `response` 1/s) to `maxKmh`. Released, the feet stop it. No engine, no gear: the
+   * selector and the dash are untouched. Gameplay values.
+   */
+  paddle: Object.freeze({
+    enabled: true,
+    startKmh: 2,
+    delay: 0.4,
+    maxKmh: 2.5,
+    accel: 0.8,
+    response: 3,
+  }),
+  hooligan: Object.freeze({
+    enabled: true,
+    /** TODO(unverified): launch burnout below this road speed, m/s, fading out over `burnoutFade`. */
+    burnoutSpeed: 6,
+    burnoutFade: 5,
+    /** TODO(unverified): rear wheel surface speed above road speed at full spin, m/s. */
+    spinSpeed: 18,
+    /** TODO(unverified): how fast the rear spins up and down, m/s per second. */
+    spinRate: 30,
+    /** TODO(unverified): share of the drive that still reaches the road while it spins. */
+    burnoutTraction: 0.6,
+    /** TODO(unverified): sideways slide of the spinning rear, yaw acceleration amplitude, rad/s². */
+    slide: 1.5,
+    /** TODO(unverified): drive multiplier for the Shift wheelie (rider back). */
+    wheelieDrive: 1.2,
+    /** Pitch rise the rider holds in the Shift wheelie by feathering the throttle, rad/s (~20°/s). */
+    wheelieRate: 0.35,
+    /** TODO(unverified): front brake multiplier for the Shift stoppie. */
+    stoppieBrake: 1.2,
+    /** Pitch rise the rider holds in the Shift stoppie by feathering the lever, rad/s (~26°/s). */
+    stoppieRate: 0.45,
+    /** How firmly the rise rate is held, 1/s. */
+    riseResponse: 60,
+    /** Rider back share (0..1 of `rider.back`) that turns Shift + throttle into a wheelie. */
+    wheelieRiderBack: 0.3,
   }),
   /**
    * Combined braking (Dual CBS style), used only when a preset declares `twoWheeled.cbs`.

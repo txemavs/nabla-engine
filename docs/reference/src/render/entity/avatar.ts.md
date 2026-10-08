@@ -7,12 +7,39 @@
 ## Module dependencies
 
 - `three`
+- `three/addons/utils/BufferGeometryUtils.js`
+- `./monitor-face.js`
+
+## curvedScreen
+
+[Implementation, line 23](../../../../../src/render/entity/avatar.ts#L23)
+
+Spherical patch with continuous UVs; the border softly rounds towards each side.
+
+```ts
+curvedScreen(width: number, height: number, radius: number): THREE.BufferGeometry
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.hypot`
+- `Math.max`
+- `Math.sqrt`
+- `THREE.PlaneGeometry`
+- `geometry.computeVertexNormals`
+- `geometry.getAttribute`
+- `geometry.rotateY`
+- `positions.getX`
+- `positions.getY`
+- `positions.setXYZ`
+- `uvs.setXY`
 
 ## createMonitorAvatar
 
-[Implementation, line 4](../../../../../src/render/entity/avatar.ts#L4)
+[Implementation, line 45](../../../../../src/render/entity/avatar.ts#L45)
 
-Agency UI crtMesh.ts (89b0907): original five-part CRT, in metres and -Z forward.
+Floating helmet-monitor: spherical satin plastic, a discreet lower lip, a sliding visor and an original blue pixel face.
 
 ```ts
 createMonitorAvatar(): THREE.Group
@@ -20,21 +47,342 @@ createMonitorAvatar(): THREE.Group
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `THREE.BoxGeometry`
-- `THREE.Color`
+- `Array.from`
+- `Math.sqrt`
+- `MonitorFace`
+- `THREE.BufferGeometry`
+- `THREE.CatmullRomCurve3`
+- `THREE.CircleGeometry`
+- `THREE.Float32BufferAttribute`
 - `THREE.Group`
-- `THREE.Mesh`
+- `THREE.LatheGeometry`
+- `THREE.MathUtils.lerp`
+- `THREE.MeshBasicMaterial`
+- `THREE.MeshPhysicalMaterial`
 - `THREE.MeshStandardMaterial`
-- `material.emissive.copy`
-- `mesh.position.fromArray`
-- `new THREE.Color().setRGB`
+- `THREE.PlaneGeometry`
+- `THREE.SphereGeometry`
+- `THREE.TubeGeometry`
+- `THREE.Vector3`
+- `a.clone`
+- `a.clone().multiplyScalar`
+- `add`
+- `b.clone`
+- `b.clone().multiplyScalar`
+- `body.clone`
+- `border.push`
+- `borderPoint`
+- `borderY`
+- `bridgePositions.getX`
+- `bridgePositions.getY`
+- `bridgePositions.setXYZ`
+- `curvedScreen`
+- `displayModule.add`
+- `ear.toArray`
+- `earCover.computeVertexNormals`
+- `earCover.getAttribute`
+- `foam.clone`
+- `helmetForm.add`
+- `hinge.computeVertexNormals`
+- `hinge.getAttribute`
+- `inner.scale`
+- `lower.toArray`
+- `mergeVertices`
+- `monitors.set`
+- `p.multiplyScalar`
+- `positions.getX`
+- `positions.getY`
+- `positions.setXYZ`
+- `propulsionSocket.position.set`
+- `rimProfile.getPoints`
+- `rimProfile.getPoints(32).map`
 - `root.add`
 - `root.scale.setScalar`
-- `shell.add`
+- `shades.add`
+- `shell.clone`
+- `smoothWall.computeVertexNormals`
+- `tab.computeVertexNormals`
+- `tab.setAttribute`
+- `upper.toArray`
+- `upperBridge.computeVertexNormals`
+- `upperBridge.getAttribute`
+- `visor.computeVertexNormals`
+- `visor.getAttribute`
+- `visorPoint`
+- `visorPositions.getX`
+- `visorPositions.getY`
+- `visorPositions.setXYZ`
+- `wall.setAttribute`
+- `wallPositions.push`
+
+## createMonitorAvatar.add
+
+[Implementation, line 62](../../../../../src/render/entity/avatar.ts#L62)
+
+```ts
+add(name: string, geometry: THREE.BufferGeometry, material: THREE.Material, position: [number, number, number], parent: THREE.Group = root): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Mesh`
+- `mesh.position.set`
+- `parent.add`
+
+## createMonitorAvatar.callback@80
+
+[Implementation, line 80](../../../../../src/render/entity/avatar.ts#L80)
+
+```ts
+callback@80(shader): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `shader.fragmentShader.replace`
+- `shader.vertexShader.replace`
+
+## createMonitorAvatar.borderPoint
+
+[Implementation, line 111](../../../../../src/render/entity/avatar.ts#L111)
+
+```ts
+borderPoint(rawX: number, rawY: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.sqrt`
+- `THREE.Vector3`
+
+## createMonitorAvatar.borderY
+
+[Implementation, line 116](../../../../../src/render/entity/avatar.ts#L116)
+
+```ts
+borderY(x: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.sqrt`
+
+## createMonitorAvatar.callback@154
+
+[Implementation, line 154](../../../../../src/render/entity/avatar.ts#L154)
+
+```ts
+callback@154(): inferred by TypeScript; see implementation
+```
+
+## createMonitorAvatar.callback@162
+
+[Implementation, line 162](../../../../../src/render/entity/avatar.ts#L162)
+
+```ts
+callback@162(shader): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `shader.fragmentShader.replace`
+- `shader.vertexShader.replace`
+
+## createMonitorAvatar.callback@179
+
+[Implementation, line 179](../../../../../src/render/entity/avatar.ts#L179)
+
+```ts
+callback@179(shader): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `shader.fragmentShader.replace`
+
+## createMonitorAvatar.callback@197
+
+[Implementation, line 197](../../../../../src/render/entity/avatar.ts#L197)
+
+```ts
+callback@197(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Vector2`
+
+## createMonitorAvatar.callback@205
+
+[Implementation, line 205](../../../../../src/render/entity/avatar.ts#L205)
+
+```ts
+callback@205(shader, renderer): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `foam.onBeforeCompile`
+- `shader.fragmentShader.replace`
+
+## createMonitorAvatar.callback@228
+
+[Implementation, line 228](../../../../../src/render/entity/avatar.ts#L228)
+
+```ts
+callback@228(shader): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `shader.fragmentShader.replace`
+
+## createMonitorAvatar.visorPoint
+
+[Implementation, line 272](../../../../../src/render/entity/avatar.ts#L272)
+
+```ts
+visorPoint(u: number, v: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.cos`
+- `Math.sin`
+- `Math.sqrt`
+- `THREE.Vector3`
+
+## createMonitorAvatar.callback@334
+
+[Implementation, line 334](../../../../../src/render/entity/avatar.ts#L334)
+
+```ts
+callback@334(_, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `visorPoint`
+
+## setMonitorHelmetColor
+
+[Implementation, line 380](../../../../../src/render/entity/avatar.ts#L380)
+
+Set a player's helmet paint independently of the face, trim and smoked glasses.
+
+```ts
+setMonitorHelmetColor(model: THREE.Group, color: THREE.ColorRepresentation): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `monitors.get`
+- `monitors.get(model)?.shell.color.set`
+
+## setMonitorSunglasses
+
+[Implementation, line 385](../../../../../src/render/entity/avatar.ts#L385)
+
+Slide the concentric outer sun visor; the fixed pixel display never rotates with it.
+
+```ts
+setMonitorSunglasses(model: THREE.Group, lowered: boolean): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `monitors.get`
+
+## setMonitorVisorPosition
+
+[Implementation, line 391](../../../../../src/render/entity/avatar.ts#L391)
+
+Set visor travel from lowered (0) to fully retracted (1), always on the same sphere.
+
+```ts
+setMonitorVisorPosition(model: THREE.Group, position: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+- `THREE.MathUtils.clamp`
+- `monitors.get`
+
+## setMonitorVisorTint
+
+[Implementation, line 398](../../../../../src/render/entity/avatar.ts#L398)
+
+Regulate the plastic visor from clear (0) to black sunglasses (1).
+
+```ts
+setMonitorVisorTint(model: THREE.Group, darkness: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+- `THREE.MathUtils.clamp`
+- `THREE.MathUtils.lerp`
+- `monitor.tint.color.set`
+- `monitors.get`
+
+## setMonitorPortrait
+
+[Implementation, line 409](../../../../../src/render/entity/avatar.ts#L409)
+
+Display a caller-owned photo/video texture on the curved face; null restores blue pixels.
+The caller configures its texture (including sRGB) and retains disposal ownership.
+
+```ts
+setMonitorPortrait(model: THREE.Group, texture: THREE.Texture | null): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `monitors.get`
+
+## updateMonitorAvatar
+
+[Implementation, line 418](../../../../../src/render/entity/avatar.ts#L418)
+
+Advance reusable face pixels and smooth the glasses hinge without changing the driver pose.
+
+```ts
+updateMonitorAvatar(model: THREE.Group, elapsed: number, driving = false): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.exp`
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+- `THREE.MathUtils.lerp`
+- `monitor.face.update`
+- `monitors.get`
+
+## disposeMonitorAvatar
+
+[Implementation, line 431](../../../../../src/render/entity/avatar.ts#L431)
+
+The SceneView owns this texture; normal object disposal owns all meshes and materials.
+
+```ts
+disposeMonitorAvatar(model: THREE.Group): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `monitors.delete`
+- `monitors.get`
+- `monitors.get(model)?.face.dispose`
 
 ## MonitorMotion.reset
 
-[Implementation, line 43](../../../../../src/render/entity/avatar.ts#L43)
+[Implementation, line 441](../../../../../src/render/entity/avatar.ts#L441)
 
 Presentation only: the existing player collider remains the sole locomotion body.
 
@@ -48,7 +396,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorMotion.update
 
-[Implementation, line 47](../../../../../src/render/entity/avatar.ts#L47)
+[Implementation, line 445](../../../../../src/render/entity/avatar.ts#L445)
 
 Presentation only: the existing player collider remains the sole locomotion body.
 
