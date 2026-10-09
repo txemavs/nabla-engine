@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **350 modules; 3702 executable function definitions**.
+Coverage: **352 modules; 3719 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -268,6 +268,7 @@ Coverage: **350 modules; 3702 executable function definitions**.
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
+| [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
@@ -293,7 +294,7 @@ Coverage: **350 modules; 3702 executable function definitions**.
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 4 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 33 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 36 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 9 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -354,6 +355,7 @@ Coverage: **350 modules; 3702 executable function definitions**.
 | [src/simulation/weapons/ballistics.ts](src/simulation/weapons/ballistics.ts.md) | 12 |
 | [src/simulation/weapons/casings.ts](src/simulation/weapons/casings.ts.md) | 16 |
 | [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 6 |
+| [src/simulation/weapons/machine-pistol.ts](src/simulation/weapons/machine-pistol.ts.md) | 10 |
 | [src/simulation/weapons/recoil.ts](src/simulation/weapons/recoil.ts.md) | 7 |
 | [src/simulation/wheel-surface.ts](src/simulation/wheel-surface.ts.md) | 2 |
 | [src/util/gzip.ts](src/util/gzip.ts.md) | 1 |

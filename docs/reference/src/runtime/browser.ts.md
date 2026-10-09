@@ -33,6 +33,8 @@ scene; dispose releases owned resources without removing the host canvas.
 - `./render-pipeline.js`
 - `./sidearm.js`
 - `../audio/gear-click.js`
+- `../simulation/weapons/machine-pistol.js`
+- `./fire-mode-badge.js`
 - `./gallery.js`
 - `./shooting.js`
 - `../simulation/weapons/casings.js`
@@ -87,7 +89,7 @@ scene; dispose releases owned resources without removing the host canvas.
 
 ## browserStorage
 
-[Implementation, line 330](../../../../src/runtime/browser.ts#L330)
+[Implementation, line 332](../../../../src/runtime/browser.ts#L332)
 
 Browser composition over the same session, camera, input and effects used by Studio.
 Owns its renderer and listeners; the caller owns the canvas and surrounding UI.
@@ -98,7 +100,7 @@ browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined
 
 ## GameRuntime.constructor
 
-[Implementation, line 447](../../../../src/runtime/browser.ts#L447)
+[Implementation, line 455](../../../../src/runtime/browser.ts#L455)
 
 ```ts
 constructor(private readonly options: GameRuntimeOptions): instance
@@ -175,12 +177,12 @@ Explicit throws in this body:
 
 - `new Error('A Nabla game requires planetary coordinates, including offline scenes')`
 
-## GameRuntime.constructor.callback@456
+## GameRuntime.constructor.callback@464
 
-[Implementation, line 456](../../../../src/runtime/browser.ts#L456)
+[Implementation, line 464](../../../../src/runtime/browser.ts#L464)
 
 ```ts
-callback@456(): inferred by TypeScript; see implementation
+callback@464(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -188,67 +190,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `navigationRoads`
 - `navigationRoads().filter`
 
-## GameRuntime.constructor.callback@456.callback@456
+## GameRuntime.constructor.callback@464.callback@464
 
-[Implementation, line 456](../../../../src/runtime/browser.ts#L456)
-
-```ts
-callback@456(road): inferred by TypeScript; see implementation
-```
-
-## GameRuntime.constructor.callback@490
-
-[Implementation, line 490](../../../../src/runtime/browser.ts#L490)
+[Implementation, line 464](../../../../src/runtime/browser.ts#L464)
 
 ```ts
-callback@490(): inferred by TypeScript; see implementation
+callback@464(road): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.constructor.callback@491
-
-[Implementation, line 491](../../../../src/runtime/browser.ts#L491)
-
-```ts
-callback@491(message): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `options.onMessage`
-
-## GameRuntime.constructor.callback@492
-
-[Implementation, line 492](../../../../src/runtime/browser.ts#L492)
-
-```ts
-callback@492(doc): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `SceneView`
-
-## GameRuntime.constructor.callback@493
-
-[Implementation, line 493](../../../../src/runtime/browser.ts#L493)
-
-```ts
-callback@493(doc): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `PlanetWorld`
-
-## GameRuntime.constructor.callback@493.callback@497
-
-[Implementation, line 497](../../../../src/runtime/browser.ts#L497)
-
-```ts
-callback@497(): inferred by TypeScript; see implementation
-```
-
-## GameRuntime.constructor.callback@493.callback@498
+## GameRuntime.constructor.callback@498
 
 [Implementation, line 498](../../../../src/runtime/browser.ts#L498)
 
@@ -256,9 +206,61 @@ callback@497(): inferred by TypeScript; see implementation
 callback@498(): inferred by TypeScript; see implementation
 ```
 
+## GameRuntime.constructor.callback@499
+
+[Implementation, line 499](../../../../src/runtime/browser.ts#L499)
+
+```ts
+callback@499(message): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `options.onMessage`
+
+## GameRuntime.constructor.callback@500
+
+[Implementation, line 500](../../../../src/runtime/browser.ts#L500)
+
+```ts
+callback@500(doc): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `SceneView`
+
+## GameRuntime.constructor.callback@501
+
+[Implementation, line 501](../../../../src/runtime/browser.ts#L501)
+
+```ts
+callback@501(doc): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `PlanetWorld`
+
+## GameRuntime.constructor.callback@501.callback@505
+
+[Implementation, line 505](../../../../src/runtime/browser.ts#L505)
+
+```ts
+callback@505(): inferred by TypeScript; see implementation
+```
+
+## GameRuntime.constructor.callback@501.callback@506
+
+[Implementation, line 506](../../../../src/runtime/browser.ts#L506)
+
+```ts
+callback@506(): inferred by TypeScript; see implementation
+```
+
 ## GameRuntime.constructor.steeringWheelOffset
 
-[Implementation, line 525](../../../../src/runtime/browser.ts#L525)
+[Implementation, line 533](../../../../src/runtime/browser.ts#L533)
 
 ```ts
 steeringWheelOffset(model): inferred by TypeScript; see implementation
@@ -270,7 +272,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.constructor.mirrorAdjustment
 
-[Implementation, line 526](../../../../src/runtime/browser.ts#L526)
+[Implementation, line 534](../../../../src/runtime/browser.ts#L534)
 
 ```ts
 mirrorAdjustment(model): inferred by TypeScript; see implementation
@@ -280,36 +282,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `initialMirrorAdjustment`
 
-## GameRuntime.constructor.callback@532
+## GameRuntime.constructor.callback@540
 
-[Implementation, line 532](../../../../src/runtime/browser.ts#L532)
+[Implementation, line 540](../../../../src/runtime/browser.ts#L540)
 
 ```ts
-callback@532(message): inferred by TypeScript; see implementation
+callback@540(message): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `options.onMessage`
 
-## GameRuntime.constructor.callback@536
+## GameRuntime.constructor.callback@544
 
-[Implementation, line 536](../../../../src/runtime/browser.ts#L536)
+[Implementation, line 544](../../../../src/runtime/browser.ts#L544)
 
 ```ts
-callback@536(id, kind): inferred by TypeScript; see implementation
+callback@544(id, kind): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.view.pressShipSwitch`
 
-## GameRuntime.constructor.callback@538
+## GameRuntime.constructor.callback@546
 
-[Implementation, line 538](../../../../src/runtime/browser.ts#L538)
+[Implementation, line 546](../../../../src/runtime/browser.ts#L546)
 
 ```ts
-callback@538(carrier, latitude, longitude): inferred by TypeScript; see implementation
+callback@546(carrier, latitude, longitude): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -319,7 +321,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.constructor.source
 
-[Implementation, line 544](../../../../src/runtime/browser.ts#L544)
+[Implementation, line 552](../../../../src/runtime/browser.ts#L552)
 
 ```ts
 source(id: string): inferred by TypeScript; see implementation
@@ -330,17 +332,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `portalRegistry`
 - `portalRegistry(world).find`
 
-## GameRuntime.constructor.source.callback@546
+## GameRuntime.constructor.source.callback@554
 
-[Implementation, line 546](../../../../src/runtime/browser.ts#L546)
+[Implementation, line 554](../../../../src/runtime/browser.ts#L554)
 
 ```ts
-callback@546(entry): inferred by TypeScript; see implementation
+callback@554(entry): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.constructor.entries
 
-[Implementation, line 549](../../../../src/runtime/browser.ts#L549)
+[Implementation, line 557](../../../../src/runtime/browser.ts#L557)
 
 ```ts
 entries(): inferred by TypeScript; see implementation
@@ -351,17 +353,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `portalRegistry`
 - `portalRegistry(world).filter`
 
-## GameRuntime.constructor.entries.callback@550
+## GameRuntime.constructor.entries.callback@558
 
-[Implementation, line 550](../../../../src/runtime/browser.ts#L550)
+[Implementation, line 558](../../../../src/runtime/browser.ts#L558)
 
 ```ts
-callback@550(entry): inferred by TypeScript; see implementation
+callback@558(entry): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.constructor.selected
 
-[Implementation, line 551](../../../../src/runtime/browser.ts#L551)
+[Implementation, line 559](../../../../src/runtime/browser.ts#L559)
 
 ```ts
 selected(id): inferred by TypeScript; see implementation
@@ -371,12 +373,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `world.connections?.find`
 
-## GameRuntime.constructor.selected.callback@552
+## GameRuntime.constructor.selected.callback@560
 
-[Implementation, line 552](../../../../src/runtime/browser.ts#L552)
+[Implementation, line 560](../../../../src/runtime/browser.ts#L560)
 
 ```ts
-callback@552(connection): inferred by TypeScript; see implementation
+callback@560(connection): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -385,7 +387,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.constructor.configure
 
-[Implementation, line 554](../../../../src/runtime/browser.ts#L554)
+[Implementation, line 562](../../../../src/runtime/browser.ts#L562)
 
 ```ts
 configure(id, destination, open): inferred by TypeScript; see implementation
@@ -408,17 +410,17 @@ Explicit throws in this body:
 - `new Error('Portal is not registered')`
 - `new Error('Close the garage door first')`
 
-## GameRuntime.constructor.configure.callback@557
+## GameRuntime.constructor.configure.callback@565
 
-[Implementation, line 557](../../../../src/runtime/browser.ts#L557)
+[Implementation, line 565](../../../../src/runtime/browser.ts#L565)
 
 ```ts
-callback@557(entity): inferred by TypeScript; see implementation
+callback@565(entity): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.constructor.status
 
-[Implementation, line 575](../../../../src/runtime/browser.ts#L575)
+[Implementation, line 583](../../../../src/runtime/browser.ts#L583)
 
 ```ts
 status(id): inferred by TypeScript; see implementation
@@ -429,29 +431,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.text`
 - `world.connections?.find`
 
-## GameRuntime.constructor.status.callback@576
+## GameRuntime.constructor.status.callback@584
 
-[Implementation, line 576](../../../../src/runtime/browser.ts#L576)
+[Implementation, line 584](../../../../src/runtime/browser.ts#L584)
 
 ```ts
-callback@576(item): inferred by TypeScript; see implementation
+callback@584(item): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `source`
 
-## GameRuntime.constructor.callback@587
+## GameRuntime.constructor.callback@595
 
-[Implementation, line 587](../../../../src/runtime/browser.ts#L587)
+[Implementation, line 595](../../../../src/runtime/browser.ts#L595)
 
 ```ts
-callback@587(): inferred by TypeScript; see implementation
+callback@595(): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.constructor.engage
 
-[Implementation, line 598](../../../../src/runtime/browser.ts#L598)
+[Implementation, line 606](../../../../src/runtime/browser.ts#L606)
 
 ```ts
 engage(): inferred by TypeScript; see implementation
@@ -464,7 +466,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.constructor.interact
 
-[Implementation, line 602](../../../../src/runtime/browser.ts#L602)
+[Implementation, line 610](../../../../src/runtime/browser.ts#L610)
 
 ```ts
 interact(): inferred by TypeScript; see implementation
@@ -476,7 +478,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.constructor.camera
 
-[Implementation, line 603](../../../../src/runtime/browser.ts#L603)
+[Implementation, line 611](../../../../src/runtime/browser.ts#L611)
 
 ```ts
 camera(): inferred by TypeScript; see implementation
@@ -485,26 +487,6 @@ camera(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.cycleCamera`
-
-## GameRuntime.constructor.callback@632
-
-[Implementation, line 632](../../../../src/runtime/browser.ts#L632)
-
-```ts
-callback@632(material): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.shadows.setupMaterial`
-
-## GameRuntime.constructor.callback@639
-
-[Implementation, line 639](../../../../src/runtime/browser.ts#L639)
-
-```ts
-callback@639(): inferred by TypeScript; see implementation
-```
 
 ## GameRuntime.constructor.callback@640
 
@@ -518,36 +500,56 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.shadows.setupMaterial`
 
-## GameRuntime.constructor.callback@653
+## GameRuntime.constructor.callback@647
 
-[Implementation, line 653](../../../../src/runtime/browser.ts#L653)
+[Implementation, line 647](../../../../src/runtime/browser.ts#L647)
 
 ```ts
-callback@653(): inferred by TypeScript; see implementation
+callback@647(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.constructor.callback@654
+## GameRuntime.constructor.callback@648
 
-[Implementation, line 654](../../../../src/runtime/browser.ts#L654)
+[Implementation, line 648](../../../../src/runtime/browser.ts#L648)
 
 ```ts
-callback@654(): inferred by TypeScript; see implementation
+callback@648(material): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.constructor.callback@655
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 655](../../../../src/runtime/browser.ts#L655)
+- `this.shadows.setupMaterial`
+
+## GameRuntime.constructor.callback@661
+
+[Implementation, line 661](../../../../src/runtime/browser.ts#L661)
 
 ```ts
-callback@655(): inferred by TypeScript; see implementation
+callback@661(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.constructor.callback@657
+## GameRuntime.constructor.callback@662
 
-[Implementation, line 657](../../../../src/runtime/browser.ts#L657)
+[Implementation, line 662](../../../../src/runtime/browser.ts#L662)
 
 ```ts
-callback@657(time): inferred by TypeScript; see implementation
+callback@662(): inferred by TypeScript; see implementation
+```
+
+## GameRuntime.constructor.callback@663
+
+[Implementation, line 663](../../../../src/runtime/browser.ts#L663)
+
+```ts
+callback@663(): inferred by TypeScript; see implementation
+```
+
+## GameRuntime.constructor.callback@665
+
+[Implementation, line 665](../../../../src/runtime/browser.ts#L665)
+
+```ts
+callback@665(time): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -556,12 +558,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.options.onError`
 - `this.pause`
 
-## GameRuntime.constructor.callback@669
+## GameRuntime.constructor.callback@677
 
-[Implementation, line 669](../../../../src/runtime/browser.ts#L669)
+[Implementation, line 677](../../../../src/runtime/browser.ts#L677)
 
 ```ts
-callback@669(): inferred by TypeScript; see implementation
+callback@677(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -570,7 +572,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.play
 
-[Implementation, line 675](../../../../src/runtime/browser.ts#L675)
+[Implementation, line 683](../../../../src/runtime/browser.ts#L683)
 
 Prepare usable terrain and presentation before starting physics; reject cancelled/failed loads.
 
@@ -617,7 +619,7 @@ Explicit throws in this body:
 
 ## GameRuntime.play.progress
 
-[Implementation, line 683](../../../../src/runtime/browser.ts#L683)
+[Implementation, line 691](../../../../src/runtime/browser.ts#L691)
 
 ```ts
 progress(status: string): inferred by TypeScript; see implementation
@@ -628,93 +630,93 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.options.onProgress`
 - `this.world!.activeTiles.map`
 
-## GameRuntime.play.progress.callback@686
+## GameRuntime.play.progress.callback@694
 
-[Implementation, line 686](../../../../src/runtime/browser.ts#L686)
+[Implementation, line 694](../../../../src/runtime/browser.ts#L694)
 
 ```ts
-callback@686(tile): inferred by TypeScript; see implementation
+callback@694(tile): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play.callback@700
+## GameRuntime.play.callback@708
 
-[Implementation, line 700](../../../../src/runtime/browser.ts#L700)
+[Implementation, line 708](../../../../src/runtime/browser.ts#L708)
 
 ```ts
-callback@700(entity): inferred by TypeScript; see implementation
+callback@708(entity): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play.callback@701
+## GameRuntime.play.callback@709
 
-[Implementation, line 701](../../../../src/runtime/browser.ts#L701)
+[Implementation, line 709](../../../../src/runtime/browser.ts#L709)
 
 ```ts
-callback@701(entity): inferred by TypeScript; see implementation
+callback@709(entity): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play.callback@710
+## GameRuntime.play.callback@718
 
-[Implementation, line 710](../../../../src/runtime/browser.ts#L710)
+[Implementation, line 718](../../../../src/runtime/browser.ts#L718)
 
 ```ts
-callback@710(entity): inferred by TypeScript; see implementation
+callback@718(entity): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play.callback@712
+## GameRuntime.play.callback@720
 
-[Implementation, line 712](../../../../src/runtime/browser.ts#L712)
+[Implementation, line 720](../../../../src/runtime/browser.ts#L720)
 
 ```ts
-callback@712(entity): inferred by TypeScript; see implementation
+callback@720(entity): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play.callback@723
+## GameRuntime.play.callback@731
 
-[Implementation, line 723](../../../../src/runtime/browser.ts#L723)
+[Implementation, line 731](../../../../src/runtime/browser.ts#L731)
 
 ```ts
-callback@723(entity): inferred by TypeScript; see implementation
+callback@731(entity): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play.callback@734
+## GameRuntime.play.callback@742
 
-[Implementation, line 734](../../../../src/runtime/browser.ts#L734)
+[Implementation, line 742](../../../../src/runtime/browser.ts#L742)
 
 ```ts
-callback@734(): inferred by TypeScript; see implementation
+callback@742(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play.callback@763
+## GameRuntime.play.callback@771
 
-[Implementation, line 763](../../../../src/runtime/browser.ts#L763)
+[Implementation, line 771](../../../../src/runtime/browser.ts#L771)
 
 ```ts
-callback@763(): inferred by TypeScript; see implementation
+callback@771(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `warmGamePresentation`
 
-## GameRuntime.play.callback@774
+## GameRuntime.play.callback@782
 
-[Implementation, line 774](../../../../src/runtime/browser.ts#L774)
+[Implementation, line 782](../../../../src/runtime/browser.ts#L782)
 
 ```ts
-callback@774(): inferred by TypeScript; see implementation
+callback@782(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play.callback@775
+## GameRuntime.play.callback@783
 
-[Implementation, line 775](../../../../src/runtime/browser.ts#L775)
+[Implementation, line 783](../../../../src/runtime/browser.ts#L783)
 
 ```ts
-callback@775(): inferred by TypeScript; see implementation
+callback@783(): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.pause
 
-[Implementation, line 787](../../../../src/runtime/browser.ts#L787)
+[Implementation, line 795](../../../../src/runtime/browser.ts#L795)
 
 Suspend the frame loop, physics, audio and held input while retaining loaded resources.
 
@@ -734,7 +736,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.resume
 
-[Implementation, line 798](../../../../src/runtime/browser.ts#L798)
+[Implementation, line 806](../../../../src/runtime/browser.ts#L806)
 
 Resume paused gameplay and automatic scheduling; manual-clock hosts still supply ticks.
 
@@ -751,7 +753,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.stop
 
-[Implementation, line 806](../../../../src/runtime/browser.ts#L806)
+[Implementation, line 814](../../../../src/runtime/browser.ts#L814)
 
 Cancel loading and reset gameplay/presentation for replay while retaining reusable renderer resources.
 
@@ -785,7 +787,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.tick
 
-[Implementation, line 839](../../../../src/runtime/browser.ts#L839)
+[Implementation, line 847](../../../../src/runtime/browser.ts#L847)
 
 Host-owned scheduling is exclusive with the automatic loop. Time is in milliseconds.
 
@@ -805,7 +807,7 @@ Explicit throws in this body:
 
 ## GameRuntime.resize
 
-[Implementation, line 845](../../../../src/runtime/browser.ts#L845)
+[Implementation, line 853](../../../../src/runtime/browser.ts#L853)
 
 Fit renderer and projection to canvas CSS dimensions; ignore notifications after disposal.
 
@@ -821,7 +823,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.dispose
 
-[Implementation, line 854](../../../../src/runtime/browser.ts#L854)
+[Implementation, line 862](../../../../src/runtime/browser.ts#L862)
 
 Release GPU/audio/DOM listeners and restore canvas tab index. Idempotent and terminal.
 
@@ -839,6 +841,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.effects.dispose`
 - `this.environment.dispose`
 - `this.fieldLighting?.dispose`
+- `this.fireModeBadge?.dispose`
 - `this.gallery.dispose`
 - `this.game.dispose`
 - `this.hud?.dispose`
@@ -862,33 +865,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.wheelDebug.dispose`
 - `this.world?.dispose`
 
-## GameRuntime.dispose.callback@863
+## GameRuntime.dispose.callback@871
 
-[Implementation, line 863](../../../../src/runtime/browser.ts#L863)
+[Implementation, line 871](../../../../src/runtime/browser.ts#L871)
 
 ```ts
-callback@863(): inferred by TypeScript; see implementation
+callback@871(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.dispose.callback@864
+## GameRuntime.dispose.callback@872
 
-[Implementation, line 864](../../../../src/runtime/browser.ts#L864)
+[Implementation, line 872](../../../../src/runtime/browser.ts#L872)
 
 ```ts
-callback@864(): inferred by TypeScript; see implementation
+callback@872(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.dispose.callback@865
+## GameRuntime.dispose.callback@873
 
-[Implementation, line 865](../../../../src/runtime/browser.ts#L865)
+[Implementation, line 873](../../../../src/runtime/browser.ts#L873)
 
 ```ts
-callback@865(): inferred by TypeScript; see implementation
+callback@873(): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.frame
 
-[Implementation, line 889](../../../../src/runtime/browser.ts#L889)
+[Implementation, line 899](../../../../src/runtime/browser.ts#L899)
 
 ```ts
 frame(time: number): void
@@ -897,6 +900,7 @@ frame(time: number): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
+- `FireModeBadge`
 - `Math.hypot`
 - `Math.max`
 - `Math.min`
@@ -910,6 +914,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `direction.clone`
 - `direction.clone().negate`
 - `downwardViewFar`
+- `fireModeLabel`
 - `forward.multiplyScalar`
 - `gameCameraView`
 - `gearLabel`
@@ -947,6 +952,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.environment.updateSea`
 - `this.environment.updateSky`
 - `this.fieldLighting?.update`
+- `this.fireModeBadge?.show`
 - `this.flipCinematic.update`
 - `this.gallery.update`
 - `this.game.readInput`
@@ -1008,12 +1014,12 @@ Explicit throws in this body:
 
 - `new Error('Invalid frame time')`
 
-## GameRuntime.frame.callback@1011
+## GameRuntime.frame.callback@1025
 
-[Implementation, line 1011](../../../../src/runtime/browser.ts#L1011)
+[Implementation, line 1025](../../../../src/runtime/browser.ts#L1025)
 
 ```ts
-callback@1011(object): inferred by TypeScript; see implementation
+callback@1025(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1023,7 +1029,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.frame.linvel
 
-[Implementation, line 1044](../../../../src/runtime/browser.ts#L1044)
+[Implementation, line 1058](../../../../src/runtime/browser.ts#L1058)
 
 ```ts
 linvel(): inferred by TypeScript; see implementation
@@ -1031,23 +1037,23 @@ linvel(): inferred by TypeScript; see implementation
 
 ## GameRuntime.frame.angvel
 
-[Implementation, line 1045](../../../../src/runtime/browser.ts#L1045)
+[Implementation, line 1059](../../../../src/runtime/browser.ts#L1059)
 
 ```ts
 angvel(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.frame.callback@1075
+## GameRuntime.frame.callback@1089
 
-[Implementation, line 1075](../../../../src/runtime/browser.ts#L1075)
+[Implementation, line 1089](../../../../src/runtime/browser.ts#L1089)
 
 ```ts
-callback@1075(entity): inferred by TypeScript; see implementation
+callback@1089(entity): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.frame.heightAt
 
-[Implementation, line 1144](../../../../src/runtime/browser.ts#L1144)
+[Implementation, line 1158](../../../../src/runtime/browser.ts#L1158)
 
 ```ts
 heightAt(p): inferred by TypeScript; see implementation
@@ -1057,20 +1063,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.world?.groundHeight`
 
-## GameRuntime.frame.callback@1145
+## GameRuntime.frame.callback@1159
 
-[Implementation, line 1145](../../../../src/runtime/browser.ts#L1145)
+[Implementation, line 1159](../../../../src/runtime/browser.ts#L1159)
 
 ```ts
-callback@1145(tile): inferred by TypeScript; see implementation
+callback@1159(tile): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.frame.callback@1161
+## GameRuntime.frame.callback@1175
 
-[Implementation, line 1161](../../../../src/runtime/browser.ts#L1161)
+[Implementation, line 1175](../../../../src/runtime/browser.ts#L1175)
 
 ```ts
-callback@1161(location, document, entity): inferred by TypeScript; see implementation
+callback@1175(location, document, entity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1079,7 +1085,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.frame.cull
 
-[Implementation, line 1182](../../../../src/runtime/browser.ts#L1182)
+[Implementation, line 1196](../../../../src/runtime/browser.ts#L1196)
 
 ```ts
 cull(position): inferred by TypeScript; see implementation
@@ -1091,7 +1097,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.skyClock
 
-[Implementation, line 1220](../../../../src/runtime/browser.ts#L1220)
+[Implementation, line 1234](../../../../src/runtime/browser.ts#L1234)
 
 The sky clock in use: `live` follows the real clock (optionally faster), `fixed` holds one instant.
 
@@ -1101,7 +1107,7 @@ skyClock(): SkyClock
 
 ## GameRuntime.setSkyClock
 
-[Implementation, line 1224](../../../../src/runtime/browser.ts#L1224)
+[Implementation, line 1238](../../../../src/runtime/browser.ts#L1238)
 
 Change the time of day live; sun, sky, fog and lighting follow on the next frame.
 
@@ -1119,7 +1125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.planetLayers
 
-[Implementation, line 1236](../../../../src/runtime/browser.ts#L1236)
+[Implementation, line 1250](../../../../src/runtime/browser.ts#L1250)
 
 Visible planetary layers (sky, sun, clouds, sea).
 
@@ -1129,7 +1135,7 @@ planetLayers(): { sky: boolean; sun: boolean; clouds: boolean; sea: boolean }
 
 ## GameRuntime.setPlanetLayers
 
-[Implementation, line 1245](../../../../src/runtime/browser.ts#L1245)
+[Implementation, line 1259](../../../../src/runtime/browser.ts#L1259)
 
 Show or hide planetary layers; wires `GeographicView.setLayers` and the sea sheet.
 
@@ -1145,7 +1151,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.cloudStyle
 
-[Implementation, line 1256](../../../../src/runtime/browser.ts#L1256)
+[Implementation, line 1270](../../../../src/runtime/browser.ts#L1270)
 
 ```ts
 cloudStyle(): 'low' | 'artistic'
@@ -1153,7 +1159,7 @@ cloudStyle(): 'low' | 'artistic'
 
 ## GameRuntime.setCloudStyle
 
-[Implementation, line 1260](../../../../src/runtime/browser.ts#L1260)
+[Implementation, line 1274](../../../../src/runtime/browser.ts#L1274)
 
 Artistic sheets or the simpler globe layer (`GeographicView.setCloudStyle`).
 
@@ -1169,7 +1175,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.cloudAmount
 
-[Implementation, line 1266](../../../../src/runtime/browser.ts#L1266)
+[Implementation, line 1280](../../../../src/runtime/browser.ts#L1280)
 
 ```ts
 cloudAmount(): number
@@ -1177,7 +1183,7 @@ cloudAmount(): number
 
 ## GameRuntime.setCloudWeather
 
-[Implementation, line 1273](../../../../src/runtime/browser.ts#L1273)
+[Implementation, line 1287](../../../../src/runtime/browser.ts#L1287)
 
 Cloud coverage 0–1 (`GeographicView.setCloudWeather`).
 Omit `storm` to keep the current cloud pressure (scene-controls amount slider).
@@ -1201,7 +1207,7 @@ Explicit throws in this body:
 
 ## GameRuntime.cloudPressure
 
-[Implementation, line 1285](../../../../src/runtime/browser.ts#L1285)
+[Implementation, line 1299](../../../../src/runtime/browser.ts#L1299)
 
 ```ts
 cloudPressure(): number
@@ -1209,7 +1215,7 @@ cloudPressure(): number
 
 ## GameRuntime.lensFlareAmount
 
-[Implementation, line 1288](../../../../src/runtime/browser.ts#L1288)
+[Implementation, line 1302](../../../../src/runtime/browser.ts#L1302)
 
 ```ts
 lensFlareAmount(): number
@@ -1217,7 +1223,7 @@ lensFlareAmount(): number
 
 ## GameRuntime.setLensFlareAmount
 
-[Implementation, line 1292](../../../../src/runtime/browser.ts#L1292)
+[Implementation, line 1306](../../../../src/runtime/browser.ts#L1306)
 
 0-1 sun lens flare strength (`GeographicView.setLensFlareAmount`).
 
@@ -1239,7 +1245,7 @@ Explicit throws in this body:
 
 ## GameRuntime.planetVisualConfig
 
-[Implementation, line 1301](../../../../src/runtime/browser.ts#L1301)
+[Implementation, line 1315](../../../../src/runtime/browser.ts#L1315)
 
 Snapshot of Planeta visual knobs for host/demo config paste.
 
@@ -1249,7 +1255,7 @@ planetVisualConfig(): inferred by TypeScript; see implementation
 
 ## GameRuntime.applyCameraFov
 
-[Implementation, line 1314](../../../../src/runtime/browser.ts#L1314)
+[Implementation, line 1328](../../../../src/runtime/browser.ts#L1328)
 
 Cockpit and chase FOV with the player's J-menu offset; read live by the camera each frame.
 
@@ -1263,7 +1269,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.rememberPlanetVisual
 
-[Implementation, line 1320](../../../../src/runtime/browser.ts#L1320)
+[Implementation, line 1334](../../../../src/runtime/browser.ts#L1334)
 
 ```ts
 rememberPlanetVisual(): void
@@ -1276,7 +1282,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.syncPlanet
 
-[Implementation, line 1332](../../../../src/runtime/browser.ts#L1332)
+[Implementation, line 1346](../../../../src/runtime/browser.ts#L1346)
 
 ```ts
 syncPlanet(): void
@@ -1291,7 +1297,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.waterSettings
 
-[Implementation, line 1345](../../../../src/runtime/browser.ts#L1345)
+[Implementation, line 1359](../../../../src/runtime/browser.ts#L1359)
 
 Sea settings in use; undefined means the simplified tide.
 
@@ -1301,7 +1307,7 @@ waterSettings(): SceneDocument['water']
 
 ## GameRuntime.sea
 
-[Implementation, line 1349](../../../../src/runtime/browser.ts#L1349)
+[Implementation, line 1363](../../../../src/runtime/browser.ts#L1363)
 
 Current sea level in metres and its state label, as drawn and used by physics.
 
@@ -1315,7 +1321,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.setWater
 
-[Implementation, line 1353](../../../../src/runtime/browser.ts#L1353)
+[Implementation, line 1367](../../../../src/runtime/browser.ts#L1367)
 
 Change the sea live: a manual level in metres, or undefined for the simplified tide.
 
@@ -1330,7 +1336,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.spawnedVehicles
 
-[Implementation, line 1359](../../../../src/runtime/browser.ts#L1359)
+[Implementation, line 1373](../../../../src/runtime/browser.ts#L1373)
 
 Ids of vehicles added with `spawnVehicle`, oldest first.
 
@@ -1342,29 +1348,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.spawned.map`
 
-## GameRuntime.spawnedVehicles.callback@1360
+## GameRuntime.spawnedVehicles.callback@1374
 
-[Implementation, line 1360](../../../../src/runtime/browser.ts#L1360)
+[Implementation, line 1374](../../../../src/runtime/browser.ts#L1374)
 
 ```ts
-callback@1360(id): inferred by TypeScript; see implementation
+callback@1374(id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.document.entities.find`
 
-## GameRuntime.spawnedVehicles.callback@1360.callback@1362
+## GameRuntime.spawnedVehicles.callback@1374.callback@1376
 
-[Implementation, line 1362](../../../../src/runtime/browser.ts#L1362)
+[Implementation, line 1376](../../../../src/runtime/browser.ts#L1376)
 
 ```ts
-callback@1362(e): inferred by TypeScript; see implementation
+callback@1376(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.spawnVehicle
 
-[Implementation, line 1371](../../../../src/runtime/browser.ts#L1371)
+[Implementation, line 1385](../../../../src/runtime/browser.ts#L1385)
 
 Add a vehicle on the real ground in front of the player, facing the same way, and
 return its id. `template` is a complete vehicle entity (for example `presetVehicle`),
@@ -1391,17 +1397,17 @@ Explicit throws in this body:
 - `new Error('A vehicle template is required')`
 - `new Error('A running game on loaded terrain is required')`
 
-## GameRuntime.spawnVehicle.callback@1379
+## GameRuntime.spawnVehicle.callback@1393
 
-[Implementation, line 1379](../../../../src/runtime/browser.ts#L1379)
+[Implementation, line 1393](../../../../src/runtime/browser.ts#L1393)
 
 ```ts
-callback@1379(e): inferred by TypeScript; see implementation
+callback@1393(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.spawnVehicle.radius
 
-[Implementation, line 1385](../../../../src/runtime/browser.ts#L1385)
+[Implementation, line 1399](../../../../src/runtime/browser.ts#L1399)
 
 ```ts
 radius(size: readonly number[]): inferred by TypeScript; see implementation
@@ -1411,12 +1417,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.hypot`
 
-## GameRuntime.spawnVehicle.callback@1386
+## GameRuntime.spawnVehicle.callback@1400
 
-[Implementation, line 1386](../../../../src/runtime/browser.ts#L1386)
+[Implementation, line 1400](../../../../src/runtime/browser.ts#L1400)
 
 ```ts
-callback@1386(e): inferred by TypeScript; see implementation
+callback@1400(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1426,7 +1432,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.spawnVehicle.spot
 
-[Implementation, line 1392](../../../../src/runtime/browser.ts#L1392)
+[Implementation, line 1406](../../../../src/runtime/browser.ts#L1406)
 
 ```ts
 spot(extra: number, side: number): Vec3Tuple
@@ -1439,7 +1445,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.spawnVehicle.free
 
-[Implementation, line 1397](../../../../src/runtime/browser.ts#L1397)
+[Implementation, line 1411](../../../../src/runtime/browser.ts#L1411)
 
 ```ts
 free(at: Vec3Tuple): inferred by TypeScript; see implementation
@@ -1449,12 +1455,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `others.every`
 
-## GameRuntime.spawnVehicle.free.callback@1399
+## GameRuntime.spawnVehicle.free.callback@1413
 
-[Implementation, line 1399](../../../../src/runtime/browser.ts#L1399)
+[Implementation, line 1413](../../../../src/runtime/browser.ts#L1413)
 
 ```ts
-callback@1399(o): inferred by TypeScript; see implementation
+callback@1413(o): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1462,44 +1468,44 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.hypot`
 - `radius`
 
-## GameRuntime.spawnVehicle.callback@1404
+## GameRuntime.spawnVehicle.callback@1418
 
-[Implementation, line 1404](../../../../src/runtime/browser.ts#L1404)
+[Implementation, line 1418](../../../../src/runtime/browser.ts#L1418)
 
 ```ts
-callback@1404(extra): inferred by TypeScript; see implementation
+callback@1418(extra): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `[0, 1, -1, 2, -2, 3, -3].map`
 
-## GameRuntime.spawnVehicle.callback@1404.callback@1404
+## GameRuntime.spawnVehicle.callback@1418.callback@1418
 
-[Implementation, line 1404](../../../../src/runtime/browser.ts#L1404)
+[Implementation, line 1418](../../../../src/runtime/browser.ts#L1418)
 
 ```ts
-callback@1404(side): inferred by TypeScript; see implementation
+callback@1418(side): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.spawnVehicle.callback@1406
+## GameRuntime.spawnVehicle.callback@1420
 
-[Implementation, line 1406](../../../../src/runtime/browser.ts#L1406)
+[Implementation, line 1420](../../../../src/runtime/browser.ts#L1420)
 
 ```ts
-callback@1406(a, b): inferred by TypeScript; see implementation
+callback@1420(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
 
-## GameRuntime.spawnVehicle.callback@1408
+## GameRuntime.spawnVehicle.callback@1422
 
-[Implementation, line 1408](../../../../src/runtime/browser.ts#L1408)
+[Implementation, line 1422](../../../../src/runtime/browser.ts#L1422)
 
 ```ts
-callback@1408(c): inferred by TypeScript; see implementation
+callback@1422(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1509,7 +1515,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.placeVehicle
 
-[Implementation, line 1421](../../../../src/runtime/browser.ts#L1421)
+[Implementation, line 1435](../../../../src/runtime/browser.ts#L1435)
 
 Rest `template` on loaded ground at a local-metre position and install it on the
 live view, simulation and input mixer (the same path as `spawnVehicle`).
@@ -1550,12 +1556,12 @@ Explicit throws in this body:
 - `new Error(\`Entity ${child.id} must be hosted by ${vehicle.id}\`)`
 - `new Error('A running game on loaded terrain is required')`
 
-## GameRuntime.placeVehicle.callback@1451
+## GameRuntime.placeVehicle.callback@1465
 
-[Implementation, line 1451](../../../../src/runtime/browser.ts#L1451)
+[Implementation, line 1465](../../../../src/runtime/browser.ts#L1465)
 
 ```ts
-callback@1451(child): Entity
+callback@1465(child): Entity
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1564,25 +1570,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `child.id.startsWith`
 - `structuredClone`
 
-## GameRuntime.placeVehicle.callback@1464
+## GameRuntime.placeVehicle.callback@1478
 
-[Implementation, line 1464](../../../../src/runtime/browser.ts#L1464)
+[Implementation, line 1478](../../../../src/runtime/browser.ts#L1478)
 
 ```ts
-callback@1464(e): inferred by TypeScript; see implementation
+callback@1478(e): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.placeVehicle.callback@1469
+## GameRuntime.placeVehicle.callback@1483
 
-[Implementation, line 1469](../../../../src/runtime/browser.ts#L1469)
+[Implementation, line 1483](../../../../src/runtime/browser.ts#L1483)
 
 ```ts
-callback@1469(): inferred by TypeScript; see implementation
+callback@1483(): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.hitchTrailer
 
-[Implementation, line 1476](../../../../src/runtime/browser.ts#L1476)
+[Implementation, line 1490](../../../../src/runtime/browser.ts#L1490)
 
 Couple a free trailer to a tractor. Omit `trailerId` to use the nearest hitchable trailer.
 Retracts landing legs. The tractor/trailer must already be in the live simulation.
@@ -1603,7 +1609,7 @@ Explicit throws in this body:
 
 ## GameRuntime.unhitchTrailer
 
-[Implementation, line 1483](../../../../src/runtime/browser.ts#L1483)
+[Implementation, line 1497](../../../../src/runtime/browser.ts#L1497)
 
 Uncouple a trailer and deploy its landing legs. Omit the id to release the occupied tractor's trailer.
 
@@ -1623,7 +1629,7 @@ Explicit throws in this body:
 
 ## GameRuntime.toggleHitch
 
-[Implementation, line 1490](../../../../src/runtime/browser.ts#L1490)
+[Implementation, line 1504](../../../../src/runtime/browser.ts#L1504)
 
 Occupied tractor: hitch a nearby free trailer, or uncouple the attached one.
 
@@ -1638,7 +1644,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.steeringWheel
 
-[Implementation, line 1498](../../../../src/runtime/browser.ts#L1498)
+[Implementation, line 1512](../../../../src/runtime/browser.ts#L1512)
 
 The steering wheel of the vehicle the player is in, or null on foot and in vehicles without
 a separate steering mesh. Every car of the same model shares one adjustment.
@@ -1655,17 +1661,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.view.steeringWheelModel`
 - `this.view.steeringWheelOffset`
 
-## GameRuntime.steeringWheel.callback@1505
+## GameRuntime.steeringWheel.callback@1519
 
-[Implementation, line 1505](../../../../src/runtime/browser.ts#L1505)
+[Implementation, line 1519](../../../../src/runtime/browser.ts#L1519)
 
 ```ts
-callback@1505(e): inferred by TypeScript; see implementation
+callback@1519(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.setSteeringWheelOffset
 
-[Implementation, line 1519](../../../../src/runtime/browser.ts#L1519)
+[Implementation, line 1533](../../../../src/runtime/browser.ts#L1533)
 
 Move the steering wheel of `model` (default: the player's vehicle) live, on top of the pose
 baked into its GLB, and save the choice for that model. Values are metres, clamped to
@@ -1688,7 +1694,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.resetSteeringWheelOffset
 
-[Implementation, line 1532](../../../../src/runtime/browser.ts#L1532)
+[Implementation, line 1546](../../../../src/runtime/browser.ts#L1546)
 
 Forget the saved choice of `model` (default: the player's vehicle) and return to the host default.
 
@@ -1707,7 +1713,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.mirrors
 
-[Implementation, line 1548](../../../../src/runtime/browser.ts#L1548)
+[Implementation, line 1562](../../../../src/runtime/browser.ts#L1562)
 
 The mirrors of the vehicle the player is in, or null on foot and in vehicles without cockpit
 mirrors. Every vehicle of the same mirror model shares one adjustment.
@@ -1725,17 +1731,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.view.mirrorModel`
 - `this.view.mirrorSides`
 
-## GameRuntime.mirrors.callback@1555
+## GameRuntime.mirrors.callback@1569
 
-[Implementation, line 1555](../../../../src/runtime/browser.ts#L1555)
+[Implementation, line 1569](../../../../src/runtime/browser.ts#L1569)
 
 ```ts
-callback@1555(e): inferred by TypeScript; see implementation
+callback@1569(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.setMirrorAngle
 
-[Implementation, line 1570](../../../../src/runtime/browser.ts#L1570)
+[Implementation, line 1584](../../../../src/runtime/browser.ts#L1584)
 
 Turn one mirror glass of `model` (default: the player's vehicle) live, on top of the aim baked
 into the asset, and save the choice for that model. Degrees: `yaw` + outward / − inward,
@@ -1759,7 +1765,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.resetMirrorAdjustment
 
-[Implementation, line 1587](../../../../src/runtime/browser.ts#L1587)
+[Implementation, line 1601](../../../../src/runtime/browser.ts#L1601)
 
 Forget the saved mirror choice of `model` (default: the player's vehicle); back to the host default.
 
@@ -1779,7 +1785,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.mirrorSidesOf
 
-[Implementation, line 1598](../../../../src/runtime/browser.ts#L1598)
+[Implementation, line 1612](../../../../src/runtime/browser.ts#L1612)
 
 ```ts
 mirrorSidesOf(model: string): string[]
@@ -1791,12 +1797,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.view.mirrorSides`
 - `this.view.mirrorSides(id).sort`
 
-## GameRuntime.mirrorSidesOf.callback@1599
+## GameRuntime.mirrorSidesOf.callback@1613
 
-[Implementation, line 1599](../../../../src/runtime/browser.ts#L1599)
+[Implementation, line 1613](../../../../src/runtime/browser.ts#L1613)
 
 ```ts
-callback@1599(e): inferred by TypeScript; see implementation
+callback@1613(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1805,7 +1811,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.removeSpawnedVehicle
 
-[Implementation, line 1603](../../../../src/runtime/browser.ts#L1603)
+[Implementation, line 1617](../../../../src/runtime/browser.ts#L1617)
 
 Remove a vehicle added with `spawnVehicle`. The player must be outside it.
 
@@ -1828,17 +1834,17 @@ Explicit throws in this body:
 
 - `new Error(\`Not a spawned vehicle: ${id}\`)`
 
-## GameRuntime.removeSpawnedVehicle.callback@1610
+## GameRuntime.removeSpawnedVehicle.callback@1624
 
-[Implementation, line 1610](../../../../src/runtime/browser.ts#L1610)
+[Implementation, line 1624](../../../../src/runtime/browser.ts#L1624)
 
 ```ts
-callback@1610(other): inferred by TypeScript; see implementation
+callback@1624(other): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.placedObjects
 
-[Implementation, line 1615](../../../../src/runtime/browser.ts#L1615)
+[Implementation, line 1629](../../../../src/runtime/browser.ts#L1629)
 
 Groups added with `placeEntities` / `spawnEntities`, oldest first.
 
@@ -1850,17 +1856,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.placed.map`
 
-## GameRuntime.placedObjects.callback@1616
+## GameRuntime.placedObjects.callback@1630
 
-[Implementation, line 1616](../../../../src/runtime/browser.ts#L1616)
+[Implementation, line 1630](../../../../src/runtime/browser.ts#L1630)
 
 ```ts
-callback@1616(entry): inferred by TypeScript; see implementation
+callback@1630(entry): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.spawnEntities
 
-[Implementation, line 1624](../../../../src/runtime/browser.ts#L1624)
+[Implementation, line 1638](../../../../src/runtime/browser.ts#L1638)
 
 Place scenery in front of the player, like `spawnVehicle`: `entities` are in a local frame
 whose origin is the ground contact point and whose −Z points away from the player (see
@@ -1884,17 +1890,17 @@ Explicit throws in this body:
 
 - `new Error('A running game on loaded terrain is required')`
 
-## GameRuntime.spawnEntities.callback@1630
+## GameRuntime.spawnEntities.callback@1644
 
-[Implementation, line 1630](../../../../src/runtime/browser.ts#L1630)
+[Implementation, line 1644](../../../../src/runtime/browser.ts#L1644)
 
 ```ts
-callback@1630(e): inferred by TypeScript; see implementation
+callback@1644(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.placeEntities
 
-[Implementation, line 1648](../../../../src/runtime/browser.ts#L1648)
+[Implementation, line 1662](../../../../src/runtime/browser.ts#L1662)
 
 Install scenery (standalone portals, sprites, lamps, static boxes) on loaded ground at a
 local-metre `position`, turned by gameplay `yaw` (0 faces north, −Z). Each top-level entity
@@ -1932,20 +1938,20 @@ Explicit throws in this body:
 - `new Error('A running game on loaded terrain is required')`
 - `new Error('Nothing to place')`
 
-## GameRuntime.placeEntities.callback@1663
+## GameRuntime.placeEntities.callback@1677
 
-[Implementation, line 1663](../../../../src/runtime/browser.ts#L1663)
+[Implementation, line 1677](../../../../src/runtime/browser.ts#L1677)
 
 ```ts
-callback@1663(e, i): inferred by TypeScript; see implementation
+callback@1677(e, i): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.placeEntities.callback@1665
+## GameRuntime.placeEntities.callback@1679
 
-[Implementation, line 1665](../../../../src/runtime/browser.ts#L1665)
+[Implementation, line 1679](../../../../src/runtime/browser.ts#L1679)
 
 ```ts
-callback@1665(template): Entity
+callback@1679(template): Entity
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1958,33 +1964,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `offset.lengthSq`
 - `structuredClone`
 
-## GameRuntime.placeEntities.callback@1687
+## GameRuntime.placeEntities.callback@1701
 
-[Implementation, line 1687](../../../../src/runtime/browser.ts#L1687)
+[Implementation, line 1701](../../../../src/runtime/browser.ts#L1701)
 
 ```ts
-callback@1687(e): inferred by TypeScript; see implementation
+callback@1701(e): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.placeEntities.callback@1688
+## GameRuntime.placeEntities.callback@1702
 
-[Implementation, line 1688](../../../../src/runtime/browser.ts#L1688)
+[Implementation, line 1702](../../../../src/runtime/browser.ts#L1702)
 
 ```ts
-callback@1688(e): inferred by TypeScript; see implementation
+callback@1702(e): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.placeEntities.callback@1692
+## GameRuntime.placeEntities.callback@1706
 
-[Implementation, line 1692](../../../../src/runtime/browser.ts#L1692)
+[Implementation, line 1706](../../../../src/runtime/browser.ts#L1706)
 
 ```ts
-callback@1692(): inferred by TypeScript; see implementation
+callback@1706(): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.configurePortal
 
-[Implementation, line 1700](../../../../src/runtime/browser.ts#L1700)
+[Implementation, line 1714](../../../../src/runtime/browser.ts#L1714)
 
 Link, relink or close a portal mouth in the running game (what the portal panel's Abrir /
 Cerrar do). Both mouths need equal apertures; carrier sterns need the garage door closed.
@@ -2005,7 +2011,7 @@ Explicit throws in this body:
 
 ## GameRuntime.removePlaced
 
-[Implementation, line 1711](../../../../src/runtime/browser.ts#L1711)
+[Implementation, line 1725](../../../../src/runtime/browser.ts#L1725)
 
 Remove a group added with `placeEntities` / `spawnEntities`, unlinking its portals.
 
@@ -2029,37 +2035,37 @@ Explicit throws in this body:
 
 - `new Error(\`Not a placed object: ${id}\`)`
 
-## GameRuntime.removePlaced.callback@1713
+## GameRuntime.removePlaced.callback@1727
 
-[Implementation, line 1713](../../../../src/runtime/browser.ts#L1713)
+[Implementation, line 1727](../../../../src/runtime/browser.ts#L1727)
 
 ```ts
-callback@1713(item): inferred by TypeScript; see implementation
+callback@1727(item): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.removePlaced.callback@1715
+## GameRuntime.removePlaced.callback@1729
 
-[Implementation, line 1715](../../../../src/runtime/browser.ts#L1715)
+[Implementation, line 1729](../../../../src/runtime/browser.ts#L1729)
 
 ```ts
-callback@1715(e): inferred by TypeScript; see implementation
+callback@1729(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `entry.ids.includes`
 
-## GameRuntime.removePlaced.callback@1719
+## GameRuntime.removePlaced.callback@1733
 
-[Implementation, line 1719](../../../../src/runtime/browser.ts#L1719)
+[Implementation, line 1733](../../../../src/runtime/browser.ts#L1733)
 
 ```ts
-callback@1719(item): inferred by TypeScript; see implementation
+callback@1733(item): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.cellStats
 
-[Implementation, line 1724](../../../../src/runtime/browser.ts#L1724)
+[Implementation, line 1738](../../../../src/runtime/browser.ts#L1738)
 
 Terrain cells loaded and drawn of the known dataset; null without tiles.
 
@@ -2075,7 +2081,7 @@ cellStats(): {
 
 ## GameRuntime.setStreaming
 
-[Implementation, line 1738](../../../../src/runtime/browser.ts#L1738)
+[Implementation, line 1752](../../../../src/runtime/browser.ts#L1752)
 
 Change how far terrain is loaded and how many cells stay in memory, live. Unset fields keep their value,
 except that a new distance without `cells` resets the cells to the quality profile for that distance.
@@ -2100,7 +2106,7 @@ Explicit throws in this body:
 
 ## GameRuntime.streaming
 
-[Implementation, line 1751](../../../../src/runtime/browser.ts#L1751)
+[Implementation, line 1765](../../../../src/runtime/browser.ts#L1765)
 
 Current load radius (metres) and cells kept in memory.
 
@@ -2110,7 +2116,7 @@ streaming(): { distance: number; cells: number }
 
 ## GameRuntime.loadDiagnostics
 
-[Implementation, line 1755](../../../../src/runtime/browser.ts#L1755)
+[Implementation, line 1769](../../../../src/runtime/browser.ts#L1769)
 
 What the loading screen needs: requests in flight, failures, holes and the last error.
 
@@ -2120,7 +2126,7 @@ loadDiagnostics(): LoadDiagnostics | null
 
 ## GameRuntime.missingTiles
 
-[Implementation, line 1759](../../../../src/runtime/browser.ts#L1759)
+[Implementation, line 1773](../../../../src/runtime/browser.ts#L1773)
 
 Tiles the host does not have (z/x/y, HTTP status, when): holes in the map, kept for the tile producer.
 
@@ -2130,7 +2136,7 @@ missingTiles(): MissingTile[]
 
 ## GameRuntime.clearMissingTiles
 
-[Implementation, line 1762](../../../../src/runtime/browser.ts#L1762)
+[Implementation, line 1776](../../../../src/runtime/browser.ts#L1776)
 
 ```ts
 clearMissingTiles(): void
@@ -2142,7 +2148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.cellTimings
 
-[Implementation, line 1766](../../../../src/runtime/browser.ts#L1766)
+[Implementation, line 1780](../../../../src/runtime/browser.ts#L1780)
 
 Per-cell load timings (worker phases, install steps, photo), keyed by cell id; empty without tiles.
 
@@ -2152,7 +2158,7 @@ cellTimings(): [string, TileTiming][]
 
 ## GameRuntime.hiddenLayers
 
-[Implementation, line 1770](../../../../src/runtime/browser.ts#L1770)
+[Implementation, line 1784](../../../../src/runtime/browser.ts#L1784)
 
 Ids of the terrain layers switched off (see `TILE_LAYERS`).
 
@@ -2166,7 +2172,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.setHiddenLayers
 
-[Implementation, line 1774](../../../../src/runtime/browser.ts#L1774)
+[Implementation, line 1788](../../../../src/runtime/browser.ts#L1788)
 
 Show or hide terrain layers live; only drawing changes, never collision.
 
@@ -2182,7 +2188,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.groundAudit
 
-[Implementation, line 1780](../../../../src/runtime/browser.ts#L1780)
+[Implementation, line 1794](../../../../src/runtime/browser.ts#L1794)
 
 Where every vehicle and the player sit against the loaded ground; null when not playing.
 
@@ -2195,20 +2201,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `auditGround`
 - `this.document.entities.flatMap`
 
-## GameRuntime.groundAudit.callback@1786
+## GameRuntime.groundAudit.callback@1800
 
-[Implementation, line 1786](../../../../src/runtime/browser.ts#L1786)
+[Implementation, line 1800](../../../../src/runtime/browser.ts#L1800)
 
 ```ts
-callback@1786(entity): inferred by TypeScript; see implementation
+callback@1800(entity): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.groundAudit.callback@1798
+## GameRuntime.groundAudit.callback@1812
 
-[Implementation, line 1798](../../../../src/runtime/browser.ts#L1798)
+[Implementation, line 1812](../../../../src/runtime/browser.ts#L1812)
 
 ```ts
-callback@1798(position): inferred by TypeScript; see implementation
+callback@1812(position): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2217,7 +2223,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.displaySettings
 
-[Implementation, line 1803](../../../../src/runtime/browser.ts#L1803)
+[Implementation, line 1817](../../../../src/runtime/browser.ts#L1817)
 
 Return per-instance presentation settings without exposing mutable internal state.
 
@@ -2227,7 +2233,7 @@ displaySettings(): DisplaySettings
 
 ## GameRuntime.flipCinematicEnabled
 
-[Implementation, line 1807](../../../../src/runtime/browser.ts#L1807)
+[Implementation, line 1821](../../../../src/runtime/browser.ts#L1821)
 
 Whether the post-flip cinematic camera is allowed (default on).
 
@@ -2237,7 +2243,7 @@ flipCinematicEnabled(): boolean
 
 ## GameRuntime.setFlipCinematicEnabled
 
-[Implementation, line 1811](../../../../src/runtime/browser.ts#L1811)
+[Implementation, line 1825](../../../../src/runtime/browser.ts#L1825)
 
 Enable or disable the post-flip cinematic camera; aborts an in-flight shot.
 
@@ -2251,7 +2257,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.recoverToRoadEnabled
 
-[Implementation, line 1816](../../../../src/runtime/browser.ts#L1816)
+[Implementation, line 1830](../../../../src/runtime/browser.ts#L1830)
 
 Whether R reset snaps to the nearest road/vía (default on).
 
@@ -2261,7 +2267,7 @@ recoverToRoadEnabled(): boolean
 
 ## GameRuntime.setRecoverToRoadEnabled
 
-[Implementation, line 1820](../../../../src/runtime/browser.ts#L1820)
+[Implementation, line 1834](../../../../src/runtime/browser.ts#L1834)
 
 Choose between R reset on the nearest road/vía (true) or upright in place (false).
 
@@ -2275,7 +2281,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.shadowBias
 
-[Implementation, line 1825](../../../../src/runtime/browser.ts#L1825)
+[Implementation, line 1839](../../../../src/runtime/browser.ts#L1839)
 
 Factor on the quality tier's shadow bias (1 = tuned default; see `shadowBiasRange`).
 
@@ -2285,7 +2291,7 @@ shadowBias(): number
 
 ## GameRuntime.setShadowBias
 
-[Implementation, line 1829](../../../../src/runtime/browser.ts#L1829)
+[Implementation, line 1843](../../../../src/runtime/browser.ts#L1843)
 
 Change the shadow bias factor live (clamped to 0..3): bias is a receiver uniform, no reload or rebuild.
 
@@ -2300,7 +2306,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.asphaltContrast
 
-[Implementation, line 1834](../../../../src/runtime/browser.ts#L1834)
+[Implementation, line 1848](../../../../src/runtime/browser.ts#L1848)
 
 Asphalt contrast on the roads photo drape (1 = unchanged).
 
@@ -2314,7 +2320,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.setAsphaltContrast
 
-[Implementation, line 1842](../../../../src/runtime/browser.ts#L1842)
+[Implementation, line 1856](../../../../src/runtime/browser.ts#L1856)
 
 Set the asphalt contrast live, clamped to 0.5–2.5; a uniform change, no shader recompile. On
 photo-draped terrain without road meshes (`relief=lidar`) it follows each cell's OSM
@@ -2332,7 +2338,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.setAudioEnabled
 
-[Implementation, line 1848](../../../../src/runtime/browser.ts#L1848)
+[Implementation, line 1862](../../../../src/runtime/browser.ts#L1862)
 
 Change the host's mute preference without replacing the audio graph.
 
@@ -2347,7 +2353,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.audioMix
 
-[Implementation, line 1853](../../../../src/runtime/browser.ts#L1853)
+[Implementation, line 1867](../../../../src/runtime/browser.ts#L1867)
 
 Player mix: General (master), Motor (engine bus), Música and its mute, each 0..1.
 
@@ -2357,7 +2363,7 @@ audioMix(): AudioMixLevels
 
 ## GameRuntime.setAudioMix
 
-[Implementation, line 1857](../../../../src/runtime/browser.ts#L1857)
+[Implementation, line 1871](../../../../src/runtime/browser.ts#L1871)
 
 Change and save the mix (`nabla.audioMix`); returns the clamped levels.
 
@@ -2374,7 +2380,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.musicPlaying
 
-[Implementation, line 1864](../../../../src/runtime/browser.ts#L1864)
+[Implementation, line 1878](../../../../src/runtime/browser.ts#L1878)
 
 True while the background track plays (it waits for the first gesture).
 
@@ -2384,7 +2390,7 @@ musicPlaying(): boolean
 
 ## GameRuntime.setDisplay
 
-[Implementation, line 1872](../../../../src/runtime/browser.ts#L1872)
+[Implementation, line 1886](../../../../src/runtime/browser.ts#L1886)
 
 Apply a live automatic-clock cap and drawing-buffer scale; physics keeps its fixed timestep.
 Passing `resolutionScale` without a mode fixes the scale (manual). Passing
@@ -2413,7 +2419,7 @@ Explicit throws in this body:
 
 ## GameRuntime.resolutionScaleState
 
-[Implementation, line 1900](../../../../src/runtime/browser.ts#L1900)
+[Implementation, line 1914](../../../../src/runtime/browser.ts#L1914)
 
 Current auto/manual mode and live drawing-buffer scale.
 
@@ -2423,7 +2429,7 @@ resolutionScaleState(): ResolutionScaleState
 
 ## GameRuntime.probeMachine
 
-[Implementation, line 1908](../../../../src/runtime/browser.ts#L1908)
+[Implementation, line 1922](../../../../src/runtime/browser.ts#L1922)
 
 Run a short (~3 s by default) machine-speed probe while the host waits (ideally during
 `startAttract`). In auto mode the suggested initial scale is applied immediately; manual
@@ -2440,25 +2446,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.assertAlive`
 - `this.runProbe`
 
-## GameRuntime.probeMachine.callback@1915
+## GameRuntime.probeMachine.callback@1929
 
-[Implementation, line 1915](../../../../src/runtime/browser.ts#L1915)
+[Implementation, line 1929](../../../../src/runtime/browser.ts#L1929)
 
 ```ts
-callback@1915(): inferred by TypeScript; see implementation
+callback@1929(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.probeMachine.callback@1918
+## GameRuntime.probeMachine.callback@1932
 
-[Implementation, line 1918](../../../../src/runtime/browser.ts#L1918)
+[Implementation, line 1932](../../../../src/runtime/browser.ts#L1932)
 
 ```ts
-callback@1918(): inferred by TypeScript; see implementation
+callback@1932(): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.runProbe
 
-[Implementation, line 1921](../../../../src/runtime/browser.ts#L1921)
+[Implementation, line 1935](../../../../src/runtime/browser.ts#L1935)
 
 ```ts
 runProbe(options: { durationMs?: number }): Promise<ResolutionProbeResult>
@@ -2479,7 +2485,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.runProbe.sample
 
-[Implementation, line 1931](../../../../src/runtime/browser.ts#L1931)
+[Implementation, line 1945](../../../../src/runtime/browser.ts#L1945)
 
 ```ts
 sample(): inferred by TypeScript; see implementation
@@ -2489,24 +2495,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Promise`
 
-## GameRuntime.runProbe.sample.callback@1932
+## GameRuntime.runProbe.sample.callback@1946
 
-[Implementation, line 1932](../../../../src/runtime/browser.ts#L1932)
+[Implementation, line 1946](../../../../src/runtime/browser.ts#L1946)
 
 ```ts
-callback@1932(resolve): inferred by TypeScript; see implementation
+callback@1946(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `requestAnimationFrame`
 
-## GameRuntime.runProbe.sample.callback@1932.callback@1933
+## GameRuntime.runProbe.sample.callback@1946.callback@1947
 
-[Implementation, line 1933](../../../../src/runtime/browser.ts#L1933)
+[Implementation, line 1947](../../../../src/runtime/browser.ts#L1947)
 
 ```ts
-callback@1933(time): inferred by TypeScript; see implementation
+callback@1947(time): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2519,7 +2525,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.runProbe.sleep
 
-[Implementation, line 1945](../../../../src/runtime/browser.ts#L1945)
+[Implementation, line 1959](../../../../src/runtime/browser.ts#L1959)
 
 ```ts
 sleep(): inferred by TypeScript; see implementation
@@ -2527,7 +2533,7 @@ sleep(): inferred by TypeScript; see implementation
 
 ## GameRuntime.startAttract
 
-[Implementation, line 1966](../../../../src/runtime/browser.ts#L1966)
+[Implementation, line 1980](../../../../src/runtime/browser.ts#L1980)
 
 Boot/attract mode: render only sky and planet from orbit while `play()` streams terrain and
 vehicles. `play()` stops it automatically once the simulation starts. Idempotent.
@@ -2545,12 +2551,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `this.assertAlive`
 
-## GameRuntime.startAttract.callback@1978
+## GameRuntime.startAttract.callback@1992
 
-[Implementation, line 1978](../../../../src/runtime/browser.ts#L1978)
+[Implementation, line 1992](../../../../src/runtime/browser.ts#L1992)
 
 ```ts
-callback@1978(time): inferred by TypeScript; see implementation
+callback@1992(time): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2562,7 +2568,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.stopAttract
 
-[Implementation, line 1997](../../../../src/runtime/browser.ts#L1997)
+[Implementation, line 2011](../../../../src/runtime/browser.ts#L2011)
 
 Stop the attract view (also called by `play()` and `dispose()`).
 
@@ -2576,7 +2582,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.attracting
 
-[Implementation, line 2005](../../../../src/runtime/browser.ts#L2005)
+[Implementation, line 2019](../../../../src/runtime/browser.ts#L2019)
 
 Whether the pre-play attract view is running.
 
@@ -2586,7 +2592,7 @@ attracting(): boolean
 
 ## GameRuntime.renderAttractFrame
 
-[Implementation, line 2008](../../../../src/runtime/browser.ts#L2008)
+[Implementation, line 2022](../../../../src/runtime/browser.ts#L2022)
 
 ```ts
 renderAttractFrame(time: number): void
@@ -2607,7 +2613,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.observeResolution
 
-[Implementation, line 2044](../../../../src/runtime/browser.ts#L2044)
+[Implementation, line 2058](../../../../src/runtime/browser.ts#L2058)
 
 ```ts
 observeResolution(frameMs: number, time: number): void
@@ -2622,7 +2628,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.applyPixelRatio
 
-[Implementation, line 2052](../../../../src/runtime/browser.ts#L2052)
+[Implementation, line 2066](../../../../src/runtime/browser.ts#L2066)
 
 ```ts
 applyPixelRatio(): void
@@ -2636,7 +2642,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.cull
 
-[Implementation, line 2061](../../../../src/runtime/browser.ts#L2061)
+[Implementation, line 2075](../../../../src/runtime/browser.ts#L2075)
 
 ```ts
 cull(position: THREE.Vector3): void
@@ -2649,7 +2655,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.controlSurfaces
 
-[Implementation, line 2074](../../../../src/runtime/browser.ts#L2074)
+[Implementation, line 2088](../../../../src/runtime/browser.ts#L2088)
 
 Resolve the seated vehicle's control profile from its live definition (host-placed
 vehicles included). All touch-rig and HUD choices read this; never branch on vehicle kind here.
@@ -2667,7 +2673,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.hasInput
 
-[Implementation, line 2081](../../../../src/runtime/browser.ts#L2081)
+[Implementation, line 2095](../../../../src/runtime/browser.ts#L2095)
 
 ```ts
 hasInput(): boolean
@@ -2682,7 +2688,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.canvasDiagnostics
 
-[Implementation, line 2091](../../../../src/runtime/browser.ts#L2091)
+[Implementation, line 2105](../../../../src/runtime/browser.ts#L2105)
 
 Expose input health on the canvas so a stuck-control report can be checked in devtools.
 
@@ -2699,7 +2705,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.releaseInput
 
-[Implementation, line 2099](../../../../src/runtime/browser.ts#L2099)
+[Implementation, line 2113](../../../../src/runtime/browser.ts#L2113)
 
 Release held controls when host UI takes focus, without stopping simulation.
 
@@ -2717,7 +2723,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.updateSidearm
 
-[Implementation, line 2114](../../../../src/runtime/browser.ts#L2114)
+[Implementation, line 2129](../../../../src/runtime/browser.ts#L2129)
 
 Sidearm frame: trigger press / reset, reload, slide, the muzzle rise added to the aim (the
 player pulls it back down), the shot, the ejected brass and the mechanical sounds.
@@ -2734,6 +2740,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `fireSidearm`
 - `shot.impactJoules.toFixed`
 - `sidearm.aimRise`
+- `sidearm.recoilYaw.step`
 - `sidearm.release`
 - `sidearm.reload`
 - `sidearm.update`
@@ -2753,24 +2760,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.options.onMessage`
 - `this.text`
 
-## GameRuntime.updateSidearm.callback@2154
+## GameRuntime.updateSidearm.callback@2172
 
-[Implementation, line 2154](../../../../src/runtime/browser.ts#L2154)
+[Implementation, line 2172](../../../../src/runtime/browser.ts#L2172)
 
 ```ts
-callback@2154(from, direction, length): inferred by TypeScript; see implementation
+callback@2172(from, direction, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `sim.shoot`
 
-## GameRuntime.updateSidearm.callback@2162
+## GameRuntime.updateSidearm.callback@2180
 
-[Implementation, line 2162](../../../../src/runtime/browser.ts#L2162)
+[Implementation, line 2180](../../../../src/runtime/browser.ts#L2180)
 
 ```ts
-callback@2162(from, direction, length): inferred by TypeScript; see implementation
+callback@2180(from, direction, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2779,7 +2786,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.ejectCasing
 
-[Implementation, line 2175](../../../../src/runtime/browser.ts#L2175)
+[Implementation, line 2193](../../../../src/runtime/browser.ts#L2193)
 
 One spent case out of the ejection port, to the shooter's right.
 
@@ -2806,7 +2813,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.dropMagazine
 
-[Implementation, line 2202](../../../../src/runtime/browser.ts#L2202)
+[Implementation, line 2220](../../../../src/runtime/browser.ts#L2220)
 
 Spent magazine out of the grip. Same bounce, rest and lifetime as a casing, with a small
 pool of its own. The mesh is the pistol's `Magazine` node.
@@ -2841,7 +2848,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.updateSidearmLaser
 
-[Implementation, line 2238](../../../../src/runtime/browser.ts#L2238)
+[Implementation, line 2256](../../../../src/runtime/browser.ts#L2256)
 
 World laser beam from the sidearm muzzle along the look ray (when H-toggled on).
 
@@ -2869,7 +2876,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.applySidearmButton
 
-[Implementation, line 2264](../../../../src/runtime/browser.ts#L2264)
+[Implementation, line 2282](../../../../src/runtime/browser.ts#L2282)
 
 Fire or aim from one mouse button edge. Safe to call from both pointer and mouse events.
 
@@ -2886,7 +2893,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.pointerLocked
 
-[Implementation, line 2276](../../../../src/runtime/browser.ts#L2276)
+[Implementation, line 2300](../../../../src/runtime/browser.ts#L2300)
 
 ```ts
 pointerLocked(): boolean
@@ -2894,7 +2901,7 @@ pointerLocked(): boolean
 
 ## GameRuntime.pointerLockUnsupported
 
-[Implementation, line 2280](../../../../src/runtime/browser.ts#L2280)
+[Implementation, line 2304](../../../../src/runtime/browser.ts#L2304)
 
 Pointer lock is unavailable (old or embedded browsers): fall back to drag-to-look.
 
@@ -2904,7 +2911,7 @@ pointerLockUnsupported(): boolean
 
 ## GameRuntime.capturePointer
 
-[Implementation, line 2288](../../../../src/runtime/browser.ts#L2288)
+[Implementation, line 2312](../../../../src/runtime/browser.ts#L2312)
 
 The single pointer rule: while playing, the game owns the mouse. Browsers grant pointer
 lock only from a user gesture handler (click or key), never from the frame loop, so this
@@ -2921,17 +2928,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pointerLockUnsupported`
 - `this.pointerLocked`
 
-## GameRuntime.capturePointer.callback@2296
+## GameRuntime.capturePointer.callback@2320
 
-[Implementation, line 2296](../../../../src/runtime/browser.ts#L2296)
+[Implementation, line 2320](../../../../src/runtime/browser.ts#L2320)
 
 ```ts
-callback@2296(): inferred by TypeScript; see implementation
+callback@2320(): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.releasePointer
 
-[Implementation, line 2302](../../../../src/runtime/browser.ts#L2302)
+[Implementation, line 2326](../../../../src/runtime/browser.ts#L2326)
 
 Give the mouse back (free-mouse mode); the next click on the game recaptures it.
 
@@ -2946,7 +2953,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.startCamerasActive
 
-[Implementation, line 2306](../../../../src/runtime/browser.ts#L2306)
+[Implementation, line 2330](../../../../src/runtime/browser.ts#L2330)
 
 True while a start camera sequence (`startCameras`) is running.
 
@@ -2956,7 +2963,7 @@ startCamerasActive(): boolean
 
 ## GameRuntime.skipStartCameras
 
-[Implementation, line 2310](../../../../src/runtime/browser.ts#L2310)
+[Implementation, line 2334](../../../../src/runtime/browser.ts#L2334)
 
 End a running start camera sequence: a held engine starts and the camera blends to the last view.
 
@@ -2971,7 +2978,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.advanceStartCameras
 
-[Implementation, line 2314](../../../../src/runtime/browser.ts#L2314)
+[Implementation, line 2338](../../../../src/runtime/browser.ts#L2338)
 
 ```ts
 advanceStartCameras(sim: Simulation, now: number): void
@@ -2986,7 +2993,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.applyStartCamera
 
-[Implementation, line 2332](../../../../src/runtime/browser.ts#L2332)
+[Implementation, line 2356](../../../../src/runtime/browser.ts#L2356)
 
 ```ts
 applyStartCamera(action: StartCameraAction, sim: Simulation): void
@@ -3000,7 +3007,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.cycleCamera
 
-[Implementation, line 2345](../../../../src/runtime/browser.ts#L2345)
+[Implementation, line 2369](../../../../src/runtime/browser.ts#L2369)
 
 ```ts
 cycleCamera(): void
@@ -3015,7 +3022,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.pollGamepad
 
-[Implementation, line 2352](../../../../src/runtime/browser.ts#L2352)
+[Implementation, line 2376](../../../../src/runtime/browser.ts#L2376)
 
 ```ts
 pollGamepad(): Gamepad | null
@@ -3031,33 +3038,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.cycleCamera`
 - `this.hasInput`
 
-## GameRuntime.pollGamepad.callback@2357
+## GameRuntime.pollGamepad.callback@2381
 
-[Implementation, line 2357](../../../../src/runtime/browser.ts#L2357)
+[Implementation, line 2381](../../../../src/runtime/browser.ts#L2381)
 
 ```ts
-callback@2357(p): inferred by TypeScript; see implementation
+callback@2381(p): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.pollGamepad.pressed
 
-[Implementation, line 2361](../../../../src/runtime/browser.ts#L2361)
+[Implementation, line 2385](../../../../src/runtime/browser.ts#L2385)
 
 ```ts
 pressed(index: number): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.pollGamepad.callback@2367
+## GameRuntime.pollGamepad.callback@2391
 
-[Implementation, line 2367](../../../../src/runtime/browser.ts#L2367)
+[Implementation, line 2391](../../../../src/runtime/browser.ts#L2391)
 
 ```ts
-callback@2367(button): inferred by TypeScript; see implementation
+callback@2391(button): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.action
 
-[Implementation, line 2370](../../../../src/runtime/browser.ts#L2370)
+[Implementation, line 2394](../../../../src/runtime/browser.ts#L2394)
 
 ```ts
 action(code: string): void
@@ -3066,9 +3073,12 @@ action(code: string): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Sidearm`
+- `fireModeLabel`
+- `nextFireMode`
 - `this.gallery.reset`
 - `this.game.action`
 - `this.options.onMessage`
+- `this.sidearm.setFireMode`
 - `this.sidearm.toggleLaser`
 - `this.sidearm?.setAiming`
 - `this.text`
@@ -3080,7 +3090,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.bindInput
 
-[Implementation, line 2421](../../../../src/runtime/browser.ts#L2421)
+[Implementation, line 2455](../../../../src/runtime/browser.ts#L2455)
 
 ```ts
 bindInput(): void
@@ -3093,12 +3103,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.addEventListener`
 - `window.addEventListener`
 
-## GameRuntime.bindInput.callback@2426
+## GameRuntime.bindInput.callback@2460
 
-[Implementation, line 2426](../../../../src/runtime/browser.ts#L2426)
+[Implementation, line 2460](../../../../src/runtime/browser.ts#L2460)
 
 ```ts
-callback@2426(event): inferred by TypeScript; see implementation
+callback@2460(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3108,12 +3118,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `event.preventDefault`
 - `this.hasInput`
 
-## GameRuntime.bindInput.callback@2451
+## GameRuntime.bindInput.callback@2485
 
-[Implementation, line 2451](../../../../src/runtime/browser.ts#L2451)
+[Implementation, line 2485](../../../../src/runtime/browser.ts#L2485)
 
 ```ts
-callback@2451(event): inferred by TypeScript; see implementation
+callback@2485(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3124,12 +3134,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.capturePointer`
 - `this.effects.audio.unlock`
 
-## GameRuntime.bindInput.callback@2473
+## GameRuntime.bindInput.callback@2507
 
-[Implementation, line 2473](../../../../src/runtime/browser.ts#L2473)
+[Implementation, line 2507](../../../../src/runtime/browser.ts#L2507)
 
 ```ts
-callback@2473(event): inferred by TypeScript; see implementation
+callback@2507(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3144,72 +3154,72 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pointerLocked`
 - `this.releasePointer`
 
-## GameRuntime.bindInput.callback@2498
-
-[Implementation, line 2498](../../../../src/runtime/browser.ts#L2498)
-
-```ts
-callback@2498(event): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.applySidearmButton`
-
-## GameRuntime.bindInput.callback@2507
-
-[Implementation, line 2507](../../../../src/runtime/browser.ts#L2507)
-
-```ts
-callback@2507(event): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.applySidearmButton`
-
-## GameRuntime.bindInput.callback@2512
-
-[Implementation, line 2512](../../../../src/runtime/browser.ts#L2512)
-
-```ts
-callback@2512(event): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.applySidearmButton`
-
-## GameRuntime.bindInput.callback@2517
-
-[Implementation, line 2517](../../../../src/runtime/browser.ts#L2517)
-
-```ts
-callback@2517(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.sidearm?.setAiming`
-
-## GameRuntime.bindInput.callback@2525
-
-[Implementation, line 2525](../../../../src/runtime/browser.ts#L2525)
-
-```ts
-callback@2525(event): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `event.preventDefault`
-
 ## GameRuntime.bindInput.callback@2532
 
 [Implementation, line 2532](../../../../src/runtime/browser.ts#L2532)
 
 ```ts
 callback@2532(event): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.applySidearmButton`
+
+## GameRuntime.bindInput.callback@2541
+
+[Implementation, line 2541](../../../../src/runtime/browser.ts#L2541)
+
+```ts
+callback@2541(event): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.applySidearmButton`
+
+## GameRuntime.bindInput.callback@2546
+
+[Implementation, line 2546](../../../../src/runtime/browser.ts#L2546)
+
+```ts
+callback@2546(event): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.applySidearmButton`
+
+## GameRuntime.bindInput.callback@2551
+
+[Implementation, line 2551](../../../../src/runtime/browser.ts#L2551)
+
+```ts
+callback@2551(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.sidearm?.setAiming`
+
+## GameRuntime.bindInput.callback@2560
+
+[Implementation, line 2560](../../../../src/runtime/browser.ts#L2560)
+
+```ts
+callback@2560(event): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `event.preventDefault`
+
+## GameRuntime.bindInput.callback@2567
+
+[Implementation, line 2567](../../../../src/runtime/browser.ts#L2567)
+
+```ts
+callback@2567(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3225,24 +3235,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.keys.press`
 - `vehicleMenuKey`
 
-## GameRuntime.bindInput.callback@2532.callback@2550
+## GameRuntime.bindInput.callback@2567.callback@2585
 
-[Implementation, line 2550](../../../../src/runtime/browser.ts#L2550)
+[Implementation, line 2585](../../../../src/runtime/browser.ts#L2585)
 
 ```ts
-callback@2550(message): inferred by TypeScript; see implementation
+callback@2585(message): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.options.onMessage`
 
-## GameRuntime.bindInput.callback@2532.callback@2551
+## GameRuntime.bindInput.callback@2567.callback@2586
 
-[Implementation, line 2551](../../../../src/runtime/browser.ts#L2551)
+[Implementation, line 2586](../../../../src/runtime/browser.ts#L2586)
 
 ```ts
-callback@2551(entityId, patch): inferred by TypeScript; see implementation
+callback@2586(entityId, patch): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3250,32 +3260,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.assign`
 - `this.document.entities.find`
 
-## GameRuntime.bindInput.callback@2532.callback@2551.callback@2552
+## GameRuntime.bindInput.callback@2567.callback@2586.callback@2587
 
-[Implementation, line 2552](../../../../src/runtime/browser.ts#L2552)
+[Implementation, line 2587](../../../../src/runtime/browser.ts#L2587)
 
 ```ts
-callback@2552(e): inferred by TypeScript; see implementation
+callback@2587(e): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.bindInput.callback@2532.callback@2556
+## GameRuntime.bindInput.callback@2567.callback@2591
 
-[Implementation, line 2556](../../../../src/runtime/browser.ts#L2556)
+[Implementation, line 2591](../../../../src/runtime/browser.ts#L2591)
 
 ```ts
-callback@2556(entityId, mode): inferred by TypeScript; see implementation
+callback@2591(entityId, mode): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.session.simulation?.setEngineMode`
 
-## GameRuntime.bindInput.callback@2532.callback@2559
+## GameRuntime.bindInput.callback@2567.callback@2594
 
-[Implementation, line 2559](../../../../src/runtime/browser.ts#L2559)
+[Implementation, line 2594](../../../../src/runtime/browser.ts#L2594)
 
 ```ts
-callback@2559(step): inferred by TypeScript; see implementation
+callback@2594(step): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3286,72 +3296,72 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.text`
 - `writeCameraFovOffset`
 
-## GameRuntime.bindInput.callback@2581
+## GameRuntime.bindInput.callback@2616
 
-[Implementation, line 2581](../../../../src/runtime/browser.ts#L2581)
+[Implementation, line 2616](../../../../src/runtime/browser.ts#L2616)
 
 ```ts
-callback@2581(event): inferred by TypeScript; see implementation
+callback@2616(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.keys.release`
 
-## GameRuntime.bindInput.callback@2585
+## GameRuntime.bindInput.callback@2620
 
-[Implementation, line 2585](../../../../src/runtime/browser.ts#L2585)
+[Implementation, line 2620](../../../../src/runtime/browser.ts#L2620)
 
 ```ts
-callback@2585(): inferred by TypeScript; see implementation
+callback@2620(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseInput`
 
-## GameRuntime.bindInput.callback@2590
+## GameRuntime.bindInput.callback@2625
 
-[Implementation, line 2590](../../../../src/runtime/browser.ts#L2590)
+[Implementation, line 2625](../../../../src/runtime/browser.ts#L2625)
 
 ```ts
-callback@2590(): inferred by TypeScript; see implementation
+callback@2625(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseInput`
 
-## GameRuntime.bindInput.callback@2600
+## GameRuntime.bindInput.callback@2635
 
-[Implementation, line 2600](../../../../src/runtime/browser.ts#L2600)
+[Implementation, line 2635](../../../../src/runtime/browser.ts#L2635)
 
 ```ts
-callback@2600(): inferred by TypeScript; see implementation
+callback@2635(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseInput`
 
-## GameRuntime.bindInput.callback@2601
+## GameRuntime.bindInput.callback@2636
 
-[Implementation, line 2601](../../../../src/runtime/browser.ts#L2601)
+[Implementation, line 2636](../../../../src/runtime/browser.ts#L2636)
 
 ```ts
-callback@2601(): inferred by TypeScript; see implementation
+callback@2636(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseInput`
 
-## GameRuntime.bindInput.callback@2604
+## GameRuntime.bindInput.callback@2639
 
-[Implementation, line 2604](../../../../src/runtime/browser.ts#L2604)
+[Implementation, line 2639](../../../../src/runtime/browser.ts#L2639)
 
 ```ts
-callback@2604(): inferred by TypeScript; see implementation
+callback@2639(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3360,12 +3370,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.effects.audio.setSuspended`
 - `this.releaseInput`
 
-## GameRuntime.bindInput.callback@2616
+## GameRuntime.bindInput.callback@2651
 
-[Implementation, line 2616](../../../../src/runtime/browser.ts#L2616)
+[Implementation, line 2651](../../../../src/runtime/browser.ts#L2651)
 
 ```ts
-callback@2616(event): inferred by TypeScript; see implementation
+callback@2651(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -3379,7 +3389,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.assertAlive
 
-[Implementation, line 2645](../../../../src/runtime/browser.ts#L2645)
+[Implementation, line 2680](../../../../src/runtime/browser.ts#L2680)
 
 ```ts
 assertAlive(): void

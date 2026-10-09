@@ -54,6 +54,8 @@ import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { magazineInsertClick, magazineReleaseClick } from '../audio/gear-click.js'
+import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
+import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm, sidearmButtonAction } from './shooting.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
@@ -372,6 +374,12 @@ export class GameRuntime {
   private weaponDrawn = false
   private fireRequested = false
   private triggerReleased = false
+  /**
+   * Left button held (on foot, pistol drawn). `fireRequested` is a one-frame edge cleared every
+   * frame; RÁFAGA keeps firing while this stays true.
+   */
+  private triggerDown = false
+  private fireModeBadge: FireModeBadge | null = null
   private reloadRequested = false
   private casingMotion: CasingMotion | null = null
   private casingMeshes: Casings | null = null
@@ -868,6 +876,8 @@ export class GameRuntime {
     this.magazineMeshes?.dispose()
     this.gallery.dispose()
     this.touchDriving?.dispose()
+    this.fireModeBadge?.dispose()
+    this.fireModeBadge = null
     this.touchFlight?.dispose()
     this.monitors.dispose()
     this.view.dispose()
@@ -991,6 +1001,10 @@ export class GameRuntime {
     if (this.sidearm) {
       this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
       this.updateSidearm(sim, time, dt, eyes)
+      if (!this.fireModeBadge && this.options.canvas.parentElement)
+        this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)
+      this.fireModeBadge?.show(this.sidearm.visible ? fireModeLabel(this.sidearm.fireMode) : null)
+      this.options.canvas.dataset.fireMode = this.sidearm.fireMode
       this.updateSidearmLaser(sim, time)
     } else {
       this.view.laser.enabled = false
@@ -2099,6 +2113,7 @@ export class GameRuntime {
   releaseInput(): void {
     this.fireRequested = false
     this.triggerReleased = true
+    this.triggerDown = false
     this.touchDriving?.clear()
     this.touchFlight?.clear()
     this.monitors.releaseInput()
@@ -2128,7 +2143,10 @@ export class GameRuntime {
         -controlDefaults.pitchLimit,
         controlDefaults.pitchLimit,
       )
-    if (this.fireRequested && this.hasInput()) {
+    const automatic = sidearm.fireMode === 'burst30'
+    const yaw = sidearm.recoilYaw.step(dt, automatic && this.triggerDown)
+    if (yaw && !sim.player.vehicleId) this.cameraState.yaw += yaw
+    if ((this.fireRequested || (automatic && this.triggerDown)) && this.hasInput()) {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
       if (shot) events.push(shot)
       if (shot?.fired) {
@@ -2267,8 +2285,14 @@ export class GameRuntime {
     const onFoot = this.weaponDrawn && !this.session.simulation?.player.vehicleId
     if (!onFoot) return
     const action = sidearmButtonAction(button, down)
-    if (action === 'fire') this.fireRequested = true
-    if (action === 'release') this.triggerReleased = true
+    if (action === 'fire') {
+      this.fireRequested = true
+      this.triggerDown = true
+    }
+    if (action === 'release') {
+      this.triggerReleased = true
+      this.triggerDown = false
+    }
     if (action === 'aim') this.sidearm?.setAiming(true)
     if (action === 'unaim') this.sidearm?.setAiming(false)
   }
@@ -2377,6 +2401,7 @@ export class GameRuntime {
     if (code === 'Tab' && !sim.player.vehicleId) {
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
+      this.triggerDown = false
       if (this.weaponDrawn && !this.sidearm)
         this.sidearm = new Sidearm(this.options.canvas.parentElement!)
       this.sidearm?.setAiming(false)
@@ -2388,6 +2413,15 @@ export class GameRuntime {
     }
     if (code === 'KeyR' && this.weaponDrawn && !sim.player.vehicleId) {
       this.reloadRequested = true
+      return
+    }
+    // Experimental full-auto: M on foot with the pistol drawn. At a ship helm (or on foot without
+    // the pistol) M keeps its game meaning (helm mode / its notice).
+    if (code === 'KeyM' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
+      const mode = nextFireMode(this.sidearm.fireMode)
+      this.sidearm.setFireMode(mode)
+      this.triggerDown = false
+      this.options.onMessage?.(fireModeLabel(mode))
       return
     }
     if (code === 'KeyN') this.gallery.reset()
@@ -2516,6 +2550,7 @@ export class GameRuntime {
       'pointercancel',
       () => {
         this.triggerReleased = true
+        this.triggerDown = false
         this.sidearm?.setAiming(false)
       },
       options,

@@ -4,6 +4,7 @@
 
 ### Added
 
+- Experimental full-auto for the pistol: M on foot with the pistol drawn toggles SEMI / RÁFAGA 30 (30-round magazine, ~900 rpm while the left button is held, accumulating muzzle rise and a random sideways kick that recovers on release, a case and a shot sound per round, the normal magazine reload, fires while aiming). A label at the bottom right shows `SEMI` or `EXPERIMENTAL · RÁFAGA 30`; canvas `data-fire-mode`. M at a ship helm still cycles the helm mode. Rate, magazine and kick are TODO(unverified) (`src/simulation/weapons/machine-pistol.ts`).
 - Audio mixer: master → engine bus (every engine, starter, turbo, turbine and propeller voice) and music bus; tyres, gears, gunshot and brakes stay on master. `GameRuntime.audioMix` / `setAudioMix` (0..1, squared slider curve, music mute), saved as `nabla.audioMix`. Ajustes → Opciones → Sonido has General, Motor and Música sliders and «Silenciar música».
 - Background music: `GameRuntimeOptions.music` (and `NABLA_BOOT.music` in the game host) takes encodings in preference order. The track streams through an `<audio>` element into the music bus, loops, starts after the first gesture and pauses while the page is hidden. Default music level 50% (TODO(unverified): a taste choice).
 
