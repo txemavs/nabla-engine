@@ -28,9 +28,23 @@ export interface MirrorRuntime {
 
 /** Slider limits in degrees (the engine's `mirrorAngleRange`). */
 export const MIRROR_RANGE = {
-  yaw: { min: -15, max: 15, step: 0.5 },
-  tilt: { min: -10, max: 10, step: 0.5 },
+  yaw: { min: -25, max: 25, step: 0.5 },
+  tilt: { min: -15, max: 15, step: 0.5 },
 } as const
+
+/** Each slider spans its default (host / built-in) ±9°, within {@link MIRROR_RANGE}. */
+export const MIRROR_SPAN = 9
+
+/** Slider limits centred on `centre` (degrees), within `range`. */
+export function centredRange(
+  centre: number,
+  range: { min: number; max: number },
+): { min: number; max: number } {
+  return {
+    min: Math.max(range.min, centre - MIRROR_SPAN),
+    max: Math.min(range.max, centre + MIRROR_SPAN),
+  }
+}
 
 /** The two sides the menu offers; a vehicle without one of them leaves its sliders disabled. */
 export const MIRROR_SIDES = [
@@ -162,6 +176,15 @@ export function mirrorControls(): {
       // Only a new vehicle model moves the sliders; never fight a drag in progress.
       if (next !== model) {
         model = next
+        for (const { side, yaw, tilt } of rows) {
+          const centre = mirrors.defaultAdjustment[side] ?? { yaw: 0, tilt: 0 }
+          const y = centredRange(centre.yaw, MIRROR_RANGE.yaw)
+          const t = centredRange(centre.tilt, MIRROR_RANGE.tilt)
+          yaw.input.min = String(y.min)
+          yaw.input.max = String(y.max)
+          tilt.input.min = String(t.min)
+          tilt.input.max = String(t.max)
+        }
         show(mirrors.adjustment, true)
       }
     }

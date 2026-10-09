@@ -97,11 +97,24 @@ Explicit throws in this body:
 
 - `new Error(\`Unknown vehicle preset: ${preset}\`)`
 
+## builtinHostMirrors
+
+[Implementation, line 78](../../../game/host-mirrors.ts#L78)
+
+```ts
+builtinHostMirrors(): HostMirrors
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `JSON.stringify`
+- `parseHostMirrors`
+
 ## viteHostMirrors
 
-[Implementation, line 68](../../../game/host-mirrors.ts#L68)
+[Implementation, line 83](../../../game/host-mirrors.ts#L83)
 
-`VITE_NABLA_MIRRORS` at build time, or none.
+Built-in defaults, overridden per model by `VITE_NABLA_MIRRORS` at build time.
 
 ```ts
 viteHostMirrors(): HostMirrors
@@ -109,12 +122,13 @@ viteHostMirrors(): HostMirrors
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `builtinHostMirrors`
 - `parseHostMirrors`
 - `raw.trim`
 
 ## hostMirrorsFromSearch
 
-[Implementation, line 75](../../../game/host-mirrors.ts#L75)
+[Implementation, line 90](../../../game/host-mirrors.ts#L90)
 
 ```ts
 hostMirrorsFromSearch(search: string, fallback: HostMirrors = {}): HostMirrors
@@ -129,7 +143,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorStorage
 
-[Implementation, line 83](../../../game/host-mirrors.ts#L83)
+[Implementation, line 98](../../../game/host-mirrors.ts#L98)
 
 Where the player's choice is kept: `localStorage`, or nothing when the browser refuses it.
 

@@ -64,11 +64,26 @@ function mirrorModelOf(preset: string): string {
   return mirrorModelKey(visual.body.url, visual.steering?.url)
 }
 
-/** `VITE_NABLA_MIRRORS` at build time, or none. */
+/**
+ * Built-in defaults (Txema 2026-10-09): the «Espejos» values a fresh browser shows and uses, on top
+ * of each preset's baked `mirrorAim`. The sliders are centred on them (±9°).
+ */
+export const BUILTIN_HOST_MIRRORS = {
+  car: { left: { yaw: -5, tilt: 0 }, right: { yaw: -9, tilt: -4 } },
+  'white-truck': { left: { yaw: 0, tilt: 0 }, right: { yaw: 0, tilt: 1.5 } },
+  vfr800: { left: { yaw: -12.5, tilt: -1.5 }, right: { yaw: -14.5, tilt: -1.5 } },
+} as const
+
+/** {@link BUILTIN_HOST_MIRRORS} resolved to mirror models. */
+export function builtinHostMirrors(): HostMirrors {
+  return parseHostMirrors(JSON.stringify(BUILTIN_HOST_MIRRORS))
+}
+
+/** Built-in defaults, overridden per model by `VITE_NABLA_MIRRORS` at build time. */
 export function viteHostMirrors(): HostMirrors {
   const raw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_NABLA_MIRRORS
-  if (raw === undefined || raw.trim() === '') return {}
-  return parseHostMirrors(raw)
+  if (raw === undefined || raw.trim() === '') return builtinHostMirrors()
+  return { ...builtinHostMirrors(), ...parseHostMirrors(raw) }
 }
 
 /** Read `?mirrors=`; a missing param uses `fallback` (typically {@link viteHostMirrors}). */

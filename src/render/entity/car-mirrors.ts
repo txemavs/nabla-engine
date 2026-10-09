@@ -37,10 +37,13 @@ export type MirrorAdjustment = Record<string, MirrorAngle>
 /** Neutral glass angle: exactly as the asset aims it. */
 export const mirrorAngleCentred: Readonly<MirrorAngle> = Object.freeze({ yaw: 0, tilt: 0 })
 
-/** Limits and step of each glass axis, degrees (yaw ±15°, tilt ±10°, 0.5° steps). */
+/**
+ * Limits and step of each glass axis, degrees (yaw ±25°, tilt ±15°, 0.5° steps): room for a host
+ * default of up to ±15° / ±10° plus the menu's ±9° around it.
+ */
 export const mirrorAngleRange = Object.freeze({
-  yaw: Object.freeze({ min: -15, max: 15, step: 0.5 }),
-  tilt: Object.freeze({ min: -10, max: 10, step: 0.5 }),
+  yaw: Object.freeze({ min: -25, max: 25, step: 0.5 }),
+  tilt: Object.freeze({ min: -15, max: 15, step: 0.5 }),
 })
 
 /** Clamp to `mirrorAngleRange` and snap to its step; non-finite values become 0. */

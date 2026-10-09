@@ -4,6 +4,9 @@ import { idleInput, type PlayerInput, type Simulation } from '../simulation/simu
 import type { SceneDocument } from '../scene/document.js'
 import { isRoadTouchDriving } from './touch-driving.js'
 /** Gamepad access may be absent or denied on HTTP LAN origins and embedded views. */
+/** Share of throttle and front brake a two-wheeler gets without Shift (sprint). */
+export const TWO_WHEELER_CALM_SHARE = 0.5
+
 export function availableGamepads(): (Gamepad | null)[] {
   if (
     typeof navigator === 'undefined' ||
@@ -143,6 +146,10 @@ export class GameInput {
       riderRight: flight ? 0 : axis('KeyO', 'KeyU'),
       riderForward: flight ? 0 : axis('KeyI', 'KeyL'),
     }
+    // Two-wheelers (Txema 2026-10-09): without Shift the throttle and the front brake give about
+    // half; Shift gives full throttle (a wheelie at launch) and full braking (the stoppie).
+    if (!flight && vehicle?.twoWheeled && !input.sprint)
+      input.forward = Math.max(-1, Math.min(1, input.forward)) * TWO_WHEELER_CALM_SHARE
     return finiteInput(input)
   }
 }

@@ -71,7 +71,8 @@
       "engine": {
         "voice": "v4",
         "vAngle": 90,
-        "crankpin": 180
+        "crankpin": 180,
+        "volume": 0.8
       }
     }
   },
