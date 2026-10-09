@@ -22,6 +22,7 @@
 
 ### Fixed
 
+- S3 right door mirror no longer looks up and far outward. Its glass was authored as the mirror image of the left one, but from the left-hand driver's eye that throws the right view about 20° further outward and slightly up (mostly sky, slanted horizon). The S3 preset now bakes `mirrorAim.right` (yaw −10°, tilt −2.5°) so the right view matches the left view mirrored across the car; the «Espejos» sliders still add on top. Test: `test/render/mirror-symmetry.test.ts` (same slider value turns both sides alike on the S3 and the truck).
 - No coloured placeholder block is drawn while a vehicle's GLB is still loading (e.g. the red cube before the motorbike appeared).
 - Zenithal camera: zooming out no longer turns cars or trucks black on Ultra (4 cascades). The #183 cut for steep views was still capped at far / 4, and the overhead far plane is about three times the eye height, so the vehicle always fell into cascade 1. Steep views now keep their uncapped first cut.
 - Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
