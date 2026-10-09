@@ -404,8 +404,8 @@ describe('v2+ ground asphalt', () => {
     ).toBe(true)
   })
 
-  it('on version 2 and 3 keeps only bridge-deck asphalt; the OSM road layer is not drawn', () => {
-    for (const version of [2, 3] as const) {
+  it('on version 2+ keeps only bridge-deck asphalt; the OSM road layer is not drawn', () => {
+    for (const version of [2, 3, 4] as const) {
       expect(
         loadsCandidateAsphaltOnCell(
           version,
@@ -447,7 +447,7 @@ describe('OSM road layer: hidden and non-colliding by default, bridges always', 
   })
 
   it('default: v2+ OSM asphalt dropped, bridge deck + supports kept and colliding', () => {
-    for (const version of [2, 3] as const) {
+    for (const version of [2, 3, 4] as const) {
       const c = cell()
       const meshes = applyCandidateAsphaltPolicy(Object.values(c), version)
       expect(meshes).not.toContain(c.ground)
@@ -484,7 +484,7 @@ describe('OSM road layer: hidden and non-colliding by default, bridges always', 
   })
 
   it('bridges are never dropped, with or without the opt-in', () => {
-    for (const version of [1, 2, 3] as const)
+    for (const version of [1, 2, 3, 4] as const)
       for (const osmRoads of [false, true]) {
         const c = cell()
         expect(candidateAsphaltDisposition(version, c.deck.metadata, { osmRoads })).toBe('keep')

@@ -28,9 +28,11 @@ export const PLANET_GEOMETRY_REVISION = 'native-surfaces-v5'
  * published before the Atlas unified pipeline). Version 2 cells (Atlas `terrain-unified`, 2026-10)
  * carry roads and tunnel openings inside the terrain GLB and replace v1 cells at the same URL.
  * Version 3 is the same ground model after the Atlas surface-cleanup pass (floating fragments
- * removed, terrain fused under the road).
+ * removed, terrain fused under the road). Version 4 conforms the terrain to the OSM road profiles
+ * (level/crowned carriageway, LiDAR artefacts removed, approaches ramped to the deck ends); the
+ * road is the terrain itself, so like v2/v3 only bridge-deck asphalt and supports are loaded.
  */
-export const PLANET_CELL_VERSIONS = [1, 2, 3] as const
+export const PLANET_CELL_VERSIONS = [1, 2, 3, 4] as const
 export type PlanetCellVersion = (typeof PLANET_CELL_VERSIONS)[number]
 
 const SHA256 = /^[a-f0-9]{64}$/
