@@ -159,14 +159,32 @@ describe('side mirror symmetry', () => {
     // The glass alone (no aim): the right view sits far outward of the left's mirror image.
     expect(outward('right', before.right) - outward('left', before.left)).toBeGreaterThan(12)
 
+    // Txema 2026-10-09 set the right glass tilt to +1.5 on purpose (was -2.5, the symmetric
+    // value): his view looks a little higher than the left's mirror image. Symmetry is checked
+    // with the symmetric reference tilt; his tilt is checked as a deliberate raise on top of it.
+    const symmetricAim = {
+      ...preset.mirrorAim,
+      right: { yaw: preset.mirrorAim?.right?.yaw ?? 0, tilt: -2.5 },
+    }
+    const reference = new CarMirrors(lenses, new Vector3(0, 1, 0), tilt, {}, root, symmetricAim)
+    const symmetric = views(root, reference, eyes)
+    reference.dispose()
+    const mirroredLeft = symmetric.left.clone().setX(-symmetric.left.x)
+    expect(degrees(symmetric.right, mirroredLeft)).toBeLessThan(1.5)
+    expect(Math.abs(elevation(symmetric.right))).toBeLessThan(3)
+
     const aimed = new CarMirrors(lenses, new Vector3(0, 1, 0), tilt, {}, root, preset.mirrorAim)
     const after = views(root, aimed, eyes)
     aimed.dispose()
-    const mirroredLeft = after.left.clone().setX(-after.left.x)
-    expect(degrees(after.right, mirroredLeft)).toBeLessThan(1.5)
-    // Still a rear view that shows the road beside the car: outward, near level.
+    expect(preset.mirrorAim?.right).toEqual({ yaw: -10, tilt: 1.5 })
+    // Same outward aim as the mirrored left view; only raised by the extra 4° of tilt.
+    expect(Math.abs(outward('right', after.right) - outward('left', after.left))).toBeLessThan(1.5)
+    const raise = elevation(after.right) - elevation(symmetric.right)
+    expect(raise).toBeGreaterThan(3)
+    expect(raise).toBeLessThan(10)
+    // Still a rear view that shows the road beside the car: outward, not into the sky.
     expect(outward('right', after.right)).toBeGreaterThan(8)
-    expect(Math.abs(elevation(after.right))).toBeLessThan(3)
+    expect(elevation(after.right)).toBeLessThan(10)
     // The left glass keeps its authored aim.
     expect(degrees(after.left, before.left)).toBeLessThan(1e-3)
   })
