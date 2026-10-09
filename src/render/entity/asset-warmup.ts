@@ -54,7 +54,7 @@ export class AssetWarmup {
   private readonly kept: THREE.Object3D[] = []
   private disposed = false
   constructor(
-    private readonly target: AssetWarmupTarget,
+    _target: AssetWarmupTarget,
     private readonly library: Pick<AssetLibrary, 'instantiate'> = assets,
     private readonly frame: () => Promise<void> = nextFrame,
   ) {}
