@@ -23,6 +23,7 @@ import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
 import { steeringWheelControls, type SteeringWheelRuntime } from './steering-wheel-controls.js'
 import { mirrorControls, type MirrorRuntime } from './mirror-controls.js'
+import { assignVehicleColor } from './vehicle-colors.js'
 
 /** Sea level limits in metres, as in Studio's sea-surface controls. */
 export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
@@ -534,7 +535,9 @@ export function bindSceneControls(
       vehicleMessage.textContent = 'Añadiendo…'
       try {
         // `presetEntities` keeps hosted parts such as the carrier stern portal.
-        await runtime.spawnVehicle(presetEntities(entry.id, 'spawn-template'))
+        const entities = presetEntities(entry.id, 'spawn-template')
+        assignVehicleColor(entities[0])
+        await runtime.spawnVehicle(entities)
         vehicleMessage.textContent = `${entry.label} añadido delante de ti. Acércate y pulsa E para entrar.`
       } catch (error) {
         vehicleMessage.textContent = groundError(error, 'el vehículo')

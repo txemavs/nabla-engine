@@ -46,3 +46,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 ```ts
 callback@32(e): inferred by TypeScript; see implementation
 ```
+
+## vehicleMenuKey.callback@54
+
+[Implementation, line 54](../../../../src/runtime/vehicle-menu.ts#L54)
+
+```ts
+callback@54(e): inferred by TypeScript; see implementation
+```

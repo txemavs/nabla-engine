@@ -86,7 +86,8 @@ describe('vfr800 GLB cockpit pass', () => {
     // Stanchions (fork) and silencer + end cap (body): mirror chrome. Fork lowers: satin grey.
     expect(own('Fork_Slider')).toContain(CHROME)
     expect(own('Fork_Slider')).toContain(SATIN)
-    expect(own('Body')).toContain(CHROME)
+    expect(own('Body')).toContain('VFR silencer subtle reflection')
+    expect(own('Body')).not.toContain(CHROME)
     // The headers no longer use the old chrome; the triple clamp keeps the satin grey.
     expect(own('Body')).not.toContain('Chrome exhaust and discs')
     expect(own('Steering_Pivot')).toContain(SATIN)

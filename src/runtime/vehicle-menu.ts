@@ -45,9 +45,15 @@ export function vehicleMenuKey(
   if (action?.type === 'vehicle.fov' && action.value && fov) report(fov(action.value))
   if (action?.type === 'vehicle.engine' && engineMode)
     report(engineMode(id, action.value === 'beast' ? 'beast' : 'normal'))
-  if (action?.type === 'vehicle.paint' && action.value) {
-    update(id, { color: action.value })
-    view.setVehiclePaint(id, action.value)
+  if (
+    (action?.type === 'vehicle.paint' || action?.type === 'vehicle.paintFinish') &&
+    action.value
+  ) {
+    const finish = action.type === 'vehicle.paintFinish' ? 'chrome' : 'paint'
+    const color = finish === 'chrome' ? '#ffffff' : action.value
+    const vehicle = document.entities.find((e) => e.id === id)?.vehicle
+    update(id, { color, ...(vehicle ? { vehicle: { ...vehicle, paintFinish: finish } } : {}) })
+    view.setVehiclePaint(id, color, finish)
     report(text('Paint applied'))
   }
   return { handled: result.handled }

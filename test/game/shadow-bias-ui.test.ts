@@ -4,6 +4,7 @@ import {
   hostShadowBias,
   resolveShadowBias,
   saveShadowBias,
+  resolveShadowsEnabled,
 } from '../../game/shadow-bias-ui.js'
 
 function memoryStorage(initial: Record<string, string> = {}) {
@@ -16,6 +17,17 @@ function memoryStorage(initial: Record<string, string> = {}) {
 }
 
 describe('shadow bias setting', () => {
+  it('shares shadow state with the light panel and migrates the legacy preference', () => {
+    expect(resolveShadowsEnabled(memoryStorage({ 'nabla.shadowsEnabled': '0' }))).toBe(false)
+    expect(
+      resolveShadowsEnabled(
+        memoryStorage({
+          'nabla.shadowsEnabled': '0',
+          'nabla.lightTuning': JSON.stringify({ shadows: true }),
+        }),
+      ),
+    ).toBe(true)
+  })
   it('defaults to the tuned factor and clamps host values', () => {
     expect(resolveShadowBias(undefined, memoryStorage())).toBe(1)
     expect(hostShadowBias(undefined)).toBe(1)

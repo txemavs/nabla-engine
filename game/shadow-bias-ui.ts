@@ -10,6 +10,7 @@
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { normalizeShadowBias, shadowBiasRange } from '@nabla/engine/config/shadows'
 import { menuSection } from './menu.js'
+import { readLightTuning, lightTuningStorageKey } from '@nabla/engine/runtime/light-tuning'
 
 export const SHADOW_BIAS_STORAGE_KEY = 'nabla.shadowBias'
 
@@ -58,6 +59,7 @@ export function resolveShadowsEnabled(
   storage: StorageLike | undefined = browserStorage(),
 ): boolean {
   try {
+    if (storage?.getItem(lightTuningStorageKey)) return readLightTuning(storage).shadows
     return storage?.getItem(SHADOWS_ENABLED_STORAGE_KEY) !== '0'
   } catch {
     return true
@@ -73,7 +75,7 @@ export function bindShadowBiasControl(
   storage = browserStorage(),
 ): void {
   const group = menuSection('quality-shadows', 'Sombras')
-  // «Sombras: activadas / desactivadas»: live, saved as `nabla.shadowsEnabled` ('1' / '0').
+  // Migrate the old preference once; the runtime persists the canonical light tuning.
   const toggleLabel = document.createElement('label')
   const toggle = document.createElement('input')
   toggle.type = 'checkbox'
@@ -84,10 +86,15 @@ export function bindShadowBiasControl(
     toggleText.textContent = runtime.shadowsEnabled ? 'Sombras: activadas' : 'Sombras: desactivadas'
   }
   runtime.setShadowsEnabled(resolveShadowsEnabled(storage))
+  try {
+    storage?.removeItem(SHADOWS_ENABLED_STORAGE_KEY)
+  } catch {
+    /* private mode */
+  }
   toggle.addEventListener('change', () => {
     runtime.setShadowsEnabled(toggle.checked)
     try {
-      storage?.setItem(SHADOWS_ENABLED_STORAGE_KEY, toggle.checked ? '1' : '0')
+      storage?.removeItem(SHADOWS_ENABLED_STORAGE_KEY)
     } catch {
       /* private mode */
     }

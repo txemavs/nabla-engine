@@ -1,6 +1,7 @@
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
+import { assignVehicleColor } from './vehicle-colors.js'
 import { hasVehiclePreset } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
@@ -82,6 +83,8 @@ try {
     longitude: config.start!.longitude,
     includeDemoFleet: config.vehicles.length === 0,
   })
+  for (const entity of scene.entities)
+    if (entity.id !== 'player-vehicle' || !config.scene.color) assignVehicleColor(entity)
   // &time=, &timeSpeed= and &sea= start the scene at that hour / rate / sea level; the menu changes them live.
   if (config.timeOfDay !== undefined)
     scene.sky =

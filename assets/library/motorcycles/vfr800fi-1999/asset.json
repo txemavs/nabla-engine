@@ -15,15 +15,18 @@
   "up": "+Y",
   "forward": "-Z",
   "triangles": 271678,
-  "bytes": 6233328,
-  "sha256": "f381853a7310696b3607da2775e796badda342d3cdcb3209d9a66f74d449545b",
+  "bytes": 6604228,
+  "sha256": "296bb43213f3b88f8dd033f0e779ec8f6cb155203944eeadffca6df5fda354e7",
   "provenance": {
     "reworkedBy": "Txema Vicente (manual cleanup), then Codex (AI coding agent) under his direction using data from the Honda manual",
     "source": "Cleaned up by hand by Txema Vicente over several hours, then substantially reworked by Codex under his direction using data from the Honda manual, starting from a low-quality base mesh; almost none of the original geometry remains. Base mesh: the user-supplied interceptor.glb. Prepared and visually approved on 2026-10-08.",
     "sourceSha256": "aba157065d7bc73009ac11dc90a89131d91e7c0e5d2ad8705283df83f05a7efd",
     "preparedOn": "2026-10-08",
     "edits": [
-      "2026-10-08 scripts/prepare-vfr800-cockpit.mjs: the existing fairing mirrors split into mirror_L / mirror_R nodes under Body; static needles, hubs and speedometer tick marks removed for the live instruments; gauge and lamp anchors added; windscreen switched from transmission to alpha blending with a neutral smoke-grey tint and a slight reflection (extras.nabla.envIntensity 0.35); a new neutral mirror chrome (base 0.95 grey, metallic 1, roughness 0.03) only on the fork stanchions, the silencer can and its end cap; the exhaust headers and the engine cases behind the radiator moved to the satin aluminium of the top triple clamp; discs, brake tracks, chain, sprockets, radiator, swingarm and mirror glass keep their authored materials."
+      "2026-10-08 scripts/prepare-vfr800-cockpit.mjs: the existing fairing mirrors split into mirror_L / mirror_R nodes under Body; static needles, hubs and speedometer tick marks removed for the live instruments; gauge and lamp anchors added; windscreen switched from transmission to alpha blending with a neutral smoke-grey tint and a slight reflection (extras.nabla.envIntensity 0.35); a new neutral mirror chrome (base 0.95 grey, metallic 1, roughness 0.03) only on the fork stanchions, the silencer can and its end cap; the exhaust headers and the engine cases behind the radiator moved to the satin aluminium of the top triple clamp; discs, brake tracks, chain, sprockets, radiator, swingarm and mirror glass keep their authored materials.",
+      "2026-10-09 scripts/tag-vfr800-paint.mjs: tag the fairing material with extras.nabla.paint for authored body colour selection; geometry, textures and all other material properties are unchanged.",
+      "2026-10-09 scripts/prepare-vfr800-fixed-finishes.mjs: separate fixed black mirror supports, mudguards, plate carrier and rims; dark grey cockpit plastics; fixed grey radiator. Reassign existing triangles without changing their positions.",
+      "2026-10-09 scripts/set-vfr800-exhaust-reflection.mjs: split the silencer material from the fork stanchions; authored envFloor 0.025 keeps only the final exhaust subtly reflective when global reflections are off. Geometry unchanged."
     ],
     "note": "Provenance as stated by Txema Vicente. No license name is recorded for the artwork; the repository's MIT code license covers code only."
   }

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **356 modules; 3816 executable function definitions**.
+Coverage: **358 modules; 3827 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -41,6 +41,7 @@ Coverage: **356 modules; 3816 executable function definitions**.
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 13 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
 | [game/terrain.ts](game/terrain.ts.md) | 14 |
+| [game/vehicle-colors.ts](game/vehicle-colors.ts.md) | 1 |
 | [src/audio/casing-tinkle.ts](src/audio/casing-tinkle.ts.md) | 4 |
 | [src/audio/diesel-engine.ts](src/audio/diesel-engine.ts.md) | 6 |
 | [src/audio/engine-start.ts](src/audio/engine-start.ts.md) | 6 |
@@ -71,7 +72,7 @@ Coverage: **356 modules; 3816 executable function definitions**.
 | [src/catalog/presentation/a3-lamps.ts](src/catalog/presentation/a3-lamps.ts.md) | 12 |
 | [src/catalog/presentation/a3-mounts.ts](src/catalog/presentation/a3-mounts.ts.md) | 10 |
 | [src/catalog/presentation/police-equipment.ts](src/catalog/presentation/police-equipment.ts.md) | 14 |
-| [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 19 |
+| [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 22 |
 | [src/catalog/vehicles/generated-rigs.ts](src/catalog/vehicles/generated-rigs.ts.md) | 0 |
 | [src/catalog/vehicles/index.ts](src/catalog/vehicles/index.ts.md) | 0 |
 | [src/catalog/vehicles/library.ts](src/catalog/vehicles/library.ts.md) | 9 |
@@ -92,6 +93,7 @@ Coverage: **356 modules; 3816 executable function definitions**.
 | [src/config/shadows.ts](src/config/shadows.ts.md) | 3 |
 | [src/config/simulation.ts](src/config/simulation.ts.md) | 0 |
 | [src/config/streaming.ts](src/config/streaming.ts.md) | 0 |
+| [src/config/vehicle-appearance.ts](src/config/vehicle-appearance.ts.md) | 0 |
 | [src/diagnostics/performance-monitor.ts](src/diagnostics/performance-monitor.ts.md) | 10 |
 | [src/diagnostics/runtime-frame.ts](src/diagnostics/runtime-frame.ts.md) | 0 |
 | [src/diagnostics/wheel-debug.ts](src/diagnostics/wheel-debug.ts.md) | 13 |
@@ -262,11 +264,11 @@ Coverage: **356 modules; 3816 executable function definitions**.
 | [src/render/vehicle-presentation/motorcycle-mirrors.ts](src/render/vehicle-presentation/motorcycle-mirrors.ts.md) | 5 |
 | [src/render/vehicle-presentation/motorcycle-rig.ts](src/render/vehicle-presentation/motorcycle-rig.ts.md) | 14 |
 | [src/render/vehicle-presentation/mounts.ts](src/render/vehicle-presentation/mounts.ts.md) | 2 |
-| [src/render/vehicle-presentation/reflection-environment.ts](src/render/vehicle-presentation/reflection-environment.ts.md) | 7 |
+| [src/render/vehicle-presentation/reflection-environment.ts](src/render/vehicle-presentation/reflection-environment.ts.md) | 14 |
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 258 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 257 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
@@ -307,7 +309,7 @@ Coverage: **356 modules; 3816 executable function definitions**.
 | [src/runtime/touch-flight.ts](src/runtime/touch-flight.ts.md) | 21 |
 | [src/runtime/touch-icons.ts](src/runtime/touch-icons.ts.md) | 1 |
 | [src/runtime/vehicle-effects.ts](src/runtime/vehicle-effects.ts.md) | 10 |
-| [src/runtime/vehicle-menu.ts](src/runtime/vehicle-menu.ts.md) | 2 |
+| [src/runtime/vehicle-menu.ts](src/runtime/vehicle-menu.ts.md) | 3 |
 | [src/runtime/vehicle-monitor-styles.ts](src/runtime/vehicle-monitor-styles.ts.md) | 2 |
 | [src/runtime/vehicle-monitors.ts](src/runtime/vehicle-monitors.ts.md) | 35 |
 | [src/runtime/water.ts](src/runtime/water.ts.md) | 1 |

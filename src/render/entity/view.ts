@@ -41,12 +41,13 @@ import {
 import { MotorcycleInstruments } from '../vehicle-presentation/motorcycle-instruments.js'
 import { motorcycleMirrorLenses } from '../vehicle-presentation/motorcycle-mirrors.js'
 import {
-  applyReflectionEnvironment,
+  applyVehicleEnvironment,
   type ReflectionEnvironment,
 } from '../vehicle-presentation/reflection-environment.js'
 import { localMinutes, skyTime } from '../../planet/sky.js'
 import { simulationDefaults, twoWheeledDefaults } from '../../config/simulation.js'
 import { gameCameraDefaults, rideSmoothingDefaults } from '../../config/camera.js'
+import { vehicleAppearanceDefaults } from '../../config/vehicle-appearance.js'
 import { easeRiderHead, type RiderHeadEase } from './rider-head.js'
 import { RideSmoothing, rideSmoothingSettings } from './ride-smoothing.js'
 import { AvatarFollow, EjectionTumble } from './avatar-motion.js'
@@ -236,12 +237,13 @@ export class SceneView {
   toggleVehicleMenu(id: string): boolean | null {
     return this.instruments.get(id)?.toggleMenu() ?? null
   }
-  setVehiclePaint(id: string, color: string): void {
+  setVehiclePaint(id: string, color: string, finish: 'paint' | 'chrome' = 'paint'): void {
     if (!/^#[0-9a-f]{6}$/i.test(color)) return
     const entity = this.document.entities.find((e) => e.id === id)
     if (entity) entity.color = color
+    if (entity?.vehicle) entity.vehicle.paintFinish = finish
     const model = this.objects.get(id)
-    if (entity && model) this.options.vehiclePresentation?.(entity)?.paint?.(model, color)
+    if (entity && model) this.options.vehiclePresentation?.(entity)?.paint?.(model, color, finish)
   }
   /** Steering model (GLB URL) of a vehicle with a separate steering mesh, else undefined. */
   steeringWheelModel(id: string): string | undefined {
@@ -1079,6 +1081,8 @@ export class SceneView {
     const visual = e.visual!,
       definition = vehicleDefinition(e)
     const adapter = this.options.vehiclePresentation?.(e)
+    const environment = applyVehicleEnvironment(group)
+    this.reflections.set(e.id, environment)
     const fallback = box(e.size, e.color)
     // Kept for the swap below but never drawn: a coloured block before the GLB arrives looked broken.
     fallback.visible = false
@@ -1103,6 +1107,7 @@ export class SceneView {
         }
       }
       adapter?.preparePart?.(model, 'body')
+      environment.add(model)
       const twoWheeled = e.vehicle?.twoWheeled
       if (twoWheeled && hasMotorcycleRig(model))
         this.motorcycleRigs.set(
@@ -1113,8 +1118,6 @@ export class SceneView {
           ),
         )
       if (twoWheeled) {
-        // Chrome and mirror glass need something to reflect; cars keep their current look.
-        this.reflections.set(e.id, applyReflectionEnvironment(model))
         const cluster = MotorcycleInstruments.bind(model, {
           ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
           ...e.vehicle?.cluster,
@@ -1154,6 +1157,7 @@ export class SceneView {
         this.addAsset(model, part, undefined, (attachment) => {
           adapter?.paint?.(attachment, e.color)
           adapter?.preparePart?.(attachment, 'body')
+          environment.add(attachment)
           this.authoredLights.get(e.id)?.absorb(attachment)
         })
       }
@@ -1177,9 +1181,10 @@ export class SceneView {
         const orientation = new THREE.Group()
         if (visual.wheelRotations) orientation.quaternion.fromArray(visual.wheelRotations[i])
         wheel.add(orientation)
-        this.addAsset(orientation, visual.wheels?.[i] ?? visual.wheel!, undefined, (model) =>
-          adapter?.preparePart?.(model, 'wheel'),
-        )
+        this.addAsset(orientation, visual.wheels?.[i] ?? visual.wheel!, undefined, (model) => {
+          adapter?.preparePart?.(model, 'wheel')
+          environment.add(model)
+        })
         return wheel
       })
       this.wheels.set(e.id, wheels)
@@ -1203,6 +1208,7 @@ export class SceneView {
         undefined,
         (model) => {
           adapter?.preparePart?.(model, 'steering')
+          environment.add(model)
           const pivot = steeringPivot(model)
           if (pivot) this.steeringPivots.set(e.id, pivot)
         },
@@ -1432,8 +1438,10 @@ export class SceneView {
         this.riderTucks.set(id, ease.value[2])
       }
     }
+    const nightLevel = vehicleAppearanceDefaults.environment.nightLevel
+    const environmentLevel = nightLevel + (1 - nightLevel) * this.daylight
     for (const reflection of this.reflections.values())
-      reflection.setLevel((this.night ? 0.15 : 1) * this.reflectionScale)
+      reflection.setLevel(environmentLevel * this.reflectionScale)
     if (this.motorcycleClusters.size) {
       const clockMinutes = localMinutes(skyTime(this.document.sky ?? { mode: 'live' }))
       const lampNow = performance.now()

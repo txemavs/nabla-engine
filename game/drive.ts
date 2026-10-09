@@ -8,6 +8,7 @@ import {
 import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
+import { assignVehicleColor } from './vehicle-colors.js'
 import { headingRotation, installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
 import { showTelemetry } from './telemetry.js'
@@ -48,6 +49,7 @@ try {
     throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
   const vehicle = presetVehicle(config.vehicle, 'player-vehicle', [0, 2, 0])
   if (config.color) vehicle.color = config.color
+  else assignVehicleColor(vehicle)
   const scene: SceneDocument = flat
     ? createFlatTestScene(vehicle)
     : {

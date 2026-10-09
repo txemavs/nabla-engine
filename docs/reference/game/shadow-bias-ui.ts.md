@@ -17,10 +17,11 @@ boot (URL `?shadowBias=`, `window.NABLA_BOOT.shadowBias`, `VITE_NABLA_BOOT`,
 - `@nabla/engine/runtime/browser`
 - `@nabla/engine/config/shadows`
 - `./menu.js`
+- `@nabla/engine/runtime/light-tuning`
 
 ## browserStorage
 
-[Implementation, line 18](../../../game/shadow-bias-ui.ts#L18)
+[Implementation, line 19](../../../game/shadow-bias-ui.ts#L19)
 
 ```ts
 browserStorage(): StorageLike | undefined
@@ -28,7 +29,7 @@ browserStorage(): StorageLike | undefined
 
 ## hostShadowBias
 
-[Implementation, line 27](../../../game/shadow-bias-ui.ts#L27)
+[Implementation, line 28](../../../game/shadow-bias-ui.ts#L28)
 
 The host's default factor (boot value, else 1), clamped to the engine range.
 
@@ -42,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveShadowBias
 
-[Implementation, line 32](../../../game/shadow-bias-ui.ts#L32)
+[Implementation, line 33](../../../game/shadow-bias-ui.ts#L33)
 
 Initial factor: saved player choice > host default (boot: URL / NABLA_BOOT / VITE) > 1.
 
@@ -62,7 +63,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveShadowBias
 
-[Implementation, line 42](../../../game/shadow-bias-ui.ts#L42)
+[Implementation, line 43](../../../game/shadow-bias-ui.ts#L43)
 
 ```ts
 saveShadowBias(value: number | null, storage: StorageLike | undefined = browserStorage()): void
@@ -78,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveShadowsEnabled
 
-[Implementation, line 57](../../../game/shadow-bias-ui.ts#L57)
+[Implementation, line 58](../../../game/shadow-bias-ui.ts#L58)
 
 Saved on/off choice for shadows; on unless the player turned them off.
 
@@ -89,11 +90,12 @@ resolveShadowsEnabled(storage: StorageLike | undefined = browserStorage()): bool
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `browserStorage`
+- `readLightTuning`
 - `storage?.getItem`
 
 ## percent
 
-[Implementation, line 67](../../../game/shadow-bias-ui.ts#L67)
+[Implementation, line 69](../../../game/shadow-bias-ui.ts#L69)
 
 ```ts
 percent(value: number): inferred by TypeScript; see implementation
@@ -105,7 +107,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindShadowBiasControl
 
-[Implementation, line 70](../../../game/shadow-bias-ui.ts#L70)
+[Implementation, line 72](../../../game/shadow-bias-ui.ts#L72)
 
 Slider + reset in a «Sombras» section shown under the Calidad tab.
 
@@ -128,35 +130,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setShadowsEnabled`
 - `showToggle`
 - `slider.addEventListener`
+- `storage?.removeItem`
 - `sync`
 - `toggle.addEventListener`
 - `toggleLabel.append`
 
 ## bindShadowBiasControl.showToggle
 
-[Implementation, line 82](../../../game/shadow-bias-ui.ts#L82)
+[Implementation, line 84](../../../game/shadow-bias-ui.ts#L84)
 
 ```ts
 showToggle(): inferred by TypeScript; see implementation
 ```
 
-## bindShadowBiasControl.callback@87
+## bindShadowBiasControl.callback@94
 
-[Implementation, line 87](../../../game/shadow-bias-ui.ts#L87)
+[Implementation, line 94](../../../game/shadow-bias-ui.ts#L94)
 
 ```ts
-callback@87(): inferred by TypeScript; see implementation
+callback@94(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime.setShadowsEnabled`
 - `showToggle`
-- `storage?.setItem`
+- `storage?.removeItem`
 
 ## bindShadowBiasControl.sync
 
-[Implementation, line 115](../../../game/shadow-bias-ui.ts#L115)
+[Implementation, line 122](../../../game/shadow-bias-ui.ts#L122)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -168,12 +171,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `percent`
 
-## bindShadowBiasControl.callback@119
+## bindShadowBiasControl.callback@126
 
-[Implementation, line 119](../../../game/shadow-bias-ui.ts#L119)
+[Implementation, line 126](../../../game/shadow-bias-ui.ts#L126)
 
 ```ts
-callback@119(): inferred by TypeScript; see implementation
+callback@126(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -182,24 +185,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `percent`
 - `runtime.setShadowBias`
 
-## bindShadowBiasControl.callback@123
+## bindShadowBiasControl.callback@130
 
-[Implementation, line 123](../../../game/shadow-bias-ui.ts#L123)
+[Implementation, line 130](../../../game/shadow-bias-ui.ts#L130)
 
 ```ts
-callback@123(): inferred by TypeScript; see implementation
+callback@130(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `saveShadowBias`
 
-## bindShadowBiasControl.callback@124
+## bindShadowBiasControl.callback@131
 
-[Implementation, line 124](../../../game/shadow-bias-ui.ts#L124)
+[Implementation, line 131](../../../game/shadow-bias-ui.ts#L131)
 
 ```ts
-callback@124(): inferred by TypeScript; see implementation
+callback@131(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

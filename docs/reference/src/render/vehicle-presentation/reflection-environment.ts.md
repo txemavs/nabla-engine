@@ -4,14 +4,14 @@
 
 [Source](../../../../../src/render/vehicle-presentation/reflection-environment.ts)
 
-Procedural reflection environment for polished metal. The scene has no environment map, so a
-metallic PBR material (chrome exhaust, mirror glass) reflects nothing and renders black. This
-gives such materials a small shared sky-over-ground gradient (three.js prefilters it), so
-chrome reads as bright polished metal. Matte and painted materials are left alone.
+Shared neutral environment for vehicle PBR materials. Three.js prefilters the
+sky-over-ground gradient for diffuse and specular indirect lighting. The runtime
+applies it uniformly to every vehicle; the legacy selective helper remains available.
 
 ## Module dependencies
 
 - `three`
+- `../../config/vehicle-appearance.js`
 
 ## reflectionEnvironmentTexture
 
@@ -33,6 +33,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.DataTexture`
 - `Uint8Array`
 - `data.set`
+- `grey`
 - `mix`
 
 ## reflectionEnvironmentTexture.mix
@@ -55,9 +56,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@21(v, i): inferred by TypeScript; see implementation
 ```
 
+## reflectionEnvironmentTexture.grey
+
+[Implementation, line 23](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L23)
+
+```ts
+grey(value: number): inferred by TypeScript; see implementation
+```
+
 ## applyReflectionEnvironment
 
-[Implementation, line 56](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L56)
+[Implementation, line 60](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L60)
 
 Give every standard material under `root` with `metalness >= minMetalness`, or tagged
 `extras.nabla.reflective` in the GLB (glossy glass such as a windscreen), the shared reflection
@@ -70,16 +79,28 @@ applyReflectionEnvironment(root: THREE.Object3D, { minMetalness = 0.9, intensity
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Set`
+- `apply`
+- `collect`
 - `reflectionEnvironmentTexture`
-- `root.traverse`
-- `scale`
 
-## applyReflectionEnvironment.callback@61
+## applyReflectionEnvironment.collect
 
-[Implementation, line 61](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L61)
+[Implementation, line 65](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L65)
 
 ```ts
-callback@61(object): inferred by TypeScript; see implementation
+collect(root: THREE.Object3D): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `root.traverse`
+
+## applyReflectionEnvironment.collect.callback@66
+
+[Implementation, line 66](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L66)
+
+```ts
+callback@66(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -89,7 +110,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.scale
 
-[Implementation, line 75](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L75)
+[Implementation, line 81](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L81)
 
 ```ts
 scale(material: THREE.Material): inferred by TypeScript; see implementation
@@ -100,9 +121,56 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Number.isFinite`
 
+## applyReflectionEnvironment.response
+
+[Implementation, line 88](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L88)
+
+```ts
+response(material: THREE.Material): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Number.isFinite`
+- `scale`
+
+## applyReflectionEnvironment.apply
+
+[Implementation, line 95](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L95)
+
+```ts
+apply(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `response`
+
+## applyReflectionEnvironment.materials
+
+[Implementation, line 106](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L106)
+
+```ts
+materials(): inferred by TypeScript; see implementation
+```
+
+## applyReflectionEnvironment.add
+
+[Implementation, line 109](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L109)
+
+```ts
+add(root): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `apply`
+- `collect`
+
 ## applyReflectionEnvironment.setLevel
 
-[Implementation, line 87](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L87)
+[Implementation, line 113](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L113)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation
@@ -111,4 +179,18 @@ setLevel(level: number): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
-- `scale`
+- `response`
+
+## applyVehicleEnvironment
+
+[Implementation, line 123](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L123)
+
+Every vehicle PBR surface needs indirect light, including dielectric cabin materials.
+
+```ts
+applyVehicleEnvironment(root: THREE.Object3D): ReflectionEnvironment
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `applyReflectionEnvironment`

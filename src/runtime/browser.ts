@@ -442,8 +442,6 @@ export class GameRuntime {
     lightingDefaults.ambientIntensity,
   )
   private readonly catchFloor = new CatchFloor()
-  /** Ajustes → «Sombras: activadas / desactivadas» (see `setShadowsEnabled`). */
-  private shadowSwitch = true
   /** Live look knobs (Ajustes → Luz); defaults are the shipped look. */
   private lighting: LightTuning = readLightTuning(browserStorage())
   private readonly origin = new THREE.Vector3()
@@ -1353,6 +1351,7 @@ export class GameRuntime {
     this.camera.position.sub(this.origin)
     const scissor = this.renderer.getScissor(new THREE.Vector4()),
       scissorTest = this.renderer.getScissorTest()
+    this.applyLightTuning()
     try {
       this.renderer.setScissor(0, 0, 1, 1)
       this.renderer.setScissorTest(true)
@@ -2091,29 +2090,18 @@ export class GameRuntime {
   }
   /** Shadows on/off switch (Ajustes → Sombras); on by default, the quality tier still applies. */
   get shadowsEnabled(): boolean {
-    return this.shadowSwitch
+    return this.lighting.shadows
   }
-  /**
-   * Turn shadows on or off live: the shadow map, the sun's `castShadow` (and the cascade lights')
-   * and every scene material's program follow on the next frame.
-   */
+  /** Disable shadow attenuation without changing the number of sun lights or shader programs. */
   setShadowsEnabled(on: boolean): void {
     this.assertAlive()
-    this.shadowSwitch = !!on
+    this.setLightTuning({ shadows: !!on })
   }
   /** Apply the shadow switch on top of the quality tier; returns whether shadows draw this frame. */
   private syncShadowSwitch(): boolean {
-    const on = this.shadowSwitch && this.quality.shadows > 0
-    for (const light of this.shadows.lights) if (light.castShadow !== on) light.castShadow = on
-    if (this.sun.castShadow && !on) this.sun.castShadow = false
-    if (this.renderer.shadowMap.enabled !== on) {
-      this.renderer.shadowMap.enabled = on
-      this.scene.traverse((object) => {
-        const material = (object as THREE.Mesh).material
-        if (material) for (const m of [material].flat()) m.needsUpdate = true
-      })
-    }
-    return on
+    // Cascades represent one sun. Keep their shader/light topology stable when disabling
+    // shadow attenuation; removing castShadow would make the addon count them as three suns.
+    return this.lighting.shadows && this.quality.shadows > 0
   }
   /** Asphalt contrast on the roads photo drape (1 = unchanged). */
   get asphaltContrast(): number {
