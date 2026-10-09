@@ -19,6 +19,7 @@
 ### Fixed
 
 - No coloured placeholder block is drawn while a vehicle's GLB is still loading (e.g. the red cube before the motorbike appeared).
+- Zenithal camera: zooming out no longer turns cars or trucks black on Ultra (4 cascades). The #183 cut for steep views was still capped at far / 4, and the overhead far plane is about three times the eye height, so the vehicle always fell into cascade 1. Steep views now keep their uncapped first cut.
 - Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
 
 - Zenithal camera: zooming out no longer turns trucks black. A downward view used to leave the vehicle in the last shadow cascade (the 140 m cut is still in the air), and that map is sized to the far plane. Cascade 0 now ends just past the ground under the camera.
@@ -34,6 +35,7 @@
 
 ### Changed
 
+- The Audi S3 instrument cluster sits 5 mm lower than the previous 15 mm raise (`clusterOffset` y 0.015 → 0.010).
 - On a coarse pointer the enter/camera buttons stack on the left above the clock, and the accelerator sits beside the wheel, so the wheel can be grabbed. Fine pointers keep the horizontal bar.
 - The truck diesel is much louder (idle gain 0.04 → 0.12, load 0.075 → 0.225, about +9.5 dB) and its turbo whistle sits a bit lower (700–2200 Hz → 580–1780 Hz). TODO(unverified): not a measured recording. Starter click, jake and blow-off stay as they are.
 
