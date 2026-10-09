@@ -8,6 +8,12 @@ import type { SceneDocument } from '../scene/document.js'
 import type { Simulation } from '../simulation/simulation.js'
 import type { GearClackProfile } from '../simulation/vehicles/wheeled/contracts.js'
 
+/**
+ * Gear shifts (car and truck clack, bike click) sit under the engine: 0.5 is about −6 dB.
+ * Pistol reload clicks use their own levels. TODO(unverified): a listening choice.
+ */
+export const gearShiftLevel = 0.5
+
 /** Shared audio/effects orchestration. Supplied audio remains owned by the host. */
 export class VehicleEffects {
   readonly smoke = new TireSmoke()
@@ -101,17 +107,11 @@ export class VehicleEffects {
     this.shiftCount = info.gearClacks
     this.gearChangeCount = info.gearShifts
     if (!known || info.helm === 'off') return
+    const volume = sound.gearShiftVolume * gearShiftLevel
     if (sound.gearShift === 'clack' && info.gearClacks > previousClacks)
-      this.audio.gearChange(
-        sound.gearShiftVolume === 1
-          ? info.gearClack
-          : {
-              ...info.gearClack,
-              gain: (info.gearClack?.gain ?? 1) * sound.gearShiftVolume,
-            },
-      )
+      this.audio.gearChange({ ...info.gearClack, gain: (info.gearClack?.gain ?? 1) * volume })
     else if (sound.gearShift === 'click' && info.gearShifts > previousShifts)
-      this.audio.gearClick({ volume: sound.gearShiftVolume })
+      this.audio.gearClick({ volume })
   }
 
   /** One starter sound per start-up, as soon as its cranking phase (the first one) is seen. Lower idle cranks lower. */

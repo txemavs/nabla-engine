@@ -30,12 +30,32 @@ interface Buses {
 
 const registry = new WeakMap<BaseAudioContext, Buses>()
 
+/**
+ * Fixed lift of the engine bus over the effects on master, so the engine dominates a gear
+ * shift on every vehicle (2026-10-09 request: shifts sounded louder than the engine). 1.6 is
+ * about +4 dB. TODO(unverified): a listening choice, not a measured recording.
+ */
+export const engineBusTrim = 1.6
+
+/** Safety limiter on master: the louder engine bus must not clip with music and effects. */
+function masterOutput(context: BaseAudioContext): AudioNode {
+  if (typeof context.createDynamicsCompressor !== 'function') return context.destination
+  const limiter = context.createDynamicsCompressor()
+  limiter.threshold.value = -3
+  limiter.knee.value = 0
+  limiter.ratio.value = 20
+  limiter.attack.value = 0.003
+  limiter.release.value = 0.25
+  limiter.connect(context.destination)
+  return limiter
+}
+
 /** Create (once) and return the buses of `context`. */
 export function attachAudioBuses(context: BaseAudioContext): Buses {
   let buses = registry.get(context)
   if (!buses) {
     const master = context.createGain()
-    master.connect(context.destination)
+    master.connect(masterOutput(context))
     const engine = context.createGain()
     engine.connect(master)
     const music = context.createGain()
@@ -106,7 +126,7 @@ export class AudioMixer {
       else node.gain.setTargetAtTime(value, time, 0.03)
     }
     set(this.buses.master, sliderGain(this.mix.master))
-    set(this.buses.engine, sliderGain(this.mix.engine))
+    set(this.buses.engine, sliderGain(this.mix.engine) * engineBusTrim)
     set(this.buses.music, this.mix.musicMuted ? 0 : sliderGain(this.mix.music))
   }
 }

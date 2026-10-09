@@ -10,7 +10,7 @@ import {
 import { resolveVehicleSound } from '../../src/audio/vehicle-sound.js'
 import { VehicleAudio } from '../../src/audio/vehicle.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
-import { VehicleEffects } from '../../src/runtime/vehicle-effects.js'
+import { VehicleEffects, gearShiftLevel } from '../../src/runtime/vehicle-effects.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { finishStartUp } from '../start-up.js'
@@ -223,7 +223,7 @@ describe('gear-change sound from the simulation', () => {
       const shifts = sim.vehicleInfo('bike').gearShifts - start
       expect(shifts).toBeGreaterThanOrEqual(3)
       expect(clicks).toHaveLength(shifts)
-      expect(clicks[0]).toEqual({ volume: 1 })
+      expect(clicks[0]).toEqual({ volume: gearShiftLevel })
       expect(clacks).toHaveLength(0)
       expect(turbo.length).toBeGreaterThan(0)
       expect(turbo.every((on) => on === false)).toBe(true)
