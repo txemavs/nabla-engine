@@ -147,9 +147,9 @@ it('reports a missing optional stock mount and leaves the asset intact', () => {
   warning.mockRestore()
 })
 
-it('raises the S3 cluster by the preset and keeps the dials inside the binnacle', async () => {
+it('raises the S3 cluster 10 mm and keeps the dials inside the binnacle', async () => {
   const car = presetVehicle('car', 's3')
-  expect(car.vehicle?.clusterOffset).toEqual([0, 0.015, 0])
+  expect(car.vehicle?.clusterOffset).toEqual([0, 0.01, 0])
   ;(globalThis as { self?: unknown }).self ??= globalThis
   const bytes = await fs.readFile('assets/library/cars/a3/a3.cabrio.glb')
   const load = async () => {
@@ -169,7 +169,7 @@ it('raises the S3 cluster by the preset and keeps the dials inside the binnacle'
   const raised = createA3Mounts(raisedModel, car.vehicle!.clusterOffset)!
   const [dx, dy, dz] = raised.cluster.position.map((n, i) => n - plain.cluster.position[i]!)
   // Chassis up, through the body's yaw, lands on the interior's up.
-  expect(dy).toBeCloseTo(0.015, 3)
+  expect(dy).toBeCloseTo(0.01, 3)
   expect(Math.hypot(dx, dz)).toBeLessThan(0.001)
   const halfH = 160 * raised.cluster.scale
   const halfW = 320 * raised.cluster.scale
