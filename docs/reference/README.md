@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **350 modules; 3709 executable function definitions**.
+Coverage: **352 modules; 3734 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -29,7 +29,7 @@ Coverage: **350 modules; 3709 executable function definitions**.
 | [game/mirror-controls.ts](game/mirror-controls.ts.md) | 15 |
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
-| [game/scene-controls.ts](game/scene-controls.ts.md) | 49 |
+| [game/scene-controls.ts](game/scene-controls.ts.md) | 52 |
 | [game/settings-hud.ts](game/settings-hud.ts.md) | 25 |
 | [game/shadow-bias-ui.ts](game/shadow-bias-ui.ts.md) | 10 |
 | [game/sound-ui.ts](game/sound-ui.ts.md) | 4 |
@@ -48,7 +48,7 @@ Coverage: **350 modules; 3709 executable function definitions**.
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
-| [src/audio/mixer.ts](src/audio/mixer.ts.md) | 13 |
+| [src/audio/mixer.ts](src/audio/mixer.ts.md) | 14 |
 | [src/audio/music.ts](src/audio/music.ts.md) | 12 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 14 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
@@ -167,6 +167,7 @@ Coverage: **350 modules; 3709 executable function definitions**.
 | [src/presentation/scene-view.ts](src/presentation/scene-view.ts.md) | 1 |
 | [src/render/capture.ts](src/render/capture.ts.md) | 7 |
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 6 |
+| [src/render/entity/asset-warmup.ts](src/render/entity/asset-warmup.ts.md) | 15 |
 | [src/render/entity/assets.ts](src/render/entity/assets.ts.md) | 13 |
 | [src/render/entity/avatar-motion.ts](src/render/entity/avatar-motion.ts.md) | 8 |
 | [src/render/entity/avatar.ts](src/render/entity/avatar.ts.md) | 23 |
@@ -264,7 +265,7 @@ Coverage: **350 modules; 3709 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 232 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 235 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
@@ -280,6 +281,7 @@ Coverage: **350 modules; 3709 executable function definitions**.
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 10 |
+| [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 3 |
 | [src/runtime/messages.es.ts](src/runtime/messages.es.ts.md) | 0 |
 | [src/runtime/messages.ts](src/runtime/messages.ts.md) | 3 |
 | [src/runtime/mirror-adjustment.ts](src/runtime/mirror-adjustment.ts.md) | 8 |

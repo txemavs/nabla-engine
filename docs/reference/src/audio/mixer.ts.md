@@ -11,9 +11,24 @@ starter, turbo, turbine and propeller voice) and a music bus under it. Other eff
 ## Module dependencies
 
 
+## masterOutput
+
+[Implementation, line 41](../../../../src/audio/mixer.ts#L41)
+
+Safety limiter on master: the louder engine bus must not clip with music and effects.
+
+```ts
+masterOutput(context: BaseAudioContext): AudioNode
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `context.createDynamicsCompressor`
+- `limiter.connect`
+
 ## attachAudioBuses
 
-[Implementation, line 34](../../../../src/audio/mixer.ts#L34)
+[Implementation, line 54](../../../../src/audio/mixer.ts#L54)
 
 Create (once) and return the buses of `context`.
 
@@ -26,13 +41,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `context.createGain`
 - `engine.connect`
 - `master.connect`
+- `masterOutput`
 - `music.connect`
 - `registry.get`
 - `registry.set`
 
 ## audioBus
 
-[Implementation, line 50](../../../../src/audio/mixer.ts#L50)
+[Implementation, line 70](../../../../src/audio/mixer.ts#L70)
 
 Where a voice should connect: its bus when the context has a mixer, else the speakers.
 
@@ -46,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## level
 
-[Implementation, line 56](../../../../src/audio/mixer.ts#L56)
+[Implementation, line 76](../../../../src/audio/mixer.ts#L76)
 
 ```ts
 level(value: unknown, fallback: number): number
@@ -60,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## normalizeAudioMix
 
-[Implementation, line 63](../../../../src/audio/mixer.ts#L63)
+[Implementation, line 83](../../../../src/audio/mixer.ts#L83)
 
 Clamp a partial mix onto `base`; junk fields keep the base value.
 
@@ -74,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## sliderGain
 
-[Implementation, line 76](../../../../src/audio/mixer.ts#L76)
+[Implementation, line 96](../../../../src/audio/mixer.ts#L96)
 
 Slider position to gain: a squared curve so the lower half of the slider is usable.
 
@@ -84,7 +100,7 @@ sliderGain(value: number): number
 
 ## AudioMixer.constructor
 
-[Implementation, line 85](../../../../src/audio/mixer.ts#L85)
+[Implementation, line 105](../../../../src/audio/mixer.ts#L105)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -98,7 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AudioMixer.levels
 
-[Implementation, line 88](../../../../src/audio/mixer.ts#L88)
+[Implementation, line 108](../../../../src/audio/mixer.ts#L108)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -108,7 +124,7 @@ levels(): AudioMixLevels
 
 ## AudioMixer.attach
 
-[Implementation, line 91](../../../../src/audio/mixer.ts#L91)
+[Implementation, line 111](../../../../src/audio/mixer.ts#L111)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -123,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AudioMixer.set
 
-[Implementation, line 96](../../../../src/audio/mixer.ts#L96)
+[Implementation, line 116](../../../../src/audio/mixer.ts#L116)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -138,7 +154,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AudioMixer.apply
 
-[Implementation, line 101](../../../../src/audio/mixer.ts#L101)
+[Implementation, line 121](../../../../src/audio/mixer.ts#L121)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -153,7 +169,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AudioMixer.apply.set
 
-[Implementation, line 104](../../../../src/audio/mixer.ts#L104)
+[Implementation, line 124](../../../../src/audio/mixer.ts#L124)
 
 ```ts
 set(node: GainNode, value: number): inferred by TypeScript; see implementation
@@ -165,7 +181,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readAudioMix
 
-[Implementation, line 119](../../../../src/audio/mixer.ts#L119)
+[Implementation, line 139](../../../../src/audio/mixer.ts#L139)
 
 The player's saved mix, or undefined.
 
@@ -181,7 +197,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## writeAudioMix
 
-[Implementation, line 132](../../../../src/audio/mixer.ts#L132)
+[Implementation, line 152](../../../../src/audio/mixer.ts#L152)
 
 Remember the mix; storage errors are ignored.
 

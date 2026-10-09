@@ -49,6 +49,8 @@ export interface SceneRuntime extends Partial<SteeringWheelRuntime>, Partial<Mir
   setCloudWeather(amount: number, pressure?: number): void
   readonly spawnedVehicles: { id: string; name: string }[]
   spawnVehicle(template: Entity | Entity[]): Promise<string>
+  /** Load a vehicle's models ahead of `spawnVehicle` so adding it does not freeze a frame. */
+  prewarmVehicle?(template: Entity | Entity[]): Promise<void>
   removeSpawnedVehicle(id: string): void
   readonly placedObjects: { id: string; name: string }[]
   spawnEntities(entities: Entity[], distance?: number, name?: string): Promise<string>
@@ -333,6 +335,13 @@ export function bindSceneControls(
   for (const control of controls) (control as HTMLInputElement).disabled = true
 
   return (runtime) => {
+    // Start loading the picked model as soon as it is chosen; «Añadir» then only places it.
+    choice.addEventListener('change', () => {
+      if (vehicleChoices().some((item) => item.id === choice.value))
+        void runtime
+          .prewarmVehicle?.(presetEntities(choice.value, 'spawn-template'))
+          ?.catch(() => {})
+    })
     for (const control of controls) (control as HTMLInputElement).disabled = false
 
     const showSpeed = () => {
@@ -500,7 +509,7 @@ export function bindSceneControls(
       const object = objectChoices().find((item) => item.id === choice.value)
       if (object) {
         add.disabled = true
-        vehicleMessage.textContent = 'Añadiendo…'
+        vehicleMessage.textContent = 'Cargando vehículo…'
         try {
           await runtime.spawnEntities(
             createPlaceable(object.id, `place-${object.id}`),
