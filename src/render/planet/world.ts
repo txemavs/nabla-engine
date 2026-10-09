@@ -102,6 +102,7 @@ import {
   DRAPE_LAYERS,
   GROUND_DRAPE_LIFT,
   ROOF_DRAPE_LIFT,
+  bakedDrapeLayers,
   buildDrapes,
   drapeMaterialAlpha,
   photoFrameTransform,
@@ -182,14 +183,19 @@ export function dressSatelliteRoofs(
   const tile = manifest.tile
   if (tile.z !== 15 || imagery === 'none') return
   if (imagery === 'package' && (!manifest.photo || !photoUrl)) return
-  const baked = new Set<string>()
+  const baked = bakedDrapeLayers(
+    group.children.flatMap((node) => {
+      const mesh = node as THREE.Mesh
+      if (!mesh.isMesh) return []
+      const material = mesh.material as THREE.MeshStandardMaterial
+      return [{ name: mesh.name, metadata: mesh.userData, hasMap: !!material.map }]
+    }),
+  )
   for (const node of group.children) {
     const mesh = node as THREE.Mesh
     if (!mesh.isMesh || mesh.name !== 'Drape') continue
-    const id = String(mesh.userData.drape ?? '')
     const material = mesh.material as THREE.MeshStandardMaterial
-    if (id && material.map) baked.add(id)
-    else {
+    if (!mesh.userData.drape || !material.map) {
       mesh.visible = false
       mesh.userData.ready = false
     }

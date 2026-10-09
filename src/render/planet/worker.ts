@@ -17,7 +17,7 @@ import {
 import type { PlanetGlbKind } from '../../planet/contract.js'
 import { mapCache } from './cache.js'
 import { sha256 } from '../../util/sha256.js'
-import { buildDrapes } from './drape.js'
+import { bakedDrapeLayers, buildDrapes } from './drape.js'
 const controllers = new Map<number, AbortController>()
 /** Download, verify and decode a package orthophoto, flipped so the texture needs no `flipY`. */
 async function loadPhoto(
@@ -183,8 +183,8 @@ self.onmessage = async (
     // main thread only wraps the arrays. A photo failure leaves the cell playable without it.
     let drape: PlanetPayload['drape']
     if (event.data.drape && manifest.photo) {
-      const baked = new Set<string>(
-        meshes.filter((m) => m.name === 'Drape' && m.map).map((m) => String(m.metadata.drape)),
+      const baked = bakedDrapeLayers(
+        meshes.map((m) => ({ name: m.name, metadata: m.metadata, hasMap: !!m.map })),
       )
       const layers = await phase('photo', () =>
         buildDrapes(meshes, {
@@ -197,7 +197,8 @@ self.onmessage = async (
       if (layers.length)
         try {
           drape.photo = await loadPhoto(directory + manifest.photo.path, manifest.photo, phase)
-          if (manifest.roofPhoto)
+          // Baked roofs (Atlas roof_bake) carry their own photo: no roofs drape, no download.
+          if (manifest.roofPhoto && layers.some((l) => l.id === 'roofs'))
             drape.roofPhoto = await loadPhoto(
               directory + manifest.roofPhoto.path,
               manifest.roofPhoto,

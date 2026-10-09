@@ -127,9 +127,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `AbortController`
 - `GLTFLoader`
 - `LoadingManager`
-- `Set`
 - `String`
 - `applyCandidateAsphaltPolicy`
+- `bakedDrapeLayers`
 - `chunks.map`
 - `console.warn`
 - `controller.signal.throwIfAborted`
@@ -139,12 +139,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `controllers.set`
 - `drape?.layers.flatMap`
 - `isCandidateRoadKind`
+- `layers.some`
 - `loadLayer`
 - `loadPhoto`
 - `manager.setURLModifier`
-- `meshes.filter`
-- `meshes.filter((m) => m.name === 'Drape' && m.map).map`
 - `meshes.flatMap`
+- `meshes.map`
 - `performance.now`
 - `phase`
 - `planetCellVersion`
@@ -362,18 +362,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@187(m): inferred by TypeScript; see implementation
 ```
 
-## callback@41.callback@187
-
-[Implementation, line 187](../../../../../src/render/planet/worker.ts#L187)
-
-```ts
-callback@187(m): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `String`
-
 ## callback@41.callback@189
 
 [Implementation, line 189](../../../../../src/render/planet/worker.ts#L189)
@@ -387,20 +375,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `buildDrapes`
 
-## callback@41.callback@216
+## callback@41.callback@201
 
-[Implementation, line 216](../../../../../src/render/planet/worker.ts#L216)
+[Implementation, line 201](../../../../../src/render/planet/worker.ts#L201)
 
 ```ts
-callback@216(m): inferred by TypeScript; see implementation
+callback@201(l): inferred by TypeScript; see implementation
 ```
 
-## callback@41.callback@223
+## callback@41.callback@217
 
-[Implementation, line 223](../../../../../src/render/planet/worker.ts#L223)
+[Implementation, line 217](../../../../../src/render/planet/worker.ts#L217)
 
 ```ts
-callback@223(c): inferred by TypeScript; see implementation
+callback@217(m): inferred by TypeScript; see implementation
 ```
 
 ## callback@41.callback@224
@@ -408,7 +396,7 @@ callback@223(c): inferred by TypeScript; see implementation
 [Implementation, line 224](../../../../../src/render/planet/worker.ts#L224)
 
 ```ts
-callback@224(m): inferred by TypeScript; see implementation
+callback@224(c): inferred by TypeScript; see implementation
 ```
 
 ## callback@41.callback@225
@@ -416,5 +404,13 @@ callback@224(m): inferred by TypeScript; see implementation
 [Implementation, line 225](../../../../../src/render/planet/worker.ts#L225)
 
 ```ts
-callback@225(d): inferred by TypeScript; see implementation
+callback@225(m): inferred by TypeScript; see implementation
+```
+
+## callback@41.callback@226
+
+[Implementation, line 226](../../../../../src/render/planet/worker.ts#L226)
+
+```ts
+callback@226(d): inferred by TypeScript; see implementation
 ```
