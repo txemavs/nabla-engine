@@ -180,14 +180,18 @@ try {
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
   )
   void runBootPhase(runtime, loading, boot)
+  // Host vehicles are placed inside play(), before the reveal: their models, lights and
+  // programs load behind the intro instead of during the start descent.
+  const geography = scene.geography
+  if (geography && config.vehicles.length)
+    runtime.beforeReveal(async () => {
+      bootLog(`installHostVehicles start (${config.vehicles.length})`)
+      await installHostVehicles(runtime!, geography, config.vehicles)
+      bootLog('installHostVehicles done')
+    })
   bootLog('play() start')
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
   bootLog('play() done (ground + physics)')
-  if (scene.geography && config.vehicles.length) {
-    bootLog(`installHostVehicles start (${config.vehicles.length})`)
-    await installHostVehicles(runtime, scene.geography, config.vehicles)
-    bootLog('installHostVehicles done')
-  }
   if (scene.geography && config.portals?.length) {
     bootLog(`installHostPortals start (${config.portals?.length})`)
     await installHostPortals(runtime, scene.geography, config.portals)

@@ -6,7 +6,12 @@ import { MapCollisions } from './map-collisions.js'
 import { PlanetCatchFloor } from './catch-floor.js'
 import { createEntityBody } from './entity-body.js'
 import { RoadAssist } from './road-assist.js'
-import { nearestRoadPoint, ROAD_SNAP_MAX_DISTANCE, type RoadCenterline } from './road-snap.js'
+import {
+  nearestRoadPoint,
+  ROAD_SNAP_MAX_DISTANCE,
+  RoadSegmentIndex,
+  type RoadCenterline,
+} from './road-snap.js'
 import { classifyWheelSurface, type WheelSurface } from './wheel-surface.js'
 import { portalEnvelope, portalExitBlocked } from './portal-clearance.js'
 import { constrainTerrainBoundary } from './terrain-boundary.js'
@@ -826,7 +831,12 @@ export class Simulation {
    * the host set. An empty world (no scene roads and no host roads) leaves the surface unknown.
    */
   setSurfaceRoads(roads?: Iterable<RoadCenterline> | null): void {
-    this.hostSurfaceRoads = roads ? [...roads] : []
+    const next = roads ? [...roads] : []
+    const current = this.hostSurfaceRoads
+    // Hosts pass a fresh array every frame; keep the current one (and its segment index) when
+    // it holds the same roads.
+    if (next.length === current.length && next.every((road, i) => road === current[i])) return
+    this.hostSurfaceRoads = next
   }
   private surfaceRoads(): RoadCenterline[] {
     const scene = this.roadGuidance.centerlines(
@@ -836,6 +846,24 @@ export class Simulation {
     )
     return this.hostSurfaceRoads.length ? scene.concat(this.hostSurfaceRoads) : scene
   }
+  /** Segment grid over {@link surfaceRoads}, rebuilt only when the scene or host roads change. */
+  private surfaceIndex(): RoadSegmentIndex | null {
+    const scene = this.roadGuidance.centerlines(
+      this.document.entities,
+      this.graph,
+      this.entitiesById,
+    )
+    const cache = this.surfaceIndexCache
+    if (cache && cache.scene === scene && cache.host === this.hostSurfaceRoads) return cache.index
+    const index = new RoadSegmentIndex(this.surfaceRoads())
+    this.surfaceIndexCache = { scene, host: this.hostSurfaceRoads, index }
+    return index
+  }
+  private surfaceIndexCache: {
+    scene: RoadCenterline[]
+    host: RoadCenterline[]
+    index: RoadSegmentIndex
+  } | null = null
   private wheelSurfaces(v: {
     raycast: {
       wheelInfos: {
@@ -844,8 +872,8 @@ export class Simulation {
       }[]
     }
   }): (WheelSurface | null)[] | undefined {
-    const roads = this.surfaceRoads()
-    if (!roads.length) return undefined
+    const roads = this.surfaceIndex()
+    if (!roads?.size) return undefined
     return v.raycast.wheelInfos.map((wheel) =>
       wheel.isInContact
         ? classifyWheelSurface(

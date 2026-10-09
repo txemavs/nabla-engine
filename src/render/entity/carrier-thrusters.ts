@@ -1,14 +1,21 @@
 import * as THREE from 'three'
 
-/** Four exhausts. Flames stay unlit. At night each engine throws a pool downward. */
+/**
+ * Four exhausts. Flames stay unlit. At night each engine throws a pool downward.
+ * The lamps stay in the scene while playing (intensity 0 by day) and only the flames toggle:
+ * a light that appears or disappears changes every lit material's program.
+ */
 export class CarrierThrusters {
   readonly root = new THREE.Group()
+  private readonly exhaust = new THREE.Group()
   private readonly jets: THREE.Group[] = []
   private readonly lamps: THREE.SpotLight[] = []
   private power = 0
   constructor() {
     this.root.name = 'Carrier exhaust'
     this.root.visible = false
+    this.exhaust.visible = false
+    this.root.add(this.exhaust)
     for (const x of [-2.02, 2.02])
       for (const z of [-4.52, 4.52]) {
         const jet = new THREE.Group()
@@ -38,14 +45,15 @@ export class CarrierThrusters {
           flame.position.y = -length / 2
           jet.add(flame)
         }
-        this.root.add(jet)
+        this.exhaust.add(jet)
         this.jets.push(jet)
       }
   }
   update(active: boolean, speed: number, dt: number, time: number, night = false): void {
     const target = active ? 0.65 + Math.min(1, Math.abs(speed) / 1000) * 0.8 : 0
     this.power = THREE.MathUtils.damp(this.power, target, 8, Math.min(dt, 0.1))
-    this.root.visible = night || this.power > 0.01
+    this.root.visible = true
+    this.exhaust.visible = this.power > 0.01
     for (const lamp of this.lamps) lamp.intensity = night ? 90 : 0
     for (const [i, jet] of this.jets.entries()) {
       jet.visible = this.power > 0.01
