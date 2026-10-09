@@ -1302,6 +1302,8 @@ export class GameRuntime {
       )
       this.camera.updateProjectionMatrix()
     }
+    this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
+    this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     this.view.root.position.copy(this.origin).negate()
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
     this.view.streetlights.update(eye, this.view.night, this.quality.distance)
@@ -1319,6 +1321,18 @@ export class GameRuntime {
       this.origin,
       state.mode === 'cockpit',
     )
+    // Field lights (and every other light) as gameplay shows them: the light count is part of
+    // each program, so a light that only appears after the reveal recompiles every material.
+    this.fieldLighting?.update({
+      origin: this.document.geography,
+      eye,
+      renderOrigin: this.origin,
+      night: this.view.night,
+      time,
+      heightAt: (p) => this.world?.groundHeight(p),
+      tiles: this.world?.activeTiles.map((tile) => tile.manifest.tile) ?? [],
+      simulation: sim,
+    })
     this.camera.position.sub(this.origin)
     const scissor = this.renderer.getScissor(new THREE.Vector4()),
       scissorTest = this.renderer.getScissorTest()
@@ -1385,6 +1399,8 @@ export class GameRuntime {
     // 10:00), and day or night changes lights and therefore shader programs.
     const clock = this.document.sky
     if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
+    // Gameplay visibility (avatar shown, spawn markers hidden), as after the reveal.
+    this.view.setPlaying(true)
     try {
       for (const view of views) {
         signal.throwIfAborted()
@@ -1402,6 +1418,7 @@ export class GameRuntime {
     } catch {
       /* Warmup is optional; the first visible frames build what remains. */
     } finally {
+      this.view.setPlaying(false)
       this.document.sky = clock
       camera.position.copy(pose.position)
       camera.quaternion.copy(pose.quaternion)
