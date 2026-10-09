@@ -30,6 +30,7 @@ import {
 import { bindShadowBiasControl, resolveShadowBias } from './shadow-bias-ui.js'
 import { hostMirrorsFromSearch, mirrorStorage, viteHostMirrors } from './host-mirrors.js'
 import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
+import { bindAnisotropySelect } from './anisotropy-ui.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
@@ -210,7 +211,7 @@ try {
   bindFlipCinematicToggle(runtime)
   bindRecoverToRoadToggle(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)
-  bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
+  bindAnisotropySelect(runtime, bindAsphaltContrastSlider(runtime, boot.asphaltContrast))
   bindSoundControls(runtime)
   bindLightControls(runtime)
   mountSettingsHud(runtime)

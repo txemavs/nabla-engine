@@ -112,6 +112,8 @@ import {
   type LoadDiagnostics,
   type TileDiscoveryMode,
   type PlanetSourceOptions,
+  groundPhotoAnisotropy,
+  setGroundPhotoAnisotropy,
 } from '../render/planet/world.js'
 import { setPlanetCharts } from '../render/entity/helm-map.js'
 import { setNavigationPlaces, setNavigationRoads } from '../render/entity/navigation-places.js'
@@ -2191,6 +2193,19 @@ export class GameRuntime {
     // Cascades represent one sun. Keep their shader/light topology stable when disabling
     // shadow attenuation; removing castShadow would make the addon count them as three suns.
     return this.lighting.shadows && this.quality.shadows > 0
+  }
+  /** Anisotropic filtering of the ground photo (asphalt and road markings). */
+  get anisotropy(): number {
+    return groundPhotoAnisotropy()
+  }
+  /** Largest anisotropy this GPU supports. */
+  get maxAnisotropy(): number {
+    return this.renderer.capabilities.getMaxAnisotropy()
+  }
+  /** Set the ground photo anisotropy live (1–16), clamped to the GPU maximum. Returns the value used. */
+  setAnisotropy(value: number): number {
+    this.assertAlive()
+    return setGroundPhotoAnisotropy(Math.min(Math.max(1, value), this.maxAnisotropy))
   }
   /** Asphalt contrast on the roads photo drape (1 = unchanged). */
   get asphaltContrast(): number {
