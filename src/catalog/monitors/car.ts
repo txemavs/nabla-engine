@@ -55,6 +55,16 @@ export const carMenuItems: MonitorMenuItem[] = [
       back,
     ],
   },
+  {
+    id: 'fov',
+    label: 'VISTA FOV',
+    children: [
+      { id: 'fov-wide', label: 'AMPLIAR +5', action: { type: 'vehicle.fov', value: '5' } },
+      { id: 'fov-narrow', label: 'REDUCIR -5', action: { type: 'vehicle.fov', value: '-5' } },
+      { id: 'fov-reset', label: 'NORMAL', action: { type: 'vehicle.fov', value: 'reset' } },
+      back,
+    ],
+  },
 ]
 /** Edit the panel, positions and bindings here; no keyboard or game logic in the layout. */
 export const carMenuDefinition: MonitorDefinition = {
