@@ -4,14 +4,13 @@
 
 [Source](../../../../src/audio/graph.ts)
 
-Two seconds of looping white noise. One buffer can feed several voices.
-
 ## Module dependencies
 
+- `./mixer.js`
 
 ## loopingNoise
 
-[Implementation, line 2](../../../../src/audio/graph.ts#L2)
+[Implementation, line 4](../../../../src/audio/graph.ts#L4)
 
 Two seconds of looping white noise. One buffer can feed several voices.
 
@@ -29,15 +28,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## silentOutput
 
-[Implementation, line 14](../../../../src/audio/graph.ts#L14)
+[Implementation, line 16](../../../../src/audio/graph.ts#L16)
 
-A gain that starts silent and feeds the speakers.
+A gain that starts silent and feeds its mixer bus (effects by default), or the speakers.
 
 ```ts
-silentOutput(context: AudioContext): GainNode
+silentOutput(context: AudioContext, bus: AudioBus = 'sfx'): GainNode
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `audioBus`
 - `context.createGain`
 - `output.connect`

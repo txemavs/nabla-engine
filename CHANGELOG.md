@@ -5,6 +5,11 @@
 ### Added
 
 - Adding a vehicle no longer freezes the game. `GameRuntime.prewarmVehicle` loads and parses its GLBs (cached and reused), uploads one texture per frame and compiles its shaders with `compileAsync` before the vehicle exists; `placeVehicle` / `spawnVehicle` wait for that and show a small «Cargando vehículo…» badge. The game menu starts it as soon as a vehicle is picked. Vehicle colliders are a few boxes and stay synchronous.
+- Audio mixer: master → engine bus (every engine, starter, turbo, turbine and propeller voice) and music bus; tyres, gears, gunshot and brakes stay on master. `GameRuntime.audioMix` / `setAudioMix` (0..1, squared slider curve, music mute), saved as `nabla.audioMix`. Ajustes → Opciones → Sonido has General, Motor and Música sliders and «Silenciar música».
+- Background music: `GameRuntimeOptions.music` (and `NABLA_BOOT.music` in the game host) takes encodings in preference order. The track streams through an `<audio>` element into the music bus, loops, starts after the first gesture and pauses while the page is hidden. Default music level 50% (TODO(unverified): a taste choice).
+
+### Added
+
 - J menu «VISTA FOV» (last page): widen or narrow the cockpit/on-foot and chase cameras in 5° steps (−15° to +25°, or NORMAL). Saved as `nabla.cameraFov`. The overhead view shares the chase FOV; the cinematic camera keeps its own.
 
 ### Changed
@@ -28,6 +33,7 @@
 
 ### Changed
 
+- The Audi S3 instrument cluster sits 5 mm lower than the previous 15 mm raise (`clusterOffset` y 0.015 → 0.010).
 - On a coarse pointer the enter/camera buttons stack on the left above the clock, and the accelerator sits beside the wheel, so the wheel can be grabbed. Fine pointers keep the horizontal bar.
 - The truck diesel is much louder (idle gain 0.04 → 0.12, load 0.075 → 0.225, about +9.5 dB) and its turbo whistle sits a bit lower (700–2200 Hz → 580–1780 Hz). TODO(unverified): not a measured recording. Starter click, jake and blow-off stay as they are.
 

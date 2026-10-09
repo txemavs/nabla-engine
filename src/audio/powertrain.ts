@@ -26,7 +26,7 @@ class EngineNote {
   private readonly filter: BiquadFilterNode
 
   constructor(context: AudioContext) {
-    this.output = silentOutput(context)
+    this.output = silentOutput(context, 'engine')
 
     this.filter = context.createBiquadFilter()
     this.filter.type = 'lowpass'
@@ -64,14 +64,14 @@ class Turbo {
   private previousLoad = 0
 
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
-    this.whistleLevel = silentOutput(context)
+    this.whistleLevel = silentOutput(context, 'engine')
     this.whistle = context.createOscillator()
     this.whistle.type = 'sine'
     this.whistle.frequency.value = 1100
     this.whistle.connect(this.whistleLevel)
     this.whistle.start()
 
-    this.air = silentOutput(context)
+    this.air = silentOutput(context, 'engine')
     const airFilter = context.createBiquadFilter()
     airFilter.type = 'bandpass'
     airFilter.frequency.value = 2400

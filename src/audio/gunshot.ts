@@ -5,6 +5,7 @@
  * tail that stands in for the surroundings. The nodes are created once; a trigger only
  * schedules envelopes, so rapid fire never allocates audio nodes.
  */
+import { audioBus } from './mixer.js'
 const SILENT = 0.0001
 
 /** Attack-decay envelope on one gain. Cancels only its own earlier schedule. */
@@ -30,7 +31,7 @@ export class Gunshot {
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
     const output = context.createGain()
     output.gain.value = 1
-    output.connect(context.destination)
+    output.connect(audioBus(context))
     const level = () => {
       const gain = context.createGain()
       gain.gain.value = 0
