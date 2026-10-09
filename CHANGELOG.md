@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- J menu «VISTA FOV» (last page): widen or narrow the cockpit/on-foot and chase cameras in 5° steps (−15° to +25°, or NORMAL). Saved as `nabla.cameraFov`. The overhead view shares the chase FOV; the cinematic camera keeps its own.
+
 ### Changed
 
 - Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
