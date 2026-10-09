@@ -1400,8 +1400,6 @@ export class GameRuntime {
     // 10:00), and day or night changes lights and therefore shader programs.
     const clock = this.document.sky
     if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
-    // Gameplay visibility (avatar shown, spawn markers hidden), as after the reveal.
-    this.view.setPlaying(true)
     try {
       for (const view of views) {
         signal.throwIfAborted()
@@ -1419,7 +1417,6 @@ export class GameRuntime {
     } catch {
       /* Warmup is optional; the first visible frames build what remains. */
     } finally {
-      this.view.setPlaying(false)
       this.document.sky = clock
       camera.position.copy(pose.position)
       camera.quaternion.copy(pose.quaternion)
@@ -2282,22 +2279,39 @@ export class GameRuntime {
     // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
     // of the camera so the attract frames keep their own projection.
     stage('shaders', 3)
-    const camera = this.camera.clone()
-    await within(
-      warmGamePresentation({
-        renderer: this.renderer,
-        scene: this.scene,
-        camera,
-        view: this.view,
-        settings: this.cameraState.settings,
-        signal,
-      }),
-      20_000,
-    )
-    await within(uploadSceneTextures(this.renderer, this.scene, signal), 20_000)
-    signal.throwIfAborted()
-    // Then the start views themselves, as the first gameplay frames will draw them.
-    await within(this.warmStartViews(signal), 20_000)
+    // Gameplay visibility (avatar shown, spawn markers hidden) and one pose sync first, so the
+    // lights compileAsync sees are the ones gameplay draws with (the light count is part of
+    // every lit program; a mismatch means slow synchronous compiles later).
+    this.view.setPlaying(true)
+    try {
+      if (sim)
+        this.view.sync(
+          sim,
+          0,
+          isFirstPersonView(this.cameraState, !!sim.player.vehicleId),
+          this.cameraState.headYaw,
+          this.cameraState.headPitch,
+        )
+      const camera = this.camera.clone()
+      await within(
+        warmGamePresentation({
+          renderer: this.renderer,
+          scene: this.scene,
+          camera,
+          view: this.view,
+          settings: this.cameraState.settings,
+          signal,
+        }),
+        20_000,
+      )
+      await within(uploadSceneTextures(this.renderer, this.scene, signal), 20_000)
+      signal.throwIfAborted()
+      // Then the start views themselves, as the first gameplay frames will draw them. Awaited
+      // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
+      await this.warmStartViews(signal)
+    } finally {
+      this.view.setPlaying(false)
+    }
     signal.throwIfAborted()
     stage('ready', REVEAL_STAGES)
     canvas.dataset.reveal = 'holding'
