@@ -31,6 +31,8 @@ preserves the edit/play contract and a single physics owner.
 
 ## Composable engine modules
 
+- [Presentation preparation](presentation-preload.md): preload behind credits and keep street-light budgets stable.
+
 - [Module map and compatibility](architecture/module-map.md)
 - [Game library mode](game-library.md): Run the engine without Studio, with static tiles
 - [Terrain folder](terrain-folder.md): Play on real nabla-atlas Z15 packages (`?terrain=<base>`), format mapping and deployment

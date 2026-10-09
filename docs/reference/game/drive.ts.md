@@ -118,30 +118,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## source
 
-[Implementation, line 180](../../../game/drive.ts#L180)
+[Implementation, line 181](../../../game/drive.ts#L181)
 
 ```ts
 source(tile): inferred by TypeScript; see implementation
 ```
 
-## source.callback@184
+## source.callback@185
 
-[Implementation, line 184](../../../game/drive.ts#L184)
+[Implementation, line 185](../../../game/drive.ts#L185)
 
 ```ts
-callback@184(mark): inferred by TypeScript; see implementation
+callback@185(mark): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mapTileAt`
 
-## callback@211
+## callback@212
 
-[Implementation, line 211](../../../game/drive.ts#L211)
+[Implementation, line 212](../../../game/drive.ts#L212)
 
 ```ts
-callback@211(sample): inferred by TypeScript; see implementation
+callback@212(sample): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -150,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onProgress
 
-[Implementation, line 216](../../../game/drive.ts#L216)
+[Implementation, line 217](../../../game/drive.ts#L217)
 
 ```ts
 onProgress(status, tiles): inferred by TypeScript; see implementation
@@ -165,7 +165,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onFrame
 
-[Implementation, line 222](../../../game/drive.ts#L222)
+[Implementation, line 223](../../../game/drive.ts#L223)
 
 ```ts
 onFrame(frame): inferred by TypeScript; see implementation
@@ -178,7 +178,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onError
 
-[Implementation, line 226](../../../game/drive.ts#L226)
+[Implementation, line 227](../../../game/drive.ts#L227)
 
 ```ts
 onError(error): inferred by TypeScript; see implementation
@@ -191,7 +191,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onMessage
 
-[Implementation, line 229](../../../game/drive.ts#L229)
+[Implementation, line 230](../../../game/drive.ts#L230)
 
 ```ts
 onMessage(message): inferred by TypeScript; see implementation
@@ -201,12 +201,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `document.getElementById`
 
-## callback@233
+## callback@234
 
-[Implementation, line 233](../../../game/drive.ts#L233)
+[Implementation, line 234](../../../game/drive.ts#L234)
 
 ```ts
-callback@233(): inferred by TypeScript; see implementation
+callback@234(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
