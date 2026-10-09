@@ -182,12 +182,13 @@ export const twoWheeledDefaults = Object.freeze({
   /** TODO(unverified): handlebar slew rate, rad/s. */
   steerRate: 2.5,
   /**
-   * Lean hold: released steering keeps the current bar demand (and so the lean) at riding
-   * speed instead of self-centring; steering to the other side brings the bike back up.
-   * `rate` is how fast the opposite input winds the held demand back, full scale per second;
-   * below `2 × balanceSpeed` the bar follows the input as before.
+   * Lean hold by throttle, at riding speed: with the throttle closed a released steer keeps the
+   * bar demand (and so the lean); steering to the other side winds it back through upright at
+   * `rate` (full scale per second). With throttle the bike self-rights: the demand returns with
+   * time constant `returnSeconds × (1 − throttle) / throttle`, so full throttle returns as fast
+   * as before and partial throttle slower. Below `2 × balanceSpeed` the bar follows the input.
    */
-  leanHold: { enabled: true, rate: 2 },
+  leanHold: { enabled: true, rate: 2, returnSeconds: 0.3 },
   /** TODO(unverified): front brake at full lever, same units as `brakeForce`. */
   frontBrakeForce: 24,
   /** TODO(unverified): rear brake at full lever, same units as `brakeForce`. */

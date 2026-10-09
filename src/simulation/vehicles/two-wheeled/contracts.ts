@@ -36,8 +36,8 @@ export interface TwoWheeledTuning {
   maxLeanAcceleration: number
   disturbanceResponse: number
   steerRate: number
-  /** Released steering keeps the lean at riding speed (`twoWheeledDefaults.leanHold`). */
-  leanHold: { enabled: boolean; rate: number }
+  /** Lean hold and the gradual self-righting return (`twoWheeledDefaults.leanHold`). */
+  leanHold: { enabled: boolean; rate: number; returnSeconds: number }
   frontBrakeForce: number
   rearBrakeForce: number
   frictionSlip: number

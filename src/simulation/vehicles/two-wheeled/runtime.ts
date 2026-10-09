@@ -476,18 +476,22 @@ export function stepTwoWheeledVehicle(
     rider && rider.lateral > 0
       ? (rider.steer * state.riderShift[0] * state.riderControl.manualShare) / rider.lateral
       : 0
-  state.steerHold = holdSteering(
-    state.steerHold,
-    input.steering,
+  const riding =
     tuning.leanHold.enabled &&
-      active &&
-      powered &&
-      !state.fallen &&
-      !state.crashed &&
-      Math.abs(speed) > 2 * tuning.balanceSpeed,
-    tuning.leanHold.rate,
-    dt,
-  )
+    active &&
+    powered &&
+    !state.fallen &&
+    !state.crashed &&
+    Math.abs(speed) > 2 * tuning.balanceSpeed
+  state.steerHold = riding
+    ? holdSteering(
+        state.steerHold,
+        input.steering,
+        Math.max(0, input.throttle),
+        tuning.leanHold,
+        dt,
+      )
+    : input.steering
   const barTarget =
     active && powered
       ? handlebarTarget(clamp(state.steerHold + bodySteer, -1, 1), speed, {
@@ -752,24 +756,35 @@ export function stepTwoWheeledVehicle(
 }
 
 /**
- * Lean hold for the steering demand: at riding speed a released input (or an input eased back
- * on the same side) keeps the held demand, so the bike keeps its lean instead of self-righting;
- * pushing further on the same side takes the new demand at once, and the opposite side winds it
- * back through upright at `rate` (full scale per second), so letting go when upright rides on
- * straight. Off (`hold` false: slow, stopped, fallen, inactive) the demand is the input.
+ * Steering demand with the throttle lean hold (riding speed only). Pushing further on the same
+ * side takes the new demand at once. Released (or eased back on the same side): with the
+ * throttle closed the demand is kept, so the bike keeps its lean; with throttle it returns with
+ * time constant `returnSeconds × (1 − throttle) / throttle` (full throttle: at once, as before).
+ * The other side: with throttle it is taken at once (as before); with the throttle closed it
+ * winds the demand back through upright at `rate` (full scale per second), so letting go when
+ * upright rides on straight.
  */
 export function holdSteering(
   held: number,
   input: number,
-  hold: boolean,
-  rate: number,
+  throttle: number,
+  tuning: { rate: number; returnSeconds: number },
   dt: number,
 ): number {
-  if (!hold) return input
-  if (Math.abs(input) < 0.05) return held
-  const sameSide = Math.sign(input) === Math.sign(held) || held === 0
-  if (sameSide) return Math.abs(input) > Math.abs(held) ? input : held
-  return clamp(held + clamp(input - held, -rate * dt, rate * dt), -1, 1)
+  const open = clamp(throttle, 0, 1)
+  const pressed = Math.abs(input) >= 0.05
+  const opposite = pressed && held !== 0 && Math.sign(input) !== Math.sign(held)
+  if (opposite) {
+    if (open > 0.01) return input
+    const step = tuning.rate * dt
+    return clamp(held + clamp(input - held, -step, step), -1, 1)
+  }
+  if (Math.abs(input) >= Math.abs(held)) return input
+  if (open <= 0.01) return held
+  const seconds = (tuning.returnSeconds * (1 - open)) / open
+  if (seconds < 1e-3) return input
+  const next = held + (input - held) * (1 - Math.exp(-dt / seconds))
+  return Math.abs(next - input) < 1e-3 ? input : next
 }
 
 /** Lean measurement, fall detection and the balance torque for one tick. */
