@@ -605,6 +605,9 @@ export class SceneView {
     this.document.entities = [...this.document.entities, ...added]
     this.graph = SceneGraph.fromValidated(this.document)
     this.addEntities(added)
+    if (this.materialSetup)
+      for (const entity of added)
+        this.registerMaterials(this.objects.get(entity.id)!, this.materialSetup)
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
   }
   /** Remove entities installed by `addPlaced`, releasing meshes, portal targets and lamp lights. */
@@ -1753,6 +1756,7 @@ export class SceneView {
   }
   dispose(): void {
     if (this.disposed) return
+    this.streetlights.dispose()
     for (const hud of this.shipHuds.values()) hud.dispose()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()

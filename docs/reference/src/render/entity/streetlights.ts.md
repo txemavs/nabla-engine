@@ -8,20 +8,29 @@
 
 - `three`
 - `../../entity/schema.js`
+- `../../config/lighting.js`
 
 ## Streetlights.constructor
 
-[Implementation, line 15](../../../../../src/render/entity/streetlights.ts#L15)
+[Implementation, line 17](../../../../../src/render/entity/streetlights.ts#L17)
 
 Shared fixed light budget: no shadow passes, regardless of the number of poles.
 
 ```ts
-constructor(private root: THREE.Group): instance
+constructor(private root: THREE.Group, budget: { spots: number; points: number } = { spots: lightingDefaults.streetSpots, points: lightingDefaults.streetPoints, }): instance
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.PointLight`
+- `THREE.SpotLight`
+- `root.add`
+- `this.points.push`
+- `this.pool.push`
 
 ## Streetlights.add
 
-[Implementation, line 16](../../../../../src/render/entity/streetlights.ts#L16)
+[Implementation, line 38](../../../../../src/render/entity/streetlights.ts#L38)
 
 Shared fixed light budget: no shadow passes, regardless of the number of poles.
 
@@ -45,12 +54,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `source.position.copy`
 - `target.position.set`
 - `this.addGlobe`
-- `this.ensurePool`
 - `this.entries.push`
 
 ## Streetlights.remove
 
-[Implementation, line 57](../../../../../src/render/entity/streetlights.ts#L57)
+[Implementation, line 78](../../../../../src/render/entity/streetlights.ts#L78)
 
 Forget a lamp whose group was removed; its pooled spot light is reassigned next update.
 
@@ -60,29 +68,19 @@ remove(entityId: string): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `entry.point?.dispose`
-- `entry.point?.removeFromParent`
 - `this.entries.filter`
 
-## Streetlights.remove.callback@58
+## Streetlights.remove.callback@79
 
-[Implementation, line 58](../../../../../src/render/entity/streetlights.ts#L58)
-
-```ts
-callback@58(e): inferred by TypeScript; see implementation
-```
-
-## Streetlights.remove.callback@62
-
-[Implementation, line 62](../../../../../src/render/entity/streetlights.ts#L62)
+[Implementation, line 79](../../../../../src/render/entity/streetlights.ts#L79)
 
 ```ts
-callback@62(e): inferred by TypeScript; see implementation
+callback@79(e): inferred by TypeScript; see implementation
 ```
 
 ## Streetlights.addGlobe
 
-[Implementation, line 64](../../../../../src/render/entity/streetlights.ts#L64)
+[Implementation, line 83](../../../../../src/render/entity/streetlights.ts#L83)
 
 Shared fixed light budget: no shadow passes, regardless of the number of poles.
 
@@ -97,32 +95,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MeshBasicMaterial`
 - `THREE.MeshStandardMaterial`
 - `THREE.Object3D`
-- `THREE.PointLight`
 - `THREE.SphereGeometry`
 - `group.add`
 - `source.position.copy`
 - `this.entries.push`
-- `this.root.add`
-
-## Streetlights.ensurePool
-
-[Implementation, line 87](../../../../../src/render/entity/streetlights.ts#L87)
-
-Shared fixed light budget: no shadow passes, regardless of the number of poles.
-
-```ts
-ensurePool(): void
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `THREE.SpotLight`
-- `this.pool.push`
-- `this.root.add`
 
 ## Streetlights.update
 
-[Implementation, line 96](../../../../../src/render/entity/streetlights.ts#L96)
+[Implementation, line 103](../../../../../src/render/entity/streetlights.ts#L103)
 
 Shared fixed light budget: no shadow passes, regardless of the number of poles.
 
@@ -132,43 +112,39 @@ update(camera: THREE.Vector3, night: boolean, drawDistance: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `THREE.Vector3`
-- `e.point.color.set`
-- `e.point.position.copy`
-- `e.source.getWorldPosition`
+- `candidates.filter`
 - `lit`
 - `material.color.set`
-- `position.distanceTo`
+- `this.points.forEach`
 - `this.pool.forEach`
 - `this.root.updateWorldMatrix`
-- `this.root.worldToLocal`
 
 ## Streetlights.update.lit
 
-[Implementation, line 99](../../../../../src/render/entity/streetlights.ts#L99)
+[Implementation, line 105](../../../../../src/render/entity/streetlights.ts#L105)
 
 ```ts
 lit(e: (typeof this.entries)[number]): inferred by TypeScript; see implementation
 ```
 
-## Streetlights.update.callback@102
+## Streetlights.update.callback@108
 
-[Implementation, line 102](../../../../../src/render/entity/streetlights.ts#L102)
+[Implementation, line 108](../../../../../src/render/entity/streetlights.ts#L108)
 
 ```ts
-callback@102(e): inferred by TypeScript; see implementation
+callback@108(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `lit`
 
-## Streetlights.update.callback@103
+## Streetlights.update.callback@109
 
-[Implementation, line 103](../../../../../src/render/entity/streetlights.ts#L103)
+[Implementation, line 109](../../../../../src/render/entity/streetlights.ts#L109)
 
 ```ts
-callback@103(e): inferred by TypeScript; see implementation
+callback@109(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -176,24 +152,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Vector3`
 - `e.source.getWorldPosition`
 
-## Streetlights.update.callback@104
+## Streetlights.update.callback@110
 
-[Implementation, line 104](../../../../../src/render/entity/streetlights.ts#L104)
+[Implementation, line 110](../../../../../src/render/entity/streetlights.ts#L110)
 
 ```ts
-callback@104(e): inferred by TypeScript; see implementation
+callback@110(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `e.position.distanceTo`
 
-## Streetlights.update.callback@105
+## Streetlights.update.callback@111
 
-[Implementation, line 105](../../../../../src/render/entity/streetlights.ts#L105)
+[Implementation, line 111](../../../../../src/render/entity/streetlights.ts#L111)
 
 ```ts
-callback@105(a, b): inferred by TypeScript; see implementation
+callback@111(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -201,19 +177,67 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `a.position.distanceToSquared`
 - `b.position.distanceToSquared`
 
+## Streetlights.update.callback@120
+
+[Implementation, line 120](../../../../../src/render/entity/streetlights.ts#L120)
+
+```ts
+callback@120({ e }): inferred by TypeScript; see implementation
+```
+
 ## Streetlights.update.callback@121
 
 [Implementation, line 121](../../../../../src/render/entity/streetlights.ts#L121)
 
 ```ts
-callback@121(light, i): inferred by TypeScript; see implementation
+callback@121({ e }): inferred by TypeScript; see implementation
+```
+
+## Streetlights.update.callback@122
+
+[Implementation, line 122](../../../../../src/render/entity/streetlights.ts#L122)
+
+```ts
+callback@122(light, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `item.position.clone`
+- `light.color.set`
+- `light.position.copy`
+- `this.root.worldToLocal`
+
+## Streetlights.update.callback@130
+
+[Implementation, line 130](../../../../../src/render/entity/streetlights.ts#L130)
+
+```ts
+callback@130(light, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.Vector3`
 - `item.e.target.getWorldPosition`
+- `item.position.clone`
 - `light.color.set`
 - `light.position.copy`
 - `light.target.position.copy`
 - `this.root.worldToLocal`
+
+## Streetlights.dispose
+
+[Implementation, line 143](../../../../../src/render/entity/streetlights.ts#L143)
+
+Shared fixed light budget: no shadow passes, regardless of the number of poles.
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `light.dispose`
+- `light.removeFromParent`
+- `light.target.removeFromParent`

@@ -68,7 +68,8 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
-import { AssetWarmup } from '../render/entity/asset-warmup.js'
+import { VehicleWarmup } from './vehicle-warmup.js'
+import { createEntity } from '../entity/schema.js'
 import { showLoadingBadge } from './loading-badge.js'
 import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer.js'
 import type { MusicTrack } from '../audio/music.js'
@@ -199,8 +200,8 @@ export interface GameFrame {
  * 80 m remain after 2.2 s, versus 1.6 s to settle at the normal 3/s. A presentation choice.
  */
 const START_DESCENT_DAMPING = 1.2
-/** Loading stages `prepareReveal` reports (vehicles, weapons, terrain, shaders). */
-const REVEAL_STAGES = 4
+/** Loading stages `prepareReveal` reports, including mounted menu vehicle preparation. */
+const REVEAL_STAGES = 5
 
 /** Pre-play attract/boot view: sky and planet only, camera outside the planet (TV-style). */
 export interface AttractOptions {
@@ -272,6 +273,8 @@ export interface GameRuntimeOptions {
   /** Additional host focus policy, for editor menus and docked panels. */
   acceptsInput?: () => boolean
   scene: SceneDocument
+  /** Vehicle assemblies prepared during the intro, before gameplay is revealed. Empty by default. */
+  preloadVehicles?: readonly (readonly Entity[])[]
   world?: WorldContent
   tiles?: { baseUrl: string; apiUrl?: string; mode?: TileDiscoveryMode } & PlanetSourceOptions
   /** Disable only the visible water sheet for a synthetic sea-level test surface. */
@@ -397,7 +400,7 @@ export class GameRuntime {
   private sidearm: Sidearm | null = null
   private spawned: string[] = []
   private spawnSequence = 0
-  private assetWarmup: AssetWarmup | null = null
+  private vehicleWarmup: VehicleWarmup | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
   private weaponDrawn = false
@@ -908,7 +911,7 @@ export class GameRuntime {
     this.touchFlight?.dispose()
     this.monitors.dispose()
     this.view.dispose()
-    this.assetWarmup?.dispose()
+    this.vehicleWarmup?.dispose()
     this.sky.dispose()
     this.environment.dispose()
     this.fieldLighting?.dispose()
@@ -1713,19 +1716,40 @@ export class GameRuntime {
     return id
   }
   /**
-   * Load and prepare a vehicle's models without adding it: GLB parse (cached and reused), one
-   * texture upload per frame and an async shader compile. `placeVehicle` and `spawnVehicle`
+   * Prepare the mounted vehicle materials, instruments, textures, shaders and mirror views
+   * without adding it to the simulation. `placeVehicle` and `spawnVehicle`
    * call this first; a host may call it early (for example when a vehicle is picked in a menu).
    */
   async prewarmVehicle(template: Entity | readonly Entity[]): Promise<void> {
     this.assertAlive()
     const entities = Array.isArray(template) ? template : [template as Entity]
-    this.assetWarmup ??= new AssetWarmup({
+    this.vehicleWarmup ??= new VehicleWarmup({
       renderer: this.renderer,
       camera: this.camera,
       scene: this.scene,
+      createView: (entities) => {
+        const view = new SceneView(
+          {
+            version: 1,
+            name: 'Vehicle preparation',
+            entities: [createEntity('__warm-spawn', 'spawn'), ...entities],
+          },
+          false,
+          false,
+          {
+            mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
+            steeringWheelOffset: (model) =>
+              initialSteeringWheelOffset(this.options.steeringWheel, model),
+            mirrorAdjustment: (model) => initialMirrorAdjustment(this.options.mirrors, model),
+            startLights: this.options.startLights,
+          },
+        )
+        view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
+        view.setupMaterials((material) => this.shadows.setupMaterial(material))
+        return view
+      },
     })
-    await Promise.all(entities.map((e) => this.assetWarmup!.warmVisual(e.visual)))
+    await this.vehicleWarmup.warm(entities)
   }
   /**
    * Couple a free trailer to a tractor. Omit `trailerId` to use the nearest hitchable trailer.
@@ -2359,6 +2383,11 @@ export class GameRuntime {
       // Then the start views themselves, as the first gameplay frames will draw them. Awaited
       // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
       await this.warmStartViews(signal)
+      stage('preload', 4)
+      for (const templates of this.options.preloadVehicles ?? []) {
+        signal.throwIfAborted()
+        await this.prewarmVehicle(templates)
+      }
     } finally {
       this.view.setPlaying(false)
     }

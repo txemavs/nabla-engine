@@ -10,7 +10,7 @@ import { LoadingScreen, showError } from './loading.js'
 import { startError } from './start-error.js'
 import { bindPosition, showLocation } from './position.js'
 import { showTelemetry } from './telemetry.js'
-import { bindSceneControls } from './scene-controls.js'
+import { bindSceneControls, menuPreloadVehicles } from './scene-controls.js'
 import { skyClockAtMinutes, skyClockAtRate } from '@nabla/engine/planet/sky'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
@@ -130,6 +130,7 @@ try {
         .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
+    preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
     sea: true,
     restParkedOnGround: true,
     // Same streaming as Studio's ground mode: the cells around the player first, the rest by distance.

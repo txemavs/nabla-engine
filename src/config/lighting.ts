@@ -64,4 +64,7 @@ export const lightingDefaults = Object.freeze({
   vehicleSpots: 6,
   vehiclePoints: 10,
   vehicleMappedSpots: 2,
+  /** Fixed budgets for placeable highway cones and neighbourhood globe lamps. No shadows. */
+  streetSpots: 6,
+  streetPoints: 6,
 })
