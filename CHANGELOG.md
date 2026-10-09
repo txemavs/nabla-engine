@@ -2,7 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- J menu «VISTA FOV» (last page): widen or narrow the cockpit/on-foot and chase cameras in 5° steps (−15° to +25°, or NORMAL). Saved as `nabla.cameraFov`. The overhead view shares the chase FOV; the cinematic camera keeps its own.
+
+### Changed
+
+- Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
+
 ### Fixed
+
+- Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
 
 - Zenithal camera: zooming out no longer turns trucks black. A downward view used to leave the vehicle in the last shadow cascade (the 140 m cut is still in the air), and that map is sized to the far plane. Cascade 0 now ends just past the ground under the camera.
 
@@ -18,6 +28,7 @@
 ### Changed
 
 - The Audi S3 instrument cluster sits 5 mm lower than the previous 15 mm raise (`clusterOffset` y 0.015 → 0.010).
+- The truck diesel is much louder (idle gain 0.04 → 0.12, load 0.075 → 0.225, about +9.5 dB) and its turbo whistle sits a bit lower (700–2200 Hz → 580–1780 Hz). TODO(unverified): not a measured recording. Starter click, jake and blow-off stay as they are.
 
 - Pistol reload: the magazine release and the magazine insert are louder (+8 to +10 dB) and not the same tick. The release is a dull knock, the insert a short sharp click. Gearbox clicks are unchanged.
 

@@ -11,8 +11,9 @@ export const dieselEngineDefaults: FiringVoiceTimbre = Object.freeze({
   harmonics: 24,
   /** Wider pulses than the petrol inline: a rounder, lower note. */
   pulseWidth: 0.11,
-  idleGain: 0.04,
-  loadGain: 0.075,
+  // Much louder than the first truck voice. TODO(unverified): not a measured level.
+  idleGain: 0.12,
+  loadGain: 0.225,
   drive: 1.35,
   cutoffBaseHz: 80,
   cutoffPerRpm: 0.045,
@@ -33,8 +34,9 @@ export const dieselEngineDefaults: FiringVoiceTimbre = Object.freeze({
 export const dieselTurboSpool = Object.freeze({
   fromRpm: 900,
   spanRpm: 1400,
-  whistleBaseHz: 700,
-  whistleRiseHz: 1500,
+  // A bit lower than the first whistle (700 / 1500 Hz). TODO(unverified).
+  whistleBaseHz: 580,
+  whistleRiseHz: 1200,
 })
 
 /**

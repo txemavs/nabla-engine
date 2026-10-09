@@ -1923,7 +1923,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
 ```ts
-renderMirrors(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, vehicleId: string | null, now: number): void
+renderMirrors(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, vehicleId: string | null, now: number, paintSky?: (camera: THREE.PerspectiveCamera) => void): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1931,12 +1931,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...this.carMirrors].sort`
 - `mirrors.render`
 
-## SceneView.renderMirrors.callback@1686
+## SceneView.renderMirrors.callback@1687
 
-[Implementation, line 1686](../../../../../src/render/entity/view.ts#L1686)
+[Implementation, line 1687](../../../../../src/render/entity/view.ts#L1687)
 
 ```ts
-callback@1686([a], [b]): inferred by TypeScript; see implementation
+callback@1687([a], [b]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1945,7 +1945,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.setupMaterials
 
-[Implementation, line 1691](../../../../../src/render/entity/view.ts#L1691)
+[Implementation, line 1692](../../../../../src/render/entity/view.ts#L1692)
 
 Traverse all materials and call the callback for CSM setup.
 
@@ -1959,7 +1959,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.registerMaterials
 
-[Implementation, line 1698](../../../../../src/render/entity/view.ts#L1698)
+[Implementation, line 1699](../../../../../src/render/entity/view.ts#L1699)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -1971,12 +1971,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `root.traverse`
 
-## SceneView.registerMaterials.callback@1702
+## SceneView.registerMaterials.callback@1703
 
-[Implementation, line 1702](../../../../../src/render/entity/view.ts#L1702)
+[Implementation, line 1703](../../../../../src/render/entity/view.ts#L1703)
 
 ```ts
-callback@1702(object): inferred by TypeScript; see implementation
+callback@1703(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1986,7 +1986,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.captureOccupiedLights
 
-[Implementation, line 1709](../../../../../src/render/entity/view.ts#L1709)
+[Implementation, line 1710](../../../../../src/render/entity/view.ts#L1710)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2005,7 +2005,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.dispose
 
-[Implementation, line 1716](../../../../../src/render/entity/view.ts#L1716)
+[Implementation, line 1717](../../../../../src/render/entity/view.ts#L1717)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2042,12 +2042,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.tracers.dispose`
 - `this.vehicleLights.dispose`
 
-## SceneView.dispose.callback@1735
+## SceneView.dispose.callback@1736
 
-[Implementation, line 1735](../../../../../src/render/entity/view.ts#L1735)
+[Implementation, line 1736](../../../../../src/render/entity/view.ts#L1736)
 
 ```ts
-callback@1735(texture): inferred by TypeScript; see implementation
+callback@1736(texture): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2056,7 +2056,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## riderHeadOffset
 
-[Implementation, line 1750](../../../../../src/render/entity/view.ts#L1750)
+[Implementation, line 1751](../../../../../src/render/entity/view.ts#L1751)
 
 Rider head (and cockpit eye) offset for a two-wheeler rider moved by `shift` ([x, z] chassis
 metres, +z back): the head follows the body sideways and fore-aft and drops a little as the
