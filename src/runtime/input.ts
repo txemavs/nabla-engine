@@ -118,7 +118,8 @@ export class GameInput {
     const shift = keys.has('ShiftLeft') || keys.has('ShiftRight')
     // Two-wheeler keys (Txema 2026-10-09): Space is the front lever, S/ArrowDown the rear pedal
     // (still a paddle back from a standstill). W and S together are full throttle, like Shift
-    // (no Sticky Keys prompt), instead of cancelling out.
+    // (no Sticky Keys prompt), instead of cancelling out; adding Space (full front lever, as with
+    // Shift) is the burnout on the spot.
     const bike = !flight && !!vehicle?.twoWheeled
     const up = keys.has('KeyW') || keys.has('ArrowUp')
     const down = keys.has('KeyS') || keys.has('ArrowDown')

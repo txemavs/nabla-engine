@@ -41,4 +41,12 @@ describe('two-wheeler keyboard mapping', () => {
           frontBrake: 0,
         })
   })
+
+  it('W + S + Space (or the arrows + Space) is full throttle and full front brake: burnout on the spot', () => {
+    for (const keys of [
+      ['KeyW', 'KeyS', 'Space'],
+      ['ArrowUp', 'ArrowDown', 'Space'],
+    ])
+      expect(read(keys, 0)).toMatchObject({ forward: 1, frontBrake: 1, sprint: true, brake: false })
+  })
 })
