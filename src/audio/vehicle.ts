@@ -114,11 +114,10 @@ export class VehicleAudio {
   unlock(): void {
     if (!this.enabled) return
     try {
-      if (!this.context) {
-        this.build()
-        this.syncMusic()
-      }
+      if (!this.context) this.build()
       if (this.context?.state === 'suspended') void this.context.resume().catch(() => {})
+      // A blocked autoplay left the track paused; any later gesture retries it.
+      this.syncMusic()
     } catch {
       /* Audio is optional; never interrupt the host loop. */
     }

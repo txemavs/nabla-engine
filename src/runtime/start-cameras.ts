@@ -25,6 +25,11 @@ export interface StartCameraStep {
   after?: number | 'engine'
   /** Blend into this step, milliseconds (default: the camera's `modeTransitionMs`). */
   transitionMs?: number
+  /**
+   * First step only, overhead view: start this many metres above the vehicle and settle down to
+   * the normal overhead height (a descent from high altitude). Ignored for other views.
+   */
+  fromHeight?: number
 }
 
 /** A view name is shorthand for `{ view }`. */
@@ -37,6 +42,8 @@ export interface ResolvedStartCamera {
   view: GameCameraView
   after: number | 'engine'
   transitionMs: number | null
+  /** Overhead start height, metres (`StartCameraStep.fromHeight`). */
+  fromHeight?: number
 }
 
 const VIEWS: Readonly<Record<StartCameraName, GameCameraView>> = {
@@ -69,7 +76,14 @@ export function resolveStartCameras(
       throw new RangeError(`startCameras[${index}].after must be milliseconds or 'engine'`)
     if (step.transitionMs !== undefined && !nonNegative(step.transitionMs))
       throw new RangeError(`startCameras[${index}].transitionMs must be non-negative milliseconds`)
-    return { view: VIEWS[name as StartCameraName], after, transitionMs: step.transitionMs ?? null }
+    if (step.fromHeight !== undefined && !nonNegative(step.fromHeight))
+      throw new RangeError(`startCameras[${index}].fromHeight must be non-negative metres`)
+    return {
+      view: VIEWS[name as StartCameraName],
+      after,
+      transitionMs: step.transitionMs ?? null,
+      ...(step.fromHeight !== undefined ? { fromHeight: step.fromHeight } : {}),
+    }
   })
 }
 
