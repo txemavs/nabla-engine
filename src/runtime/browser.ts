@@ -140,9 +140,13 @@ import {
   isFirstPersonView,
   mouseLooksWithoutButton,
   setGameCameraView,
+  updateGameCamera,
+  type GameCameraState,
+  type GameCameraView,
 } from './game-camera.js'
 import {
   StartCameraSequencer,
+  descentWarmHeights,
   resolveStartCameras,
   type ResolvedStartCamera,
   type StartCameraAction,
@@ -1244,6 +1248,168 @@ export class GameRuntime {
     })
   }
 
+  /**
+   * Render the current camera state once without stepping physics, reading input, audio, HUD
+   * or host callbacks, 1 px scissored on the canvas. Programs (shadow and transmission passes
+   * included), buffers and textures of that view are built while the host still covers it.
+   */
+  private warmFrame(sim: Simulation, state: GameCameraState, time: number): void {
+    this.view.flushMapInstall(
+      streamingDefaults.mapInstallBudgetMs * 3,
+      streamingDefaults.mapInstallCount * 4,
+      this.camera.position,
+    )
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    this.view.sync(
+      sim,
+      0,
+      isFirstPersonView(state, !!sim.player.vehicleId),
+      state.headYaw,
+      state.headPitch,
+    )
+    const { player } = updateGameCamera(sim, this.view, this.camera, state, time, 0)
+    const eye = this.camera.position.clone()
+    this.origin.set(0, 0, 0)
+    if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
+      this.origin.fromArray(player.position)
+    this.environment.updateSea(
+      this.document.geography,
+      eye,
+      this.origin,
+      Math.max(this.quality.distance, this.quality.fog * 2),
+      time,
+      this.planet.sea,
+    )
+    const height = this.environment.updateSky(
+      this.sky,
+      eye,
+      this.origin,
+      this.document.sky ?? { mode: 'live' },
+      this.quality.fog,
+    )
+    if (this.sky.enabled) {
+      const direction = this.environment.applyLighting(this.sky, this.planet.sun)
+      this.shadows.setLightDirection(direction.clone().negate())
+      this.shadows.setLightIntensity(this.sun.intensity)
+      this.shadows.setLightColor(this.sun.color)
+      this.camera.far = downwardViewFar(
+        Math.hypot(
+          Math.max(height >= 2000 ? 80000 : 12000, this.quality.distance + 500),
+          Math.max(0, height),
+        ),
+        eye.y,
+        this.camera.getWorldDirection(this.viewForward).y,
+      )
+      this.camera.updateProjectionMatrix()
+    }
+    this.view.root.position.copy(this.origin).negate()
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    this.view.streetlights.update(eye, this.view.night, this.quality.distance)
+    this.cull(eye)
+    this.monitors.update(
+      sim,
+      this.document,
+      this.camera,
+      this.view.portalTablets,
+      this.view.helmScreens,
+      this.view.touchScreens,
+      this.view.flightScreens,
+      this.view.placeScreens,
+      this.view.systemScreens,
+      this.origin,
+      state.mode === 'cockpit',
+    )
+    this.camera.position.sub(this.origin)
+    const scissor = this.renderer.getScissor(new THREE.Vector4()),
+      scissorTest = this.renderer.getScissorTest()
+    try {
+      this.renderer.setScissor(0, 0, 1, 1)
+      this.renderer.setScissorTest(true)
+      this.pipeline.render({
+        renderer: this.renderer,
+        scene: this.scene,
+        camera: this.camera,
+        view: this.view,
+        sky: this.sky,
+        clock: this.document.sky ?? { mode: 'live' },
+        skyVisible: this.planet.sky,
+        origin: this.origin,
+        eye,
+        ambient: this.ambient,
+        lights: [this.sun, ...this.shadows.lights],
+        shadows: this.shadows,
+        monitors: this.monitors,
+        time,
+        mirrorVehicle: this.quality.mirrors && state.mode === 'cockpit' ? player.vehicleId : null,
+        shadowsEnabled: this.quality.shadows > 0,
+        depthOfField: this.options.depthOfField ?? !!this.quality.dof,
+        cull: (position) => this.cull(position),
+      })
+    } finally {
+      this.renderer.setScissor(scissor)
+      this.renderer.setScissorTest(scissorTest)
+      this.camera.position.copy(eye)
+    }
+  }
+  /**
+   * Warm the start views behind the host's intro: the overhead descent at a few heights from
+   * its start height down to the normal overhead height, then the cockpit and chase views.
+   * A scratch camera state is used, and the camera and render origin are restored afterwards,
+   * so the attract frames and the real descent start exactly as before. Best effort: a failure
+   * only skips the warmup.
+   */
+  private async warmStartViews(signal: AbortSignal): Promise<void> {
+    const sim = this.session.simulation
+    if (!sim || !sim.player.vehicleId) return
+    const settings = this.cameraState.settings
+    const state = createGameCameraState(settings)
+    state.yaw = this.cameraState.yaw
+    const camera = this.camera
+    const pose = {
+      position: camera.position.clone(),
+      quaternion: camera.quaternion.clone(),
+      up: camera.up.clone(),
+      fov: camera.fov,
+      near: camera.near,
+      far: camera.far,
+    }
+    const origin = this.origin.clone(),
+      root = this.view.root.position.clone()
+    const first = this.startSequence?.steps[0]
+    const views: { mode: GameCameraView; height?: number }[] = []
+    if (first?.view === 'map' && first.fromHeight !== undefined)
+      for (const height of descentWarmHeights(first.fromHeight, settings.mapHeight))
+        views.push({ mode: 'map', height })
+    views.push({ mode: 'cockpit' }, { mode: 'chase' })
+    try {
+      for (const view of views) {
+        signal.throwIfAborted()
+        setGameCameraView(state, view.mode, true)
+        state.transition = null
+        state.lastPose = null
+        state.lastView = null
+        if (view.height !== undefined) {
+          state.mapHeight = view.height
+          state.mapDescentDamping = START_DESCENT_DAMPING
+        }
+        this.warmFrame(sim, state, performance.now())
+        await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      }
+    } catch {
+      /* Warmup is optional; the first visible frames build what remains. */
+    } finally {
+      camera.position.copy(pose.position)
+      camera.quaternion.copy(pose.quaternion)
+      camera.up.copy(pose.up)
+      camera.fov = pose.fov
+      camera.near = pose.near
+      camera.far = pose.far
+      camera.updateProjectionMatrix()
+      camera.updateMatrixWorld()
+      this.origin.copy(origin)
+      this.view.root.position.copy(root)
+    }
+  }
   /** The sky clock in use: `live` follows the real clock (optionally faster), `fixed` holds one instant. */
   get skyClock(): SkyClock {
     return this.document.sky ?? { mode: 'live' }
@@ -2086,6 +2252,9 @@ export class GameRuntime {
       20_000,
     )
     await within(uploadSceneTextures(this.renderer, this.scene, signal), 20_000)
+    signal.throwIfAborted()
+    // Then the start views themselves, as the first gameplay frames will draw them.
+    await within(this.warmStartViews(signal), 20_000)
     signal.throwIfAborted()
     stage('ready', REVEAL_STAGES)
     canvas.dataset.reveal = 'holding'

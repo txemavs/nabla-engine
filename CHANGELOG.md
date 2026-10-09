@@ -22,6 +22,7 @@
 
 ### Fixed
 
+- The start descent no longer stutters after the reveal. Before `data-reveal="holding"`, `play()` renders the start views once (the overhead descent at its start height, halving down to the normal overhead height, then cockpit and chase), 1 px scissored on the canvas with a scratch camera state, so their shader programs (shadow and transmission passes included), buffers and textures are built behind the intro. Wheel asphalt/grass classification uses a segment grid (`RoadSegmentIndex`) instead of scanning every OSM road for every wheel on every physics step; the result is unchanged.
 - No coloured placeholder block is drawn while a vehicle's GLB is still loading (e.g. the red cube before the motorbike appeared).
 - Zenithal camera: zooming out no longer turns cars or trucks black on Ultra (4 cascades). The #183 cut for steep views was still capped at far / 4, and the overhead far plane is about three times the eye height, so the vehicle always fell into cascade 1. Steep views now keep their uncapped first cut.
 - Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
