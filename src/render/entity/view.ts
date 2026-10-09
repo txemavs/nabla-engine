@@ -1676,6 +1676,7 @@ export class SceneView {
     camera: THREE.PerspectiveCamera,
     vehicleId: string | null,
     now: number,
+    paintSky?: (camera: THREE.PerspectiveCamera) => void,
   ): void {
     if (!this.carMirrors.size) {
       renderer.domElement.dataset.mirrorActive = 'false'
@@ -1685,7 +1686,7 @@ export class SceneView {
     for (const [id, mirrors] of [...this.carMirrors].sort(
       ([a], [b]) => Number(a === vehicleId) - Number(b === vehicleId),
     ))
-      mirrors.render(renderer, scene, camera, id === vehicleId, now)
+      mirrors.render(renderer, scene, camera, id === vehicleId, now, paintSky)
   }
   /** Traverse all materials and call the callback for CSM setup. */
   setupMaterials(callback: (material: THREE.Material) => void): void {
