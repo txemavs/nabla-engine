@@ -70,8 +70,9 @@ export interface HostBootConfig {
    */
   startCameras?: StartCameraSequence
   /**
-   * Looping background music: encodings in preference order, e.g.
+   * Background music: encodings in preference order, e.g.
    * `{ sources: [{ url: '/music/x.ogg', type: 'audio/ogg; codecs=opus' }, { url: '/music/x.m4a', type: 'audio/mp4' }] }`.
+   * Loops by default; `loop: false` plays it once per session.
    * Streamed, started after the first gesture; Ajustes → Opciones → Sonido sets its volume.
    */
   music?: GameRuntimeOptions['music']

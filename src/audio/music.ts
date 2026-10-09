@@ -13,7 +13,10 @@ export interface MusicSource {
 
 export interface MusicTrack {
   sources: readonly MusicSource[]
-  /** Default true. */
+  /**
+   * Default true. False plays the track once: after it ends it stays silent for the session
+   * (later `start` calls, gestures and tab switches do not restart it).
+   */
   loop?: boolean
 }
 
@@ -22,6 +25,7 @@ type MediaLike = Pick<HTMLAudioElement, 'canPlayType' | 'play' | 'pause' | 'paus
   loop: boolean
   preload: string
   crossOrigin: string | null
+  addEventListener?: (type: 'ended', listener: () => void) => void
 }
 
 /** First source the element can play, or undefined. */
@@ -36,10 +40,16 @@ export class BackgroundMusic {
   private element?: MediaLike
   private wanted = false
   private hidden = false
+  private ended = false
   constructor(
     readonly track: MusicTrack,
     private readonly createElement: () => MediaLike = () => new Audio(),
   ) {}
+
+  /** True once a play-once track (`loop: false`) has played through. */
+  get finished(): boolean {
+    return this.ended
+  }
 
   /** True once the element exists and is playing. */
   get playing(): boolean {
@@ -60,6 +70,7 @@ export class BackgroundMusic {
         element.crossOrigin = 'anonymous'
         element.preload = 'auto'
         element.loop = this.track.loop !== false
+        if (!element.loop) element.addEventListener?.('ended', () => (this.ended = true))
         element.src = source.url
         context.createMediaElementSource(element as HTMLAudioElement).connect(bus)
         this.element = element
@@ -91,7 +102,7 @@ export class BackgroundMusic {
 
   private sync(): void {
     const element = this.element
-    if (!element) return
+    if (!element || this.ended) return
     if (this.wanted && !this.hidden) {
       if (element.paused) void element.play().catch(() => {})
     } else if (!element.paused) element.pause()

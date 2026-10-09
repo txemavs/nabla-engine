@@ -130,4 +130,41 @@ describe('background music', () => {
     expect(created).toBe(1)
     expect(music.playing).toBe(true)
   })
+
+  it('plays a play-once track a single time and stays silent after it ends', () => {
+    let ended: (() => void) | undefined
+    const element = {
+      src: '',
+      loop: true,
+      preload: 'none',
+      crossOrigin: null as string | null,
+      paused: true,
+      canPlayType: () => 'probably',
+      play() {
+        element.paused = false
+        return Promise.resolve()
+      },
+      pause() {
+        element.paused = true
+      },
+      addEventListener(type: string, listener: () => void) {
+        if (type === 'ended') ended = listener
+      },
+    }
+    const music = new BackgroundMusic(
+      { sources: [{ url: '/m.ogg', type: 'audio/ogg' }], loop: false },
+      () => element as unknown as HTMLAudioElement,
+    )
+    const context = fakeContext()
+    music.start(context, attachAudioBuses(context).music)
+    expect(element.loop).toBe(false)
+    expect(music.playing).toBe(true)
+    element.paused = true
+    ended!()
+    expect(music.finished).toBe(true)
+    music.setHidden(true)
+    music.setHidden(false)
+    music.start(context, attachAudioBuses(context).music)
+    expect(music.playing).toBe(false)
+  })
 })

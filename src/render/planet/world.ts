@@ -417,7 +417,15 @@ export class PlanetWorld {
   private simulation: Simulation | null = null
   private horizon: PlanetHorizon
   private treeTexture: THREE.Texture | undefined
-  private worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
+  /**
+   * Cell builders. Each cell's terrain, buildings and photo drape are CPU work in a worker;
+   * one worker builds the start area one cell at a time (~0.4 s each), so a small pool builds
+   * several at once.
+   */
+  private workers = Array.from(
+    { length: planetWorkerCount() },
+    () => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }),
+  )
   private resident = new Map<string, Resident>()
   /** Per-cell timing record for diagnostics and the loading budget tests. */
   readonly tileTimings = new Map<string, TileTiming>()
@@ -426,7 +434,7 @@ export class PlanetWorld {
     if (!t) this.tileTimings.set(key, (t = {}))
     return t
   }
-  private requests = new Map<number, { key: string; manifest: PlanetManifest }>()
+  private requests = new Map<number, { key: string; manifest: PlanetManifest; worker: Worker }>()
   private ready = new Map<string, PlanetManifest>()
   private retry = new Map<string, number>()
   /** Tiles the host does not have: holes, remembered and not re-requested for a while. */
@@ -476,7 +484,7 @@ export class PlanetWorld {
     this.missing = sourceOptions.missing ?? new MissingTiles()
     this.horizon = new PlanetHorizon(origin, changed, `${base}/photos`, setupMaterial)
     this.root.add(this.horizon.root)
-    this.worker.onmessage = (
+    const onMessage = (
       event: MessageEvent<{ id: number; payload?: PlanetPayload; error?: string }>,
     ) => {
       const request = this.requests.get(event.data.id)
@@ -509,7 +517,7 @@ export class PlanetWorld {
       this.pump()
       this.changed()
     }
-    this.worker.onerror = (event) => {
+    const onError = (event: ErrorEvent) => {
       this.lastError = {
         message: event.message || 'no se pudo iniciar el cargador de celdas (worker)',
         kind: 'worker',
@@ -517,6 +525,10 @@ export class PlanetWorld {
       this.status = 'Error en el cargador GLB'
       this.requests.clear()
       this.changed()
+    }
+    for (const worker of this.workers) {
+      worker.onmessage = onMessage
+      worker.onerror = onError
     }
   }
   private installQueue: { key: string; manifest: PlanetManifest; payload: PlanetPayload }[] = []
@@ -646,6 +658,15 @@ export class PlanetWorld {
     return worked
   }
   private concurrency = 2
+  private boost = false
+  /**
+   * While loading blocks play (the start area behind an intro), build as many cells at once as
+   * there are workers instead of the quality preset's steady-state concurrency.
+   */
+  setLoadingBoost(on: boolean) {
+    this.boost = on
+    if (on) this.pump()
+  }
   private ahead = 8
   private memoryBudget = 160 * 1024 * 1024
   setQuality(concurrent: number, ahead: number, retain = false, maxTiles = 64) {
@@ -810,7 +831,7 @@ export class PlanetWorld {
     })
     for (const [id, r] of this.requests)
       if (!needed.has(r.key)) {
-        this.worker.postMessage({ id, cancel: true })
+        r.worker.postMessage({ id, cancel: true })
         this.requests.delete(id)
       }
     for (const key of this.ready.keys())
@@ -954,7 +975,7 @@ export class PlanetWorld {
     for (const tile of this.wanted) {
       if (
         this.requests.size + this.installQueue.length + Number(!!this.installing) >=
-        this.concurrency
+        (this.boost ? Math.max(this.concurrency, this.workers.length + 1) : this.concurrency)
       )
         break
       const key = mapTileId(tile),
@@ -972,10 +993,14 @@ export class PlanetWorld {
         continue
       const id = ++this.serial
       this.stamp(key).atRequested = performance.now()
-      this.requests.set(id, { key, manifest })
+      // The least busy worker builds it.
+      const load = new Map(this.workers.map((w) => [w, 0]))
+      for (const r of this.requests.values()) load.set(r.worker, load.get(r.worker)! + 1)
+      const worker = this.workers.reduce((a, b) => (load.get(b)! < load.get(a)! ? b : a))
+      this.requests.set(id, { key, manifest, worker })
       const imagery =
         this.sourceOptions.imagery ?? (this.sourceOptions.atlas ? 'package' : 'online')
-      this.worker.postMessage({
+      worker.postMessage({
         id,
         manifest,
         buildings: this.buildings,
@@ -1483,7 +1508,7 @@ export class PlanetWorld {
     this.clearSelection()
     this.disposed = true
     this.controller.abort()
-    this.worker.terminate()
+    for (const worker of this.workers) worker.terminate()
     this.installing?.steps.return(undefined)
     for (const job of this.installQueue) {
       job.payload.chart?.bitmap.close()
@@ -1505,4 +1530,9 @@ export class PlanetWorld {
     this.treeTexture?.dispose()
     this.root.removeFromParent()
   }
+}
+
+/** Cell builder workers: half the logical cores, 1 to 4. */
+export function planetWorkerCount(cores = globalThis.navigator?.hardwareConcurrency ?? 4): number {
+  return Math.max(1, Math.min(4, Math.floor((cores || 4) / 2)))
 }

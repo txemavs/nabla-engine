@@ -146,11 +146,26 @@ waitForArea(world: GroundProvider & { readonly cellStats?: { pending: number } }
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.round`
 - `options.flush`
 - `options.onProgress`
 - `options.pending`
 - `options.signal?.throwIfAborted`
 - `performance.now`
+- `report`
+- `stats.timeline.push`
 - `waitTick`
 - `world.flushInstall`
 - `world.update`
+
+## waitForArea.report
+
+[Implementation, line 156](../../../../src/runtime/ground.ts#L156)
+
+```ts
+report(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `performance.mark`

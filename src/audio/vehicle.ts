@@ -66,6 +66,10 @@ export class VehicleAudio {
   get musicPlaying(): boolean {
     return this.music?.playing ?? false
   }
+  /** True once a play-once track has ended (it stays silent for the session). */
+  get musicFinished(): boolean {
+    return this.music?.finished ?? false
+  }
 
   /** Change the mix (0..1 sliders, music mute). Returns the clamped levels. */
   setMix(patch: Partial<AudioMixLevels>): AudioMixLevels {
