@@ -35,6 +35,7 @@ import type { VehicleLightMode } from '../render/vehicle-presentation/light-cont
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
+import { setCarMenuMusicLabel } from '../catalog/monitors/car.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
 import {
@@ -635,6 +636,7 @@ export class GameRuntime {
     this.effects.audio.mixer.set(readAudioMix(browserStorage()) ?? {})
     this.effects.audio.setEnabled(options.audio !== false)
     this.effects.audio.setMusic(options.music)
+    if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
     const touchActions = {
       engage: () => {
         options.canvas.focus()
@@ -2277,6 +2279,24 @@ export class GameRuntime {
     this.assertAlive()
     this.effects.audio.unlock()
   }
+  /**
+   * Fade the background music out over `seconds` (e.g. once the intro descent has landed); it
+   * stays off until `playMusic` (vehicle menu «MUSICA»). A track not started yet never starts.
+   */
+  fadeOutMusic(seconds = 3.5): void {
+    this.assertAlive()
+    this.effects.audio.fadeOutMusic(seconds)
+  }
+  /** Play the background music again from the start, on the music bus. False when muted/absent. */
+  playMusic(): boolean {
+    this.assertAlive()
+    return this.effects.audio.playMusic()
+  }
+  /** Stop the background music with a short fade. */
+  stopMusic(): void {
+    this.assertAlive()
+    this.effects.audio.fadeOutMusic(0.8)
+  }
   private async prepareReveal(signal: AbortSignal): Promise<void> {
     const within = <T>(promise: Promise<T>, ms: number) =>
       Promise.race([promise.catch(() => undefined), new Promise((r) => setTimeout(r, ms))])
@@ -3017,6 +3037,17 @@ export class GameRuntime {
               writeCameraFovOffset(browserStorage(), this.fovOffset)
               const { firstPersonFov, chaseFov } = this.cameraState.settings
               return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
+            },
+            (action) => {
+              const track = this.effects.audio.musicTrack
+              if (!track) return 'Sin música'
+              if (action === 'stop') {
+                this.effects.audio.fadeOutMusic(0.8)
+                return 'Música parada'
+              }
+              return this.effects.audio.playMusic()
+                ? 'Música: ' + (track.title ?? 'pista')
+                : 'Música silenciada en Ajustes → Audio'
             },
           )
           if (result.handled) {

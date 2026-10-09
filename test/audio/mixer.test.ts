@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   AudioMixer,
   audioBus,
@@ -129,5 +129,75 @@ describe('background music', () => {
     music.start(context, attachAudioBuses(context).music)
     expect(created).toBe(1)
     expect(music.playing).toBe(true)
+  })
+
+  it('fades out, stays off through gestures and mix changes, and restarts from the start', () => {
+    vi.useFakeTimers()
+    try {
+      const element = {
+        src: '',
+        loop: false,
+        preload: 'none',
+        crossOrigin: null as string | null,
+        paused: true,
+        currentTime: 0,
+        canPlayType: () => 'probably',
+        play() {
+          element.paused = false
+          return Promise.resolve()
+        },
+        pause() {
+          element.paused = true
+        },
+      }
+      const music = new BackgroundMusic(
+        { sources: [{ url: '/m.ogg', type: 'audio/ogg' }] },
+        () => element as unknown as HTMLAudioElement,
+      )
+      const context = fakeContext()
+      const bus = attachAudioBuses(context).music
+      music.start(context, bus)
+      element.currentTime = 42
+      music.fadeOut(3.5)
+      // Still audible while the fade runs, even if a gesture or the mix re-syncs it.
+      music.start(context, bus)
+      expect(music.playing).toBe(true)
+      vi.advanceTimersByTime(3600)
+      expect(music.playing).toBe(false)
+      expect(element.currentTime).toBe(0)
+      music.start(context, bus)
+      expect(music.playing).toBe(false)
+      music.restart()
+      expect(music.playing).toBe(true)
+      expect(music.halted).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('never starts a track faded out before it began', () => {
+    const element = {
+      src: '',
+      loop: false,
+      preload: 'none',
+      crossOrigin: null as string | null,
+      paused: true,
+      canPlayType: () => 'probably',
+      play() {
+        element.paused = false
+        return Promise.resolve()
+      },
+      pause() {
+        element.paused = true
+      },
+    }
+    const music = new BackgroundMusic(
+      { sources: [{ url: '/m.ogg', type: 'audio/ogg' }] },
+      () => element as unknown as HTMLAudioElement,
+    )
+    music.fadeOut(3)
+    const context = fakeContext()
+    music.start(context, attachAudioBuses(context).music)
+    expect(music.playing).toBe(false)
   })
 })

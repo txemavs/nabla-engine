@@ -69,7 +69,36 @@ export const carMenuItems: MonitorMenuItem[] = [
       back,
     ],
   },
+  {
+    // Monitor glyphs are ASCII: no accent on «MUSICA» (as «POSICION»).
+    id: 'music',
+    label: 'MUSICA',
+    children: [
+      { id: 'music-play', label: 'PISTA', action: { type: 'vehicle.music', value: 'play' } },
+      { id: 'music-stop', label: 'PARAR', action: { type: 'vehicle.music', value: 'stop' } },
+      back,
+    ],
+  },
 ]
+
+/**
+ * Name the «MUSICA» page's play entry after the host's track (`MusicTrack.menuLabel`); the
+ * monitor shows 11 ASCII characters, so longer names are cut and accents are dropped.
+ */
+export function setCarMenuMusicLabel(label: string): void {
+  const entry = carMenuItems
+    .find((item) => item.id === 'music')
+    ?.children?.find((item) => item.id === 'music-play')
+  if (!entry) return
+  const ascii = label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7e]/g, '')
+    .toUpperCase()
+    .trim()
+    .slice(0, 11)
+  if (ascii) (entry as { label: string }).label = ascii
+}
 /** Edit the panel, positions and bindings here; no keyboard or game logic in the layout. */
 export const carMenuDefinition: MonitorDefinition = {
   width: 600,

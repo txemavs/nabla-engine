@@ -17,7 +17,7 @@
 Equipment actions shared by game hosts. Persistence is a host concern.
 
 ```ts
-vehicleMenuKey(view: SceneView, document: SceneDocument, id: string, code: string, repeat: boolean, report: (message: string) => void, update: (id: string, patch: Partial<SceneDocument['entities'][number]>) => void, text: RuntimeText = createRuntimeText(), engineMode?: (id: string, mode: 'normal' | 'beast') => string, fov?: (action: string) => string): { handled: boolean; opened?: boolean }
+vehicleMenuKey(view: SceneView, document: SceneDocument, id: string, code: string, repeat: boolean, report: (message: string) => void, update: (id: string, patch: Partial<SceneDocument['entities'][number]>) => void, text: RuntimeText = createRuntimeText(), engineMode?: (id: string, mode: 'normal' | 'beast') => string, fov?: (action: string) => string, music?: (action: string) => string): { handled: boolean; opened?: boolean }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -30,6 +30,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `engineMode`
 - `fov`
 - `menu.key`
+- `music`
 - `report`
 - `text`
 - `update`
@@ -39,18 +40,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.toggleVehicleMenu`
 - `view.vehicleMenu`
 
-## vehicleMenuKey.callback@32
+## vehicleMenuKey.callback@34
 
-[Implementation, line 32](../../../../src/runtime/vehicle-menu.ts#L32)
+[Implementation, line 34](../../../../src/runtime/vehicle-menu.ts#L34)
 
 ```ts
-callback@32(e): inferred by TypeScript; see implementation
+callback@34(e): inferred by TypeScript; see implementation
 ```
 
-## vehicleMenuKey.callback@54
+## vehicleMenuKey.callback@57
 
-[Implementation, line 54](../../../../src/runtime/vehicle-menu.ts#L54)
+[Implementation, line 57](../../../../src/runtime/vehicle-menu.ts#L57)
 
 ```ts
-callback@54(e): inferred by TypeScript; see implementation
+callback@57(e): inferred by TypeScript; see implementation
 ```

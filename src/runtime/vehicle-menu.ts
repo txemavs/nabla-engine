@@ -16,6 +16,8 @@ export function vehicleMenuKey(
   engineMode?: (id: string, mode: 'normal' | 'beast') => string,
   /** «VISTA FOV» page: a signed degree step or `reset`; returns the HUD message. */
   fov?: (action: string) => string,
+  /** «MUSICA» page: `play` or `stop` the background track; returns the HUD message. */
+  music?: (action: string) => string,
 ): { handled: boolean; opened?: boolean } {
   if (code === 'KeyJ') {
     if (repeat) return { handled: true }
@@ -43,6 +45,7 @@ export function vehicleMenuKey(
     report(follow ? text('Map follows vehicle') : text('North-up map'))
   }
   if (action?.type === 'vehicle.fov' && action.value && fov) report(fov(action.value))
+  if (action?.type === 'vehicle.music' && action.value && music) report(music(action.value))
   if (action?.type === 'vehicle.engine' && engineMode)
     report(engineMode(id, action.value === 'beast' ? 'beast' : 'normal'))
   if (
