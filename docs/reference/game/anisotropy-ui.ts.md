@@ -93,3 +93,58 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `apply`
 - `storage?.setItem`
+
+## resolveGroundDetail
+
+[Implementation, line 72](../../../game/anisotropy-ui.ts#L72)
+
+Stored ground detail distance (1–3 cells), else 1.
+
+```ts
+resolveGroundDetail(storage: StorageLike | undefined = browserStorage()): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `[1, 2, 3].includes`
+- `browserStorage`
+- `storage?.getItem`
+
+## bindGroundDetailSelect
+
+[Implementation, line 86](../../../game/anisotropy-ui.ts#L86)
+
+«Distancia de detalle del suelo»: cells around the player that get the full-resolution ground
+photo (asphalt and road markings). Applied live and stored. More cells cost GPU memory (~85 MB each).
+
+```ts
+bindGroundDetailSelect(runtime: GameRuntime, group: HTMLElement, storage: StorageLike | undefined = browserStorage()): HTMLSelectElement
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `browserStorage`
+- `document.createElement`
+- `group.append`
+- `label.append`
+- `resolveGroundDetail`
+- `runtime.setGroundDetailCells`
+- `select.addEventListener`
+- `select.append`
+
+## bindGroundDetailSelect.callback@99
+
+[Implementation, line 99](../../../game/anisotropy-ui.ts#L99)
+
+```ts
+callback@99(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `String`
+- `runtime.setGroundDetailCells`
+- `storage?.setItem`

@@ -2194,6 +2194,21 @@ export class GameRuntime {
     // shadow attenuation; removing castShadow would make the addon count them as three suns.
     return this.lighting.shadows && this.quality.shadows > 0
   }
+  /** Ground detail distance: cells around the player with the full-resolution photo (1–3). */
+  get groundDetailCells(): number {
+    return this.world?.nearCells ?? this.groundDetail
+  }
+  /**
+   * Set the ground detail distance live, 1–3 cells (3×3, 5×5, 7×7 full photos; ~1, 2, 3 km). Growing
+   * it loads the full photo for the newly near cells; shrinking only stops further upgrades.
+   */
+  setGroundDetailCells(cells: number): number {
+    this.assertAlive()
+    this.groundDetail = Math.min(3, Math.max(1, Math.round(cells)))
+    this.world?.setNearCells(this.groundDetail)
+    return this.groundDetail
+  }
+  private groundDetail = 1
   /** Anisotropic filtering of the ground photo (asphalt and road markings). */
   get anisotropy(): number {
     return groundPhotoAnisotropy()

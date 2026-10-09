@@ -990,6 +990,18 @@ export class PlanetWorld {
         : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
   }
 
+  /** Full-photo radius in cells around the player (`nearCells`, default 1). */
+  get nearCells(): number {
+    return this.sourceOptions.nearCells ?? 1
+  }
+  /**
+   * Change the full-photo radius live (whole cells, at least 0). Growing it upgrades the newly near
+   * `lo` cells on the next tile pass; shrinking it only stops further upgrades (full cells stay full
+   * until they are unloaded).
+   */
+  setNearCells(cells: number): void {
+    this.sourceOptions.nearCells = Math.max(0, Math.round(cells))
+  }
   /** `atlas.photo`, except `lo` for cells farther than `nearCells` from the player. */
   private photoQuality(tile: MapTile): 'full' | 'lo' | 'none' {
     return atlasPhotoFor(

@@ -186,17 +186,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bootLog`
 - `installHostVehicles`
 
-## callback@227
-
-[Implementation, line 227](../../../game/terrain-main.ts#L227)
-
-```ts
-callback@227(action): inferred by TypeScript; see implementation
-```
-
-## callback@227.onClick
+## callback@229
 
 [Implementation, line 229](../../../game/terrain-main.ts#L229)
+
+```ts
+callback@229(action): inferred by TypeScript; see implementation
+```
+
+## callback@229.onClick
+
+[Implementation, line 231](../../../game/terrain-main.ts#L231)
 
 ```ts
 onClick(): inferred by TypeScript; see implementation
