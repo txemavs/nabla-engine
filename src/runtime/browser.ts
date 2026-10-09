@@ -46,12 +46,7 @@ import {
   tileBudget,
   type PerformanceSettings,
 } from './performance.js'
-import {
-  highPlanetVisual,
-  isHighQualityPreset,
-  readSavedPlanetVisual,
-  writeSavedPlanetVisual,
-} from './planet-visual.js'
+import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
@@ -529,7 +524,6 @@ export class GameRuntime {
     })
     const savedPlanet = readSavedPlanetVisual(browserStorage())
     if (savedPlanet) Object.assign(this.planet, savedPlanet)
-    else if (isHighQualityPreset(this.quality.preset)) Object.assign(this.planet, highPlanetVisual)
     else this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
     this.document = parseScene(options.scene)
     this.worldContent = options.world ? structuredClone(options.world) : undefined
