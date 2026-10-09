@@ -81,12 +81,26 @@ callback@57(object): inferred by TypeScript; see implementation
 callback@61(surface): inferred by TypeScript; see implementation
 ```
 
-## GameRenderPipeline.render.callback@77
+## GameRenderPipeline.render.callback@74
 
-[Implementation, line 77](../../../../src/runtime/render-pipeline.ts#L77)
+[Implementation, line 74](../../../../src/runtime/render-pipeline.ts#L74)
 
 ```ts
-callback@77(remote): inferred by TypeScript; see implementation
+callback@74(reflection): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `reflection.position.clone`
+- `reflection.position.clone().add`
+- `sky.render`
+
+## GameRenderPipeline.render.callback@88
+
+[Implementation, line 88](../../../../src/runtime/render-pipeline.ts#L88)
+
+```ts
+callback@88(remote): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
