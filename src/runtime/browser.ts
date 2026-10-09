@@ -1381,6 +1381,10 @@ export class GameRuntime {
       for (const height of descentWarmHeights(first.fromHeight, settings.mapHeight))
         views.push({ mode: 'map', height })
     views.push({ mode: 'cockpit' }, { mode: 'chase' })
+    // Light the views as the reveal will: a live clock starts at its authored time then (e.g.
+    // 10:00), and day or night changes lights and therefore shader programs.
+    const clock = this.document.sky
+    if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
     try {
       for (const view of views) {
         signal.throwIfAborted()
@@ -1398,6 +1402,7 @@ export class GameRuntime {
     } catch {
       /* Warmup is optional; the first visible frames build what remains. */
     } finally {
+      this.document.sky = clock
       camera.position.copy(pose.position)
       camera.quaternion.copy(pose.quaternion)
       camera.up.copy(pose.up)

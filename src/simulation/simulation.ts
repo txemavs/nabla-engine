@@ -831,7 +831,12 @@ export class Simulation {
    * the host set. An empty world (no scene roads and no host roads) leaves the surface unknown.
    */
   setSurfaceRoads(roads?: Iterable<RoadCenterline> | null): void {
-    this.hostSurfaceRoads = roads ? [...roads] : []
+    const next = roads ? [...roads] : []
+    const current = this.hostSurfaceRoads
+    // Hosts pass a fresh array every frame; keep the current one (and its segment index) when
+    // it holds the same roads.
+    if (next.length === current.length && next.every((road, i) => road === current[i])) return
+    this.hostSurfaceRoads = next
   }
   private surfaceRoads(): RoadCenterline[] {
     const scene = this.roadGuidance.centerlines(
