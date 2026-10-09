@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **352 modules; 3725 executable function definitions**.
+Coverage: **352 modules; 3727 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -48,7 +48,7 @@ Coverage: **352 modules; 3725 executable function definitions**.
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
-| [src/audio/mixer.ts](src/audio/mixer.ts.md) | 13 |
+| [src/audio/mixer.ts](src/audio/mixer.ts.md) | 14 |
 | [src/audio/music.ts](src/audio/music.ts.md) | 12 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 14 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
@@ -249,7 +249,7 @@ Coverage: **352 modules; 3725 executable function definitions**.
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
 | [src/render/portal/remote.ts](src/render/portal/remote.ts.md) | 10 |
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
-| [src/render/shadows.ts](src/render/shadows.ts.md) | 30 |
+| [src/render/shadows.ts](src/render/shadows.ts.md) | 31 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
 | [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 15 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |

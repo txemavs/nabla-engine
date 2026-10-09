@@ -18,7 +18,7 @@
 
 ## VehicleEffects.constructor
 
-[Implementation, line 24](../../../../src/runtime/vehicle-effects.ts#L24)
+[Implementation, line 30](../../../../src/runtime/vehicle-effects.ts#L30)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -33,7 +33,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleEffects.updateAudio
 
-[Implementation, line 30](../../../../src/runtime/vehicle-effects.ts#L30)
+[Implementation, line 36](../../../../src/runtime/vehicle-effects.ts#L36)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -58,17 +58,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.playEngineStart`
 - `this.playGearChanges`
 
-## VehicleEffects.updateAudio.callback@52
+## VehicleEffects.updateAudio.callback@58
 
-[Implementation, line 52](../../../../src/runtime/vehicle-effects.ts#L52)
+[Implementation, line 58](../../../../src/runtime/vehicle-effects.ts#L58)
 
 ```ts
-callback@52(entity): inferred by TypeScript; see implementation
+callback@58(entity): inferred by TypeScript; see implementation
 ```
 
 ## VehicleEffects.playGearChanges
 
-[Implementation, line 83](../../../../src/runtime/vehicle-effects.ts#L83)
+[Implementation, line 89](../../../../src/runtime/vehicle-effects.ts#L89)
 
 Gear-change sound per the vehicle's `audio.gearShift`. `clack` (default): one clack per
 audible change (D/R engagement or manual shift, never an automatic shift). `click`: one

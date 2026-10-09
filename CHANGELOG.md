@@ -14,10 +14,12 @@
 
 ### Changed
 
+- Engine over gear shifts on every vehicle: the engine bus has a fixed +4 dB trim (`engineBusTrim` 1.6) and car/truck clacks and the bike click play at half gain (`gearShiftLevel`, about −6 dB), so a shift is subtle under the engine. A limiter on master keeps the louder mix from clipping. Pistol reload clicks are unchanged.
 - Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
 
 ### Fixed
 
+- Zenithal camera: zooming out no longer turns cars or trucks black on Ultra (4 cascades). The #183 cut for steep views was still capped at far / 4, and the overhead far plane is about three times the eye height, so the vehicle always fell into cascade 1. Steep views now keep their uncapped first cut.
 - Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
 
 - Zenithal camera: zooming out no longer turns trucks black. A downward view used to leave the vehicle in the last shadow cascade (the 140 m cut is still in the air), and that map is sized to the far plane. Cascade 0 now ends just past the ground under the camera.
