@@ -7,6 +7,9 @@ import { isRoadTouchDriving } from './touch-driving.js'
 /** Share of throttle and front brake a two-wheeler gets without Shift (sprint). */
 export const TWO_WHEELER_CALM_SHARE = 0.5
 
+/** Below this speed (km/h) S on a two-wheeler is the feet paddle back, above it the rear pedal. */
+export const BIKE_PADDLE_KMH = 3
+
 export function availableGamepads(): (Gamepad | null)[] {
   if (
     typeof navigator === 'undefined' ||
@@ -98,7 +101,8 @@ export class GameInput {
     }
     const { keys, yaw, pad } = sources
     const id = sim?.player.vehicleId
-    const flight = Boolean(id && sim?.vehicleInfo(id).flightMode)
+    const info = id && sim ? sim.vehicleInfo(id) : null
+    const flight = Boolean(info?.flightMode)
     const axis = (positive: string, negative: string) =>
       Number(keys.has(positive)) - Number(keys.has(negative))
     const analog = pad
@@ -112,24 +116,24 @@ export class GameInput {
     const vehicle = id ? document.entities.find((e) => e.id === id)?.vehicle : null
     const roadCar = id && isRoadTouchDriving(vehicle, flight)
     const shift = keys.has('ShiftLeft') || keys.has('ShiftRight')
-    // Two-wheeler with Shift: W and S together are throttle plus front lever (stationary
-    // burnout) instead of cancelling out.
-    const twin =
-      !flight &&
-      shift &&
-      !!vehicle?.twoWheeled &&
-      (keys.has('KeyW') || keys.has('ArrowUp')) &&
-      (keys.has('KeyS') || keys.has('ArrowDown'))
+    // Two-wheeler keys (Txema 2026-10-09): Space is the front lever, S/ArrowDown the rear pedal
+    // (still a paddle back from a standstill). W and S together are full throttle, like Shift
+    // (no Sticky Keys prompt), instead of cancelling out.
+    const bike = !flight && !!vehicle?.twoWheeled
+    const up = keys.has('KeyW') || keys.has('ArrowUp')
+    const down = keys.has('KeyS') || keys.has('ArrowDown')
+    const twin = bike && up && down
+    const rolling = !!info && !info.reversing && info.speedKmh >= BIKE_PADDLE_KMH
+    const pedal = bike && down && !up && rolling
+    const keyForward = twin
+      ? 1
+      : flight
+        ? axis('ArrowUp', 'ArrowDown')
+        : pedal
+          ? Number(up)
+          : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')
     const input: PlayerInput = {
-      forward:
-        (twin
-          ? 1
-          : flight
-            ? axis('ArrowUp', 'ArrowDown')
-            : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')) +
-        analog.forward +
-        touch.forward +
-        driving.forward,
+      forward: keyForward + analog.forward + touch.forward + driving.forward,
       right:
         this.steering.update(roadCar ? id : null, keyboardRight, elapsed) +
         analog.right +
@@ -138,18 +142,20 @@ export class GameInput {
       lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
       turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
       yaw,
-      frontBrake: twin ? 1 : 0,
-      sprint: shift || Boolean(pad?.buttons[10]?.pressed) || !!driving.sprint,
+      frontBrake: bike && keys.has('Space') ? 1 : 0,
+      sprint: shift || twin || Boolean(pad?.buttons[10]?.pressed) || !!driving.sprint,
       jump: false,
-      brake: keys.has('Space') || analog.brake || touch.brake || driving.brake,
+      brake: (bike ? pedal : keys.has('Space')) || analog.brake || touch.brake || driving.brake,
       // Two-wheeler rider counterweight: U/O hang off left/right, I over the tank, L sit back.
       riderRight: flight ? 0 : axis('KeyO', 'KeyU'),
       riderForward: flight ? 0 : axis('KeyI', 'KeyL'),
     }
     // Two-wheelers (Txema 2026-10-09): without Shift the throttle and the front brake give about
     // half; Shift gives full throttle (a wheelie at launch) and full braking (the stoppie).
-    if (!flight && vehicle?.twoWheeled && !input.sprint)
+    if (bike && !input.sprint) {
       input.forward = Math.max(-1, Math.min(1, input.forward)) * TWO_WHEELER_CALM_SHARE
+      input.frontBrake = (input.frontBrake ?? 0) * TWO_WHEELER_CALM_SHARE
+    }
     return finiteInput(input)
   }
 }
