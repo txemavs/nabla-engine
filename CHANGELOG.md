@@ -13,6 +13,7 @@
 
 ### Changed
 
+- Engine over gear shifts on every vehicle: the engine bus has a fixed +4 dB trim (`engineBusTrim` 1.6) and car/truck clacks and the bike click play at half gain (`gearShiftLevel`, about −6 dB), so a shift is subtle under the engine. A limiter on master keeps the louder mix from clipping. Pistol reload clicks are unchanged.
 - Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
 
 ### Fixed

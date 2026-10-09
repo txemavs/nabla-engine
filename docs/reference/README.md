@@ -48,7 +48,7 @@ Coverage: **350 modules; 3702 executable function definitions**.
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
-| [src/audio/mixer.ts](src/audio/mixer.ts.md) | 13 |
+| [src/audio/mixer.ts](src/audio/mixer.ts.md) | 14 |
 | [src/audio/music.ts](src/audio/music.ts.md) | 12 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 14 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |

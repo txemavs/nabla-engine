@@ -3,7 +3,7 @@ import { Scene, Vector3 } from 'three'
 import { carGearClack, resolveGearClack } from '../../src/audio/gear-clack.js'
 import { VehicleAudio } from '../../src/audio/vehicle.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
-import { VehicleEffects } from '../../src/runtime/vehicle-effects.js'
+import { VehicleEffects, gearShiftLevel } from '../../src/runtime/vehicle-effects.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { finishStartUp } from '../start-up.js'
@@ -216,7 +216,8 @@ describe('gear clack events from the simulation', () => {
         expect(sim.vehicleInfo(entity).gear).toBeGreaterThan(0)
         expect(calls).toHaveLength(3)
         const profile = presetVehicle(catalog, entity).vehicle!.powertrain!.shift?.clack ?? null
-        for (const played of calls) expect(played).toEqual(profile)
+        for (const played of calls)
+          expect(played).toEqual({ ...profile, gain: (profile?.gain ?? 1) * gearShiftLevel })
         // Truck uses its own heavy profile, the car's falls back to the audio default.
         if (entity === 'truck') expect((calls[0] as { clunkHz: number }).clunkHz).toBeLessThan(80)
       } finally {
