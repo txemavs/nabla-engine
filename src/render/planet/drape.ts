@@ -28,8 +28,12 @@ export const DRAPE_LAYERS: readonly DrapeLayer[] = [
   { id: 'roads', roads: true },
 ]
 
-/** Roof photos float a hand above the roof; ground photos must not (see `world.ts`). */
-export const ROOF_DRAPE_LIFT = 0.15
+/**
+ * Roof photo lift above the real roof. The car collides with the unlifted roof triangle, so a
+ * 15 cm lift made wheels look sunk into roofs (same bug as the ground, fixed with 0.005). 2 cm
+ * plus the drape's polygonOffset wins the depth test; baked roofs (Atlas roof_bake) need none.
+ */
+export const ROOF_DRAPE_LIFT = 0.02
 
 /**
  * Margin on each side of a package photo frame, as a fraction of the CELL width:

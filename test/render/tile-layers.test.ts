@@ -110,8 +110,9 @@ describe('tile layers', () => {
 })
 
 describe('photo drape height', () => {
-  it('lifts roof photos but leaves ground photos on the physics surface', () => {
-    expect(ROOF_DRAPE_LIFT).toBeGreaterThanOrEqual(0.1)
+  it('keeps roof and ground photos within a few cm of the physics surface', () => {
+    expect(ROOF_DRAPE_LIFT).toBeGreaterThan(0)
+    expect(ROOF_DRAPE_LIFT).toBeLessThanOrEqual(0.03)
     expect(GROUND_DRAPE_LIFT).toBeLessThanOrEqual(0.01)
   })
 })

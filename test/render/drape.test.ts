@@ -35,6 +35,8 @@ describe('buildDrapes', () => {
     const roof = buildDrapes([quad(9, 1, { category: 'Buildings' })], { width: 20, layers })
     expect(roof[0].id).toBe('roofs')
     expect(roof[0].position[1]).toBeCloseTo(9 + ROOF_DRAPE_LIFT)
+    // Wheels rest on the unlifted roof: the visible roof may float at most a few cm (was 15).
+    expect(ROOF_DRAPE_LIFT).toBeLessThanOrEqual(0.03)
     expect(buildDrapes([quad(9, 0.1, { category: 'Buildings' })], { width: 20, layers })).toEqual(
       [],
     )
