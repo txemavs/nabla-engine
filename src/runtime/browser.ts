@@ -46,6 +46,12 @@ import {
   tileBudget,
   type PerformanceSettings,
 } from './performance.js'
+import {
+  highPlanetVisual,
+  isHighQualityPreset,
+  readSavedPlanetVisual,
+  writeSavedPlanetVisual,
+} from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
@@ -506,6 +512,8 @@ export class GameRuntime {
       ...preset,
       ...options.performance,
     })
+    const savedPlanet = readSavedPlanetVisual(browserStorage())
+    if (savedPlanet) Object.assign(this.planet, savedPlanet)
     else this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
     this.document = parseScene(options.scene)
     this.worldContent = options.world ? structuredClone(options.world) : undefined
@@ -1454,6 +1462,7 @@ export class GameRuntime {
     if (layers.clouds !== undefined) this.planet.clouds = layers.clouds
     if (layers.sea !== undefined) this.planet.sea = layers.sea
     this.syncPlanet()
+    this.rememberPlanetVisual()
   }
   get cloudStyle(): 'low' | 'artistic' {
     return this.planet.cloudStyle
@@ -1463,6 +1472,7 @@ export class GameRuntime {
     this.assertAlive()
     this.planet.cloudStyle = style
     this.sky.setCloudStyle(style)
+    this.rememberPlanetVisual()
   }
   get cloudAmount(): number {
     return this.planet.cloudAmount
@@ -1481,6 +1491,7 @@ export class GameRuntime {
     this.planet.cloudAmount = amount
     this.planet.cloudPressure = pressure
     this.sky.setCloudWeather(amount, pressure)
+    this.rememberPlanetVisual()
   }
   get cloudPressure(): number {
     return this.planet.cloudPressure
@@ -1495,6 +1506,7 @@ export class GameRuntime {
       throw new Error('Lens flare amount must be between 0 and 1')
     this.planet.lensFlareAmount = amount
     this.sky.setLensFlareAmount(amount)
+    this.rememberPlanetVisual()
   }
   /** Snapshot of Planeta visual knobs for host/demo config paste. */
   planetVisualConfig() {
@@ -1515,6 +1527,18 @@ export class GameRuntime {
     this.fovOffset = fov.chaseFov - this.fovBase.chaseFov
     this.cameraState.settings.firstPersonFov = fov.firstPersonFov
     this.cameraState.settings.chaseFov = fov.chaseFov
+  }
+  private rememberPlanetVisual(): void {
+    writeSavedPlanetVisual(browserStorage(), {
+      sky: this.planet.sky,
+      sun: this.planet.sun,
+      sea: this.planet.sea,
+      clouds: this.planet.clouds,
+      cloudStyle: this.planet.cloudStyle,
+      cloudAmount: this.planet.cloudAmount,
+      cloudPressure: this.planet.cloudPressure,
+      lensFlareAmount: this.planet.lensFlareAmount,
+    })
   }
   private syncPlanet(): void {
     this.sky.setLayers({
