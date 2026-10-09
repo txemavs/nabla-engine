@@ -14,11 +14,11 @@ export interface AudioMixLevels {
   musicMuted: boolean
 }
 
-/** Starting mix. Music sits under the engine by default. TODO(unverified): a taste choice. */
+/** Starting mix. Music sits well under the engine by default (30%, 2026-10-09 request). */
 export const defaultAudioMix: Readonly<AudioMixLevels> = Object.freeze({
   master: 1,
   engine: 1,
-  music: 0.5,
+  music: 0.3,
   musicMuted: false,
 })
 
@@ -31,11 +31,13 @@ interface Buses {
 const registry = new WeakMap<BaseAudioContext, Buses>()
 
 /**
- * Fixed lift of the engine bus over the effects on master, so the engine dominates a gear
- * shift on every vehicle (2026-10-09 request: shifts sounded louder than the engine). 1.6 is
- * about +4 dB. TODO(unverified): a listening choice, not a measured recording.
+ * Fixed lift of the engine bus over music and the effects on master. 1.6 (+4 dB) still left the
+ * engine under the music (Txema had to drop the music to 20% to hear it). Measured in Chrome on
+ * the S3 at ~40 km/h (2026-10-09, General 100 / Motor 100 / Música 50): engine bus RMS -32.5 dBFS
+ * vs music -29 dBFS with 1.6. 6.4 (+12 dB over that, about +16 dB over unity) puts the engine near
+ * -20.5 dBFS, about 2.7x the music RMS at 50%. The master limiter catches the peaks.
  */
-export const engineBusTrim = 1.6
+export const engineBusTrim = 6.4
 
 /** Safety limiter on master: the louder engine bus must not clip with music and effects. */
 function masterOutput(context: BaseAudioContext): AudioNode {
