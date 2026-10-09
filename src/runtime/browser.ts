@@ -192,6 +192,17 @@ export interface GameFrame {
  * 80 m remain after 2.2 s, versus 1.6 s to settle at the normal 3/s. A presentation choice.
  */
 const START_DESCENT_DAMPING = 1.2
+/**
+ * `performance.mark('nabla:<name>')` for loading milestones (play start, ground, each reveal
+ * chunk), so hosts and headless checks can measure where an intro's time goes.
+ */
+function loadMark(name: string): void {
+  try {
+    performance.mark(`nabla:${name}`)
+  } catch {
+    /* marks are diagnostics only */
+  }
+}
 /** Loading stages `prepareReveal` reports (vehicles, weapons, terrain, shaders). */
 const REVEAL_STAGES = 4
 
@@ -710,6 +721,7 @@ export class GameRuntime {
     const controller = new AbortController()
     this.loading = controller
     const document = structuredClone(this.document)
+    loadMark('play')
     try {
       if (this.world) {
         const progress = (status: string) =>
@@ -761,6 +773,7 @@ export class GameRuntime {
           }
         }
         progress('Ground ready')
+        loadMark('ground')
       }
       // A boot probe may run alongside the ground wait; finish it before gameplay frames start.
       if (this.probing) await this.probing.catch(() => undefined)
@@ -772,6 +785,7 @@ export class GameRuntime {
         planetaryTerrain: !!document.geography?.planetary,
       })
       simulation.setCollisionDistance(this.quality.collisions)
+      loadMark('simulation')
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
       this.startSequence =
@@ -2107,6 +2121,10 @@ export class GameRuntime {
   get musicPlaying(): boolean {
     return this.effects.audio.musicPlaying
   }
+  /** True once a play-once track (`music.loop: false`) has ended; it stays silent. */
+  get musicFinished(): boolean {
+    return this.effects.audio.musicFinished
+  }
   /**
    * Apply a live automatic-clock cap and drawing-buffer scale; physics keeps its fixed timestep.
    * Passing `resolutionScale` without a mode fixes the scale (manual). Passing
@@ -2237,9 +2255,11 @@ export class GameRuntime {
       canvas.dataset.revealProgress = (done / REVEAL_STAGES).toFixed(2)
     }
     canvas.dataset.reveal = 'preparing'
+    loadMark('prepare')
     // 1. Vehicle GLBs (the bike included) and 2. the sidearm models land in the asset cache.
     stage('vehicles', 0)
     await within(this.view.ready, 30_000)
+    loadMark('vehicles')
     signal.throwIfAborted()
     stage('weapons', 1)
     const preset = weaponPresets()[0]
@@ -2252,6 +2272,7 @@ export class GameRuntime {
       ),
       20_000,
     )
+    loadMark('weapons')
     signal.throwIfAborted()
     // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
     // from high above shows, at the LODs the stream plans there.
@@ -2260,13 +2281,22 @@ export class GameRuntime {
       signal.throwIfAborted()
       await task().catch((error) => console.warn('beforeReveal task failed', error))
     }
+    loadMark('host')
     signal.throwIfAborted()
     const sim = this.session.simulation
     if (this.world && sim) {
       const spawn = [...sim.player.position] as Vec3Tuple
+      let cellsDone = false
+      const world = this.world
       await waitForArea(this.world, spawn, {
         signal,
-        pending: () => this.view.pendingMapInstalls,
+        pending: () => {
+          if (!cellsDone && !(world.cellStats?.pending ?? 0)) {
+            cellsDone = true
+            loadMark('cells')
+          }
+          return this.view.pendingMapInstalls
+        },
         flush: () =>
           this.view.flushMapInstall(
             streamingDefaults.mapInstallBudgetMs * 3,
@@ -2275,6 +2305,7 @@ export class GameRuntime {
       })
       this.world.renderUpdate(this.origin, !!this.quality.buildings, sim)
     }
+    loadMark('area')
     signal.throwIfAborted()
     // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
     // of the camera so the attract frames keep their own projection.
@@ -2304,17 +2335,21 @@ export class GameRuntime {
         }),
         20_000,
       )
+      loadMark('compile')
       await within(uploadSceneTextures(this.renderer, this.scene, signal), 20_000)
+      loadMark('textures')
       signal.throwIfAborted()
       // Then the start views themselves, as the first gameplay frames will draw them. Awaited
       // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
       await this.warmStartViews(signal)
+      loadMark('warm')
     } finally {
       this.view.setPlaying(false)
     }
     signal.throwIfAborted()
     stage('ready', REVEAL_STAGES)
     canvas.dataset.reveal = 'holding'
+    loadMark('holding')
     while (this.revealGates.length) await Promise.all(this.revealGates.splice(0))
   }
   /**

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **354 modules; 3777 executable function definitions**.
+Coverage: **354 modules; 3782 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -49,7 +49,7 @@ Coverage: **354 modules; 3777 executable function definitions**.
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
 | [src/audio/mixer.ts](src/audio/mixer.ts.md) | 14 |
-| [src/audio/music.ts](src/audio/music.ts.md) | 12 |
+| [src/audio/music.ts](src/audio/music.ts.md) | 14 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 14 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
 | [src/audio/reverse-alarm.ts](src/audio/reverse-alarm.ts.md) | 3 |
@@ -58,7 +58,7 @@ Coverage: **354 modules; 3777 executable function definitions**.
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
 | [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 35 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 36 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
 | [src/catalog/monitors/car.ts](src/catalog/monitors/car.ts.md) | 1 |
@@ -265,7 +265,7 @@ Coverage: **354 modules; 3777 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 250 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 252 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
