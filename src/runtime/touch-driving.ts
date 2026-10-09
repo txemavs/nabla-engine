@@ -162,6 +162,14 @@ const styles = `
 .touch-driving button.touch-driving-action { display: inline-flex; align-items: center; justify-content: center;
  padding: 0; width: 52px; height: 52px; }
 .touch-driving button.touch-driving-action svg { display: block; }
+/* Coarse pointers: action buttons stack on the left, above the clock (HUD is bottom: 16px).
+   Gas and brake sit just left of the wheel so the right and the bottom stay free to grab. */
+@media (pointer: coarse) {
+  .touch-driving-bar { position: absolute; left: 0; bottom: 132px; flex-direction: column;
+    margin-bottom: 0; }
+  .touch-driving-stack { position: absolute; right: 164px; bottom: 0; }
+  .touch-driving-place { margin-bottom: 320px; }
+}
 /* Host brand owns the top-left; do not bump .nabla-game-hud up. */
 
 `

@@ -72,6 +72,13 @@ import { vehicleMenuKey } from './vehicle-menu.js'
 import { AssetWarmup } from '../render/entity/asset-warmup.js'
 import { showLoadingBadge } from './loading-badge.js'
 import {
+  cameraFovFor,
+  nextCameraFovOffset,
+  readCameraFovOffset,
+  writeCameraFovOffset,
+  type CameraFovBase,
+} from './camera-fov.js'
+import {
   defaultSteeringWheelOffset,
   describeSteeringWheelOffset,
   initialSteeringWheelOffset,
@@ -315,7 +322,7 @@ export interface GameRuntimeOptions {
  * Owns its renderer and listeners; the caller owns the canvas and surrounding UI.
  */
 
-function planetVisualStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
+function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
   try {
     return typeof localStorage === 'undefined' ? undefined : localStorage
   } catch {
@@ -410,6 +417,8 @@ export class GameRuntime {
   private readonly hud: GameHud | null
   private readonly wheelDebug = new WheelDebugOverlay()
   private readonly text: ReturnType<typeof createRuntimeText>
+  private fovBase: CameraFovBase = { firstPersonFov: 70, chaseFov: 48 }
+  private fovOffset = 0
   private planet: {
     sky: boolean
     sun: boolean
@@ -450,6 +459,11 @@ export class GameRuntime {
     })
     this.adaptive.setTargetFrameMs(this.display.maxFps ? 1000 / this.display.maxFps : null)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
+    this.fovBase = {
+      firstPersonFov: this.cameraState.settings.firstPersonFov,
+      chaseFov: this.cameraState.settings.chaseFov,
+    }
+    this.applyCameraFov(readCameraFovOffset(browserStorage()))
     this.camera.near = this.cameraState.settings.nearClip
     this.camera.far = this.cameraState.settings.farClip
     const profile = options.performance?.preset
@@ -462,7 +476,7 @@ export class GameRuntime {
       ...preset,
       ...options.performance,
     })
-    const savedPlanet = readSavedPlanetVisual(planetVisualStorage())
+    const savedPlanet = readSavedPlanetVisual(browserStorage())
     if (savedPlanet) Object.assign(this.planet, savedPlanet)
     else if (isHighQualityPreset(this.quality.preset)) Object.assign(this.planet, highPlanetVisual)
     else this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
@@ -1291,8 +1305,15 @@ export class GameRuntime {
       sea: this.planet.sea,
     }
   }
+  /** Cockpit and chase FOV with the player's J-menu offset; read live by the camera each frame. */
+  private applyCameraFov(offset: number): void {
+    const fov = cameraFovFor(this.fovBase, offset)
+    this.fovOffset = fov.chaseFov - this.fovBase.chaseFov
+    this.cameraState.settings.firstPersonFov = fov.firstPersonFov
+    this.cameraState.settings.chaseFov = fov.chaseFov
+  }
   private rememberPlanetVisual(): void {
-    writeSavedPlanetVisual(planetVisualStorage(), {
+    writeSavedPlanetVisual(browserStorage(), {
       sky: this.planet.sky,
       sun: this.planet.sun,
       sea: this.planet.sea,
@@ -2540,6 +2561,12 @@ export class GameRuntime {
             (entityId, mode) =>
               this.session.simulation?.setEngineMode(entityId, mode) ??
               'Este vehículo tiene un solo modo de motor',
+            (step) => {
+              this.applyCameraFov(nextCameraFovOffset(this.fovOffset, step))
+              writeCameraFovOffset(browserStorage(), this.fovOffset)
+              const { firstPersonFov, chaseFov } = this.cameraState.settings
+              return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
+            },
           )
           if (result.handled) {
             event.preventDefault()
