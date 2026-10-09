@@ -54,7 +54,9 @@ export function saveShadowBias(
 export const SHADOWS_ENABLED_STORAGE_KEY = 'nabla.shadowsEnabled'
 
 /** Saved on/off choice for shadows; on unless the player turned them off. */
-export function resolveShadowsEnabled(storage: StorageLike | undefined = browserStorage()): boolean {
+export function resolveShadowsEnabled(
+  storage: StorageLike | undefined = browserStorage(),
+): boolean {
   try {
     return storage?.getItem(SHADOWS_ENABLED_STORAGE_KEY) !== '0'
   } catch {
