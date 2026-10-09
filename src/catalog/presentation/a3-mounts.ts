@@ -2,7 +2,11 @@ import * as THREE from 'three'
 import type { InstrumentMounts } from '../../render/vehicle-presentation/mounts.js'
 
 /** Mount instruments using authored GLB nodes and casing metadata. */
-export function createA3Mounts(model: THREE.Object3D): InstrumentMounts | undefined {
+export function createA3Mounts(
+  model: THREE.Object3D,
+  /** Chassis-space metres added to the cluster anchor. +Y is vehicle up. */
+  clusterOffset?: readonly [number, number, number],
+): InstrumentMounts | undefined {
   const interior = model.getObjectByName('Interior')
   if (!interior) {
     console.warn('S3 instruments omitted: missing Interior mount')
@@ -31,6 +35,16 @@ export function createA3Mounts(model: THREE.Object3D): InstrumentMounts | undefi
   const quad = (role: string) =>
     [0, 1, 2, 3].map((i) => mount(role + '.' + i).position.toArray()) as InstrumentMounts['menu']
   const cluster = mount('instrument.cluster')
+  if (clusterOffset) {
+    // The anchor is in Interior space. The offset is chassis space, so express vehicle up there.
+    const chassis = model.parent ?? model
+    chassis.updateWorldMatrix(true, true)
+    interior.updateWorldMatrix(true, true)
+    const delta = new THREE.Vector3(...clusterOffset)
+    delta.applyQuaternion(chassis.getWorldQuaternion(new THREE.Quaternion()))
+    delta.applyQuaternion(interior.getWorldQuaternion(new THREE.Quaternion()).invert())
+    cluster.position.add(delta)
+  }
   const bounds = metadata.gpsCasingBounds as { min: number[]; max: number[] }
   const support = new THREE.Group()
   support.name = 'A3 retractable GPS'

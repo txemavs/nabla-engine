@@ -19,7 +19,7 @@ Shared gameplay camera with configurable manual-look recovery. Times are millise
 
 ## createGameCameraState
 
-[Implementation, line 88](../../../../src/runtime/game-camera.ts#L88)
+[Implementation, line 93](../../../../src/runtime/game-camera.ts#L93)
 
 Create independent camera state and validate per-consumer recovery overrides.
 
@@ -36,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mouseLooksWithoutButton
 
-[Implementation, line 123](../../../../src/runtime/game-camera.ts#L123)
+[Implementation, line 128](../../../../src/runtime/game-camera.ts#L128)
 
 Views where plain mouse movement looks around with no button held: the exterior
 chase/third-person camera, on-foot first person and the seated driver view. The vehicle
@@ -50,7 +50,7 @@ mouseLooksWithoutButton(state: Pick<GameCameraState, 'mode'>, seated: boolean): 
 
 ## detachedView
 
-[Implementation, line 131](../../../../src/runtime/game-camera.ts#L131)
+[Implementation, line 136](../../../../src/runtime/game-camera.ts#L136)
 
 Overhead and cinematic views are detached from the player's eyes in every context.
 
@@ -60,7 +60,7 @@ detachedView(mode: GameCameraMode): boolean
 
 ## isFirstPersonView
 
-[Implementation, line 136](../../../../src/runtime/game-camera.ts#L136)
+[Implementation, line 141](../../../../src/runtime/game-camera.ts#L141)
 
 True when the view is rendered from the player's or driver's eyes.
 
@@ -74,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gameCameraView
 
-[Implementation, line 145](../../../../src/runtime/game-camera.ts#L145)
+[Implementation, line 150](../../../../src/runtime/game-camera.ts#L150)
 
 Stable view name for hosts: `first-person`, `chase`, `cockpit`, `map` or `cinematic`.
 
@@ -88,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cycleGameCamera
 
-[Implementation, line 159](../../../../src/runtime/game-camera.ts#L159)
+[Implementation, line 164](../../../../src/runtime/game-camera.ts#L164)
 
 The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
 cinematic → exterior. On foot: first person → third person → overhead → cinematic → first
@@ -105,18 +105,39 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setGameCameraView
 
-[Implementation, line 185](../../../../src/runtime/game-camera.ts#L185)
+[Implementation, line 192](../../../../src/runtime/game-camera.ts#L192)
 
 Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
 `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
+Entering the overhead view cuts unless `nextTransitionMs` is set: the blend climbed out
+through the cabin while the field of view lerped, and that frame hitch is the stall.
 
 ```ts
 setGameCameraView(state: GameCameraState, wanted: GameCameraView, seated: boolean): void
 ```
 
+## downwardViewFar
+
+[Implementation, line 223](../../../../src/runtime/game-camera.ts#L223)
+
+Far plane while the camera looks steeply down. The ordinary far plane is 12 km, so a
+zenithal view is a shaft and the cascaded shadow maps size themselves to it. The ground
+under the camera is only about `eyeHeight` metres away; keep enough for relief.
+`viewDown` is the camera's forward Y (−1 is straight down).
+
+```ts
+downwardViewFar(far: number, eyeHeight: number, viewDown: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+
 ## updateGameCamera
 
-[Implementation, line 213](../../../../src/runtime/game-camera.ts#L213)
+[Implementation, line 232](../../../../src/runtime/game-camera.ts#L232)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -127,6 +148,7 @@ updateGameCamera(sim: Simulation, view: Pick<SceneView, 'document' | 'vehicleHea
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.abs`
 - `Math.atan2`
 - `Math.cos`
 - `Math.exp`
@@ -199,10 +221,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@408
+## updateGameCamera.callback@428
 
-[Implementation, line 408](../../../../src/runtime/game-camera.ts#L408)
+[Implementation, line 428](../../../../src/runtime/game-camera.ts#L428)
 
 ```ts
-callback@408(entity): inferred by TypeScript; see implementation
+callback@428(entity): inferred by TypeScript; see implementation
 ```

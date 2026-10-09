@@ -123,3 +123,50 @@ export async function waitForGround(
     await waitTick(Math.min(pollMs, remaining), options.signal)
   }
 }
+
+/**
+ * Wait until every cell the stream plans around `position` has arrived (or failed / is a known
+ * hole), e.g. the landscape seen during a start descent. `pending` adds other install queues
+ * (map meshes) that must drain too. Resolves true when settled, false at the stall limit (no
+ * progress for `stallMs`) or the hard cap; never throws for slowness.
+ */
+export async function waitForArea(
+  world: GroundProvider & { readonly cellStats?: { pending: number } },
+  position: Vec3Tuple,
+  options: {
+    signal?: AbortSignal
+    stallMs?: number
+    capMs?: number
+    installBudgetMs?: number
+    pending?: () => number
+    /** Drains another install queue each tick (e.g. map meshes). */
+    flush?: () => void
+    onProgress?: (pending: number) => void
+  } = {},
+): Promise<boolean> {
+  const stall = options.stallMs ?? 15000
+  const cap = options.capMs ?? 60000
+  const budget = options.installBudgetMs ?? streamingDefaults.blockingInstallBudgetMs
+  const begun = performance.now()
+  let progressAt = begun
+  let progress = world.loadProgress
+  let quiet = 0
+  while (true) {
+    options.signal?.throwIfAborted()
+    world.update(position, [0, 0, 0])
+    world.flushInstall(budget)
+    options.flush?.()
+    const pending = (world.cellStats?.pending ?? 0) + (options.pending?.() ?? 0)
+    options.onProgress?.(pending)
+    // Two quiet ticks in a row: a finished cell can queue map meshes on the next tick.
+    quiet = pending === 0 ? quiet + 1 : 0
+    if (quiet >= 2) return true
+    if (world.loadProgress !== progress) {
+      progress = world.loadProgress
+      progressAt = performance.now()
+    }
+    const now = performance.now()
+    if (now - progressAt > stall || now - begun > cap) return false
+    await waitTick(streamingDefaults.blockingPollMs, options.signal)
+  }
+}

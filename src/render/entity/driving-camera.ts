@@ -179,8 +179,9 @@ export function headingDirection(heading: number, frame: Quaternion | null = nul
  *   `tumbleSettleSeconds` upright and calm (hysteresis);
  * - while tumbling, aims along the line of horizontal travel (the nearer of its two
  *   directions) above `tumbleTrackSpeed` and otherwise holds the last heading;
- * - follows the aim with a critically damped spring (`mapHeadingResponse`, with yaw-rate
- *   feed-forward so steady turns have no lag) and clamps the turn rate (`mapMaxYawRate`);
+ * - while driving, follows the nose with a critically damped spring. The yaw-rate feed-forward
+ *   is low-passed (shortest-angle sample, render dt) so a steady turn has no lag but one physics
+ *   tick cannot kick the view. The turn rate is clamped (`mapMaxYawRate`);
  *   while tumbling it switches to the much calmer `tumbleHeadingResponse` /
  *   `tumbleMaxYawRate` and eases back over `tumbleRecoverySeconds` after the car settles.
  *
@@ -221,6 +222,10 @@ export class GroundHeading {
   private settled = 0
   private targetRate = 0
   private tracking = false
+  /** Last raw chassis heading, for the yaw-rate sample. */
+  private chassisSample = 0
+  /** Low-passed chassis yaw rate, radians per second. One tick cannot kick the view. */
+  private yawRate = 0
 
   constructor(private readonly settings: Readonly<GameCameraSettings> = gameCameraDefaults) {}
 
@@ -256,8 +261,8 @@ export class GroundHeading {
     const chassis = Math.atan2(-forward.x, -forward.z)
     if (id !== this.id) {
       this.id = id
-      this.heading = this.target = chassis
-      this.rate = this.targetRate = this.tiltRate = this.settled = 0
+      this.heading = this.target = this.chassisSample = chassis
+      this.rate = this.targetRate = this.yawRate = this.tiltRate = this.settled = 0
       this.tumbling = false
       this.calm = 1
       this.tracking = true
@@ -297,12 +302,23 @@ export class GroundHeading {
         ? Math.min(1, this.calm + step / s.tumbleRecoverySeconds)
         : 1
 
-    const previous = this.target
     if (!this.tumbling) {
+      if (!this.tracking) {
+        // Just left a rollover: the nose may have flipped. Do not treat that as a yaw spike.
+        this.chassisSample = chassis
+        this.yawRate = 0
+      }
+      // Sample the nose, then low-pass the rate. The raw one-frame difference is what made a
+      // roundabout turn in little kicks: each physics tick became a camera step.
+      const measured = MathUtils.clamp(
+        wrapAngle(chassis - this.chassisSample) / step,
+        -s.mapMaxYawRate,
+        s.mapMaxYawRate,
+      )
+      this.chassisSample = chassis
+      this.yawRate += (measured - this.yawRate) * (1 - Math.exp(-s.mapHeadingResponse * step))
       this.target = chassis
-      this.targetRate = this.tracking
-        ? MathUtils.clamp(wrapAngle(chassis - previous) / step, -s.mapMaxYawRate, s.mapMaxYawRate)
-        : 0
+      this.targetRate = MathUtils.clamp(this.yawRate, -s.mapMaxYawRate, s.mapMaxYawRate)
       this.tracking = true
     } else {
       this.tracking = false

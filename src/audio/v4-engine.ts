@@ -197,7 +197,7 @@ export class V4Engine {
     private readonly timbre: FiringVoiceTimbre = v4EngineDefaults,
     weights?: readonly number[],
   ) {
-    this.output = silentOutput(context)
+    this.output = silentOutput(context, 'engine')
     this.filter = context.createBiquadFilter()
     this.filter.type = 'lowpass'
     this.filter.Q.value = timbre.filterQ ?? 0.9
@@ -211,7 +211,7 @@ export class V4Engine {
     this.oscillator.connect(shaper)
     this.oscillator.start()
 
-    this.intake = silentOutput(context)
+    this.intake = silentOutput(context, 'engine')
     this.intakeFilter = context.createBiquadFilter()
     this.intakeFilter.type = 'bandpass'
     this.intakeFilter.Q.value = 1.2

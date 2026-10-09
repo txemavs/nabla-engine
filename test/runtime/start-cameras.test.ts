@@ -12,6 +12,12 @@ const euskadi = resolveStartCameras([
 ])
 
 describe('start camera sequence', () => {
+  it('keeps an overhead descent height and rejects a negative one', () => {
+    const [first, second] = resolveStartCameras([{ view: 'overhead', fromHeight: 600 }, 'driver'])
+    expect(first).toMatchObject({ view: 'map', fromHeight: 600 })
+    expect(second).not.toHaveProperty('fromHeight')
+    expect(() => resolveStartCameras([{ view: 'overhead', fromHeight: -1 }])).toThrow(RangeError)
+  })
   it('maps host names to camera views and fills defaults', () => {
     expect(resolveStartCameras(undefined)).toEqual([])
     expect(euskadi).toEqual([
@@ -78,4 +84,12 @@ describe('start camera sequence', () => {
     const byC = new StartCameraSequencer(euskadi)
     expect(byC.skip(false)).toEqual({ done: true, startEngine: true })
   })
+})
+
+it('the start descent is warmed from its start height down to the overhead height', async () => {
+  const { descentWarmHeights } = await import('../../src/runtime/start-cameras.js')
+  expect(descentWarmHeights(600, 45)).toEqual([600, 300, 150, 75, 45])
+  expect(descentWarmHeights(50, 45)).toEqual([45])
+  expect(descentWarmHeights(30, 45)).toEqual([30])
+  expect(descentWarmHeights(0, 45)).toEqual([])
 })

@@ -17,6 +17,7 @@ import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
+import { bindSoundControls } from './sound-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import {
@@ -115,6 +116,7 @@ try {
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     startCameras: boot.startCameras,
+    music: boot.music,
     hud: true,
     touchControls: 'always',
     display: readDisplaySettings(),
@@ -178,14 +180,18 @@ try {
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
   )
   void runBootPhase(runtime, loading, boot)
+  // Host vehicles are placed inside play(), before the reveal: their models, lights and
+  // programs load behind the intro instead of during the start descent.
+  const geography = scene.geography
+  if (geography && config.vehicles.length)
+    runtime.beforeReveal(async () => {
+      bootLog(`installHostVehicles start (${config.vehicles.length})`)
+      await installHostVehicles(runtime!, geography, config.vehicles)
+      bootLog('installHostVehicles done')
+    })
   bootLog('play() start')
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
   bootLog('play() done (ground + physics)')
-  if (scene.geography && config.vehicles.length) {
-    bootLog(`installHostVehicles start (${config.vehicles.length})`)
-    await installHostVehicles(runtime, scene.geography, config.vehicles)
-    bootLog('installHostVehicles done')
-  }
   if (scene.geography && config.portals?.length) {
     bootLog(`installHostPortals start (${config.portals?.length})`)
     await installHostPortals(runtime, scene.geography, config.portals)
@@ -199,6 +205,7 @@ try {
   bindRecoverToRoadToggle(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)
   bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
+  bindSoundControls(runtime)
   mountSettingsHud(runtime)
   bindLayerSelector(runtime, undefined, layerDefaults)
   document.getElementById('game-hud')!.classList.remove('hidden')

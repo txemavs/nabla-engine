@@ -23,8 +23,8 @@ export interface GameCameraSettings {
   /** Overhead height convergence rate, inverse seconds. */
   mapDamping: number
   /**
-   * Overhead heading response while driving, inverse seconds: a critically damped follower with
-   * yaw-rate feed-forward, so steady turns have no lag and only bump noise is filtered.
+   * Overhead heading response while driving, inverse seconds. The nose is damped exponentially
+   * and the yaw rate is low-passed, so steady turns stay with the car and single ticks do not kick.
    */
   mapHeadingResponse: number
   /** Overhead position response while driving, inverse seconds (critically damped, velocity feed-forward). */

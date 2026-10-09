@@ -1,12 +1,12 @@
 import { roadVehicleDefaults } from '../config/simulation.js'
 import { engineNoteHz } from './powertrain.js'
+import { audioBus } from './mixer.js'
 
 /**
- * Engine start, fully synthesized: no sample files. A starter motor (filtered sawtooth whose
- * level pulses with every compression stroke), a low "chug" per stroke and a slice of the
- * shared noise for the mechanical rattle, then a louder catch when the engine fires. The
- * engine note itself (see `Powertrain`) takes over from the catch and settles to idle.
- * The nodes are created once; a trigger only schedules envelopes.
+ * Engine start, fully synthesized: no sample files. One short mechanical click as the starter
+ * engages, a very brief crank, then the engine catches on the first try and the idle note
+ * (see `Powertrain`) takes over. No starter whine. The nodes are created once; a trigger only
+ * schedules envelopes.
  */
 export interface EngineStartSound {
   /** Pitch multiplier, 0.4..2. Heavier engines (lower idle rpm) crank lower. */
@@ -35,16 +35,10 @@ export function resolveEngineStart(sound?: EngineStartSound | null): Required<En
   }
 }
 
-/** Compression-stroke times of one start, seconds from the trigger. The rate rises as it spins up. */
+/** Engagement-click time of one start, seconds from the trigger. One click, then the catch. */
 export function crankPulses(seconds: number, pitch = 1): number[] {
-  const pulses: number[] = []
-  // Leave the last ~0.15 s for the catch.
-  for (let t = 0.04; t < seconds - 0.15;) {
-    pulses.push(t)
-    const rate = (8 + 3 * Math.min(1, t / Math.max(0.1, seconds - 0.15))) * Math.sqrt(pitch)
-    t += 1 / rate
-  }
-  return pulses
+  if (!(seconds >= 0.15) || !(pitch > 0)) return []
+  return [0.012]
 }
 
 export class EngineStart {
@@ -58,7 +52,7 @@ export class EngineStart {
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
     const output = context.createGain()
     output.gain.value = 1
-    output.connect(context.destination)
+    output.connect(audioBus(context, 'engine'))
 
     this.motorLevel = context.createGain()
     this.motorLevel.gain.value = 0
@@ -100,7 +94,8 @@ export class EngineStart {
     const { pitch, gain, idleRpm } = resolveEngineStart(sound)
     const seconds = roadVehicleDefaults.ignitionCrankSeconds
     const end = time + seconds
-    const catchAt = end - 0.12
+    // The click is immediate; the catch is inside the same short window, then idle.
+    const catchAt = time + Math.min(0.16, seconds * 0.75)
     for (const param of [
       this.motorLevel.gain,
       this.chugLevel.gain,
@@ -110,14 +105,11 @@ export class EngineStart {
     ])
       param.cancelScheduledValues(time)
 
-    // Electric starter: a gear whine well above the compression chugs, rising as it spins,
-    // then freewheeling off once the engine fires. Not the running engine note.
-    this.motor.frequency.setValueAtTime(240 * pitch, time)
-    this.motor.frequency.linearRampToValueAtTime(320 * pitch, time + 0.2)
-    this.motor.frequency.linearRampToValueAtTime(420 * pitch, catchAt)
-    this.motor.frequency.linearRampToValueAtTime(180 * pitch, end)
-    this.chug.frequency.setValueAtTime(55 * pitch, time)
-    this.rattleBand.frequency.setValueAtTime(520 * pitch, time)
+    // A plink, not a rising electric whine. The grind stays at one low pitch and is gone
+    // before the engine fires.
+    this.motor.frequency.setValueAtTime(95 * pitch, time)
+    this.chug.frequency.setValueAtTime(80 * pitch, time)
+    this.rattleBand.frequency.setValueAtTime(2200 * pitch, time)
 
     const motor = this.motorLevel.gain
     const chug = this.chugLevel.gain
@@ -125,40 +117,29 @@ export class EngineStart {
     motor.setValueAtTime(SILENT, time)
     chug.setValueAtTime(SILENT, time)
     rattle.setValueAtTime(SILENT, time)
-    const pulses = crankPulses(seconds, pitch)
-    pulses.forEach((offset, i) => {
-      const start = time + offset
-      const next = time + (pulses[i + 1] ?? seconds - 0.15)
-      const period = Math.max(0.02, next - start)
-      // Each compression loads the starter (louder, rougher) and releases it.
-      motor.linearRampToValueAtTime(0.03 * gain, start)
-      motor.linearRampToValueAtTime(0.075 * gain, start + period * 0.3)
-      motor.linearRampToValueAtTime(0.035 * gain, start + period * 0.95)
-      chug.setValueAtTime(SILENT, start)
-      chug.linearRampToValueAtTime(0.11 * gain, start + 0.008)
-      chug.exponentialRampToValueAtTime(SILENT, start + period * 0.8)
-      rattle.setValueAtTime(SILENT, start)
-      rattle.linearRampToValueAtTime(0.03 * gain, start + 0.006)
-      rattle.exponentialRampToValueAtTime(SILENT, start + period * 0.6)
-    })
-    // The engine fires: one strong combustion thump at the flare above idle that glides down to
-    // the idle engine note, where the engine voice takes over; the starter freewheels away.
+    const [click] = crankPulses(seconds, pitch)
+    if (click !== undefined) {
+      const at = time + click
+      rattle.linearRampToValueAtTime(0.1 * gain, at)
+      rattle.exponentialRampToValueAtTime(SILENT, at + 0.028)
+      rattle.setValueAtTime(0, at + 0.035)
+      motor.linearRampToValueAtTime(0.04 * gain, at + 0.02)
+      motor.exponentialRampToValueAtTime(SILENT, catchAt)
+      motor.setValueAtTime(0, catchAt + 0.01)
+      chug.setValueAtTime(SILENT, at)
+      chug.linearRampToValueAtTime(0.07 * gain, at + 0.008)
+      chug.exponentialRampToValueAtTime(SILENT, at + 0.06)
+    }
+    // First-try catch, straight down to the idle note. The engine voice takes over there.
     this.chug.frequency.setValueAtTime(
       engineNoteHz(idleRpm * roadVehicleDefaults.ignitionFlare),
       catchAt,
     )
-    this.chug.frequency.exponentialRampToValueAtTime(engineNoteHz(idleRpm), end + 0.12)
+    this.chug.frequency.exponentialRampToValueAtTime(engineNoteHz(idleRpm), end + 0.04)
     chug.setValueAtTime(SILENT, catchAt)
-    chug.linearRampToValueAtTime(0.18 * gain, catchAt + 0.01)
-    chug.exponentialRampToValueAtTime(SILENT, end + 0.12)
-    chug.setValueAtTime(0, end + 0.13)
-    rattle.setValueAtTime(SILENT, catchAt)
-    rattle.linearRampToValueAtTime(0.05 * gain, catchAt + 0.01)
-    rattle.exponentialRampToValueAtTime(SILENT, end + 0.05)
-    rattle.setValueAtTime(0, end + 0.06)
-    motor.linearRampToValueAtTime(0.05 * gain, catchAt)
-    motor.exponentialRampToValueAtTime(SILENT, end)
-    motor.setValueAtTime(0, end + 0.01)
+    chug.linearRampToValueAtTime(0.16 * gain, catchAt + 0.01)
+    chug.exponentialRampToValueAtTime(SILENT, end + 0.04)
+    chug.setValueAtTime(0, end + 0.05)
   }
 
   silence(time: number): void {

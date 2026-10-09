@@ -11,10 +11,11 @@ trigger only schedules envelopes. Sound design values, not measurements.
 
 ## Module dependencies
 
+- `./mixer.js`
 
 ## CasingTinkle.constructor
 
-[Implementation, line 25](../../../../src/audio/casing-tinkle.ts#L25)
+[Implementation, line 26](../../../../src/audio/casing-tinkle.ts#L26)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -22,6 +23,7 @@ constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `audioBus`
 - `band.connect`
 - `context.createBiquadFilter`
 - `context.createGain`
@@ -36,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CasingTinkle.trigger
 
-[Implementation, line 50](../../../../src/audio/casing-tinkle.ts#L50)
+[Implementation, line 51](../../../../src/audio/casing-tinkle.ts#L51)
 
 One impact at audio time `time`, `speed` m/s.
 
@@ -55,12 +57,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tick.linearRampToValueAtTime`
 - `tick.setValueAtTime`
 
-## CasingTinkle.trigger.callback@54
+## CasingTinkle.trigger.callback@55
 
-[Implementation, line 54](../../../../src/audio/casing-tinkle.ts#L54)
+[Implementation, line 55](../../../../src/audio/casing-tinkle.ts#L55)
 
 ```ts
-callback@54(partial, i): inferred by TypeScript; see implementation
+callback@55(partial, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -74,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CasingTinkle.silence
 
-[Implementation, line 71](../../../../src/audio/casing-tinkle.ts#L71)
+[Implementation, line 72](../../../../src/audio/casing-tinkle.ts#L72)
 
 ```ts
 silence(time: number): void

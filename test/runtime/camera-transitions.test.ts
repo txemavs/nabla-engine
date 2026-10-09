@@ -3,6 +3,7 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import {
   createGameCameraState,
   cycleGameCamera,
+  downwardViewFar,
   setGameCameraView,
   updateGameCamera,
 } from '../../src/runtime/game-camera.js'
@@ -43,6 +44,8 @@ test('a view change moves the camera smoothly instead of cutting', async () => {
   expect(cut.transition).toBeNull()
   expect(overhead.distanceTo(chase)).toBeGreaterThan(10)
 
+  // The default overhead entry cuts; this checks the blend a start sequence can still request.
+  state.nextTransitionMs = state.settings.modeTransitionMs
   setGameCameraView(state, 'map', true)
   const duration = state.settings.modeTransitionMs
   const heights: number[] = []
@@ -109,4 +112,28 @@ test('boarding keeps the entrance move and leaving a vehicle does not blend', as
   expect(state.transition).toBeNull()
   expect(new Vector3().copy(camera.position).length()).toBeGreaterThan(0)
   session.dispose()
+})
+
+test('entering the overhead view cuts instead of climbing through the cabin', async () => {
+  const { session, sim, view } = await seated()
+  const camera = new PerspectiveCamera()
+  const state = createGameCameraState()
+  state.mode = 'cockpit'
+  updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
+  const cockpit = camera.position.clone()
+  setGameCameraView(state, 'map', true)
+  updateGameCamera(sim, view, camera, state, 1016, 1 / 60)
+  expect(state.transition).toBeNull()
+  expect(camera.position.distanceTo(cockpit)).toBeGreaterThan(10)
+  expect(camera.position.y).toBeGreaterThan(cockpit.y + 10)
+  session.dispose()
+})
+
+test('a steep look-down caps the far plane to the ground under the camera', () => {
+  expect(downwardViewFar(12000, 45, -0.2)).toBe(12000)
+  expect(downwardViewFar(12000, 45, -0.9)).toBe(45 * 3 + 80)
+  expect(downwardViewFar(12000, 10, -0.9)).toBe(180)
+  expect(downwardViewFar(12000, 400, -1)).toBe(400 * 3 + 80)
+  expect(downwardViewFar(200, 400, -1)).toBe(200)
+  expect(downwardViewFar(Number.NaN, 40, -1)).toBeNaN()
 })

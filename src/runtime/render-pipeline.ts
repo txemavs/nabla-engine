@@ -64,7 +64,18 @@ export class GameRenderPipeline {
       }))
       try {
         for (const { surface } of portalStates) surface.mesh.material.uniforms.live.value = 0
-        view.renderMirrors(renderer, scene, camera, frame.mirrorVehicle, frame.time)
+        view.renderMirrors(
+          renderer,
+          scene,
+          camera,
+          frame.mirrorVehicle,
+          frame.time,
+          sky.enabled
+            ? (reflection) => {
+                sky.render(renderer, reflection, reflection.position.clone().add(origin))
+              }
+            : undefined,
+        )
       } finally {
         for (const { surface, live } of portalStates)
           surface.mesh.material.uniforms.live.value = live

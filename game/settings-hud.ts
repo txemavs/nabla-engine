@@ -38,7 +38,7 @@ type TabId = (typeof TABS)[number]['id']
  *   Calidad       — profile, performance, «Sombras» (#138) and the asphalt contrast
  *   Capas         — map layers (road, buildings, ground photo)
  *   Vehículos     — add vehicles, «Volante»
- *   Opciones      — player preferences: camera, R reset, city labels
+ *   Opciones      — player preferences: camera, R reset, city labels, «Sonido» (volumes, music)
  *   Configuración — the planet config text to copy, terrain source and cache
  * Sections created after the HUD mounts (the Capas layer list is bound later) are placed as they
  * appear. An unknown id lands in Opciones so a new feature is never left in the hidden legacy menu.
@@ -56,6 +56,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['camera-extras', 'options'],
   ['driving-extras', 'options'],
   ['settings-options-labels', 'options'],
+  ['settings-sound', 'options'],
   ['settings-config-planet', 'config'],
   ['terrain-source', 'config'],
 ]

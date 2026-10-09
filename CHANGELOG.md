@@ -2,11 +2,54 @@
 
 ## Unreleased
 
+### Added
+
+- Staged reveal for intros: `play()` reports `data-reveal-stage` (vehicles, weapons, terrain, shaders, ready) and `data-reveal-progress`, waits for every streamed cell and map mesh around the start (`waitForArea`, what a descent from above shows) and uploads scene textures (`uploadSceneTextures`) before `data-reveal="holding"`. `holdStartCameras(promise)` keeps the start sequence on its first view (a `fromHeight` descent waits at its start height, e.g. while the host fades in), and the descent's first view only counts as arrived once the camera is near its normal height, so slow frames never cut it short.
+- Experimental full-auto for the pistol: M on foot with the pistol drawn toggles SEMI / RÁFAGA 30 (30-round magazine, ~900 rpm while the left button is held, accumulating muzzle rise and a random sideways kick that recovers on release, a case and a shot sound per round, the normal magazine reload, fires while aiming). A label at the bottom right shows `SEMI` or `EXPERIMENTAL · RÁFAGA 30`; canvas `data-fire-mode`. M at a ship helm still cycles the helm mode. Rate, magazine and kick are TODO(unverified) (`src/simulation/weapons/machine-pistol.ts`).
+- Intro and reveal: `GameRuntime.play()` now preloads the vehicle and sidearm models and warms the shader programs before the attract view goes away, and waits for host gates added with `holdReveal(promise)` (an intro or credits sequence). `startMusic()` starts the background music now or on the next gesture. The attract planet follows the real clock by default (`AttractOptions.clock`), and a live scene clock is re-anchored at reveal so gameplay starts at its authored time. Start cameras take `fromHeight` on an overhead first step for a descent from high altitude (slower damping, 1.2/s, until it settles or leaves the overhead view). The canvas exposes `data-reveal` (`preparing`, `holding`, `play`).
+- Adding a vehicle no longer freezes the game. `GameRuntime.prewarmVehicle` loads and parses its GLBs (cached and reused), uploads one texture per frame and compiles its shaders with `compileAsync` before the vehicle exists; `placeVehicle` / `spawnVehicle` wait for that and show a small «Cargando vehículo…» badge. The game menu starts it as soon as a vehicle is picked. Vehicle colliders are a few boxes and stay synchronous.
+- Audio mixer: master → engine bus (every engine, starter, turbo, turbine and propeller voice) and music bus; tyres, gears, gunshot and brakes stay on master. `GameRuntime.audioMix` / `setAudioMix` (0..1, squared slider curve, music mute), saved as `nabla.audioMix`. Ajustes → Opciones → Sonido has General, Motor and Música sliders and «Silenciar música».
+- Background music: `GameRuntimeOptions.music` (and `NABLA_BOOT.music` in the game host) takes encodings in preference order. The track streams through an `<audio>` element into the music bus, loops, starts after the first gesture and pauses while the page is hidden. Default music level 50% (TODO(unverified): a taste choice).
+
+### Added
+
+- J menu «VISTA FOV» (last page): widen or narrow the cockpit/on-foot and chase cameras in 5° steps (−15° to +25°, or NORMAL). Saved as `nabla.cameraFov`. The overhead view shares the chase FOV; the cinematic camera keeps its own.
+
+### Changed
+
+- Engine over gear shifts on every vehicle: the engine bus has a fixed +4 dB trim (`engineBusTrim` 1.6) and car/truck clacks and the bike click play at half gain (`gearShiftLevel`, about −6 dB), so a shift is subtle under the engine. A limiter on master keeps the louder mix from clipping. Pistol reload clicks are unchanged.
+- Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
+
 ### Fixed
+
+- The start descent no longer stutters after the reveal. Before `data-reveal="holding"`, `play()` renders the start views once (the overhead descent at its start height, halving down to the normal overhead height, then cockpit and chase), 1 px scissored on the canvas with a scratch camera state, so their shader programs (shadow and transmission passes included), buffers and textures are built behind the intro. `GameRuntime.beforeReveal(task)` runs host work inside `play()` before the start area is streamed and warmed; the game host places its host vehicles there (no loading badge while `data-reveal="preparing"`), so a carrier's lights no longer recompile every material during the descent. The carrier's four exhaust lamps stay in the scene while playing (dark by day) and only the flames toggle, so taking off no longer changes the light count. Wheel asphalt/grass classification uses a segment grid (`RoadSegmentIndex`) instead of scanning every OSM road for every wheel on every physics step; the result is unchanged.
+- No coloured placeholder block is drawn while a vehicle's GLB is still loading (e.g. the red cube before the motorbike appeared).
+- Zenithal camera: zooming out no longer turns cars or trucks black on Ultra (4 cascades). The #183 cut for steep views was still capped at far / 4, and the overhead far plane is about three times the eye height, so the vehicle always fell into cascade 1. Steep views now keep their uncapped first cut.
+- Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
+
+- Zenithal camera: zooming out no longer turns trucks black. A downward view used to leave the vehicle in the last shadow cascade (the 140 m cut is still in the air), and that map is sized to the far plane. Cascade 0 now ends just past the ground under the camera.
+
+- Overhead camera: switching into the zenithal view no longer climbs out through the cabin for 700 ms (that blend lerped the field of view and rebuilt the shadow cascades every frame). The view cuts to the overhead pose, which is already being tracked. A start sequence can still blend by setting its own transition. While the camera looks steeply down, the far plane is capped to the ground under it so the shadow maps are not sized to a 12 km shaft.
+
+- Pistol: left click fires while aiming (right button held). Pointer lock does not report that second button as a pointer event, so the mouse button is read as well.
+- Overhead camera: turning at speed no longer rotates the view in small steps. The heading follows the nose continuously (shortest angle, render frame) instead of copying each physics tick.
+
+- S3 instrument cluster: the gauge display sits 1.5 cm higher in the car (chassis up), so the dash lip no longer covers the bottom of the dials. The offset is the preset's `clusterOffset`.
 
 - Trucks and trailers: the cargo-box skin (`Chassis B`, albedo ~0.02, metal 0.45, no environment) rendered as a flat black silhouette. It now takes the same body colour as `White paint`. S3 / A3 cabin cloth and plastic authored under 0.08 linear are floored so the interior is not pure black. TODO(unverified): the cabin floor is not a measured swatch.
 
 ### Changed
+
+- The Audi S3 instrument cluster sits 5 mm lower than the previous 15 mm raise (`clusterOffset` y 0.015 → 0.010).
+- On a coarse pointer the enter/camera buttons stack on the left above the clock, and the accelerator sits beside the wheel, so the wheel can be grabbed. Fine pointers keep the horizontal bar.
+- The truck diesel is much louder (idle gain 0.04 → 0.12, load 0.075 → 0.225, about +9.5 dB) and its turbo whistle sits a bit lower (700–2200 Hz → 580–1780 Hz). TODO(unverified): not a measured recording. Starter click, jake and blow-off stay as they are.
+
+- Pistol reload: the magazine release and the magazine insert are louder (+8 to +10 dB) and not the same tick. The release is a dull knock, the insert a short sharp click. Gearbox clicks are unchanged.
+
+- Bike: mounting a fallen bike (E, next to it) does the R reset. The rider is seated, the bike stands up and, with road snap on, moves to the nearest road. An upright bike is unchanged.
+- Starter (every vehicle): one mechanical click and a very brief crank (about 0.2 s), then the engine catches on the first try and idles. No starter whine. The running voices are unchanged.
+
+- Pistol reload: the pistol rises, the spent magazine drops out of the grip and stays on the ground (same bounce and lifetime as a shell casing, eight at most), then a fresh magazine is inserted and the pistol comes back down. Timed to the existing reload (magazine out 0.35 s, seated 1.25 s). The magazine is the model's `Magazine` node.
 
 - Starter (every vehicle): the crank is half as long, about 0.5 s (was 0.95 s). The running voices are unchanged.
 - Truck: the diesel pulse train stays, pitched down so its strong partial matches yesterday's note (`rpm/24` instead of `rpm/20`). No jake bark and no turbo blow-off chirp on lift-off; the engine itself stays audible. Air-brake hiss remains.
@@ -26,6 +69,8 @@
   `scripts/prepare-vfr800-cockpit.mjs` from the phase-1 GLB.
 
 ### Added
+
+- Wheels know asphalt from grass when road data is loaded. A contact inside a mapped carriageway (scene roads plus the OSM navigation roads used by the R reset, compared with that road's width) is asphalt. Off that carriageway, grip drops to 0.42 of the vehicle's own tyre grip (car, bike and truck share the factor; TODO(unverified), not a measured friction) and the skid marks are brown-green. Marks still fade with the existing tyre-mark lifetime. No road data leaves grip and mark colour unchanged. A paved lot that is not a carriageway reads as grass.
 
 - **HK USP Compact as a firearm:** the assembled model (slide, trigger, magazine, muzzle) replaces the
   split viewmodel, and the preset carries the real pistol's data with sources (HK manual: 9 mm x 19,

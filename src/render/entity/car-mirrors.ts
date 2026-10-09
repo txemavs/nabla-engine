@@ -184,6 +184,49 @@ function authoredMirrorSide(mesh: THREE.Mesh): string | undefined {
   const side = mesh.userData.nabla?.mirror
   return typeof side === 'string' ? side : undefined
 }
+
+/**
+ * Draw the sky into the mirror target before the reflected scene. The reflector clears on
+ * `renderer.render`, so the sky pass has to run inside that call, first, while autoClear is
+ * still on. The scene is then composited with autoClear off and covers the sky where the
+ * world is. Without this the mirror target keeps the clear colour, a dark navy that is not
+ * the daytime sky.
+ */
+export function renderSceneWithSky(
+  renderer: { render: THREE.WebGLRenderer['render']; autoClear: boolean },
+  paintSky: ((camera: THREE.PerspectiveCamera) => void) | undefined,
+  draw: () => void,
+): void {
+  if (!paintSky) {
+    draw()
+    return
+  }
+  const original = renderer.render
+  let painting = false
+  renderer.render = function (this: unknown, scene, camera, ...rest: unknown[]) {
+    if (painting || !(camera as { isPerspectiveCamera?: boolean } | undefined)?.isPerspectiveCamera)
+      return original.call(this, scene, camera as THREE.Camera, ...(rest as []))
+    painting = true
+    try {
+      paintSky(camera as THREE.PerspectiveCamera)
+      const clear = renderer.autoClear
+      renderer.autoClear = false
+      try {
+        return original.call(this, scene, camera as THREE.Camera, ...(rest as []))
+      } finally {
+        renderer.autoClear = clear
+      }
+    } finally {
+      painting = false
+    }
+  } as THREE.WebGLRenderer['render']
+  try {
+    draw()
+  } finally {
+    renderer.render = original
+  }
+}
+
 /** Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz. */
 export class CarMirrors {
   private entries: {
@@ -334,6 +377,8 @@ export class CarMirrors {
     camera: THREE.PerspectiveCamera,
     enabled: boolean,
     now: number,
+    /** Paints the real sky into the mirror target for this reflection camera. */
+    paintSky?: (camera: THREE.PerspectiveCamera) => void,
   ): void {
     for (const e of this.entries) {
       e.mirror.visible = enabled
@@ -367,7 +412,8 @@ export class CarMirrors {
         e.mirror.visible = false
         e.original.visible = true
       }
-      if (!scene.background) scene.background = scene.fog?.color ?? new THREE.Color('#50677d')
+      // Same light as the sky backdrop, so a mirror that misses the sky pass is not navy.
+      if (!scene.background) scene.background = scene.fog?.color ?? new THREE.Color('#a6bbd5')
       renderer.autoClear = true
       for (const e of this.entries) {
         if (!capturing.has(e) || !frustum.intersectsObject(e.mirror)) continue
@@ -379,14 +425,16 @@ export class CarMirrors {
         if (e.mirror.parent) up.transformDirection(e.mirror.parent.matrixWorld)
         fitMirrorCamera(e.capture, camera, e.mirror, e.width / e.height, up)
         e.original.visible = false
-        e.render.call(
-          e.mirror,
-          renderer,
-          scene,
-          e.capture,
-          e.mirror.geometry,
-          e.mirror.material as THREE.Material,
-          null!,
+        renderSceneWithSky(renderer, paintSky, () =>
+          e.render.call(
+            e.mirror,
+            renderer,
+            scene,
+            e.capture,
+            e.mirror.geometry,
+            e.mirror.material as THREE.Material,
+            null!,
+          ),
         )
         e.mirror.visible = false
         e.original.visible = true

@@ -6,7 +6,13 @@ import { MapCollisions } from './map-collisions.js'
 import { PlanetCatchFloor } from './catch-floor.js'
 import { createEntityBody } from './entity-body.js'
 import { RoadAssist } from './road-assist.js'
-import { nearestRoadPoint, ROAD_SNAP_MAX_DISTANCE, type RoadCenterline } from './road-snap.js'
+import {
+  nearestRoadPoint,
+  ROAD_SNAP_MAX_DISTANCE,
+  RoadSegmentIndex,
+  type RoadCenterline,
+} from './road-snap.js'
+import { classifyWheelSurface, type WheelSurface } from './wheel-surface.js'
 import { portalEnvelope, portalExitBlocked } from './portal-clearance.js'
 import { constrainTerrainBoundary } from './terrain-boundary.js'
 import { ejectionDefaults, simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
@@ -198,6 +204,8 @@ export class Simulation {
   private ticks = 0
   private lostTime = 0
   private readonly roadGuidance = new RoadAssist()
+  /** Host carriageways (OSM navigation roads) in the simulation frame. Scene roads are added. */
+  private hostSurfaceRoads: RoadCenterline[] = []
   private readonly portalTraversal = new PortalTraversal()
   /**
    * The rider thrown off a crashed two-wheeler, from the throw until control returns (flying,
@@ -817,12 +825,80 @@ export class Simulation {
       lever: this.input.frontBrake ?? 0,
     }
   }
+  /**
+   * Carriageways used to tell asphalt from grass. Pass the same roads the R reset snaps to
+   * (OSM navigation roads). Scene roads are always included. Omit or pass nothing to clear
+   * the host set. An empty world (no scene roads and no host roads) leaves the surface unknown.
+   */
+  setSurfaceRoads(roads?: Iterable<RoadCenterline> | null): void {
+    const next = roads ? [...roads] : []
+    const current = this.hostSurfaceRoads
+    // Hosts pass a fresh array every frame; keep the current one (and its segment index) when
+    // it holds the same roads.
+    if (next.length === current.length && next.every((road, i) => road === current[i])) return
+    this.hostSurfaceRoads = next
+  }
+  private surfaceRoads(): RoadCenterline[] {
+    const scene = this.roadGuidance.centerlines(
+      this.document.entities,
+      this.graph,
+      this.entitiesById,
+    )
+    return this.hostSurfaceRoads.length ? scene.concat(this.hostSurfaceRoads) : scene
+  }
+  /** Segment grid over {@link surfaceRoads}, rebuilt only when the scene or host roads change. */
+  private surfaceIndex(): RoadSegmentIndex | null {
+    const scene = this.roadGuidance.centerlines(
+      this.document.entities,
+      this.graph,
+      this.entitiesById,
+    )
+    const cache = this.surfaceIndexCache
+    if (cache && cache.scene === scene && cache.host === this.hostSurfaceRoads) return cache.index
+    const index = new RoadSegmentIndex(this.surfaceRoads())
+    this.surfaceIndexCache = { scene, host: this.hostSurfaceRoads, index }
+    return index
+  }
+  private surfaceIndexCache: {
+    scene: RoadCenterline[]
+    host: RoadCenterline[]
+    index: RoadSegmentIndex
+  } | null = null
+  private wheelSurfaces(v: {
+    raycast: {
+      wheelInfos: {
+        isInContact: boolean
+        raycastResult: { hitPointWorld: { x: number; z: number } }
+      }[]
+    }
+  }): (WheelSurface | null)[] | undefined {
+    const roads = this.surfaceIndex()
+    if (!roads?.size) return undefined
+    return v.raycast.wheelInfos.map((wheel) =>
+      wheel.isInContact
+        ? classifyWheelSurface(
+            wheel.raycastResult.hitPointWorld.x,
+            wheel.raycastResult.hitPointWorld.z,
+            roads,
+          )
+        : null,
+    )
+  }
   /** Per-wheel absolute-world contact snapshots for any tyre effect or diagnostic. */
   wheelContactInfo(
     id: string,
   ): { -readonly [K in keyof WheelContactSnapshot]: WheelContactSnapshot[K] }[] {
     const v = this.vehicles.get(id)
-    return v ? wheelContacts(v, this.wheeledInput(), id === this.vehicleId, !v.definition.boat) : []
+    if (!v) return []
+    const contacts = wheelContacts(
+      v,
+      this.wheeledInput(),
+      id === this.vehicleId,
+      !v.definition.boat,
+    )
+    const surfaces = this.wheelSurfaces(v)
+    if (!surfaces) return contacts
+    return contacts.map((contact, i) => ({ ...contact, surface: surfaces[i] ?? null }))
   }
 
   step(elapsed: number): void {
@@ -1129,6 +1205,7 @@ export class Simulation {
           v.helm !== 'off',
           this.radialUp(v.body),
           simulationDefaults.gravity,
+          this.wheelSurfaces(v),
         )
         if (v.twoWheeled.ejectPending) {
           v.twoWheeled.ejectPending = false
@@ -1136,7 +1213,14 @@ export class Simulation {
         }
         continue
       }
-      stepWheeledVehicle(v, drivingInput, FIXED_STEP, active, v.helm !== 'off')
+      stepWheeledVehicle(
+        v,
+        drivingInput,
+        FIXED_STEP,
+        active,
+        v.helm !== 'off',
+        this.wheelSurfaces(v),
+      )
       if (active && this.roadGuidance.enabled)
         this.roadGuidance.apply(
           v,
@@ -1579,14 +1663,21 @@ export class Simulation {
     }
     return nearest
   }
-  /** Interaction returns a useful status; dismount requires a supported, unobstructed exit. */
-  interact(): string {
+  /**
+   * Interaction returns a useful status; dismount requires a supported, unobstructed exit.
+   * Mounting a two-wheeler that is on the ground (crashed or fallen) is the R reset: same
+   * upright and, when `recover` asks for it, the same snap to the nearest road.
+   */
+  interact(recover?: RecoverVehicleOptions): string {
     if (this.disposed) throw new Error('Simulation is disposed')
     if (this.vehicleId) return this.exitVehicle()
     const id = this.nearestVehicle()
     if (!id) return 'Acércate a un vehículo detenido y pulsa E para entrar'
+    const v = this.vehicles.get(id)!
+    const lying = !!v.twoWheeled && (v.twoWheeled.crashed || v.twoWheeled.fallen)
     this.startInVehicle(id)
-    return 'Conduciendo ' + this.vehicles.get(id)!.entity.name
+    if (lying) return this.recoverVehicle(recover)
+    return 'Conduciendo ' + v.entity.name
   }
   /** Explicit scenario entry; ordinary interaction still checks reach and obstructions. */
   startInVehicle(id: string): void {

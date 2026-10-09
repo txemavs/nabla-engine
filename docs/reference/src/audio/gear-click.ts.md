@@ -11,10 +11,11 @@ motorcycle's sequential gearbox (or any vehicle whose preset asks for `gearShift
 
 ## Module dependencies
 
+- `./mixer.js`
 
 ## resolveGearClickVolume
 
-[Implementation, line 28](../../../../src/audio/gear-click.ts#L28)
+[Implementation, line 37](../../../../src/audio/gear-click.ts#L37)
 
 ```ts
 resolveGearClickVolume(sound?: GearClickSound | null): number
@@ -26,9 +27,38 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `Number.isFinite`
 
+## shaped
+
+[Implementation, line 44](../../../../src/audio/gear-click.ts#L44)
+
+```ts
+shaped(value: number | undefined, fallback: number, min: number, max: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+
+## gearClickPeak
+
+[Implementation, line 51](../../../../src/audio/gear-click.ts#L51)
+
+Peak gain of one click, after the volume multiplier. Gearbox clicks stay at the default.
+
+```ts
+gearClickPeak(sound?: GearClickSound | null): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `resolveGearClickVolume`
+- `shaped`
+
 ## GearClick.constructor
 
-[Implementation, line 38](../../../../src/audio/gear-click.ts#L38)
+[Implementation, line 80](../../../../src/audio/gear-click.ts#L80)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -36,15 +66,16 @@ constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `band.connect`
+- `audioBus`
 - `context.createBiquadFilter`
 - `context.createGain`
 - `noise.connect`
+- `this.band.connect`
 - `this.level.connect`
 
 ## GearClick.trigger
 
-[Implementation, line 51](../../../../src/audio/gear-click.ts#L51)
+[Implementation, line 93](../../../../src/audio/gear-click.ts#L93)
 
 Schedule one click at audio time `time`. Silent when not `audible` or at volume 0.
 
@@ -55,15 +86,19 @@ trigger(time: number, audible: boolean, sound?: GearClickSound | null): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
+- `gearClickPeak`
 - `param.cancelScheduledValues`
 - `param.exponentialRampToValueAtTime`
 - `param.linearRampToValueAtTime`
 - `param.setValueAtTime`
 - `resolveGearClickVolume`
+- `shaped`
+- `this.band.Q.setValueAtTime`
+- `this.band.frequency.setValueAtTime`
 
 ## GearClick.silence
 
-[Implementation, line 63](../../../../src/audio/gear-click.ts#L63)
+[Implementation, line 109](../../../../src/audio/gear-click.ts#L109)
 
 ```ts
 silence(time: number): void

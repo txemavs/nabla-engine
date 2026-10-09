@@ -12,6 +12,13 @@ import {
   type FirearmState,
 } from '../simulation/weapons/firearm.js'
 import { MuzzleRise } from '../simulation/weapons/recoil.js'
+import {
+  pullTrigger,
+  RecoilYaw,
+  specForMode,
+  type FireMode,
+} from '../simulation/weapons/machine-pistol.js'
+import { reloadPresentation } from './reload-presentation.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
@@ -59,7 +66,10 @@ export class Sidearm {
   private readonly camera = new THREE.PerspectiveCamera(HIP_POSE.fov, 1, 0.01, 5)
   readonly model = new THREE.Group()
   readonly preset: WeaponPreset | undefined
-  readonly firearm: FirearmSpec
+  /** The pistol's own (semi-automatic) spec; `firearm` follows the fire mode. */
+  readonly baseFirearm: FirearmSpec
+  private mode: FireMode = 'semi'
+  readonly recoilYaw = new RecoilYaw()
   readonly state: FirearmState
   private readonly rise: MuzzleRise | null
   private rig: WeaponRig = defaultRig
@@ -84,7 +94,7 @@ export class Sidearm {
     this.range = preset?.ammunition?.maxTraceM ?? preset?.range ?? 150
     this.impulse = preset?.impulse ?? 12
     this.legacyTravel = preset?.slideTravel ?? 0
-    this.firearm = preset?.firearm
+    this.baseFirearm = preset?.firearm
       ? {
           magazineCapacity: preset.firearm.magazineCapacity,
           chamber: preset.firearm.chamber,
@@ -92,7 +102,7 @@ export class Sidearm {
           reloadMs: preset.firearm.reloadMs,
         }
       : legacyFirearm(preset)
-    this.state = freshFirearm(this.firearm)
+    this.state = freshFirearm(this.baseFirearm)
     this.rise = preset?.recoil ? new MuzzleRise(preset.recoil) : null
     const fallbackMaterial = new THREE.MeshStandardMaterial({ color: '#1b1f24', roughness: 0.6 })
     const fallback = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.17), fallbackMaterial)
@@ -250,16 +260,36 @@ export class Sidearm {
 
   reset(): void {
     Object.assign(this.state, freshFirearm(this.firearm))
+    this.recoilYaw.reset()
     this.rise?.reset()
     this.aiming = false
     this.aimBlend = 0
   }
 
-  /** Trigger pressed (fires at most once per press). */
+  /** Spec in use: the pistol's own, or the 30-round RÁFAGA one (`machine-pistol.ts`). */
+  get firearm(): FirearmSpec {
+    return specForMode(this.baseFirearm, this.mode)
+  }
+  get fireMode(): FireMode {
+    return this.mode
+  }
+  /** Switch SEMI / RÁFAGA 30. A magazine fuller than the new capacity keeps only what fits. */
+  setFireMode(mode: FireMode): void {
+    this.mode = mode
+    const capacity = this.firearm.magazineCapacity
+    if (this.state.magazine > capacity) this.state.magazine = capacity
+    this.state.triggerHeld = false
+    this.recoilYaw.reset()
+  }
+
+  /** Trigger pressed or held: once per press in SEMI, at the cyclic rate in RÁFAGA. */
   pull(now: number): FirearmEvent {
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
-    const event = trigger(this.state, this.firearm, true, now)
-    if (event.fired) this.rise?.shot(now)
+    const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
+    if (event.fired) {
+      this.rise?.shot(now)
+      if (this.mode === 'burst30') this.recoilYaw.kick()
+    }
     return event
   }
 
@@ -330,6 +360,32 @@ export class Sidearm {
     }
   }
 
+  /**
+   * Magazine in the viewmodel camera's space, plus the direction it slides out of the grip.
+   * Null until the assembled model has loaded.
+   */
+  magazineDropView(): {
+    position: THREE.Vector3
+    quaternion: THREE.Quaternion
+    direction: THREE.Vector3
+  } | null {
+    if (!this.magazine) return null
+    this.model.updateWorldMatrix(true, true)
+    const position = new THREE.Vector3()
+    const quaternion = new THREE.Quaternion()
+    this.magazine.object.getWorldPosition(position)
+    this.magazine.object.getWorldQuaternion(quaternion)
+    const parent = new THREE.Quaternion()
+    this.magazine.object.parent?.getWorldQuaternion(parent)
+    const direction = axis(this.rig.presentation.magazine.axis).applyQuaternion(parent)
+    return { position, quaternion, direction }
+  }
+
+  /** A detached copy of the `Magazine` node. Geometry and materials stay shared. */
+  magazineClone(): THREE.Object3D | null {
+    return this.magazine ? this.magazine.object.clone(true) : null
+  }
+
   /** Slide, trigger and magazine from the firearm state, relative to their rest poses. */
   private pose(now: number): void {
     const p = this.rig.presentation
@@ -347,20 +403,18 @@ export class Sidearm {
             this.state.triggerHeld ? p.trigger.angle : 0,
           ),
         )
+    const shown = reloadPresentation(
+      this.state.reload,
+      now - this.state.reloadStartMs,
+      this.firearm.reloadMs,
+    )
+    // Negative X raises the muzzle: the model looks down -Z.
+    this.model.rotation.x = -shown.pitch
     if (this.magazine) {
-      const { magazineOut, magazineIn } = this.firearm.reloadMs
-      const age = now - this.state.reloadStartMs
-      let out = 0
-      if (this.state.reload === 'magazine-out') out = 0.3 * smooth(age / magazineOut)
-      else if (this.state.reload === 'magazine-in') {
-        const u = (age - magazineOut) / (magazineIn - magazineOut)
-        // The old magazine falls away; the new one comes up from below and seats.
-        out = u < 0.35 ? 0.3 + 6 * u * u : 1 - smooth((u - 0.35) / 0.65)
-      }
-      this.magazine.object.visible = out < 1.5
+      this.magazine.object.visible = shown.magazineVisible
       this.magazine.object.position
         .copy(this.magazine.rest)
-        .addScaledVector(axis(p.magazine.axis), p.magazine.distance * out)
+        .addScaledVector(axis(p.magazine.axis), p.magazine.distance * shown.travel)
     }
   }
 }
@@ -373,10 +427,6 @@ function part(root: THREE.Object3D, name: string): Part | null {
 }
 
 const axis = (v: number[]) => new THREE.Vector3(v[0], v[1], v[2]).normalize()
-const smooth = (t: number) => {
-  const x = Math.min(1, Math.max(0, t))
-  return x * x * (3 - 2 * x)
-}
 
 async function loadRig(url: string): Promise<WeaponRig | null> {
   try {

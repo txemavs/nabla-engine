@@ -25,6 +25,11 @@ export interface StartCameraStep {
   after?: number | 'engine'
   /** Blend into this step, milliseconds (default: the camera's `modeTransitionMs`). */
   transitionMs?: number
+  /**
+   * First step only, overhead view: start this many metres above the vehicle and settle down to
+   * the normal overhead height (a descent from high altitude). Ignored for other views.
+   */
+  fromHeight?: number
 }
 
 /** A view name is shorthand for `{ view }`. */
@@ -37,6 +42,8 @@ export interface ResolvedStartCamera {
   view: GameCameraView
   after: number | 'engine'
   transitionMs: number | null
+  /** Overhead start height, metres (`StartCameraStep.fromHeight`). */
+  fromHeight?: number
 }
 
 const VIEWS: Readonly<Record<StartCameraName, GameCameraView>> = {
@@ -69,7 +76,14 @@ export function resolveStartCameras(
       throw new RangeError(`startCameras[${index}].after must be milliseconds or 'engine'`)
     if (step.transitionMs !== undefined && !nonNegative(step.transitionMs))
       throw new RangeError(`startCameras[${index}].transitionMs must be non-negative milliseconds`)
-    return { view: VIEWS[name as StartCameraName], after, transitionMs: step.transitionMs ?? null }
+    if (step.fromHeight !== undefined && !nonNegative(step.fromHeight))
+      throw new RangeError(`startCameras[${index}].fromHeight must be non-negative metres`)
+    return {
+      view: VIEWS[name as StartCameraName],
+      after,
+      transitionMs: step.transitionMs ?? null,
+      ...(step.fromHeight !== undefined ? { fromHeight: step.fromHeight } : {}),
+    }
   })
 }
 
@@ -111,6 +125,10 @@ export class StartCameraSequencer {
   }
   get done(): boolean {
     return this.finished
+  }
+  /** Index of the current step (0 = the first view). */
+  get step(): number {
+    return this.index
   }
 
   update(frame: { now: number; arrived: boolean; engineRunning: boolean }): StartCameraAction {
@@ -155,4 +173,16 @@ export class StartCameraSequencer {
     if (toLast) action.view = this.steps[this.steps.length - 1].view
     return action
   }
+}
+
+/**
+ * Heights (m) at which `prepareReveal` renders the start descent once: its start height, then
+ * halving down to the normal overhead height, which is included.
+ */
+export function descentWarmHeights(fromHeight: number, toHeight: number): number[] {
+  if (!(fromHeight > 0) || !(toHeight > 0)) return []
+  const heights: number[] = []
+  for (let h = fromHeight; h > toHeight * 1.5 && heights.length < 8; h /= 2) heights.push(h)
+  heights.push(Math.min(toHeight, fromHeight))
+  return heights
 }

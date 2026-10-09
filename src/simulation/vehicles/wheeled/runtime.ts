@@ -18,6 +18,7 @@ import {
   initialEngineMode,
   type DrivetrainState,
 } from '../drivetrain.js'
+import { surfaceGripScale, type WheelSurface } from '../../wheel-surface.js'
 import type {
   EngineMode,
   PowertrainDefinition,
@@ -199,6 +200,7 @@ export function stepWheeledVehicle(
   dt: number,
   active = true,
   powered = true,
+  surfaces?: readonly (WheelSurface | null)[],
 ): void {
   if (
     !Number.isFinite(dt) ||
@@ -306,11 +308,11 @@ export function stepWheeledVehicle(
     )
     if (tune) {
       const desiredGrip =
-        active && input.handbrake && i >= 2
+        (active && input.handbrake && i >= 2
           ? 0.7
           : i >= 2
             ? tune.grip * (1 - v.drivetrain.launchSlip * 0.6)
-            : tune.grip
+            : tune.grip) * surfaceGripScale(surfaces?.[i])
       const wheel = v.raycast.wheelInfos[i]
       wheel.frictionSlip += (desiredGrip - wheel.frictionSlip) * Math.min(1, dt * 8)
     }

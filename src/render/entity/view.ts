@@ -504,6 +504,10 @@ export class SceneView {
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
   }
   /** A soft CPU budget; one indivisible mesh may exceed it. Call once per main frame. */
+  /** Map meshes (roads, cover) still waiting for `flushMapInstall`. */
+  get pendingMapInstalls(): number {
+    return this.pendingMapMeshes.length
+  }
   flushMapInstall(budgetMs = 4, maxEntities = 24, eye?: THREE.Vector3): number {
     if (eye) this.mapInstallEye.copy(eye)
     const started = performance.now()
@@ -1047,6 +1051,8 @@ export class SceneView {
       definition = vehicleDefinition(e)
     const adapter = this.options.vehiclePresentation?.(e)
     const fallback = box(e.size, e.color)
+    // Kept for the swap below but never drawn: a coloured block before the GLB arrives looked broken.
+    fallback.visible = false
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
       const equipment = adapter?.mount(
@@ -1676,6 +1682,7 @@ export class SceneView {
     camera: THREE.PerspectiveCamera,
     vehicleId: string | null,
     now: number,
+    paintSky?: (camera: THREE.PerspectiveCamera) => void,
   ): void {
     if (!this.carMirrors.size) {
       renderer.domElement.dataset.mirrorActive = 'false'
@@ -1685,7 +1692,7 @@ export class SceneView {
     for (const [id, mirrors] of [...this.carMirrors].sort(
       ([a], [b]) => Number(a === vehicleId) - Number(b === vehicleId),
     ))
-      mirrors.render(renderer, scene, camera, id === vehicleId, now)
+      mirrors.render(renderer, scene, camera, id === vehicleId, now, paintSky)
   }
   /** Traverse all materials and call the callback for CSM setup. */
   setupMaterials(callback: (material: THREE.Material) => void): void {

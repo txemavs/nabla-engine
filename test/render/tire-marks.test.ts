@@ -40,3 +40,16 @@ it('breaks on airborne wheels, teleports and vehicle changes, and ignores ordina
   expect(marks.root.geometry.drawRange.count).toBe(0)
   marks.dispose()
 })
+
+it('paints a grass slide brown-green, including a lighter slide than asphalt', () => {
+  const marks = new TireMarks(),
+    origin = new Vector3()
+  const grass = (x: number): TireMarkContact => ({ ...contact(x, 0.15), surface: 'grass' })
+  marks.update(0.1, 'a', [grass(0)], origin)
+  marks.update(0.1, 'a', [grass(1)], origin)
+  expect(marks.root.geometry.drawRange.count).toBe(6)
+  const tint = marks.root.geometry.attributes.tint as BufferAttribute
+  expect(tint.getY(0)).toBeGreaterThan(0.2)
+  expect(tint.getY(0)).toBeGreaterThan(tint.getX(0))
+  marks.dispose()
+})

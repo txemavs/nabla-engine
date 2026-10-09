@@ -167,6 +167,7 @@ export class GameRuntime {
   ) {
     const sim = this.simulation
     if (!sim || this.state !== 'playing') return null
+    sim.setSurfaceRoads(this.recover.roads?.())
     if (input.forward || input.right || input.brake || input.sprint)
       this.cameraState.entrance = null
     const ticks = sim.stats.ticks
@@ -227,7 +228,10 @@ export class GameRuntime {
     if (!sim || this.state !== 'playing') return
     if (code === 'KeyE') {
       const previous = sim.player.vehicleId
-      const message = sim.interact()
+      const message = sim.interact({
+        snapToRoad: this.recover.snapToRoad,
+        roads: this.recover.snapToRoad ? this.recover.roads?.() : undefined,
+      })
       const id = sim.player.vehicleId
       if (id && id !== previous) {
         const forward = new Vector3(0, 0, -1).applyQuaternion(
