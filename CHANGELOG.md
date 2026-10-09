@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Changed
+
+- Lighting, colour, shadow and material code restored to what euskadi.online runs (engine 8d18dba), because the trucks rendered black again on :8707. Reverted: the car sky fill and the S3 paint, chrome, rear-chrome, windscreen and cabin-floor overrides (#161, #167, #198, #199, #200), the chrome light scaling and its night/daylight curve (#163, #170, #172), the trailer box `Chassis B` repaint (#167), the zenithal shadow-cascade cuts (#183, #192), bridge shadow casters (#153), the VFR800 metal map GLB (#165) and the Alto artistic-cloud default (#184: artistic clouds also shade the ground; back to Ultra only, as online). Kept: the zenithal entry stall fix (#180) and every non-lighting feature.
+
+### Added
+
+- Ajustes → Opciones → Luz: live sliders for Exposición (tone-mapping exposure), Sol and Ambiente (multipliers on the full-day 3.2 sun and 0.22 ambient), Reflejos (vehicle reflection multiplier), Pintura (vehicle paint colour multiplier), Sombras on/off and intensity. Each value is shown next to its slider, saved as `nabla.lightTuning`, and «Copiar valores» copies them as JSON (with «Restablecer» back to the defaults). The defaults are the restored look.
+
+### Fixed
+
+- Car parks are asphalt for the tyres: OSM `amenity=parking` areas (not underground, multi-storey or rooftop ones, nor grass/gravel lots) and paved road areas (`area:highway`, pedestrian/service `area=yes`) from the cell's OSM snapshot count as asphalt, so they get asphalt grip and black, persistent skid marks. Green marks and grass grip stay for real grass.
+
 ### Added
 
 - Staged reveal for intros: `play()` reports `data-reveal-stage` (vehicles, weapons, terrain, shaders, ready) and `data-reveal-progress`, waits for every streamed cell and map mesh around the start (`waitForArea`, what a descent from above shows) and uploads scene textures (`uploadSceneTextures`) before `data-reveal="holding"`. `holdStartCameras(promise)` keeps the start sequence on its first view (a `fromHeight` descent waits at its start height, e.g. while the host fades in), and the descent's first view only counts as arrived once the camera is near its normal height, so slow frames never cut it short.
@@ -17,6 +29,7 @@
 
 ### Changed
 
+- Engine much louder on every vehicle, music lower by default: `engineBusTrim` 1.6 → 6.4 (+12 dB on the Motor bus) and the default music level 50% → 30%. Measured in Chrome on the S3 at ~40 km/h with General 100 / Motor 100 / Música 50: engine bus RMS went from -32.5 dBFS (under the music, about -29 dBFS) to -20.5 dBFS, about 3.3x the music RMS (-30.9 dBFS); at the new 30% default the music is about -40 dBFS. Output peak 0.43, no clipping; the master limiter (-3 dB, 20:1) keeps the peaks from clipping. A mix saved in the browser (`nabla.audioMix`) still wins over the new default.
 - Engine over gear shifts on every vehicle: the engine bus has a fixed +4 dB trim (`engineBusTrim` 1.6) and car/truck clacks and the bike click play at half gain (`gearShiftLevel`, about −6 dB), so a shift is subtle under the engine. A limiter on master keeps the louder mix from clipping. Pistol reload clicks are unchanged.
 - Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
 

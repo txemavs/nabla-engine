@@ -42,8 +42,6 @@ import { MotorcycleInstruments } from '../vehicle-presentation/motorcycle-instru
 import { motorcycleMirrorLenses } from '../vehicle-presentation/motorcycle-mirrors.js'
 import {
   applyReflectionEnvironment,
-  carReflectionOptions,
-  reflectionLevel,
   type ReflectionEnvironment,
 } from '../vehicle-presentation/reflection-environment.js'
 import { localMinutes, skyTime } from '../../planet/sky.js'
@@ -176,6 +174,37 @@ export class SceneView {
   night = false
   /** Atmospheric daylight factor (0 night .. 1 day; 1 without a sky), for the chrome reflections. */
   daylight = 1
+  /** Multiplier on vehicle reflection levels (Ajustes → Luz «Reflejos»). */
+  reflectionScale = 1
+  private paintBrightness = 1
+  private paintCheckAt = 0
+  /**
+   * Scale the vehicle paint colour (S3 `Pintura*`, truck and trailer `White paint`) by `k`.
+   * The authored or painted colour is kept as the base; a colour changed elsewhere (a repaint)
+   * becomes the new base. Rechecked every ~0.5 s for vehicles that appear later.
+   */
+  applyPaintBrightness(k: number): void {
+    const now = performance.now()
+    if (k === this.paintBrightness && now < this.paintCheckAt) return
+    this.paintBrightness = k
+    this.paintCheckAt = now + 500
+    for (const object of this.objects.values())
+      object.traverse((node) => {
+        const mesh = node as THREE.Mesh
+        if (!mesh.isMesh) return
+        for (const material of [mesh.material].flat()) {
+          const standard = material as THREE.MeshStandardMaterial
+          if (!standard?.isMeshStandardMaterial || !/^pintura|paint/i.test(standard.name)) continue
+          const data = standard.userData as {
+            nablaPaint?: { base: THREE.Color; applied: THREE.Color }
+          }
+          if (!data.nablaPaint || !data.nablaPaint.applied.equals(standard.color))
+            data.nablaPaint = { base: standard.color.clone(), applied: standard.color.clone() }
+          standard.color.copy(data.nablaPaint.base).multiplyScalar(k)
+          data.nablaPaint.applied.copy(standard.color)
+        }
+      })
+  }
   private readonly headOffsets = new Map<string, readonly number[]>()
   /** Two-wheeler rider offset ([x, z] chassis metres) from the last pose; moves the head. */
   private readonly riderShifts = new Map<string, readonly [number, number]>()
@@ -1083,13 +1112,8 @@ export class SceneView {
             motorcycleRigFromModel(model, { steerLimit: twoWheeled.steerLimit }),
           ),
         )
-      if (!twoWheeled) {
-        // Cars: only the parts the adapter or GLB tags `reflective` (the S3 / A3 chrome).
-        const chrome = applyReflectionEnvironment(model, carReflectionOptions)
-        if (chrome.materials.length) this.reflections.set(e.id, chrome)
-      }
       if (twoWheeled) {
-        // Chrome and mirror glass need something to reflect.
+        // Chrome and mirror glass need something to reflect; cars keep their current look.
         this.reflections.set(e.id, applyReflectionEnvironment(model))
         const cluster = MotorcycleInstruments.bind(model, {
           ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
@@ -1408,9 +1432,8 @@ export class SceneView {
         this.riderTucks.set(id, ease.value[2])
       }
     }
-    // Chrome reflections fade with the daylight (dusk included), not just on/off at night.
-    const reflectionDim = reflectionLevel(this.night ? 0 : this.daylight)
-    for (const reflection of this.reflections.values()) reflection.setLevel(reflectionDim)
+    for (const reflection of this.reflections.values())
+      reflection.setLevel((this.night ? 0.15 : 1) * this.reflectionScale)
     if (this.motorcycleClusters.size) {
       const clockMinutes = localMinutes(skyTime(this.document.sky ?? { mode: 'live' }))
       const lampNow = performance.now()

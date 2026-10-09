@@ -2,7 +2,6 @@ import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
 import { placeLabel } from './place-label.js'
 import {
   PLANET_GEOMETRY_REVISION,
-  castsPlanetShadow,
   planetTileRevision,
   validPlanetPlaces,
   validatePlanetManifest,
@@ -13,6 +12,8 @@ import {
 import type { PlanetPhoto } from '../../planet/contract.js'
 import {
   osmSnapshotHighways,
+  osmSnapshotPavedAreas,
+  projectOsmPavedAreas,
   projectOsmRoads,
   type OsmChartRoad,
 } from '../../planet/osm-snapshot.js'
@@ -334,6 +335,8 @@ interface Resident {
   revision: string
   buildings: boolean
   roads?: OsmChartRoad[]
+  /** Paved non-road polygons (car parks) from the OSM snapshot, scene metres. */
+  pavedAreas?: ReturnType<typeof projectOsmPavedAreas>
   /** OSM carriageway mask for the terrain drape's asphalt contrast; painted on demand. */
   asphaltMask?: THREE.DataTexture
 }
@@ -381,6 +384,10 @@ export class PlanetWorld {
       r.group.updateMatrix()
       return [{ ...r.chart, matrix: r.group.matrix }]
     })
+  }
+  /** Car parks and paved road areas around the visible cells (asphalt for the tyres). */
+  get pavedAreas() {
+    return this.visible.flatMap((key) => this.resident.get(key)?.pavedAreas ?? [])
   }
   get navigationRoads() {
     return this.visible.flatMap((key) => this.resident.get(key)?.roads ?? [])
@@ -1051,13 +1058,9 @@ export class PlanetWorld {
         ? drapeShown(data.metadata.drape)
         : !tileMeshHidden(data.metadata)
       mesh.userData = data.metadata
-      mesh.castShadow = castsPlanetShadow(data.metadata)
-      // Back-face casting avoids acne on closed or ground-hugging casters (terrain, bridge slabs,
-      // fascias and abutments). A bridge-deck asphalt sheet is a single surface: it keeps its
-      // default side so its top still reaches the shadow map where no slab lies under it.
-      if (data.metadata.category === 'Terrain' || data.metadata.nablaCandidateRoad === 'supports') {
-        castShadowFromBackFaces(material)
-      }
+      mesh.castShadow =
+        !data.metadata.skirt && ['Terrain', 'Buildings'].includes(data.metadata.category)
+      if (data.metadata.category === 'Terrain') castShadowFromBackFaces(material)
       mesh.receiveShadow = true
       group.add(mesh)
       restoreTileLayers(mesh)
@@ -1196,6 +1199,7 @@ export class PlanetWorld {
         const resident = this.resident.get(key)
         if (!resident || ac.signal.aborted || this.disposed) return
         resident.roads = projectOsmRoads(osmSnapshotHighways(json), this.origin)
+        resident.pavedAreas = projectOsmPavedAreas(osmSnapshotPavedAreas(json), this.origin)
         resident.bytes += resident.roads.reduce((n, road) => n + road.points.length * 16, 0)
         this.paintAsphaltMask(resident)
         this.changed()

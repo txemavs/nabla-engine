@@ -100,6 +100,87 @@ export function osmSnapshotHighways(value: unknown): OsmHighway[] {
   return out
 }
 
+/** Surfaces that are not paved: such an area keeps the grass grip and marks. */
+const UNPAVED = new Set([
+  'grass',
+  'grass_paver',
+  'gravel',
+  'fine_gravel',
+  'dirt',
+  'earth',
+  'ground',
+  'mud',
+  'sand',
+  'unpaved',
+  'compacted',
+  'pebblestone',
+  'wood',
+])
+
+/** A paved polygon (geographic) from the snapshot: car parks and paved road areas. */
+export interface OsmPavedArea {
+  id: string
+  geometry: { lat: number; lon: number }[]
+}
+
+/**
+ * Paved areas that are not carriageways: OSM car parks (`amenity=parking`, except underground,
+ * multi-storey and rooftop ones) and `area:highway` / `area=yes` service and pedestrian areas,
+ * as closed ways in the roads block. An unpaved `surface` (grass, gravel…) is left out.
+ */
+export function osmSnapshotPavedAreas(value: unknown): OsmPavedArea[] {
+  const out: OsmPavedArea[] = []
+  for (const el of overpassElements(roadsBlock(value))) {
+    const tags = el.tags
+    if (!tags || el.type === 'node') continue
+    const parking =
+      tags.amenity === 'parking' &&
+      !['underground', 'multi-storey', 'rooftop'].includes(tags.parking ?? '')
+    const roadArea =
+      (tags['area:highway'] && tags['area:highway'] !== 'traffic_island') ||
+      (tags.area === 'yes' &&
+        ['service', 'pedestrian', 'living_street'].includes(tags.highway ?? ''))
+    if (!parking && !roadArea) continue
+    if (UNPAVED.has(tags.surface ?? '')) continue
+    const geometry = (el.geometry ?? []).filter(
+      (p): p is { lat: number; lon: number } => Number.isFinite(p?.lat) && Number.isFinite(p?.lon),
+    )
+    if (geometry.length < 4) continue
+    out.push({ id: String(el.id ?? `area-${out.length}`), geometry })
+  }
+  return out
+}
+
+/** Project paved areas into the scene metre frame, with bounds. */
+export function projectOsmPavedAreas(
+  areas: OsmPavedArea[],
+  origin: GeoPoint,
+): {
+  points: { x: number; z: number }[]
+  minX: number
+  maxX: number
+  minZ: number
+  maxZ: number
+}[] {
+  return areas.map((area) => {
+    const points = area.geometry.map((p) => {
+      const [x, , z] = geoToLocal(origin, {
+        latitude: p.lat,
+        longitude: p.lon,
+        altitude: origin.altitude,
+      })
+      return { x, z }
+    })
+    return {
+      points,
+      minX: Math.min(...points.map((p) => p.x)),
+      maxX: Math.max(...points.map((p) => p.x)),
+      minZ: Math.min(...points.map((p) => p.z)),
+      maxZ: Math.max(...points.map((p) => p.z)),
+    }
+  })
+}
+
 /** Project snapshot highways into the scene metre frame (same origin as the vehicle pose). */
 export function projectOsmRoads(highways: OsmHighway[], origin: GeoPoint): OsmChartRoad[] {
   return highways.map((road) => {
