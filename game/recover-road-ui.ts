@@ -50,6 +50,6 @@ export function bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserS
     runtime.setRecoverToRoadEnabled(box.checked)
     saveRecoverToRoadEnabled(box.checked, storage)
   })
-  label.append(box, ' R: reaparecer en la vía más cercana')
+  label.append(box, ' Reaparecer en vía cercana (R)')
   group.append(label)
 }

@@ -36,7 +36,7 @@ export function saveFlipCinematicEnabled(
   }
 }
 
-/** Checkbox in Ajustes → Opciones → Cámara: "Cámara cinematográfica al volcar". */
+/** Checkbox in Ajustes → Opciones → Cámara: «Accidentes modo cine» (cinematic camera on a flip). */
 export function bindFlipCinematicToggle(runtime: GameRuntime, storage = browserStorage()): void {
   const group = menuSection('camera-extras', 'Cámara')
   const label = document.createElement('label')
@@ -47,6 +47,7 @@ export function bindFlipCinematicToggle(runtime: GameRuntime, storage = browserS
     runtime.setFlipCinematicEnabled(box.checked)
     saveFlipCinematicEnabled(box.checked, storage)
   })
-  label.append(box, ' Cámara cinematográfica al volcar')
+  label.append(box, ' Accidentes modo cine')
+  label.title = 'Cámara cinematográfica al volcar'
   group.append(label)
 }

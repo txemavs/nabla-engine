@@ -22,6 +22,7 @@ import {
 } from '@nabla/engine/planet/terrain-cache'
 import { formatMissingReport } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
+import { menuSection } from './menu.js'
 import type { SourceStorage } from '@nabla/engine/planet/terrain-source'
 
 export const CACHE_STORAGE_KEY = 'nabla.terrain.cache'
@@ -67,25 +68,24 @@ function choice(
   return { label, select }
 }
 
-/** Build the controls inside the "Terreno" section, apply the remembered settings, keep the usage line fresh. */
+/** Build the «Caché» section (only with a «Terreno» section), apply the remembered settings, keep the usage line fresh. */
 export function bindTerrainCache(
   runtime: GameRuntime,
   search: string = location.search,
   storage: SourceStorage | undefined = browserStorage(),
 ): void {
-  const section = document.getElementById('terrain-source')
-  if (!section) return
+  // Only the terrain games have a «Terreno» source section; the cache gets its own «Caché» section
+  // (Ajustes → Rendimiento).
+  if (!document.getElementById('terrain-source')) return
+  const section = menuSection('terrain-cache', 'Caché')
   const settings = currentCacheSettings(search, storage)
   void applyCacheSettings(runtime, settings).catch(() => {})
   const live = runtime.streaming
   const stored = parseStoredCache(storage?.getItem(CACHE_STORAGE_KEY))
 
-  const heading = document.createElement('p')
-  heading.textContent = 'Caché y alcance'
-  heading.className = 'menu-subtitle'
   const disk = choice(
     'terrain-cache-disk',
-    'Caché en disco',
+    'Espacio en disco',
     CACHE_BUDGETS_MB,
     formatBudget,
     settings.diskMb ?? 1000,
@@ -119,21 +119,12 @@ export function bindTerrainCache(
   const retry = document.createElement('button')
   retry.type = 'button'
   retry.id = 'terrain-missing-retry'
-  retry.textContent = 'Volver a pedirlas'
+  retry.textContent = 'Recargar'
+  retry.title = 'Volver a pedir al servidor las celdas que faltan'
   const list = document.createElement('pre')
   list.id = 'terrain-missing-list'
   list.hidden = true
-  section.append(
-    heading,
-    disk.label,
-    memory.label,
-    distance.label,
-    usage,
-    clear,
-    holes,
-    retry,
-    list,
-  )
+  section.append(disk.label, memory.label, distance.label, usage, clear, holes, retry, list)
   const showHoles = () => {
     const tiles = runtime.missingTiles
     list.textContent = tiles.length
