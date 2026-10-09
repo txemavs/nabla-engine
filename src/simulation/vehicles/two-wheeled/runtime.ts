@@ -66,6 +66,11 @@ import {
 import { crashTrigger, measureImpact, startCrash } from './crash.js'
 
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n))
+/** Donut yaw rate at full steering in a stationary burnout, rad/s (a full turn in ~4 s). */
+export const DONUT_YAW_RATE = 1.6
+/** Rear grip share while it spins in a stationary burnout, so it can swing round the front. */
+export const DONUT_REAR_GRIP = 0.2
+
 const FRONT = 0,
   REAR = 1
 
@@ -560,9 +565,12 @@ export function stepTwoWheeledVehicle(
   const hoo = tuning.hooligan
   const riderBack = rider && rider.back > 0 ? clamp(state.riderShift[1] / rider.back, 0, 1) : 0
   const burnoutShare = clamp(1 - (Math.abs(speed) - hoo.burnoutSpeed) / hoo.burnoutFade, 0, 1)
+  const wasStationary = state.hooligan === 'stationary-burnout'
+  // Stationary burnout: throttle and lever together at a standstill (W+S+Space, or Shift + W +
+  // Space); the rear pedal is no longer needed.
   state.hooligan = !hooligan
     ? 'none'
-    : throttle > 0.3 && state.lever > 0.3 && state.pedal > 0 && Math.abs(speed) < 2
+    : throttle > 0.3 && state.lever > 0.3 && Math.abs(speed) < 2
       ? 'stationary-burnout'
       : throttle > 0.3 && state.lever < 0.05 && riderBack >= hoo.wheelieRiderBack
         ? 'wheelie'
@@ -677,9 +685,11 @@ export function stepTwoWheeledVehicle(
   // extra drive (the engine's stored energy) that fades out linearly.
   const kick = tuning.clutchKick
   const launch = active && powered && input.launch
+  // Letting go of the lever out of a stationary burnout launches like a fresh Shift press.
+  const released = wasStationary && state.hooligan !== 'stationary-burnout'
   if (
     launch &&
-    !state.launchHeld &&
+    (!state.launchHeld || released) &&
     throttle > 0.5 &&
     kick.gain > 0 &&
     kick.seconds > 0 &&
@@ -725,7 +735,10 @@ export function stepTwoWheeledVehicle(
     v.body.applyTorque(gravityUp.scale(v.body.inertia.y * yaw))
   }
   for (let i = 0; i < v.raycast.wheelInfos.length; i++)
-    v.raycast.wheelInfos[i].frictionSlip = tuning.frictionSlip * surfaceGripScale(surfaces?.[i])
+    v.raycast.wheelInfos[i].frictionSlip =
+      tuning.frictionSlip *
+      surfaceGripScale(surfaces?.[i]) *
+      (stationary && i === REAR ? DONUT_REAR_GRIP : 1)
   v.raycast.setSteeringValue(state.groundSteer, FRONT)
   v.raycast.setSteeringValue(0, REAR)
   v.raycast.applyEngineForce(0, FRONT)
@@ -742,6 +755,7 @@ export function stepTwoWheeledVehicle(
     // Front locked, the bike held in place; the rear spins on the spot (rearSpin).
     v.raycast.setBrake(tuning.frontBrakeForce * 2, FRONT)
     v.raycast.setBrake(v.definition.brakeForce, REAR)
+    holdDonut(v, active ? input.steering : 0, gravityUp, dt)
   } else {
     v.raycast.setBrake(
       burnout
@@ -753,6 +767,32 @@ export function stepTwoWheeledVehicle(
   }
 
   stepLean(v, dt, speed, forward, up, gravityUp, gravity, frontContact && rearContact)
+}
+
+/**
+ * Stationary burnout (Txema 2026-10-09): the locked front is the pivot and steering swings the
+ * spinning rear round it in a controlled circle (a donut), nose towards the steered side, at up
+ * to {@link DONUT_YAW_RATE}; with the bars straight the bike stays put. Any other horizontal
+ * drift or yaw is taken out.
+ */
+function holdDonut(v: TwoWheeledVehicle, steering: number, up: Vec3, dt: number): void {
+  const body = v.body
+  const front = v.raycast.wheelInfos[FRONT]
+  const pivot = front.isInContact
+    ? front.raycastResult.hitPointWorld
+    : front.worldTransform.position
+  const blend = 1 - Math.exp(-dt * 12)
+  const w = body.angularVelocity
+  const yaw = w.dot(up)
+  w.vadd(up.scale((-DONUT_YAW_RATE * steering - yaw) * blend), w)
+  const arm = body.position.vsub(pivot)
+  const flat = arm.vsub(up.scale(arm.dot(up)))
+  const want = up.scale(w.dot(up)).cross(flat)
+  const vel = body.velocity
+  const vertical = up.scale(vel.dot(up))
+  const horizontal = vel.vsub(vertical)
+  const next = horizontal.vadd(want.vsub(horizontal).scale(blend))
+  body.velocity.copy(vertical.vadd(next))
 }
 
 /**
