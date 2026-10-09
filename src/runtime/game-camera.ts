@@ -42,6 +42,11 @@ export interface GameCameraState {
   headPitch: number
   lastLookTime: number
   mapHeight: number
+  /**
+   * Slower overhead height damping for a start descent from high above (`fromHeight`), 1/s.
+   * Cleared once the view leaves the overhead camera or the height has settled.
+   */
+  mapDescentDamping?: number | null
   mapZoom: number
   /** Cinematic orbit angle (chase-yaw convention), radians. */
   cinematicAngle: number
@@ -367,9 +372,10 @@ export function updateGameCamera(
     const wantedHeight = p.vehicleId
       ? overheadDrivingHeight(drivingTelemetry.speed, mapZoom, tuning)
       : overheadFootHeight(drivingTelemetry.speed, mapZoom, tuning)
+    const damping = state.mapDescentDamping ?? tuning.mapDamping
     mapHeight +=
-      (wantedHeight - mapHeight) *
-      (1 - Math.exp(-tuning.mapDamping * Math.min(dt, tuning.maxStepSeconds)))
+      (wantedHeight - mapHeight) * (1 - Math.exp(-damping * Math.min(dt, tuning.maxStepSeconds)))
+    if (Math.abs(wantedHeight - mapHeight) < 1) state.mapDescentDamping = null
     // Vehicles: the followed view centre already sits ahead of the car (see `mapFollow`).
     // On foot the player stays centred; turning would otherwise swing the whole view.
     // Vehicles: the smoothed, roll-independent heading and the critically damped anchor, so a
@@ -556,6 +562,7 @@ export function updateGameCamera(
 
   state.yaw = yaw
   state.mapHeight = mapHeight
+  if (!overhead) state.mapDescentDamping = null
   state.entrance = vehicleEntrance
   state.flightTilt = flightTilt
   state.cinematicAngle = cinematicAngle

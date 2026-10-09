@@ -179,6 +179,12 @@ export interface GameFrame {
    */
   controls: ControlSurfaces
 }
+/**
+ * Overhead damping of a start descent (`StartCameraStep.fromHeight`), 1/s: from 600 m about
+ * 80 m remain after 2.2 s, versus 1.6 s to settle at the normal 3/s. A presentation choice.
+ */
+const START_DESCENT_DAMPING = 1.2
+
 /** Pre-play attract/boot view: sky and planet only, camera outside the planet (TV-style). */
 export interface AttractOptions {
   /** Camera distance above the surface, metres (default 18 000 km). */
@@ -764,8 +770,10 @@ export class GameRuntime {
       await this.prepareReveal(controller.signal)
       controller.signal.throwIfAborted()
       const first = this.startSequence?.steps[0]
-      if (first?.view === 'map' && first.fromHeight !== undefined)
+      if (first?.view === 'map' && first.fromHeight !== undefined) {
         this.cameraState.mapHeight = first.fromHeight
+        this.cameraState.mapDescentDamping = START_DESCENT_DAMPING
+      }
       // The scene clock starts at its authored time (e.g. 10:00) at reveal, not at construction.
       const clock = this.document.sky
       if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
