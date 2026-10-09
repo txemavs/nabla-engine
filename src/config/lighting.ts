@@ -64,7 +64,8 @@ export const lightingDefaults = Object.freeze({
   vehicleSpots: 6,
   vehiclePoints: 10,
   vehicleMappedSpots: 2,
-  /** Fixed budgets for placeable highway cones and neighbourhood globe lamps. No shadows. */
-  streetSpots: 6,
-  streetPoints: 6,
+  /** Fixed budgets for placeable highway cones and neighbourhood globe lamps. No shadows.
+   * Disabled for now (Txema, 2026-10-09): 0 = poles keep their lit lenses but cast no light. */
+  streetSpots: 0,
+  streetPoints: 0,
 })
