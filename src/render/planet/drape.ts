@@ -88,10 +88,33 @@ export interface DrapeGeometry {
   uv: Float32Array
 }
 
+/**
+ * Drape layers a cell's GLBs already carry as real textures, so the runtime drape must skip them:
+ * - a mesh named `Drape` with its own map (`userData.drape` id; old engine-baked roof drape);
+ * - `roofs` when a Buildings mesh has its own map (Atlas `roof_bake`: roof faces with UVs into
+ *   the lean-corrected roof photo, no lift). Cells without it keep the runtime roofs drape.
+ */
+export function bakedDrapeLayers(
+  meshes: readonly { name: string; metadata: Record<string, any>; hasMap: boolean }[],
+): Set<string> {
+  const baked = new Set<string>()
+  for (const mesh of meshes) {
+    if (!mesh.hasMap) continue
+    if (mesh.name === 'Drape' && mesh.metadata.drape) baked.add(String(mesh.metadata.drape))
+    else if (mesh.metadata.category === 'Buildings') baked.add('roofs')
+  }
+  return baked
+}
+
+/** True when the cell's buildings carry the baked roof photo (Atlas `roof_bake`). */
+export function hasBakedRoofs(baked: ReadonlySet<string>): boolean {
+  return baked.has('roofs')
+}
+
 /** Which drape layer a source mesh feeds, and whether it is a roof (steep faces are skipped). */
 function layerOf(mesh: DrapeSource): { id: string; roofs: boolean } | undefined {
   const m = mesh.metadata
-  if (m.skirt || mesh.name === 'Drape') return undefined
+  if (m.skirt || mesh.name === 'Drape' || m.roofBake) return undefined
   switch (m.category) {
     case 'Buildings':
       return { id: 'roofs', roofs: true }

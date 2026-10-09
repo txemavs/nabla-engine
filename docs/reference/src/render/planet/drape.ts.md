@@ -58,9 +58,42 @@ off-roof; drawn opaque those texels are black, so it must alpha-test.
 drapeMaterialAlpha(id: string, dedicatedRoofPhoto: boolean): { transparent: boolean; alphaTest: number }
 ```
 
+## bakedDrapeLayers
+
+[Implementation, line 97](../../../../../src/render/planet/drape.ts#L97)
+
+Drape layers a cell's GLBs already carry as real textures, so the runtime drape must skip them:
+- a mesh named `Drape` with its own map (`userData.drape` id; old engine-baked roof drape);
+- `roofs` when a Buildings mesh has its own map (Atlas `roof_bake`: roof faces with UVs into
+  the lean-corrected roof photo, no lift). Cells without it keep the runtime roofs drape.
+
+```ts
+bakedDrapeLayers(meshes: readonly { name: string; metadata: Record<string, any>; hasMap: boolean }[]): Set<string>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Set`
+- `String`
+- `baked.add`
+
+## hasBakedRoofs
+
+[Implementation, line 110](../../../../../src/render/planet/drape.ts#L110)
+
+True when the cell's buildings carry the baked roof photo (Atlas `roof_bake`).
+
+```ts
+hasBakedRoofs(baked: ReadonlySet<string>): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `baked.has`
+
 ## layerOf
 
-[Implementation, line 92](../../../../../src/render/planet/drape.ts#L92)
+[Implementation, line 115](../../../../../src/render/planet/drape.ts#L115)
 
 Which drape layer a source mesh feeds, and whether it is a roof (steep faces are skipped).
 
@@ -72,17 +105,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `DRAPE_LAYERS.find`
 
-## layerOf.callback@108
+## layerOf.callback@131
 
-[Implementation, line 108](../../../../../src/render/planet/drape.ts#L108)
+[Implementation, line 131](../../../../../src/render/planet/drape.ts#L131)
 
 ```ts
-callback@108(item): inferred by TypeScript; see implementation
+callback@131(item): inferred by TypeScript; see implementation
 ```
 
 ## buildDrapes
 
-[Implementation, line 117](../../../../../src/render/planet/drape.ts#L117)
+[Implementation, line 140](../../../../../src/render/planet/drape.ts#L140)
 
 Cut the drape triangles. `layers` are the projected layer ids; `baked` ids already carry their own
 textured drape in the GLB and are skipped. `width` is the cell's ground width in metres.
@@ -105,12 +138,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sources.get`
 - `sources.set`
 
-## buildDrapes.callback@134
+## buildDrapes.callback@157
 
-[Implementation, line 134](../../../../../src/render/planet/drape.ts#L134)
+[Implementation, line 157](../../../../../src/render/planet/drape.ts#L157)
 
 ```ts
-callback@134({ mesh, roofs }): inferred by TypeScript; see implementation
+callback@157({ mesh, roofs }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -118,10 +151,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.floor`
 - `Uint8Array`
 
-## buildDrapes.callback@152
+## buildDrapes.callback@175
 
-[Implementation, line 152](../../../../../src/render/planet/drape.ts#L152)
+[Implementation, line 175](../../../../../src/render/planet/drape.ts#L175)
 
 ```ts
-callback@152({ mesh, roofs }, i): inferred by TypeScript; see implementation
+callback@175({ mesh, roofs }, i): inferred by TypeScript; see implementation
 ```
