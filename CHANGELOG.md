@@ -17,6 +17,8 @@
 
 ### Changed
 
+- On a coarse pointer the enter/camera buttons stack on the left above the clock, and the accelerator sits beside the wheel, so the wheel can be grabbed. Fine pointers keep the horizontal bar.
+
 - Pistol reload: the magazine release and the magazine insert are louder (+8 to +10 dB) and not the same tick. The release is a dull knock, the insert a short sharp click. Gearbox clicks are unchanged.
 
 - Bike: mounting a fallen bike (E, next to it) does the R reset. The rider is seated, the bike stands up and, with road snap on, moves to the nearest road. An upright bike is unchanged.
