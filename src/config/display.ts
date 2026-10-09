@@ -6,8 +6,14 @@ export type ResolutionScaleMode = 'auto' | 'manual'
 /** Inclusive clamps for auto adaptation (healthy machines may reach 1). */
 export const autoResolutionScaleRange = Object.freeze({ min: 0.5, max: 1 })
 
-/** Inclusive clamps for an explicit host/manual scale. */
-export const manualResolutionScaleRange = Object.freeze({ min: 0.25, max: 1 })
+/**
+ * Inclusive clamps for an explicit host/manual scale. Above 1 supersamples (renders more pixels
+ * than the preset's pixel ratio); the runtime also caps the final pixel ratio ({@link maxPixelRatio}).
+ */
+export const manualResolutionScaleRange = Object.freeze({ min: 0.25, max: 2 })
+
+/** Upper bound for the final drawing-buffer pixel ratio (preset ratio × scale), to bound GPU memory. */
+export const maxPixelRatio = 3
 
 /** Where auto mode starts when the host gives no scale. */
 export const autoResolutionScaleStart = 0.5
@@ -19,7 +25,8 @@ export const autoResolutionScaleStart = 0.5
  */
 export const presetResolutionScales: Readonly<Record<string, number>> = Object.freeze({
   ultra: 1,
-  high: 0.9,
+  // High and above: 100% of the preset pixel ratio (Txema 2026-10-09).
+  high: 1,
   balanced: 0.8,
   low: 0.5,
   mobile: 0.45,
@@ -42,7 +49,7 @@ export interface DisplaySettings {
    * Drawing-buffer multiplier relative to the selected quality profile.
    * In `manual` mode this is the host-fixed value (0.25..1).
    * In `auto` mode this is the live adapted value, starting at 0.5 and clamped to 0.5..1.
-   * Unset, it is the preset's fixed {@link presetResolutionScales} step (Ultra 1 … Mínima 0.4).
+   * Unset, it is the preset's fixed {@link presetResolutionScales} step (Ultra 1, Alta 1 … Mínima 0.4).
    */
   resolutionScale: number
   /**
@@ -63,7 +70,7 @@ export const displayDefaults: Readonly<DisplaySettings> = Object.freeze({
  * Validate per-runtime overrides; the minimum FPS cap preserves normal fixed-step catch-up.
  * An explicit `resolutionScale` without `resolutionScaleMode` selects `manual` so hosts that
  * pass a fixed scale keep that scale. Omitting both fixes the quality preset's default
- * ({@link presetResolutionScales}: Ultra 1, Alta 0.9, Equilibrada 0.8, Baja 0.5, Móvil 0.45,
+ * ({@link presetResolutionScales}: Ultra 1, Alta 1, Equilibrada 0.8, Baja 0.5, Móvil 0.45,
  * Mínima 0.4; others 0.8). `resolutionScaleMode: 'auto'` without a scale starts adaptation
  * at 0.5; `'manual'` without a scale is 1.
  */

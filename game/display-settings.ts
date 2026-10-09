@@ -4,7 +4,7 @@ import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
 /**
  * Read shareable URL overrides, falling back to Engine defaults for invalid input.
- * The player's saved `scale` wins: `scale=<0.25..1>` fixes it, `scale=auto` adapts live.
+ * The player's saved `scale` wins: `scale=<0.25..2>` fixes it (above 1 supersamples), `scale=auto` adapts live.
  * Without `scale` the quality preset's fixed step decides (`presetResolutionScales`).
  */
 export function readDisplaySettings(search = location.search): DisplaySettings {

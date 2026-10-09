@@ -18,7 +18,7 @@ describe('display resolution modes', () => {
     })
     expect(presetResolutionScales).toEqual({
       ultra: 1,
-      high: 0.9,
+      high: 1,
       balanced: 0.8,
       low: 0.5,
       mobile: 0.45,

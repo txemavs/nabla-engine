@@ -11,7 +11,7 @@ describe('demo display URL', () => {
       resolutionScaleMode: 'manual',
     })
     expect(readDisplaySettings('?quality=ultra').resolutionScale).toBe(1)
-    expect(readDisplaySettings('?quality=high').resolutionScale).toBe(0.9)
+    expect(readDisplaySettings('?quality=high').resolutionScale).toBe(1)
     expect(readDisplaySettings('?quality=balanced').resolutionScale).toBe(0.8)
     expect(readDisplaySettings('?quality=low').resolutionScale).toBe(0.5)
     expect(readDisplaySettings('?quality=mobile').resolutionScale).toBe(0.45)

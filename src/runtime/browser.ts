@@ -6,6 +6,7 @@
  */
 import {
   autoResolutionScaleRange,
+  maxPixelRatio,
   resolveDisplaySettings,
   type DisplaySettings,
 } from '../config/display.js'
@@ -2622,8 +2623,11 @@ export class GameRuntime {
   }
   private applyPixelRatio(): void {
     this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, this.quality.resolution) *
-        this.display.resolutionScale,
+      Math.min(
+        maxPixelRatio,
+        Math.min(window.devicePixelRatio || 1, this.quality.resolution) *
+          this.display.resolutionScale,
+      ),
     )
     this.options.canvas.dataset.resolutionScale = String(this.display.resolutionScale)
     this.options.canvas.dataset.resolutionScaleMode = this.display.resolutionScaleMode
