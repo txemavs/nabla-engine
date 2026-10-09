@@ -118,9 +118,19 @@ answers with the next view, the engine start, or done. Pure: no camera or simula
 done(): boolean
 ```
 
-## StartCameraSequencer.update
+## StartCameraSequencer.step
 
 [Implementation, line 130](../../../../src/runtime/start-cameras.ts#L130)
+
+Index of the current step (0 = the first view).
+
+```ts
+step(): number
+```
+
+## StartCameraSequencer.update
+
+[Implementation, line 134](../../../../src/runtime/start-cameras.ts#L134)
 
 Steps through a resolved sequence. Each frame the runtime reports whether the camera has
 reached the current view (no blend running) and whether the engine is running; the sequencer
@@ -132,7 +142,7 @@ update(frame: { now: number; arrived: boolean; engineRunning: boolean }): StartC
 
 ## StartCameraSequencer.skip
 
-[Implementation, line 161](../../../../src/runtime/start-cameras.ts#L161)
+[Implementation, line 165](../../../../src/runtime/start-cameras.ts#L165)
 
 End now (player input): starts a held engine. `toLast` also asks for the last view, for
 driving input; C keeps the player's own camera choice.

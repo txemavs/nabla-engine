@@ -130,3 +130,27 @@ Explicit throws in this body:
 - `new Error('Invalid ground poll interval')`
 - `new GroundMissingError(hole)`
 - `new Error(\`Ground unavailable: ${world.status}\`)`
+
+## waitForArea
+
+[Implementation, line 133](../../../../src/runtime/ground.ts#L133)
+
+Wait until every cell the stream plans around `position` has arrived (or failed / is a known
+hole), e.g. the landscape seen during a start descent. `pending` adds other install queues
+(map meshes) that must drain too. Resolves true when settled, false at the stall limit (no
+progress for `stallMs`) or the hard cap; never throws for slowness.
+
+```ts
+waitForArea(world: GroundProvider & { readonly cellStats?: { pending: number } }, position: Vec3Tuple, options: { signal?: AbortSignal stallMs?: number capMs?: number installBudgetMs?: number pending?: () => number /** Drains another install queue each tick (e.g. map meshes). */ flush?: () => void onProgress?: (pending: number) => void } = {}): Promise<boolean>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `options.flush`
+- `options.onProgress`
+- `options.pending`
+- `options.signal?.throwIfAborted`
+- `performance.now`
+- `waitTick`
+- `world.flushInstall`
+- `world.update`

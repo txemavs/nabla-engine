@@ -14,7 +14,7 @@ Compile chase, cockpit and mirror programs once so later enter/exit and KeyC sta
 
 ## warmGamePresentation
 
-[Implementation, line 21](../../../../src/runtime/presentation-warmup.ts#L21)
+[Implementation, line 29](../../../../src/runtime/presentation-warmup.ts#L29)
 
 Best-effort GPU warmup. Failures must not stop play.
 
@@ -31,12 +31,58 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `signal?.throwIfAborted`
 - `view.renderMirrors`
 
-## warmGamePresentation.callback@37
+## warmGamePresentation.callback@45
 
-[Implementation, line 37](../../../../src/runtime/presentation-warmup.ts#L37)
+[Implementation, line 45](../../../../src/runtime/presentation-warmup.ts#L45)
 
 ```ts
-callback@37(resolve): inferred by TypeScript; see implementation
+callback@45(resolve): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `setTimeout`
+
+## uploadSceneTextures
+
+[Implementation, line 72](../../../../src/runtime/presentation-warmup.ts#L72)
+
+Upload every texture in `scene` (hidden objects included) before it is first drawn, a few
+milliseconds per frame, so the first gameplay frames (a descent over freshly streamed tiles)
+do not stall on texture uploads. Already uploaded textures cost a version check.
+
+```ts
+uploadSceneTextures(renderer: { initTexture: (texture: Texture) => void }, scene: Object3D, signal?: AbortSignal, budgetMs = 6): Promise<number>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Promise`
+- `Set`
+- `performance.now`
+- `renderer.initTexture`
+- `scene.traverse`
+- `signal?.throwIfAborted`
+
+## uploadSceneTextures.callback@79
+
+[Implementation, line 79](../../../../src/runtime/presentation-warmup.ts#L79)
+
+```ts
+callback@79(object): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Array.isArray`
+- `textures.add`
+
+## uploadSceneTextures.callback@102
+
+[Implementation, line 102](../../../../src/runtime/presentation-warmup.ts#L102)
+
+```ts
+callback@102(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
