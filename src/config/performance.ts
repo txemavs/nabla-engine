@@ -228,9 +228,9 @@ export const performancePresets = {
   },
 } as const
 
-/** Cloud renderer for a named quality preset. Artistic sheets on Alto and Ultra; cheaper tiers stay on the globe layer. */
+/** Cloud renderer for a named quality preset. Artistic 3-layer sheets only on Ultra; all other tiers use the cheaper globe layer. */
 export function cloudStyleForPerformancePreset(preset: string): 'low' | 'artistic' {
-  return preset === 'high' || preset === 'ultra' ? 'artistic' : 'low'
+  return preset === 'ultra' ? 'artistic' : 'low'
 }
 
 /** z15 meshes for a custom draw distance. Named presets carry their own cap. */

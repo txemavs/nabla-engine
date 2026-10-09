@@ -58,10 +58,9 @@ it('accelerated live clocks move the tide with the sky instant', () => {
   expect(worldWater(water, clock, epoch + TIDE_PERIOD_MS / 48).level).toBeCloseTo(-2)
 })
 
-it('uses artistic clouds on Alto and Ultra; cheaper tiers stay on the globe layer', () => {
+it('uses artistic clouds only on Ultra; every other quality tier stays on cheap clouds', () => {
   expect(cloudStyleForPerformancePreset('ultra')).toBe('artistic')
-  expect(cloudStyleForPerformancePreset('high')).toBe('artistic')
-  for (const preset of ['minimal', 'mobile', 'low', 'balanced', 'custom', '']) {
+  for (const preset of ['minimal', 'mobile', 'low', 'balanced', 'high', 'custom', '']) {
     expect(cloudStyleForPerformancePreset(preset)).toBe('low')
   }
 })

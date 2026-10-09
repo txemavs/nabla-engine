@@ -46,12 +46,7 @@ import {
   tileBudget,
   type PerformanceSettings,
 } from './performance.js'
-import {
-  highPlanetVisual,
-  isHighQualityPreset,
-  readSavedPlanetVisual,
-  writeSavedPlanetVisual,
-} from './planet-visual.js'
+import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
@@ -118,6 +113,18 @@ import {
 } from '../render/planet/world.js'
 import { setPlanetCharts } from '../render/entity/helm-map.js'
 import { setNavigationPlaces, setNavigationRoads } from '../render/entity/navigation-places.js'
+import {
+  normalizeLightTuning,
+  readLightTuning,
+  writeLightTuning,
+  type LightTuning,
+} from './light-tuning.js'
+export {
+  lightTuningBase,
+  lightTuningDefaults,
+  lightTuningRanges,
+  type LightTuning,
+} from './light-tuning.js'
 import {
   WorldEnvironment,
   configureWorldRenderer,
@@ -435,6 +442,8 @@ export class GameRuntime {
     lightingDefaults.ambientIntensity,
   )
   private readonly catchFloor = new CatchFloor()
+  /** Live look knobs (Ajustes → Luz); defaults are the shipped look. */
+  private lighting: LightTuning = readLightTuning(browserStorage())
   private readonly origin = new THREE.Vector3()
   private readonly loop: FrameLoop
   private readonly keys = this.game.keys
@@ -486,6 +495,7 @@ export class GameRuntime {
     this.game.text = this.text
     this.game.recover.snapToRoad = options.recoverToRoad !== false
     this.game.recover.roads = () => navigationRoads().filter((road) => road.carriageway)
+    this.game.recover.pavedAreas = () => this.world?.pavedAreas ?? []
     this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
     this.scene.add(this.wheelDebug.root)
     this.display = resolveDisplaySettings(options.display, options.performance?.preset)
@@ -514,7 +524,6 @@ export class GameRuntime {
     })
     const savedPlanet = readSavedPlanetVisual(browserStorage())
     if (savedPlanet) Object.assign(this.planet, savedPlanet)
-    else if (isHighQualityPreset(this.quality.preset)) Object.assign(this.planet, highPlanetVisual)
     else this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
     this.document = parseScene(options.scene)
     this.worldContent = options.world ? structuredClone(options.world) : undefined
@@ -1132,6 +1141,8 @@ export class GameRuntime {
     const previousFar = this.camera.far
     if (this.sky.enabled) {
       const direction = this.environment.applyLighting(this.sky, this.planet.sun)
+      this.sun.intensity *= this.lighting.sun
+      this.ambient.intensity *= this.lighting.ambient
       this.shadows.setLightDirection(direction.clone().negate())
       this.shadows.setLightIntensity(this.sun.intensity)
       this.shadows.setLightColor(this.sun.color)
@@ -1185,6 +1196,7 @@ export class GameRuntime {
         (player.vehicleId === id && this.cameraState.mode === 'cockpit')
       hud.update(this.camera, this.origin, time, inside ? sim.vehicleInfo(id) : null)
     }
+    this.applyLightTuning()
     try {
       this.pipeline.render({
         externalViews: this.worldContent
@@ -1290,6 +1302,8 @@ export class GameRuntime {
     )
     if (this.sky.enabled) {
       const direction = this.environment.applyLighting(this.sky, this.planet.sun)
+      this.sun.intensity *= this.lighting.sun
+      this.ambient.intensity *= this.lighting.ambient
       this.shadows.setLightDirection(direction.clone().negate())
       this.shadows.setLightIntensity(this.sun.intensity)
       this.shadows.setLightColor(this.sun.color)
@@ -2102,6 +2116,26 @@ export class GameRuntime {
     const levels = this.effects.audio.setMix(patch)
     writeAudioMix(browserStorage(), levels)
     return levels
+  }
+  /** Live lighting knobs (exposure, sun, ambient, reflections, paint, shadows). */
+  get lightTuning(): LightTuning {
+    return { ...this.lighting }
+  }
+  /** Change and save the lighting knobs (`nabla.lightTuning`); returns the clamped values. */
+  setLightTuning(patch: Partial<LightTuning>): LightTuning {
+    this.assertAlive()
+    this.lighting = normalizeLightTuning(patch, this.lighting)
+    writeLightTuning(browserStorage(), this.lighting)
+    return { ...this.lighting }
+  }
+  /** Per frame: exposure, shadow darkness, vehicle reflections and paint from `lighting`. */
+  private applyLightTuning(): void {
+    const t = this.lighting
+    this.renderer.toneMappingExposure = t.exposure
+    const shadow = t.shadows ? t.shadowIntensity : 0
+    for (const light of [this.sun, ...this.shadows.lights]) light.shadow.intensity = shadow
+    this.view.reflectionScale = t.reflections
+    this.view.applyPaintBrightness(t.paint)
   }
   /** True while the background track plays (it waits for the first gesture). */
   get musicPlaying(): boolean {

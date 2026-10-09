@@ -33,6 +33,8 @@ export { planetPlaces, validPlanetPlaces, type PlanetPlace } from './places.js'
 export {
   OSM_CELL_FORMAT,
   osmSnapshotHighways,
+  osmSnapshotPavedAreas,
+  projectOsmPavedAreas,
   projectOsmRoads,
   type OsmChartRoad,
   type OsmHighway,

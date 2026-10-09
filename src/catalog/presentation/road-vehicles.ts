@@ -10,123 +10,29 @@ import { createA3Lights } from './a3-lamps.js'
 import { createA3Mounts } from './a3-mounts.js'
 import { authoredMirrorLenses } from '../../render/vehicle-presentation/mirror-lenses.js'
 import { authoredScreenMounts } from '../../render/vehicle-presentation/screen-mounts.js'
-/**
- * Cab and trailer paint (`White paint`) plus the cargo-box skin (`Chassis B`).
- * The box mesh is named like a missing reference map and is authored at albedo ~0.02 with
- * metalness 0.45. Cars get no environment except tagged chrome, so that metal reflects
- * nothing and the trailer is a flat black silhouette (exact 0,0,0 on the shadow side).
- * The frame (`Chassis`, `Chassis C`) stays as authored.
- */
-const truckPaintMaterial = /^White paint|^Chassis B/i
-
 function paintWhiteBody(model: THREE.Object3D, color: string): void {
   model.traverse((node) => {
     if (!(node instanceof THREE.Mesh)) return
-    for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
-      if (
-        !(material instanceof THREE.MeshStandardMaterial) ||
-        !truckPaintMaterial.test(material.name)
-      )
-        continue
-      material.color.set(color)
-      if (/^Chassis B/i.test(material.name)) {
-        material.metalness = 0.08
-        material.roughness = Math.max(material.roughness, 0.34)
-      }
-      material.needsUpdate = true
-    }
+    for (const material of Array.isArray(node.material) ? node.material : [node.material])
+      if (material instanceof THREE.MeshStandardMaterial && /^White paint/i.test(material.name))
+        material.color.set(color)
   })
 }
 
-/**
- * Cabin cloth and plastic in the S3 / A3 GLB are authored at about 0.00–0.04 linear.
- * With no environment fill they crush to a flat black interior. Floor them to a dark
- * neutral so the cabin keeps a colour. TODO(unverified): no manufacturer swatch for these
- * factors; the floor only stops the crush, it is not a measured interior colour.
- */
-const cabinMaterial = /^(Asiento|Plastico|Tela|Gris \d|Metal \d|Negro)/i
-const cabinFloor = 0.16
-
-function liftCabinColour(model: THREE.Object3D): void {
-  model.traverse((node) => {
-    if (!(node instanceof THREE.Mesh)) return
-    for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
-      if (!(material instanceof THREE.MeshStandardMaterial) || !cabinMaterial.test(material.name))
-        continue
-      const { r, g, b } = material.color
-      if (Math.max(r, g, b) >= 0.08) continue
-      material.color.setRGB(cabinFloor, cabinFloor * 0.96, cabinFloor * 0.9)
-      material.metalness = Math.min(material.metalness, 0.08)
-      material.needsUpdate = true
-    }
-  })
-}
-
-/**
- * S3 / A3 body chrome: the window surrounds, beltline and boot trim and the grille (`Cromo …`)
- * and the badge (`Nabla silver chrome`). A metal shows only what it reflects and the scene has
- * no environment map, so on their own these parts showed little more than the sun's highlight
- * (dull grey or near black depending on the sun and the time of day). They are tagged
- * `reflective` and the entity view gives them the shared neutral reflection environment (the
- * same one as the VFR800 chrome, `applyReflectionEnvironment`, dimmed at night).
- */
-export const s3ChromeMaterial = /^cromo|chrome/i
-
-/**
- * Rear bumper parts authored as flat dark greys (0.08–0.35 linear, metalness 0): the twin
- * exhaust tips (`*26` outer sleeve, `*31` inner ring) and the chrome strip along the diffuser
- * (`Gris 1`). In shade they had only the ambient and read black. They become polished metal
- * with the reflection environment; the pipe bore (`*28`) stays black.
- */
-const s3RearBumper = /^Parachoques[_ ]?Trasero/i
-const s3RearChrome = /^(\*26|\*31|Gris 1)$/
-
-/** Windscreen tint (`Gris Parabrisas`): glossy glass with a slight sky reflection. */
-const s3Windscreen = /^Gris Parabrisas$/i
-
-function shineVehicle(model: THREE.Object3D, kind: 'body' | 'wheel' | 'steering'): void {
+function shineVehicle(model: THREE.Object3D): void {
   model.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     const materials = Array.isArray(object.material) ? object.material : [object.material]
     for (const material of materials) {
       if (!(material instanceof THREE.MeshStandardMaterial)) continue
-      const rearBumper =
-        s3RearBumper.test(object.name) || s3RearBumper.test(object.parent?.name ?? '')
-      if (kind === 'body' && rearBumper && s3RearChrome.test(material.name)) {
-        material.metalness = 1
-        // The tips a little whiter than the strip; both slightly satin, like real exhaust chrome.
-        const tip = material.name !== 'Gris 1'
-        material.color.setRGB(tip ? 0.9 : 0.86, tip ? 0.9 : 0.86, tip ? 0.9 : 0.87)
-        material.roughness = tip ? 0.22 : 0.2
-        material.emissive.set(0, 0, 0)
-        material.userData.nabla = { ...material.userData.nabla, reflective: true }
-        material.needsUpdate = true
-        continue
-      }
-      if (kind === 'body' && s3Windscreen.test(material.name)) {
-        material.roughness = Math.min(material.roughness, 0.06)
-        material.userData.nabla = {
-          ...material.userData.nabla,
-          reflective: true,
-          envIntensity: 0.6,
-        }
-        material.needsUpdate = true
-        continue
-      }
-      // The door mirror housings (`Llanta 2`, also the live mirror lenses) keep their satin look.
       if (/^llanta/i.test(material.name) && material.metalness > 0.5) {
         material.metalness = 0.35
         material.needsUpdate = true
       }
-      if (kind !== 'body' || !s3ChromeMaterial.test(material.name)) continue
+      if (!/^cromo/i.test(material.name)) continue
       material.metalness = 1
-      // Bright chrome like the wheel rim lips, but whiter: the rims' base (0.86-0.93, roughness
-      // 0.18) reads glossy black next to env-lit trim. The reflection follows the light
-      // (`shadeEnvironment`), so a bright base never looks self-lit.
-      material.color.setRGB(0.93, 0.93, 0.93)
-      material.roughness = 0.15
-      material.emissive.set(0, 0, 0)
-      material.userData.nabla = { ...material.userData.nabla, reflective: true }
+      material.roughness = Math.min(material.roughness, 0.32)
+      material.envMap = null
       material.needsUpdate = true
     }
   })
@@ -134,7 +40,6 @@ function shineVehicle(model: THREE.Object3D, kind: 'body' | 'wheel' | 'steering'
 
 export const s3Presentation: VehiclePresentationAdapter = {
   mount(model, e, definition, policy) {
-    liftCabinColour(model)
     model.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
       const materials = Array.isArray(object.material) ? object.material : [object.material]
@@ -152,9 +57,8 @@ export const s3Presentation: VehiclePresentationAdapter = {
           roughness: 0.22,
           clearcoat: 0.8,
           clearcoatRoughness: 0.14,
+          envMapIntensity: 0,
         })
-        // Only the cars' sky fill (`carReflectionOptions.fill`), not a full reflection: a tagged
-        // reflection on a light metallic paint washed grey out to near white (Txema 2026-10-09).
         return paint
       })
       object.material = Array.isArray(object.material) ? next : next[0]
@@ -190,8 +94,8 @@ export const s3Presentation: VehiclePresentationAdapter = {
       instruments,
     }
   },
-  preparePart(model, kind) {
-    shineVehicle(model, kind)
+  preparePart(model) {
+    shineVehicle(model)
   },
   paint(model, color) {
     model.traverse((node) => {

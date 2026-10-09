@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Changed
+
+- Lighting, colour, shadow and material code restored to what euskadi.online runs (engine 8d18dba), because the trucks rendered black again on :8707. Reverted: the car sky fill and the S3 paint, chrome, rear-chrome, windscreen and cabin-floor overrides (#161, #167, #198, #199, #200), the chrome light scaling and its night/daylight curve (#163, #170, #172), the trailer box `Chassis B` repaint (#167), the zenithal shadow-cascade cuts (#183, #192), bridge shadow casters (#153), the VFR800 metal map GLB (#165) and the Alto artistic-cloud default (#184: artistic clouds also shade the ground; back to Ultra only, as online). Kept: the zenithal entry stall fix (#180) and every non-lighting feature.
+
+### Added
+
+- Ajustes → Opciones → Luz: live sliders for Exposición (tone-mapping exposure), Sol and Ambiente (multipliers on the full-day 3.2 sun and 0.22 ambient), Reflejos (vehicle reflection multiplier), Pintura (vehicle paint colour multiplier), Sombras on/off and intensity. Each value is shown next to its slider, saved as `nabla.lightTuning`, and «Copiar valores» copies them as JSON (with «Restablecer» back to the defaults). The defaults are the restored look.
+
+### Fixed
+
+- Car parks are asphalt for the tyres: OSM `amenity=parking` areas (not underground, multi-storey or rooftop ones, nor grass/gravel lots) and paved road areas (`area:highway`, pedestrian/service `area=yes`) from the cell's OSM snapshot count as asphalt, so they get asphalt grip and black, persistent skid marks. Green marks and grass grip stay for real grass.
+
 ### Added
 
 - Staged reveal for intros: `play()` reports `data-reveal-stage` (vehicles, weapons, terrain, shaders, ready) and `data-reveal-progress`, waits for every streamed cell and map mesh around the start (`waitForArea`, what a descent from above shows) and uploads scene textures (`uploadSceneTextures`) before `data-reveal="holding"`. `holdStartCameras(promise)` keeps the start sequence on its first view (a `fromHeight` descent waits at its start height, e.g. while the host fades in), and the descent's first view only counts as arrived once the camera is near its normal height, so slow frames never cut it short.
