@@ -500,6 +500,10 @@ export class SceneView {
     void Promise.all(this.loading.splice(0)).catch(() => undefined)
   }
   /** A soft CPU budget; one indivisible mesh may exceed it. Call once per main frame. */
+  /** Map meshes (roads, cover) still waiting for `flushMapInstall`. */
+  get pendingMapInstalls(): number {
+    return this.pendingMapMeshes.length
+  }
   flushMapInstall(budgetMs = 4, maxEntities = 24, eye?: THREE.Vector3): number {
     if (eye) this.mapInstallEye.copy(eye)
     const started = performance.now()
