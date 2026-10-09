@@ -442,6 +442,8 @@ export class GameRuntime {
     lightingDefaults.ambientIntensity,
   )
   private readonly catchFloor = new CatchFloor()
+  /** Ajustes → «Sombras: activadas / desactivadas» (see `setShadowsEnabled`). */
+  private shadowSwitch = true
   /** Live look knobs (Ajustes → Luz); defaults are the shipped look. */
   private lighting: LightTuning = readLightTuning(browserStorage())
   private readonly origin = new THREE.Vector3()
@@ -1222,7 +1224,7 @@ export class GameRuntime {
         time,
         mirrorVehicle:
           this.quality.mirrors && this.cameraState.mode === 'cockpit' ? player.vehicleId : null,
-        shadowsEnabled: this.quality.shadows > 0,
+        shadowsEnabled: this.syncShadowSwitch(),
         depthOfField: this.options.depthOfField ?? !!this.quality.dof,
         cull: (position) => this.cull(position),
       })
@@ -1370,7 +1372,7 @@ export class GameRuntime {
         monitors: this.monitors,
         time,
         mirrorVehicle: this.quality.mirrors && state.mode === 'cockpit' ? player.vehicleId : null,
-        shadowsEnabled: this.quality.shadows > 0,
+        shadowsEnabled: this.syncShadowSwitch(),
         depthOfField: this.options.depthOfField ?? !!this.quality.dof,
         cull: (position) => this.cull(position),
       })
@@ -2086,6 +2088,32 @@ export class GameRuntime {
   setShadowBias(scale: number): void {
     this.assertAlive()
     this.shadows.setBiasScale(scale)
+  }
+  /** Shadows on/off switch (Ajustes → Sombras); on by default, the quality tier still applies. */
+  get shadowsEnabled(): boolean {
+    return this.shadowSwitch
+  }
+  /**
+   * Turn shadows on or off live: the shadow map, the sun's `castShadow` (and the cascade lights')
+   * and every scene material's program follow on the next frame.
+   */
+  setShadowsEnabled(on: boolean): void {
+    this.assertAlive()
+    this.shadowSwitch = !!on
+  }
+  /** Apply the shadow switch on top of the quality tier; returns whether shadows draw this frame. */
+  private syncShadowSwitch(): boolean {
+    const on = this.shadowSwitch && this.quality.shadows > 0
+    for (const light of this.shadows.lights) if (light.castShadow !== on) light.castShadow = on
+    if (this.sun.castShadow && !on) this.sun.castShadow = false
+    if (this.renderer.shadowMap.enabled !== on) {
+      this.renderer.shadowMap.enabled = on
+      this.scene.traverse((object) => {
+        const material = (object as THREE.Mesh).material
+        if (material) for (const m of [material].flat()) m.needsUpdate = true
+      })
+    }
+    return on
   }
   /** Asphalt contrast on the roads photo drape (1 = unchanged). */
   get asphaltContrast(): number {
