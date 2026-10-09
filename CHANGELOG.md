@@ -4,6 +4,7 @@
 
 ### Added
 
+- Intro and reveal: `GameRuntime.play()` now preloads the vehicle and sidearm models and warms the shader programs before the attract view goes away, and waits for host gates added with `holdReveal(promise)` (an intro or credits sequence). `startMusic()` starts the background music now or on the next gesture. The attract planet follows the real clock by default (`AttractOptions.clock`), and a live scene clock is re-anchored at reveal so gameplay starts at its authored time. Start cameras take `fromHeight` on an overhead first step for a descent from high altitude. The canvas exposes `data-reveal` (`preparing`, `holding`, `play`).
 - Audio mixer: master → engine bus (every engine, starter, turbo, turbine and propeller voice) and music bus; tyres, gears, gunshot and brakes stay on master. `GameRuntime.audioMix` / `setAudioMix` (0..1, squared slider curve, music mute), saved as `nabla.audioMix`. Ajustes → Opciones → Sonido has General, Motor and Música sliders and «Silenciar música».
 - Background music: `GameRuntimeOptions.music` (and `NABLA_BOOT.music` in the game host) takes encodings in preference order. The track streams through an `<audio>` element into the music bus, loops, starts after the first gesture and pauses while the page is hidden. Default music level 50% (TODO(unverified): a taste choice).
 
@@ -17,6 +18,7 @@
 
 ### Fixed
 
+- No coloured placeholder block is drawn while a vehicle's GLB is still loading (e.g. the red cube before the motorbike appeared).
 - Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
 
 - Zenithal camera: zooming out no longer turns trucks black. A downward view used to leave the vehicle in the last shadow cascade (the 140 m cut is still in the air), and that map is sized to the far plane. Cascade 0 now ends just past the ground under the camera.
