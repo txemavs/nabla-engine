@@ -168,6 +168,7 @@ callback@171(object): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `THREE.MathUtils.clamp`
 - `[mesh.material].flat`
 - `base.set`
 - `materials.add`
@@ -177,7 +178,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.setLevel
 
-[Implementation, line 205](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L205)
+[Implementation, line 207](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L207)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation
@@ -190,7 +191,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## scale
 
-[Implementation, line 216](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L216)
+[Implementation, line 218](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L218)
 
 Per-material multiplier from the GLB (`extras.nabla.envIntensity`, e.g. a windscreen's
 slight reflection); 1 when omitted.
