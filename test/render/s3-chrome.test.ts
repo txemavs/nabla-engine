@@ -14,7 +14,11 @@ import {
   carReflectionOptions,
   reflectionEnvironmentTexture,
   reflectionLevel,
+  shadeReflectionFloor,
 } from '../../src/render/vehicle-presentation/reflection-environment.js'
+
+const SPECULAR_SUM =
+  'vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;'
 
 type Gltf = {
   materials: { name: string; pbrMetallicRoughness?: { metallicFactor?: number } }[]
@@ -72,23 +76,26 @@ describe('S3 chrome', () => {
 
     const reflections = applyReflectionEnvironment(body, carReflectionOptions)
     const wheelReflections = applyReflectionEnvironment(wheel, carReflectionOptions)
-    expect(new Set(reflections.materials)).toEqual(new Set(trim))
+    // The trim at full strength; everything else on the car at the sky fill.
+    expect(new Set(reflections.materials)).toEqual(new Set([...trim, paint, housing]))
     for (const material of trim) {
       expect(material.metalness).toBe(1)
       // Whiter than the wheel rim lips, which read glossy black next to it.
       expect(material.roughness).toBeCloseTo(0.15, 6)
       expect(material.color.r).toBeGreaterThan(0.8)
       expect(material.emissive.r + material.emissive.g + material.emissive.b).toBe(0)
-      expect(material.customProgramCacheKey()).toContain('nabla-shaded-env')
+      expect(material.customProgramCacheKey()).toContain('nabla-shaded-env-floor')
       expect(material.envMap).toBe(reflectionEnvironmentTexture())
       expect(material.envMapIntensity).toBeCloseTo(carReflectionOptions.intensity)
     }
-    // Untouched: the paint, the satin mirror housings (also the live mirror lenses), the wheels.
-    expect(paint.envMap).toBeNull()
-    expect(housing.envMap).toBeNull()
+    // Paint and the satin mirror housings keep their look and only take the sky fill.
+    expect(paint.metalness).toBe(0.72)
+    expect(paint.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
+    expect(housing.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
     expect(housing.metalness).toBe(0.35)
-    expect(wheelReflections.materials).toEqual([])
-    expect(wheelChrome.envMap).toBeNull()
+    // Wheels are not trim: no full-strength chrome there, only the fill.
+    expect(wheelReflections.materials).toEqual([wheelChrome])
+    expect(wheelChrome.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
     // The env is scaled by the shadowed light, not left as a fixed specular.
     expect(ShaderChunk.lights_fragment_begin).toContain('nablaIncident')
     expect(ShaderChunk.lights_fragment_begin).toContain('nablaIncident += irradiance')
@@ -101,6 +108,49 @@ describe('S3 chrome', () => {
     const night = reflectionLevel(0)
     reflections.setLevel(night)
     expect(trim[0].envMapIntensity).toBeCloseTo(carReflectionOptions.intensity * night)
+    expect(paint.envMapIntensity).toBeCloseTo(carReflectionOptions.fill * night)
+    // Applying again (a second car sharing the material) does not scale the reflection twice.
+    applyReflectionEnvironment(body, carReflectionOptions)
+    const shader = { fragmentShader: ShaderChunk.lights_fragment_maps + SPECULAR_SUM }
+    trim[0].onBeforeCompile(shader as never, {} as never)
+    expect(shader.fragmentShader.match(/nablaIncident/g)).toHaveLength(1)
+  })
+
+  it('shaded chrome keeps half its reflection instead of going black', () => {
+    expect(shadeReflectionFloor).toBeGreaterThanOrEqual(0.4)
+    const chrome = standard('Cromo 3', 1)
+    applyReflectionEnvironment(model([chrome]), carReflectionOptions)
+    const shader = { fragmentShader: SPECULAR_SUM }
+    chrome.onBeforeCompile(shader as never, {} as never)
+    expect(shader.fragmentShader).toContain(
+      'indirectSpecular *= max( saturate( nablaIncident ), vec3( 0.50 ) )',
+    )
+  })
+
+  it('the exhaust tips, the rear strip and the windscreen reflect like chrome and glass', () => {
+    const bumper = new THREE.Group()
+    bumper.name = 'Parachoques_Trasero002'
+    const parts = ['*26', '*31', 'Gris 1', '*28'].map((name) => standard(name, 0, 0.4))
+    for (const material of parts)
+      bumper.add(new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), material))
+    const glass = standard('Gris Parabrisas', 0, 0.4)
+    const body = new THREE.Group()
+    body.add(bumper, new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), glass))
+    s3Presentation.preparePart!(body, 'body')
+    applyReflectionEnvironment(body, carReflectionOptions)
+    const [outer, inner, strip, bore] = parts
+    for (const material of [outer, inner, strip]) {
+      expect(material.metalness).toBe(1)
+      expect(material.color.r).toBeGreaterThan(0.8)
+      expect(material.envMapIntensity).toBeCloseTo(carReflectionOptions.intensity)
+    }
+    // The pipe bore stays dark (sky fill only).
+    expect(bore.metalness).toBe(0)
+    expect(bore.color.r).toBe(1)
+    expect(bore.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
+    expect(glass.roughness).toBeLessThanOrEqual(0.06)
+    expect(glass.metalness).toBe(0)
+    expect(glass.envMapIntensity).toBeCloseTo(carReflectionOptions.intensity * 0.6)
   })
 
   it('fades the chrome reflections with the daylight, dusk included', () => {
