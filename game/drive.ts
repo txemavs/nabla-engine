@@ -18,7 +18,7 @@ import { browserStorage } from './entry.js'
 import { showLocation } from './position.js'
 import { describeLoading } from './loading-text.js'
 import { bindTerrainSelector } from './terrain-selector.js'
-import { bindSceneControls } from './scene-controls.js'
+import { bindSceneControls, menuPreloadVehicles } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
@@ -172,6 +172,7 @@ try {
         .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
+    preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
     world,
     sea: !flat,
     fieldLights: lights

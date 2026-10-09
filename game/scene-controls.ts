@@ -90,6 +90,15 @@ export function vehicleChoices(): VehicleChoice[] {
     .map((preset) => ({ id: preset.id, label: preset.label }))
 }
 
+/** Common add-menu models prepared behind the opening credits; large ships stay on demand. */
+export function menuPreloadVehicles(
+  ids: readonly string[] = ['car', 'vfr800', 'white-truck'],
+): Entity[][] {
+  return [...new Set(ids)]
+    .filter((id) => vehicleChoices().some((choice) => choice.id === id))
+    .map((id) => presetEntities(id, `preload-${id}`))
+}
+
 /** Metres as shown to the player: one decimal and a decimal comma. */
 export function formatMetres(metres: number): string {
   return metres.toFixed(1).replace('.', ',').replace(/^-/, '−') + ' m'

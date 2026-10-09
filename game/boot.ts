@@ -20,6 +20,8 @@ import { wantsAutoResolution } from './display-settings.js'
 import type { GameRuntimeOptions } from '@nabla/engine/runtime/browser'
 
 export interface HostBootConfig {
+  /** Menu preset IDs to prepare during credits; defaults to car, VFR and white truck. [] disables it. */
+  preloadVehicles?: readonly string[]
   /** Splash slots: logo URL, title, message list, layout, theme CSS. */
   splash?: EngineSplashSkin
   /** Planet-from-orbit boot view while terrain and vehicles stream; true uses defaults. */
