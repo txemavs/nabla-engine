@@ -504,8 +504,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   grid-row: 1;
   padding: 2px 10px;
 }
-/* Planeta switches read like the other tabs: box first, then its name. */
-#settings-pane-planet label:has(> input[type='checkbox']) {
+/* The planet panel's switches read like the other tabs: box first, then its name. */
+#settings-pane-planet label:has(> input[type='checkbox'][id^='ps-']) {
   flex-direction: row-reverse;
   justify-content: flex-end;
 }
