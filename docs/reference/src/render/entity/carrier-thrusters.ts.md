@@ -10,9 +10,11 @@
 
 ## CarrierThrusters.constructor
 
-[Implementation, line 9](../../../../../src/render/entity/carrier-thrusters.ts#L9)
+[Implementation, line 14](../../../../../src/render/entity/carrier-thrusters.ts#L14)
 
 Four exhausts. Flames stay unlit. At night each engine throws a pool downward.
+The lamps stay in the scene while playing (intensity 0 by day) and only the flames toggle:
+a light that appears or disappears changes every lit material's program.
 
 ```ts
 constructor(): instance
@@ -29,15 +31,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `jet.position.set`
 - `lamp.position.set`
 - `lamp.target.position.set`
+- `this.exhaust.add`
 - `this.jets.push`
 - `this.lamps.push`
 - `this.root.add`
 
 ## CarrierThrusters.update
 
-[Implementation, line 45](../../../../../src/render/entity/carrier-thrusters.ts#L45)
+[Implementation, line 52](../../../../../src/render/entity/carrier-thrusters.ts#L52)
 
 Four exhausts. Flames stay unlit. At night each engine throws a pool downward.
+The lamps stay in the scene while playing (intensity 0 by day) and only the flames toggle:
+a light that appears or disappears changes every lit material's program.
 
 ```ts
 update(active: boolean, speed: number, dt: number, time: number, night = false): void

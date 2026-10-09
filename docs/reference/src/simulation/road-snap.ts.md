@@ -27,3 +27,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Math.sqrt`
+
+## RoadSegmentIndex.constructor
+
+[Implementation, line 88](../../../../src/simulation/road-snap.ts#L88)
+
+```ts
+constructor(roads: Iterable<RoadCenterline>): instance
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Float64Array`
+- `Math.floor`
+- `Math.max`
+- `Math.min`
+- `Uint32Array`
+- `cell.push`
+- `segs.push`
+- `this.cells.get`
+- `this.cells.set`
+
+## RoadSegmentIndex.nearest
+
+[Implementation, line 127](../../../../src/simulation/road-snap.ts#L127)
+
+```ts
+nearest(x: number, z: number, maxDistance = ROAD_SNAP_MAX_DISTANCE): RoadSnap | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `Math.hypot`
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+- `this.cells.get`
+- `this.stamp.fill`

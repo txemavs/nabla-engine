@@ -9,7 +9,7 @@
  *
  * This does not see a paved lot that is not a carriageway. Those read as grass.
  */
-import { nearestRoadPoint, type RoadCenterline } from './road-snap.js'
+import { nearestRoadPoint, RoadSegmentIndex, type RoadCenterline } from './road-snap.js'
 
 export type WheelSurface = 'asphalt' | 'grass'
 
@@ -31,17 +31,19 @@ export function surfaceGripScale(surface: WheelSurface | null | undefined): numb
 }
 
 /**
- * `roads` empty → null (unknown). Otherwise asphalt inside the nearest carriageway's
+ * `roads` (centrelines, or a prebuilt {@link RoadSegmentIndex} for per-tick use) empty → null (unknown). Otherwise asphalt inside the nearest carriageway's
  * width, grass when the nearest one is farther than that (including farther than the search).
  */
 export function classifyWheelSurface(
   x: number,
   z: number,
-  roads: readonly RoadCenterline[],
+  roads: readonly RoadCenterline[] | RoadSegmentIndex,
   maxDistance = SURFACE_SEARCH_M,
 ): WheelSurface | null {
-  if (!roads.length || !Number.isFinite(x) || !Number.isFinite(z)) return null
-  const hit = nearestRoadPoint(x, z, roads, maxDistance)
+  const index = roads instanceof RoadSegmentIndex
+  if (!(index ? roads.size : roads.length) || !Number.isFinite(x) || !Number.isFinite(z))
+    return null
+  const hit = index ? roads.nearest(x, z, maxDistance) : nearestRoadPoint(x, z, roads, maxDistance)
   if (!hit || !(hit.width > 0)) return hit ? null : 'grass'
   return hit.distance <= hit.width / 2 + EDGE_M ? 'asphalt' : 'grass'
 }

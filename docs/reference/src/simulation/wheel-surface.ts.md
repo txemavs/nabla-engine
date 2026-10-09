@@ -30,14 +30,12 @@ surfaceGripScale(surface: WheelSurface | null | undefined): number
 
 [Implementation, line 37](../../../../src/simulation/wheel-surface.ts#L37)
 
-`roads` empty → null (unknown). Otherwise asphalt inside the nearest carriageway's
-width, grass when the nearest one is farther than that (including farther than the search).
-
 ```ts
-classifyWheelSurface(x: number, z: number, roads: readonly RoadCenterline[], maxDistance = SURFACE_SEARCH_M): WheelSurface | null
+classifyWheelSurface(x: number, z: number, roads: readonly RoadCenterline[] | RoadSegmentIndex, maxDistance = SURFACE_SEARCH_M): WheelSurface | null
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number.isFinite`
 - `nearestRoadPoint`
+- `roads.nearest`
