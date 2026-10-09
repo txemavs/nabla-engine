@@ -1,6 +1,6 @@
-import { audioBus } from './mixer.js'
 import { roadVehicleDefaults } from '../config/simulation.js'
 import { engineNoteHz } from './powertrain.js'
+import { audioBus } from './mixer.js'
 
 /**
  * Engine start, fully synthesized: no sample files. One short mechanical click as the starter

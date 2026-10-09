@@ -4,6 +4,11 @@
 
 [Source](../../../../src/audio/gear-click.ts)
 
+Gear-change "click", fully synthesized: no sample files. A single short transient of the
+shared noise through a bandpass, a few tens of milliseconds long and quiet, for a
+motorcycle's sequential gearbox (or any vehicle whose preset asks for `gearShift.sound:
+'click'`). The nodes are created once; a trigger only schedules an envelope.
+
 ## Module dependencies
 
 - `./mixer.js`

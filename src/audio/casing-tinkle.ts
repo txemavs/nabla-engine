@@ -1,10 +1,10 @@
-import { audioBus } from './mixer.js'
 /**
  * Brass casing hitting the ground: a short metallic "tink", fully synthesized. Three inharmonic
  * sine partials (a thin tube rings at non-integer ratios) with fast exponential decays plus a
  * tick of band-passed noise. Loudness follows the impact speed. Nodes are created once; a
  * trigger only schedules envelopes. Sound design values, not measurements.
  */
+import { audioBus } from './mixer.js'
 const SILENT = 0.0001
 
 export const casingTinkleDefaults = Object.freeze({

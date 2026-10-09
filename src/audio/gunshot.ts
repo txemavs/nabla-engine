@@ -1,4 +1,3 @@
-import { audioBus } from './mixer.js'
 /**
  * Sidearm gunshot, fully synthesized: no sample files. Four layers share one trigger:
  * a bright supersonic crack (high-passed noise, a few milliseconds), the muzzle boom
@@ -6,6 +5,7 @@ import { audioBus } from './mixer.js'
  * tail that stands in for the surroundings. The nodes are created once; a trigger only
  * schedules envelopes, so rapid fire never allocates audio nodes.
  */
+import { audioBus } from './mixer.js'
 const SILENT = 0.0001
 
 /** Attack-decay envelope on one gain. Cancels only its own earlier schedule. */

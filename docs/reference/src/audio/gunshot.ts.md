@@ -4,6 +4,12 @@
 
 [Source](../../../../src/audio/gunshot.ts)
 
+Sidearm gunshot, fully synthesized: no sample files. Four layers share one trigger:
+a bright supersonic crack (high-passed noise, a few milliseconds), the muzzle boom
+(low-passed noise), a pitch-falling sine thump for chest weight, and a short band-passed
+tail that stands in for the surroundings. The nodes are created once; a trigger only
+schedules envelopes, so rapid fire never allocates audio nodes.
+
 ## Module dependencies
 
 - `./mixer.js`

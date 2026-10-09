@@ -1,4 +1,3 @@
-import { audioBus } from './mixer.js'
 /**
  * Gear-change "clack", fully synthesized: no sample files. Two impacts (selection, then
  * engagement) plus an optional air-release hiss. Each impact is a short pitch-falling sine
@@ -8,6 +7,7 @@ import { audioBus } from './mixer.js'
  * A light road car uses the defaults. A truck passes lower frequencies, longer decays and
  * an air hiss, so it sounds like a heavy dog-clutch box with air-assisted shifting.
  */
+import { audioBus } from './mixer.js'
 export interface GearClackSound {
   /** Body of the thump, Hz. */
   clunkHz?: number

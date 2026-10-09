@@ -4,6 +4,14 @@
 
 [Source](../../../../src/audio/gear-clack.ts)
 
+Gear-change "clack", fully synthesized: no sample files. Two impacts (selection, then
+engagement) plus an optional air-release hiss. Each impact is a short pitch-falling sine
+(the thump of the gearbox casing) plus the shared noise through a bandpass (the metal
+click). The nodes are created once; a trigger only schedules envelopes.
+
+A light road car uses the defaults. A truck passes lower frequencies, longer decays and
+an air hiss, so it sounds like a heavy dog-clutch box with air-assisted shifting.
+
 ## Module dependencies
 
 - `./mixer.js`

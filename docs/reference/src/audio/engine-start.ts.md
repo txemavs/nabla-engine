@@ -6,9 +6,9 @@
 
 ## Module dependencies
 
-- `./mixer.js`
 - `../config/simulation.js`
 - `./powertrain.js`
+- `./mixer.js`
 
 ## clampNumber
 
