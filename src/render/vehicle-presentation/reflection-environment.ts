@@ -127,12 +127,13 @@ export function reflectionEnvironmentTexture(): THREE.DataTexture {
  * environment, a little stronger than on the motorcycles so thin chrome trim reads at a distance.
  * Every other lit material gets it at `fill`: the sky light a shaded or far (zenithal) car
  * receives besides the sun. Without it the shadow side of the body, the cabin and dark trim had
- * only the 0.22 ambient and read black. TODO(unverified): `fill` is a look choice.
+ * only the 0.22 ambient and read black. `fill` 0.0625 matched euskadi.online (engine 8d18dba)
+ * within 3% mean luminance on the truck cab and S3 shots (Atlas, 2026-10-09); 0.25 read ~8-15% too light.
  */
 export const carReflectionOptions = Object.freeze({
   minMetalness: Infinity,
   intensity: 0.8,
-  fill: 0.25,
+  fill: 0.0625,
 })
 
 /**
