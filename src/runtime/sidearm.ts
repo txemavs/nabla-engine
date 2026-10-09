@@ -12,6 +12,12 @@ import {
   type FirearmState,
 } from '../simulation/weapons/firearm.js'
 import { MuzzleRise } from '../simulation/weapons/recoil.js'
+import {
+  pullTrigger,
+  RecoilYaw,
+  specForMode,
+  type FireMode,
+} from '../simulation/weapons/machine-pistol.js'
 import { reloadPresentation } from './reload-presentation.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
@@ -60,7 +66,10 @@ export class Sidearm {
   private readonly camera = new THREE.PerspectiveCamera(HIP_POSE.fov, 1, 0.01, 5)
   readonly model = new THREE.Group()
   readonly preset: WeaponPreset | undefined
-  readonly firearm: FirearmSpec
+  /** The pistol's own (semi-automatic) spec; `firearm` follows the fire mode. */
+  readonly baseFirearm: FirearmSpec
+  private mode: FireMode = 'semi'
+  readonly recoilYaw = new RecoilYaw()
   readonly state: FirearmState
   private readonly rise: MuzzleRise | null
   private rig: WeaponRig = defaultRig
@@ -85,7 +94,7 @@ export class Sidearm {
     this.range = preset?.ammunition?.maxTraceM ?? preset?.range ?? 150
     this.impulse = preset?.impulse ?? 12
     this.legacyTravel = preset?.slideTravel ?? 0
-    this.firearm = preset?.firearm
+    this.baseFirearm = preset?.firearm
       ? {
           magazineCapacity: preset.firearm.magazineCapacity,
           chamber: preset.firearm.chamber,
@@ -93,7 +102,7 @@ export class Sidearm {
           reloadMs: preset.firearm.reloadMs,
         }
       : legacyFirearm(preset)
-    this.state = freshFirearm(this.firearm)
+    this.state = freshFirearm(this.baseFirearm)
     this.rise = preset?.recoil ? new MuzzleRise(preset.recoil) : null
     const fallbackMaterial = new THREE.MeshStandardMaterial({ color: '#1b1f24', roughness: 0.6 })
     const fallback = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.17), fallbackMaterial)
@@ -251,16 +260,36 @@ export class Sidearm {
 
   reset(): void {
     Object.assign(this.state, freshFirearm(this.firearm))
+    this.recoilYaw.reset()
     this.rise?.reset()
     this.aiming = false
     this.aimBlend = 0
   }
 
-  /** Trigger pressed (fires at most once per press). */
+  /** Spec in use: the pistol's own, or the 30-round RÁFAGA one (`machine-pistol.ts`). */
+  get firearm(): FirearmSpec {
+    return specForMode(this.baseFirearm, this.mode)
+  }
+  get fireMode(): FireMode {
+    return this.mode
+  }
+  /** Switch SEMI / RÁFAGA 30. A magazine fuller than the new capacity keeps only what fits. */
+  setFireMode(mode: FireMode): void {
+    this.mode = mode
+    const capacity = this.firearm.magazineCapacity
+    if (this.state.magazine > capacity) this.state.magazine = capacity
+    this.state.triggerHeld = false
+    this.recoilYaw.reset()
+  }
+
+  /** Trigger pressed or held: once per press in SEMI, at the cyclic rate in RÁFAGA. */
   pull(now: number): FirearmEvent {
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
-    const event = trigger(this.state, this.firearm, true, now)
-    if (event.fired) this.rise?.shot(now)
+    const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
+    if (event.fired) {
+      this.rise?.shot(now)
+      if (this.mode === 'burst30') this.recoilYaw.kick()
+    }
     return event
   }
 
