@@ -96,6 +96,7 @@ export const spanishMessages: Readonly<Record<string, string>> = {
   'Mirrors: ': 'Espejos: ',
   'FOV cockpit {0}° · driving {1}°': 'FOV cabina {0}° · conducción {1}°',
   'Menu closed': 'Menú cerrado',
+  'Loading vehicle…': 'Cargando vehículo…',
   'Vehicle menu · arrows and Enter · J to close': 'Menú del coche · flechas y Enter · J para salir',
   Accelerate: 'Acelerar',
   Reverse: 'Atrás',

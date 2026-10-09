@@ -69,6 +69,8 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
+import { AssetWarmup } from '../render/entity/asset-warmup.js'
+import { showLoadingBadge } from './loading-badge.js'
 import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer.js'
 import type { MusicTrack } from '../audio/music.js'
 import {
@@ -367,6 +369,7 @@ export class GameRuntime {
   private sidearm: Sidearm | null = null
   private spawned: string[] = []
   private spawnSequence = 0
+  private assetWarmup: AssetWarmup | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
   private weaponDrawn = false
@@ -871,6 +874,7 @@ export class GameRuntime {
     this.touchFlight?.dispose()
     this.monitors.dispose()
     this.view.dispose()
+    this.assetWarmup?.dispose()
     this.sky.dispose()
     this.environment.dispose()
     this.fieldLighting?.dispose()
@@ -1433,9 +1437,19 @@ export class GameRuntime {
     const sim = this.session.simulation
     if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
     const [x, , z] = position
-    const ground = await waitForGround(this.world, [x, 0, z], {
-      timeoutMs: timeoutMs ?? 120_000,
-    })
+    // Parse, texture upload and shader compile happen before the vehicle exists, spread over
+    // frames, so adding it below is a cheap clone instead of a frozen frame.
+    const hide = showLoadingBadge(this.options.canvas.parentElement, this.text('Loading vehicle…'))
+    let ground: number
+    try {
+      ;[ground] = await Promise.all([
+        waitForGround(this.world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 }),
+        this.prewarmVehicle([vehicle, ...hostedTemplates]).catch(() => undefined),
+      ])
+    } finally {
+      hide()
+    }
+    this.assertAlive()
     const id = `spawned-${++this.spawnSequence}`
     const entity: Entity = {
       ...structuredClone(vehicle),
@@ -1468,6 +1482,21 @@ export class GameRuntime {
     if (group)
       void this.renderer.compileAsync(group, this.camera, this.scene).catch(() => undefined)
     return id
+  }
+  /**
+   * Load and prepare a vehicle's models without adding it: GLB parse (cached and reused), one
+   * texture upload per frame and an async shader compile. `placeVehicle` and `spawnVehicle`
+   * call this first; a host may call it early (for example when a vehicle is picked in a menu).
+   */
+  async prewarmVehicle(template: Entity | readonly Entity[]): Promise<void> {
+    this.assertAlive()
+    const entities = Array.isArray(template) ? template : [template as Entity]
+    this.assetWarmup ??= new AssetWarmup({
+      renderer: this.renderer,
+      camera: this.camera,
+      scene: this.scene,
+    })
+    await Promise.all(entities.map((e) => this.assetWarmup!.warmVisual(e.visual)))
   }
   /**
    * Couple a free trailer to a tractor. Omit `trailerId` to use the nearest hitchable trailer.

@@ -4,6 +4,7 @@
 
 ### Added
 
+- Adding a vehicle no longer freezes the game. `GameRuntime.prewarmVehicle` loads and parses its GLBs (cached and reused), uploads one texture per frame and compiles its shaders with `compileAsync` before the vehicle exists; `placeVehicle` / `spawnVehicle` wait for that and show a small «Cargando vehículo…» badge. The game menu starts it as soon as a vehicle is picked. Vehicle colliders are a few boxes and stay synchronous.
 - Audio mixer: master → engine bus (every engine, starter, turbo, turbine and propeller voice) and music bus; tyres, gears, gunshot and brakes stay on master. `GameRuntime.audioMix` / `setAudioMix` (0..1, squared slider curve, music mute), saved as `nabla.audioMix`. Ajustes → Opciones → Sonido has General, Motor and Música sliders and «Silenciar música».
 - Background music: `GameRuntimeOptions.music` (and `NABLA_BOOT.music` in the game host) takes encodings in preference order. The track streams through an `<audio>` element into the music bus, loops, starts after the first gesture and pauses while the page is hidden. Default music level 50% (TODO(unverified): a taste choice).
 
