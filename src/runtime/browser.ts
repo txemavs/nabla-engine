@@ -159,8 +159,8 @@ import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { VehicleEffects } from './vehicle-effects.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 
-import { groundAtSeam, waitForGround } from './ground.js'
-import { warmGamePresentation } from './presentation-warmup.js'
+import { groundAtSeam, waitForArea, waitForGround } from './ground.js'
+import { uploadSceneTextures, warmGamePresentation } from './presentation-warmup.js'
 import { GameHud } from './hud.js'
 import { FlipCinematic } from './flip-cinematic.js'
 import {
@@ -188,6 +188,8 @@ export interface GameFrame {
  * 80 m remain after 2.2 s, versus 1.6 s to settle at the normal 3/s. A presentation choice.
  */
 const START_DESCENT_DAMPING = 1.2
+/** Loading stages `prepareReveal` reports (vehicles, weapons, terrain, shaders). */
+const REVEAL_STAGES = 4
 
 /** Pre-play attract/boot view: sky and planet only, camera outside the planet (TV-style). */
 export interface AttractOptions {
@@ -437,6 +439,7 @@ export class GameRuntime {
   private readonly world: PlanetWorld | null
   private loading: AbortController | null = null
   private readonly revealGates: Promise<unknown>[] = []
+  private startHold: Promise<unknown> | null = null
   private lastTime: number | null = null
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
@@ -2026,22 +2029,50 @@ export class GameRuntime {
   private async prepareReveal(signal: AbortSignal): Promise<void> {
     const within = <T>(promise: Promise<T>, ms: number) =>
       Promise.race([promise.catch(() => undefined), new Promise((r) => setTimeout(r, ms))])
-    this.options.canvas.dataset.reveal = 'preparing'
-    // Vehicle GLBs (the bike included) and the sidearm models land in the asset cache.
+    const canvas = this.options.canvas
+    // Stages for hosts that pace an intro on loading (`data-reveal-stage`, `data-reveal-progress`).
+    const stage = (name: string, done: number) => {
+      canvas.dataset.revealStage = name
+      canvas.dataset.revealProgress = (done / REVEAL_STAGES).toFixed(2)
+    }
+    canvas.dataset.reveal = 'preparing'
+    // 1. Vehicle GLBs (the bike included) and 2. the sidearm models land in the asset cache.
+    stage('vehicles', 0)
+    await within(this.view.ready, 30_000)
+    signal.throwIfAborted()
+    stage('weapons', 1)
     const preset = weaponPresets()[0]
     const weaponUrls = [preset?.model, preset?.body, preset?.slide].filter(
       (url): url is string => typeof url === 'string',
     )
     await within(
-      Promise.all([
-        this.view.ready,
-        ...weaponUrls.map((url) => assets.instantiate(url).then((model) => disposeObject(model))),
-      ]),
-      30_000,
+      Promise.all(
+        weaponUrls.map((url) => assets.instantiate(url).then((model) => disposeObject(model))),
+      ),
+      20_000,
     )
     signal.throwIfAborted()
-    // Shader programs for the chase, cockpit and mirror views, on a copy of the camera so the
-    // attract frames keep their own projection.
+    // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
+    // from high above shows, at the LODs the stream plans there.
+    stage('terrain', 2)
+    const sim = this.session.simulation
+    if (this.world && sim) {
+      const spawn = [...sim.player.position] as Vec3Tuple
+      await waitForArea(this.world, spawn, {
+        signal,
+        pending: () => this.view.pendingMapInstalls,
+        flush: () =>
+          this.view.flushMapInstall(
+            streamingDefaults.mapInstallBudgetMs * 3,
+            streamingDefaults.mapInstallCount * 4,
+          ),
+      })
+      this.world.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    }
+    signal.throwIfAborted()
+    // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
+    // of the camera so the attract frames keep their own projection.
+    stage('shaders', 3)
     const camera = this.camera.clone()
     await within(
       warmGamePresentation({
@@ -2054,9 +2085,24 @@ export class GameRuntime {
       }),
       20_000,
     )
+    await within(uploadSceneTextures(this.renderer, this.scene, signal), 20_000)
     signal.throwIfAborted()
-    this.options.canvas.dataset.reveal = 'holding'
+    stage('ready', REVEAL_STAGES)
+    canvas.dataset.reveal = 'holding'
     while (this.revealGates.length) await Promise.all(this.revealGates.splice(0))
+  }
+  /**
+   * Hold the start camera sequence on its first view until `gate` settles: the overhead descent
+   * (`fromHeight`) stays at its start height and nothing advances, e.g. while the host fades in
+   * from black. It lasts until the gate settles, also across a `play()` started after the call.
+   */
+  holdStartCameras(gate: Promise<unknown>): void {
+    this.assertAlive()
+    const hold = gate.catch(() => undefined)
+    this.startHold = hold
+    void hold.then(() => {
+      if (this.startHold === hold) this.startHold = null
+    })
   }
   /**
    * Boot/attract mode: render only sky and planet from orbit while `play()` streams terrain and
@@ -2430,10 +2476,23 @@ export class GameRuntime {
       return
     }
     const info = sim.vehicleInfo(id)
+    const first = sequence.steps[0]
+    const descending = first.view === 'map' && first.fromHeight !== undefined
+    if (this.startHold) {
+      // Held (host fading in): the descent waits at its start height.
+      if (descending && sequence.step === 0) {
+        this.cameraState.mapHeight = first.fromHeight!
+        this.cameraState.mapDescentDamping = START_DESCENT_DAMPING
+      }
+      return
+    }
+    // The descent is never cut short by slow frames: the first view counts as arrived only
+    // once the camera is close to its normal overhead height.
+    const settling = descending && sequence.step === 0 && this.cameraState.mapDescentDamping != null
     this.applyStartCamera(
       sequence.update({
         now,
-        arrived: !this.cameraState.transition && !this.cameraState.entrance,
+        arrived: !settling && !this.cameraState.transition && !this.cameraState.entrance,
         engineRunning: info.ignition === 'running' && info.helm !== 'off',
       }),
       sim,

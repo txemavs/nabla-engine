@@ -126,6 +126,10 @@ export class StartCameraSequencer {
   get done(): boolean {
     return this.finished
   }
+  /** Index of the current step (0 = the first view). */
+  get step(): number {
+    return this.index
+  }
 
   update(frame: { now: number; arrived: boolean; engineRunning: boolean }): StartCameraAction {
     if (this.finished) return { done: true }
