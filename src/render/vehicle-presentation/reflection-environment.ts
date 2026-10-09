@@ -185,7 +185,9 @@ export function applyReflectionEnvironment(
         (!standard.envMap || standard.envMap === reflectionEnvironmentTexture())
       ) {
         materials.add(standard)
-        base.set(standard, fill)
+        // Sky fill, not a mirror: on a metallic paint the env is a coloured reflection of the bright
+        // studio sky and turned light grey paint near white. Scale it down with the metalness.
+        base.set(standard, fill * (1 - THREE.MathUtils.clamp(standard.metalness, 0, 1)))
       }
     }
   })
