@@ -5,6 +5,8 @@
 ### Added
 
 - Experimental full-auto for the pistol: M on foot with the pistol drawn toggles SEMI / RÁFAGA 30 (30-round magazine, ~900 rpm while the left button is held, accumulating muzzle rise and a random sideways kick that recovers on release, a case and a shot sound per round, the normal magazine reload, fires while aiming). A label at the bottom right shows `SEMI` or `EXPERIMENTAL · RÁFAGA 30`; canvas `data-fire-mode`. M at a ship helm still cycles the helm mode. Rate, magazine and kick are TODO(unverified) (`src/simulation/weapons/machine-pistol.ts`).
+- Intro and reveal: `GameRuntime.play()` now preloads the vehicle and sidearm models and warms the shader programs before the attract view goes away, and waits for host gates added with `holdReveal(promise)` (an intro or credits sequence). `startMusic()` starts the background music now or on the next gesture. The attract planet follows the real clock by default (`AttractOptions.clock`), and a live scene clock is re-anchored at reveal so gameplay starts at its authored time. Start cameras take `fromHeight` on an overhead first step for a descent from high altitude (slower damping, 1.2/s, until it settles or leaves the overhead view). The canvas exposes `data-reveal` (`preparing`, `holding`, `play`).
+- Adding a vehicle no longer freezes the game. `GameRuntime.prewarmVehicle` loads and parses its GLBs (cached and reused), uploads one texture per frame and compiles its shaders with `compileAsync` before the vehicle exists; `placeVehicle` / `spawnVehicle` wait for that and show a small «Cargando vehículo…» badge. The game menu starts it as soon as a vehicle is picked. Vehicle colliders are a few boxes and stay synchronous.
 - Audio mixer: master → engine bus (every engine, starter, turbo, turbine and propeller voice) and music bus; tyres, gears, gunshot and brakes stay on master. `GameRuntime.audioMix` / `setAudioMix` (0..1, squared slider curve, music mute), saved as `nabla.audioMix`. Ajustes → Opciones → Sonido has General, Motor and Música sliders and «Silenciar música».
 - Background music: `GameRuntimeOptions.music` (and `NABLA_BOOT.music` in the game host) takes encodings in preference order. The track streams through an `<audio>` element into the music bus, loops, starts after the first gesture and pauses while the page is hidden. Default music level 50% (TODO(unverified): a taste choice).
 
@@ -19,6 +21,7 @@
 
 ### Fixed
 
+- No coloured placeholder block is drawn while a vehicle's GLB is still loading (e.g. the red cube before the motorbike appeared).
 - Zenithal camera: zooming out no longer turns cars or trucks black on Ultra (4 cascades). The #183 cut for steep views was still capped at far / 4, and the overhead far plane is about three times the eye height, so the vehicle always fell into cascade 1. Steep views now keep their uncapped first cut.
 - Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
 
