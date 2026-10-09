@@ -3,6 +3,7 @@ import {
   AudioMixer,
   audioBus,
   attachAudioBuses,
+  engineBusTrim,
   defaultAudioMix,
   normalizeAudioMix,
   readAudioMix,
@@ -53,9 +54,10 @@ describe('audio mixer', () => {
     mixer.attach(context)
     const buses = attachAudioBuses(context)
     expect(buses.master.gain.value).toBeCloseTo(sliderGain(0.8))
+    expect(buses.engine.gain.value).toBeCloseTo(sliderGain(1) * engineBusTrim)
     expect(buses.music.gain.value).toBeCloseTo(sliderGain(defaultAudioMix.music))
     mixer.set({ engine: 0.5, musicMuted: true })
-    expect(buses.engine.gain.value).toBeCloseTo(0.25)
+    expect(buses.engine.gain.value).toBeCloseTo(0.25 * engineBusTrim)
     expect(buses.music.gain.value).toBe(0)
   })
 
