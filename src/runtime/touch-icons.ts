@@ -8,6 +8,8 @@ export function touchActionIcon(action: string): string {
     return `<svg ${common}><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>`
   if (action === 'interact')
     return `<svg ${common}><path d="M10 3h4v7h4l-6 7-6-7h4z"/><path d="M5 20h14"/></svg>`
+  if (action === 'respawn')
+    return `<svg ${common}><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg>`
   if (action === 'brake')
     return `<svg ${common}><rect x="7" y="4" width="10" height="16" rx="2"/><path d="M10 8h4"/></svg>`
   return `<svg ${common}><circle cx="12" cy="12" r="7"/></svg>`

@@ -109,6 +109,7 @@ export const spanishMessages: Readonly<Record<string, string>> = {
   Turbo: 'Turbo',
   Camera: 'Cámara',
   'Enter / exit': 'Entrar / salir',
+  Respawn: 'Reaparecer',
   Play: 'Jugar',
   'Touch controls': 'Controles táctiles',
   'Flight controls': 'Controles de vuelo',
