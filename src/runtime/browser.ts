@@ -34,6 +34,8 @@ import type { FieldLightOptions } from '../render/entity/field-lights.js'
 import type { VehicleLightMode } from '../render/vehicle-presentation/light-controller.js'
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
+import { weaponPresets } from '../catalog/weapons/library.js'
+import { assets, disposeObject } from '../render/entity/assets.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
 import {
   browserPerformanceDefaults,
@@ -179,6 +181,12 @@ export interface GameFrame {
    */
   controls: ControlSurfaces
 }
+/**
+ * Overhead damping of a start descent (`StartCameraStep.fromHeight`), 1/s: from 600 m about
+ * 80 m remain after 2.2 s, versus 1.6 s to settle at the normal 3/s. A presentation choice.
+ */
+const START_DESCENT_DAMPING = 1.2
+
 /** Pre-play attract/boot view: sky and planet only, camera outside the planet (TV-style). */
 export interface AttractOptions {
   /** Camera distance above the surface, metres (default 18 000 km). */
@@ -187,6 +195,11 @@ export interface AttractOptions {
   orbitSeconds?: number
   /** Tilt from local vertical, radians (default 0.45). */
   tilt?: number
+  /**
+   * Sky clock of the attract view. Default: the real clock now (rate 1), so the planet shows the
+   * real day or night; gameplay switches to the scene's own clock when it is revealed.
+   */
+  clock?: SkyClock
 }
 /** The steering wheel of the vehicle the player drives (see `GameRuntime.steeringWheel`). */
 export interface SteeringWheelState {
@@ -415,7 +428,7 @@ export class GameRuntime {
   private readonly observer: ResizeObserver
   private readonly world: PlanetWorld | null
   private loading: AbortController | null = null
-  private warming: AbortController | null = null
+  private readonly revealGates: Promise<unknown>[] = []
   private lastTime: number | null = null
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
@@ -754,30 +767,26 @@ export class GameRuntime {
         if (this.startSequence.holdsEngine) simulation.holdEngine()
       }
       this.options.canvas.dataset.startCameras = this.startSequence ? 'active' : 'none'
+      // Everything the first gameplay seconds need is ready before the attract view goes away:
+      // vehicle and sidearm models, shader programs, and any host gate (an intro sequence).
+      this.options.onProgress?.('Preparing…')
+      await this.prepareReveal(controller.signal)
+      controller.signal.throwIfAborted()
+      const first = this.startSequence?.steps[0]
+      if (first?.view === 'map' && first.fromHeight !== undefined) {
+        this.cameraState.mapHeight = first.fromHeight
+        this.cameraState.mapDescentDamping = START_DESCENT_DAMPING
+      }
+      // The scene clock starts at its authored time (e.g. 10:00) at reveal, not at construction.
+      const clock = this.document.sky
+      if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
+      this.options.canvas.dataset.reveal = 'play'
       this.stopAttract()
       this.view.setPlaying(true)
       this.effects.audio.setSuspended(globalThis.document.hidden)
       this.world?.renderUpdate(this.origin, !!this.quality.buildings, this.session.simulation)
       this.lastTime = null
       if (this.options.clock !== 'manual') this.loop.start()
-      this.warming?.abort()
-      this.warming = controller
-      void this.view.ready
-        .then(() => {
-          if (this.warming !== controller || this.disposed) return
-          return warmGamePresentation({
-            renderer: this.renderer,
-            scene: this.scene,
-            camera: this.camera,
-            view: this.view,
-            settings: this.cameraState.settings,
-            signal: controller.signal,
-          })
-        })
-        .catch(() => undefined)
-        .finally(() => {
-          if (this.warming === controller) this.warming = null
-        })
     } catch (error) {
       if (this.loading === controller) this.stop()
       throw error
@@ -810,8 +819,6 @@ export class GameRuntime {
     if (this.disposed) return
     this.loading?.abort()
     this.loading = null
-    this.warming?.abort()
-    this.warming = null
     this.loop.stop()
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, null)
     this.touchDriving?.setActive(false)
@@ -1989,6 +1996,55 @@ export class GameRuntime {
     }
   }
   /**
+   * Hold the reveal of gameplay (the end of the attract view) until `gate` settles, e.g. an intro
+   * or credits sequence. Gates added before or during `play()` are awaited; a rejected gate
+   * counts as done. `play()` clears them once gameplay is revealed.
+   */
+  holdReveal(gate: Promise<unknown>): void {
+    this.assertAlive()
+    this.revealGates.push(gate.catch(() => undefined))
+  }
+  /** Start the background music now if the browser allows it; otherwise the next gesture does. */
+  startMusic(): void {
+    this.assertAlive()
+    this.effects.audio.unlock()
+  }
+  private async prepareReveal(signal: AbortSignal): Promise<void> {
+    const within = <T>(promise: Promise<T>, ms: number) =>
+      Promise.race([promise.catch(() => undefined), new Promise((r) => setTimeout(r, ms))])
+    this.options.canvas.dataset.reveal = 'preparing'
+    // Vehicle GLBs (the bike included) and the sidearm models land in the asset cache.
+    const preset = weaponPresets()[0]
+    const weaponUrls = [preset?.model, preset?.body, preset?.slide].filter(
+      (url): url is string => typeof url === 'string',
+    )
+    await within(
+      Promise.all([
+        this.view.ready,
+        ...weaponUrls.map((url) => assets.instantiate(url).then((model) => disposeObject(model))),
+      ]),
+      30_000,
+    )
+    signal.throwIfAborted()
+    // Shader programs for the chase, cockpit and mirror views, on a copy of the camera so the
+    // attract frames keep their own projection.
+    const camera = this.camera.clone()
+    await within(
+      warmGamePresentation({
+        renderer: this.renderer,
+        scene: this.scene,
+        camera,
+        view: this.view,
+        settings: this.cameraState.settings,
+        signal,
+      }),
+      20_000,
+    )
+    signal.throwIfAborted()
+    this.options.canvas.dataset.reveal = 'holding'
+    while (this.revealGates.length) await Promise.all(this.revealGates.splice(0))
+  }
+  /**
    * Boot/attract mode: render only sky and planet from orbit while `play()` streams terrain and
    * vehicles. `play()` stops it automatically once the simulation starts. Idempotent.
    */
@@ -2003,6 +2059,7 @@ export class GameRuntime {
       altitude: options.altitude ?? 18_000_000,
       orbitSeconds: options.orbitSeconds ?? 120,
       tilt: options.tilt ?? 0.45,
+      clock: options.clock ?? { mode: 'live' },
     }
     const loop = new FrameLoop((time) => {
       try {
@@ -2058,7 +2115,7 @@ export class GameRuntime {
       this.sky,
       eye,
       this.origin,
-      this.document.sky ?? { mode: 'live' },
+      this.attract?.options.clock ?? { mode: 'live' },
       this.quality.fog,
     )
     this.sky.setViewAspect(this.camera.aspect)

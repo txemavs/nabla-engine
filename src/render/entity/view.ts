@@ -1047,6 +1047,8 @@ export class SceneView {
       definition = vehicleDefinition(e)
     const adapter = this.options.vehiclePresentation?.(e)
     const fallback = box(e.size, e.color)
+    // Kept for the swap below but never drawn: a coloured block before the GLB arrives looked broken.
+    fallback.visible = false
     group.add(fallback)
     this.addAsset(group, visual.body, fallback, (model) => {
       const equipment = adapter?.mount(
