@@ -132,7 +132,7 @@ export function reflectionEnvironmentTexture(): THREE.DataTexture {
 export const carReflectionOptions = Object.freeze({
   minMetalness: Infinity,
   intensity: 0.8,
-  fill: 0.35,
+  fill: 0.25,
 })
 
 /**
