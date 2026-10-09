@@ -27,12 +27,14 @@ export interface AsphaltMaskRoad {
 
 /**
  * Rasterise carriageways into a mask texture over a cell `width` metres wide (UV `0.5 + x/width`,
- * `0.5 - z/width`, as the drape). Null when no road crosses the cell.
+ * `0.5 - z/width`, as the drape; `0.5 + z/width` with `northAtV0`). Null when no road crosses.
  */
 export function asphaltMaskTexture(
   roads: readonly AsphaltMaskRoad[],
   width: number,
   size = ASPHALT_MASK_SIZE,
+  /** glTF cell UVs (v2+ terrain texture): v = 0 is north, so rows are not flipped. */
+  northAtV0 = false,
 ): THREE.DataTexture | null {
   if (!roads.length || !(width > 0)) return null
   const canvas = document.createElement('canvas')
@@ -64,7 +66,7 @@ export function asphaltMaskTexture(
   let any = false
   // DataTexture row 0 is v = 0 (south), so flip the canvas rows.
   for (let row = 0; row < size; row++) {
-    const from = (size - 1 - row) * size
+    const from = (northAtV0 ? row : size - 1 - row) * size
     for (let col = 0; col < size; col++) {
       const value = rgba[(from + col) * 4]
       mask[row * size + col] = value

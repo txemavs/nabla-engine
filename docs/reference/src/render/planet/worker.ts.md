@@ -362,12 +362,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@187(m): inferred by TypeScript; see implementation
 ```
 
-## callback@41.callback@189
+## callback@41.callback@190
 
-[Implementation, line 189](../../../../../src/render/planet/worker.ts#L189)
+[Implementation, line 190](../../../../../src/render/planet/worker.ts#L190)
 
 ```ts
-callback@189(): inferred by TypeScript; see implementation
+callback@190(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -375,36 +375,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `buildDrapes`
 
-## callback@41.callback@201
+## callback@41.callback@203
 
-[Implementation, line 201](../../../../../src/render/planet/worker.ts#L201)
+[Implementation, line 203](../../../../../src/render/planet/worker.ts#L203)
 
 ```ts
-callback@201(l): inferred by TypeScript; see implementation
+callback@203(l): inferred by TypeScript; see implementation
 ```
 
-## callback@41.callback@217
+## callback@41.callback@219
 
-[Implementation, line 217](../../../../../src/render/planet/worker.ts#L217)
-
-```ts
-callback@217(m): inferred by TypeScript; see implementation
-```
-
-## callback@41.callback@224
-
-[Implementation, line 224](../../../../../src/render/planet/worker.ts#L224)
+[Implementation, line 219](../../../../../src/render/planet/worker.ts#L219)
 
 ```ts
-callback@224(c): inferred by TypeScript; see implementation
-```
-
-## callback@41.callback@225
-
-[Implementation, line 225](../../../../../src/render/planet/worker.ts#L225)
-
-```ts
-callback@225(m): inferred by TypeScript; see implementation
+callback@219(m): inferred by TypeScript; see implementation
 ```
 
 ## callback@41.callback@226
@@ -412,5 +396,21 @@ callback@225(m): inferred by TypeScript; see implementation
 [Implementation, line 226](../../../../../src/render/planet/worker.ts#L226)
 
 ```ts
-callback@226(d): inferred by TypeScript; see implementation
+callback@226(c): inferred by TypeScript; see implementation
+```
+
+## callback@41.callback@227
+
+[Implementation, line 227](../../../../../src/render/planet/worker.ts#L227)
+
+```ts
+callback@227(m): inferred by TypeScript; see implementation
+```
+
+## callback@41.callback@228
+
+[Implementation, line 228](../../../../../src/render/planet/worker.ts#L228)
+
+```ts
+callback@228(d): inferred by TypeScript; see implementation
 ```
