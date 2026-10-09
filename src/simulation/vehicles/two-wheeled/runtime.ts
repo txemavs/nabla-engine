@@ -66,6 +66,17 @@ import {
 import { crashTrigger, measureImpact, startCrash } from './crash.js'
 
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n))
+/** Donut yaw rate at full lean in a stationary burnout, rad/s (a full turn in ~3 s). */
+export const DONUT_YAW_RATE = 2.2
+/** Donut lean into the circle at full steering and throttle, radians (45°). */
+export const DONUT_MAX_LEAN = Math.PI / 4
+/** Share of the donut lean the roll hold aims at (the tyres' side forces make up the rest). */
+export const DONUT_LEAN_AIM = 0.92
+/** How fast the donut lean builds up or comes back, rad/s (45° in 1 s). */
+export const DONUT_LEAN_RATE = Math.PI / 4
+/** Rear grip share while it spins in a stationary burnout, so it can swing round the front. */
+export const DONUT_REAR_GRIP = 0.2
+
 const FRONT = 0,
   REAR = 1
 
@@ -264,6 +275,7 @@ export function createTwoWheeledVehicle(
       hooligan: 'none',
       rearSpin: 0,
       rearSpinAngle: 0,
+      donutLean: 0,
       crashed: false,
       crashCause: null,
       crashSpeed: 0,
@@ -309,6 +321,7 @@ export function resetTwoWheeled(state: TwoWheeledState): void {
   state.scrape = 0
   state.hooligan = 'none'
   state.rearSpin = 0
+  state.donutLean = 0
   state.riderControl = { manualShare: 0, manualHold: 0 }
   state.acceleration = 0
   state.previousSpeed = null
@@ -560,9 +573,12 @@ export function stepTwoWheeledVehicle(
   const hoo = tuning.hooligan
   const riderBack = rider && rider.back > 0 ? clamp(state.riderShift[1] / rider.back, 0, 1) : 0
   const burnoutShare = clamp(1 - (Math.abs(speed) - hoo.burnoutSpeed) / hoo.burnoutFade, 0, 1)
+  const wasStationary = state.hooligan === 'stationary-burnout'
+  // Stationary burnout: throttle and lever together at a standstill (W+S+Space, or Shift + W +
+  // Space); the rear pedal is no longer needed.
   state.hooligan = !hooligan
     ? 'none'
-    : throttle > 0.3 && state.lever > 0.3 && state.pedal > 0 && Math.abs(speed) < 2
+    : state.lever > 0.3 && Math.abs(speed) < 2 && (throttle > 0.3 || wasStationary)
       ? 'stationary-burnout'
       : throttle > 0.3 && state.lever < 0.05 && riderBack >= hoo.wheelieRiderBack
         ? 'wheelie'
@@ -677,9 +693,11 @@ export function stepTwoWheeledVehicle(
   // extra drive (the engine's stored energy) that fades out linearly.
   const kick = tuning.clutchKick
   const launch = active && powered && input.launch
+  // Letting go of the lever out of a stationary burnout launches like a fresh Shift press.
+  const released = wasStationary && state.hooligan !== 'stationary-burnout'
   if (
     launch &&
-    !state.launchHeld &&
+    (!state.launchHeld || released) &&
     throttle > 0.5 &&
     kick.gain > 0 &&
     kick.seconds > 0 &&
@@ -725,7 +743,10 @@ export function stepTwoWheeledVehicle(
     v.body.applyTorque(gravityUp.scale(v.body.inertia.y * yaw))
   }
   for (let i = 0; i < v.raycast.wheelInfos.length; i++)
-    v.raycast.wheelInfos[i].frictionSlip = tuning.frictionSlip * surfaceGripScale(surfaces?.[i])
+    v.raycast.wheelInfos[i].frictionSlip =
+      tuning.frictionSlip *
+      surfaceGripScale(surfaces?.[i]) *
+      (stationary && i === REAR ? DONUT_REAR_GRIP : 1)
   v.raycast.setSteeringValue(state.groundSteer, FRONT)
   v.raycast.setSteeringValue(0, REAR)
   v.raycast.applyEngineForce(0, FRONT)
@@ -752,7 +773,63 @@ export function stepTwoWheeledVehicle(
     v.raycast.setBrake(burnout ? 0 : Math.max(hold, state.rearBrake * tuning.rearBrakeForce), REAR)
   }
 
+  if (stationary || state.donutLean !== 0)
+    holdDonut(v, stationary, active ? input.steering : 0, throttle, forward, gravityUp, dt)
   stepLean(v, dt, speed, forward, up, gravityUp, gravity, frontContact && rearContact)
+}
+
+/**
+ * Stationary burnout (Txema 2026-10-09): the locked front is the pivot and steering swings the
+ * spinning rear round it in a controlled circle (a donut), nose towards the steered side, at up
+ * to {@link DONUT_YAW_RATE}; with the bars straight the bike stays put. Any other horizontal
+ * drift or yaw is taken out.
+ */
+function holdDonut(
+  v: TwoWheeledVehicle,
+  stationary: boolean,
+  steering: number,
+  throttle: number,
+  forward: Vec3,
+  up: Vec3,
+  dt: number,
+): void {
+  const body = v.body,
+    state = v.twoWheeled
+  // Lean into the circle up to DONUT_MAX_LEAN with steering × throttle; less throttle, less lean;
+  // none (or out of the burnout): back upright. The spin rate follows the lean.
+  const target = stationary ? -clamp(steering, -1, 1) * clamp(throttle, 0, 1) * DONUT_MAX_LEAN : 0
+  const step = DONUT_LEAN_RATE * dt
+  state.donutLean += clamp(target - state.donutLean, -step, step)
+  if (Math.abs(state.donutLean) < 1e-4 && target === 0) state.donutLean = 0
+  const blend = 1 - Math.exp(-dt * 12)
+  const w = body.angularVelocity
+  const yaw = w.dot(up)
+  w.vadd(up.scale(DONUT_YAW_RATE * (state.donutLean / DONUT_MAX_LEAN) - yaw), w)
+  // Roll towards the donut lean; left-positive roll is a rotation about −heading (as stepLean).
+  const bodyUp = body.quaternion.vmult(new Vec3(0, 1, 0))
+  const { heading } = measureLean(
+    [forward.x, forward.y, forward.z],
+    [bodyUp.x, bodyUp.y, bodyUp.z],
+    [up.x, up.y, up.z],
+  )
+  const axis = new Vec3(-heading[0], -heading[1], -heading[2])
+  const roll = w.dot(axis)
+  // Set outright each tick (gravity would otherwise pull it past the target).
+  // The wheels' side forces add a few degrees on top: aim a little short so it peaks at the max.
+  w.vadd(axis.scale(clamp((state.donutLean * DONUT_LEAN_AIM - state.lean) * 25, -3, 3) - roll), w)
+  if (!stationary) return
+  const front = v.raycast.wheelInfos[FRONT]
+  const pivot = front.isInContact
+    ? front.raycastResult.hitPointWorld
+    : front.worldTransform.position
+  const arm = body.position.vsub(pivot)
+  const flat = arm.vsub(up.scale(arm.dot(up)))
+  const want = up.scale(w.dot(up)).cross(flat)
+  const vel = body.velocity
+  const vertical = up.scale(vel.dot(up))
+  const horizontal = vel.vsub(vertical)
+  const next = horizontal.vadd(want.vsub(horizontal).scale(blend))
+  body.velocity.copy(vertical.vadd(next))
 }
 
 /**
@@ -850,6 +927,14 @@ function stepLean(
     -(tuning.pegLean?.right.lean ?? tuning.fallLean),
     tuning.pegLean?.left.lean ?? tuning.fallLean,
   )
+  // Donut: holdDonut steers the roll itself; the balance torque stays out of it.
+  if (state.hooligan === 'stationary-burnout' || state.donutLean !== 0) {
+    state.targetLean = state.donutLean
+    state.disturbance = 0
+    state.previousLeanRate = null
+    state.previousCommand = 0
+    return
+  }
   if (state.previousLeanRate !== null)
     state.disturbance = updateDisturbance(
       state.disturbance,
