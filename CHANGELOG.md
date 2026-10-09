@@ -2,7 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+- J menu «VISTA FOV» (last page): widen or narrow the cockpit/on-foot and chase cameras in 5° steps (−15° to +25°, or NORMAL). Saved as `nabla.cameraFov`. The overhead view shares the chase FOV; the cinematic camera keeps its own.
+
+### Changed
+
+- Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
+
 ### Fixed
+
+- Side mirrors now paint the same sky as the main view. The reflection used to clear to the scene fog (dark navy) because the sky lives in its own pass and never reached the mirror target; the horizon line in the glass was that clear colour. The mirror fallback clear matches the sky backdrop (`#a6bbd5`).
+
+- Zenithal camera: zooming out no longer turns trucks black. A downward view used to leave the vehicle in the last shadow cascade (the 140 m cut is still in the air), and that map is sized to the far plane. Cascade 0 now ends just past the ground under the camera.
 
 - Overhead camera: switching into the zenithal view no longer climbs out through the cabin for 700 ms (that blend lerped the field of view and rebuilt the shadow cascades every frame). The view cuts to the overhead pose, which is already being tracked. A start sequence can still blend by setting its own transition. While the camera looks steeply down, the far plane is capped to the ground under it so the shadow maps are not sized to a 12 km shaft.
 

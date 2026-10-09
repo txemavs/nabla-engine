@@ -44,6 +44,12 @@ import {
   tileBudget,
   type PerformanceSettings,
 } from './performance.js'
+import {
+  highPlanetVisual,
+  isHighQualityPreset,
+  readSavedPlanetVisual,
+  writeSavedPlanetVisual,
+} from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
@@ -63,6 +69,13 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
+import {
+  cameraFovFor,
+  nextCameraFovOffset,
+  readCameraFovOffset,
+  writeCameraFovOffset,
+  type CameraFovBase,
+} from './camera-fov.js'
 import {
   defaultSteeringWheelOffset,
   describeSteeringWheelOffset,
@@ -306,6 +319,15 @@ export interface GameRuntimeOptions {
 /** Browser composition over the same session, camera, input and effects used by Studio.
  * Owns its renderer and listeners; the caller owns the canvas and surrounding UI.
  */
+
+function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
+  try {
+    return typeof localStorage === 'undefined' ? undefined : localStorage
+  } catch {
+    return undefined
+  }
+}
+
 export class GameRuntime {
   readonly game = new SharedGameRuntime()
   readonly session = this.game.session
@@ -392,6 +414,8 @@ export class GameRuntime {
   private readonly hud: GameHud | null
   private readonly wheelDebug = new WheelDebugOverlay()
   private readonly text: ReturnType<typeof createRuntimeText>
+  private fovBase: CameraFovBase = { firstPersonFov: 70, chaseFov: 48 }
+  private fovOffset = 0
   private planet: {
     sky: boolean
     sun: boolean
@@ -406,7 +430,7 @@ export class GameRuntime {
     sun: PLANET_DEFAULTS.sun,
     clouds: PLANET_DEFAULTS.clouds,
     sea: PLANET_DEFAULTS.sea,
-    // Overwritten after quality is resolved; Ultra keeps artistic, other tiers start on cheap clouds.
+    // Overwritten after quality is resolved. Alto and Ultra start artistic; a saved Planeta choice wins.
     cloudStyle: 'low',
     cloudAmount: PLANET_DEFAULTS.cloudAmount,
     cloudPressure: 0.12,
@@ -432,6 +456,11 @@ export class GameRuntime {
     })
     this.adaptive.setTargetFrameMs(this.display.maxFps ? 1000 / this.display.maxFps : null)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
+    this.fovBase = {
+      firstPersonFov: this.cameraState.settings.firstPersonFov,
+      chaseFov: this.cameraState.settings.chaseFov,
+    }
+    this.applyCameraFov(readCameraFovOffset(browserStorage()))
     this.camera.near = this.cameraState.settings.nearClip
     this.camera.far = this.cameraState.settings.farClip
     const profile = options.performance?.preset
@@ -444,7 +473,10 @@ export class GameRuntime {
       ...preset,
       ...options.performance,
     })
-    this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
+    const savedPlanet = readSavedPlanetVisual(browserStorage())
+    if (savedPlanet) Object.assign(this.planet, savedPlanet)
+    else if (isHighQualityPreset(this.quality.preset)) Object.assign(this.planet, highPlanetVisual)
+    else this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
     this.document = parseScene(options.scene)
     this.worldContent = options.world ? structuredClone(options.world) : undefined
     this.remoteViews = new RemotePortalViews(
@@ -925,6 +957,7 @@ export class GameRuntime {
       )
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
+    this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     this.view.sync(
       sim,
       dt,
@@ -1209,6 +1242,7 @@ export class GameRuntime {
     if (layers.clouds !== undefined) this.planet.clouds = layers.clouds
     if (layers.sea !== undefined) this.planet.sea = layers.sea
     this.syncPlanet()
+    this.rememberPlanetVisual()
   }
   get cloudStyle(): 'low' | 'artistic' {
     return this.planet.cloudStyle
@@ -1218,6 +1252,7 @@ export class GameRuntime {
     this.assertAlive()
     this.planet.cloudStyle = style
     this.sky.setCloudStyle(style)
+    this.rememberPlanetVisual()
   }
   get cloudAmount(): number {
     return this.planet.cloudAmount
@@ -1236,6 +1271,7 @@ export class GameRuntime {
     this.planet.cloudAmount = amount
     this.planet.cloudPressure = pressure
     this.sky.setCloudWeather(amount, pressure)
+    this.rememberPlanetVisual()
   }
   get cloudPressure(): number {
     return this.planet.cloudPressure
@@ -1250,6 +1286,7 @@ export class GameRuntime {
       throw new Error('Lens flare amount must be between 0 and 1')
     this.planet.lensFlareAmount = amount
     this.sky.setLensFlareAmount(amount)
+    this.rememberPlanetVisual()
   }
   /** Snapshot of Planeta visual knobs for host/demo config paste. */
   planetVisualConfig() {
@@ -1263,6 +1300,25 @@ export class GameRuntime {
       clouds: this.planet.clouds,
       sea: this.planet.sea,
     }
+  }
+  /** Cockpit and chase FOV with the player's J-menu offset; read live by the camera each frame. */
+  private applyCameraFov(offset: number): void {
+    const fov = cameraFovFor(this.fovBase, offset)
+    this.fovOffset = fov.chaseFov - this.fovBase.chaseFov
+    this.cameraState.settings.firstPersonFov = fov.firstPersonFov
+    this.cameraState.settings.chaseFov = fov.chaseFov
+  }
+  private rememberPlanetVisual(): void {
+    writeSavedPlanetVisual(browserStorage(), {
+      sky: this.planet.sky,
+      sun: this.planet.sun,
+      sea: this.planet.sea,
+      clouds: this.planet.clouds,
+      cloudStyle: this.planet.cloudStyle,
+      cloudAmount: this.planet.cloudAmount,
+      cloudPressure: this.planet.cloudPressure,
+      lensFlareAmount: this.planet.lensFlareAmount,
+    })
   }
   private syncPlanet(): void {
     this.sky.setLayers({
@@ -2476,6 +2532,12 @@ export class GameRuntime {
             (entityId, mode) =>
               this.session.simulation?.setEngineMode(entityId, mode) ??
               'Este vehículo tiene un solo modo de motor',
+            (step) => {
+              this.applyCameraFov(nextCameraFovOffset(this.fovOffset, step))
+              writeCameraFovOffset(browserStorage(), this.fovOffset)
+              const { firstPersonFov, chaseFov } = this.cameraState.settings
+              return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
+            },
           )
           if (result.handled) {
             event.preventDefault()
