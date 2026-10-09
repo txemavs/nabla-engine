@@ -5,8 +5,7 @@
 [Source](../../../../src/runtime/light-tuning.ts)
 
 Live lighting knobs for look tuning (Ajustes → Opciones → Luz). Defaults are the shipped
-look: the values euskadi.online runs (engine 8d18dba), so the sliders start where the game
-already is. Saved per browser as `nabla.lightTuning`; «Copiar valores» exports them as JSON.
+look. Saved per browser as `nabla.lightTuning`; «Copiar valores» exports them as JSON.
 
 ## Module dependencies
 
@@ -15,7 +14,7 @@ already is. Saved per browser as `nabla.lightTuning`; «Copiar valores» exports
 
 ## normalizeLightTuning
 
-[Implementation, line 57](../../../../src/runtime/light-tuning.ts#L57)
+[Implementation, line 56](../../../../src/runtime/light-tuning.ts#L56)
 
 Clamp a partial tuning onto `base`; junk fields keep the base value.
 
@@ -32,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readLightTuning
 
-[Implementation, line 74](../../../../src/runtime/light-tuning.ts#L74)
+[Implementation, line 73](../../../../src/runtime/light-tuning.ts#L73)
 
 ```ts
 readLightTuning(storage: TuningStorage | null | undefined): LightTuning
@@ -46,7 +45,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## writeLightTuning
 
-[Implementation, line 85](../../../../src/runtime/light-tuning.ts#L85)
+[Implementation, line 84](../../../../src/runtime/light-tuning.ts#L84)
 
 ```ts
 writeLightTuning(storage: TuningStorage | null | undefined, tuning: LightTuning): void

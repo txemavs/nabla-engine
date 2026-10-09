@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 /** The Ajustes window places every menu section in its tab, including sections bound later. */
-test('settings HUD tabs: Opciones, Configuración, Calidad and late Capas placement', async ({
+test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarrollo and late Tierra placement', async ({
   page,
 }) => {
   await page.route('**/settings-hud', (route) =>
@@ -66,51 +66,50 @@ test('settings HUD tabs: Opciones, Configuración, Calidad and late Capas placem
     return {
       before,
       after: tabs(),
-      quality: order('settings-pane-quality'),
+      planet: order('settings-pane-planet'),
+      performance: order('settings-pane-performance'),
+      video: order('settings-pane-video'),
       options: order('settings-pane-options'),
-      config: order('settings-pane-config'),
-      position: order('settings-pane-position'),
+      dev: order('settings-pane-dev'),
       places: pane('layer-places'),
       placesGroup: document.getElementById('layer-places')?.closest('fieldset')?.id,
       road: pane('layer-road'),
+      layersTitle: document.querySelector('#terrain-layers > legend')?.textContent,
+      asphaltTitle: document.querySelector('#road-style > legend')?.textContent,
       copy: pane('ps-copy-config'),
       configText: document.getElementById('ps-config-out')?.textContent,
       planetHasCopy: !!document.querySelector('#settings-pane-planet #ps-copy-config'),
+      sky: pane('ps-sky'),
+      clouds: document.getElementById('ps-clouds')?.closest('fieldset')?.id,
+      flare: document.getElementById('ps-lens-flare')?.closest('fieldset')?.id,
       vehicles: pane('vehicles'),
     }
   }, process.cwd())
 
-  expect(result.before).toEqual([
-    'Planeta',
-    'Posición',
-    'Calidad',
-    'Vehículos',
-    'Opciones',
-    'Configuración',
+  const visible = ['Planeta', 'Opciones', 'Rendimiento', 'Vídeo', 'Objetos', 'Desarrollo']
+  expect(result.before).toEqual(visible)
+  expect(result.after).toEqual(visible)
+  expect(result.planet).toEqual([
+    'terrain-position',
+    'terrain-layers',
+    'settings-planet-sea',
+    'settings-planet-air',
+    'settings-planet-sky',
   ])
-  expect(result.after).toEqual([
-    'Planeta',
-    'Posición',
-    'Calidad',
-    'Capas',
-    'Vehículos',
-    'Opciones',
-    'Configuración',
-  ])
-  expect(result.quality).toEqual([
-    'display-quality-section',
-    'display-performance',
-    'quality-shadows',
-    'road-style',
-  ])
+  expect(result.performance).toEqual(['display-quality-section', 'display-performance'])
+  expect(result.video).toEqual(['quality-shadows', 'road-style'])
   expect(result.options).toEqual(['camera-extras', 'driving-extras', 'settings-options-labels'])
-  expect(result.config).toEqual(['settings-config-planet', 'terrain-source'])
-  expect(result.position).toEqual(['terrain-position'])
+  expect(result.dev).toEqual(['settings-config-planet', 'terrain-source'])
   expect(result.places).toBe('settings-pane-options')
   expect(result.placesGroup).toBe('settings-options-labels')
-  expect(result.road).toBe('settings-pane-layers')
-  expect(result.copy).toBe('settings-pane-config')
+  expect(result.road).toBe('settings-pane-planet')
+  expect(result.layersTitle).toBe('Tierra')
+  expect(result.asphaltTitle).toBe('Postproceso')
+  expect(result.copy).toBe('settings-pane-dev')
   expect(result.configText).toContain('cloudAmount=0.35')
   expect(result.planetHasCopy).toBe(false)
-  expect(result.vehicles).toBe('settings-pane-vehicles')
+  expect(result.sky).toBe('settings-pane-planet')
+  expect(result.clouds).toBe('settings-planet-air')
+  expect(result.flare).toBe('settings-planet-sky')
+  expect(result.vehicles).toBe('settings-pane-objects')
 })

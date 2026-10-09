@@ -356,7 +356,8 @@ export function atlasFileUrl(tilesBase: string, tile: MapTile, name: string): st
 
 /**
  * Photo quality for one cell: the wanted quality near the player, the small `lo` photo farther away
- * (16x fewer pixels to download, decode and keep on the GPU). `none` and `lo` are never upgraded.
+ * (16x fewer pixels to download, decode and keep on the GPU). `PlanetWorld` upgrades a `lo` cell to
+ * `full` once the player comes within `nearCells`. A wanted `none` or `lo` is returned unchanged.
  */
 export function atlasPhotoFor(
   wanted: NonNullable<AtlasZ15Options['photo']>,

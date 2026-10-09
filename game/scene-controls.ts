@@ -23,6 +23,7 @@ import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
 import { steeringWheelControls, type SteeringWheelRuntime } from './steering-wheel-controls.js'
 import { mirrorControls, type MirrorRuntime } from './mirror-controls.js'
+import { assignVehicleColor } from './vehicle-colors.js'
 
 /** Sea level limits in metres, as in Studio's sea-surface controls. */
 export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
@@ -55,6 +56,73 @@ export interface SceneRuntime extends Partial<SteeringWheelRuntime>, Partial<Mir
   readonly placedObjects: { id: string; name: string }[]
   spawnEntities(entities: Entity[], distance?: number, name?: string): Promise<string>
   removePlaced(id: string): void
+  /** Every vehicle in the scene in WGS84 (`GameRuntime.vehiclePlacements`); enables «Exportar». */
+  vehiclePlacements?(): VehiclePlacementLike[]
+}
+
+/** What «Exportar posición de vehículos» reads per vehicle (engine `VehiclePlacement`). */
+export interface VehiclePlacementLike {
+  id: string
+  name: string
+  visual: string | null
+  color: string | null
+  lat: number
+  lon: number
+  heading: number
+  towedBy: string | null
+  player: boolean
+}
+
+/** One exported vehicle: the host-vehicles / START entry shape, plus its scene id. */
+export interface ExportedVehicle {
+  id: string
+  vehicle: string
+  lat: number
+  lon: number
+  heading: number
+  color?: string
+  tow?: true
+}
+
+/** Catalog preset of a live vehicle: same body model and name, else same model, else same name. */
+export function vehiclePresetId(placement: Pick<VehiclePlacementLike, 'name' | 'visual'>): string {
+  const presets = vehiclePresets()
+  const match =
+    presets.find((p) => p.visual.body.url === placement.visual && p.name === placement.name) ??
+    presets.find((p) => p.visual.body.url === placement.visual) ??
+    presets.find((p) => p.name === placement.name)
+  return match?.id ?? placement.name
+}
+
+/**
+ * The scene's vehicles as a config to paste into the host start / host-vehicles list:
+ * `start` is the occupied vehicle (null on foot), `vehicles` the others with every hitched
+ * trailer right after its tractor (`tow: true`). lat/lon 6 decimals, heading 1 decimal.
+ */
+export function exportVehiclePlacements(placements: readonly VehiclePlacementLike[]): {
+  start: ExportedVehicle | null
+  vehicles: ExportedVehicle[]
+} {
+  const entry = (p: VehiclePlacementLike, tow: boolean): ExportedVehicle => ({
+    id: p.id,
+    vehicle: vehiclePresetId(p),
+    lat: Number(p.lat.toFixed(6)),
+    lon: Number(p.lon.toFixed(6)),
+    heading: Number(p.heading.toFixed(1)) % 360,
+    ...(p.color ? { color: p.color } : {}),
+    ...(tow ? { tow: true as const } : {}),
+  })
+  const ids = new Set(placements.map((p) => p.id))
+  const trailers = (tractor: string) => placements.filter((p) => p.towedBy === tractor)
+  const player = placements.find((p) => p.player) ?? null
+  const vehicles: ExportedVehicle[] = []
+  for (const p of placements) {
+    // A hitched trailer follows its tractor; one whose tractor is gone is listed free.
+    if (p.towedBy && ids.has(p.towedBy)) continue
+    if (p !== player) vehicles.push(entry(p, false))
+    for (const trailer of trailers(p.id)) vehicles.push(entry(trailer, true))
+  }
+  return { start: player ? entry(player, false) : null, vehicles }
 }
 
 /** Scenery the same menu can add: Portal, Galería 2.5D, Sprite and the two street lamps. */
@@ -87,6 +155,15 @@ export function vehicleChoices(): VehicleChoice[] {
   return vehiclePresets()
     .filter((preset) => !preset.vehicle.passive && !preset.hidden)
     .map((preset) => ({ id: preset.id, label: preset.label }))
+}
+
+/** Common add-menu models prepared behind the opening credits; large ships stay on demand. */
+export function menuPreloadVehicles(
+  ids: readonly string[] = ['car', 'vfr800', 'white-truck'],
+): Entity[][] {
+  return [...new Set(ids)]
+    .filter((id) => vehicleChoices().some((choice) => choice.id === id))
+    .map((id) => presetEntities(id, `preload-${id}`))
 }
 
 /** Metres as shown to the player: one decimal and a decimal comma. */
@@ -312,9 +389,27 @@ export function bindSceneControls(
   const wheel = steeringWheelControls()
   // «Espejos»: per-model glass angle of each mirror of the vehicle the player drives.
   const mirrors = mirrorControls()
-  vehicles.append(choiceRow, add, vehicleMessage, vehicleList, wheel.root, mirrors.root)
+  // «Exportar posición de vehículos»: JSON for the start / host-vehicles config.
+  const exportButton = button('vehicle-export', 'Exportar posición de vehículos')
+  exportButton.title = 'Copia al portapapeles la posición de todos los vehículos (JSON)'
+  const exportText = document.createElement('textarea')
+  exportText.id = 'vehicle-export-text'
+  exportText.readOnly = true
+  exportText.rows = 6
+  exportText.hidden = true
+  exportText.setAttribute('aria-label', 'Posición de vehículos (JSON)')
+  vehicles.append(
+    choiceRow,
+    add,
+    vehicleMessage,
+    vehicleList,
+    exportButton,
+    exportText,
+    wheel.root,
+    mirrors.root,
+  )
 
-  isolateKeys(timeRange, timeInput, timeSpeed, seaRange, seaInput, cloudAmount, choice)
+  isolateKeys(timeRange, timeInput, timeSpeed, seaRange, seaInput, cloudAmount, choice, exportText)
   const controls = [
     timeRange,
     timeInput,
@@ -331,6 +426,7 @@ export function bindSceneControls(
     cloudAmount,
     choice,
     add,
+    exportButton,
   ]
   for (const control of controls) (control as HTMLInputElement).disabled = true
 
@@ -534,7 +630,9 @@ export function bindSceneControls(
       vehicleMessage.textContent = 'Añadiendo…'
       try {
         // `presetEntities` keeps hosted parts such as the carrier stern portal.
-        await runtime.spawnVehicle(presetEntities(entry.id, 'spawn-template'))
+        const entities = presetEntities(entry.id, 'spawn-template')
+        assignVehicleColor(entities[0])
+        await runtime.spawnVehicle(entities)
         vehicleMessage.textContent = `${entry.label} añadido delante de ti. Acércate y pulsa E para entrar.`
       } catch (error) {
         vehicleMessage.textContent = groundError(error, 'el vehículo')
@@ -544,5 +642,23 @@ export function bindSceneControls(
       }
     })
     renderList()
+
+    exportButton.disabled = !runtime.vehiclePlacements
+    exportButton.addEventListener('click', () => {
+      const json = JSON.stringify(
+        exportVehiclePlacements(runtime.vehiclePlacements?.() ?? []),
+        null,
+        2,
+      )
+      // Always visible as the fallback; the clipboard is best effort (needs a secure context).
+      exportText.value = json
+      exportText.hidden = false
+      exportText.select()
+      const done = () => (vehicleMessage.textContent = 'Posición de vehículos copiada (JSON).')
+      const fallback = () =>
+        (vehicleMessage.textContent = 'No se pudo copiar: selecciona el texto y cópialo.')
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(json).then(done, fallback)
+      else fallback()
+    })
   }
 }

@@ -71,6 +71,14 @@
       "types": "./dist/runtime/session.d.ts",
       "import": "./dist/runtime/session.js"
     },
+    "./runtime/light-tuning": {
+      "types": "./dist/runtime/light-tuning.d.ts",
+      "import": "./dist/runtime/light-tuning.js"
+    },
+    "./config/vehicle-appearance": {
+      "types": "./dist/config/vehicle-appearance.d.ts",
+      "import": "./dist/config/vehicle-appearance.js"
+    },
     "./runtime/browser": {
       "types": "./dist/runtime/browser.d.ts",
       "import": "./dist/runtime/browser.js"

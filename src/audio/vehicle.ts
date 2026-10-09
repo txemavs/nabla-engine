@@ -62,6 +62,28 @@ export class VehicleAudio {
     this.syncMusic()
   }
 
+  /** Fade the background track out over `seconds`; it stays off until `playMusic`. */
+  fadeOutMusic(seconds: number): void {
+    this.music?.fadeOut(seconds)
+  }
+
+  /**
+   * Play the background track again from the start (vehicle menu «MUSICA»). Returns `false`
+   * when there is no track, audio is off or the music is muted in the mix.
+   */
+  playMusic(): boolean {
+    if (!this.music) return false
+    this.music.restart()
+    this.unlock()
+    this.syncMusic()
+    return !!this.context && this.enabled && !this.mixer.levels.musicMuted
+  }
+
+  /** The background track, if any (title and menu label for hosts). */
+  get musicTrack(): MusicTrack | undefined {
+    return this.music?.track
+  }
+
   /** True while the background track is playing. */
   get musicPlaying(): boolean {
     return this.music?.playing ?? false

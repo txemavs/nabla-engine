@@ -21,45 +21,49 @@ export type SettingsHud = {
 
 const TABS = [
   { id: 'planet', label: 'Planeta' },
-  { id: 'position', label: 'Posición' },
-  { id: 'quality', label: 'Calidad' },
-  { id: 'layers', label: 'Capas' },
-  { id: 'vehicles', label: 'Vehículos' },
   { id: 'options', label: 'Opciones' },
-  { id: 'config', label: 'Configuración' },
+  { id: 'performance', label: 'Rendimiento' },
+  { id: 'video', label: 'Vídeo' },
+  { id: 'audio', label: 'Audio' },
+  { id: 'objects', label: 'Objetos' },
+  { id: 'dev', label: 'Desarrollo' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
 
 /**
  * Where each menu section (`menuSection(id, …)`) lives, in display order within its tab:
- *   Planeta       — built here: Hora first (#123), the planet panel, then sea level / tide
- *   Posición      — where you are / go to lat,lon
- *   Calidad       — profile, performance, «Sombras» (#138) and the asphalt contrast
- *   Capas         — map layers (road, buildings, ground photo)
- *   Vehículos     — add vehicles, «Volante»
- *   Opciones      — player preferences: camera, R reset, city labels, «Sonido» (volumes, music)
- *   Configuración — the planet config text to copy, terrain source and cache
- * Sections created after the HUD mounts (the Capas layer list is bound later) are placed as they
+ *   Planeta     — Posición, Hora, Tierra (map layers), Mar, Aire (clouds), Cielo (sky, sun, flare)
+ *   Opciones    — player preferences: Cámara, Conducción, Volante y espejos, Mapa (city labels)
+ *   Rendimiento — Calidad (profile, FPS limit, resolution scale, apply) and the terrain Caché
+ *   Vídeo       — Sombras and Postproceso (asphalt contrast)
+ *   Audio       — General / Motor / Música volumes and music mute
+ *   Objetos     — Añadir (vehicles and objects to place)
+ *   Desarrollo  — planet values to copy, light tuning sliders, terrain source
+ * Sections created after the HUD mounts (the Tierra layer list is bound later) are placed as they
  * appear. An unknown id lands in Opciones so a new feature is never left in the hidden legacy menu.
  */
 export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
+  ['terrain-position', 'planet'],
   ['settings-planet-time', 'planet'],
+  ['terrain-layers', 'planet'],
   ['settings-planet-sea', 'planet'],
-  ['terrain-position', 'position'],
-  ['display-quality-section', 'quality'],
-  ['display-performance', 'quality'],
-  ['quality-shadows', 'quality'],
-  ['road-style', 'quality'],
-  ['terrain-layers', 'layers'],
-  ['scene-vehicles', 'vehicles'],
+  ['settings-planet-air', 'planet'],
+  ['settings-planet-sky', 'planet'],
   ['camera-extras', 'options'],
   ['driving-extras', 'options'],
+  ['settings-options-driver', 'options'],
   ['settings-options-labels', 'options'],
-  ['settings-sound', 'options'],
-  ['settings-light', 'options'],
-  ['settings-config-planet', 'config'],
-  ['terrain-source', 'config'],
+  ['display-quality-section', 'performance'],
+  ['display-performance', 'performance'],
+  ['terrain-cache', 'performance'],
+  ['quality-shadows', 'video'],
+  ['road-style', 'video'],
+  ['settings-sound', 'audio'],
+  ['scene-vehicles', 'objects'],
+  ['settings-config-planet', 'dev'],
+  ['settings-light', 'dev'],
+  ['terrain-source', 'dev'],
 ]
 
 /** Tab for a section id, or undefined when the HUD does not place it (the legacy Planeta). */
@@ -68,8 +72,34 @@ export function sectionTab(id: string): TabId | undefined {
   return SECTION_TABS.find(([section]) => section === id)?.[1] ?? 'options'
 }
 
-/** The city labels toggle is a player preference: it leaves the Capas list for Opciones. */
+/** Section titles in the Ajustes window; the sections keep their ids, listeners and storage. */
+const SECTION_TITLES: Readonly<Record<string, string>> = {
+  'terrain-layers': 'Tierra',
+  'road-style': 'Postproceso',
+  'scene-vehicles': 'Añadir',
+  'settings-light': 'Luz (ajuste fino)',
+}
+
+/** Shorter names for the Tierra layer switches (by `data-layer`). */
+const LAYER_LABELS: Readonly<Record<string, string>> = {
+  photo: 'Suelo',
+  road: 'Carreteras',
+  buildings: 'Edificios',
+}
+
+/** The city labels toggle is a player preference: it leaves the Tierra list for Opciones. */
 const OPTION_LAYERS = ['places'] as const
+
+/** Replace the first piece of text in a row, keeping its control (and its listeners). */
+function relabel(row: Element | null | undefined, text: string): void {
+  if (!row) return
+  for (const node of row.childNodes) {
+    if (node.nodeType !== Node.TEXT_NODE || !node.textContent?.trim()) continue
+    const old = node.textContent
+    node.textContent = (old.startsWith(' ') ? ' ' : '') + text + (old.endsWith(' ') ? ' ' : '')
+    return
+  }
+}
 
 /** Replace the sprawling `#display-settings` details with icon + tabbed window. */
 export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
@@ -141,12 +171,11 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   console.append(title, tabBar, panes, closeBtn)
   win.append(console)
 
-  // Planeta opens with the time of day (Hora), before clouds, pressure and lens flare.
   const planetPane = paneEls.get('planet')!
   const timeGroup = doc.getElementById('scene-time')
-  if (timeGroup) planetPane.append(timeGroup)
+  // The planet panel's controls are spread over the Planeta sections below; its emptied root
+  // stays out of the window.
   let planetPanel: PlanetSettingsPanel | null = createPlanetSettingsPanel(doc)
-  planetPane.append(planetPanel.root)
 
   const fieldset = (id: string, title?: string) => {
     const group = doc.createElement('fieldset')
@@ -171,7 +200,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       const next = rank === -1 ? null : [...pane.children].find((child) => order(child.id) > rank)
       pane.insertBefore(el, next ?? null)
     }
-    if (el.id === 'terrain-layers') moveOptionLayers(el)
+    const title = SECTION_TITLES[el.id]
+    const legend = el.querySelector(':scope > legend')
+    if (title && legend) legend.textContent = title
+    if (el.id === 'terrain-layers') {
+      for (const [id, text] of Object.entries(LAYER_LABELS))
+        relabel(el.querySelector(`input[data-layer="${id}"]`)?.closest('label'), text)
+      moveOptionLayers(el)
+    }
   }
 
   // «Nombres de poblaciones» keeps its checkbox (and the layer selector's listener and storage);
@@ -189,10 +225,85 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     group.append(...rows)
   }
 
-  // Configuración: the planet config text and «Copiar config» (moved out of Planeta).
+  // Desarrollo: the planet config text and «Copiar config».
   const configGroup = fieldset('settings-config-planet', 'Valores del planeta')
   configGroup.append(planetPanel.config)
   place(configGroup)
+
+  // Planeta: the planet panel rows and the legacy Hora / Mar groups, one titled section each.
+  const panelRoot = planetPanel.root
+  // The window joins the document only at the end of the mount: look in it and in the
+  // (detached) panel too.
+  const byId = (id: string) =>
+    doc.getElementById(id) ??
+    win.querySelector<HTMLElement>(`#${id}`) ??
+    panelRoot.querySelector<HTMLElement>(`#${id}`)
+  const rowOf = (id: string) => byId(id)?.closest('label') ?? null
+  const rows = (...items: Array<HTMLElement | null>) =>
+    items.filter((item): item is HTMLElement => item !== null)
+  const subtitle = (text: string) => {
+    const heading = doc.createElement('p')
+    heading.className = 'menu-subtitle'
+    heading.textContent = text
+    return heading
+  }
+  /** A legacy planet group keeps its controls; the section legend replaces its own subtitle. */
+  const hideSubtitle = (group: HTMLElement | null) => {
+    const heading = group?.querySelector<HTMLElement>(':scope > .menu-subtitle')
+    if (heading) heading.hidden = true
+  }
+  const skyRow = rowOf('ps-sky')
+  const sunRow = rowOf('ps-sun')
+  const seaRow = rowOf('ps-sea')
+  const cloudsRow = rowOf('ps-clouds')
+  const artisticRow = rowOf('ps-artistic')
+  relabel(skyRow, 'Activado')
+  relabel(sunRow, 'Activado')
+  relabel(seaRow, 'Activado')
+  relabel(rowOf('ps-cloud-amount'), 'Nublado')
+  relabel(rowOf('ps-cloud-pressure-mode'), 'Presión')
+  relabel(rowOf('ps-cloud-pressure'), 'Presión (valor)')
+  relabel(rowOf('ps-lens-flare'), 'Destello')
+
+  if (timeGroup) {
+    const time = fieldset('settings-planet-time', 'Hora')
+    hideSubtitle(timeGroup)
+    relabel(rowOf('time-range'), 'Fijar')
+    relabel(rowOf('time-speed'), 'Velocidad')
+    time.append(timeGroup)
+    place(time)
+  }
+  const seaGroup = byId('scene-sea')
+  const sea = fieldset('settings-planet-sea', 'Mar')
+  if (seaGroup) {
+    hideSubtitle(seaGroup)
+    // The panel's sea switch replaces the legacy duplicate; the tide button sits before the level.
+    byId('planet-sea')?.closest('label')?.setAttribute('hidden', '')
+    const tide = byId('sea-tide')
+    if (tide) tide.textContent = 'Mareas'
+    const level = rowOf('sea-range')
+    relabel(level, 'Nivel m')
+    seaGroup.append(...rows(seaRow, tide, level))
+    sea.append(seaGroup)
+  } else sea.append(...rows(seaRow))
+  place(sea)
+
+  const air = fieldset('settings-planet-air', 'Aire')
+  air.append(
+    ...rows(
+      cloudsRow,
+      artisticRow,
+      subtitle('Cielo'),
+      rowOf('ps-cloud-amount'),
+      rowOf('ps-cloud-pressure-mode'),
+      rowOf('ps-cloud-pressure'),
+    ),
+  )
+  place(air)
+
+  const sky = fieldset('settings-planet-sky', 'Cielo')
+  sky.append(...rows(skyRow, subtitle('Sol'), sunRow, rowOf('ps-lens-flare')))
+  place(sky)
 
   const menu = doc.getElementById('menu-sections')
   const legacySections = () =>
@@ -203,36 +314,41 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
   for (const el of legacySections()) place(el)
 
-  // The legacy Planeta section (scene-controls) duplicates sky / sun / sea / clouds toggles that
-  // the planet panel already has. Keep only what the panel lacks: hour/time speed (already first
-  // in Planeta, #123) and sea level/tide (end of Planeta).
-  const legacyPlanet = doc.getElementById('scene-planet')
+  // Rendimiento → Calidad: profile, FPS limit and resolution scale in one section, with the
+  // «Aplicar calidad y reiniciar» button and its note last. The controls keep their ids and binds.
+  const quality = byId('display-quality-section')
+  const performanceGroup = byId('display-performance')
+  if (quality && performanceGroup) {
+    const tail = [...quality.children].filter((el) => el.matches('button, p'))
+    quality.append(
+      ...[...performanceGroup.children].filter((el) => el.tagName !== 'LEGEND'),
+      ...tail,
+    )
+    performanceGroup.hidden = true
+  }
+
+  // Opciones → Volante y espejos: the driver's steering wheel and mirror glass adjustments.
+  const driverGroups = rows(byId('scene-steering-wheel'), byId('scene-mirrors'))
+  if (driverGroups.length) {
+    const driver = fieldset('settings-options-driver', 'Volante y espejos')
+    driver.append(...driverGroups)
+    place(driver)
+  }
+
+  // The legacy Planeta section (scene-controls) duplicates the sky / sun / clouds toggles the
+  // planet panel already has; its Hora and Mar groups moved above. Keep it in the DOM (it holds
+  // the listeners) but hidden.
+  const legacyPlanet = byId('scene-planet')
   if (legacyPlanet) {
-    const legacyGroup = (id: string) => doc.getElementById(id)
-    const sea = legacyGroup('scene-sea')
     for (const id of ['scene-sky', 'scene-sun', 'scene-clouds']) {
-      const el = legacyGroup(id)
+      const el = byId(id)
       if (el) el.hidden = true
     }
-    const seaToggle = doc.getElementById('planet-sea')?.closest('label')
-    if (seaToggle) seaToggle.hidden = true
-    // Each legacy group already carries its own subtitle (Hora / Mar).
-    const box = (id: string, child: HTMLElement | null) => {
-      if (!child) return null
-      const group = fieldset(id)
-      group.append(child)
-      return group
-    }
-    const timeBox = box('settings-planet-time', timeGroup)
-    const seaBox = box('settings-planet-sea', sea)
-    if (timeBox) planetPane.prepend(timeBox)
-    if (seaBox) planetPane.append(seaBox)
-    // Hidden duplicates stay in the DOM (scene-controls keeps its listeners) but off-screen.
     legacyPlanet.hidden = true
     planetPane.append(legacyPlanet)
   }
 
-  // A tab with nothing to show (Posición and Capas on the flat demo: no map, no layers) is hidden.
+  // A tab with nothing to show (e.g. Audio on a host without the mixer) is hidden.
   const syncTabs = () => {
     for (const tab of TABS) {
       const pane = paneEls.get(tab.id)!
@@ -241,7 +357,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     }
   }
   syncTabs()
-  // Sections bound after the HUD (Capas in the terrain game) are placed when they appear.
+  // Sections bound after the HUD (Tierra in the terrain game) are placed when they appear.
   const observer = menu
     ? new MutationObserver((records) => {
         for (const record of records)
@@ -388,13 +504,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   grid-row: 1;
   padding: 2px 10px;
 }
-#settings-pane-planet .planet-settings-toggles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: 10px;
-  margin: 6px 0 4px;
-}
-#settings-pane-planet .planet-settings-toggles label {
+/* The planet panel's switches read like the other tabs: box first, then its name. */
+#settings-pane-planet label:has(> input[type='checkbox'][id^='ps-']) {
   flex-direction: row-reverse;
   justify-content: flex-end;
 }

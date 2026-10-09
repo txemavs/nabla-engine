@@ -24,6 +24,7 @@ import {
   presetVehicle,
 } from '@nabla/engine/vehicles'
 import type { Entity, Vec3Tuple } from '@nabla/engine/scene'
+import { assignVehicleColor } from './vehicle-colors.js'
 
 /** One extra vehicle, authored in geographic coordinates. */
 export interface HostVehicle {
@@ -256,6 +257,7 @@ export async function installHostVehicles(
       spec.box !== undefined ? { box: spec.box } : undefined,
     )
     if (spec.color) template.color = spec.color
+    else assignVehicleColor(template)
     const isTractor = Boolean(template.vehicle?.hitch && !template.vehicle.passive)
     let footprint = hostFootprint(pose.position, pose.yaw, template.size)
     let tractorId: string | undefined

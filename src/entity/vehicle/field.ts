@@ -408,6 +408,8 @@ export const vehicleField = z
       .optional(),
     /** Vertical mirror tilt in degrees; omitted uses -2 degrees (0 on two-wheelers). */
     mirrorTilt: finite.min(-5).max(12).optional(),
+    /** Body finish; omitted uses the stock paint properties. */
+    paintFinish: z.enum(['paint', 'chrome']).optional(),
     /**
      * Baked glass aim per mirror side (`left`, `right`, …), degrees, on top of the asset lens:
      * `yaw` + outward / − inward about the vehicle vertical, `tilt` + up (added to `mirrorTilt`).
@@ -416,7 +418,13 @@ export const vehicleField = z
     mirrorAim: z
       .record(
         z.string().min(1).max(32),
-        z.object({ yaw: finite.min(-30).max(30), tilt: finite.min(-20).max(20) }).strict(),
+        z
+          .object({
+            yaw: finite.min(-30).max(30),
+            tilt: finite.min(-20).max(20),
+            viewYaw: finite.min(-30).max(30).optional(),
+          })
+          .strict(),
       )
       .optional(),
     /** Enable the audible warning while this vehicle has reverse gear engaged. */

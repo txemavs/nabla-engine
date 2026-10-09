@@ -163,7 +163,7 @@ describe('engine start from the simulation', () => {
     ['a3', 'a3'],
     ['truck', 'white-truck'],
   ] as const) {
-    it(`${entity}: starter sound first, then the engine idles through the needle sweep, in P`, () => {
+    it(`${entity}: no starter sound; the engine idles through the needle sweep, in P`, () => {
       const floor = createEntity('floor', 'box', [0, -0.5, 0])
       floor.size = [400, 1, 400]
       const document = {
@@ -197,9 +197,9 @@ describe('engine start from the simulation', () => {
           effects.updateAudio(sim, document, eye)
           const info = sim.vehicleInfo(entity)
           if (phases.at(-1) !== info.ignition) phases.push(info.ignition)
-          // The starter sound plays on the first frame, before any needle moves.
-          if (i === 0) expect(starts).toHaveLength(1)
-          // While cranking the engine note is silent; the starter voice covers it.
+          // No starter sound (Txema 2026-10-09).
+          expect(starts).toHaveLength(0)
+          // While cranking the engine note is silent.
           if (info.ignition === 'cranking') expect(engine.at(-1)).toBe(0)
           if (info.ignition === 'cranking') expect(info.gaugeSweep).toBe(0)
           // During the sweep the engine has caught and its note is already playing.
@@ -208,16 +208,13 @@ describe('engine start from the simulation', () => {
           expect(info.parked).toBe(true)
         }
         expect(phases).toEqual(['cranking', 'sweep', 'running'])
-        expect(starts).toHaveLength(1)
+        expect(starts).toHaveLength(0)
         expect(sweeping.length).toBeGreaterThan(30)
         expect(Math.min(...sweeping)).toBeGreaterThan(0)
         // The catch flares above idle and settles while the needles sweep.
         expect(sweeping[0]).toBeGreaterThan(sweeping.at(-1)!)
         const idle =
           presetVehicle(catalog, entity).vehicle!.powertrain?.idleRpm ?? roadVehicleDefaults.idleRpm
-        const sound = starts[0] as { pitch: number; idleRpm: number }
-        expect(sound.pitch).toBeCloseTo(idle / roadVehicleDefaults.idleRpm)
-        expect(sound.idleRpm).toBe(idle)
         expect(idle).toBe(entity === 'truck' ? 750 : 1000)
         // Settled to idle after the catch: about 1,000 rpm for the cars, 750 for the truck.
         expect(engine.at(-1)!).toBeGreaterThan(idle * 0.9)

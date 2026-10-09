@@ -35,6 +35,7 @@ import type { VehicleLightMode } from '../render/vehicle-presentation/light-cont
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
+import { setCarMenuMusicLabel } from '../catalog/monitors/car.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
 import {
@@ -68,7 +69,8 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
-import { AssetWarmup } from '../render/entity/asset-warmup.js'
+import { VehicleWarmup } from './vehicle-warmup.js'
+import { createEntity } from '../entity/schema.js'
 import { showLoadingBadge } from './loading-badge.js'
 import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer.js'
 import type { MusicTrack } from '../audio/music.js'
@@ -110,6 +112,8 @@ import {
   type LoadDiagnostics,
   type TileDiscoveryMode,
   type PlanetSourceOptions,
+  groundPhotoAnisotropy,
+  setGroundPhotoAnisotropy,
 } from '../render/planet/world.js'
 import { setPlanetCharts } from '../render/entity/helm-map.js'
 import { setNavigationPlaces, setNavigationRoads } from '../render/entity/navigation-places.js'
@@ -199,8 +203,8 @@ export interface GameFrame {
  * 80 m remain after 2.2 s, versus 1.6 s to settle at the normal 3/s. A presentation choice.
  */
 const START_DESCENT_DAMPING = 1.2
-/** Loading stages `prepareReveal` reports (vehicles, weapons, terrain, shaders). */
-const REVEAL_STAGES = 4
+/** Loading stages `prepareReveal` reports, including mounted menu vehicle preparation. */
+const REVEAL_STAGES = 5
 
 /** Pre-play attract/boot view: sky and planet only, camera outside the planet (TV-style). */
 export interface AttractOptions {
@@ -253,6 +257,26 @@ const lightModeNotice: Record<VehicleLightMode, string> = {
   low: 'Dipped beams',
 }
 
+/** One vehicle's place in the world, from `GameRuntime.vehiclePlacements`. */
+export interface VehiclePlacement {
+  id: string
+  name: string
+  /** Body model URL, to tell the catalog preset apart. */
+  visual: string | null
+  color: string | null
+  /** WGS84 degrees. */
+  lat: number
+  lon: number
+  /** Metres above the mean-radius sphere. */
+  alt: number
+  /** Compass heading, degrees clockwise from north (0 ≤ h < 360). */
+  heading: number
+  /** Tractor id when this trailer is hitched. */
+  towedBy: string | null
+  /** The vehicle the player occupies. */
+  player: boolean
+}
+
 export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
@@ -272,6 +296,8 @@ export interface GameRuntimeOptions {
   /** Additional host focus policy, for editor menus and docked panels. */
   acceptsInput?: () => boolean
   scene: SceneDocument
+  /** Vehicle assemblies prepared during the intro, before gameplay is revealed. Empty by default. */
+  preloadVehicles?: readonly (readonly Entity[])[]
   world?: WorldContent
   tiles?: { baseUrl: string; apiUrl?: string; mode?: TileDiscoveryMode } & PlanetSourceOptions
   /** Disable only the visible water sheet for a synthetic sea-level test surface. */
@@ -397,7 +423,7 @@ export class GameRuntime {
   private sidearm: Sidearm | null = null
   private spawned: string[] = []
   private spawnSequence = 0
-  private assetWarmup: AssetWarmup | null = null
+  private vehicleWarmup: VehicleWarmup | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
   private weaponDrawn = false
@@ -442,8 +468,6 @@ export class GameRuntime {
     lightingDefaults.ambientIntensity,
   )
   private readonly catchFloor = new CatchFloor()
-  /** Ajustes → «Sombras: activadas / desactivadas» (see `setShadowsEnabled`). */
-  private shadowSwitch = true
   /** Live look knobs (Ajustes → Luz); defaults are the shipped look. */
   private lighting: LightTuning = readLightTuning(browserStorage())
   private readonly origin = new THREE.Vector3()
@@ -637,6 +661,7 @@ export class GameRuntime {
     this.effects.audio.mixer.set(readAudioMix(browserStorage()) ?? {})
     this.effects.audio.setEnabled(options.audio !== false)
     this.effects.audio.setMusic(options.music)
+    if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
     const touchActions = {
       engage: () => {
         options.canvas.focus()
@@ -644,6 +669,7 @@ export class GameRuntime {
       },
       interact: () => this.action('KeyE'),
       camera: () => this.cycleCamera(),
+      respawn: () => this.action('KeyR'),
     }
     this.touchDriving =
       options.touchControls === false
@@ -910,7 +936,7 @@ export class GameRuntime {
     this.touchFlight?.dispose()
     this.monitors.dispose()
     this.view.dispose()
-    this.assetWarmup?.dispose()
+    this.vehicleWarmup?.dispose()
     this.sky.dispose()
     this.environment.dispose()
     this.fieldLighting?.dispose()
@@ -1353,6 +1379,7 @@ export class GameRuntime {
     this.camera.position.sub(this.origin)
     const scissor = this.renderer.getScissor(new THREE.Vector4()),
       scissorTest = this.renderer.getScissorTest()
+    this.applyLightTuning()
     try {
       this.renderer.setScissor(0, 0, 1, 1)
       this.renderer.setScissorTest(true)
@@ -1714,19 +1741,40 @@ export class GameRuntime {
     return id
   }
   /**
-   * Load and prepare a vehicle's models without adding it: GLB parse (cached and reused), one
-   * texture upload per frame and an async shader compile. `placeVehicle` and `spawnVehicle`
+   * Prepare the mounted vehicle materials, instruments, textures, shaders and mirror views
+   * without adding it to the simulation. `placeVehicle` and `spawnVehicle`
    * call this first; a host may call it early (for example when a vehicle is picked in a menu).
    */
   async prewarmVehicle(template: Entity | readonly Entity[]): Promise<void> {
     this.assertAlive()
     const entities = Array.isArray(template) ? template : [template as Entity]
-    this.assetWarmup ??= new AssetWarmup({
+    this.vehicleWarmup ??= new VehicleWarmup({
       renderer: this.renderer,
       camera: this.camera,
       scene: this.scene,
+      createView: (entities) => {
+        const view = new SceneView(
+          {
+            version: 1,
+            name: 'Vehicle preparation',
+            entities: [createEntity('__warm-spawn', 'spawn'), ...entities],
+          },
+          false,
+          false,
+          {
+            mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
+            steeringWheelOffset: (model) =>
+              initialSteeringWheelOffset(this.options.steeringWheel, model),
+            mirrorAdjustment: (model) => initialMirrorAdjustment(this.options.mirrors, model),
+            startLights: this.options.startLights,
+          },
+        )
+        view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
+        view.setupMaterials((material) => this.shadows.setupMaterial(material))
+        return view
+      },
     })
-    await Promise.all(entities.map((e) => this.assetWarmup!.warmVisual(e.visual)))
+    await this.vehicleWarmup.warm(entities)
   }
   /**
    * Couple a free trailer to a tractor. Omit `trailerId` to use the nearest hitchable trailer.
@@ -1870,6 +1918,48 @@ export class GameRuntime {
     this.monitors.rebuild(this.document)
   }
 
+  /**
+   * Where every vehicle in the scene is (start vehicle, host fleet and spawned ones), in WGS84
+   * with a compass heading, for exporting a start / host-vehicles config. Trailers name the
+   * tractor they are hitched to. Empty without a running game on geographic terrain.
+   */
+  vehiclePlacements(): VehiclePlacement[] {
+    const sim = this.session.simulation
+    const origin = this.document.geography
+    if (!sim || !origin) return []
+    const player = sim.player.vehicleId
+    return sim.vehicleList().map(({ id, entity, towedBy }) => {
+      const pose = sim.entityTransform(id)
+      const at = new THREE.Vector3(...pose.position)
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
+        new THREE.Quaternion(...pose.rotation),
+      )
+      forward.y = 0
+      if (forward.lengthSq() < 1e-9) forward.set(0, 0, -1)
+      const here = localToGeo(origin, at.toArray())
+      // Bearing to a point 10 m ahead: the true compass heading at the vehicle, not the origin's.
+      const ahead = localToGeo(origin, at.addScaledVector(forward.normalize(), 10).toArray())
+      const rad = Math.PI / 180
+      const dLon = (ahead.longitude - here.longitude) * rad
+      const bearing = Math.atan2(
+        Math.sin(dLon) * Math.cos(ahead.latitude * rad),
+        Math.cos(here.latitude * rad) * Math.sin(ahead.latitude * rad) -
+          Math.sin(here.latitude * rad) * Math.cos(ahead.latitude * rad) * Math.cos(dLon),
+      )
+      return {
+        id,
+        name: entity.name,
+        visual: entity.visual?.body?.url ?? null,
+        color: entity.color ?? null,
+        lat: here.latitude,
+        lon: here.longitude,
+        alt: here.altitude,
+        heading: (((bearing / rad) % 360) + 360) % 360,
+        towedBy,
+        player: id === player,
+      }
+    })
+  }
   /** Groups added with `placeEntities` / `spawnEntities`, oldest first. */
   get placedObjects(): { id: string; name: string; ids: string[] }[] {
     return this.placed.map((entry) => ({ ...entry, ids: [...entry.ids] }))
@@ -2091,29 +2181,46 @@ export class GameRuntime {
   }
   /** Shadows on/off switch (Ajustes → Sombras); on by default, the quality tier still applies. */
   get shadowsEnabled(): boolean {
-    return this.shadowSwitch
+    return this.lighting.shadows
   }
-  /**
-   * Turn shadows on or off live: the shadow map, the sun's `castShadow` (and the cascade lights')
-   * and every scene material's program follow on the next frame.
-   */
+  /** Disable shadow attenuation without changing the number of sun lights or shader programs. */
   setShadowsEnabled(on: boolean): void {
     this.assertAlive()
-    this.shadowSwitch = !!on
+    this.setLightTuning({ shadows: !!on })
   }
   /** Apply the shadow switch on top of the quality tier; returns whether shadows draw this frame. */
   private syncShadowSwitch(): boolean {
-    const on = this.shadowSwitch && this.quality.shadows > 0
-    for (const light of this.shadows.lights) if (light.castShadow !== on) light.castShadow = on
-    if (this.sun.castShadow && !on) this.sun.castShadow = false
-    if (this.renderer.shadowMap.enabled !== on) {
-      this.renderer.shadowMap.enabled = on
-      this.scene.traverse((object) => {
-        const material = (object as THREE.Mesh).material
-        if (material) for (const m of [material].flat()) m.needsUpdate = true
-      })
-    }
-    return on
+    // Cascades represent one sun. Keep their shader/light topology stable when disabling
+    // shadow attenuation; removing castShadow would make the addon count them as three suns.
+    return this.lighting.shadows && this.quality.shadows > 0
+  }
+  /** Ground detail distance: cells around the player with the full-resolution photo (1–3). */
+  get groundDetailCells(): number {
+    return this.world?.nearCells ?? this.groundDetail
+  }
+  /**
+   * Set the ground detail distance live, 1–3 cells (3×3, 5×5, 7×7 full photos; ~1, 2, 3 km). Growing
+   * it loads the full photo for the newly near cells; shrinking only stops further upgrades.
+   */
+  setGroundDetailCells(cells: number): number {
+    this.assertAlive()
+    this.groundDetail = Math.min(3, Math.max(1, Math.round(cells)))
+    this.world?.setNearCells(this.groundDetail)
+    return this.groundDetail
+  }
+  private groundDetail = 1
+  /** Anisotropic filtering of the ground photo (asphalt and road markings). */
+  get anisotropy(): number {
+    return groundPhotoAnisotropy()
+  }
+  /** Largest anisotropy this GPU supports. */
+  get maxAnisotropy(): number {
+    return this.renderer.capabilities.getMaxAnisotropy()
+  }
+  /** Set the ground photo anisotropy live (1–16), clamped to the GPU maximum. Returns the value used. */
+  setAnisotropy(value: number): number {
+    this.assertAlive()
+    return setGroundPhotoAnisotropy(Math.min(Math.max(1, value), this.maxAnisotropy))
   }
   /** Asphalt contrast on the roads photo drape (1 = unchanged). */
   get asphaltContrast(): number {
@@ -2289,6 +2396,24 @@ export class GameRuntime {
     this.assertAlive()
     this.effects.audio.unlock()
   }
+  /**
+   * Fade the background music out over `seconds` (e.g. once the intro descent has landed); it
+   * stays off until `playMusic` (vehicle menu «MUSICA»). A track not started yet never starts.
+   */
+  fadeOutMusic(seconds = 3.5): void {
+    this.assertAlive()
+    this.effects.audio.fadeOutMusic(seconds)
+  }
+  /** Play the background music again from the start, on the music bus. False when muted/absent. */
+  playMusic(): boolean {
+    this.assertAlive()
+    return this.effects.audio.playMusic()
+  }
+  /** Stop the background music with a short fade. */
+  stopMusic(): void {
+    this.assertAlive()
+    this.effects.audio.fadeOutMusic(0.8)
+  }
   private async prepareReveal(signal: AbortSignal): Promise<void> {
     const within = <T>(promise: Promise<T>, ms: number) =>
       Promise.race([promise.catch(() => undefined), new Promise((r) => setTimeout(r, ms))])
@@ -2315,6 +2440,13 @@ export class GameRuntime {
       20_000,
     )
     signal.throwIfAborted()
+    // The viewmodel itself (HK model, magazine, flash, laser): built and compiled now, so the
+    // first draw shows the pistol instead of the placeholder block while it loads.
+    this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
+    await within(this.sidearm.warm(this.renderer), 20_000)
+    signal.throwIfAborted()
+    // Casing meshes join the scene before the shader stage, so the first shot compiles nothing.
+    this.ensureCasingMeshes()
     // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
     // from high above shows, at the LODs the stream plans there.
     stage('terrain', 2)
@@ -2371,6 +2503,11 @@ export class GameRuntime {
       // Then the start views themselves, as the first gameplay frames will draw them. Awaited
       // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
       await this.warmStartViews(signal)
+      stage('preload', 4)
+      for (const templates of this.options.preloadVehicles ?? []) {
+        signal.throwIfAborted()
+        await this.prewarmVehicle(templates)
+      }
     } finally {
       this.view.setPlaying(false)
     }
@@ -2610,14 +2747,18 @@ export class GameRuntime {
   }
 
   /** One spent case out of the ejection port, to the shooter's right. */
+  /** The casing pool in the scene (created once, empty until shots eject casings). */
+  private ensureCasingMeshes(): void {
+    const casing = (this.sidearm?.preset ?? weaponPresets()[0])?.casing
+    if (!casing || this.casingMeshes) return
+    this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
+    this.view.root.add(this.casingMeshes.root)
+  }
   private ejectCasing(sim: Simulation, eyes: boolean): void {
     const casing = this.sidearm?.preset?.casing
     if (!casing) return
     if (!this.casingMotion) this.casingMotion = new CasingMotion(casing)
-    if (!this.casingMeshes) {
-      this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
-      this.view.root.add(this.casingMeshes.root)
-    }
+    this.ensureCasingMeshes()
     const q = this.camera.quaternion
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(q)
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
@@ -3029,6 +3170,17 @@ export class GameRuntime {
               writeCameraFovOffset(browserStorage(), this.fovOffset)
               const { firstPersonFov, chaseFov } = this.cameraState.settings
               return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
+            },
+            (action) => {
+              const track = this.effects.audio.musicTrack
+              if (!track) return 'Sin música'
+              if (action === 'stop') {
+                this.effects.audio.fadeOutMusic(0.8)
+                return 'Música parada'
+              }
+              return this.effects.audio.playMusic()
+                ? 'Música: ' + (track.title ?? 'pista')
+                : 'Música silenciada en Ajustes → Audio'
             },
           )
           if (result.handled) {

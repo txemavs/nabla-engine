@@ -22,6 +22,6 @@ export interface VehiclePresentationAdapter {
     mirrorPolicy?: MirrorPolicy,
   ): VehicleEquipment
   preparePart?(model: Group, kind: 'body' | 'wheel' | 'steering'): void
-  paint?(model: Group, color: string): void
+  paint?(model: Group, color: string, finish?: 'paint' | 'chrome'): void
 }
 export type VehiclePresentationResolver = (entity: Entity) => VehiclePresentationAdapter | undefined

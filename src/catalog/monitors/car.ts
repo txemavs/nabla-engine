@@ -7,11 +7,15 @@ export const carMenuItems: MonitorMenuItem[] = [
     id: 'paint',
     label: 'COLOR COCHE',
     children: [
-      { id: 'silver', label: 'GRIS PLATA', action: { type: 'vehicle.paint', value: '#dadde1' } },
+      { id: 'grey', label: 'GRIS', action: { type: 'vehicle.paint', value: '#888888' } },
+      { id: 'silver', label: 'PLATA', action: { type: 'vehicle.paint', value: '#dadde1' } },
       { id: 'black', label: 'NEGRO', action: { type: 'vehicle.paint', value: '#17191e' } },
       { id: 'red', label: 'ROJO', action: { type: 'vehicle.paint', value: '#b91929' } },
       { id: 'blue', label: 'AZUL', action: { type: 'vehicle.paint', value: '#2157a5' } },
       { id: 'white', label: 'BLANCO', action: { type: 'vehicle.paint', value: '#f0f0ea' } },
+      { id: 'yellow', label: 'AMARILLO', action: { type: 'vehicle.paint', value: '#f5cc19' } },
+      { id: 'orange', label: 'NARANJA', action: { type: 'vehicle.paint', value: '#f07818' } },
+      { id: 'chrome', label: 'CROMADO', action: { type: 'vehicle.paintFinish', value: 'chrome' } },
       back,
     ],
   },
@@ -65,7 +69,36 @@ export const carMenuItems: MonitorMenuItem[] = [
       back,
     ],
   },
+  {
+    // Monitor glyphs are ASCII: no accent on «MUSICA» (as «POSICION»).
+    id: 'music',
+    label: 'MUSICA',
+    children: [
+      { id: 'music-play', label: 'PISTA', action: { type: 'vehicle.music', value: 'play' } },
+      { id: 'music-stop', label: 'PARAR', action: { type: 'vehicle.music', value: 'stop' } },
+      back,
+    ],
+  },
 ]
+
+/**
+ * Name the «MUSICA» page's play entry after the host's track (`MusicTrack.menuLabel`); the
+ * monitor shows 11 ASCII characters, so longer names are cut and accents are dropped.
+ */
+export function setCarMenuMusicLabel(label: string): void {
+  const entry = carMenuItems
+    .find((item) => item.id === 'music')
+    ?.children?.find((item) => item.id === 'music-play')
+  if (!entry) return
+  const ascii = label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7e]/g, '')
+    .toUpperCase()
+    .trim()
+    .slice(0, 11)
+  if (ascii) (entry as { label: string }).label = ascii
+}
 /** Edit the panel, positions and bindings here; no keyboard or game logic in the layout. */
 export const carMenuDefinition: MonitorDefinition = {
   width: 600,

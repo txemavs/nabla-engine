@@ -51,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 40](../../../game/flip-cinematic-ui.ts#L40)
 
-Checkbox in Ajustes → Opciones → Cámara: "Cámara cinematográfica al volcar".
+Checkbox in Ajustes → Opciones → Cámara: «Accidentes modo cine» (cinematic camera on a flip).
 
 ```ts
 bindFlipCinematicToggle(runtime: GameRuntime, storage = browserStorage()): void

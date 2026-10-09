@@ -5,6 +5,7 @@ import {
   objectChoices,
   seaStatus,
   vehicleChoices,
+  menuPreloadVehicles,
   withSceneParams,
 } from '../../game/scene-controls.js'
 import {
@@ -13,6 +14,12 @@ import {
   parseTimeParam,
   parseTimeSpeedParam,
 } from '../../game/terrain.js'
+
+it('prepares the common menu vehicles and permits an explicit reduced or empty list', () => {
+  expect(menuPreloadVehicles().map((assembly) => assembly[0].visual?.presentation)).toHaveLength(3)
+  expect(menuPreloadVehicles([])).toEqual([])
+  expect(menuPreloadVehicles(['car', 'car', 'unknown'])).toHaveLength(1)
+})
 
 describe('&time= and &sea= URL parameters', () => {
   it('reads the time as minutes after midnight, or the real clock', () => {

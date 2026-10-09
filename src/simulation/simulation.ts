@@ -481,6 +481,17 @@ export class Simulation {
     this.graph = SceneGraph.fromValidated(this.document)
     this.entitiesById = new Map(this.document.entities.map((e) => [e.id, e]))
   }
+  /**
+   * Every live vehicle in insertion order (start vehicle, host fleet, spawned ones), with the
+   * tractor a trailer is hitched to. For exporting placements; poses come from `entityTransform`.
+   */
+  vehicleList(): { id: string; entity: Entity; towedBy: string | null }[] {
+    return [...this.vehicles.values()].map((v) => ({
+      id: v.entity.id,
+      entity: v.entity,
+      towedBy: v.definition.tow?.vehicleId ?? null,
+    }))
+  }
   /** Authored definition of a live vehicle, including ones added with `addVehicles`; null if unknown. */
   vehicleSpec(id: string): VehicleDefinition | null {
     return this.vehicles.get(id)?.definition ?? null

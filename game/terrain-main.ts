@@ -1,6 +1,7 @@
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
+import { assignVehicleColor } from './vehicle-colors.js'
 import { hasVehiclePreset } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
@@ -9,7 +10,7 @@ import { LoadingScreen, showError } from './loading.js'
 import { startError } from './start-error.js'
 import { bindPosition, showLocation } from './position.js'
 import { showTelemetry } from './telemetry.js'
-import { bindSceneControls } from './scene-controls.js'
+import { bindSceneControls, menuPreloadVehicles } from './scene-controls.js'
 import { skyClockAtMinutes, skyClockAtRate } from '@nabla/engine/planet/sky'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
@@ -29,6 +30,7 @@ import {
 import { bindShadowBiasControl, resolveShadowBias } from './shadow-bias-ui.js'
 import { hostMirrorsFromSearch, mirrorStorage, viteHostMirrors } from './host-mirrors.js'
 import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
+import { bindAnisotropySelect, bindGroundDetailSelect } from './anisotropy-ui.js'
 import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
@@ -82,6 +84,9 @@ try {
     longitude: config.start!.longitude,
     includeDemoFleet: config.vehicles.length === 0,
   })
+  for (const entity of scene.entities)
+    if (entity.id !== 'player-vehicle' || !(config.scene as { color?: string }).color)
+      assignVehicleColor(entity)
   // &time=, &timeSpeed= and &sea= start the scene at that hour / rate / sea level; the menu changes them live.
   if (config.timeOfDay !== undefined)
     scene.sky =
@@ -127,6 +132,7 @@ try {
         .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
+    preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
     sea: true,
     restParkedOnGround: true,
     // Same streaming as Studio's ground mode: the cells around the player first, the rest by distance.
@@ -205,7 +211,9 @@ try {
   bindFlipCinematicToggle(runtime)
   bindRecoverToRoadToggle(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)
-  bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
+  const roadStyle = bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
+  bindAnisotropySelect(runtime, roadStyle)
+  bindGroundDetailSelect(runtime, roadStyle)
   bindSoundControls(runtime)
   bindLightControls(runtime)
   mountSettingsHud(runtime)

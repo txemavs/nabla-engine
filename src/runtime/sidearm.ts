@@ -88,6 +88,8 @@ export class Sidearm {
   readonly range: number
   readonly impulse: number
   private readonly legacyTravel: number
+  /** Settles once the assembled model has replaced the placeholder block (or failed to load). */
+  readonly ready: Promise<void>
 
   constructor(_viewport: HTMLElement, preset: WeaponPreset | undefined = weaponPresets()[0]) {
     this.preset = preset
@@ -113,9 +115,10 @@ export class Sidearm {
       fallback.geometry.dispose()
       fallbackMaterial.dispose()
     }
+    let loading: Promise<unknown> = Promise.resolve()
     if (preset?.model) {
       const model = preset.model
-      Promise.all([assets.instantiate(model), preset.rig ? loadRig(preset.rig) : null])
+      loading = Promise.all([assets.instantiate(model), preset.rig ? loadRig(preset.rig) : null])
         .then(([object, rig]) => {
           if (this.disposed) return disposeObject(object)
           if (rig) this.rig = rig
@@ -134,7 +137,7 @@ export class Sidearm {
         })
     } else if (preset?.body) {
       const body = preset.body
-      Promise.all([
+      loading = Promise.all([
         assets.instantiate(body),
         preset.slide ? assets.instantiate(preset.slide) : Promise.resolve(null),
       ])
@@ -159,6 +162,10 @@ export class Sidearm {
           /* the fallback block stays */
         })
     }
+    this.ready = loading.then(
+      () => undefined,
+      () => undefined,
+    )
     this.flashAt = (preset?.flash.position ?? [0, 0, -0.135]) as [number, number, number]
     // A short, small, dim flash: in daylight a 9 mm shows little more than a blink.
     this.flash = new THREE.Mesh(
@@ -203,6 +210,43 @@ export class Sidearm {
     key.position.set(-1, 2, 1)
     this.scene.add(key)
     this.scene.add(this.model, new THREE.HemisphereLight('#d3edff', '#27374f', 3))
+  }
+
+  /**
+   * Prepare the viewmodel before it is first drawn: wait for the assembled model, upload its
+   * textures and compile its programs (flash and laser included) against the viewmodel lights,
+   * then draw it once off screen. The first draw then shows the pistol, not the placeholder.
+   */
+  async warm(renderer: THREE.WebGLRenderer): Promise<void> {
+    await this.ready
+    if (this.disposed) return
+    const flash = this.flash.visible,
+      laser = this.laserLine.visible
+    this.flash.visible = true
+    this.laserLine.visible = true
+    try {
+      this.scene.updateMatrixWorld(true)
+      this.scene.traverse((object) => {
+        const material = (object as THREE.Mesh).material
+        for (const m of Array.isArray(material) ? material : material ? [material] : [])
+          for (const value of Object.values(m))
+            if (value instanceof THREE.Texture) renderer.initTexture(value)
+      })
+      await renderer.compileAsync(this.scene, this.camera)
+      if (this.disposed) return
+      const previous = renderer.getRenderTarget()
+      const target = new THREE.WebGLRenderTarget(1, 1)
+      try {
+        renderer.setRenderTarget(target)
+        renderer.render(this.scene, this.camera)
+      } finally {
+        renderer.setRenderTarget(previous)
+        target.dispose()
+      }
+    } finally {
+      this.flash.visible = flash
+      this.laserLine.visible = laser
+    }
   }
 
   dispose(): void {

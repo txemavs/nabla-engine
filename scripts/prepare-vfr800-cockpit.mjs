@@ -50,6 +50,10 @@ const materialIndex = (name) => {
   return i
 }
 const FAIRING = materialIndex('Gloss black fairing')
+json.materials[FAIRING].extras = {
+  ...json.materials[FAIRING].extras,
+  nabla: { ...json.materials[FAIRING].extras?.nabla, paint: true },
+}
 const REFLECTOR = materialIndex('Reflector')
 const PANEL = materialIndex('Matte black instrument panel')
 const ALUMINIUM = materialIndex('Satin aluminium chassis')

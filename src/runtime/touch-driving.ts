@@ -7,6 +7,8 @@ export interface TouchDrivingActions {
   play?: () => void
   interact: () => void
   camera: () => void
+  /** Respawn the vehicle, as the R key (recover onto the nearest road). Omitted: no button. */
+  respawn?: () => void
   /** Host acquires gameplay focus and may unlock audio before reading commands. */
   engage?: () => void
 }
@@ -274,8 +276,10 @@ export class TouchDriving {
       ['play', this.text('Play')],
       ['interact', this.text('Enter / exit')],
       ['camera', this.text('Camera')],
+      ['respawn', this.text('Respawn')],
     ] as const) {
       if (action === 'play' && !actions.play) continue
+      if (action === 'respawn' && !actions.respawn) continue
       const button = document.createElement('button')
       button.innerHTML = touchActionIcon(action)
       button.dataset.drive = action

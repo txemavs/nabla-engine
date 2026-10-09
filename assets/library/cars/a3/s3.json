@@ -5,7 +5,7 @@
   "placement": [4, 0.62, 6],
   "order": 0,
   "name": "S3 Nabla · DSG",
-  "color": "#dadde1",
+  "color": "#888888",
   "size": [1.994, 1.332, 4.407],
   "mass": 1400,
   "vehicle": {
@@ -37,7 +37,7 @@
       }
     },
     "mirrorTilt": 4,
-    "mirrorAim": { "right": { "yaw": -10, "tilt": -2.5 } },
+    "mirrorAim": { "right": { "yaw": -10, "tilt": 1.5 } },
     "clusterOffset": [0, 0.01, 0],
     "colliders": [
       {

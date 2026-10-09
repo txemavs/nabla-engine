@@ -9,10 +9,37 @@
 - `../../render/monitors/layered-monitor.js`
 - `../../render/monitors/menu.js`
 
-## callback@87
+## setCarMenuMusicLabel
 
-[Implementation, line 87](../../../../../src/catalog/monitors/car.ts#L87)
+[Implementation, line 88](../../../../../src/catalog/monitors/car.ts#L88)
+
+Name the «MUSICA» page's play entry after the host's track (`MusicTrack.menuLabel`); the
+monitor shows 11 ASCII characters, so longer names are cut and accents are dropped.
 
 ```ts
-callback@87(i): inferred by TypeScript; see implementation
+setCarMenuMusicLabel(label: string): void
+```
+
+## setCarMenuMusicLabel.callback@90
+
+[Implementation, line 90](../../../../../src/catalog/monitors/car.ts#L90)
+
+```ts
+callback@90(item): inferred by TypeScript; see implementation
+```
+
+## setCarMenuMusicLabel.callback@91
+
+[Implementation, line 91](../../../../../src/catalog/monitors/car.ts#L91)
+
+```ts
+callback@91(item): inferred by TypeScript; see implementation
+```
+
+## callback@120
+
+[Implementation, line 120](../../../../../src/catalog/monitors/car.ts#L120)
+
+```ts
+callback@120(i): inferred by TypeScript; see implementation
 ```

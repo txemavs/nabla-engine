@@ -1,7 +1,6 @@
 /**
  * Live lighting knobs for look tuning (Ajustes → Opciones → Luz). Defaults are the shipped
- * look: the values euskadi.online runs (engine 8d18dba), so the sliders start where the game
- * already is. Saved per browser as `nabla.lightTuning`; «Copiar valores» exports them as JSON.
+ * look. Saved per browser as `nabla.lightTuning`; «Copiar valores» exports them as JSON.
  */
 import { lightingDefaults } from '../config/lighting.js'
 import { PLANET_DEFAULTS } from '../render/planet/world-environment.js'
@@ -13,7 +12,7 @@ export interface LightTuning {
   sun: number
   /** Multiplier on the ambient light (full day 0.22). */
   ambient: number
-  /** Multiplier on vehicle environment reflections (envMapIntensity, motorcycle chrome and glass). */
+  /** Multiplier on every vehicle's PBR environment (indirect diffuse light and reflections). */
   reflections: number
   /** Multiplier on the vehicle paint colour (S3 `Pintura*`, truck/trailer `White paint`). */
   paint: number
@@ -27,7 +26,7 @@ export const lightTuningDefaults: Readonly<LightTuning> = Object.freeze({
   exposure: PLANET_DEFAULTS.exposure,
   sun: 1,
   ambient: 1,
-  reflections: 1,
+  reflections: 0,
   paint: 1,
   shadows: true,
   shadowIntensity: 1,

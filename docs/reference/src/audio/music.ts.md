@@ -14,7 +14,7 @@ audio context is unlocked. Hosts pass several encodings; the first the browser c
 
 ## pickMusicSource
 
-[Implementation, line 28](../../../../src/audio/music.ts#L28)
+[Implementation, line 33](../../../../src/audio/music.ts#L33)
 
 First source the element can play, or undefined.
 
@@ -26,12 +26,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `sources.find`
 
-## pickMusicSource.callback@32
+## pickMusicSource.callback@37
 
-[Implementation, line 32](../../../../src/audio/music.ts#L32)
+[Implementation, line 37](../../../../src/audio/music.ts#L37)
 
 ```ts
-callback@32(source): inferred by TypeScript; see implementation
+callback@37(source): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -40,18 +40,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.constructor
 
-[Implementation, line 39](../../../../src/audio/music.ts#L39)
+[Implementation, line 49](../../../../src/audio/music.ts#L49)
 
 ```ts
 constructor(readonly track: MusicTrack, private readonly createElement: () => MediaLike = () => new Audio()): instance
 ```
 
-## BackgroundMusic.constructor.callback@41
+## BackgroundMusic.constructor.callback@51
 
-[Implementation, line 41](../../../../src/audio/music.ts#L41)
+[Implementation, line 51](../../../../src/audio/music.ts#L51)
 
 ```ts
-callback@41(): inferred by TypeScript; see implementation
+callback@51(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -60,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.playing
 
-[Implementation, line 45](../../../../src/audio/music.ts#L45)
+[Implementation, line 55](../../../../src/audio/music.ts#L55)
 
 True once the element exists and is playing.
 
@@ -70,7 +70,7 @@ playing(): boolean
 
 ## BackgroundMusic.start
 
-[Implementation, line 53](../../../../src/audio/music.ts#L53)
+[Implementation, line 63](../../../../src/audio/music.ts#L63)
 
 Create the element on first call (after a gesture), route it into `bus` and play.
 Later calls only resume. Never throws.
@@ -81,27 +81,97 @@ start(context: AudioContext, bus: AudioNode): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `context.createGain`
 - `context.createMediaElementSource`
 - `context.createMediaElementSource(element as HTMLAudioElement).connect`
+- `fader.connect`
 - `pickMusicSource`
 - `this.createElement`
 - `this.sync`
 
-## BackgroundMusic.start.callback@58
+## BackgroundMusic.start.callback@68
 
-[Implementation, line 58](../../../../src/audio/music.ts#L58)
+[Implementation, line 68](../../../../src/audio/music.ts#L68)
 
 ```ts
-callback@58(t): inferred by TypeScript; see implementation
+callback@68(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `element.canPlayType`
 
+## BackgroundMusic.halted
+
+[Implementation, line 88](../../../../src/audio/music.ts#L88)
+
+True while a fade-out runs or after it: the track stays off until `restart`.
+
+```ts
+halted(): boolean
+```
+
+## BackgroundMusic.fadeOut
+
+[Implementation, line 96](../../../../src/audio/music.ts#L96)
+
+Fade the track out over `seconds`, then pause it and rewind. It stays off (mix changes and
+gestures do not bring it back) until `restart`. A track not started yet never starts.
+
+```ts
+fadeOut(seconds: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `fader.gain.setTargetAtTime`
+- `setTimeout`
+- `this.finishFade`
+
+## BackgroundMusic.fadeOut.callback@107
+
+[Implementation, line 107](../../../../src/audio/music.ts#L107)
+
+```ts
+callback@107(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.finishFade`
+
+## BackgroundMusic.restart
+
+[Implementation, line 111](../../../../src/audio/music.ts#L111)
+
+Play the track again from the start at full level (the bus level still applies).
+
+```ts
+restart(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clearTimeout`
+- `this.fader.gain.setTargetAtTime`
+- `this.sync`
+
+## BackgroundMusic.finishFade
+
+[Implementation, line 121](../../../../src/audio/music.ts#L121)
+
+```ts
+finishFade(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.element.pause`
+- `this.fader.gain.setTargetAtTime`
+
 ## BackgroundMusic.stop
 
-[Implementation, line 74](../../../../src/audio/music.ts#L74)
+[Implementation, line 131](../../../../src/audio/music.ts#L131)
 
 Stop playback (mute); `start` resumes it.
 
@@ -115,7 +185,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.setHidden
 
-[Implementation, line 80](../../../../src/audio/music.ts#L80)
+[Implementation, line 137](../../../../src/audio/music.ts#L137)
 
 Pause while the page is hidden without forgetting that it should play.
 
@@ -129,7 +199,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.dispose
 
-[Implementation, line 85](../../../../src/audio/music.ts#L85)
+[Implementation, line 142](../../../../src/audio/music.ts#L142)
 
 ```ts
 dispose(): void
@@ -137,11 +207,12 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `clearTimeout`
 - `this.sync`
 
 ## BackgroundMusic.sync
 
-[Implementation, line 92](../../../../src/audio/music.ts#L92)
+[Implementation, line 151](../../../../src/audio/music.ts#L151)
 
 ```ts
 sync(): void
@@ -153,10 +224,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `element.play`
 - `element.play().catch`
 
-## BackgroundMusic.sync.callback@96
+## BackgroundMusic.sync.callback@157
 
-[Implementation, line 96](../../../../src/audio/music.ts#L96)
+[Implementation, line 157](../../../../src/audio/music.ts#L157)
 
 ```ts
-callback@96(): inferred by TypeScript; see implementation
+callback@157(): inferred by TypeScript; see implementation
 ```

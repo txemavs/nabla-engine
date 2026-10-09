@@ -278,10 +278,11 @@ Explicit throws in this body:
 
 ## atlasPhotoFor
 
-[Implementation, line 361](../../../../src/planet/atlas-z15.ts#L361)
+[Implementation, line 362](../../../../src/planet/atlas-z15.ts#L362)
 
 Photo quality for one cell: the wanted quality near the player, the small `lo` photo farther away
-(16x fewer pixels to download, decode and keep on the GPU). `none` and `lo` are never upgraded.
+(16x fewer pixels to download, decode and keep on the GPU). `PlanetWorld` upgrades a `lo` cell to
+`full` once the player comes within `nearCells`. A wanted `none` or `lo` is returned unchanged.
 
 ```ts
 atlasPhotoFor(wanted: NonNullable<AtlasZ15Options['photo']>, tile: MapTile, focus: MapTile | undefined, nearCells = 1): NonNullable<AtlasZ15Options['photo']>

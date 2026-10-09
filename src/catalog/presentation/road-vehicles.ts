@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { vehicleAppearanceDefaults } from '../../config/vehicle-appearance.js'
 import { CarMirrors, authoredMirrorSurfaces } from '../../render/entity/car-mirrors.js'
 import { CarInstruments } from '../../render/entity/car-instruments.js'
 import { PoliceEquipment } from './police-equipment.js'
@@ -26,13 +27,15 @@ function shineVehicle(model: THREE.Object3D): void {
     for (const material of materials) {
       if (!(material instanceof THREE.MeshStandardMaterial)) continue
       if (/^llanta/i.test(material.name) && material.metalness > 0.5) {
-        material.metalness = 0.35
+        material.metalness = vehicleAppearanceDefaults.wheels.metalness
         material.needsUpdate = true
       }
       if (!/^cromo/i.test(material.name)) continue
-      material.metalness = 1
-      material.roughness = Math.min(material.roughness, 0.32)
-      material.envMap = null
+      material.metalness = vehicleAppearanceDefaults.chrome.metalness
+      material.roughness = Math.min(
+        material.roughness,
+        vehicleAppearanceDefaults.chrome.maxRoughness,
+      )
       material.needsUpdate = true
     }
   })
@@ -53,11 +56,8 @@ export const s3Presentation: VehiclePresentationAdapter = {
           side: THREE.DoubleSide,
           shadowSide: THREE.DoubleSide,
           color: e.color,
-          metalness: 0.72,
-          roughness: 0.22,
-          clearcoat: 0.8,
-          clearcoatRoughness: 0.14,
-          envMapIntensity: 0,
+          ...vehicleAppearanceDefaults.paint,
+          ...(e.vehicle?.paintFinish === 'chrome' ? vehicleAppearanceDefaults.chromePaint : {}),
         })
         return paint
       })
@@ -97,12 +97,19 @@ export const s3Presentation: VehiclePresentationAdapter = {
   preparePart(model) {
     shineVehicle(model)
   },
-  paint(model, color) {
+  paint(model, color, finish = 'paint') {
     model.traverse((node) => {
       if (!(node instanceof THREE.Mesh)) return
       for (const material of Array.isArray(node.material) ? node.material : [node.material])
-        if (material instanceof THREE.MeshStandardMaterial && /^Pintura/.test(material.name))
+        if (material instanceof THREE.MeshStandardMaterial && /^Pintura/.test(material.name)) {
           material.color.set(color)
+          Object.assign(
+            material,
+            finish === 'chrome'
+              ? vehicleAppearanceDefaults.chromePaint
+              : vehicleAppearanceDefaults.paint,
+          )
+        }
     })
   },
 }
@@ -184,9 +191,23 @@ const stock = new Map<string, VehiclePresentationAdapter>([
   ['nabla.wrangler', wranglerPresentation],
   ['nabla.police', policePresentation],
 ])
+const motorcyclePresentation: VehiclePresentationAdapter = {
+  mount(model, entity) {
+    this.paint?.(model, entity.color)
+    return {}
+  },
+  paint(model, color) {
+    model.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      for (const material of [object.material].flat())
+        if (material instanceof THREE.MeshStandardMaterial && material.userData.nabla?.paint)
+          material.color.set(color)
+    })
+  },
+}
 export const stockVehiclePresentation: VehiclePresentationResolver = (entity) => {
   const id = entity.visual?.presentation
-  if (!id) return undefined
+  if (!id) return entity.vehicle?.twoWheeled ? motorcyclePresentation : undefined
   const adapter = stock.get(id)
   if (!adapter) console.warn(`Unknown vehicle presentation: ${id}`)
   return adapter

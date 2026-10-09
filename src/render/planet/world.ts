@@ -230,6 +230,9 @@ export function dressSatelliteRoofs(
   const ctx = canvas?.getContext('2d') ?? undefined
   const texture: THREE.Texture = canvas ? new THREE.CanvasTexture(canvas) : new THREE.Texture()
   texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = groundAnisotropy
+  groundPhotos.add(texture)
+  texture.addEventListener('dispose', () => groundPhotos.delete(texture))
   const roofTextureMap: THREE.Texture = packaged ? new THREE.Texture() : texture
   if (packaged) roofTextureMap.colorSpace = THREE.SRGBColorSpace
   // Roof photo frame is `cell+margin:0.125` (5120² = 4096 cell px + 512 px each side): map cell
@@ -292,7 +295,7 @@ export function dressSatelliteRoofs(
     texture.image = prepared.photo
     texture.flipY = false
     texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
-    texture.anisotropy = 8
+    texture.anisotropy = groundAnisotropy
     texture.needsUpdate = true
     const roofBmp = prepared.roofPhoto ?? prepared.photo
     if (roofTextureMap !== texture) {
@@ -327,7 +330,7 @@ export function dressSatelliteRoofs(
         texture.image = bitmap
         texture.flipY = false
         texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
-        texture.anisotropy = 8
+        texture.anisotropy = groundAnisotropy
         texture.needsUpdate = true
         if (roofTextureMap !== texture) {
           useRoofImage(roofBmp ? manifest.roofPhoto?.frame : 'cell')
@@ -436,6 +439,29 @@ function describeStreamError(error: unknown): StreamError {
 }
 
 /** One planetary stream for editor, rendering and physics. Only tile roots change frame. */
+/**
+ * Anisotropic filtering of the ground photo drape, which carries the asphalt and its baked road
+ * markings (single ground texture, v2+ cells). Default 8; the runtime clamps to the GPU maximum.
+ */
+let groundAnisotropy = 8
+const groundPhotos = new Set<THREE.Texture>()
+
+/** Current ground photo anisotropy. */
+export function groundPhotoAnisotropy(): number {
+  return groundAnisotropy
+}
+
+/** Set the ground photo anisotropy for loaded and future cells (re-uploads loaded photos). */
+export function setGroundPhotoAnisotropy(value: number): number {
+  groundAnisotropy = Math.max(1, Math.round(value))
+  for (const texture of groundPhotos)
+    if (texture.anisotropy !== groundAnisotropy) {
+      texture.anisotropy = groundAnisotropy
+      if (texture.image) texture.needsUpdate = true
+    }
+  return groundAnisotropy
+}
+
 export class PlanetWorld {
   readonly root = new THREE.Group()
   status = 'Preparando baldosas del planeta…'
@@ -964,6 +990,18 @@ export class PlanetWorld {
         : 'Generación GLB desactivada · activa el acceso privado en la barra inferior'
   }
 
+  /** Full-photo radius in cells around the player (`nearCells`, default 1). */
+  get nearCells(): number {
+    return this.sourceOptions.nearCells ?? 1
+  }
+  /**
+   * Change the full-photo radius live (whole cells, at least 0). Growing it upgrades the newly near
+   * `lo` cells on the next tile pass; shrinking it only stops further upgrades (full cells stay full
+   * until they are unloaded).
+   */
+  setNearCells(cells: number): void {
+    this.sourceOptions.nearCells = Math.max(0, Math.round(cells))
+  }
   /** `atlas.photo`, except `lo` for cells farther than `nearCells` from the player. */
   private photoQuality(tile: MapTile): 'full' | 'lo' | 'none' {
     return atlasPhotoFor(

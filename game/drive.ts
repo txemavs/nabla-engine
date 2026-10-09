@@ -8,6 +8,7 @@ import {
 import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
+import { assignVehicleColor } from './vehicle-colors.js'
 import { headingRotation, installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
 import { showTelemetry } from './telemetry.js'
@@ -17,7 +18,7 @@ import { browserStorage } from './entry.js'
 import { showLocation } from './position.js'
 import { describeLoading } from './loading-text.js'
 import { bindTerrainSelector } from './terrain-selector.js'
-import { bindSceneControls } from './scene-controls.js'
+import { bindSceneControls, menuPreloadVehicles } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
@@ -34,6 +35,7 @@ import {
 import { bindShadowBiasControl, resolveShadowBias } from './shadow-bias-ui.js'
 import { hostMirrorsFromSearch, mirrorStorage, viteHostMirrors } from './host-mirrors.js'
 import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
+import { bindAnisotropySelect, bindGroundDetailSelect } from './anisotropy-ui.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
@@ -48,6 +50,7 @@ try {
     throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
   const vehicle = presetVehicle(config.vehicle, 'player-vehicle', [0, 2, 0])
   if (config.color) vehicle.color = config.color
+  else assignVehicleColor(vehicle)
   const scene: SceneDocument = flat
     ? createFlatTestScene(vehicle)
     : {
@@ -170,6 +173,7 @@ try {
         .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
+    preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
     world,
     sea: !flat,
     fieldLights: lights
@@ -244,7 +248,9 @@ try {
   bindFlipCinematicToggle(runtime)
   bindRecoverToRoadToggle(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)
-  bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
+  const roadStyle = bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
+  bindAnisotropySelect(runtime, roadStyle)
+  bindGroundDetailSelect(runtime, roadStyle)
   mountSettingsHud(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()
