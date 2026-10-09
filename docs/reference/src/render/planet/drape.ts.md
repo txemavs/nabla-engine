@@ -15,7 +15,7 @@ the main thread at install time and cost ~140 ms of frame time per cell.
 
 ## photoFrameMargin
 
-[Implementation, line 39](../../../../../src/render/planet/drape.ts#L39)
+[Implementation, line 43](../../../../../src/render/planet/drape.ts#L43)
 
 Margin on each side of a package photo frame, as a fraction of the CELL width:
 `cell` → 0, `cell+margin:0.125` → 0.125. Atlas roof PRIMARY is 5120² = 4096 cell px + 512 px
@@ -32,7 +32,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## photoFrameTransform
 
-[Implementation, line 52](../../../../../src/render/planet/drape.ts#L52)
+[Implementation, line 56](../../../../../src/render/planet/drape.ts#L56)
 
 Texture transform mapping cell UVs ([0,1] over the tile) into a photo with a margin frame:
 `uv * repeat + offset`. The image spans `1 + 2·margin` cells, so the cell occupies
@@ -49,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## drapeMaterialAlpha
 
-[Implementation, line 62](../../../../../src/render/planet/drape.ts#L62)
+[Implementation, line 66](../../../../../src/render/planet/drape.ts#L66)
 
 Material options for a drape layer. The dedicated roof photo is RGBA with alpha 0 (RGB ≈ 0)
 off-roof; drawn opaque those texels are black, so it must alpha-test.
@@ -60,7 +60,7 @@ drapeMaterialAlpha(id: string, dedicatedRoofPhoto: boolean): { transparent: bool
 
 ## bakedDrapeLayers
 
-[Implementation, line 95](../../../../../src/render/planet/drape.ts#L95)
+[Implementation, line 99](../../../../../src/render/planet/drape.ts#L99)
 
 Drape layers a cell's GLBs already carry as real textures, so the runtime drape must skip them:
 - a mesh named `Drape` with its own map (`userData.drape` id; old engine-baked roof drape);
@@ -81,7 +81,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hasBakedRoofs
 
-[Implementation, line 115](../../../../../src/render/planet/drape.ts#L115)
+[Implementation, line 119](../../../../../src/render/planet/drape.ts#L119)
 
 True when the cell's buildings carry the baked roof photo (Atlas `roof_bake`).
 
@@ -95,7 +95,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## layerOf
 
-[Implementation, line 120](../../../../../src/render/planet/drape.ts#L120)
+[Implementation, line 124](../../../../../src/render/planet/drape.ts#L124)
 
 Which drape layer a source mesh feeds, and whether it is a roof (steep faces are skipped).
 
@@ -107,17 +107,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `DRAPE_LAYERS.find`
 
-## layerOf.callback@136
+## layerOf.callback@140
 
-[Implementation, line 136](../../../../../src/render/planet/drape.ts#L136)
+[Implementation, line 140](../../../../../src/render/planet/drape.ts#L140)
 
 ```ts
-callback@136(item): inferred by TypeScript; see implementation
+callback@140(item): inferred by TypeScript; see implementation
 ```
 
 ## buildDrapes
 
-[Implementation, line 145](../../../../../src/render/planet/drape.ts#L145)
+[Implementation, line 149](../../../../../src/render/planet/drape.ts#L149)
 
 Cut the drape triangles. `layers` are the projected layer ids; `baked` ids already carry their own
 textured drape in the GLB and are skipped. `width` is the cell's ground width in metres.
@@ -140,12 +140,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sources.get`
 - `sources.set`
 
-## buildDrapes.callback@162
+## buildDrapes.callback@166
 
-[Implementation, line 162](../../../../../src/render/planet/drape.ts#L162)
+[Implementation, line 166](../../../../../src/render/planet/drape.ts#L166)
 
 ```ts
-callback@162({ mesh, roofs }): inferred by TypeScript; see implementation
+callback@166({ mesh, roofs }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -153,10 +153,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.floor`
 - `Uint8Array`
 
-## buildDrapes.callback@180
+## buildDrapes.callback@184
 
-[Implementation, line 180](../../../../../src/render/planet/drape.ts#L180)
+[Implementation, line 184](../../../../../src/render/planet/drape.ts#L184)
 
 ```ts
-callback@180({ mesh, roofs }, i): inferred by TypeScript; see implementation
+callback@184({ mesh, roofs }, i): inferred by TypeScript; see implementation
 ```
