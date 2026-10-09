@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { cascadeCutsForView, shadowProjectionKey } from '../../src/render/shadows.js'
+import { cascadeBreaks, cascadeCutsForView, shadowProjectionKey } from '../../src/render/shadows.js'
 
 test('a view blend does not change the shadow projection key every fraction of a degree', () => {
   const camera = { fov: 70, aspect: 16 / 9, near: 0.1, far: 12000, zoom: 1 }
@@ -22,4 +22,20 @@ test('a steep overhead view keeps the vehicle in the first cascade', () => {
   expect(cuts[0]).toBeGreaterThan(400)
   expect(cuts[1]).toBeGreaterThan(cuts[0])
   expect(cascadeCutsForView(4, 500, -1)[0]).toBeGreaterThan(500)
+})
+
+test('the steep overhead cut is not capped back to far / count (cars and trucks stay lit)', () => {
+  // Ultra: 4 cascades. The overhead far plane is max(180, 3h + 80) (downwardViewFar).
+  for (const height of [100, 200, 400, 600]) {
+    const far = Math.max(180, height * 3 + 80)
+    const breaks = cascadeBreaks(4, far, height, -1)
+    expect(breaks[0] * far).toBeGreaterThan(height + 10)
+    expect(breaks).toHaveLength(4)
+    expect(breaks[3]).toBe(1)
+    for (let i = 1; i < 4; i++) expect(breaks[i]).toBeGreaterThan(breaks[i - 1])
+    for (const count of [2, 3])
+      expect(cascadeBreaks(count, far, height, -1)[0] * far).toBeGreaterThan(height)
+  }
+  // Street level keeps the near-heavy capped cuts.
+  expect(cascadeBreaks(4, 4000, 2, -0.1)).toEqual([140 / 4000, 420 / 4000, 1200 / 4000, 1])
 })
