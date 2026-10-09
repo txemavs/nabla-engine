@@ -6,7 +6,7 @@ test('prepared vehicle and additional lamps reuse the live shader programs', asy
   )
   await page.goto('/preload-presentation')
   const result = await page.evaluate(async (root) => {
-    const T = await import('/e2e/render-fixture.ts')
+    const T = await import(String('/e2e/render-fixture.ts'))
     const { SceneView } = await import(`/@fs/${root}/src/presentation/scene-view.ts`)
     const { createEntity } = await import(`/@fs/${root}/src/entity/schema.ts`)
     const { createPlaceable } = await import(`/@fs/${root}/src/catalog/placeables.ts`)
@@ -35,11 +35,11 @@ test('prepared vehicle and additional lamps reuse the live shader programs', asy
     scene.add(view.root, new T.AmbientLight('#fff', 1))
     const shadows = new ShadowManager()
     shadows.reconfigure(512, camera, scene, new T.Vector3(1, -2, 1), 3.2)
-    view.setupMaterials((material) => shadows.setupMaterial(material))
+    view.setupMaterials((material: any) => shadows.setupMaterial(material))
     const count = () => renderer.info.programs!.length
     const lights = () => {
       let n = 0
-      scene.traverse((o) => {
+      scene.traverse((o: any) => {
         if (o instanceof T.Light && o.visible) n++
       })
       return n
@@ -58,14 +58,14 @@ test('prepared vehicle and additional lamps reuse the live shader programs', asy
       renderer,
       camera,
       scene,
-      createView: (entities) => {
+      createView: (entities: any[]) => {
         preparedViews++
         const prepared = new SceneView({
           version: 1,
           name: 'Warm',
           entities: [createEntity('warm-spawn', 'spawn'), ...entities],
         })
-        prepared.setupMaterials((material) => shadows.setupMaterial(material))
+        prepared.setupMaterials((material: any) => shadows.setupMaterial(material))
         return prepared
       },
     })

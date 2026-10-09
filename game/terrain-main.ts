@@ -84,7 +84,8 @@ try {
     includeDemoFleet: config.vehicles.length === 0,
   })
   for (const entity of scene.entities)
-    if (entity.id !== 'player-vehicle' || !config.scene.color) assignVehicleColor(entity)
+    if (entity.id !== 'player-vehicle' || !(config.scene as { color?: string }).color)
+      assignVehicleColor(entity)
   // &time=, &timeSpeed= and &sea= start the scene at that hour / rate / sea level; the menu changes them live.
   if (config.timeOfDay !== undefined)
     scene.sky =
