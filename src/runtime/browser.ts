@@ -443,6 +443,7 @@ export class GameRuntime {
   private readonly world: PlanetWorld | null
   private loading: AbortController | null = null
   private readonly revealGates: Promise<unknown>[] = []
+  private readonly revealTasks: (() => Promise<unknown>)[] = []
   private startHold: Promise<unknown> | null = null
   private lastTime: number | null = null
   private previousButtons: boolean[] = []
@@ -1651,7 +1652,11 @@ export class GameRuntime {
     const [x, , z] = position
     // Parse, texture upload and shader compile happen before the vehicle exists, spread over
     // frames, so adding it below is a cheap clone instead of a frozen frame.
-    const hide = showLoadingBadge(this.options.canvas.parentElement, this.text('Loading vehicle…'))
+    // Behind an intro (`beforeReveal`) the host's cards cover loading; no badge over them.
+    const hide =
+      this.options.canvas.dataset.reveal === 'preparing'
+        ? () => {}
+        : showLoadingBadge(this.options.canvas.parentElement, this.text('Loading vehicle…'))
     let ground: number
     try {
       ;[ground] = await Promise.all([
@@ -2209,6 +2214,17 @@ export class GameRuntime {
     this.assertAlive()
     this.revealGates.push(gate.catch(() => undefined))
   }
+  /**
+   * Run `task` inside `play()` once the simulation exists and before the start area is
+   * streamed and warmed, e.g. placing host vehicles with `placeVehicle`. What it adds is then
+   * loaded, lit and compiled behind the intro instead of during the first gameplay seconds
+   * (a new vehicle's lights change every material's program). A failing task is logged and
+   * does not stop play.
+   */
+  beforeReveal(task: () => Promise<unknown>): void {
+    this.assertAlive()
+    this.revealTasks.push(task)
+  }
   /** Start the background music now if the browser allows it; otherwise the next gesture does. */
   startMusic(): void {
     this.assertAlive()
@@ -2243,6 +2259,11 @@ export class GameRuntime {
     // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
     // from high above shows, at the LODs the stream plans there.
     stage('terrain', 2)
+    for (const task of this.revealTasks.splice(0)) {
+      signal.throwIfAborted()
+      await task().catch((error) => console.warn('beforeReveal task failed', error))
+    }
+    signal.throwIfAborted()
     const sim = this.session.simulation
     if (this.world && sim) {
       const spawn = [...sim.player.position] as Vec3Tuple
