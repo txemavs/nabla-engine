@@ -65,6 +65,36 @@ export function cascadeCutsForView(count: number, eyeHeight: number, viewDown: n
   return [first, first + 400, first + Math.max(1200, eyeHeight * 2)]
 }
 
+/**
+ * Cascade breaks as fractions of `far` (last one 1). Street level caps break i at (i+1)/count so
+ * the near cascades stay small. A steep downward view must not be capped: the overhead far plane
+ * is about 3 × the eye height, so far/4 always ends before the ground under the camera and the
+ * vehicle (car or truck) fell back into cascade 1 and went black (#183 follow-up).
+ */
+export function cascadeBreaks(
+  count: number,
+  far: number,
+  eyeHeight: number,
+  viewDown: number,
+): number[] {
+  const distances = cascadeCutsForView(count, eyeHeight, viewDown)
+  const steep = viewDown < -0.65 && eyeHeight > 80
+  const breaks: number[] = []
+  for (let i = 0; i < count - 1; i++) {
+    const fraction = distances[i] / far
+    if (!steep) {
+      breaks.push(Math.min(fraction, (i + 1) / count))
+      continue
+    }
+    // Strictly increasing and short of 1, so every cascade keeps a slice.
+    const ceiling = 1 - (count - 1 - i) * 0.04
+    const floor = (breaks[i - 1] ?? 0) + 0.02
+    breaks.push(Math.max(floor, Math.min(fraction, ceiling)))
+  }
+  breaks.push(1)
+  return breaks
+}
+
 // Three.js fade uses 0.25 * edge^2, ~1 m at the 140 m split. Grow the band with
 // distance so flying shows a blend, not two hard rings, without eating the car.
 const blendMin = 28
@@ -178,10 +208,7 @@ export class ShadowManager {
       // A 40 m cut follows the view, so turning drops the building out of the map.
       mode: 'custom',
       customSplitsCallback: (count, _near, far, breaks) => {
-        const distances = cascadeCutsForView(count, this.eyeHeight, this.viewDown)
-        for (let i = 0; i < count - 1; i++)
-          breaks.push(Math.min(distances[i] / far, (i + 1) / count))
-        breaks.push(1)
+        breaks.push(...cascadeBreaks(count, far, this.eyeHeight, this.viewDown))
       },
     })
     THREE.ShaderChunk.lights_fragment_begin = softenCascadeSeams(
