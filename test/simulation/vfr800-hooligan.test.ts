@@ -127,27 +127,51 @@ describe('W + S + Space (throttle + lever, no pedal): stationary burnout and don
     expect(Math.abs(pose().lean)).toBeLessThan(5 * deg)
   })
 
-  it('steering pivots the rear round the front (donut) towards the steered side', () => {
+  it('steering leans the bike into the circle up to 45° and spins faster the more it leans', () => {
     const { run, pose, position } = ride()
     run(1, burn)
-    const h0 = heading(sim!)
     const start = position()
-    run(1, { ...burn, right: 1 })
-    const turned = heading(sim!) - h0
-    const turn = Math.atan2(Math.sin(turned), Math.cos(turned))
-    expect(Math.abs(turn)).toBeGreaterThan(40 * deg)
+    const turn = (from: number) => {
+      const d = heading(sim!) - from
+      return Math.atan2(Math.sin(d), Math.cos(d))
+    }
+    let maxLean = 0
+    const sample = (seconds: number) => {
+      const h = heading(sim!)
+      for (let i = 0; i < Math.round(seconds * 60); i++) {
+        run(1 / 60, { ...burn, right: 1 })
+        maxLean = Math.max(maxLean, Math.abs(pose().lean))
+      }
+      return { lean: Math.abs(pose().lean), turn: turn(h) }
+    }
+    const early = sample(0.4)
+    const late = sample(0.4)
+    const full = sample(0.6)
+    expect(early.lean).toBeLessThan(late.lean)
+    expect(Math.abs(late.turn)).toBeGreaterThan(Math.abs(early.turn))
+    expect(full.lean).toBeGreaterThan(35 * deg)
+    expect(maxLean).toBeLessThanOrEqual(46 * deg)
+    // Leaning to the right (negative) with right steering, i.e. into the circle.
+    expect(pose().lean).toBeLessThan(0)
+    expect(Math.abs(full.turn)).toBeGreaterThan(40 * deg)
     expect(pose().hooligan).toBe('stationary-burnout')
     expect(pose().fallen).toBe(false)
     const end = position()
-    // The centre of mass circles the front contact (~1 m away), it does not wander off.
-    expect(Math.hypot(end[0] - start[0], end[2] - start[2])).toBeLessThan(2)
-    // Right steering turns the opposite way to left steering.
+    expect(Math.hypot(end[0] - start[0], end[2] - start[2])).toBeLessThan(2.5)
+    // Throttle off (lever still held): back upright and the rotation stops.
+    run(2, { frontBrake: 1, sprint: true, right: 1 })
+    expect(Math.abs(pose().lean)).toBeLessThan(5 * deg)
+    const h = heading(sim!)
+    run(0.5, { frontBrake: 1, sprint: true, right: 1 })
+    expect(Math.abs(turn(h))).toBeLessThan(3 * deg)
+    expect(pose().fallen).toBe(false)
+    // Left steering goes the other way.
     const other = ride()
     other.run(1, burn)
     const g0 = heading(sim!)
-    other.run(1, { ...burn, right: -1 })
-    const back = heading(sim!) - g0
-    expect(Math.sign(Math.atan2(Math.sin(back), Math.cos(back)))).toBe(-Math.sign(turn))
+    other.run(1.5, { ...burn, right: -1 })
+    expect(other.pose().lean).toBeGreaterThan(0)
+    expect(Math.sign(turn(g0))).toBe(-Math.sign(full.turn))
   })
 
   it('letting go of the lever launches with a wheelie kick', () => {

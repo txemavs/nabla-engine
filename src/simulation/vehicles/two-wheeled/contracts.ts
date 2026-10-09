@@ -156,6 +156,8 @@ export interface TwoWheeledState {
   /** Rear wheel surface speed above road speed, m/s (wheelspin), and its accumulated angle. */
   rearSpin: number
   rearSpinAngle: number
+  /** Stationary-burnout donut lean, radians, left positive (0 outside a donut). */
+  donutLean: number
   /** Looped, went over the front, hit something hard or lowsided: fallen until reset (R). */
   crashed: boolean
   /** Why it crashed (null while riding). */
