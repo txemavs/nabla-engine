@@ -121,7 +121,7 @@ callback@101(v, i): inferred by TypeScript; see implementation
 
 ## reflectionLevel
 
-[Implementation, line 143](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L143)
+[Implementation, line 144](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L144)
 
 Reflection level for the atmosphere's daylight factor `day` (0 night .. 1 full day; 1 without a
 sky): `reflectionNightLevel` up to the night threshold, eased up to 1 at `reflectionFullDay`.
@@ -138,7 +138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment
 
-[Implementation, line 160](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L160)
+[Implementation, line 161](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L161)
 
 Give every standard material under `root` with `metalness >= minMetalness`, or tagged
 `extras.nabla.reflective` in the GLB (glossy glass such as a windscreen), the shared reflection
@@ -159,12 +159,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.traverse`
 - `shadeEnvironment`
 
-## applyReflectionEnvironment.callback@173
+## applyReflectionEnvironment.callback@174
 
-[Implementation, line 173](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L173)
+[Implementation, line 174](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L174)
 
 ```ts
-callback@173(object): inferred by TypeScript; see implementation
+callback@174(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -180,7 +180,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyReflectionEnvironment.setLevel
 
-[Implementation, line 214](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L214)
+[Implementation, line 215](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L215)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation
@@ -193,7 +193,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## scale
 
-[Implementation, line 225](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L225)
+[Implementation, line 226](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L226)
 
 Per-material multiplier from the GLB (`extras.nabla.envIntensity`, e.g. a windscreen's
 slight reflection); 1 when omitted.
