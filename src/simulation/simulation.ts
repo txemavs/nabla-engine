@@ -12,7 +12,7 @@ import {
   RoadSegmentIndex,
   type RoadCenterline,
 } from './road-snap.js'
-import { classifyWheelSurface, type WheelSurface } from './wheel-surface.js'
+import { classifyWheelSurface, type PavedArea, type WheelSurface } from './wheel-surface.js'
 import { portalEnvelope, portalExitBlocked } from './portal-clearance.js'
 import { constrainTerrainBoundary } from './terrain-boundary.js'
 import { ejectionDefaults, simulationDefaults, mapCollisionDefaults } from '../config/simulation.js'
@@ -830,6 +830,14 @@ export class Simulation {
    * (OSM navigation roads). Scene roads are always included. Omit or pass nothing to clear
    * the host set. An empty world (no scene roads and no host roads) leaves the surface unknown.
    */
+  /** Paved non-road areas (OSM car parks): asphalt grip and black skid marks inside them. */
+  setSurfaceAreas(areas?: Iterable<PavedArea> | null): void {
+    const next = areas ? [...areas] : []
+    const current = this.hostSurfaceAreas
+    if (next.length === current.length && next.every((area, i) => area === current[i])) return
+    this.hostSurfaceAreas = next
+  }
+  private hostSurfaceAreas: PavedArea[] = []
   setSurfaceRoads(roads?: Iterable<RoadCenterline> | null): void {
     const next = roads ? [...roads] : []
     const current = this.hostSurfaceRoads
@@ -873,13 +881,16 @@ export class Simulation {
     }
   }): (WheelSurface | null)[] | undefined {
     const roads = this.surfaceIndex()
-    if (!roads?.size) return undefined
+    const areas = this.hostSurfaceAreas
+    if (!roads?.size && !areas.length) return undefined
     return v.raycast.wheelInfos.map((wheel) =>
       wheel.isInContact
         ? classifyWheelSurface(
             wheel.raycastResult.hitPointWorld.x,
             wheel.raycastResult.hitPointWorld.z,
-            roads,
+            roads ?? [],
+            undefined,
+            areas,
           )
         : null,
     )

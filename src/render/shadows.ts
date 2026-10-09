@@ -23,7 +23,6 @@ import {
   type ShadowTier,
 } from './shadow-tiers.js'
 import { patchGroundCloudShadow } from './planet/artistic-clouds.js'
-import { patchChromeIncidentLight } from './vehicle-presentation/reflection-environment.js'
 
 // The addon ships an older full lighting chunk. Replacing it wholesale drops
 // r186's DFG lookup and multi-scattering initialization, turning metals black.
@@ -47,52 +46,6 @@ export function cascadedLighting(standard: string, cascaded: string): string {
 /** Near-heavy cuts: the car and the façade that shades it stay in cascade 0. */
 function cascadeCutMetres(count: number): number[] {
   return count >= 4 ? [140, 420, 1200] : count === 3 ? [140, 500] : [160]
-}
-
-/**
- * Cascade ends in metres. Street level keeps the near-heavy cuts. A steep downward view
- * (zenithal zoom) puts the vehicle about `eyeHeight` metres from the camera: the 140 m cut
- * is still in the air, so the truck falls in the last cascade, whose map is sized to the
- * far plane, and the body goes black. End cascade 0 just past the visible ground instead.
- */
-export function cascadeCutsForView(count: number, eyeHeight: number, viewDown: number): number[] {
-  const street = cascadeCutMetres(count)
-  if (!(viewDown < -0.65) || !(eyeHeight > 80)) return street
-  const first = eyeHeight * 1.35 + 30
-  if (count <= 1) return []
-  if (count === 2) return [first]
-  if (count === 3) return [first, first + Math.max(500, eyeHeight)]
-  return [first, first + 400, first + Math.max(1200, eyeHeight * 2)]
-}
-
-/**
- * Cascade breaks as fractions of `far` (last one 1). Street level caps break i at (i+1)/count so
- * the near cascades stay small. A steep downward view must not be capped: the overhead far plane
- * is about 3 × the eye height, so far/4 always ends before the ground under the camera and the
- * vehicle (car or truck) fell back into cascade 1 and went black (#183 follow-up).
- */
-export function cascadeBreaks(
-  count: number,
-  far: number,
-  eyeHeight: number,
-  viewDown: number,
-): number[] {
-  const distances = cascadeCutsForView(count, eyeHeight, viewDown)
-  const steep = viewDown < -0.65 && eyeHeight > 80
-  const breaks: number[] = []
-  for (let i = 0; i < count - 1; i++) {
-    const fraction = distances[i] / far
-    if (!steep) {
-      breaks.push(Math.min(fraction, (i + 1) / count))
-      continue
-    }
-    // Strictly increasing and short of 1, so every cascade keeps a slice.
-    const ceiling = 1 - (count - 1 - i) * 0.04
-    const floor = (breaks[i - 1] ?? 0) + 0.02
-    breaks.push(Math.max(floor, Math.min(fraction, ceiling)))
-  }
-  breaks.push(1)
-  return breaks
 }
 
 // Three.js fade uses 0.25 * edge^2, ~1 m at the 140 m split. Grow the band with
@@ -171,10 +124,6 @@ export class ShadowManager {
   private biasScale: number = shadowBiasRange.default
   private readonly projectionCamera = new THREE.PerspectiveCamera()
   private projectionKey = ''
-  /** Camera view-direction Y and height, read by the cascade-split callback. */
-  private viewDown = 0
-  private eyeHeight = 0
-  private readonly viewForward = new THREE.Vector3()
   private readonly originals = new Map<THREE.Material, THREE.Material['onBeforeCompile']>()
   private readonly disposedMaterial = (event: { target: THREE.Material }) =>
     this.removeMaterial(event.target)
@@ -208,14 +157,15 @@ export class ShadowManager {
       // A 40 m cut follows the view, so turning drops the building out of the map.
       mode: 'custom',
       customSplitsCallback: (count, _near, far, breaks) => {
-        breaks.push(...cascadeBreaks(count, far, this.eyeHeight, this.viewDown))
+        const distances = cascadeCutMetres(count)
+        for (let i = 0; i < count - 1; i++)
+          breaks.push(Math.min(distances[i] / far, (i + 1) / count))
+        breaks.push(1)
       },
     })
     THREE.ShaderChunk.lights_fragment_begin = softenCascadeSeams(
       cascadedLighting(standardLighting, THREE.ShaderChunk.lights_fragment_begin),
     )
-    // The splice replaces the chunk. Re-apply the chrome incident accumulator on the result.
-    patchChromeIncidentLight()
     this.csm.fade = true
     this.csm.updateFrustums()
     this.padShadowBounds()
@@ -327,12 +277,7 @@ export class ShadowManager {
     proxy.copy(camera)
     proxy.position.add(origin)
     proxy.updateMatrixWorld(true)
-    camera.getWorldDirection(this.viewForward)
-    this.viewDown = this.viewForward.y
-    this.eyeHeight = camera.position.y
-    const key =
-      shadowProjectionKey(camera, this.tier.maxFar) +
-      (this.viewDown < -0.65 ? `:d${Math.round(this.eyeHeight / 20)}` : '')
+    const key = shadowProjectionKey(camera, this.tier.maxFar)
     if (key !== this.projectionKey) {
       this.projectionKey = key
       this.csm.updateFrustums()

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Changed
+
+- Lighting, colour, shadow and material code restored to what euskadi.online runs (engine 8d18dba), because the trucks rendered black again on :8707. Reverted: the car sky fill and the S3 paint, chrome, rear-chrome, windscreen and cabin-floor overrides (#161, #167, #198, #199, #200), the chrome light scaling and its night/daylight curve (#163, #170, #172), the trailer box `Chassis B` repaint (#167), the zenithal shadow-cascade cuts (#183, #192), bridge shadow casters (#153), the VFR800 metal map GLB (#165) and the Alto artistic-cloud default (#184: artistic clouds also shade the ground; back to Ultra only, as online). Kept: the zenithal entry stall fix (#180) and every non-lighting feature.
+
+### Added
+
+- Ajustes → Opciones → Luz: live sliders for Exposición (tone-mapping exposure), Sol and Ambiente (multipliers on the full-day 3.2 sun and 0.22 ambient), Reflejos (vehicle reflection multiplier), Pintura (vehicle paint colour multiplier), Sombras on/off and intensity. Each value is shown next to its slider, saved as `nabla.lightTuning`, and «Copiar valores» copies them as JSON (with «Restablecer» back to the defaults). The defaults are the restored look.
+
+### Fixed
+
+- Car parks are asphalt for the tyres: OSM `amenity=parking` areas (not underground, multi-storey or rooftop ones, nor grass/gravel lots) and paved road areas (`area:highway`, pedestrian/service `area=yes`) from the cell's OSM snapshot count as asphalt, so they get asphalt grip and black, persistent skid marks. Green marks and grass grip stay for real grass.
+
 ### Added
 
 - Staged reveal for intros: `play()` reports `data-reveal-stage` (vehicles, weapons, terrain, shaders, ready) and `data-reveal-progress`, waits for every streamed cell and map mesh around the start (`waitForArea`, what a descent from above shows) and uploads scene textures (`uploadSceneTextures`) before `data-reveal="holding"`. `holdStartCameras(promise)` keeps the start sequence on its first view (a `fromHeight` descent waits at its start height, e.g. while the host fades in), and the descent's first view only counts as arrived once the camera is near its normal height, so slow frames never cut it short.
@@ -17,11 +29,16 @@
 
 ### Changed
 
+- Engine much louder on every vehicle, music lower by default: `engineBusTrim` 1.6 → 6.4 (+12 dB on the Motor bus) and the default music level 50% → 30%. Measured in Chrome on the S3 at ~40 km/h with General 100 / Motor 100 / Música 50: engine bus RMS went from -32.5 dBFS (under the music, about -29 dBFS) to -20.5 dBFS, about 3.3x the music RMS (-30.9 dBFS); at the new 30% default the music is about -40 dBFS. Output peak 0.43, no clipping; the master limiter (-3 dB, 20:1) keeps the peaks from clipping. A mix saved in the browser (`nabla.audioMix`) still wins over the new default.
 - Engine over gear shifts on every vehicle: the engine bus has a fixed +4 dB trim (`engineBusTrim` 1.6) and car/truck clacks and the bike click play at half gain (`gearShiftLevel`, about −6 dB), so a shift is subtle under the engine. A limiter on master keeps the louder mix from clipping. Pistol reload clicks are unchanged.
 - Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
 
 ### Fixed
 
+- Vehicles no longer render black in shade, at night or from the zenithal camera (S3 windscreen, exhaust tips, rear chrome strip and cabin; trucks, trailers and mirror housings). Shade had only the 0.22 ambient, car materials had no environment light, and chrome/glass reflections were multiplied by the shadowed sun (#172). Car and truck materials now get the shared neutral environment as sky fill (`carReflectionOptions.fill` 0.35), shaded reflections keep half their strength (`shadeReflectionFloor`, night still dims them), the S3 paint clear coat reflects the sky, the S3 exhaust tips and diffuser strip are polished metal, and the windscreen is glossy glass.
+- Light grey and silver paint no longer looks almost white after that fix. The sky fill is now `carReflectionOptions.fill` 0.25 scaled by `1 - metalness` (metallic paint takes a coloured reflection of the bright sky, so 0.72-metal paint gets about 0.07), and the S3 paint is no longer tagged as a reflective clear coat. Dark paint and trucks look the same as before. The fill was then lowered to 0.0625: with 0.25 the truck cab shots read 8-15% lighter than euskadi.online (engine 8d18dba); at 0.0625 every compared shot is within 3%, and the shaded S3 rear stays dark grey, not black.
+- S3 rear turn signals, brake, reverse and position lamps light up again. Since #198 every car material takes the sky fill, and the environment pass cleared the emissive colour on all of them; the lenses set their colour once and only switch the intensity, so only the front signals (recoloured every frame) still lit. Only full-reflection chrome and glass lose their emissive now.
+- S3 right door mirror no longer looks up and far outward. Its glass was authored as the mirror image of the left one, but from the left-hand driver's eye that throws the right view about 20° further outward and slightly up (mostly sky, slanted horizon). The S3 preset now bakes `mirrorAim.right` (yaw −10°, tilt −2.5°) so the right view matches the left view mirrored across the car; the «Espejos» sliders still add on top. Test: `test/render/mirror-symmetry.test.ts` (same slider value turns both sides alike on the S3 and the truck).
 - The start descent no longer stutters after the reveal. Before `data-reveal="holding"`, `play()` renders the start views once (the overhead descent at its start height, halving down to the normal overhead height, then cockpit and chase), 1 px scissored on the canvas with a scratch camera state, so their shader programs (shadow and transmission passes included), buffers and textures are built behind the intro. `GameRuntime.beforeReveal(task)` runs host work inside `play()` before the start area is streamed and warmed; the game host places its host vehicles there (no loading badge while `data-reveal="preparing"`), so a carrier's lights no longer recompile every material during the descent. The carrier's four exhaust lamps stay in the scene while playing (dark by day) and only the flames toggle, so taking off no longer changes the light count. Wheel asphalt/grass classification uses a segment grid (`RoadSegmentIndex`) instead of scanning every OSM road for every wheel on every physics step; the result is unchanged.
 - No coloured placeholder block is drawn while a vehicle's GLB is still loading (e.g. the red cube before the motorbike appeared).
 - Zenithal camera: zooming out no longer turns cars or trucks black on Ultra (4 cascades). The #183 cut for steep views was still capped at far / 4, and the overhead far plane is about three times the eye height, so the vehicle always fell into cascade 1. Steep views now keep their uncapped first cut.

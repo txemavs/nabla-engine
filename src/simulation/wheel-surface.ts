@@ -7,11 +7,36 @@
  * inside that width is asphalt. Outside it, with road data loaded, it is grass. No road
  * data at all stays unknown — grip and skid colour are not invented.
  *
- * This does not see a paved lot that is not a carriageway. Those read as grass.
+ * Paved areas that are not carriageways (OSM car parks: `amenity=parking`, paved pedestrian or
+ * service areas) come as polygons ({@link PavedArea}); a contact inside one is asphalt too.
  */
 import { nearestRoadPoint, RoadSegmentIndex, type RoadCenterline } from './road-snap.js'
 
 export type WheelSurface = 'asphalt' | 'grass'
+
+/** A paved polygon in the scene metre frame (x/z), with its bounds for a cheap reject. */
+export interface PavedArea {
+  points: readonly { x: number; z: number }[]
+  minX: number
+  maxX: number
+  minZ: number
+  maxZ: number
+}
+
+/** Even-odd point-in-polygon test, bounds first. */
+export function insidePavedArea(x: number, z: number, area: PavedArea): boolean {
+  if (x < area.minX || x > area.maxX || z < area.minZ || z > area.maxZ) return false
+  const p = area.points
+  let inside = false
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+    if (
+      p[i].z > z !== p[j].z > z &&
+      x < ((p[j].x - p[i].x) * (z - p[i].z)) / (p[j].z - p[i].z) + p[i].x
+    )
+      inside = !inside
+  }
+  return inside
+}
 
 /**
  * Fraction of the vehicle's own tyre grip on grass. TODO(unverified): not a measured
@@ -39,7 +64,10 @@ export function classifyWheelSurface(
   z: number,
   roads: readonly RoadCenterline[] | RoadSegmentIndex,
   maxDistance = SURFACE_SEARCH_M,
+  areas: readonly PavedArea[] = [],
 ): WheelSurface | null {
+  if (Number.isFinite(x) && Number.isFinite(z) && areas.some((area) => insidePavedArea(x, z, area)))
+    return 'asphalt'
   const index = roads instanceof RoadSegmentIndex
   if (!(index ? roads.size : roads.length) || !Number.isFinite(x) || !Number.isFinite(z))
     return null

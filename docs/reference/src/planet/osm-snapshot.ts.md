@@ -85,9 +85,123 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Number.isFinite`
 
+## osmSnapshotPavedAreas
+
+[Implementation, line 131](../../../../src/planet/osm-snapshot.ts#L131)
+
+Paved areas that are not carriageways: OSM car parks (`amenity=parking`, except underground,
+multi-storey and rooftop ones) and `area:highway` / `area=yes` service and pedestrian areas,
+as closed ways in the roads block. An unpaved `surface` (grass, gravel…) is left out.
+
+```ts
+osmSnapshotPavedAreas(value: unknown): OsmPavedArea[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(el.geometry ?? []).filter`
+- `String`
+- `UNPAVED.has`
+- `['service', 'pedestrian', 'living_street'].includes`
+- `['underground', 'multi-storey', 'rooftop'].includes`
+- `out.push`
+- `overpassElements`
+- `roadsBlock`
+
+## osmSnapshotPavedAreas.callback@146
+
+[Implementation, line 146](../../../../src/planet/osm-snapshot.ts#L146)
+
+```ts
+callback@146(p): p is { lat: number; lon: number }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+
+## projectOsmPavedAreas
+
+[Implementation, line 155](../../../../src/planet/osm-snapshot.ts#L155)
+
+Project paved areas into the scene metre frame, with bounds.
+
+```ts
+projectOsmPavedAreas(areas: OsmPavedArea[], origin: GeoPoint): {
+  points: { x: number; z: number }[]
+  minX: number
+  maxX: number
+  minZ: number
+  maxZ: number
+}[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `areas.map`
+
+## projectOsmPavedAreas.callback@165
+
+[Implementation, line 165](../../../../src/planet/osm-snapshot.ts#L165)
+
+```ts
+callback@165(area): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `area.geometry.map`
+- `points.map`
+
+## projectOsmPavedAreas.callback@165.callback@166
+
+[Implementation, line 166](../../../../src/planet/osm-snapshot.ts#L166)
+
+```ts
+callback@166(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `geoToLocal`
+
+## projectOsmPavedAreas.callback@165.callback@176
+
+[Implementation, line 176](../../../../src/planet/osm-snapshot.ts#L176)
+
+```ts
+callback@176(p): inferred by TypeScript; see implementation
+```
+
+## projectOsmPavedAreas.callback@165.callback@177
+
+[Implementation, line 177](../../../../src/planet/osm-snapshot.ts#L177)
+
+```ts
+callback@177(p): inferred by TypeScript; see implementation
+```
+
+## projectOsmPavedAreas.callback@165.callback@178
+
+[Implementation, line 178](../../../../src/planet/osm-snapshot.ts#L178)
+
+```ts
+callback@178(p): inferred by TypeScript; see implementation
+```
+
+## projectOsmPavedAreas.callback@165.callback@179
+
+[Implementation, line 179](../../../../src/planet/osm-snapshot.ts#L179)
+
+```ts
+callback@179(p): inferred by TypeScript; see implementation
+```
+
 ## projectOsmRoads
 
-[Implementation, line 104](../../../../src/planet/osm-snapshot.ts#L104)
+[Implementation, line 185](../../../../src/planet/osm-snapshot.ts#L185)
 
 Project snapshot highways into the scene metre frame (same origin as the vehicle pose).
 
@@ -99,12 +213,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `highways.map`
 
-## projectOsmRoads.callback@105
+## projectOsmRoads.callback@186
 
-[Implementation, line 105](../../../../src/planet/osm-snapshot.ts#L105)
+[Implementation, line 186](../../../../src/planet/osm-snapshot.ts#L186)
 
 ```ts
-callback@105(road): inferred by TypeScript; see implementation
+callback@186(road): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -113,12 +227,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `road.geometry.map`
 
-## projectOsmRoads.callback@105.callback@106
+## projectOsmRoads.callback@186.callback@187
 
-[Implementation, line 106](../../../../src/planet/osm-snapshot.ts#L106)
+[Implementation, line 187](../../../../src/planet/osm-snapshot.ts#L187)
 
 ```ts
-callback@106(p): inferred by TypeScript; see implementation
+callback@187(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

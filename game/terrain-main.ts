@@ -18,6 +18,7 @@ import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
 import { bindSoundControls } from './sound-ui.js'
+import { bindLightControls } from './light-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import {
@@ -206,6 +207,7 @@ try {
   bindShadowBiasControl(runtime, boot.shadowBias)
   bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
   bindSoundControls(runtime)
+  bindLightControls(runtime)
   mountSettingsHud(runtime)
   bindLayerSelector(runtime, undefined, layerDefaults)
   document.getElementById('game-hud')!.classList.remove('hidden')

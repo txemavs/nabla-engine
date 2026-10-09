@@ -103,8 +103,6 @@ export {
 } from './motorcycle-instruments.js'
 export {
   applyReflectionEnvironment,
-  carReflectionOptions,
   reflectionEnvironmentTexture,
-  reflectionLevel,
   type ReflectionEnvironment,
 } from './reflection-environment.js'

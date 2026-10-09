@@ -5,71 +5,6 @@
  * chrome reads as bright polished metal. Matte and painted materials are left alone.
  */
 import * as THREE from 'three'
-import { lightingDefaults } from '../../config/lighting.js'
-
-/**
- * Environment reflections do not pass through the lighting. A studio env map stays bright in
- * shade and at night, so chrome reads as self-lit. Three r186 no longer has
- * `#include <emissive_fragment>`, and a metal's diffuse term is ~0 even in full sun, so the
- * reflection has to be scaled by the light that actually arrives: shadowed direct light
- * (NdotL * light color, after the shadow map) plus ambient irradiance. That is ~1 on a sunlit
- * face (bright whitish chrome) and only the small night/shade fill otherwise. No emissive,
- * and the env is not left as a fixed specular.
- *
- * `nablaIncident` is accumulated in the shared lighting chunk (see `patchChromeIncidentLight`,
- * re-applied after the CSM splice). Chrome materials then scale `indirectSpecular` by it.
- */
-const DIRECT_CALL =
-  'RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );'
-
-export function patchChromeIncidentLight(): void {
-  let source = THREE.ShaderChunk.lights_fragment_begin
-  if (!source.includes('vec3 nablaIncident')) {
-    if (!source.includes('vec3 geometryPosition'))
-      throw new Error('Unsupported Three.js lighting chunk (no geometryPosition)')
-    source = source.replace(
-      'vec3 geometryPosition',
-      'vec3 nablaIncident = vec3( 0.0 );\nvec3 geometryPosition',
-    )
-  }
-  if (!source.includes('nablaIncident += directLight.color')) {
-    if (!source.includes(DIRECT_CALL))
-      throw new Error('Unsupported Three.js lighting chunk (no RE_Direct)')
-    source = source.replaceAll(
-      DIRECT_CALL,
-      'nablaIncident += directLight.color * saturate( dot( geometryNormal, directLight.direction ) );\n\t\t' +
-        DIRECT_CALL,
-    )
-  }
-  if (!source.includes('nablaIncident += irradiance')) {
-    const marker = '#if defined( RE_IndirectSpecular )'
-    if (!source.includes(marker))
-      throw new Error('Unsupported Three.js lighting chunk (no indirect specular)')
-    source = source.replace(
-      marker,
-      '#if defined( RE_IndirectDiffuse )\n\tnablaIncident += irradiance;\n#endif\n\n' + marker,
-    )
-  }
-  THREE.ShaderChunk.lights_fragment_begin = source
-}
-
-const SPECULAR_SUM =
-  'vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;'
-
-function shadeEnvironment(material: THREE.MeshStandardMaterial): void {
-  patchChromeIncidentLight()
-  const previous = material.onBeforeCompile
-  material.onBeforeCompile = (shader, renderer) => {
-    previous?.(shader, renderer)
-    if (!shader.fragmentShader.includes(SPECULAR_SUM)) return
-    shader.fragmentShader = shader.fragmentShader.replace(
-      SPECULAR_SUM,
-      'reflectedLight.indirectSpecular *= saturate( nablaIncident );\n\t' + SPECULAR_SUM,
-    )
-  }
-  const key = material.customProgramCacheKey?.bind(material)
-  material.customProgramCacheKey = () => (key ? key() : '') + ' nabla-shaded-env'
-}
 
 let shared: THREE.DataTexture | null = null
 
@@ -105,23 +40,6 @@ export function reflectionEnvironmentTexture(): THREE.DataTexture {
   texture.magFilter = THREE.LinearFilter
   texture.needsUpdate = true
   return (shared = texture)
-}
-
-/**
- * Cars: only materials tagged `reflective` (by the presentation adapter or the GLB) take the
- * environment, a little stronger than on the motorcycles so thin chrome trim reads at a distance.
- */
-export const carReflectionOptions = Object.freeze({ minMetalness: Infinity, intensity: 0.8 })
-
-/**
- * Reflection level for the atmosphere's daylight factor `day` (0 night .. 1 full day; 1 without a
- * sky): `reflectionNightLevel` up to the night threshold, eased up to 1 at `reflectionFullDay`.
- * The environment is a fixed studio gradient, so it must fade with the light it stands for.
- */
-export function reflectionLevel(day: number, lighting = lightingDefaults): number {
-  if (!Number.isFinite(day)) return 1
-  const t = THREE.MathUtils.smoothstep(day, lighting.nightThreshold, lighting.reflectionFullDay)
-  return lighting.reflectionNightLevel + (1 - lighting.reflectionNightLevel) * t
 }
 
 /** Materials that took the environment; `setLevel` dims the reflections (night). */
@@ -161,10 +79,6 @@ export function applyReflectionEnvironment(
   for (const material of materials) {
     material.envMap = texture
     material.envMapIntensity = intensity * scale(material)
-    // Nothing may glow: chrome reads bright from its base colour and reflection, never emissive.
-    material.emissive.set(0, 0, 0)
-    material.emissiveIntensity = 0
-    shadeEnvironment(material)
     material.needsUpdate = true
   }
   let current = intensity

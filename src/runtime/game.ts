@@ -12,6 +12,7 @@ import type { SceneDocument } from '../scene/document.js'
 import type { Entity } from '../entity/schema.js'
 import { idleInput, type PlayerInput } from '../simulation/simulation.js'
 import type { RoadCenterline } from '../simulation/road-snap.js'
+import type { PavedArea } from '../simulation/wheel-surface.js'
 import { overheadDrivingHeight } from '../render/entity/driving-camera.js'
 import { PlaySession, type PlayOptions } from './session.js'
 import { GameInput, type GameInputSources } from './input.js'
@@ -47,7 +48,12 @@ export class GameRuntime {
    * R reset policy. `snapToRoad` moves the car to the nearest road/vía before uprighting;
    * `roads` lets the host add streamed centrelines (OSM navigation roads) to the scene roads.
    */
-  readonly recover: { snapToRoad: boolean; roads?: () => Iterable<RoadCenterline> } = {
+  readonly recover: {
+    snapToRoad: boolean
+    roads?: () => Iterable<RoadCenterline>
+    /** Paved non-road areas (car parks) for the tyre surface. */
+    pavedAreas?: () => Iterable<PavedArea>
+  } = {
     snapToRoad: false,
   }
 
@@ -168,6 +174,7 @@ export class GameRuntime {
     const sim = this.simulation
     if (!sim || this.state !== 'playing') return null
     sim.setSurfaceRoads(this.recover.roads?.())
+    sim.setSurfaceAreas(this.recover.pavedAreas?.())
     if (input.forward || input.right || input.brake || input.sprint)
       this.cameraState.entrance = null
     const ticks = sim.stats.ticks
