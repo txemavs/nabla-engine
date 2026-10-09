@@ -36,6 +36,8 @@ export interface TwoWheeledTuning {
   maxLeanAcceleration: number
   disturbanceResponse: number
   steerRate: number
+  /** Released steering keeps the lean at riding speed (`twoWheeledDefaults.leanHold`). */
+  leanHold: { enabled: boolean; rate: number }
   frontBrakeForce: number
   rearBrakeForce: number
   frictionSlip: number
@@ -100,6 +102,8 @@ export interface TwoWheeledState {
   readonly wheelbase: number
   /** Handlebar rotation about the steering axis, radians. */
   handlebar: number
+  /** Steering demand held after release at riding speed (lean hold), -1..1, +right. */
+  steerHold: number
   /** Front-wheel steer angle on the ground, radians. */
   groundSteer: number
   /** Measured lean from the gravity vertical, radians. */

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **358 modules; 3837 executable function definitions**.
+Coverage: **358 modules; 3838 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -354,7 +354,7 @@ Coverage: **358 modules; 3837 executable function definitions**.
 | [src/simulation/vehicles/two-wheeled/index.ts](src/simulation/vehicles/two-wheeled/index.ts.md) | 0 |
 | [src/simulation/vehicles/two-wheeled/pitch.ts](src/simulation/vehicles/two-wheeled/pitch.ts.md) | 9 |
 | [src/simulation/vehicles/two-wheeled/rider.ts](src/simulation/vehicles/two-wheeled/rider.ts.md) | 12 |
-| [src/simulation/vehicles/two-wheeled/runtime.ts](src/simulation/vehicles/two-wheeled/runtime.ts.md) | 24 |
+| [src/simulation/vehicles/two-wheeled/runtime.ts](src/simulation/vehicles/two-wheeled/runtime.ts.md) | 25 |
 | [src/simulation/vehicles/wheeled/contracts.ts](src/simulation/vehicles/wheeled/contracts.ts.md) | 1 |
 | [src/simulation/vehicles/wheeled/index.ts](src/simulation/vehicles/wheeled/index.ts.md) | 0 |
 | [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 31 |

@@ -100,6 +100,7 @@ export function twoWheeledTuning(definition: WheeledDefinition): TwoWheeledTunin
     maxLeanAcceleration: g.maxLeanAcceleration ?? d.maxLeanAcceleration,
     disturbanceResponse: d.disturbanceResponse,
     steerRate: g.steerRate ?? d.steerRate,
+    leanHold: { ...d.leanHold },
     frontBrakeForce: g.frontBrakeForce ?? d.frontBrakeForce,
     rearBrakeForce: g.rearBrakeForce ?? d.rearBrakeForce,
     frictionSlip: g.frictionSlip ?? d.frictionSlip,
@@ -234,6 +235,7 @@ export function createTwoWheeledVehicle(
       steeringAxis: geometry.steeringAxis.map((v) => v / axisLength) as [number, number, number],
       wheelbase: Math.abs(definition.hubs[REAR][2] - definition.hubs[FRONT][2]),
       handlebar: 0,
+      steerHold: 0,
       groundSteer: 0,
       lean: 0,
       targetLean: 0,
@@ -287,6 +289,7 @@ export function createTwoWheeledVehicle(
 /** Forget transient controller state, e.g. after an R reset uprighted the chassis. */
 export function resetTwoWheeled(state: TwoWheeledState): void {
   state.handlebar = 0
+  state.steerHold = 0
   state.groundSteer = 0
   state.targetLean = 0
   state.fallen = false
@@ -473,9 +476,21 @@ export function stepTwoWheeledVehicle(
     rider && rider.lateral > 0
       ? (rider.steer * state.riderShift[0] * state.riderControl.manualShare) / rider.lateral
       : 0
+  state.steerHold = holdSteering(
+    state.steerHold,
+    input.steering,
+    tuning.leanHold.enabled &&
+      active &&
+      powered &&
+      !state.fallen &&
+      !state.crashed &&
+      Math.abs(speed) > 2 * tuning.balanceSpeed,
+    tuning.leanHold.rate,
+    dt,
+  )
   const barTarget =
     active && powered
-      ? handlebarTarget(clamp(input.steering + bodySteer, -1, 1), speed, {
+      ? handlebarTarget(clamp(state.steerHold + bodySteer, -1, 1), speed, {
           steerLimit: state.geometry.steerLimit,
           maxLean: leanLimit,
           rakeCosine: state.rakeCosine,
@@ -734,6 +749,27 @@ export function stepTwoWheeledVehicle(
   }
 
   stepLean(v, dt, speed, forward, up, gravityUp, gravity, frontContact && rearContact)
+}
+
+/**
+ * Lean hold for the steering demand: at riding speed a released input (or an input eased back
+ * on the same side) keeps the held demand, so the bike keeps its lean instead of self-righting;
+ * pushing further on the same side takes the new demand at once, and the opposite side winds it
+ * back through upright at `rate` (full scale per second), so letting go when upright rides on
+ * straight. Off (`hold` false: slow, stopped, fallen, inactive) the demand is the input.
+ */
+export function holdSteering(
+  held: number,
+  input: number,
+  hold: boolean,
+  rate: number,
+  dt: number,
+): number {
+  if (!hold) return input
+  if (Math.abs(input) < 0.05) return held
+  const sameSide = Math.sign(input) === Math.sign(held) || held === 0
+  if (sameSide) return Math.abs(input) > Math.abs(held) ? input : held
+  return clamp(held + clamp(input - held, -rate * dt, rate * dt), -1, 1)
 }
 
 /** Lean measurement, fall detection and the balance torque for one tick. */
