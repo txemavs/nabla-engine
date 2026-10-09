@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **358 modules; 3853 executable function definitions**.
+Coverage: **358 modules; 3878 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -30,7 +30,7 @@ Coverage: **358 modules; 3853 executable function definitions**.
 | [game/mirror-controls.ts](game/mirror-controls.ts.md) | 15 |
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
-| [game/scene-controls.ts](game/scene-controls.ts.md) | 52 |
+| [game/scene-controls.ts](game/scene-controls.ts.md) | 65 |
 | [game/settings-hud.ts](game/settings-hud.ts.md) | 32 |
 | [game/shadow-bias-ui.ts](game/shadow-bias-ui.ts.md) | 13 |
 | [game/sound-ui.ts](game/sound-ui.ts.md) | 4 |
@@ -178,7 +178,7 @@ Coverage: **358 modules; 3853 executable function definitions**.
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 1 |
 | [src/render/entity/car-instruments.ts](src/render/entity/car-instruments.ts.md) | 16 |
 | [src/render/entity/car-lights.ts](src/render/entity/car-lights.ts.md) | 7 |
-| [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 29 |
+| [src/render/entity/car-mirrors.ts](src/render/entity/car-mirrors.ts.md) | 31 |
 | [src/render/entity/carrier-interior.ts](src/render/entity/carrier-interior.ts.md) | 6 |
 | [src/render/entity/carrier-thrusters.ts](src/render/entity/carrier-thrusters.ts.md) | 2 |
 | [src/render/entity/casings.ts](src/render/entity/casings.ts.md) | 3 |
@@ -268,7 +268,7 @@ Coverage: **358 modules; 3853 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 261 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 265 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
@@ -300,7 +300,7 @@ Coverage: **358 modules; 3853 executable function definitions**.
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 4 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 36 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 40 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -338,7 +338,7 @@ Coverage: **358 modules; 3853 executable function definitions**.
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 212 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 214 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |

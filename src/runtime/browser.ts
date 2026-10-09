@@ -254,6 +254,26 @@ const lightModeNotice: Record<VehicleLightMode, string> = {
   low: 'Dipped beams',
 }
 
+/** One vehicle's place in the world, from `GameRuntime.vehiclePlacements`. */
+export interface VehiclePlacement {
+  id: string
+  name: string
+  /** Body model URL, to tell the catalog preset apart. */
+  visual: string | null
+  color: string | null
+  /** WGS84 degrees. */
+  lat: number
+  lon: number
+  /** Metres above the mean-radius sphere. */
+  alt: number
+  /** Compass heading, degrees clockwise from north (0 ≤ h < 360). */
+  heading: number
+  /** Tractor id when this trailer is hitched. */
+  towedBy: string | null
+  /** The vehicle the player occupies. */
+  player: boolean
+}
+
 export interface GameRuntimeOptions {
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
@@ -644,6 +664,7 @@ export class GameRuntime {
       },
       interact: () => this.action('KeyE'),
       camera: () => this.cycleCamera(),
+      respawn: () => this.action('KeyR'),
     }
     this.touchDriving =
       options.touchControls === false
@@ -1871,6 +1892,48 @@ export class GameRuntime {
     this.monitors.rebuild(this.document)
   }
 
+  /**
+   * Where every vehicle in the scene is (start vehicle, host fleet and spawned ones), in WGS84
+   * with a compass heading, for exporting a start / host-vehicles config. Trailers name the
+   * tractor they are hitched to. Empty without a running game on geographic terrain.
+   */
+  vehiclePlacements(): VehiclePlacement[] {
+    const sim = this.session.simulation
+    const origin = this.document.geography
+    if (!sim || !origin) return []
+    const player = sim.player.vehicleId
+    return sim.vehicleList().map(({ id, entity, towedBy }) => {
+      const pose = sim.entityTransform(id)
+      const at = new THREE.Vector3(...pose.position)
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
+        new THREE.Quaternion(...pose.rotation),
+      )
+      forward.y = 0
+      if (forward.lengthSq() < 1e-9) forward.set(0, 0, -1)
+      const here = localToGeo(origin, at.toArray())
+      // Bearing to a point 10 m ahead: the true compass heading at the vehicle, not the origin's.
+      const ahead = localToGeo(origin, at.addScaledVector(forward.normalize(), 10).toArray())
+      const rad = Math.PI / 180
+      const dLon = (ahead.longitude - here.longitude) * rad
+      const bearing = Math.atan2(
+        Math.sin(dLon) * Math.cos(ahead.latitude * rad),
+        Math.cos(here.latitude * rad) * Math.sin(ahead.latitude * rad) -
+          Math.sin(here.latitude * rad) * Math.cos(ahead.latitude * rad) * Math.cos(dLon),
+      )
+      return {
+        id,
+        name: entity.name,
+        visual: entity.visual?.body?.url ?? null,
+        color: entity.color ?? null,
+        lat: here.latitude,
+        lon: here.longitude,
+        alt: here.altitude,
+        heading: (((bearing / rad) % 360) + 360) % 360,
+        towedBy,
+        player: id === player,
+      }
+    })
+  }
   /** Groups added with `placeEntities` / `spawnEntities`, oldest first. */
   get placedObjects(): { id: string; name: string; ids: string[] }[] {
     return this.placed.map((entry) => ({ ...entry, ids: [...entry.ids] }))
@@ -2323,6 +2386,13 @@ export class GameRuntime {
       20_000,
     )
     signal.throwIfAborted()
+    // The viewmodel itself (HK model, magazine, flash, laser): built and compiled now, so the
+    // first draw shows the pistol instead of the placeholder block while it loads.
+    this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
+    await within(this.sidearm.warm(this.renderer), 20_000)
+    signal.throwIfAborted()
+    // Casing meshes join the scene before the shader stage, so the first shot compiles nothing.
+    this.ensureCasingMeshes()
     // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
     // from high above shows, at the LODs the stream plans there.
     stage('terrain', 2)
@@ -2618,14 +2688,18 @@ export class GameRuntime {
   }
 
   /** One spent case out of the ejection port, to the shooter's right. */
+  /** The casing pool in the scene (created once, empty until shots eject casings). */
+  private ensureCasingMeshes(): void {
+    const casing = (this.sidearm?.preset ?? weaponPresets()[0])?.casing
+    if (!casing || this.casingMeshes) return
+    this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
+    this.view.root.add(this.casingMeshes.root)
+  }
   private ejectCasing(sim: Simulation, eyes: boolean): void {
     const casing = this.sidearm?.preset?.casing
     if (!casing) return
     if (!this.casingMotion) this.casingMotion = new CasingMotion(casing)
-    if (!this.casingMeshes) {
-      this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
-      this.view.root.add(this.casingMeshes.root)
-    }
+    this.ensureCasingMeshes()
     const q = this.camera.quaternion
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(q)
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
