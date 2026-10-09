@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Adding a vehicle no longer freezes the game. `GameRuntime.prewarmVehicle` loads and parses its GLBs (cached and reused), uploads one texture per frame and compiles its shaders with `compileAsync` before the vehicle exists; `placeVehicle` / `spawnVehicle` wait for that and show a small «Cargando vehículo…» badge. The game menu starts it as soon as a vehicle is picked. Vehicle colliders are a few boxes and stay synchronous.
+
 ### Changed
 
 - Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
