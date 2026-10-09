@@ -151,22 +151,49 @@ export async function waitForArea(
   let progressAt = begun
   let progress = world.loadProgress
   let quiet = 0
+  const stats = { ticks: 0, updateMs: 0, installMs: 0, flushMs: 0, timeline: [] as string[] }
+  let lastPending = -1
+  const report = () => {
+    try {
+      performance.mark('nabla:area-stats', { detail: stats })
+    } catch {
+      /* diagnostics only */
+    }
+  }
   while (true) {
     options.signal?.throwIfAborted()
+    stats.ticks++
+    let t = performance.now()
     world.update(position, [0, 0, 0])
+    stats.updateMs += performance.now() - t
+    t = performance.now()
     world.flushInstall(budget)
+    stats.installMs += performance.now() - t
+    t = performance.now()
     options.flush?.()
-    const pending = (world.cellStats?.pending ?? 0) + (options.pending?.() ?? 0)
+    stats.flushMs += performance.now() - t
+    const cells = world.cellStats?.pending ?? 0
+    const pending = cells + (options.pending?.() ?? 0)
+    if (pending !== lastPending) {
+      lastPending = pending
+      stats.timeline.push(`${Math.round(performance.now())}:${cells}+${pending - cells}`)
+    }
     options.onProgress?.(pending)
     // Two quiet ticks in a row: a finished cell can queue map meshes on the next tick.
     quiet = pending === 0 ? quiet + 1 : 0
-    if (quiet >= 2) return true
+    if (quiet >= 2) {
+      report()
+      return true
+    }
     if (world.loadProgress !== progress) {
       progress = world.loadProgress
       progressAt = performance.now()
     }
     const now = performance.now()
-    if (now - progressAt > stall || now - begun > cap) return false
+    if (now - progressAt > stall || now - begun > cap) {
+      report()
+      return false
+    }
     await waitTick(streamingDefaults.blockingPollMs, options.signal)
   }
 }
