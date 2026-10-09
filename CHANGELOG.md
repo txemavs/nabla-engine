@@ -17,6 +17,7 @@
 
 ### Changed
 
+- Engine much louder on every vehicle, music lower by default: `engineBusTrim` 1.6 → 6.4 (+12 dB on the Motor bus) and the default music level 50% → 30%. Measured in Chrome on the S3 at ~40 km/h with General 100 / Motor 100 / Música 50: engine bus RMS went from -32.5 dBFS (under the music, about -29 dBFS) to the level in the PR; the master limiter (-3 dB, 20:1) keeps the peaks from clipping. A mix saved in the browser (`nabla.audioMix`) still wins over the new default.
 - Engine over gear shifts on every vehicle: the engine bus has a fixed +4 dB trim (`engineBusTrim` 1.6) and car/truck clacks and the bike click play at half gain (`gearShiftLevel`, about −6 dB), so a shift is subtle under the engine. A limiter on master keeps the louder mix from clipping. Pistol reload clicks are unchanged.
 - Alto and Ultra now start with artistic clouds, 40% cloud cover, custom cloud pressure at 80% and sun flare at 80% (Destello del sol). Sky, sun, sea and clouds stay on. A saved Planeta choice (`nabla.planetVisual`) still wins. Sun light intensity is unchanged (3.2).
 
