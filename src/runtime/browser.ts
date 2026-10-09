@@ -47,8 +47,6 @@ import {
   type PerformanceSettings,
 } from './performance.js'
 import {
-  highPlanetVisual,
-  isHighQualityPreset,
   readSavedPlanetVisual,
   writeSavedPlanetVisual,
 } from './planet-visual.js'
