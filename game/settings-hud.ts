@@ -232,8 +232,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   // Planeta: the planet panel rows and the legacy Hora / Mar groups, one titled section each.
   const panelRoot = planetPanel.root
-  const rowOf = (id: string) =>
-    (doc.getElementById(id) ?? panelRoot.querySelector(`#${id}`))?.closest('label') ?? null
+  // The window joins the document only at the end of the mount: look in it and in the
+  // (detached) panel too.
+  const byId = (id: string) =>
+    doc.getElementById(id) ??
+    win.querySelector<HTMLElement>(`#${id}`) ??
+    panelRoot.querySelector<HTMLElement>(`#${id}`)
+  const rowOf = (id: string) => byId(id)?.closest('label') ?? null
   const rows = (...items: Array<HTMLElement | null>) =>
     items.filter((item): item is HTMLElement => item !== null)
   const subtitle = (text: string) => {
@@ -268,13 +273,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     time.append(timeGroup)
     place(time)
   }
-  const seaGroup = doc.getElementById('scene-sea')
+  const seaGroup = byId('scene-sea')
   const sea = fieldset('settings-planet-sea', 'Mar')
   if (seaGroup) {
     hideSubtitle(seaGroup)
     // The panel's sea switch replaces the legacy duplicate; the tide button sits before the level.
-    doc.getElementById('planet-sea')?.closest('label')?.setAttribute('hidden', '')
-    const tide = doc.getElementById('sea-tide')
+    byId('planet-sea')?.closest('label')?.setAttribute('hidden', '')
+    const tide = byId('sea-tide')
     if (tide) tide.textContent = 'Mareas'
     const level = rowOf('sea-range')
     relabel(level, 'Nivel m')
@@ -311,19 +316,19 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   // Rendimiento → Calidad: profile, FPS limit and resolution scale in one section, with the
   // «Aplicar calidad y reiniciar» button and its note last. The controls keep their ids and binds.
-  const quality = doc.getElementById('display-quality-section')
-  const performance = doc.getElementById('display-performance')
-  if (quality && performance) {
+  const quality = byId('display-quality-section')
+  const performanceGroup = byId('display-performance')
+  if (quality && performanceGroup) {
     const tail = [...quality.children].filter((el) => el.matches('button, p'))
-    quality.append(...[...performance.children].filter((el) => el.tagName !== 'LEGEND'), ...tail)
-    performance.hidden = true
+    quality.append(
+      ...[...performanceGroup.children].filter((el) => el.tagName !== 'LEGEND'),
+      ...tail,
+    )
+    performanceGroup.hidden = true
   }
 
   // Opciones → Volante y espejos: the driver's steering wheel and mirror glass adjustments.
-  const driverGroups = rows(
-    doc.getElementById('scene-steering-wheel'),
-    doc.getElementById('scene-mirrors'),
-  )
+  const driverGroups = rows(byId('scene-steering-wheel'), byId('scene-mirrors'))
   if (driverGroups.length) {
     const driver = fieldset('settings-options-driver', 'Volante y espejos')
     driver.append(...driverGroups)
@@ -333,10 +338,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // The legacy Planeta section (scene-controls) duplicates the sky / sun / clouds toggles the
   // planet panel already has; its Hora and Mar groups moved above. Keep it in the DOM (it holds
   // the listeners) but hidden.
-  const legacyPlanet = doc.getElementById('scene-planet')
+  const legacyPlanet = byId('scene-planet')
   if (legacyPlanet) {
     for (const id of ['scene-sky', 'scene-sun', 'scene-clouds']) {
-      const el = doc.getElementById(id)
+      const el = byId(id)
       if (el) el.hidden = true
     }
     legacyPlanet.hidden = true
