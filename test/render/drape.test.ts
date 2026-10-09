@@ -74,4 +74,30 @@ describe('buildDrapes', () => {
     )
     expect(drape.position.length).toBe(9)
   })
+
+  it('v2+ callers must drop ground-road asphalt before buildDrapes (ghost road guard)', () => {
+    // Mirrors the worker filter: ground-road asphalt is removed on v2+ before drapes are cut.
+    // Leaving those triangles in would float a roads-photo ghost over terrain.lidar.
+    const ground = quad(4, 1, {
+      category: 'Roads',
+      nablaCandidateRoad: 'asphalt',
+      atlasSurfaceRole: 'ground-road',
+    })
+    const bridge = quad(8, 1, {
+      category: 'Roads',
+      nablaCandidateRoad: 'asphalt',
+      atlasSurfaceRole: 'bridge-deck',
+    })
+    const terrain = quad(0, 1, { category: 'Terrain' })
+    const kept = [ground, bridge, terrain].filter(
+      (m) =>
+        m.metadata.nablaCandidateRoad !== 'asphalt' ||
+        m.metadata.atlasSurfaceRole !== 'ground-road',
+    )
+    const drapes = buildDrapes(kept, { width: 20, layers: new Set(['roads', 'terrain']) })
+    expect(drapes.map((d) => d.id).sort()).toEqual(['roads', 'terrain'])
+    const roads = drapes.find((d) => d.id === 'roads')!
+    // Only the bridge-deck quad (y=8) feeds the roads drape.
+    expect(roads.position[1]).toBeCloseTo(8 + GROUND_DRAPE_LIFT)
+  })
 })

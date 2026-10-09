@@ -3,7 +3,9 @@ import { convertPlanetGlbMesh } from './convert-mesh.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { LoadingManager, Mesh } from 'three'
 import {
+  applyCandidateAsphaltPolicy,
   isCandidateRoadKind,
+  planetCellVersion,
   planetCollisionChunks,
   planetGlbCacheKey,
   planetTileGlbLayers,
@@ -44,6 +46,8 @@ self.onmessage = async (
     buildings?: boolean
     /** Load `roads.files.collision` / `roadCandidates.layers.collision` as an inspect mesh. Default off. */
     inspectRoadCollision?: boolean
+    /** Show v2+ OSM road asphalt as an inspect-only mesh (visible, no collision). Default off. */
+    osmRoads?: boolean
     /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */
     drape?: { layers: string[]; width: number }
     cancel?: boolean
@@ -168,6 +172,13 @@ self.onmessage = async (
       }
     }
     if (roadErrors.length) console.warn('Planet road layers:', manifest.id, roadErrors)
+    // v2+ terrain.lidar already has the ground road. The separate OSM road asphalt (ground-road,
+    // elevated-or-unresolved, untagged) is dropped here — before the orthophoto drape and collision
+    // — so no ghost road plane floats over the fused terrain or collides; with `osmRoads` it stays
+    // as an inspect-only mesh. Bridge-deck asphalt and supports always stay (bridges have priority).
+    applyCandidateAsphaltPolicy(meshes, planetCellVersion(manifest), {
+      osmRoads: event.data.osmRoads === true,
+    })
     // The orthophoto drape: geometry cut here, photo downloaded, verified and decoded here, so the
     // main thread only wraps the arrays. A photo failure leaves the cell playable without it.
     let drape: PlanetPayload['drape']
@@ -186,6 +197,12 @@ self.onmessage = async (
       if (layers.length)
         try {
           drape.photo = await loadPhoto(directory + manifest.photo.path, manifest.photo, phase)
+          if (manifest.roofPhoto)
+            drape.roofPhoto = await loadPhoto(
+              directory + manifest.roofPhoto.path,
+              manifest.roofPhoto,
+              phase,
+            )
         } catch (error) {
           drape.error = String(error)
         }
@@ -207,6 +224,7 @@ self.onmessage = async (
       ...meshes.flatMap((m) => (m.map ? [m.map] : [])),
       ...(drape?.layers.flatMap((d) => [d.position.buffer, d.uv.buffer]) ?? []),
       ...(drape?.photo ? [drape.photo] : []),
+      ...(drape?.roofPhoto ? [drape.roofPhoto] : []),
     ] as Transferable[]
     self.postMessage(
       {

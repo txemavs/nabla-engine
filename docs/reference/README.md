@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **356 modules; 3801 executable function definitions**.
+Coverage: **356 modules; 3809 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -21,7 +21,7 @@ Coverage: **356 modules; 3801 executable function definitions**.
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
 | [game/host-steering-wheel.ts](game/host-steering-wheel.ts.md) | 6 |
 | [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
-| [game/layers-ui.ts](game/layers-ui.ts.md) | 10 |
+| [game/layers-ui.ts](game/layers-ui.ts.md) | 11 |
 | [game/light-ui.ts](game/light-ui.ts.md) | 9 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 21 |
@@ -142,7 +142,7 @@ Coverage: **356 modules; 3801 executable function definitions**.
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
 | [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 21 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
-| [src/planet/contract.ts](src/planet/contract.ts.md) | 28 |
+| [src/planet/contract.ts](src/planet/contract.ts.md) | 31 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
 | [src/planet/extract/multipolygon.ts](src/planet/extract/multipolygon.ts.md) | 8 |
 | [src/planet/extract/source.ts](src/planet/extract/source.ts.md) | 4 |
@@ -217,7 +217,7 @@ Coverage: **356 modules; 3801 executable function definitions**.
 | [src/render/planet/clouds.ts](src/render/planet/clouds.ts.md) | 4 |
 | [src/render/planet/convert-mesh.ts](src/render/planet/convert-mesh.ts.md) | 2 |
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
-| [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 5 |
+| [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 8 |
 | [src/render/planet/geometry.ts](src/render/planet/geometry.ts.md) | 11 |
 | [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 21 |
 | [src/render/planet/horizon.ts](src/render/planet/horizon.ts.md) | 36 |
@@ -244,7 +244,7 @@ Coverage: **356 modules; 3801 executable function definitions**.
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 29 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 124 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 125 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
 | [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |

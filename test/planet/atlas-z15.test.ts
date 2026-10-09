@@ -18,6 +18,11 @@ import {
   type PlanetManifest,
 } from '../../src/planet/contract.js'
 import { fetchTileManifest, StaticTileError } from '../../src/render/planet/static-tiles.js'
+import {
+  applyCandidateAsphaltPolicy,
+  planetTileGlbLayers,
+  tagCandidateRoadMesh,
+} from '../../src/planet/index.js'
 import type { MapTile } from '../../src/scene/mercator.js'
 
 // Real metadata of the Atlas cell 15/16211/12003 (files stay on the Atlas disk; only JSON is a fixture).
@@ -80,10 +85,15 @@ describe('Atlas Z15 package adapter', () => {
     const engine = adaptAtlasManifest(manifest(), p)
     expect(engine.files.terrain.path).toBe('terrain-ad8550fe0459ce7d.glb')
     expect(engine.photo).toMatchObject({
-      path: 'ground-84ad1def609c2916.webp',
+      path: 'ground-lots-ec58b341916d2b55.webp',
       sizePx: 4096,
       level: 'full',
-      bytes: 847876,
+      bytes: 520676,
+    })
+    expect(engine.roofPhoto).toMatchObject({
+      path: 'roof-0474668251b791ff.webp',
+      sizePx: 5120,
+      level: 'full',
     })
     const lidar = adaptAtlasManifest(manifest(), p, { relief: 'lidar', photo: 'lo' })
     expect(lidar.files.terrain).toMatchObject({
@@ -92,7 +102,8 @@ describe('Atlas Z15 package adapter', () => {
       sha256: '50074696349a001214e09797edb03108c7484c1e439ae2169c5eb24fdd939965',
     })
     expect(lidar.files['buildings-osm'].path).toBe('buildings-osm-8b7a0e12579eb3ab.glb')
-    expect(lidar.photo).toMatchObject({ path: 'ground-lo-93fed02bb5c4abd3.webp', level: 'lo' })
+    expect(lidar.photo).toMatchObject({ path: 'ground-lots-lo-ee41398d57296b08.webp', level: 'lo' })
+    expect(lidar.roofPhoto).toMatchObject({ path: 'roof-lo-6059293a7ebd97a3.webp', level: 'lo' })
     expect(adaptAtlasManifest(manifest(), p, { photo: 'none' }).photo).toBeUndefined()
     expect(engine.osmSnapshot).toMatchObject({
       path: 'osm-3f3939c12c359aab.json.gz',
@@ -312,7 +323,8 @@ describe('fetchTileManifest with Atlas packages', () => {
     const calls = serve()
     const m = await fetchTileManifest(tile, { ...options, atlas: { relief: 'lidar' } })
     expect(m?.files.terrain.path).toBe('terrain-lidar-50074696349a0012.glb')
-    expect(m?.photo?.path).toBe('ground-84ad1def609c2916.webp')
+    expect(m?.photo?.path).toBe('ground-lots-ec58b341916d2b55.webp')
+    expect(m?.roofPhoto?.path).toBe('roof-0474668251b791ff.webp')
     expect(calls).toEqual([
       '/terrain/z/15/16211/12003/manifest.json',
       '/terrain/z/15/16211/12003/z15-059a2665959db8a9.json',
@@ -383,7 +395,7 @@ describe('cell versions', () => {
     p.files = p.files.filter((f: { role: string }) => f.role !== 'terrain.lidar')
     delete p.terrain.lidar
     expect(() => adaptAtlasManifest(m, validateAtlasZ15Package(p, tile))).toThrow(
-      /version 2 has no unified terrain/,
+      /version 2\+ has no unified terrain/,
     )
   })
 
@@ -394,11 +406,43 @@ describe('cell versions', () => {
     )
   })
 
+  it('renders a version 4 (road-conformed) cell from its unified terrain like v2/v3', () => {
+    for (const relief of [undefined, 'engine', 'lidar'] as const) {
+      const { m, p } = v2()
+      m.cellVersion = 4
+      p.cellVersion = 4
+      const adapted = adaptAtlasManifest(m, validateAtlasZ15Package(p, tile), { relief })
+      expect(planetCellVersion(validatePlanetManifest(adapted, tile))).toBe(4)
+      expect(adapted.files.terrain.path).toBe('terrain-lidar-50074696349a0012.glb')
+    }
+  })
+
   it('refuses cell versions this engine does not know', () => {
-    for (const bad of [3, 0, '2', 1.5]) {
+    for (const bad of [5, 0, '2', 1.5]) {
       const m = manifest()
       ;(m as unknown as { cellVersion: unknown }).cellVersion = bad
       expect(() => validatePlanetManifest(m, tile)).toThrow(/Unsupported cell version/)
+    }
+  })
+})
+
+describe('GPS keeps its OSM road data when the OSM road mesh is hidden', () => {
+  it('osm.snapshot is not a mesh layer, so the asphalt policy cannot remove it', () => {
+    const p = validateAtlasZ15Package(pkg(), tile)
+    for (const relief of ['engine', 'lidar'] as const) {
+      const m = adaptAtlasManifest(manifest(), p, { relief })
+      const v3 = { ...m, cellVersion: 3 as const }
+      // The GPS / navigation source is still published for the cell…
+      expect(v3.osmSnapshot?.path).toBe('osm-3f3939c12c359aab.json.gz')
+      // …and is never one of the GLB layers the worker loads (and the policy filters).
+      const paths = planetTileGlbLayers(v3).map((l) => l.file.path)
+      expect(paths).not.toContain(v3.osmSnapshot!.path)
+      // Hiding every OSM road mesh leaves the manifest's GPS source untouched.
+      applyCandidateAsphaltPolicy(
+        [{ metadata: tagCandidateRoadMesh({ atlasSurfaceRole: 'ground-road' }, 'asphalt') }],
+        3,
+      )
+      expect(v3.osmSnapshot?.path).toBe('osm-3f3939c12c359aab.json.gz')
     }
   })
 })

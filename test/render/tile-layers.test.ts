@@ -23,6 +23,8 @@ describe('tile layers', () => {
   it('hides the road mesh and its photo drape but keeps the ground photo under it', () => {
     setHiddenTileLayers(['road'])
     expect(tileMeshHidden({ category: 'Roads' })).toBe(true)
+    // The opt-in OSM road inspect mesh hides with Carretera too.
+    expect(tileMeshHidden({ category: 'RoadInspect' })).toBe(true)
     expect(tileMeshHidden({ drape: 'roads' })).toBe(true)
     expect(tileMeshHidden({ drape: 'terrain' })).toBe(false)
     expect(tileMeshHidden({ category: 'Terrain' })).toBe(false)

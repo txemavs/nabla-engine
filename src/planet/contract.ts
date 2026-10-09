@@ -27,8 +27,12 @@ export const PLANET_GEOMETRY_REVISION = 'native-surfaces-v5'
  * Cell versions this engine renders. A manifest without `cellVersion` is version 1 (every cell
  * published before the Atlas unified pipeline). Version 2 cells (Atlas `terrain-unified`, 2026-10)
  * carry roads and tunnel openings inside the terrain GLB and replace v1 cells at the same URL.
+ * Version 3 is the same ground model after the Atlas surface-cleanup pass (floating fragments
+ * removed, terrain fused under the road). Version 4 conforms the terrain to the OSM road profiles
+ * (level/crowned carriageway, LiDAR artefacts removed, approaches ramped to the deck ends); the
+ * road is the terrain itself, so like v2/v3 only bridge-deck asphalt and supports are loaded.
  */
-export const PLANET_CELL_VERSIONS = [1, 2] as const
+export const PLANET_CELL_VERSIONS = [1, 2, 3, 4] as const
 export type PlanetCellVersion = (typeof PLANET_CELL_VERSIONS)[number]
 
 const SHA256 = /^[a-f0-9]{64}$/
@@ -138,10 +142,15 @@ export interface PlanetManifest {
   /** Present when an external producer (nabla-atlas) published a Z15 package next to this manifest. */
   z15Package?: PlanetZ15PackageRef
   /**
-   * Orthophoto draped over the tile (the compatibility composite of an Atlas package).
+   * Orthophoto draped over the ground (prefer Atlas `ground.lots`: roofs masked out).
    * Set only by the Atlas adapter; the standard preparation service never writes it.
    */
   photo?: PlanetPhoto
+  /**
+   * Lean-corrected roof orthophoto (`roof` / `roof.lo`). Used for the roofs drape so
+   * building tops stay aligned; the ground photo must not carry roof pixels onto roads.
+   */
+  roofPhoto?: PlanetPhoto
   /** Optional candidate asphalt / supports / collision (`#88` shape). Absent on engine-only tiles. */
   roads?: PlanetCandidateRoads
   /** Atlas `#49` shape. Normalized into `roads` by `readCandidateRoads`. */
@@ -167,6 +176,12 @@ export interface PlanetPhoto {
   sha256: string
   sizePx: number
   level: 'full' | 'lo'
+  /**
+   * Atlas texture frame. `cell` covers the tile exactly; `cell+margin:0.125` adds a border of
+   * 1/8 CELL each side (roof PRIMARY is 5120² = 4096 cell px + 512 px each side). Drape UVs must
+   * map into the inner 80 % or roofs sample the transparent margin / a neighbour's roof.
+   */
+  frame?: string
 }
 export interface PlanetMesh {
   name: string
@@ -190,7 +205,10 @@ export interface PlanetPayload {
   /** Orthophoto drape prepared by the worker: triangles per layer, plus the decoded photo. */
   drape?: {
     layers: { id: string; position: Float32Array; uv: Float32Array }[]
+    /** Ground / roads / land-use photo (`ground.lots` when available). */
     photo?: ImageBitmap
+    /** Lean-corrected roofs-only photo; falls back to `photo` when absent. */
+    roofPhoto?: ImageBitmap
     error?: string
   }
   /** Worker milliseconds per phase (download, SHA-256, GLB parse, photo decode, collision build). */
@@ -238,6 +256,77 @@ export function isInspectRoadCollisionMesh(
 
 /** Atlas asphalt primitive role on an elevated structure (`extras.atlasSurfaceRole`). */
 export const BRIDGE_DECK_ROLE = 'bridge-deck'
+
+/** Atlas asphalt primitive role on ground-level roadway (`extras.atlasSurfaceRole`). */
+export const GROUND_ROAD_ROLE = 'ground-road'
+
+/** Atlas asphalt role for viaducts / ramps not fused into `terrain.lidar`. */
+export const ELEVATED_OR_UNRESOLVED_ROAD_ROLE = 'elevated-or-unresolved-road'
+
+/**
+ * `userData.category` of OSM road asphalt shown only for inspection (`osmRoads` opt-in): drawn with
+ * its own material, never collides, never draped, never in the cockpit chart.
+ */
+export const OSM_ROAD_INSPECT_CATEGORY = 'RoadInspect'
+
+/**
+ * What the engine does with one candidate asphalt mesh:
+ * - `keep`: render and collide (category Roads).
+ * - `inspect`: render only, no collision (category {@link OSM_ROAD_INSPECT_CATEGORY}).
+ * - `drop`: not installed at all.
+ *
+ * Bridges have priority and are always `keep`: `bridge-deck` asphalt, and every non-asphalt road
+ * layer (supports: piers, fascias, abutments, the deck wall). Version 1 cells publish one untagged
+ * asphalt mesh ("Cell road surface") that is the road surface AND the bridge decks, and their
+ * terrain has no fused road, so it stays `keep` (as in Euskadi Online).
+ *
+ * Version 2+ cells carry the ground road inside `terrain.lidar`; every other asphalt role
+ * (`ground-road`, `elevated-or-unresolved-road`, untagged) is the separate OSM road layer. By
+ * default it is `drop` (no floating plane, no collider); with `osmRoads` it is `inspect`.
+ * The OSM data itself (`osm.snapshot`, GPS / navigation) is a different file and always loads.
+ */
+export function candidateAsphaltDisposition(
+  cellVersion: PlanetCellVersion,
+  metadata: Record<string, any> | undefined,
+  options: { osmRoads?: boolean } = {},
+): 'keep' | 'inspect' | 'drop' {
+  if (cellVersion < 2) return 'keep'
+  // Supports and non-asphalt layers are bridges / structure: never filtered here.
+  if (metadata?.nablaCandidateRoad && metadata.nablaCandidateRoad !== 'asphalt') return 'keep'
+  if (metadata?.atlasSurfaceRole === BRIDGE_DECK_ROLE) return 'keep'
+  return options.osmRoads ? 'inspect' : 'drop'
+}
+
+/**
+ * Whether a candidate asphalt mesh renders and collides by default (see
+ * {@link candidateAsphaltDisposition}): every mesh on version 1 cells; on version 2+ only
+ * `bridge-deck` asphalt and non-asphalt road layers (supports).
+ */
+export function loadsCandidateAsphaltOnCell(
+  cellVersion: PlanetCellVersion,
+  metadata: Record<string, any> | undefined,
+): boolean {
+  return candidateAsphaltDisposition(cellVersion, metadata) === 'keep'
+}
+
+/**
+ * Apply {@link candidateAsphaltDisposition} to a cell's meshes in place: drop the `drop` ones and
+ * move the `inspect` ones to {@link OSM_ROAD_INSPECT_CATEGORY}. Returns the same array.
+ */
+export function applyCandidateAsphaltPolicy<T extends { metadata: Record<string, any> }>(
+  meshes: T[],
+  cellVersion: PlanetCellVersion,
+  options: { osmRoads?: boolean } = {},
+): T[] {
+  for (let i = meshes.length - 1; i >= 0; i--) {
+    const m = meshes[i]!
+    if (m.metadata.nablaCandidateRoad !== 'asphalt') continue
+    const disposition = candidateAsphaltDisposition(cellVersion, m.metadata, options)
+    if (disposition === 'drop') meshes.splice(i, 1)
+    else if (disposition === 'inspect') m.metadata.category = OSM_ROAD_INSPECT_CATEGORY
+  }
+  return meshes
+}
 
 /**
  * Shadow casters among planet meshes. Terrain and buildings always cast. Atlas bridge supports

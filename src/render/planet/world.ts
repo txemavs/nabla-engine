@@ -2,6 +2,8 @@ import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
 import { placeLabel } from './place-label.js'
 import {
   PLANET_GEOMETRY_REVISION,
+  candidateAsphaltDisposition,
+  planetCellVersion,
   planetTileRevision,
   validPlanetPlaces,
   validatePlanetManifest,
@@ -59,6 +61,13 @@ export interface PlanetSourceOptions {
    * The mesh is never installed as driving collision.
    */
   inspectRoadCollision?: boolean
+  /**
+   * Show the separate OSM road asphalt of version 2+ cells (`ground-road`,
+   * `elevated-or-unresolved-road`) for inspection: drawn, never a collider. Default off (not drawn,
+   * not loaded into collision). Bridges (`bridge-deck`, supports) always render and collide, and
+   * the OSM snapshot for the GPS always loads. URL `osmRoads=1` in the game.
+   */
+  osmRoads?: boolean
 }
 import { PlanetHorizon } from './horizon.js'
 import {
@@ -94,6 +103,8 @@ import {
   GROUND_DRAPE_LIFT,
   ROOF_DRAPE_LIFT,
   buildDrapes,
+  drapeMaterialAlpha,
+  photoFrameTransform,
   type DrapeGeometry,
 } from './drape.js'
 import { PLACE_LABEL_CATEGORY, tileMeshHidden } from './tile-layers.js'
@@ -151,7 +162,12 @@ async function loadPackagePhoto(
  * and the player look sunk into the drawn road. polygonOffset alone wins the depth test there.
  */
 export { ROOF_DRAPE_LIFT, GROUND_DRAPE_LIFT }
-function dressSatelliteRoofs(
+/**
+ * Dress a z15 cell with photo drapes: the ground photo (`ground.lots` when the package has it) on
+ * terrain/roads, and the dedicated lean-corrected roof photo (`roof`, frame `cell+margin:0.125`) on
+ * roofs. Exported for the roof-photo regression test.
+ */
+export function dressSatelliteRoofs(
   group: THREE.Group,
   manifest: PlanetManifest,
   changed: () => void,
@@ -161,7 +177,7 @@ function dressSatelliteRoofs(
   onPhotoError?: (error: unknown) => void,
   mark?: (name: string, ms: number) => void,
   /** Drape geometry and photo already prepared by the worker; absent = build and fetch here. */
-  prepared?: { drapes: DrapeGeometry[]; photo?: ImageBitmap },
+  prepared?: { drapes: DrapeGeometry[]; photo?: ImageBitmap; roofPhoto?: ImageBitmap },
 ) {
   const tile = manifest.tile
   if (tile.z !== 15 || imagery === 'none') return
@@ -207,13 +223,33 @@ function dressSatelliteRoofs(
   const ctx = canvas?.getContext('2d') ?? undefined
   const texture: THREE.Texture = canvas ? new THREE.CanvasTexture(canvas) : new THREE.Texture()
   texture.colorSpace = THREE.SRGBColorSpace
+  const roofTextureMap: THREE.Texture = packaged ? new THREE.Texture() : texture
+  if (packaged) roofTextureMap.colorSpace = THREE.SRGBColorSpace
+  // Roof photo frame is `cell+margin:0.125` (5120² = 4096 cell px + 512 px each side): map cell
+  // UVs into the inner 80 %. Without it roofs sample the transparent (RGB≈0) margin or the wrong
+  // roof and render black / untextured.
+  const useRoofImage = (frame: string | undefined) => {
+    const { repeat, offset } = photoFrameTransform(frame)
+    roofTextureMap.repeat.set(repeat, repeat)
+    roofTextureMap.offset.set(offset, offset)
+    roofTextureMap.userData.frame = frame ?? 'cell'
+    // Fallback to the ground photo (no dedicated roof image) stays opaque.
+    if (frame === 'cell' || !frame)
+      for (const mesh of draped)
+        if (mesh.userData.drape === 'roofs') {
+          const material = mesh.material as THREE.MeshStandardMaterial
+          material.transparent = false
+          material.alphaTest = 0
+          material.needsUpdate = true
+        }
+  }
   const draped: THREE.Mesh[] = []
   for (const { id, position, uv } of buckets) {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
     geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
     const material = new THREE.MeshStandardMaterial({
-      map: texture,
+      map: id === 'roofs' ? roofTextureMap : texture,
       color: id === 'roads' ? ROADS_DRAPE_TINT : '#ffffff',
       roughness: 1,
       metalness: 0,
@@ -221,6 +257,7 @@ function dressSatelliteRoofs(
       polygonOffsetFactor: drapeBias(id),
       polygonOffsetUnits: drapeBias(id),
       depthWrite: false,
+      ...drapeMaterialAlpha(id, roofTextureMap !== texture),
     })
     // Asphalt contrast (draw time) before shadow setup, which chains onBeforeCompile. The terrain
     // photo gets it only through its cell's OSM road mask (relief=lidar has no road meshes).
@@ -250,16 +287,34 @@ function dressSatelliteRoofs(
     texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
     texture.anisotropy = 8
     texture.needsUpdate = true
+    const roofBmp = prepared.roofPhoto ?? prepared.photo
+    if (roofTextureMap !== texture) {
+      useRoofImage(prepared.roofPhoto ? manifest.roofPhoto?.frame : 'cell')
+      roofTextureMap.image = roofBmp
+      roofTextureMap.flipY = false
+      roofTextureMap.wrapS = roofTextureMap.wrapT = THREE.ClampToEdgeWrapping
+      roofTextureMap.anisotropy = 8
+      roofTextureMap.needsUpdate = true
+    }
     show()
     mark?.('photoShown', performance.now())
     return
   }
   if (packaged) {
-    loadPackagePhoto(photoUrl!, manifest.photo!, mark)
-      .then((bitmap) => {
+    const groundUrl = photoUrl!
+    const roofUrl = manifest.roofPhoto
+      ? groundUrl.slice(0, groundUrl.lastIndexOf('/') + 1) + manifest.roofPhoto.path
+      : undefined
+    Promise.all([
+      loadPackagePhoto(groundUrl, manifest.photo!, mark),
+      manifest.roofPhoto && roofUrl
+        ? loadPackagePhoto(roofUrl, manifest.roofPhoto, mark)
+        : Promise.resolve(undefined),
+    ])
+      .then(([bitmap, roofBmp]) => {
         if (group.userData.disposed) {
-          // The tile was evicted while the photo downloaded.
           bitmap.close()
+          roofBmp?.close()
           return
         }
         texture.image = bitmap
@@ -267,6 +322,14 @@ function dressSatelliteRoofs(
         texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
         texture.anisotropy = 8
         texture.needsUpdate = true
+        if (roofTextureMap !== texture) {
+          useRoofImage(roofBmp ? manifest.roofPhoto?.frame : 'cell')
+          roofTextureMap.image = roofBmp ?? bitmap
+          roofTextureMap.flipY = false
+          roofTextureMap.wrapS = roofTextureMap.wrapT = THREE.ClampToEdgeWrapping
+          roofTextureMap.anisotropy = 8
+          roofTextureMap.needsUpdate = true
+        }
         show()
         mark?.('photoShown', performance.now())
       })
@@ -980,6 +1043,7 @@ export class PlanetWorld {
         manifest,
         buildings: this.buildings,
         inspectRoadCollision: this.sourceOptions.inspectRoadCollision === true,
+        osmRoads: this.sourceOptions.osmRoads === true,
         drape:
           imagery === 'package' && manifest.photo && tile.z === 15
             ? { layers: [...projectedLayers], width: planetTileFrame(tile).width }
@@ -998,7 +1062,17 @@ export class PlanetWorld {
       .toArray()
     group.position.fromArray(position)
     group.quaternion.fromArray(rotation)
+    const cellVersion = planetCellVersion(manifest)
     for (const data of payload.meshes) {
+      // The worker already applied the OSM road policy; this guards payloads from elsewhere.
+      // Bridge-deck asphalt and supports always stay (bridges have priority).
+      if (
+        data.metadata.nablaCandidateRoad === 'asphalt' &&
+        candidateAsphaltDisposition(cellVersion, data.metadata, {
+          osmRoads: this.sourceOptions.osmRoads === true,
+        }) === 'drop'
+      )
+        continue
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute('position', new THREE.BufferAttribute(data.position, 3))
       geometry.setAttribute('normal', new THREE.BufferAttribute(data.normal, 3))
@@ -1060,7 +1134,11 @@ export class PlanetWorld {
         if (name === 'photoShown') timing.atPhotoShown = ms
         else (timing as Record<string, number>)[name] = ms
       },
-      payload.drape && { drapes: payload.drape.layers, photo: payload.drape.photo },
+      payload.drape && {
+        drapes: payload.drape.layers,
+        photo: payload.drape.photo,
+        roofPhoto: payload.drape.roofPhoto,
+      },
     )
     if (payload.drape?.error) {
       console.warn('Foto del terreno no disponible · ' + payload.drape.error)

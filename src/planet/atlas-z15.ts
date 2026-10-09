@@ -262,13 +262,13 @@ export function adaptAtlasManifest(
       `Atlas package cell version ${pkg.cellVersion ?? 1} does not match manifest.json (${version})`,
     )
   const adapted: PlanetManifest = structuredClone(manifest)
-  // v2: the unified terrain (role terrain.lidar) is the cell's ground, whatever `relief` asks.
-  if (options.relief === 'lidar' || version === 2) {
+  // v2+: the unified terrain (role terrain.lidar) is the cell's ground, whatever `relief` asks.
+  if (options.relief === 'lidar' || version >= 2) {
     const lidar = atlasFile(pkg, 'terrain.lidar')
     if (!lidar || lidar.path !== pkg.terrain.lidar)
       throw new Error(
-        version === 2
-          ? 'Atlas cell version 2 has no unified terrain (terrain.lidar)'
+        version >= 2
+          ? 'Atlas cell version 2+ has no unified terrain (terrain.lidar)'
           : 'Atlas package has no LiDAR terrain (relief=lidar)',
       )
     adapted.files.terrain = {
@@ -291,14 +291,32 @@ export function adaptAtlasManifest(
     }
   const quality = options.photo ?? 'full'
   if (quality !== 'none') {
-    const file = atlasFile(pkg, quality === 'full' ? 'ground.composite' : 'ground.composite.lo')
-    if (file?.sizePx && file.frame === 'cell')
+    // PRIMARY: ground.lots has building roofs punched out (empty lots). Fall back to the
+    // compatibility composite only when lots are missing — composite still paints roof pixels
+    // onto the road (ortho lean), which is the "techo suelto" defect.
+    const groundRole = quality === 'full' ? 'ground.lots' : 'ground.lots.lo'
+    const groundFallback = quality === 'full' ? 'ground.composite' : 'ground.composite.lo'
+    const ground = atlasFile(pkg, groundRole) ?? atlasFile(pkg, groundFallback)
+    if (ground?.sizePx && ground.frame === 'cell')
       adapted.photo = {
-        path: file.path,
-        bytes: file.bytes,
-        sha256: file.sha256,
-        sizePx: file.sizePx,
+        path: ground.path,
+        bytes: ground.bytes,
+        sha256: ground.sha256,
+        sizePx: ground.sizePx,
         level: quality,
+        frame: ground.frame,
+      } satisfies PlanetPhoto
+    // Lean-corrected roofs-only photo for the roofs drape (separate from the ground photo).
+    const roofRole = quality === 'full' ? 'roof' : 'roof.lo'
+    const roof = atlasFile(pkg, roofRole)
+    if (roof?.sizePx)
+      adapted.roofPhoto = {
+        path: roof.path,
+        bytes: roof.bytes,
+        sha256: roof.sha256,
+        sizePx: roof.sizePx,
+        level: quality,
+        frame: roof.frame,
       } satisfies PlanetPhoto
   }
   // Re-run the engine's own validation on the result (path names, hashes, sizes).

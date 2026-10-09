@@ -143,6 +143,8 @@ try {
       atlas: config.atlas,
       imagery: config.atlas.photo === 'none' ? 'none' : 'package',
       inspectRoadCollision: config.inspectRoadCollision,
+      // OSM road asphalt: hidden + non-colliding unless &osmRoads=1 (bridges always drawn).
+      osmRoads: config.osmRoads,
     },
     onDiagnostics: params.has('diagnostics')
       ? (sample) =>

@@ -36,6 +36,16 @@ export function initialHiddenLayers(
     : parseLayerSpec(spec, defaults)
 }
 
+/**
+ * `osmRoads=1` (also `true`/`on`/bare `osmRoads`) opts in to drawing the separate OSM road asphalt of
+ * version 2+ cells for inspection. It never collides; default (absent, `0`, `false`, `off`) hides it.
+ * The OSM data for the GPS loads either way.
+ */
+export function osmRoadsRequested(search: string = location.search): boolean {
+  const value = new URLSearchParams(search).get('osmRoads')
+  return value !== null && !['0', 'false', 'off', 'no'].includes(value.trim().toLowerCase())
+}
+
 /** HUD text while the road layer ('Carretera') is hidden; undefined when roads are drawn. */
 export function roadHiddenHint(hidden: readonly string[]): string | undefined {
   return hidden.includes('road') ? ROAD_HIDDEN_HINT : undefined

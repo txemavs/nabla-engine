@@ -49,6 +49,7 @@ import {
   type LatLon,
 } from '@nabla/engine/planet/lat-lon'
 import { hostVehiclesFromSearch, viteHostVehicles, type HostVehicle } from './host-vehicles.js'
+import { osmRoadsRequested } from './layers-ui.js'
 import { hostPortalsFromSearch, viteHostPortals, type HostPortal } from './host-portals.js'
 
 /**
@@ -116,6 +117,11 @@ export interface TerrainConfig {
   playerMode: 'hover' | 'walk'
   /** `&inspectRoads=collision`: show the candidate collision GLB. Not the driving collider. */
   inspectRoadCollision: boolean
+  /**
+   * `&osmRoads=1`: draw the v2+ OSM road asphalt for inspection (never collides). Default false:
+   * only bridges (bridge-deck, supports) render and collide; the GPS OSM data loads either way.
+   */
+  osmRoads: boolean
   /** `&time=`: minutes after local midnight, or `live` for the real clock. Undefined keeps `&sky=`. */
   timeOfDay?: number | 'live'
   /** `&timeSpeed=`: live clock multiplier, 1–24. Undefined keeps 1×. */
@@ -240,6 +246,7 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
     atlas: { relief, photo },
     playerMode: player,
     inspectRoadCollision: params.get('inspectRoads') === 'collision',
+    osmRoads: osmRoadsRequested(search),
     timeOfDay: params.has('time') ? parseTimeParam(params.get('time')!) : undefined,
     timeSpeed: params.has('timeSpeed') ? parseTimeSpeedParam(params.get('timeSpeed')!) : undefined,
     seaLevel: params.has('sea') ? parseSeaParam(params.get('sea')!) : undefined,
