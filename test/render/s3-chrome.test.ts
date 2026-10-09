@@ -154,6 +154,20 @@ describe('S3 chrome', () => {
     expect(glass.envMapIntensity).toBeCloseTo(carReflectionOptions.intensity * 0.6)
   })
 
+  it('lamp lenses keep their emissive colour under the sky fill (rear signals, brake)', () => {
+    // CarLights only switches the intensity of these lenses; their colour is set once.
+    const signal = new THREE.MeshStandardMaterial({ emissive: '#ff7300', emissiveIntensity: 0 })
+    const brake = new THREE.MeshStandardMaterial({ emissive: '#ff0800', emissiveIntensity: 0 })
+    const chrome = new THREE.MeshStandardMaterial({ emissive: '#ffffff', metalness: 1 })
+    chrome.userData = { nabla: { reflective: true } }
+    applyReflectionEnvironment(model([signal, brake, chrome]), carReflectionOptions)
+    expect(signal.emissive.getHexString()).toBe('ff7300')
+    expect(brake.emissive.getHexString()).toBe('ff0800')
+    expect(signal.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
+    // Chrome still never glows.
+    expect(chrome.emissive.getHex()).toBe(0)
+  })
+
   it('fades the chrome reflections with the daylight, dusk included', () => {
     const { nightThreshold, reflectionNightLevel, reflectionFullDay } = lightingDefaults
     expect(reflectionLevel(1)).toBe(1)

@@ -166,6 +166,8 @@ export function applyReflectionEnvironment(
   }: { minMetalness?: number; intensity?: number; fill?: number } = {},
 ): ReflectionEnvironment {
   const materials = new Set<THREE.MeshStandardMaterial>()
+  /** Full reflections (chrome, glass); the rest only take the sky fill. */
+  const mirrors = new Set<THREE.MeshStandardMaterial>()
   /** Base intensity per material before the daylight level. */
   const base = new Map<THREE.MeshStandardMaterial, number>()
   root.traverse((object) => {
@@ -179,6 +181,7 @@ export function applyReflectionEnvironment(
         (material.userData as { nabla?: { reflective?: boolean } }).nabla?.reflective
       ) {
         materials.add(standard)
+        mirrors.add(standard)
         base.set(standard, intensity * scale(standard))
       } else if (
         fill > 0 &&
@@ -195,9 +198,13 @@ export function applyReflectionEnvironment(
   for (const material of materials) {
     material.envMap = texture
     material.envMapIntensity = base.get(material)!
-    // Nothing may glow: chrome reads bright from its base colour and reflection, never emissive.
-    material.emissive.set(0, 0, 0)
-    material.emissiveIntensity = 0
+    // Chrome reads bright from its base colour and reflection, never emissive. Fill-only materials
+    // keep their emissive: lamp lenses (rear signals, brake, reverse, position) set their colour
+    // once and only switch the intensity, so clearing it here left them dark.
+    if (mirrors.has(material)) {
+      material.emissive.set(0, 0, 0)
+      material.emissiveIntensity = 0
+    }
     shadeEnvironment(material)
     material.needsUpdate = true
   }
