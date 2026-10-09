@@ -102,6 +102,7 @@ import {
   DRAPE_LAYERS,
   GROUND_DRAPE_LIFT,
   ROOF_DRAPE_LIFT,
+  bakedDrapeLayers,
   buildDrapes,
   drapeMaterialAlpha,
   photoFrameTransform,
@@ -182,14 +183,20 @@ export function dressSatelliteRoofs(
   const tile = manifest.tile
   if (tile.z !== 15 || imagery === 'none') return
   if (imagery === 'package' && (!manifest.photo || !photoUrl)) return
-  const baked = new Set<string>()
+  const baked = bakedDrapeLayers(
+    group.children.flatMap((node) => {
+      const mesh = node as THREE.Mesh
+      if (!mesh.isMesh) return []
+      const material = mesh.material as THREE.MeshStandardMaterial
+      return [{ name: mesh.name, metadata: mesh.userData, hasMap: !!material.map }]
+    }),
+    planetCellVersion(manifest),
+  )
   for (const node of group.children) {
     const mesh = node as THREE.Mesh
     if (!mesh.isMesh || mesh.name !== 'Drape') continue
-    const id = String(mesh.userData.drape ?? '')
     const material = mesh.material as THREE.MeshStandardMaterial
-    if (id && material.map) baked.add(id)
-    else {
+    if (!mesh.userData.drape || !material.map) {
       mesh.visible = false
       mesh.userData.ready = false
     }
@@ -402,6 +409,8 @@ interface Resident {
   pavedAreas?: ReturnType<typeof projectOsmPavedAreas>
   /** OSM carriageway mask for the terrain drape's asphalt contrast; painted on demand. */
   asphaltMask?: THREE.DataTexture
+  /** Same mask with north at v = 0, for the v2+ terrain texture's glTF UVs. */
+  asphaltMaskNorth?: THREE.DataTexture
 }
 /** The last thing that went wrong while loading cells, structured so a host can phrase it. */
 export interface StreamError {
@@ -1095,6 +1104,17 @@ export class PlanetWorld {
             side: tileMeshSide(data.side as THREE.Side, data.metadata, data.position, data.index),
           })
       if (data.metadata.drape === 'roads') withAsphaltContrast(material)
+      // v2+ terrain texture is the visible ground (no photo drape over it): the asphalt contrast
+      // runs on it, weighted by the cell's OSM road mask (glTF UVs: north at v = 0).
+      if (
+        cellVersion >= 2 &&
+        data.metadata.category === 'Terrain' &&
+        photo &&
+        !data.metadata.skirt
+      ) {
+        withAsphaltContrast(material, { value: NO_ASPHALT_MASK })
+        material.userData.asphaltMaskNorthAtV0 = true
+      }
       if (data.metadata.drape) {
         material.depthWrite = false
         material.polygonOffset = true
@@ -1498,7 +1518,10 @@ export class PlanetWorld {
     const drapes: THREE.Mesh[] = []
     resident.group.traverse((node) => {
       const mesh = node as THREE.Mesh
-      if (mesh.isMesh && mesh.name === 'Drape' && mesh.userData.drape === 'terrain') {
+      const terrain =
+        (mesh.name === 'Drape' && mesh.userData.drape === 'terrain') ||
+        mesh.userData.category === 'Terrain'
+      if (mesh.isMesh && terrain) {
         const material = mesh.material as THREE.Material
         if (material.userData.asphaltMask) drapes.push(mesh)
       }
@@ -1519,12 +1542,18 @@ export class PlanetWorld {
           return { x: point.x, z: point.z }
         }),
       }))
-    const mask = asphaltMaskTexture(roads, planetTileFrame(manifest.tile).width)
+    const width = planetTileFrame(manifest.tile).width
+    const mask = asphaltMaskTexture(roads, width)
     if (!mask) return
     resident.asphaltMask = mask
-    for (const mesh of drapes)
-      ((mesh.material as THREE.Material).userData.asphaltMask as { value: THREE.Texture }).value =
-        mask
+    for (const mesh of drapes) {
+      const data = (mesh.material as THREE.Material).userData
+      if (data.asphaltMaskNorthAtV0) {
+        resident.asphaltMaskNorth ??= asphaltMaskTexture(roads, width, undefined, true) ?? undefined
+        if (resident.asphaltMaskNorth)
+          (data.asphaltMask as { value: THREE.Texture }).value = resident.asphaltMaskNorth
+      } else (data.asphaltMask as { value: THREE.Texture }).value = mask
+    }
     this.changed()
   }
   /** Paint missing road masks after the asphalt contrast leaves neutral (runtime slider). */
@@ -1537,6 +1566,7 @@ export class PlanetWorld {
     const r = this.resident.get(key)
     if (!r) return
     r.asphaltMask?.dispose()
+    r.asphaltMaskNorth?.dispose()
     r.chart?.bitmap.close()
     r.group.removeFromParent()
     r.group.userData.disposed = true

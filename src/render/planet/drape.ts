@@ -28,8 +28,12 @@ export const DRAPE_LAYERS: readonly DrapeLayer[] = [
   { id: 'roads', roads: true },
 ]
 
-/** Roof photos float a hand above the roof; ground photos must not (see `world.ts`). */
-export const ROOF_DRAPE_LIFT = 0.15
+/**
+ * Roof photo lift above the real roof. The car collides with the unlifted roof triangle, so a
+ * 15 cm lift made wheels look sunk into roofs (same bug as the ground, fixed with 0.005). 2 cm
+ * plus the drape's polygonOffset wins the depth test; baked roofs (Atlas roof_bake) need none.
+ */
+export const ROOF_DRAPE_LIFT = 0.02
 
 /**
  * Margin on each side of a package photo frame, as a fraction of the CELL width:
@@ -84,10 +88,42 @@ export interface DrapeGeometry {
   uv: Float32Array
 }
 
+/**
+ * Drape layers a cell's GLBs already carry as real textures, so the runtime drape must skip them:
+ * - a mesh named `Drape` with its own map (`userData.drape` id; old engine-baked roof drape);
+ * - `roofs` when a Buildings mesh has its own map (Atlas `roof_bake`: roof faces with UVs into
+ *   the lean-corrected roof photo, no lift). Cells without it keep the runtime roofs drape.
+ * - `terrain` and `roads` on cellVersion 2+ when the Terrain mesh has its own map (the unified
+ *   terrain texture is authoritative). v1 cells keep the ground/roads drape.
+ */
+export function bakedDrapeLayers(
+  meshes: readonly { name: string; metadata: Record<string, any>; hasMap: boolean }[],
+  cellVersion = 1,
+): Set<string> {
+  const baked = new Set<string>()
+  for (const mesh of meshes) {
+    if (!mesh.hasMap) continue
+    if (mesh.name === 'Drape' && mesh.metadata.drape) baked.add(String(mesh.metadata.drape))
+    else if (mesh.metadata.category === 'Buildings') baked.add('roofs')
+    else if (mesh.metadata.category === 'Terrain' && !mesh.metadata.skirt && cellVersion >= 2) {
+      // v2+ unified terrain carries the final cell texture (ground.lots-derived, roads finished,
+      // no roofs): one texture per cell, no photo drape painted over it and over its asphalt.
+      baked.add('terrain')
+      baked.add('roads')
+    }
+  }
+  return baked
+}
+
+/** True when the cell's buildings carry the baked roof photo (Atlas `roof_bake`). */
+export function hasBakedRoofs(baked: ReadonlySet<string>): boolean {
+  return baked.has('roofs')
+}
+
 /** Which drape layer a source mesh feeds, and whether it is a roof (steep faces are skipped). */
 function layerOf(mesh: DrapeSource): { id: string; roofs: boolean } | undefined {
   const m = mesh.metadata
-  if (m.skirt || mesh.name === 'Drape') return undefined
+  if (m.skirt || mesh.name === 'Drape' || m.roofBake) return undefined
   switch (m.category) {
     case 'Buildings':
       return { id: 'roofs', roofs: true }
