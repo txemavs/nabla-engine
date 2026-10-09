@@ -48,7 +48,8 @@ it('creates independently editable vehicles with remapped portals when cloned', 
 
 it('serializes lamp controls and caps nearby night illumination at six shadowless spots', () => {
   const root = new THREE.Group(),
-    lamps = new Streetlights(root)
+    // Explicit budget: the default street-light set is disabled for now (lightingDefaults).
+    lamps = new Streetlights(root, { spots: 6, points: 6 })
   for (let i = 0; i < 9; i++) {
     const e = createCatalogEntities('streetlight', `lamp-${i}`, [i * 2, 0, 0])[0]
     expect(entityCapabilities(e)).toContain('light')
