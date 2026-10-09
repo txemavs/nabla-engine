@@ -154,30 +154,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `base.get`
 - `material.emissive.set`
+- `mirrors.has`
 - `reflectionEnvironmentTexture`
 - `root.traverse`
 - `shadeEnvironment`
 
-## applyReflectionEnvironment.callback@171
+## applyReflectionEnvironment.callback@173
 
-[Implementation, line 171](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L171)
+[Implementation, line 173](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L173)
 
 ```ts
-callback@171(object): inferred by TypeScript; see implementation
+callback@173(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `THREE.MathUtils.clamp`
 - `[mesh.material].flat`
 - `base.set`
 - `materials.add`
 - `materials.has`
+- `mirrors.add`
 - `reflectionEnvironmentTexture`
 - `scale`
 
 ## applyReflectionEnvironment.setLevel
 
-[Implementation, line 205](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L205)
+[Implementation, line 214](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L214)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation
@@ -190,7 +193,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## scale
 
-[Implementation, line 216](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L216)
+[Implementation, line 225](../../../../../src/render/vehicle-presentation/reflection-environment.ts#L225)
 
 Per-material multiplier from the GLB (`extras.nabla.envIntensity`, e.g. a windscreen's
 slight reflection); 1 when omitted.

@@ -153,9 +153,8 @@ export const s3Presentation: VehiclePresentationAdapter = {
           clearcoat: 0.8,
           clearcoatRoughness: 0.14,
         })
-        // The clear coat reflects the sky, so a shaded or far panel keeps its colour instead of
-        // going black (the entity view gives it the environment, `carReflectionOptions`).
-        paint.userData.nabla = { reflective: true, envIntensity: 0.45 }
+        // Only the cars' sky fill (`carReflectionOptions.fill`), not a full reflection: a tagged
+        // reflection on a light metallic paint washed grey out to near white (Txema 2026-10-09).
         return paint
       })
       object.material = Array.isArray(object.material) ? next : next[0]

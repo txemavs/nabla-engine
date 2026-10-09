@@ -90,12 +90,13 @@ describe('S3 chrome', () => {
     }
     // Paint and the satin mirror housings keep their look and only take the sky fill.
     expect(paint.metalness).toBe(0.72)
-    expect(paint.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
-    expect(housing.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
+    // Metallic paint keeps its authored grey: the fill shrinks with the metalness.
+    expect(paint.envMapIntensity).toBeCloseTo(carReflectionOptions.fill * (1 - 0.72))
+    expect(housing.envMapIntensity).toBeCloseTo(carReflectionOptions.fill * (1 - 0.35))
     expect(housing.metalness).toBe(0.35)
     // Wheels are not trim: no full-strength chrome there, only the fill.
     expect(wheelReflections.materials).toEqual([wheelChrome])
-    expect(wheelChrome.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
+    expect(wheelChrome.envMapIntensity).toBeCloseTo(0)
     // The env is scaled by the shadowed light, not left as a fixed specular.
     expect(ShaderChunk.lights_fragment_begin).toContain('nablaIncident')
     expect(ShaderChunk.lights_fragment_begin).toContain('nablaIncident += irradiance')
@@ -108,7 +109,7 @@ describe('S3 chrome', () => {
     const night = reflectionLevel(0)
     reflections.setLevel(night)
     expect(trim[0].envMapIntensity).toBeCloseTo(carReflectionOptions.intensity * night)
-    expect(paint.envMapIntensity).toBeCloseTo(carReflectionOptions.fill * night)
+    expect(paint.envMapIntensity).toBeCloseTo(carReflectionOptions.fill * (1 - 0.72) * night)
     // Applying again (a second car sharing the material) does not scale the reflection twice.
     applyReflectionEnvironment(body, carReflectionOptions)
     const shader = { fragmentShader: ShaderChunk.lights_fragment_maps + SPECULAR_SUM }
@@ -151,6 +152,20 @@ describe('S3 chrome', () => {
     expect(glass.roughness).toBeLessThanOrEqual(0.06)
     expect(glass.metalness).toBe(0)
     expect(glass.envMapIntensity).toBeCloseTo(carReflectionOptions.intensity * 0.6)
+  })
+
+  it('lamp lenses keep their emissive colour under the sky fill (rear signals, brake)', () => {
+    // CarLights only switches the intensity of these lenses; their colour is set once.
+    const signal = new THREE.MeshStandardMaterial({ emissive: '#ff7300', emissiveIntensity: 0 })
+    const brake = new THREE.MeshStandardMaterial({ emissive: '#ff0800', emissiveIntensity: 0 })
+    const chrome = new THREE.MeshStandardMaterial({ emissive: '#ffffff', metalness: 1 })
+    chrome.userData = { nabla: { reflective: true } }
+    applyReflectionEnvironment(model([signal, brake, chrome]), carReflectionOptions)
+    expect(signal.emissive.getHexString()).toBe('ff7300')
+    expect(brake.emissive.getHexString()).toBe('ff0800')
+    expect(signal.envMapIntensity).toBeCloseTo(carReflectionOptions.fill)
+    // Chrome still never glows.
+    expect(chrome.emissive.getHex()).toBe(0)
   })
 
   it('fades the chrome reflections with the daylight, dusk included', () => {
