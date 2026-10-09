@@ -31,10 +31,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 32](../../../../../src/render/planet/asphalt-mask.ts#L32)
 
 Rasterise carriageways into a mask texture over a cell `width` metres wide (UV `0.5 + x/width`,
-`0.5 - z/width`, as the drape). Null when no road crosses the cell.
+`0.5 - z/width`, as the drape; `0.5 + z/width` with `northAtV0`). Null when no road crosses.
 
 ```ts
-asphaltMaskTexture(roads: readonly AsphaltMaskRoad[], width: number, size = ASPHALT_MASK_SIZE): THREE.DataTexture | null
+asphaltMaskTexture(roads: readonly AsphaltMaskRoad[], width: number, size = ASPHALT_MASK_SIZE, northAtV0 = false): THREE.DataTexture | null
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -49,12 +49,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.createElement`
 - `road.points.forEach`
 
-## asphaltMaskTexture.callback@51
+## asphaltMaskTexture.callback@53
 
-[Implementation, line 51](../../../../../src/render/planet/asphalt-mask.ts#L51)
+[Implementation, line 53](../../../../../src/render/planet/asphalt-mask.ts#L53)
 
 ```ts
-callback@51(p, i): inferred by TypeScript; see implementation
+callback@53(p, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

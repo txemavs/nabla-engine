@@ -89,15 +89,24 @@ export interface DrapeGeometry {
  * - a mesh named `Drape` with its own map (`userData.drape` id; old engine-baked roof drape);
  * - `roofs` when a Buildings mesh has its own map (Atlas `roof_bake`: roof faces with UVs into
  *   the lean-corrected roof photo, no lift). Cells without it keep the runtime roofs drape.
+ * - `terrain` and `roads` on cellVersion 2+ when the Terrain mesh has its own map (the unified
+ *   terrain texture is authoritative). v1 cells keep the ground/roads drape.
  */
 export function bakedDrapeLayers(
   meshes: readonly { name: string; metadata: Record<string, any>; hasMap: boolean }[],
+  cellVersion = 1,
 ): Set<string> {
   const baked = new Set<string>()
   for (const mesh of meshes) {
     if (!mesh.hasMap) continue
     if (mesh.name === 'Drape' && mesh.metadata.drape) baked.add(String(mesh.metadata.drape))
     else if (mesh.metadata.category === 'Buildings') baked.add('roofs')
+    else if (mesh.metadata.category === 'Terrain' && !mesh.metadata.skirt && cellVersion >= 2) {
+      // v2+ unified terrain carries the final cell texture (ground.lots-derived, roads finished,
+      // no roofs): one texture per cell, no photo drape painted over it and over its asphalt.
+      baked.add('terrain')
+      baked.add('roads')
+    }
   }
   return baked
 }

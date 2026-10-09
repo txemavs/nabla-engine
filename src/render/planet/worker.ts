@@ -185,6 +185,7 @@ self.onmessage = async (
     if (event.data.drape && manifest.photo) {
       const baked = bakedDrapeLayers(
         meshes.map((m) => ({ name: m.name, metadata: m.metadata, hasMap: !!m.map })),
+        planetCellVersion(manifest),
       )
       const layers = await phase('photo', () =>
         buildDrapes(meshes, {
@@ -194,6 +195,7 @@ self.onmessage = async (
         }),
       )
       drape = { layers }
+      // No layer left (v2+ terrain and baked roofs): no photo is downloaded or decoded at all.
       if (layers.length)
         try {
           drape.photo = await loadPhoto(directory + manifest.photo.path, manifest.photo, phase)
