@@ -4,6 +4,7 @@
  * motorcycle's sequential gearbox (or any vehicle whose preset asks for `gearShift.sound:
  * 'click'`). The nodes are created once; a trigger only schedules an envelope.
  */
+import { audioBus } from './mixer.js'
 export interface GearClickSound {
   /** Loudness multiplier, 0..2. 1 is already well below the car clack. */
   volume?: number
@@ -79,7 +80,7 @@ export class GearClick {
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
     this.level = context.createGain()
     this.level.gain.value = 0
-    this.level.connect(context.destination)
+    this.level.connect(audioBus(context))
     this.band = context.createBiquadFilter()
     this.band.type = 'bandpass'
     this.band.frequency.value = gearClickDefaults.bandHz
