@@ -161,6 +161,10 @@ const seaShader = {
       color += sunColor * glint * elev * strength;
       vec3 depthHit = hit - radial * ${SEA_DEPTH_INSET};
       vec4 clipHit = projectionMatrix * viewMatrix * vec4(depthHit, 1.0);
+      // Mirror captures draw with an oblique projection (near plane on the glass, Reflector): its
+      // far plane tilts and clips the terrain at moderate range. Past that plane the sea must not
+      // fill in, or a steep (right-hand) mirror shows a dark sea band over most of the glass.
+      if (abs(projectionMatrix[0][2]) + abs(projectionMatrix[1][2]) > 1e-6 && clipHit.z > clipHit.w) discard;
       float w = max(clipHit.w, 0.0);
       #if defined( USE_LOGARITHMIC_DEPTH_BUFFER )
         gl_FragDepth = min(log2(1.0 + max(w, 0.0)) * logDepthBufFC * 0.5, 0.9999);

@@ -418,7 +418,13 @@ export const vehicleField = z
     mirrorAim: z
       .record(
         z.string().min(1).max(32),
-        z.object({ yaw: finite.min(-30).max(30), tilt: finite.min(-20).max(20) }).strict(),
+        z
+          .object({
+            yaw: finite.min(-30).max(30),
+            tilt: finite.min(-20).max(20),
+            viewYaw: finite.min(-30).max(30).optional(),
+          })
+          .strict(),
       )
       .optional(),
     /** Enable the audible warning while this vehicle has reverse gear engaged. */

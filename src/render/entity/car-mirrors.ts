@@ -21,6 +21,16 @@ export interface MirrorAngle {
   tilt: number
 }
 
+/**
+ * Baked aim of one side (`vehicle.mirrorAim`): the glass angle, plus `viewYaw`, degrees of glass
+ * yaw applied to the reflection only (positive outward, as `yaw`). The glass mesh stays where the
+ * housing has it; only the captured view turns, by twice `viewYaw`. Use it where turning the
+ * glass itself would push it out of the housing.
+ */
+export interface MirrorAim extends MirrorAngle {
+  viewYaw?: number
+}
+
 /** Adjustment of every mirror of a vehicle model, keyed by side (`left`, `right`, …). */
 export type MirrorAdjustment = Record<string, MirrorAngle>
 
@@ -196,6 +206,11 @@ export function renderSceneWithSky(
   renderer: { render: THREE.WebGLRenderer['render']; autoClear: boolean },
   paintSky: ((camera: THREE.PerspectiveCamera) => void) | undefined,
   draw: () => void,
+  /**
+   * Projection to paint the sky with: the capture camera's, before the reflector bends its near
+   * plane onto the glass (see `skyCamera`). Omitted: the reflection camera itself.
+   */
+  plain?: THREE.Matrix4,
 ): void {
   if (!paintSky) {
     draw()
@@ -208,7 +223,8 @@ export function renderSceneWithSky(
       return original.call(this, scene, camera as THREE.Camera, ...(rest as []))
     painting = true
     try {
-      paintSky(camera as THREE.PerspectiveCamera)
+      const reflection = camera as THREE.PerspectiveCamera
+      paintSky(plain ? skyCamera(reflection, plain) : reflection)
       const clear = renderer.autoClear
       renderer.autoClear = false
       try {
@@ -225,6 +241,50 @@ export function renderSceneWithSky(
   } finally {
     renderer.render = original
   }
+}
+
+/**
+ * A camera the sky pass can rebuild: the sky redraws with its own camera from `fov`, `aspect`
+ * and `view` (it has its own near/far), so a projection matrix set directly is lost. A mirror's
+ * capture frustum is off-axis (fitted to the glass, far from the eye's axis on the right-hand
+ * mirrors), and the sky then looked along the wrong axis: below the horizon, a dark band over
+ * most of the glass. Encode the same frustum as a view offset of a symmetric one.
+ */
+export function skyCamera(
+  reflection: THREE.PerspectiveCamera,
+  projection: THREE.Matrix4,
+): THREE.PerspectiveCamera {
+  const te = projection.elements
+  // Extents on the plane one unit in front of the camera.
+  const width = 2 / te[0],
+    height = 2 / te[5]
+  const cx = te[8] / te[0],
+    cy = te[9] / te[5]
+  const left = cx - width / 2,
+    right = cx + width / 2,
+    top = cy + height / 2,
+    bottom = cy - height / 2
+  const halfX = Math.max(Math.abs(left), Math.abs(right)),
+    halfY = Math.max(Math.abs(top), Math.abs(bottom))
+  const sky = new THREE.PerspectiveCamera(
+    THREE.MathUtils.radToDeg(2 * Math.atan(halfY)),
+    halfX / halfY,
+    reflection.near,
+    reflection.far,
+  )
+  const k = 1000
+  sky.setViewOffset(
+    2 * halfX * k,
+    2 * halfY * k,
+    (left + halfX) * k,
+    (halfY - top) * k,
+    (right - left) * k,
+    (top - bottom) * k,
+  )
+  sky.position.copy(reflection.position)
+  sky.quaternion.copy(reflection.quaternion)
+  sky.updateMatrixWorld(true)
+  return sky
 }
 
 /** Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz. */
@@ -259,7 +319,7 @@ export class CarMirrors {
     tilt = -2,
     private readonly policy: MirrorPolicy = {},
     root?: THREE.Object3D,
-    private readonly aim: Readonly<Record<string, MirrorAngle>> = {},
+    private readonly aim: Readonly<Record<string, MirrorAim>> = {},
   ) {
     this.tilt = tilt
     resolveMirrorCapture(policy)
@@ -371,6 +431,15 @@ export class CarMirrors {
       .premultiply(new THREE.Quaternion().setFromAxisAngle(e.up, yaw))
     e.next = 0
   }
+  /** Signed view-only yaw of a side, radians, about the lens parent's vehicle-up. */
+  private viewYaw(e: CarMirrors['entries'][number]): number {
+    const degrees = this.aim[e.side]?.viewYaw ?? 0
+    if (!degrees) return 0
+    const swing = new THREE.Vector3()
+      .crossVectors(e.up, new THREE.Vector3(0, 0, 1).applyQuaternion(e.mirror.quaternion))
+      .dot(e.outward)
+    return THREE.MathUtils.degToRad(degrees) * (swing < 0 ? -1 : 1)
+  }
   render(
     renderer: THREE.WebGLRenderer,
     scene: THREE.Scene,
@@ -423,19 +492,34 @@ export class CarMirrors {
         // Keep the capture upright with the vehicle, whatever roll the lens node was authored with.
         const up = e.up.clone()
         if (e.mirror.parent) up.transformDirection(e.mirror.parent.matrixWorld)
-        fitMirrorCamera(e.capture, camera, e.mirror, e.width / e.height, up)
-        e.original.visible = false
-        renderSceneWithSky(renderer, paintSky, () =>
-          e.render.call(
-            e.mirror,
+        // View-only yaw: turn the glass for the capture and back, so the mesh never moves.
+        const viewYaw = this.viewYaw(e)
+        const placed = e.mirror.quaternion.clone()
+        if (viewYaw !== 0)
+          e.mirror.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(e.up, viewYaw))
+        e.mirror.updateMatrixWorld(true)
+        try {
+          fitMirrorCamera(e.capture, camera, e.mirror, e.width / e.height, up)
+          e.original.visible = false
+          renderSceneWithSky(
             renderer,
-            scene,
-            e.capture,
-            e.mirror.geometry,
-            e.mirror.material as THREE.Material,
-            null!,
-          ),
-        )
+            paintSky,
+            () =>
+              e.render.call(
+                e.mirror,
+                renderer,
+                scene,
+                e.capture,
+                e.mirror.geometry,
+                e.mirror.material as THREE.Material,
+                null!,
+              ),
+            e.capture.projectionMatrix.clone(),
+          )
+        } finally {
+          e.mirror.quaternion.copy(placed)
+          e.mirror.updateMatrixWorld(true)
+        }
         e.mirror.visible = false
         e.original.visible = true
         this.frames++
