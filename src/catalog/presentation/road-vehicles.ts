@@ -155,7 +155,7 @@ export const s3Presentation: VehiclePresentationAdapter = {
         })
         // The clear coat reflects the sky, so a shaded or far panel keeps its colour instead of
         // going black (the entity view gives it the environment, `carReflectionOptions`).
-        paint.userData.nabla = { reflective: true, envIntensity: 0.6 }
+        paint.userData.nabla = { reflective: true, envIntensity: 0.45 }
         return paint
       })
       object.material = Array.isArray(object.material) ? next : next[0]
