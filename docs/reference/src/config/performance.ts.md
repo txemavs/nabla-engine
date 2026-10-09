@@ -41,7 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 232](../../../../src/config/performance.ts#L232)
 
-Cloud renderer for a named quality preset. Artistic 3-layer sheets only on Ultra; all other tiers use the cheaper globe layer.
+Cloud renderer for a named quality preset. Artistic sheets on Alto and Ultra; cheaper tiers stay on the globe layer.
 
 ```ts
 cloudStyleForPerformancePreset(preset: string): 'low' | 'artistic'
