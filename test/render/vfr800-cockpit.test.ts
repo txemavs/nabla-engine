@@ -183,7 +183,7 @@ describe('vfr800 GLB cockpit pass', () => {
     }
     end.onBeforeCompile(shader as never, {} as never)
     expect(shader.fragmentShader).toContain('nablaIncident')
-    expect(shader.fragmentShader).toContain('indirectSpecular *= saturate( nablaIncident )')
+    expect(shader.fragmentShader).toContain('indirectSpecular *= max( saturate( nablaIncident ), vec3( 0.50 ) )')
     expect(end.customProgramCacheKey()).toContain('nabla-shaded-env')
     // Matte paint and rubber are left alone.
     const rubber = materialsOf(root).find((m) => m.name === 'Smooth rubber')!

@@ -72,12 +72,47 @@ function liftCabinColour(model: THREE.Object3D): void {
  */
 export const s3ChromeMaterial = /^cromo|chrome/i
 
+/**
+ * Rear bumper parts authored as flat dark greys (0.08–0.35 linear, metalness 0): the twin
+ * exhaust tips (`*26` outer sleeve, `*31` inner ring) and the chrome strip along the diffuser
+ * (`Gris 1`). In shade they had only the ambient and read black. They become polished metal
+ * with the reflection environment; the pipe bore (`*28`) stays black.
+ */
+const s3RearBumper = /^Parachoques[_ ]?Trasero/i
+const s3RearChrome = /^(\*26|\*31|Gris 1)$/
+
+/** Windscreen tint (`Gris Parabrisas`): glossy glass with a slight sky reflection. */
+const s3Windscreen = /^Gris Parabrisas$/i
+
 function shineVehicle(model: THREE.Object3D, kind: 'body' | 'wheel' | 'steering'): void {
   model.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     const materials = Array.isArray(object.material) ? object.material : [object.material]
     for (const material of materials) {
       if (!(material instanceof THREE.MeshStandardMaterial)) continue
+      const rearBumper =
+        s3RearBumper.test(object.name) || s3RearBumper.test(object.parent?.name ?? '')
+      if (kind === 'body' && rearBumper && s3RearChrome.test(material.name)) {
+        material.metalness = 1
+        // The tips a little whiter than the strip; both slightly satin, like real exhaust chrome.
+        const tip = material.name !== 'Gris 1'
+        material.color.setRGB(tip ? 0.9 : 0.86, tip ? 0.9 : 0.86, tip ? 0.9 : 0.87)
+        material.roughness = tip ? 0.22 : 0.2
+        material.emissive.set(0, 0, 0)
+        material.userData.nabla = { ...material.userData.nabla, reflective: true }
+        material.needsUpdate = true
+        continue
+      }
+      if (kind === 'body' && s3Windscreen.test(material.name)) {
+        material.roughness = Math.min(material.roughness, 0.06)
+        material.userData.nabla = {
+          ...material.userData.nabla,
+          reflective: true,
+          envIntensity: 0.6,
+        }
+        material.needsUpdate = true
+        continue
+      }
       // The door mirror housings (`Llanta 2`, also the live mirror lenses) keep their satin look.
       if (/^llanta/i.test(material.name) && material.metalness > 0.5) {
         material.metalness = 0.35
@@ -117,8 +152,10 @@ export const s3Presentation: VehiclePresentationAdapter = {
           roughness: 0.22,
           clearcoat: 0.8,
           clearcoatRoughness: 0.14,
-          envMapIntensity: 0,
         })
+        // The clear coat reflects the sky, so a shaded or far panel keeps its colour instead of
+        // going black (the entity view gives it the environment, `carReflectionOptions`).
+        paint.userData.nabla = { reflective: true, envIntensity: 0.6 }
         return paint
       })
       object.material = Array.isArray(object.material) ? next : next[0]
