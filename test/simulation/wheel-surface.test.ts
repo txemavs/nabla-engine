@@ -1,7 +1,9 @@
-import { expect, test } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
+import { osmSnapshotPavedAreas } from '../../src/planet/osm-snapshot.js'
 import {
   GRASS_GRIP,
   classifyWheelSurface,
+  insidePavedArea,
   surfaceGripScale,
 } from '../../src/simulation/wheel-surface.js'
 
@@ -61,4 +63,77 @@ test('the segment index finds the same nearest road point as the linear scan', a
   expect(classifyWheelSurface(10, 0, new RoadSegmentIndex([road]))).toBe('asphalt')
   expect(classifyWheelSurface(10, 4, new RoadSegmentIndex([road]))).toBe('grass')
   expect(classifyWheelSurface(10, 0, new RoadSegmentIndex([]))).toBeNull()
+})
+
+describe('paved areas (car parks)', () => {
+  const lot = {
+    points: [
+      { x: 0, z: 0 },
+      { x: 40, z: 0 },
+      { x: 40, z: 30 },
+      { x: 0, z: 30 },
+      { x: 0, z: 0 },
+    ],
+    minX: 0,
+    maxX: 40,
+    minZ: 0,
+    maxZ: 30,
+  }
+  const far = [
+    {
+      points: [
+        { x: -200, z: -100 },
+        { x: 200, z: -100 },
+      ],
+      width: 7,
+    },
+  ]
+  it('a contact inside a car park is asphalt even far from every carriageway', () => {
+    expect(classifyWheelSurface(20, 15, far, undefined, [lot])).toBe('asphalt')
+    expect(classifyWheelSurface(20, 15, far)).toBe('grass')
+    expect(classifyWheelSurface(60, 15, far, undefined, [lot])).toBe('grass')
+    expect(insidePavedArea(39.9, 29.9, lot)).toBe(true)
+    expect(insidePavedArea(40.1, 10, lot)).toBe(false)
+  })
+  it('reads car parks from the OSM snapshot, not underground ones or grass lots', () => {
+    const ring = (lat: number) => [
+      { lat, lon: -1.76 },
+      { lat, lon: -1.759 },
+      { lat: lat + 0.001, lon: -1.759 },
+      { lat, lon: -1.76 },
+    ]
+    const snapshot = {
+      format: 'nabla-ways-osm-cell/1',
+      roads: {
+        elements: [
+          {
+            type: 'way',
+            id: 1,
+            tags: { amenity: 'parking', parking: 'surface' },
+            geometry: ring(43.34),
+          },
+          {
+            type: 'way',
+            id: 2,
+            tags: { amenity: 'parking', parking: 'underground' },
+            geometry: ring(43.35),
+          },
+          {
+            type: 'way',
+            id: 3,
+            tags: { amenity: 'parking', surface: 'grass' },
+            geometry: ring(43.36),
+          },
+          {
+            type: 'way',
+            id: 4,
+            tags: { highway: 'pedestrian', area: 'yes' },
+            geometry: ring(43.37),
+          },
+          { type: 'way', id: 5, tags: { highway: 'residential' }, geometry: ring(43.38) },
+        ],
+      },
+    }
+    expect(osmSnapshotPavedAreas(snapshot).map((a) => a.id)).toEqual(['1', '4'])
+  })
 })

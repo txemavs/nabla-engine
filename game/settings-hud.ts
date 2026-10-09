@@ -57,6 +57,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['driving-extras', 'options'],
   ['settings-options-labels', 'options'],
   ['settings-sound', 'options'],
+  ['settings-light', 'options'],
   ['settings-config-planet', 'config'],
   ['terrain-source', 'config'],
 ]

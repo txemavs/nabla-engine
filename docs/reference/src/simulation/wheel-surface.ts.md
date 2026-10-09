@@ -12,15 +12,26 @@ plus the host's OSM navigation roads (the same ones the R reset snaps to). A con
 inside that width is asphalt. Outside it, with road data loaded, it is grass. No road
 data at all stays unknown — grip and skid colour are not invented.
 
-This does not see a paved lot that is not a carriageway. Those read as grass.
+Paved areas that are not carriageways (OSM car parks: `amenity=parking`, paved pedestrian or
+service areas) come as polygons ({@link PavedArea}); a contact inside one is asphalt too.
 
 ## Module dependencies
 
 - `./road-snap.js`
 
+## insidePavedArea
+
+[Implementation, line 27](../../../../src/simulation/wheel-surface.ts#L27)
+
+Even-odd point-in-polygon test, bounds first.
+
+```ts
+insidePavedArea(x: number, z: number, area: PavedArea): boolean
+```
+
 ## surfaceGripScale
 
-[Implementation, line 29](../../../../src/simulation/wheel-surface.ts#L29)
+[Implementation, line 54](../../../../src/simulation/wheel-surface.ts#L54)
 
 ```ts
 surfaceGripScale(surface: WheelSurface | null | undefined): number
@@ -28,14 +39,27 @@ surfaceGripScale(surface: WheelSurface | null | undefined): number
 
 ## classifyWheelSurface
 
-[Implementation, line 37](../../../../src/simulation/wheel-surface.ts#L37)
+[Implementation, line 62](../../../../src/simulation/wheel-surface.ts#L62)
 
 ```ts
-classifyWheelSurface(x: number, z: number, roads: readonly RoadCenterline[] | RoadSegmentIndex, maxDistance = SURFACE_SEARCH_M): WheelSurface | null
+classifyWheelSurface(x: number, z: number, roads: readonly RoadCenterline[] | RoadSegmentIndex, maxDistance = SURFACE_SEARCH_M, areas: readonly PavedArea[] = []): WheelSurface | null
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number.isFinite`
+- `areas.some`
 - `nearestRoadPoint`
 - `roads.nearest`
+
+## classifyWheelSurface.callback@69
+
+[Implementation, line 69](../../../../src/simulation/wheel-surface.ts#L69)
+
+```ts
+callback@69(area): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `insidePavedArea`
