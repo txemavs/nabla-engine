@@ -140,9 +140,13 @@ import {
   isFirstPersonView,
   mouseLooksWithoutButton,
   setGameCameraView,
+  updateGameCamera,
+  type GameCameraState,
+  type GameCameraView,
 } from './game-camera.js'
 import {
   StartCameraSequencer,
+  descentWarmHeights,
   resolveStartCameras,
   type ResolvedStartCamera,
   type StartCameraAction,
@@ -439,6 +443,7 @@ export class GameRuntime {
   private readonly world: PlanetWorld | null
   private loading: AbortController | null = null
   private readonly revealGates: Promise<unknown>[] = []
+  private readonly revealTasks: (() => Promise<unknown>)[] = []
   private startHold: Promise<unknown> | null = null
   private lastTime: number | null = null
   private previousButtons: boolean[] = []
@@ -1244,6 +1249,187 @@ export class GameRuntime {
     })
   }
 
+  /**
+   * Render the current camera state once without stepping physics, reading input, audio, HUD
+   * or host callbacks, 1 px scissored on the canvas. Programs (shadow and transmission passes
+   * included), buffers and textures of that view are built while the host still covers it.
+   */
+  private warmFrame(sim: Simulation, state: GameCameraState, time: number): void {
+    this.view.flushMapInstall(
+      streamingDefaults.mapInstallBudgetMs * 3,
+      streamingDefaults.mapInstallCount * 4,
+      this.camera.position,
+    )
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    this.view.sync(
+      sim,
+      0,
+      isFirstPersonView(state, !!sim.player.vehicleId),
+      state.headYaw,
+      state.headPitch,
+    )
+    const { player } = updateGameCamera(sim, this.view, this.camera, state, time, 0)
+    const eye = this.camera.position.clone()
+    this.origin.set(0, 0, 0)
+    if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
+      this.origin.fromArray(player.position)
+    this.environment.updateSea(
+      this.document.geography,
+      eye,
+      this.origin,
+      Math.max(this.quality.distance, this.quality.fog * 2),
+      time,
+      this.planet.sea,
+    )
+    const height = this.environment.updateSky(
+      this.sky,
+      eye,
+      this.origin,
+      this.document.sky ?? { mode: 'live' },
+      this.quality.fog,
+    )
+    if (this.sky.enabled) {
+      const direction = this.environment.applyLighting(this.sky, this.planet.sun)
+      this.shadows.setLightDirection(direction.clone().negate())
+      this.shadows.setLightIntensity(this.sun.intensity)
+      this.shadows.setLightColor(this.sun.color)
+      this.camera.far = downwardViewFar(
+        Math.hypot(
+          Math.max(height >= 2000 ? 80000 : 12000, this.quality.distance + 500),
+          Math.max(0, height),
+        ),
+        eye.y,
+        this.camera.getWorldDirection(this.viewForward).y,
+      )
+      this.camera.updateProjectionMatrix()
+    }
+    this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
+    this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
+    this.view.root.position.copy(this.origin).negate()
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    this.view.streetlights.update(eye, this.view.night, this.quality.distance)
+    this.cull(eye)
+    this.monitors.update(
+      sim,
+      this.document,
+      this.camera,
+      this.view.portalTablets,
+      this.view.helmScreens,
+      this.view.touchScreens,
+      this.view.flightScreens,
+      this.view.placeScreens,
+      this.view.systemScreens,
+      this.origin,
+      state.mode === 'cockpit',
+    )
+    // Field lights (and every other light) as gameplay shows them: the light count is part of
+    // each program, so a light that only appears after the reveal recompiles every material.
+    this.fieldLighting?.update({
+      origin: this.document.geography,
+      eye,
+      renderOrigin: this.origin,
+      night: this.view.night,
+      time,
+      heightAt: (p) => this.world?.groundHeight(p),
+      tiles: this.world?.activeTiles.map((tile) => tile.manifest.tile) ?? [],
+      simulation: sim,
+    })
+    this.camera.position.sub(this.origin)
+    const scissor = this.renderer.getScissor(new THREE.Vector4()),
+      scissorTest = this.renderer.getScissorTest()
+    try {
+      this.renderer.setScissor(0, 0, 1, 1)
+      this.renderer.setScissorTest(true)
+      this.pipeline.render({
+        renderer: this.renderer,
+        scene: this.scene,
+        camera: this.camera,
+        view: this.view,
+        sky: this.sky,
+        clock: this.document.sky ?? { mode: 'live' },
+        skyVisible: this.planet.sky,
+        origin: this.origin,
+        eye,
+        ambient: this.ambient,
+        lights: [this.sun, ...this.shadows.lights],
+        shadows: this.shadows,
+        monitors: this.monitors,
+        time,
+        mirrorVehicle: this.quality.mirrors && state.mode === 'cockpit' ? player.vehicleId : null,
+        shadowsEnabled: this.quality.shadows > 0,
+        depthOfField: this.options.depthOfField ?? !!this.quality.dof,
+        cull: (position) => this.cull(position),
+      })
+    } finally {
+      this.renderer.setScissor(scissor)
+      this.renderer.setScissorTest(scissorTest)
+      this.camera.position.copy(eye)
+    }
+  }
+  /**
+   * Warm the start views behind the host's intro: the overhead descent at a few heights from
+   * its start height down to the normal overhead height, then the cockpit and chase views.
+   * A scratch camera state is used, and the camera and render origin are restored afterwards,
+   * so the attract frames and the real descent start exactly as before. Best effort: a failure
+   * only skips the warmup.
+   */
+  private async warmStartViews(signal: AbortSignal): Promise<void> {
+    const sim = this.session.simulation
+    if (!sim || !sim.player.vehicleId) return
+    const settings = this.cameraState.settings
+    const state = createGameCameraState(settings)
+    state.yaw = this.cameraState.yaw
+    const camera = this.camera
+    const pose = {
+      position: camera.position.clone(),
+      quaternion: camera.quaternion.clone(),
+      up: camera.up.clone(),
+      fov: camera.fov,
+      near: camera.near,
+      far: camera.far,
+    }
+    const origin = this.origin.clone(),
+      root = this.view.root.position.clone()
+    const first = this.startSequence?.steps[0]
+    const views: { mode: GameCameraView; height?: number }[] = []
+    if (first?.view === 'map' && first.fromHeight !== undefined)
+      for (const height of descentWarmHeights(first.fromHeight, settings.mapHeight))
+        views.push({ mode: 'map', height })
+    views.push({ mode: 'cockpit' }, { mode: 'chase' })
+    // Light the views as the reveal will: a live clock starts at its authored time then (e.g.
+    // 10:00), and day or night changes lights and therefore shader programs.
+    const clock = this.document.sky
+    if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
+    try {
+      for (const view of views) {
+        signal.throwIfAborted()
+        setGameCameraView(state, view.mode, true)
+        state.transition = null
+        state.lastPose = null
+        state.lastView = null
+        if (view.height !== undefined) {
+          state.mapHeight = view.height
+          state.mapDescentDamping = START_DESCENT_DAMPING
+        }
+        this.warmFrame(sim, state, performance.now())
+        await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      }
+    } catch {
+      /* Warmup is optional; the first visible frames build what remains. */
+    } finally {
+      this.document.sky = clock
+      camera.position.copy(pose.position)
+      camera.quaternion.copy(pose.quaternion)
+      camera.up.copy(pose.up)
+      camera.fov = pose.fov
+      camera.near = pose.near
+      camera.far = pose.far
+      camera.updateProjectionMatrix()
+      camera.updateMatrixWorld()
+      this.origin.copy(origin)
+      this.view.root.position.copy(root)
+    }
+  }
   /** The sky clock in use: `live` follows the real clock (optionally faster), `fixed` holds one instant. */
   get skyClock(): SkyClock {
     return this.document.sky ?? { mode: 'live' }
@@ -1463,7 +1649,11 @@ export class GameRuntime {
     const [x, , z] = position
     // Parse, texture upload and shader compile happen before the vehicle exists, spread over
     // frames, so adding it below is a cheap clone instead of a frozen frame.
-    const hide = showLoadingBadge(this.options.canvas.parentElement, this.text('Loading vehicle…'))
+    // Behind an intro (`beforeReveal`) the host's cards cover loading; no badge over them.
+    const hide =
+      this.options.canvas.dataset.reveal === 'preparing'
+        ? () => {}
+        : showLoadingBadge(this.options.canvas.parentElement, this.text('Loading vehicle…'))
     let ground: number
     try {
       ;[ground] = await Promise.all([
@@ -2021,6 +2211,17 @@ export class GameRuntime {
     this.assertAlive()
     this.revealGates.push(gate.catch(() => undefined))
   }
+  /**
+   * Run `task` inside `play()` once the simulation exists and before the start area is
+   * streamed and warmed, e.g. placing host vehicles with `placeVehicle`. What it adds is then
+   * loaded, lit and compiled behind the intro instead of during the first gameplay seconds
+   * (a new vehicle's lights change every material's program). A failing task is logged and
+   * does not stop play.
+   */
+  beforeReveal(task: () => Promise<unknown>): void {
+    this.assertAlive()
+    this.revealTasks.push(task)
+  }
   /** Start the background music now if the browser allows it; otherwise the next gesture does. */
   startMusic(): void {
     this.assertAlive()
@@ -2055,6 +2256,11 @@ export class GameRuntime {
     // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
     // from high above shows, at the LODs the stream plans there.
     stage('terrain', 2)
+    for (const task of this.revealTasks.splice(0)) {
+      signal.throwIfAborted()
+      await task().catch((error) => console.warn('beforeReveal task failed', error))
+    }
+    signal.throwIfAborted()
     const sim = this.session.simulation
     if (this.world && sim) {
       const spawn = [...sim.player.position] as Vec3Tuple
@@ -2073,19 +2279,39 @@ export class GameRuntime {
     // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
     // of the camera so the attract frames keep their own projection.
     stage('shaders', 3)
-    const camera = this.camera.clone()
-    await within(
-      warmGamePresentation({
-        renderer: this.renderer,
-        scene: this.scene,
-        camera,
-        view: this.view,
-        settings: this.cameraState.settings,
-        signal,
-      }),
-      20_000,
-    )
-    await within(uploadSceneTextures(this.renderer, this.scene, signal), 20_000)
+    // Gameplay visibility (avatar shown, spawn markers hidden) and one pose sync first, so the
+    // lights compileAsync sees are the ones gameplay draws with (the light count is part of
+    // every lit program; a mismatch means slow synchronous compiles later).
+    this.view.setPlaying(true)
+    try {
+      if (sim)
+        this.view.sync(
+          sim,
+          0,
+          isFirstPersonView(this.cameraState, !!sim.player.vehicleId),
+          this.cameraState.headYaw,
+          this.cameraState.headPitch,
+        )
+      const camera = this.camera.clone()
+      await within(
+        warmGamePresentation({
+          renderer: this.renderer,
+          scene: this.scene,
+          camera,
+          view: this.view,
+          settings: this.cameraState.settings,
+          signal,
+        }),
+        20_000,
+      )
+      await within(uploadSceneTextures(this.renderer, this.scene, signal), 20_000)
+      signal.throwIfAborted()
+      // Then the start views themselves, as the first gameplay frames will draw them. Awaited
+      // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
+      await this.warmStartViews(signal)
+    } finally {
+      this.view.setPlaying(false)
+    }
     signal.throwIfAborted()
     stage('ready', REVEAL_STAGES)
     canvas.dataset.reveal = 'holding'

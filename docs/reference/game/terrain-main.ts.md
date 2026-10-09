@@ -170,17 +170,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `runtime?.dispose`
 
-## callback@213
+## callback@185
 
-[Implementation, line 213](../../../game/terrain-main.ts#L213)
+[Implementation, line 185](../../../game/terrain-main.ts#L185)
 
 ```ts
-callback@213(action): inferred by TypeScript; see implementation
+callback@185(): inferred by TypeScript; see implementation
 ```
 
-## callback@213.onClick
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 215](../../../game/terrain-main.ts#L215)
+- `bootLog`
+- `installHostVehicles`
+
+## callback@217
+
+[Implementation, line 217](../../../game/terrain-main.ts#L217)
+
+```ts
+callback@217(action): inferred by TypeScript; see implementation
+```
+
+## callback@217.onClick
+
+[Implementation, line 219](../../../game/terrain-main.ts#L219)
 
 ```ts
 onClick(): inferred by TypeScript; see implementation

@@ -174,3 +174,15 @@ export class StartCameraSequencer {
     return action
   }
 }
+
+/**
+ * Heights (m) at which `prepareReveal` renders the start descent once: its start height, then
+ * halving down to the normal overhead height, which is included.
+ */
+export function descentWarmHeights(fromHeight: number, toHeight: number): number[] {
+  if (!(fromHeight > 0) || !(toHeight > 0)) return []
+  const heights: number[] = []
+  for (let h = fromHeight; h > toHeight * 1.5 && heights.length < 8; h /= 2) heights.push(h)
+  heights.push(Math.min(toHeight, fromHeight))
+  return heights
+}

@@ -150,3 +150,19 @@ driving input; C keeps the player's own camera choice.
 ```ts
 skip(toLast = true): StartCameraAction
 ```
+
+## descentWarmHeights
+
+[Implementation, line 182](../../../../src/runtime/start-cameras.ts#L182)
+
+Heights (m) at which `prepareReveal` renders the start descent once: its start height, then
+halving down to the normal overhead height, which is included.
+
+```ts
+descentWarmHeights(fromHeight: number, toHeight: number): number[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.min`
+- `heights.push`
