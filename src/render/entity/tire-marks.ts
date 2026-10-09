@@ -4,12 +4,12 @@ export type TireMarkContact = {
   contactPoint: Vec3Tuple | null
   contactNormal: Vec3Tuple | null
   slip: number
-  /** Grass marks are brown-green. Omitted or asphalt stays the dark road mark. */
+  /** Off-asphalt (grass) marks are a lighter dark grey. Omitted or asphalt stays the dark road mark. */
   surface?: 'asphalt' | 'grass' | null
 }
 const ASPHALT_MARK = [0.025, 0.022, 0.02]
-/** Brown-green. Not a measured swatch. */
-const GRASS_MARK = [0.22, 0.3, 0.09]
+/** Off-asphalt: a slightly lighter dark grey than the road mark, never green. Not a measured swatch. */
+const OFF_ROAD_MARK = [0.07, 0.068, 0.065]
 function markGate(contact: TireMarkContact): number {
   return contact.surface === 'grass' ? 0.12 : 0.22
 }
@@ -134,7 +134,7 @@ export class TireMarks {
       )
       this.stamps.fill(this.time, slot * 6, slot * 6 + 6)
       this.strength.fill(Math.min(1, c.slip), slot * 6, slot * 6 + 6)
-      const tint = c.surface === 'grass' ? GRASS_MARK : ASPHALT_MARK
+      const tint = c.surface === 'grass' ? OFF_ROAD_MARK : ASPHALT_MARK
       for (let k = 0; k < 6; k++) this.colors.set(tint, slot * 18 + k * 3)
       this.count = Math.min(this.capacity, this.count + 1)
       this.previous.set(i, { point, normal, left, right })
