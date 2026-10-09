@@ -37,7 +37,7 @@
       }
     },
     "mirrorTilt": 4,
-    "mirrorAim": { "right": { "yaw": -10, "tilt": -2.5 } },
+    "mirrorAim": { "right": { "yaw": -10, "tilt": 1.5 } },
     "clusterOffset": [0, 0.01, 0],
     "colliders": [
       {

@@ -12,6 +12,7 @@
     "controls": "road",
     "reverseAlarm": true,
     "mirrorTilt": 0,
+    "mirrorAim": { "left": { "yaw": 3, "tilt": 2 }, "right": { "yaw": 1, "tilt": 5 } },
     "colliders": [
       {
         "size": [2.2, 2.8, 2.7],

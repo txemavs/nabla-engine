@@ -9,6 +9,7 @@
   "size": [0.735, 1.19, 2.095],
   "mass": 310,
   "vehicle": {
+    "mirrorAim": { "left": { "yaw": -1.5, "tilt": 8.5 }, "right": { "yaw": 9, "tilt": 8.5 } },
     "controls": "road",
     "colliders": [
       {
