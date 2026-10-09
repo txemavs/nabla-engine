@@ -406,8 +406,19 @@ describe('cell versions', () => {
     )
   })
 
+  it('renders a version 4 (road-conformed) cell from its unified terrain like v2/v3', () => {
+    for (const relief of [undefined, 'engine', 'lidar'] as const) {
+      const { m, p } = v2()
+      m.cellVersion = 4
+      p.cellVersion = 4
+      const adapted = adaptAtlasManifest(m, validateAtlasZ15Package(p, tile), { relief })
+      expect(planetCellVersion(validatePlanetManifest(adapted, tile))).toBe(4)
+      expect(adapted.files.terrain.path).toBe('terrain-lidar-50074696349a0012.glb')
+    }
+  })
+
   it('refuses cell versions this engine does not know', () => {
-    for (const bad of [4, 0, '2', 1.5]) {
+    for (const bad of [5, 0, '2', 1.5]) {
       const m = manifest()
       ;(m as unknown as { cellVersion: unknown }).cellVersion = bad
       expect(() => validatePlanetManifest(m, tile)).toThrow(/Unsupported cell version/)
