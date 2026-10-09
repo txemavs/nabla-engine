@@ -1,3 +1,4 @@
+import { audioBus } from './mixer.js'
 /**
  * Brass casing hitting the ground: a short metallic "tink", fully synthesized. Three inharmonic
  * sine partials (a thin tube rings at non-integer ratios) with fast exponential decays plus a
@@ -26,7 +27,7 @@ export class CasingTinkle {
     for (const partial of casingTinkleDefaults.partials) {
       const level = context.createGain()
       level.gain.value = 0
-      level.connect(context.destination)
+      level.connect(audioBus(context))
       const oscillator = context.createOscillator()
       oscillator.type = 'sine'
       oscillator.frequency.value = partial.hz
@@ -37,7 +38,7 @@ export class CasingTinkle {
     }
     this.tick = context.createGain()
     this.tick.gain.value = 0
-    this.tick.connect(context.destination)
+    this.tick.connect(audioBus(context))
     const band = context.createBiquadFilter()
     band.type = 'bandpass'
     band.frequency.value = 6000

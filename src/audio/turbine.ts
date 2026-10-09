@@ -10,7 +10,7 @@ export class Turbine {
   private readonly hum: OscillatorNode
 
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
-    this.output = silentOutput(context)
+    this.output = silentOutput(context, 'engine')
 
     this.filter = context.createBiquadFilter()
     this.filter.type = 'lowpass'

@@ -10,7 +10,7 @@ export class Propeller {
   private readonly filter: BiquadFilterNode
 
   constructor(context: AudioContext) {
-    this.output = silentOutput(context)
+    this.output = silentOutput(context, 'engine')
 
     this.filter = context.createBiquadFilter()
     this.filter.type = 'lowpass'

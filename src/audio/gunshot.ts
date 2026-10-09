@@ -1,3 +1,4 @@
+import { audioBus } from './mixer.js'
 /**
  * Sidearm gunshot, fully synthesized: no sample files. Four layers share one trigger:
  * a bright supersonic crack (high-passed noise, a few milliseconds), the muzzle boom
@@ -30,7 +31,7 @@ export class Gunshot {
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
     const output = context.createGain()
     output.gain.value = 1
-    output.connect(context.destination)
+    output.connect(audioBus(context))
     const level = () => {
       const gain = context.createGain()
       gain.gain.value = 0

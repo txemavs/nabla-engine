@@ -82,7 +82,7 @@ export class OverrunBurble {
     noise: AudioBufferSourceNode,
     private readonly random: () => number = Math.random,
   ) {
-    this.output = silentOutput(context)
+    this.output = silentOutput(context, 'engine')
     const filter = context.createBiquadFilter()
     filter.type = 'lowpass'
     filter.frequency.value = overrunBurbleDefaults.lowpassHz

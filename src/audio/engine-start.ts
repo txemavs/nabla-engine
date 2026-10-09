@@ -1,3 +1,4 @@
+import { audioBus } from './mixer.js'
 import { roadVehicleDefaults } from '../config/simulation.js'
 import { engineNoteHz } from './powertrain.js'
 
@@ -51,7 +52,7 @@ export class EngineStart {
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
     const output = context.createGain()
     output.gain.value = 1
-    output.connect(context.destination)
+    output.connect(audioBus(context, 'engine'))
 
     this.motorLevel = context.createGain()
     this.motorLevel.gain.value = 0

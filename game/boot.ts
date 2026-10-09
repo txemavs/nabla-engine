@@ -17,6 +17,7 @@ import type {
 } from '@nabla/engine/runtime/browser'
 import type { LoadingScreen } from './loading.js'
 import { wantsAutoResolution } from './display-settings.js'
+import type { GameRuntimeOptions } from '@nabla/engine/runtime/browser'
 
 export interface HostBootConfig {
   /** Splash slots: logo URL, title, message list, layout, theme CSS. */
@@ -68,6 +69,12 @@ export interface HostBootConfig {
    * seat, the engine start-up there, then out to the chase camera. See `StartCameraStep`.
    */
   startCameras?: StartCameraSequence
+  /**
+   * Looping background music: encodings in preference order, e.g.
+   * `{ sources: [{ url: '/music/x.ogg', type: 'audio/ogg; codecs=opus' }, { url: '/music/x.m4a', type: 'audio/mp4' }] }`.
+   * Streamed, started after the first gesture; Ajustes → Opciones → Sonido sets its volume.
+   */
+  music?: GameRuntimeOptions['music']
 }
 
 declare global {

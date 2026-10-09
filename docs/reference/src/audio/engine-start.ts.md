@@ -6,12 +6,13 @@
 
 ## Module dependencies
 
+- `./mixer.js`
 - `../config/simulation.js`
 - `./powertrain.js`
 
 ## clampNumber
 
-[Implementation, line 23](../../../../src/audio/engine-start.ts#L23)
+[Implementation, line 24](../../../../src/audio/engine-start.ts#L24)
 
 ```ts
 clampNumber(value: number | undefined, fallback: number, low: number, high: number): inferred by TypeScript; see implementation
@@ -25,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveEngineStart
 
-[Implementation, line 29](../../../../src/audio/engine-start.ts#L29)
+[Implementation, line 30](../../../../src/audio/engine-start.ts#L30)
 
 Fill omitted or invalid fields and clamp them to a safe range.
 
@@ -39,7 +40,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## crankPulses
 
-[Implementation, line 38](../../../../src/audio/engine-start.ts#L38)
+[Implementation, line 39](../../../../src/audio/engine-start.ts#L39)
 
 Engagement-click time of one start, seconds from the trigger. One click, then the catch.
 
@@ -49,7 +50,7 @@ crankPulses(seconds: number, pitch = 1): number[]
 
 ## EngineStart.constructor
 
-[Implementation, line 51](../../../../src/audio/engine-start.ts#L51)
+[Implementation, line 52](../../../../src/audio/engine-start.ts#L52)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -57,6 +58,7 @@ constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `audioBus`
 - `context.createBiquadFilter`
 - `context.createGain`
 - `context.createOscillator`
@@ -74,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EngineStart.trigger
 
-[Implementation, line 91](../../../../src/audio/engine-start.ts#L91)
+[Implementation, line 92](../../../../src/audio/engine-start.ts#L92)
 
 Schedule one start at audio time `time`, lasting `ignitionCrankSeconds`. Silent when not `audible`.
 
@@ -105,7 +107,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EngineStart.silence
 
-[Implementation, line 144](../../../../src/audio/engine-start.ts#L144)
+[Implementation, line 145](../../../../src/audio/engine-start.ts#L145)
 
 ```ts
 silence(time: number): void

@@ -51,7 +51,7 @@ export class ExhaustBrake {
   barks = 0
 
   constructor(context: AudioContext) {
-    this.level = silentOutput(context)
+    this.level = silentOutput(context, 'engine')
     this.osc = context.createOscillator()
     this.osc.type = 'square'
     this.osc.frequency.value = 70

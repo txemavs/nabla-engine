@@ -1,3 +1,4 @@
+import { audioBus } from './mixer.js'
 /**
  * Gear-change "clack", fully synthesized: no sample files. Two impacts (selection, then
  * engagement) plus an optional air-release hiss. Each impact is a short pitch-falling sine
@@ -106,7 +107,7 @@ export class GearClack {
   constructor(context: AudioContext, noise: AudioBufferSourceNode) {
     const output = context.createGain()
     output.gain.value = 1
-    output.connect(context.destination)
+    output.connect(audioBus(context))
     this.selection = new Impact(context, noise, output)
     this.engagement = new Impact(context, noise, output)
 

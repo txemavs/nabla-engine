@@ -4,17 +4,13 @@
 
 [Source](../../../../src/audio/gear-click.ts)
 
-Gear-change "click", fully synthesized: no sample files. A single short transient of the
-shared noise through a bandpass, a few tens of milliseconds long and quiet, for a
-motorcycle's sequential gearbox (or any vehicle whose preset asks for `gearShift.sound:
-'click'`). The nodes are created once; a trigger only schedules an envelope.
-
 ## Module dependencies
 
+- `./mixer.js`
 
 ## resolveGearClickVolume
 
-[Implementation, line 36](../../../../src/audio/gear-click.ts#L36)
+[Implementation, line 37](../../../../src/audio/gear-click.ts#L37)
 
 ```ts
 resolveGearClickVolume(sound?: GearClickSound | null): number
@@ -28,7 +24,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shaped
 
-[Implementation, line 43](../../../../src/audio/gear-click.ts#L43)
+[Implementation, line 44](../../../../src/audio/gear-click.ts#L44)
 
 ```ts
 shaped(value: number | undefined, fallback: number, min: number, max: number): number
@@ -42,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gearClickPeak
 
-[Implementation, line 50](../../../../src/audio/gear-click.ts#L50)
+[Implementation, line 51](../../../../src/audio/gear-click.ts#L51)
 
 Peak gain of one click, after the volume multiplier. Gearbox clicks stay at the default.
 
@@ -57,7 +53,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GearClick.constructor
 
-[Implementation, line 79](../../../../src/audio/gear-click.ts#L79)
+[Implementation, line 80](../../../../src/audio/gear-click.ts#L80)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -65,6 +61,7 @@ constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `audioBus`
 - `context.createBiquadFilter`
 - `context.createGain`
 - `noise.connect`
@@ -73,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GearClick.trigger
 
-[Implementation, line 92](../../../../src/audio/gear-click.ts#L92)
+[Implementation, line 93](../../../../src/audio/gear-click.ts#L93)
 
 Schedule one click at audio time `time`. Silent when not `audible` or at volume 0.
 
@@ -96,7 +93,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GearClick.silence
 
-[Implementation, line 108](../../../../src/audio/gear-click.ts#L108)
+[Implementation, line 109](../../../../src/audio/gear-click.ts#L109)
 
 ```ts
 silence(time: number): void
