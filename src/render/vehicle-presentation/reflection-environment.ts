@@ -56,19 +56,34 @@ export function patchChromeIncidentLight(): void {
 const SPECULAR_SUM =
   'vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;'
 
+/**
+ * Reflection kept in full shade, as a fraction of the sunlit one. Shade is lit by the sky, which
+ * a shadow does not remove: scaling the reflection by the shadowed sun alone (only the ~0.22
+ * ambient left) turned shaded chrome, glass and exhausts pure black, and a shadow map flickering
+ * while driving flashed them back to their real colour. Night still dims it through
+ * `reflectionLevel` (`setLevel`). TODO(unverified): 0.5 is a look choice, not a measurement.
+ */
+export const shadeReflectionFloor = 0.5
+
+const shaded = new WeakSet<THREE.Material>()
+
 function shadeEnvironment(material: THREE.MeshStandardMaterial): void {
   patchChromeIncidentLight()
+  // Once per material: a material shared by two vehicles must not scale its reflection twice.
+  if (shaded.has(material)) return
+  shaded.add(material)
   const previous = material.onBeforeCompile
   material.onBeforeCompile = (shader, renderer) => {
     previous?.(shader, renderer)
     if (!shader.fragmentShader.includes(SPECULAR_SUM)) return
     shader.fragmentShader = shader.fragmentShader.replace(
       SPECULAR_SUM,
-      'reflectedLight.indirectSpecular *= saturate( nablaIncident );\n\t' + SPECULAR_SUM,
+      `reflectedLight.indirectSpecular *= max( saturate( nablaIncident ), vec3( ${shadeReflectionFloor.toFixed(2)} ) );\n\t` +
+        SPECULAR_SUM,
     )
   }
   const key = material.customProgramCacheKey?.bind(material)
-  material.customProgramCacheKey = () => (key ? key() : '') + ' nabla-shaded-env'
+  material.customProgramCacheKey = () => (key ? key() : '') + ' nabla-shaded-env-floor'
 }
 
 let shared: THREE.DataTexture | null = null
@@ -108,10 +123,18 @@ export function reflectionEnvironmentTexture(): THREE.DataTexture {
 }
 
 /**
- * Cars: only materials tagged `reflective` (by the presentation adapter or the GLB) take the
+ * Cars: materials tagged `reflective` (by the presentation adapter or the GLB) take the full
  * environment, a little stronger than on the motorcycles so thin chrome trim reads at a distance.
+ * Every other lit material gets it at `fill`: the sky light a shaded or far (zenithal) car
+ * receives besides the sun. Without it the shadow side of the body, the cabin and dark trim had
+ * only the 0.22 ambient and read black. `fill` 0.0625 matched euskadi.online (engine 8d18dba)
+ * within 3% mean luminance on the truck cab and S3 shots (Atlas, 2026-10-09); 0.25 read ~8-15% too light.
  */
-export const carReflectionOptions = Object.freeze({ minMetalness: Infinity, intensity: 0.8 })
+export const carReflectionOptions = Object.freeze({
+  minMetalness: Infinity,
+  intensity: 0.8,
+  fill: 0.0625,
+})
 
 /**
  * Reflection level for the atmosphere's daylight factor `day` (0 night .. 1 full day; 1 without a
@@ -137,44 +160,70 @@ export interface ReflectionEnvironment {
  */
 export function applyReflectionEnvironment(
   root: THREE.Object3D,
-  { minMetalness = 0.9, intensity = 1 }: { minMetalness?: number; intensity?: number } = {},
+  {
+    minMetalness = 0.9,
+    intensity = 1,
+    fill = 0,
+  }: { minMetalness?: number; intensity?: number; fill?: number } = {},
 ): ReflectionEnvironment {
   const materials = new Set<THREE.MeshStandardMaterial>()
+  /** Full reflections (chrome, glass); the rest only take the sky fill. */
+  const mirrors = new Set<THREE.MeshStandardMaterial>()
+  /** Base intensity per material before the daylight level. */
+  const base = new Map<THREE.MeshStandardMaterial, number>()
   root.traverse((object) => {
     const mesh = object as THREE.Mesh
     if (!mesh.isMesh) return
-    for (const material of [mesh.material].flat())
+    for (const material of [mesh.material].flat()) {
+      const standard = material as THREE.MeshStandardMaterial
+      if (!standard.isMeshStandardMaterial || materials.has(standard)) continue
       if (
-        (material as THREE.MeshStandardMaterial).isMeshStandardMaterial &&
-        ((material as THREE.MeshStandardMaterial).metalness >= minMetalness ||
-          (material.userData as { nabla?: { reflective?: boolean } }).nabla?.reflective)
-      )
-        materials.add(material as THREE.MeshStandardMaterial)
+        standard.metalness >= minMetalness ||
+        (material.userData as { nabla?: { reflective?: boolean } }).nabla?.reflective
+      ) {
+        materials.add(standard)
+        mirrors.add(standard)
+        base.set(standard, intensity * scale(standard))
+      } else if (
+        fill > 0 &&
+        (!standard.envMap || standard.envMap === reflectionEnvironmentTexture())
+      ) {
+        materials.add(standard)
+        // Sky fill, not a mirror: on a metallic paint the env is a coloured reflection of the bright
+        // studio sky and turned light grey paint near white. Scale it down with the metalness.
+        base.set(standard, fill * (1 - THREE.MathUtils.clamp(standard.metalness, 0, 1)))
+      }
+    }
   })
   const texture = reflectionEnvironmentTexture()
-  // Per-material multiplier from the GLB (`extras.nabla.envIntensity`, e.g. a windscreen's
-  // slight reflection); 1 when omitted.
-  const scale = (material: THREE.Material) => {
-    const value = (material.userData as { nabla?: { envIntensity?: number } }).nabla?.envIntensity
-    return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 1
-  }
   for (const material of materials) {
     material.envMap = texture
-    material.envMapIntensity = intensity * scale(material)
-    // Nothing may glow: chrome reads bright from its base colour and reflection, never emissive.
-    material.emissive.set(0, 0, 0)
-    material.emissiveIntensity = 0
+    material.envMapIntensity = base.get(material)!
+    // Chrome reads bright from its base colour and reflection, never emissive. Fill-only materials
+    // keep their emissive: lamp lenses (rear signals, brake, reverse, position) set their colour
+    // once and only switch the intensity, so clearing it here left them dark.
+    if (mirrors.has(material)) {
+      material.emissive.set(0, 0, 0)
+      material.emissiveIntensity = 0
+    }
     shadeEnvironment(material)
     material.needsUpdate = true
   }
-  let current = intensity
+  let current = 1
   return {
     materials: [...materials],
     setLevel(level: number) {
-      const next = intensity * Math.max(0, level)
+      const next = Math.max(0, level)
       if (next === current) return
       current = next
-      for (const material of materials) material.envMapIntensity = next * scale(material)
+      for (const material of materials) material.envMapIntensity = base.get(material)! * next
     },
   }
+}
+
+/** Per-material multiplier from the GLB (`extras.nabla.envIntensity`, e.g. a windscreen's
+ * slight reflection); 1 when omitted. */
+function scale(material: THREE.Material): number {
+  const value = (material.userData as { nabla?: { envIntensity?: number } }).nabla?.envIntensity
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 1
 }
