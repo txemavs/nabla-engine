@@ -40,6 +40,8 @@ export interface GameRenderFrame {
 export class GameRenderPipeline {
   renderedPortals = 0
   readonly depthOfField = new DepthOfField()
+  /** True once the shadow maps were cleared to «no shadow» for the shadows-off switch. */
+  private shadowMapsBlank = false
   /** Release owned postprocessing resources; scene, renderer and monitors remain host-owned. */
   dispose(): void {
     this.depthOfField.dispose()
@@ -55,6 +57,14 @@ export class GameRenderPipeline {
     const target = renderer.getRenderTarget(),
       autoClear = renderer.autoClear
     const overlays = (frame.overlays ?? []).map((object) => ({ object, visible: object.visible }))
+    // Shadows switched off: the lit programs still sample each light's shadow map, so the maps
+    // must exist (a missing one leaves a non-shadow texture on the shadow sampler: GL errors and
+    // a black frame). Let one shadow pass allocate them, then keep them cleared to «no shadow».
+    const shadowsOff = !frame.shadowsEnabled
+    if (!shadowsOff) this.shadowMapsBlank = false
+    const allocate = shadowsOff && missingShadowMap(frame.lights)
+    if (allocate) renderer.shadowMap.needsUpdate = true
+    else if (shadowsOff && !this.shadowMapsBlank) this.blankShadowMaps(frame)
     try {
       for (const { object } of overlays) object.visible = false
       if (frame.mirrorVehicle) frame.cull(eye)
@@ -124,8 +134,9 @@ export class GameRenderPipeline {
       }
       frame.shadows.update(camera, origin)
       monitors.prepare(camera)
-      renderer.shadowMap.needsUpdate = frame.shadowsEnabled
+      renderer.shadowMap.needsUpdate = frame.shadowsEnabled || missingShadowMap(frame.lights)
       renderer.render(scene, camera)
+      if (allocate && !missingShadowMap(frame.lights)) this.blankShadowMaps(frame)
       if (sky.enabled) sky.renderClouds(renderer, camera)
       monitors.finish()
       if (frame.depthOfField) this.depthOfField.present(renderer, camera)
@@ -136,4 +147,25 @@ export class GameRenderPipeline {
       renderer.autoClear = autoClear
     }
   }
+  /** Clear every shadow map to its far depth (fully lit); the current render target is kept. */
+  private blankShadowMaps(frame: GameRenderFrame): void {
+    const { renderer } = frame
+    const target = renderer.getRenderTarget()
+    try {
+      for (const light of frame.lights) {
+        const map = light.castShadow ? light.shadow?.map : null
+        if (!map) continue
+        renderer.setRenderTarget(map as THREE.WebGLRenderTarget)
+        renderer.clear(true, true, false)
+      }
+      this.shadowMapsBlank = true
+    } finally {
+      renderer.setRenderTarget(target)
+    }
+  }
+}
+
+/** A shadow-casting light whose map the renderer has not created yet. */
+function missingShadowMap(lights: readonly THREE.DirectionalLight[]): boolean {
+  return lights.some((light) => light.castShadow && !light.shadow?.map)
 }
