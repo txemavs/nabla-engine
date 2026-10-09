@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **347 modules; 3664 executable function definitions**.
+Coverage: **350 modules; 3701 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -32,6 +32,7 @@ Coverage: **347 modules; 3664 executable function definitions**.
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 49 |
 | [game/settings-hud.ts](game/settings-hud.ts.md) | 25 |
 | [game/shadow-bias-ui.ts](game/shadow-bias-ui.ts.md) | 10 |
+| [game/sound-ui.ts](game/sound-ui.ts.md) | 4 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
 | [game/steering-wheel-controls.ts](game/steering-wheel-controls.ts.md) | 11 |
 | [game/telemetry.ts](game/telemetry.ts.md) | 1 |
@@ -47,6 +48,8 @@ Coverage: **347 modules; 3664 executable function definitions**.
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
+| [src/audio/mixer.ts](src/audio/mixer.ts.md) | 13 |
+| [src/audio/music.ts](src/audio/music.ts.md) | 12 |
 | [src/audio/powertrain.ts](src/audio/powertrain.ts.md) | 14 |
 | [src/audio/propeller.ts](src/audio/propeller.ts.md) | 3 |
 | [src/audio/reverse-alarm.ts](src/audio/reverse-alarm.ts.md) | 3 |
@@ -55,7 +58,7 @@ Coverage: **347 modules; 3664 executable function definitions**.
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
 | [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 30 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 35 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
 | [src/catalog/monitors/car.ts](src/catalog/monitors/car.ts.md) | 1 |
@@ -261,7 +264,7 @@ Coverage: **347 modules; 3664 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 222 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 225 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |

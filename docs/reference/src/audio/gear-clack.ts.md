@@ -14,10 +14,11 @@ an air hiss, so it sounds like a heavy dog-clutch box with air-assisted shifting
 
 ## Module dependencies
 
+- `./mixer.js`
 
 ## bounded
 
-[Implementation, line 35](../../../../src/audio/gear-clack.ts#L35)
+[Implementation, line 36](../../../../src/audio/gear-clack.ts#L36)
 
 ```ts
 bounded(value: number | undefined, fallback: number, low: number, high: number): inferred by TypeScript; see implementation
@@ -31,7 +32,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveGearClack
 
-[Implementation, line 41](../../../../src/audio/gear-clack.ts#L41)
+[Implementation, line 42](../../../../src/audio/gear-clack.ts#L42)
 
 Fill omitted or invalid fields from the car sound and clamp every field to a safe range.
 
@@ -45,7 +46,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## strike
 
-[Implementation, line 55](../../../../src/audio/gear-clack.ts#L55)
+[Implementation, line 56](../../../../src/audio/gear-clack.ts#L56)
 
 Attack-decay envelope on one gain. Cancels only its own earlier schedule.
 
@@ -63,7 +64,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Impact.constructor
 
-[Implementation, line 70](../../../../src/audio/gear-clack.ts#L70)
+[Implementation, line 71](../../../../src/audio/gear-clack.ts#L71)
 
 One impact: thump oscillator and click noise, each with its own envelope gain.
 
@@ -85,7 +86,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Impact.hit
 
-[Implementation, line 90](../../../../src/audio/gear-clack.ts#L90)
+[Implementation, line 91](../../../../src/audio/gear-clack.ts#L91)
 
 One impact: thump oscillator and click noise, each with its own envelope gain.
 
@@ -103,7 +104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GearClack.constructor
 
-[Implementation, line 106](../../../../src/audio/gear-clack.ts#L106)
+[Implementation, line 107](../../../../src/audio/gear-clack.ts#L107)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -113,6 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Impact`
 - `air.connect`
+- `audioBus`
 - `context.createBiquadFilter`
 - `context.createGain`
 - `noise.connect`
@@ -121,7 +123,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GearClack.trigger
 
-[Implementation, line 124](../../../../src/audio/gear-clack.ts#L124)
+[Implementation, line 125](../../../../src/audio/gear-clack.ts#L125)
 
 Schedule one gear change starting at audio time `time`. Silent when not `audible`.
 
@@ -141,7 +143,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GearClack.silence
 
-[Implementation, line 142](../../../../src/audio/gear-clack.ts#L142)
+[Implementation, line 143](../../../../src/audio/gear-clack.ts#L143)
 
 ```ts
 silence(time: number): void

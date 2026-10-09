@@ -11,6 +11,8 @@ import { TireSqueal } from './tires.js'
 import { MetalScrape } from './scrape.js'
 import { Turbine } from './turbine.js'
 import { ReverseAlarm } from './reverse-alarm.js'
+import { AudioMixer, audioBus, type AudioMixLevels } from './mixer.js'
+import { BackgroundMusic, type MusicTrack } from './music.js'
 
 /**
  * One browser audio context, nine independent voices (the powertrain one picks a road-car
@@ -45,9 +47,42 @@ export class VehicleAudio {
   private shots = 0
   private enabled = true
   private suspended = false
+  /** Master / engine / music buses; levels apply as soon as the context exists. */
+  readonly mixer = new AudioMixer()
+  private music?: BackgroundMusic
 
   constructor(enabled = true) {
     this.enabled = enabled
+  }
+
+  /** Looping background track; it starts on the next unlock (a user gesture). */
+  setMusic(track: MusicTrack | undefined): void {
+    this.music?.dispose()
+    this.music = track?.sources.length ? new BackgroundMusic(track) : undefined
+    this.syncMusic()
+  }
+
+  /** True while the background track is playing. */
+  get musicPlaying(): boolean {
+    return this.music?.playing ?? false
+  }
+
+  /** Change the mix (0..1 sliders, music mute). Returns the clamped levels. */
+  setMix(patch: Partial<AudioMixLevels>): AudioMixLevels {
+    const levels = this.mixer.set(patch)
+    this.syncMusic()
+    return levels
+  }
+
+  /** Pause the music while the page is hidden; effects use `setSuspended`. */
+  setPageHidden(hidden: boolean): void {
+    this.music?.setHidden(hidden)
+  }
+
+  private syncMusic(): void {
+    if (!this.music) return
+    if (!this.context || !this.enabled || this.mixer.levels.musicMuted) this.music.stop()
+    else this.music.start(this.context, audioBus(this.context, 'music'))
   }
 
   /** Mute or restore every voice. Muting ramps the gains to zero. */
@@ -55,6 +90,7 @@ export class VehicleAudio {
     this.enabled = enabled
     if (!enabled) this.silence()
     else this.unlock()
+    this.syncMusic()
   }
 
   /** Silence while the document is hidden. Does not change the stored preference. */
@@ -65,6 +101,7 @@ export class VehicleAudio {
 
   /** Close the context. Further updates are no-ops. */
   dispose(): void {
+    this.music?.dispose()
     if (this.context) void this.context.close().catch(() => {})
     this.context = undefined
     this.enabled = false
@@ -77,7 +114,10 @@ export class VehicleAudio {
   unlock(): void {
     if (!this.enabled) return
     try {
-      if (!this.context) this.build()
+      if (!this.context) {
+        this.build()
+        this.syncMusic()
+      }
       if (this.context?.state === 'suspended') void this.context.resume().catch(() => {})
     } catch {
       /* Audio is optional; never interrupt the host loop. */
@@ -224,6 +264,7 @@ export class VehicleAudio {
   }
   private build(): void {
     const context = new AudioContext()
+    this.mixer.attach(context)
     const noise = loopingNoise(context)
     this.context = context
     this.turbineVoice = new Turbine(context, noise)

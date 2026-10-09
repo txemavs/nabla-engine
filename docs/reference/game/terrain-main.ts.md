@@ -25,6 +25,7 @@
 - `./display-settings.js`
 - `./boot.js`
 - `./settings-hud.js`
+- `./sound-ui.js`
 - `./flip-cinematic-ui.js`
 - `./recover-road-ui.js`
 - `./host-steering-wheel.js`
@@ -38,7 +39,7 @@
 
 ## bootLog
 
-[Implementation, line 44](../../../game/terrain-main.ts#L44)
+[Implementation, line 45](../../../game/terrain-main.ts#L45)
 
 ```ts
 bootLog(label: string): inferred by TypeScript; see implementation
@@ -52,7 +53,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## showCells
 
-[Implementation, line 54](../../../game/terrain-main.ts#L54)
+[Implementation, line 55](../../../game/terrain-main.ts#L55)
 
 HUD line with the cells loaded and the ones the host lacks, e.g. "Celdas: 12 cargadas · 5 faltan".
 
@@ -69,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onResolutionScale
 
-[Implementation, line 121](../../../game/terrain-main.ts#L121)
+[Implementation, line 123](../../../game/terrain-main.ts#L123)
 
 ```ts
 onResolutionScale(state): inferred by TypeScript; see implementation
@@ -169,17 +170,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `runtime?.dispose`
 
-## callback@212
+## callback@213
 
-[Implementation, line 212](../../../game/terrain-main.ts#L212)
+[Implementation, line 213](../../../game/terrain-main.ts#L213)
 
 ```ts
-callback@212(action): inferred by TypeScript; see implementation
+callback@213(action): inferred by TypeScript; see implementation
 ```
 
-## callback@212.onClick
+## callback@213.onClick
 
-[Implementation, line 214](../../../game/terrain-main.ts#L214)
+[Implementation, line 215](../../../game/terrain-main.ts#L215)
 
 ```ts
 onClick(): inferred by TypeScript; see implementation

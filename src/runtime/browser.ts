@@ -69,6 +69,8 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
+import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer.js'
+import type { MusicTrack } from '../audio/music.js'
 import {
   cameraFovFor,
   nextCameraFovOffset,
@@ -229,6 +231,11 @@ export interface GameRuntimeOptions {
   hud?: boolean
   /** Initial audio preference; hosts may change it later with setAudioEnabled. */
   audio?: boolean
+  /**
+   * Looping background music on the music bus, streamed and started after the first gesture.
+   * The player's mix (`setAudioMix`, saved as `nabla.audioMix`) sets its level and mute.
+   */
+  music?: MusicTrack
   /** Per-instance UI language and optional message-template overrides. English is the fallback. */
   locale?: RuntimeLocale
   messages?: Readonly<Record<string, string>>
@@ -584,7 +591,9 @@ export class GameRuntime {
     this.planet.sea = this.options.sea !== false
     this.syncPlanet()
     this.effects = new VehicleEffects(this.scene)
+    this.effects.audio.mixer.set(readAudioMix(browserStorage()) ?? {})
     this.effects.audio.setEnabled(options.audio !== false)
+    this.effects.audio.setMusic(options.music)
     const touchActions = {
       engage: () => {
         options.canvas.focus()
@@ -1840,6 +1849,21 @@ export class GameRuntime {
     this.assertAlive()
     this.effects.audio.setEnabled(enabled)
   }
+  /** Player mix: General (master), Motor (engine bus), Música and its mute, each 0..1. */
+  get audioMix(): AudioMixLevels {
+    return this.effects.audio.mixer.levels
+  }
+  /** Change and save the mix (`nabla.audioMix`); returns the clamped levels. */
+  setAudioMix(patch: Partial<AudioMixLevels>): AudioMixLevels {
+    this.assertAlive()
+    const levels = this.effects.audio.setMix(patch)
+    writeAudioMix(browserStorage(), levels)
+    return levels
+  }
+  /** True while the background track plays (it waits for the first gesture). */
+  get musicPlaying(): boolean {
+    return this.effects.audio.musicPlaying
+  }
   /**
    * Apply a live automatic-clock cap and drawing-buffer scale; physics keeps its fixed timestep.
    * Passing `resolutionScale` without a mode fixes the scale (manual). Passing
@@ -2580,6 +2604,7 @@ export class GameRuntime {
       () => {
         this.releaseInput()
         this.effects.audio.setSuspended(document.hidden || this.session.state !== 'playing')
+        this.effects.audio.setPageHidden(document.hidden)
         this.lastTime = null
       },
       options,

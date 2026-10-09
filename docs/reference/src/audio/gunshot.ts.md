@@ -12,10 +12,11 @@ schedules envelopes, so rapid fire never allocates audio nodes.
 
 ## Module dependencies
 
+- `./mixer.js`
 
 ## strike
 
-[Implementation, line 11](../../../../src/audio/gunshot.ts#L11)
+[Implementation, line 12](../../../../src/audio/gunshot.ts#L12)
 
 Attack-decay envelope on one gain. Cancels only its own earlier schedule.
 
@@ -33,7 +34,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gunshot.constructor
 
-[Implementation, line 30](../../../../src/audio/gunshot.ts#L30)
+[Implementation, line 31](../../../../src/audio/gunshot.ts#L31)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -41,6 +42,7 @@ constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `audioBus`
 - `context.createGain`
 - `context.createOscillator`
 - `filter`
@@ -51,7 +53,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gunshot.constructor.level
 
-[Implementation, line 34](../../../../src/audio/gunshot.ts#L34)
+[Implementation, line 35](../../../../src/audio/gunshot.ts#L35)
 
 ```ts
 level(): inferred by TypeScript; see implementation
@@ -64,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gunshot.constructor.filter
 
-[Implementation, line 40](../../../../src/audio/gunshot.ts#L40)
+[Implementation, line 41](../../../../src/audio/gunshot.ts#L41)
 
 ```ts
 filter(type: BiquadFilterType, frequency: number, q: number, into: AudioNode): inferred by TypeScript; see implementation
@@ -78,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gunshot.trigger
 
-[Implementation, line 64](../../../../src/audio/gunshot.ts#L64)
+[Implementation, line 65](../../../../src/audio/gunshot.ts#L65)
 
 Schedule one shot at audio time `time`. Silent when not `audible`.
 
@@ -97,7 +99,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gunshot.silence
 
-[Implementation, line 78](../../../../src/audio/gunshot.ts#L78)
+[Implementation, line 79](../../../../src/audio/gunshot.ts#L79)
 
 ```ts
 silence(time: number): void
