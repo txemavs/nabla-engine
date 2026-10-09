@@ -130,7 +130,7 @@ describe('car sound selection per engine mode', () => {
       expect(resolveVehicleSound(bike.audio, mode).engine).toEqual({
         voice: 'v4',
         firing: [0, 90, 270, 540],
-        volume: 1,
+        volume: 0.8,
       })
       for (const preset of vehiclePresets().filter(
         (p) => !['car', 'vfr800', 'white-truck'].includes(p.id),

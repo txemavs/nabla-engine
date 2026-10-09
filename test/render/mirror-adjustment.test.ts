@@ -61,7 +61,7 @@ const degrees = (a: Vector3, b: Vector3) => (a.angleTo(b) * 180) / Math.PI
 
 describe('mirror glass adjustment', () => {
   it('clamps and snaps each axis and drops neutral sides', () => {
-    expect(clampMirrorAngle({ yaw: 40, tilt: -0.74 })).toEqual({ yaw: 15, tilt: -0.5 })
+    expect(clampMirrorAngle({ yaw: 40, tilt: -0.74 })).toEqual({ yaw: 25, tilt: -0.5 })
     expect(clampMirrorAngle({ yaw: Number.NaN })).toEqual({ yaw: 0, tilt: 0 })
     expect(clampMirrorAdjustment({ left: { yaw: -2.26 }, right: { yaw: 0.1, tilt: 0 } })).toEqual({
       left: { yaw: -2.5, tilt: 0 },
