@@ -202,6 +202,12 @@ export class Simulation {
     position?: Vec3
     targetY?: number
   } | null = null
+  private bikeMountHold: {
+    vehicleId: string
+    elapsed: number
+    position: Vec3
+    rotation: Quaternion
+  } | null = null
   private disposed = false
   private grounded = false
   private support: Body | null = null
@@ -227,10 +233,16 @@ export class Simulation {
   /** Low-speed tip-over recovery, for the avatar's lifting pose. */
   get playerBikeRecovery(): {
     vehicleId: string
-    phase: 'rising' | 'lifting'
+    phase: 'rising' | 'lifting' | 'boarding'
     progress: number
   } | null {
     const r = this.gentleRecovery
+    if (this.bikeMountHold)
+      return {
+        vehicleId: this.bikeMountHold.vehicleId,
+        phase: 'boarding',
+        progress: Math.min(1, this.bikeMountHold.elapsed / 0.85),
+      }
     return r
       ? {
           vehicleId: r.vehicleId,
@@ -1251,7 +1263,10 @@ export class Simulation {
         continue
       }
       if (v.twoWheeled) {
-        if (this.gentleRecovery?.vehicleId === id && this.gentleRecovery.phase === 'lifting')
+        if (
+          this.bikeMountHold?.vehicleId === id ||
+          (this.gentleRecovery?.vehicleId === id && this.gentleRecovery.phase === 'lifting')
+        )
           continue
         stepTwoWheeledVehicle(
           v as TwoWheeledVehicle,
@@ -1406,10 +1421,11 @@ export class Simulation {
     forward.normalize()
     const yaw = Math.atan2(-forward.x, -forward.z)
     const upright = new Quaternion().setFromAxisAngle(up, yaw)
-    for (const side of [-1, 1]) {
-      const candidate = v.body.position.vadd(
-        upright.vmult(new Vec3(side * (v.entity.size[0] / 2 + 0.8), 0, 0)),
-      )
+    const candidates = [-1, 1].map((side) =>
+      v.body.position.vadd(upright.vmult(new Vec3(side * (v.entity.size[0] / 2 + 0.8), 0, 0))),
+    )
+    if (pickingUp) candidates.unshift(this.playerBody.position.clone())
+    for (const candidate of candidates) {
       let support = -Infinity
       this.world.raycastAll(
         new Vec3(candidate.x, candidate.y + 1, candidate.z),
@@ -1439,6 +1455,24 @@ export class Simulation {
   }
   /** Ease the actual chassis upright at the same spot, then put the recovered rider back in the seat. */
   private stepGentleRecovery(): void {
+    const hold = this.bikeMountHold
+    if (hold) {
+      const bike = this.vehicles.get(hold.vehicleId)
+      if (!bike || this.vehicleId !== hold.vehicleId) this.bikeMountHold = null
+      else {
+        bike.body.position.copy(hold.position)
+        bike.body.quaternion.copy(hold.rotation)
+        bike.body.previousPosition.copy(hold.position)
+        bike.body.previousQuaternion.copy(hold.rotation)
+        bike.body.velocity.setZero()
+        bike.body.angularVelocity.setZero()
+        bike.body.torque.setZero()
+        bike.body.aabbNeedsUpdate = true
+        hold.elapsed += FIXED_STEP
+        if (hold.elapsed >= 0.85) this.bikeMountHold = null
+      }
+      return
+    }
     const r = this.gentleRecovery
     if (!r) return
     const v = this.vehicles.get(r.vehicleId)
@@ -1501,6 +1535,12 @@ export class Simulation {
       this.fallRest.delete(r.vehicleId)
       this.gentleRecovery = null
       this.startInVehicle(r.vehicleId)
+      this.bikeMountHold = {
+        vehicleId: r.vehicleId,
+        elapsed: 0,
+        position: v.body.position.clone(),
+        rotation: v.body.quaternion.clone(),
+      }
     }
   }
   private height(body: Body): number {
@@ -1634,6 +1674,7 @@ export class Simulation {
    * Flying craft in flight and boats never snap; no road or no ground under it keeps the spot.
    */
   recoverVehicle(options: RecoverVehicleOptions = {}): string {
+    this.bikeMountHold = null
     const id = this.vehicleId
     const v = id ? this.vehicles.get(id) : undefined
     if (!v) return 'Monta en un coche'
@@ -1817,6 +1858,10 @@ export class Simulation {
       if (v.definition.passive) continue
       const local = v.body.pointToLocalFrame(this.playerBody.position)
       const target = this.hullPoint(v, this.playerBody.position)
+      // A tipped chassis can put its hull point beneath the supporting terrain.
+      // Reach the exposed upper side, rather than treating that ground as a wall.
+      if (v.twoWheeled?.fallen || v.twoWheeled?.crashed)
+        target.y = Math.max(target.y, this.playerBody.position.y - this.playerHalfHeight + 0.3)
       const reach = target.distanceTo(this.playerBody.position)
       // A carrier hull encloses its cargo: prefer the car beside the monitor,
       // while keeping the helm reachable around the hull when no car is nearer.
@@ -1874,6 +1919,7 @@ export class Simulation {
       throw new Error('Invalid initial vehicle')
     this.setInterior(null)
     this.vehicleId = id
+    this.bikeMountHold = null
     this.gentleRecovery = null
     this.ejection = null
     this.world.removeBody(this.playerBody)
@@ -2019,6 +2065,7 @@ export class Simulation {
     return 'Las salidas están bloqueadas'
   }
   private placeOnFoot(candidate: Vec3): void {
+    this.bikeMountHold = null
     const leaving = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
     if (
       leaving &&
@@ -2041,7 +2088,7 @@ export class Simulation {
   private overlapsBody(bounds: AABB): boolean {
     const center = bounds.lowerBound.vadd(bounds.upperBound).scale(0.5)
     const half = bounds.upperBound.vsub(bounds.lowerBound).scale(0.5)
-    return this.world.intersectsCuboid(center, half)
+    return this.world.intersectsCuboid(center, half, this.playerBody)
   }
 
   vehicleInfo(

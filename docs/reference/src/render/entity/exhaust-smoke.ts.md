@@ -4,7 +4,7 @@
 
 [Source](../../../../../src/render/entity/exhaust-smoke.ts)
 
-Light exhaust vapour attached to the authored outlet, with a bounded world-space pool.
+White exhaust vapour attached to the authored outlet, with a bounded world-space pool.
 
 ## Module dependencies
 

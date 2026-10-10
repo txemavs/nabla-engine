@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **365 modules; 3960 executable function definitions**.
+Coverage: **365 modules; 3962 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -338,13 +338,13 @@ Coverage: **365 modules; 3960 executable function definitions**.
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |
-| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 119 |
+| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 120 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 13 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 219 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 220 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |

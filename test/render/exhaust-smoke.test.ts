@@ -22,7 +22,7 @@ describe('exhaust smoke', () => {
     expect(new THREE.Vector3().fromBufferAttribute(positions, 0).distanceTo(first)).toBeLessThan(
       0.1,
     )
-    for (let i = 0; i < 20; i++) smoke.update(0.05, false, 0)
+    for (let i = 0; i < 25; i++) smoke.update(0.05, false, 0)
     expect(smoke.root.visible).toBe(false)
     smoke.dispose()
   })

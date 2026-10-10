@@ -6,7 +6,8 @@ import { afterEach, expect, it } from 'vitest'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { Vec3 } from '../../src/simulation/physics.js'
-import { Simulation } from '../../src/simulation/simulation.js'
+import { Simulation, idleInput } from '../../src/simulation/simulation.js'
+import type { Vehicle } from '../../src/entity/vehicle/vehicle.js'
 
 let sim: Simulation | undefined
 afterEach(() => {
@@ -24,7 +25,7 @@ const roads = [
   },
 ]
 
-function scene() {
+function scene(extra: ReturnType<typeof createEntity>[] = []) {
   const floor = createEntity('floor', 'box', [0, -0.5, 0])
   floor.size = [200, 1, 200]
   sim = new Simulation({
@@ -34,6 +35,7 @@ function scene() {
       floor,
       presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
       createEntity('spawn', 'spawn', [1.2, 1, 0]),
+      ...extra,
     ],
   })
   for (let i = 0; i < 30; i++) sim.step(1 / 60)
@@ -85,4 +87,42 @@ it('does not move an upright bike onto the road when mounting it', () => {
   expect(after[0]).toBeCloseTo(before[0], 1)
   expect(after[2]).toBeCloseTo(before[2], 1)
   expect(s.twoWheeledPose('bike')!.fallen).toBe(false)
+})
+
+it('can lift from the rider’s clear footing when the opposite side is blocked', () => {
+  const wall = createEntity('wall', 'box', [-1.275, 1, 0])
+  wall.size = [0.3, 2, 3]
+  const s = scene([wall])
+  const internals = s as unknown as { vehicles: Map<string, Vehicle>; playerBody: Vehicle['body'] }
+  const bike = internals.vehicles.get('bike')!
+  bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+  bike.body.position.y = 0.3
+  bike.body.velocity.setZero()
+  bike.twoWheeled!.fallen = true
+  bike.twoWheeled!.crashed = true
+  // The rider occupies the only usable side; their own collider must not block pickup.
+  internals.playerBody.position.set(1.275, 0.94, 0)
+  internals.playerBody.velocity.setZero()
+  expect(s.interact()).toBe('Levantando la moto')
+})
+
+it('holds the lifted bike still until the avatar finishes boarding, even with throttle held', () => {
+  const s = scene()
+  const bike = (s as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+  bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+  bike.twoWheeled!.fallen = true
+  expect(s.interact()).toBe('Levantando la moto')
+  for (let i = 0; i < 160 && s.playerBikeRecovery?.phase !== 'boarding'; i++) s.step(1 / 60)
+  expect(s.playerBikeRecovery?.phase).toBe('boarding')
+  expect(s.player.vehicleId).toBe('bike')
+  const before = s.entityTransform('bike').position
+  s.setInput({ ...idleInput(), forward: 1, right: 1 })
+  for (let i = 0; i < 45; i++) {
+    bike.body.velocity.set(2, 0, 1)
+    s.step(1 / 60)
+    expect(s.playerBikeRecovery?.phase).toBe('boarding')
+    expect(s.entityTransform('bike').position).toEqual(before)
+  }
+  for (let i = 0; i < 10; i++) s.step(1 / 60)
+  expect(s.playerBikeRecovery).toBeNull()
 })

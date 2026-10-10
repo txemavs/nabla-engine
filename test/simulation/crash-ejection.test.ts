@@ -88,7 +88,7 @@ describe('gentle tip-over', () => {
         }
         if (phases.has('lifting') && !recovery) break
       }
-      expect([...phases]).toEqual(['rising', 'lifting'])
+      expect([...phases]).toEqual(['rising', 'lifting', 'boarding'])
       expect(s.player.vehicleId).toBe('bike')
       expect(pose().fallen).toBe(false)
       expect(upY(s.entityTransform('bike').rotation)).toBeGreaterThan(0.99)

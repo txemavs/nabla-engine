@@ -1,4 +1,4 @@
-/** Light exhaust vapour attached to the authored outlet, with a bounded world-space pool. */
+/** White exhaust vapour attached to the authored outlet, with a bounded world-space pool. */
 import * as THREE from 'three'
 
 export class ExhaustSmoke {
@@ -32,7 +32,7 @@ export class ExhaustSmoke {
         attribute float life; varying float age;
         void main(){age=life; vec4 p=modelViewMatrix*vec4(position,1.0);
           gl_Position=projectionMatrix*p;
-          gl_PointSize=life>0.0?clamp((1.0-life)*100.0/max(1.0,-p.z),1.0,32.0):0.0;
+          gl_PointSize=life>0.0?clamp((1.1-life)*160.0/max(1.0,-p.z),1.0,64.0):0.0;
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
@@ -42,11 +42,11 @@ export class ExhaustSmoke {
           #include <logdepthbuf_fragment>
           float d=length(gl_PointCoord-0.5)*2.0;
           if(d>1.0||age<=0.0)discard;
-          gl_FragColor=vec4(0.72,0.75,0.78,pow(1.0-d,2.0)*age*0.09);
+          gl_FragColor=vec4(0.95,0.96,0.97,pow(1.0-d,2.0)*(age/1.1)*0.4);
         }`,
       }),
     )
-    this.root.name = 'Subtle exhaust smoke'
+    this.root.name = 'White exhaust smoke'
     this.root.frustumCulled = false
     this.root.visible = false
   }
@@ -71,7 +71,7 @@ export class ExhaustSmoke {
       for (let j = 0; j < 3; j++) this.positions[i * 3 + j] += this.velocities[i * 3 + j] * dt
       this.velocities[i * 3 + 1] += dt * 0.2
     }
-    this.carry = running ? this.carry + dt * (4 + 8 * THREE.MathUtils.clamp(load, 0, 1)) : 0
+    this.carry = running ? this.carry + dt * (10 + 22 * THREE.MathUtils.clamp(load, 0, 1)) : 0
     while (this.carry >= 1) {
       this.carry--
       const i = this.next++ % this.life.length
@@ -82,7 +82,7 @@ export class ExhaustSmoke {
         .multiplyScalar(jet)
         .add(this.movement)
         .toArray(this.velocities, i * 3)
-      this.life[i] = 0.7
+      this.life[i] = 1.1
     }
     this.root.visible = this.life.some((v) => v > 0)
     this.geometry.attributes.position.needsUpdate = true
