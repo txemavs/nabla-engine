@@ -8,6 +8,7 @@ import { createEntity } from '../../src/entity/schema.js'
 import { Vec3 } from '../../src/simulation/physics.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import type { Vehicle } from '../../src/entity/vehicle/vehicle.js'
+import { startEjection, type RiderEjection } from '../../src/simulation/rider-ejection.js'
 
 let sim: Simulation | undefined
 afterEach(() => {
@@ -43,6 +44,39 @@ function scene(extra: ReturnType<typeof createEntity>[] = []) {
 }
 
 const upY = (q: readonly number[]) => 1 - 2 * (q[0] * q[0] + q[2] * q[2])
+
+it('picks up the crashed bike automatically when the thrown rider gets up beside it', () => {
+  const s = scene()
+  const internal = s as unknown as {
+    vehicles: Map<string, Vehicle>
+    ejection: RiderEjection | null
+  }
+  const bike = internal.vehicles.get('bike')!
+  bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+  bike.body.velocity.setZero()
+  bike.twoWheeled!.crashed = true
+  bike.twoWheeled!.fallen = true
+  internal.ejection = { ...startEjection('bike', 12), phase: 'rising', phaseElapsed: 1 }
+  s.step(1 / 60)
+  expect(s.playerBikeRecovery).not.toBeNull()
+  for (let i = 0; i < 180; i++) s.step(1 / 60)
+  expect(s.player.vehicleId).toBe('bike')
+  expect(s.twoWheeledPose('bike')!.fallen).toBe(false)
+})
+
+it('starts lifting despite small terrain-induced sliding instead of waiting for perfect rest', () => {
+  const s = scene()
+  s.startInVehicle('bike')
+  const bike = (s as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+  bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+  bike.twoWheeled!.crashed = true
+  for (let i = 0; i < 90 && !s.playerBikeRecovery; i++) {
+    bike.body.velocity.set(0.9, 0, 0)
+    bike.body.angularVelocity.setZero()
+    s.step(1 / 60)
+  }
+  expect(s.playerBikeRecovery).not.toBeNull()
+})
 
 it('lifts a fallen bike in place before mounting even when road reset options are supplied', () => {
   const s = scene()

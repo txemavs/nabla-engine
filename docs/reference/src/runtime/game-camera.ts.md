@@ -19,7 +19,7 @@ Shared gameplay camera with configurable manual-look recovery. Times are millise
 
 ## createGameCameraState
 
-[Implementation, line 97](../../../../src/runtime/game-camera.ts#L97)
+[Implementation, line 104](../../../../src/runtime/game-camera.ts#L104)
 
 Create independent camera state and validate per-consumer recovery overrides.
 
@@ -36,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mouseLooksWithoutButton
 
-[Implementation, line 132](../../../../src/runtime/game-camera.ts#L132)
+[Implementation, line 140](../../../../src/runtime/game-camera.ts#L140)
 
 Views where plain mouse movement looks around with no button held: the exterior
 chase/third-person camera, on-foot first person and the seated driver view. The vehicle
@@ -50,7 +50,7 @@ mouseLooksWithoutButton(state: Pick<GameCameraState, 'mode'>, seated: boolean): 
 
 ## detachedView
 
-[Implementation, line 140](../../../../src/runtime/game-camera.ts#L140)
+[Implementation, line 148](../../../../src/runtime/game-camera.ts#L148)
 
 Overhead and cinematic views are detached from the player's eyes in every context.
 
@@ -60,7 +60,7 @@ detachedView(mode: GameCameraMode): boolean
 
 ## isFirstPersonView
 
-[Implementation, line 145](../../../../src/runtime/game-camera.ts#L145)
+[Implementation, line 153](../../../../src/runtime/game-camera.ts#L153)
 
 True when the view is rendered from the player's or driver's eyes.
 
@@ -74,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gameCameraView
 
-[Implementation, line 154](../../../../src/runtime/game-camera.ts#L154)
+[Implementation, line 162](../../../../src/runtime/game-camera.ts#L162)
 
 Stable view name for hosts: `first-person`, `chase`, `cockpit`, `map` or `cinematic`.
 
@@ -88,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cycleGameCamera
 
-[Implementation, line 168](../../../../src/runtime/game-camera.ts#L168)
+[Implementation, line 176](../../../../src/runtime/game-camera.ts#L176)
 
 The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
 cinematic → exterior. On foot: first person → third person → overhead → cinematic → first
@@ -105,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setGameCameraView
 
-[Implementation, line 196](../../../../src/runtime/game-camera.ts#L196)
+[Implementation, line 204](../../../../src/runtime/game-camera.ts#L204)
 
 Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
 `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
@@ -118,7 +118,7 @@ setGameCameraView(state: GameCameraState, wanted: GameCameraView, seated: boolea
 
 ## downwardViewFar
 
-[Implementation, line 227](../../../../src/runtime/game-camera.ts#L227)
+[Implementation, line 235](../../../../src/runtime/game-camera.ts#L235)
 
 Far plane while the camera looks steeply down. The ordinary far plane is 12 km, so a
 zenithal view is a shaft and the cascaded shadow maps size themselves to it. The ground
@@ -137,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## updateGameCamera
 
-[Implementation, line 236](../../../../src/runtime/game-camera.ts#L236)
+[Implementation, line 244](../../../../src/runtime/game-camera.ts#L244)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -148,6 +148,8 @@ updateGameCamera(sim: Simulation, view: Pick<SceneView, 'document' | 'vehicleHea
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(state.lastPose?.position ?? camera.position).clone`
+- `(state.lastPose?.quaternion ?? camera.quaternion).clone`
 - `Math.abs`
 - `Math.atan2`
 - `Math.cos`
@@ -173,6 +175,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.position.copy(anchor).add(transition.offset).lerp`
 - `camera.position.fromArray`
 - `camera.position.lerp`
+- `camera.position.lerpVectors`
 - `camera.quaternion.clone`
 - `camera.quaternion.copy`
 - `camera.quaternion.slerp`
@@ -197,8 +200,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `localToGeo`
 - `new THREE.Quaternion().setFromAxisAngle`
 - `new THREE.Quaternion().setFromEuler`
+- `new THREE.Vector3(...bike.position).add`
 - `new THREE.Vector3(...p.position).addScaledVector`
 - `new THREE.Vector3(0, 0, -1).applyQuaternion`
+- `new THREE.Vector3(0, 0.3, 0).applyQuaternion`
 - `new THREE.Vector3(0, 1, 0).applyQuaternion`
 - `offset.toArray`
 - `overheadDrivingHeight`
@@ -222,10 +227,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@447
+## updateGameCamera.callback@416
 
-[Implementation, line 447](../../../../src/runtime/game-camera.ts#L447)
+[Implementation, line 416](../../../../src/runtime/game-camera.ts#L416)
 
 ```ts
-callback@447(entity): inferred by TypeScript; see implementation
+callback@416(entity): inferred by TypeScript; see implementation
+```
+
+## updateGameCamera.callback@502
+
+[Implementation, line 502](../../../../src/runtime/game-camera.ts#L502)
+
+```ts
+callback@502(entity): inferred by TypeScript; see implementation
 ```

@@ -1285,7 +1285,9 @@ export class Simulation {
         }
         if (!v.twoWheeled.fallen || id !== this.vehicleId) this.fallRest.delete(id)
         else {
-          const resting = v.body.velocity.length() < 0.75 && v.body.angularVelocity.length() < 1.2
+          // Terrain contacts can keep a tipped chassis gently rocking or sliding.
+          // Treat that as settled enough to hold it while the rider lifts it.
+          const resting = v.body.velocity.length() < 1.5 && v.body.angularVelocity.length() < 2
           const seconds = resting ? (this.fallRest.get(id) ?? 0) + FIXED_STEP : 0
           this.fallRest.set(id, seconds)
           if (seconds >= 0.45) this.beginGentleRecovery(v)
@@ -1378,6 +1380,7 @@ export class Simulation {
    */
   private stepEjection(): void {
     const body = this.playerBody
+    const vehicleId = this.ejection!.vehicleId
     const up = this.radialUp(body)
     const vertical = body.velocity.dot(up)
     const horizontal = body.velocity.vsub(up.scale(vertical))
@@ -1397,6 +1400,10 @@ export class Simulation {
     if (this.ejection?.phase !== 'flying' && this.ejection?.phase !== 'down')
       if (this.options.playerMode === 'hover') this.hover()
     body.wakeUp()
+    if (!this.ejection && !this.gentleRecovery && this.nearestVehicle() === vehicleId) {
+      const bike = this.vehicles.get(vehicleId)
+      if (bike?.twoWheeled?.fallen) this.beginGentleRecovery(bike, true)
+    }
   }
 
   private radialUp(body: Body): Vec3 {

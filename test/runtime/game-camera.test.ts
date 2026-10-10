@@ -52,6 +52,21 @@ test('a fallen rider gets an overhead shot of rider and bike without losing the 
     }
     fall.ejection = null
     expect(updateGameCamera(sim, view, camera, state, 2000, 1 / 60).cinematic).toBe(false)
+    // Getting up beside a tipped bike is not another ejection: keep every chosen mode.
+    for (const mode of ['cockpit', 'chase', 'map', 'cinematic'] as const) {
+      state.mode = mode
+      for (const phase of ['rising', 'lifting', 'boarding'] as const) {
+        Object.defineProperty(sim, 'playerBikeRecovery', {
+          configurable: true,
+          get: () => ({ vehicleId: 'bike', phase, progress: 0.5 }),
+        })
+        const recovering = updateGameCamera(sim, view, camera, state, 3000, 1 / 60)
+        expect(recovering.cinematic).toBe(mode === 'cinematic')
+        expect(recovering.cockpit).toBe(mode === 'cockpit')
+        expect(state.lastView?.view).toBe(mode)
+        expect(state.mode).toBe(mode)
+      }
+    }
   } finally {
     session.dispose()
   }
