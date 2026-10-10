@@ -1,6 +1,6 @@
 /**
- * Mounting a bike that is on the ground is the R reset: seated, upright, snapped to the
- * nearest road. Mounting one that is still standing leaves it where it is.
+ * Picking up a fallen bike lifts it at its current location before mounting.
+ * Mounting one that is still standing leaves it where it is.
  */
 import { afterEach, expect, it } from 'vitest'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
@@ -42,7 +42,7 @@ function scene() {
 
 const upY = (q: readonly number[]) => 1 - 2 * (q[0] * q[0] + q[2] * q[2])
 
-it('stands a fallen bike up on the nearest road when the rider mounts it', () => {
+it('lifts a fallen bike in place before mounting even when road reset options are supplied', () => {
   const s = scene()
   const bike = (
     s as unknown as {
@@ -64,12 +64,16 @@ it('stands a fallen bike up on the nearest road when the rider mounts it', () =>
   bike.twoWheeled.crashed = true
   bike.body.wakeUp()
   expect(s.player.vehicleId).toBeNull()
-  expect(s.interact({ snapToRoad: true, roads })).toBe('En la vía más cercana')
+  const before = s.entityTransform('bike').position.slice()
+  expect(s.interact({ snapToRoad: true, roads })).toBe('Levantando la moto')
+  expect(s.player.vehicleId).toBeNull()
+  for (let i = 0; i < 180; i++) s.step(1 / 60)
   expect(s.player.vehicleId).toBe('bike')
   expect(s.twoWheeledPose('bike')!.fallen).toBe(false)
   expect(s.twoWheeledPose('bike')!.crashed).toBe(false)
   const pose = s.entityTransform('bike')
-  expect(pose.position[2]).toBeCloseTo(12, 0)
+  expect(pose.position[0]).toBeCloseTo(before[0], 1)
+  expect(pose.position[2]).toBeCloseTo(before[2], 1)
   expect(upY(pose.rotation)).toBeGreaterThan(0.99)
 })
 

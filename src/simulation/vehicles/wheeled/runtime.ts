@@ -19,6 +19,7 @@ import {
   type DrivetrainState,
 } from '../drivetrain.js'
 import { surfaceGripScale, type WheelSurface } from '../../wheel-surface.js'
+import { stepWheelMomentum } from '../wheel-momentum.js'
 import type {
   EngineMode,
   PowertrainDefinition,
@@ -339,6 +340,7 @@ export function stepWheeledVehicle(
       i,
     )
   }
+  stepWheelMomentum(v, dt, active && !starting, powered, input.throttle)
 }
 /**
  * A driver gets in (spawned in the seat, entered with E, or took over the controls): the

@@ -58,35 +58,77 @@ function ride(barrierZ: number | null, playerMode: 'hover' | 'walk' = 'hover') {
 const upY = ([x, , z]: number[]) => 1 - 2 * (x * x + z * z)
 
 describe('gentle tip-over', () => {
-  it('gets up, lifts the bike smoothly at the same spot and mounts again', () => {
+  it.each([false, true])(
+    'gets up and lifts a stationary bike before remounting (crashed: %s)',
+    (crashed) => {
+      const { s, tick, pose } = ride(null)
+      const bike = (s as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+      bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+      bike.body.angularVelocity.setZero()
+      bike.body.velocity.setZero()
+      bike.twoWheeled!.crashed = crashed
+      bike.twoWheeled!.crashSpeed = crashed ? 8 : 0
+      const phases = new Set<string>()
+      let liftStart: number[] | undefined
+      let lastUp: number | undefined
+      for (let i = 0; i < 360; i++) {
+        tick()
+        const recovery = s.playerBikeRecovery
+        if (recovery) phases.add(recovery.phase)
+        if (recovery?.phase === 'lifting') {
+          expect(s.player.vehicleId).toBeNull()
+          expect(s.playerEjection).toBeNull()
+          const transform = s.entityTransform('bike')
+          liftStart ??= transform.position
+          expect(transform.position[0]).toBeCloseTo(liftStart[0], 4)
+          expect(transform.position[2]).toBeCloseTo(liftStart[2], 4)
+          const up = upY(transform.rotation)
+          if (lastUp !== undefined) expect(Math.abs(up - lastUp)).toBeLessThan(0.04)
+          lastUp = up
+        }
+        if (phases.has('lifting') && !recovery) break
+      }
+      expect([...phases]).toEqual(['rising', 'lifting'])
+      expect(s.player.vehicleId).toBe('bike')
+      expect(pose().fallen).toBe(false)
+      expect(upY(s.entityTransform('bike').rotation)).toBeGreaterThan(0.99)
+    },
+  )
+
+  it('does not lift the bike once the rider has got off', () => {
     const { s, tick, pose } = ride(null)
     const bike = (s as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
     bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
-    bike.body.angularVelocity.setZero()
     bike.body.velocity.setZero()
-    const phases = new Set<string>()
-    let liftStart: number[] | undefined
-    let lastUp: number | undefined
-    for (let i = 0; i < 360; i++) {
-      tick()
-      const recovery = s.playerBikeRecovery
-      if (recovery) phases.add(recovery.phase)
-      if (recovery?.phase === 'lifting') {
-        expect(s.player.vehicleId).toBeNull()
-        const transform = s.entityTransform('bike')
-        liftStart ??= transform.position
-        expect(transform.position[0]).toBeCloseTo(liftStart[0], 4)
-        expect(transform.position[2]).toBeCloseTo(liftStart[2], 4)
-        const up = upY(transform.rotation)
-        if (lastUp !== undefined) expect(Math.abs(up - lastUp)).toBeLessThan(0.04)
-        lastUp = up
-      }
-      if (phases.has('lifting') && !recovery) break
-    }
-    expect([...phases]).toEqual(['rising', 'lifting'])
+    bike.body.angularVelocity.setZero()
+    for (let i = 0; i < 360 && !s.playerBikeRecovery; i++) tick()
+    expect(s.playerBikeRecovery).not.toBeNull()
+    s.interact()
+    expect(s.player.vehicleId).toBeNull()
+    for (let i = 0; i < 240; i++) tick()
+    expect(s.playerBikeRecovery).toBeNull()
+    expect(pose().fallen).toBe(true)
+    const before = s.entityTransform('bike').position
+    expect(
+      s.interact({
+        snapToRoad: true,
+        roads: [
+          {
+            points: [
+              { x: -10, z: 20 },
+              { x: 10, z: 20 },
+            ],
+            width: 4,
+          },
+        ],
+      }),
+    ).toBe('Levantando la moto')
+    expect(s.player.vehicleId).toBeNull()
+    for (let i = 0; i < 180; i++) tick()
     expect(s.player.vehicleId).toBe('bike')
+    const after = s.entityTransform('bike').position
+    expect(Math.hypot(after[0] - before[0], after[2] - before[2])).toBeLessThan(0.1)
     expect(pose().fallen).toBe(false)
-    expect(upY(s.entityTransform('bike').rotation)).toBeGreaterThan(0.99)
   })
 })
 

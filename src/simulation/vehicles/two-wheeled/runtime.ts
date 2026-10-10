@@ -37,6 +37,7 @@ import {
   ignitionRpm,
 } from '../drivetrain.js'
 import { holdInPark, isValidPowertrain, type WheeledVehicle } from '../wheeled/runtime.js'
+import { stepWheelMomentum } from '../wheel-momentum.js'
 import type { WheeledDefinition, WheeledInput } from '../wheeled/contracts.js'
 import {
   balanceActive,
@@ -813,6 +814,7 @@ export function stepTwoWheeledVehicle(
     v.raycast.setBrake(burnout ? 0 : Math.max(hold, state.rearBrake * tuning.rearBrakeForce), REAR)
   }
 
+  stepWheelMomentum(v, dt, active && !state.fallen && !state.crashed, powered, input.throttle)
   if (stationary || state.donutLean !== 0)
     holdDonut(v, stationary, active ? input.steering : 0, throttle, forward, gravityUp, dt)
   stepLean(v, dt, speed, forward, up, gravityUp, gravity, frontContact && rearContact)

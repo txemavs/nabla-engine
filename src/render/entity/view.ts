@@ -1621,8 +1621,10 @@ export class SceneView {
     this.captureOccupiedLights(sim.player.vehicleId)
     const vehicleId = sim.player.vehicleId
     this.updateRideSmoothing(sim, vehicleId, elapsed)
-    setMonitorSunglasses(this.monitor, !this.night)
-    if (!cockpit) updateMonitorAvatar(this.monitor, elapsed, !!vehicleId)
+    const recovery = sim.playerBikeRecovery
+    setMonitorSunglasses(this.monitor, !this.night && !recovery)
+    if (!cockpit)
+      updateMonitorAvatar(this.monitor, elapsed, !!vehicleId, recovery?.phase === 'lifting')
     if (vehicleId) {
       const info = sim.vehicleInfo(vehicleId, true)
       const head = driverHeadPose(
@@ -1683,13 +1685,22 @@ export class SceneView {
       )
       this.avatar.visible = !cockpit
     }
-    const recovery = sim.playerBikeRecovery
     if (recovery?.phase === 'rising')
       this.monitor.rotateZ(
         (Math.PI / 2) * (1 - THREE.MathUtils.smoothstep(recovery.progress, 0, 1)),
       )
-    if (recovery?.phase === 'lifting')
-      this.monitor.rotateX(-0.25 * Math.sin(Math.PI * recovery.progress))
+    if (recovery?.phase === 'lifting') {
+      const bike = new THREE.Vector3(...sim.entityTransform(recovery.vehicleId, true).position)
+      const delta = this.avatar.position.clone().sub(bike)
+      this.avatar.quaternion.setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        Math.atan2(delta.x, delta.z),
+      )
+      const pull = Math.sin(Math.PI * recovery.progress)
+      this.monitor.rotateX(-0.25 - 0.15 * pull)
+      this.monitor.position.y += 0.06 * pull
+      this.monitor.position.z += 0.08 * pull
+    }
     this.avatarTransfer.update(this.avatar, this.monitor, vehicleId, elapsed, !!sim.playerEjection)
   }
   /**

@@ -15,12 +15,13 @@
 Original pixel face: two expressive eyes and a small smile, with no text or green phosphor.
 
 ```ts
-paintMonitorFace(pixels: Uint8Array, eyeHeight = 5, focused = false): void
+paintMonitorFace(pixels: Uint8Array, eyeHeight = 5, focused = false, effort = false): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
+- `Math.abs`
 - `Math.max`
 - `Math.round`
 
@@ -30,7 +31,7 @@ Explicit throws in this body:
 
 ## MonitorFace.constructor
 
-[Implementation, line 34](../../../../../src/render/entity/monitor-face.ts#L34)
+[Implementation, line 43](../../../../../src/render/entity/monitor-face.ts#L43)
 
 Owns one reusable low-resolution texture; no canvas, fonts or per-pixel meshes.
 
@@ -45,12 +46,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorFace.update
 
-[Implementation, line 42](../../../../../src/render/entity/monitor-face.ts#L42)
+[Implementation, line 51](../../../../../src/render/entity/monitor-face.ts#L51)
 
 Owns one reusable low-resolution texture; no canvas, fonts or per-pixel meshes.
 
 ```ts
-update(elapsed: number, focused = false): void
+update(elapsed: number, focused = false, effort = false): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -64,7 +65,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorFace.dispose
 
-[Implementation, line 54](../../../../../src/render/entity/monitor-face.ts#L54)
+[Implementation, line 63](../../../../../src/render/entity/monitor-face.ts#L63)
 
 Owns one reusable low-resolution texture; no canvas, fonts or per-pixel meshes.
 

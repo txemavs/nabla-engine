@@ -192,7 +192,7 @@ export class Simulation {
   private interiorId: string | null = null
   private hoverJumpTime = 0
   private ejection: RiderEjection | null = null
-  private readonly fallSpeeds = new Map<string, number>()
+  private readonly fallRest = new Map<string, number>()
   private gentleRecovery: {
     vehicleId: string
     phase: 'rising' | 'lifting'
@@ -1267,22 +1267,12 @@ export class Simulation {
           v.twoWheeled.ejectPending = false
           if (id === this.vehicleId) this.ejectRider(v)
         }
-        if (!v.twoWheeled.fallen) this.fallSpeeds.delete(id)
+        if (!v.twoWheeled.fallen || id !== this.vehicleId) this.fallRest.delete(id)
         else {
-          if (!this.fallSpeeds.has(id))
-            this.fallSpeeds.set(
-              id,
-              Math.max(
-                v.body.velocity.length(),
-                v.twoWheeled.crashed ? v.twoWheeled.crashSpeed : 0,
-              ),
-            )
-          if (
-            id === this.vehicleId &&
-            this.fallSpeeds.get(id)! <= 3 &&
-            v.body.velocity.length() < 1.5
-          )
-            this.beginGentleRecovery(v)
+          const resting = v.body.velocity.length() < 0.75 && v.body.angularVelocity.length() < 1.2
+          const seconds = resting ? (this.fallRest.get(id) ?? 0) + FIXED_STEP : 0
+          this.fallRest.set(id, seconds)
+          if (seconds >= 0.45) this.beginGentleRecovery(v)
         }
         continue
       }
@@ -1400,13 +1390,19 @@ export class Simulation {
     return p
   }
   /** Supported, clear footing beside a slow fallen bike; no recovery over a drop or through a wall. */
-  private beginGentleRecovery(v: Vehicle): void {
-    if (this.gentleRecovery || !v.twoWheeled) return
+  private beginGentleRecovery(v: Vehicle, pickingUp = false): boolean {
+    if (this.gentleRecovery || !v.twoWheeled || (!pickingUp && this.vehicleId !== v.entity.id))
+      return false
     const up = this.radialUp(v.body)
-    if (up.y < 0.98) return // Keep planetary recovery near the local upright frame.
+    if (up.y < 0.98) return false // Keep planetary recovery near the local upright frame.
     const forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
     forward.y = 0
-    if (forward.lengthSquared() < 0.01) return
+    if (forward.lengthSquared() < 0.01) {
+      const right = v.body.quaternion.vmult(new Vec3(1, 0, 0))
+      right.y = 0
+      up.cross(right, forward)
+    }
+    if (forward.lengthSquared() < 0.01) return false
     forward.normalize()
     const yaw = Math.atan2(-forward.x, -forward.z)
     const upright = new Quaternion().setFromAxisAngle(up, yaw)
@@ -1433,12 +1429,13 @@ export class Simulation {
         )
       )
         continue
-      this.placeOnFoot(candidate)
+      if (this.vehicleId) this.placeOnFoot(candidate)
       this.input.yaw = Math.atan2(candidate.x - v.body.position.x, candidate.z - v.body.position.z)
-      this.ejection = { ...startEjection(v.entity.id, 0), phase: 'rising' }
+      this.ejection = pickingUp ? null : { ...startEjection(v.entity.id, 0), phase: 'rising' }
       this.gentleRecovery = { vehicleId: v.entity.id, phase: 'rising', elapsed: 0, to: upright }
-      return
+      return true
     }
+    return false
   }
   /** Ease the actual chassis upright at the same spot, then put the recovered rider back in the seat. */
   private stepGentleRecovery(): void {
@@ -1501,7 +1498,7 @@ export class Simulation {
     if (this.options.playerMode === 'hover') this.hover()
     if (t === 1) {
       resetTwoWheeled(v.twoWheeled)
-      this.fallSpeeds.delete(r.vehicleId)
+      this.fallRest.delete(r.vehicleId)
       this.gentleRecovery = null
       this.startInVehicle(r.vehicleId)
     }
@@ -1845,19 +1842,25 @@ export class Simulation {
   }
   /**
    * Interaction returns a useful status; dismount requires a supported, unobstructed exit.
-   * Mounting a two-wheeler that is on the ground (crashed or fallen) is the R reset: same
-   * upright and, when `recover` asks for it, the same snap to the nearest road.
+   * Picking up a fallen two-wheeler animates an in-place lift before mounting; R remains a reset.
    */
-  interact(recover?: RecoverVehicleOptions): string {
+  interact(_recover?: RecoverVehicleOptions): string {
     if (this.disposed) throw new Error('Simulation is disposed')
-    if (this.gentleRecovery) return 'Levantando la moto'
+    if (this.gentleRecovery) {
+      this.gentleRecovery = null
+      this.ejection = null
+      return 'A pie · moto en el suelo'
+    }
     if (this.vehicleId) return this.exitVehicle()
     const id = this.nearestVehicle()
     if (!id) return 'Acércate a un vehículo detenido y pulsa E para entrar'
     const v = this.vehicles.get(id)!
     const lying = !!v.twoWheeled && (v.twoWheeled.crashed || v.twoWheeled.fallen)
+    if (lying)
+      return this.beginGentleRecovery(v, true)
+        ? 'Levantando la moto'
+        : 'No hay espacio para levantar la moto'
     this.startInVehicle(id)
-    if (lying) return this.recoverVehicle(recover)
     return 'Conduciendo ' + v.entity.name
   }
   /** Explicit scenario entry; ordinary interaction still checks reach and obstructions. */

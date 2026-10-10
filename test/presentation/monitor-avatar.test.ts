@@ -14,6 +14,19 @@ import {
 import { MonitorFace } from '../../src/render/entity/monitor-face.js'
 
 describe('floating helmet avatar', () => {
+  it('shows narrowed eyes and clenched teeth while lifting, then restores the normal face', () => {
+    const face = new MonitorFace()
+    const texture = face.texture
+    const normal = new Uint8Array(texture.image.data as Uint8Array)
+    face.update(0, false, true)
+    const effort = texture.image.data as Uint8Array
+    expect(effort[(4 * 80 + 34) * 4]).toBe(160)
+    expect(effort).not.toEqual(normal)
+    face.update(0, false, false)
+    expect(texture.image.data).toEqual(normal)
+    expect(face.texture).toBe(texture)
+    face.dispose()
+  })
   it('compresses the ear distance to 80 percent and slides the visor along the same shape', () => {
     const model = createMonitorAvatar()
     model.scale.setScalar(1)
