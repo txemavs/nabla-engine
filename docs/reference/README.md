@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **365 modules; 3962 executable function definitions**.
+Coverage: **365 modules; 3963 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -174,7 +174,7 @@ Coverage: **365 modules; 3962 executable function definitions**.
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 6 |
 | [src/render/entity/asset-warmup.ts](src/render/entity/asset-warmup.ts.md) | 15 |
 | [src/render/entity/assets.ts](src/render/entity/assets.ts.md) | 13 |
-| [src/render/entity/avatar-motion.ts](src/render/entity/avatar-motion.ts.md) | 9 |
+| [src/render/entity/avatar-motion.ts](src/render/entity/avatar-motion.ts.md) | 10 |
 | [src/render/entity/avatar.ts](src/render/entity/avatar.ts.md) | 23 |
 | [src/render/entity/billboard.ts](src/render/entity/billboard.ts.md) | 7 |
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 1 |

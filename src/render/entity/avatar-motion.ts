@@ -7,6 +7,25 @@ import { CriticalFollow, criticalStep } from './driving-camera.js'
 
 const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle))
 
+/** Absolute local lifting pose: repeated render frames must not accumulate motion or spin. */
+export function poseBikeRecovery(
+  model: THREE.Object3D,
+  phase: 'rising' | 'lifting',
+  progress: number,
+  baseHeight: number,
+): void {
+  const t = THREE.MathUtils.clamp(progress, 0, 1)
+  const pull = phase === 'lifting' ? Math.sin(Math.PI * t) : 0
+  model.position.set(0, baseHeight + 0.06 * pull, 0.08 * pull)
+  model.quaternion.setFromEuler(
+    new THREE.Euler(
+      phase === 'lifting' ? -0.25 - 0.15 * pull : 0,
+      0,
+      phase === 'rising' ? (Math.PI / 2) * (1 - THREE.MathUtils.smoothstep(t, 0, 1)) : 0,
+    ),
+  )
+}
+
 /** Blend the displayed pose on seat changes, including the monitor's offset and scale. */
 export class AvatarTransfer {
   private mode: string | null | undefined

@@ -5,11 +5,37 @@ import {
   AvatarFollow,
   AvatarTransfer,
   EjectionTumble,
+  poseBikeRecovery,
 } from '../../src/render/entity/avatar-motion.js'
 import { startEjection, type RiderEjection } from '../../src/simulation/rider-ejection.js'
 import { ejectionDefaults } from '../../src/config/simulation.js'
 
 const dt = 1 / 60
+
+describe('bike recovery pose', () => {
+  it('keeps the pull within eight centimetres across a whole lift, independent of frame rate', () => {
+    for (const fps of [30, 60, 144]) {
+      const model = new THREE.Group()
+      for (let i = 0; i <= fps * 1.7; i++) {
+        poseBikeRecovery(model, 'lifting', i / (fps * 1.7), 0.35)
+        expect(Math.abs(model.position.z)).toBeLessThanOrEqual(0.080001)
+        expect(model.position.y).toBeLessThanOrEqual(0.410001)
+        expect(model.quaternion.angleTo(new THREE.Quaternion())).toBeLessThanOrEqual(0.400001)
+      }
+    }
+  })
+
+  it('does not accumulate the leftward get-up rotation when a progress frame repeats', () => {
+    const model = new THREE.Group()
+    poseBikeRecovery(model, 'rising', 0.7, 0.35)
+    const rotation = model.quaternion.clone()
+    for (let i = 0; i < 120; i++) poseBikeRecovery(model, 'rising', 0.7, 0.35)
+    expect(model.quaternion.angleTo(rotation)).toBeLessThan(1e-7)
+    poseBikeRecovery(model, 'rising', 1, 0.35)
+    expect(model.quaternion.angleTo(new THREE.Quaternion())).toBeLessThan(1e-7)
+    expect(model.position.toArray()).toEqual([0, 0.35, 0])
+  })
+})
 
 describe('AvatarTransfer', () => {
   it('blends getting into and out of a moving vehicle without a pose jump', () => {

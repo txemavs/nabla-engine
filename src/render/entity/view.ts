@@ -52,7 +52,7 @@ import { gameCameraDefaults, rideSmoothingDefaults } from '../../config/camera.j
 import { vehicleAppearanceDefaults } from '../../config/vehicle-appearance.js'
 import { easeRiderHead, type RiderHeadEase } from './rider-head.js'
 import { RideSmoothing, rideSmoothingSettings } from './ride-smoothing.js'
-import { AvatarFollow, AvatarTransfer, EjectionTumble } from './avatar-motion.js'
+import { AvatarFollow, AvatarTransfer, EjectionTumble, poseBikeRecovery } from './avatar-motion.js'
 import {
   clampMirrorAdjustment,
   mirrorModelKey,
@@ -1639,6 +1639,7 @@ export class SceneView {
           ),
         )
       this.monitor.scale.setScalar(0.825)
+      this.monitor.position.set(0, 0, 0)
       this.monitorMotion.update(
         this.monitor,
         sim.playerFrame
@@ -1660,10 +1661,8 @@ export class SceneView {
       )
       this.avatar.visible = !cockpit
     }
-    if (recovery?.phase === 'rising')
-      this.monitor.rotateZ(
-        (Math.PI / 2) * (1 - THREE.MathUtils.smoothstep(recovery.progress, 0, 1)),
-      )
+    if (recovery?.phase === 'rising' || recovery?.phase === 'lifting')
+      poseBikeRecovery(this.monitor, recovery.phase, recovery.progress, this.monitor.position.y)
     if (recovery?.phase === 'lifting') {
       const bike = new THREE.Vector3(...sim.entityTransform(recovery.vehicleId, true).position)
       const delta = this.avatar.position.clone().sub(bike)
@@ -1671,10 +1670,6 @@ export class SceneView {
         new THREE.Vector3(0, 1, 0),
         Math.atan2(delta.x, delta.z),
       )
-      const pull = Math.sin(Math.PI * recovery.progress)
-      this.monitor.rotateX(-0.25 - 0.15 * pull)
-      this.monitor.position.y += 0.06 * pull
-      this.monitor.position.z += 0.08 * pull
     }
     this.avatarTransfer.update(this.avatar, this.monitor, vehicleId, elapsed, !!sim.playerEjection)
   }

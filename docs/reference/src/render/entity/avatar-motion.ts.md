@@ -28,9 +28,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.cos`
 - `Math.sin`
 
+## poseBikeRecovery
+
+[Implementation, line 11](../../../../../src/render/entity/avatar-motion.ts#L11)
+
+Absolute local lifting pose: repeated render frames must not accumulate motion or spin.
+
+```ts
+poseBikeRecovery(model: THREE.Object3D, phase: 'rising' | 'lifting', progress: number, baseHeight: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.sin`
+- `THREE.Euler`
+- `THREE.MathUtils.clamp`
+- `THREE.MathUtils.smoothstep`
+- `model.position.set`
+- `model.quaternion.setFromEuler`
+
 ## AvatarTransfer.update
 
-[Implementation, line 19](../../../../../src/render/entity/avatar-motion.ts#L19)
+[Implementation, line 38](../../../../../src/render/entity/avatar-motion.ts#L38)
 
 Blend the displayed pose on seat changes, including the monitor's offset and scale.
 
@@ -68,7 +87,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AvatarFollow.position
 
-[Implementation, line 78](../../../../../src/render/entity/avatar-motion.ts#L78)
+[Implementation, line 97](../../../../../src/render/entity/avatar-motion.ts#L97)
 
 Smoothed position.
 
@@ -78,7 +97,7 @@ position(): THREE.Vector3
 
 ## AvatarFollow.velocity
 
-[Implementation, line 82](../../../../../src/render/entity/avatar-motion.ts#L82)
+[Implementation, line 101](../../../../../src/render/entity/avatar-motion.ts#L101)
 
 Smoothed velocity, m/s.
 
@@ -88,7 +107,7 @@ velocity(): THREE.Vector3
 
 ## AvatarFollow.heading
 
-[Implementation, line 86](../../../../../src/render/entity/avatar-motion.ts#L86)
+[Implementation, line 105](../../../../../src/render/entity/avatar-motion.ts#L105)
 
 Smoothed heading, radians.
 
@@ -98,7 +117,7 @@ heading(): number
 
 ## AvatarFollow.reset
 
-[Implementation, line 91](../../../../../src/render/entity/avatar-motion.ts#L91)
+[Implementation, line 110](../../../../../src/render/entity/avatar-motion.ts#L110)
 
 Forget the history; the next update snaps.
 
@@ -112,7 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AvatarFollow.update
 
-[Implementation, line 96](../../../../../src/render/entity/avatar-motion.ts#L96)
+[Implementation, line 115](../../../../../src/render/entity/avatar-motion.ts#L115)
 
 Smooth the on-foot avatar like the cameras: a critically damped follower with velocity
 feed-forward for the position and one with turn-rate feed-forward for the heading. Steady
@@ -138,7 +157,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## EjectionTumble.active
 
-[Implementation, line 143](../../../../../src/render/entity/avatar-motion.ts#L143)
+[Implementation, line 162](../../../../../src/render/entity/avatar-motion.ts#L162)
 
 True while it is posing the model (an ejection is running).
 
@@ -148,7 +167,7 @@ active(): boolean
 
 ## EjectionTumble.update
 
-[Implementation, line 151](../../../../../src/render/entity/avatar-motion.ts#L151)
+[Implementation, line 170](../../../../../src/render/entity/avatar-motion.ts#L170)
 
 Pose `model` (the monitor inside the avatar group) on top of its normal motion. `velocity`
 is the smoothed avatar velocity in the avatar's own frame. Returns false when idle.
