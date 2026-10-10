@@ -20,6 +20,7 @@ import { withinMapDistance } from '../planet/visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
 import { ShipLights, type ShipSwitch } from './ship-lights.js'
 import { ExhaustSmoke } from './exhaust-smoke.js'
+import { MotorcycleSideStand } from './motorcycle-side-stand.js'
 import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
@@ -157,7 +158,7 @@ export class SceneView {
   private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
   private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
   private readonly exhaustSmoke = new Map<string, ExhaustSmoke>()
-  private readonly motorcycleStands = new Map<string, THREE.Group>()
+  private readonly motorcycleStands = new Map<string, MotorcycleSideStand>()
   private readonly reflections = new Map<string, ReflectionEnvironment>()
   /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
   private readonly odometers = new Map<string, number>()
@@ -1128,8 +1129,6 @@ export class SceneView {
           ),
         )
       if (twoWheeled) {
-        const stand = new THREE.Group()
-        stand.name = 'Parked motorcycle centre stand'
         const bottom = Math.min(
           ...definition.hubs.map(
             (hub, i) =>
@@ -1139,37 +1138,8 @@ export class SceneView {
                 : definition.wheelRadius),
           ),
         )
-        const metal = new THREE.MeshStandardMaterial({
-          color: '#242729',
-          metalness: 0.65,
-          roughness: 0.55,
-        })
-        const bar = (a: THREE.Vector3, b: THREE.Vector3) => {
-          const direction = b.clone().sub(a)
-          const mesh = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.012, 0.012, direction.length(), 6),
-            metal,
-          )
-          mesh.position.copy(a).add(b).multiplyScalar(0.5)
-          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize())
-          stand.add(mesh)
-        }
-        for (const side of [-1, 1]) {
-          bar(
-            new THREE.Vector3(side * 0.1, bottom + 0.22, 0.08),
-            new THREE.Vector3(side * 0.2, bottom + 0.015, 0.16),
-          )
-          bar(
-            new THREE.Vector3(side * 0.2, bottom + 0.015, 0.1),
-            new THREE.Vector3(side * 0.2, bottom + 0.015, 0.22),
-          )
-        }
-        bar(
-          new THREE.Vector3(-0.2, bottom + 0.08, 0.14),
-          new THREE.Vector3(0.2, bottom + 0.08, 0.14),
-        )
-        stand.visible = false
-        group.add(stand)
+        const stand = new MotorcycleSideStand(bottom)
+        group.add(stand.root)
         this.motorcycleStands.set(e.id, stand)
         const outlet = model.getObjectByName('Exhaust_Outlet_Closure')
         if (outlet) {
@@ -1544,7 +1514,7 @@ export class SceneView {
     }
     for (const [id, stand] of this.motorcycleStands) {
       const info = sim.vehicleInfo(id)
-      stand.visible = sim.player.vehicleId !== id && info.parked && Math.abs(info.lean) < 0.3
+      stand.update(elapsed, sim.player.vehicleId !== id && info.parked && Math.abs(info.lean) < 0.3)
     }
     for (const lights of this.shipLights.values()) lights.update(performance.now())
     const lightNow = performance.now()

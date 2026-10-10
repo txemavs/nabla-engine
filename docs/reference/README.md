@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **364 modules; 3957 executable function definitions**.
+Coverage: **365 modules; 3959 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -192,6 +192,7 @@ Coverage: **364 modules; 3957 executable function definitions**.
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 12 |
 | [src/render/entity/magazines.ts](src/render/entity/magazines.ts.md) | 4 |
 | [src/render/entity/monitor-face.ts](src/render/entity/monitor-face.ts.md) | 4 |
+| [src/render/entity/motorcycle-side-stand.ts](src/render/entity/motorcycle-side-stand.ts.md) | 3 |
 | [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 11 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
 | [src/render/entity/ride-smoothing.ts](src/render/entity/ride-smoothing.ts.md) | 13 |
@@ -205,7 +206,7 @@ Coverage: **364 modules; 3957 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 125 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 124 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
