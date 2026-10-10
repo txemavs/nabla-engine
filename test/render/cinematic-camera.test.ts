@@ -1,12 +1,40 @@
 import { expect, test } from 'vitest'
-import { Quaternion, Vector3 } from 'three'
+import { Quaternion, Vector3, PerspectiveCamera } from 'three'
 import {
   advanceCinematicAngle,
   cinematicOrbitPose,
   cinematicOrbitRadius,
+  cinematicFallPose,
 } from '../../src/render/entity/cinematic-camera.js'
 import { overheadFootHeight } from '../../src/render/entity/driving-camera.js'
 import { gameCameraDefaults, resolveGameCameraSettings } from '../../src/config/camera.js'
+
+test.each([0.6, 1, 1.8])(
+  'overhead fall shot frames both separated subjects at aspect %s',
+  (aspect) => {
+    for (const rider of [
+      [0, 1, 0],
+      [30, 1, -15],
+      [2, 18, 2],
+    ]) {
+      const bike = [0, 0.5, 0]
+      const camera = new PerspectiveCamera(38, aspect, 0.1, 1000)
+      const shot = cinematicFallPose(rider, bike, camera.fov, aspect, 0.6)
+      camera.position.copy(shot.position)
+      camera.up.copy(shot.up)
+      camera.lookAt(shot.target)
+      camera.updateMatrixWorld(true)
+      expect(camera.getWorldDirection(new Vector3()).y).toBeCloseTo(-1, 8)
+      for (const centre of [rider, bike]) {
+        const projected = new Vector3().fromArray(centre).project(camera)
+        expect(Math.abs(projected.x)).toBeLessThan(0.95)
+        expect(Math.abs(projected.y)).toBeLessThan(0.95)
+        expect(projected.z).toBeGreaterThan(-1)
+        expect(projected.z).toBeLessThan(1)
+      }
+    }
+  },
+)
 
 test('cinematic radius scales the chase distance and respects the minimum', () => {
   const d = gameCameraDefaults

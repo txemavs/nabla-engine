@@ -19,7 +19,7 @@ Shared gameplay camera with configurable manual-look recovery. Times are millise
 
 ## createGameCameraState
 
-[Implementation, line 93](../../../../src/runtime/game-camera.ts#L93)
+[Implementation, line 97](../../../../src/runtime/game-camera.ts#L97)
 
 Create independent camera state and validate per-consumer recovery overrides.
 
@@ -36,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mouseLooksWithoutButton
 
-[Implementation, line 128](../../../../src/runtime/game-camera.ts#L128)
+[Implementation, line 132](../../../../src/runtime/game-camera.ts#L132)
 
 Views where plain mouse movement looks around with no button held: the exterior
 chase/third-person camera, on-foot first person and the seated driver view. The vehicle
@@ -50,7 +50,7 @@ mouseLooksWithoutButton(state: Pick<GameCameraState, 'mode'>, seated: boolean): 
 
 ## detachedView
 
-[Implementation, line 136](../../../../src/runtime/game-camera.ts#L136)
+[Implementation, line 140](../../../../src/runtime/game-camera.ts#L140)
 
 Overhead and cinematic views are detached from the player's eyes in every context.
 
@@ -60,7 +60,7 @@ detachedView(mode: GameCameraMode): boolean
 
 ## isFirstPersonView
 
-[Implementation, line 141](../../../../src/runtime/game-camera.ts#L141)
+[Implementation, line 145](../../../../src/runtime/game-camera.ts#L145)
 
 True when the view is rendered from the player's or driver's eyes.
 
@@ -74,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gameCameraView
 
-[Implementation, line 150](../../../../src/runtime/game-camera.ts#L150)
+[Implementation, line 154](../../../../src/runtime/game-camera.ts#L154)
 
 Stable view name for hosts: `first-person`, `chase`, `cockpit`, `map` or `cinematic`.
 
@@ -88,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cycleGameCamera
 
-[Implementation, line 164](../../../../src/runtime/game-camera.ts#L164)
+[Implementation, line 168](../../../../src/runtime/game-camera.ts#L168)
 
 The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
 cinematic → exterior. On foot: first person → third person → overhead → cinematic → first
@@ -105,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setGameCameraView
 
-[Implementation, line 192](../../../../src/runtime/game-camera.ts#L192)
+[Implementation, line 196](../../../../src/runtime/game-camera.ts#L196)
 
 Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
 `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
@@ -118,7 +118,7 @@ setGameCameraView(state: GameCameraState, wanted: GameCameraView, seated: boolea
 
 ## downwardViewFar
 
-[Implementation, line 223](../../../../src/runtime/game-camera.ts#L223)
+[Implementation, line 227](../../../../src/runtime/game-camera.ts#L227)
 
 Far plane while the camera looks steeply down. The ordinary far plane is 12 km, so a
 zenithal view is a shaft and the cascaded shadow maps size themselves to it. The ground
@@ -137,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## updateGameCamera
 
-[Implementation, line 232](../../../../src/runtime/game-camera.ts#L232)
+[Implementation, line 236](../../../../src/runtime/game-camera.ts#L236)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -183,6 +183,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.up.set(0, 1, 0).applyQuaternion`
 - `camera.updateProjectionMatrix`
 - `cameraRecovery`
+- `cinematicFallPose`
 - `cinematicOrbitPose`
 - `desired.splice`
 - `driverHeadPose`
@@ -221,10 +222,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@428
+## updateGameCamera.callback@447
 
-[Implementation, line 428](../../../../src/runtime/game-camera.ts#L428)
+[Implementation, line 447](../../../../src/runtime/game-camera.ts#L447)
 
 ```ts
-callback@428(entity): inferred by TypeScript; see implementation
+callback@447(entity): inferred by TypeScript; see implementation
 ```

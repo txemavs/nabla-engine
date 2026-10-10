@@ -15,6 +15,47 @@ import type { SceneDocument } from '../../src/scene/document.js'
 import { gameCameraDefaults, resolveGameCameraSettings } from '../../src/config/camera.js'
 import { followDrivingHeading } from '../../src/render/entity/driving-camera.js'
 import { GameRuntime } from '../../src/runtime/game.js'
+import { startEjection, type RiderEjection } from '../../src/simulation/rider-ejection.js'
+
+test('a fallen rider gets an overhead shot of rider and bike without losing the previous camera mode', async () => {
+  const document: SceneDocument = {
+    version: 1,
+    name: 'Fall camera',
+    entities: [
+      presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
+      createEntity('spawn', 'spawn', [12, 1, 8]),
+    ],
+  }
+  const session = new PlaySession()
+  const sim = await session.play(document)
+  const view = {
+    document,
+    objects: new Map(),
+    vehicleHeadOffset: () => [0, 0, 0] as [number, number, number],
+  }
+  const camera = new PerspectiveCamera(38, 0.6)
+  const state = createGameCameraState()
+  state.mode = 'cockpit'
+  const fall = sim as unknown as { ejection: RiderEjection | null }
+  try {
+    fall.ejection = startEjection('bike', 12)
+    const result = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
+    expect(result.cinematic).toBe(true)
+    expect(result.cockpit).toBe(false)
+    expect(camera.getWorldDirection(new Vector3()).y).toBeCloseTo(-1, 8)
+    expect(state.mode).toBe('cockpit')
+    camera.updateMatrixWorld(true)
+    for (const centre of [sim.renderPlayerPosition, sim.entityTransform('bike').position]) {
+      const projected = new Vector3(...centre).project(camera)
+      expect(Math.abs(projected.x)).toBeLessThan(0.95)
+      expect(Math.abs(projected.y)).toBeLessThan(0.95)
+    }
+    fall.ejection = null
+    expect(updateGameCamera(sim, view, camera, state, 2000, 1 / 60).cinematic).toBe(false)
+  } finally {
+    session.dispose()
+  }
+})
 
 test('manual look lasts ten seconds, then recovery ramps up and can be overridden', () => {
   for (const elapsed of [0, 900, 1400, 9999, 10000]) {

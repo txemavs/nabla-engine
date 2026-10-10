@@ -1424,6 +1424,7 @@ export class SceneView {
       }
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
+    if (sim.playerEjection || sim.playerBikeRecovery) cockpit = false
     this.simulated = true
     for (const e of this.document.entities) {
       if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue

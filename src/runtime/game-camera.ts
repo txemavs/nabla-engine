@@ -20,7 +20,11 @@ import {
   DrivingTelemetry,
   GroundHeading,
 } from '../render/entity/driving-camera.js'
-import { advanceCinematicAngle, cinematicOrbitPose } from '../render/entity/cinematic-camera.js'
+import {
+  advanceCinematicAngle,
+  cinematicOrbitPose,
+  cinematicFallPose,
+} from '../render/entity/cinematic-camera.js'
 
 /**
  * Gameplay camera modes. `chase` is the exterior view (third person on foot), `cockpit` the
@@ -254,10 +258,11 @@ export function updateGameCamera(
   // Only the exterior chase view keeps the flight tilt; every other view drops it.
   let flightTilt = 0
   const p = { ...sim.player, position: sim.renderPlayerPosition }
-  const cockpit = cameraMode === 'cockpit'
-  const overhead = cameraMode === 'map'
-  const cinematic = cameraMode === 'cinematic'
-  const eyes = isFirstPersonView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
+  const riderFall = sim.playerEjection ?? sim.playerBikeRecovery
+  const cockpit = !riderFall && cameraMode === 'cockpit'
+  const overhead = !riderFall && cameraMode === 'map'
+  const cinematic = !!riderFall || cameraMode === 'cinematic'
+  const eyes = !riderFall && isFirstPersonView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
   const playerFrame = sim.playerFrame
   const playerFrameQ = new THREE.Quaternion(...(playerFrame?.rotation ?? ([0, 0, 0, 1] as const)))
   camera.up.set(0, 1, 0).applyQuaternion(playerFrameQ)
@@ -361,7 +366,21 @@ export function updateGameCamera(
   let { cinematicAngle, cinematicAnchorY } = state
   if (cinematic) cinematicAngle = advanceCinematicAngle(cinematicAngle, dt, tuning)
   else cinematicAnchorY = null
-  if (!p.vehicleId && eyes) {
+  if (riderFall) {
+    const bike = sim.entityTransform(riderFall.vehicleId, true)
+    const shot = cinematicFallPose(
+      p.position,
+      bike.position,
+      camera.fov,
+      camera.aspect,
+      state.yaw,
+      playerFrameQ,
+    )
+    camera.position.copy(shot.position)
+    camera.up.copy(shot.up)
+    camera.lookAt(shot.target)
+    vehicleEntrance = null
+  } else if (!p.vehicleId && eyes) {
     camera.position.fromArray(p.position)
     camera.quaternion
       .copy(playerFrameQ)
@@ -515,7 +534,9 @@ export function updateGameCamera(
 
   // View changes blend from the last rendered pose (eased position, orientation and fov) while
   // the player stays in the same vehicle or on foot; boarding keeps its own entrance move.
-  const cameraView = gameCameraView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
+  const cameraView = riderFall
+    ? 'cinematic'
+    : gameCameraView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
   const vehicleKey = p.vehicleId ?? null
   const anchor = new THREE.Vector3(...p.position)
   let transition = state.transition
@@ -536,7 +557,7 @@ export function updateGameCamera(
           }
         : null
   }
-  if (vehicleEntrance || (last && last.vehicleId !== vehicleKey)) transition = null
+  if (riderFall || vehicleEntrance || (last && last.vehicleId !== vehicleKey)) transition = null
   if (transition) {
     const t = THREE.MathUtils.clamp((now - transition.started) / transition.duration, 0, 1)
     const k = THREE.MathUtils.smootherstep(t, 0, 1)
