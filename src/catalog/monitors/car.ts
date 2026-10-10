@@ -13,7 +13,6 @@ export const carMenuItems: MonitorMenuItem[] = [
       { id: 'red', label: 'ROJO', action: { type: 'vehicle.paint', value: '#b91929' } },
       { id: 'blue', label: 'AZUL', action: { type: 'vehicle.paint', value: '#2157a5' } },
       { id: 'white', label: 'BLANCO', action: { type: 'vehicle.paint', value: '#f0f0ea' } },
-      { id: 'yellow', label: 'AMARILLO', action: { type: 'vehicle.paint', value: '#f5cc19' } },
       { id: 'orange', label: 'NARANJA', action: { type: 'vehicle.paint', value: '#f07818' } },
       { id: 'chrome', label: 'CROMADO', action: { type: 'vehicle.paintFinish', value: 'chrome' } },
       back,

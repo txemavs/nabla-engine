@@ -28,7 +28,6 @@ export const vehicleAppearanceDefaults = Object.freeze({
     '#b91929',
     '#2157a5',
     '#f0f0ea',
-    '#f5cc19',
     '#f07818',
   ]),
   chrome: Object.freeze({ metalness: 1, maxRoughness: 0.32 }),
