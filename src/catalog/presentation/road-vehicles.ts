@@ -11,6 +11,7 @@ import { createA3Lights } from './a3-lamps.js'
 import { createA3Mounts } from './a3-mounts.js'
 import { authoredMirrorLenses } from '../../render/vehicle-presentation/mirror-lenses.js'
 import { authoredScreenMounts } from '../../render/vehicle-presentation/screen-mounts.js'
+import { paintMotorcycle } from './motorcycle-paint.js'
 function paintWhiteBody(model: THREE.Object3D, color: string): void {
   model.traverse((node) => {
     if (!(node instanceof THREE.Mesh)) return
@@ -197,12 +198,7 @@ const motorcyclePresentation: VehiclePresentationAdapter = {
     return {}
   },
   paint(model, color) {
-    model.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return
-      for (const material of [object.material].flat())
-        if (material instanceof THREE.MeshStandardMaterial && material.userData.nabla?.paint)
-          material.color.set(color)
-    })
+    paintMotorcycle(model, color)
   },
 }
 export const stockVehiclePresentation: VehiclePresentationResolver = (entity) => {

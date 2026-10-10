@@ -1,7 +1,13 @@
 # Honda VFR800FI 99
 
-User-approved black VFR800FI (RC46) asset: 273,994 triangles, 7.83 MB, metres, Y-up, −Z forward.
+User-approved VFR800FI (RC46) asset: 140,345 triangles, 3.42 MB, metres, Y-up, −Z forward.
 Cleaned up by hand by Txema Vicente over several hours, then substantially reworked by Codex under his direction using data from the Honda manual, starting from a low-quality base mesh; almost none of the original geometry remains. The base mesh was the user-supplied `interceptor.glb`. The model was simplified and articulated; the base mesh SHA-256, final integrity and provenance are in [asset.json](asset.json). The spoke designs were kept. Tyres and chain are smooth, brake tracks are planar, and lenses carry the shared vehicle light channels.
+
+The 2026-10-10 owner export `VFR800FI99.glb` replaces the earlier mesh. It includes the six-spoke front wheel, both front brakes, closed supports, folded passenger pegs, bare rider pegs, original mirrors, revised lenses and cap, and simplified exhaust. No decals are included. The radiator is the only embedded image texture. The rear chain and sprocket sit 26 mm farther inward; closed black chain spans meet the rear semicircle, behind the existing grey hub. The sprocket rotates with the wheel; the chain wrap stays with the swingarm.
+
+Body paint is split into tank, front and tail; both rims have independent paint tags. The motorcycle palette includes black with red rim stripes, red, white with white rims, yellow with black rims and no red stripe, grey and blue with grey rims, and the owner's anniversary combination (`#c51b28`): red front/tank and grey rear. Other colour combinations omit the red rim stripe. Fixed metal, tyres and lenses keep their materials.
+
+After a new Blender export, `scripts/import-vfr800-final.mjs <source.glb>` restores the engine metadata from the current shipped GLB without changing the source geometry bytes. `scripts/adjust-vfr800-chain.mjs` applies the owner's chain correction once after import. Regenerate catalog anchors with `npm run rigs:generate`.
 
 ## Files
 

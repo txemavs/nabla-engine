@@ -29,8 +29,8 @@ describe('vehicle colours and finishes', () => {
 
   it('chooses the motorcycle/car palette once and leaves other vehicles unchanged', () => {
     const bike = presetVehicle('vfr800', 'bike')
-    for (let i = 0; i < 6; i++) {
-      assignVehicleColor(bike, () => (i + 0.5) / 6)
+    for (let i = 0; i < vehicleAppearanceDefaults.motorcycleColors.length; i++) {
+      assignVehicleColor(bike, () => (i + 0.5) / vehicleAppearanceDefaults.motorcycleColors.length)
       expect(bike.color).toBe(vehicleAppearanceDefaults.motorcycleColors[i])
     }
     const car = presetVehicle('car', 'car')
@@ -69,14 +69,15 @@ describe('vehicle colours and finishes', () => {
       if (material.userData.nabla?.paint) {
         expect(material.color.getHexString()).toBe('f5cc19')
         painted++
+      } else if (['rim', 'rim-stripe'].includes(material.userData.nabla?.paintZone)) {
+        expect(material.color.getHexString()).toBe('17191e')
       } else expect(material.color.getHexString()).toBe(original)
     }
-    expect(painted).toBe(1)
+    expect(painted).toBe(3)
     for (const name of [
       'Fixed black plastic',
       'Fixed dark grey cockpit plastic',
       'Fixed grey radiator',
-      'Fixed black wheel finish',
     ]) {
       const material = [...originals.keys()].find((material) => material.name === name)
       expect(material).toBeDefined()

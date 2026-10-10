@@ -7,17 +7,17 @@
   "estimatedDimensions": true,
   "sourceScale": 0.0022,
   "nodes": {
-    "Body": 1,
-    "Steering_Pivot": 2,
-    "Fork_Slider": 3,
-    "Wheel_Front": 4,
-    "Swingarm_Pivot": 5,
-    "Wheel_Rear": 6,
-    "Chain": 7,
-    "Tire_Front": 8,
-    "Tire_Rear": 9,
-    "Shock_Body": 10,
-    "Shock_Rod": 11
+    "Body": 41,
+    "Steering_Pivot": 54,
+    "Fork_Slider": 53,
+    "Wheel_Front": 52,
+    "Swingarm_Pivot": 59,
+    "Wheel_Rear": 58,
+    "Chain": 42,
+    "Tire_Front": 50,
+    "Tire_Rear": 57,
+    "Shock_Body": 43,
+    "Shock_Rod": 44
   },
   "front": {
     "hub": [0.00396, 0.2999, -0.72],
@@ -42,10 +42,10 @@
   "chain": {
     "node": "Chain",
     "frontSprocket": [-0.077, 0.31040053030303033, 0.11909090909090908],
-    "rearSprocket": [-0.077, 0.31665053030303036, 0.719090909090909],
+    "rearSprocket": [-0.10926, 0.3149, 0.72],
     "animation": "update-two-spans",
     "appearance": "smooth black band without link detail",
-    "sourceSpans": [45, 47]
+    "sourceSpans": ["upper continuous band", "lower continuous band"]
   },
   "driver": {
     "seat": [0, 0.8475810227272728, 0.36681818181818177],
@@ -95,7 +95,7 @@
   },
   "passengerFootrests": {
     "finish": "satin aluminium",
-    "orientation": "deployed horizontally outward, aligned with widened passenger brackets",
+    "orientation": "folded upwards, with repaired closed supports",
     "sourceMesh": 276,
     "attachedTo": "Body"
   },

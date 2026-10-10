@@ -18,7 +18,8 @@ export const vehicleAppearanceDefaults = Object.freeze({
     '#b91929',
     '#f5cc19',
     '#2157a5',
-    '#20843d',
+    '#aab0b7',
+    '#c51b28',
   ]),
   carColors: Object.freeze([
     '#888888',
