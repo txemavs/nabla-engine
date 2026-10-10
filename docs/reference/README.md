@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **362 modules; 3943 executable function definitions**.
+Coverage: **363 modules; 3955 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -174,7 +174,7 @@ Coverage: **362 modules; 3943 executable function definitions**.
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 6 |
 | [src/render/entity/asset-warmup.ts](src/render/entity/asset-warmup.ts.md) | 15 |
 | [src/render/entity/assets.ts](src/render/entity/assets.ts.md) | 13 |
-| [src/render/entity/avatar-motion.ts](src/render/entity/avatar-motion.ts.md) | 8 |
+| [src/render/entity/avatar-motion.ts](src/render/entity/avatar-motion.ts.md) | 9 |
 | [src/render/entity/avatar.ts](src/render/entity/avatar.ts.md) | 23 |
 | [src/render/entity/billboard.ts](src/render/entity/billboard.ts.md) | 7 |
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 1 |
@@ -186,6 +186,7 @@ Coverage: **362 modules; 3943 executable function definitions**.
 | [src/render/entity/casings.ts](src/render/entity/casings.ts.md) | 3 |
 | [src/render/entity/cinematic-camera.ts](src/render/entity/cinematic-camera.ts.md) | 3 |
 | [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 16 |
+| [src/render/entity/exhaust-smoke.ts](src/render/entity/exhaust-smoke.ts.md) | 4 |
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 46 |
 | [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 14 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 12 |
@@ -204,7 +205,7 @@ Coverage: **362 modules; 3943 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 123 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 125 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
@@ -342,7 +343,7 @@ Coverage: **362 modules; 3943 executable function definitions**.
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 214 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 219 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |

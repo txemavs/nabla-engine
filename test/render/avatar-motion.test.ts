@@ -1,11 +1,53 @@
 /** On-foot avatar smoothing (like the cameras) and the thrown rider's tumble pose. */
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { AvatarFollow, EjectionTumble } from '../../src/render/entity/avatar-motion.js'
+import {
+  AvatarFollow,
+  AvatarTransfer,
+  EjectionTumble,
+} from '../../src/render/entity/avatar-motion.js'
 import { startEjection, type RiderEjection } from '../../src/simulation/rider-ejection.js'
 import { ejectionDefaults } from '../../src/config/simulation.js'
 
 const dt = 1 / 60
+
+describe('AvatarTransfer', () => {
+  it('blends getting into and out of a moving vehicle without a pose jump', () => {
+    const transfer = new AvatarTransfer(),
+      avatar = new THREE.Group(),
+      head = new THREE.Group()
+    transfer.update(avatar, head, null, dt)
+    avatar.position.set(2, 1, 0)
+    head.scale.setScalar(0.7)
+    transfer.update(avatar, head, 'bike', dt)
+    expect(avatar.position.x).toBeLessThan(0.01)
+    expect(head.scale.x).toBeGreaterThan(0.99)
+    for (let i = 1; i <= 50; i++) {
+      avatar.position.set(2 + i * dt, 1, 0)
+      head.scale.setScalar(0.7)
+      transfer.update(avatar, head, 'bike', dt)
+    }
+    expect(avatar.position.x).toBeCloseTo(2 + 50 * dt)
+    const previous = avatar.position.clone()
+    avatar.position.add(new THREE.Vector3(1, -1, 0))
+    head.scale.setScalar(0.825)
+    transfer.update(avatar, head, null, dt)
+    expect(avatar.position.distanceTo(previous)).toBeLessThan(0.01)
+  })
+
+  it('keeps crash ejections and teleports immediate', () => {
+    const transfer = new AvatarTransfer(),
+      avatar = new THREE.Group(),
+      head = new THREE.Group()
+    transfer.update(avatar, head, 'bike', dt)
+    avatar.position.set(1, 0, 0)
+    transfer.update(avatar, head, null, dt, true)
+    expect(avatar.position.x).toBe(1)
+    avatar.position.set(100, 0, 0)
+    transfer.update(avatar, head, 'car', dt)
+    expect(avatar.position.x).toBe(100)
+  })
+})
 
 describe('AvatarFollow', () => {
   it('has no lag at steady walking speed and heading rate', () => {

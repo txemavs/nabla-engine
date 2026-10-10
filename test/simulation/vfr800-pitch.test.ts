@@ -58,11 +58,11 @@ const editTwoWheeled = (bike: Entity, patch: Record<string, unknown>) => {
 }
 
 describe('vfr800 wheelies', () => {
-  it('a centred rider at full throttle in first only gets the front light', () => {
+  it('an automatic rider lifts progressively and stays assisted on a normal acceleration', () => {
     const { run, pose, info } = ride()
     const { max } = run(5, { forward: 1 })
     expect(max).toBeGreaterThan(0)
-    expect(max).toBeLessThan(assist.wheelieNeutralAngle + 0.05)
+    expect(max).toBeLessThan(assist.wheelieSoftAngle + 0.1)
     expect(pose().fallen).toBe(false)
     expect(info().gear).toBeGreaterThanOrEqual(2)
   })
@@ -249,7 +249,7 @@ describe('vfr800 automatic rider', () => {
     expect(pose().riderShift[1]).toBeGreaterThan(0.05)
   })
 
-  it('keeps the front lower than a centred rider at full throttle in first', () => {
+  it('allows more lift with the automatic rider while retaining the assisted limit', () => {
     const peak = (enabled: boolean) => {
       const r = ride((bike) => {
         bike.vehicle!.twoWheeled!.rider!.auto = { enabled }
@@ -259,7 +259,9 @@ describe('vfr800 automatic rider', () => {
       sim = undefined
       return result
     }
-    expect(peak(true)).toBeLessThanOrEqual(peak(false) + 1e-3)
+    const automatic = peak(true)
+    expect(automatic).toBeGreaterThan(peak(false))
+    expect(automatic).toBeLessThan(assist.wheelieSoftAngle + 0.1)
   })
 
   it('gives way to the keys at once and takes back over after the release delay', () => {

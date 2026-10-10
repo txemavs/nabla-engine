@@ -19,6 +19,7 @@ import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import { withinMapDistance } from '../planet/visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
 import { ShipLights, type ShipSwitch } from './ship-lights.js'
+import { ExhaustSmoke } from './exhaust-smoke.js'
 import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
@@ -50,7 +51,7 @@ import { gameCameraDefaults, rideSmoothingDefaults } from '../../config/camera.j
 import { vehicleAppearanceDefaults } from '../../config/vehicle-appearance.js'
 import { easeRiderHead, type RiderHeadEase } from './rider-head.js'
 import { RideSmoothing, rideSmoothingSettings } from './ride-smoothing.js'
-import { AvatarFollow, EjectionTumble } from './avatar-motion.js'
+import { AvatarFollow, AvatarTransfer, EjectionTumble } from './avatar-motion.js'
 import {
   clampMirrorAdjustment,
   mirrorModelKey,
@@ -155,6 +156,8 @@ export class SceneView {
   /** Fork, swingarm, shock, chain and wheel articulation of two-wheeled GLB bodies. */
   private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
   private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
+  private readonly exhaustSmoke = new Map<string, ExhaustSmoke>()
+  private readonly motorcycleStands = new Map<string, THREE.Group>()
   private readonly reflections = new Map<string, ReflectionEnvironment>()
   /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
   private readonly odometers = new Map<string, number>()
@@ -407,6 +410,7 @@ export class SceneView {
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
   private readonly avatarFollow = new AvatarFollow()
+  private readonly avatarTransfer = new AvatarTransfer()
   private readonly ejectionTumble = new EjectionTumble()
   private graph: SceneGraph
   constructor(
@@ -643,6 +647,7 @@ export class SceneView {
     this.mirrorModels.delete(id)
     this.instruments.get(id)?.dispose()
     this.motorcycleClusters.get(id)?.dispose()
+    this.exhaustSmoke.get(id)?.dispose()
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
     if (group) {
@@ -678,6 +683,8 @@ export class SceneView {
       this.landingGear,
       this.motorcycleRigs,
       this.motorcycleClusters,
+      this.exhaustSmoke,
+      this.motorcycleStands,
       this.reflections,
       this.odometers,
       this.ramps,
@@ -1121,6 +1128,55 @@ export class SceneView {
           ),
         )
       if (twoWheeled) {
+        const stand = new THREE.Group()
+        stand.name = 'Parked motorcycle centre stand'
+        const bottom = Math.min(
+          ...definition.hubs.map(
+            (hub, i) =>
+              hub[1] -
+              (i === 1
+                ? (twoWheeled.rearWheelRadius ?? definition.wheelRadius)
+                : definition.wheelRadius),
+          ),
+        )
+        const metal = new THREE.MeshStandardMaterial({
+          color: '#242729',
+          metalness: 0.65,
+          roughness: 0.55,
+        })
+        const bar = (a: THREE.Vector3, b: THREE.Vector3) => {
+          const direction = b.clone().sub(a)
+          const mesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.012, 0.012, direction.length(), 6),
+            metal,
+          )
+          mesh.position.copy(a).add(b).multiplyScalar(0.5)
+          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize())
+          stand.add(mesh)
+        }
+        for (const side of [-1, 1]) {
+          bar(
+            new THREE.Vector3(side * 0.1, bottom + 0.22, 0.08),
+            new THREE.Vector3(side * 0.2, bottom + 0.015, 0.16),
+          )
+          bar(
+            new THREE.Vector3(side * 0.2, bottom + 0.015, 0.1),
+            new THREE.Vector3(side * 0.2, bottom + 0.015, 0.22),
+          )
+        }
+        bar(
+          new THREE.Vector3(-0.2, bottom + 0.08, 0.14),
+          new THREE.Vector3(0.2, bottom + 0.08, 0.14),
+        )
+        stand.visible = false
+        group.add(stand)
+        this.motorcycleStands.set(e.id, stand)
+        const outlet = model.getObjectByName('Exhaust_Outlet_Closure')
+        if (outlet) {
+          const smoke = new ExhaustSmoke(outlet, this.root)
+          this.exhaustSmoke.set(e.id, smoke)
+          this.root.add(smoke.root)
+        }
         const cluster = MotorcycleInstruments.bind(model, {
           ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
           ...e.vehicle?.cluster,
@@ -1478,6 +1534,18 @@ export class SceneView {
       const info = sim.vehicleInfo(id)
       thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now(), this.night)
     }
+    for (const [id, smoke] of this.exhaustSmoke) {
+      const info = sim.vehicleInfo(id)
+      smoke.update(
+        elapsed,
+        info.helm !== 'off' && info.ignition === 'running' && info.rpm > 500,
+        info.engineLoad,
+      )
+    }
+    for (const [id, stand] of this.motorcycleStands) {
+      const info = sim.vehicleInfo(id)
+      stand.visible = sim.player.vehicleId !== id && info.parked && Math.abs(info.lean) < 0.3
+    }
     for (const lights of this.shipLights.values()) lights.update(performance.now())
     const lightNow = performance.now()
     const occupied = sim.player.vehicleId
@@ -1615,6 +1683,14 @@ export class SceneView {
       )
       this.avatar.visible = !cockpit
     }
+    const recovery = sim.playerBikeRecovery
+    if (recovery?.phase === 'rising')
+      this.monitor.rotateZ(
+        (Math.PI / 2) * (1 - THREE.MathUtils.smoothstep(recovery.progress, 0, 1)),
+      )
+    if (recovery?.phase === 'lifting')
+      this.monitor.rotateX(-0.25 * Math.sin(Math.PI * recovery.progress))
+    this.avatarTransfer.update(this.avatar, this.monitor, vehicleId, elapsed, !!sim.playerEjection)
   }
   /**
    * Advance the ride smoothing with the player's vehicle. Crashes, a fallen bike, rollovers and
@@ -1758,6 +1834,8 @@ export class SceneView {
   dispose(): void {
     if (this.disposed) return
     this.streetlights.dispose()
+    for (const smoke of this.exhaustSmoke.values()) smoke.dispose()
+    this.exhaustSmoke.clear()
     for (const hud of this.shipHuds.values()) hud.dispose()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()

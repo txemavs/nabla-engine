@@ -7,6 +7,59 @@ import { CriticalFollow, criticalStep } from './driving-camera.js'
 
 const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle))
 
+/** Blend the displayed pose on seat changes, including the monitor's offset and scale. */
+export class AvatarTransfer {
+  private mode: string | null | undefined
+  private elapsed = 1
+  private duration = 0
+  private readonly displayed = new THREE.Group()
+  private readonly local = new THREE.Group()
+  private readonly start = new THREE.Group()
+  private readonly startLocal = new THREE.Group()
+  update(
+    avatar: THREE.Object3D,
+    model: THREE.Object3D,
+    mode: string | null,
+    dt: number,
+    ejected = false,
+  ): void {
+    if (
+      this.mode !== undefined &&
+      mode !== this.mode &&
+      !ejected &&
+      this.displayed.position.distanceTo(avatar.position) < 6
+    ) {
+      this.start.position.copy(this.displayed.position)
+      this.start.quaternion.copy(this.displayed.quaternion)
+      this.startLocal.position.copy(this.local.position)
+      this.startLocal.quaternion.copy(this.local.quaternion)
+      this.startLocal.scale.copy(this.local.scale)
+      this.elapsed = 0
+      this.duration = mode ? 0.75 : 0.65
+    }
+    this.mode = mode
+    if (ejected || this.displayed.position.distanceTo(avatar.position) >= 6)
+      this.elapsed = this.duration
+    if (this.elapsed < this.duration) {
+      this.elapsed = Math.min(
+        this.duration,
+        this.elapsed + Math.max(0, Math.min(Number.isFinite(dt) ? dt : 0, 0.1)),
+      )
+      const t = THREE.MathUtils.smoothstep(this.elapsed / this.duration, 0, 1)
+      avatar.position.lerpVectors(this.start.position, avatar.position.clone(), t)
+      avatar.quaternion.slerpQuaternions(this.start.quaternion, avatar.quaternion.clone(), t)
+      model.position.lerpVectors(this.startLocal.position, model.position.clone(), t)
+      model.quaternion.slerpQuaternions(this.startLocal.quaternion, model.quaternion.clone(), t)
+      model.scale.lerpVectors(this.startLocal.scale, model.scale.clone(), t)
+    }
+    this.displayed.position.copy(avatar.position)
+    this.displayed.quaternion.copy(avatar.quaternion)
+    this.local.position.copy(model.position)
+    this.local.quaternion.copy(model.quaternion)
+    this.local.scale.copy(model.scale)
+  }
+}
+
 /**
  * Smooth the on-foot avatar like the cameras: a critically damped follower with velocity
  * feed-forward for the position and one with turn-rate feed-forward for the heading. Steady

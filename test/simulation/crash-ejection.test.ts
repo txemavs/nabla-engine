@@ -12,6 +12,8 @@ import { parseScene } from '../../src/scene/document.js'
 import { ejectionDefaults, twoWheeledDefaults } from '../../src/config/simulation.js'
 import { startEjection, stepEjection } from '../../src/simulation/rider-ejection.js'
 import { finishStartUp } from '../start-up.js'
+import { Vec3 } from '../../src/simulation/physics.js'
+import type { Vehicle } from '../../src/entity/vehicle/vehicle.js'
 
 let sim: Simulation | undefined
 afterEach(() => {
@@ -54,6 +56,62 @@ function ride(barrierZ: number | null, playerMode: 'hover' | 'walk' = 'hover') {
 }
 
 const upY = ([x, , z]: number[]) => 1 - 2 * (x * x + z * z)
+
+describe('gentle tip-over', () => {
+  it('gets up, lifts the bike smoothly at the same spot and mounts again', () => {
+    const { s, tick, pose } = ride(null)
+    const bike = (s as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+    bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+    bike.body.angularVelocity.setZero()
+    bike.body.velocity.setZero()
+    const phases = new Set<string>()
+    let liftStart: number[] | undefined
+    let lastUp: number | undefined
+    for (let i = 0; i < 360; i++) {
+      tick()
+      const recovery = s.playerBikeRecovery
+      if (recovery) phases.add(recovery.phase)
+      if (recovery?.phase === 'lifting') {
+        expect(s.player.vehicleId).toBeNull()
+        const transform = s.entityTransform('bike')
+        liftStart ??= transform.position
+        expect(transform.position[0]).toBeCloseTo(liftStart[0], 4)
+        expect(transform.position[2]).toBeCloseTo(liftStart[2], 4)
+        const up = upY(transform.rotation)
+        if (lastUp !== undefined) expect(Math.abs(up - lastUp)).toBeLessThan(0.04)
+        lastUp = up
+      }
+      if (phases.has('lifting') && !recovery) break
+    }
+    expect([...phases]).toEqual(['rising', 'lifting'])
+    expect(s.player.vehicleId).toBe('bike')
+    expect(pose().fallen).toBe(false)
+    expect(upY(s.entityTransform('bike').rotation)).toBeGreaterThan(0.99)
+  })
+})
+
+describe('rear brake cornering', () => {
+  it.each([-1, 1])('steps the rear outward without reversing the turn (%s)', (direction) => {
+    const { s, tick, kmh } = ride(null)
+    const bike = (s as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+    for (let i = 0; i < 600 && kmh() < 35; i++) tick({ forward: 1 })
+    for (let i = 0; i < 60; i++) tick({ right: direction * 0.4 })
+    const originalRearGrip = bike.raycast.wheelInfos[1].frictionSlip
+    let outside = 0
+    for (let i = 0; i < 45; i++) {
+      tick({ right: direction * 0.4, brake: true })
+      const right = bike.body.quaternion.vmult(new Vec3(1, 0, 0))
+      const rear = bike.body.quaternion.vmult(new Vec3(...bike.definition.hubs[1]))
+      const velocity = bike.body.velocity.vadd(bike.body.angularVelocity.cross(rear))
+      outside += -direction * velocity.dot(right)
+      if (kmh() > 8) expect(-direction * bike.body.angularVelocity.y).toBeGreaterThan(0)
+      if (i === 10) expect(bike.raycast.wheelInfos[1].frictionSlip).toBeLessThan(originalRearGrip)
+    }
+    expect(outside / 45).toBeGreaterThan(0.1)
+    for (let i = 0; i < 20; i++) tick({ right: direction * 0.4 })
+    expect(bike.raycast.wheelInfos[1].frictionSlip).toBeCloseTo(originalRearGrip)
+  })
+})
 
 describe('impact crash', () => {
   it('tumbles the machine; below the eject speed the rider stays on', () => {

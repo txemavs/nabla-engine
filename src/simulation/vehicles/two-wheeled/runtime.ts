@@ -290,6 +290,7 @@ export function createTwoWheeledVehicle(
       comHeight: 0,
       clutchKick: 0,
       launchHeld: false,
+      wheelieHold: 0,
       disturbance: 0,
       previousLean: null,
       previousLeanRate: null,
@@ -337,6 +338,7 @@ export function resetTwoWheeled(state: TwoWheeledState): void {
   state.brakeLink.linkedFront = 0
   state.brakeLink.linkedRear = 0
   state.clutchKick = 0
+  state.wheelieHold = 0
 }
 
 /**
@@ -633,21 +635,35 @@ export function stepTwoWheeledVehicle(
   const back = rider && rider.back > 0 ? clamp(state.riderShift[1] / rider.back, 0, 1) : 1
   const ahead = rider && rider.forward > 0 ? clamp(-state.riderShift[1] / rider.forward, 0, 1) : 1
   const blend = (neutral: number, full: number, share: number) => neutral + (full - neutral) * share
+  const automaticWheelie = rider && state.riderControl.manualShare < 0.05 && !hooligan
+  state.wheelieHold =
+    automaticWheelie && throttle > 0.95 && rearContact && !frontContact && state.pitch > 0.04
+      ? state.wheelieHold + dt
+      : 0
+  // A short acceleration lifts progressively under assistance. Holding full throttle for
+  // several seconds while already on the rear wheel deliberately fades that assistance.
+  const insist = automaticWheelie ? clamp((state.wheelieHold - 2.5) / 2, 0, 1) : 0
+  if (insist > 0 && !state.crashed && (Math.abs(nose) > tuning.crashPitch || up.dot(gravityUp) < 0))
+    startCrash(v, 'loop', forward, gravityUp)
   // The Shift modifier turns both assists off.
   if (rearContact && !frontContact && assist.wheelie && !hooligan) {
     const out = pitchAssist({
       angle: state.pitch,
       rate: state.pitchRate,
-      softAngle: assist.wheelieSoftAngle * back,
-      maxAngle: blend(assist.wheelieNeutralAngle, assist.wheelieMaxAngle, back),
+      softAngle: automaticWheelie ? assist.wheelieSoftAngle * 0.5 : assist.wheelieSoftAngle * back,
+      maxAngle: automaticWheelie
+        ? assist.wheelieSoftAngle
+        : blend(assist.wheelieNeutralAngle, assist.wheelieMaxAngle, back),
       floor: 0,
       response: assist.response,
       dampingRatio: assist.dampingRatio,
       landingRate: assist.landingRate,
       anticipation: assist.anticipation,
     })
-    state.wheelieScale = out.scale
-    pitchAcceleration = out.acceleration
+    state.wheelieScale = blend(out.scale, 1, insist)
+    pitchAcceleration =
+      (out.acceleration - (automaticWheelie ? Math.max(0, state.pitchRate - 0.35) * 12 : 0)) *
+      (1 - insist)
   } else if (frontContact && !rearContact && assist.stoppie && !hooligan) {
     const out = pitchAssist({
       angle: -state.pitch,
@@ -742,11 +758,35 @@ export function stepTwoWheeledVehicle(
     const yaw = Math.sin(state.slideClock * 2 * Math.PI * 0.8) * hoo.slide * spinShare
     v.body.applyTorque(gravityUp.scale(v.body.inertia.y * yaw))
   }
+  // Braking uses part of the rear tyre's lateral grip. The pedal releases the rear first,
+  // leaving the steered front planted so the tail steps towards the outside of the turn.
+  // Fade this out at walking pace; the stationary burnout keeps its own grip model.
+  const rearPedalGrip =
+    1 - 0.75 * state.pedal * state.rearBrake * clamp((Math.abs(speed) - 2) / 4, 0, 1)
+  // The ray-cast brake impulse can yaw a banked single-track chassis against its steering.
+  // Stabilise that braking disturbance using the same signed turn rate as the lean controller.
+  // This is a riding assist, and stays out of airborne, fallen and Shift manoeuvres.
+  if (
+    active &&
+    !hooligan &&
+    !state.fallen &&
+    !state.crashed &&
+    frontContact &&
+    rearContact &&
+    Math.abs(speed) > 2 &&
+    state.pedal > 0
+  ) {
+    const turnRate = (speed * Math.tan(state.groundSteer)) / state.wheelbase
+    const yawRate = v.body.angularVelocity.dot(gravityUp)
+    v.body.applyTorque(
+      gravityUp.scale(v.body.inertia.y * (turnRate - yawRate) * 24 * state.rearBrake),
+    )
+  }
   for (let i = 0; i < v.raycast.wheelInfos.length; i++)
     v.raycast.wheelInfos[i].frictionSlip =
       tuning.frictionSlip *
       surfaceGripScale(surfaces?.[i]) *
-      (stationary && i === REAR ? DONUT_REAR_GRIP : 1)
+      (i === REAR ? (stationary ? DONUT_REAR_GRIP : rearPedalGrip) : 1)
   v.raycast.setSteeringValue(state.groundSteer, FRONT)
   v.raycast.setSteeringValue(0, REAR)
   v.raycast.applyEngineForce(0, FRONT)
