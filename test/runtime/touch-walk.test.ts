@@ -21,7 +21,7 @@ describe('on-foot touch sticks', () => {
 })
 
 describe('Luz defaults', () => {
-  it('Reflejos starts at x0.20', () => {
-    expect(lightTuningDefaults.reflections).toBe(0.2)
+  it('Reflejos starts at x0.10', () => {
+    expect(lightTuningDefaults.reflections).toBe(0.1)
   })
 })
