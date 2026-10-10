@@ -120,6 +120,16 @@ export {
   type TouchFlightVisibility,
   type TouchFlightInput,
 } from './touch-flight.js'
+export {
+  TouchWalk,
+  stickFromOffset,
+  walkFromStick,
+  touchLookRate,
+  touchLookPitchRate,
+  type TouchWalkInput,
+  type TouchWalkVisibility,
+  type TouchStick,
+} from './touch-walk.js'
 export { GameplayStreaming, type GameplayWorldStream } from './streaming.js'
 export { Sidearm } from './sidearm.js'
 export { Gallery, shotView } from './gallery.js'

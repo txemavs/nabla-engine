@@ -69,6 +69,7 @@ import {
   type ControlSurfaces,
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
+import { TouchWalk, touchLookPitchRate, touchLookRate } from './touch-walk.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleWarmup } from './vehicle-warmup.js'
 import { createEntity } from '../entity/schema.js'
@@ -454,6 +455,7 @@ export class GameRuntime {
   /** The start camera sequence of the current play, while it runs. */
   private startSequence: StartCameraSequencer | null = null
   private readonly touchFlight: TouchFlight | null
+  private readonly touchWalk: TouchWalk | null
   private readonly monitors: VehicleMonitors
   private readonly view: SceneView
   private readonly sky: GeographicView
@@ -690,6 +692,10 @@ export class GameRuntime {
             options.touchControls ?? 'auto',
             this.text,
           )
+    this.touchWalk =
+      options.touchControls === false
+        ? null
+        : new TouchWalk(options.canvas.parentElement!, options.touchControls ?? 'auto', this.text)
     this.shadows.setBiasScale(options.shadowBias ?? shadowBiasRange.default)
     if (this.quality.shadows > 0)
       this.shadows.init({
@@ -854,6 +860,7 @@ export class GameRuntime {
     this.assertAlive()
     this.touchDriving?.setActive(false)
     this.touchFlight?.setActive(false)
+    this.touchWalk?.setActive(false)
     this.game.pause()
     this.loop.stop()
     this.releaseInput()
@@ -877,6 +884,7 @@ export class GameRuntime {
     this.world?.renderUpdate(this.origin, !!this.quality.buildings, null)
     this.touchDriving?.setActive(false)
     this.touchFlight?.setActive(false)
+    this.touchWalk?.setActive(false)
     this.monitors.hide()
     this.pointerFree = false
     this.remoteViews.dispose()
@@ -935,6 +943,7 @@ export class GameRuntime {
     this.fireModeBadge?.dispose()
     this.fireModeBadge = null
     this.touchFlight?.dispose()
+    this.touchWalk?.dispose()
     this.monitors.dispose()
     this.view.dispose()
     this.vehicleWarmup?.dispose()
@@ -972,6 +981,8 @@ export class GameRuntime {
     this.touchDriving?.setActive(rigs.driving.active)
     if (this.touchDriving) this.touchDriving.root.hidden = rigs.driving.hidden
     this.touchFlight?.setActive(rigs.flight.active)
+    // On-foot sticks: only while walking (no vehicle) and playing.
+    this.touchWalk?.setActive(playing && !sim.player.vehicleId)
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
@@ -999,13 +1010,27 @@ export class GameRuntime {
       turn: 0,
       brake: false,
     }
+    const walkTouch = this.touchWalk?.input() ?? { forward: 0, right: 0, look: { x: 0, y: 0 } }
+    if (walkTouch.look.x || walkTouch.look.y) {
+      const look = this.cameraState
+      look.lastLookTime = performance.now()
+      look.yaw -= walkTouch.look.x * touchLookRate * dt
+      look.pitch = THREE.MathUtils.clamp(
+        look.pitch + walkTouch.look.y * touchLookPitchRate * dt,
+        -controlDefaults.pitchLimit,
+        controlDefaults.pitchLimit,
+      )
+    }
     const input = this.game.readInput(dt, {
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
       pad,
       touch: {
-        forward: Math.max(-1, Math.min(1, helmTouch.forward + flightTouch.forward)),
-        right: Math.max(-1, Math.min(1, helmTouch.right + flightTouch.right)),
+        forward: Math.max(
+          -1,
+          Math.min(1, helmTouch.forward + flightTouch.forward + walkTouch.forward),
+        ),
+        right: Math.max(-1, Math.min(1, helmTouch.right + flightTouch.right + walkTouch.right)),
         lift: Math.max(-1, Math.min(1, helmTouch.lift + flightTouch.lift)),
         turn: Math.max(-1, Math.min(1, helmTouch.turn + flightTouch.turn)),
         brake: helmTouch.brake || flightTouch.brake,
@@ -2659,6 +2684,7 @@ export class GameRuntime {
       (this.options.acceptsInput?.() ?? true) &&
       (this.touchDriving?.busy() ||
         this.touchFlight?.busy() ||
+        this.touchWalk?.busy() ||
         (document.activeElement === this.options.canvas && document.hasFocus()))
     )
   }
@@ -2677,6 +2703,7 @@ export class GameRuntime {
     this.triggerDown = false
     this.touchDriving?.clear()
     this.touchFlight?.clear()
+    this.touchWalk?.clear()
     this.monitors.releaseInput()
     this.game.releaseInput()
     this.previousButtons = []

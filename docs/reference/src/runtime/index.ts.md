@@ -29,6 +29,7 @@
 - `./touch-driving.js`
 - `./control-profiles.js`
 - `./touch-flight.js`
+- `./touch-walk.js`
 - `./streaming.js`
 - `./sidearm.js`
 - `./gallery.js`
