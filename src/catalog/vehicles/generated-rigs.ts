@@ -145,7 +145,7 @@ export const generatedVehicleRigs: Record<
   },
   vfr800: {
     source: '/library/motorcycles/vfr800fi-1999/vfr800fi-1999.glb',
-    sha256: '93df5c7299639cae955059c91ebc4c71bcf425dd2351a54abc7e6abff1ff958c',
+    sha256: 'b133fb5b6db6b57661e274b172a2d379a058ec826160c48d882eec9cb7e4faec',
     hubs: [
       [0.00395999988541007, -0.2501000046730042, -0.7200000286102295],
       [0.0037400000728666782, -0.23509998917579655, 0.7200000286102295],

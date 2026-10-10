@@ -7,10 +7,11 @@
 ## Module dependencies
 
 - `three`
+- `../../config/simulation.js`
 
 ## MotorcycleSideStand.constructor
 
-[Implementation, line 11](../../../../../src/render/entity/motorcycle-side-stand.ts#L11)
+[Implementation, line 12](../../../../../src/render/entity/motorcycle-side-stand.ts#L12)
 
 A slim left-side leg, hinged below the rider footpeg and folded back under it when riding.
 
@@ -20,6 +21,8 @@ constructor(bottom: number): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.cos`
+- `Math.sin`
 - `THREE.BoxGeometry`
 - `THREE.Mesh`
 - `THREE.MeshStandardMaterial`
@@ -40,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MotorcycleSideStand.constructor.bar
 
-[Implementation, line 24](../../../../../src/render/entity/motorcycle-side-stand.ts#L24)
+[Implementation, line 25](../../../../../src/render/entity/motorcycle-side-stand.ts#L25)
 
 ```ts
 bar(a: THREE.Vector3, b: THREE.Vector3, radius: number, material = black): inferred by TypeScript; see implementation
@@ -63,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MotorcycleSideStand.update
 
-[Implementation, line 58](../../../../../src/render/entity/motorcycle-side-stand.ts#L58)
+[Implementation, line 62](../../../../../src/render/entity/motorcycle-side-stand.ts#L62)
 
 Move the actual hinge over about half a second; the folded leg remains part of the bike.
 

@@ -25,6 +25,35 @@ const vehicles = [
 ] as const
 
 describe('parking on a slope', () => {
+  it('parks the motorcycle leaned left with left steering lock, then releases both when mounted', () => {
+    const floor = createEntity('floor', 'box', [0, -0.5, 0])
+    floor.size = [100, 1, 100]
+    const s = new Simulation({
+      version: 1,
+      name: 'Side stand',
+      entities: [
+        floor,
+        presetVehicle('vfr800', 'bike', [0, 0.7, 0]),
+        createEntity('spawn', 'spawn', [3, 1, 4]),
+      ],
+    })
+    try {
+      for (let i = 0; i < 300; i++) s.step(dt)
+      const parked = s.twoWheeledPose('bike')!
+      expect(parked.lean).toBeGreaterThan(0.14)
+      expect(parked.lean).toBeLessThan(0.22)
+      expect(parked.steeringAngle).toBeGreaterThan(0.6)
+      const heading = s.entityTransform('bike').rotation
+      expect(Math.abs(heading[1])).toBeLessThan(0.03)
+      s.startInVehicle('bike')
+      finishStartUp(s)
+      for (let i = 0; i < 180; i++) s.step(dt)
+      expect(Math.abs(s.twoWheeledPose('bike')!.lean)).toBeLessThan(0.04)
+      expect(Math.abs(s.twoWheeledPose('bike')!.steeringAngle)).toBeLessThan(0.01)
+    } finally {
+      s.dispose()
+    }
+  })
   it.each(['car', 'vfr800'] as const)(
     'holds %s against forward and sideways downhill creep and releases on drive',
     (catalog) => {

@@ -38,6 +38,8 @@ import {
 } from '../drivetrain.js'
 import { holdInPark, isValidPowertrain, type WheeledVehicle } from '../wheeled/runtime.js'
 import { stepWheelMomentum } from '../wheel-momentum.js'
+
+const parkedHeadings = new WeakMap<WheeledVehicle, Vec3>()
 import type { WheeledDefinition, WheeledInput } from '../wheeled/contracts.js'
 import {
   balanceActive,
@@ -517,7 +519,9 @@ export function stepTwoWheeledVehicle(
           wheelbase: state.wheelbase,
           gravity,
         })
-      : 0
+      : !active && v.drivetrain.parked && !state.fallen
+        ? state.geometry.steerLimit
+        : 0
   state.handlebar += clamp(
     barTarget - state.handlebar,
     -tuning.steerRate * dt,
@@ -526,6 +530,19 @@ export function stepTwoWheeledVehicle(
   state.handlebar = clamp(state.handlebar, -state.geometry.steerLimit, state.geometry.steerLimit)
   state.groundSteer = groundSteerAngle(state.handlebar, state.rakeCosine)
   v.steer = state.handlebar
+  // A parked bike rests on its side stand: locking the bars must not steer the chassis.
+  if (!active && v.drivetrain.parked && !state.fallen && frontContact && rearContact) {
+    const heading = forward.vsub(gravityUp.scale(forward.dot(gravityUp)))
+    heading.normalize()
+    const held = parkedHeadings.get(v) ?? heading.clone()
+    parkedHeadings.set(v, held)
+    const yawError = Math.atan2(gravityUp.dot(heading.cross(held)), heading.dot(held))
+    v.body.applyTorque(
+      gravityUp.scale(
+        v.body.inertia.y * (yawError * 32 - v.body.angularVelocity.dot(gravityUp) * 12),
+      ),
+    )
+  } else parkedHeadings.delete(v)
 
   // Start-up sequence after entering: P is kept and the controls do nothing until it ends.
   const starting = stepIgnition(v.drivetrain, dt, tune?.idleRpm ?? roadVehicleDefaults.idleRpm)
@@ -817,7 +834,17 @@ export function stepTwoWheeledVehicle(
   stepWheelMomentum(v, dt, active && !state.fallen && !state.crashed, powered, input.throttle)
   if (stationary || state.donutLean !== 0)
     holdDonut(v, stationary, active ? input.steering : 0, throttle, forward, gravityUp, dt)
-  stepLean(v, dt, speed, forward, up, gravityUp, gravity, frontContact && rearContact)
+  stepLean(
+    v,
+    dt,
+    speed,
+    forward,
+    up,
+    gravityUp,
+    gravity,
+    frontContact && rearContact,
+    !active && v.drivetrain.parked,
+  )
 }
 
 /**
@@ -916,6 +943,7 @@ function stepLean(
   gravityUp: Vec3,
   gravity: number,
   bothWheelsDown: boolean,
+  parked: boolean,
 ): void {
   const state = v.twoWheeled,
     tuning = state.tuning
@@ -969,6 +997,7 @@ function stepLean(
     -(tuning.pegLean?.right.lean ?? tuning.fallLean),
     tuning.pegLean?.left.lean ?? tuning.fallLean,
   )
+  if (parked && bothWheelsDown) state.targetLean = twoWheeledDefaults.parkingLean
   // Donut: holdDonut steers the roll itself; the balance torque stays out of it.
   if (state.hooligan === 'stationary-burnout' || state.donutLean !== 0) {
     state.targetLean = state.donutLean

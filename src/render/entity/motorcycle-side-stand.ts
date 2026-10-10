@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { twoWheeledDefaults } from '../../config/simulation.js'
 
 /** A slim left-side leg, hinged below the rider footpeg and folded back under it when riding. */
 export class MotorcycleSideStand {
@@ -31,11 +32,14 @@ export class MotorcycleSideStand {
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize())
       this.leg.add(mesh)
     }
-    const foot = new THREE.Vector3(-0.17, -0.257, 0.055)
+    const lean = twoWheeledDefaults.parkingLean
+    const shoeY = (bottom + 0.004 + 0.325 * Math.sin(lean)) / Math.cos(lean)
+    const foot = new THREE.Vector3(-0.17, shoeY - bottom - 0.265, 0.055)
     bar(new THREE.Vector3(), foot, 0.011)
     // Small flat shoe and the discreet toe tang used to lower the leg.
     const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.008, 0.038), black)
     shoe.position.copy(foot)
+    shoe.rotation.z = -lean
     this.leg.add(shoe)
     bar(foot.clone().multiplyScalar(0.75), new THREE.Vector3(-0.18, -0.19, 0.1), 0.004)
     bar(

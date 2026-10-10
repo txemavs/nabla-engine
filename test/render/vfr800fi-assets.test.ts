@@ -68,6 +68,10 @@ it('animates actual GLB suspension and wheel hierarchy without changing the auth
   expect(Math.abs(fromModel.chain!.rearZ - fromJson.chain!.rearZ)).toBeLessThan(0.002)
   const shared = (root.getObjectByName('Chain') as Mesh).geometry
   const visual = bindMotorcycleRig(root, fromJson)
+  const fixedFrame = root.getObjectByName('Fixed_Steering_Head_Frame')!
+  expect(fixedFrame).toBeDefined()
+  root.updateMatrixWorld(true)
+  const fixedFrameRest = fixedFrame.matrixWorld.clone()
   const rear = root.getObjectByName('Wheel_Rear')!
   const arm = root.getObjectByName('Swingarm_Pivot')!
   const fork = root.getObjectByName('Fork_Slider')!
@@ -88,6 +92,7 @@ it('animates actual GLB suspension and wheel hierarchy without changing the auth
       expect(rest.clone().applyQuaternion(arm.quaternion).length()).toBeCloseTo(radius, 8)
       expect(fork.position.distanceTo(forkRest)).toBeCloseTo(compression, 7)
       expect(root.getObjectByName('Wheel_Front')!.quaternion.x).not.toBe(0)
+      expect(fixedFrame.matrixWorld.equals(fixedFrameRest)).toBe(true)
     }
   }
   // The handlebar turns the fork about the head axis: a positive (left) angle swings the
