@@ -32,7 +32,7 @@ export class ExhaustSmoke {
         attribute float life; varying float age;
         void main(){age=life; vec4 p=modelViewMatrix*vec4(position,1.0);
           gl_Position=projectionMatrix*p;
-          gl_PointSize=life>0.0?clamp((1.1-life)*160.0/max(1.0,-p.z),1.0,64.0):0.0;
+          gl_PointSize=life>0.0?clamp((1.4-life)*220.0/max(1.0,-p.z),1.0,96.0):0.0;
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
@@ -42,7 +42,7 @@ export class ExhaustSmoke {
           #include <logdepthbuf_fragment>
           float d=length(gl_PointCoord-0.5)*2.0;
           if(d>1.0||age<=0.0)discard;
-          gl_FragColor=vec4(0.95,0.96,0.97,pow(1.0-d,2.0)*(age/1.1)*0.4);
+          gl_FragColor=vec4(0.95,0.96,0.97,pow(1.0-d,2.0)*(age/1.4)*0.4);
         }`,
       }),
     )
@@ -81,8 +81,9 @@ export class ExhaustSmoke {
         .clone()
         .multiplyScalar(jet)
         .add(this.movement)
+        .add(new THREE.Vector3(Math.sin(i * 2.4) * 0.18, 0.08, Math.cos(i * 2.4) * 0.18))
         .toArray(this.velocities, i * 3)
-      this.life[i] = 1.1
+      this.life[i] = 1.4
     }
     this.root.visible = this.life.some((v) => v > 0)
     this.geometry.attributes.position.needsUpdate = true

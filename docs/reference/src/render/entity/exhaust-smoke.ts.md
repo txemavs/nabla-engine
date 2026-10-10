@@ -35,11 +35,14 @@ update(dt: number, running: boolean, load: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.cos`
 - `Math.max`
 - `Math.min`
+- `Math.sin`
 - `Number.isFinite`
 - `THREE.Box3`
 - `THREE.MathUtils.clamp`
+- `THREE.Vector3`
 - `bounds.getCenter`
 - `new THREE.Box3().setFromObject`
 - `this.direction.set`
@@ -59,17 +62,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.space.matrixWorld.clone().invert`
 - `this.space.worldToLocal`
 
-## ExhaustSmoke.update.callback@87
+## ExhaustSmoke.update.callback@88
 
-[Implementation, line 87](../../../../../src/render/entity/exhaust-smoke.ts#L87)
+[Implementation, line 88](../../../../../src/render/entity/exhaust-smoke.ts#L88)
 
 ```ts
-callback@87(v): inferred by TypeScript; see implementation
+callback@88(v): inferred by TypeScript; see implementation
 ```
 
 ## ExhaustSmoke.dispose
 
-[Implementation, line 92](../../../../../src/render/entity/exhaust-smoke.ts#L92)
+[Implementation, line 93](../../../../../src/render/entity/exhaust-smoke.ts#L93)
 
 ```ts
 dispose(): void
