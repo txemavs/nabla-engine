@@ -1509,7 +1509,11 @@ export class SceneView {
       const info = sim.vehicleInfo(id)
       smoke.update(
         elapsed,
-        info.helm !== 'off' && info.ignition === 'running' && info.rpm > 500,
+        sim.player.vehicleId === id &&
+          !info.parked &&
+          info.helm !== 'off' &&
+          info.ignition === 'running' &&
+          info.rpm > 500,
         info.engineLoad,
       )
     }
