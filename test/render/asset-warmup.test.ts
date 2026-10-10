@@ -37,7 +37,7 @@ describe('asset warm-up', () => {
     expect(materialTextures(model())).toHaveLength(2)
   })
 
-  it('uploads one texture per frame, compiles with lamps hidden and reuses the result', async () => {
+  it('parses each GLB once and does not touch the shared textures or programs', async () => {
     const log: string[] = []
     let instantiated = 0
     let compiled: THREE.Object3D | undefined
@@ -65,10 +65,8 @@ describe('asset warm-up', () => {
     await warmup.warmVisual({ body: { url: '/a/body.glb' } })
     await warmup.warm('/a/body.glb')
     expect(instantiated).toBe(1)
-    expect(log).toEqual(['frame', 'upload', 'frame', 'upload', 'compile'])
-    const lights: THREE.Light[] = []
-    compiled!.traverse((o) => o instanceof THREE.Light && lights.push(o))
-    expect(lights.every((light) => !light.visible)).toBe(true)
+    expect(log).toEqual(['frame'])
+    expect(compiled).toBeUndefined()
     warmup.dispose()
   })
 

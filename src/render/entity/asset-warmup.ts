@@ -54,7 +54,7 @@ export class AssetWarmup {
   private readonly kept: THREE.Object3D[] = []
   private disposed = false
   constructor(
-    private readonly target: AssetWarmupTarget,
+    _target: AssetWarmupTarget,
     private readonly library: Pick<AssetLibrary, 'instantiate'> = assets,
     private readonly frame: () => Promise<void> = nextFrame,
   ) {}
@@ -86,13 +86,10 @@ export class AssetWarmup {
     model.traverse((object) => {
       if (object instanceof THREE.Light) object.visible = false
     })
-    for (const texture of materialTextures(model)) {
-      await this.frame()
-      if (this.disposed) break
-      this.target.renderer.initTexture(texture)
-    }
-    if (!this.disposed)
-      await this.target.renderer.compileAsync(model, this.target.camera, this.target.scene)
+    // Texture upload and shader compile on the warm instance are off: the warm clone shares its
+    // materials and textures with the real vehicle, and since #189 the S3 cabin and the VFR body
+    // rendered black (2026-10-09). Only the GLB fetch and parse stay ahead of the spawn.
+    await this.frame()
     this.kept.push(model)
     if (this.disposed) this.dispose()
   }

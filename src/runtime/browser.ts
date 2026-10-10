@@ -177,7 +177,7 @@ import { VehicleEffects } from './vehicle-effects.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 
 import { groundAtSeam, waitForArea, waitForGround } from './ground.js'
-import { uploadSceneTextures, warmGamePresentation } from './presentation-warmup.js'
+import { warmGamePresentation } from './presentation-warmup.js'
 import { GameHud } from './hud.js'
 import { FlipCinematic } from './flip-cinematic.js'
 import {
@@ -2524,7 +2524,7 @@ export class GameRuntime {
         }),
         20_000,
       )
-      await within(uploadSceneTextures(this.renderer, this.scene, signal), 20_000)
+      // uploadSceneTextures is off with the vehicle texture warm-up (black vehicles, 2026-10-09).
       signal.throwIfAborted()
       // Then the start views themselves, as the first gameplay frames will draw them. Awaited
       // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
