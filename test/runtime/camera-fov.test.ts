@@ -27,12 +27,13 @@ describe('camera FOV offset', () => {
     expect(nextCameraFovOffset(20, '5')).toBe(25)
     expect(nextCameraFovOffset(25, '5')).toBe(25)
     expect(nextCameraFovOffset(-15, '-5')).toBe(-15)
-    expect(nextCameraFovOffset(10, 'reset')).toBe(0)
+    expect(nextCameraFovOffset(10, 'reset')).toBe(15)
   })
 
-  it('persists the offset and reads junk as 0', () => {
+  it('defaults to +15 with nothing saved, persists the offset and reads junk as 0', () => {
     const storage = memory()
-    expect(readCameraFovOffset(storage)).toBe(0)
+    expect(readCameraFovOffset(storage)).toBe(15)
+    expect(readCameraFovOffset(null)).toBe(15)
     writeCameraFovOffset(storage, 10)
     expect(storage.data.get(cameraFovStorageKey)).toBe('10')
     expect(readCameraFovOffset(storage)).toBe(10)

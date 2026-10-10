@@ -10,6 +10,8 @@ export const cameraFovStorageKey = 'nabla.cameraFov'
 export const cameraFovStep = 5
 /** Allowed offset range, degrees. */
 export const cameraFovRange = Object.freeze({ min: -15, max: 25 })
+/** Offset before the player picks one (Txema 2026-10-10: +15°). */
+export const cameraFovDefault = 15
 
 export type CameraFovStorage = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -30,13 +32,13 @@ export function cameraFovFor(base: CameraFovBase, offset: number): CameraFovBase
   return { firstPersonFov: base.firstPersonFov + delta, chaseFov: base.chaseFov + delta }
 }
 
-/** Saved offset, or 0 when none or unreadable. */
+/** Saved offset, or {@link cameraFovDefault} when none or unreadable. */
 export function readCameraFovOffset(storage: CameraFovStorage | null | undefined): number {
   try {
     const raw = storage?.getItem(cameraFovStorageKey)
-    return raw === null || raw === undefined ? 0 : clampCameraFovOffset(Number(raw))
+    return raw === null || raw === undefined ? cameraFovDefault : clampCameraFovOffset(Number(raw))
   } catch {
-    return 0
+    return cameraFovDefault
   }
 }
 
@@ -54,6 +56,6 @@ export function writeCameraFovOffset(
 
 /** Offset after a menu action: a signed step, or `reset`. */
 export function nextCameraFovOffset(current: number, action: string): number {
-  if (action === 'reset') return 0
+  if (action === 'reset') return cameraFovDefault
   return clampCameraFovOffset(current + Number(action))
 }

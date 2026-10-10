@@ -13,7 +13,7 @@ overhead view shares). The cinematic camera keeps its own FOV.
 
 ## clampCameraFovOffset
 
-[Implementation, line 22](../../../../src/runtime/camera-fov.ts#L22)
+[Implementation, line 24](../../../../src/runtime/camera-fov.ts#L24)
 
 Clamp to the allowed range and whole degrees; non-finite reads as 0.
 
@@ -30,7 +30,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cameraFovFor
 
-[Implementation, line 28](../../../../src/runtime/camera-fov.ts#L28)
+[Implementation, line 30](../../../../src/runtime/camera-fov.ts#L30)
 
 Both camera FOVs for an offset.
 
@@ -44,9 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readCameraFovOffset
 
-[Implementation, line 34](../../../../src/runtime/camera-fov.ts#L34)
-
-Saved offset, or 0 when none or unreadable.
+[Implementation, line 36](../../../../src/runtime/camera-fov.ts#L36)
 
 ```ts
 readCameraFovOffset(storage: CameraFovStorage | null | undefined): number
@@ -60,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## writeCameraFovOffset
 
-[Implementation, line 44](../../../../src/runtime/camera-fov.ts#L44)
+[Implementation, line 46](../../../../src/runtime/camera-fov.ts#L46)
 
 Remember the offset. Storage errors are ignored; the change still applies this session.
 
@@ -76,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nextCameraFovOffset
 
-[Implementation, line 56](../../../../src/runtime/camera-fov.ts#L56)
+[Implementation, line 58](../../../../src/runtime/camera-fov.ts#L58)
 
 Offset after a menu action: a signed step, or `reset`.
 
