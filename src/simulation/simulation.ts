@@ -201,6 +201,7 @@ export class Simulation {
     to?: Quaternion
     position?: Vec3
     targetY?: number
+    riderPosition: Vec3
   } | null = null
   private bikeMountHold: {
     vehicleId: string
@@ -1448,7 +1449,13 @@ export class Simulation {
       if (this.vehicleId) this.placeOnFoot(candidate)
       this.input.yaw = Math.atan2(candidate.x - v.body.position.x, candidate.z - v.body.position.z)
       this.ejection = pickingUp ? null : { ...startEjection(v.entity.id, 0), phase: 'rising' }
-      this.gentleRecovery = { vehicleId: v.entity.id, phase: 'rising', elapsed: 0, to: upright }
+      this.gentleRecovery = {
+        vehicleId: v.entity.id,
+        phase: 'rising',
+        elapsed: 0,
+        to: upright,
+        riderPosition: this.playerBody.position.clone(),
+      }
       return true
     }
     return false
@@ -1484,6 +1491,13 @@ export class Simulation {
       this.gentleRecovery = null
       return
     }
+    // Getting off can carry a little chassis velocity. Keep the rider's footing through
+    // the rise and lift instead of letting that momentum drift them away from the bike.
+    this.playerBody.position.x = r.riderPosition.x
+    this.playerBody.position.z = r.riderPosition.z
+    this.playerBody.velocity.x = 0
+    this.playerBody.velocity.z = 0
+    this.playerBody.aabbNeedsUpdate = true
     if (r.phase === 'rising') {
       if (this.ejection) return
       const ground = this.groundUnder(v.body.position.x, v.body.position.z, v.body.position.y)

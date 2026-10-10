@@ -126,3 +126,22 @@ it('holds the lifted bike still until the avatar finishes boarding, even with th
   for (let i = 0; i < 10; i++) s.step(1 / 60)
   expect(s.playerBikeRecovery).toBeNull()
 })
+
+it('keeps the rising rider beside the bike instead of carrying dismount momentum away', () => {
+  const s = scene()
+  const internals = s as unknown as { vehicles: Map<string, Vehicle>; playerBody: Vehicle['body'] }
+  const bike = internals.vehicles.get('bike')!
+  s.startInVehicle('bike')
+  bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+  bike.body.velocity.setZero()
+  bike.body.angularVelocity.setZero()
+  for (let i = 0; i < 180 && !s.playerBikeRecovery; i++) s.step(1 / 60)
+  expect(s.playerBikeRecovery?.phase).toBe('rising')
+  const start = s.player.position
+  internals.playerBody.velocity.set(0.5, 0, 0.3)
+  for (let i = 0; i < 20; i++) {
+    s.step(1 / 60)
+    expect(s.player.position[0]).toBeCloseTo(start[0], 6)
+    expect(s.player.position[2]).toBeCloseTo(start[2], 6)
+  }
+})
