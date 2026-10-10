@@ -20,7 +20,7 @@ it('repaints the real GLB with paired body/rim finishes and restores the black r
     ['#f0f0ea', 'f0f0ea', 'f0f0ea'],
     ['#aab0b7', 'aab0b7', 'aab0b7'],
     ['#2157a5', 'aab0b7', '2157a5'],
-    ['#c51b28', '17191e', 'aab0b7'],
+    ['#c51b28', 'aab0b7', 'aab0b7'],
     ['#b91929', '17191e', 'b91929'],
     ['#17191e', '17191e', '17191e'],
   ]) {

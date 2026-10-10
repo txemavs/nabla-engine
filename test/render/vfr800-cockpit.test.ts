@@ -37,6 +37,77 @@ const materialsOf = (object: THREE.Object3D) => {
 }
 
 describe('vfr800 GLB cockpit pass', () => {
+  it('blocks views through the headlamp bowls and recessed exhaust outlet', async () => {
+    const root = await load()
+    root.updateMatrixWorld(true)
+    for (const x of [-0.1, 0.1]) {
+      const hits = new THREE.Raycaster(
+        new THREE.Vector3(x, 0.73, -1.1),
+        new THREE.Vector3(0, 0, 1),
+        0,
+        0.6,
+      ).intersectObject(root, true)
+      const opaque = hits.find(
+        (h) =>
+          (h.object as THREE.Mesh).material &&
+          ((h.object as THREE.Mesh).material as THREE.Material).name !== 'Headlamp clear lens',
+      )!
+      expect(((opaque.object as THREE.Mesh).material as THREE.Material).name).toBe(
+        'Lamp internal reflector',
+      )
+    }
+    const cap = root.getObjectByName('Exhaust_Outlet_Closure') as THREE.Mesh
+    const center = new THREE.Vector3(0.1599454, 0.608 + 0.00556, 0.989)
+    const normal = new THREE.Vector3(0, 0.559, 0.829).normalize()
+    const hit = new THREE.Raycaster(
+      center.clone().addScaledVector(normal, 0.07),
+      normal.negate(),
+      0,
+      0.1,
+    ).intersectObject(cap, true)[0]
+    expect(hit).toBeDefined()
+    expect(hit.distance).toBeCloseTo(0.07, 5)
+    expect((cap.material as THREE.MeshStandardMaterial).color.r).toBeLessThan(0.01)
+  })
+
+  it('keeps the live dial and LCD faces in front of the exported cockpit plastic', async () => {
+    const root = await load()
+    root.updateMatrixWorld(true)
+    for (const name of ['gauge_speedo', 'gauge_tacho', 'gauge_lcd']) {
+      const anchor = root.getObjectByName(name)!
+      const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(
+        anchor.getWorldQuaternion(new THREE.Quaternion()),
+      )
+      const origin = anchor.getWorldPosition(new THREE.Vector3()).addScaledVector(normal, 0.04)
+      const hit = new THREE.Raycaster(origin, normal.negate(), 0, 0.08).intersectObject(
+        root,
+        true,
+      )[0]
+      expect(hit, name).toBeDefined()
+      expect(hit.distance, name).toBeGreaterThan(0.04)
+    }
+  })
+
+  it('keeps the white daytime tacho dark at night and lights both needles green only with power', async () => {
+    const root = await load()
+    const cluster = MotorcycleInstruments.bind(root)!
+    const face = (name: string) =>
+      (root.getObjectByName(`${name}.face`) as THREE.Mesh).material as THREE.MeshBasicMaterial
+    const blade = (name: string) =>
+      (root.getObjectByName(`${name}.needle`)!.children[0] as THREE.Mesh)
+        .material as THREE.MeshBasicMaterial
+    cluster.update({ ...inputs, daylight: 1 })
+    expect(face('gauge_tacho').color.getHexString()).toBe('f4f4f0')
+    cluster.update({ ...inputs, daylight: 0 })
+    expect(face('gauge_tacho').color.getHexString()).toBe('060c09')
+    for (const name of ['gauge_speedo', 'gauge_tacho'])
+      expect(blade(name).color.getHexString()).toBe('80dfa4')
+    cluster.update({ ...inputs, powered: false, daylight: 0 })
+    expect(blade('gauge_tacho').color.getHexString()).not.toBe('80dfa4')
+    expect(face('gauge_tacho').color.r).toBeLessThan(0.04)
+    cluster.dispose()
+  })
+
   it('has fairing-mounted mirror_L and mirror_R nodes with reflective glass', async () => {
     const root = await load()
     const body = root.getObjectByName('Body')!

@@ -1458,6 +1458,7 @@ export class SceneView {
         const lamp = { powered, braking: false, reversing: false }
         cluster.update({
           powered,
+          daylight: this.daylight,
           ignition: info.ignition,
           gaugeSweep: info.gaugeSweep,
           speedKmh: info.speedKmh,

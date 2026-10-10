@@ -5,9 +5,13 @@ Cleaned up by hand by Txema Vicente over several hours, then substantially rewor
 
 The 2026-10-10 owner export `VFR800FI99.glb` replaces the earlier mesh. It includes the six-spoke front wheel, both front brakes, closed supports, folded passenger pegs, bare rider pegs, original mirrors, revised lenses and cap, and simplified exhaust. No decals are included. The radiator is the only embedded image texture. The rear chain and sprocket sit 26 mm farther inward; closed black chain spans meet the rear semicircle, behind the existing grey hub. The sprocket rotates with the wheel; the chain wrap stays with the swingarm.
 
-Body paint is split into tank, front and tail; both rims have independent paint tags. The motorcycle palette includes black with red rim stripes, red, white with white rims, yellow with black rims and no red stripe, grey and blue with grey rims, and the owner's anniversary combination (`#c51b28`): red front/tank and grey rear. Other colour combinations omit the red rim stripe. Fixed metal, tyres and lenses keep their materials.
+Body paint is split into tank, front and tail; both rims have independent paint tags. The motorcycle palette includes black with red rim stripes, red, white with white rims, yellow with black rims and no red stripe, grey and blue with grey rims, and the owner's anniversary combination (`#c51b28`): red front/tank, grey rear and grey rims. Other colour combinations omit the red rim stripe. Fixed metal, tyres and lenses keep their materials.
 
 After a new Blender export, `scripts/import-vfr800-final.mjs <source.glb>` restores the engine metadata from the current shipped GLB without changing the source geometry bytes. `scripts/adjust-vfr800-chain.mjs` applies the owner's chain correction once after import. Regenerate catalog anchors with `npm run rigs:generate`.
+
+The live cluster anchors sit above the exported plastic (a 5.56 mm correction). The tachometer has a white face in daylight; at night its face goes dark and both dials' numbers, ticks and needles glow green with the ignition on. The LCD shares the green backlight. Brake/clutch levers and clip-on handlebars are fixed grey; fluid reservoirs and their mounts stay black. `scripts/fix-vfr800-cockpit.mjs` applies these anchor/finish corrections once after a fresh import, without changing the triangle count.
+
+`scripts/refine-vfr800-cockpit.mjs` subdivides only the upper cockpit contour into four triangles per selected face, interpolates its curvature and stitches neighbouring faces. Thin reflector bowls render on both sides to block views through the headlamp. `scripts/close-vfr800-rear.mjs` closes the exhaust outlet with a recessed dark disk and fixes loose rear-lens fragments; `scripts/close-vfr800-tail-bezel.mjs` closes the gap behind the rear lamp bezel. These closures add only 56 triangles. Live motorcycle mirror captures exclude their own housing to prevent a black rim reflecting across the glass.
 
 ## Files
 

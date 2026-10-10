@@ -8,7 +8,7 @@ export function paintMotorcycle(model: THREE.Object3D, color: string): void {
   const selected = color.toLowerCase()
   const anniversary = selected === vfrAnniversaryColor
   const white = selected === '#f0f0ea'
-  const greyRims = selected === '#aab0b7' || selected === '#2157a5'
+  const greyRims = anniversary || selected === '#aab0b7' || selected === '#2157a5'
   const rim = white ? '#f0f0ea' : greyRims ? '#aab0b7' : '#17191e'
   const redStripe = selected === '#17191e'
   model.traverse((object) => {
