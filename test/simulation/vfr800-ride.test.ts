@@ -40,9 +40,9 @@ const ride = () => {
 }
 
 describe('vfr800 two-wheeled controller', () => {
-  it('stands upright unoccupied and parked, with both tyres loaded', () => {
+  it('rests leaned left unoccupied and parked, with both tyres loaded', () => {
     run(5)
-    expect(Math.abs(info().lean)).toBeLessThan(0.01)
+    expect(info().lean).toBeCloseTo(twoWheeledDefaults.parkingLean, 2)
     expect(info().twoWheeled).toBe(true)
     expect(info().leanAllowance).toBe(twoWheeledDefaults.fallLean)
     expect(sim.wheelContactInfo('bike').every((wheel) => wheel.isInContact)).toBe(true)
