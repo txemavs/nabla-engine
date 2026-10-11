@@ -59,7 +59,6 @@ import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
-import { magazineInsertClick, magazineReleaseClick } from '../audio/gear-click.js'
 import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
 import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
@@ -67,6 +66,7 @@ import { fireSidearm, sidearmButtonAction } from './shooting.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
 import { Casings } from '../render/entity/casings.js'
 import { DroppedMagazines } from '../render/entity/magazines.js'
+import type { MagazineEntity } from '../simulation/weapons/magazine.js'
 import type { FirearmEvent } from '../simulation/weapons/firearm.js'
 import { TouchDriving, type TouchDrivingVisibility } from './touch-driving.js'
 import {
@@ -523,6 +523,7 @@ export class GameRuntime {
   private casingMeshes: Casings | null = null
   private magazineMotion: CasingMotion | null = null
   private magazineMeshes: DroppedMagazines | null = null
+  private droppedMagazines = new Map<string, MagazineEntity>()
   /**
    * Free-mouse mode. While playing, the game owns the pointer (pointer lock on the canvas);
    * Escape, a menu taking focus, or a click on an in-world monitor release it, and it stays
@@ -992,6 +993,7 @@ export class GameRuntime {
     this.casingMotion?.reset()
     this.casingMeshes?.sync([])
     this.magazineMotion?.reset()
+    this.droppedMagazines.clear()
     this.magazineMeshes?.sync([])
     this.gallery.reset()
     this.gallery.update(this.view, false, 0)
@@ -3079,6 +3081,7 @@ export class GameRuntime {
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
+    this.sidearm?.stopInspect(performance.now())
     this.fireRequested = false
     this.triggerReleased = true
     this.triggerDown = false
@@ -3138,7 +3141,9 @@ export class GameRuntime {
         this.effects.audio.destruction(this.gallery.lastGlassImpact, true)
       if (shot) events.push(shot)
       if (shot?.fired) {
-        this.effects.audio.gunshot(weaponPosition)
+        this.effects.audio.gunshot(weaponPosition, !!shot.locked)
+        if (this.gallery.lastMetalImpact)
+          this.effects.audio.metalImpact(this.gallery.lastMetalImpact)
         canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
         if (shot.impactJoules !== undefined)
           canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)
@@ -3147,13 +3152,13 @@ export class GameRuntime {
       canvas.dataset.impacts = String(this.view.impacts.count)
     }
     for (const event of events) {
-      if (event.dry) this.effects.audio.gearClick({ volume: 0.6 }, weaponPosition)
+      if (event.dry) this.effects.audio.weaponSound('dry', weaponPosition)
       if (event.magazineDropped) {
-        this.effects.audio.gearClick(magazineReleaseClick, weaponPosition)
-        this.dropMagazine(sim, eyes)
+        this.effects.audio.weaponSound('magazine-out', weaponPosition)
+        if (event.droppedMagazine) this.dropMagazine(sim, eyes, event.droppedMagazine)
       }
-      if (event.magazineSeated) this.effects.audio.gearClick(magazineInsertClick, weaponPosition)
-      if (event.slideReleased) this.effects.audio.gearClick({ volume: 1.6 }, weaponPosition)
+      if (event.magazineSeated) this.effects.audio.weaponSound('magazine-in', weaponPosition)
+      if (event.slideReleased) this.effects.audio.weaponSound('slide-forward', weaponPosition)
       if (event.locked) this.options.onMessage?.(this.text('Slide locked back · R reload'))
     }
     if (this.casingMotion && this.casingMeshes) {
@@ -3169,7 +3174,11 @@ export class GameRuntime {
       this.magazineMotion.update(dt, (from, direction, length) =>
         sim.shoot(from, direction, length, 0),
       )
-      this.magazineMeshes.sync(this.magazineMotion.poses())
+      const poses = this.magazineMotion.poses()
+      this.magazineMeshes.sync(poses, this.droppedMagazines)
+      const live = new Set(poses.map((pose) => pose.entityId))
+      for (const id of this.droppedMagazines.keys())
+        if (!live.has(id)) this.droppedMagazines.delete(id)
       canvas.dataset.magazines = String(this.magazineMotion.count)
     }
     const ammo = sidearm.ammo
@@ -3210,7 +3219,7 @@ export class GameRuntime {
    * Spent magazine out of the grip. Same bounce, rest and lifetime as a casing, with a small
    * pool of its own. The mesh is the pistol's `Magazine` node.
    */
-  private dropMagazine(_sim: Simulation, eyes: boolean): void {
+  private dropMagazine(_sim: Simulation, eyes: boolean, entity: MagazineEntity): void {
     const sidearm = this.sidearm
     const casing = sidearm?.preset?.casing
     if (!sidearm || !casing) return
@@ -3237,11 +3246,13 @@ export class GameRuntime {
     const velocity = view.direction.clone()
     if (eyes) velocity.applyQuaternion(camQ)
     velocity.normalize().multiplyScalar(1.5)
+    this.droppedMagazines.set(entity.id, entity)
     this.magazineMotion.release(
       origin.toArray() as Vec3Tuple,
       velocity.toArray() as Vec3Tuple,
       [0.3, 0.5, 0.2],
       [orientation.x, orientation.y, orientation.z, orientation.w],
+      entity.id,
     )
   }
 
@@ -3449,6 +3460,12 @@ export class GameRuntime {
     }
     if (code === 'KeyR' && this.weaponDrawn) {
       this.reloadRequested = true
+      return
+    }
+    if ((code === 'KeyZ' || code === 'KeyX') && this.weaponDrawn && this.sidearm) {
+      this.sidearm.inspect(performance.now(), code === 'KeyX')
+      if (code === 'KeyX')
+        this.effects.audio.weaponSound('slide-back', this.camera.position.toArray())
       return
     }
     // Experimental full-auto: M on foot with the pistol drawn. At a ship helm (or on foot without
@@ -3671,10 +3688,21 @@ export class GameRuntime {
       },
       options,
     )
-    window.addEventListener('keyup', (event) => this.keys.release(event.code), {
-      ...options,
-      capture: true,
-    })
+    window.addEventListener(
+      'keyup',
+      (event) => {
+        this.keys.release(event.code)
+        if (event.code === 'KeyZ' || event.code === 'KeyX') {
+          this.sidearm?.stopInspect(performance.now())
+          if (event.code === 'KeyX' && this.weaponDrawn)
+            this.effects.audio.weaponSound('slide-forward', this.camera.position.toArray())
+        }
+      },
+      {
+        ...options,
+        capture: true,
+      },
+    )
     window.addEventListener('pagehide', () => this.releaseInput(), options)
     // Losing pointer lock (Escape, menus, monitors, browser UI) enters free-mouse mode until the
     // next click, and can swallow the keyups of held controls.

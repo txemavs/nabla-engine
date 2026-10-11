@@ -4,6 +4,8 @@ import { assets, disposeObject } from '../render/entity/assets.js'
 import {
   advanceFirearm,
   beginReload,
+  beginReloadAction,
+  moveSlide,
   freshFirearm,
   rounds,
   trigger,
@@ -19,12 +21,15 @@ import {
   type FireMode,
 } from '../simulation/weapons/machine-pistol.js'
 import { reloadPresentation } from './reload-presentation.js'
+import { WeaponThermal } from '../simulation/weapons/weapon-thermal.js'
+import { hkVariants, type HKVariantId } from '../simulation/weapons/hk-variants.js'
 import {
   normalizeSidearmTuning,
   sidearmTuningDefaults,
   type SidearmTuning,
 } from './sidearm-tuning.js'
 import { MuzzleSmoke } from '../render/entity/muzzle-smoke.js'
+import { poseHKDetails } from './hk-presentation.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
@@ -82,6 +87,22 @@ export class Sidearm {
   private slide: Part | null = null
   private triggerPart: Part | null = null
   private magazine: Part | null = null
+  private chamberRound: THREE.Object3D | null = null
+  private inspection: { kind: 'inspect' | 'chamber'; start: number; release?: number } | null = null
+  private hammer: Part | null = null
+  private lever: Part | null = null
+  private slideLever: Part | null = null
+  private magazineLever: Part | null = null
+  private presentationNow = 0
+  private decockPoseAt = -Infinity
+  private slideLeverPoseAt = -Infinity
+  private magazineLeverPoseAt = -Infinity
+  private triggerPose = 0
+  private hammerArmed = false
+  private lastAction: 'single' | 'double' = 'double'
+  readonly temperature = new WeaponThermal()
+  private variantId: HKVariantId = 'sa-da-combined-left'
+  private safetyOn = false
   private worldPresentation: THREE.Group | null = null
   private tuning: SidearmTuning = { ...sidearmTuningDefaults }
   private readonly smoke = new MuzzleSmoke()
@@ -143,6 +164,14 @@ export class Sidearm {
           this.slide = part(object, this.rig.parts.slide)
           this.triggerPart = part(object, this.rig.parts.trigger)
           this.magazine = part(object, this.rig.parts.magazine)
+          this.chamberRound = object.getObjectByName('ChamberRound') ?? null
+          poseHKDetails(object, 0, this.state.magazine)
+          const accessory = object.getObjectByName('LightLaserModule')
+          if (accessory) accessory.visible = false
+          this.hammer = part(object, 'HammerPivot')
+          this.lever = part(object, 'SafetyLeverPivot')
+          this.slideLever = part(object, 'SlideReleasePivot')
+          this.magazineLever = part(object, 'MagazineReleasePivot')
           dropFallback()
         })
         .catch(() => {
@@ -327,6 +356,9 @@ export class Sidearm {
   }
 
   reset(): void {
+    this.temperature.reset()
+    this.inspection = null
+    this.hammerArmed = false
     Object.assign(this.state, freshFirearm(this.firearm))
     this.recoilYaw.reset()
     this.rise?.reset()
@@ -352,9 +384,21 @@ export class Sidearm {
 
   /** Trigger pressed or held: once per press in SEMI, at the cyclic rate in RÁFAGA. */
   pull(now: number): FirearmEvent {
+    if (
+      this.inspection?.kind === 'chamber' &&
+      (this.inspection.release === undefined || now - this.inspection.release < 300)
+    )
+      return trigger(this.state, this.firearm, false, now)
+    this.inspection = null
+    if (this.safetyOn) return trigger(this.state, this.firearm, false, now)
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
     const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
+    if (event.fired || event.dry) {
+      this.lastAction = this.hammerArmed ? 'single' : 'double'
+      this.hammerArmed = !!event.fired && !this.variant.dao
+    }
     if (event.fired) {
+      this.temperature.shot(now)
       if (this.smokeEnabled) {
         this.smoke.burst(now, this.flashAt)
         if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
@@ -378,12 +422,33 @@ export class Sidearm {
   }
 
   reload(now: number): FirearmEvent {
-    return beginReload(this.state, this.firearm, now)
+    const event = beginReload(this.state, this.firearm, now)
+    if (event.reloadStarted) this.magazineLeverPoseAt = now
+    return event
+  }
+
+  manipulate(action: 'magazine-out' | 'magazine-in' | 'slide-release', now: number): FirearmEvent {
+    const event = beginReloadAction(this.state, this.firearm, action, now)
+    if (event.reloadStarted && action === 'magazine-out') this.magazineLeverPoseAt = now
+    return event
+  }
+
+  moveSlide(travel: number, now: number): FirearmEvent {
+    if (this.state.reload !== 'none') return trigger(this.state, this.firearm, false, now)
+    const event = moveSlide(this.state, this.firearm, travel, now)
+    if (travel >= 0.75) this.hammerArmed = !this.variant.dao
+    return event
   }
 
   /** Advance the slide and any reload; call once per frame. */
   update(now: number): FirearmEvent {
-    return advanceFirearm(this.state, this.firearm, now)
+    this.temperature.step(now)
+    const event = advanceFirearm(this.state, this.firearm, now)
+    if (event.slideReleased) {
+      this.hammerArmed = !this.variant.dao
+      this.slideLeverPoseAt = now
+    }
+    return event
   }
 
   /** Muzzle rise since the previous call (rad, positive = up), to add to the aim. */
@@ -477,13 +542,39 @@ export class Sidearm {
         .multiply(rotation)
       if (this.state.reload !== 'none') world.quaternion.multiply(this.model.quaternion)
     }
-    for (const source of [this.slide, this.triggerPart, this.magazine]) {
+    for (const source of [
+      this.slide,
+      this.triggerPart,
+      this.magazine,
+      this.hammer,
+      this.lever,
+      this.slideLever,
+      this.magazineLever,
+    ]) {
       if (!source) continue
       const target = world.getObjectByName(source.object.name)
       if (!target) continue
       target.position.copy(source.object.position)
       target.quaternion.copy(source.object.quaternion)
       target.visible = source.object.visible
+      target.scale.copy(source.object.scale)
+    }
+    const cartridge = world.getObjectByName('ChamberRound')
+    if (cartridge && this.chamberRound) cartridge.visible = this.chamberRound.visible
+    poseHKDetails(
+      world,
+      (this.slide?.object.position.z ?? 0) / this.rig.presentation.slide.travel,
+      this.state.reload === 'magazine-in'
+        ? (this.state.pendingMagazine?.rounds ?? 0)
+        : this.state.magazine,
+    )
+    for (const name of ['Hammer', 'HammerDAO', 'Control_lever']) {
+      const source = this.assembledModel?.getObjectByName(name)
+      const target = world.getObjectByName(name)
+      if (source && target) {
+        target.visible = source.visible
+        target.scale.copy(source.scale)
+      }
     }
   }
 
@@ -539,12 +630,21 @@ export class Sidearm {
 
   /** A detached copy of the `Magazine` node. Geometry and materials stay shared. */
   magazineClone(): THREE.Object3D | null {
-    return this.magazine ? this.magazine.object.clone(true) : null
+    const clone = this.magazine?.object.clone(true) ?? null
+    const top = clone?.getObjectByName('MagazineTopRound')
+    if (top) top.visible = false // World presentation binds the actual dropped entity.
+    return clone
   }
 
   /** Slide, trigger and magazine from the firearm state, relative to their rest poses. */
   private pose(now: number): void {
+    const elapsed = Math.max(0, Math.min(100, now - this.presentationNow))
+    this.presentationNow = now
     const p = this.rig.presentation
+    const targetTrigger = this.state.triggerHeld
+      ? p.trigger.angle * (this.lastAction === 'double' ? 1 : 0.45)
+      : 0
+    this.triggerPose += (targetTrigger - this.triggerPose) * (1 - Math.exp(-elapsed / 28))
     if (this.slide)
       this.slide.object.position
         .copy(this.slide.rest)
@@ -553,14 +653,9 @@ export class Sidearm {
     if (this.triggerPart)
       this.triggerPart.object.quaternion
         .copy(this.triggerPart.restQuaternion)
-        .multiply(
-          new THREE.Quaternion().setFromAxisAngle(
-            axis(p.trigger.axis),
-            this.state.triggerHeld ? p.trigger.angle : 0,
-          ),
-        )
+        .multiply(new THREE.Quaternion().setFromAxisAngle(axis(p.trigger.axis), this.triggerPose))
     const shown = reloadPresentation(
-      this.state.reload,
+      this.state.reloadAction === 'slide-release' ? 'none' : this.state.reload,
       now - this.state.reloadStartMs,
       this.firearm.reloadMs,
     )
@@ -574,11 +669,110 @@ export class Sidearm {
     this.model.position.z -= shown.lift * 0.7
     this.model.position.x += shown.lift * 0.4
     if (this.magazine) {
-      this.magazine.object.visible = shown.magazineVisible
+      this.magazine.object.visible =
+        this.state.reload === 'none' ? this.state.magazineSeated : shown.magazineVisible
       this.magazine.object.position
         .copy(this.magazine.rest)
         .addScaledVector(axis(p.magazine.axis), p.magazine.distance * shown.travel)
     }
+    if (this.chamberRound) this.chamberRound.visible = this.state.chamber > 0
+    if (this.hammer) this.hammer.object.rotation.x = this.hammerArmed ? 0.7 : 0
+    const originalHammer = this.hammer?.object.getObjectByName('Hammer')
+    const bobbedHammer = this.hammer?.object.getObjectByName('HammerDAO')
+    if (originalHammer) originalHammer.visible = !this.variant.dao || !bobbedHammer
+    if (bobbedHammer) bobbedHammer.visible = this.variant.dao
+    if (this.lever) {
+      this.lever.object.visible = this.variant.side !== 'none'
+      this.lever.object.scale.x = this.variant.side === 'right' ? -1 : 1
+      const pulse = Math.max(0, 1 - (now - this.decockPoseAt) / 280)
+      const target = this.safetyOn ? -0.24 : pulse * 0.3
+      this.lever.object.rotation.x +=
+        (target - this.lever.object.rotation.x) * (1 - Math.exp(-elapsed / 65))
+    }
+    if (this.slideLever) {
+      const pulse = Math.max(0, 1 - (now - this.slideLeverPoseAt) / 240)
+      const target = this.state.slideLocked ? -0.15 : pulse * 0.17
+      this.slideLever.object.rotation.x +=
+        (target - this.slideLever.object.rotation.x) * (1 - Math.exp(-elapsed / 45))
+    }
+    if (this.magazineLever) {
+      const age = now - this.magazineLeverPoseAt
+      const press = age >= 0 && age < 300 ? Math.sin((Math.PI * age) / 300) : 0
+      this.magazineLever.object.rotation.x = press * -0.25
+    }
+    if (this.inspection && this.state.reload === 'none') {
+      const age = now - this.inspection.start
+      const released =
+        this.inspection.release === undefined ? 1 : 1 - (now - this.inspection.release) / 300
+      const blend = Math.max(0, Math.min(1, age / 300, released))
+      if (released <= 0) this.inspection = null
+      else {
+        this.model.rotation.y += blend * (this.inspection.kind === 'inspect' ? 0.9 : -0.45)
+        this.model.rotation.z += blend * -0.35
+        this.model.position.y += blend * 0.055
+        if (this.inspection.kind === 'chamber' && this.slide)
+          this.slide.object.position
+            .copy(this.slide.rest)
+            .addScaledVector(axis(p.slide.axis), p.slide.travel * 0.8 * blend)
+      }
+    }
+    if (this.assembledModel)
+      poseHKDetails(
+        this.assembledModel,
+        (this.slide?.object.position.z ?? 0) / p.slide.travel,
+        this.state.reload === 'magazine-in'
+          ? (this.state.pendingMagazine?.rounds ?? 0)
+          : this.state.magazine,
+      )
+  }
+
+  /** Cosmetic inspection only: it never consumes or ejects ammunition. */
+  inspect(now: number, chamber = false): void {
+    if (this.state.reload !== 'none') return
+    this.inspection = { kind: chamber ? 'chamber' : 'inspect', start: now }
+  }
+  stopInspect(now: number): void {
+    if (this.inspection && this.inspection.release === undefined) this.inspection.release = now
+  }
+  get triggerAction(): 'single' | 'double' {
+    return this.hammerArmed ? 'single' : 'double'
+  }
+  /** Gameplay hammer state, with no discharge or ammunition change. */
+  decock(): void {
+    if (this.variant.decocker) {
+      this.decockPoseAt = this.presentationNow
+      this.hammerArmed = false
+      this.release()
+    }
+  }
+  cock(): void {
+    if (!this.variant.dao) this.hammerArmed = true
+  }
+  get variant() {
+    return hkVariants.find((variant) => variant.id === this.variantId)!
+  }
+  setVariant(id: HKVariantId): void {
+    if (!hkVariants.some((v) => v.id === id)) return
+    this.variantId = id
+    this.safetyOn = false
+    this.hammerArmed = false
+    this.release()
+  }
+  setSafety(on: boolean): void {
+    this.safetyOn = on && this.variant.safety
+    if (this.safetyOn) this.release()
+  }
+  get safe(): boolean {
+    return this.safetyOn
+  }
+  /** Initialise an exercise without generating fake shots or heating the weapon. */
+  setTrainingLoad(magazine: number, chamber: 0 | 1): void {
+    Object.assign(this.state, freshFirearm(this.firearm))
+    this.state.magazine = Math.max(0, Math.min(this.firearm.magazineCapacity, Math.floor(magazine)))
+    this.state.chamber = chamber
+    this.state.slideLocked = this.state.magazine === 0 && chamber === 0
+    this.hammerArmed = !this.variant.dao && this.state.slideLocked
+    this.inspection = null
   }
 
   /** Update the aimed presentation without altering shot direction or ballistics. */

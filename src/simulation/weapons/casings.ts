@@ -15,6 +15,7 @@ export interface CasingSpec {
 }
 
 export interface CasingPose {
+  entityId?: string
   position: Vec3Tuple
   spin: Vec3Tuple
   angle: number
@@ -23,6 +24,7 @@ export interface CasingPose {
 }
 
 interface Casing {
+  entityId?: string
   position: [number, number, number]
   velocity: [number, number, number]
   spin: [number, number, number]
@@ -102,6 +104,7 @@ export class CasingMotion {
     velocity: Vec3Tuple,
     spin: Vec3Tuple = [0.2, 0.4, 0.15],
     orientation: [number, number, number, number] = [0, 0, 0, 1],
+    entityId?: string,
   ): void {
     if (this.casings.length >= this.capacity) this.casings.shift()
     this.casings.push({
@@ -112,6 +115,7 @@ export class CasingMotion {
       age: 0,
       resting: false,
       orientation: [...orientation],
+      entityId,
     })
   }
 
@@ -173,6 +177,7 @@ export class CasingMotion {
 
   poses(): CasingPose[] {
     return this.casings.map((casing) => ({
+      entityId: casing.entityId,
       position: [...casing.position] as Vec3Tuple,
       spin: [...casing.spin] as Vec3Tuple,
       angle: casing.angle,

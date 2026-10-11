@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HK · Manejo · Revisión 11</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #18212d;
+      color: #e9eef4;
+      font: 14px system-ui;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    aside {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      width: 290px;
+      padding: 20px;
+      background: #101823ed;
+      border: 1px solid #516174;
+      border-radius: 14px;
+    }
+    h1 {
+      font-size: 23px;
+      margin: 0 0 5px;
+    }
+    p {
+      color: #a9bacb;
+      line-height: 1.5;
+      margin: 5px 0 16px;
+    }
+    button,
+    select {
+      background: #283b50;
+      color: inherit;
+      border: 1px solid #526b85;
+      border-radius: 6px;
+      padding: 9px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #375875;
+    }
+    .row {
+      display: flex;
+      gap: 7px;
+      margin: 12px 0;
+    }
+    .row > * {
+      flex: 1;
+    }
+    label {
+      display: block;
+      margin: 14px 0 5px;
+    }
+    input[type='range'] {
+      width: 100%;
+      accent-color: #8ec8ee;
+    }
+    output {
+      float: right;
+      color: #8ec8ee;
+    }
+    #status {
+      min-height: 20px;
+      color: #b6d9ed;
+    }
+    details {
+      margin-top: 18px;
+    }
+    summary {
+      cursor: pointer;
+    }
+    footer {
+      position: fixed;
+      bottom: 14px;
+      right: 18px;
+      color: #afc0d0;
+      pointer-events: none;
+    }
+    @media (max-width: 650px) {
+      aside {
+        width: 235px;
+        padding: 12px;
+        top: 8px;
+        left: 8px;
+      }
+      footer {
+        font-size: 11px;
+      }
+    }
+    aside {
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+    }
+  </style>
+  <canvas id="view"></canvas>
+  <aside>
+    <h1>HK · Manejo</h1>
+    <p>Modelo revisión 11 · animación de juego</p>
+    <p>Arrastra para girar · rueda para acercar.<br />Botón derecho para desplazar.</p>
+    <div class="row">
+      <button id="fire">Disparar</button><button id="reload">Soltar cargador</button>
+    </div>
+    <div class="row">
+      <button id="insertMagazine">Meter cargador</button><button id="rackSlide">Corredera</button>
+    </div>
+    <div class="row">
+      <button id="inspectModel">Mantener: mirar</button
+      ><button id="inspectChamber">Mantener: recámara</button>
+    </div>
+    <div class="row"><button id="magazinePreview" aria-pressed="false">Ver cargador</button></div>
+    <label for="variant">Configuración HK</label
+    ><select id="variant" style="width: 100%"></select>
+    <label for="load">Carga de práctica</label
+    ><select id="load" style="width: 100%">
+      <option value="4">4 + 1 · cinco disparos</option>
+      <option value="13">13 + 1 · carga completa</option>
+      <option value="0">Vacía</option>
+    </select>
+    <div class="row">
+      <button id="safety">Seguro: OFF</button><button id="decock">Desamartillar</button>
+    </div>
+    <div class="row">
+      <button id="cock">Armar martillo</button><button id="metal">Impacto metal</button>
+    </div>
+    <label><input id="testMetal" type="checkbox" /> Metal de prueba tras el disparo</label>
+    <details open>
+      <summary>Linterna y láser · módulo opcional</summary>
+      <label><input id="accessory" type="checkbox" /> Montar módulo</label>
+      <label><input id="torch" type="checkbox" disabled /> Linterna</label>
+      <label><input id="redLaser" type="checkbox" disabled /> Láser rojo</label>
+    </details>
+    <div class="row"><button id="pause">Pausar</button><button id="reset">Restablecer</button></div>
+    <label for="speed">Velocidad <output id="speedValue">1×</output></label
+    ><input id="speed" type="range" min="0.05" max="1" step="0.05" value="1" />
+    <label for="timeline">Recarga <output id="progress">0 %</output></label
+    ><input id="timeline" type="range" min="0" max="1" step="0.001" value="0" />
+    <label for="slide">Corredera <output id="slideValue">Cerrada</output></label
+    ><input id="slide" type="range" min="0" max="1" step="0.01" value="0" />
+    <div class="row">
+      <select id="angle" aria-label="Vista">
+        <option value="three">Tres cuartos</option>
+        <option value="front">Frente</option>
+        <option value="rear">Detrás</option>
+        <option value="left">Lateral izquierdo</option>
+        <option value="right">Lateral derecho</option>
+        <option value="top">Arriba</option>
+      </select>
+    </div>
+    <details>
+      <summary>Inspección</summary>
+      <label><input id="wire" type="checkbox" /> Ver triangulación</label
+      ><label><input id="light" type="checkbox" /> Acabado gris de inspección</label
+      ><button id="refresh">Actualizar modelo</button>
+    </details>
+    <p id="status" role="status">Cargando nuestra HK…</p>
+    <p id="thermal"></p>
+  </aside>
+  <footer>
+    Espacio: disparar · R: soltar cargador · P: pausar · mantener Z: mirar · mantener X: recámara
+  </footer>
+  <script type="module" src="./hk-review.js"></script>
+</html>

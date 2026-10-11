@@ -3,6 +3,8 @@ import { GearClack, type GearClackSound } from './gear-clack.js'
 import { GearClick, type GearClickSound } from './gear-click.js'
 import { loopingNoise } from './graph.js'
 import { Gunshot } from './gunshot.js'
+import { WeaponHandling, type WeaponSound } from './weapon-handling.js'
+import { MetalImpact } from './metal-impact.js'
 import { CasingTinkle } from './casing-tinkle.js'
 import { Powertrain } from './powertrain.js'
 import type { ResolvedEngineVoice } from './vehicle-sound.js'
@@ -38,6 +40,10 @@ export class VehicleAudio {
   private startVoice?: EngineStart
   private reverseVoice?: ReverseAlarm
   private gunshotVoice?: Gunshot
+  private weaponHandling?: WeaponHandling
+  private readonly metalVoices: MetalImpact[] = []
+  private readonly metalEmitters: SpatialEmitter[] = []
+  private nextMetal = 0
   private weaponClickVoice?: GearClick
   private vehicleEngine?: SpatialEmitter
   private turbineEmitter?: SpatialEmitter
@@ -143,6 +149,9 @@ export class VehicleAudio {
   dispose(): void {
     for (const entry of this.destructionVoices) entry.emitter.dispose()
     this.destructionVoices.length = 0
+    for (const emitter of this.metalEmitters) emitter.dispose()
+    this.metalEmitters.length = 0
+    this.metalVoices.length = 0
     this.music?.dispose()
     if (this.context) void this.context.close().catch(() => {})
     this.context = undefined
@@ -202,6 +211,7 @@ export class VehicleAudio {
       this.turbineEmitter,
       ...this.casingVoices.map((entry) => entry.emitter),
       ...this.destructionVoices.map((entry) => entry.emitter),
+      ...this.metalEmitters,
     ]) {
       emitter?.setListener(this.eye, this.orientation)
     }
@@ -291,12 +301,31 @@ export class VehicleAudio {
   }
 
   /** One sidearm shot. Silent before the first gesture, while muted or while suspended. */
-  gunshot(position?: readonly number[]): void {
+  gunshot(position?: readonly number[], last = false): void {
     const frame = this.frame()
     if (!frame || !this.gunshotVoice || !frame.audible) return
     this.weaponEmitter?.setPosition(position ?? this.eye)
     this.gunshotVoice.trigger(frame.time, true)
+    if (last) this.weaponHandling?.trigger(frame.time + 0.035, 'slide-lock')
     this.shots++
+  }
+
+  /** Procedural handling cue, at the weapon rather than the listener. */
+  weaponSound(sound: WeaponSound, position?: readonly number[]): void {
+    const frame = this.frame()
+    if (!frame?.audible || !this.weaponEmitter) return
+    this.weaponEmitter.setPosition(position ?? this.eye)
+    this.weaponHandling?.trigger(frame.time, sound)
+  }
+
+  /** A metal target rings at the hit point; independent emitters preserve previous tails. */
+  metalImpact(position: readonly number[]): void {
+    if (!this.frame()?.audible || !this.metalEmitters.length) return
+    const index = this.nextMetal++ % this.metalEmitters.length
+    const emitter = this.metalEmitters[index]
+    emitter.setPosition(position)
+    emitter.setListener(this.eye, this.orientation)
+    this.metalVoices[index].trigger(this.context!.currentTime, index % 4)
   }
 
   /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */
@@ -368,6 +397,16 @@ export class VehicleAudio {
       })
     }
     this.context = context
+    for (let i = 0; i < 8; i++) {
+      const emitter = new SpatialEmitter(context, audioBus(context), {
+        referenceDistance: 2,
+        maxDistance: 150,
+      })
+      this.metalEmitters.push(emitter)
+      this.metalVoices.push(
+        withAudioOutputs(context, { sfx: emitter.input }, () => new MetalImpact(context, noise)),
+      )
+    }
     this.vehicleEngine = new SpatialEmitter(context, audioBus(context, 'engine'), {
       referenceDistance: 3,
       maxDistance: 180,
@@ -413,6 +452,11 @@ export class VehicleAudio {
       { sfx: this.weaponEmitter.input },
       () => new GearClick(context, noise),
     )
+    this.weaponHandling = withAudioOutputs(
+      context,
+      { sfx: this.weaponEmitter.input },
+      () => new WeaponHandling(context, noise),
+    )
     this.setListener(this.eye, this.orientation, this.listenerSpeed)
   }
 
@@ -435,6 +479,8 @@ export class VehicleAudio {
     this.startVoice?.silence(time)
     this.reverseVoice?.silence(time)
     this.gunshotVoice?.silence(time)
+    this.weaponHandling?.silence(time)
+    for (const voice of this.metalVoices) voice.silence(time)
     for (const entry of this.casingVoices) entry.voice.silence(time)
     for (const entry of this.destructionVoices) entry.voice.silence(time)
   }

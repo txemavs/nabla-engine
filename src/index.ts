@@ -189,3 +189,4 @@ export {
   type MonitorLayer,
 } from './render/monitors/layered-monitor.js'
 export { MonitorMenu, type MonitorMenuItem, type MonitorAction } from './render/monitors/menu.js'
+export { createMagazine, type MagazineEntity } from './simulation/weapons/magazine.js'

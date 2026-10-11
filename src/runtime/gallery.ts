@@ -66,6 +66,7 @@ export function shotView(
 
 export class Gallery {
   lastGlassImpact: [number, number, number] | null = null
+  lastMetalImpact: [number, number, number] | null = null
   private elapsed = 0
   private remaining = 60
   private started = false
@@ -135,6 +136,7 @@ export class Gallery {
     damage = 0,
   ): boolean {
     this.lastGlassImpact = null
+    this.lastMetalImpact = null
     let rayView = shotView(sim, view.document, camera, range)
     const foreground = new THREE.Raycaster()
     foreground.setFromCamera(new THREE.Vector2(), camera)
@@ -199,6 +201,11 @@ export class Gallery {
       // Planet buildings and other static colliders have no entity id — anchor in
       // view.root, which shares the floating-origin shift with world meshes.
       const object = hit.entityId ? view.objects.get(hit.entityId) : undefined
+      if (
+        hit.entityId &&
+        view.document.entities.some((entity) => entity.id === hit.entityId && entity.vehicle)
+      )
+        this.lastMetalImpact = [...hit.point] as [number, number, number]
       if (object && hit.entityId) {
         view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)
       } else {

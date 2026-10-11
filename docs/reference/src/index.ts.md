@@ -53,5 +53,6 @@
 - `./render/monitors/html-monitor.js`
 - `./render/monitors/layered-monitor.js`
 - `./render/monitors/menu.js`
+- `./simulation/weapons/magazine.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

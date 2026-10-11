@@ -5,8 +5,12 @@
  * and releases the slide; with a round already chambered the slide is not run, so the chambered
  * round is kept.
  */
+import { createMagazine, type MagazineEntity } from './magazine.js'
+
 export interface FirearmSpec {
   magazineCapacity: number
+  /** Spawn loadout; reloads consume existing items, never refill them. */
+  spareMagazines?: number
   chamber: number
   cycleMs: number
   reloadMs: { magazineOut: number; magazineIn: number; slideRelease: number }
@@ -15,6 +19,10 @@ export interface FirearmSpec {
 export type ReloadPhase = 'none' | 'magazine-out' | 'magazine-in' | 'slide-release'
 
 export interface FirearmState {
+  magazineEntity: MagazineEntity | null
+  spareMagazines: MagazineEntity[]
+  pendingMagazine: MagazineEntity | null
+  detachedMagazine: MagazineEntity | null
   /** Cartridges in the seated magazine (0 when none is seated). */
   magazine: number
   /** A magazine is in the pistol. */
@@ -25,6 +33,10 @@ export interface FirearmState {
   slide: number
   reload: ReloadPhase
   reloadStartMs: number
+  /** Workshop manipulation: finish only the requested step, then wait. */
+  reloadAction?: ReloadPhase
+  manualRackBack?: boolean
+  manualSlideTravel?: number
   /** The trigger is still held from the last press: it has to be released (reset) first. */
   triggerHeld: boolean
   lastShotMs: number
@@ -33,6 +45,7 @@ export interface FirearmState {
 }
 
 export interface FirearmEvent {
+  droppedMagazine?: MagazineEntity
   fired: boolean
   /** The slide just locked open on the last round. */
   locked: boolean
@@ -44,17 +57,64 @@ export interface FirearmEvent {
   slideReleased: boolean
   /** Trigger pressed with the slide forward on an empty chamber: the hammer falls, click. */
   dry: boolean
+  cartridgeEjected?: boolean
+}
+
+/** Continuous viewer slide manipulation, sharing the same ammunition state. */
+export function moveSlide(
+  state: FirearmState,
+  _spec: FirearmSpec,
+  travel: number,
+  _now: number,
+): FirearmEvent {
+  const event = empty()
+  state.slide = Math.max(0, Math.min(1, travel))
+  state.manualSlideTravel = state.slide > 0.01 ? state.slide : undefined
+  if (state.slide >= 0.75 && !state.manualRackBack) {
+    event.cartridgeEjected = state.chamber > 0
+    state.chamber = 0
+    state.manualRackBack = true
+  }
+  if (state.slide <= 0.01 && state.manualRackBack) {
+    if (state.magazineSeated && state.magazine > 0) {
+      state.magazine--
+      state.chamber = 1
+    }
+    state.slideLocked = state.magazineSeated && state.magazine === 0 && state.chamber === 0
+    state.manualRackBack = false
+    state.slideReleaseMs = -Infinity
+    event.slideReleased = true
+  }
+  return event
 }
 
 export function freshFirearm(spec: FirearmSpec): FirearmState {
   return {
-    magazine: spec.magazineCapacity,
+    magazineEntity: createMagazine(spec.magazineCapacity),
+    spareMagazines: Array.from({ length: spec.spareMagazines ?? 3 }, () =>
+      createMagazine(spec.magazineCapacity),
+    ),
+    pendingMagazine: null,
+    detachedMagazine: null,
+    get magazine() {
+      return this.magazineEntity?.rounds ?? 0
+    },
+    set magazine(value: number) {
+      if (this.magazineEntity)
+        this.magazineEntity.rounds = Math.max(
+          0,
+          Math.min(this.magazineEntity.capacity, Math.floor(value)),
+        )
+    },
     magazineSeated: true,
     chamber: spec.chamber,
     slideLocked: false,
     slide: 0,
     reload: 'none',
     reloadStartMs: -Infinity,
+    reloadAction: undefined,
+    manualRackBack: false,
+    manualSlideTravel: undefined,
     triggerHeld: false,
     lastShotMs: -Infinity,
     slideReleaseMs: -Infinity,
@@ -65,6 +125,7 @@ export function freshFirearm(spec: FirearmSpec): FirearmState {
 export function beginReload(state: FirearmState, spec: FirearmSpec, now: number): FirearmEvent {
   const event = empty()
   if (state.reload !== 'none') return event
+  if (!state.spareMagazines.length) return event
   if (
     state.magazineSeated &&
     state.magazine >= spec.magazineCapacity &&
@@ -72,8 +133,41 @@ export function beginReload(state: FirearmState, spec: FirearmSpec, now: number)
   )
     return event
   event.reloadStarted = true
+  state.pendingMagazine = state.spareMagazines.shift()!
+  state.reloadAction = undefined
+  state.manualSlideTravel = undefined
   state.reload = 'magazine-out'
   state.reloadStartMs = now
+  return event
+}
+
+/** Independently operated magazine and slide actions for the interactive viewer. */
+export function beginReloadAction(
+  state: FirearmState,
+  spec: FirearmSpec,
+  action: Exclude<ReloadPhase, 'none'>,
+  now: number,
+): FirearmEvent {
+  const event = empty()
+  if (state.reload !== 'none' || now - state.lastShotMs < spec.cycleMs) return event
+  if (action === 'magazine-out' && !state.magazineSeated) return event
+  if (action === 'magazine-in' && state.magazineSeated) return event
+  if (action === 'magazine-in') {
+    state.pendingMagazine = state.detachedMagazine ?? state.spareMagazines.shift() ?? null
+    if (!state.pendingMagazine) return event
+    state.detachedMagazine = null
+  }
+  state.reload = action
+  state.reloadAction = action
+  if (action === 'slide-release') state.manualSlideTravel = undefined
+  const offset =
+    action === 'magazine-in'
+      ? spec.reloadMs.magazineOut
+      : action === 'slide-release'
+        ? spec.reloadMs.magazineIn
+        : 0
+  state.reloadStartMs = now - offset
+  event.reloadStarted = true
   return event
 }
 
@@ -95,7 +189,12 @@ export function trigger(
   if (state.triggerHeld) return event
   state.triggerHeld = true
   // Hands busy with a reload, or the slide not in battery: the trigger does nothing.
-  if (state.reload !== 'none' || now - state.lastShotMs < spec.cycleMs) return event
+  if (
+    state.reload !== 'none' ||
+    state.manualSlideTravel !== undefined ||
+    now - state.lastShotMs < spec.cycleMs
+  )
+    return event
   if (state.slideLocked || state.chamber <= 0) {
     event.dry = true
     return event
@@ -123,23 +222,37 @@ export function advanceFirearm(state: FirearmState, spec: FirearmSpec, now: numb
   if (state.reload !== 'none') {
     const age = now - state.reloadStartMs
     const { magazineOut, magazineIn, slideRelease } = spec.reloadMs
+    if (
+      state.reload === 'slide-release' &&
+      state.reloadAction &&
+      age >= magazineIn + (slideRelease - magazineIn) / 2
+    ) {
+      event.cartridgeEjected = moveSlide(state, spec, 1, now).cartridgeEjected
+    }
     if (state.reload === 'magazine-out' && age >= magazineOut) {
-      state.magazine = 0
+      event.droppedMagazine = state.magazineEntity ?? undefined
+      state.detachedMagazine = state.reloadAction ? state.magazineEntity : null
+      state.magazineEntity = null
       state.magazineSeated = false
-      state.reload = 'magazine-in'
+      state.reload = state.reloadAction ? 'none' : 'magazine-in'
       event.magazineDropped = true
     }
     if (state.reload === 'magazine-in' && age >= magazineIn) {
-      state.magazine = spec.magazineCapacity
+      state.magazineEntity = state.pendingMagazine
+      state.pendingMagazine = null
       state.magazineSeated = true
       event.magazineSeated = true
       // A chambered round is kept: the slide is only run when the chamber is empty.
-      state.reload = state.chamber > 0 ? 'none' : 'slide-release'
+      state.reload = state.reloadAction || state.chamber > 0 ? 'none' : 'slide-release'
     }
     if (state.reload === 'slide-release' && age >= slideRelease) {
       state.slideLocked = false
-      state.magazine -= 1
-      state.chamber = 1
+      if (state.reloadAction) state.manualRackBack = false
+      state.manualSlideTravel = undefined
+      if (state.chamber === 0 && state.magazineSeated && state.magazine > 0) {
+        state.magazine -= 1
+        state.chamber = 1
+      }
       state.reload = 'none'
       state.slideReleaseMs = now
       event.slideReleased = true
@@ -152,6 +265,16 @@ export function advanceFirearm(state: FirearmState, spec: FirearmSpec, now: numb
   else if (shot >= 0 && shot < spec.cycleMs) state.slide = Math.sin((Math.PI * shot) / spec.cycleMs)
   else if (released >= 0 && released < half) state.slide = 1 - released / half
   else state.slide = 0
+  if (state.reload === 'slide-release' && state.reloadAction) {
+    const span = Math.max(1, spec.reloadMs.slideRelease - spec.reloadMs.magazineIn)
+    const progress = Math.max(
+      0,
+      Math.min(1, (now - state.reloadStartMs - spec.reloadMs.magazineIn) / span),
+    )
+    state.slide = state.slideLocked ? 1 : Math.min(1, progress * 2)
+  }
+  if (state.manualSlideTravel !== undefined && state.reload !== 'slide-release')
+    state.slide = state.manualSlideTravel
   return event
 }
 

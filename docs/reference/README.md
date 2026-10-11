@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **375 modules; 4121 executable function definitions**.
+Coverage: **381 modules; 4159 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -53,6 +53,7 @@ Coverage: **375 modules; 4121 executable function definitions**.
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
+| [src/audio/metal-impact.ts](src/audio/metal-impact.ts.md) | 5 |
 | [src/audio/mixer.ts](src/audio/mixer.ts.md) | 15 |
 | [src/audio/music.ts](src/audio/music.ts.md) | 17 |
 | [src/audio/positional.ts](src/audio/positional.ts.md) | 6 |
@@ -64,7 +65,8 @@ Coverage: **375 modules; 4121 executable function definitions**.
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
 | [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 48 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 52 |
+| [src/audio/weapon-handling.ts](src/audio/weapon-handling.ts.md) | 3 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
 | [src/catalog/monitors/car.ts](src/catalog/monitors/car.ts.md) | 4 |
@@ -279,20 +281,21 @@ Coverage: **375 modules; 4121 executable function definitions**.
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 306 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 307 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
-| [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 16 |
+| [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 17 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 13 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 21 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 8 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 5 |
 | [src/runtime/helm-touch.ts](src/runtime/helm-touch.ts.md) | 1 |
+| [src/runtime/hk-presentation.ts](src/runtime/hk-presentation.ts.md) | 1 |
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 10 |
@@ -312,7 +315,7 @@ Coverage: **375 modules; 4121 executable function definitions**.
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 4 |
 | [src/runtime/sidearm-tuning.ts](src/runtime/sidearm-tuning.ts.md) | 3 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 47 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 61 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -377,9 +380,12 @@ Coverage: **375 modules; 4121 executable function definitions**.
 | [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 31 |
 | [src/simulation/weapons/ballistics.ts](src/simulation/weapons/ballistics.ts.md) | 12 |
 | [src/simulation/weapons/casings.ts](src/simulation/weapons/casings.ts.md) | 16 |
-| [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 6 |
+| [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 11 |
+| [src/simulation/weapons/hk-variants.ts](src/simulation/weapons/hk-variants.ts.md) | 0 |
 | [src/simulation/weapons/machine-pistol.ts](src/simulation/weapons/machine-pistol.ts.md) | 10 |
+| [src/simulation/weapons/magazine.ts](src/simulation/weapons/magazine.ts.md) | 1 |
 | [src/simulation/weapons/recoil.ts](src/simulation/weapons/recoil.ts.md) | 7 |
+| [src/simulation/weapons/weapon-thermal.ts](src/simulation/weapons/weapon-thermal.ts.md) | 3 |
 | [src/simulation/wheel-surface.ts](src/simulation/wheel-surface.ts.md) | 4 |
 | [src/util/gzip.ts](src/util/gzip.ts.md) | 1 |
 | [src/util/sha256.ts](src/util/sha256.ts.md) | 5 |

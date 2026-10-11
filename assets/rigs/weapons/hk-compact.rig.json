@@ -2,7 +2,7 @@
   "version": 1,
   "units": "metres",
   "forward": "-Z",
-  "model": "/library/weapons/hk-compact/hk-compact.glb",
+  "model": "./hk-compact.glb",
   "rest": "assembled",
   "parts": {
     "frame": "Frame",
@@ -23,7 +23,7 @@
         0,
         1
       ],
-      "travel": 0.012
+      "travel": 0.035
     },
     "trigger": {
       "axis": [
@@ -31,7 +31,7 @@
         0,
         0
       ],
-      "angle": 0.16
+      "angle": -0.16
     },
     "magazine": {
       "axis": [
@@ -46,11 +46,11 @@
     "min": [
       -0.018577449023723602,
       -0.010899093933403492,
-      -0.11838977038860321
+      -0.1211
     ],
     "max": [
       0.016802214086055756,
-      0.13140833377838135,
+      0.1268785537686199,
       0.05374099686741829
     ]
   },

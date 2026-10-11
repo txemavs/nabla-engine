@@ -12,18 +12,74 @@ round is kept.
 
 ## Module dependencies
 
+- `./magazine.js`
+
+## moveSlide
+
+[Implementation, line 64](../../../../../src/simulation/weapons/firearm.ts#L64)
+
+Continuous viewer slide manipulation, sharing the same ammunition state.
+
+```ts
+moveSlide(state: FirearmState, _spec: FirearmSpec, travel: number, _now: number): FirearmEvent
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `empty`
 
 ## freshFirearm
 
-[Implementation, line 49](../../../../../src/simulation/weapons/firearm.ts#L49)
+[Implementation, line 91](../../../../../src/simulation/weapons/firearm.ts#L91)
 
 ```ts
 freshFirearm(spec: FirearmSpec): FirearmState
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Array.from`
+- `createMagazine`
+
+## freshFirearm.callback@94
+
+[Implementation, line 94](../../../../../src/simulation/weapons/firearm.ts#L94)
+
+```ts
+callback@94(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `createMagazine`
+
+## freshFirearm.magazine
+
+[Implementation, line 99](../../../../../src/simulation/weapons/firearm.ts#L99)
+
+```ts
+magazine(): inferred by TypeScript; see implementation
+```
+
+## freshFirearm.magazine
+
+[Implementation, line 102](../../../../../src/simulation/weapons/firearm.ts#L102)
+
+```ts
+magazine(value: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `Math.max`
+- `Math.min`
+
 ## beginReload
 
-[Implementation, line 65](../../../../../src/simulation/weapons/firearm.ts#L65)
+[Implementation, line 125](../../../../../src/simulation/weapons/firearm.ts#L125)
 
 A reload request at `now` (ms). Nothing when one is running or the pistol is full.
 
@@ -34,10 +90,26 @@ beginReload(state: FirearmState, spec: FirearmSpec, now: number): FirearmEvent
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `empty`
+- `state.spareMagazines.shift`
+
+## beginReloadAction
+
+[Implementation, line 145](../../../../../src/simulation/weapons/firearm.ts#L145)
+
+Independently operated magazine and slide actions for the interactive viewer.
+
+```ts
+beginReloadAction(state: FirearmState, spec: FirearmSpec, action: Exclude<ReloadPhase, 'none'>, now: number): FirearmEvent
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `empty`
+- `state.spareMagazines.shift`
 
 ## trigger
 
-[Implementation, line 84](../../../../../src/simulation/weapons/firearm.ts#L84)
+[Implementation, line 178](../../../../../src/simulation/weapons/firearm.ts#L178)
 
 One trigger sample (pressed or released) at `now` (ms). A shot needs a fresh press (the trigger
 reset after the last one), the slide in battery with the cycle finished, and a chambered round.
@@ -52,7 +124,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## advanceFirearm
 
-[Implementation, line 121](../../../../../src/simulation/weapons/firearm.ts#L121)
+[Implementation, line 220](../../../../../src/simulation/weapons/firearm.ts#L220)
 
 Advance the slide and an in-progress reload to `now` (ms).
 
@@ -62,13 +134,15 @@ advanceFirearm(state: FirearmState, spec: FirearmSpec, now: number): FirearmEven
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
 - `Math.min`
 - `Math.sin`
 - `empty`
+- `moveSlide`
 
 ## rounds
 
-[Implementation, line 159](../../../../../src/simulation/weapons/firearm.ts#L159)
+[Implementation, line 282](../../../../../src/simulation/weapons/firearm.ts#L282)
 
 Rounds on board: the chamber plus the seated magazine.
 
@@ -78,7 +152,7 @@ rounds(state: FirearmState): number
 
 ## empty
 
-[Implementation, line 163](../../../../../src/simulation/weapons/firearm.ts#L163)
+[Implementation, line 286](../../../../../src/simulation/weapons/firearm.ts#L286)
 
 ```ts
 empty(): FirearmEvent
