@@ -1113,12 +1113,11 @@ export class GameRuntime {
       if (vehicleId !== this.lightSensorVehicle || this.lightSensorSeconds >= 0.25) {
         this.lightSensorVehicle = vehicleId
         this.lightSensorSeconds = 0
-        const at = sim.entityTransform(vehicleId).position
         const direction = this.sky.sunDirection
         this.lightSensorShadow =
           this.sky.enabled &&
           direction.y > 0.04 &&
-          !!sim.shoot([at[0], at[1] + 1.2, at[2]], direction.toArray(), 200, 0)
+          sim.vehicleSunOccluded(vehicleId, direction.toArray())
       }
       this.view.sampleVehicleLightEnvironment(
         vehicleId,

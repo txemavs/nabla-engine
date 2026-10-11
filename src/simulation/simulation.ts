@@ -1248,6 +1248,46 @@ export class Simulation {
     }
   }
 
+  /** Ambient-light probe ignores the complete vehicle assembly, including trailers and hosted parts. */
+  vehicleSunOccluded(id: string, direction: Vec3Tuple, range = 200): boolean {
+    const vehicle = this.vehicles.get(id)
+    if (!vehicle || !direction.every(Number.isFinite) || !Number.isFinite(range) || range <= 0)
+      return false
+    const ray = new Vec3(...direction)
+    if (ray.length() < 0.001) return false
+    ray.normalize()
+    const owned = new Set([id])
+    for (const [otherId, other] of this.vehicles)
+      if (other.definition.tow?.vehicleId === id) owned.add(otherId)
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const entity of this.entitiesById.values())
+        if (entity.parentId && owned.has(entity.parentId) && !owned.has(entity.id)) {
+          owned.add(entity.id)
+          changed = true
+        }
+    }
+    const ignored = new Set([this.playerBody, vehicle.body])
+    for (const ownId of owned) {
+      const body = this.bodies.get(ownId)
+      if (body) ignored.add(body)
+    }
+    const from = vehicle.body
+      .pointToWorldFrame(new Vec3(...vehicle.definition.driver))
+      .vadd(this.radialUp(vehicle.body).scale(0.4))
+    let blocked = false
+    this.world.raycastAll(
+      from,
+      from.vadd(ray.scale(Math.min(range, 1000))),
+      { skipBackfaces: true },
+      (hit) => {
+        if (hit.body && !ignored.has(hit.body)) blocked = true
+      },
+    )
+    return blocked
+  }
+
   /** Hitscan against physical solids. Shots stop at the first obstruction. */
   shoot(
     origin: Vec3Tuple,
