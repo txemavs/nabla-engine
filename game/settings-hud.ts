@@ -7,6 +7,11 @@
  */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
+  weaponPoseNames,
+  normalizeWeaponPoses,
+  type WeaponPose,
+} from '../src/runtime/weapon-pose-tuning.js'
+import {
   sidearmTuningDefaults,
   sidearmTuningRanges,
   type SidearmTuning,
@@ -407,6 +412,118 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     })
     group.append(reset)
     refreshSidearm()
+    place(group)
+  }
+
+  {
+    const group = fieldset('settings-weapon-poses', 'Arma · ángulos de todas las posturas')
+    const note = doc.createElement('p')
+    note.textContent =
+      'Ajustes en grados sobre la postura actual. 0 conserva el giro original. Se guardan en este navegador.'
+    const select = doc.createElement('select')
+    select.setAttribute('aria-label', 'Postura del arma')
+    for (const [value, text] of Object.entries(weaponPoseNames)) {
+      const option = doc.createElement('option')
+      option.value = value
+      option.textContent = text
+      select.append(option)
+    }
+    const controls: Array<{
+      axis: 'pitch' | 'yaw' | 'roll'
+      range: HTMLInputElement
+      number: HTMLInputElement
+    }> = []
+    const refresh = () => {
+      const values = runtime.weaponPoseTuning[select.value as WeaponPose]
+      for (const { axis, range, number } of controls)
+        range.value = number.value = String(values[axis])
+    }
+    group.append(note, select)
+    for (const [axis, title] of [
+      ['pitch', 'Arriba / abajo'],
+      ['yaw', 'Izquierda / derecha'],
+      ['roll', 'Inclinación lateral'],
+    ] as const) {
+      const row = doc.createElement('label'),
+        range = doc.createElement('input'),
+        number = doc.createElement('input')
+      row.textContent = title + ' (°) '
+      range.type = 'range'
+      number.type = 'number'
+      for (const input of [range, number]) {
+        input.min = '-180'
+        input.max = '180'
+        input.step = '0.1'
+        input.setAttribute('aria-label', `${title}${input === number ? ' valor' : ''}`)
+        input.addEventListener('input', () => {
+          if (!Number.isFinite(input.valueAsNumber)) return
+          const values = runtime.weaponPoseTuning
+          values[select.value as WeaponPose][axis] = input.valueAsNumber
+          runtime.setWeaponPoseTuning(values)
+          runtime.previewWeaponPose(select.value as WeaponPose)
+          refresh()
+        })
+      }
+      number.style.width = '75px'
+      row.append(range, number)
+      group.append(row)
+      controls.push({ axis, range, number })
+    }
+    select.addEventListener('change', () => {
+      refresh()
+      runtime.previewWeaponPose(select.value as WeaponPose)
+    })
+    const preview = doc.createElement('button'),
+      stop = doc.createElement('button'),
+      reset = doc.createElement('button'),
+      copy = doc.createElement('button')
+    for (const button of [preview, stop, reset, copy]) button.type = 'button'
+    preview.textContent = 'Ver postura'
+    stop.textContent = 'Volver al juego'
+    reset.textContent = 'Restablecer esta postura'
+    copy.textContent = 'Copiar todos los ajustes'
+    preview.onclick = () => runtime.previewWeaponPose(select.value as WeaponPose)
+    stop.onclick = () => runtime.previewWeaponPose(null)
+    reset.onclick = () => {
+      const values = runtime.weaponPoseTuning
+      values[select.value as WeaponPose] = normalizeWeaponPoses()[select.value as WeaponPose]
+      runtime.setWeaponPoseTuning(values)
+      refresh()
+      runtime.previewWeaponPose(select.value as WeaponPose)
+    }
+    const status = doc.createElement('p'),
+      exportText = doc.createElement('textarea')
+    status.setAttribute('role', 'status')
+    exportText.readOnly = true
+    exportText.hidden = true
+    exportText.setAttribute('aria-label', 'Todos los ajustes del arma para copiar')
+    exportText.style.width = '100%'
+    exportText.rows = 12
+    copy.onclick = async () => {
+      const text = JSON.stringify(
+        {
+          version: 1,
+          units: 'degrees',
+          angles: 'offsets from reviewed poses',
+          aim: runtime.sidearmTuning,
+          poses: runtime.weaponPoseTuning,
+        },
+        null,
+        2,
+      )
+      exportText.value = text
+      exportText.hidden = false
+      try {
+        await navigator.clipboard.writeText(text)
+        status.textContent = 'Copiado: las seis posturas y el ajuste de apuntado.'
+      } catch {
+        exportText.focus()
+        exportText.select()
+        status.textContent = 'Seleccionado. Pulsa Ctrl+C para copiar todos los ajustes.'
+      }
+    }
+    group.append(preview, stop, reset, copy, status, exportText)
+    refresh()
     place(group)
   }
 

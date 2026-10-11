@@ -34,6 +34,7 @@ import {
 import { MuzzleSmoke } from '../render/entity/muzzle-smoke.js'
 import { poseHKDetails } from './hk-presentation.js'
 import { ViewmodelLighting } from './viewmodel-lighting.js'
+import { normalizeWeaponPoses, type WeaponPoseTuning } from './weapon-pose-tuning.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
@@ -78,6 +79,7 @@ interface Part {
  */
 export class Sidearm {
   private readonly scene = new THREE.Scene()
+  poseTuning: WeaponPoseTuning = normalizeWeaponPoses()
   private readonly viewRig = new THREE.Group()
   private readonly studioLights = new THREE.Group()
   private readonly worldLighting = new ViewmodelLighting()
@@ -790,6 +792,24 @@ export class Sidearm {
           this.model.position.y += blend * 0.055
         }
       }
+    }
+    const base = this.poseTuning.normal,
+      aimed = this.poseTuning.aimed
+    const pair =
+      this.inspection?.kind === 'chamber'
+        ? [this.poseTuning.chamber, this.poseTuning.chamberAimed]
+        : [this.poseTuning.inspect, this.poseTuning.inspectAimed]
+    const inspectionBlend = this.inspection?.blend ?? 0
+    for (const [axis, rotation] of [
+      ['pitch', 'x'],
+      ['yaw', 'y'],
+      ['roll', 'z'],
+    ] as const) {
+      const normalAngle = THREE.MathUtils.lerp(base[axis], aimed[axis], this.aimBlend)
+      const inspectedAngle = THREE.MathUtils.lerp(pair[0][axis], pair[1][axis], this.aimBlend)
+      this.model.rotation[rotation] += THREE.MathUtils.degToRad(
+        THREE.MathUtils.lerp(normalAngle, inspectedAngle, inspectionBlend),
+      )
     }
     if (this.assembledModel)
       poseHKDetails(

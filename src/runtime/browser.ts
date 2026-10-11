@@ -58,6 +58,11 @@ import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.j
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
+import {
+  normalizeWeaponPoses,
+  type WeaponPose,
+  type WeaponPoseTuning,
+} from './weapon-pose-tuning.js'
 import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
 import { fireModeLabel } from '../simulation/weapons/machine-pistol.js'
 import { FireModeBadge } from './fire-mode-badge.js'
@@ -579,6 +584,16 @@ export class GameRuntime {
   private fovOffset = 0
   private weaponTuning = readSidearmTuning(browserStorage())
   private sidearmAimPreview = false
+  private weaponPosePreview: WeaponPose | null = null
+  private weaponPoses: WeaponPoseTuning = (() => {
+    try {
+      return normalizeWeaponPoses(
+        JSON.parse(browserStorage()?.getItem('nabla.weaponPoses') ?? '{}'),
+      )
+    } catch {
+      return normalizeWeaponPoses()
+    }
+  })()
   private smokeOn = true
   private planet: {
     sky: boolean
@@ -1269,10 +1284,16 @@ export class GameRuntime {
     this.view.destruction.update(dt, this.smokeOn)
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
+      this.sidearm.poseTuning = this.weaponPoses
       this.sidearm.setSmokeEnabled(this.smokeOn)
       this.sidearm.visible = this.weaponDrawn || this.sidearmAimPreview
       this.updateSidearm(sim, time, dt, eyes)
-      if (this.sidearmAimPreview) this.sidearm.setAiming(true)
+      if (this.sidearmAimPreview)
+        this.sidearm.setAiming(
+          this.weaponPosePreview === null ||
+            this.weaponPosePreview === 'aimed' ||
+            this.weaponPosePreview.endsWith('Aimed'),
+        )
       let aim: THREE.Vector3 | undefined
       if (this.sidearm.visible && !eyes && !this.sidearmAimPreview) {
         const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
@@ -2669,7 +2690,31 @@ export class GameRuntime {
   setSidearmAimPreview(enabled: boolean): void {
     if (enabled) this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
     this.sidearmAimPreview = enabled
+    if (!enabled) {
+      this.weaponPosePreview = null
+      this.sidearm?.stopInspect(performance.now())
+    }
     if (!enabled) this.sidearm?.setAiming(false)
+  }
+  get weaponPoseTuning(): WeaponPoseTuning {
+    return normalizeWeaponPoses(this.weaponPoses)
+  }
+  setWeaponPoseTuning(value: WeaponPoseTuning): void {
+    this.weaponPoses = normalizeWeaponPoses(value)
+    if (this.sidearm) this.sidearm.poseTuning = this.weaponPoses
+    try {
+      browserStorage()?.setItem('nabla.weaponPoses', JSON.stringify(this.weaponPoses))
+    } catch {
+      /* Optional persistence. */
+    }
+  }
+  previewWeaponPose(pose: WeaponPose | null): void {
+    this.setSidearmAimPreview(pose !== null)
+    this.weaponPosePreview = pose
+    if (!pose || !this.sidearm) return
+    if (pose.startsWith('chamber')) this.sidearm.inspect(performance.now(), true)
+    else if (pose.startsWith('inspect')) this.sidearm.inspect(performance.now(), false)
+    else this.sidearm.stopInspect(performance.now())
   }
   /** Change and save the lighting knobs (`nabla.lightTuning`); returns the clamped values. */
   setLightTuning(patch: Partial<LightTuning>): LightTuning {
