@@ -20,7 +20,7 @@ so disposing a clone must not dispose them.
 [Implementation, line 16](../../../../../src/render/entity/magazines.ts#L16)
 
 ```ts
-constructor(template: THREE.Object3D, count = 8): instance
+constructor(template: THREE.Object3D, count = 8, private readonly isMagazine = true): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -30,17 +30,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pool.push`
 - `this.root.add`
 
-## DroppedMagazines.constructor.callback@20
+## DroppedMagazines.constructor.callback@24
 
-[Implementation, line 20](../../../../../src/render/entity/magazines.ts#L20)
+[Implementation, line 24](../../../../../src/render/entity/magazines.ts#L24)
 
 ```ts
-callback@20(child): inferred by TypeScript; see implementation
+callback@24(child): inferred by TypeScript; see implementation
 ```
 
 ## DroppedMagazines.dispose
 
-[Implementation, line 29](../../../../../src/render/entity/magazines.ts#L29)
+[Implementation, line 33](../../../../../src/render/entity/magazines.ts#L33)
 
 ```ts
 dispose(): void
@@ -52,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DroppedMagazines.sync
 
-[Implementation, line 35](../../../../../src/render/entity/magazines.ts#L35)
+[Implementation, line 39](../../../../../src/render/entity/magazines.ts#L39)
 
 ```ts
 sync(poses: readonly CasingPose[], entities?: ReadonlyMap<string, MagazineEntity>): void

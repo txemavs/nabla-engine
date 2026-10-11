@@ -533,6 +533,8 @@ export class GameRuntime {
   private weaponLight: THREE.SpotLight | null = null
   private casingMotion: CasingMotion | null = null
   private casingMeshes: Casings | null = null
+  private cartridgeMotion: CasingMotion | null = null
+  private cartridgeMeshes: DroppedMagazines | null = null
   private magazineMotion: CasingMotion | null = null
   private magazineMeshes: DroppedMagazines | null = null
   private droppedMagazines = new Map<string, MagazineEntity>()
@@ -1017,6 +1019,8 @@ export class GameRuntime {
     }
     this.casingMotion?.reset()
     this.casingMeshes?.sync([])
+    this.cartridgeMotion?.reset()
+    this.cartridgeMeshes?.sync([])
     this.magazineMotion?.reset()
     this.droppedMagazines.clear()
     this.magazineMeshes?.sync([])
@@ -1061,6 +1065,7 @@ export class GameRuntime {
     this.clearPickups()
     this.casingMeshes?.dispose()
     this.magazineMeshes?.dispose()
+    this.cartridgeMeshes?.dispose()
     this.weaponLight?.removeFromParent()
     this.weaponLight?.target.removeFromParent()
     this.weaponLight?.dispose()
@@ -1292,6 +1297,8 @@ export class GameRuntime {
     this.view.destruction.update(dt, this.smokeOn)
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
+      this.sidearm.slidePosePreview =
+        this.sidearmAimPreview && !!this.weaponPosePreview?.startsWith('slide')
       this.sidearm.poseTuning = this.weaponPoses
       this.sidearm.setSmokeEnabled(this.smokeOn)
       this.sidearm.visible = this.weaponDrawn || this.sidearmAimPreview
@@ -3226,6 +3233,7 @@ export class GameRuntime {
       canvas.dataset.impacts = String(this.view.impacts.count)
     }
     for (const event of events) {
+      if (event.cartridgeEjected) this.ejectCartridge(sim, eyes)
       if (event.dry) this.effects.audio.weaponSound('dry', weaponPosition)
       if (event.magazineDropped) {
         this.effects.audio.weaponSound('magazine-out', weaponPosition)
@@ -3244,6 +3252,15 @@ export class GameRuntime {
         this.effects.audio.casing(impact.speed, impact.position)
       this.casingMeshes.sync(this.casingMotion.poses())
       canvas.dataset.casings = String(this.casingMotion.count)
+    }
+    if (this.cartridgeMotion && this.cartridgeMeshes) {
+      this.cartridgeMotion.update(dt, (from, direction, length) =>
+        sim.shoot(from, direction, length, 0),
+      )
+      for (const impact of this.cartridgeMotion.impacts.slice(0, 3))
+        this.effects.audio.casing(impact.speed, impact.position)
+      this.cartridgeMeshes.sync(this.cartridgeMotion.poses())
+      canvas.dataset.cartridges = String(this.cartridgeMotion.count)
     }
     if (this.magazineMotion && this.magazineMeshes) {
       this.magazineMotion.update(dt, (from, direction, length) =>
@@ -3270,6 +3287,28 @@ export class GameRuntime {
     this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
     this.view.root.add(this.casingMeshes.root)
   }
+  private ejectCartridge(sim: Simulation, eyes: boolean): void {
+    const sidearm = this.sidearm,
+      casing = sidearm?.preset?.casing
+    if (!sidearm || !casing) return
+    if (!this.cartridgeMeshes) {
+      const clone = sidearm.cartridgeClone()
+      if (!clone) return
+      this.cartridgeMeshes = new DroppedMagazines(clone, 24, false)
+      this.view.root.add(this.cartridgeMeshes.root)
+    }
+    this.cartridgeMotion ??= new CasingMotion(casing)
+    const q = this.camera.quaternion
+    const port = eyes
+      ? this.camera.position.clone().add(sidearm.ejectionViewOffset().applyQuaternion(q))
+      : new THREE.Vector3(...sim.renderPlayerPosition).add(new THREE.Vector3(0, 0.3, 0))
+    this.cartridgeMotion.eject(
+      port.toArray() as Vec3Tuple,
+      new THREE.Vector3(1, 0, 0).applyQuaternion(q).toArray() as Vec3Tuple,
+      new THREE.Vector3(0, 1, 0).applyQuaternion(q).toArray() as Vec3Tuple,
+    )
+  }
+
   private ejectCasing(sim: Simulation, eyes: boolean): void {
     const casing = this.sidearm?.preset?.casing
     if (!casing) return

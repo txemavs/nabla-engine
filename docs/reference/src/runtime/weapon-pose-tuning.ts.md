@@ -9,7 +9,7 @@
 
 ## normalizeWeaponPoses
 
-[Implementation, line 20](../../../../src/runtime/weapon-pose-tuning.ts#L20)
+[Implementation, line 31](../../../../src/runtime/weapon-pose-tuning.ts#L31)
 
 ```ts
 normalizeWeaponPoses(value: Partial<WeaponPoseTuning> = {}): WeaponPoseTuning
@@ -21,3 +21,4 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `Number.isFinite`
 - `Object.keys`
+- `['x', 'y', 'z'].includes`

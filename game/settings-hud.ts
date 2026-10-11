@@ -416,10 +416,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   {
-    const group = fieldset('settings-weapon-poses', 'Arma · ángulos de todas las posturas')
+    const group = fieldset('settings-weapon-poses', 'Arma · posición y ángulos de las posturas')
     const note = doc.createElement('p')
     note.textContent =
-      'Ajustes en grados sobre la postura actual. 0 conserva el giro original. Se guardan en este navegador.'
+      'Giros en grados y posición en milímetros. F añade ajustes al accionar la corredera sobre cualquier postura. 0 conserva el giro original. Se guardan en este navegador.'
     const select = doc.createElement('select')
     select.setAttribute('aria-label', 'Postura del arma')
     for (const [value, text] of Object.entries(weaponPoseNames)) {
@@ -429,7 +429,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       select.append(option)
     }
     const controls: Array<{
-      axis: 'pitch' | 'yaw' | 'roll'
+      axis: 'pitch' | 'yaw' | 'roll' | 'x' | 'y' | 'z'
       range: HTMLInputElement
       number: HTMLInputElement
     }> = []
@@ -443,16 +443,20 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       ['pitch', 'Arriba / abajo'],
       ['yaw', 'Izquierda / derecha'],
       ['roll', 'Inclinación lateral'],
+      ['x', 'Posición lateral'],
+      ['y', 'Altura'],
+      ['z', 'Acercar / alejar'],
     ] as const) {
       const row = doc.createElement('label'),
         range = doc.createElement('input'),
         number = doc.createElement('input')
-      row.textContent = title + ' (°) '
+      const position = ['x', 'y', 'z'].includes(axis)
+      row.textContent = title + (position ? ' (mm) ' : ' (°) ')
       range.type = 'range'
       number.type = 'number'
       for (const input of [range, number]) {
-        input.min = '-180'
-        input.max = '180'
+        input.min = position ? '-500' : '-180'
+        input.max = position ? '500' : '180'
         input.step = '0.1'
         input.setAttribute('aria-label', `${title}${input === number ? ' valor' : ''}`)
         input.addEventListener('input', () => {
@@ -502,7 +506,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     copy.onclick = async () => {
       const text = JSON.stringify(
         {
-          version: 1,
+          version: 2,
+          positionUnits: 'millimeters',
           units: 'degrees',
           angles: 'offsets from reviewed poses',
           aim: runtime.sidearmTuning,
@@ -515,7 +520,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       exportText.hidden = false
       try {
         await navigator.clipboard.writeText(text)
-        status.textContent = 'Copiado: las seis posturas y el ajuste de apuntado.'
+        status.textContent = 'Copiado: todas las posturas y el ajuste de apuntado.'
       } catch {
         exportText.focus()
         exportText.select()

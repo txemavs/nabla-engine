@@ -80,6 +80,8 @@ interface Part {
 export class Sidearm {
   private readonly scene = new THREE.Scene()
   poseTuning: WeaponPoseTuning = normalizeWeaponPoses()
+  slidePosePreview = false
+  private slidePoseBlend = 0
   private readonly viewRig = new THREE.Group()
   private readonly studioLights = new THREE.Group()
   private readonly worldLighting = new ViewmodelLighting()
@@ -520,6 +522,10 @@ export class Sidearm {
 
   /** Ejection port in the viewmodel camera's space: right of and behind the muzzle. */
   ejectionViewOffset(): THREE.Vector3 {
+    if (this.chamberRound) {
+      this.model.updateWorldMatrix(true, true)
+      return this.viewRig.worldToLocal(this.chamberRound.getWorldPosition(new THREE.Vector3()))
+    }
     return this.muzzleViewOffset().add(new THREE.Vector3(0.012, 0.01, 0.08))
   }
 
@@ -706,7 +712,15 @@ export class Sidearm {
     const parent = new THREE.Quaternion()
     this.magazine.object.parent?.getWorldQuaternion(parent)
     const direction = axis(this.rig.presentation.magazine.axis).applyQuaternion(parent)
+    this.viewRig.worldToLocal(position)
+    const inverse = this.viewRig.getWorldQuaternion(new THREE.Quaternion()).invert()
+    quaternion.premultiply(inverse)
+    direction.applyQuaternion(inverse)
     return { position, quaternion, direction }
+  }
+
+  cartridgeClone(): THREE.Object3D | null {
+    return this.chamberRound?.clone(true) ?? null
   }
 
   /** A detached copy of the `Magazine` node. Geometry and materials stay shared. */
@@ -805,6 +819,13 @@ export class Sidearm {
         }
       }
     }
+    const slideActive =
+      this.slidePosePreview ||
+      (this.state.reloadAction === 'slide-release' && this.state.reload !== 'none')
+    this.slidePoseBlend +=
+      ((slideActive ? 1 : 0) - this.slidePoseBlend) * (1 - Math.exp(-elapsed / 70))
+    const slidePose = this.poseTuning.slide,
+      slideAimed = this.poseTuning.slideAimed
     const base = this.poseTuning.normal,
       aimed = this.poseTuning.aimed
     const pair =
@@ -812,6 +833,15 @@ export class Sidearm {
         ? [this.poseTuning.chamber, this.poseTuning.chamberAimed]
         : [this.poseTuning.inspect, this.poseTuning.inspectAimed]
     const inspectionBlend = this.inspection?.blend ?? 0
+    for (const axis of ['x', 'y', 'z'] as const) {
+      const normal = THREE.MathUtils.lerp(base[axis], aimed[axis], this.aimBlend)
+      const inspected = THREE.MathUtils.lerp(pair[0][axis], pair[1][axis], this.aimBlend)
+      this.model.position[axis] +=
+        (THREE.MathUtils.lerp(normal, inspected, inspectionBlend) +
+          THREE.MathUtils.lerp(slidePose[axis], slideAimed[axis], this.aimBlend) *
+            this.slidePoseBlend) /
+        1000
+    }
     for (const [axis, rotation] of [
       ['pitch', 'x'],
       ['yaw', 'y'],
@@ -820,7 +850,9 @@ export class Sidearm {
       const normalAngle = THREE.MathUtils.lerp(base[axis], aimed[axis], this.aimBlend)
       const inspectedAngle = THREE.MathUtils.lerp(pair[0][axis], pair[1][axis], this.aimBlend)
       this.model.rotation[rotation] += THREE.MathUtils.degToRad(
-        THREE.MathUtils.lerp(normalAngle, inspectedAngle, inspectionBlend),
+        THREE.MathUtils.lerp(normalAngle, inspectedAngle, inspectionBlend) +
+          THREE.MathUtils.lerp(slidePose[axis], slideAimed[axis], this.aimBlend) *
+            this.slidePoseBlend,
       )
     }
     if (this.assembledModel)

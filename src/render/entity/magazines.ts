@@ -13,7 +13,11 @@ export class DroppedMagazines {
   private readonly pool: THREE.Object3D[] = []
   private disposed = false
 
-  constructor(template: THREE.Object3D, count = 8) {
+  constructor(
+    template: THREE.Object3D,
+    count = 8,
+    private readonly isMagazine = true,
+  ) {
     for (let i = 0; i < count; i++) {
       const mesh = template.clone(true)
       mesh.visible = false
@@ -42,7 +46,7 @@ export class DroppedMagazines {
       if (!pose) continue
       const entity = pose.entityId ? entities?.get(pose.entityId) : undefined
       mesh.userData.entityId = entity?.id
-      poseMagazineCapacity(mesh, entity?.capacity ?? 13)
+      if (this.isMagazine) poseMagazineCapacity(mesh, entity?.capacity ?? 13)
       const top = mesh.getObjectByName('MagazineTopRound')
       if (top) top.visible = !!entity && entity.rounds > 0
       mesh.position.fromArray(pose.position)
