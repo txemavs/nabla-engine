@@ -41,7 +41,7 @@ test('HK begins on the ground, can only be collected on foot, and survives board
         simulation: { player: { vehicleId: string | null }; startInVehicle(id: string): void }
       }
       pickupModels: Map<string, import('three').Group>
-      cameraState: { mode: string; cinematicZoom: number; chaseZoom: number }
+      cameraState: { mode: string; firstPerson: boolean; cinematicZoom: number; chaseZoom: number }
     }
     const initial = {
       owned: runtime.weaponOwned,
@@ -66,10 +66,16 @@ test('HK begins on the ground, can only be collected on foot, and survives board
       .querySelector('canvas')!
       .dispatchEvent(new WheelEvent('wheel', { deltaY: -2000, cancelable: true }))
     const zoom = internal.cameraState.cinematicZoom
+    internal.cameraState.mode = 'chase'
+    internal.cameraState.firstPerson = true
+    document
+      .querySelector('canvas')!
+      .dispatchEvent(new WheelEvent('wheel', { deltaY: -1000, cancelable: true }))
+    const chaseZoom = internal.cameraState.chaseZoom
     runtime.stop()
     const reset = !runtime.weaponOwned && runtime.worldPickups.length === 0
     runtime.dispose()
-    return { initial, blocked, picked, boarded, zoom, reset }
+    return { initial, blocked, picked, boarded, zoom, chaseZoom, reset }
   }, process.cwd())
   expect(result.initial).toMatchObject({ owned: false, pickups: 1 })
   expect(result.initial.model).toBeGreaterThan(0)
@@ -78,5 +84,6 @@ test('HK begins on the ground, can only be collected on foot, and survives board
   expect(result.picked).toEqual({ owned: true, drawn: true, pickups: 0, vehicle: null })
   expect(result.boarded).toEqual({ owned: true, drawn: true })
   expect(result.zoom).toBeLessThan(0.5)
+  expect(result.chaseZoom).toBeLessThan(1)
   expect(result.reset).toBe(true)
 })

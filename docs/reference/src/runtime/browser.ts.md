@@ -4167,14 +4167,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.exp`
 - `THREE.MathUtils.clamp`
 - `event.preventDefault`
+- `isFirstPersonView`
 - `this.hasInput`
 
-## GameRuntime.bindInput.callback@3350
+## GameRuntime.bindInput.callback@3353
 
-[Implementation, line 3350](../../../../src/runtime/browser.ts#L3350)
+[Implementation, line 3353](../../../../src/runtime/browser.ts#L3353)
 
 ```ts
-callback@3350(event): inferred by TypeScript; see implementation
+callback@3353(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -4185,12 +4186,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.capturePointer`
 - `this.effects.audio.unlock`
 
-## GameRuntime.bindInput.callback@3372
+## GameRuntime.bindInput.callback@3375
 
-[Implementation, line 3372](../../../../src/runtime/browser.ts#L3372)
+[Implementation, line 3375](../../../../src/runtime/browser.ts#L3375)
 
 ```ts
-callback@3372(event): inferred by TypeScript; see implementation
+callback@3375(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -4205,72 +4206,72 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pointerLocked`
 - `this.releasePointer`
 
-## GameRuntime.bindInput.callback@3397
+## GameRuntime.bindInput.callback@3400
 
-[Implementation, line 3397](../../../../src/runtime/browser.ts#L3397)
+[Implementation, line 3400](../../../../src/runtime/browser.ts#L3400)
 
 ```ts
-callback@3397(event): inferred by TypeScript; see implementation
+callback@3400(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.applySidearmButton`
 
-## GameRuntime.bindInput.callback@3406
+## GameRuntime.bindInput.callback@3409
 
-[Implementation, line 3406](../../../../src/runtime/browser.ts#L3406)
+[Implementation, line 3409](../../../../src/runtime/browser.ts#L3409)
 
 ```ts
-callback@3406(event): inferred by TypeScript; see implementation
+callback@3409(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.applySidearmButton`
 
-## GameRuntime.bindInput.callback@3411
+## GameRuntime.bindInput.callback@3414
 
-[Implementation, line 3411](../../../../src/runtime/browser.ts#L3411)
+[Implementation, line 3414](../../../../src/runtime/browser.ts#L3414)
 
 ```ts
-callback@3411(event): inferred by TypeScript; see implementation
+callback@3414(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.applySidearmButton`
 
-## GameRuntime.bindInput.callback@3416
+## GameRuntime.bindInput.callback@3419
 
-[Implementation, line 3416](../../../../src/runtime/browser.ts#L3416)
+[Implementation, line 3419](../../../../src/runtime/browser.ts#L3419)
 
 ```ts
-callback@3416(): inferred by TypeScript; see implementation
+callback@3419(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.sidearm?.setAiming`
 
-## GameRuntime.bindInput.callback@3425
+## GameRuntime.bindInput.callback@3428
 
-[Implementation, line 3425](../../../../src/runtime/browser.ts#L3425)
+[Implementation, line 3428](../../../../src/runtime/browser.ts#L3428)
 
 ```ts
-callback@3425(event): inferred by TypeScript; see implementation
+callback@3428(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `event.preventDefault`
 
-## GameRuntime.bindInput.callback@3432
+## GameRuntime.bindInput.callback@3435
 
-[Implementation, line 3432](../../../../src/runtime/browser.ts#L3432)
+[Implementation, line 3435](../../../../src/runtime/browser.ts#L3435)
 
 ```ts
-callback@3432(event): inferred by TypeScript; see implementation
+callback@3435(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -4286,24 +4287,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.keys.press`
 - `vehicleMenuKey`
 
-## GameRuntime.bindInput.callback@3432.callback@3450
+## GameRuntime.bindInput.callback@3435.callback@3453
 
-[Implementation, line 3450](../../../../src/runtime/browser.ts#L3450)
+[Implementation, line 3453](../../../../src/runtime/browser.ts#L3453)
 
 ```ts
-callback@3450(message): inferred by TypeScript; see implementation
+callback@3453(message): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.options.onMessage`
 
-## GameRuntime.bindInput.callback@3432.callback@3451
+## GameRuntime.bindInput.callback@3435.callback@3454
 
-[Implementation, line 3451](../../../../src/runtime/browser.ts#L3451)
+[Implementation, line 3454](../../../../src/runtime/browser.ts#L3454)
 
 ```ts
-callback@3451(entityId, patch): inferred by TypeScript; see implementation
+callback@3454(entityId, patch): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -4311,32 +4312,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.assign`
 - `this.document.entities.find`
 
-## GameRuntime.bindInput.callback@3432.callback@3451.callback@3452
+## GameRuntime.bindInput.callback@3435.callback@3454.callback@3455
 
-[Implementation, line 3452](../../../../src/runtime/browser.ts#L3452)
+[Implementation, line 3455](../../../../src/runtime/browser.ts#L3455)
 
 ```ts
-callback@3452(e): inferred by TypeScript; see implementation
+callback@3455(e): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.bindInput.callback@3432.callback@3456
+## GameRuntime.bindInput.callback@3435.callback@3459
 
-[Implementation, line 3456](../../../../src/runtime/browser.ts#L3456)
+[Implementation, line 3459](../../../../src/runtime/browser.ts#L3459)
 
 ```ts
-callback@3456(entityId, mode): inferred by TypeScript; see implementation
+callback@3459(entityId, mode): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.session.simulation?.setEngineMode`
 
-## GameRuntime.bindInput.callback@3432.callback@3459
+## GameRuntime.bindInput.callback@3435.callback@3462
 
-[Implementation, line 3459](../../../../src/runtime/browser.ts#L3459)
+[Implementation, line 3462](../../../../src/runtime/browser.ts#L3462)
 
 ```ts
-callback@3459(step): inferred by TypeScript; see implementation
+callback@3462(step): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -4347,12 +4348,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.text`
 - `writeCameraFovOffset`
 
-## GameRuntime.bindInput.callback@3432.callback@3465
+## GameRuntime.bindInput.callback@3435.callback@3468
 
-[Implementation, line 3465](../../../../src/runtime/browser.ts#L3465)
+[Implementation, line 3468](../../../../src/runtime/browser.ts#L3468)
 
 ```ts
-callback@3465(action): inferred by TypeScript; see implementation
+callback@3468(action): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -4360,60 +4361,48 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.effects.audio.fadeOutMusic`
 - `this.effects.audio.playMusic`
 
-## GameRuntime.bindInput.callback@3492
+## GameRuntime.bindInput.callback@3495
 
-[Implementation, line 3492](../../../../src/runtime/browser.ts#L3492)
+[Implementation, line 3495](../../../../src/runtime/browser.ts#L3495)
 
 ```ts
-callback@3492(event): inferred by TypeScript; see implementation
+callback@3495(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.keys.release`
 
-## GameRuntime.bindInput.callback@3496
+## GameRuntime.bindInput.callback@3499
 
-[Implementation, line 3496](../../../../src/runtime/browser.ts#L3496)
+[Implementation, line 3499](../../../../src/runtime/browser.ts#L3499)
 
 ```ts
-callback@3496(): inferred by TypeScript; see implementation
+callback@3499(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseInput`
 
-## GameRuntime.bindInput.callback@3501
+## GameRuntime.bindInput.callback@3504
 
-[Implementation, line 3501](../../../../src/runtime/browser.ts#L3501)
+[Implementation, line 3504](../../../../src/runtime/browser.ts#L3504)
 
 ```ts
-callback@3501(): inferred by TypeScript; see implementation
+callback@3504(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseInput`
 
-## GameRuntime.bindInput.callback@3511
+## GameRuntime.bindInput.callback@3514
 
-[Implementation, line 3511](../../../../src/runtime/browser.ts#L3511)
-
-```ts
-callback@3511(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.releaseInput`
-
-## GameRuntime.bindInput.callback@3512
-
-[Implementation, line 3512](../../../../src/runtime/browser.ts#L3512)
+[Implementation, line 3514](../../../../src/runtime/browser.ts#L3514)
 
 ```ts
-callback@3512(): inferred by TypeScript; see implementation
+callback@3514(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -4430,16 +4419,28 @@ callback@3515(): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.releaseInput`
+
+## GameRuntime.bindInput.callback@3518
+
+[Implementation, line 3518](../../../../src/runtime/browser.ts#L3518)
+
+```ts
+callback@3518(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `this.effects.audio.setPageHidden`
 - `this.effects.audio.setSuspended`
 - `this.releaseInput`
 
-## GameRuntime.bindInput.callback@3527
+## GameRuntime.bindInput.callback@3530
 
-[Implementation, line 3527](../../../../src/runtime/browser.ts#L3527)
+[Implementation, line 3530](../../../../src/runtime/browser.ts#L3530)
 
 ```ts
-callback@3527(event): inferred by TypeScript; see implementation
+callback@3530(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -4453,7 +4454,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.assertAlive
 
-[Implementation, line 3556](../../../../src/runtime/browser.ts#L3556)
+[Implementation, line 3559](../../../../src/runtime/browser.ts#L3559)
 
 ```ts
 assertAlive(): void

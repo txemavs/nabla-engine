@@ -3334,7 +3334,10 @@ export class GameRuntime {
             controlDefaults.cinematicZoomMin,
             controlDefaults.cinematicZoomMax,
           )
-        } else if (state.mode === 'chase' && !state.firstPerson) {
+        } else if (
+          state.mode === 'chase' &&
+          !isFirstPersonView(state, !!this.session.simulation.player.vehicleId)
+        ) {
           state.chaseZoom = THREE.MathUtils.clamp(
             (state.chaseZoom ?? 1) * scale,
             controlDefaults.chaseZoomMin,
