@@ -19,8 +19,8 @@ export type WeaponAngles = {
 }
 export type WeaponPoseTuning = Record<WeaponPose, WeaponAngles>
 export const weaponPoseDefaults: WeaponPoseTuning = {
-  slide: { pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 },
-  slideAimed: { pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 },
+  slide: { pitch: 0, yaw: -33.9, roll: 91.2, x: -90.8, y: 0, z: 0 },
+  slideAimed: { pitch: 4.5, yaw: -19.8, roll: 45.7, x: 16.6, y: 5.2, z: -375.8 },
   normal: { pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 },
   aimed: { pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 },
   inspect: { pitch: 11.2, yaw: -41, roll: -26.6, x: 0, y: 0, z: 0 },

@@ -37,7 +37,7 @@ it('migrates reviewed angles with zero translation and independent slide offsets
   )
   expect(poses.inspect.x).toBe(0)
   expect(poses.inspect.yaw).toBe(-41)
-  expect(poses.slide).toEqual({ pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 })
+  expect(poses.slide).toEqual({ pitch: 0, yaw: -33.9, roll: 91.2, x: -90.8, y: 0, z: 0 })
   poses.slide.x = 30
   expect(normalizeWeaponPoses(poses).slide.x).toBe(30)
 })

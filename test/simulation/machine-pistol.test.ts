@@ -65,3 +65,14 @@ describe('experimental full-auto', () => {
     expect(Math.abs(applied)).toBeLessThan(1e-4)
   })
 })
+
+it('clicks only once per press when automatic fire has no chambered round', () => {
+  const spec = specForMode(pistol, 'burst30')
+  const state = freshFirearm(spec)
+  state.chamber = 0
+  expect(pullTrigger(state, spec, 'burst30', true, 0).dry).toBe(true)
+  for (let t = 16; t < 1000; t += 16)
+    expect(pullTrigger(state, spec, 'burst30', true, t).dry).toBe(false)
+  pullTrigger(state, spec, 'burst30', false, 1000)
+  expect(pullTrigger(state, spec, 'burst30', true, 1100).dry).toBe(true)
+})

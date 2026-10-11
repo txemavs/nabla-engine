@@ -760,7 +760,9 @@ export class Sidearm {
     this.model.rotation.set(THREE.MathUtils.degToRad(this.tuning.angle) * this.aimBlend, 0, 0)
     if (this.magazine) {
       this.magazine.object.visible =
-        this.state.reload === 'none' ? this.state.magazineSeated : shown.magazineVisible
+        this.state.reload === 'none' || this.state.reloadAction === 'slide-release'
+          ? this.state.magazineSeated
+          : shown.magazineVisible
       this.magazine.object.position
         .copy(this.magazine.rest)
         .addScaledVector(axis(p.magazine.axis), p.magazine.distance * shown.travel)

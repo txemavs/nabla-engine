@@ -63,6 +63,8 @@ export function pullTrigger(
     mode === 'burst30' &&
     pressed &&
     state.triggerHeld &&
+    state.chamber > 0 &&
+    !state.slideLocked &&
     now - state.lastShotMs >= autoIntervalMs()
   )
     state.triggerHeld = false
