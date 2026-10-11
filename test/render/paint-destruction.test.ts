@@ -1,4 +1,4 @@
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three'
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, Scene } from 'three'
 import { expect, it } from 'vitest'
 import { SceneView } from '../../src/render/entity/view.js'
 import { VehicleDestruction } from '../../src/render/entity/vehicle-destruction.js'
@@ -7,7 +7,8 @@ it('keeps wreck paint dark through brightness updates and restores paint on rese
   const group = new Group()
   const paint = new MeshStandardMaterial({ name: 'Pintura', color: '#cc3322' })
   const mesh = new Mesh(new BoxGeometry(), paint)
-  group.add(mesh)
+  const panel = new Mesh(mesh.geometry, paint)
+  group.add(mesh, panel)
   const state = {
     paintBrightness: 1,
     paintCheckAt: 0,
@@ -21,8 +22,12 @@ it('keeps wreck paint dark through brightness updates and restores paint on rese
   paint.userData.nablaPaint = { base: paint.color.clone(), applied: paint.color.clone() }
   const destruction = new VehicleDestruction(new Group())
   destruction.explode('car', group)
+  expect(panel.material).toBe(mesh.material)
   const burned = mesh.material.color.clone()
+  expect(burned.getHexString()).toBe('171717')
   expect(() => brightness(1.2)).not.toThrow()
+  expect(mesh.material.color.equals(burned)).toBe(true)
+  for (let i = 0; i < 140; i++) destruction.update(0.1, false)
   expect(mesh.material.color.equals(burned)).toBe(true)
   destruction.clear()
   brightness(1)
@@ -31,4 +36,48 @@ it('keeps wreck paint dark through brightness updates and restores paint on rese
   destruction.dispose()
   mesh.geometry.dispose()
   paint.dispose()
+})
+
+it('warms fire and smoke without changing scene light count on explosion or reset', async () => {
+  const scene = new Scene()
+  const space = new Group()
+  scene.add(space)
+  const destruction = new VehicleDestruction(space)
+  space.add(destruction.root)
+  const lightCount = () => {
+    let count = 0
+    scene.traverse((object) => {
+      if ('isLight' in object) count++
+    })
+    return count
+  }
+  const before = lightCount()
+  let compiledFire = false
+  let compiledSmoke = false
+  await destruction.warm(
+    {
+      compileAsync: async () => {
+        scene.traverse((object) => {
+          if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) return
+          if (object instanceof Mesh)
+            compiledFire ||= object.material.customProgramCacheKey() === 'vehicle-fire-v1'
+          compiledSmoke ||= object.name === 'Engine exhaust smoke' && object.visible
+        })
+        return scene
+      },
+    },
+    scene,
+    new PerspectiveCamera(),
+  )
+  expect(compiledFire && compiledSmoke).toBe(true)
+  expect(destruction.root.children).toHaveLength(2)
+  const wreck = new Group()
+  space.add(wreck)
+  destruction.explode('wreck', wreck)
+  destruction.update(0.016, true)
+  expect(lightCount()).toBe(before)
+  destruction.clear()
+  expect(lightCount()).toBe(before)
+  destruction.dispose()
+  expect(lightCount()).toBe(0)
 })

@@ -7,15 +7,23 @@ export class VehicleDestruction {
   readonly root = new THREE.Group()
   readonly glassRoot = new THREE.Group()
   private readonly geometry = new THREE.SphereGeometry(1, 10, 8)
+  private readonly flameGeometry = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0)
+  // Keep the light count constant: adding the first explosion lamp otherwise recompiles
+  // every lit material in the scene on the gameplay frame.
+  private readonly light = new THREE.PointLight('#ff9b22', 0, 8, 2)
+  private warmFire?: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>
+  private warmSmoke?: ExhaustSmoke
+  private warmFlames?: ReturnType<VehicleDestruction['createFlames']>
   private readonly burns = new Map<
     string,
     {
       object: THREE.Object3D
       fire: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>
+      flames: THREE.Group
+      flameMaterial: THREE.MeshBasicMaterial
       smoke: ExhaustSmoke
       age: number
       clock: { value: number }
-      light: THREE.PointLight
     }
   >()
   private readonly fragments = new THREE.InstancedMesh(
@@ -29,28 +37,47 @@ export class VehicleDestruction {
     this.fragments.count = 0
     this.fragments.frustumCulled = false
     this.root.add(this.fragments, this.glassRoot)
+    this.space.add(this.light)
   }
   explode(id: string, object: THREE.Object3D): void {
     if (this.burns.has(id)) return
     if (this.burns.size >= 32) this.remove(this.burns.keys().next().value!)
+    const burnedMaterials = new Map<THREE.Material, THREE.Material>()
     object.traverse((node) => {
       if (!(node instanceof THREE.Mesh) || this.charred.has(node)) return
       this.charred.set(node, node.material)
       const materials = (Array.isArray(node.material) ? node.material : [node.material]).map(
         (material) => {
+          const existing = burnedMaterials.get(material)
+          if (existing) return existing
           const clone = material.clone()
           clone.userData.nablaCharred = true
+          if ('color' in clone && clone.color instanceof THREE.Color) clone.color.set('#171717')
           if (clone instanceof THREE.MeshStandardMaterial) {
-            clone.color.multiplyScalar(0.22)
             clone.emissive.set(0)
+            clone.emissiveIntensity = 0
             clone.roughness = 0.95
             clone.metalness = 0.1
           }
+          burnedMaterials.set(material, clone)
           return clone
         },
       )
       node.material = Array.isArray(node.material) ? materials : materials[0]
     })
+    const { fire, clock } = this.createFire()
+    const { flames, material: flameMaterial } = this.createFlames(clock)
+    fire.position.y = 0.5
+    const smoke = new ExhaustSmoke(object, this.space, {
+      direction: [0, 1, 0],
+      color: '#222222',
+      size: 900,
+    })
+    object.add(fire, flames)
+    this.root.add(smoke.root)
+    this.burns.set(id, { object, fire, flames, flameMaterial, smoke, age: 0, clock })
+  }
+  private createFire() {
     const fire = new THREE.Mesh(
       this.geometry,
       new THREE.MeshBasicMaterial({
@@ -82,17 +109,74 @@ export class VehicleDestruction {
         )
     }
     fire.material.customProgramCacheKey = () => 'vehicle-fire-v1'
-    const light = new THREE.PointLight('#ff9b22', 20, 8, 2)
-    light.position.y = 0.5
-    fire.position.y = 0.5
-    const smoke = new ExhaustSmoke(object, this.space, {
-      direction: [0, 1, 0],
-      color: '#222222',
-      size: 900,
+    return { fire, clock }
+  }
+  private createFlames(clock: { value: number }) {
+    const material = new THREE.MeshBasicMaterial({
+      color: '#ffffff',
+      transparent: true,
+      depthWrite: false,
+      toneMapped: false,
+      side: THREE.DoubleSide,
     })
-    object.add(fire, light)
-    this.root.add(smoke.root)
-    this.burns.set(id, { object, fire, smoke, age: 0, clock, light })
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.flameTime = clock
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec2 flameUv;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nflameUv = uv;')
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <common>',
+          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;',
+        )
+        .replace(
+          '#include <color_fragment>',
+          `#include <color_fragment>
+          float h = flameUv.y;
+          float sway = sin(h * 9.0 - flameTime * 8.0) * 0.08 * h;
+          float x = abs(flameUv.x - 0.5 - sway);
+          float width = max(0.001, (1.0 - h) * 0.38);
+          float tongues = sin(flameUv.x * 25.0 + flameTime * 11.0) * 0.07
+            + sin(flameUv.x * 43.0 - flameTime * 7.0) * 0.04;
+          float edge = 1.0 - smoothstep(width * 0.55, width, x);
+          float tip = 1.0 - smoothstep(0.72 + tongues, 0.95 + tongues, h);
+          float alpha = edge * tip * smoothstep(0.0, 0.08, h);
+          if (alpha < 0.02) discard;
+          diffuseColor.rgb = mix(vec3(1.0, 0.82, 0.18), vec3(1.0, 0.13, 0.015), h);
+          diffuseColor.a *= alpha * 0.8;`,
+        )
+    }
+    material.customProgramCacheKey = () => 'vehicle-flames-v1'
+    const flames = new THREE.Group()
+    flames.name = 'Wreck flames'
+    flames.position.y = 0.3
+    for (let i = 0; i < 6; i++) {
+      const tongue = new THREE.Mesh(this.flameGeometry, material)
+      tongue.rotation.y = ((i % 2) * Math.PI) / 2
+      tongue.position.set((Math.floor(i / 2) - 1) * 0.24, 0, ((i % 3) - 1) * 0.1)
+      tongue.scale.set(0.7, 1.0 + (i % 3) * 0.2, 1)
+      flames.add(tongue)
+    }
+    return { flames, material }
+  }
+  /** Compile effect programs during loading and keep them alive across session resets. */
+  async warm(
+    renderer: Pick<THREE.WebGLRenderer, 'compileAsync'>,
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+  ): Promise<void> {
+    this.warmFire ??= this.createFire().fire
+    this.warmFlames ??= this.createFlames({ value: 0 })
+    this.warmSmoke ??= new ExhaustSmoke(this.space, this.space)
+    this.warmSmoke.root.visible = true
+    this.root.add(this.warmFire, this.warmSmoke.root, this.warmFlames.flames)
+    try {
+      await renderer.compileAsync(scene, camera)
+    } finally {
+      this.warmFire.removeFromParent()
+      this.warmSmoke.root.removeFromParent()
+      this.warmFlames.flames.removeFromParent()
+    }
   }
   glass(point: THREE.Vector3, direction: THREE.Vector3): void {
     for (let i = 0; i < 24; i++) {
@@ -111,17 +195,26 @@ export class VehicleDestruction {
   }
   update(dt: number, smokeEnabled: boolean): void {
     dt = THREE.MathUtils.clamp(dt, 0, 0.1)
+    this.light.intensity = 0
     for (const burn of this.burns.values()) {
       burn.age += dt
       burn.clock.value = burn.age
-      burn.light.intensity =
+      const intensity =
         burn.age < 0.4
           ? 40 * (1 - burn.age / 0.4)
           : burn.age < 12
             ? 5 + Math.sin(burn.age * 17) * 2
             : 0
+      if (intensity > this.light.intensity) {
+        this.light.intensity = intensity
+        burn.fire.getWorldPosition(this.light.position)
+        this.space.worldToLocal(this.light.position)
+      }
       const flash = burn.age < 0.4
-      burn.fire.visible = burn.age < 12
+      burn.fire.visible = flash
+      burn.flames.visible = !flash && burn.age < 12
+      burn.flames.scale.y = 0.95 + Math.sin(burn.age * 13) * 0.12
+      burn.flameMaterial.opacity = Math.max(0, Math.min(1, (12 - burn.age) / 3))
       burn.fire.scale.set(
         flash ? 0.2 + burn.age * 8 : 0.45 + Math.sin(burn.age * 21) * 0.08,
         flash ? 0.2 + burn.age * 8 : 0.8 + Math.sin(burn.age * 17) * 0.15,
@@ -157,26 +250,36 @@ export class VehicleDestruction {
     const burn = this.burns.get(id)
     if (!burn) return
     burn.fire.removeFromParent()
-    burn.light.removeFromParent()
+    burn.flames.removeFromParent()
     burn.fire.material.dispose()
+    burn.flameMaterial.dispose()
     burn.smoke.dispose()
     this.burns.delete(id)
   }
   clear(): void {
+    const released = new Set<THREE.Material>()
     for (const [mesh, original] of this.charred) {
-      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material])
-        material.dispose()
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        if (!released.has(material)) material.dispose()
+        released.add(material)
+      }
       mesh.material = original
     }
     this.charred.clear()
     for (const id of this.burns.keys()) this.remove(id)
     this.shards.length = 0
     this.fragments.count = 0
+    this.light.intensity = 0
   }
   dispose(): void {
     this.clear()
     this.root.removeFromParent()
+    this.light.removeFromParent()
+    this.warmFire?.material.dispose()
+    this.warmFlames?.material.dispose()
+    this.warmSmoke?.dispose()
     this.geometry.dispose()
+    this.flameGeometry.dispose()
     this.fragments.geometry.dispose()
     ;(this.fragments.material as THREE.Material).dispose()
   }

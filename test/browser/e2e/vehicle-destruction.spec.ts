@@ -4,6 +4,10 @@ import { writeFileSync } from 'node:fs'
 test('real S3 glass breaks and runtime renders a burning, disabled vehicle', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /shader|WebGLProgram/i.test(message.text()))
+      errors.push(message.text())
+  })
   await page.route('**/vehicle-destruction', (route) =>
     route.fulfill({
       contentType: 'text/html',
@@ -120,6 +124,9 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
     const effectCount = view.destruction.root.children.length
     const disabled = sim.vehicleDamage('car').destroyed && sim.vehicleInfo('car').rpm === 0
     for (let i = 0; i < 8; i++) view.destruction.update(0.1, true)
+    const flamesVisible = car.children.some(
+      (child) => child.name === 'Wreck flames' && child.visible,
+    )
     const graphics = runtime as unknown as {
       camera: import('three').PerspectiveCamera
       renderer: import('three').WebGLRenderer
@@ -142,6 +149,7 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
       glassName,
       materialNames,
       burning,
+      flamesVisible,
       effectCount,
       disabled,
       cleared,
@@ -154,6 +162,7 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
   expect(result.restored).toBe(true)
   expect(result.bulletBreaksGlass).toBe(true)
   expect(result.burning).toBe(true)
+  expect(result.flamesVisible).toBe(true)
   expect(result.effectCount).toBeGreaterThan(2)
   expect(result.disabled).toBe(true)
   expect(result.cleared).toBe(true)
