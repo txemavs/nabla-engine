@@ -1187,8 +1187,9 @@ export class Simulation {
     let point: Vec3 | null = null
     let normal = new Vec3()
     let body: Body | null = null
+    const occupiedBody = this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : null
     this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
-      if (hit.body !== this.playerBody && hit.distance < nearest) {
+      if (hit.body !== this.playerBody && hit.body !== occupiedBody && hit.distance < nearest) {
         nearest = hit.distance
         point = hit.hitPointWorld.clone()
         normal = hit.hitNormalWorld.clone()

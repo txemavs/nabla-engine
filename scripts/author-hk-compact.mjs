@@ -177,7 +177,7 @@ function sightDot(name, x, startZ, material, parent, radius) {
   slide.updateMatrixWorld(true)
   const sight = slide.getObjectByName('Sights')
   const hit = new T.Raycaster(
-    new T.Vector3(x, 0.1302, startZ),
+    new T.Vector3(x, 0.1298, startZ),
     new T.Vector3(0, 0, -1),
   ).intersectObject(sight)[0]
   if (!hit) throw new Error(`Sight dot has no supporting face: ${name}`)
@@ -193,10 +193,10 @@ for (const side of [-1, 1])
     0.1,
     greenDot,
     rearSight,
-    0.0008,
+    0.00065,
   )
 const frontSight = group('FrontSight', slide)
-sightDot('FrontSightDot', 0, -0.05, redDot, frontSight, 0.00075)
+sightDot('FrontSightDot', 0, -0.05, redDot, frontSight, 0.00065)
 
 // Visible barrel shroud and chamber: presentation geometry only, no internal mechanism.
 const barrelShell = mesh(
@@ -248,7 +248,7 @@ await source('magazine.source', magazine, darkSteel)
 
 group('MuzzleSocket', model, [0, 0.108, -0.1181])
 group('GripSocket', model, [0, 0.049, 0.015])
-group('SightSocket', slide, [0, 0.1302, 0.035])
+group('SightSocket', slide, [0, 0.1298, 0.035])
 model.updateMatrixWorld(true)
 const binary = await new GLTFExporter().parseAsync(model, {
   binary: true,

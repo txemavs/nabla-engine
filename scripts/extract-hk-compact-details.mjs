@@ -42,7 +42,21 @@ for (const name of ['Hammer', 'Sights', 'Control_lever', 'Slide_Release']) {
   const source = obj.getObjectByName(name)
   if (!source?.isMesh) throw new Error(`Missing OBJ part: ${name}`)
   const geometry = source.geometry.clone().applyMatrix4(transform)
-  if (name === 'Sights') geometry.translate(0, 0.005, 0)
+  if (name === 'Sights') {
+    geometry.translate(0, 0.005, 0)
+    const vertices = geometry.attributes.position
+    for (let i = 0; i < vertices.count; i++) {
+      const y = vertices.getY(i)
+      // Seat both bases on the existing slide. Preserve the front blade's top
+      // while extending its lower section, so the sight line stays level.
+      vertices.setY(
+        i,
+        vertices.getZ(i) < 0
+          ? 0.1314083 + ((y - 0.1314083) * (0.1314083 - 0.1233)) / (0.1314083 - 0.1264916)
+          : y - 0.0005,
+      )
+    }
+  }
   if (name === 'Hammer') geometry.translate(0, 0, 0.0016)
   geometry.normalizeNormals()
   const mesh = new T.Mesh(geometry, material)

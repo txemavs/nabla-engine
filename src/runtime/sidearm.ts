@@ -22,7 +22,7 @@ import { reloadPresentation } from './reload-presentation.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
-const ADS_POSE = { position: [0, -0.038, -0.2] as const, fov: 42 }
+const ADS_POSE = { position: [0, -0.02, -0.2] as const, fov: 42 }
 
 /** Presentation rig of an assembled model (`assets/rigs/weapons/*.rig.json`). */
 interface WeaponRig {
@@ -76,6 +76,8 @@ export class Sidearm {
   private slide: Part | null = null
   private triggerPart: Part | null = null
   private magazine: Part | null = null
+  private worldPresentation: THREE.Group | null = null
+  private assembledModel: THREE.Group | null = null
   private legacySlide: THREE.Object3D | null = null
   private readonly flash: THREE.Mesh
   private readonly flashAt: [number, number, number]
@@ -127,6 +129,7 @@ export class Sidearm {
           assembly.position.set(...preset.assembly)
           assembly.add(object)
           this.model.add(assembly)
+          this.assembledModel = assembly
           this.slide = part(object, this.rig.parts.slide)
           this.triggerPart = part(object, this.rig.parts.trigger)
           this.magazine = part(object, this.rig.parts.magazine)
@@ -156,6 +159,7 @@ export class Sidearm {
             this.legacySlide = slideObject
           }
           this.model.add(assembly)
+          this.assembledModel = assembly
           dropFallback()
         })
         .catch(() => {
@@ -253,6 +257,9 @@ export class Sidearm {
     if (this.disposed) return
     this.visible = false
     this.disposed = true
+    this.worldPresentation?.removeFromParent()
+    this.worldPresentation?.clear()
+    this.worldPresentation = null
     disposeObject(this.model)
     this.model.clear()
     this.scene.clear()
@@ -260,7 +267,9 @@ export class Sidearm {
 
   set visible(value: boolean) {
     this.enabled = value && !this.disposed
+    if (this.worldPresentation) this.worldPresentation.visible = this.enabled
     if (!this.enabled) {
+      this.worldPresentation?.removeFromParent()
       this.aiming = false
       this.aimBlend = 0
       this.state.triggerHeld = false
@@ -387,11 +396,7 @@ export class Sidearm {
     this.camera.aspect = aspect
     this.camera.fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)
     this.camera.updateProjectionMatrix()
-    this.model.position
-      .set(...HIP_POSE.position)
-      .lerp(new THREE.Vector3(...ADS_POSE.position), this.aimBlend)
-    this.model.rotation.set(0, 0, 0)
-    this.pose(now)
+    this.viewPose(now)
     const age = now - this.state.lastShotMs
     this.flash.visible = age >= 0 && age < 30
     const autoClear = renderer.autoClear
@@ -402,6 +407,66 @@ export class Sidearm {
     } finally {
       renderer.autoClear = autoClear
     }
+  }
+
+  /** Shared assembled asset on the avatar, including slide, trigger and magazine motion. */
+  syncWorld(parent: THREE.Object3D, now: number, firstPerson: boolean): void {
+    if (!this.enabled || firstPerson || !this.assembledModel) {
+      if (this.worldPresentation) this.worldPresentation.visible = false
+      return
+    }
+    this.viewPose(now)
+    if (!this.worldPresentation) {
+      this.worldPresentation = new THREE.Group()
+      this.worldPresentation.name = 'EquippedSidearm'
+      this.worldPresentation.add(this.assembledModel.clone(true))
+      this.worldPresentation.traverse((node) => {
+        if (node instanceof THREE.Mesh) node.castShadow = true
+      })
+    }
+    const world = this.worldPresentation
+    if (world.parent !== parent) parent.add(world)
+    world.visible = true
+    world.position.set(
+      0.24 + this.model.position.x - HIP_POSE.position[0],
+      -0.16 + this.model.position.y - HIP_POSE.position[1],
+      -0.32 + this.model.position.z - HIP_POSE.position[2],
+    )
+    world.quaternion.copy(this.model.quaternion)
+    for (const source of [this.slide, this.triggerPart, this.magazine]) {
+      if (!source) continue
+      const target = world.getObjectByName(source.object.name)
+      if (!target) continue
+      target.position.copy(source.object.position)
+      target.quaternion.copy(source.object.quaternion)
+      target.visible = source.object.visible
+    }
+  }
+
+  worldMuzzle(): THREE.Vector3 | null {
+    const world = this.worldPresentation
+    return world?.visible ? world.localToWorld(new THREE.Vector3(...this.flashAt)) : null
+  }
+
+  worldMagazineDropView(): ReturnType<Sidearm['magazineDropView']> {
+    const object = this.worldPresentation?.getObjectByName(this.rig.parts.magazine)
+    if (!object || !this.worldPresentation?.visible) return null
+    object.updateWorldMatrix(true, false)
+    return {
+      position: object.getWorldPosition(new THREE.Vector3()),
+      quaternion: object.getWorldQuaternion(new THREE.Quaternion()),
+      direction: axis(this.rig.presentation.magazine.axis).transformDirection(
+        object.parent!.matrixWorld,
+      ),
+    }
+  }
+
+  private viewPose(now: number): void {
+    this.model.position
+      .set(...HIP_POSE.position)
+      .lerp(new THREE.Vector3(...ADS_POSE.position), this.aimBlend)
+    this.model.rotation.set(0, 0, 0)
+    this.pose(now)
   }
 
   /**
@@ -452,8 +517,11 @@ export class Sidearm {
       now - this.state.reloadStartMs,
       this.firearm.reloadMs,
     )
-    // Negative X raises the muzzle: the model looks down -Z.
-    this.model.rotation.x = -shown.pitch
+    // Positive X raises a muzzle facing -Z. Lift and cant the grip to show the magazine.
+    this.model.rotation.set(shown.pitch, shown.yaw, shown.roll)
+    this.model.position.y += shown.lift
+    this.model.position.z -= shown.lift * 0.7
+    this.model.position.x += shown.lift * 0.4
     if (this.magazine) {
       this.magazine.object.visible = shown.magazineVisible
       this.magazine.object.position

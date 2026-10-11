@@ -1081,8 +1081,9 @@ export class GameRuntime {
     this.view.scrapeSparks(sim, time)
     this.view.sparks.update(time)
     if (this.sidearm) {
-      this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
+      this.sidearm.visible = this.weaponDrawn
       this.updateSidearm(sim, time, dt, eyes)
+      this.sidearm.syncWorld(this.view.avatar, time, eyes)
       if (!this.fireModeBadge && this.options.canvas.parentElement)
         this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)
       this.fireModeBadge?.show(this.sidearm.visible ? fireModeLabel(this.sidearm.fireMode) : null)
@@ -2725,15 +2726,20 @@ export class GameRuntime {
     }
     if (this.triggerReleased) sidearm.release()
     const rise = sidearm.aimRise(time)
-    if (rise && !sim.player.vehicleId)
-      this.cameraState.pitch = THREE.MathUtils.clamp(
-        this.cameraState.pitch - rise,
+    if (rise) {
+      const pitchKey = sim.player.vehicleId ? 'headPitch' : 'pitch'
+      this.cameraState[pitchKey] = THREE.MathUtils.clamp(
+        this.cameraState[pitchKey] - rise,
         -controlDefaults.pitchLimit,
         controlDefaults.pitchLimit,
       )
+    }
     const automatic = sidearm.fireMode === 'burst30'
     const yaw = sidearm.recoilYaw.step(dt, automatic && this.triggerDown)
-    if (yaw && !sim.player.vehicleId) this.cameraState.yaw += yaw
+    if (yaw) {
+      if (sim.player.vehicleId) this.cameraState.headYaw += yaw
+      else this.cameraState.yaw += yaw
+    }
     if ((this.fireRequested || (automatic && this.triggerDown)) && this.hasInput()) {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
       if (shot) events.push(shot)
@@ -2809,11 +2815,11 @@ export class GameRuntime {
    * Spent magazine out of the grip. Same bounce, rest and lifetime as a casing, with a small
    * pool of its own. The mesh is the pistol's `Magazine` node.
    */
-  private dropMagazine(sim: Simulation, eyes: boolean): void {
+  private dropMagazine(_sim: Simulation, eyes: boolean): void {
     const sidearm = this.sidearm
     const casing = sidearm?.preset?.casing
     if (!sidearm || !casing) return
-    const view = sidearm.magazineDropView()
+    const view = eyes ? sidearm.magazineDropView() : sidearm.worldMagazineDropView()
     if (!view) return
     if (!this.magazineMotion)
       this.magazineMotion = new CasingMotion(
@@ -2831,11 +2837,11 @@ export class GameRuntime {
     const camQ = this.camera.quaternion
     const origin = eyes
       ? this.camera.position.clone().add(view.position.clone().applyQuaternion(camQ))
-      : new THREE.Vector3(...sim.renderPlayerPosition).add(
-          new THREE.Vector3(0.15, 0.9, 0.2).applyQuaternion(camQ),
-        )
-    const orientation = camQ.clone().multiply(view.quaternion)
-    const velocity = view.direction.clone().applyQuaternion(camQ).normalize().multiplyScalar(1.5)
+      : view.position.clone().add(this.origin)
+    const orientation = eyes ? camQ.clone().multiply(view.quaternion) : view.quaternion
+    const velocity = view.direction.clone()
+    if (eyes) velocity.applyQuaternion(camQ)
+    velocity.normalize().multiplyScalar(1.5)
     this.magazineMotion.release(
       origin.toArray() as Vec3Tuple,
       velocity.toArray() as Vec3Tuple,
@@ -2846,17 +2852,19 @@ export class GameRuntime {
 
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
   private updateSidearmLaser(sim: Simulation, time: number): void {
-    if (!this.sidearm?.laserEnabled || !this.weaponDrawn || sim.player.vehicleId) {
+    if (!this.sidearm?.laserEnabled || !this.weaponDrawn) {
       this.view.laser.enabled = false
       return
     }
     this.view.laser.enabled = true
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
     const origin = this.camera.position.clone()
-    if (isFirstPersonView(this.cameraState, false)) {
+    if (isFirstPersonView(this.cameraState, !!sim.player.vehicleId)) {
       origin.add(this.sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
     } else {
-      origin.fromArray(sim.renderPlayerPosition)
+      const muzzle = this.sidearm.worldMuzzle()
+      if (muzzle) origin.copy(muzzle).add(this.origin)
+      else origin.fromArray(sim.renderPlayerPosition)
     }
     const aimed = sim.shoot(
       origin.toArray() as Vec3Tuple,
@@ -2874,8 +2882,7 @@ export class GameRuntime {
   private applySidearmButton(button: number, down: boolean): void {
     if (this.session.state !== 'playing') return
     if (down && !this.pointerLocked() && !this.pointerLockUnsupported()) return
-    const onFoot = this.weaponDrawn && !this.session.simulation?.player.vehicleId
-    if (!onFoot) return
+    if (!this.weaponDrawn) return
     const action = sidearmButtonAction(button, down)
     if (action === 'fire') {
       this.fireRequested = true
@@ -3003,7 +3010,7 @@ export class GameRuntime {
       this.wheelDebug.toggle()
       return
     }
-    if (code === 'Tab' && !sim.player.vehicleId) {
+    if (code === 'Tab') {
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
       this.triggerDown = false
@@ -3016,7 +3023,7 @@ export class GameRuntime {
       )
       return
     }
-    if (code === 'KeyR' && this.weaponDrawn && !sim.player.vehicleId) {
+    if (code === 'KeyR' && this.weaponDrawn) {
       this.reloadRequested = true
       return
     }
