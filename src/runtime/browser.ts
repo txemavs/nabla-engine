@@ -1,3 +1,4 @@
+import { WeaponControls } from './weapon-controls.js'
 /**
  * Compose a complete browser game over the shared gameplay coordinator.
  * This owner creates GPU resources, terrain streaming, input listeners, audio,
@@ -584,6 +585,7 @@ export class GameRuntime {
   private previousPad: number | null = null
   private readonly originalTabIndex: string | null
   private disposed = false
+  private readonly weaponControls: WeaponControls
   private readonly hud: GameHud | null
   private readonly wheelDebug = new WheelDebugOverlay()
   private readonly text: ReturnType<typeof createRuntimeText>
@@ -639,6 +641,11 @@ export class GameRuntime {
     this.game.recover.snapToRoad = options.recoverToRoad !== false
     this.game.recover.roads = () => navigationRoads().filter((road) => road.carriageway)
     this.game.recover.pavedAreas = () => this.world?.pavedAreas ?? []
+    this.weaponControls = new WeaponControls(
+      options.canvas.parentElement!,
+      (code) => this.action(code),
+      (held) => this.sidearm?.setAiming(held),
+    )
     this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
     this.scene.add(this.wheelDebug.root)
     this.display = resolveDisplaySettings(options.display, options.performance?.preset)
@@ -1085,6 +1092,7 @@ export class GameRuntime {
     this.pipeline.dispose()
     this.shadows.dispose()
     this.catchFloor.dispose()
+    this.weaponControls.dispose()
     this.hud?.dispose()
     this.wheelDebug.dispose()
     this.renderer.dispose()
@@ -1114,6 +1122,7 @@ export class GameRuntime {
     this.touchFlight?.setActive(rigs.flight.active)
     // On-foot sticks: only while walking (no vehicle) and playing.
     this.touchWalk?.setActive(playing && !sim.player.vehicleId)
+    this.weaponControls.setActive(playing && !sim.player.vehicleId && this.weaponDrawn)
     if (document.hidden) return
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
@@ -1302,6 +1311,7 @@ export class GameRuntime {
       this.sidearm.poseTuning = this.weaponPoses
       this.sidearm.setSmokeEnabled(this.smokeOn)
       this.sidearm.visible = this.weaponDrawn || this.sidearmAimPreview
+      if (this.weaponControls.aiming) this.sidearm.setAiming(true)
       this.updateSidearm(sim, time, dt, eyes)
       if (this.sidearmAimPreview)
         this.sidearm.setAiming(
