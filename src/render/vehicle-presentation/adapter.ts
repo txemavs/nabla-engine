@@ -14,7 +14,11 @@ export interface VehicleEquipment {
   mirrors?: CarMirrors
   instruments?: CarInstruments
   beacons?: BeaconEquipment
-  exhaust?: { outlet: Object3D; options?: ExhaustSmokeOptions }
+  exhaust?: {
+    outlet: Object3D
+    additionalOutlets?: readonly Object3D[]
+    options?: ExhaustSmokeOptions
+  }
 }
 export interface VehiclePresentationAdapter {
   mount(

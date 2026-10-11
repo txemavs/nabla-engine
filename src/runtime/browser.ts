@@ -58,6 +58,7 @@ import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.j
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
+import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
 import { magazineInsertClick, magazineReleaseClick } from '../audio/gear-click.js'
 import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
 import { FireModeBadge } from './fire-mode-badge.js'
@@ -286,6 +287,8 @@ export interface VehiclePlacement {
 }
 
 export interface GameRuntimeOptions {
+  /** Place the initial HK on the ground beside the nearest road car (or a specific vehicle id). */
+  weaponPickupNearVehicle?: boolean | string
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
   canvas: HTMLCanvasElement
@@ -429,6 +432,10 @@ export class GameRuntime {
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
+  private readonly inventory = new PickupInventory()
+  private ownedWeaponId: string | null = null
+  private readonly pickupModels = new Map<string, THREE.Group>()
+  private pickupGeneration = 0
   private spawned: string[] = []
   private spawnSequence = 0
   private vehicleWarmup: VehicleWarmup | null = null
@@ -904,6 +911,7 @@ export class GameRuntime {
     this.remoteViews.dispose()
     this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
+    this.clearPickups()
     this.sidearmAimPreview = false
     if (this.sidearm) {
       this.sidearm.visible = false
@@ -951,6 +959,7 @@ export class GameRuntime {
     setNavigationPlaces(() => [])
     setNavigationRoads(() => [])
     this.sidearm?.dispose()
+    this.clearPickups()
     this.casingMeshes?.dispose()
     this.magazineMeshes?.dispose()
     this.gallery.dispose()
@@ -1199,6 +1208,9 @@ export class GameRuntime {
         this.flipCinematic.update(time, dt, false, null, this.camera, this.cameraState)
       }
     }
+    const nearbyPickup = this.nearbyPickup(sim)
+    canvas.dataset.pickup = nearbyPickup?.id ?? ''
+    canvas.dataset.weaponOwned = String(this.weaponOwned)
     this.hud?.update({
       showSpeed: controls.speed,
       showGear: controls.gear,
@@ -1217,7 +1229,9 @@ export class GameRuntime {
       cameraMode: canvas.dataset.cameraMode!,
       interaction: player.vehicleId
         ? 'E exit · C camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics'
-        : 'WASD move · Space jump · E enter · C camera',
+        : nearbyPickup
+          ? this.text('E pick up {0}', nearbyPickup.name)
+          : 'WASD move · Space jump · E enter · C camera',
       wheelDebug: this.wheelDebug.formatHud(),
     })
     this.effects.updateAudio(sim, this.document, eye)
@@ -2331,6 +2345,117 @@ export class GameRuntime {
   get sidearmTuning(): SidearmTuning {
     return { ...this.weaponTuning }
   }
+  /** World pickups and inventory are session state; previewing settings never grants a weapon. */
+  get weaponOwned(): boolean {
+    return this.ownedWeaponId !== null && this.inventory.has(this.ownedWeaponId)
+  }
+  get worldPickups(): readonly WorldPickup[] {
+    return this.inventory.items.map((item) => ({ ...item, position: [...item.position] }))
+  }
+  /** Add a real, collectible weapon model at an absolute ground point. */
+  async addWeaponPickup(
+    id: string,
+    presetId: string,
+    position: Vec3Tuple,
+    normal: Vec3Tuple = [0, 1, 0],
+  ): Promise<void> {
+    this.assertAlive()
+    const preset = weaponPresets().find((item) => item.id === presetId)
+    if (!preset) throw new Error(`Unknown pickup weapon: ${presetId}`)
+    const generation = this.pickupGeneration
+    const model = await assets.instantiate(preset.model ?? preset.body!)
+    if (this.disposed || generation !== this.pickupGeneration) {
+      disposeObject(model)
+      return
+    }
+    const root = new THREE.Group()
+    root.name = `Pickup: ${preset.name}`
+    model.scale.setScalar(preset.scale ?? 1)
+    model.rotation.z = Math.PI / 2
+    root.add(model)
+    const bounds = new THREE.Box3().setFromObject(root)
+    model.position.y -= bounds.min.y - 0.008
+    root.position.fromArray(position)
+    root.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(...normal).normalize(),
+    )
+    try {
+      this.inventory.add({ id, itemId: preset.id, name: preset.name, position })
+    } catch (error) {
+      disposeObject(root)
+      throw error
+    }
+    this.pickupModels.set(id, root)
+    this.view.root.add(root)
+  }
+  private clearPickups(): void {
+    this.pickupGeneration++
+    for (const root of this.pickupModels.values()) {
+      root.removeFromParent()
+      disposeObject(root)
+    }
+    this.pickupModels.clear()
+    this.inventory.clear()
+    this.ownedWeaponId = null
+  }
+  private pickupVisible(sim: Simulation, item: WorldPickup): boolean {
+    const from = new THREE.Vector3(...sim.renderPlayerPosition)
+    const direction = new THREE.Vector3(...item.position).sub(from)
+    const length = direction.length()
+    if (length < 0.1) return true
+    const hit = sim.shoot(
+      from.toArray(),
+      direction.normalize().toArray(),
+      Math.max(0.01, length - 0.08),
+      0,
+    )
+    return !hit
+  }
+  private nearbyPickup(sim: Simulation): WorldPickup | null {
+    if (sim.player.vehicleId) return null
+    return this.inventory.nearest(sim.renderPlayerPosition, 1.8, (item) =>
+      this.pickupVisible(sim, item),
+    )
+  }
+  private async placeInitialWeaponPickup(sim: Simulation): Promise<void> {
+    const option = this.options.weaponPickupNearVehicle
+    if (!option) return
+    const cars = this.document.entities.filter(
+      (entity) =>
+        entity.vehicle &&
+        !entity.vehicle.twoWheeled &&
+        !entity.vehicle.flight &&
+        !entity.vehicle.boat &&
+        !entity.vehicle.passive,
+    )
+    const car =
+      typeof option === 'string'
+        ? this.document.entities.find((entity) => entity.id === option)
+        : cars.sort((a, b) => {
+            const eye = new THREE.Vector3(...sim.player.position)
+            return (
+              eye.distanceTo(new THREE.Vector3(...sim.entityTransform(a.id, true).position)) -
+              eye.distanceTo(new THREE.Vector3(...sim.entityTransform(b.id, true).position))
+            )
+          })[0]
+    if (!car) return
+    const pose = sim.entityTransform(car.id, true)
+    const rotation = new THREE.Quaternion(...pose.rotation)
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation)
+    const point = new THREE.Vector3(-2.6, 0, 0.6)
+      .applyQuaternion(rotation)
+      .add(new THREE.Vector3(...pose.position))
+    const from = point.clone().addScaledVector(up, 4)
+    const hit = sim.shoot(from.toArray(), up.clone().negate().toArray(), 12, 0)
+    const ground = hit ? new THREE.Vector3(...hit.point) : point.addScaledVector(up, -0.6)
+    await this.addWeaponPickup(
+      'initial-hk',
+      'hk-compact',
+      ground.toArray(),
+      hit?.normal ?? up.toArray(),
+    )
+  }
   /** Live quality preference shared by exhaust and gun smoke. */
   get smokeEnabled(): boolean {
     return this.smokeOn
@@ -2573,6 +2698,8 @@ export class GameRuntime {
     }
     signal.throwIfAborted()
     // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
+    if (sim) await this.placeInitialWeaponPickup(sim)
+    signal.throwIfAborted()
     // of the camera so the attract frames keep their own projection.
     stage('shaders', 3)
     // Gameplay visibility (avatar shown, spawn markers hidden) and one pose sync first, so the
@@ -2823,7 +2950,11 @@ export class GameRuntime {
       if (sim.player.vehicleId) this.cameraState.headYaw += yaw
       else this.cameraState.yaw += yaw
     }
-    if ((this.fireRequested || (automatic && this.triggerDown)) && this.hasInput()) {
+    if (
+      this.weaponOwned &&
+      (this.fireRequested || (automatic && this.triggerDown)) &&
+      this.hasInput()
+    ) {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
       if (shot) events.push(shot)
       if (shot?.fired) {
@@ -3090,11 +3221,43 @@ export class GameRuntime {
   private action(code: string): void {
     const sim = this.session.simulation
     if (!sim) return
+    if (code === 'KeyE') {
+      const nearby = this.nearbyPickup(sim)
+      const item =
+        nearby &&
+        this.inventory.take(nearby.id, sim.renderPlayerPosition, (pickup) =>
+          this.pickupVisible(sim, pickup),
+        )
+      if (item) {
+        const root = this.pickupModels.get(item.id)
+        if (root) {
+          root.removeFromParent()
+          disposeObject(root)
+          this.pickupModels.delete(item.id)
+        }
+        this.ownedWeaponId = item.itemId
+        if (this.sidearm?.preset?.id !== item.itemId) {
+          this.sidearm?.dispose()
+          this.sidearm = new Sidearm(
+            this.options.canvas.parentElement!,
+            weaponPresets().find((preset) => preset.id === item.itemId),
+          )
+        }
+        this.weaponDrawn = true
+        this.sidearm.visible = true
+        this.options.onMessage?.(this.text('Picked up {0} · Tab holster', item.name))
+        return
+      }
+    }
     if (code === 'F9') {
       this.wheelDebug.toggle()
       return
     }
     if (code === 'Tab') {
+      if (!this.weaponOwned) {
+        this.options.onMessage?.(this.text('Find and pick up a pistol first'))
+        return
+      }
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
       this.triggerDown = false
@@ -3170,6 +3333,12 @@ export class GameRuntime {
             state.cinematicZoom * scale,
             controlDefaults.cinematicZoomMin,
             controlDefaults.cinematicZoomMax,
+          )
+        } else if (state.mode === 'chase' && !state.firstPerson) {
+          state.chaseZoom = THREE.MathUtils.clamp(
+            (state.chaseZoom ?? 1) * scale,
+            controlDefaults.chaseZoomMin,
+            controlDefaults.chaseZoomMax,
           )
         } else return
         event.preventDefault()

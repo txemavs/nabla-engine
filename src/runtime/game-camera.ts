@@ -52,6 +52,8 @@ export interface GameCameraState {
    */
   mapDescentDamping?: number | null
   mapZoom: number
+  /** Wheel distance multiplier for the manual exterior orbit. */
+  chaseZoom?: number
   /** Cinematic orbit angle (chase-yaw convention), radians. */
   cinematicAngle: number
   /** Wheel multiplier for the cinematic orbit radius. */
@@ -122,6 +124,7 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     lastLookTime: 0,
     mapHeight: resolved.mapHeight,
     mapZoom: 1,
+    chaseZoom: 1,
     cinematicAngle: 0,
     cinematicZoom: 1,
     cinematicAnchorY: null,
@@ -530,6 +533,7 @@ export function updateGameCamera(
     }
     const distance =
       (info?.cameraDistance ?? tuning.chaseDistance) *
+      (state.chaseZoom ?? 1) *
       (1 +
         tuning.altitudeDistanceGain *
           THREE.MathUtils.smoothstep(
@@ -550,7 +554,9 @@ export function updateGameCamera(
         : pitch
     const desired: Vec3Tuple = [
       cameraAnchor[0] + Math.sin(yaw) * distance * Math.cos(travelPitch),
-      cameraAnchor[1] + tuning.chaseHeight + Math.sin(travelPitch) * distance,
+      cameraAnchor[1] +
+        tuning.chaseHeight * (state.chaseZoom ?? 1) +
+        Math.sin(travelPitch) * distance,
       cameraAnchor[2] + Math.cos(yaw) * distance * Math.cos(travelPitch),
     ]
     if (p.interiorId) {

@@ -157,7 +157,7 @@ export class SceneView {
   /** Fork, swingarm, shock, chain and wheel articulation of two-wheeled GLB bodies. */
   private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
   private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
-  private readonly exhaustSmoke = new Map<string, ExhaustSmoke>()
+  private readonly exhaustSmoke = new Map<string, ExhaustSmoke[]>()
   private readonly motorcycleStands = new Map<string, MotorcycleSideStand>()
   private readonly reflections = new Map<string, ReflectionEnvironment>()
   /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
@@ -649,7 +649,7 @@ export class SceneView {
     this.mirrorModels.delete(id)
     this.instruments.get(id)?.dispose()
     this.motorcycleClusters.get(id)?.dispose()
-    this.exhaustSmoke.get(id)?.dispose()
+    this.exhaustSmoke.get(id)?.forEach((smoke) => smoke.dispose())
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
     if (group) {
@@ -1122,9 +1122,11 @@ export class SceneView {
       environment.add(model)
       const exhaust = equipment?.exhaust
       if (exhaust) {
-        const smoke = new ExhaustSmoke(exhaust.outlet, this.root, exhaust.options)
-        this.exhaustSmoke.set(e.id, smoke)
-        this.root.add(smoke.root)
+        const emitters = [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map(
+          (outlet) => new ExhaustSmoke(outlet, this.root, exhaust.options),
+        )
+        this.exhaustSmoke.set(e.id, emitters)
+        this.root.add(...emitters.map((smoke) => smoke.root))
       }
       const twoWheeled = e.vehicle?.twoWheeled
       if (twoWheeled && hasMotorcycleRig(model))
@@ -1151,7 +1153,7 @@ export class SceneView {
         const outlet = model.getObjectByName('Exhaust_Outlet_Closure')
         if (outlet) {
           const smoke = new ExhaustSmoke(outlet, this.root)
-          this.exhaustSmoke.set(e.id, smoke)
+          this.exhaustSmoke.set(e.id, [smoke])
           this.root.add(smoke.root)
         }
         const cluster = MotorcycleInstruments.bind(model, {
@@ -1512,19 +1514,21 @@ export class SceneView {
       const info = sim.vehicleInfo(id)
       thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now(), this.night)
     }
-    for (const [id, smoke] of this.exhaustSmoke) {
+    for (const [id, emitters] of this.exhaustSmoke) {
       const info = sim.vehicleInfo(id)
-      smoke.setEnabled(this.smokeEnabled)
-      smoke.update(
-        elapsed,
-        sim.player.vehicleId === id &&
-          (!info.twoWheeled || !info.parked) &&
-          info.helm !== 'off' &&
-          info.ignition === 'running' &&
-          info.rpm > 500,
-        info.engineLoad,
-        info.speedKmh,
-      )
+      for (const smoke of emitters) {
+        smoke.setEnabled(this.smokeEnabled)
+        smoke.update(
+          elapsed,
+          sim.player.vehicleId === id &&
+            (!info.twoWheeled || !info.parked) &&
+            info.helm !== 'off' &&
+            info.ignition === 'running' &&
+            info.rpm > 500,
+          info.engineLoad,
+          info.speedKmh,
+        )
+      }
     }
     for (const [id, stand] of this.motorcycleStands) {
       const info = sim.vehicleInfo(id)
@@ -1824,7 +1828,7 @@ export class SceneView {
   dispose(): void {
     if (this.disposed) return
     this.streetlights.dispose()
-    for (const smoke of this.exhaustSmoke.values()) smoke.dispose()
+    for (const emitters of this.exhaustSmoke.values()) for (const smoke of emitters) smoke.dispose()
     this.exhaustSmoke.clear()
     for (const hud of this.shipHuds.values()) hud.dispose()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()

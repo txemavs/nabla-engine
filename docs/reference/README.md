@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **368 modules; 4008 executable function definitions**.
+Coverage: **369 modules; 4036 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -208,7 +208,7 @@ Coverage: **368 modules; 4008 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 124 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 127 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
@@ -274,7 +274,7 @@ Coverage: **368 modules; 4008 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 278 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 293 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
@@ -338,6 +338,7 @@ Coverage: **368 modules; 4008 executable function definitions**.
 | [src/simulation/catch-floor.ts](src/simulation/catch-floor.ts.md) | 8 |
 | [src/simulation/contracts.ts](src/simulation/contracts.ts.md) | 1 |
 | [src/simulation/entity-body.ts](src/simulation/entity-body.ts.md) | 5 |
+| [src/simulation/items/pickups.ts](src/simulation/items/pickups.ts.md) | 10 |
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |

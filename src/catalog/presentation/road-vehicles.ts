@@ -95,7 +95,8 @@ export const s3Presentation: VehiclePresentationAdapter = {
     return {
       lights: createA3Lights(model),
       exhaust: {
-        outlet: exhaustSocket(model, [-0.62, 0.23, -2.16]),
+        outlet: exhaustSocket(model, [0.68, 0.23, -2.16]),
+        additionalOutlets: [exhaustSocket(model, [0.84, 0.23, -2.16])],
         options: { direction: [0, 0.2, -1] },
       },
       mirrors: new CarMirrors(
@@ -186,9 +187,9 @@ const stock = new Map<string, VehiclePresentationAdapter>([
         return {
           instruments,
           exhaust: {
-            outlet: exhaustSocket(model, [1.13, -0.45, -0.1]),
+            outlet: exhaustSocket(model, [-1.08, 1.86, -0.72]),
             options: {
-              direction: [1, 0.1, 0],
+              direction: [0, 1, 0],
               color: '#111111',
               clearColor: '#888888',
               clearAtKmh: 60,
