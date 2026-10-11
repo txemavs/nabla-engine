@@ -24,6 +24,7 @@ export class ExhaustSmoke {
   private carry = 0
   private next = 0
   private enabled = true
+  private amount = 1
   private readonly color: THREE.Color
   private readonly clearColor: THREE.Color
   readonly root: THREE.Points
@@ -79,6 +80,11 @@ export class ExhaustSmoke {
     }
   }
 
+  /** Scale particle emission without changing the size or lifetime of each puff. */
+  setAmount(amount: number): void {
+    this.amount = THREE.MathUtils.clamp(amount, 0, 2)
+  }
+
   update(dt: number, running: boolean, load: number, speedKmh = 0): void {
     if (!this.enabled) return
     dt = Math.min(0.05, Math.max(0, Number.isFinite(dt) ? dt : 0))
@@ -104,7 +110,7 @@ export class ExhaustSmoke {
       this.velocities[i * 3 + 1] += dt * 0.2
     }
     this.carry = running
-      ? this.carry + dt * (10 + 22 * THREE.MathUtils.clamp(load, 0, 1))
+      ? this.carry + dt * (10 + 22 * THREE.MathUtils.clamp(load, 0, 1)) * this.amount
       : -THREE.MathUtils.clamp(this.options.emissionPhase ?? 0, 0, 1)
     while (this.carry >= 1) {
       this.carry--

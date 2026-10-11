@@ -45,6 +45,32 @@ function scene(extra: ReturnType<typeof createEntity>[] = []) {
 
 const upY = (q: readonly number[]) => 1 - 2 * (q[0] * q[0] + q[2] * q[2])
 
+it.each([false, true])(
+  'lifts a stationary partly buried rider beside the bike (automatic=%s)',
+  (automatic) => {
+    const s = scene()
+    const internal = s as unknown as {
+      vehicles: Map<string, Vehicle>
+      playerBody: Vehicle['body']
+      ejection: RiderEjection | null
+    }
+    const bike = internal.vehicles.get('bike')!
+    bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+    bike.body.velocity.setZero()
+    bike.twoWheeled!.fallen = true
+    bike.twoWheeled!.crashed = true
+    internal.playerBody.position.set(1.2, 0.1, 0)
+    internal.playerBody.velocity.setZero()
+    internal.ejection = { ...startEjection('bike', 12), phase: 'down', elapsed: 2 }
+    if (automatic) s.step(1 / 60)
+    else expect(s.liftNearbyBike()).toBe(true)
+    expect(['rising', 'lifting']).toContain(s.playerBikeRecovery?.phase)
+    expect(s.player.position[1]).toBeGreaterThan(0.8)
+    for (let i = 0; i < 180; i++) s.step(1 / 60)
+    expect(s.player.vehicleId).toBe('bike')
+  },
+)
+
 it('picks up the crashed bike automatically when the thrown rider gets up beside it', () => {
   const s = scene()
   const internal = s as unknown as {

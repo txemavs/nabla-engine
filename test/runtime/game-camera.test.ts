@@ -3,6 +3,8 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import {
   createGameCameraState,
   cycleGameCamera,
+  IdleCinematic,
+  setGameCameraView,
   gameCameraView,
   isFirstPersonView,
   mouseLooksWithoutButton,
@@ -207,22 +209,16 @@ test('chase, first-person and driver views look with the mouse without a held bu
   }
 })
 
-test('C cycles exterior → driver → overhead → cinematic seated, and adds overhead/cinematic on foot', () => {
+test('C cycles ordinary views without entering cinematic', () => {
   const state = createGameCameraState()
   state.mode = 'chase'
-  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, true))).toEqual([
-    'cockpit',
-    'map',
-    'cinematic',
-    'chase',
-  ])
+  expect([1, 2, 3].map(() => cycleGameCamera(state, true))).toEqual(['cockpit', 'map', 'chase'])
   state.mode = 'chase'
   state.firstPerson = true
   expect(gameCameraView(state, false)).toBe('first-person')
-  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, false))).toEqual([
+  expect([1, 2, 3].map(() => cycleGameCamera(state, false))).toEqual([
     'chase',
     'map',
-    'cinematic',
     'first-person',
   ])
   expect(state.firstPerson).toBe(true)
@@ -232,11 +228,32 @@ test('C cycles exterior → driver → overhead → cinematic seated, and adds o
   expect(cycleGameCamera(state, false)).toBe('chase')
   // Entering cinematic starts the orbit behind the current heading.
   state.yaw = 1.2
-  cycleGameCamera(state, false)
-  cycleGameCamera(state, false)
+  setGameCameraView(state, 'cinematic', false)
   expect(state.mode).toBe('cinematic')
   expect(state.cinematicAngle).toBe(1.2)
 })
+
+test.each([false, true])(
+  'idle orbit waits two minutes and restores the original view (seated=%s)',
+  (seated) => {
+    const state = createGameCameraState()
+    setGameCameraView(state, seated ? 'cockpit' : 'first-person', seated)
+    const idle = new IdleCinematic()
+    idle.update(state, seated, 0, true)
+    idle.update(state, seated, 119999, true)
+    expect(state.mode).not.toBe('cinematic')
+    idle.activity(state, seated, 119999)
+    idle.update(state, seated, 239998, true)
+    expect(state.mode).not.toBe('cinematic')
+    idle.update(state, seated, 239999, true)
+    expect(state.mode).toBe('cinematic')
+    idle.activity(state, seated, 240000)
+    expect(gameCameraView(state, seated)).toBe(seated ? 'cockpit' : 'first-person')
+    idle.update(state, seated, 500000, false)
+    idle.update(state, seated, 500001, true)
+    expect(state.mode).not.toBe('cinematic')
+  },
+)
 
 test('overhead and cinematic views never count as first person', () => {
   const state = createGameCameraState()
@@ -305,9 +322,7 @@ test('cinematic camera orbits slowly around the vehicle and keeps it framed', as
   const camera = new PerspectiveCamera()
   const state = createGameCameraState()
   state.mode = 'chase'
-  cycleGameCamera(state, true)
-  cycleGameCamera(state, true)
-  expect(cycleGameCamera(state, true)).toBe('cinematic')
+  setGameCameraView(state, 'cinematic', true)
   const start = state.cinematicAngle
   const result = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
   expect(result.cinematic).toBe(true)

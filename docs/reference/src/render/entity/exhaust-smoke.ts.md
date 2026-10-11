@@ -12,7 +12,7 @@ White exhaust vapour attached to the authored outlet, with a bounded world-space
 
 ## ExhaustSmoke.constructor
 
-[Implementation, line 31](../../../../../src/render/entity/exhaust-smoke.ts#L31)
+[Implementation, line 32](../../../../../src/render/entity/exhaust-smoke.ts#L32)
 
 ```ts
 constructor(private readonly outlet: THREE.Object3D, private readonly space: THREE.Object3D, private readonly options: ExhaustSmokeOptions = {}): instance
@@ -29,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ExhaustSmoke.setEnabled
 
-[Implementation, line 73](../../../../../src/render/entity/exhaust-smoke.ts#L73)
+[Implementation, line 74](../../../../../src/render/entity/exhaust-smoke.ts#L74)
 
 ```ts
 setEnabled(enabled: boolean): void
@@ -40,9 +40,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MathUtils.clamp`
 - `this.life.fill`
 
+## ExhaustSmoke.setAmount
+
+[Implementation, line 84](../../../../../src/render/entity/exhaust-smoke.ts#L84)
+
+Scale particle emission without changing the size or lifetime of each puff.
+
+```ts
+setAmount(amount: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.MathUtils.clamp`
+
 ## ExhaustSmoke.update
 
-[Implementation, line 82](../../../../../src/render/entity/exhaust-smoke.ts#L82)
+[Implementation, line 88](../../../../../src/render/entity/exhaust-smoke.ts#L88)
 
 ```ts
 update(dt: number, running: boolean, load: number, speedKmh = 0): void
@@ -78,17 +92,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.space.matrixWorld.clone().invert`
 - `this.space.worldToLocal`
 
-## ExhaustSmoke.update.callback@129
+## ExhaustSmoke.update.callback@135
 
-[Implementation, line 129](../../../../../src/render/entity/exhaust-smoke.ts#L129)
+[Implementation, line 135](../../../../../src/render/entity/exhaust-smoke.ts#L135)
 
 ```ts
-callback@129(v): inferred by TypeScript; see implementation
+callback@135(v): inferred by TypeScript; see implementation
 ```
 
 ## ExhaustSmoke.dispose
 
-[Implementation, line 135](../../../../../src/render/entity/exhaust-smoke.ts#L135)
+[Implementation, line 141](../../../../../src/render/entity/exhaust-smoke.ts#L141)
 
 ```ts
 dispose(): void

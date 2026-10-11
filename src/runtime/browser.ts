@@ -161,6 +161,7 @@ import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
 import {
   createGameCameraState,
+  IdleCinematic,
   downwardViewFar,
   gameCameraView,
   isFirstPersonView,
@@ -474,6 +475,37 @@ export class GameRuntime {
   private lightSensorSeconds = 0
   private lightSensorShadow = false
   private lightSensorVehicle: string | null = null
+  private exhaustOffset: Vec3Tuple = [0, 0, 0]
+  private readonly idleCinematic = new IdleCinematic()
+  private cameraActivity(): void {
+    this.idleCinematic.activity(
+      this.cameraState,
+      !!this.session.simulation?.player.vehicleId,
+      performance.now(),
+    )
+  }
+  private exhaustAmount = 0.5
+  get s3ExhaustAmount(): number {
+    return this.exhaustAmount
+  }
+  /** Provisional S3 emission multiplier; 0.5 means half the particle quantity. */
+  setS3ExhaustAmount(amount: number): number {
+    if (!Number.isFinite(amount)) throw new Error('Invalid exhaust amount')
+    this.exhaustAmount = Math.max(0, Math.min(2, amount))
+    this.view.setS3ExhaustAmount(this.exhaustAmount)
+    return this.exhaustAmount
+  }
+  get s3ExhaustOffset(): Vec3Tuple {
+    return [...this.exhaustOffset]
+  }
+  /** Provisional live S3 exhaust offsets, metres: right, up, rearward. */
+  setS3ExhaustOffset(offset: Vec3Tuple): Vec3Tuple {
+    if (!offset.every(Number.isFinite)) throw new Error('Invalid exhaust offset')
+    this.exhaustOffset = offset.map((value) => Math.max(-1, Math.min(1, value))) as Vec3Tuple
+    // Vehicle forward is -Z, so positive rearward offsets use +Z.
+    this.view.setS3ExhaustOffset(this.exhaustOffset)
+    return this.s3ExhaustOffset
+  }
   private vehicleWarmup: VehicleWarmup | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
@@ -1053,6 +1085,22 @@ export class GameRuntime {
     this.canvasDiagnostics(frameMs)
     this.observeResolution(frameMs, time)
     const pad = this.pollGamepad()
+    if (
+      this.keys.values.size ||
+      pad?.buttons.some((button) => button.pressed) ||
+      pad?.axes.some((axis) => Math.abs(axis) > 0.15)
+    )
+      this.cameraActivity()
+    this.idleCinematic.update(
+      this.cameraState,
+      !!sim.player.vehicleId,
+      time,
+      playing &&
+        !this.view.vehicleMenu(sim.player.vehicleId ?? '')?.open &&
+        !this.startSequence &&
+        !sim.playerEjection &&
+        !sim.playerBikeRecovery,
+    )
     const installStart = measuring ? performance.now() : 0
     this.world?.flushInstall(
       this.quality.preset === 'mobile' || this.quality.preset === 'minimal'
@@ -1105,6 +1153,16 @@ export class GameRuntime {
       enabled: this.hasInput(),
       menuOpen: !!(sim.player.vehicleId && this.view.vehicleMenu(sim.player.vehicleId)?.open),
     })
+    if (
+      input.forward ||
+      input.right ||
+      input.brake ||
+      input.lift ||
+      input.turn ||
+      walkTouch.look.x ||
+      walkTouch.look.y
+    )
+      this.cameraActivity()
     if (this.startSequence && (input.forward || input.right || input.brake))
       this.applyStartCamera(this.startSequence.skip(), sim)
     const vehicleId = sim.player.vehicleId
@@ -3433,6 +3491,8 @@ export class GameRuntime {
   private bindInput(): void {
     const options = { signal: this.lifetime.signal }
     const canvas = this.options.canvas
+    for (const event of ['keydown', 'keyup', 'pointerdown', 'pointerup', 'pointermove', 'wheel'])
+      window.addEventListener(event, () => this.cameraActivity(), { ...options, capture: true })
     canvas.addEventListener(
       'wheel',
       (event) => {

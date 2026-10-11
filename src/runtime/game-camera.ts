@@ -182,7 +182,7 @@ export function gameCameraView(
 
 /**
  * The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
- * cinematic → exterior. On foot: first person → third person → overhead → cinematic → first
+ * exterior. On foot: first person → third person → overhead → first
  * person. Mutates `state` and returns the new view.
  */
 export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCameraView {
@@ -191,7 +191,7 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
     ? {
         chase: 'cockpit',
         cockpit: 'map',
-        map: 'cinematic',
+        map: 'chase',
         cinematic: 'chase',
         'first-person': 'cockpit',
       }
@@ -199,7 +199,7 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
         'first-person': 'chase',
         chase: 'map',
         cockpit: 'map',
-        map: 'cinematic',
+        map: 'first-person',
         cinematic: 'first-person',
       }
   const wanted = next[view]
@@ -236,6 +236,34 @@ export function setGameCameraView(
     state.pitch = state.mode === 'cockpit' ? state.settings.headPitch : state.settings.chasePitch
     state.headYaw = 0
     state.headPitch = state.settings.headPitch
+  }
+}
+
+/** Two-minute idle orbit, with the previous view restored before the next input. */
+export class IdleCinematic {
+  private lastActivity: number | null = null
+  private previous: GameCameraView | null = null
+  activity(state: GameCameraState, seated: boolean, now: number): void {
+    this.lastActivity = now
+    if (this.previous !== null) {
+      setGameCameraView(state, this.previous, seated)
+      this.previous = null
+    }
+  }
+  update(state: GameCameraState, seated: boolean, now: number, active: boolean): void {
+    if (!active) {
+      this.activity(state, seated, now)
+      return
+    }
+    this.lastActivity ??= now
+    if (
+      this.previous === null &&
+      now - this.lastActivity >= 120_000 &&
+      state.mode !== 'cinematic'
+    ) {
+      this.previous = gameCameraView(state, seated)
+      setGameCameraView(state, 'cinematic', seated)
+    }
   }
 }
 

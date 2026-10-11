@@ -20,6 +20,7 @@ import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
 import { bindSoundControls } from './sound-ui.js'
 import { bindLightControls } from './light-ui.js'
+import { bindExhaustControls } from './exhaust-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import {
@@ -218,6 +219,7 @@ try {
   bindGroundDetailSelect(runtime, roadStyle)
   bindSoundControls(runtime)
   bindLightControls(runtime)
+  bindExhaustControls(runtime)
   mountSettingsHud(runtime)
   bindLayerSelector(runtime, undefined, layerDefaults)
   document.getElementById('game-hud')!.classList.remove('hidden')

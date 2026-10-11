@@ -91,7 +91,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 188](../../../../src/runtime/game-camera.ts#L188)
 
 The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
-cinematic → exterior. On foot: first person → third person → overhead → cinematic → first
+exterior. On foot: first person → third person → overhead → first
 person. Mutates `state` and returns the new view.
 
 ```ts
@@ -116,9 +116,39 @@ through the cabin while the field of view lerped, and that frame hitch is the st
 setGameCameraView(state: GameCameraState, wanted: GameCameraView, seated: boolean): void
 ```
 
+## IdleCinematic.activity
+
+[Implementation, line 246](../../../../src/runtime/game-camera.ts#L246)
+
+Two-minute idle orbit, with the previous view restored before the next input.
+
+```ts
+activity(state: GameCameraState, seated: boolean, now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `setGameCameraView`
+
+## IdleCinematic.update
+
+[Implementation, line 253](../../../../src/runtime/game-camera.ts#L253)
+
+Two-minute idle orbit, with the previous view restored before the next input.
+
+```ts
+update(state: GameCameraState, seated: boolean, now: number, active: boolean): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `gameCameraView`
+- `setGameCameraView`
+- `this.activity`
+
 ## downwardViewFar
 
-[Implementation, line 248](../../../../src/runtime/game-camera.ts#L248)
+[Implementation, line 276](../../../../src/runtime/game-camera.ts#L276)
 
 Far plane while the camera looks steeply down. The ordinary far plane is 12 km, so a
 zenithal view is a shaft and the cascaded shadow maps size themselves to it. The ground
@@ -137,7 +167,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## updateGameCamera
 
-[Implementation, line 257](../../../../src/runtime/game-camera.ts#L257)
+[Implementation, line 285](../../../../src/runtime/game-camera.ts#L285)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -231,18 +261,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@429
+## updateGameCamera.callback@457
 
-[Implementation, line 429](../../../../src/runtime/game-camera.ts#L429)
+[Implementation, line 457](../../../../src/runtime/game-camera.ts#L457)
 
 ```ts
-callback@429(entity): inferred by TypeScript; see implementation
+callback@457(entity): inferred by TypeScript; see implementation
 ```
 
-## updateGameCamera.callback@515
+## updateGameCamera.callback@543
 
-[Implementation, line 515](../../../../src/runtime/game-camera.ts#L515)
+[Implementation, line 543](../../../../src/runtime/game-camera.ts#L543)
 
 ```ts
-callback@515(entity): inferred by TypeScript; see implementation
+callback@543(entity): inferred by TypeScript; see implementation
 ```

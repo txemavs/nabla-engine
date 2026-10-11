@@ -1517,6 +1517,8 @@ export class Simulation {
   private stepEjection(): void {
     const body = this.playerBody
     const vehicleId = this.ejection!.vehicleId
+    if (this.ejection!.elapsed > 1.5 && body.velocity.length() < 0.4 && this.liftNearbyBike())
+      return
     const up = this.radialUp(body)
     const vertical = body.velocity.dot(up)
     const horizontal = body.velocity.vsub(up.scale(vertical))
@@ -1547,6 +1549,28 @@ export class Simulation {
     const p = body.position.vadd(new Vec3(0, EARTH_RADIUS + this.document.geography.altitude, 0))
     p.normalize()
     return p
+  }
+  /** Resume an in-place lift beside a stationary fallen bike, including a stuck grounded rider. */
+  liftNearbyBike(): boolean {
+    if (this.gentleRecovery) return true
+    const id = this.vehicleId ?? this.ejection?.vehicleId ?? this.nearestVehicle()
+    const bike = id ? this.vehicles.get(id) : undefined
+    if (
+      !bike?.twoWheeled ||
+      !(bike.twoWheeled.fallen || bike.twoWheeled.crashed) ||
+      bike.body.velocity.length() > 1.5 ||
+      (!this.vehicleId && this.playerBody.velocity.length() > 0.6)
+    )
+      return false
+    if (!this.vehicleId) {
+      const from = this.playerBody.position.clone()
+      // Keep the reach ray above the terrain even when the fallen helmet is partly buried.
+      from.y = Math.max(from.y, bike.body.position.y + 0.5)
+      const target = this.hullPoint(bike, from)
+      target.y = Math.max(target.y, from.y)
+      if (from.distanceTo(target) > 2.75 || this.hullBlocked(bike, from, target)) return false
+    }
+    return this.beginGentleRecovery(bike, !this.vehicleId)
   }
   /** Supported, clear footing beside a slow fallen bike; no recovery over a drop or through a wall. */
   private beginGentleRecovery(v: Vehicle, pickingUp = false): boolean {
@@ -1590,7 +1614,7 @@ export class Simulation {
         )
       )
         continue
-      if (this.vehicleId) this.placeOnFoot(candidate)
+      this.placeOnFoot(candidate)
       this.input.yaw = Math.atan2(candidate.x - v.body.position.x, candidate.z - v.body.position.z)
       this.ejection = pickingUp ? null : { ...startEjection(v.entity.id, 0), phase: 'rising' }
       this.gentleRecovery = {

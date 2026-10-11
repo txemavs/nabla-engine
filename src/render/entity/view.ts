@@ -160,6 +160,31 @@ export class SceneView {
   private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
   private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
   private readonly exhaustSmoke = new Map<string, ExhaustSmoke[]>()
+  private readonly s3Outlets = new Map<string, { outlet: THREE.Object3D; base: THREE.Vector3 }[]>()
+  private s3Offset: readonly [number, number, number] = [0, 0, 0]
+  private s3Amount = 0.5
+  /** Live S3 smoke emission multiplier, applied to both outlets. */
+  setS3ExhaustAmount(amount: number): void {
+    this.s3Amount = amount
+  }
+  /** Provisional S3 exhaust positioning, metres in the chassis frame. */
+  setS3ExhaustOffset(offset: readonly [number, number, number]): void {
+    this.s3Offset = offset
+    for (const id of this.s3Outlets.keys()) this.applyS3ExhaustOffset(id)
+  }
+  private applyS3ExhaustOffset(id: string): void {
+    const chassis = this.objects.get(id)
+    if (!chassis) return
+    chassis.updateWorldMatrix(true, true)
+    for (const { outlet, base } of this.s3Outlets.get(id) ?? []) {
+      const shift = new THREE.Vector3(...this.s3Offset).applyQuaternion(
+        chassis.getWorldQuaternion(new THREE.Quaternion()),
+      )
+      if (outlet.parent)
+        shift.applyQuaternion(outlet.parent.getWorldQuaternion(new THREE.Quaternion()).invert())
+      outlet.position.copy(base).add(shift)
+    }
+  }
   private readonly motorcycleStands = new Map<string, MotorcycleSideStand>()
   private readonly reflections = new Map<string, ReflectionEnvironment>()
   /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
@@ -664,6 +689,7 @@ export class SceneView {
     this.instruments.get(id)?.dispose()
     this.motorcycleClusters.get(id)?.dispose()
     this.exhaustSmoke.get(id)?.forEach((smoke) => smoke.dispose())
+    this.s3Outlets.delete(id)
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
     if (group) {
@@ -1136,6 +1162,16 @@ export class SceneView {
       environment.add(model)
       const exhaust = equipment?.exhaust
       if (exhaust) {
+        if (e.visual?.presentation === 'nabla.s3') {
+          this.s3Outlets.set(
+            e.id,
+            [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map((outlet) => ({
+              outlet,
+              base: outlet.position.clone(),
+            })),
+          )
+          this.applyS3ExhaustOffset(e.id)
+        }
         const emitters = [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map(
           (outlet, index) =>
             new ExhaustSmoke(outlet, this.root, {
@@ -1537,6 +1573,7 @@ export class SceneView {
     for (const [id, emitters] of this.exhaustSmoke) {
       const info = sim.vehicleInfo(id)
       for (const smoke of emitters) {
+        smoke.setAmount(this.s3Outlets.has(id) ? this.s3Amount : 1)
         smoke.setEnabled(this.smokeEnabled)
         smoke.update(
           elapsed,

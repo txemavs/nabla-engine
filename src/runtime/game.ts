@@ -274,7 +274,10 @@ export class GameRuntime {
       this.cameraState.mode = 'chase'
       return sim.transferControls()
     }
-    if (code === 'Space' && !sim.player.vehicleId) this.jumpRequested = true
+    if (code === 'Space') {
+      if (sim.liftNearbyBike()) return 'Levantando la moto'
+      if (!sim.player.vehicleId && !sim.playerEjection) this.jumpRequested = true
+    }
     return undefined
   }
 }
