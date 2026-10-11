@@ -444,6 +444,26 @@ export class GameRuntime {
   private ownedWeaponId: string | null = null
   private readonly pickupModels = new Map<string, THREE.Group>()
   private pickupGeneration = 0
+  private pickupGroundTime = 0
+  private syncPickupGround(sim: Simulation, dt: number): void {
+    if (!this.world || !this.inventory.items.length) return
+    this.pickupGroundTime += dt
+    if (this.pickupGroundTime < 0.5) return
+    this.pickupGroundTime = 0
+    for (const item of this.inventory.items) {
+      if (
+        new THREE.Vector3(...item.position).distanceTo(
+          new THREE.Vector3(...sim.renderPlayerPosition),
+        ) > 100
+      )
+        continue
+      const height = this.world.groundHeight(item.position)
+      if (height === undefined) continue
+      const position: Vec3Tuple = [item.position[0], height + 0.01, item.position[2]]
+      this.inventory.move(item.id, position)
+      this.pickupModels.get(item.id)?.position.fromArray(position)
+    }
+  }
   private spawned: string[] = []
   private spawnSequence = 0
   private vehicleWarmup: VehicleWarmup | null = null
@@ -1090,6 +1110,7 @@ export class GameRuntime {
         crossing.blocked ? this.text('Passage blocked') : this.text('Stargate crossed'),
       )
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
+    this.syncPickupGround(sim, dt)
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
     this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     this.view.smokeEnabled = this.smokeOn
@@ -2442,11 +2463,18 @@ export class GameRuntime {
       const up = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation)
       const from = point.clone().addScaledVector(up, 10)
       const hit = sim.shoot(from.toArray(), up.clone().negate().toArray(), 30, 0)
+      const groundHeight = this.world?.groundHeight(point.toArray())
+      const ground =
+        groundHeight === undefined
+          ? this.world
+            ? point.toArray()
+            : (hit?.point ?? point.toArray())
+          : ([point.x, groundHeight + 0.01, point.z] as Vec3Tuple)
       await this.addWeaponPickup(
         'initial-hk',
         'hk-compact',
-        hit?.point ?? point.toArray(),
-        hit?.normal ?? up.toArray(),
+        ground,
+        groundHeight === undefined ? (hit?.normal ?? up.toArray()) : up.toArray(),
       )
       return
     }

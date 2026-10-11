@@ -19,6 +19,11 @@ export class PickupInventory {
   has(itemId: string): boolean {
     return this.owned.has(itemId)
   }
+  /** Keep loose items on refined terrain without changing ownership. */
+  move(id: string, position: Vec3Tuple): void {
+    const item = this.loose.get(id)
+    if (item && position.every(Number.isFinite)) item.position = [...position]
+  }
   get items(): readonly WorldPickup[] {
     return [...this.loose.values()]
   }

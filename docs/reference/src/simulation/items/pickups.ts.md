@@ -42,9 +42,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.owned.has`
 
+## PickupInventory.move
+
+[Implementation, line 23](../../../../../src/simulation/items/pickups.ts#L23)
+
+Keep loose items on refined terrain without changing ownership.
+
+```ts
+move(id: string, position: Vec3Tuple): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `position.every`
+- `this.loose.get`
+
 ## PickupInventory.items
 
-[Implementation, line 22](../../../../../src/simulation/items/pickups.ts#L22)
+[Implementation, line 27](../../../../../src/simulation/items/pickups.ts#L27)
 
 Session inventory: empty at start; collection is atomic and requires physical reach.
 
@@ -58,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PickupInventory.nearest
 
-[Implementation, line 25](../../../../../src/simulation/items/pickups.ts#L25)
+[Implementation, line 30](../../../../../src/simulation/items/pickups.ts#L30)
 
 Session inventory: empty at start; collection is atomic and requires physical reach.
 
@@ -73,25 +88,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.loose.values`
 - `visible`
 
-## PickupInventory.nearest.callback@28
-
-[Implementation, line 28](../../../../../src/simulation/items/pickups.ts#L28)
-
-```ts
-callback@28(): inferred by TypeScript; see implementation
-```
-
 ## PickupInventory.nearest.callback@33
 
 [Implementation, line 33](../../../../../src/simulation/items/pickups.ts#L33)
 
 ```ts
-callback@33(value, i): inferred by TypeScript; see implementation
+callback@33(): inferred by TypeScript; see implementation
+```
+
+## PickupInventory.nearest.callback@38
+
+[Implementation, line 38](../../../../../src/simulation/items/pickups.ts#L38)
+
+```ts
+callback@38(value, i): inferred by TypeScript; see implementation
 ```
 
 ## PickupInventory.take
 
-[Implementation, line 41](../../../../../src/simulation/items/pickups.ts#L41)
+[Implementation, line 46](../../../../../src/simulation/items/pickups.ts#L46)
 
 Session inventory: empty at start; collection is atomic and requires physical reach.
 
@@ -108,25 +123,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.owned.add`
 - `visible`
 
-## PickupInventory.take.callback@44
-
-[Implementation, line 44](../../../../../src/simulation/items/pickups.ts#L44)
-
-```ts
-callback@44(): inferred by TypeScript; see implementation
-```
-
 ## PickupInventory.take.callback@49
 
 [Implementation, line 49](../../../../../src/simulation/items/pickups.ts#L49)
 
 ```ts
-callback@49(value, i): inferred by TypeScript; see implementation
+callback@49(): inferred by TypeScript; see implementation
+```
+
+## PickupInventory.take.callback@54
+
+[Implementation, line 54](../../../../../src/simulation/items/pickups.ts#L54)
+
+```ts
+callback@54(value, i): inferred by TypeScript; see implementation
 ```
 
 ## PickupInventory.clear
 
-[Implementation, line 57](../../../../../src/simulation/items/pickups.ts#L57)
+[Implementation, line 62](../../../../../src/simulation/items/pickups.ts#L62)
 
 Session inventory: empty at start; collection is atomic and requires physical reach.
 
