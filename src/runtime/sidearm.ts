@@ -22,7 +22,7 @@ import { reloadPresentation } from './reload-presentation.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
-const ADS_POSE = { position: [0, -0.02, -0.2] as const, fov: 42 }
+const ADS_POSE = { position: [0, -0.027, -0.2] as const, pitch: 0.035, fov: 42 }
 
 /** Presentation rig of an assembled model (`assets/rigs/weapons/*.rig.json`). */
 interface WeaponRig {
@@ -380,7 +380,12 @@ export class Sidearm {
       new THREE.Vector3(...ADS_POSE.position),
       this.aimBlend,
     )
-    return pos.add(new THREE.Vector3(...this.flashAt))
+    return pos.add(
+      new THREE.Vector3(...this.flashAt).applyAxisAngle(
+        new THREE.Vector3(1, 0, 0),
+        ADS_POSE.pitch * this.aimBlend,
+      ),
+    )
   }
 
   /** Ejection port in the viewmodel camera's space: right of and behind the muzzle. */
@@ -518,7 +523,7 @@ export class Sidearm {
       this.firearm.reloadMs,
     )
     // Positive X raises a muzzle facing -Z. Lift and cant the grip to show the magazine.
-    this.model.rotation.set(shown.pitch, shown.yaw, shown.roll)
+    this.model.rotation.set(shown.pitch + ADS_POSE.pitch * this.aimBlend, shown.yaw, shown.roll)
     this.model.position.y += shown.lift
     this.model.position.z -= shown.lift * 0.7
     this.model.position.x += shown.lift * 0.4
