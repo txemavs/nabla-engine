@@ -3231,7 +3231,7 @@ export class GameRuntime {
       if (event.magazineSeated) this.effects.audio.weaponSound('magazine-in', weaponPosition)
       if (event.slideReleased) this.effects.audio.weaponSound('slide-forward', weaponPosition)
       if (event.locked)
-        this.options.onMessage?.('R: soltar cargador · T: cargador nuevo · Y: liberar corredera')
+        this.options.onMessage?.('R: soltar cargador · T: cargador nuevo · F: accionar corredera')
     }
     if (this.casingMotion && this.casingMeshes) {
       this.casingMotion.update(dt, (from, direction, length) =>
@@ -3545,7 +3545,7 @@ export class GameRuntime {
       )
       return
     }
-    if ((code === 'KeyR' || code === 'KeyT' || code === 'KeyY') && this.weaponDrawn) {
+    if ((code === 'KeyR' || code === 'KeyT' || code === 'KeyF') && this.weaponDrawn) {
       this.magazineAction = code === 'KeyR' ? 'drop' : code === 'KeyT' ? 'insert' : 'release'
       return
     }

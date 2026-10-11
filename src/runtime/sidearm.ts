@@ -356,7 +356,7 @@ export class Sidearm {
   /** Toggle the laser sight; returns the new state. */
   toggleLaser(): boolean {
     this.laserOn = !this.laserOn
-    this.laserLine.visible = this.laserOn && this.enabled
+    this.laserLine.visible = false // The world beam alone supplies depth-tested surface termination.
     return this.laserOn
   }
   get laserEnabled(): boolean {
@@ -468,6 +468,7 @@ export class Sidearm {
       }
       return event
     }
+    if (!this.state.slideLocked) return this.manipulate('slide-release', now)
     const event = releaseSlide(this.state, now)
     if (event.slideReleased) {
       this.hammerArmed = !this.variant.dao
@@ -533,7 +534,7 @@ export class Sidearm {
     this.smoke.update(now, height)
     this.worldSmoke?.update(now, height)
     this.aimBlend += ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
-    this.laserLine.visible = this.laserOn
+    this.laserLine.visible = false
     if (!firstPerson) return
     this.camera.aspect = aspect
     this.camera.fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)

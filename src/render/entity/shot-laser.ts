@@ -8,7 +8,7 @@ export class ShotLaser {
   private readonly beamMat = new THREE.LineBasicMaterial({
     color: '#ff2a2a',
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.12,
     depthWrite: false,
     toneMapped: false,
   })
@@ -25,7 +25,7 @@ export class ShotLaser {
     this.beam.frustumCulled = false
     this.beam.renderOrder = 6
     this.pin = new THREE.Mesh(
-      new THREE.SphereGeometry(0.018, 8, 6),
+      new THREE.SphereGeometry(0.001, 16, 10),
       new THREE.MeshBasicMaterial({
         color: '#ff4444',
         transparent: true,
@@ -61,6 +61,8 @@ export class ShotLaser {
     this.beamGeom.attributes.position.needsUpdate = true
     this.beamGeom.computeBoundingSphere()
     this.pin.position.set(end[0], end[1], end[2])
+    const distance = Math.hypot(end[0] - origin[0], end[1] - origin[1], end[2] - origin[2])
+    this.pin.scale.setScalar(1 + Math.min(2, distance * 0.015))
     this.pin.visible = hit
   }
 

@@ -69,12 +69,15 @@ set(origin: Vec3Tuple, end: Vec3Tuple, hit: boolean): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.hypot`
+- `Math.min`
 - `this.beamGeom.computeBoundingSphere`
 - `this.pin.position.set`
+- `this.pin.scale.setScalar`
 
 ## ShotLaser.clear
 
-[Implementation, line 67](../../../../../src/render/entity/shot-laser.ts#L67)
+[Implementation, line 69](../../../../../src/render/entity/shot-laser.ts#L69)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -84,7 +87,7 @@ clear(): void
 
 ## ShotLaser.dispose
 
-[Implementation, line 71](../../../../../src/render/entity/shot-laser.ts#L71)
+[Implementation, line 73](../../../../../src/render/entity/shot-laser.ts#L73)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 

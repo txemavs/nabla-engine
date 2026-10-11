@@ -20,7 +20,7 @@ dropped items. Entities have an ID, capacity and remaining rounds. A normal
 simulation reload consumes an existing spare. Gameplay uses unlimited supplies:
 R drops the current item, T supplies a full normal magazine and selects semi-auto,
 M replaces it with a visibly extended 30-round magazine and selects automatic.
-Y releases the slide catch separately. G toggles the laser and H the flashlight.
+F operates the slide or releases its catch separately. G toggles the laser and H the flashlight.
 Removed items never refill. Workshop reinsertion retains the same item.
 The chamber is independent. Dropped entities remain associated with their
 physics poses until the existing dropped-body lifetime expires. Ground pickup
