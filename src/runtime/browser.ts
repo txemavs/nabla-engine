@@ -485,26 +485,26 @@ export class GameRuntime {
     )
   }
   private exhaustAmount = 1
-  get motorcycleExhaustAmount(): number {
+  get truckExhaustAmount(): number {
     return this.exhaustAmount
   }
-  /** Provisional motorcycle emission multiplier; 0.5 means half the particle quantity. */
-  setMotorcycleExhaustAmount(amount: number): number {
+  /** Provisional truck emission multiplier; 0.5 means half the particle quantity. */
+  setTruckExhaustAmount(amount: number): number {
     if (!Number.isFinite(amount)) throw new Error('Invalid exhaust amount')
     this.exhaustAmount = Math.max(0, Math.min(2, amount))
-    this.view.setMotorcycleExhaustAmount(this.exhaustAmount)
+    this.view.setTruckExhaustAmount(this.exhaustAmount)
     return this.exhaustAmount
   }
-  get motorcycleExhaustOffset(): Vec3Tuple {
+  get truckExhaustOffset(): Vec3Tuple {
     return [...this.exhaustOffset]
   }
-  /** Provisional live motorcycle exhaust offsets, metres: right, up, rearward. */
-  setMotorcycleExhaustOffset(offset: Vec3Tuple): Vec3Tuple {
+  /** Provisional live truck exhaust offsets, metres: right, up, rearward. */
+  setTruckExhaustOffset(offset: Vec3Tuple): Vec3Tuple {
     if (!offset.every(Number.isFinite)) throw new Error('Invalid exhaust offset')
     this.exhaustOffset = offset.map((value) => Math.max(-1, Math.min(1, value))) as Vec3Tuple
     // Vehicle forward is -Z, so positive rearward offsets use +Z.
-    this.view.setMotorcycleExhaustOffset(this.exhaustOffset)
-    return this.motorcycleExhaustOffset
+    this.view.setTruckExhaustOffset(this.exhaustOffset)
+    return this.truckExhaustOffset
   }
   private vehicleWarmup: VehicleWarmup | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
