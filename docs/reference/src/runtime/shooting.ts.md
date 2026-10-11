@@ -56,6 +56,7 @@ fireSidearm(sidearm: Sidearm, gallery: Gallery, sim: Simulation, view: SceneView
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
+- `Math.min`
 - `Vector3`
 - `bulletEnergy`
 - `camera.clone`

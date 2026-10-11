@@ -6,6 +6,8 @@ export interface ExhaustSmokeOptions {
   clearColor?: THREE.ColorRepresentation
   clearAtKmh?: number
   size?: number
+  /** Fraction of one emission interval to delay this outlet, for alternating twin exhausts. */
+  emissionPhase?: number
 }
 
 export class ExhaustSmoke {
@@ -31,6 +33,7 @@ export class ExhaustSmoke {
     private readonly space: THREE.Object3D,
     private readonly options: ExhaustSmokeOptions = {},
   ) {
+    this.carry = -THREE.MathUtils.clamp(options.emissionPhase ?? 0, 0, 1)
     this.color = new THREE.Color(options.color ?? '#fafbfc')
     this.clearColor = new THREE.Color(options.clearColor ?? options.color ?? '#fafbfc')
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
@@ -71,7 +74,7 @@ export class ExhaustSmoke {
     this.enabled = enabled
     if (!enabled) {
       this.life.fill(0)
-      this.carry = 0
+      this.carry = -THREE.MathUtils.clamp(this.options.emissionPhase ?? 0, 0, 1)
       this.root.visible = false
     }
   }
@@ -100,7 +103,9 @@ export class ExhaustSmoke {
       for (let j = 0; j < 3; j++) this.positions[i * 3 + j] += this.velocities[i * 3 + j] * dt
       this.velocities[i * 3 + 1] += dt * 0.2
     }
-    this.carry = running ? this.carry + dt * (10 + 22 * THREE.MathUtils.clamp(load, 0, 1)) : 0
+    this.carry = running
+      ? this.carry + dt * (10 + 22 * THREE.MathUtils.clamp(load, 0, 1))
+      : -THREE.MathUtils.clamp(this.options.emissionPhase ?? 0, 0, 1)
     while (this.carry >= 1) {
       this.carry--
       const i = this.next++ % this.life.length

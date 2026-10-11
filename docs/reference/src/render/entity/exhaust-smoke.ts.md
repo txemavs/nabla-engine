@@ -12,7 +12,7 @@ White exhaust vapour attached to the authored outlet, with a bounded world-space
 
 ## ExhaustSmoke.constructor
 
-[Implementation, line 29](../../../../../src/render/entity/exhaust-smoke.ts#L29)
+[Implementation, line 31](../../../../../src/render/entity/exhaust-smoke.ts#L31)
 
 ```ts
 constructor(private readonly outlet: THREE.Object3D, private readonly space: THREE.Object3D, private readonly options: ExhaustSmokeOptions = {}): instance
@@ -22,13 +22,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.BufferAttribute`
 - `THREE.Color`
+- `THREE.MathUtils.clamp`
 - `THREE.Points`
 - `THREE.ShaderMaterial`
 - `this.geometry.setAttribute`
 
 ## ExhaustSmoke.setEnabled
 
-[Implementation, line 70](../../../../../src/render/entity/exhaust-smoke.ts#L70)
+[Implementation, line 73](../../../../../src/render/entity/exhaust-smoke.ts#L73)
 
 ```ts
 setEnabled(enabled: boolean): void
@@ -36,11 +37,12 @@ setEnabled(enabled: boolean): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `THREE.MathUtils.clamp`
 - `this.life.fill`
 
 ## ExhaustSmoke.update
 
-[Implementation, line 79](../../../../../src/render/entity/exhaust-smoke.ts#L79)
+[Implementation, line 82](../../../../../src/render/entity/exhaust-smoke.ts#L82)
 
 ```ts
 update(dt: number, running: boolean, load: number, speedKmh = 0): void
@@ -76,17 +78,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.space.matrixWorld.clone().invert`
 - `this.space.worldToLocal`
 
-## ExhaustSmoke.update.callback@124
+## ExhaustSmoke.update.callback@129
 
-[Implementation, line 124](../../../../../src/render/entity/exhaust-smoke.ts#L124)
+[Implementation, line 129](../../../../../src/render/entity/exhaust-smoke.ts#L129)
 
 ```ts
-callback@124(v): inferred by TypeScript; see implementation
+callback@129(v): inferred by TypeScript; see implementation
 ```
 
 ## ExhaustSmoke.dispose
 
-[Implementation, line 130](../../../../../src/render/entity/exhaust-smoke.ts#L130)
+[Implementation, line 135](../../../../../src/render/entity/exhaust-smoke.ts#L135)
 
 ```ts
 dispose(): void

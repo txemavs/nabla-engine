@@ -1,4 +1,5 @@
 import { TowOverload } from './tow-overload.js'
+import { VehicleDamage } from './vehicle-damage.js'
 /** Own one physics world and coordinate independent collision, portal and vehicle subsystems. */
 import { VehicleDocking } from './vehicle-docking.js'
 import { PortalTraversal } from './portal-traversal.js'
@@ -111,6 +112,55 @@ const hasGearSelector = (d: VehicleDefinition): boolean =>
 /** Owns exactly one physics world. Scene data is copied and never mutated.
  * The host supplies elapsed seconds and input, and reads snapshots after step(). */
 export class Simulation {
+  private readonly damage = new VehicleDamage()
+  private readonly explosions: { entityId: string; position: Vec3Tuple }[] = []
+  vehicleDamage(id: string): { health: number; destroyed: boolean } {
+    return { health: this.damage.remaining(id), destroyed: this.damage.destroyed(id) }
+  }
+  /** Actual weapon hits only; ray probes never cause damage. */
+  damageVehicle(id: string | null, amount: number): void {
+    if (!id || !this.vehicles.has(id) || this.vehicles.get(id)!.definition.passive) return
+    this.damage.apply(id, amount)
+    this.resolveExplosions()
+  }
+  consumeExplosions(): { entityId: string; position: Vec3Tuple }[] {
+    return this.explosions.splice(0)
+  }
+  private resolveExplosions(): void {
+    let pending = this.damage.drain()
+    while (pending.length) {
+      for (const id of pending) {
+        const v = this.vehicles.get(id)
+        if (!v) continue
+        v.helm = 'off'
+        v.prop = 0
+        v.drivetrain.ignition = 'running'
+        v.drivetrain.rpm = v.drivetrain.force = v.drivetrain.load = 0
+        this.gentleRecovery = null
+        this.bikeMountHold = null
+        if (this.vehicleId === id && v.twoWheeled) this.ejectRider(v)
+        const centre = v.body.position.clone()
+        const up = this.radialUp(v.body)
+        this.explosions.push({ entityId: id, position: vec(centre) })
+        for (const body of this.world.bodies) {
+          if (!body.mass) continue
+          const direction = body.position.vsub(centre)
+          const distance = direction.length()
+          if (distance >= 12) continue
+          const strength = 1 - distance / 12
+          if (distance > 0.1) direction.normalize()
+          else direction.copy(up)
+          direction.vadd(up.scale(0.45), direction)
+          body.wakeUp()
+          body.applyImpulse(direction.scale(body.mass * 9 * strength))
+          for (const [otherId, other] of this.vehicles)
+            if (other.body === body && otherId !== id && !other.definition.passive)
+              this.damage.apply(otherId, strength * 45)
+        }
+      }
+      pending = this.damage.drain()
+    }
+  }
   private readonly document: SceneDocument
   private readonly terrainEntity: Entity | undefined
   private waterLevel = 0
@@ -269,6 +319,8 @@ export class Simulation {
       mapBuildingsEnabled?: boolean
       experimentalLargeScene?: boolean
       planetaryTerrain?: boolean
+      /** Damage from strong physical impacts; weapon damage is always explicit. */
+      vehicleDamage?: boolean
       /**
        * Start-up sequence when a driver gets into a geared road vehicle: starter cranking, then
        * the needle sweep while the engine settles to idle, all in P (default true). False only
@@ -561,6 +613,7 @@ export class Simulation {
     v.raycast.removeFromWorld(this.world)
     if (v.body.world === this.world) this.world.removeBody(v.body)
     this.vehicles.delete(id)
+    this.damage.remove(id)
     this.bodies.delete(id)
     this.previousWheels.delete(id)
     this.document.entities = this.document.entities.filter(
@@ -1006,7 +1059,27 @@ export class Simulation {
       for (const vehicle of this.vehicles.values()) this.updateRamp(vehicle, FIXED_STEP)
       this.beforeTick()
       this.updateCatchFloor()
+      const impactVelocities = this.options.vehicleDamage
+        ? new Map(this.world.bodies.map((body) => [body, body.velocity.clone()]))
+        : null
       this.world.step(FIXED_STEP)
+      if (impactVelocities) {
+        for (const contact of this.world.contacts) {
+          const relative = impactVelocities.get(contact.bi)!.vsub(impactVelocities.get(contact.bj)!)
+          const speed = Math.abs(relative.dot(contact.ni))
+          for (const [id, vehicle] of this.vehicles) {
+            if (vehicle.definition.passive) continue
+            if (vehicle.body === contact.bi || vehicle.body === contact.bj)
+              this.damage.impact(
+                id,
+                vehicle.body === contact.bi ? contact.bj.id : contact.bi.id,
+                speed,
+                this.ticks * FIXED_STEP,
+              )
+          }
+        }
+        this.resolveExplosions()
+      }
       for (let i = this.trailerJoints.length - 1; i >= 0; i--) {
         const joint = this.trailerJoints[i]
         const driver = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
@@ -1245,6 +1318,16 @@ export class Simulation {
     }
     const drivingInput = this.wheeledInput()
     for (const [id, v] of this.vehicles) {
+      if (this.damage.destroyed(id)) {
+        v.helm = 'off'
+        v.drivetrain.ignition = 'running'
+        v.drivetrain.rpm = v.drivetrain.force = v.drivetrain.load = 0
+        for (let wheel = 0; wheel < v.raycast.wheelInfos.length; wheel++) {
+          v.raycast.applyEngineForce(0, wheel)
+          v.raycast.setBrake(0, wheel)
+        }
+        continue
+      }
       const dock = this.docks.get(id)
       syncWheeledDamping(
         v,
@@ -1415,6 +1498,7 @@ export class Simulation {
   }
   /** Supported, clear footing beside a slow fallen bike; no recovery over a drop or through a wall. */
   private beginGentleRecovery(v: Vehicle, pickingUp = false): boolean {
+    if (this.damage.destroyed(v.entity.id)) return false
     if (this.gentleRecovery || !v.twoWheeled || (!pickingUp && this.vehicleId !== v.entity.id))
       return false
     const up = this.radialUp(v.body)
@@ -1700,6 +1784,7 @@ export class Simulation {
     const id = this.vehicleId
     const v = id ? this.vehicles.get(id) : undefined
     if (!v) return 'Monta en un coche'
+    if (this.damage.destroyed(id!)) return 'Vehículo destruido'
     if (this.docks.has(id!)) return 'Desengancha antes de enderezar'
     const up = new Vec3(0, 1, 0)
     let forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
@@ -1922,6 +2007,7 @@ export class Simulation {
     const id = this.nearestVehicle()
     if (!id) return 'Acércate a un vehículo detenido y pulsa E para entrar'
     const v = this.vehicles.get(id)!
+    if (this.damage.destroyed(id)) return 'Vehículo destruido'
     const lying = !!v.twoWheeled && (v.twoWheeled.crashed || v.twoWheeled.fallen)
     if (lying)
       return this.beginGentleRecovery(v, true)
@@ -1936,6 +2022,7 @@ export class Simulation {
       this.disposed ||
       this.vehicleId ||
       !this.vehicles.has(id) ||
+      this.damage.destroyed(id) ||
       this.vehicles.get(id)!.definition.passive
     )
       throw new Error('Invalid initial vehicle')

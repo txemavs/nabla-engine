@@ -72,7 +72,7 @@ callback@53(e): inferred by TypeScript; see implementation
 
 ## Gallery.constructor
 
-[Implementation, line 75](../../../../src/runtime/gallery.ts#L75)
+[Implementation, line 76](../../../../src/runtime/gallery.ts#L76)
 
 ```ts
 constructor(viewport: HTMLElement, private readonly text: RuntimeText = createRuntimeText()): instance
@@ -86,7 +86,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gallery.dispose
 
-[Implementation, line 96](../../../../src/runtime/gallery.ts#L96)
+[Implementation, line 97](../../../../src/runtime/gallery.ts#L97)
 
 ```ts
 dispose(): void
@@ -99,7 +99,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gallery.reset
 
-[Implementation, line 100](../../../../src/runtime/gallery.ts#L100)
+[Implementation, line 101](../../../../src/runtime/gallery.ts#L101)
 
 ```ts
 reset(): void
@@ -111,7 +111,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gallery.update
 
-[Implementation, line 108](../../../../src/runtime/gallery.ts#L108)
+[Implementation, line 109](../../../../src/runtime/gallery.ts#L109)
 
 ```ts
 update(view: SceneView, playing: boolean, dt: number): void
@@ -127,20 +127,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.text`
 - `view.document.entities.filter`
 
-## Gallery.update.callback@109
+## Gallery.update.callback@110
 
-[Implementation, line 109](../../../../src/runtime/gallery.ts#L109)
+[Implementation, line 110](../../../../src/runtime/gallery.ts#L110)
 
 ```ts
-callback@109(e): inferred by TypeScript; see implementation
+callback@110(e): inferred by TypeScript; see implementation
 ```
 
-## Gallery.update.callback@114
+## Gallery.update.callback@115
 
-[Implementation, line 114](../../../../src/runtime/gallery.ts#L114)
+[Implementation, line 115](../../../../src/runtime/gallery.ts#L115)
 
 ```ts
-callback@114(e, i): inferred by TypeScript; see implementation
+callback@115(e, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -151,40 +151,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gallery.shoot
 
-[Implementation, line 128](../../../../src/runtime/gallery.ts#L128)
+[Implementation, line 129](../../../../src/runtime/gallery.ts#L129)
 
 ```ts
-shoot(sim: Simulation, view: SceneView, camera: THREE.PerspectiveCamera, range = 150, impulse = 12): boolean
+shoot(sim: Simulation, view: SceneView, camera: THREE.PerspectiveCamera, range = 150, impulse = 12, damage = 0): boolean
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.min`
 - `THREE.Raycaster`
 - `THREE.Vector2`
 - `THREE.Vector3`
 - `foreground.setFromCamera`
+- `glassPoint.clone`
+- `glassPoint.clone().sub`
+- `point.toArray`
 - `ray.ray.direction.toArray`
+- `ray.ray.origin.clone`
+- `ray.ray.origin.clone().add`
 - `ray.ray.origin.distanceTo`
 - `ray.ray.origin.toArray`
 - `ray.setFromCamera`
 - `shotView`
+- `sim.damageVehicle`
 - `sim.entityTransform`
 - `sim.shoot`
 - `this.respawn.set`
+- `view.brokenGlass.hit`
+- `view.destruction.glass`
 - `view.document.entities.find`
 - `view.document.entities.some`
 - `view.hitSprite`
 - `view.impacts.add`
 - `view.impacts.addWorld`
 - `view.objects.get`
-
-## Gallery.shoot.callback@151
-
-[Implementation, line 151](../../../../src/runtime/gallery.ts#L151)
-
-```ts
-callback@151(e): inferred by TypeScript; see implementation
-```
 
 ## Gallery.shoot.callback@154
 
@@ -194,10 +195,46 @@ callback@151(e): inferred by TypeScript; see implementation
 callback@154(e): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@162
+## Gallery.shoot.callback@157
 
-[Implementation, line 162](../../../../src/runtime/gallery.ts#L162)
+[Implementation, line 157](../../../../src/runtime/gallery.ts#L157)
 
 ```ts
-callback@162(e): inferred by TypeScript; see implementation
+callback@157(e): inferred by TypeScript; see implementation
+```
+
+## Gallery.shoot.callback@165
+
+[Implementation, line 165](../../../../src/runtime/gallery.ts#L165)
+
+```ts
+callback@165(e): inferred by TypeScript; see implementation
+```
+
+## Gallery.shoot.callback@175
+
+[Implementation, line 175](../../../../src/runtime/gallery.ts#L175)
+
+```ts
+callback@175(entity): inferred by TypeScript; see implementation
+```
+
+## Gallery.shoot.callback@176
+
+[Implementation, line 176](../../../../src/runtime/gallery.ts#L176)
+
+```ts
+callback@176(entity): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `view.objects.get`
+
+## Gallery.shoot.callback@177
+
+[Implementation, line 177](../../../../src/runtime/gallery.ts#L177)
+
+```ts
+callback@177(object): object is THREE.Group
 ```

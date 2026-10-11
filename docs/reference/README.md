@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **369 modules; 4036 executable function definitions**.
+Coverage: **373 modules; 4074 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -44,6 +44,7 @@ Coverage: **369 modules; 4036 executable function definitions**.
 | [game/terrain.ts](game/terrain.ts.md) | 14 |
 | [game/vehicle-colors.ts](game/vehicle-colors.ts.md) | 1 |
 | [src/audio/casing-tinkle.ts](src/audio/casing-tinkle.ts.md) | 4 |
+| [src/audio/destruction.ts](src/audio/destruction.ts.md) | 3 |
 | [src/audio/diesel-engine.ts](src/audio/diesel-engine.ts.md) | 6 |
 | [src/audio/engine-start.ts](src/audio/engine-start.ts.md) | 6 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
@@ -62,7 +63,7 @@ Coverage: **369 modules; 4036 executable function definitions**.
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
 | [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 46 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 48 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
 | [src/catalog/monitors/car.ts](src/catalog/monitors/car.ts.md) | 4 |
@@ -178,6 +179,7 @@ Coverage: **369 modules; 4036 executable function definitions**.
 | [src/render/entity/avatar-motion.ts](src/render/entity/avatar-motion.ts.md) | 10 |
 | [src/render/entity/avatar.ts](src/render/entity/avatar.ts.md) | 23 |
 | [src/render/entity/billboard.ts](src/render/entity/billboard.ts.md) | 7 |
+| [src/render/entity/breakable-glass.ts](src/render/entity/breakable-glass.ts.md) | 7 |
 | [src/render/entity/car-instrument-definition.ts](src/render/entity/car-instrument-definition.ts.md) | 1 |
 | [src/render/entity/car-instruments.ts](src/render/entity/car-instruments.ts.md) | 16 |
 | [src/render/entity/car-lights.ts](src/render/entity/car-lights.ts.md) | 7 |
@@ -208,6 +210,7 @@ Coverage: **369 modules; 4036 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
+| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 12 |
 | [src/render/entity/view.ts](src/render/entity/view.ts.md) | 127 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
@@ -281,7 +284,7 @@ Coverage: **369 modules; 4036 executable function definitions**.
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
-| [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 13 |
+| [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 16 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 11 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 21 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
@@ -348,10 +351,11 @@ Coverage: **369 modules; 4036 executable function definitions**.
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 220 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 225 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |
+| [src/simulation/vehicle-damage.ts](src/simulation/vehicle-damage.ts.md) | 6 |
 | [src/simulation/vehicle-docking.ts](src/simulation/vehicle-docking.ts.md) | 9 |
 | [src/simulation/vehicles/boat.ts](src/simulation/vehicles/boat.ts.md) | 5 |
 | [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 20 |

@@ -841,6 +841,7 @@ export class GameRuntime {
       this.options.onProgress?.('Starting simulation…')
       const simulation = await this.game.play(document, {
         playerMode: 'walk',
+        vehicleDamage: true,
         ...options,
         planetaryTerrain: !!document.geography?.planetary,
       })
@@ -1118,6 +1119,12 @@ export class GameRuntime {
     this.view.tracers.update(time)
     this.view.scrapeSparks(sim, time)
     this.view.sparks.update(time)
+    for (const explosion of sim.consumeExplosions()) {
+      const object = this.view.objects.get(explosion.entityId)
+      if (object) this.view.destruction.explode(explosion.entityId, object)
+      this.effects.audio.destruction(explosion.position)
+    }
+    this.view.destruction.update(dt, this.smokeOn)
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
       this.sidearm.setSmokeEnabled(this.smokeOn)
@@ -2980,6 +2987,8 @@ export class GameRuntime {
       this.hasInput()
     ) {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
+      if (shot?.fired && this.gallery.lastGlassImpact)
+        this.effects.audio.destruction(this.gallery.lastGlassImpact, true)
       if (shot) events.push(shot)
       if (shot?.fired) {
         this.effects.audio.gunshot(weaponPosition)
@@ -3278,10 +3287,7 @@ export class GameRuntime {
       return
     }
     if (code === 'Tab') {
-      if (!this.weaponOwned) {
-        this.options.onMessage?.(this.text('Find and pick up a pistol first'))
-        return
-      }
+      if (!this.weaponOwned) return
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
       this.triggerDown = false

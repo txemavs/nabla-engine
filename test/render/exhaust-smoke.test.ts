@@ -3,6 +3,26 @@ import * as THREE from 'three'
 import { ExhaustSmoke } from '../../src/render/entity/exhaust-smoke.js'
 
 describe('exhaust smoke', () => {
+  it('twin outlets emit half an interval apart rather than simultaneously', () => {
+    const space = new THREE.Group(),
+      outlet = new THREE.Object3D()
+    space.add(outlet)
+    const first = new ExhaustSmoke(outlet, space)
+    const second = new ExhaustSmoke(outlet, space, { emissionPhase: 0.5 })
+    for (let i = 0; i < 6; i++) {
+      first.update(0.02, true, 0)
+      second.update(0.02, true, 0)
+    }
+    expect(first.root.visible).toBe(true)
+    expect(second.root.visible).toBe(false)
+    for (let i = 0; i < 2; i++) {
+      first.update(0.02, true, 0)
+      second.update(0.02, true, 0)
+    }
+    expect(second.root.visible).toBe(true)
+    first.dispose()
+    second.dispose()
+  })
   it('emits from a socket, lightens diesel smoke with speed and clears it when disabled', () => {
     const space = new THREE.Group(),
       outlet = new THREE.Object3D()

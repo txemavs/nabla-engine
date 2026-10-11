@@ -13,6 +13,7 @@ import { Turbine } from './turbine.js'
 import { ReverseAlarm } from './reverse-alarm.js'
 import { AudioMixer, audioBus, withAudioOutputs, type AudioMixLevels } from './mixer.js'
 import { SpatialEmitter } from './positional.js'
+import { DestructionSound } from './destruction.js'
 import { BackgroundMusic, type MusicTrack } from './music.js'
 
 /**
@@ -44,6 +45,16 @@ export class VehicleAudio {
   private weaponEmitter?: SpatialEmitter
   private casingVoices: { voice: CasingTinkle; emitter: SpatialEmitter }[] = []
   private nextCasing = 0
+  private readonly destructionVoices: { voice: DestructionSound; emitter: SpatialEmitter }[] = []
+  private nextDestruction = 0
+  destruction(position: readonly number[], glass = false): void {
+    const frame = this.frame()
+    if (!frame?.audible || !this.context) return
+    const entry = this.destructionVoices[this.nextDestruction++ % this.destructionVoices.length]
+    entry.emitter.setPosition(position)
+    entry.emitter.setListener(this.eye, this.orientation)
+    entry.voice.trigger(frame.time, glass)
+  }
   private eye: readonly number[] = [0, 0, 0]
   private orientation: readonly number[] = [0, 0, 0, 1]
   private listenerSpeed = 0
@@ -130,6 +141,8 @@ export class VehicleAudio {
 
   /** Close the context. Further updates are no-ops. */
   dispose(): void {
+    for (const entry of this.destructionVoices) entry.emitter.dispose()
+    this.destructionVoices.length = 0
     this.music?.dispose()
     if (this.context) void this.context.close().catch(() => {})
     this.context = undefined
@@ -188,6 +201,7 @@ export class VehicleAudio {
       this.weaponEmitter,
       this.turbineEmitter,
       ...this.casingVoices.map((entry) => entry.emitter),
+      ...this.destructionVoices.map((entry) => entry.emitter),
     ]) {
       emitter?.setListener(this.eye, this.orientation)
     }
@@ -343,6 +357,16 @@ export class VehicleAudio {
     const context = new AudioContext()
     this.mixer.attach(context)
     const noise = loopingNoise(context)
+    for (let i = 0; i < 4; i++) {
+      const emitter = new SpatialEmitter(context, audioBus(context), {
+        referenceDistance: 5,
+        maxDistance: 250,
+      })
+      this.destructionVoices.push({
+        emitter,
+        voice: new DestructionSound(context, noise, emitter.input),
+      })
+    }
     this.context = context
     this.vehicleEngine = new SpatialEmitter(context, audioBus(context, 'engine'), {
       referenceDistance: 3,
@@ -412,5 +436,6 @@ export class VehicleAudio {
     this.reverseVoice?.silence(time)
     this.gunshotVoice?.silence(time)
     for (const entry of this.casingVoices) entry.voice.silence(time)
+    for (const entry of this.destructionVoices) entry.voice.silence(time)
   }
 }

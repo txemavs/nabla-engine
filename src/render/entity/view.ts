@@ -79,6 +79,8 @@ import { carrierInterior } from './carrier-interior.js'
 import { ImpactMarks } from './impact-marks.js'
 import { ShotTracers } from './shot-tracers.js'
 import { ShotSparks } from './shot-sparks.js'
+import { VehicleDestruction } from './vehicle-destruction.js'
+import { BreakableGlass } from './breakable-glass.js'
 import { ShotLaser } from './shot-laser.js'
 import { roadGeometry } from '../../planet/land/roads/draped-road.js'
 import { terrainVertices, terrainIndices } from '../../planet/land/terrain.js'
@@ -173,8 +175,10 @@ export class SceneView {
   readonly impacts = new ImpactMarks()
   readonly tracers = new ShotTracers()
   readonly sparks = new ShotSparks()
+  readonly brokenGlass = new BreakableGlass()
   readonly laser = new ShotLaser()
   readonly root = new THREE.Group()
+  readonly destruction = new VehicleDestruction(this.root)
   readonly streetlights = new Streetlights(this.root)
   night = false
   /** Atmospheric daylight factor (0 night .. 1 day; 1 without a sky), for the chrome reflections. */
@@ -437,7 +441,7 @@ export class SceneView {
     this.avatar.add(this.monitor)
     this.avatar.visible = false
     this.root.add(this.avatar, this.vehicleLights.root)
-    this.root.add(this.tracers.root, this.sparks.root, this.laser.root)
+    this.root.add(this.tracers.root, this.sparks.root, this.laser.root, this.destruction.root)
     this.ready = Promise.all(this.loading).then(() => undefined)
   }
   /** A known pose-only edit; preserve all unrelated entities and render batches. */
@@ -1123,7 +1127,11 @@ export class SceneView {
       const exhaust = equipment?.exhaust
       if (exhaust) {
         const emitters = [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map(
-          (outlet) => new ExhaustSmoke(outlet, this.root, exhaust.options),
+          (outlet, index) =>
+            new ExhaustSmoke(outlet, this.root, {
+              ...exhaust.options,
+              emissionPhase: index / (1 + (exhaust.additionalOutlets?.length ?? 0)),
+            }),
         )
         this.exhaustSmoke.set(e.id, emitters)
         this.root.add(...emitters.map((smoke) => smoke.root))
@@ -1420,6 +1428,8 @@ export class SceneView {
       this.impacts.clear()
       this.tracers.clear()
       this.sparks.clear()
+      this.brokenGlass.clear()
+      this.destruction.clear()
       this.laser.clear()
     }
     if (!playing) for (const thrusters of this.thrusters.values()) thrusters.root.visible = false
@@ -1826,6 +1836,8 @@ export class SceneView {
     this.vehicleLights.capture(authored?.spots ?? [], [...(authored?.points ?? []), ...courtesy])
   }
   dispose(): void {
+    this.brokenGlass.clear()
+    this.destruction.dispose()
     if (this.disposed) return
     this.streetlights.dispose()
     for (const emitters of this.exhaustSmoke.values()) for (const smoke of emitters) smoke.dispose()

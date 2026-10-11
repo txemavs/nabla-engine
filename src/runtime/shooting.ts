@@ -29,7 +29,7 @@ export function sidearmButtonAction(
 export interface SidearmShot extends FirearmEvent {
   /** Where the bullet stopped (hit point or end of the trace), world. */
   end?: Vec3
-  /** Bullet kinetic energy at the hit, J (no damage model yet). */
+  /** Bullet kinetic energy at the hit, J. */
   impactJoules?: number
   /** Flight distance to the hit, m. */
   distance?: number
@@ -123,8 +123,16 @@ export function fireSidearm(
   const range = missed
     ? NEAR_MISS_CHECK
     : Math.max(0.5, firing.position.distanceTo(destination) + 0.25)
-  const hit = gallery.shoot(sim, view, firing, range, impulse)
+  const hit = gallery.shoot(
+    sim,
+    view,
+    firing,
+    range,
+    impulse,
+    Math.min(25, (event.impactJoules ?? 480) / 40),
+  )
   sidearm.impact(hit)
-  if (hit) view.sparks.add(destination.toArray() as [number, number, number], now, normal)
+  if (hit && !gallery.lastGlassImpact)
+    view.sparks.add(destination.toArray() as [number, number, number], now, normal)
   return event
 }
