@@ -572,7 +572,7 @@ export class Sidearm {
       world.quaternion
         .copy(parent.getWorldQuaternion(new THREE.Quaternion()).invert())
         .multiply(rotation)
-      if (this.state.reload !== 'none') world.quaternion.multiply(this.model.quaternion)
+      if (this.inspection) world.quaternion.multiply(this.model.quaternion)
     }
     for (const source of [
       this.slide,
@@ -695,15 +695,8 @@ export class Sidearm {
       now - this.state.reloadStartMs,
       this.firearm.reloadMs,
     )
-    // Positive X raises a muzzle facing -Z. Lift and cant the grip to show the magazine.
-    this.model.rotation.set(
-      shown.pitch + THREE.MathUtils.degToRad(this.tuning.angle) * this.aimBlend,
-      shown.yaw,
-      shown.roll,
-    )
-    this.model.position.y += shown.lift
-    this.model.position.z -= shown.lift * 0.7
-    this.model.position.x += shown.lift * 0.4
+    // Magazine/slide actions animate their own parts, independently of the viewing posture.
+    this.model.rotation.set(THREE.MathUtils.degToRad(this.tuning.angle) * this.aimBlend, 0, 0)
     if (this.magazine) {
       this.magazine.object.visible =
         this.state.reload === 'none' ? this.state.magazineSeated : shown.magazineVisible
@@ -736,7 +729,7 @@ export class Sidearm {
       const press = age >= 0 && age < 300 ? Math.sin((Math.PI * age) / 300) : 0
       this.magazineLever.object.rotation.x = press * -0.25
     }
-    if (this.inspection && this.state.reload === 'none') {
+    if (this.inspection) {
       const held = this.inspection.release === undefined
       this.inspection.blend +=
         ((held ? 1 : 0) - this.inspection.blend) * (1 - Math.exp(-elapsed / 90))
@@ -776,7 +769,6 @@ export class Sidearm {
 
   /** Cosmetic inspection only: it never consumes or ejects ammunition. */
   inspect(now: number, chamber = false): void {
-    if (this.state.reload !== 'none') return
     const kind = chamber ? 'chamber' : 'inspect'
     const blend = this.inspection?.kind === kind ? this.inspection.blend : 0
     this.inspection = { kind, start: now, blend }
