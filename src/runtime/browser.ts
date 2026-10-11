@@ -530,7 +530,6 @@ export class GameRuntime {
   private magazineAction: 'drop' | 'insert' | 'release' | 'automatic' | null = null
   private weaponLightOn = false
   private safetyClickHeld = false
-  private slideInspectHeld = false
   private weaponLight: THREE.SpotLight | null = null
   private casingMotion: CasingMotion | null = null
   private casingMeshes: Casings | null = null
@@ -3163,7 +3162,6 @@ export class GameRuntime {
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
     this.safetyClickHeld = false
-    this.slideInspectHeld = false
     if (!this.sidearmAimPreview) this.sidearm?.stopInspect(performance.now())
     this.fireRequested = false
     this.triggerReleased = true
@@ -3607,17 +3605,6 @@ export class GameRuntime {
       return
     }
     if ((code === 'KeyR' || code === 'KeyF') && this.weaponDrawn) {
-      const state = this.sidearm?.state
-      if (
-        code === 'KeyF' &&
-        state?.slideLocked &&
-        state.chamber === 0 &&
-        (!state.magazineSeated || state.magazine === 0)
-      ) {
-        this.slideInspectHeld = true
-        this.sidearm!.inspect(performance.now(), true)
-        return
-      }
       if (this.sidearm?.state.reload !== 'none') return
       this.magazineAction =
         code === 'KeyF' ? 'release' : this.sidearm?.state.magazineSeated ? 'drop' : 'insert'
@@ -3858,10 +3845,6 @@ export class GameRuntime {
       'keyup',
       (event) => {
         this.keys.release(event.code)
-        if (event.code === 'KeyF' && this.slideInspectHeld) {
-          this.slideInspectHeld = false
-          if (!this.keys.values.has('KeyX')) this.sidearm?.stopInspect(performance.now())
-        }
         if (event.code === 'KeyZ' || event.code === 'KeyX') {
           this.sidearm?.stopInspect(performance.now())
           if (event.code === 'KeyX' && this.weaponDrawn)

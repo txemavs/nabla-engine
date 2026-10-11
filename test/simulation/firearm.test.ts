@@ -270,3 +270,18 @@ it('fires the chambered round with the magazine out (no magazine disconnect)', (
   expect(state.chamber).toBe(0)
   expect(state.slide).toBe(0)
 })
+
+it('releases the catch with an empty magazine or no magazine without creating ammunition', () => {
+  for (const seated of [true, false]) {
+    const state = freshFirearm(spec())
+    state.magazine = 0
+    state.magazineSeated = seated
+    state.chamber = 0
+    state.slideLocked = true
+    expect(releaseSlide(state, 1000).slideReleased).toBe(true)
+    expect(state.slideLocked).toBe(false)
+    expect(state.chamber).toBe(0)
+    expect(state.magazine).toBe(0)
+    expect(state.magazineSeated).toBe(seated)
+  }
+})

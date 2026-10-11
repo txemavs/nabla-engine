@@ -178,7 +178,6 @@ export function swapFreshMagazine(
 export function releaseSlide(state: FirearmState, now: number): FirearmEvent {
   const event = empty()
   if (state.reload !== 'none' || !state.slideLocked) return event
-  if (state.magazineSeated && state.magazine === 0) return event
   state.slideLocked = false
   state.manualRackBack = false
   state.manualSlideTravel = undefined
