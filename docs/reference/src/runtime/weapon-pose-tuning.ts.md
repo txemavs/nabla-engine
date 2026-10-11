@@ -9,7 +9,7 @@
 
 ## normalizeWeaponPoses
 
-[Implementation, line 12](../../../../src/runtime/weapon-pose-tuning.ts#L12)
+[Implementation, line 20](../../../../src/runtime/weapon-pose-tuning.ts#L20)
 
 ```ts
 normalizeWeaponPoses(value: Partial<WeaponPoseTuning> = {}): WeaponPoseTuning

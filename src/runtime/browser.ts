@@ -529,6 +529,7 @@ export class GameRuntime {
   private fireModeBadge: FireModeBadge | null = null
   private magazineAction: 'drop' | 'insert' | 'release' | 'automatic' | null = null
   private weaponLightOn = false
+  private safetyClickHeld = false
   private weaponLight: THREE.SpotLight | null = null
   private casingMotion: CasingMotion | null = null
   private casingMeshes: Casings | null = null
@@ -3153,6 +3154,7 @@ export class GameRuntime {
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
+    this.safetyClickHeld = false
     if (!this.sidearmAimPreview) this.sidearm?.stopInspect(performance.now())
     this.fireRequested = false
     this.triggerReleased = true
@@ -3212,6 +3214,7 @@ export class GameRuntime {
         this.effects.audio.destruction(this.gallery.lastGlassImpact, true)
       if (shot) events.push(shot)
       if (shot?.fired) {
+        this.effects.audio.weaponSound('hammer', weaponPosition)
         this.effects.audio.gunshot(weaponPosition, !!shot.locked)
         if (this.gallery.lastMetalImpact)
           this.effects.audio.metalImpact(this.gallery.lastMetalImpact)
@@ -3375,11 +3378,28 @@ export class GameRuntime {
     if (down && !this.pointerLocked() && !this.pointerLockUnsupported()) return
     if (!this.weaponDrawn) return
     const action = sidearmButtonAction(button, down)
+    if (
+      action === 'fire' &&
+      (this.keys.values.has('KeyZ') || this.safetyClickHeld) &&
+      this.sidearm
+    ) {
+      if (!this.safetyClickHeld) {
+        this.sidearm.setSafety(!this.sidearm.safe)
+        this.effects.audio.weaponSound('safety', this.camera.position.toArray())
+        this.options.onMessage?.(this.sidearm.safe ? 'Seguro activado' : 'Seguro desactivado')
+      }
+      this.safetyClickHeld = true
+      this.fireRequested = false
+      this.triggerDown = false
+      this.sidearm.release()
+      return
+    }
     if (action === 'fire') {
       this.fireRequested = true
       this.triggerDown = true
     }
     if (action === 'release') {
+      this.safetyClickHeld = false
       this.triggerReleased = true
       this.triggerDown = false
     }

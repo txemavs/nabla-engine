@@ -113,6 +113,7 @@ export class Sidearm {
   private magazineLeverPoseAt = -Infinity
   private triggerPose = 0
   private hammerArmed = false
+  private hammerStrikeAt = -Infinity
   private lastAction: 'single' | 'double' = 'double'
   readonly temperature = new WeaponThermal()
   private variantId: HKVariantId = 'sa-da-combined-left'
@@ -415,6 +416,7 @@ export class Sidearm {
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
     const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
     if (event.fired || event.dry) {
+      this.hammerStrikeAt = now
       this.lastAction = this.hammerArmed ? 'single' : 'double'
       this.hammerArmed = !!event.fired && !this.variant.dao
     }
@@ -750,7 +752,12 @@ export class Sidearm {
         .addScaledVector(axis(p.magazine.axis), p.magazine.distance * shown.travel)
     }
     if (this.chamberRound) this.chamberRound.visible = this.state.chamber > 0
-    if (this.hammer) this.hammer.object.rotation.x = this.hammerArmed ? 0.7 : 0
+    if (this.hammer) {
+      const age = now - this.hammerStrikeAt
+      const strike = age >= 0 && age < 55 ? 0.7 * (1 - age / 55) : 0
+      const recock = this.hammerArmed ? 0.7 * Math.max(0, Math.min(1, (age - 55) / 65)) : 0
+      this.hammer.object.rotation.x = Math.max(strike, recock, this.state.slide * 0.7)
+    }
     const originalHammer = this.hammer?.object.getObjectByName('Hammer')
     const bobbedHammer = this.hammer?.object.getObjectByName('HammerDAO')
     if (originalHammer) originalHammer.visible = !this.variant.dao || !bobbedHammer
