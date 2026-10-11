@@ -5,6 +5,11 @@ It preserves the existing authored frame and slide, completes the rear exterior,
 and adds a rounded curved trigger and a simple barrel exterior. The user's rear-view
 reference supplies the notched rear sight with two green dots, red-dot front sight,
 and visible rounded compact hammer in the rear opening of the slide.
+The hammer, sight bodies, control lever and slide release are extracted from the
+user's `USP_Compact.obj`, aligned to the existing frame and slide. Their reusable
+source is `hk-compact.details.glb`; regenerate it with
+`node scripts/extract-hk-compact-details.mjs path/to/USP_Compact.obj`.
+The green and red dots follow the imported sight faces rather than floating off them.
 These additions are visual approximations for rendering, not manufacturing geometry.
 
 The user supplied `cargador.glb`, preserved as `hk-compact.magazine.source.glb`.

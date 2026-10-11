@@ -44,14 +44,14 @@
   },
   "bounds": {
     "min": [
-      -0.015611423179507256,
+      -0.018577449023723602,
       -0.010899093933403492,
       -0.11838977038860321
     ],
     "max": [
       0.016802214086055756,
-      0.13150000010803342,
-      0.05449999994412064
+      0.13140831887722015,
+      0.05374099686741829
     ]
   },
   "note": "Game presentation rig. Motion values are artistic animation parameters, not mechanical specifications."

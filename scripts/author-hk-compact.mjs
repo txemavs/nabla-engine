@@ -38,6 +38,17 @@ const group = (name, parent = model, at = [0, 0, 0]) => {
 }
 const frame = group('Frame')
 const slide = group('Slide')
+const detailBytes = await fs.readFile(path.join(directory, 'hk-compact.details.glb'))
+const details = await loader.parseAsync(
+  detailBytes.buffer.slice(detailBytes.byteOffset, detailBytes.byteOffset + detailBytes.byteLength),
+  '',
+)
+for (const name of ['Hammer', 'Sights', 'Control_lever', 'Slide_Release']) {
+  const part = details.scene.getObjectByName(name)
+  if (!part) throw new Error(`Missing imported detail: ${name}`)
+  part.material = darkSteel
+  ;(name === 'Sights' ? slide : frame).add(part)
+}
 const barrel = group('Barrel')
 const trigger = group('Trigger', model, [0, 0.083, -0.027])
 trigger.userData = { presentationAxis: [1, 0, 0] }
@@ -144,22 +155,10 @@ hammerOpening.lineTo(0.0048, 0.101)
 hammerOpening.closePath()
 rearOutline.holes.push(hammerOpening)
 mesh('SlideRearClosure', new T.ShapeGeometry(rearOutline), steel, slide, [0, 0, 0.05035])
-const hammer = group('Hammer', frame)
 box('HammerRecess', [0.0094, 0.016, 0.002], [0, 0.109, 0.048], darkSteel, frame)
-box('HammerFace', [0.007, 0.012, 0.004], [0, 0.11, 0.051], darkSteel, hammer, 0.0018)
-box('HammerRoundedTop', [0.007, 0.004, 0.005], [0, 0.117, 0.052], steel, hammer, 0.0015)
 
 // The supplied rear view has a notched two-green-dot rear sight and a red front dot.
 const rearSight = group('RearSight', slide)
-box('RearSightBase', [0.022, 0.002, 0.01], [0, 0.1241, 0.033], darkSteel, rearSight)
-for (const side of [-1, 1])
-  box(
-    `RearSightWing_${side < 0 ? 'Left' : 'Right'}`,
-    [0.007, 0.007, 0.008],
-    [side * 0.0068, 0.128, 0.034],
-    darkSteel,
-    rearSight,
-  )
 const greenDot = new T.MeshStandardMaterial({
   color: 0x83c6a3,
   emissive: 0x244936,
@@ -174,17 +173,30 @@ const redDot = new T.MeshStandardMaterial({
   roughness: 0.6,
 })
 redDot.name = 'Red front sight dot'
+function sightDot(name, x, startZ, material, parent, radius) {
+  slide.updateMatrixWorld(true)
+  const sight = slide.getObjectByName('Sights')
+  const hit = new T.Raycaster(
+    new T.Vector3(x, 0.129, startZ),
+    new T.Vector3(0, 0, -1),
+  ).intersectObject(sight)[0]
+  if (!hit) throw new Error(`Sight dot has no supporting face: ${name}`)
+  const normal = hit.face.normal.clone().transformDirection(sight.matrixWorld)
+  const dot = mesh(name, new T.CircleGeometry(radius, 16), material, parent)
+  dot.position.copy(hit.point).addScaledVector(normal, 0.00008)
+  dot.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), normal)
+}
 for (const side of [-1, 1])
-  mesh(
+  sightDot(
     `RearSightDot_${side < 0 ? 'Left' : 'Right'}`,
-    new T.CircleGeometry(0.00125, 16),
+    side * 0.0048,
+    0.1,
     greenDot,
     rearSight,
-    [side * 0.0068, 0.1285, 0.0381],
+    0.0011,
   )
 const frontSight = group('FrontSight', slide)
-box('FrontSightBlade', [0.004, 0.008, 0.006], [0, 0.1272, -0.11], darkSteel, frontSight)
-mesh('FrontSightDot', new T.CircleGeometry(0.00115, 16), redDot, frontSight, [0, 0.1285, -0.1069])
+sightDot('FrontSightDot', 0, -0.05, redDot, frontSight, 0.00105)
 
 // Visible barrel shroud and chamber: presentation geometry only, no internal mechanism.
 const barrelShell = mesh(
