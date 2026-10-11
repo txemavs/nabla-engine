@@ -191,6 +191,7 @@ import { gearLabel } from '../entity/vehicle/gear-label.js'
 
 import { groundAtSeam, waitForArea, waitForGround } from './ground.js'
 import { uploadSceneTextures, warmGamePresentation } from './presentation-warmup.js'
+import { AccidentReplacement, replacementRoadSpot } from './accident-replacement.js'
 import { GameHud } from './hud.js'
 import { FlipCinematic } from './flip-cinematic.js'
 import {
@@ -317,6 +318,8 @@ export interface GameRuntimeOptions {
   scene: SceneDocument
   /** Vehicle assemblies prepared during the intro, before gameplay is revealed. Empty by default. */
   preloadVehicles?: readonly (readonly Entity[])[]
+  /** Spawn one of these prepared assemblies on a road behind the player 2 s after an occupied-vehicle impact explosion. */
+  accidentReplacementVehicles?: readonly (readonly Entity[])[]
   world?: WorldContent
   tiles?: { baseUrl: string; apiUrl?: string; mode?: TileDiscoveryMode } & PlanetSourceOptions
   /** Disable only the visible water sheet for a synthetic sea-level test surface. */
@@ -466,6 +469,7 @@ export class GameRuntime {
   }
   private spawned: string[] = []
   private spawnSequence = 0
+  private accidentReplacement?: AccidentReplacement
   private vehicleWarmup: VehicleWarmup | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
@@ -941,6 +945,7 @@ export class GameRuntime {
     this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
     this.clearPickups()
+    this.accidentReplacement?.clear()
     this.sidearmAimPreview = false
     if (this.sidearm) {
       this.sidearm.visible = false
@@ -1140,10 +1145,37 @@ export class GameRuntime {
     this.view.tracers.update(time)
     this.view.scrapeSparks(sim, time)
     this.view.sparks.update(time)
+    const replacement = playing ? this.accidentReplacement?.step(dt) : null
+    if (replacement && this.world) {
+      const occupied = sim.vehicleList().map(({ id, entity }) => ({
+        position: sim.entityTransform(id).position,
+        size: entity.size,
+      }))
+      const spot = replacementRoadSpot(
+        sim.player.position,
+        sim.player.vehicleId ? sim.player.yaw : this.cameraState.yaw,
+        replacement[0],
+        navigationRoads().filter((road) => road.carriageway),
+        occupied,
+      )
+      if (spot)
+        void this.placeVehicle(replacement, spot.position, spot.yaw, 8000).catch((error) =>
+          console.warn('Accident replacement unavailable', error),
+        )
+    }
     for (const explosion of sim.consumeExplosions()) {
       const object = this.view.objects.get(explosion.entityId)
       if (object) this.view.destruction.explode(explosion.entityId, object)
       this.effects.audio.destruction(explosion.position)
+      if (
+        (explosion.occupied || sim.playerEjection?.vehicleId === explosion.entityId) &&
+        explosion.cause === 'impact'
+      ) {
+        this.accidentReplacement ??= new AccidentReplacement(
+          this.options.accidentReplacementVehicles ?? [],
+        )
+        this.accidentReplacement.schedule()
+      }
     }
     this.view.destruction.update(dt, this.smokeOn)
     if (this.sidearm) {
@@ -1828,6 +1860,7 @@ export class GameRuntime {
       hide()
     }
     this.assertAlive()
+    if (this.session.simulation !== sim) throw new Error('Vehicle placement session ended')
     const id = `spawned-${++this.spawnSequence}`
     const entity: Entity = {
       ...structuredClone(vehicle),
@@ -2793,7 +2826,10 @@ export class GameRuntime {
       // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
       await this.warmStartViews(signal)
       stage('preload', 4)
-      for (const templates of this.options.preloadVehicles ?? []) {
+      for (const templates of [
+        ...(this.options.preloadVehicles ?? []),
+        ...(this.options.accidentReplacementVehicles ?? []),
+      ]) {
         signal.throwIfAborted()
         await this.prewarmVehicle(templates)
       }

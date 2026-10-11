@@ -113,7 +113,12 @@ const hasGearSelector = (d: VehicleDefinition): boolean =>
  * The host supplies elapsed seconds and input, and reads snapshots after step(). */
 export class Simulation {
   private readonly damage = new VehicleDamage()
-  private readonly explosions: { entityId: string; position: Vec3Tuple }[] = []
+  private readonly explosions: {
+    entityId: string
+    position: Vec3Tuple
+    cause: 'weapon' | 'impact'
+    occupied: boolean
+  }[] = []
   vehicleDamage(id: string): { health: number; destroyed: boolean } {
     return { health: this.damage.remaining(id), destroyed: this.damage.destroyed(id) }
   }
@@ -123,15 +128,21 @@ export class Simulation {
     this.damage.apply(id, amount)
     this.resolveExplosions()
   }
-  consumeExplosions(): { entityId: string; position: Vec3Tuple }[] {
+  consumeExplosions(): {
+    entityId: string
+    position: Vec3Tuple
+    cause: 'weapon' | 'impact'
+    occupied: boolean
+  }[] {
     return this.explosions.splice(0)
   }
-  private resolveExplosions(): void {
+  private resolveExplosions(cause: 'weapon' | 'impact' = 'weapon'): void {
     let pending = this.damage.drain()
     while (pending.length) {
       for (const id of pending) {
         const v = this.vehicles.get(id)
         if (!v) continue
+        const occupied = this.vehicleId === id
         v.helm = 'off'
         v.prop = 0
         v.drivetrain.ignition = 'running'
@@ -141,7 +152,7 @@ export class Simulation {
         if (this.vehicleId === id && v.twoWheeled) this.ejectRider(v)
         const centre = v.body.position.clone()
         const up = this.radialUp(v.body)
-        this.explosions.push({ entityId: id, position: vec(centre) })
+        this.explosions.push({ entityId: id, position: vec(centre), cause, occupied })
         for (const body of this.world.bodies) {
           if (!body.mass) continue
           const direction = body.position.vsub(centre)
@@ -1078,7 +1089,7 @@ export class Simulation {
               )
           }
         }
-        this.resolveExplosions()
+        this.resolveExplosions('impact')
       }
       for (let i = this.trailerJoints.length - 1; i >= 0; i--) {
         const joint = this.trailerJoints[i]

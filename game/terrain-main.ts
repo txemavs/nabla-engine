@@ -134,6 +134,7 @@ try {
     weaponPickupLocation: { longitude: -1.76129, latitude: 43.34336, altitude: 41 },
     scene,
     preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
+    accidentReplacementVehicles: menuPreloadVehicles(['vfr800', 'car', 'white-truck']),
     sea: true,
     restParkedOnGround: true,
     // Same streaming as Studio's ground mode: the cells around the player first, the rest by distance.

@@ -44,7 +44,9 @@ it('blast moves nearby bodies, cannot damage distant vehicles, and wreck cannot 
     sim.damageVehicle('car', 50)
     expect(sim.consumeExplosions()).toEqual([])
     sim.damageVehicle('car', 50)
-    expect(sim.consumeExplosions().map((event) => event.entityId)).toEqual(['car'])
+    const shots = sim.consumeExplosions()
+    expect(shots.map((event) => event.entityId)).toEqual(['car'])
+    expect(shots[0]).toMatchObject({ cause: 'weapon', occupied: false })
     expect(sim.vehicleDamage('near').health).toBeLessThan(100)
     expect(sim.vehicleDamage('far').health).toBe(100)
     const before = sim.entityTransform('near').position
@@ -76,11 +78,14 @@ it('a strong physical collision destroys a vehicle, without requiring a gun hit'
     { vehicleDamage: true },
   )
   try {
+    sim.startInVehicle('car')
     const vehicle = (sim as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('car')!
     vehicle.body.velocity.set(0, 0, -32)
     for (let i = 0; i < 20; i++) sim.step(1 / 60)
     expect(sim.vehicleDamage('car').destroyed).toBe(true)
-    expect(sim.consumeExplosions()).toHaveLength(1)
+    const impacts = sim.consumeExplosions()
+    expect(impacts).toHaveLength(1)
+    expect(impacts[0]).toMatchObject({ cause: 'impact', occupied: true })
   } finally {
     sim.dispose()
   }
