@@ -150,7 +150,13 @@ import {
 } from '../render/planet/ground-material.js'
 import { ShadowManager } from '../render/shadows.js'
 import { shadowBiasRange, shadowTiers } from '../render/shadow-tiers.js'
-import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
+import {
+  localToGeo,
+  geoToLocal,
+  localFrame,
+  EARTH_RADIUS,
+  type GeoPoint,
+} from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
 import {
@@ -287,6 +293,8 @@ export interface VehiclePlacement {
 }
 
 export interface GameRuntimeOptions {
+  /** Fixed initial pickup location; projected onto the ground, takes precedence over a vehicle. */
+  weaponPickupLocation?: GeoPoint
   /** Place the initial HK on the ground beside the nearest road car (or a specific vehicle id). */
   weaponPickupNearVehicle?: boolean | string
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
@@ -2419,6 +2427,22 @@ export class GameRuntime {
     )
   }
   private async placeInitialWeaponPickup(sim: Simulation): Promise<void> {
+    const location = this.options.weaponPickupLocation
+    if (location && this.document.geography) {
+      const origin = this.document.geography
+      const point = new THREE.Vector3(...geoToLocal(origin, location))
+      const rotation = localFrame(origin).invert().multiply(localFrame(location))
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation)
+      const from = point.clone().addScaledVector(up, 10)
+      const hit = sim.shoot(from.toArray(), up.clone().negate().toArray(), 30, 0)
+      await this.addWeaponPickup(
+        'initial-hk',
+        'hk-compact',
+        hit?.point ?? point.toArray(),
+        hit?.normal ?? up.toArray(),
+      )
+      return
+    }
     const option = this.options.weaponPickupNearVehicle
     if (!option) return
     const cars = this.document.entities.filter(

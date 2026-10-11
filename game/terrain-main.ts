@@ -131,7 +131,7 @@ try {
         .getElementById('game-canvas')!
         .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
-    weaponPickupNearVehicle: true,
+    weaponPickupLocation: { longitude: -1.760585, latitude: 43.342472, altitude: 41 },
     scene,
     preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
     sea: true,
