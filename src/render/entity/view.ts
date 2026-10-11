@@ -19,7 +19,7 @@ import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import { withinMapDistance } from '../planet/visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
 import { ShipLights, type ShipSwitch } from './ship-lights.js'
-import { ExhaustSmoke } from './exhaust-smoke.js'
+import { ExhaustSmoke, s3SmokeAmount } from './exhaust-smoke.js'
 import { MotorcycleSideStand } from './motorcycle-side-stand.js'
 import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
@@ -161,27 +161,34 @@ export class SceneView {
   private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
   private readonly exhaustSmoke = new Map<string, ExhaustSmoke[]>()
   private readonly s3Outlets = new Map<string, { outlet: THREE.Object3D; base: THREE.Vector3 }[]>()
-  private s3Offset: readonly [number, number, number] = [0, 0, 0]
-  private s3Amount = 0.5
-  /** Live S3 smoke emission multiplier, applied to both outlets. */
-  setS3ExhaustAmount(amount: number): void {
-    this.s3Amount = amount
+  private readonly motorcycleOutlets = new Map<
+    string,
+    { outlet: THREE.Object3D; base: THREE.Vector3 }[]
+  >()
+  private motorcycleOffset: readonly [number, number, number] = [0, 0, 0]
+  private motorcycleAmount = 1
+  setMotorcycleExhaustAmount(amount: number): void {
+    this.motorcycleAmount = amount
   }
-  /** Provisional S3 exhaust positioning, metres in the chassis frame. */
-  setS3ExhaustOffset(offset: readonly [number, number, number]): void {
-    this.s3Offset = offset
-    for (const id of this.s3Outlets.keys()) this.applyS3ExhaustOffset(id)
+  /** Provisional motorcycle exhaust positioning, metres in the chassis frame. */
+  setMotorcycleExhaustOffset(offset: readonly [number, number, number]): void {
+    this.motorcycleOffset = offset
+    for (const id of this.motorcycleOutlets.keys()) this.applyExhaustOffset(id)
   }
-  private applyS3ExhaustOffset(id: string): void {
+  private applyExhaustOffset(id: string): void {
     const chassis = this.objects.get(id)
     if (!chassis) return
     chassis.updateWorldMatrix(true, true)
-    for (const { outlet, base } of this.s3Outlets.get(id) ?? []) {
-      const shift = new THREE.Vector3(...this.s3Offset).applyQuaternion(
-        chassis.getWorldQuaternion(new THREE.Quaternion()),
-      )
+    const motorcycle = this.motorcycleOutlets.has(id)
+    for (const { outlet, base } of (motorcycle ? this.motorcycleOutlets : this.s3Outlets).get(id) ??
+      []) {
+      const shift = new THREE.Vector3(
+        ...(motorcycle ? this.motorcycleOffset : [0.088, -0.015, -0.025]),
+      ).applyQuaternion(chassis.getWorldQuaternion(new THREE.Quaternion()))
       if (outlet.parent)
-        shift.applyQuaternion(outlet.parent.getWorldQuaternion(new THREE.Quaternion()).invert())
+        shift
+          .applyQuaternion(outlet.parent.getWorldQuaternion(new THREE.Quaternion()).invert())
+          .divide(outlet.parent.getWorldScale(new THREE.Vector3()))
       outlet.position.copy(base).add(shift)
     }
   }
@@ -690,6 +697,7 @@ export class SceneView {
     this.motorcycleClusters.get(id)?.dispose()
     this.exhaustSmoke.get(id)?.forEach((smoke) => smoke.dispose())
     this.s3Outlets.delete(id)
+    this.motorcycleOutlets.delete(id)
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
     if (group) {
@@ -1170,12 +1178,13 @@ export class SceneView {
               base: outlet.position.clone(),
             })),
           )
-          this.applyS3ExhaustOffset(e.id)
+          this.applyExhaustOffset(e.id)
         }
         const emitters = [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map(
           (outlet, index) =>
             new ExhaustSmoke(outlet, this.root, {
               ...exhaust.options,
+              ...(e.visual?.presentation === 'nabla.s3' ? { emissionRate: 32, capacity: 96 } : {}),
               emissionPhase: index / (1 + (exhaust.additionalOutlets?.length ?? 0)),
             }),
         )
@@ -1206,7 +1215,16 @@ export class SceneView {
         this.motorcycleStands.set(e.id, stand)
         const outlet = model.getObjectByName('Exhaust_Outlet_Closure')
         if (outlet) {
-          const smoke = new ExhaustSmoke(outlet, this.root)
+          const socket = new THREE.Object3D()
+          socket.name = 'Motorcycle smoke socket'
+          if (outlet instanceof THREE.Mesh) {
+            outlet.geometry.computeBoundingBox()
+            outlet.geometry.boundingBox?.getCenter(socket.position)
+          }
+          outlet.add(socket)
+          this.motorcycleOutlets.set(e.id, [{ outlet: socket, base: socket.position.clone() }])
+          this.applyExhaustOffset(e.id)
+          const smoke = new ExhaustSmoke(socket, this.root)
           this.exhaustSmoke.set(e.id, [smoke])
           this.root.add(smoke.root)
         }
@@ -1573,7 +1591,14 @@ export class SceneView {
     for (const [id, emitters] of this.exhaustSmoke) {
       const info = sim.vehicleInfo(id)
       for (const smoke of emitters) {
-        smoke.setAmount(this.s3Outlets.has(id) ? this.s3Amount : 1)
+        smoke.setAmount(
+          this.s3Outlets.has(id)
+            ? s3SmokeAmount(info.rpm, info.engineLoad)
+            : this.motorcycleOutlets.has(id)
+              ? this.motorcycleAmount *
+                THREE.MathUtils.lerp(0.1, 1, THREE.MathUtils.clamp(info.engineLoad, 0, 1))
+              : 1,
+        )
         smoke.setEnabled(this.smokeEnabled)
         smoke.update(
           elapsed,
@@ -1889,6 +1914,8 @@ export class SceneView {
     this.streetlights.dispose()
     for (const emitters of this.exhaustSmoke.values()) for (const smoke of emitters) smoke.dispose()
     this.exhaustSmoke.clear()
+    this.s3Outlets.clear()
+    this.motorcycleOutlets.clear()
     for (const hud of this.shipHuds.values()) hud.dispose()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()

@@ -1,8 +1,34 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { ExhaustSmoke } from '../../src/render/entity/exhaust-smoke.js'
+import { ExhaustSmoke, s3SmokeAmount } from '../../src/render/entity/exhaust-smoke.js'
 
 describe('exhaust smoke', () => {
+  it.each([
+    [0, 0.1],
+    [1000, 0.1],
+    [4000, 1.05],
+    [7000, 2],
+    [9000, 2],
+  ])('S3 smoke quantity follows rpm (%s -> %s)', (rpm, amount) => {
+    expect(s3SmokeAmount(rpm)).toBeCloseTo(amount)
+  })
+  it('S3 emits little at high rpm without throttle and reaches 200% under full load', () => {
+    const space = new THREE.Group(),
+      outlet = new THREE.Object3D()
+    space.add(outlet)
+    const counts: number[] = []
+    for (const load of [0, 1]) {
+      const smoke = new ExhaustSmoke(outlet, space, { emissionRate: 32, capacity: 96 })
+      smoke.setAmount(s3SmokeAmount(7000, load))
+      for (let i = 0; i < 20; i++) smoke.update(0.05, true, load)
+      const life = smoke.root.geometry.getAttribute('life')
+      counts.push(
+        Array.from({ length: life.count }, (_, i) => life.getX(i)).filter((v) => v > 0).length,
+      )
+      smoke.dispose()
+    }
+    expect(counts).toEqual([3, 64])
+  })
   it('twin outlets emit half an interval apart rather than simultaneously', () => {
     const space = new THREE.Group(),
       outlet = new THREE.Object3D()

@@ -1,6 +1,9 @@
 /** White exhaust vapour attached to the authored outlet, with a bounded world-space pool. */
 import * as THREE from 'three'
 export interface ExhaustSmokeOptions {
+  /** Fixed emission rate at 100% quantity; omitted uses engine load. */
+  emissionRate?: number
+  capacity?: number
   direction?: readonly [number, number, number]
   color?: THREE.ColorRepresentation
   clearColor?: THREE.ColorRepresentation
@@ -11,10 +14,10 @@ export interface ExhaustSmokeOptions {
 }
 
 export class ExhaustSmoke {
-  private readonly positions = new Float32Array(48 * 3)
-  private readonly velocities = new Float32Array(48 * 3)
-  private readonly life = new Float32Array(48)
-  private readonly tints = new Float32Array(48 * 3)
+  private readonly positions: Float32Array
+  private readonly velocities: Float32Array
+  private readonly life: Float32Array
+  private readonly tints: Float32Array
   private readonly geometry = new THREE.BufferGeometry()
   private readonly source = new THREE.Vector3()
   private readonly previous = new THREE.Vector3()
@@ -34,6 +37,11 @@ export class ExhaustSmoke {
     private readonly space: THREE.Object3D,
     private readonly options: ExhaustSmokeOptions = {},
   ) {
+    const capacity = options.capacity ?? 48
+    this.positions = new Float32Array(capacity * 3)
+    this.velocities = new Float32Array(capacity * 3)
+    this.life = new Float32Array(capacity)
+    this.tints = new Float32Array(capacity * 3)
     this.carry = -THREE.MathUtils.clamp(options.emissionPhase ?? 0, 0, 1)
     this.color = new THREE.Color(options.color ?? '#fafbfc')
     this.clearColor = new THREE.Color(options.clearColor ?? options.color ?? '#fafbfc')
@@ -110,7 +118,10 @@ export class ExhaustSmoke {
       this.velocities[i * 3 + 1] += dt * 0.2
     }
     this.carry = running
-      ? this.carry + dt * (10 + 22 * THREE.MathUtils.clamp(load, 0, 1)) * this.amount
+      ? this.carry +
+        dt *
+          (this.options.emissionRate ?? 10 + 22 * THREE.MathUtils.clamp(load, 0, 1)) *
+          this.amount
       : -THREE.MathUtils.clamp(this.options.emissionPhase ?? 0, 0, 1)
     while (this.carry >= 1) {
       this.carry--
@@ -143,4 +154,10 @@ export class ExhaustSmoke {
     this.geometry.dispose()
     ;(this.root.material as THREE.ShaderMaterial).dispose()
   }
+}
+
+/** Loaded S3 quantity rises from 10% at 1000 rpm to 200% at 7000; releasing gas leaves 10%. */
+export function s3SmokeAmount(rpm: number, load = 1): number {
+  const loaded = THREE.MathUtils.lerp(0.1, 2, THREE.MathUtils.clamp((rpm - 1000) / 6000, 0, 1))
+  return THREE.MathUtils.lerp(0.1, loaded, THREE.MathUtils.clamp(load, 0, 1))
 }

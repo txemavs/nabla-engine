@@ -14,10 +14,10 @@
 
 [Implementation, line 6](../../../game/exhaust-ui.ts#L6)
 
-Temporary live alignment controls; offsets move both alternating S3 jets together.
+Temporary live controls for motorcycle exhaust position and quantity.
 
 ```ts
-bindExhaustControls(runtime: Pick< GameRuntime, 's3ExhaustOffset' | 'setS3ExhaustOffset' | 's3ExhaustAmount' | 'setS3ExhaustAmount' >): void
+bindExhaustControls(runtime: Pick< GameRuntime, | 'motorcycleExhaustOffset' | 'setMotorcycleExhaustOffset' | 'motorcycleExhaustAmount' | 'setMotorcycleExhaustAmount' >): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -38,18 +38,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `reset.addEventListener`
 - `rows.push`
-- `runtime.setS3ExhaustAmount`
-- `runtime.setS3ExhaustOffset`
+- `runtime.setMotorcycleExhaustAmount`
+- `runtime.setMotorcycleExhaustOffset`
 - `saved.every`
 - `slider.addEventListener`
 - `storage?.getItem`
 
-## bindExhaustControls.callback@32
+## bindExhaustControls.callback@35
 
-[Implementation, line 32](../../../game/exhaust-ui.ts#L32)
+[Implementation, line 35](../../../game/exhaust-ui.ts#L35)
 
 ```ts
-callback@32(): inferred by TypeScript; see implementation
+callback@35(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -57,12 +57,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `String`
 - `refresh`
-- `runtime.setS3ExhaustAmount`
+- `runtime.setMotorcycleExhaustAmount`
 - `storage?.setItem`
 
 ## bindExhaustControls.refresh
 
-[Implementation, line 51](../../../game/exhaust-ui.ts#L51)
+[Implementation, line 54](../../../game/exhaust-ui.ts#L54)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -72,14 +72,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.round`
 - `String`
-- `runtime.s3ExhaustOffset.forEach`
+- `runtime.motorcycleExhaustOffset.forEach`
 
-## bindExhaustControls.refresh.callback@54
+## bindExhaustControls.refresh.callback@57
 
-[Implementation, line 54](../../../game/exhaust-ui.ts#L54)
+[Implementation, line 57](../../../game/exhaust-ui.ts#L57)
 
 ```ts
-callback@54(value, i): inferred by TypeScript; see implementation
+callback@57(value, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -87,12 +87,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.round`
 - `String`
 
-## bindExhaustControls.callback@73
+## bindExhaustControls.callback@76
 
-[Implementation, line 73](../../../game/exhaust-ui.ts#L73)
+[Implementation, line 76](../../../game/exhaust-ui.ts#L76)
 
 ```ts
-callback@73(): inferred by TypeScript; see implementation
+callback@76(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -100,20 +100,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `JSON.stringify`
 - `Number`
 - `refresh`
-- `runtime.setS3ExhaustOffset`
+- `runtime.setMotorcycleExhaustOffset`
 - `storage?.setItem`
 
-## bindExhaustControls.callback@91
+## bindExhaustControls.callback@94
 
-[Implementation, line 91](../../../game/exhaust-ui.ts#L91)
+[Implementation, line 94](../../../game/exhaust-ui.ts#L94)
 
 ```ts
-callback@91(): inferred by TypeScript; see implementation
+callback@94(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `refresh`
-- `runtime.setS3ExhaustAmount`
-- `runtime.setS3ExhaustOffset`
+- `runtime.setMotorcycleExhaustAmount`
+- `runtime.setMotorcycleExhaustOffset`
 - `storage?.setItem`

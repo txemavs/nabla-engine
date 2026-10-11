@@ -138,22 +138,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `this.idleCinematic.activity`
 
-## GameRuntime.s3ExhaustAmount
+## GameRuntime.motorcycleExhaustAmount
 
 [Implementation, line 488](../../../../src/runtime/browser.ts#L488)
 
 ```ts
-s3ExhaustAmount(): number
+motorcycleExhaustAmount(): number
 ```
 
-## GameRuntime.setS3ExhaustAmount
+## GameRuntime.setMotorcycleExhaustAmount
 
 [Implementation, line 492](../../../../src/runtime/browser.ts#L492)
 
-Provisional S3 emission multiplier; 0.5 means half the particle quantity.
+Provisional motorcycle emission multiplier; 0.5 means half the particle quantity.
 
 ```ts
-setS3ExhaustAmount(amount: number): number
+setMotorcycleExhaustAmount(amount: number): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -162,28 +162,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number.isFinite`
-- `this.view.setS3ExhaustAmount`
+- `this.view.setMotorcycleExhaustAmount`
 
 Explicit throws in this body:
 
 - `new Error('Invalid exhaust amount')`
 
-## GameRuntime.s3ExhaustOffset
+## GameRuntime.motorcycleExhaustOffset
 
 [Implementation, line 498](../../../../src/runtime/browser.ts#L498)
 
 ```ts
-s3ExhaustOffset(): Vec3Tuple
+motorcycleExhaustOffset(): Vec3Tuple
 ```
 
-## GameRuntime.setS3ExhaustOffset
+## GameRuntime.setMotorcycleExhaustOffset
 
 [Implementation, line 502](../../../../src/runtime/browser.ts#L502)
 
-Provisional live S3 exhaust offsets, metres: right, up, rearward.
+Provisional live motorcycle exhaust offsets, metres: right, up, rearward.
 
 ```ts
-setS3ExhaustOffset(offset: Vec3Tuple): Vec3Tuple
+setMotorcycleExhaustOffset(offset: Vec3Tuple): Vec3Tuple
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -191,13 +191,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Error`
 - `offset.every`
 - `offset.map`
-- `this.view.setS3ExhaustOffset`
+- `this.view.setMotorcycleExhaustOffset`
 
 Explicit throws in this body:
 
 - `new Error('Invalid exhaust offset')`
 
-## GameRuntime.setS3ExhaustOffset.callback@504
+## GameRuntime.setMotorcycleExhaustOffset.callback@504
 
 [Implementation, line 504](../../../../src/runtime/browser.ts#L504)
 
