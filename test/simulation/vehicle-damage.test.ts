@@ -90,3 +90,29 @@ it('a strong physical collision destroys a vehicle, without requiring a gun hit'
     sim.dispose()
   }
 })
+
+it.each(['car', 'white-truck', 'vfr800'])(
+  'an occupied %s ejects its avatar immediately on explosion',
+  (preset) => {
+    const sim = new Simulation({
+      version: 1,
+      name: 'Forced explosion exit',
+      entities: [
+        presetVehicle(preset, 'occupied', [0, 2, 0]),
+        createEntity('spawn', 'spawn', [10, 2, 0]),
+      ],
+    })
+    try {
+      sim.startInVehicle('occupied')
+      sim.damageVehicle('occupied', 100)
+      expect(sim.player.vehicleId).toBeNull()
+      expect(sim.playerEjection?.vehicleId).toBe('occupied')
+      expect(sim.consumeExplosions()[0]).toMatchObject({ occupied: true, cause: 'weapon' })
+      expect(sim.player.position[1]).toBeGreaterThan(sim.entityTransform('occupied').position[1])
+      sim.damageVehicle('occupied', 100)
+      expect(sim.consumeExplosions()).toHaveLength(0)
+    } finally {
+      sim.dispose()
+    }
+  },
+)

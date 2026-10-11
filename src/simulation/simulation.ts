@@ -149,7 +149,7 @@ export class Simulation {
         v.drivetrain.rpm = v.drivetrain.force = v.drivetrain.load = 0
         this.gentleRecovery = null
         this.bikeMountHold = null
-        if (this.vehicleId === id && v.twoWheeled) this.ejectRider(v)
+        if (this.vehicleId === id) this.ejectRider(v)
         const centre = v.body.position.clone()
         const up = this.radialUp(v.body)
         this.explosions.push({ entityId: id, position: vec(centre), cause, occupied })
@@ -1448,15 +1448,16 @@ export class Simulation {
    * `stepEjection` has them back up.
    */
   private ejectRider(v: Vehicle): void {
-    if (!v.twoWheeled) return
     const up = this.radialUp(v.body)
-    const start = v.body
-      .pointToWorldFrame(new Vec3(...v.definition.driver))
-      .vadd(up.scale(ejectionDefaults.clearance))
+    const start = v.twoWheeled
+      ? v.body
+          .pointToWorldFrame(new Vec3(...v.definition.driver))
+          .vadd(up.scale(ejectionDefaults.clearance))
+      : v.body.position.vadd(up.scale(v.entity.size[1] / 2 + this.playerHalfHeight + 0.5))
     this.playerBody.position.copy(start)
     this.playerBody.previousPosition.copy(start)
     this.playerBody.velocity.copy(
-      new Vec3(...v.twoWheeled.recentVelocity)
+      (v.twoWheeled ? new Vec3(...v.twoWheeled.recentVelocity) : v.body.velocity.clone())
         .scale(ejectionDefaults.carry)
         .vadd(up.scale(ejectionDefaults.hop)),
     )
@@ -1467,7 +1468,7 @@ export class Simulation {
     this.vehicleId = null
     this.grounded = false
     this.hoverJumpTime = 0
-    this.ejection = startEjection(v.entity.id, v.twoWheeled.crashSpeed)
+    this.ejection = startEjection(v.entity.id, v.twoWheeled?.crashSpeed ?? v.body.velocity.length())
   }
   /**
    * One tick of a thrown rider: no input and no hover cushion while flying and sliding (plain
