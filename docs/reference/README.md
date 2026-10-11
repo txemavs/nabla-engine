@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **382 modules; 4165 executable function definitions**.
+Coverage: **383 modules; 4168 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -316,7 +316,7 @@ Coverage: **382 modules; 4165 executable function definitions**.
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 4 |
 | [src/runtime/sidearm-tuning.ts](src/runtime/sidearm-tuning.ts.md) | 3 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 63 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 64 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -330,6 +330,7 @@ Coverage: **382 modules; 4165 executable function definitions**.
 | [src/runtime/vehicle-monitor-styles.ts](src/runtime/vehicle-monitor-styles.ts.md) | 2 |
 | [src/runtime/vehicle-monitors.ts](src/runtime/vehicle-monitors.ts.md) | 35 |
 | [src/runtime/vehicle-warmup.ts](src/runtime/vehicle-warmup.ts.md) | 11 |
+| [src/runtime/viewmodel-lighting.ts](src/runtime/viewmodel-lighting.ts.md) | 2 |
 | [src/runtime/water.ts](src/runtime/water.ts.md) | 1 |
 | [src/runtime/world-content.ts](src/runtime/world-content.ts.md) | 12 |
 | [src/scene/asset-urls.ts](src/scene/asset-urls.ts.md) | 1 |

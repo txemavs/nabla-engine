@@ -1496,11 +1496,18 @@ export class GameRuntime {
         depthOfField: this.options.depthOfField ?? !!this.quality.dof,
         cull: (position) => this.cull(position),
       })
+      this.sidearm?.render(
+        this.renderer,
+        time,
+        this.camera.aspect,
+        eyes || this.sidearmAimPreview,
+        this.scene,
+        this.camera,
+      )
     } finally {
       this.camera.position.copy(eye)
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
-    this.sidearm?.render(this.renderer, time, this.camera.aspect, eyes || this.sidearmAimPreview)
     if (this.options.onDiagnostics)
       this.options.onDiagnostics({
         frameMs,

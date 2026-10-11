@@ -33,6 +33,7 @@ import {
 } from './sidearm-tuning.js'
 import { MuzzleSmoke } from '../render/entity/muzzle-smoke.js'
 import { poseHKDetails } from './hk-presentation.js'
+import { ViewmodelLighting } from './viewmodel-lighting.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
@@ -77,6 +78,9 @@ interface Part {
  */
 export class Sidearm {
   private readonly scene = new THREE.Scene()
+  private readonly viewRig = new THREE.Group()
+  private readonly studioLights = new THREE.Group()
+  private readonly worldLighting = new ViewmodelLighting()
   private readonly camera = new THREE.PerspectiveCamera(HIP_POSE.fov, 1, 0.01, 5)
   readonly model = new THREE.Group()
   readonly preset: WeaponPreset | undefined
@@ -264,8 +268,9 @@ export class Sidearm {
     this.model.add(this.laserLine)
     const key = new THREE.DirectionalLight('#ffffff', 2)
     key.position.set(-1, 2, 1)
-    this.scene.add(key)
-    this.scene.add(this.model, new THREE.HemisphereLight('#d3edff', '#27374f', 3))
+    this.studioLights.add(key, new THREE.HemisphereLight('#d3edff', '#27374f', 3))
+    this.viewRig.add(this.model)
+    this.scene.add(this.viewRig, this.studioLights, this.worldLighting.root)
   }
 
   /**
@@ -509,7 +514,14 @@ export class Sidearm {
     return this.muzzleViewOffset().add(new THREE.Vector3(0.012, 0.01, 0.08))
   }
 
-  render(renderer: THREE.WebGLRenderer, now: number, aspect: number, firstPerson: boolean): void {
+  render(
+    renderer: THREE.WebGLRenderer,
+    now: number,
+    aspect: number,
+    firstPerson: boolean,
+    world?: THREE.Scene,
+    eye?: THREE.Camera,
+  ): void {
     if (!this.enabled) return
     const height = renderer.getDrawingBufferSize(new THREE.Vector2()).y
     this.smoke.update(now, height)
@@ -521,15 +533,41 @@ export class Sidearm {
     this.camera.fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)
     this.camera.updateProjectionMatrix()
     this.viewPose(now)
+    this.studioLights.visible = !world
+    this.worldLighting.root.visible = !!world
+    if (world && eye) {
+      this.worldLighting.sync(world)
+      this.scene.environment = world.environment
+      this.scene.environmentIntensity = world.environmentIntensity
+      this.scene.environmentRotation.copy(world.environmentRotation)
+      eye.updateWorldMatrix(true, false)
+      eye.matrixWorld.decompose(this.viewRig.position, this.viewRig.quaternion, this.viewRig.scale)
+      this.camera.position.copy(this.viewRig.position)
+      this.camera.quaternion.copy(this.viewRig.quaternion)
+      this.model.traverse((object) => {
+        if (object instanceof THREE.Mesh) object.receiveShadow = true
+      })
+    } else {
+      this.viewRig.position.set(0, 0, 0)
+      this.viewRig.quaternion.identity()
+      this.camera.position.set(0, 0, 0)
+      this.camera.quaternion.identity()
+    }
     const age = now - this.state.lastShotMs
     this.flash.visible = age >= 0 && age < 30
     const autoClear = renderer.autoClear
+    const shadowUpdate = renderer.shadowMap.autoUpdate
+    const shadowNeedsUpdate = renderer.shadowMap.needsUpdate
     renderer.autoClear = false
+    renderer.shadowMap.autoUpdate = false
+    renderer.shadowMap.needsUpdate = false
     try {
       renderer.clearDepth()
       renderer.render(this.scene, this.camera)
     } finally {
       renderer.autoClear = autoClear
+      renderer.shadowMap.autoUpdate = shadowUpdate
+      renderer.shadowMap.needsUpdate = shadowNeedsUpdate
     }
   }
 
