@@ -3242,7 +3242,7 @@ export class GameRuntime {
       if (event.magazineSeated) this.effects.audio.weaponSound('magazine-in', weaponPosition)
       if (event.slideReleased) this.effects.audio.weaponSound('slide-forward', weaponPosition)
       if (event.locked)
-        this.options.onMessage?.('R: soltar cargador · T: cargador nuevo · F: accionar corredera')
+        this.options.onMessage?.('R: sacar / meter cargador · M: cargador largo · F: corredera')
     }
     if (this.casingMotion && this.casingMeshes) {
       this.casingMotion.update(dt, (from, direction, length) =>
@@ -3549,7 +3549,7 @@ export class GameRuntime {
     if (pressed(1)) this.cycleCamera()
     if (pressed(2)) this.action('KeyF')
     if (pressed(3)) this.action('KeyV')
-    if (pressed(4)) this.action('KeyT')
+    if (pressed(4)) this.action('KeyR')
     this.previousButtons = pad.buttons.map((button) => button.pressed)
     return pad
   }
@@ -3604,8 +3604,10 @@ export class GameRuntime {
       )
       return
     }
-    if ((code === 'KeyR' || code === 'KeyT' || code === 'KeyF') && this.weaponDrawn) {
-      this.magazineAction = code === 'KeyR' ? 'drop' : code === 'KeyT' ? 'insert' : 'release'
+    if ((code === 'KeyR' || code === 'KeyF') && this.weaponDrawn) {
+      if (this.sidearm?.state.reload !== 'none') return
+      this.magazineAction =
+        code === 'KeyF' ? 'release' : this.sidearm?.state.magazineSeated ? 'drop' : 'insert'
       return
     }
     if ((code === 'KeyZ' || code === 'KeyX') && this.weaponDrawn && this.sidearm) {

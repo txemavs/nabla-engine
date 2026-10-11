@@ -82,6 +82,7 @@ export class Sidearm {
   poseTuning: WeaponPoseTuning = normalizeWeaponPoses()
   slidePosePreview = false
   private slidePoseBlend = 0
+  private magazinePoseBlend = 0
   private readonly viewRig = new THREE.Group()
   private readonly studioLights = new THREE.Group()
   private readonly worldLighting = new ViewmodelLighting()
@@ -797,28 +798,39 @@ export class Sidearm {
       const press = age >= 0 && age < 300 ? Math.sin((Math.PI * age) / 300) : 0
       this.magazineLever.object.rotation.x = press * -0.25
     }
+    const magazineViewing = !this.state.magazineSeated || this.state.reload === 'magazine-out'
+    this.magazinePoseBlend +=
+      ((magazineViewing ? 1 : 0) - this.magazinePoseBlend) * (1 - Math.exp(-elapsed / 90))
     if (this.inspection) {
       const held = this.inspection.release === undefined
       this.inspection.blend +=
         ((held ? 1 : 0) - this.inspection.blend) * (1 - Math.exp(-elapsed / 90))
-      const blend = this.inspection.blend
-      if (!held && blend < 0.001) this.inspection = null
-      else {
-        if (this.inspection.kind === 'chamber') {
-          this.model.rotation.x += (0.85 - this.model.rotation.x) * blend
-          this.model.rotation.y += (0 - this.model.rotation.y) * blend
-          this.model.rotation.z += (0.22 - this.model.rotation.z) * blend
-          if (this.slide) {
-            const travel = Math.max(this.state.slide, 0.8 * blend)
-            this.slide.object.position
-              .copy(this.slide.rest)
-              .addScaledVector(axis(p.slide.axis), p.slide.travel * travel)
+      if (!held && this.inspection.blend < 0.001) this.inspection = null
+    }
+    // An empty magazine well changes presentation only; Z remains the explicit safety gesture.
+    const poseInspection =
+      this.inspection?.kind === 'chamber'
+        ? this.inspection
+        : {
+            kind: 'inspect',
+            blend: Math.max(this.inspection?.blend ?? 0, this.magazinePoseBlend),
           }
-        } else {
-          this.model.rotation.y += blend * 0.9
-          this.model.rotation.z += blend * -0.35
-          this.model.position.y += blend * 0.055
+    {
+      const blend = poseInspection.blend
+      if (poseInspection.kind === 'chamber') {
+        this.model.rotation.x += (0.85 - this.model.rotation.x) * blend
+        this.model.rotation.y += (0 - this.model.rotation.y) * blend
+        this.model.rotation.z += (0.22 - this.model.rotation.z) * blend
+        if (this.slide) {
+          const travel = Math.max(this.state.slide, 0.8 * blend)
+          this.slide.object.position
+            .copy(this.slide.rest)
+            .addScaledVector(axis(p.slide.axis), p.slide.travel * travel)
         }
+      } else {
+        this.model.rotation.y += blend * 0.9
+        this.model.rotation.z += blend * -0.35
+        this.model.position.y += blend * 0.055
       }
     }
     const slideActive =
@@ -831,10 +843,10 @@ export class Sidearm {
     const base = this.poseTuning.normal,
       aimed = this.poseTuning.aimed
     const pair =
-      this.inspection?.kind === 'chamber'
+      poseInspection.kind === 'chamber'
         ? [this.poseTuning.chamber, this.poseTuning.chamberAimed]
         : [this.poseTuning.inspect, this.poseTuning.inspectAimed]
-    const inspectionBlend = this.inspection?.blend ?? 0
+    const inspectionBlend = poseInspection.blend
     for (const axis of ['x', 'y', 'z'] as const) {
       const normal = THREE.MathUtils.lerp(base[axis], aimed[axis], this.aimBlend)
       const inspected = THREE.MathUtils.lerp(pair[0][axis], pair[1][axis], this.aimBlend)

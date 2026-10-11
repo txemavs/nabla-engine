@@ -18,7 +18,7 @@ does not rotate the frame. No manufacturing or functional geometry is implied.
 The magazine marker follows its `MagazineEntity.rounds`, including insertion and
 dropped items. Entities have an ID, capacity and remaining rounds. A normal
 simulation reload consumes an existing spare. Gameplay uses unlimited supplies:
-R drops the current item, T supplies a full normal magazine and selects semi-auto,
+R drops the current item or, with an empty well, supplies a full normal magazine and selects semi-auto. The empty well holds the Z viewing pose without activating its safety gesture;
 M replaces it with a visibly extended 30-round magazine and selects automatic.
 F operates the slide or releases its catch separately. G toggles the laser and H the flashlight.
 Removed items never refill. Workshop reinsertion retains the same item.
