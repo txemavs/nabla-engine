@@ -12,6 +12,8 @@ it('automatic dipped beams ignore brief shadows and retain a delay when returnin
   lights.sampleEnvironment(false, 0.1)
   expect(beam()).toBe(0)
   lights.sampleEnvironment(true, 0.4)
+  expect(beam()).toBe(0)
+  lights.sampleEnvironment(true, 0.45)
   expect(beam()).toBe(1)
   lights.sampleEnvironment(false, 1)
   expect(beam()).toBe(1)

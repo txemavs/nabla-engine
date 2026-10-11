@@ -40,7 +40,7 @@ export class VehicleLightController {
     if (!Number.isFinite(dt) || dt < 0) return
     this.darknessSeconds = dark ? this.darknessSeconds + dt : 0
     this.daylightSeconds = dark ? 0 : this.daylightSeconds + dt
-    if (this.darknessSeconds >= 0.35) this.automaticLow = true
+    if (this.darknessSeconds >= 0.85) this.automaticLow = true
     if (this.daylightSeconds >= 1.5) this.automaticLow = false
   }
   private get drivingMode(): Exclude<VehicleLightMode, 'auto'> {
