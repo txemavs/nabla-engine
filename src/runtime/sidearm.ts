@@ -92,6 +92,7 @@ export class Sidearm {
   private magazine: Part | null = null
   private chamberRound: THREE.Object3D | null = null
   private inspection: { kind: 'inspect' | 'chamber'; start: number; release?: number } | null = null
+  private chamberLookBlend = 0
   private hammer: Part | null = null
   private lever: Part | null = null
   private slideLever: Part | null = null
@@ -509,7 +510,8 @@ export class Sidearm {
     const height = renderer.getDrawingBufferSize(new THREE.Vector2()).y
     this.smoke.update(now, height)
     this.worldSmoke?.update(now, height)
-    this.aimBlend += ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
+    if (this.inspection?.kind !== 'chamber')
+      this.aimBlend += ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
     this.laserLine.visible = this.laserOn
     if (!firstPerson) return
     this.camera.aspect = aspect
@@ -738,13 +740,24 @@ export class Sidearm {
       const blend = Math.max(0, Math.min(1, age / 300, released))
       if (released <= 0) this.inspection = null
       else {
-        this.model.rotation.y += blend * (this.inspection.kind === 'inspect' ? 0.9 : -0.45)
-        this.model.rotation.z += blend * -0.35
-        this.model.position.y += blend * 0.055
-        if (this.inspection.kind === 'chamber' && this.slide)
-          this.slide.object.position
-            .copy(this.slide.rest)
-            .addScaledVector(axis(p.slide.axis), p.slide.travel * 0.8 * blend)
+        if (this.inspection.kind === 'chamber') {
+          this.model.position.lerp(new THREE.Vector3(0.025, -0.13, -0.31), blend)
+          this.model.rotation.x += (0.45 - this.model.rotation.x) * blend
+          this.model.rotation.y += (-0.65 - this.model.rotation.y) * blend
+          this.model.rotation.z += (-0.4 - this.model.rotation.z) * blend
+          this.chamberLookBlend +=
+            ((this.aiming ? 1 : 0) - this.chamberLookBlend) * (1 - Math.exp(-elapsed / 90))
+          if (this.slide) {
+            const travel = Math.max(this.state.slide, (0.25 + 0.7 * this.chamberLookBlend) * blend)
+            this.slide.object.position
+              .copy(this.slide.rest)
+              .addScaledVector(axis(p.slide.axis), p.slide.travel * travel)
+          }
+        } else {
+          this.model.rotation.y += blend * 0.9
+          this.model.rotation.z += blend * -0.35
+          this.model.position.y += blend * 0.055
+        }
       }
     }
     if (this.assembledModel)
@@ -764,6 +777,7 @@ export class Sidearm {
   /** Cosmetic inspection only: it never consumes or ejects ammunition. */
   inspect(now: number, chamber = false): void {
     if (this.state.reload !== 'none') return
+    this.chamberLookBlend = 0
     this.inspection = { kind: chamber ? 'chamber' : 'inspect', start: now }
   }
   stopInspect(now: number): void {
