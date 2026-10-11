@@ -1422,7 +1422,13 @@ export class Simulation {
         else {
           // Terrain contacts can keep a tipped chassis gently rocking or sliding.
           // Treat that as settled enough to hold it while the rider lifts it.
-          const resting = v.body.velocity.length() < 1.5 && v.body.angularVelocity.length() < 2
+          const tryingToRide =
+            Math.abs(drivingInput.throttle) > 0.01 ||
+            Math.abs(drivingInput.steering) > 0.01 ||
+            drivingInput.handbrake ||
+            (drivingInput.lever ?? 0) > 0.01
+          const resting =
+            !tryingToRide && v.body.velocity.length() < 1.5 && v.body.angularVelocity.length() < 2
           const seconds = resting ? (this.fallRest.get(id) ?? 0) + FIXED_STEP : 0
           this.fallRest.set(id, seconds)
           if (seconds >= 0.45) this.beginGentleRecovery(v)

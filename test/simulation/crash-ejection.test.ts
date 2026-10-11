@@ -133,6 +133,25 @@ describe('gentle tip-over', () => {
 })
 
 describe('rear brake cornering', () => {
+  it('keeps throttle and airborne wheel torque available to the mounted rider after a tip', () => {
+    const { s, tick } = ride(null)
+    const bike = (s as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+    bike.body.position.set(0, 20, 0)
+    bike.body.quaternion.setFromAxisAngle(new Vec3(1, 0, 0), 1.2)
+    bike.body.velocity.setZero()
+    bike.body.angularVelocity.setZero()
+    bike.twoWheeled!.fallen = true
+    bike.twoWheeled!.crashed = true
+    bike.drivetrain.parked = false
+    bike.drivetrain.gear = 1
+    for (let i = 0; i < 12; i++) tick({ forward: 1 })
+    expect(s.player.vehicleId).toBe('bike')
+    expect(s.playerBikeRecovery).toBeNull()
+    expect(s.vehicleInfo('bike').engineLoad).toBeGreaterThan(0.9)
+    expect(bike.raycast.wheelInfos[1].engineForce).toBeGreaterThan(0)
+    const axle = bike.body.quaternion.vmult(new Vec3(1, 0, 0))
+    expect(bike.body.angularVelocity.dot(axle)).toBeGreaterThan(0.01)
+  })
   it.each([-1, 1])('steps the rear outward without reversing the turn (%s)', (direction) => {
     const { s, tick, kmh } = ride(null)
     const bike = (s as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!

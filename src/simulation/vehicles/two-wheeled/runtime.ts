@@ -546,8 +546,8 @@ export function stepTwoWheeledVehicle(
 
   // Start-up sequence after entering: P is kept and the controls do nothing until it ends.
   const starting = stepIgnition(v.drivetrain, dt, tune?.idleRpm ?? roadVehicleDefaults.idleRpm)
-  const throttle =
-    active && powered && !starting && !state.crashed ? Math.max(0, input.throttle) : 0
+  // A rider still in the seat can attempt to save a tip/loop with wheel torque.
+  const throttle = active && powered && !starting ? Math.max(0, input.throttle) : 0
   state.lever = active ? clamp(Math.max(-input.throttle, input.lever ?? 0), 0, 1) : 0
   // Foot paddling: stopped with S (the cars' reverse) held, the rider walks the bike back.
   // No engine needed: it works with the engine off too, just not during the start-up sequence.
@@ -831,7 +831,7 @@ export function stepTwoWheeledVehicle(
     v.raycast.setBrake(burnout ? 0 : Math.max(hold, state.rearBrake * tuning.rearBrakeForce), REAR)
   }
 
-  stepWheelMomentum(v, dt, active && !state.fallen && !state.crashed, powered, input.throttle)
+  stepWheelMomentum(v, dt, active, powered, input.throttle)
   if (stationary || state.donutLean !== 0)
     holdDonut(v, stationary, active ? input.steering : 0, throttle, forward, gravityUp, dt)
   stepLean(
