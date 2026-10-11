@@ -11,9 +11,26 @@ starter, turbo, turbine and propeller voice) and a music bus under it. Other eff
 ## Module dependencies
 
 
+## withAudioOutputs
+
+[Implementation, line 35](../../../../src/audio/mixer.ts#L35)
+
+Route newly constructed voices through a spatial emitter without changing their mixer bus.
+
+```ts
+withAudioOutputs(context: BaseAudioContext, outputs: Partial<Record<AudioBus, AudioNode>>, build: () => T): T
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `build`
+- `voiceOutputs.delete`
+- `voiceOutputs.get`
+- `voiceOutputs.set`
+
 ## masterOutput
 
-[Implementation, line 43](../../../../src/audio/mixer.ts#L43)
+[Implementation, line 60](../../../../src/audio/mixer.ts#L60)
 
 Safety limiter on master: the louder engine bus must not clip with music and effects.
 
@@ -28,7 +45,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## attachAudioBuses
 
-[Implementation, line 56](../../../../src/audio/mixer.ts#L56)
+[Implementation, line 73](../../../../src/audio/mixer.ts#L73)
 
 Create (once) and return the buses of `context`.
 
@@ -48,7 +65,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## audioBus
 
-[Implementation, line 72](../../../../src/audio/mixer.ts#L72)
+[Implementation, line 89](../../../../src/audio/mixer.ts#L89)
 
 Where a voice should connect: its bus when the context has a mixer, else the speakers.
 
@@ -59,10 +76,11 @@ audioBus(context: BaseAudioContext, bus: AudioBus = 'sfx'): AudioNode
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `registry.get`
+- `voiceOutputs.get`
 
 ## level
 
-[Implementation, line 78](../../../../src/audio/mixer.ts#L78)
+[Implementation, line 97](../../../../src/audio/mixer.ts#L97)
 
 ```ts
 level(value: unknown, fallback: number): number
@@ -76,7 +94,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## normalizeAudioMix
 
-[Implementation, line 85](../../../../src/audio/mixer.ts#L85)
+[Implementation, line 104](../../../../src/audio/mixer.ts#L104)
 
 Clamp a partial mix onto `base`; junk fields keep the base value.
 
@@ -90,7 +108,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## sliderGain
 
-[Implementation, line 98](../../../../src/audio/mixer.ts#L98)
+[Implementation, line 117](../../../../src/audio/mixer.ts#L117)
 
 Slider position to gain: a squared curve so the lower half of the slider is usable.
 
@@ -100,7 +118,7 @@ sliderGain(value: number): number
 
 ## AudioMixer.constructor
 
-[Implementation, line 107](../../../../src/audio/mixer.ts#L107)
+[Implementation, line 126](../../../../src/audio/mixer.ts#L126)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -114,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AudioMixer.levels
 
-[Implementation, line 110](../../../../src/audio/mixer.ts#L110)
+[Implementation, line 129](../../../../src/audio/mixer.ts#L129)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -124,7 +142,7 @@ levels(): AudioMixLevels
 
 ## AudioMixer.attach
 
-[Implementation, line 113](../../../../src/audio/mixer.ts#L113)
+[Implementation, line 132](../../../../src/audio/mixer.ts#L132)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -139,7 +157,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AudioMixer.set
 
-[Implementation, line 118](../../../../src/audio/mixer.ts#L118)
+[Implementation, line 137](../../../../src/audio/mixer.ts#L137)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -154,7 +172,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AudioMixer.apply
 
-[Implementation, line 123](../../../../src/audio/mixer.ts#L123)
+[Implementation, line 142](../../../../src/audio/mixer.ts#L142)
 
 Holds the player mix and drives the bus gains once a context exists.
 
@@ -169,7 +187,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AudioMixer.apply.set
 
-[Implementation, line 126](../../../../src/audio/mixer.ts#L126)
+[Implementation, line 145](../../../../src/audio/mixer.ts#L145)
 
 ```ts
 set(node: GainNode, value: number): inferred by TypeScript; see implementation
@@ -181,7 +199,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readAudioMix
 
-[Implementation, line 141](../../../../src/audio/mixer.ts#L141)
+[Implementation, line 160](../../../../src/audio/mixer.ts#L160)
 
 The player's saved mix, or undefined.
 
@@ -197,7 +215,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## writeAudioMix
 
-[Implementation, line 154](../../../../src/audio/mixer.ts#L154)
+[Implementation, line 173](../../../../src/audio/mixer.ts#L173)
 
 Remember the mix; storage errors are ignored.
 

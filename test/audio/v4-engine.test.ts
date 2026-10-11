@@ -101,7 +101,7 @@ describe('engine voice selection', () => {
     expect(resolveVehicleSound(bike.audio).engine).toEqual({
       voice: 'v4',
       firing: [0, 90, 270, 540],
-      volume: 0.8,
+      volume: 0.48,
     })
     // The S3 (`car`) has its own refined inline voices (test/audio/car-engine-voice.test.ts).
     const others = vehiclePresets().filter(

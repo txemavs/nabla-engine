@@ -19,7 +19,7 @@ Shared gameplay camera with configurable manual-look recovery. Times are millise
 
 ## createGameCameraState
 
-[Implementation, line 93](../../../../src/runtime/game-camera.ts#L93)
+[Implementation, line 114](../../../../src/runtime/game-camera.ts#L114)
 
 Create independent camera state and validate per-consumer recovery overrides.
 
@@ -36,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mouseLooksWithoutButton
 
-[Implementation, line 128](../../../../src/runtime/game-camera.ts#L128)
+[Implementation, line 152](../../../../src/runtime/game-camera.ts#L152)
 
 Views where plain mouse movement looks around with no button held: the exterior
 chase/third-person camera, on-foot first person and the seated driver view. The vehicle
@@ -50,7 +50,7 @@ mouseLooksWithoutButton(state: Pick<GameCameraState, 'mode'>, seated: boolean): 
 
 ## detachedView
 
-[Implementation, line 136](../../../../src/runtime/game-camera.ts#L136)
+[Implementation, line 160](../../../../src/runtime/game-camera.ts#L160)
 
 Overhead and cinematic views are detached from the player's eyes in every context.
 
@@ -60,7 +60,7 @@ detachedView(mode: GameCameraMode): boolean
 
 ## isFirstPersonView
 
-[Implementation, line 141](../../../../src/runtime/game-camera.ts#L141)
+[Implementation, line 165](../../../../src/runtime/game-camera.ts#L165)
 
 True when the view is rendered from the player's or driver's eyes.
 
@@ -74,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gameCameraView
 
-[Implementation, line 150](../../../../src/runtime/game-camera.ts#L150)
+[Implementation, line 174](../../../../src/runtime/game-camera.ts#L174)
 
 Stable view name for hosts: `first-person`, `chase`, `cockpit`, `map` or `cinematic`.
 
@@ -88,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cycleGameCamera
 
-[Implementation, line 164](../../../../src/runtime/game-camera.ts#L164)
+[Implementation, line 188](../../../../src/runtime/game-camera.ts#L188)
 
 The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
 cinematic → exterior. On foot: first person → third person → overhead → cinematic → first
@@ -105,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setGameCameraView
 
-[Implementation, line 192](../../../../src/runtime/game-camera.ts#L192)
+[Implementation, line 216](../../../../src/runtime/game-camera.ts#L216)
 
 Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
 `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
@@ -118,7 +118,7 @@ setGameCameraView(state: GameCameraState, wanted: GameCameraView, seated: boolea
 
 ## downwardViewFar
 
-[Implementation, line 223](../../../../src/runtime/game-camera.ts#L223)
+[Implementation, line 248](../../../../src/runtime/game-camera.ts#L248)
 
 Far plane while the camera looks steeply down. The ordinary far plane is 12 km, so a
 zenithal view is a shaft and the cascaded shadow maps size themselves to it. The ground
@@ -137,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## updateGameCamera
 
-[Implementation, line 232](../../../../src/runtime/game-camera.ts#L232)
+[Implementation, line 257](../../../../src/runtime/game-camera.ts#L257)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -148,6 +148,8 @@ updateGameCamera(sim: Simulation, view: Pick<SceneView, 'document' | 'vehicleHea
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(state.lastPose?.position ?? camera.position).clone`
+- `(state.lastPose?.quaternion ?? camera.quaternion).clone`
 - `Math.abs`
 - `Math.atan2`
 - `Math.cos`
@@ -166,6 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Vector3`
 - `advanceCinematicAngle`
 - `anchor.toArray`
+- `camera.clone`
 - `camera.lookAt`
 - `camera.position.clone`
 - `camera.position.copy`
@@ -173,6 +176,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.position.copy(anchor).add(transition.offset).lerp`
 - `camera.position.fromArray`
 - `camera.position.lerp`
+- `camera.position.lerpVectors`
 - `camera.quaternion.clone`
 - `camera.quaternion.copy`
 - `camera.quaternion.slerp`
@@ -183,8 +187,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.up.set(0, 1, 0).applyQuaternion`
 - `camera.updateProjectionMatrix`
 - `cameraRecovery`
+- `cinematicFallPose`
 - `cinematicOrbitPose`
 - `desired.splice`
+- `destination.distanceToSquared`
+- `door.lookAt`
+- `door.position.copy`
 - `driverHeadPose`
 - `drivingTelemetry.update`
 - `followDrivingHeading`
@@ -196,8 +204,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `localToGeo`
 - `new THREE.Quaternion().setFromAxisAngle`
 - `new THREE.Quaternion().setFromEuler`
+- `new THREE.Vector3(...bike.position).add`
 - `new THREE.Vector3(...p.position).addScaledVector`
 - `new THREE.Vector3(0, 0, -1).applyQuaternion`
+- `new THREE.Vector3(0, 0.3, 0).applyQuaternion`
 - `new THREE.Vector3(0, 1, 0).applyQuaternion`
 - `offset.toArray`
 - `overheadDrivingHeight`
@@ -221,10 +231,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@428
+## updateGameCamera.callback@429
 
-[Implementation, line 428](../../../../src/runtime/game-camera.ts#L428)
+[Implementation, line 429](../../../../src/runtime/game-camera.ts#L429)
 
 ```ts
-callback@428(entity): inferred by TypeScript; see implementation
+callback@429(entity): inferred by TypeScript; see implementation
+```
+
+## updateGameCamera.callback@515
+
+[Implementation, line 515](../../../../src/runtime/game-camera.ts#L515)
+
+```ts
+callback@515(entity): inferred by TypeScript; see implementation
 ```

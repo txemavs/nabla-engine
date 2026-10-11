@@ -96,7 +96,7 @@ describe('two-wheeled vehicle schema and validation', () => {
     expect(bike().vehicle!.audio).toEqual({
       turbo: false,
       gearShift: { sound: 'click', volume: 1 },
-      engine: { voice: 'v4', vAngle: 90, crankpin: 180, volume: 0.8 },
+      engine: { voice: 'v4', vAngle: 90, crankpin: 180, volume: 0.48 },
     })
     expect(
       vehicleField.safeParse({ ...bike().vehicle, audio: { engine: { voice: 'v12' } } }).success,

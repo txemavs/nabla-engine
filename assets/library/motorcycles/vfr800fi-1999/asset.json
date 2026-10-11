@@ -14,20 +14,28 @@
   "units": "metres",
   "up": "+Y",
   "forward": "-Z",
-  "triangles": 271678,
-  "bytes": 6604228,
-  "sha256": "296bb43213f3b88f8dd033f0e779ec8f6cb155203944eeadffca6df5fda354e7",
+  "triangles": 142689,
+  "bytes": 3473268,
+  "sha256": "b133fb5b6db6b57661e274b172a2d379a058ec826160c48d882eec9cb7e4faec",
   "provenance": {
     "reworkedBy": "Txema Vicente (manual cleanup), then Codex (AI coding agent) under his direction using data from the Honda manual",
     "source": "Cleaned up by hand by Txema Vicente over several hours, then substantially reworked by Codex under his direction using data from the Honda manual, starting from a low-quality base mesh; almost none of the original geometry remains. Base mesh: the user-supplied interceptor.glb. Prepared and visually approved on 2026-10-08.",
     "sourceSha256": "aba157065d7bc73009ac11dc90a89131d91e7c0e5d2ad8705283df83f05a7efd",
-    "preparedOn": "2026-10-08",
+    "preparedOn": "2026-10-10",
     "edits": [
       "2026-10-08 scripts/prepare-vfr800-cockpit.mjs: the existing fairing mirrors split into mirror_L / mirror_R nodes under Body; static needles, hubs and speedometer tick marks removed for the live instruments; gauge and lamp anchors added; windscreen switched from transmission to alpha blending with a neutral smoke-grey tint and a slight reflection (extras.nabla.envIntensity 0.35); a new neutral mirror chrome (base 0.95 grey, metallic 1, roughness 0.03) only on the fork stanchions, the silencer can and its end cap; the exhaust headers and the engine cases behind the radiator moved to the satin aluminium of the top triple clamp; discs, brake tracks, chain, sprockets, radiator, swingarm and mirror glass keep their authored materials.",
       "2026-10-09 scripts/tag-vfr800-paint.mjs: tag the fairing material with extras.nabla.paint for authored body colour selection; geometry, textures and all other material properties are unchanged.",
       "2026-10-09 scripts/prepare-vfr800-fixed-finishes.mjs: separate fixed black mirror supports, mudguards, plate carrier and rims; dark grey cockpit plastics; fixed grey radiator. Reassign existing triangles without changing their positions.",
-      "2026-10-09 scripts/set-vfr800-exhaust-reflection.mjs: split the silencer material from the fork stanchions; authored envFloor 0.025 keeps only the final exhaust subtly reflective when global reflections are off. Geometry unchanged."
+      "2026-10-09 scripts/set-vfr800-exhaust-reflection.mjs: split the silencer material from the fork stanchions; authored envFloor 0.025 keeps only the final exhaust subtly reflective when global reflections are off. Geometry unchanged.",
+      "2026-10-10: user-approved VFR800FI99.glb, reduced geometry, corrected wheels, brakes, folded footrests, closed supports, original mirrors and lights, no decals; radiator is the only image texture. Restore engine rig, cockpit, light channels and independent body/rim paint zones after Blender export.",
+      "2026-10-10 owner correction: inset rear chain and sprocket by 26 mm; replace open separated spans with a closed continuous black band meeting the lower semicircle. Keep the existing grey hub over the sprocket.",
+      "2026-10-10 cockpit correction: raise instrument anchors 5.56 mm to match the exported plastic surfaces; grey brake/clutch levers and clip-on handlebars, preserving black fluid reservoirs and their mounts. No triangles added or removed.",
+      "2026-10-10 upper cockpit contour: four triangles per selected original face with curved interpolation and stitched neighbours, leaving the lower cluster and all other geometry unchanged. Headlamp reflector bowls render on both sides to prevent seeing through to the fairing/fork.",
+      "2026-10-10 rear closure: dark two-sided rear lamp housing, misplaced small red lens fragments reassigned to the housing, and a recessed 24-triangle black exhaust outlet cap to prevent seeing the world through the silencer.",
+      "2026-10-10 tail lamp: 32-triangle curved black backing closes the gap below the overhanging tail lip.",
+      "2026-10-11 steering correction: separate the 222-triangle fixed steering-head frame from Steering_Pivot, preserving geometry and the authored rest pose."
     ],
-    "note": "Provenance as stated by Txema Vicente. No license name is recorded for the artwork; the repository's MIT code license covers code only."
+    "note": "Provenance as stated by Txema Vicente. No license name is recorded for the artwork; the repository's MIT code license covers code only.",
+    "finalSourceSha256": "99a758aee3d40dcee33a6c29e8eae3e889b14ebb46ee8390ec3fef71f2ee0467"
   }
 }

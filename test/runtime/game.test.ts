@@ -6,6 +6,7 @@ import { idleInput } from '../../src/simulation/simulation.js'
 import type { SceneDocument } from '../../src/scene/document.js'
 import { playGroundClearance } from '../../src/runtime/placement.js'
 import { START_UP_SECONDS } from '../start-up.js'
+import { PerspectiveCamera } from 'three'
 
 const scene = (): SceneDocument => ({
   version: 1,
@@ -46,7 +47,7 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     expect(game.action('KeyE')).toMatch(/Conduciendo/)
     game.step(1 / 60, idleInput(), 0, 2100)
     expect(game.cameraState.mode).toBe('cockpit')
-    expect(game.cameraState.entrance?.id).toBe('car')
+    expect(game.cameraState.entrance).toBeNull()
     game.action('KeyE')
     game.step(1 / 60, idleInput(), 0, 2200)
     expect(game.simulation!.player.vehicleId).toBeNull()
@@ -77,7 +78,7 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     game.dispose()
   }
 })
-it('plays the boarding camera once per vehicle and reuses it on later enters', async () => {
+it('never starts an overhead descent when boarding, including a new vehicle', async () => {
   const game = new GameRuntime(),
     doc = scene()
   doc.entities.push(presetVehicle('car', 'car-2', [0, 0.7, -6]))
@@ -86,12 +87,12 @@ it('plays the boarding camera once per vehicle and reuses it on later enters', a
     for (let i = 0; i < 120; i++) game.step(1 / 60, idleInput(), 0, (i * 1000) / 60)
     game.simulation!.startInVehicle('car')
     game.step(1 / 60, idleInput(), 0, 2100)
-    expect(game.cameraState.entrance?.id).toBe('car')
+    expect(game.cameraState.entrance).toBeNull()
     expect(game.action('KeyE')).toMatch(/pie|Monitor/)
     game.step(1 / 60, idleInput(), 0, 2200)
     game.simulation!.startInVehicle('car-2')
     game.step(1 / 60, idleInput(), 0, 2300)
-    expect(game.cameraState.entrance?.id).toBe('car-2')
+    expect(game.cameraState.entrance).toBeNull()
     expect(game.action('KeyE')).toMatch(/pie|Monitor/)
     game.step(1 / 60, idleInput(), 0, 2400)
     game.simulation!.startInVehicle('car-2')
@@ -102,6 +103,43 @@ it('plays the boarding camera once per vehicle and reuses it on later enters', a
     game.dispose()
   }
 })
+it('boards at eye level and turns toward the exit without cutting in first person', async () => {
+  const game = new GameRuntime(),
+    doc = scene()
+  const camera = new PerspectiveCamera()
+  const view = { document: doc, objects: new Map(), vehicleHeadOffset: () => undefined }
+  try {
+    await game.play(doc)
+    for (let i = 0; i < 120; i++) game.step(1 / 60, idleInput(), 0, (i * 1000) / 60)
+    game.updateCamera(view, camera, 2000, 1 / 60)
+    const outside = camera.position.clone()
+    game.action('KeyE')
+    game.step(1 / 60, idleInput(), 0, 2100)
+    game.updateCamera(view, camera, 2100, 1 / 60)
+    expect(camera.position.distanceTo(outside)).toBeLessThan(0.001)
+    expect(game.cameraState.entrance).toBeNull()
+    game.updateCamera(view, camera, 2500, 1 / 60)
+    expect(camera.position.distanceTo(outside)).toBeGreaterThan(0.1)
+    expect(camera.position.y).toBeLessThan(3)
+    game.updateCamera(view, camera, 2950, 1 / 60)
+    const seated = camera.position.clone(),
+      heading = camera.quaternion.clone()
+    game.action('KeyE')
+    game.step(1 / 60, idleInput(), 0, 3100)
+    game.updateCamera(view, camera, 3100, 1 / 60)
+    expect(game.cameraState.firstPerson).toBe(true)
+    expect(camera.position.distanceTo(seated)).toBeLessThan(0.001)
+    game.updateCamera(view, camera, 3350, 1 / 60)
+    expect(camera.quaternion.angleTo(heading)).toBeGreaterThan(0.3)
+    expect(camera.position.distanceTo(seated)).toBeGreaterThan(0)
+    game.updateCamera(view, camera, 3950, 1 / 60)
+    expect(game.cameraState.seatMove).toBeNull()
+    expect(game.simulation!.player.vehicleId).toBeNull()
+  } finally {
+    game.dispose()
+  }
+})
+
 it('consumes jump on a physics tick and clears pending input when focus is released', async () => {
   const game = new GameRuntime()
   try {

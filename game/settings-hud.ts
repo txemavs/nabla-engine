@@ -7,6 +7,11 @@
  */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
+  sidearmTuningDefaults,
+  sidearmTuningRanges,
+  type SidearmTuning,
+} from '../src/runtime/sidearm-tuning.js'
+import {
   createPlanetSettingsPanel,
   installVehicleMonitorStyles,
   type PlanetSettingsPanel,
@@ -53,6 +58,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['camera-extras', 'options'],
   ['driving-extras', 'options'],
   ['settings-options-driver', 'options'],
+  ['settings-options-sidearm', 'options'],
   ['settings-options-labels', 'options'],
   ['display-quality-section', 'performance'],
   ['display-performance', 'performance'],
@@ -327,12 +333,79 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     performanceGroup.hidden = true
   }
 
+  // Quality preference applies immediately to both exhaust and gun smoke.
+  if (quality && typeof runtime.smokeEnabled === 'boolean') {
+    const label = doc.createElement('label'),
+      input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'quality-smoke'
+    input.checked = runtime.smokeEnabled
+    label.append(input, ' Humo (escapes y disparos)')
+    input.addEventListener('change', () => runtime.setSmokeEnabled(input.checked))
+    quality.insertBefore(label, quality.querySelector('button'))
+  }
+
   // Opciones → Volante y espejos: the driver's steering wheel and mirror glass adjustments.
   const driverGroups = rows(byId('scene-steering-wheel'), byId('scene-mirrors'))
   if (driverGroups.length) {
     const driver = fieldset('settings-options-driver', 'Volante y espejos')
     driver.append(...driverGroups)
     place(driver)
+  }
+
+  // Live aimed-pistol adjustments remain visible with the mouse free over the sliders.
+  let refreshSidearm = () => {}
+  if (runtime.sidearmTuning && runtime.setSidearmTuning) {
+    const group = fieldset('settings-options-sidearm', 'Pistola · apuntado')
+    const controls = new Map<
+      keyof SidearmTuning,
+      { input: HTMLInputElement; output: HTMLOutputElement }
+    >()
+    for (const [key, title] of [
+      ['height', 'Altura al apuntar'],
+      ['angle', 'Ángulo al apuntar'],
+    ] as const) {
+      const row = doc.createElement('label'),
+        input = doc.createElement('input'),
+        output = doc.createElement('output')
+      input.type = 'range'
+      input.id = `sidearm-aim-${key}`
+      input.setAttribute('aria-label', title)
+      const multiplier = key === 'height' ? 1000 : 1
+      const [min, max, step] = sidearmTuningRanges[key]
+      input.min = String(min * multiplier)
+      input.max = String(max * multiplier)
+      input.step = String(step * multiplier)
+      output.htmlFor = input.id
+      row.append(title + ' ', input, ' ', output)
+      group.append(row)
+      controls.set(key, { input, output })
+      input.addEventListener('input', () => {
+        runtime.setSidearmTuning({ [key]: Number(input.value) / multiplier })
+        runtime.setSidearmAimPreview(true)
+        refreshSidearm()
+      })
+    }
+    refreshSidearm = () => {
+      const tuning = runtime.sidearmTuning
+      for (const [key, { input, output }] of controls) {
+        const value = tuning[key] * (key === 'height' ? 1000 : 1)
+        input.value = String(value)
+        output.value = key === 'height' ? `${Math.round(value)} mm` : `${value.toFixed(1)}°`
+        input.setAttribute('aria-valuetext', output.value)
+      }
+    }
+    const reset = doc.createElement('button')
+    reset.type = 'button'
+    reset.textContent = 'Restablecer pistola'
+    reset.addEventListener('click', () => {
+      runtime.setSidearmTuning(sidearmTuningDefaults)
+      runtime.setSidearmAimPreview(true)
+      refreshSidearm()
+    })
+    group.append(reset)
+    refreshSidearm()
+    place(group)
   }
 
   // The legacy Planeta section (scene-controls) duplicates the sky / sun / clouds toggles the
@@ -523,6 +596,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   planetPanel.bind(runtime)
 
   const selectTab = (id: TabId) => {
+    if (id !== 'options') runtime.setSidearmAimPreview?.(false)
     for (const tab of TABS) {
       const btn = doc.getElementById(`settings-tab-${tab.id}`)
       const pane = paneEls.get(tab.id)!
@@ -534,6 +608,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   const open = () => {
+    refreshSidearm()
     win.hidden = false
     toggle.setAttribute('aria-expanded', 'true')
     // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
@@ -541,6 +616,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     planetPanel?.refresh()
   }
   const close = () => {
+    runtime.setSidearmAimPreview?.(false)
     win.hidden = true
     toggle.setAttribute('aria-expanded', 'false')
     doc.getElementById('game-canvas')?.focus()
@@ -571,6 +647,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     close,
     toggle: toggleWin,
     destroy: () => {
+      runtime.setSidearmAimPreview?.(false)
       observer?.disconnect()
       planetPanel?.destroy()
       planetPanel = null

@@ -37,6 +37,9 @@ import {
   ignitionRpm,
 } from '../drivetrain.js'
 import { holdInPark, isValidPowertrain, type WheeledVehicle } from '../wheeled/runtime.js'
+import { stepWheelMomentum } from '../wheel-momentum.js'
+
+const parkedHeadings = new WeakMap<WheeledVehicle, Vec3>()
 import type { WheeledDefinition, WheeledInput } from '../wheeled/contracts.js'
 import {
   balanceActive,
@@ -290,6 +293,7 @@ export function createTwoWheeledVehicle(
       comHeight: 0,
       clutchKick: 0,
       launchHeld: false,
+      wheelieHold: 0,
       disturbance: 0,
       previousLean: null,
       previousLeanRate: null,
@@ -337,6 +341,7 @@ export function resetTwoWheeled(state: TwoWheeledState): void {
   state.brakeLink.linkedFront = 0
   state.brakeLink.linkedRear = 0
   state.clutchKick = 0
+  state.wheelieHold = 0
 }
 
 /**
@@ -514,7 +519,9 @@ export function stepTwoWheeledVehicle(
           wheelbase: state.wheelbase,
           gravity,
         })
-      : 0
+      : !active && v.drivetrain.parked && !state.fallen
+        ? state.geometry.steerLimit
+        : 0
   state.handlebar += clamp(
     barTarget - state.handlebar,
     -tuning.steerRate * dt,
@@ -523,6 +530,19 @@ export function stepTwoWheeledVehicle(
   state.handlebar = clamp(state.handlebar, -state.geometry.steerLimit, state.geometry.steerLimit)
   state.groundSteer = groundSteerAngle(state.handlebar, state.rakeCosine)
   v.steer = state.handlebar
+  // A parked bike rests on its side stand: locking the bars must not steer the chassis.
+  if (!active && v.drivetrain.parked && !state.fallen && frontContact && rearContact) {
+    const heading = forward.vsub(gravityUp.scale(forward.dot(gravityUp)))
+    heading.normalize()
+    const held = parkedHeadings.get(v) ?? heading.clone()
+    parkedHeadings.set(v, held)
+    const yawError = Math.atan2(gravityUp.dot(heading.cross(held)), heading.dot(held))
+    v.body.applyTorque(
+      gravityUp.scale(
+        v.body.inertia.y * (yawError * 32 - v.body.angularVelocity.dot(gravityUp) * 12),
+      ),
+    )
+  } else parkedHeadings.delete(v)
 
   // Start-up sequence after entering: P is kept and the controls do nothing until it ends.
   const starting = stepIgnition(v.drivetrain, dt, tune?.idleRpm ?? roadVehicleDefaults.idleRpm)
@@ -633,21 +653,35 @@ export function stepTwoWheeledVehicle(
   const back = rider && rider.back > 0 ? clamp(state.riderShift[1] / rider.back, 0, 1) : 1
   const ahead = rider && rider.forward > 0 ? clamp(-state.riderShift[1] / rider.forward, 0, 1) : 1
   const blend = (neutral: number, full: number, share: number) => neutral + (full - neutral) * share
+  const automaticWheelie = rider && state.riderControl.manualShare < 0.05 && !hooligan
+  state.wheelieHold =
+    automaticWheelie && throttle > 0.95 && rearContact && !frontContact && state.pitch > 0.04
+      ? state.wheelieHold + dt
+      : 0
+  // A short acceleration lifts progressively under assistance. Holding full throttle for
+  // several seconds while already on the rear wheel deliberately fades that assistance.
+  const insist = automaticWheelie ? clamp((state.wheelieHold - 2.5) / 2, 0, 1) : 0
+  if (insist > 0 && !state.crashed && (Math.abs(nose) > tuning.crashPitch || up.dot(gravityUp) < 0))
+    startCrash(v, 'loop', forward, gravityUp)
   // The Shift modifier turns both assists off.
   if (rearContact && !frontContact && assist.wheelie && !hooligan) {
     const out = pitchAssist({
       angle: state.pitch,
       rate: state.pitchRate,
-      softAngle: assist.wheelieSoftAngle * back,
-      maxAngle: blend(assist.wheelieNeutralAngle, assist.wheelieMaxAngle, back),
+      softAngle: automaticWheelie ? assist.wheelieSoftAngle * 0.5 : assist.wheelieSoftAngle * back,
+      maxAngle: automaticWheelie
+        ? assist.wheelieSoftAngle
+        : blend(assist.wheelieNeutralAngle, assist.wheelieMaxAngle, back),
       floor: 0,
       response: assist.response,
       dampingRatio: assist.dampingRatio,
       landingRate: assist.landingRate,
       anticipation: assist.anticipation,
     })
-    state.wheelieScale = out.scale
-    pitchAcceleration = out.acceleration
+    state.wheelieScale = blend(out.scale, 1, insist)
+    pitchAcceleration =
+      (out.acceleration - (automaticWheelie ? Math.max(0, state.pitchRate - 0.35) * 12 : 0)) *
+      (1 - insist)
   } else if (frontContact && !rearContact && assist.stoppie && !hooligan) {
     const out = pitchAssist({
       angle: -state.pitch,
@@ -742,11 +776,35 @@ export function stepTwoWheeledVehicle(
     const yaw = Math.sin(state.slideClock * 2 * Math.PI * 0.8) * hoo.slide * spinShare
     v.body.applyTorque(gravityUp.scale(v.body.inertia.y * yaw))
   }
+  // Braking uses part of the rear tyre's lateral grip. The pedal releases the rear first,
+  // leaving the steered front planted so the tail steps towards the outside of the turn.
+  // Fade this out at walking pace; the stationary burnout keeps its own grip model.
+  const rearPedalGrip =
+    1 - 0.75 * state.pedal * state.rearBrake * clamp((Math.abs(speed) - 2) / 4, 0, 1)
+  // The ray-cast brake impulse can yaw a banked single-track chassis against its steering.
+  // Stabilise that braking disturbance using the same signed turn rate as the lean controller.
+  // This is a riding assist, and stays out of airborne, fallen and Shift manoeuvres.
+  if (
+    active &&
+    !hooligan &&
+    !state.fallen &&
+    !state.crashed &&
+    frontContact &&
+    rearContact &&
+    Math.abs(speed) > 2 &&
+    state.pedal > 0
+  ) {
+    const turnRate = (speed * Math.tan(state.groundSteer)) / state.wheelbase
+    const yawRate = v.body.angularVelocity.dot(gravityUp)
+    v.body.applyTorque(
+      gravityUp.scale(v.body.inertia.y * (turnRate - yawRate) * 24 * state.rearBrake),
+    )
+  }
   for (let i = 0; i < v.raycast.wheelInfos.length; i++)
     v.raycast.wheelInfos[i].frictionSlip =
       tuning.frictionSlip *
       surfaceGripScale(surfaces?.[i]) *
-      (stationary && i === REAR ? DONUT_REAR_GRIP : 1)
+      (i === REAR ? (stationary ? DONUT_REAR_GRIP : rearPedalGrip) : 1)
   v.raycast.setSteeringValue(state.groundSteer, FRONT)
   v.raycast.setSteeringValue(0, REAR)
   v.raycast.applyEngineForce(0, FRONT)
@@ -773,9 +831,20 @@ export function stepTwoWheeledVehicle(
     v.raycast.setBrake(burnout ? 0 : Math.max(hold, state.rearBrake * tuning.rearBrakeForce), REAR)
   }
 
+  stepWheelMomentum(v, dt, active && !state.fallen && !state.crashed, powered, input.throttle)
   if (stationary || state.donutLean !== 0)
     holdDonut(v, stationary, active ? input.steering : 0, throttle, forward, gravityUp, dt)
-  stepLean(v, dt, speed, forward, up, gravityUp, gravity, frontContact && rearContact)
+  stepLean(
+    v,
+    dt,
+    speed,
+    forward,
+    up,
+    gravityUp,
+    gravity,
+    frontContact && rearContact,
+    !active && v.drivetrain.parked,
+  )
 }
 
 /**
@@ -874,6 +943,7 @@ function stepLean(
   gravityUp: Vec3,
   gravity: number,
   bothWheelsDown: boolean,
+  parked: boolean,
 ): void {
   const state = v.twoWheeled,
     tuning = state.tuning
@@ -927,6 +997,7 @@ function stepLean(
     -(tuning.pegLean?.right.lean ?? tuning.fallLean),
     tuning.pegLean?.left.lean ?? tuning.fallLean,
   )
+  if (parked && bothWheelsDown) state.targetLean = twoWheeledDefaults.parkingLean
   // Donut: holdDonut steers the roll itself; the balance torque stays out of it.
   if (state.hooligan === 'stationary-burnout' || state.donutLean !== 0) {
     state.targetLean = state.donutLean

@@ -36,6 +36,12 @@ import type { VehicleLightMode } from '../render/vehicle-presentation/light-cont
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
+import {
+  readSidearmTuning,
+  writeSidearmTuning,
+  normalizeSidearmTuning,
+  type SidearmTuning,
+} from './sidearm-tuning.js'
 import { setCarMenuMusicLabel } from '../catalog/monitors/car.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
@@ -52,6 +58,7 @@ import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.j
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
+import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
 import { magazineInsertClick, magazineReleaseClick } from '../audio/gear-click.js'
 import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
 import { FireModeBadge } from './fire-mode-badge.js'
@@ -143,7 +150,13 @@ import {
 } from '../render/planet/ground-material.js'
 import { ShadowManager } from '../render/shadows.js'
 import { shadowBiasRange, shadowTiers } from '../render/shadow-tiers.js'
-import { localToGeo, geoToLocal, EARTH_RADIUS } from '../math/geo/sphere.js'
+import {
+  localToGeo,
+  geoToLocal,
+  localFrame,
+  EARTH_RADIUS,
+  type GeoPoint,
+} from '../math/geo/sphere.js'
 import { mapTileSample } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
 import {
@@ -280,6 +293,10 @@ export interface VehiclePlacement {
 }
 
 export interface GameRuntimeOptions {
+  /** Fixed initial pickup location; projected onto the ground, takes precedence over a vehicle. */
+  weaponPickupLocation?: GeoPoint
+  /** Place the initial HK on the ground beside the nearest road car (or a specific vehicle id). */
+  weaponPickupNearVehicle?: boolean | string
   /** Per-instance camera recovery settings; omitted fields use Engine defaults. */
   camera?: Partial<GameCameraSettings>
   canvas: HTMLCanvasElement
@@ -423,6 +440,10 @@ export class GameRuntime {
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
+  private readonly inventory = new PickupInventory()
+  private ownedWeaponId: string | null = null
+  private readonly pickupModels = new Map<string, THREE.Group>()
+  private pickupGeneration = 0
   private spawned: string[] = []
   private spawnSequence = 0
   private vehicleWarmup: VehicleWarmup | null = null
@@ -493,6 +514,9 @@ export class GameRuntime {
   private readonly text: ReturnType<typeof createRuntimeText>
   private fovBase: CameraFovBase = { firstPersonFov: 70, chaseFov: 48 }
   private fovOffset = 0
+  private weaponTuning = readSidearmTuning(browserStorage())
+  private sidearmAimPreview = false
+  private smokeOn = true
   private planet: {
     sky: boolean
     sun: boolean
@@ -515,6 +539,11 @@ export class GameRuntime {
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
+    try {
+      this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
+    } catch {
+      /* Keep the default if storage is disabled. */
+    }
     this.startCameras = resolveStartCameras(options.startCameras)
     this.flipCinematic.enabled = options.flipCinematic !== false
     applyAsphaltContrast(options.asphaltContrast ?? 1)
@@ -890,6 +919,8 @@ export class GameRuntime {
     this.remoteViews.dispose()
     this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
+    this.clearPickups()
+    this.sidearmAimPreview = false
     if (this.sidearm) {
       this.sidearm.visible = false
       this.sidearm.reset()
@@ -936,6 +967,7 @@ export class GameRuntime {
     setNavigationPlaces(() => [])
     setNavigationRoads(() => [])
     this.sidearm?.dispose()
+    this.clearPickups()
     this.casingMeshes?.dispose()
     this.magazineMeshes?.dispose()
     this.gallery.dispose()
@@ -1059,6 +1091,7 @@ export class GameRuntime {
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
     this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
+    this.view.smokeEnabled = this.smokeOn
     this.view.sync(
       sim,
       dt,
@@ -1073,6 +1106,11 @@ export class GameRuntime {
     canvas.dataset.interior = player.interiorId ?? ''
     canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
+    this.effects.audio.setListener(
+      this.camera.position.toArray(),
+      this.camera.quaternion.toArray(),
+      player.vehicleId ? sim.vehicleInfo(player.vehicleId).speedKmh : 0,
+    )
     canvas.dataset.mapHeight = String(Math.round(this.cameraState.mapHeight))
     canvas.dataset.vehicleEntrance = this.cameraState.entrance ? 'active' : 'complete'
     if (crossing) canvas.dataset.portalCrossings = String(crossing.sequence)
@@ -1081,8 +1119,32 @@ export class GameRuntime {
     this.view.scrapeSparks(sim, time)
     this.view.sparks.update(time)
     if (this.sidearm) {
-      this.sidearm.visible = !sim.player.vehicleId && this.weaponDrawn
+      this.sidearm.setTuning(this.weaponTuning)
+      this.sidearm.setSmokeEnabled(this.smokeOn)
+      this.sidearm.visible = this.weaponDrawn || this.sidearmAimPreview
       this.updateSidearm(sim, time, dt, eyes)
+      if (this.sidearmAimPreview) this.sidearm.setAiming(true)
+      let aim: THREE.Vector3 | undefined
+      if (this.sidearm.visible && !eyes && !this.sidearmAimPreview) {
+        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
+        const hit = sim.shoot(
+          this.camera.position.toArray(),
+          direction.toArray(),
+          this.sidearm.range,
+          0,
+        )
+        aim = hit
+          ? new THREE.Vector3(...hit.point)
+          : this.camera.position.clone().addScaledVector(direction, this.sidearm.range)
+        aim.add(this.view.root.position)
+      }
+      this.sidearm.syncWorld(
+        this.view.avatar,
+        time,
+        eyes || this.sidearmAimPreview,
+        aim,
+        this.camera.up,
+      )
       if (!this.fireModeBadge && this.options.canvas.parentElement)
         this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)
       this.fireModeBadge?.show(this.sidearm.visible ? fireModeLabel(this.sidearm.fireMode) : null)
@@ -1154,6 +1216,9 @@ export class GameRuntime {
         this.flipCinematic.update(time, dt, false, null, this.camera, this.cameraState)
       }
     }
+    const nearbyPickup = this.nearbyPickup(sim)
+    canvas.dataset.pickup = nearbyPickup?.id ?? ''
+    canvas.dataset.weaponOwned = String(this.weaponOwned)
     this.hud?.update({
       showSpeed: controls.speed,
       showGear: controls.gear,
@@ -1172,7 +1237,9 @@ export class GameRuntime {
       cameraMode: canvas.dataset.cameraMode!,
       interaction: player.vehicleId
         ? 'E exit · C camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics'
-        : 'WASD move · Space jump · E enter · C camera',
+        : nearbyPickup
+          ? this.text('E pick up {0}', nearbyPickup.name)
+          : 'WASD move · Space jump · E enter · C camera',
       wheelDebug: this.wheelDebug.formatHud(),
     })
     this.effects.updateAudio(sim, this.document, eye)
@@ -1284,7 +1351,7 @@ export class GameRuntime {
       this.camera.position.copy(eye)
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
-    this.sidearm?.render(this.renderer, time, this.camera.aspect, eyes)
+    this.sidearm?.render(this.renderer, time, this.camera.aspect, eyes || this.sidearmAimPreview)
     if (this.options.onDiagnostics)
       this.options.onDiagnostics({
         frameMs,
@@ -2282,6 +2349,164 @@ export class GameRuntime {
   get lightTuning(): LightTuning {
     return { ...this.lighting }
   }
+  /** Saved eye-level pistol height (metres) and muzzle-up angle (degrees). */
+  get sidearmTuning(): SidearmTuning {
+    return { ...this.weaponTuning }
+  }
+  /** World pickups and inventory are session state; previewing settings never grants a weapon. */
+  get weaponOwned(): boolean {
+    return this.ownedWeaponId !== null && this.inventory.has(this.ownedWeaponId)
+  }
+  get worldPickups(): readonly WorldPickup[] {
+    return this.inventory.items.map((item) => ({ ...item, position: [...item.position] }))
+  }
+  /** Add a real, collectible weapon model at an absolute ground point. */
+  async addWeaponPickup(
+    id: string,
+    presetId: string,
+    position: Vec3Tuple,
+    normal: Vec3Tuple = [0, 1, 0],
+  ): Promise<void> {
+    this.assertAlive()
+    const preset = weaponPresets().find((item) => item.id === presetId)
+    if (!preset) throw new Error(`Unknown pickup weapon: ${presetId}`)
+    const generation = this.pickupGeneration
+    const model = await assets.instantiate(preset.model ?? preset.body!)
+    if (this.disposed || generation !== this.pickupGeneration) {
+      disposeObject(model)
+      return
+    }
+    const root = new THREE.Group()
+    root.name = `Pickup: ${preset.name}`
+    model.scale.setScalar(preset.scale ?? 1)
+    model.rotation.z = Math.PI / 2
+    root.add(model)
+    const bounds = new THREE.Box3().setFromObject(root)
+    model.position.y -= bounds.min.y - 0.008
+    root.position.fromArray(position)
+    root.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(...normal).normalize(),
+    )
+    try {
+      this.inventory.add({ id, itemId: preset.id, name: preset.name, position })
+    } catch (error) {
+      disposeObject(root)
+      throw error
+    }
+    this.pickupModels.set(id, root)
+    this.view.root.add(root)
+  }
+  private clearPickups(): void {
+    this.pickupGeneration++
+    for (const root of this.pickupModels.values()) {
+      root.removeFromParent()
+      disposeObject(root)
+    }
+    this.pickupModels.clear()
+    this.inventory.clear()
+    this.ownedWeaponId = null
+  }
+  private pickupVisible(sim: Simulation, item: WorldPickup): boolean {
+    const from = new THREE.Vector3(...sim.renderPlayerPosition)
+    const direction = new THREE.Vector3(...item.position).sub(from)
+    const length = direction.length()
+    if (length < 0.1) return true
+    const hit = sim.shoot(
+      from.toArray(),
+      direction.normalize().toArray(),
+      Math.max(0.01, length - 0.08),
+      0,
+    )
+    return !hit
+  }
+  private nearbyPickup(sim: Simulation): WorldPickup | null {
+    if (sim.player.vehicleId) return null
+    return this.inventory.nearest(sim.renderPlayerPosition, 1.8, (item) =>
+      this.pickupVisible(sim, item),
+    )
+  }
+  private async placeInitialWeaponPickup(sim: Simulation): Promise<void> {
+    const location = this.options.weaponPickupLocation
+    if (location && this.document.geography) {
+      const origin = this.document.geography
+      const point = new THREE.Vector3(...geoToLocal(origin, location))
+      const rotation = localFrame(origin).invert().multiply(localFrame(location))
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation)
+      const from = point.clone().addScaledVector(up, 10)
+      const hit = sim.shoot(from.toArray(), up.clone().negate().toArray(), 30, 0)
+      await this.addWeaponPickup(
+        'initial-hk',
+        'hk-compact',
+        hit?.point ?? point.toArray(),
+        hit?.normal ?? up.toArray(),
+      )
+      return
+    }
+    const option = this.options.weaponPickupNearVehicle
+    if (!option) return
+    const cars = this.document.entities.filter(
+      (entity) =>
+        entity.vehicle &&
+        !entity.vehicle.twoWheeled &&
+        !entity.vehicle.flight &&
+        !entity.vehicle.boat &&
+        !entity.vehicle.passive,
+    )
+    const car =
+      typeof option === 'string'
+        ? this.document.entities.find((entity) => entity.id === option)
+        : cars.sort((a, b) => {
+            const eye = new THREE.Vector3(...sim.player.position)
+            return (
+              eye.distanceTo(new THREE.Vector3(...sim.entityTransform(a.id, true).position)) -
+              eye.distanceTo(new THREE.Vector3(...sim.entityTransform(b.id, true).position))
+            )
+          })[0]
+    if (!car) return
+    const pose = sim.entityTransform(car.id, true)
+    const rotation = new THREE.Quaternion(...pose.rotation)
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation)
+    const point = new THREE.Vector3(-2.6, 0, 0.6)
+      .applyQuaternion(rotation)
+      .add(new THREE.Vector3(...pose.position))
+    const from = point.clone().addScaledVector(up, 4)
+    const hit = sim.shoot(from.toArray(), up.clone().negate().toArray(), 12, 0)
+    const ground = hit ? new THREE.Vector3(...hit.point) : point.addScaledVector(up, -0.6)
+    await this.addWeaponPickup(
+      'initial-hk',
+      'hk-compact',
+      ground.toArray(),
+      hit?.normal ?? up.toArray(),
+    )
+  }
+  /** Live quality preference shared by exhaust and gun smoke. */
+  get smokeEnabled(): boolean {
+    return this.smokeOn
+  }
+  setSmokeEnabled(enabled: boolean): void {
+    this.smokeOn = enabled
+    this.view.smokeEnabled = enabled
+    this.sidearm?.setSmokeEnabled(enabled)
+    try {
+      browserStorage()?.setItem('nabla.smoke', enabled ? '1' : '0')
+    } catch {
+      /* Storage may be disabled. */
+    }
+  }
+  setSidearmTuning(patch: Partial<SidearmTuning>): SidearmTuning {
+    this.assertAlive()
+    this.weaponTuning = normalizeSidearmTuning(patch, this.weaponTuning)
+    this.sidearm?.setTuning(this.weaponTuning)
+    writeSidearmTuning(browserStorage(), this.weaponTuning)
+    return this.sidearmTuning
+  }
+  /** Keep the aimed model visible while its settings are adjusted with a free mouse. */
+  setSidearmAimPreview(enabled: boolean): void {
+    if (enabled) this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
+    this.sidearmAimPreview = enabled
+    if (!enabled) this.sidearm?.setAiming(false)
+  }
   /** Change and save the lighting knobs (`nabla.lightTuning`); returns the clamped values. */
   setLightTuning(patch: Partial<LightTuning>): LightTuning {
     this.assertAlive()
@@ -2497,6 +2722,8 @@ export class GameRuntime {
     }
     signal.throwIfAborted()
     // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
+    if (sim) await this.placeInitialWeaponPickup(sim)
+    signal.throwIfAborted()
     // of the camera so the attract frames keep their own projection.
     stage('shaders', 3)
     // Gameplay visibility (avatar shown, spawn markers hidden) and one pose sync first, so the
@@ -2716,6 +2943,14 @@ export class GameRuntime {
    */
   private updateSidearm(sim: Simulation, time: number, dt: number, eyes: boolean): void {
     const sidearm = this.sidearm!
+    const weaponPosition = (
+      eyes
+        ? this.camera.position
+            .clone()
+            .add(sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
+        : (sidearm.worldMuzzle()?.sub(this.view.root.position) ??
+          new THREE.Vector3(...sim.renderPlayerPosition))
+    ).toArray()
     const canvas = this.options.canvas
     const events: FirearmEvent[] = [sidearm.update(time)]
     if (this.reloadRequested && sidearm.visible) {
@@ -2725,20 +2960,29 @@ export class GameRuntime {
     }
     if (this.triggerReleased) sidearm.release()
     const rise = sidearm.aimRise(time)
-    if (rise && !sim.player.vehicleId)
-      this.cameraState.pitch = THREE.MathUtils.clamp(
-        this.cameraState.pitch - rise,
+    if (rise) {
+      const pitchKey = sim.player.vehicleId ? 'headPitch' : 'pitch'
+      this.cameraState[pitchKey] = THREE.MathUtils.clamp(
+        this.cameraState[pitchKey] - rise,
         -controlDefaults.pitchLimit,
         controlDefaults.pitchLimit,
       )
+    }
     const automatic = sidearm.fireMode === 'burst30'
     const yaw = sidearm.recoilYaw.step(dt, automatic && this.triggerDown)
-    if (yaw && !sim.player.vehicleId) this.cameraState.yaw += yaw
-    if ((this.fireRequested || (automatic && this.triggerDown)) && this.hasInput()) {
+    if (yaw) {
+      if (sim.player.vehicleId) this.cameraState.headYaw += yaw
+      else this.cameraState.yaw += yaw
+    }
+    if (
+      this.weaponOwned &&
+      (this.fireRequested || (automatic && this.triggerDown)) &&
+      this.hasInput()
+    ) {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
       if (shot) events.push(shot)
       if (shot?.fired) {
-        this.effects.audio.gunshot()
+        this.effects.audio.gunshot(weaponPosition)
         canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
         if (shot.impactJoules !== undefined)
           canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)
@@ -2747,20 +2991,21 @@ export class GameRuntime {
       canvas.dataset.impacts = String(this.view.impacts.count)
     }
     for (const event of events) {
-      if (event.dry) this.effects.audio.gearClick({ volume: 0.6 })
+      if (event.dry) this.effects.audio.gearClick({ volume: 0.6 }, weaponPosition)
       if (event.magazineDropped) {
-        this.effects.audio.gearClick(magazineReleaseClick)
+        this.effects.audio.gearClick(magazineReleaseClick, weaponPosition)
         this.dropMagazine(sim, eyes)
       }
-      if (event.magazineSeated) this.effects.audio.gearClick(magazineInsertClick)
-      if (event.slideReleased) this.effects.audio.gearClick({ volume: 1.6 })
+      if (event.magazineSeated) this.effects.audio.gearClick(magazineInsertClick, weaponPosition)
+      if (event.slideReleased) this.effects.audio.gearClick({ volume: 1.6 }, weaponPosition)
       if (event.locked) this.options.onMessage?.(this.text('Slide locked back · R reload'))
     }
     if (this.casingMotion && this.casingMeshes) {
       this.casingMotion.update(dt, (from, direction, length) =>
         sim.shoot(from, direction, length, 0),
       )
-      for (const speed of this.casingMotion.bounces.slice(0, 3)) this.effects.audio.casing(speed)
+      for (const impact of this.casingMotion.impacts.slice(0, 3))
+        this.effects.audio.casing(impact.speed, impact.position)
       this.casingMeshes.sync(this.casingMotion.poses())
       canvas.dataset.casings = String(this.casingMotion.count)
     }
@@ -2809,11 +3054,11 @@ export class GameRuntime {
    * Spent magazine out of the grip. Same bounce, rest and lifetime as a casing, with a small
    * pool of its own. The mesh is the pistol's `Magazine` node.
    */
-  private dropMagazine(sim: Simulation, eyes: boolean): void {
+  private dropMagazine(_sim: Simulation, eyes: boolean): void {
     const sidearm = this.sidearm
     const casing = sidearm?.preset?.casing
     if (!sidearm || !casing) return
-    const view = sidearm.magazineDropView()
+    const view = eyes ? sidearm.magazineDropView() : sidearm.worldMagazineDropView()
     if (!view) return
     if (!this.magazineMotion)
       this.magazineMotion = new CasingMotion(
@@ -2831,11 +3076,11 @@ export class GameRuntime {
     const camQ = this.camera.quaternion
     const origin = eyes
       ? this.camera.position.clone().add(view.position.clone().applyQuaternion(camQ))
-      : new THREE.Vector3(...sim.renderPlayerPosition).add(
-          new THREE.Vector3(0.15, 0.9, 0.2).applyQuaternion(camQ),
-        )
-    const orientation = camQ.clone().multiply(view.quaternion)
-    const velocity = view.direction.clone().applyQuaternion(camQ).normalize().multiplyScalar(1.5)
+      : view.position.clone().add(this.origin)
+    const orientation = eyes ? camQ.clone().multiply(view.quaternion) : view.quaternion
+    const velocity = view.direction.clone()
+    if (eyes) velocity.applyQuaternion(camQ)
+    velocity.normalize().multiplyScalar(1.5)
     this.magazineMotion.release(
       origin.toArray() as Vec3Tuple,
       velocity.toArray() as Vec3Tuple,
@@ -2846,17 +3091,19 @@ export class GameRuntime {
 
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
   private updateSidearmLaser(sim: Simulation, time: number): void {
-    if (!this.sidearm?.laserEnabled || !this.weaponDrawn || sim.player.vehicleId) {
+    if (!this.sidearm?.laserEnabled || !this.weaponDrawn) {
       this.view.laser.enabled = false
       return
     }
     this.view.laser.enabled = true
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
     const origin = this.camera.position.clone()
-    if (isFirstPersonView(this.cameraState, false)) {
+    if (isFirstPersonView(this.cameraState, !!sim.player.vehicleId)) {
       origin.add(this.sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
     } else {
-      origin.fromArray(sim.renderPlayerPosition)
+      const muzzle = this.sidearm.worldMuzzle()
+      if (muzzle) origin.copy(muzzle).add(this.origin)
+      else origin.fromArray(sim.renderPlayerPosition)
     }
     const aimed = sim.shoot(
       origin.toArray() as Vec3Tuple,
@@ -2874,8 +3121,7 @@ export class GameRuntime {
   private applySidearmButton(button: number, down: boolean): void {
     if (this.session.state !== 'playing') return
     if (down && !this.pointerLocked() && !this.pointerLockUnsupported()) return
-    const onFoot = this.weaponDrawn && !this.session.simulation?.player.vehicleId
-    if (!onFoot) return
+    if (!this.weaponDrawn) return
     const action = sidearmButtonAction(button, down)
     if (action === 'fire') {
       this.fireRequested = true
@@ -2999,11 +3245,43 @@ export class GameRuntime {
   private action(code: string): void {
     const sim = this.session.simulation
     if (!sim) return
+    if (code === 'KeyE') {
+      const nearby = this.nearbyPickup(sim)
+      const item =
+        nearby &&
+        this.inventory.take(nearby.id, sim.renderPlayerPosition, (pickup) =>
+          this.pickupVisible(sim, pickup),
+        )
+      if (item) {
+        const root = this.pickupModels.get(item.id)
+        if (root) {
+          root.removeFromParent()
+          disposeObject(root)
+          this.pickupModels.delete(item.id)
+        }
+        this.ownedWeaponId = item.itemId
+        if (this.sidearm?.preset?.id !== item.itemId) {
+          this.sidearm?.dispose()
+          this.sidearm = new Sidearm(
+            this.options.canvas.parentElement!,
+            weaponPresets().find((preset) => preset.id === item.itemId),
+          )
+        }
+        this.weaponDrawn = true
+        this.sidearm.visible = true
+        this.options.onMessage?.(this.text('Picked up {0} · Tab holster', item.name))
+        return
+      }
+    }
     if (code === 'F9') {
       this.wheelDebug.toggle()
       return
     }
-    if (code === 'Tab' && !sim.player.vehicleId) {
+    if (code === 'Tab') {
+      if (!this.weaponOwned) {
+        this.options.onMessage?.(this.text('Find and pick up a pistol first'))
+        return
+      }
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
       this.triggerDown = false
@@ -3016,7 +3294,7 @@ export class GameRuntime {
       )
       return
     }
-    if (code === 'KeyR' && this.weaponDrawn && !sim.player.vehicleId) {
+    if (code === 'KeyR' && this.weaponDrawn) {
       this.reloadRequested = true
       return
     }
@@ -3079,6 +3357,15 @@ export class GameRuntime {
             state.cinematicZoom * scale,
             controlDefaults.cinematicZoomMin,
             controlDefaults.cinematicZoomMax,
+          )
+        } else if (
+          state.mode === 'chase' &&
+          !isFirstPersonView(state, !!this.session.simulation.player.vehicleId)
+        ) {
+          state.chaseZoom = THREE.MathUtils.clamp(
+            (state.chaseZoom ?? 1) * scale,
+            controlDefaults.chaseZoomMin,
+            controlDefaults.chaseZoomMax,
           )
         } else return
         event.preventDefault()

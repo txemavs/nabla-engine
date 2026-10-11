@@ -11,7 +11,7 @@ Browser presentation settings; the browser owns actual display synchronization.
 
 ## presetResolutionScale
 
-[Implementation, line 37](../../../../src/config/display.ts#L37)
+[Implementation, line 36](../../../../src/config/display.ts#L36)
 
 ```ts
 presetResolutionScale(preset?: string): number
@@ -23,7 +23,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveDisplaySettings
 
-[Implementation, line 77](../../../../src/config/display.ts#L77)
+[Implementation, line 76](../../../../src/config/display.ts#L76)
 
 ```ts
 resolveDisplaySettings(value: Partial<DisplaySettings> = {}, preset?: string): DisplaySettings

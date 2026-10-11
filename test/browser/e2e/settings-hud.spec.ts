@@ -37,7 +37,20 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     check(menuSection('quality-shadows', 'Sombras'), 'shadows')
     check(menuSection('scene-vehicles', 'Vehículos'), 'vehicles')
     const layer = { sky: true, sun: true, clouds: true, sea: true }
+    let sidearm = { height: -0.027, angle: 1 },
+      preview = false
     const runtime = {
+      smokeEnabled: true,
+      setSmokeEnabled: (enabled: boolean) => {
+        runtime.smokeEnabled = enabled
+      },
+      get sidearmTuning() {
+        return sidearm
+      },
+      setSidearmTuning: (patch: Partial<typeof sidearm>) => (sidearm = { ...sidearm, ...patch }),
+      setSidearmAimPreview: (on: boolean) => {
+        preview = on
+      },
       planetLayers: layer,
       setPlanetLayers: () => {},
       cloudStyle: 'low',
@@ -49,6 +62,15 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       setLensFlareAmount: () => {},
     }
     mountSettingsHud(runtime as never)
+    const smoke = document.getElementById('quality-smoke') as HTMLInputElement
+    smoke.checked = false
+    smoke.dispatchEvent(new Event('change', { bubbles: true }))
+    const height = document.getElementById('sidearm-aim-height') as HTMLInputElement
+    height.value = '-33'
+    height.dispatchEvent(new Event('input', { bubbles: true }))
+    const angle = document.getElementById('sidearm-aim-angle') as HTMLInputElement
+    angle.value = '0.7'
+    angle.dispatchEvent(new Event('input', { bubbles: true }))
     const tabs = () =>
       [...document.querySelectorAll<HTMLElement>('.settings-tab')]
         .filter((tab) => !tab.hidden)
@@ -65,6 +87,13 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       [...document.getElementById(paneId)!.children].map((el) => el.id).filter(Boolean)
     return {
       before,
+      smoke: runtime.smokeEnabled,
+      smokePane: pane('quality-smoke'),
+      sidearm,
+      preview,
+      weaponOutputs: [...document.querySelectorAll('#settings-options-sidearm output')].map(
+        (el) => el.textContent,
+      ),
       after: tabs(),
       planet: order('settings-pane-planet'),
       performance: order('settings-pane-performance'),
@@ -88,6 +117,11 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
 
   const visible = ['Planeta', 'Opciones', 'Rendimiento', 'Vídeo', 'Objetos', 'Desarrollo']
   expect(result.before).toEqual(visible)
+  expect(result.smoke).toBe(false)
+  expect(result.smokePane).toBe('settings-pane-performance')
+  expect(result.sidearm).toEqual({ height: -0.033, angle: 0.7 })
+  expect(result.preview).toBe(true)
+  expect(result.weaponOutputs).toEqual(['-33 mm', '0.7°'])
   expect(result.after).toEqual(visible)
   expect(result.planet).toEqual([
     'terrain-position',
@@ -98,7 +132,12 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   ])
   expect(result.performance).toEqual(['display-quality-section', 'display-performance'])
   expect(result.video).toEqual(['quality-shadows', 'road-style'])
-  expect(result.options).toEqual(['camera-extras', 'driving-extras', 'settings-options-labels'])
+  expect(result.options).toEqual([
+    'camera-extras',
+    'driving-extras',
+    'settings-options-sidearm',
+    'settings-options-labels',
+  ])
   expect(result.dev).toEqual(['settings-config-planet', 'terrain-source'])
   expect(result.places).toBe('settings-pane-options')
   expect(result.placesGroup).toBe('settings-options-labels')

@@ -20,7 +20,11 @@ import {
   DrivingTelemetry,
   GroundHeading,
 } from '../render/entity/driving-camera.js'
-import { advanceCinematicAngle, cinematicOrbitPose } from '../render/entity/cinematic-camera.js'
+import {
+  advanceCinematicAngle,
+  cinematicOrbitPose,
+  cinematicFallPose,
+} from '../render/entity/cinematic-camera.js'
 
 /**
  * Gameplay camera modes. `chase` is the exterior view (third person on foot), `cockpit` the
@@ -48,6 +52,8 @@ export interface GameCameraState {
    */
   mapDescentDamping?: number | null
   mapZoom: number
+  /** Wheel distance multiplier for the manual exterior orbit. */
+  chaseZoom?: number
   /** Cinematic orbit angle (chase-yaw convention), radians. */
   cinematicAngle: number
   /** Wheel multiplier for the cinematic orbit radius. */
@@ -55,6 +61,21 @@ export interface GameCameraState {
   /** Vertically smoothed cinematic anchor height, metres; null re-seeds it next frame. */
   cinematicAnchorY: number | null
   entrance: { id: string; started: number } | null
+  /** Eye-level boarding/dismount, separate from the authored initial overhead descent. */
+  seatMove: {
+    vehicleId: string | null
+    started: number
+    position: THREE.Vector3
+    quaternion: THREE.Quaternion
+    fov: number
+  } | null
+  recoveryView: {
+    id: string
+    started: number
+    position: THREE.Vector3
+    quaternion: THREE.Quaternion
+    boarding?: { position: THREE.Vector3; quaternion: THREE.Quaternion }
+  } | null
   telemetry: DrivingTelemetry
   /** Current upward tilt of the flight chase camera, radians; eases toward `flightChaseTilt`. */
   flightTilt: number
@@ -103,10 +124,13 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     lastLookTime: 0,
     mapHeight: resolved.mapHeight,
     mapZoom: 1,
+    chaseZoom: 1,
     cinematicAngle: 0,
     cinematicZoom: 1,
     cinematicAnchorY: null,
     entrance: null,
+    seatMove: null,
+    recoveryView: null,
     telemetry: new DrivingTelemetry(resolved),
     flightTilt: 0,
     groundHeading: new GroundHeading(resolved),
@@ -195,6 +219,7 @@ export function setGameCameraView(
   seated: boolean,
 ): void {
   state.entrance = null
+  state.seatMove = null
   if (wanted === 'first-person') {
     state.mode = 'chase'
     state.firstPerson = true
@@ -254,10 +279,17 @@ export function updateGameCamera(
   // Only the exterior chase view keeps the flight tilt; every other view drops it.
   let flightTilt = 0
   const p = { ...sim.player, position: sim.renderPlayerPosition }
-  const cockpit = cameraMode === 'cockpit'
-  const overhead = cameraMode === 'map'
-  const cinematic = cameraMode === 'cinematic'
-  const eyes = isFirstPersonView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
+  const recovery = sim.playerBikeRecovery
+  // A gentle get-up uses the same ejection phases, but must keep the selected view.
+  const riderFall = recovery ? null : sim.playerEjection
+  const recoveryEyes = cameraMode === 'cockpit' && !!recovery
+  const cockpit = recoveryEyes || (!riderFall && cameraMode === 'cockpit')
+  const overhead = !riderFall && cameraMode === 'map'
+  const cinematic = (!recoveryEyes && !!riderFall) || cameraMode === 'cinematic'
+  const eyes =
+    recoveryEyes ||
+    (!riderFall && !recovery && isFirstPersonView({ mode: cameraMode, firstPerson }, !!p.vehicleId))
+  if (!recoveryEyes) state.recoveryView = null
   const playerFrame = sim.playerFrame
   const playerFrameQ = new THREE.Quaternion(...(playerFrame?.rotation ?? ([0, 0, 0, 1] as const)))
   camera.up.set(0, 1, 0).applyQuaternion(playerFrameQ)
@@ -361,7 +393,62 @@ export function updateGameCamera(
   let { cinematicAngle, cinematicAnchorY } = state
   if (cinematic) cinematicAngle = advanceCinematicAngle(cinematicAngle, dt, tuning)
   else cinematicAnchorY = null
-  if (!p.vehicleId && eyes) {
+  if (recoveryEyes && recovery) {
+    const bike = sim.entityTransform(recovery.vehicleId, true)
+    if (!state.recoveryView || state.recoveryView.id !== recovery.vehicleId)
+      state.recoveryView = {
+        id: recovery.vehicleId,
+        started: now,
+        position: (state.lastPose?.position ?? camera.position).clone(),
+        quaternion: (state.lastPose?.quaternion ?? camera.quaternion).clone(),
+      }
+    const move = state.recoveryView
+    if (recovery.phase !== 'boarding') {
+      camera.position.fromArray(p.position)
+      camera.lookAt(
+        new THREE.Vector3(...bike.position).add(
+          new THREE.Vector3(0, 0.3, 0).applyQuaternion(playerFrameQ),
+        ),
+      )
+      const k = THREE.MathUtils.smoothstep(now - move.started, 0, 450)
+      camera.position.lerpVectors(move.position, camera.position.clone(), k)
+      camera.quaternion.slerpQuaternions(move.quaternion, camera.quaternion.clone(), k)
+    } else {
+      move.boarding ??= {
+        position: (state.lastPose?.position ?? camera.position).clone(),
+        quaternion: (state.lastPose?.quaternion ?? camera.quaternion).clone(),
+      }
+      const seat = sim.vehicleInfo(recovery.vehicleId, true)
+      const head = driverHeadPose(
+        seat.driver,
+        bike.rotation,
+        seat.isCarrier,
+        headYaw,
+        headPitch,
+        view.vehicleHeadOffset(recovery.vehicleId),
+        view.document.entities.find((entity) => entity.id === recovery.vehicleId)?.vehicle
+          ?.headRotation,
+      )
+      const k = THREE.MathUtils.smoothstep(recovery.progress, 0, 0.9)
+      camera.position.lerpVectors(move.boarding.position, head.position, k)
+      camera.quaternion.slerpQuaternions(move.boarding.quaternion, head.quaternion, k)
+    }
+    vehicleEntrance = null
+  } else if (riderFall) {
+    const bike = sim.entityTransform(riderFall.vehicleId, true)
+    const shot = cinematicFallPose(
+      p.position,
+      bike.position,
+      camera.fov,
+      camera.aspect,
+      state.yaw,
+      playerFrameQ,
+    )
+    camera.position.copy(shot.position)
+    camera.up.copy(shot.up)
+    camera.lookAt(shot.target)
+    vehicleEntrance = null
+  } else if (!p.vehicleId && eyes) {
     camera.position.fromArray(p.position)
     camera.quaternion
       .copy(playerFrameQ)
@@ -446,6 +533,7 @@ export function updateGameCamera(
     }
     const distance =
       (info?.cameraDistance ?? tuning.chaseDistance) *
+      (state.chaseZoom ?? 1) *
       (1 +
         tuning.altitudeDistanceGain *
           THREE.MathUtils.smoothstep(
@@ -466,7 +554,9 @@ export function updateGameCamera(
         : pitch
     const desired: Vec3Tuple = [
       cameraAnchor[0] + Math.sin(yaw) * distance * Math.cos(travelPitch),
-      cameraAnchor[1] + tuning.chaseHeight + Math.sin(travelPitch) * distance,
+      cameraAnchor[1] +
+        tuning.chaseHeight * (state.chaseZoom ?? 1) +
+        Math.sin(travelPitch) * distance,
       cameraAnchor[2] + Math.cos(yaw) * distance * Math.cos(travelPitch),
     ]
     if (p.interiorId) {
@@ -513,9 +603,57 @@ export function updateGameCamera(
     if (elapsed >= tuning.entranceEndMs) vehicleEntrance = null
   } else vehicleEntrance = null
 
+  const seatMove = state.seatMove
+  if (seatMove && seatMove.vehicleId === p.vehicleId && eyes && !recovery && !riderFall) {
+    const t = THREE.MathUtils.clamp((now - seatMove.started) / 850, 0, 1)
+    const destination = camera.position.clone()
+    const rotation = camera.quaternion.clone()
+    if (!p.vehicleId && destination.distanceToSquared(seatMove.position) > 0.01) {
+      // Turn toward the door before moving out; settle into the walking heading afterward.
+      const door = camera.clone()
+      door.position.copy(seatMove.position)
+      door.lookAt(destination)
+      if (t < 0.4)
+        camera.quaternion.slerpQuaternions(
+          seatMove.quaternion,
+          door.quaternion,
+          THREE.MathUtils.smootherstep(t, 0, 0.4),
+        )
+      else
+        camera.quaternion.slerpQuaternions(
+          door.quaternion,
+          rotation,
+          THREE.MathUtils.smootherstep(t, 0.4, 1),
+        )
+    } else
+      camera.quaternion.slerpQuaternions(
+        seatMove.quaternion,
+        rotation,
+        THREE.MathUtils.smootherstep(t, 0, 1),
+      )
+    camera.position.lerpVectors(
+      seatMove.position,
+      destination,
+      THREE.MathUtils.smootherstep(t, p.vehicleId ? 0 : 0.15, 1),
+    )
+    camera.fov = THREE.MathUtils.lerp(
+      seatMove.fov,
+      camera.fov,
+      THREE.MathUtils.smootherstep(t, 0, 1),
+    )
+    camera.updateProjectionMatrix()
+    const body = p.vehicleId ? view.objects.get(p.vehicleId) : undefined
+    if (body) prepareVehicle?.(body, camera)
+    if (t >= 1) state.seatMove = null
+  } else state.seatMove = null
+
   // View changes blend from the last rendered pose (eased position, orientation and fov) while
   // the player stays in the same vehicle or on foot; boarding keeps its own entrance move.
-  const cameraView = gameCameraView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
+  const cameraView = recovery
+    ? cameraMode
+    : riderFall
+      ? 'cinematic'
+      : gameCameraView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
   const vehicleKey = p.vehicleId ?? null
   const anchor = new THREE.Vector3(...p.position)
   let transition = state.transition
@@ -536,7 +674,8 @@ export function updateGameCamera(
           }
         : null
   }
-  if (vehicleEntrance || (last && last.vehicleId !== vehicleKey)) transition = null
+  if (riderFall || vehicleEntrance || seatMove || (last && last.vehicleId !== vehicleKey))
+    transition = null
   if (transition) {
     const t = THREE.MathUtils.clamp((now - transition.started) / transition.duration, 0, 1)
     const k = THREE.MathUtils.smootherstep(t, 0, 1)

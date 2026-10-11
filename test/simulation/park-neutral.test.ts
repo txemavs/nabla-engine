@@ -7,6 +7,7 @@ import { createEntity } from '../../src/entity/schema.js'
 import { gearLabel } from '../../src/entity/vehicle/gear-label.js'
 import { VehicleEffects } from '../../src/runtime/vehicle-effects.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
+import { finishStartUp } from '../start-up.js'
 import {
   createDrivetrain,
   effectivePowertrain,
@@ -22,6 +23,74 @@ const vehicles = [
   ['s3', 'car'],
   ['truck', 'white-truck'],
 ] as const
+
+describe('parking on a slope', () => {
+  it('parks the motorcycle leaned left with left steering lock, then releases both when mounted', () => {
+    const floor = createEntity('floor', 'box', [0, -0.5, 0])
+    floor.size = [100, 1, 100]
+    const s = new Simulation({
+      version: 1,
+      name: 'Side stand',
+      entities: [
+        floor,
+        presetVehicle('vfr800', 'bike', [0, 0.7, 0]),
+        createEntity('spawn', 'spawn', [3, 1, 4]),
+      ],
+    })
+    try {
+      for (let i = 0; i < 300; i++) s.step(dt)
+      const parked = s.twoWheeledPose('bike')!
+      expect(parked.lean).toBeGreaterThan(0.14)
+      expect(parked.lean).toBeLessThan(0.22)
+      expect(parked.steeringAngle).toBeGreaterThan(0.6)
+      const heading = s.entityTransform('bike').rotation
+      expect(Math.abs(heading[1])).toBeLessThan(0.03)
+      s.startInVehicle('bike')
+      finishStartUp(s)
+      for (let i = 0; i < 180; i++) s.step(dt)
+      expect(Math.abs(s.twoWheeledPose('bike')!.lean)).toBeLessThan(0.04)
+      expect(Math.abs(s.twoWheeledPose('bike')!.steeringAngle)).toBeLessThan(0.01)
+    } finally {
+      s.dispose()
+    }
+  })
+  it.each(['car', 'vfr800'] as const)(
+    'holds %s against forward and sideways downhill creep and releases on drive',
+    (catalog) => {
+      const slope = 0.12
+      for (const yaw of [0, Math.PI / 2]) {
+        const floor = createEntity('floor', 'box', [0, -0.5, 0])
+        floor.size = [100, 1, 100]
+        floor.transform.rotation = [0, 0, Math.sin(slope / 2), Math.cos(slope / 2)]
+        const bike = presetVehicle(catalog, 'vehicle', [0, 1, 0])
+        bike.transform.rotation = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
+        const s = new Simulation({
+          version: 1,
+          name: 'Slope',
+          entities: [floor, bike, createEntity('spawn', 'spawn', [5, 1, 0])],
+        })
+        try {
+          for (let i = 0; i < 180; i++) s.step(dt)
+          const start = s.entityTransform('vehicle').position
+          for (let i = 0; i < 600; i++) s.step(dt)
+          const end = s.entityTransform('vehicle').position
+          expect(Math.hypot(end[0] - start[0], end[2] - start[2])).toBeLessThan(0.05)
+          expect(s.vehicleInfo('vehicle').parked).toBe(true)
+          s.startInVehicle('vehicle')
+          finishStartUp(s)
+          for (let i = 0; i < 120; i++) {
+            s.setInput({ ...idleInput(), forward: 1 })
+            s.step(dt)
+          }
+          expect(s.vehicleInfo('vehicle').parked).toBe(false)
+          expect(s.vehicleInfo('vehicle').speedKmh).toBeGreaterThan(5)
+        } finally {
+          s.dispose()
+        }
+      }
+    },
+  )
+})
 
 describe('N and P selector, unit level', () => {
   it('uses the documented default timings', () => {

@@ -77,21 +77,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new Vector3(0, 0, -1).applyQuaternion`
 - `origin.clone`
 - `origin.clone().addScaledVector`
+- `origin.copy`
+- `origin.copy(muzzle).sub`
 - `origin.toArray`
 - `sidearm.impact`
 - `sidearm.pull`
+- `sidearm.worldMuzzle`
 - `sim.shoot`
 - `target.sub`
 - `target.sub(origin).normalize`
 - `traceBullet`
 - `view.sparks.add`
 
-## fireSidearm.callback@92
+## fireSidearm.callback@96
 
-[Implementation, line 92](../../../../src/runtime/shooting.ts#L92)
+[Implementation, line 96](../../../../src/runtime/shooting.ts#L96)
 
 ```ts
-callback@92(from, dir, length): inferred by TypeScript; see implementation
+callback@96(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

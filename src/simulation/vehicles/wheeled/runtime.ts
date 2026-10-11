@@ -19,6 +19,7 @@ import {
   type DrivetrainState,
 } from '../drivetrain.js'
 import { surfaceGripScale, type WheelSurface } from '../../wheel-surface.js'
+import { stepWheelMomentum } from '../wheel-momentum.js'
 import type {
   EngineMode,
   PowertrainDefinition,
@@ -149,29 +150,32 @@ export function createWheeledVehicle(
 export function syncWheeledDamping(v: WheeledVehicle, dockedDamping?: number): void {
   if (v.definition.powertrain) v.body.linearDamping = dockedDamping ?? 0
 }
-/**
- * P holds the vehicle where it stopped: a damped spring along the forward axis on the distance
- * crept since P engaged, limited by tyre friction. Speeds are relative to the supporting body, so
- * a car parked on a moving deck rides along. A sleeping chassis is left asleep.
- */
-export function holdInPark(v: WheeledVehicle, forward: Vec3, speed: number, dt: number): void {
+const parkOffsets = new WeakMap<WheeledVehicle, Vec3>()
+/** P holds both ground-plane axes, relative to the supporting deck and limited by tyre grip. */
+export function holdInPark(v: WheeledVehicle, forward: Vec3, _speed: number, dt: number): void {
   const state = v.drivetrain
   const wheels = v.raycast.wheelInfos
   const contacts = wheels.filter((wheel) => wheel.isInContact)
   if (!state.parked || !contacts.length || !(v.body.mass > 0)) {
     state.parkOffset = 0
+    parkOffsets.delete(v)
     return
   }
   if (v.body.raw?.isSleeping()) return
-  let relative = speed
+  const relative = v.body.velocity.clone()
   const ground = contacts.find((wheel) => wheel.raycastResult.body)?.raycastResult.body
   if (ground && ground !== v.body && ground.mass > 0) {
     const support = new Vec3()
     ground.getVelocityAtWorldPoint(v.body.position, support)
-    relative -= support.dot(forward)
+    relative.vsub(support, relative)
   }
-  if (Math.abs(relative) > roadVehicleDefaults.parkHoldSlipSpeed) {
+  const normal = contacts[0].raycastResult.hitNormalWorld.clone()
+  if (normal.lengthSquared() < 0.5) normal.set(0, 1, 0)
+  normal.normalize()
+  relative.vsub(normal.scale(relative.dot(normal)), relative)
+  if (relative.length() > roadVehicleDefaults.parkHoldSlipSpeed) {
     state.parkOffset = 0
+    parkOffsets.delete(v)
     return
   }
   const capacity =
@@ -180,17 +184,23 @@ export function holdInPark(v: WheeledVehicle, forward: Vec3, speed: number, dt: 
     (contacts.length / wheels.length)
   const stiffness = roadVehicleDefaults.parkHoldStiffness
   // Anti-windup: the spring never stores more than the tyres can hold.
-  state.parkOffset = clamp(
-    state.parkOffset + relative * dt,
-    -capacity / stiffness,
-    capacity / stiffness,
-  )
-  const acceleration = clamp(
-    -stiffness * state.parkOffset - roadVehicleDefaults.parkHoldDamping * relative,
-    -capacity,
-    capacity,
-  )
-  v.body.applyForce(forward.scale(acceleration * v.body.mass))
+  const offset = parkOffsets.get(v) ?? new Vec3()
+  offset.vadd(relative.scale(dt), offset)
+  offset.vsub(normal.scale(offset.dot(normal)), offset)
+  if (offset.length() > capacity / stiffness)
+    offset.scale(capacity / stiffness / offset.length(), offset)
+  parkOffsets.set(v, offset)
+  state.parkOffset = offset.dot(forward)
+  // Cancel downhill gravity as well as damping residual forward and sideways creep.
+  const gravity = new Vec3(0, -simulationDefaults.gravity, 0)
+  const tangentGravity = gravity.vsub(normal.scale(gravity.dot(normal)))
+  const acceleration = offset
+    .scale(-stiffness)
+    .vsub(relative.scale(roadVehicleDefaults.parkHoldDamping))
+    .vsub(tangentGravity)
+  if (acceleration.length() > capacity)
+    acceleration.scale(capacity / acceleration.length(), acceleration)
+  v.body.applyForce(acceleration.scale(v.body.mass))
 }
 
 /** Apply one fixed tick of forces/steering; call before the shared world's step. */
@@ -330,6 +340,7 @@ export function stepWheeledVehicle(
       i,
     )
   }
+  stepWheelMomentum(v, dt, active && !starting, powered, input.throttle)
 }
 /**
  * A driver gets in (spawned in the seat, entered with E, or took over the controls): the

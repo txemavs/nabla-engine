@@ -25,6 +25,15 @@ function car(id = 'car', position: [number, number, number] = [0, 1, 0]): Entity
 }
 
 describe('shared simulation', () => {
+  it('fires from an occupied vehicle without hitting its own hull', () => {
+    const target = createEntity('target', 'box', [0, 1, -6])
+    target.size = [2, 2, 0.5]
+    const sim = new Simulation(scene([car(), target]))
+    expect(sim.shoot([0, 1, 4], [0, 0, -1], 20, 0)?.entityId).toBe('car')
+    sim.startInVehicle('car')
+    expect(sim.shoot([0, 1, 0], [0, 0, -1], 20, 0)?.entityId).toBe('target')
+    sim.dispose()
+  })
   it('settles a character and stops it at a wall', () => {
     const wall = createEntity('wall', 'box', [0, 1.5, 0])
     wall.size = [10, 3, 1]

@@ -19,6 +19,8 @@ import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import { withinMapDistance } from '../planet/visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
 import { ShipLights, type ShipSwitch } from './ship-lights.js'
+import { ExhaustSmoke } from './exhaust-smoke.js'
+import { MotorcycleSideStand } from './motorcycle-side-stand.js'
 import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
@@ -50,7 +52,7 @@ import { gameCameraDefaults, rideSmoothingDefaults } from '../../config/camera.j
 import { vehicleAppearanceDefaults } from '../../config/vehicle-appearance.js'
 import { easeRiderHead, type RiderHeadEase } from './rider-head.js'
 import { RideSmoothing, rideSmoothingSettings } from './ride-smoothing.js'
-import { AvatarFollow, EjectionTumble } from './avatar-motion.js'
+import { AvatarFollow, AvatarTransfer, EjectionTumble, poseBikeRecovery } from './avatar-motion.js'
 import {
   clampMirrorAdjustment,
   mirrorModelKey,
@@ -155,6 +157,8 @@ export class SceneView {
   /** Fork, swingarm, shock, chain and wheel articulation of two-wheeled GLB bodies. */
   private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
   private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
+  private readonly exhaustSmoke = new Map<string, ExhaustSmoke[]>()
+  private readonly motorcycleStands = new Map<string, MotorcycleSideStand>()
   private readonly reflections = new Map<string, ReflectionEnvironment>()
   /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
   private readonly odometers = new Map<string, number>()
@@ -177,6 +181,7 @@ export class SceneView {
   daylight = 1
   /** Multiplier on vehicle reflection levels (Ajustes → Luz «Reflejos»). */
   reflectionScale = 1
+  smokeEnabled = true
   private paintBrightness = 1
   private paintCheckAt = 0
   /**
@@ -407,6 +412,7 @@ export class SceneView {
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
   private readonly avatarFollow = new AvatarFollow()
+  private readonly avatarTransfer = new AvatarTransfer()
   private readonly ejectionTumble = new EjectionTumble()
   private graph: SceneGraph
   constructor(
@@ -643,6 +649,7 @@ export class SceneView {
     this.mirrorModels.delete(id)
     this.instruments.get(id)?.dispose()
     this.motorcycleClusters.get(id)?.dispose()
+    this.exhaustSmoke.get(id)?.forEach((smoke) => smoke.dispose())
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
     if (group) {
@@ -678,6 +685,8 @@ export class SceneView {
       this.landingGear,
       this.motorcycleRigs,
       this.motorcycleClusters,
+      this.exhaustSmoke,
+      this.motorcycleStands,
       this.reflections,
       this.odometers,
       this.ramps,
@@ -1111,6 +1120,14 @@ export class SceneView {
       }
       adapter?.preparePart?.(model, 'body')
       environment.add(model)
+      const exhaust = equipment?.exhaust
+      if (exhaust) {
+        const emitters = [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map(
+          (outlet) => new ExhaustSmoke(outlet, this.root, exhaust.options),
+        )
+        this.exhaustSmoke.set(e.id, emitters)
+        this.root.add(...emitters.map((smoke) => smoke.root))
+      }
       const twoWheeled = e.vehicle?.twoWheeled
       if (twoWheeled && hasMotorcycleRig(model))
         this.motorcycleRigs.set(
@@ -1121,6 +1138,24 @@ export class SceneView {
           ),
         )
       if (twoWheeled) {
+        const bottom = Math.min(
+          ...definition.hubs.map(
+            (hub, i) =>
+              hub[1] -
+              (i === 1
+                ? (twoWheeled.rearWheelRadius ?? definition.wheelRadius)
+                : definition.wheelRadius),
+          ),
+        )
+        const stand = new MotorcycleSideStand(bottom)
+        group.add(stand.root)
+        this.motorcycleStands.set(e.id, stand)
+        const outlet = model.getObjectByName('Exhaust_Outlet_Closure')
+        if (outlet) {
+          const smoke = new ExhaustSmoke(outlet, this.root)
+          this.exhaustSmoke.set(e.id, [smoke])
+          this.root.add(smoke.root)
+        }
         const cluster = MotorcycleInstruments.bind(model, {
           ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
           ...e.vehicle?.cluster,
@@ -1398,6 +1433,7 @@ export class SceneView {
       }
   }
   sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
+    if (sim.playerEjection || sim.playerBikeRecovery?.phase === 'rising') cockpit = false
     this.simulated = true
     for (const e of this.document.entities) {
       if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue
@@ -1458,6 +1494,7 @@ export class SceneView {
         const lamp = { powered, braking: false, reversing: false }
         cluster.update({
           powered,
+          daylight: this.daylight,
           ignition: info.ignition,
           gaugeSweep: info.gaugeSweep,
           speedKmh: info.speedKmh,
@@ -1476,6 +1513,26 @@ export class SceneView {
     for (const [id, thrusters] of this.thrusters) {
       const info = sim.vehicleInfo(id)
       thrusters.update(!!info.flightMode, info.speedKmh, elapsed, performance.now(), this.night)
+    }
+    for (const [id, emitters] of this.exhaustSmoke) {
+      const info = sim.vehicleInfo(id)
+      for (const smoke of emitters) {
+        smoke.setEnabled(this.smokeEnabled)
+        smoke.update(
+          elapsed,
+          sim.player.vehicleId === id &&
+            (!info.twoWheeled || !info.parked) &&
+            info.helm !== 'off' &&
+            info.ignition === 'running' &&
+            info.rpm > 500,
+          info.engineLoad,
+          info.speedKmh,
+        )
+      }
+    }
+    for (const [id, stand] of this.motorcycleStands) {
+      const info = sim.vehicleInfo(id)
+      stand.update(elapsed, sim.player.vehicleId !== id && info.parked && Math.abs(info.lean) < 0.3)
     }
     for (const lights of this.shipLights.values()) lights.update(performance.now())
     const lightNow = performance.now()
@@ -1552,8 +1609,10 @@ export class SceneView {
     this.captureOccupiedLights(sim.player.vehicleId)
     const vehicleId = sim.player.vehicleId
     this.updateRideSmoothing(sim, vehicleId, elapsed)
-    setMonitorSunglasses(this.monitor, !this.night)
-    if (!cockpit) updateMonitorAvatar(this.monitor, elapsed, !!vehicleId)
+    const recovery = sim.playerBikeRecovery
+    setMonitorSunglasses(this.monitor, !this.night && !recovery)
+    if (!cockpit)
+      updateMonitorAvatar(this.monitor, elapsed, !!vehicleId, recovery?.phase === 'lifting')
     if (vehicleId) {
       const info = sim.vehicleInfo(vehicleId, true)
       const head = driverHeadPose(
@@ -1593,6 +1652,7 @@ export class SceneView {
           ),
         )
       this.monitor.scale.setScalar(0.825)
+      this.monitor.position.set(0, 0, 0)
       this.monitorMotion.update(
         this.monitor,
         sim.playerFrame
@@ -1614,6 +1674,17 @@ export class SceneView {
       )
       this.avatar.visible = !cockpit
     }
+    if (recovery?.phase === 'rising' || recovery?.phase === 'lifting')
+      poseBikeRecovery(this.monitor, recovery.phase, recovery.progress, this.monitor.position.y)
+    if (recovery?.phase === 'lifting') {
+      const bike = new THREE.Vector3(...sim.entityTransform(recovery.vehicleId, true).position)
+      const delta = this.avatar.position.clone().sub(bike)
+      this.avatar.quaternion.setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        Math.atan2(delta.x, delta.z),
+      )
+    }
+    this.avatarTransfer.update(this.avatar, this.monitor, vehicleId, elapsed, !!sim.playerEjection)
   }
   /**
    * Advance the ride smoothing with the player's vehicle. Crashes, a fallen bike, rollovers and
@@ -1757,6 +1828,8 @@ export class SceneView {
   dispose(): void {
     if (this.disposed) return
     this.streetlights.dispose()
+    for (const emitters of this.exhaustSmoke.values()) for (const smoke of emitters) smoke.dispose()
+    this.exhaustSmoke.clear()
     for (const hud of this.shipHuds.values()) hud.dispose()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()

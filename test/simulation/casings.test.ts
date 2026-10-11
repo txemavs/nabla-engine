@@ -28,7 +28,12 @@ it('lands to the right, bounces once and disappears after its lifetime', () => {
   let bounced = false
   for (let t = 0; t < 3; t += 1 / 60) {
     motion.update(1 / 60, ground)
-    if (motion.bounces.length) bounced = true
+    if (motion.bounces.length) {
+      bounced = true
+      expect(motion.impacts.map((hit) => hit.speed)).toEqual(motion.bounces)
+      expect(motion.impacts[0].position[0]).toBeGreaterThan(0.3)
+      expect(motion.impacts[0].position[1]).toBe(0)
+    }
   }
   expect(bounced).toBe(true)
   const pose = motion.poses()[0]

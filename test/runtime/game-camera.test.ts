@@ -15,6 +15,105 @@ import type { SceneDocument } from '../../src/scene/document.js'
 import { gameCameraDefaults, resolveGameCameraSettings } from '../../src/config/camera.js'
 import { followDrivingHeading } from '../../src/render/entity/driving-camera.js'
 import { GameRuntime } from '../../src/runtime/game.js'
+import { startEjection, type RiderEjection } from '../../src/simulation/rider-ejection.js'
+import { Vec3 } from '../../src/simulation/physics.js'
+import { idleInput } from '../../src/simulation/simulation.js'
+import type { Vehicle } from '../../src/entity/vehicle/vehicle.js'
+
+test.each(['chase', 'map', 'cinematic', 'cockpit'] as const)(
+  'runtime preserves %s through actual falling, lifting and automatic boarding',
+  async (mode) => {
+    const floor = createEntity('floor', 'box', [0, -0.5, 0])
+    floor.size = [100, 1, 100]
+    const game = new GameRuntime()
+    try {
+      const sim = await game.play(
+        {
+          version: 1,
+          name: 'Recovery view',
+          entities: [
+            floor,
+            createEntity('spawn', 'spawn'),
+            presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
+          ],
+        },
+        { vehicleId: 'bike' },
+      )
+      for (let i = 0; i < 60; i++) game.step(1 / 60, idleInput(), -100, (i * 1000) / 60)
+      game.cameraState.mode = mode
+      const bike = (sim as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+      bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+      bike.body.velocity.setZero()
+      bike.body.angularVelocity.setZero()
+      let boarding = false
+      for (let i = 0; i < 360; i++) {
+        game.step(1 / 60, idleInput(), -100, 1000 + (i * 1000) / 60)
+        boarding ||= sim.playerBikeRecovery?.phase === 'boarding'
+        expect(game.cameraState.mode).toBe(mode)
+        if (!sim.player.vehicleId) expect(game.cameraState.firstPerson).toBe(mode === 'cockpit')
+      }
+      expect(boarding).toBe(true)
+      expect(sim.player.vehicleId).toBe('bike')
+    } finally {
+      game.dispose()
+    }
+  },
+)
+
+test('a fallen rider gets an overhead shot of rider and bike without losing the previous camera mode', async () => {
+  const document: SceneDocument = {
+    version: 1,
+    name: 'Fall camera',
+    entities: [
+      presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
+      createEntity('spawn', 'spawn', [12, 1, 8]),
+    ],
+  }
+  const session = new PlaySession()
+  const sim = await session.play(document)
+  const view = {
+    document,
+    objects: new Map(),
+    vehicleHeadOffset: () => [0, 0, 0] as [number, number, number],
+  }
+  const camera = new PerspectiveCamera(38, 0.6)
+  const state = createGameCameraState()
+  state.mode = 'cockpit'
+  const fall = sim as unknown as { ejection: RiderEjection | null }
+  try {
+    fall.ejection = startEjection('bike', 12)
+    const result = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
+    expect(result.cinematic).toBe(true)
+    expect(result.cockpit).toBe(false)
+    expect(camera.getWorldDirection(new Vector3()).y).toBeCloseTo(-1, 8)
+    expect(state.mode).toBe('cockpit')
+    camera.updateMatrixWorld(true)
+    for (const centre of [sim.renderPlayerPosition, sim.entityTransform('bike').position]) {
+      const projected = new Vector3(...centre).project(camera)
+      expect(Math.abs(projected.x)).toBeLessThan(0.95)
+      expect(Math.abs(projected.y)).toBeLessThan(0.95)
+    }
+    fall.ejection = null
+    expect(updateGameCamera(sim, view, camera, state, 2000, 1 / 60).cinematic).toBe(false)
+    // Getting up beside a tipped bike is not another ejection: keep every chosen mode.
+    for (const mode of ['cockpit', 'chase', 'map', 'cinematic'] as const) {
+      state.mode = mode
+      for (const phase of ['rising', 'lifting', 'boarding'] as const) {
+        Object.defineProperty(sim, 'playerBikeRecovery', {
+          configurable: true,
+          get: () => ({ vehicleId: 'bike', phase, progress: 0.5 }),
+        })
+        const recovering = updateGameCamera(sim, view, camera, state, 3000, 1 / 60)
+        expect(recovering.cinematic).toBe(mode === 'cinematic')
+        expect(recovering.cockpit).toBe(mode === 'cockpit')
+        expect(state.lastView?.view).toBe(mode)
+        expect(state.mode).toBe(mode)
+      }
+    }
+  } finally {
+    session.dispose()
+  }
+})
 
 test('manual look lasts ten seconds, then recovery ramps up and can be overridden', () => {
   for (const elapsed of [0, 900, 1400, 9999, 10000]) {

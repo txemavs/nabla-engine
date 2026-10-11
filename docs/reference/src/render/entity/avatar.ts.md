@@ -351,7 +351,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Advance reusable face pixels and smooth the glasses hinge without changing the driver pose.
 
 ```ts
-updateMonitorAvatar(model: THREE.Group, elapsed: number, driving = false): void
+updateMonitorAvatar(model: THREE.Group, elapsed: number, driving = false, effort = false): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -366,7 +366,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## disposeMonitorAvatar
 
-[Implementation, line 431](../../../../../src/render/entity/avatar.ts#L431)
+[Implementation, line 436](../../../../../src/render/entity/avatar.ts#L436)
 
 The SceneView owns this texture; normal object disposal owns all meshes and materials.
 
@@ -382,7 +382,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorMotion.reset
 
-[Implementation, line 441](../../../../../src/render/entity/avatar.ts#L441)
+[Implementation, line 446](../../../../../src/render/entity/avatar.ts#L446)
 
 Presentation only: the existing player collider remains the sole locomotion body.
 
@@ -396,7 +396,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorMotion.update
 
-[Implementation, line 445](../../../../../src/render/entity/avatar.ts#L445)
+[Implementation, line 450](../../../../../src/render/entity/avatar.ts#L450)
 
 Presentation only: the existing player collider remains the sole locomotion body.
 

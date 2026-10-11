@@ -65,12 +65,16 @@ export function fireSidearm(
   now: number,
   firstPerson: boolean,
 ): SidearmShot | null {
-  if (sim.player.vehicleId || !sidearm.visible) return null
+  if (!sidearm.visible) return null
   const event: SidearmShot = sidearm.pull(now)
   if (!event.fired) return event
   const look = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
   const load = sidearm.simulated ? sidearm.preset!.ammunition! : null
   const origin = firstPerson ? camera.position.clone() : new Vector3(...sim.renderPlayerPosition)
+  if (!firstPerson) {
+    const muzzle = sidearm.worldMuzzle()
+    if (muzzle) origin.copy(muzzle).sub(view.root.position)
+  }
   let direction = look.clone()
   if (!firstPerson) {
     // Third person: the shooter aims at what the camera looks at.

@@ -1,5 +1,8 @@
 /** Spanish translations for Engine-owned gameplay UI. English message templates are stable keys. */
 export const spanishMessages: Readonly<Record<string, string>> = {
+  'E pick up {0}': 'E recoger {0}',
+  'Picked up {0} · Tab holster': 'Has recogido {0} · Tab guardar',
+  'Find and pick up a pistol first': 'Busca y recoge una pistola primero',
   'Indicators: Z left · X right · press again to cancel':
     'Intermitentes: Z izquierda · X derecha · repetir para apagar',
   'High beams selected': 'Largas seleccionadas',

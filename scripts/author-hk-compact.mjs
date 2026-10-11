@@ -38,6 +38,17 @@ const group = (name, parent = model, at = [0, 0, 0]) => {
 }
 const frame = group('Frame')
 const slide = group('Slide')
+const detailBytes = await fs.readFile(path.join(directory, 'hk-compact.details.glb'))
+const details = await loader.parseAsync(
+  detailBytes.buffer.slice(detailBytes.byteOffset, detailBytes.byteOffset + detailBytes.byteLength),
+  '',
+)
+for (const name of ['Hammer', 'Sights', 'Control_lever', 'Slide_Release']) {
+  const part = details.scene.getObjectByName(name)
+  if (!part) throw new Error(`Missing imported detail: ${name}`)
+  part.material = darkSteel
+  ;(name === 'Sights' ? slide : frame).add(part)
+}
 const barrel = group('Barrel')
 const trigger = group('Trigger', model, [0, 0.083, -0.027])
 trigger.userData = { presentationAxis: [1, 0, 0] }
@@ -127,7 +138,7 @@ sideProfile(
   polymer,
   frame,
 )
-// Flush closure follows the source slide section; no separate plate or control detail.
+// Rear opening exposes the compact hammer, rather than sealing it behind the slide.
 const rearOutline = new T.Shape([
   new T.Vector2(-0.0137, 0.092),
   new T.Vector2(0.0137, 0.092),
@@ -136,7 +147,56 @@ const rearOutline = new T.Shape([
   new T.Vector2(-0.009, 0.122),
   new T.Vector2(-0.0137, 0.116),
 ])
+const hammerOpening = new T.Path()
+hammerOpening.moveTo(-0.0048, 0.101)
+hammerOpening.lineTo(-0.0048, 0.117)
+hammerOpening.lineTo(0.0048, 0.117)
+hammerOpening.lineTo(0.0048, 0.101)
+hammerOpening.closePath()
+rearOutline.holes.push(hammerOpening)
 mesh('SlideRearClosure', new T.ShapeGeometry(rearOutline), steel, slide, [0, 0, 0.05035])
+box('HammerRecess', [0.0094, 0.016, 0.002], [0, 0.109, 0.048], darkSteel, frame)
+
+// The supplied rear view has a notched two-green-dot rear sight and a red front dot.
+const rearSight = group('RearSight', slide)
+const greenDot = new T.MeshStandardMaterial({
+  color: 0x83c6a3,
+  emissive: 0x244936,
+  emissiveIntensity: 0.15,
+  roughness: 0.6,
+})
+greenDot.name = 'Green rear sight dots'
+const redDot = new T.MeshStandardMaterial({
+  color: 0xef4936,
+  emissive: 0x65170d,
+  emissiveIntensity: 0.15,
+  roughness: 0.6,
+})
+redDot.name = 'Red front sight dot'
+function sightDot(name, x, startZ, material, parent, radius) {
+  slide.updateMatrixWorld(true)
+  const sight = slide.getObjectByName('Sights')
+  const hit = new T.Raycaster(
+    new T.Vector3(x, 0.1298, startZ),
+    new T.Vector3(0, 0, -1),
+  ).intersectObject(sight)[0]
+  if (!hit) throw new Error(`Sight dot has no supporting face: ${name}`)
+  const normal = hit.face.normal.clone().transformDirection(sight.matrixWorld)
+  const dot = mesh(name, new T.CircleGeometry(radius, 16), material, parent)
+  dot.position.copy(hit.point).addScaledVector(normal, 0.00008)
+  dot.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), normal)
+}
+for (const side of [-1, 1])
+  sightDot(
+    `RearSightDot_${side < 0 ? 'Left' : 'Right'}`,
+    side * 0.0048,
+    0.1,
+    greenDot,
+    rearSight,
+    0.00065,
+  )
+const frontSight = group('FrontSight', slide)
+sightDot('FrontSightDot', 0, -0.05, redDot, frontSight, 0.00065)
 
 // Visible barrel shroud and chamber: presentation geometry only, no internal mechanism.
 const barrelShell = mesh(
@@ -188,7 +248,7 @@ await source('magazine.source', magazine, darkSteel)
 
 group('MuzzleSocket', model, [0, 0.108, -0.1181])
 group('GripSocket', model, [0, 0.049, 0.015])
-group('SightSocket', slide, [0, 0.126, 0.035])
+group('SightSocket', slide, [0, 0.1298, 0.035])
 model.updateMatrixWorld(true)
 const binary = await new GLTFExporter().parseAsync(model, {
   binary: true,

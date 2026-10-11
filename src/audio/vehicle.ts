@@ -11,7 +11,8 @@ import { TireSqueal } from './tires.js'
 import { MetalScrape } from './scrape.js'
 import { Turbine } from './turbine.js'
 import { ReverseAlarm } from './reverse-alarm.js'
-import { AudioMixer, audioBus, type AudioMixLevels } from './mixer.js'
+import { AudioMixer, audioBus, withAudioOutputs, type AudioMixLevels } from './mixer.js'
+import { SpatialEmitter } from './positional.js'
 import { BackgroundMusic, type MusicTrack } from './music.js'
 
 /**
@@ -36,11 +37,17 @@ export class VehicleAudio {
   private startVoice?: EngineStart
   private reverseVoice?: ReverseAlarm
   private gunshotVoice?: Gunshot
-  private tinkleVoice?: CasingTinkle
+  private weaponClickVoice?: GearClick
+  private vehicleEngine?: SpatialEmitter
+  private turbineEmitter?: SpatialEmitter
+  private vehicleEffects?: SpatialEmitter
+  private weaponEmitter?: SpatialEmitter
+  private casingVoices: { voice: CasingTinkle; emitter: SpatialEmitter }[] = []
+  private nextCasing = 0
+  private eye: readonly number[] = [0, 0, 0]
+  private orientation: readonly number[] = [0, 0, 0, 1]
+  private listenerSpeed = 0
   private tinkles = 0
-  private get tinkle(): CasingTinkle {
-    return (this.tinkleVoice ??= new CasingTinkle(this.context!, loopingNoise(this.context!)))
-  }
   private clacks = 0
   private clicks = 0
   private starts = 0
@@ -170,6 +177,31 @@ export class VehicleAudio {
     return this.shots
   }
 
+  /** Camera pose and listener speed, in the same absolute world frame as source positions. */
+  setListener(position: readonly number[], quaternion: readonly number[], speedKmh = 0): void {
+    this.eye = [...position]
+    this.orientation = [...quaternion]
+    this.listenerSpeed = Math.abs(speedKmh)
+    for (const emitter of [
+      this.vehicleEngine,
+      this.vehicleEffects,
+      this.weaponEmitter,
+      this.turbineEmitter,
+      ...this.casingVoices.map((entry) => entry.emitter),
+    ]) {
+      emitter?.setListener(this.eye, this.orientation)
+    }
+    for (const entry of this.casingVoices)
+      entry.emitter.setMask(1 / (1 + (this.listenerSpeed / 30) ** 2))
+  }
+  setVehiclePosition(position: readonly number[]): void {
+    this.vehicleEngine?.setPosition(position)
+    this.vehicleEffects?.setPosition(position)
+  }
+  setTurbinePosition(position: readonly number[]): void {
+    this.turbineEmitter?.setPosition(position)
+  }
+
   /** `level` is 0..1. `speed` is km/h. */
   turbine(level: number, speed: number): void {
     const frame = this.frame()
@@ -213,10 +245,12 @@ export class VehicleAudio {
   }
 
   /** One short, quiet mechanical click for a gear change (`gearShift.sound: 'click'`). */
-  gearClick(sound?: GearClickSound | null): void {
+  gearClick(sound?: GearClickSound | null, position?: readonly number[]): void {
     const frame = this.frame()
     if (!frame || !this.clickVoice || !frame.audible) return
-    this.clickVoice.trigger(frame.time, true, sound)
+    if (position) this.weaponEmitter?.setPosition(position)
+    const voice = position ? this.weaponClickVoice : this.clickVoice
+    voice?.trigger(frame.time, true, sound)
     this.clicks++
   }
 
@@ -243,9 +277,10 @@ export class VehicleAudio {
   }
 
   /** One sidearm shot. Silent before the first gesture, while muted or while suspended. */
-  gunshot(): void {
+  gunshot(position?: readonly number[]): void {
     const frame = this.frame()
     if (!frame || !this.gunshotVoice || !frame.audible) return
+    this.weaponEmitter?.setPosition(position ?? this.eye)
     this.gunshotVoice.trigger(frame.time, true)
     this.shots++
   }
@@ -257,10 +292,31 @@ export class VehicleAudio {
   }
 
   /** A brass casing hitting the ground at `speed` m/s. */
-  casing(speed: number): void {
+  casing(speed: number, position?: readonly number[]): void {
     const frame = this.frame()
     if (!frame || !frame.audible) return
-    this.tinkle.trigger(frame.time, true, speed)
+    if (!this.casingVoices.length) {
+      const context = this.context!
+      const noise = loopingNoise(context)
+      for (let i = 0; i < 4; i++) {
+        const emitter = new SpatialEmitter(context, audioBus(context), {
+          referenceDistance: 0.75,
+          maxDistance: 12,
+          rolloff: 2,
+        })
+        const voice = withAudioOutputs(
+          context,
+          { sfx: emitter.input },
+          () => new CasingTinkle(context, noise),
+        )
+        this.casingVoices.push({ emitter, voice })
+      }
+    }
+    const entry = this.casingVoices[this.nextCasing++ % this.casingVoices.length]
+    entry.emitter.setListener(this.eye, this.orientation)
+    entry.emitter.setPosition(position ?? this.eye)
+    entry.emitter.setMask(1 / (1 + (this.listenerSpeed / 30) ** 2))
+    entry.voice.trigger(frame.time, true, speed)
     this.tinkles++
   }
   /** Casing tinkles played so far, for tests and the renderer dataset. */
@@ -288,16 +344,52 @@ export class VehicleAudio {
     this.mixer.attach(context)
     const noise = loopingNoise(context)
     this.context = context
-    this.turbineVoice = new Turbine(context, noise)
-    this.propellerVoice = new Propeller(context)
-    this.tireVoice = new TireSqueal(context, noise)
-    this.scrapeVoice = new MetalScrape(context, noise)
-    this.powertrainVoice = new Powertrain(context, noise)
-    this.reverseVoice = new ReverseAlarm(context)
-    this.startVoice = new EngineStart(context, noise)
-    this.gearVoice = new GearClack(context, noise)
-    this.clickVoice = new GearClick(context, noise)
-    this.gunshotVoice = new Gunshot(context, noise)
+    this.vehicleEngine = new SpatialEmitter(context, audioBus(context, 'engine'), {
+      referenceDistance: 3,
+      maxDistance: 180,
+    })
+    this.vehicleEffects = new SpatialEmitter(context, audioBus(context), {
+      referenceDistance: 2,
+      maxDistance: 60,
+    })
+    this.weaponEmitter = new SpatialEmitter(context, audioBus(context), {
+      referenceDistance: 1,
+      maxDistance: 250,
+    })
+    this.turbineEmitter = new SpatialEmitter(context, audioBus(context, 'engine'), {
+      referenceDistance: 3,
+      maxDistance: 180,
+    })
+    this.turbineVoice = withAudioOutputs(
+      context,
+      { engine: this.turbineEmitter.input },
+      () => new Turbine(context, noise),
+    )
+    withAudioOutputs(
+      context,
+      { engine: this.vehicleEngine.input, sfx: this.vehicleEffects.input },
+      () => {
+        this.propellerVoice = new Propeller(context)
+        this.tireVoice = new TireSqueal(context, noise)
+        this.scrapeVoice = new MetalScrape(context, noise)
+        this.powertrainVoice = new Powertrain(context, noise)
+        this.reverseVoice = new ReverseAlarm(context)
+        this.startVoice = new EngineStart(context, noise)
+        this.gearVoice = new GearClack(context, noise)
+        this.clickVoice = new GearClick(context, noise)
+      },
+    )
+    this.gunshotVoice = withAudioOutputs(
+      context,
+      { sfx: this.weaponEmitter.input },
+      () => new Gunshot(context, noise),
+    )
+    this.weaponClickVoice = withAudioOutputs(
+      context,
+      { sfx: this.weaponEmitter.input },
+      () => new GearClick(context, noise),
+    )
+    this.setListener(this.eye, this.orientation, this.listenerSpeed)
   }
 
   private frame(): { time: number; audible: boolean } | undefined {
@@ -315,9 +407,10 @@ export class VehicleAudio {
     this.powertrainVoice?.silence(time)
     this.gearVoice?.silence(time)
     this.clickVoice?.silence(time)
+    this.weaponClickVoice?.silence(time)
     this.startVoice?.silence(time)
     this.reverseVoice?.silence(time)
     this.gunshotVoice?.silence(time)
-    this.tinkleVoice?.silence(time)
+    for (const entry of this.casingVoices) entry.voice.silence(time)
   }
 }

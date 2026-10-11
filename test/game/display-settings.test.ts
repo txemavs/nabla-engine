@@ -7,16 +7,16 @@ describe('demo display URL', () => {
   it('fixes the quality preset default when the player saved no scale', () => {
     expect(readDisplaySettings('')).toEqual({
       maxFps: 0,
-      resolutionScale: 0.8,
+      resolutionScale: 1,
       resolutionScaleMode: 'manual',
     })
-    expect(readDisplaySettings('?quality=ultra').resolutionScale).toBe(1)
-    expect(readDisplaySettings('?quality=high').resolutionScale).toBe(1)
+    expect(readDisplaySettings('?quality=ultra').resolutionScale).toBe(1.3)
+    expect(readDisplaySettings('?quality=high').resolutionScale).toBe(1.15)
     expect(readDisplaySettings('?quality=balanced').resolutionScale).toBe(0.8)
     expect(readDisplaySettings('?quality=low').resolutionScale).toBe(0.5)
     expect(readDisplaySettings('?quality=mobile').resolutionScale).toBe(0.45)
     expect(readDisplaySettings('?quality=minimal').resolutionScale).toBe(0.4)
-    expect(readDisplaySettings('?quality=ultra&scale=bogus').resolutionScale).toBe(1)
+    expect(readDisplaySettings('?quality=ultra&scale=bogus').resolutionScale).toBe(1.3)
     expect(wantsAutoResolution('')).toBe(false)
   })
 
