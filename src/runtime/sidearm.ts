@@ -737,9 +737,9 @@ export class Sidearm {
       if (!held && blend < 0.001) this.inspection = null
       else {
         if (this.inspection.kind === 'chamber') {
-          this.model.rotation.x += (0.45 - this.model.rotation.x) * blend
-          this.model.rotation.y += (-0.65 - this.model.rotation.y) * blend
-          this.model.rotation.z += (-0.4 - this.model.rotation.z) * blend
+          this.model.rotation.x += (0.85 - this.model.rotation.x) * blend
+          this.model.rotation.y += (0 - this.model.rotation.y) * blend
+          this.model.rotation.z += (0.22 - this.model.rotation.z) * blend
           if (this.slide) {
             const travel = Math.max(this.state.slide, 0.8 * blend)
             this.slide.object.position
