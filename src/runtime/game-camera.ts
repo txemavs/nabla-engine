@@ -59,6 +59,14 @@ export interface GameCameraState {
   /** Vertically smoothed cinematic anchor height, metres; null re-seeds it next frame. */
   cinematicAnchorY: number | null
   entrance: { id: string; started: number } | null
+  /** Eye-level boarding/dismount, separate from the authored initial overhead descent. */
+  seatMove: {
+    vehicleId: string | null
+    started: number
+    position: THREE.Vector3
+    quaternion: THREE.Quaternion
+    fov: number
+  } | null
   recoveryView: {
     id: string
     started: number
@@ -118,6 +126,7 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     cinematicZoom: 1,
     cinematicAnchorY: null,
     entrance: null,
+    seatMove: null,
     recoveryView: null,
     telemetry: new DrivingTelemetry(resolved),
     flightTilt: 0,
@@ -207,6 +216,7 @@ export function setGameCameraView(
   seated: boolean,
 ): void {
   state.entrance = null
+  state.seatMove = null
   if (wanted === 'first-person') {
     state.mode = 'chase'
     state.firstPerson = true
@@ -587,6 +597,50 @@ export function updateGameCamera(
     if (elapsed >= tuning.entranceEndMs) vehicleEntrance = null
   } else vehicleEntrance = null
 
+  const seatMove = state.seatMove
+  if (seatMove && seatMove.vehicleId === p.vehicleId && eyes && !recovery && !riderFall) {
+    const t = THREE.MathUtils.clamp((now - seatMove.started) / 850, 0, 1)
+    const destination = camera.position.clone()
+    const rotation = camera.quaternion.clone()
+    if (!p.vehicleId && destination.distanceToSquared(seatMove.position) > 0.01) {
+      // Turn toward the door before moving out; settle into the walking heading afterward.
+      const door = camera.clone()
+      door.position.copy(seatMove.position)
+      door.lookAt(destination)
+      if (t < 0.4)
+        camera.quaternion.slerpQuaternions(
+          seatMove.quaternion,
+          door.quaternion,
+          THREE.MathUtils.smootherstep(t, 0, 0.4),
+        )
+      else
+        camera.quaternion.slerpQuaternions(
+          door.quaternion,
+          rotation,
+          THREE.MathUtils.smootherstep(t, 0.4, 1),
+        )
+    } else
+      camera.quaternion.slerpQuaternions(
+        seatMove.quaternion,
+        rotation,
+        THREE.MathUtils.smootherstep(t, 0, 1),
+      )
+    camera.position.lerpVectors(
+      seatMove.position,
+      destination,
+      THREE.MathUtils.smootherstep(t, p.vehicleId ? 0 : 0.15, 1),
+    )
+    camera.fov = THREE.MathUtils.lerp(
+      seatMove.fov,
+      camera.fov,
+      THREE.MathUtils.smootherstep(t, 0, 1),
+    )
+    camera.updateProjectionMatrix()
+    const body = p.vehicleId ? view.objects.get(p.vehicleId) : undefined
+    if (body) prepareVehicle?.(body, camera)
+    if (t >= 1) state.seatMove = null
+  } else state.seatMove = null
+
   // View changes blend from the last rendered pose (eased position, orientation and fov) while
   // the player stays in the same vehicle or on foot; boarding keeps its own entrance move.
   const cameraView = recovery
@@ -614,7 +668,8 @@ export function updateGameCamera(
           }
         : null
   }
-  if (riderFall || vehicleEntrance || (last && last.vehicleId !== vehicleKey)) transition = null
+  if (riderFall || vehicleEntrance || seatMove || (last && last.vehicleId !== vehicleKey))
+    transition = null
   if (transition) {
     const t = THREE.MathUtils.clamp((now - transition.started) / transition.duration, 0, 1)
     const k = THREE.MathUtils.smootherstep(t, 0, 1)
