@@ -127,7 +127,7 @@ sideProfile(
   polymer,
   frame,
 )
-// Flush closure follows the source slide section; no separate plate or control detail.
+// Rear opening exposes the compact hammer, rather than sealing it behind the slide.
 const rearOutline = new T.Shape([
   new T.Vector2(-0.0137, 0.092),
   new T.Vector2(0.0137, 0.092),
@@ -136,7 +136,55 @@ const rearOutline = new T.Shape([
   new T.Vector2(-0.009, 0.122),
   new T.Vector2(-0.0137, 0.116),
 ])
+const hammerOpening = new T.Path()
+hammerOpening.moveTo(-0.0048, 0.101)
+hammerOpening.lineTo(-0.0048, 0.117)
+hammerOpening.lineTo(0.0048, 0.117)
+hammerOpening.lineTo(0.0048, 0.101)
+hammerOpening.closePath()
+rearOutline.holes.push(hammerOpening)
 mesh('SlideRearClosure', new T.ShapeGeometry(rearOutline), steel, slide, [0, 0, 0.05035])
+const hammer = group('Hammer', frame)
+box('HammerRecess', [0.0094, 0.016, 0.002], [0, 0.109, 0.048], darkSteel, frame)
+box('HammerFace', [0.007, 0.012, 0.004], [0, 0.11, 0.051], darkSteel, hammer, 0.0018)
+box('HammerRoundedTop', [0.007, 0.004, 0.005], [0, 0.117, 0.052], steel, hammer, 0.0015)
+
+// The supplied rear view has a notched two-green-dot rear sight and a red front dot.
+const rearSight = group('RearSight', slide)
+box('RearSightBase', [0.022, 0.002, 0.01], [0, 0.1241, 0.033], darkSteel, rearSight)
+for (const side of [-1, 1])
+  box(
+    `RearSightWing_${side < 0 ? 'Left' : 'Right'}`,
+    [0.007, 0.007, 0.008],
+    [side * 0.0068, 0.128, 0.034],
+    darkSteel,
+    rearSight,
+  )
+const greenDot = new T.MeshStandardMaterial({
+  color: 0x83c6a3,
+  emissive: 0x244936,
+  emissiveIntensity: 0.15,
+  roughness: 0.6,
+})
+greenDot.name = 'Green rear sight dots'
+const redDot = new T.MeshStandardMaterial({
+  color: 0xef4936,
+  emissive: 0x65170d,
+  emissiveIntensity: 0.15,
+  roughness: 0.6,
+})
+redDot.name = 'Red front sight dot'
+for (const side of [-1, 1])
+  mesh(
+    `RearSightDot_${side < 0 ? 'Left' : 'Right'}`,
+    new T.CircleGeometry(0.00125, 16),
+    greenDot,
+    rearSight,
+    [side * 0.0068, 0.1285, 0.0381],
+  )
+const frontSight = group('FrontSight', slide)
+box('FrontSightBlade', [0.004, 0.008, 0.006], [0, 0.1272, -0.11], darkSteel, frontSight)
+mesh('FrontSightDot', new T.CircleGeometry(0.00115, 16), redDot, frontSight, [0, 0.1285, -0.1069])
 
 // Visible barrel shroud and chamber: presentation geometry only, no internal mechanism.
 const barrelShell = mesh(
@@ -188,7 +236,7 @@ await source('magazine.source', magazine, darkSteel)
 
 group('MuzzleSocket', model, [0, 0.108, -0.1181])
 group('GripSocket', model, [0, 0.049, 0.015])
-group('SightSocket', slide, [0, 0.126, 0.035])
+group('SightSocket', slide, [0, 0.1285, 0.035])
 model.updateMatrixWorld(true)
 const binary = await new GLTFExporter().parseAsync(model, {
   binary: true,

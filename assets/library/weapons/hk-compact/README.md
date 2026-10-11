@@ -2,8 +2,9 @@
 
 `hk-compact.glb` is the assembled game model, in metres, Y up, −Z forward.
 It preserves the existing authored frame and slide, completes the rear exterior,
-and adds a rounded curved trigger and a simple barrel exterior. The original sight
-silhouettes remain; added plates, hammer, sight dots and control levers are deferred.
+and adds a rounded curved trigger and a simple barrel exterior. The user's rear-view
+reference supplies the notched rear sight with two green dots, red-dot front sight,
+and visible rounded compact hammer in the rear opening of the slide.
 These additions are visual approximations for rendering, not manufacturing geometry.
 
 The user supplied `cargador.glb`, preserved as `hk-compact.magazine.source.glb`.
@@ -24,12 +25,9 @@ Exterior references: the user's two supplied side-view photographs and
 The leaflet is used only for visual identification; its airsoft operating instructions
 and ammunition specifications are not part of this asset or the game simulation.
 
-## Engine integration to follow
+## Engine integration
 
-The current `Sidearm` still uses the legacy split assets. Complete the model review
-before changing its runtime contract. A reusable weapon presenter should load one
-assembled asset and bind explicit rig parts and sockets; preserve authored rest poses;
-animate slide, trigger and magazine from state; place effects from `MuzzleSocket`;
-and share the asset between world representation and first-person presentation.
-Cadence, ammunition and reload state should have one simulation owner, separate from
-cosmetic animation. Dispose instance-owned resources and handle late loading consistently.
+`Sidearm` loads the assembled model and binds the slide, trigger and magazine from
+the presentation rig, preserving their authored rest transforms. Both sights move
+with the slide; the exterior hammer remains attached to the frame. Firearm and
+reload state remain separate from this cosmetic geometry.
