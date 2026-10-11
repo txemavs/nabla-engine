@@ -36,6 +36,12 @@ import type { VehicleLightMode } from '../render/vehicle-presentation/light-cont
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
+import {
+  readSidearmTuning,
+  writeSidearmTuning,
+  normalizeSidearmTuning,
+  type SidearmTuning,
+} from './sidearm-tuning.js'
 import { setCarMenuMusicLabel } from '../catalog/monitors/car.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
@@ -493,6 +499,8 @@ export class GameRuntime {
   private readonly text: ReturnType<typeof createRuntimeText>
   private fovBase: CameraFovBase = { firstPersonFov: 70, chaseFov: 48 }
   private fovOffset = 0
+  private weaponTuning = readSidearmTuning(browserStorage())
+  private sidearmAimPreview = false
   private planet: {
     sky: boolean
     sun: boolean
@@ -890,6 +898,7 @@ export class GameRuntime {
     this.remoteViews.dispose()
     this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
+    this.sidearmAimPreview = false
     if (this.sidearm) {
       this.sidearm.visible = false
       this.sidearm.reset()
@@ -1081,9 +1090,31 @@ export class GameRuntime {
     this.view.scrapeSparks(sim, time)
     this.view.sparks.update(time)
     if (this.sidearm) {
-      this.sidearm.visible = this.weaponDrawn
+      this.sidearm.setTuning(this.weaponTuning)
+      this.sidearm.visible = this.weaponDrawn || this.sidearmAimPreview
       this.updateSidearm(sim, time, dt, eyes)
-      this.sidearm.syncWorld(this.view.avatar, time, eyes)
+      if (this.sidearmAimPreview) this.sidearm.setAiming(true)
+      let aim: THREE.Vector3 | undefined
+      if (this.sidearm.visible && !eyes && !this.sidearmAimPreview) {
+        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
+        const hit = sim.shoot(
+          this.camera.position.toArray(),
+          direction.toArray(),
+          this.sidearm.range,
+          0,
+        )
+        aim = hit
+          ? new THREE.Vector3(...hit.point)
+          : this.camera.position.clone().addScaledVector(direction, this.sidearm.range)
+        aim.add(this.view.root.position)
+      }
+      this.sidearm.syncWorld(
+        this.view.avatar,
+        time,
+        eyes || this.sidearmAimPreview,
+        aim,
+        this.camera.up,
+      )
       if (!this.fireModeBadge && this.options.canvas.parentElement)
         this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)
       this.fireModeBadge?.show(this.sidearm.visible ? fireModeLabel(this.sidearm.fireMode) : null)
@@ -1285,7 +1316,7 @@ export class GameRuntime {
       this.camera.position.copy(eye)
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
-    this.sidearm?.render(this.renderer, time, this.camera.aspect, eyes)
+    this.sidearm?.render(this.renderer, time, this.camera.aspect, eyes || this.sidearmAimPreview)
     if (this.options.onDiagnostics)
       this.options.onDiagnostics({
         frameMs,
@@ -2282,6 +2313,23 @@ export class GameRuntime {
   /** Live lighting knobs (exposure, sun, ambient, reflections, paint, shadows). */
   get lightTuning(): LightTuning {
     return { ...this.lighting }
+  }
+  /** Saved eye-level pistol height (metres) and muzzle-up angle (degrees). */
+  get sidearmTuning(): SidearmTuning {
+    return { ...this.weaponTuning }
+  }
+  setSidearmTuning(patch: Partial<SidearmTuning>): SidearmTuning {
+    this.assertAlive()
+    this.weaponTuning = normalizeSidearmTuning(patch, this.weaponTuning)
+    this.sidearm?.setTuning(this.weaponTuning)
+    writeSidearmTuning(browserStorage(), this.weaponTuning)
+    return this.sidearmTuning
+  }
+  /** Keep the aimed model visible while its settings are adjusted with a free mouse. */
+  setSidearmAimPreview(enabled: boolean): void {
+    if (enabled) this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
+    this.sidearmAimPreview = enabled
+    if (!enabled) this.sidearm?.setAiming(false)
   }
   /** Change and save the lighting knobs (`nabla.lightTuning`); returns the clamped values. */
   setLightTuning(patch: Partial<LightTuning>): LightTuning {

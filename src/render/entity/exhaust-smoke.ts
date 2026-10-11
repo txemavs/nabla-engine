@@ -32,7 +32,7 @@ export class ExhaustSmoke {
         attribute float life; varying float age;
         void main(){age=life; vec4 p=modelViewMatrix*vec4(position,1.0);
           gl_Position=projectionMatrix*p;
-          gl_PointSize=life>0.0?clamp((1.4-life)*220.0/max(1.0,-p.z),1.0,96.0):0.0;
+          gl_PointSize=life>0.0?clamp((1.4-life)*550.0/max(1.0,-p.z),1.0,240.0):0.0;
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `

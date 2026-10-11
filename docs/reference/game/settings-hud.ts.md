@@ -13,11 +13,12 @@ a ship interior monitor can remount later without a second stylesheet.
 ## Module dependencies
 
 - `@nabla/engine/runtime/browser`
+- `../src/runtime/sidearm-tuning.js`
 - `../src/runtime/planet-settings-panel.js`
 
 ## sectionTab
 
-[Implementation, line 70](../../../game/settings-hud.ts#L70)
+[Implementation, line 76](../../../game/settings-hud.ts#L76)
 
 Tab for a section id, or undefined when the HUD does not place it (the legacy Planeta).
 
@@ -29,17 +30,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `SECTION_TABS.find`
 
-## sectionTab.callback@72
+## sectionTab.callback@78
 
-[Implementation, line 72](../../../game/settings-hud.ts#L72)
+[Implementation, line 78](../../../game/settings-hud.ts#L78)
 
 ```ts
-callback@72([section]): inferred by TypeScript; see implementation
+callback@78([section]): inferred by TypeScript; see implementation
 ```
 
 ## relabel
 
-[Implementation, line 94](../../../game/settings-hud.ts#L94)
+[Implementation, line 100](../../../game/settings-hud.ts#L100)
 
 Replace the first piece of text in a row, keeping its control (and its listeners).
 
@@ -55,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud
 
-[Implementation, line 105](../../../game/settings-hud.ts#L105)
+[Implementation, line 111](../../../game/settings-hud.ts#L111)
 
 Replace the sprawling `#display-settings` details with icon + tabbed window.
 
@@ -67,6 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Map`
 - `MutationObserver`
+- `String`
 - `[...performanceGroup.children].filter`
 - `[...quality.children].filter`
 - `air.append`
@@ -77,6 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `closeBtn.addEventListener`
 - `configGroup.append`
 - `console.append`
+- `controls.set`
 - `createPlanetSettingsPanel`
 - `doc.addEventListener`
 - `doc.body.append`
@@ -85,7 +88,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `doc.head.append`
 - `driver.append`
 - `fieldset`
+- `group.append`
 - `hideSubtitle`
+- `input.addEventListener`
+- `input.setAttribute`
 - `installVehicleMonitorStyles`
 - `legacySections`
 - `observer?.observe`
@@ -97,7 +103,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `planetPane.append`
 - `planetPanel.bind`
 - `quality.append`
+- `refreshSidearm`
 - `relabel`
+- `reset.addEventListener`
+- `row.append`
 - `rowOf`
 - `rows`
 - `sea.append`
@@ -116,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.fieldset
 
-[Implementation, line 180](../../../game/settings-hud.ts#L180)
+[Implementation, line 186](../../../game/settings-hud.ts#L186)
 
 ```ts
 fieldset(id: string, title?: string): inferred by TypeScript; see implementation
@@ -129,7 +138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.order
 
-[Implementation, line 193](../../../game/settings-hud.ts#L193)
+[Implementation, line 199](../../../game/settings-hud.ts#L199)
 
 ```ts
 order(id: string): inferred by TypeScript; see implementation
@@ -139,17 +148,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `SECTION_TABS.findIndex`
 
-## mountSettingsHud.order.callback@193
+## mountSettingsHud.order.callback@199
 
-[Implementation, line 193](../../../game/settings-hud.ts#L193)
+[Implementation, line 199](../../../game/settings-hud.ts#L199)
 
 ```ts
-callback@193([section]): inferred by TypeScript; see implementation
+callback@199([section]): inferred by TypeScript; see implementation
 ```
 
 ## mountSettingsHud.place
 
-[Implementation, line 194](../../../game/settings-hud.ts#L194)
+[Implementation, line 200](../../../game/settings-hud.ts#L200)
 
 ```ts
 place(el: HTMLElement): inferred by TypeScript; see implementation
@@ -168,12 +177,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `relabel`
 - `sectionTab`
 
-## mountSettingsHud.place.callback@200
+## mountSettingsHud.place.callback@206
 
-[Implementation, line 200](../../../game/settings-hud.ts#L200)
+[Implementation, line 206](../../../game/settings-hud.ts#L206)
 
 ```ts
-callback@200(child): inferred by TypeScript; see implementation
+callback@206(child): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -182,7 +191,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.moveOptionLayers
 
-[Implementation, line 215](../../../game/settings-hud.ts#L215)
+[Implementation, line 221](../../../game/settings-hud.ts#L221)
 
 ```ts
 moveOptionLayers(layers: HTMLElement): inferred by TypeScript; see implementation
@@ -196,12 +205,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `group.append`
 - `place`
 
-## mountSettingsHud.moveOptionLayers.callback@217
+## mountSettingsHud.moveOptionLayers.callback@223
 
-[Implementation, line 217](../../../game/settings-hud.ts#L217)
+[Implementation, line 223](../../../game/settings-hud.ts#L223)
 
 ```ts
-callback@217(id): inferred by TypeScript; see implementation
+callback@223(id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -209,17 +218,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `layers.querySelector`
 - `layers.querySelector(\`input[data-layer="${id}"]\`)?.closest`
 
-## mountSettingsHud.moveOptionLayers.callback@218
+## mountSettingsHud.moveOptionLayers.callback@224
 
-[Implementation, line 218](../../../game/settings-hud.ts#L218)
+[Implementation, line 224](../../../game/settings-hud.ts#L224)
 
 ```ts
-callback@218(row): row is HTMLLabelElement
+callback@224(row): row is HTMLLabelElement
 ```
 
 ## mountSettingsHud.byId
 
-[Implementation, line 237](../../../game/settings-hud.ts#L237)
+[Implementation, line 243](../../../game/settings-hud.ts#L243)
 
 ```ts
 byId(id: string): inferred by TypeScript; see implementation
@@ -233,7 +242,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.rowOf
 
-[Implementation, line 241](../../../game/settings-hud.ts#L241)
+[Implementation, line 247](../../../game/settings-hud.ts#L247)
 
 ```ts
 rowOf(id: string): inferred by TypeScript; see implementation
@@ -246,7 +255,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.rows
 
-[Implementation, line 242](../../../game/settings-hud.ts#L242)
+[Implementation, line 248](../../../game/settings-hud.ts#L248)
 
 ```ts
 rows(...items: Array<HTMLElement | null>): inferred by TypeScript; see implementation
@@ -256,17 +265,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `items.filter`
 
-## mountSettingsHud.rows.callback@243
+## mountSettingsHud.rows.callback@249
 
-[Implementation, line 243](../../../game/settings-hud.ts#L243)
+[Implementation, line 249](../../../game/settings-hud.ts#L249)
 
 ```ts
-callback@243(item): item is HTMLElement
+callback@249(item): item is HTMLElement
 ```
 
 ## mountSettingsHud.subtitle
 
-[Implementation, line 244](../../../game/settings-hud.ts#L244)
+[Implementation, line 250](../../../game/settings-hud.ts#L250)
 
 ```ts
 subtitle(text: string): inferred by TypeScript; see implementation
@@ -278,7 +287,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.hideSubtitle
 
-[Implementation, line 251](../../../game/settings-hud.ts#L251)
+[Implementation, line 257](../../../game/settings-hud.ts#L257)
 
 ```ts
 hideSubtitle(group: HTMLElement | null): inferred by TypeScript; see implementation
@@ -290,7 +299,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.legacySections
 
-[Implementation, line 309](../../../game/settings-hud.ts#L309)
+[Implementation, line 315](../../../game/settings-hud.ts#L315)
 
 ```ts
 legacySections(): inferred by TypeScript; see implementation
@@ -300,37 +309,89 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `[...(menu?.children ?? [])].filter`
 
-## mountSettingsHud.legacySections.callback@310
+## mountSettingsHud.legacySections.callback@316
 
-[Implementation, line 310](../../../game/settings-hud.ts#L310)
+[Implementation, line 316](../../../game/settings-hud.ts#L316)
 
 ```ts
-callback@310(el): el is HTMLElement
+callback@316(el): el is HTMLElement
 ```
 
-## mountSettingsHud.callback@322
+## mountSettingsHud.callback@328
 
-[Implementation, line 322](../../../game/settings-hud.ts#L322)
+[Implementation, line 328](../../../game/settings-hud.ts#L328)
 
 ```ts
-callback@322(el): inferred by TypeScript; see implementation
+callback@328(el): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `el.matches`
 
-## mountSettingsHud.callback@324
+## mountSettingsHud.callback@330
 
-[Implementation, line 324](../../../game/settings-hud.ts#L324)
+[Implementation, line 330](../../../game/settings-hud.ts#L330)
 
 ```ts
-callback@324(el): inferred by TypeScript; see implementation
+callback@330(el): inferred by TypeScript; see implementation
 ```
+
+## mountSettingsHud.refreshSidearm
+
+[Implementation, line 345](../../../game/settings-hud.ts#L345)
+
+```ts
+refreshSidearm(): inferred by TypeScript; see implementation
+```
+
+## mountSettingsHud.callback@371
+
+[Implementation, line 371](../../../game/settings-hud.ts#L371)
+
+```ts
+callback@371(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `refreshSidearm`
+- `runtime.setSidearmAimPreview`
+- `runtime.setSidearmTuning`
+
+## mountSettingsHud.callback@377
+
+[Implementation, line 377](../../../game/settings-hud.ts#L377)
+
+```ts
+callback@377(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+- `String`
+- `input.setAttribute`
+- `value.toFixed`
+
+## mountSettingsHud.callback@389
+
+[Implementation, line 389](../../../game/settings-hud.ts#L389)
+
+```ts
+callback@389(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `refreshSidearm`
+- `runtime.setSidearmAimPreview`
+- `runtime.setSidearmTuning`
 
 ## mountSettingsHud.syncTabs
 
-[Implementation, line 352](../../../game/settings-hud.ts#L352)
+[Implementation, line 413](../../../game/settings-hud.ts#L413)
 
 ```ts
 syncTabs(): inferred by TypeScript; see implementation
@@ -342,12 +403,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `paneEls.get`
 - `tabBar.querySelector`
 
-## mountSettingsHud.callback@362
+## mountSettingsHud.callback@423
 
-[Implementation, line 362](../../../game/settings-hud.ts#L362)
+[Implementation, line 423](../../../game/settings-hud.ts#L423)
 
 ```ts
-callback@362(records): inferred by TypeScript; see implementation
+callback@423(records): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -357,7 +418,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.selectTab
 
-[Implementation, line 525](../../../game/settings-hud.ts#L525)
+[Implementation, line 586](../../../game/settings-hud.ts#L586)
 
 ```ts
 selectTab(id: TabId): inferred by TypeScript; see implementation
@@ -369,10 +430,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `doc.getElementById`
 - `paneEls.get`
 - `planetPanel?.refresh`
+- `runtime.setSidearmAimPreview`
 
 ## mountSettingsHud.open
 
-[Implementation, line 536](../../../game/settings-hud.ts#L536)
+[Implementation, line 598](../../../game/settings-hud.ts#L598)
 
 ```ts
 open(): inferred by TypeScript; see implementation
@@ -383,11 +445,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `doc.getElementById`
 - `doc.getElementById('game-canvas')?.blur`
 - `planetPanel?.refresh`
+- `refreshSidearm`
 - `toggle.setAttribute`
 
 ## mountSettingsHud.close
 
-[Implementation, line 543](../../../game/settings-hud.ts#L543)
+[Implementation, line 606](../../../game/settings-hud.ts#L606)
 
 ```ts
 close(): inferred by TypeScript; see implementation
@@ -397,11 +460,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `doc.getElementById`
 - `doc.getElementById('game-canvas')?.focus`
+- `runtime.setSidearmAimPreview`
 - `toggle.setAttribute`
 
 ## mountSettingsHud.toggleWin
 
-[Implementation, line 548](../../../game/settings-hud.ts#L548)
+[Implementation, line 612](../../../game/settings-hud.ts#L612)
 
 ```ts
 toggleWin(): inferred by TypeScript; see implementation
@@ -412,12 +476,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `close`
 - `open`
 
-## mountSettingsHud.callback@550
+## mountSettingsHud.callback@614
 
-[Implementation, line 550](../../../game/settings-hud.ts#L550)
+[Implementation, line 614](../../../game/settings-hud.ts#L614)
 
 ```ts
-callback@550(e): inferred by TypeScript; see implementation
+callback@614(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -425,12 +489,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `e.stopPropagation`
 - `toggleWin`
 
-## mountSettingsHud.callback@555
+## mountSettingsHud.callback@619
 
-[Implementation, line 555](../../../game/settings-hud.ts#L555)
+[Implementation, line 619](../../../game/settings-hud.ts#L619)
 
 ```ts
-callback@555(event): inferred by TypeScript; see implementation
+callback@619(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -438,12 +502,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `(event.target as HTMLElement).closest`
 - `selectTab`
 
-## mountSettingsHud.callback@562
+## mountSettingsHud.callback@626
 
-[Implementation, line 562](../../../game/settings-hud.ts#L562)
+[Implementation, line 626](../../../game/settings-hud.ts#L626)
 
 ```ts
-callback@562(event): inferred by TypeScript; see implementation
+callback@626(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -453,7 +517,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountSettingsHud.destroy
 
-[Implementation, line 573](../../../game/settings-hud.ts#L573)
+[Implementation, line 637](../../../game/settings-hud.ts#L637)
 
 ```ts
 destroy(): inferred by TypeScript; see implementation
@@ -463,6 +527,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `observer?.disconnect`
 - `planetPanel?.destroy`
+- `runtime.setSidearmAimPreview`
 - `style.remove`
 - `toggle.remove`
 - `win.remove`

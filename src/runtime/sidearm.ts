@@ -19,10 +19,16 @@ import {
   type FireMode,
 } from '../simulation/weapons/machine-pistol.js'
 import { reloadPresentation } from './reload-presentation.js'
+import {
+  normalizeSidearmTuning,
+  sidearmTuningDefaults,
+  type SidearmTuning,
+} from './sidearm-tuning.js'
+import { MuzzleSmoke } from '../render/entity/muzzle-smoke.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
-const ADS_POSE = { position: [0, -0.027, -0.2] as const, pitch: 0.035, fov: 42 }
+const ADS_POSE = { position: [0, -0.027, -0.2] as const, fov: 42 }
 
 /** Presentation rig of an assembled model (`assets/rigs/weapons/*.rig.json`). */
 interface WeaponRig {
@@ -77,6 +83,9 @@ export class Sidearm {
   private triggerPart: Part | null = null
   private magazine: Part | null = null
   private worldPresentation: THREE.Group | null = null
+  private tuning: SidearmTuning = { ...sidearmTuningDefaults }
+  private readonly smoke = new MuzzleSmoke()
+  private worldSmoke: MuzzleSmoke | null = null
   private assembledModel: THREE.Group | null = null
   private legacySlide: THREE.Object3D | null = null
   private readonly flash: THREE.Mesh
@@ -186,6 +195,7 @@ export class Sidearm {
     this.flash.position.set(this.flashAt[0], this.flashAt[1], this.flashAt[2] - 0.015)
     this.flash.visible = false
     this.model.add(this.flash)
+    this.model.add(this.smoke.root)
     const laserPositions = new Float32Array([
       this.flashAt[0],
       this.flashAt[1],
@@ -227,6 +237,7 @@ export class Sidearm {
     const flash = this.flash.visible,
       laser = this.laserLine.visible
     this.flash.visible = true
+    this.smoke.root.visible = true
     this.laserLine.visible = true
     try {
       this.scene.updateMatrixWorld(true)
@@ -249,6 +260,7 @@ export class Sidearm {
       }
     } finally {
       this.flash.visible = flash
+      this.smoke.root.visible = false
       this.laserLine.visible = laser
     }
   }
@@ -257,6 +269,8 @@ export class Sidearm {
     if (this.disposed) return
     this.visible = false
     this.disposed = true
+    this.smoke.dispose()
+    this.worldSmoke?.dispose()
     this.worldPresentation?.removeFromParent()
     this.worldPresentation?.clear()
     this.worldPresentation = null
@@ -340,6 +354,8 @@ export class Sidearm {
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
     const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
     if (event.fired) {
+      this.smoke.burst(now, this.flashAt)
+      if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
       this.rise?.shot(now)
       if (this.mode === 'burst30') this.recoilYaw.kick()
     }
@@ -377,13 +393,13 @@ export class Sidearm {
   /** Muzzle tip in the viewmodel camera's space (eye-relative), with the hip/ADS blend. */
   muzzleViewOffset(_now = 0): THREE.Vector3 {
     const pos = new THREE.Vector3(...HIP_POSE.position).lerp(
-      new THREE.Vector3(...ADS_POSE.position),
+      new THREE.Vector3(ADS_POSE.position[0], this.tuning.height, ADS_POSE.position[2]),
       this.aimBlend,
     )
     return pos.add(
       new THREE.Vector3(...this.flashAt).applyAxisAngle(
         new THREE.Vector3(1, 0, 0),
-        ADS_POSE.pitch * this.aimBlend,
+        THREE.MathUtils.degToRad(this.tuning.angle) * this.aimBlend,
       ),
     )
   }
@@ -395,6 +411,9 @@ export class Sidearm {
 
   render(renderer: THREE.WebGLRenderer, now: number, aspect: number, firstPerson: boolean): void {
     if (!this.enabled) return
+    const height = renderer.getDrawingBufferSize(new THREE.Vector2()).y
+    this.smoke.update(now, height)
+    this.worldSmoke?.update(now, height)
     this.aimBlend += ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
     this.laserLine.visible = this.laserOn
     if (!firstPerson) return
@@ -415,7 +434,13 @@ export class Sidearm {
   }
 
   /** Shared assembled asset on the avatar, including slide, trigger and magazine motion. */
-  syncWorld(parent: THREE.Object3D, now: number, firstPerson: boolean): void {
+  syncWorld(
+    parent: THREE.Object3D,
+    now: number,
+    firstPerson: boolean,
+    aim?: THREE.Vector3,
+    up = new THREE.Vector3(0, 1, 0),
+  ): void {
     if (!this.enabled || firstPerson || !this.assembledModel) {
       if (this.worldPresentation) this.worldPresentation.visible = false
       return
@@ -425,6 +450,8 @@ export class Sidearm {
       this.worldPresentation = new THREE.Group()
       this.worldPresentation.name = 'EquippedSidearm'
       this.worldPresentation.add(this.assembledModel.clone(true))
+      this.worldSmoke = new MuzzleSmoke()
+      this.worldPresentation.add(this.worldSmoke.root)
       this.worldPresentation.traverse((node) => {
         if (node instanceof THREE.Mesh) node.castShadow = true
       })
@@ -438,6 +465,15 @@ export class Sidearm {
       -0.32 + this.model.position.z - HIP_POSE.position[2],
     )
     world.quaternion.copy(this.model.quaternion)
+    if (aim) {
+      const rotation = new THREE.Quaternion().setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(world.getWorldPosition(new THREE.Vector3()), aim, up),
+      )
+      world.quaternion
+        .copy(parent.getWorldQuaternion(new THREE.Quaternion()).invert())
+        .multiply(rotation)
+      if (this.state.reload !== 'none') world.quaternion.multiply(this.model.quaternion)
+    }
     for (const source of [this.slide, this.triggerPart, this.magazine]) {
       if (!source) continue
       const target = world.getObjectByName(source.object.name)
@@ -469,7 +505,10 @@ export class Sidearm {
   private viewPose(now: number): void {
     this.model.position
       .set(...HIP_POSE.position)
-      .lerp(new THREE.Vector3(...ADS_POSE.position), this.aimBlend)
+      .lerp(
+        new THREE.Vector3(ADS_POSE.position[0], this.tuning.height, ADS_POSE.position[2]),
+        this.aimBlend,
+      )
     this.model.rotation.set(0, 0, 0)
     this.pose(now)
   }
@@ -523,7 +562,11 @@ export class Sidearm {
       this.firearm.reloadMs,
     )
     // Positive X raises a muzzle facing -Z. Lift and cant the grip to show the magazine.
-    this.model.rotation.set(shown.pitch + ADS_POSE.pitch * this.aimBlend, shown.yaw, shown.roll)
+    this.model.rotation.set(
+      shown.pitch + THREE.MathUtils.degToRad(this.tuning.angle) * this.aimBlend,
+      shown.yaw,
+      shown.roll,
+    )
     this.model.position.y += shown.lift
     this.model.position.z -= shown.lift * 0.7
     this.model.position.x += shown.lift * 0.4
@@ -533,6 +576,11 @@ export class Sidearm {
         .copy(this.magazine.rest)
         .addScaledVector(axis(p.magazine.axis), p.magazine.distance * shown.travel)
     }
+  }
+
+  /** Update the aimed presentation without altering shot direction or ballistics. */
+  setTuning(patch: Partial<SidearmTuning>): void {
+    this.tuning = normalizeSidearmTuning(patch, this.tuning)
   }
 }
 
