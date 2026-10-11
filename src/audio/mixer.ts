@@ -29,6 +29,23 @@ interface Buses {
 }
 
 const registry = new WeakMap<BaseAudioContext, Buses>()
+const voiceOutputs = new WeakMap<BaseAudioContext, Partial<Record<AudioBus, AudioNode>>>()
+
+/** Route newly constructed voices through a spatial emitter without changing their mixer bus. */
+export function withAudioOutputs<T>(
+  context: BaseAudioContext,
+  outputs: Partial<Record<AudioBus, AudioNode>>,
+  build: () => T,
+): T {
+  const previous = voiceOutputs.get(context)
+  voiceOutputs.set(context, outputs)
+  try {
+    return build()
+  } finally {
+    if (previous) voiceOutputs.set(context, previous)
+    else voiceOutputs.delete(context)
+  }
+}
 
 /**
  * Fixed lift of the engine bus over music and the effects on master. 1.6 (+4 dB) still left the
@@ -70,6 +87,8 @@ export function attachAudioBuses(context: BaseAudioContext): Buses {
 
 /** Where a voice should connect: its bus when the context has a mixer, else the speakers. */
 export function audioBus(context: BaseAudioContext, bus: AudioBus = 'sfx'): AudioNode {
+  const output = voiceOutputs.get(context)?.[bus]
+  if (output) return output
   const buses = registry.get(context)
   if (!buses) return context.destination
   return bus === 'sfx' ? buses.master : buses[bus]

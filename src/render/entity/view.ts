@@ -181,6 +181,7 @@ export class SceneView {
   daylight = 1
   /** Multiplier on vehicle reflection levels (Ajustes → Luz «Reflejos»). */
   reflectionScale = 1
+  smokeEnabled = true
   private paintBrightness = 1
   private paintCheckAt = 0
   /**
@@ -1119,6 +1120,12 @@ export class SceneView {
       }
       adapter?.preparePart?.(model, 'body')
       environment.add(model)
+      const exhaust = equipment?.exhaust
+      if (exhaust) {
+        const smoke = new ExhaustSmoke(exhaust.outlet, this.root, exhaust.options)
+        this.exhaustSmoke.set(e.id, smoke)
+        this.root.add(smoke.root)
+      }
       const twoWheeled = e.vehicle?.twoWheeled
       if (twoWheeled && hasMotorcycleRig(model))
         this.motorcycleRigs.set(
@@ -1507,14 +1514,16 @@ export class SceneView {
     }
     for (const [id, smoke] of this.exhaustSmoke) {
       const info = sim.vehicleInfo(id)
+      smoke.setEnabled(this.smokeEnabled)
       smoke.update(
         elapsed,
         sim.player.vehicleId === id &&
-          !info.parked &&
+          (!info.twoWheeled || !info.parked) &&
           info.helm !== 'off' &&
           info.ignition === 'running' &&
           info.rpm > 500,
         info.engineLoad,
+        info.speedKmh,
       )
     }
     for (const [id, stand] of this.motorcycleStands) {

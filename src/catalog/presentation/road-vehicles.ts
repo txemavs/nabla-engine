@@ -12,6 +12,16 @@ import { createA3Mounts } from './a3-mounts.js'
 import { authoredMirrorLenses } from '../../render/vehicle-presentation/mirror-lenses.js'
 import { authoredScreenMounts } from '../../render/vehicle-presentation/screen-mounts.js'
 import { paintMotorcycle } from './motorcycle-paint.js'
+function exhaustSocket(
+  model: THREE.Object3D,
+  position: readonly [number, number, number],
+): THREE.Object3D {
+  const socket = new THREE.Object3D()
+  socket.name = 'Exhaust smoke outlet'
+  socket.position.fromArray(position)
+  model.add(socket)
+  return socket
+}
 function paintWhiteBody(model: THREE.Object3D, color: string): void {
   model.traverse((node) => {
     if (!(node instanceof THREE.Mesh)) return
@@ -84,6 +94,10 @@ export const s3Presentation: VehiclePresentationAdapter = {
     if (instruments) instruments.mirrorTilt = e.vehicle?.mirrorTilt ?? -2
     return {
       lights: createA3Lights(model),
+      exhaust: {
+        outlet: exhaustSocket(model, [-0.62, 0.23, -2.16]),
+        options: { direction: [0, 0.2, -1] },
+      },
       mirrors: new CarMirrors(
         candidates,
         up,
@@ -171,6 +185,16 @@ const stock = new Map<string, VehiclePresentationAdapter>([
         paintWhiteBody(model, entity.color)
         return {
           instruments,
+          exhaust: {
+            outlet: exhaustSocket(model, [1.13, -0.45, -0.1]),
+            options: {
+              direction: [1, 0.1, 0],
+              color: '#111111',
+              clearColor: '#888888',
+              clearAtKmh: 60,
+              size: 650,
+            },
+          },
           mirrors: lenses.length
             ? new CarMirrors(
                 lenses,

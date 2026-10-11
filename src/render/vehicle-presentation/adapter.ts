@@ -1,4 +1,5 @@
-import type { Group, Texture } from 'three'
+import type { Group, Texture, Object3D } from 'three'
+import type { ExhaustSmokeOptions } from '../entity/exhaust-smoke.js'
 import type { Entity } from '../../entity/schema.js'
 import type { CarInstruments } from '../entity/car-instruments.js'
 import type { CarInstrumentDefinition } from '../entity/car-instrument-definition.js'
@@ -13,6 +14,7 @@ export interface VehicleEquipment {
   mirrors?: CarMirrors
   instruments?: CarInstruments
   beacons?: BeaconEquipment
+  exhaust?: { outlet: Object3D; options?: ExhaustSmokeOptions }
 }
 export interface VehiclePresentationAdapter {
   mount(

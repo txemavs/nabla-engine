@@ -46,12 +46,14 @@ export class VehicleEffects {
             ? 0.55
             : Math.max(0, 1 - distance / 100)
         if (level > flightLevel) {
+          this.audio.setTurbinePosition(position)
           flightLevel = level
           flightSpeed = info.speedKmh
         }
       }
     this.audio.turbine(flightLevel, flightSpeed)
     const pilot = sim?.player.vehicleId
+    if (pilot) this.audio.setVehiclePosition(sim!.entityTransform(pilot, true).position)
     const piloted = pilot ? document.entities.find((entity) => entity.id === pilot) : undefined
     this.audio.propeller(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
     const car =

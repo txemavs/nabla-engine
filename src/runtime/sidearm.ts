@@ -86,6 +86,7 @@ export class Sidearm {
   private tuning: SidearmTuning = { ...sidearmTuningDefaults }
   private readonly smoke = new MuzzleSmoke()
   private worldSmoke: MuzzleSmoke | null = null
+  private smokeEnabled = true
   private assembledModel: THREE.Group | null = null
   private legacySlide: THREE.Object3D | null = null
   private readonly flash: THREE.Mesh
@@ -354,8 +355,10 @@ export class Sidearm {
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
     const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
     if (event.fired) {
-      this.smoke.burst(now, this.flashAt)
-      if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
+      if (this.smokeEnabled) {
+        this.smoke.burst(now, this.flashAt)
+        if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
+      }
       this.rise?.shot(now)
       if (this.mode === 'burst30') this.recoilYaw.kick()
     }
@@ -581,6 +584,14 @@ export class Sidearm {
   /** Update the aimed presentation without altering shot direction or ballistics. */
   setTuning(patch: Partial<SidearmTuning>): void {
     this.tuning = normalizeSidearmTuning(patch, this.tuning)
+  }
+  setSmokeEnabled(enabled: boolean): void {
+    if (this.smokeEnabled === enabled) return
+    this.smokeEnabled = enabled
+    if (!enabled) {
+      this.smoke.clear()
+      this.worldSmoke?.clear()
+    }
   }
 }
 

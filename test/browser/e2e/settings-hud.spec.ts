@@ -40,6 +40,10 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     let sidearm = { height: -0.027, angle: 1 },
       preview = false
     const runtime = {
+      smokeEnabled: true,
+      setSmokeEnabled: (enabled: boolean) => {
+        runtime.smokeEnabled = enabled
+      },
       get sidearmTuning() {
         return sidearm
       },
@@ -58,6 +62,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       setLensFlareAmount: () => {},
     }
     mountSettingsHud(runtime as never)
+    const smoke = document.getElementById('quality-smoke') as HTMLInputElement
+    smoke.checked = false
+    smoke.dispatchEvent(new Event('change', { bubbles: true }))
     const height = document.getElementById('sidearm-aim-height') as HTMLInputElement
     height.value = '-33'
     height.dispatchEvent(new Event('input', { bubbles: true }))
@@ -80,6 +87,8 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       [...document.getElementById(paneId)!.children].map((el) => el.id).filter(Boolean)
     return {
       before,
+      smoke: runtime.smokeEnabled,
+      smokePane: pane('quality-smoke'),
       sidearm,
       preview,
       weaponOutputs: [...document.querySelectorAll('#settings-options-sidearm output')].map(
@@ -108,6 +117,8 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
 
   const visible = ['Planeta', 'Opciones', 'Rendimiento', 'Vídeo', 'Objetos', 'Desarrollo']
   expect(result.before).toEqual(visible)
+  expect(result.smoke).toBe(false)
+  expect(result.smokePane).toBe('settings-pane-performance')
   expect(result.sidearm).toEqual({ height: -0.033, angle: 0.7 })
   expect(result.preview).toBe(true)
   expect(result.weaponOutputs).toEqual(['-33 mm', '0.7°'])

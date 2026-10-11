@@ -333,6 +333,18 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     performanceGroup.hidden = true
   }
 
+  // Quality preference applies immediately to both exhaust and gun smoke.
+  if (quality && typeof runtime.smokeEnabled === 'boolean') {
+    const label = doc.createElement('label'),
+      input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'quality-smoke'
+    input.checked = runtime.smokeEnabled
+    label.append(input, ' Humo (escapes y disparos)')
+    input.addEventListener('change', () => runtime.setSmokeEnabled(input.checked))
+    quality.insertBefore(label, quality.querySelector('button'))
+  }
+
   // Opciones → Volante y espejos: the driver's steering wheel and mirror glass adjustments.
   const driverGroups = rows(byId('scene-steering-wheel'), byId('scene-mirrors'))
   if (driverGroups.length) {

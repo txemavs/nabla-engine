@@ -5,7 +5,7 @@ export interface SidearmTuning {
   /** Muzzle-up angle in degrees. */
   angle: number
 }
-export const sidearmTuningDefaults: Readonly<SidearmTuning> = { height: -0.027, angle: 1 }
+export const sidearmTuningDefaults: Readonly<SidearmTuning> = { height: -0.026, angle: -1 }
 export const sidearmTuningRanges = { height: [-0.08, 0.015, 0.001], angle: [-5, 8, 0.1] } as const
 const storageKey = 'nabla.sidearmTuning'
 type TuningStorage = Pick<Storage, 'getItem' | 'setItem'>

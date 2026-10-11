@@ -12,29 +12,43 @@ White exhaust vapour attached to the authored outlet, with a bounded world-space
 
 ## ExhaustSmoke.constructor
 
-[Implementation, line 18](../../../../../src/render/entity/exhaust-smoke.ts#L18)
+[Implementation, line 29](../../../../../src/render/entity/exhaust-smoke.ts#L29)
 
 ```ts
-constructor(private readonly outlet: THREE.Object3D, private readonly space: THREE.Object3D): instance
+constructor(private readonly outlet: THREE.Object3D, private readonly space: THREE.Object3D, private readonly options: ExhaustSmokeOptions = {}): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.BufferAttribute`
+- `THREE.Color`
 - `THREE.Points`
 - `THREE.ShaderMaterial`
 - `this.geometry.setAttribute`
 
-## ExhaustSmoke.update
+## ExhaustSmoke.setEnabled
 
-[Implementation, line 54](../../../../../src/render/entity/exhaust-smoke.ts#L54)
+[Implementation, line 70](../../../../../src/render/entity/exhaust-smoke.ts#L70)
 
 ```ts
-update(dt: number, running: boolean, load: number): void
+setEnabled(enabled: boolean): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.life.fill`
+
+## ExhaustSmoke.update
+
+[Implementation, line 79](../../../../../src/render/entity/exhaust-smoke.ts#L79)
+
+```ts
+update(dt: number, running: boolean, load: number, speedKmh = 0): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
 - `Math.cos`
 - `Math.max`
 - `Math.min`
@@ -44,9 +58,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MathUtils.clamp`
 - `THREE.Vector3`
 - `bounds.getCenter`
+- `bounds.isEmpty`
 - `new THREE.Box3().setFromObject`
-- `this.direction.set`
-- `this.direction.set(0, 0.559, 0.829).transformDirection`
 - `this.direction.transformDirection`
 - `this.life.some`
 - `this.movement.copy`
@@ -54,6 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.movement.length`
 - `this.movement.multiplyScalar`
 - `this.movement.set`
+- `this.outlet.getWorldPosition`
 - `this.outlet.updateWorldMatrix`
 - `this.previous.copy`
 - `this.source.addScaledVector`
@@ -62,17 +76,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.space.matrixWorld.clone().invert`
 - `this.space.worldToLocal`
 
-## ExhaustSmoke.update.callback@88
+## ExhaustSmoke.update.callback@124
 
-[Implementation, line 88](../../../../../src/render/entity/exhaust-smoke.ts#L88)
+[Implementation, line 124](../../../../../src/render/entity/exhaust-smoke.ts#L124)
 
 ```ts
-callback@88(v): inferred by TypeScript; see implementation
+callback@124(v): inferred by TypeScript; see implementation
 ```
 
 ## ExhaustSmoke.dispose
 
-[Implementation, line 93](../../../../../src/render/entity/exhaust-smoke.ts#L93)
+[Implementation, line 130](../../../../../src/render/entity/exhaust-smoke.ts#L130)
 
 ```ts
 dispose(): void

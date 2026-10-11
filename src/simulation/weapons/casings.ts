@@ -49,6 +49,8 @@ export class CasingMotion {
   private casings: Casing[] = []
   /** Impact speeds (m/s) of the bounces in the last step, for the tinkle. */
   bounces: number[] = []
+  /** Exact world impact origins, paired with bounces for positional sound. */
+  impacts: { speed: number; position: Vec3Tuple }[] = []
 
   constructor(
     private readonly spec: CasingSpec,
@@ -117,6 +119,7 @@ export class CasingMotion {
   update(dt: number, cast: CasingCast): void {
     const step = Math.min(0.05, Math.max(0, dt))
     this.bounces = []
+    this.impacts = []
     const live: Casing[] = []
     for (const casing of this.casings) {
       casing.age += step
@@ -159,6 +162,7 @@ export class CasingMotion {
         continue
       }
       this.bounces.push(-into)
+      this.impacts.push({ speed: -into, position: [...hit.point] })
       casing.velocity = [0, 1, 2].map(
         (i) => tangent[i] * (1 - this.spec.friction) - n[i] * into * this.spec.restitution,
       ) as [number, number, number]
@@ -179,5 +183,6 @@ export class CasingMotion {
   reset(): void {
     this.casings = []
     this.bounces = []
+    this.impacts = []
   }
 }

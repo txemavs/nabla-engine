@@ -67,4 +67,8 @@ export class MuzzleSmoke {
     this.geometry.dispose()
     ;(this.root.material as THREE.ShaderMaterial).dispose()
   }
+  clear(): void {
+    this.births.fill(-Infinity)
+    this.update(0)
+  }
 }

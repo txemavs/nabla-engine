@@ -501,6 +501,7 @@ export class GameRuntime {
   private fovOffset = 0
   private weaponTuning = readSidearmTuning(browserStorage())
   private sidearmAimPreview = false
+  private smokeOn = true
   private planet: {
     sky: boolean
     sun: boolean
@@ -523,6 +524,11 @@ export class GameRuntime {
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
+    try {
+      this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
+    } catch {
+      /* Keep the default if storage is disabled. */
+    }
     this.startCameras = resolveStartCameras(options.startCameras)
     this.flipCinematic.enabled = options.flipCinematic !== false
     applyAsphaltContrast(options.asphaltContrast ?? 1)
@@ -1068,6 +1074,7 @@ export class GameRuntime {
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
     this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
+    this.view.smokeEnabled = this.smokeOn
     this.view.sync(
       sim,
       dt,
@@ -1082,6 +1089,11 @@ export class GameRuntime {
     canvas.dataset.interior = player.interiorId ?? ''
     canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
+    this.effects.audio.setListener(
+      this.camera.position.toArray(),
+      this.camera.quaternion.toArray(),
+      player.vehicleId ? sim.vehicleInfo(player.vehicleId).speedKmh : 0,
+    )
     canvas.dataset.mapHeight = String(Math.round(this.cameraState.mapHeight))
     canvas.dataset.vehicleEntrance = this.cameraState.entrance ? 'active' : 'complete'
     if (crossing) canvas.dataset.portalCrossings = String(crossing.sequence)
@@ -1091,6 +1103,7 @@ export class GameRuntime {
     this.view.sparks.update(time)
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
+      this.sidearm.setSmokeEnabled(this.smokeOn)
       this.sidearm.visible = this.weaponDrawn || this.sidearmAimPreview
       this.updateSidearm(sim, time, dt, eyes)
       if (this.sidearmAimPreview) this.sidearm.setAiming(true)
@@ -2318,6 +2331,20 @@ export class GameRuntime {
   get sidearmTuning(): SidearmTuning {
     return { ...this.weaponTuning }
   }
+  /** Live quality preference shared by exhaust and gun smoke. */
+  get smokeEnabled(): boolean {
+    return this.smokeOn
+  }
+  setSmokeEnabled(enabled: boolean): void {
+    this.smokeOn = enabled
+    this.view.smokeEnabled = enabled
+    this.sidearm?.setSmokeEnabled(enabled)
+    try {
+      browserStorage()?.setItem('nabla.smoke', enabled ? '1' : '0')
+    } catch {
+      /* Storage may be disabled. */
+    }
+  }
   setSidearmTuning(patch: Partial<SidearmTuning>): SidearmTuning {
     this.assertAlive()
     this.weaponTuning = normalizeSidearmTuning(patch, this.weaponTuning)
@@ -2765,6 +2792,14 @@ export class GameRuntime {
    */
   private updateSidearm(sim: Simulation, time: number, dt: number, eyes: boolean): void {
     const sidearm = this.sidearm!
+    const weaponPosition = (
+      eyes
+        ? this.camera.position
+            .clone()
+            .add(sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
+        : (sidearm.worldMuzzle()?.sub(this.view.root.position) ??
+          new THREE.Vector3(...sim.renderPlayerPosition))
+    ).toArray()
     const canvas = this.options.canvas
     const events: FirearmEvent[] = [sidearm.update(time)]
     if (this.reloadRequested && sidearm.visible) {
@@ -2792,7 +2827,7 @@ export class GameRuntime {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
       if (shot) events.push(shot)
       if (shot?.fired) {
-        this.effects.audio.gunshot()
+        this.effects.audio.gunshot(weaponPosition)
         canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
         if (shot.impactJoules !== undefined)
           canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)
@@ -2801,20 +2836,21 @@ export class GameRuntime {
       canvas.dataset.impacts = String(this.view.impacts.count)
     }
     for (const event of events) {
-      if (event.dry) this.effects.audio.gearClick({ volume: 0.6 })
+      if (event.dry) this.effects.audio.gearClick({ volume: 0.6 }, weaponPosition)
       if (event.magazineDropped) {
-        this.effects.audio.gearClick(magazineReleaseClick)
+        this.effects.audio.gearClick(magazineReleaseClick, weaponPosition)
         this.dropMagazine(sim, eyes)
       }
-      if (event.magazineSeated) this.effects.audio.gearClick(magazineInsertClick)
-      if (event.slideReleased) this.effects.audio.gearClick({ volume: 1.6 })
+      if (event.magazineSeated) this.effects.audio.gearClick(magazineInsertClick, weaponPosition)
+      if (event.slideReleased) this.effects.audio.gearClick({ volume: 1.6 }, weaponPosition)
       if (event.locked) this.options.onMessage?.(this.text('Slide locked back · R reload'))
     }
     if (this.casingMotion && this.casingMeshes) {
       this.casingMotion.update(dt, (from, direction, length) =>
         sim.shoot(from, direction, length, 0),
       )
-      for (const speed of this.casingMotion.bounces.slice(0, 3)) this.effects.audio.casing(speed)
+      for (const impact of this.casingMotion.impacts.slice(0, 3))
+        this.effects.audio.casing(impact.speed, impact.position)
       this.casingMeshes.sync(this.casingMotion.poses())
       canvas.dataset.casings = String(this.casingMotion.count)
     }

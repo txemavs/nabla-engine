@@ -44,6 +44,7 @@
 - `./render/effects/depth-of-field.js`
 - `./diagnostics/performance-monitor.js`
 - `./audio/vehicle.js`
+- `./audio/positional.js`
 - `./render/capture.js`
 - `./catalog/vehicles/library.js`
 - `./catalog/vehicles/trailer-boxes.js`

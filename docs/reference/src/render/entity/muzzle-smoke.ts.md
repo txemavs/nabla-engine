@@ -72,3 +72,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `(this.root.material as THREE.ShaderMaterial).dispose`
 - `this.geometry.dispose`
 - `this.root.removeFromParent`
+
+## MuzzleSmoke.clear
+
+[Implementation, line 70](../../../../../src/render/entity/muzzle-smoke.ts#L70)
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.births.fill`
+- `this.update`
