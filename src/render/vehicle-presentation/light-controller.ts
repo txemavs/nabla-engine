@@ -23,7 +23,7 @@ export type VehicleLightChannel =
  * lamps, no beam) or `low` (cruce: position lamps plus dipped beams; `highBeam` swaps them for
  * main beams). H cycles off → position → low → off.
  */
-export type VehicleLightMode = 'off' | 'position' | 'low'
+export type VehicleLightMode = 'off' | 'position' | 'low' | 'auto'
 /** Order of `VehicleLightController.toggleLights` (H). */
 export const vehicleLightCycle: readonly VehicleLightMode[] = ['off', 'position', 'low']
 
@@ -32,6 +32,20 @@ export class VehicleLightController {
   mode: VehicleLightMode = 'off'
   highBeam = false
   signal = 0
+  private automaticLow = false
+  private darknessSeconds = 0
+  private daylightSeconds = 0
+  /** Delay switching across short shadows so the beams do not flicker. */
+  sampleEnvironment(dark: boolean, dt: number): void {
+    if (!Number.isFinite(dt) || dt < 0) return
+    this.darknessSeconds = dark ? this.darknessSeconds + dt : 0
+    this.daylightSeconds = dark ? 0 : this.daylightSeconds + dt
+    if (this.darknessSeconds >= 0.35) this.automaticLow = true
+    if (this.daylightSeconds >= 1.5) this.automaticLow = false
+  }
+  private get drivingMode(): Exclude<VehicleLightMode, 'auto'> {
+    return this.mode === 'auto' ? (this.automaticLow ? 'low' : 'position') : this.mode
+  }
   constructor(readonly flashMs = lightingDefaults.signalFlashMs) {}
   /** Any driving light on (position or dipped). Setting true from `off` selects dipped beams. */
   get enabled(): boolean {
@@ -77,9 +91,9 @@ export class VehicleLightController {
       case 'front-signal':
         return this.indicating(side, state) ? Number(flash) : Number(this.enabled)
       case 'low':
-        return Number(this.mode === 'low' && !this.highBeam)
+        return Number(this.drivingMode === 'low' && !this.highBeam)
       case 'high':
-        return Number(this.mode === 'low' && this.highBeam)
+        return Number(this.drivingMode === 'low' && this.highBeam)
       case 'fog':
         return 0
       default:
@@ -91,7 +105,7 @@ export class VehicleLightController {
    * keeps a faint `positionLensGlow`, so a lamp unit without its own position bulb still glows.
    */
   glow(channel: VehicleLightChannel, side: number, state: VehicleLampState, now: number): number {
-    if (channel === 'low' && state.powered && this.mode === 'position')
+    if (channel === 'low' && state.powered && this.drivingMode === 'position')
       return lightingDefaults.positionLensGlow
     return this.level(channel, side, state, now)
   }

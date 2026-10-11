@@ -271,6 +271,7 @@ const lightModeNotice: Record<VehicleLightMode, string> = {
   off: 'Lights off',
   position: 'Position lights',
   low: 'Dipped beams',
+  auto: 'Automatic lights',
 }
 
 /** One vehicle's place in the world, from `GameRuntime.vehiclePlacements`. */
@@ -470,6 +471,9 @@ export class GameRuntime {
   private spawned: string[] = []
   private spawnSequence = 0
   private accidentReplacement?: AccidentReplacement
+  private lightSensorSeconds = 0
+  private lightSensorShadow = false
+  private lightSensorVehicle: string | null = null
   private vehicleWarmup: VehicleWarmup | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
@@ -647,7 +651,7 @@ export class GameRuntime {
       mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
       steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
       mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
-      startLights: options.startLights,
+      startLights: options.startLights ?? 'auto',
     })
     this.scene.add(this.view.root)
     this.monitors = new VehicleMonitors(
@@ -946,6 +950,8 @@ export class GameRuntime {
     this.weaponDrawn = false
     this.clearPickups()
     this.accidentReplacement?.clear()
+    this.lightSensorVehicle = null
+    this.lightSensorSeconds = 0
     this.sidearmAimPreview = false
     if (this.sidearm) {
       this.sidearm.visible = false
@@ -1102,6 +1108,25 @@ export class GameRuntime {
     if (this.startSequence && (input.forward || input.right || input.brake))
       this.applyStartCamera(this.startSequence.skip(), sim)
     const vehicleId = sim.player.vehicleId
+    if (vehicleId) {
+      this.lightSensorSeconds += dt
+      if (vehicleId !== this.lightSensorVehicle || this.lightSensorSeconds >= 0.25) {
+        this.lightSensorVehicle = vehicleId
+        this.lightSensorSeconds = 0
+        const at = sim.entityTransform(vehicleId).position
+        const direction = this.sky.sunDirection
+        this.lightSensorShadow =
+          this.sky.enabled &&
+          direction.y > 0.04 &&
+          !!sim.shoot([at[0], at[1] + 1.2, at[2]], direction.toArray(), 200, 0)
+      }
+      this.view.sampleVehicleLightEnvironment(
+        vehicleId,
+        (this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold) ||
+          this.lightSensorShadow,
+        playing ? dt : 0,
+      )
+    }
     this.touchDriving?.setDriving(rigs.driving.seatedRoad)
     this.touchDriving?.setPilot(!!vehicleId && this.cameraState.mode === 'cockpit')
     this.touchDriving?.reflect(input)
@@ -1920,7 +1945,7 @@ export class GameRuntime {
             steeringWheelOffset: (model) =>
               initialSteeringWheelOffset(this.options.steeringWheel, model),
             mirrorAdjustment: (model) => initialMirrorAdjustment(this.options.mirrors, model),
-            startLights: this.options.startLights,
+            startLights: this.options.startLights ?? 'auto',
           },
         )
         view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)

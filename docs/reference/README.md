@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **374 modules; 4091 executable function definitions**.
+Coverage: **374 modules; 4094 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -211,7 +211,7 @@ Coverage: **374 modules; 4091 executable function definitions**.
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
 | [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 16 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 127 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 128 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 14 |
@@ -266,7 +266,7 @@ Coverage: **374 modules; 4091 executable function definitions**.
 | [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 15 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
 | [src/render/vehicle-presentation/landing-gear.ts](src/render/vehicle-presentation/landing-gear.ts.md) | 7 |
-| [src/render/vehicle-presentation/light-controller.ts](src/render/vehicle-presentation/light-controller.ts.md) | 10 |
+| [src/render/vehicle-presentation/light-controller.ts](src/render/vehicle-presentation/light-controller.ts.md) | 12 |
 | [src/render/vehicle-presentation/light-rig.ts](src/render/vehicle-presentation/light-rig.ts.md) | 7 |
 | [src/render/vehicle-presentation/mirror-lenses.ts](src/render/vehicle-presentation/mirror-lenses.ts.md) | 2 |
 | [src/render/vehicle-presentation/motorcycle-instruments.ts](src/render/vehicle-presentation/motorcycle-instruments.ts.md) | 35 |

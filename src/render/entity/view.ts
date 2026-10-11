@@ -345,6 +345,11 @@ export class SceneView {
     const mode = this.cycleVehicleLights(id)
     return mode === null ? null : mode !== 'off'
   }
+  /** Sample ambient conditions for automatic dipped beams. */
+  sampleVehicleLightEnvironment(id: string, dark: boolean, dt: number): void {
+    const controller = this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller
+    controller?.sampleEnvironment(dark, dt)
+  }
   /** H: step the vehicle's light switch off → position → low (dipped) → off; null without lights. */
   cycleVehicleLights(id: string): VehicleLightMode | null {
     return this.carLights.get(id)?.cycleLights() ?? this.authoredLights.get(id)?.cycle() ?? null
