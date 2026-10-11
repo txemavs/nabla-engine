@@ -1,9 +1,22 @@
 import * as THREE from 'three'
 import { ExhaustSmoke } from './exhaust-smoke.js'
+import { createLensFlare } from '../planet/lens-flare.js'
 
 /** Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame. */
 export class VehicleDestruction {
-  private readonly charred = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>()
+  private readonly charred = new Map<
+    THREE.Material,
+    {
+      color?: THREE.Color
+      emissive?: THREE.Color
+      emissiveIntensity?: number
+      roughness?: number
+      metalness?: number
+      flag: unknown
+    }
+  >()
+  private readonly flarePoint = new THREE.Vector3()
+  private readonly flare = createLensFlare(new THREE.Vector3(), { position: this.flarePoint })
   readonly root = new THREE.Group()
   readonly glassRoot = new THREE.Group()
   private readonly geometry = new THREE.SphereGeometry(1, 10, 8)
@@ -38,32 +51,37 @@ export class VehicleDestruction {
     this.fragments.frustumCulled = false
     this.root.add(this.fragments, this.glassRoot)
     this.space.add(this.light)
+    this.flare.intensity.value = 0
+    this.flare.mesh.name = 'Explosion lens flare'
+    this.space.add(this.flare.mesh)
   }
   explode(id: string, object: THREE.Object3D): void {
     if (this.burns.has(id)) return
     if (this.burns.size >= 32) this.remove(this.burns.keys().next().value!)
-    const burnedMaterials = new Map<THREE.Material, THREE.Material>()
     object.traverse((node) => {
-      if (!(node instanceof THREE.Mesh) || this.charred.has(node)) return
-      this.charred.set(node, node.material)
-      const materials = (Array.isArray(node.material) ? node.material : [node.material]).map(
-        (material) => {
-          const existing = burnedMaterials.get(material)
-          if (existing) return existing
-          const clone = material.clone()
-          clone.userData.nablaCharred = true
-          if ('color' in clone && clone.color instanceof THREE.Color) clone.color.set('#171717')
-          if (clone instanceof THREE.MeshStandardMaterial) {
-            clone.emissive.set(0)
-            clone.emissiveIntensity = 0
-            clone.roughness = 0.95
-            clone.metalness = 0.1
-          }
-          burnedMaterials.set(material, clone)
-          return clone
-        },
-      )
-      node.material = Array.isArray(node.material) ? materials : materials[0]
+      if (!(node instanceof THREE.Mesh)) return
+      for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+        if (this.charred.has(material)) continue
+        const color =
+          'color' in material && material.color instanceof THREE.Color ? material.color : undefined
+        const standard = material instanceof THREE.MeshStandardMaterial ? material : undefined
+        this.charred.set(material, {
+          color: color?.clone(),
+          emissive: standard?.emissive.clone(),
+          emissiveIntensity: standard?.emissiveIntensity,
+          roughness: standard?.roughness,
+          metalness: standard?.metalness,
+          flag: material.userData.nablaCharred,
+        })
+        material.userData.nablaCharred = true
+        color?.set('#171717')
+        if (standard) {
+          standard.emissive.set(0)
+          standard.emissiveIntensity = 0
+          standard.roughness = 0.95
+          standard.metalness = 0.1
+        }
+      }
     })
     const { fire, clock } = this.createFire()
     const { flames, material: flameMaterial } = this.createFlames(clock)
@@ -196,6 +214,7 @@ export class VehicleDestruction {
   update(dt: number, smokeEnabled: boolean): void {
     dt = THREE.MathUtils.clamp(dt, 0, 0.1)
     this.light.intensity = 0
+    this.flare.intensity.value = 0
     for (const burn of this.burns.values()) {
       burn.age += dt
       burn.clock.value = burn.age
@@ -209,6 +228,11 @@ export class VehicleDestruction {
         this.light.intensity = intensity
         burn.fire.getWorldPosition(this.light.position)
         this.space.worldToLocal(this.light.position)
+      }
+      if (burn.age < 0.25) {
+        this.flare.intensity.value = 3 * (1 - burn.age / 0.25)
+        burn.fire.getWorldPosition(this.flarePoint)
+        this.flarePoint.y += 0.4
       }
       const flash = burn.age < 0.4
       burn.fire.visible = flash
@@ -257,24 +281,31 @@ export class VehicleDestruction {
     this.burns.delete(id)
   }
   clear(): void {
-    const released = new Set<THREE.Material>()
-    for (const [mesh, original] of this.charred) {
-      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-        if (!released.has(material)) material.dispose()
-        released.add(material)
+    for (const [material, saved] of this.charred) {
+      if (saved.color && 'color' in material && material.color instanceof THREE.Color)
+        material.color.copy(saved.color)
+      if (material instanceof THREE.MeshStandardMaterial) {
+        material.emissive.copy(saved.emissive!)
+        material.emissiveIntensity = saved.emissiveIntensity!
+        material.roughness = saved.roughness!
+        material.metalness = saved.metalness!
       }
-      mesh.material = original
+      if (saved.flag === undefined) delete material.userData.nablaCharred
+      else material.userData.nablaCharred = saved.flag
     }
     this.charred.clear()
     for (const id of this.burns.keys()) this.remove(id)
     this.shards.length = 0
     this.fragments.count = 0
     this.light.intensity = 0
+    this.flare.intensity.value = 0
   }
   dispose(): void {
     this.clear()
     this.root.removeFromParent()
     this.light.removeFromParent()
+    this.flare.mesh.removeFromParent()
+    this.flare.dispose()
     this.warmFire?.material.dispose()
     this.warmFlames?.material.dispose()
     this.warmSmoke?.dispose()

@@ -10,13 +10,15 @@ import {
   type PerspectiveCamera,
 } from 'three'
 /** Screen-space ghosts along the sun, drawn after the world. No extra render target. */
-export function createLensFlare(direction: Vector3) {
+export function createLensFlare(direction: Vector3, options: { position?: Vector3 } = {}) {
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3))
   geometry.setAttribute('uv', new Float32BufferAttribute([0, 0, 2, 0, 0, 2], 2))
   const material = new ShaderMaterial({
     uniforms: {
       sunDirection: { value: direction },
+      sourcePosition: { value: options.position ?? new Vector3() },
+      positional: { value: options.position ? 1 : 0 },
       aspect: { value: 1 },
       intensity: { value: 1 },
       tileRect: { value: new Vector4(0, 0, 1, 1) },
@@ -29,13 +31,19 @@ export function createLensFlare(direction: Vector3) {
     fog: false,
     vertexShader: `
       varying vec2 vUv;
+      uniform vec3 sourcePosition;
+      uniform float positional;
       void main() {
         vUv = uv;
-        gl_Position = vec4(position.xy, 0.999, 1.0);
+        vec4 source = projectionMatrix * viewMatrix * vec4(sourcePosition, 1.0);
+        float depth = positional > 0.5 ? source.z / max(0.001, source.w) : 0.999;
+        gl_Position = vec4(position.xy, depth, 1.0);
       }
     `,
     fragmentShader: `
       uniform vec3 sunDirection;
+      uniform vec3 sourcePosition;
+      uniform float positional;
       uniform float aspect;
       uniform float intensity;
       uniform vec4 tileRect;
@@ -48,8 +56,8 @@ export function createLensFlare(direction: Vector3) {
       void main() {
         if (intensity <= 0.001) discard;
         vec2 fullUv = tileRect.xy + vUv * tileRect.zw;
-        vec3 viewDir = mat3(viewMatrix) * normalize(sunDirection);
-        if (viewDir.z > -0.001 || sunDirection.y < -0.02) discard;
+        vec3 viewDir = positional > 0.5 ? (viewMatrix * vec4(sourcePosition, 1.0)).xyz : mat3(viewMatrix) * normalize(sunDirection);
+        if (viewDir.z > -0.001 || (positional < 0.5 && sunDirection.y < -0.02)) discard;
         vec2 ndc = vec2(
           viewDir.x / -viewDir.z * projectionMatrix[0][0] * tileRect.z,
           viewDir.y / -viewDir.z * projectionMatrix[1][1] * tileRect.w
@@ -71,6 +79,7 @@ export function createLensFlare(direction: Vector3) {
   })
   const mesh = new Mesh(geometry, material)
   mesh.onBeforeRender = (_renderer, _scene, camera) => {
+    if (options.position) material.uniforms.aspect.value = (camera as PerspectiveCamera).aspect ?? 1
     const view = (camera as PerspectiveCamera).view
     const rect = material.uniforms.tileRect.value
     if (view?.enabled)

@@ -22,6 +22,7 @@ it('keeps wreck paint dark through brightness updates and restores paint on rese
   paint.userData.nablaPaint = { base: paint.color.clone(), applied: paint.color.clone() }
   const destruction = new VehicleDestruction(new Group())
   destruction.explode('car', group)
+  expect(mesh.material).toBe(paint)
   expect(panel.material).toBe(mesh.material)
   const burned = mesh.material.color.clone()
   expect(burned.getHexString()).toBe('171717')
@@ -75,6 +76,11 @@ it('warms fire and smoke without changing scene light count on explosion or rese
   space.add(wreck)
   destruction.explode('wreck', wreck)
   destruction.update(0.016, true)
+  const flare = space.getObjectByName('Explosion lens flare') as Mesh
+  const flareMaterial = flare.material as import('three').ShaderMaterial
+  expect(flareMaterial.uniforms.intensity.value).toBeGreaterThan(0)
+  for (let i = 0; i < 4; i++) destruction.update(0.1, true)
+  expect(flareMaterial.uniforms.intensity.value).toBe(0)
   expect(lightCount()).toBe(before)
   destruction.clear()
   expect(lightCount()).toBe(before)

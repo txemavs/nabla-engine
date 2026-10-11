@@ -111,10 +111,27 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
       bulletBreaksGlass = !!gallery.lastGlassImpact && sim.vehicleDamage('car').health === 100
       view.brokenGlass.clear()
     })
+    const originalMaterials = new Map<
+      import('three').Mesh,
+      import('three').Material | import('three').Material[]
+    >()
+    car.traverse((object) => {
+      if ((object as import('three').Mesh).isMesh)
+        originalMaterials.set(
+          object as import('three').Mesh,
+          (object as import('three').Mesh).material,
+        )
+    })
+    const renderer = (runtime as unknown as { renderer: import('three').WebGLRenderer }).renderer
+    runtime.tick(performance.now())
+    runtime.tick(performance.now() + 16)
+    const programsBefore = renderer.info.programs?.length ?? 0
     sim.damageVehicle('car', 100)
     const now = performance.now()
     runtime.tick(now)
     runtime.tick(now + 16)
+    const firstExplosionMs = performance.now() - now
+    const programsAfter = renderer.info.programs?.length ?? 0
     const burning = car.children.some(
       (child) =>
         (child as import('three').Mesh).isMesh &&
@@ -123,6 +140,9 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
     )
     const effectCount = view.destruction.root.children.length
     const disabled = sim.vehicleDamage('car').destroyed && sim.vehicleInfo('car').rpm === 0
+    const keptMaterials = [...originalMaterials].every(
+      ([mesh, material]) => mesh.material === material,
+    )
     for (let i = 0; i < 8; i++) view.destruction.update(0.1, true)
     const flamesVisible = car.children.some(
       (child) => child.name === 'Wreck flames' && child.visible,
@@ -152,12 +172,21 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
       flamesVisible,
       effectCount,
       disabled,
+      keptMaterials,
+      firstExplosionMs,
+      newPrograms: programsAfter - programsBefore,
       cleared,
       image,
     }
   }, process.cwd())
   writeFileSync('test-results/vehicle-explosion.png', Buffer.from(result.image, 'base64'))
   result.image = ''
+  console.log(
+    'First explosion:',
+    result.firstExplosionMs.toFixed(1),
+    'ms; new shader programs:',
+    result.newPrograms,
+  )
   expect(result.paneBroken, JSON.stringify(result)).toBe(true)
   expect(result.restored).toBe(true)
   expect(result.bulletBreaksGlass).toBe(true)
@@ -165,6 +194,8 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
   expect(result.flamesVisible).toBe(true)
   expect(result.effectCount).toBeGreaterThan(2)
   expect(result.disabled).toBe(true)
+  expect(result.keptMaterials).toBe(true)
+  expect(result.newPrograms).toBe(0)
   expect(result.cleared).toBe(true)
   expect(errors).toEqual([])
 })
