@@ -39,6 +39,7 @@ export class VehicleDestruction {
       const materials = (Array.isArray(node.material) ? node.material : [node.material]).map(
         (material) => {
           const clone = material.clone()
+          clone.userData.nablaCharred = true
           if (clone instanceof THREE.MeshStandardMaterial) {
             clone.color.multiplyScalar(0.22)
             clone.emissive.set(0)

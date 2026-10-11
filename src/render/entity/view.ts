@@ -188,6 +188,10 @@ export class SceneView {
   smokeEnabled = true
   private paintBrightness = 1
   private paintCheckAt = 0
+  private readonly paintColors = new WeakMap<
+    THREE.Material,
+    { base: THREE.Color; applied: THREE.Color }
+  >()
   /**
    * Scale the vehicle paint colour (S3 `Pintura*`, truck and trailer `White paint`) by `k`.
    * The authored or painted colour is kept as the base; a colour changed elsewhere (a repaint)
@@ -205,13 +209,14 @@ export class SceneView {
         for (const material of [mesh.material].flat()) {
           const standard = material as THREE.MeshStandardMaterial
           if (!standard?.isMeshStandardMaterial || !/^pintura|paint/i.test(standard.name)) continue
-          const data = standard.userData as {
-            nablaPaint?: { base: THREE.Color; applied: THREE.Color }
+          if (standard.userData.nablaCharred) continue
+          let colors = this.paintColors.get(standard)
+          if (!colors || !colors.applied.equals(standard.color)) {
+            colors = { base: standard.color.clone(), applied: standard.color.clone() }
+            this.paintColors.set(standard, colors)
           }
-          if (!data.nablaPaint || !data.nablaPaint.applied.equals(standard.color))
-            data.nablaPaint = { base: standard.color.clone(), applied: standard.color.clone() }
-          standard.color.copy(data.nablaPaint.base).multiplyScalar(k)
-          data.nablaPaint.applied.copy(standard.color)
+          standard.color.copy(colors.base).multiplyScalar(k)
+          colors.applied.copy(standard.color)
         }
       })
   }
