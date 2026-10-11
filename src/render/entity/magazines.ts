@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 import type { CasingPose } from '../../simulation/weapons/casings.js'
 import type { MagazineEntity } from '../../simulation/weapons/magazine.js'
+import { poseMagazineCapacity } from './magazine-shape.js'
 
 export class DroppedMagazines {
   readonly root = new THREE.Group()
@@ -41,6 +42,7 @@ export class DroppedMagazines {
       if (!pose) continue
       const entity = pose.entityId ? entities?.get(pose.entityId) : undefined
       mesh.userData.entityId = entity?.id
+      poseMagazineCapacity(mesh, entity?.capacity ?? 13)
       const top = mesh.getObjectByName('MagazineTopRound')
       if (top) top.visible = !!entity && entity.rounds > 0
       mesh.position.fromArray(pose.position)

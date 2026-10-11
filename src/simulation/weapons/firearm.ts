@@ -23,6 +23,7 @@ export interface FirearmState {
   spareMagazines: MagazineEntity[]
   pendingMagazine: MagazineEntity | null
   detachedMagazine: MagazineEntity | null
+  stopAfterInsertion?: boolean
   /** Cartridges in the seated magazine (0 when none is seated). */
   magazine: number
   /** A magazine is in the pistol. */
@@ -96,6 +97,7 @@ export function freshFirearm(spec: FirearmSpec): FirearmState {
     ),
     pendingMagazine: null,
     detachedMagazine: null,
+    stopAfterInsertion: false,
     get magazine() {
       return this.magazineEntity?.rounds ?? 0
     },
@@ -135,9 +137,57 @@ export function beginReload(state: FirearmState, spec: FirearmSpec, now: number)
   event.reloadStarted = true
   state.pendingMagazine = state.spareMagazines.shift()!
   state.reloadAction = undefined
+  state.stopAfterInsertion = false
   state.manualSlideTravel = undefined
   state.reload = 'magazine-out'
   state.reloadStartMs = now
+  return event
+}
+
+/** Insert a newly supplied item; the game's unlimited reserve creates a distinct full magazine. */
+export function insertFreshMagazine(
+  state: FirearmState,
+  spec: FirearmSpec,
+  now: number,
+): FirearmEvent {
+  if (state.reload !== 'none' || state.magazineSeated || now - state.lastShotMs < spec.cycleMs)
+    return empty()
+  state.detachedMagazine = createMagazine(spec.magazineCapacity)
+  return beginReloadAction(state, spec, 'magazine-in', now)
+}
+
+/** Replace an item from the unlimited supply; leave slide release to the player. */
+export function swapFreshMagazine(
+  state: FirearmState,
+  spec: FirearmSpec,
+  now: number,
+): FirearmEvent {
+  if (state.reload !== 'none' || now - state.lastShotMs < spec.cycleMs) return empty()
+  if (!state.magazineSeated) return insertFreshMagazine(state, spec, now)
+  state.pendingMagazine = createMagazine(spec.magazineCapacity)
+  state.reloadAction = undefined
+  state.stopAfterInsertion = true
+  state.reload = 'magazine-out'
+  state.reloadStartMs = now
+  const event = empty()
+  event.reloadStarted = true
+  return event
+}
+
+/** Release the catch only. This does not rack the slide or eject a chambered cartridge. */
+export function releaseSlide(state: FirearmState, now: number): FirearmEvent {
+  const event = empty()
+  if (state.reload !== 'none' || !state.slideLocked) return event
+  if (state.magazineSeated && state.magazine === 0) return event
+  state.slideLocked = false
+  state.manualRackBack = false
+  state.manualSlideTravel = undefined
+  if (state.chamber === 0 && state.magazineSeated && state.magazine > 0) {
+    state.magazine--
+    state.chamber = 1
+  }
+  state.slideReleaseMs = now
+  event.slideReleased = true
   return event
 }
 
@@ -243,7 +293,11 @@ export function advanceFirearm(state: FirearmState, spec: FirearmSpec, now: numb
       state.magazineSeated = true
       event.magazineSeated = true
       // A chambered round is kept: the slide is only run when the chamber is empty.
-      state.reload = state.reloadAction || state.chamber > 0 ? 'none' : 'slide-release'
+      state.reload =
+        state.reloadAction || state.stopAfterInsertion || state.chamber > 0
+          ? 'none'
+          : 'slide-release'
+      state.stopAfterInsertion = false
     }
     if (state.reload === 'slide-release' && age >= slideRelease) {
       state.slideLocked = false

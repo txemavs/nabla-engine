@@ -9,6 +9,9 @@ import {
   beginReload,
   beginReloadAction,
   moveSlide,
+  insertFreshMagazine,
+  swapFreshMagazine,
+  releaseSlide,
   freshFirearm,
   rounds,
   trigger,
@@ -25,6 +28,50 @@ const spec = (): FirearmSpec => {
     reloadMs: firearm.reloadMs,
   }
 }
+
+it('R removes, T supplies unlimited distinct full items, and Y alone releases the catch', () => {
+  const firearm = spec(),
+    state = freshFirearm(firearm)
+  state.spareMagazines.length = 0
+  const ids = new Set<string>()
+  for (let i = 0; i < 6; i++) {
+    state.magazine = 0
+    state.chamber = 0
+    state.slideLocked = true
+    const now = i * 10000
+    beginReloadAction(state, firearm, 'magazine-out', now)
+    const removed = advanceFirearm(state, firearm, now + 1000).droppedMagazine!
+    expect(removed.rounds).toBe(0)
+    insertFreshMagazine(state, firearm, now + 2000)
+    advanceFirearm(state, firearm, now + 4000)
+    expect(state.magazine).toBe(13)
+    expect(state.chamber).toBe(0)
+    expect(state.slideLocked).toBe(true)
+    ids.add(state.magazineEntity!.id)
+    expect(releaseSlide(state, now + 5000).slideReleased).toBe(true)
+    expect(state.magazine).toBe(12)
+    expect(state.chamber).toBe(1)
+    expect(releaseSlide(state, now + 6000).slideReleased).toBe(false)
+  }
+  expect(ids.size).toBe(6)
+})
+
+it('M swaps for a full extended item without refilling the discarded magazine or closing the slide', () => {
+  const firearm = { ...spec(), magazineCapacity: 30 },
+    state = freshFirearm(spec())
+  state.magazine = 2
+  state.chamber = 0
+  state.slideLocked = true
+  const old = state.magazineEntity
+  swapFreshMagazine(state, firearm, 0)
+  expect(advanceFirearm(state, firearm, 1000).droppedMagazine).toBe(old)
+  advanceFirearm(state, firearm, 4000)
+  expect(old!.rounds).toBe(2)
+  expect(state.magazineEntity!.capacity).toBe(30)
+  expect(state.magazine).toBe(30)
+  expect(state.slideLocked).toBe(true)
+  expect(state.reload).toBe('none')
+})
 
 it('transfers magazine entities without refilling the removed item', () => {
   const firearm = spec(),

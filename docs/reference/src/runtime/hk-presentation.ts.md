@@ -7,15 +7,16 @@
 ## Module dependencies
 
 - `three`
+- `../render/entity/magazine-shape.js`
 
 ## poseHKDetails
 
-[Implementation, line 4](../../../../src/runtime/hk-presentation.ts#L4)
+[Implementation, line 5](../../../../src/runtime/hk-presentation.ts#L5)
 
 Cosmetic poses for the reviewed asset; offsets are local to its authored mesh.
 
 ```ts
-poseHKDetails(root: T.Object3D, slide: number, rounds: number): void
+poseHKDetails(root: T.Object3D, slide: number, rounds: number, capacity = 13): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -27,5 +28,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `origin.applyAxisAngle`
 - `pivot.clone`
 - `pivot.clone().applyAxisAngle`
+- `poseMagazineCapacity`
 - `root.getObjectByName`
 - `source.clone`

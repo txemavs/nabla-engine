@@ -16,7 +16,7 @@ round is kept.
 
 ## moveSlide
 
-[Implementation, line 64](../../../../../src/simulation/weapons/firearm.ts#L64)
+[Implementation, line 65](../../../../../src/simulation/weapons/firearm.ts#L65)
 
 Continuous viewer slide manipulation, sharing the same ammunition state.
 
@@ -32,7 +32,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## freshFirearm
 
-[Implementation, line 91](../../../../../src/simulation/weapons/firearm.ts#L91)
+[Implementation, line 92](../../../../../src/simulation/weapons/firearm.ts#L92)
 
 ```ts
 freshFirearm(spec: FirearmSpec): FirearmState
@@ -43,12 +43,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.from`
 - `createMagazine`
 
-## freshFirearm.callback@94
+## freshFirearm.callback@95
 
-[Implementation, line 94](../../../../../src/simulation/weapons/firearm.ts#L94)
+[Implementation, line 95](../../../../../src/simulation/weapons/firearm.ts#L95)
 
 ```ts
-callback@94(): inferred by TypeScript; see implementation
+callback@95(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -57,7 +57,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## freshFirearm.magazine
 
-[Implementation, line 99](../../../../../src/simulation/weapons/firearm.ts#L99)
+[Implementation, line 101](../../../../../src/simulation/weapons/firearm.ts#L101)
 
 ```ts
 magazine(): inferred by TypeScript; see implementation
@@ -65,7 +65,7 @@ magazine(): inferred by TypeScript; see implementation
 
 ## freshFirearm.magazine
 
-[Implementation, line 102](../../../../../src/simulation/weapons/firearm.ts#L102)
+[Implementation, line 104](../../../../../src/simulation/weapons/firearm.ts#L104)
 
 ```ts
 magazine(value: number): inferred by TypeScript; see implementation
@@ -79,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## beginReload
 
-[Implementation, line 125](../../../../../src/simulation/weapons/firearm.ts#L125)
+[Implementation, line 127](../../../../../src/simulation/weapons/firearm.ts#L127)
 
 A reload request at `now` (ms). Nothing when one is running or the pistol is full.
 
@@ -92,9 +92,55 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `empty`
 - `state.spareMagazines.shift`
 
+## insertFreshMagazine
+
+[Implementation, line 148](../../../../../src/simulation/weapons/firearm.ts#L148)
+
+Insert a newly supplied item; the game's unlimited reserve creates a distinct full magazine.
+
+```ts
+insertFreshMagazine(state: FirearmState, spec: FirearmSpec, now: number): FirearmEvent
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `beginReloadAction`
+- `createMagazine`
+- `empty`
+
+## swapFreshMagazine
+
+[Implementation, line 160](../../../../../src/simulation/weapons/firearm.ts#L160)
+
+Replace an item from the unlimited supply; leave slide release to the player.
+
+```ts
+swapFreshMagazine(state: FirearmState, spec: FirearmSpec, now: number): FirearmEvent
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `createMagazine`
+- `empty`
+- `insertFreshMagazine`
+
+## releaseSlide
+
+[Implementation, line 178](../../../../../src/simulation/weapons/firearm.ts#L178)
+
+Release the catch only. This does not rack the slide or eject a chambered cartridge.
+
+```ts
+releaseSlide(state: FirearmState, now: number): FirearmEvent
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `empty`
+
 ## beginReloadAction
 
-[Implementation, line 145](../../../../../src/simulation/weapons/firearm.ts#L145)
+[Implementation, line 195](../../../../../src/simulation/weapons/firearm.ts#L195)
 
 Independently operated magazine and slide actions for the interactive viewer.
 
@@ -109,7 +155,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## trigger
 
-[Implementation, line 178](../../../../../src/simulation/weapons/firearm.ts#L178)
+[Implementation, line 228](../../../../../src/simulation/weapons/firearm.ts#L228)
 
 One trigger sample (pressed or released) at `now` (ms). A shot needs a fresh press (the trigger
 reset after the last one), the slide in battery with the cycle finished, and a chambered round.
@@ -124,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## advanceFirearm
 
-[Implementation, line 220](../../../../../src/simulation/weapons/firearm.ts#L220)
+[Implementation, line 270](../../../../../src/simulation/weapons/firearm.ts#L270)
 
 Advance the slide and an in-progress reload to `now` (ms).
 
@@ -142,7 +188,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## rounds
 
-[Implementation, line 282](../../../../../src/simulation/weapons/firearm.ts#L282)
+[Implementation, line 336](../../../../../src/simulation/weapons/firearm.ts#L336)
 
 Rounds on board: the chamber plus the seated magazine.
 
@@ -152,7 +198,7 @@ rounds(state: FirearmState): number
 
 ## empty
 
-[Implementation, line 286](../../../../../src/simulation/weapons/firearm.ts#L286)
+[Implementation, line 340](../../../../../src/simulation/weapons/firearm.ts#L340)
 
 ```ts
 empty(): FirearmEvent

@@ -13,10 +13,11 @@ so disposing a clone must not dispose them.
 - `three`
 - `../../simulation/weapons/casings.js`
 - `../../simulation/weapons/magazine.js`
+- `./magazine-shape.js`
 
 ## DroppedMagazines.constructor
 
-[Implementation, line 15](../../../../../src/render/entity/magazines.ts#L15)
+[Implementation, line 16](../../../../../src/render/entity/magazines.ts#L16)
 
 ```ts
 constructor(template: THREE.Object3D, count = 8): instance
@@ -29,17 +30,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pool.push`
 - `this.root.add`
 
-## DroppedMagazines.constructor.callback@19
+## DroppedMagazines.constructor.callback@20
 
-[Implementation, line 19](../../../../../src/render/entity/magazines.ts#L19)
+[Implementation, line 20](../../../../../src/render/entity/magazines.ts#L20)
 
 ```ts
-callback@19(child): inferred by TypeScript; see implementation
+callback@20(child): inferred by TypeScript; see implementation
 ```
 
 ## DroppedMagazines.dispose
 
-[Implementation, line 28](../../../../../src/render/entity/magazines.ts#L28)
+[Implementation, line 29](../../../../../src/render/entity/magazines.ts#L29)
 
 ```ts
 dispose(): void
@@ -51,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DroppedMagazines.sync
 
-[Implementation, line 34](../../../../../src/render/entity/magazines.ts#L34)
+[Implementation, line 35](../../../../../src/render/entity/magazines.ts#L35)
 
 ```ts
 sync(poses: readonly CasingPose[], entities?: ReadonlyMap<string, MagazineEntity>): void
@@ -69,4 +70,5 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mesh.quaternion.multiply`
 - `mesh.quaternion.set`
 - `new THREE.Quaternion().setFromAxisAngle`
+- `poseMagazineCapacity`
 - `poses.slice`

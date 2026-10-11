@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **381 modules; 4159 executable function definitions**.
+Coverage: **382 modules; 4165 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -196,6 +196,7 @@ Coverage: **381 modules; 4159 executable function definitions**.
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 46 |
 | [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 14 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 12 |
+| [src/render/entity/magazine-shape.ts](src/render/entity/magazine-shape.ts.md) | 1 |
 | [src/render/entity/magazines.ts](src/render/entity/magazines.ts.md) | 4 |
 | [src/render/entity/monitor-face.ts](src/render/entity/monitor-face.ts.md) | 4 |
 | [src/render/entity/motorcycle-side-stand.ts](src/render/entity/motorcycle-side-stand.ts.md) | 3 |
@@ -315,7 +316,7 @@ Coverage: **381 modules; 4159 executable function definitions**.
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 4 |
 | [src/runtime/sidearm-tuning.ts](src/runtime/sidearm-tuning.ts.md) | 3 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 61 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 63 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -380,7 +381,7 @@ Coverage: **381 modules; 4159 executable function definitions**.
 | [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 31 |
 | [src/simulation/weapons/ballistics.ts](src/simulation/weapons/ballistics.ts.md) | 12 |
 | [src/simulation/weapons/casings.ts](src/simulation/weapons/casings.ts.md) | 16 |
-| [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 11 |
+| [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 14 |
 | [src/simulation/weapons/hk-variants.ts](src/simulation/weapons/hk-variants.ts.md) | 0 |
 | [src/simulation/weapons/machine-pistol.ts](src/simulation/weapons/machine-pistol.ts.md) | 10 |
 | [src/simulation/weapons/magazine.ts](src/simulation/weapons/magazine.ts.md) | 1 |

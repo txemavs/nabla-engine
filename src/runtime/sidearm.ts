@@ -5,6 +5,9 @@ import {
   advanceFirearm,
   beginReload,
   beginReloadAction,
+  insertFreshMagazine,
+  swapFreshMagazine,
+  releaseSlide,
   moveSlide,
   freshFirearm,
   rounds,
@@ -118,6 +121,10 @@ export class Sidearm {
   private aiming = false
   private aimBlend = 0
   private laserOn = false
+  private lightOn = false
+  setLightEnabled(on: boolean): void {
+    this.lightOn = on
+  }
   readonly range: number
   readonly impulse: number
   private readonly legacyTravel: number
@@ -373,11 +380,9 @@ export class Sidearm {
   get fireMode(): FireMode {
     return this.mode
   }
-  /** Switch SEMI / RÁFAGA 30. A magazine fuller than the new capacity keeps only what fits. */
+  /** Fire mode never changes the ammunition inside an existing item. */
   setFireMode(mode: FireMode): void {
     this.mode = mode
-    const capacity = this.firearm.magazineCapacity
-    if (this.state.magazine > capacity) this.state.magazine = capacity
     this.state.triggerHeld = false
     this.recoilYaw.reset()
   }
@@ -430,6 +435,28 @@ export class Sidearm {
   manipulate(action: 'magazine-out' | 'magazine-in' | 'slide-release', now: number): FirearmEvent {
     const event = beginReloadAction(this.state, this.firearm, action, now)
     if (event.reloadStarted && action === 'magazine-out') this.magazineLeverPoseAt = now
+    return event
+  }
+
+  handleMagazine(action: 'drop' | 'insert' | 'release' | 'automatic', now: number): FirearmEvent {
+    if (action === 'drop') return this.manipulate('magazine-out', now)
+    if (action === 'insert' || action === 'automatic') {
+      const spec = specForMode(this.baseFirearm, action === 'insert' ? 'semi' : 'burst30')
+      const event =
+        action === 'insert'
+          ? insertFreshMagazine(this.state, spec, now)
+          : swapFreshMagazine(this.state, spec, now)
+      if (event.reloadStarted) {
+        this.setFireMode(action === 'insert' ? 'semi' : 'burst30')
+        this.magazineLeverPoseAt = now
+      }
+      return event
+    }
+    const event = releaseSlide(this.state, now)
+    if (event.slideReleased) {
+      this.hammerArmed = !this.variant.dao
+      this.slideLeverPoseAt = now
+    }
     return event
   }
 
@@ -567,8 +594,10 @@ export class Sidearm {
       this.state.reload === 'magazine-in'
         ? (this.state.pendingMagazine?.rounds ?? 0)
         : this.state.magazine,
+      (this.state.reload === 'magazine-in' ? this.state.pendingMagazine : this.state.magazineEntity)
+        ?.capacity ?? 13,
     )
-    for (const name of ['Hammer', 'HammerDAO', 'Control_lever']) {
+    for (const name of ['Hammer', 'HammerDAO', 'Control_lever', 'LightLaserModule']) {
       const source = this.assembledModel?.getObjectByName(name)
       const target = world.getObjectByName(name)
       if (source && target) {
@@ -638,6 +667,8 @@ export class Sidearm {
 
   /** Slide, trigger and magazine from the firearm state, relative to their rest poses. */
   private pose(now: number): void {
+    const accessory = this.assembledModel?.getObjectByName('LightLaserModule')
+    if (accessory) accessory.visible = this.laserOn || this.lightOn
     const elapsed = Math.max(0, Math.min(100, now - this.presentationNow))
     this.presentationNow = now
     const p = this.rig.presentation
@@ -723,6 +754,10 @@ export class Sidearm {
         this.state.reload === 'magazine-in'
           ? (this.state.pendingMagazine?.rounds ?? 0)
           : this.state.magazine,
+        (this.state.reload === 'magazine-in'
+          ? this.state.pendingMagazine
+          : this.state.magazineEntity
+        )?.capacity ?? 13,
       )
   }
 

@@ -4,6 +4,26 @@ import { Box3, Vector3 } from 'three'
 import { loadTexturedGlb } from '../helpers/load-textured-glb.js'
 import { poseHKDetails } from '../../src/runtime/hk-presentation.js'
 
+it('extends the magazine body while keeping the top cartridge fixed, then restores its normal shape', async () => {
+  const { scene } = await loadTexturedGlb(
+    readFileSync(
+      new URL('../../assets/library/weapons/hk-compact/hk-compact.glb', import.meta.url),
+    ),
+  )
+  poseHKDetails(scene, 0, 13, 13)
+  const magazine = scene.getObjectByName('Magazine')!
+  const top = magazine.getObjectByName('MagazineTopRound')!
+  const normal = new Box3().setFromObject(magazine).getSize(new Vector3()).y
+  const cartridge = new Box3().setFromObject(top).getCenter(new Vector3())
+  poseHKDetails(scene, 0, 30, 30)
+  expect(new Box3().setFromObject(magazine).getSize(new Vector3()).y).toBeGreaterThan(normal * 1.5)
+  expect(new Box3().setFromObject(top).getCenter(new Vector3()).distanceTo(cartridge)).toBeLessThan(
+    1e-8,
+  )
+  poseHKDetails(scene, 0, 13, 13)
+  expect(new Box3().setFromObject(magazine).getSize(new Vector3()).y).toBeCloseTo(normal, 8)
+})
+
 it('moves the barrel as one part while preserving the frame and guide through repeated cycles', async () => {
   const { scene } = await loadTexturedGlb(
     readFileSync(

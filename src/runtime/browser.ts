@@ -59,7 +59,7 @@ import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import { Sidearm } from './sidearm.js'
 import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
-import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
+import { fireModeLabel } from '../simulation/weapons/machine-pistol.js'
 import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm, sidearmButtonAction } from './shooting.js'
@@ -518,7 +518,9 @@ export class GameRuntime {
    */
   private triggerDown = false
   private fireModeBadge: FireModeBadge | null = null
-  private reloadRequested = false
+  private magazineAction: 'drop' | 'insert' | 'release' | 'automatic' | null = null
+  private weaponLightOn = false
+  private weaponLight: THREE.SpotLight | null = null
   private casingMotion: CasingMotion | null = null
   private casingMeshes: Casings | null = null
   private magazineMotion: CasingMotion | null = null
@@ -1036,6 +1038,9 @@ export class GameRuntime {
     this.clearPickups()
     this.casingMeshes?.dispose()
     this.magazineMeshes?.dispose()
+    this.weaponLight?.removeFromParent()
+    this.weaponLight?.target.removeFromParent()
+    this.weaponLight?.dispose()
     this.gallery.dispose()
     this.touchDriving?.dispose()
     this.fireModeBadge?.dispose()
@@ -1299,7 +1304,7 @@ export class GameRuntime {
     }
     this.fireRequested = false
     this.triggerReleased = false
-    this.reloadRequested = false
+    this.magazineAction = null
     const eye = this.camera.position.clone()
     this.origin.set(0, 0, 0)
     if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
@@ -3110,10 +3115,9 @@ export class GameRuntime {
     ).toArray()
     const canvas = this.options.canvas
     const events: FirearmEvent[] = [sidearm.update(time)]
-    if (this.reloadRequested && sidearm.visible) {
-      const reload = sidearm.reload(time)
+    if (this.magazineAction && sidearm.visible) {
+      const reload = sidearm.handleMagazine(this.magazineAction, time)
       events.push(reload)
-      if (reload.reloadStarted) this.options.onMessage?.(this.text('Reloading'))
     }
     if (this.triggerReleased) sidearm.release()
     const rise = sidearm.aimRise(time)
@@ -3159,7 +3163,8 @@ export class GameRuntime {
       }
       if (event.magazineSeated) this.effects.audio.weaponSound('magazine-in', weaponPosition)
       if (event.slideReleased) this.effects.audio.weaponSound('slide-forward', weaponPosition)
-      if (event.locked) this.options.onMessage?.(this.text('Slide locked back · R reload'))
+      if (event.locked)
+        this.options.onMessage?.('R: soltar cargador · T: cargador nuevo · Y: liberar corredera')
     }
     if (this.casingMotion && this.casingMeshes) {
       this.casingMotion.update(dt, (from, direction, length) =>
@@ -3258,6 +3263,18 @@ export class GameRuntime {
 
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
   private updateSidearmLaser(sim: Simulation, time: number): void {
+    if (this.weaponLightOn && !this.weaponLight) {
+      this.weaponLight = new THREE.SpotLight(0xfff4de, 35, 45, Math.PI / 9, 0.65, 1.5)
+      this.view.root.add(this.weaponLight, this.weaponLight.target)
+    }
+    if (this.weaponLight) {
+      this.weaponLight.visible = this.weaponLightOn && this.weaponDrawn
+      this.weaponLight.position.copy(this.camera.position)
+      this.weaponLight.target.position
+        .set(0, 0, -10)
+        .applyQuaternion(this.camera.quaternion)
+        .add(this.camera.position)
+    }
     if (!this.sidearm?.laserEnabled || !this.weaponDrawn) {
       this.view.laser.enabled = false
       return
@@ -3453,13 +3470,14 @@ export class GameRuntime {
         this.sidearm = new Sidearm(this.options.canvas.parentElement!)
       this.sidearm?.setAiming(false)
       this.view.laser.enabled = this.weaponDrawn && !!this.sidearm?.laserEnabled
+      if (this.weaponLight) this.weaponLight.visible = this.weaponDrawn && this.weaponLightOn
       this.options.onMessage?.(
         this.weaponDrawn ? this.text('Weapon drawn') : this.text('Weapon holstered'),
       )
       return
     }
-    if (code === 'KeyR' && this.weaponDrawn) {
-      this.reloadRequested = true
+    if ((code === 'KeyR' || code === 'KeyT' || code === 'KeyY') && this.weaponDrawn) {
+      this.magazineAction = code === 'KeyR' ? 'drop' : code === 'KeyT' ? 'insert' : 'release'
       return
     }
     if ((code === 'KeyZ' || code === 'KeyX') && this.weaponDrawn && this.sidearm) {
@@ -3468,13 +3486,23 @@ export class GameRuntime {
         this.effects.audio.weaponSound('slide-back', this.camera.position.toArray())
       return
     }
+    if ((code === 'KeyG' || code === 'KeyH') && this.weaponDrawn && this.sidearm) {
+      if (code === 'KeyG') {
+        const on = this.sidearm.toggleLaser()
+        this.view.laser.enabled = on
+        this.options.onMessage?.(on ? this.text('Laser on') : this.text('Laser off'))
+      } else {
+        this.weaponLightOn = !this.weaponLightOn
+        this.sidearm.setLightEnabled(this.weaponLightOn)
+        this.options.onMessage?.(this.weaponLightOn ? 'Linterna encendida' : 'Linterna apagada')
+      }
+      return
+    }
     // Experimental full-auto: M on foot with the pistol drawn. At a ship helm (or on foot without
     // the pistol) M keeps its game meaning (helm mode / its notice).
     if (code === 'KeyM' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
-      const mode = nextFireMode(this.sidearm.fireMode)
-      this.sidearm.setFireMode(mode)
+      this.magazineAction = 'automatic'
       this.triggerDown = false
-      this.options.onMessage?.(fireModeLabel(mode))
       return
     }
     if (code === 'KeyN') this.gallery.reset()
@@ -3487,11 +3515,6 @@ export class GameRuntime {
       if (sim.player.vehicleId) {
         const mode = this.view.cycleVehicleLights(sim.player.vehicleId)
         if (mode !== null) message = this.text(lightModeNotice[mode])
-      } else if (this.weaponDrawn) {
-        if (!this.sidearm) this.sidearm = new Sidearm(this.options.canvas.parentElement!)
-        const on = this.sidearm.toggleLaser()
-        this.view.laser.enabled = on
-        message = on ? this.text('Laser on') : this.text('Laser off')
       }
     }
     if (code === 'KeyG' && sim.player.vehicleId) {

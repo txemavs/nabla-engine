@@ -1,7 +1,13 @@
 import * as T from 'three'
+import { poseMagazineCapacity } from '../render/entity/magazine-shape.js'
 
 /** Cosmetic poses for the reviewed asset; offsets are local to its authored mesh. */
-export function poseHKDetails(root: T.Object3D, slide: number, rounds: number): void {
+export function poseHKDetails(
+  root: T.Object3D,
+  slide: number,
+  rounds: number,
+  capacity = 13,
+): void {
   const barrel = root.getObjectByName('Barrel')
   if (barrel) {
     const t = T.MathUtils.clamp(slide * 5, 0, 1),
@@ -29,4 +35,5 @@ export function poseHKDetails(root: T.Object3D, slide: number, rounds: number): 
     magazine.add(top)
   }
   top.visible = rounds > 0
+  poseMagazineCapacity(magazine, capacity)
 }

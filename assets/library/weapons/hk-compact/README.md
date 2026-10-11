@@ -17,9 +17,12 @@ does not rotate the frame. No manufacturing or functional geometry is implied.
 
 The magazine marker follows its `MagazineEntity.rounds`, including insertion and
 dropped items. Entities have an ID, capacity and remaining rounds. A normal
-reload consumes one existing spare magazine (default spawn loadout: three);
-it does not refill the removed one. Manual removal/reinsertion retains the same
-item. The chamber is independent. Dropped entities remain associated with their
+simulation reload consumes an existing spare. Gameplay uses unlimited supplies:
+R drops the current item, T supplies a full normal magazine and selects semi-auto,
+M replaces it with a visibly extended 30-round magazine and selects automatic.
+Y releases the slide catch separately. G toggles the laser and H the flashlight.
+Removed items never refill. Workshop reinsertion retains the same item.
+The chamber is independent. Dropped entities remain associated with their
 physics poses until the existing dropped-body lifetime expires. Ground pickup
 of magazines is not implemented in this change.
 
