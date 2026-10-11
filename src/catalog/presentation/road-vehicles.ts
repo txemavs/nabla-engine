@@ -95,8 +95,8 @@ export const s3Presentation: VehiclePresentationAdapter = {
     return {
       lights: createA3Lights(model),
       exhaust: {
-        outlet: exhaustSocket(model, [0.525, 0.27, -2.16]),
-        additionalOutlets: [exhaustSocket(model, [0.655, 0.27, -2.16])],
+        outlet: exhaustSocket(model, [0.535, 0.27, -2.16]),
+        additionalOutlets: [exhaustSocket(model, [0.645, 0.27, -2.16])],
         options: { direction: [0, 0.2, -1] },
       },
       mirrors: new CarMirrors(
