@@ -373,15 +373,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       input.setAttribute('aria-label', title)
       const multiplier = key === 'height' ? 1000 : 1
       const [min, max, step] = sidearmTuningRanges[key]
-      input.min = String(min * multiplier)
-      input.max = String(max * multiplier)
+      input.min = String((min - sidearmTuningDefaults[key]) * multiplier)
+      input.max = String((max - sidearmTuningDefaults[key]) * multiplier)
       input.step = String(step * multiplier)
       output.htmlFor = input.id
       row.append(title + ' ', input, ' ', output)
       group.append(row)
       controls.set(key, { input, output })
       input.addEventListener('input', () => {
-        runtime.setSidearmTuning({ [key]: Number(input.value) / multiplier })
+        runtime.setSidearmTuning({
+          [key]: sidearmTuningDefaults[key] + Number(input.value) / multiplier,
+        })
         runtime.setSidearmAimPreview(true)
         refreshSidearm()
       })
@@ -389,7 +391,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     refreshSidearm = () => {
       const tuning = runtime.sidearmTuning
       for (const [key, { input, output }] of controls) {
-        const value = tuning[key] * (key === 'height' ? 1000 : 1)
+        const value = (tuning[key] - sidearmTuningDefaults[key]) * (key === 'height' ? 1000 : 1)
         input.value = String(value)
         output.value = key === 'height' ? `${Math.round(value)} mm` : `${value.toFixed(1)}°`
         input.setAttribute('aria-valuetext', output.value)
