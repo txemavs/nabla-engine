@@ -10,6 +10,7 @@ export class ViewmodelLighting {
     world.updateMatrixWorld(true)
     world.traverseVisible((object) => {
       if (!(object instanceof THREE.Light)) return
+      if (object.userData.excludeFromViewmodel) return
       active.add(object)
       let light = this.lights.get(object)
       if (!light) {

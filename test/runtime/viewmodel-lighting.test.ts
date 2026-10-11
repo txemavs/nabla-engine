@@ -11,6 +11,9 @@ it('follows world lights and shadow maps without moving sources or accumulating 
   parent.position.set(12, 3, -8)
   parent.add(sun, spot)
   world.add(parent, ambient)
+  const flashlight = new SpotLight()
+  flashlight.userData.excludeFromViewmodel = true
+  world.add(flashlight)
   sun.castShadow = true
   const bridge = new ViewmodelLighting()
   for (let i = 0; i < 20; i++) bridge.sync(world)

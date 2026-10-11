@@ -285,6 +285,9 @@ export class Sidearm {
     if (this.disposed) return
     const flash = this.flash.visible,
       laser = this.laserLine.visible
+    const accessory = this.assembledModel?.getObjectByName('LightLaserModule')
+    const accessoryVisible = accessory?.visible ?? false
+    if (accessory) accessory.visible = true
     this.flash.visible = true
     this.smoke.root.visible = true
     this.laserLine.visible = true
@@ -309,6 +312,7 @@ export class Sidearm {
       }
     } finally {
       this.flash.visible = flash
+      if (accessory) accessory.visible = accessoryVisible
       this.smoke.root.visible = false
       this.laserLine.visible = laser
     }

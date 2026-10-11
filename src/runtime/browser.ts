@@ -704,6 +704,9 @@ export class GameRuntime {
       startLights: options.startLights ?? 'auto',
     })
     this.scene.add(this.view.root)
+    this.weaponLight = new THREE.SpotLight(0xfff4de, 0, 45, Math.PI / 9, 0.65, 1.5)
+    this.weaponLight.userData.excludeFromViewmodel = true
+    this.scene.add(this.weaponLight, this.weaponLight.target)
     this.monitors = new VehicleMonitors(
       options.canvas.parentElement!,
       (message) => options.onMessage?.(message),
@@ -3315,17 +3318,18 @@ export class GameRuntime {
 
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
   private updateSidearmLaser(sim: Simulation, time: number): void {
-    if (this.weaponLightOn && !this.weaponLight) {
-      this.weaponLight = new THREE.SpotLight(0xfff4de, 35, 45, Math.PI / 9, 0.65, 1.5)
-      this.view.root.add(this.weaponLight, this.weaponLight.target)
-    }
     if (this.weaponLight) {
-      this.weaponLight.visible = this.weaponLightOn && this.weaponDrawn
-      this.weaponLight.position.copy(this.camera.position)
+      this.weaponLight.intensity = this.weaponLightOn && this.weaponDrawn ? 35 : 0
+      this.weaponLight.position
+        .set(0, -0.05, -0.35)
+        .applyQuaternion(this.camera.quaternion)
+        .add(this.camera.position)
+        .sub(this.origin)
       this.weaponLight.target.position
         .set(0, 0, -10)
         .applyQuaternion(this.camera.quaternion)
         .add(this.camera.position)
+        .sub(this.origin)
     }
     if (!this.sidearm?.laserEnabled || !this.weaponDrawn) {
       this.view.laser.enabled = false
@@ -3522,7 +3526,8 @@ export class GameRuntime {
         this.sidearm = new Sidearm(this.options.canvas.parentElement!)
       this.sidearm?.setAiming(false)
       this.view.laser.enabled = this.weaponDrawn && !!this.sidearm?.laserEnabled
-      if (this.weaponLight) this.weaponLight.visible = this.weaponDrawn && this.weaponLightOn
+      if (this.weaponLight)
+        this.weaponLight.intensity = this.weaponDrawn && this.weaponLightOn ? 35 : 0
       this.options.onMessage?.(
         this.weaponDrawn ? this.text('Weapon drawn') : this.text('Weapon holstered'),
       )
