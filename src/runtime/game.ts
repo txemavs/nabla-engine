@@ -194,13 +194,17 @@ export class GameRuntime {
     if (this.vehicle !== sim.player.vehicleId) {
       this.vehicle = sim.player.vehicleId
       this.cameraState.entrance = null
+      const recovering = !!sim.playerBikeRecovery
+      if (!this.vehicle && (recovering || sim.playerEjection))
+        this.cameraState.firstPerson = this.cameraState.mode === 'cockpit'
       const definition = document.entities.find((e) => e.id === this.vehicle)?.vehicle
       if (
         this.vehicle &&
         definition &&
         !definition.boat &&
         !definition.plane &&
-        !definition.interior
+        !definition.interior &&
+        !recovering
       ) {
         this.cameraState.mode = 'cockpit'
         this.cameraState.mapHeight = overheadDrivingHeight(

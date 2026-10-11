@@ -290,17 +290,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.recover.roads`
 - `this.session.step`
 
-## GameRuntime.step.callback@197
+## GameRuntime.step.callback@200
 
-[Implementation, line 197](../../../../src/runtime/game.ts#L197)
+[Implementation, line 200](../../../../src/runtime/game.ts#L200)
 
 ```ts
-callback@197(e): inferred by TypeScript; see implementation
+callback@200(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.updateCamera
 
-[Implementation, line 222](../../../../src/runtime/game.ts#L222)
+[Implementation, line 226](../../../../src/runtime/game.ts#L226)
 
 Update the host camera from live physics; now is milliseconds and dt is seconds.
 
@@ -319,7 +319,7 @@ Explicit throws in this body:
 
 ## GameRuntime.action
 
-[Implementation, line 233](../../../../src/runtime/game.ts#L233)
+[Implementation, line 237](../../../../src/runtime/game.ts#L237)
 
 Device-independent gameplay actions; presentation-only actions stay with the view.
 

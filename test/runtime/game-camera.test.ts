@@ -16,6 +16,49 @@ import { gameCameraDefaults, resolveGameCameraSettings } from '../../src/config/
 import { followDrivingHeading } from '../../src/render/entity/driving-camera.js'
 import { GameRuntime } from '../../src/runtime/game.js'
 import { startEjection, type RiderEjection } from '../../src/simulation/rider-ejection.js'
+import { Vec3 } from '../../src/simulation/physics.js'
+import { idleInput } from '../../src/simulation/simulation.js'
+import type { Vehicle } from '../../src/entity/vehicle/vehicle.js'
+
+test.each(['chase', 'map', 'cinematic', 'cockpit'] as const)(
+  'runtime preserves %s through actual falling, lifting and automatic boarding',
+  async (mode) => {
+    const floor = createEntity('floor', 'box', [0, -0.5, 0])
+    floor.size = [100, 1, 100]
+    const game = new GameRuntime()
+    try {
+      const sim = await game.play(
+        {
+          version: 1,
+          name: 'Recovery view',
+          entities: [
+            floor,
+            createEntity('spawn', 'spawn'),
+            presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
+          ],
+        },
+        { vehicleId: 'bike' },
+      )
+      for (let i = 0; i < 60; i++) game.step(1 / 60, idleInput(), -100, (i * 1000) / 60)
+      game.cameraState.mode = mode
+      const bike = (sim as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+      bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+      bike.body.velocity.setZero()
+      bike.body.angularVelocity.setZero()
+      let boarding = false
+      for (let i = 0; i < 360; i++) {
+        game.step(1 / 60, idleInput(), -100, 1000 + (i * 1000) / 60)
+        boarding ||= sim.playerBikeRecovery?.phase === 'boarding'
+        expect(game.cameraState.mode).toBe(mode)
+        if (!sim.player.vehicleId) expect(game.cameraState.firstPerson).toBe(mode === 'cockpit')
+      }
+      expect(boarding).toBe(true)
+      expect(sim.player.vehicleId).toBe('bike')
+    } finally {
+      game.dispose()
+    }
+  },
+)
 
 test('a fallen rider gets an overhead shot of rider and bike without losing the previous camera mode', async () => {
   const document: SceneDocument = {
