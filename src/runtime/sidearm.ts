@@ -798,7 +798,8 @@ export class Sidearm {
       const press = age >= 0 && age < 300 ? Math.sin((Math.PI * age) / 300) : 0
       this.magazineLever.object.rotation.x = press * -0.25
     }
-    const magazineViewing = !this.state.magazineSeated || this.state.reload === 'magazine-out'
+    const magazineViewing =
+      !this.aiming && (!this.state.magazineSeated || this.state.reload === 'magazine-out')
     this.magazinePoseBlend +=
       ((magazineViewing ? 1 : 0) - this.magazinePoseBlend) * (1 - Math.exp(-elapsed / 90))
     if (this.inspection) {
