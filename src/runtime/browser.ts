@@ -196,7 +196,11 @@ import { VehicleEffects } from './vehicle-effects.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 
 import { groundAtSeam, waitForArea, waitForGround } from './ground.js'
-import { uploadSceneTextures, warmGamePresentation } from './presentation-warmup.js'
+import {
+  uploadSceneTextures,
+  warmGamePresentation,
+  warmEffectPresentation,
+} from './presentation-warmup.js'
 import { AccidentReplacement, replacementRoadSpot } from './accident-replacement.js'
 import { GameHud } from './hud.js'
 import { FlipCinematic } from './flip-cinematic.js'
@@ -2887,6 +2891,7 @@ export class GameRuntime {
       canvas.dataset.revealProgress = (done / REVEAL_STAGES).toFixed(2)
     }
     canvas.dataset.reveal = 'preparing'
+    this.effects.audio.prepare()
     // 1. Vehicle GLBs (the bike included) and 2. the sidearm models land in the asset cache.
     stage('vehicles', 0)
     await within(this.view.ready, 30_000)
@@ -2953,6 +2958,13 @@ export class GameRuntime {
           this.cameraState.headPitch,
         )
       const camera = this.camera.clone()
+      await within(
+        warmEffectPresentation(this.renderer, camera, [
+          this.effects.smoke.root,
+          this.effects.marks.root,
+        ]),
+        20_000,
+      )
       await within(
         warmGamePresentation({
           renderer: this.renderer,
@@ -3141,7 +3153,7 @@ export class GameRuntime {
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
-    this.sidearm?.stopInspect(performance.now())
+    if (!this.sidearmAimPreview) this.sidearm?.stopInspect(performance.now())
     this.fireRequested = false
     this.triggerReleased = true
     this.triggerDown = false

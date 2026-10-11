@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **384 modules; 4180 executable function definitions**.
+Coverage: **384 modules; 4184 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -65,7 +65,7 @@ Coverage: **384 modules; 4180 executable function definitions**.
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
 | [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 52 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 54 |
 | [src/audio/weapon-handling.ts](src/audio/weapon-handling.ts.md) | 3 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
@@ -309,7 +309,7 @@ Coverage: **384 modules; 4180 executable function definitions**.
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 1 |
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |
 | [src/runtime/planet-visual.ts](src/runtime/planet-visual.ts.md) | 4 |
-| [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 5 |
+| [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |
 | [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 9 |
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |

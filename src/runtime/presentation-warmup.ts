@@ -10,6 +10,41 @@ import type {
 } from 'three'
 import type { SceneView } from '../render/entity/view.js'
 import type { GameCameraSettings } from '../config/camera.js'
+import { Scene as EffectScene, WebGLRenderTarget } from 'three'
+
+/** Compile hidden common effects and upload their buffers in an offscreen draw before play. */
+export async function warmEffectPresentation(
+  renderer: WebGLRenderer,
+  camera: PerspectiveCamera,
+  roots: readonly Object3D[],
+): Promise<void> {
+  const scene = new EffectScene()
+  for (const root of roots) {
+    const copy = root.clone(true)
+    copy.traverse((object) => {
+      object.visible = true
+      object.frustumCulled = false
+    })
+    scene.add(copy)
+  }
+  await renderer.compileAsync(scene, camera)
+  const previous = renderer.getRenderTarget()
+  const target = new WebGLRenderTarget(1, 1)
+  const auto = renderer.shadowMap.autoUpdate,
+    needs = renderer.shadowMap.needsUpdate
+  try {
+    renderer.shadowMap.autoUpdate = false
+    renderer.shadowMap.needsUpdate = false
+    renderer.setRenderTarget(target)
+    renderer.render(scene, camera)
+  } finally {
+    renderer.setRenderTarget(previous)
+    renderer.shadowMap.autoUpdate = auto
+    renderer.shadowMap.needsUpdate = needs
+    target.dispose()
+    scene.clear()
+  }
+}
 
 export interface PresentationWarmup {
   renderer: {

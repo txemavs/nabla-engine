@@ -174,6 +174,16 @@ export class VehicleAudio {
     }
   }
 
+  /** Build the silent common graph during loading; playback still requires unlock(). */
+  prepare(): void {
+    if (!this.enabled || this.context) return
+    try {
+      this.build()
+    } catch {
+      /* Audio remains optional. */
+    }
+  }
+
   /** Current tire-squeal gain, for tests and the renderer dataset. */
   get tireSoundLevel(): number {
     return this.tireVoice?.level ?? 0
@@ -338,9 +348,17 @@ export class VehicleAudio {
   casing(speed: number, position?: readonly number[]): void {
     const frame = this.frame()
     if (!frame || !frame.audible) return
+    const entry = this.casingVoices[this.nextCasing++ % this.casingVoices.length]
+    if (!entry) return
+    entry.emitter.setListener(this.eye, this.orientation)
+    entry.emitter.setPosition(position ?? this.eye)
+    entry.emitter.setMask(1 / (1 + (this.listenerSpeed / 30) ** 2))
+    entry.voice.trigger(frame.time, true, speed)
+    this.tinkles++
+  }
+
+  private prepareCasings(context: AudioContext, noise: AudioBufferSourceNode): void {
     if (!this.casingVoices.length) {
-      const context = this.context!
-      const noise = loopingNoise(context)
       for (let i = 0; i < 4; i++) {
         const emitter = new SpatialEmitter(context, audioBus(context), {
           referenceDistance: 0.75,
@@ -355,12 +373,6 @@ export class VehicleAudio {
         this.casingVoices.push({ emitter, voice })
       }
     }
-    const entry = this.casingVoices[this.nextCasing++ % this.casingVoices.length]
-    entry.emitter.setListener(this.eye, this.orientation)
-    entry.emitter.setPosition(position ?? this.eye)
-    entry.emitter.setMask(1 / (1 + (this.listenerSpeed / 30) ** 2))
-    entry.voice.trigger(frame.time, true, speed)
-    this.tinkles++
   }
   /** Casing tinkles played so far, for tests and the renderer dataset. */
   get casingCount(): number {
@@ -397,6 +409,7 @@ export class VehicleAudio {
       })
     }
     this.context = context
+    this.prepareCasings(context, noise)
     for (let i = 0; i < 8; i++) {
       const emitter = new SpatialEmitter(context, audioBus(context), {
         referenceDistance: 2,

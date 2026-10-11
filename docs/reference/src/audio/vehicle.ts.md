@@ -268,9 +268,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@169(): inferred by TypeScript; see implementation
 ```
 
-## VehicleAudio.tireSoundLevel
+## VehicleAudio.prepare
 
 [Implementation, line 178](../../../../src/audio/vehicle.ts#L178)
+
+Build the silent common graph during loading; playback still requires unlock().
+
+```ts
+prepare(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.build`
+
+## VehicleAudio.tireSoundLevel
+
+[Implementation, line 188](../../../../src/audio/vehicle.ts#L188)
 
 Current tire-squeal gain, for tests and the renderer dataset.
 
@@ -280,7 +294,7 @@ tireSoundLevel(): number
 
 ## VehicleAudio.gearClackCount
 
-[Implementation, line 183](../../../../src/audio/vehicle.ts#L183)
+[Implementation, line 193](../../../../src/audio/vehicle.ts#L193)
 
 Number of gear clacks played so far, for tests and the renderer dataset.
 
@@ -290,7 +304,7 @@ gearClackCount(): number
 
 ## VehicleAudio.gearClickCount
 
-[Implementation, line 188](../../../../src/audio/vehicle.ts#L188)
+[Implementation, line 198](../../../../src/audio/vehicle.ts#L198)
 
 Number of gear clicks played so far, for tests and the renderer dataset.
 
@@ -300,7 +314,7 @@ gearClickCount(): number
 
 ## VehicleAudio.engineStartCount
 
-[Implementation, line 193](../../../../src/audio/vehicle.ts#L193)
+[Implementation, line 203](../../../../src/audio/vehicle.ts#L203)
 
 Number of engine starts played so far, for tests and the renderer dataset.
 
@@ -310,7 +324,7 @@ engineStartCount(): number
 
 ## VehicleAudio.gunshotCount
 
-[Implementation, line 198](../../../../src/audio/vehicle.ts#L198)
+[Implementation, line 208](../../../../src/audio/vehicle.ts#L208)
 
 Number of gunshots played so far, for tests and the renderer dataset.
 
@@ -320,7 +334,7 @@ gunshotCount(): number
 
 ## VehicleAudio.setListener
 
-[Implementation, line 203](../../../../src/audio/vehicle.ts#L203)
+[Implementation, line 213](../../../../src/audio/vehicle.ts#L213)
 
 Camera pose and listener speed, in the same absolute world frame as source positions.
 
@@ -336,25 +350,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.casingVoices.map`
 - `this.destructionVoices.map`
 
-## VehicleAudio.setListener.callback@212
+## VehicleAudio.setListener.callback@222
 
-[Implementation, line 212](../../../../src/audio/vehicle.ts#L212)
+[Implementation, line 222](../../../../src/audio/vehicle.ts#L222)
 
 ```ts
-callback@212(entry): inferred by TypeScript; see implementation
+callback@222(entry): inferred by TypeScript; see implementation
 ```
 
-## VehicleAudio.setListener.callback@213
+## VehicleAudio.setListener.callback@223
 
-[Implementation, line 213](../../../../src/audio/vehicle.ts#L213)
+[Implementation, line 223](../../../../src/audio/vehicle.ts#L223)
 
 ```ts
-callback@213(entry): inferred by TypeScript; see implementation
+callback@223(entry): inferred by TypeScript; see implementation
 ```
 
 ## VehicleAudio.setVehiclePosition
 
-[Implementation, line 221](../../../../src/audio/vehicle.ts#L221)
+[Implementation, line 231](../../../../src/audio/vehicle.ts#L231)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).
@@ -376,7 +390,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.setTurbinePosition
 
-[Implementation, line 225](../../../../src/audio/vehicle.ts#L225)
+[Implementation, line 235](../../../../src/audio/vehicle.ts#L235)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).
@@ -397,7 +411,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.turbine
 
-[Implementation, line 230](../../../../src/audio/vehicle.ts#L230)
+[Implementation, line 240](../../../../src/audio/vehicle.ts#L240)
 
 `level` is 0..1. `speed` is km/h.
 
@@ -412,7 +426,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.propeller
 
-[Implementation, line 237](../../../../src/audio/vehicle.ts#L237)
+[Implementation, line 247](../../../../src/audio/vehicle.ts#L247)
 
 Pass 0 when the player is not flying the plane.
 
@@ -427,7 +441,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.powertrain
 
-[Implementation, line 248](../../../../src/audio/vehicle.ts#L248)
+[Implementation, line 258](../../../../src/audio/vehicle.ts#L258)
 
 `rpm` is engine speed. `load` is 0..1. Rpm 0 silences the car and the turbo.
 `turbo: false` keeps the turbo silent for engines without one (e.g. a motorcycle);
@@ -444,7 +458,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.engineVoice
 
-[Implementation, line 267](../../../../src/audio/vehicle.ts#L267)
+[Implementation, line 277](../../../../src/audio/vehicle.ts#L277)
 
 Engine voice that played on the last `powertrain` call, for tests and the dataset.
 
@@ -454,7 +468,7 @@ engineVoice(): 'note' | 'v4' | 'inline' | 'diesel'
 
 ## VehicleAudio.gearClick
 
-[Implementation, line 272](../../../../src/audio/vehicle.ts#L272)
+[Implementation, line 282](../../../../src/audio/vehicle.ts#L282)
 
 One short, quiet mechanical click for a gear change (`gearShift.sound: 'click'`).
 
@@ -470,7 +484,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.gearChange
 
-[Implementation, line 285](../../../../src/audio/vehicle.ts#L285)
+[Implementation, line 295](../../../../src/audio/vehicle.ts#L295)
 
 One mechanical clack for a gear change or D/R engagement. `sound` is the vehicle's own
 profile (a truck passes a heavier, lower one); omitted fields use the car sound.
@@ -486,7 +500,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.engineStart
 
-[Implementation, line 296](../../../../src/audio/vehicle.ts#L296)
+[Implementation, line 306](../../../../src/audio/vehicle.ts#L306)
 
 One click and a very brief crank, then the engine catches (`ignitionCrankSeconds`, about 0.2 s). The
 host keeps `powertrain` at rpm 0 meanwhile and then feeds the settling idle speed.
@@ -502,7 +516,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.gunshot
 
-[Implementation, line 304](../../../../src/audio/vehicle.ts#L304)
+[Implementation, line 314](../../../../src/audio/vehicle.ts#L314)
 
 One sidearm shot. Silent before the first gesture, while muted or while suspended.
 
@@ -519,7 +533,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.weaponSound
 
-[Implementation, line 314](../../../../src/audio/vehicle.ts#L314)
+[Implementation, line 324](../../../../src/audio/vehicle.ts#L324)
 
 Procedural handling cue, at the weapon rather than the listener.
 
@@ -535,7 +549,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.metalImpact
 
-[Implementation, line 322](../../../../src/audio/vehicle.ts#L322)
+[Implementation, line 332](../../../../src/audio/vehicle.ts#L332)
 
 A metal target rings at the hit point; independent emitters preserve previous tails.
 
@@ -552,7 +566,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.reverseAlarm
 
-[Implementation, line 332](../../../../src/audio/vehicle.ts#L332)
+[Implementation, line 342](../../../../src/audio/vehicle.ts#L342)
 
 Reverse-warning voice, gated by the vehicle profile, gear and global audio preference.
 
@@ -567,7 +581,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.casing
 
-[Implementation, line 338](../../../../src/audio/vehicle.ts#L338)
+[Implementation, line 348](../../../../src/audio/vehicle.ts#L348)
 
 A brass casing hitting the ground at `speed` m/s.
 
@@ -577,23 +591,42 @@ casing(speed: number, position?: readonly number[]): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `SpatialEmitter`
-- `audioBus`
 - `entry.emitter.setListener`
 - `entry.emitter.setMask`
 - `entry.emitter.setPosition`
 - `entry.voice.trigger`
-- `loopingNoise`
-- `this.casingVoices.push`
 - `this.frame`
-- `withAudioOutputs`
 
-## VehicleAudio.casing.callback@353
+## VehicleAudio.prepareCasings
 
-[Implementation, line 353](../../../../src/audio/vehicle.ts#L353)
+[Implementation, line 360](../../../../src/audio/vehicle.ts#L360)
+
+One browser audio context, nine independent voices (the powertrain one picks a road-car
+note or a procedural V4 per vehicle).
+
+The context has to be created from a click or a key press (`unlock`).
+Turbine, propeller, tires, powertrain, engine start, reverse alarm, gear clack, gear click and the
+sidearm gunshot own their nodes; they only
+share that context and one noise buffer. Studio owns the mute button.
+Audio never throws into the host loop.
 
 ```ts
-callback@353(): inferred by TypeScript; see implementation
+prepareCasings(context: AudioContext, noise: AudioBufferSourceNode): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `SpatialEmitter`
+- `audioBus`
+- `this.casingVoices.push`
+- `withAudioOutputs`
+
+## VehicleAudio.prepareCasings.callback@371
+
+[Implementation, line 371](../../../../src/audio/vehicle.ts#L371)
+
+```ts
+callback@371(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -602,7 +635,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.casingCount
 
-[Implementation, line 366](../../../../src/audio/vehicle.ts#L366)
+[Implementation, line 378](../../../../src/audio/vehicle.ts#L378)
 
 Casing tinkles played so far, for tests and the renderer dataset.
 
@@ -612,7 +645,7 @@ casingCount(): number
 
 ## VehicleAudio.tires
 
-[Implementation, line 370](../../../../src/audio/vehicle.ts#L370)
+[Implementation, line 382](../../../../src/audio/vehicle.ts#L382)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).
@@ -634,7 +667,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.scrape
 
-[Implementation, line 376](../../../../src/audio/vehicle.ts#L376)
+[Implementation, line 388](../../../../src/audio/vehicle.ts#L388)
 
 Footpeg scrape grind, 0 (none) … 1, from the two-wheeler pose.
 
@@ -649,7 +682,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.scrapeLevel
 
-[Implementation, line 382](../../../../src/audio/vehicle.ts#L382)
+[Implementation, line 394](../../../../src/audio/vehicle.ts#L394)
 
 Current scrape gain, for tests.
 
@@ -659,7 +692,7 @@ scrapeLevel(): number
 
 ## VehicleAudio.build
 
-[Implementation, line 385](../../../../src/audio/vehicle.ts#L385)
+[Implementation, line 397](../../../../src/audio/vehicle.ts#L397)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).
@@ -685,39 +718,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.metalEmitters.push`
 - `this.metalVoices.push`
 - `this.mixer.attach`
+- `this.prepareCasings`
 - `this.setListener`
 - `withAudioOutputs`
 
-## VehicleAudio.build.callback@407
+## VehicleAudio.build.callback@420
 
-[Implementation, line 407](../../../../src/audio/vehicle.ts#L407)
+[Implementation, line 420](../../../../src/audio/vehicle.ts#L420)
 
 ```ts
-callback@407(): inferred by TypeScript; see implementation
+callback@420(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `MetalImpact`
 
-## VehicleAudio.build.callback@429
+## VehicleAudio.build.callback@442
 
-[Implementation, line 429](../../../../src/audio/vehicle.ts#L429)
+[Implementation, line 442](../../../../src/audio/vehicle.ts#L442)
 
 ```ts
-callback@429(): inferred by TypeScript; see implementation
+callback@442(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Turbine`
 
-## VehicleAudio.build.callback@434
+## VehicleAudio.build.callback@447
 
-[Implementation, line 434](../../../../src/audio/vehicle.ts#L434)
+[Implementation, line 447](../../../../src/audio/vehicle.ts#L447)
 
 ```ts
-callback@434(): inferred by TypeScript; see implementation
+callback@447(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -731,36 +765,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `ReverseAlarm`
 - `TireSqueal`
 
-## VehicleAudio.build.callback@448
+## VehicleAudio.build.callback@461
 
-[Implementation, line 448](../../../../src/audio/vehicle.ts#L448)
+[Implementation, line 461](../../../../src/audio/vehicle.ts#L461)
 
 ```ts
-callback@448(): inferred by TypeScript; see implementation
+callback@461(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Gunshot`
 
-## VehicleAudio.build.callback@453
+## VehicleAudio.build.callback@466
 
-[Implementation, line 453](../../../../src/audio/vehicle.ts#L453)
+[Implementation, line 466](../../../../src/audio/vehicle.ts#L466)
 
 ```ts
-callback@453(): inferred by TypeScript; see implementation
+callback@466(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `GearClick`
 
-## VehicleAudio.build.callback@458
+## VehicleAudio.build.callback@471
 
-[Implementation, line 458](../../../../src/audio/vehicle.ts#L458)
+[Implementation, line 471](../../../../src/audio/vehicle.ts#L471)
 
 ```ts
-callback@458(): inferred by TypeScript; see implementation
+callback@471(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -769,7 +803,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleAudio.frame
 
-[Implementation, line 463](../../../../src/audio/vehicle.ts#L463)
+[Implementation, line 476](../../../../src/audio/vehicle.ts#L476)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).
@@ -786,7 +820,7 @@ frame(): { time: number; audible: boolean } | undefined
 
 ## VehicleAudio.silence
 
-[Implementation, line 468](../../../../src/audio/vehicle.ts#L468)
+[Implementation, line 481](../../../../src/audio/vehicle.ts#L481)
 
 One browser audio context, nine independent voices (the powertrain one picks a road-car
 note or a procedural V4 per vehicle).

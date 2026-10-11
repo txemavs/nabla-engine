@@ -1,6 +1,38 @@
 import { expect, it, vi } from 'vitest'
-import { PerspectiveCamera, Scene } from 'three'
-import { warmGamePresentation } from '../../src/runtime/presentation-warmup.js'
+import { PerspectiveCamera, Scene, Group, type WebGLRenderer } from 'three'
+import {
+  warmGamePresentation,
+  warmEffectPresentation,
+} from '../../src/runtime/presentation-warmup.js'
+
+it('warms hidden effects offscreen without changing gameplay visibility or shadow update flags', async () => {
+  const root = new Group(),
+    child = new Group()
+  root.visible = false
+  child.visible = false
+  root.add(child)
+  const previous = {},
+    targets: unknown[] = []
+  const renderer = {
+    shadowMap: { autoUpdate: true, needsUpdate: true },
+    compileAsync: async (scene: Scene) => {
+      expect(scene.children[0].visible).toBe(true)
+      expect(scene.children[0].children[0].visible).toBe(true)
+    },
+    getRenderTarget: () => previous,
+    setRenderTarget: (target: unknown) => targets.push(target),
+    render: () => {
+      throw new Error('GPU unavailable')
+    },
+  }
+  await expect(
+    warmEffectPresentation(renderer as unknown as WebGLRenderer, new PerspectiveCamera(), [root]),
+  ).rejects.toThrow('GPU unavailable')
+  expect(root.visible).toBe(false)
+  expect(child.visible).toBe(false)
+  expect(targets[targets.length - 1]).toBe(previous)
+  expect(renderer.shadowMap).toEqual({ autoUpdate: true, needsUpdate: true })
+})
 
 it('compiles chase and cockpit programs once and warms each mirrored vehicle', async () => {
   const renderer = { compileAsync: vi.fn(async () => {}) }

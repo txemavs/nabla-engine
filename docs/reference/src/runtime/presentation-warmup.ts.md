@@ -12,9 +12,41 @@ Compile chase, cockpit and mirror programs once so later enter/exit and KeyC sta
 - `../render/entity/view.js`
 - `../config/camera.js`
 
+## warmEffectPresentation
+
+[Implementation, line 16](../../../../src/runtime/presentation-warmup.ts#L16)
+
+Compile hidden common effects and upload their buffers in an offscreen draw before play.
+
+```ts
+warmEffectPresentation(renderer: WebGLRenderer, camera: PerspectiveCamera, roots: readonly Object3D[]): Promise<void>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `EffectScene`
+- `WebGLRenderTarget`
+- `copy.traverse`
+- `renderer.compileAsync`
+- `renderer.getRenderTarget`
+- `renderer.render`
+- `renderer.setRenderTarget`
+- `root.clone`
+- `scene.add`
+- `scene.clear`
+- `target.dispose`
+
+## warmEffectPresentation.callback@24
+
+[Implementation, line 24](../../../../src/runtime/presentation-warmup.ts#L24)
+
+```ts
+callback@24(object): inferred by TypeScript; see implementation
+```
+
 ## warmGamePresentation
 
-[Implementation, line 29](../../../../src/runtime/presentation-warmup.ts#L29)
+[Implementation, line 64](../../../../src/runtime/presentation-warmup.ts#L64)
 
 Best-effort GPU warmup. Failures must not stop play.
 
@@ -31,12 +63,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `signal?.throwIfAborted`
 - `view.renderMirrors`
 
-## warmGamePresentation.callback@45
+## warmGamePresentation.callback@80
 
-[Implementation, line 45](../../../../src/runtime/presentation-warmup.ts#L45)
+[Implementation, line 80](../../../../src/runtime/presentation-warmup.ts#L80)
 
 ```ts
-callback@45(resolve): inferred by TypeScript; see implementation
+callback@80(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -45,7 +77,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## uploadSceneTextures
 
-[Implementation, line 72](../../../../src/runtime/presentation-warmup.ts#L72)
+[Implementation, line 107](../../../../src/runtime/presentation-warmup.ts#L107)
 
 Upload every texture in `scene` (hidden objects included) before it is first drawn, a few
 milliseconds per frame, so the first gameplay frames (a descent over freshly streamed tiles)
@@ -64,12 +96,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `scene.traverse`
 - `signal?.throwIfAborted`
 
-## uploadSceneTextures.callback@79
+## uploadSceneTextures.callback@114
 
-[Implementation, line 79](../../../../src/runtime/presentation-warmup.ts#L79)
+[Implementation, line 114](../../../../src/runtime/presentation-warmup.ts#L114)
 
 ```ts
-callback@79(object): inferred by TypeScript; see implementation
+callback@114(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -77,12 +109,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `textures.add`
 
-## uploadSceneTextures.callback@102
+## uploadSceneTextures.callback@137
 
-[Implementation, line 102](../../../../src/runtime/presentation-warmup.ts#L102)
+[Implementation, line 137](../../../../src/runtime/presentation-warmup.ts#L137)
 
 ```ts
-callback@102(resolve): inferred by TypeScript; see implementation
+callback@137(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
