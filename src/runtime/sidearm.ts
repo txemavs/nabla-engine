@@ -91,8 +91,12 @@ export class Sidearm {
   private triggerPart: Part | null = null
   private magazine: Part | null = null
   private chamberRound: THREE.Object3D | null = null
-  private inspection: { kind: 'inspect' | 'chamber'; start: number; release?: number } | null = null
-  private chamberLookBlend = 0
+  private inspection: {
+    kind: 'inspect' | 'chamber'
+    start: number
+    blend: number
+    release?: number
+  } | null = null
   private hammer: Part | null = null
   private lever: Part | null = null
   private slideLever: Part | null = null
@@ -510,8 +514,7 @@ export class Sidearm {
     const height = renderer.getDrawingBufferSize(new THREE.Vector2()).y
     this.smoke.update(now, height)
     this.worldSmoke?.update(now, height)
-    if (this.inspection?.kind !== 'chamber')
-      this.aimBlend += ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
+    this.aimBlend += ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
     this.laserLine.visible = this.laserOn
     if (!firstPerson) return
     this.camera.aspect = aspect
@@ -734,21 +737,18 @@ export class Sidearm {
       this.magazineLever.object.rotation.x = press * -0.25
     }
     if (this.inspection && this.state.reload === 'none') {
-      const age = now - this.inspection.start
-      const released =
-        this.inspection.release === undefined ? 1 : 1 - (now - this.inspection.release) / 300
-      const blend = Math.max(0, Math.min(1, age / 300, released))
-      if (released <= 0) this.inspection = null
+      const held = this.inspection.release === undefined
+      this.inspection.blend +=
+        ((held ? 1 : 0) - this.inspection.blend) * (1 - Math.exp(-elapsed / 90))
+      const blend = this.inspection.blend
+      if (!held && blend < 0.001) this.inspection = null
       else {
         if (this.inspection.kind === 'chamber') {
-          this.model.position.lerp(new THREE.Vector3(0.025, -0.13, -0.31), blend)
           this.model.rotation.x += (0.45 - this.model.rotation.x) * blend
           this.model.rotation.y += (-0.65 - this.model.rotation.y) * blend
           this.model.rotation.z += (-0.4 - this.model.rotation.z) * blend
-          this.chamberLookBlend +=
-            ((this.aiming ? 1 : 0) - this.chamberLookBlend) * (1 - Math.exp(-elapsed / 90))
           if (this.slide) {
-            const travel = Math.max(this.state.slide, (0.25 + 0.7 * this.chamberLookBlend) * blend)
+            const travel = Math.max(this.state.slide, 0.8 * blend)
             this.slide.object.position
               .copy(this.slide.rest)
               .addScaledVector(axis(p.slide.axis), p.slide.travel * travel)
@@ -777,8 +777,9 @@ export class Sidearm {
   /** Cosmetic inspection only: it never consumes or ejects ammunition. */
   inspect(now: number, chamber = false): void {
     if (this.state.reload !== 'none') return
-    this.chamberLookBlend = 0
-    this.inspection = { kind: chamber ? 'chamber' : 'inspect', start: now }
+    const kind = chamber ? 'chamber' : 'inspect'
+    const blend = this.inspection?.kind === kind ? this.inspection.blend : 0
+    this.inspection = { kind, start: now, blend }
   }
   stopInspect(now: number): void {
     if (this.inspection && this.inspection.release === undefined) this.inspection.release = now
