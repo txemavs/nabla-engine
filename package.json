@@ -178,6 +178,10 @@
     "./config/gameplay-tuning": {
       "types": "./dist/config/gameplay-tuning.d.ts",
       "import": "./dist/config/gameplay-tuning.js"
+    },
+    "./config/driver-pose": {
+      "types": "./dist/config/driver-pose.d.ts",
+      "import": "./dist/config/driver-pose.js"
     }
   },
   "imports": {

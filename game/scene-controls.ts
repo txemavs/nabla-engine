@@ -23,6 +23,7 @@ import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
 import { steeringWheelControls, type SteeringWheelRuntime } from './steering-wheel-controls.js'
 import { mirrorControls, type MirrorRuntime } from './mirror-controls.js'
+import { driverPoseControls, type DriverPoseRuntime } from './driver-pose-controls.js'
 import { assignVehicleColor } from './vehicle-colors.js'
 
 /** Sea level limits in metres, as in Studio's sea-surface controls. */
@@ -32,7 +33,8 @@ export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
  * What the controls need from the engine's `GameRuntime`; tests pass a fake. The steering-wheel
  * members are optional: without them «Volante» stays disabled.
  */
-export interface SceneRuntime extends Partial<SteeringWheelRuntime>, Partial<MirrorRuntime> {
+export interface SceneRuntime
+  extends Partial<SteeringWheelRuntime>, Partial<MirrorRuntime>, Partial<DriverPoseRuntime> {
   readonly skyClock: SkyClock
   setSkyClock(clock: SkyClock): void
   readonly waterSettings: { mode: 'manual' | 'tide'; level: number; amplitude: number } | undefined
@@ -390,6 +392,7 @@ export function bindSceneControls(
   const wheel = steeringWheelControls()
   // «Espejos»: per-model glass angle of each mirror of the vehicle the player drives.
   const mirrors = mirrorControls()
+  const driverPose = driverPoseControls()
   // «Exportar posición de vehículos»: JSON for the start / host-vehicles config.
   const exportButton = button('vehicle-export', 'Exportar posición de vehículos')
   exportButton.title = 'Copia al portapapeles la posición de todos los vehículos (JSON)'
@@ -408,6 +411,7 @@ export function bindSceneControls(
     exportText,
     wheel.root,
     mirrors.root,
+    driverPose.root,
   )
 
   isolateKeys(timeRange, timeInput, timeSpeed, seaRange, seaInput, cloudAmount, choice, exportText)
@@ -550,9 +554,11 @@ export function bindSceneControls(
 
     const refreshWheel = wheel.bind(runtime)
     const refreshMirrors = mirrors.bind(runtime)
+    const refreshDriverPose = driverPose.bind(runtime)
     const timer = setInterval(() => {
       refreshWheel()
       refreshMirrors()
+      refreshDriverPose()
       showSea(false)
       if (runtime.skyClock.mode === 'live') showTime()
     }, 1000)

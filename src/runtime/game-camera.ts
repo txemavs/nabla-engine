@@ -310,7 +310,7 @@ export function downwardViewFar(
 export function updateGameCamera(
   sim: Simulation,
   view: Pick<SceneView, 'document' | 'vehicleHeadOffset' | 'objects'> &
-    Partial<Pick<SceneView, 'rideSmoothing'>>,
+    Partial<Pick<SceneView, 'rideSmoothing' | 'vehicleCameraOffset'>>,
   camera: THREE.PerspectiveCamera,
   state: GameCameraState,
   now: number,
@@ -478,7 +478,8 @@ export function updateGameCamera(
         seat.isCarrier,
         headYaw,
         headPitch,
-        view.vehicleHeadOffset(recovery.vehicleId),
+        view.vehicleCameraOffset?.(recovery.vehicleId) ??
+          view.vehicleHeadOffset(recovery.vehicleId),
         view.document.entities.find((entity) => entity.id === recovery.vehicleId)?.vehicle
           ?.headRotation,
       )
@@ -564,7 +565,7 @@ export function updateGameCamera(
       info.isCarrier,
       headYaw,
       headPitch,
-      view.vehicleHeadOffset(p.vehicleId!),
+      view.vehicleCameraOffset?.(p.vehicleId!) ?? view.vehicleHeadOffset(p.vehicleId!),
       view.document.entities.find((entity) => entity.id === p.vehicleId)?.vehicle?.headRotation,
     )
     // The eye rides the smoothed vehicle: small, fast bounce is absorbed, the cockpit keeps it.

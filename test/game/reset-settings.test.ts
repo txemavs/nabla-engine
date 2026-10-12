@@ -4,6 +4,7 @@ it('clears game preferences and per-model settings without clearing terrain or u
   const storage = Object.assign(Object.create(null), {
     'nabla.weaponPoses': '{}',
     'nabla.cameraFov': '25',
+    'nabla.driverPose': '{}',
     'nabla.mirrors:/bike.glb': '{}',
     'nabla.steeringWheel:/car.glb': '{}',
     'nabla.terrain.cache': 'keep',

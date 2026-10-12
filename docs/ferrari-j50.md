@@ -40,3 +40,16 @@ and Chromium rendering of the assembled vehicle. The browser test captures front
 and rear views. The provided screenshot suggested overlapping surfaces, but no
 identical paint triangles were found at the inspected tolerance; that cause remains
 unconfirmed. The prepared front preview did not reproduce the screenshot's spots.
+
+## Live cockpit placement
+
+While seated, open Settings → Desarrollo → Vehículo → Conductor, volante y espejos.
+Cabeza y vista has separate X/Y/forward sliders for the visible head and additional
+camera offsets. Range is ±100 cm, step 1 cm, configured in `src/config/driver-pose.ts`.
+Positive lateral is chassis right, positive height is up, positive forward is -Z.
+The camera follows the adjusted head plus its own view offsets; view sliders do not
+move the visible avatar. Motorcycle rider motion remains additive to these offsets.
+
+Values persist by body-model URL in `nabla.driverPose`. Copiar valores exports metre
+offsets and the model URL for review/baking; Restablecer clears this model only.
+AJUSTES PREDETERMINADOS clears these settings with the other game preferences.

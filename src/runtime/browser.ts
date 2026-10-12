@@ -2,6 +2,11 @@ import { normalViewTuning, smokeTuning } from '../config/gameplay-tuning.js'
 import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
 import { presetVehicle } from '../catalog/vehicles/library.js'
 import { randomRoadVehicle } from './random-vehicle.js'
+import {
+  readDriverPose,
+  writeDriverPose,
+  type DriverPoseAdjustment,
+} from '../config/driver-pose.js'
 import { GameToolbar } from './game-toolbar.js'
 import { BodycamAim } from './bodycam-aim.js'
 import { smokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
@@ -761,6 +766,7 @@ export class GameRuntime {
     this.view = new SceneView(this.document, false, false, {
       mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
       steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
+      driverPoseOffset: (model) => readDriverPose(browserStorage(), model),
       mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
       startLights: options.startLights ?? 'auto',
     })
@@ -2204,6 +2210,26 @@ export class GameRuntime {
     return sim.unhitchTrailer(trailerId)
   }
   private loadingTrailerCargo = false
+  get driverPose(): { name: string; model: string; offset: DriverPoseAdjustment } | null {
+    const id = this.session.simulation?.player.vehicleId
+    const entity = this.document.entities.find((e) => e.id === id)
+    const model = entity?.visual?.body.url
+    if (!model || !entity?.vehicle?.headOffset) return null
+    return { name: entity.name, model, offset: this.view.driverPoseAdjustment(model) }
+  }
+  setDriverPoseOffset(offset: DriverPoseAdjustment): DriverPoseAdjustment | null {
+    const current = this.driverPose
+    if (!current) return null
+    const applied = this.view.setDriverPoseAdjustment(current.model, offset)
+    writeDriverPose(browserStorage(), current.model, applied)
+    return applied
+  }
+  resetDriverPoseOffset(): DriverPoseAdjustment | null {
+    const current = this.driverPose
+    if (!current) return null
+    writeDriverPose(browserStorage(), current.model)
+    return this.view.setDriverPoseAdjustment(current.model, { head: [0, 0, 0], view: [0, 0, 0] })
+  }
   setTrailerPlatform(id: string, flat: boolean): string {
     this.assertAlive()
     return this.session.simulation!.setTrailerPlatform(id, flat)

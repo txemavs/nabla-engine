@@ -13,6 +13,7 @@ const keys = new Set([
   'nabla.truckExhaustAmount',
   'nabla.audioMix',
   'nabla.cameraFov',
+  'nabla.driverPose',
   'nabla.bodycam',
   'nabla.tunnel',
   'nabla.smoke',

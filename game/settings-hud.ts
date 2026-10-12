@@ -431,9 +431,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   // Opciones → Volante y espejos: the driver's steering wheel and mirror glass adjustments.
-  const driverGroups = rows(byId('scene-steering-wheel'), byId('scene-mirrors'))
+  const driverGroups = rows(
+    byId('scene-driver-pose'),
+    byId('scene-steering-wheel'),
+    byId('scene-mirrors'),
+  )
   if (driverGroups.length) {
-    const driver = fieldset('settings-options-driver', 'Volante y espejos')
+    const driver = fieldset('settings-options-driver', 'Conductor, volante y espejos')
     driver.append(...driverGroups)
     place(driver)
   }
