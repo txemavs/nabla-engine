@@ -158,3 +158,16 @@ coalesced and yields in small batches; labels update only when a result is ready
 
 Third-person weapon placement uses weaponViewTuning.thirdPerson: shoulder offset relative to the avatar head (metres), and reachMetres for the extended arm. The hand and barrel follow the camera target independently of first-person pose offsets. No arm mesh is added.
 
+The settings HUD keeps its tabs and folds sections into native keyboard-accessible disclosures.
+Development contains Weapon (aim calibration and poses), Vehicle (steering wheel and mirrors),
+Lighting, and Planet/diagnostics. Fine calibration lives here rather than in everyday Options.
+Closing weapon disclosures stops pose preview. Existing controls and saved settings are retained.
+
+Shots use the authored MuzzleSocket and the weapon's full pose before trigger recoil.
+The rigid RedLaserSocket and TorchSocket retain their own origins and share the same pose
+conversion, including the viewmodel FOV. They do not track the camera independently.
+Laser/barrel separation and ballistic drop remain physical differences.
+Neutral first-person alignment is a base rotation at
+`weaponViewTuning.alignmentDistanceMetres` (25 m). The reviewed gesture rotation
+is applied relative to that base, so X/Z/slide animations retain their offsets.
+Normal mode retains bodycam free aim; aiming converges toward its aim direction.

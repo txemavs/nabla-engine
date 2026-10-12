@@ -567,6 +567,7 @@ export class Sidearm {
     this.camera.updateProjectionMatrix()
     this.viewPose(now)
     this.studioLights.visible = !world
+    if (eye instanceof THREE.PerspectiveCamera) this.alignViewAim(eye.fov)
     this.worldLighting.root.visible = !!world
     if (world && eye) {
       this.worldLighting.sync(world)
@@ -680,6 +681,8 @@ export class Sidearm {
 
   worldMuzzle(): THREE.Vector3 | null {
     const world = this.worldPresentation
+    const socket = world?.getObjectByName('MuzzleSocket')
+    if (world?.visible && socket) return socket.getWorldPosition(new THREE.Vector3())
     return world?.visible ? world.localToWorld(new THREE.Vector3(...this.flashAt)) : null
   }
 
@@ -688,15 +691,21 @@ export class Sidearm {
     now: number,
     firstPerson: boolean,
     worldFov: number,
-    socketName: 'TorchSocket' | 'RedLaserSocket',
+    socketName: 'TorchSocket' | 'RedLaserSocket' | 'Barrel',
   ): { origin: THREE.Vector3; target: THREE.Vector3 } | null {
-    if (firstPerson) this.viewPose(now)
+    if (firstPerson) {
+      this.viewPose(now)
+      this.alignViewAim(worldFov)
+    }
     const root = firstPerson ? this.model : this.worldPresentation
-    const socket = root?.getObjectByName(socketName)
+    const muzzle = socketName === 'Barrel' ? root?.getObjectByName('MuzzleSocket') : undefined
+    const socket = socketName === 'Barrel' ? (muzzle ?? root) : root?.getObjectByName(socketName)
     if (!socket) return null
     socket.updateWorldMatrix(true, false)
-    const origin = socket.localToWorld(new THREE.Vector3())
-    const target = socket.localToWorld(new THREE.Vector3(0, 0, -10))
+    const local =
+      socketName === 'Barrel' && !muzzle ? new THREE.Vector3(...this.flashAt) : new THREE.Vector3()
+    const origin = socket.localToWorld(local.clone())
+    const target = socket.localToWorld(local.clone().add(new THREE.Vector3(0, 0, -10)))
     if (firstPerson) {
       const fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)
       const ratio =
@@ -738,6 +747,50 @@ export class Sidearm {
       this.model.rotation.y += this.bodycamYaw
       this.model.rotation.x -= this.bodycamPitch
     }
+  }
+
+  /** Correct only the neutral aim; retain the reviewed gesture rotation relative to it. */
+  private alignViewAim(worldFov: number): void {
+    const t = this.aimBlend
+    const base = this.poseTuning.normal,
+      aimed = this.poseTuning.aimed
+    const mix = (key: keyof typeof base) => THREE.MathUtils.lerp(base[key], aimed[key], t)
+    const pitch =
+      THREE.MathUtils.degToRad(this.tuning.angle * t + mix('pitch')) -
+      (this.bodycamEnabled ? this.bodycamPitch : 0)
+    const yaw = THREE.MathUtils.degToRad(mix('yaw')) + (this.bodycamEnabled ? this.bodycamYaw : 0)
+    const neutral = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(pitch, yaw, THREE.MathUtils.degToRad(mix('roll'))),
+    )
+    const gesture = neutral.clone().invert().multiply(this.model.quaternion)
+    const position = new THREE.Vector3(...HIP_POSE.position).lerp(
+      new THREE.Vector3(ADS_POSE.position[0], this.tuning.height, ADS_POSE.position[2]),
+      t,
+    )
+    position.add(new THREE.Vector3(mix('x'), mix('y'), mix('z')).multiplyScalar(0.001))
+    if (this.bodycamEnabled) position.y -= 0.025 * (1 - t)
+    const target = new THREE.Vector3(0, 0, -weaponViewTuning.alignmentDistanceMetres)
+    if (this.bodycamEnabled)
+      target.applyEuler(new THREE.Euler(-this.bodycamPitch, this.bodycamYaw, 0, 'YXZ'))
+    const viewFov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, t)
+    const ratio =
+      Math.tan(THREE.MathUtils.degToRad(viewFov / 2)) /
+      Math.tan(THREE.MathUtils.degToRad(worldFov / 2))
+    target.x *= ratio
+    target.y *= ratio
+    const socket = this.model.getObjectByName('MuzzleSocket')
+    this.model.updateWorldMatrix(true, true)
+    const muzzle = socket
+      ? this.model.worldToLocal(socket.getWorldPosition(new THREE.Vector3()))
+      : new THREE.Vector3(...this.flashAt)
+    const aligned = neutral.clone()
+    for (let i = 0; i < 3; i++) {
+      const from = muzzle.clone().applyQuaternion(aligned).add(position)
+      aligned.setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(from, target, new THREE.Vector3(0, 1, 0)),
+      )
+    }
+    this.model.quaternion.copy(aligned).multiply(gesture)
   }
 
   /**

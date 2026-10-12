@@ -636,6 +636,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `renderer.clearDepth`
 - `renderer.getDrawingBufferSize`
 - `renderer.render`
+- `this.alignViewAim`
 - `this.camera.position.copy`
 - `this.camera.position.set`
 - `this.camera.quaternion.copy`
@@ -650,17 +651,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.worldLighting.sync`
 - `this.worldSmoke?.update`
 
-## Sidearm.render.callback@580
+## Sidearm.render.callback@581
 
-[Implementation, line 580](../../../../src/runtime/sidearm.ts#L580)
+[Implementation, line 581](../../../../src/runtime/sidearm.ts#L581)
 
 ```ts
-callback@580(object): inferred by TypeScript; see implementation
+callback@581(object): inferred by TypeScript; see implementation
 ```
 
 ## Sidearm.syncWorld
 
-[Implementation, line 608](../../../../src/runtime/sidearm.ts#L608)
+[Implementation, line 609](../../../../src/runtime/sidearm.ts#L609)
 
 Shared assembled asset on the avatar, including slide, trigger and magazine motion.
 
@@ -689,17 +690,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `world.quaternion.copy`
 - `world.quaternion.multiply`
 
-## Sidearm.syncWorld.callback@626
+## Sidearm.syncWorld.callback@627
 
-[Implementation, line 626](../../../../src/runtime/sidearm.ts#L626)
+[Implementation, line 627](../../../../src/runtime/sidearm.ts#L627)
 
 ```ts
-callback@626(node): inferred by TypeScript; see implementation
+callback@627(node): inferred by TypeScript; see implementation
 ```
 
 ## Sidearm.worldMuzzle
 
-[Implementation, line 681](../../../../src/runtime/sidearm.ts#L681)
+[Implementation, line 682](../../../../src/runtime/sidearm.ts#L682)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -712,16 +713,18 @@ worldMuzzle(): THREE.Vector3 | null
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.Vector3`
+- `socket.getWorldPosition`
 - `world.localToWorld`
+- `world?.getObjectByName`
 
 ## Sidearm.accessoryRay
 
-[Implementation, line 687](../../../../src/runtime/sidearm.ts#L687)
+[Implementation, line 690](../../../../src/runtime/sidearm.ts#L690)
 
 Torch follows its authored mount, including inspection, recoil and third-person pose.
 
 ```ts
-accessoryRay(now: number, firstPerson: boolean, worldFov: number, socketName: 'TorchSocket' | 'RedLaserSocket'): { origin: THREE.Vector3; target: THREE.Vector3 } | null
+accessoryRay(now: number, firstPerson: boolean, worldFov: number, socketName: 'TorchSocket' | 'RedLaserSocket' | 'Barrel'): { origin: THREE.Vector3; target: THREE.Vector3 } | null
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -730,15 +733,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MathUtils.degToRad`
 - `THREE.MathUtils.lerp`
 - `THREE.Vector3`
+- `local.clone`
+- `local.clone().add`
 - `root?.getObjectByName`
 - `socket.localToWorld`
 - `socket.updateWorldMatrix`
+- `this.alignViewAim`
 - `this.viewPose`
 - `this.viewRig.worldToLocal`
 
 ## Sidearm.worldMagazineDropView
 
-[Implementation, line 714](../../../../src/runtime/sidearm.ts#L714)
+[Implementation, line 723](../../../../src/runtime/sidearm.ts#L723)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -761,7 +767,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.viewPose
 
-[Implementation, line 727](../../../../src/runtime/sidearm.ts#L727)
+[Implementation, line 736](../../../../src/runtime/sidearm.ts#L736)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -777,9 +783,61 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.model.rotation.set`
 - `this.pose`
 
+## Sidearm.alignViewAim
+
+[Implementation, line 753](../../../../src/runtime/sidearm.ts#L753)
+
+Correct only the neutral aim; retain the reviewed gesture rotation relative to it.
+
+```ts
+alignViewAim(worldFov: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.tan`
+- `THREE.Euler`
+- `THREE.MathUtils.degToRad`
+- `THREE.MathUtils.lerp`
+- `THREE.Matrix4`
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `aligned.setFromRotationMatrix`
+- `mix`
+- `muzzle.clone`
+- `muzzle.clone().applyQuaternion`
+- `muzzle.clone().applyQuaternion(aligned).add`
+- `neutral.clone`
+- `neutral.clone().invert`
+- `neutral.clone().invert().multiply`
+- `new THREE.Matrix4().lookAt`
+- `new THREE.Quaternion().setFromEuler`
+- `new THREE.Vector3(...HIP_POSE.position).lerp`
+- `new THREE.Vector3(mix('x'), mix('y'), mix('z')).multiplyScalar`
+- `position.add`
+- `socket.getWorldPosition`
+- `target.applyEuler`
+- `this.model.getObjectByName`
+- `this.model.quaternion.copy`
+- `this.model.quaternion.copy(aligned).multiply`
+- `this.model.updateWorldMatrix`
+- `this.model.worldToLocal`
+
+## Sidearm.alignViewAim.mix
+
+[Implementation, line 757](../../../../src/runtime/sidearm.ts#L757)
+
+```ts
+mix(key: keyof typeof base): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.MathUtils.lerp`
+
 ## Sidearm.magazineDropView
 
-[Implementation, line 747](../../../../src/runtime/sidearm.ts#L747)
+[Implementation, line 800](../../../../src/runtime/sidearm.ts#L800)
 
 Magazine in the viewmodel camera's space, plus the direction it slides out of the grip.
 Null until the assembled model has loaded.
@@ -810,7 +868,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.cartridgeClone
 
-[Implementation, line 768](../../../../src/runtime/sidearm.ts#L768)
+[Implementation, line 821](../../../../src/runtime/sidearm.ts#L821)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -826,7 +884,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.magazineClone
 
-[Implementation, line 773](../../../../src/runtime/sidearm.ts#L773)
+[Implementation, line 826](../../../../src/runtime/sidearm.ts#L826)
 
 A detached copy of the `Magazine` node. Geometry and materials stay shared.
 
@@ -841,7 +899,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.pose
 
-[Implementation, line 781](../../../../src/runtime/sidearm.ts#L781)
+[Implementation, line 834](../../../../src/runtime/sidearm.ts#L834)
 
 Slide, trigger and magazine from the firearm state, relative to their rest poses.
 
@@ -868,7 +926,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.pose.offset
 
-[Implementation, line 906](../../../../src/runtime/sidearm.ts#L906)
+[Implementation, line 959](../../../../src/runtime/sidearm.ts#L959)
 
 ```ts
 offset(axis: 'x' | 'y' | 'z' | 'pitch' | 'yaw' | 'roll'): inferred by TypeScript; see implementation
@@ -880,7 +938,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.inspect
 
-[Implementation, line 939](../../../../src/runtime/sidearm.ts#L939)
+[Implementation, line 992](../../../../src/runtime/sidearm.ts#L992)
 
 Cosmetic inspection only: it never consumes or ejects ammunition.
 
@@ -890,7 +948,7 @@ inspect(now: number, chamber = false): void
 
 ## Sidearm.stopInspect
 
-[Implementation, line 944](../../../../src/runtime/sidearm.ts#L944)
+[Implementation, line 997](../../../../src/runtime/sidearm.ts#L997)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -902,7 +960,7 @@ stopInspect(now: number): void
 
 ## Sidearm.triggerAction
 
-[Implementation, line 947](../../../../src/runtime/sidearm.ts#L947)
+[Implementation, line 1000](../../../../src/runtime/sidearm.ts#L1000)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -914,7 +972,7 @@ triggerAction(): 'single' | 'double'
 
 ## Sidearm.decock
 
-[Implementation, line 951](../../../../src/runtime/sidearm.ts#L951)
+[Implementation, line 1004](../../../../src/runtime/sidearm.ts#L1004)
 
 Gameplay hammer state, with no discharge or ammunition change.
 
@@ -928,7 +986,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.cock
 
-[Implementation, line 958](../../../../src/runtime/sidearm.ts#L958)
+[Implementation, line 1011](../../../../src/runtime/sidearm.ts#L1011)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -940,7 +998,7 @@ cock(): void
 
 ## Sidearm.variant
 
-[Implementation, line 961](../../../../src/runtime/sidearm.ts#L961)
+[Implementation, line 1014](../../../../src/runtime/sidearm.ts#L1014)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -954,17 +1012,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `hkVariants.find`
 
-## Sidearm.variant.callback@962
+## Sidearm.variant.callback@1015
 
-[Implementation, line 962](../../../../src/runtime/sidearm.ts#L962)
+[Implementation, line 1015](../../../../src/runtime/sidearm.ts#L1015)
 
 ```ts
-callback@962(variant): inferred by TypeScript; see implementation
+callback@1015(variant): inferred by TypeScript; see implementation
 ```
 
 ## Sidearm.setVariant
 
-[Implementation, line 964](../../../../src/runtime/sidearm.ts#L964)
+[Implementation, line 1017](../../../../src/runtime/sidearm.ts#L1017)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -979,17 +1037,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hkVariants.some`
 - `this.release`
 
-## Sidearm.setVariant.callback@965
+## Sidearm.setVariant.callback@1018
 
-[Implementation, line 965](../../../../src/runtime/sidearm.ts#L965)
+[Implementation, line 1018](../../../../src/runtime/sidearm.ts#L1018)
 
 ```ts
-callback@965(v): inferred by TypeScript; see implementation
+callback@1018(v): inferred by TypeScript; see implementation
 ```
 
 ## Sidearm.setSafety
 
-[Implementation, line 971](../../../../src/runtime/sidearm.ts#L971)
+[Implementation, line 1024](../../../../src/runtime/sidearm.ts#L1024)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -1005,7 +1063,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.safe
 
-[Implementation, line 975](../../../../src/runtime/sidearm.ts#L975)
+[Implementation, line 1028](../../../../src/runtime/sidearm.ts#L1028)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -1017,7 +1075,7 @@ safe(): boolean
 
 ## Sidearm.setTrainingLoad
 
-[Implementation, line 979](../../../../src/runtime/sidearm.ts#L979)
+[Implementation, line 1032](../../../../src/runtime/sidearm.ts#L1032)
 
 Initialise an exercise without generating fake shots or heating the weapon.
 
@@ -1035,7 +1093,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.setTuning
 
-[Implementation, line 989](../../../../src/runtime/sidearm.ts#L989)
+[Implementation, line 1042](../../../../src/runtime/sidearm.ts#L1042)
 
 Update the aimed presentation without altering shot direction or ballistics.
 
@@ -1049,7 +1107,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Sidearm.setSmokeEnabled
 
-[Implementation, line 992](../../../../src/runtime/sidearm.ts#L992)
+[Implementation, line 1045](../../../../src/runtime/sidearm.ts#L1045)
 
 The sidearm: firearm state (ammunition, trigger reset, slide lock, reload; `firearm.ts`), the
 muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-person viewmodel
@@ -1066,7 +1124,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## part
 
-[Implementation, line 1002](../../../../src/runtime/sidearm.ts#L1002)
+[Implementation, line 1055](../../../../src/runtime/sidearm.ts#L1055)
 
 ```ts
 part(root: THREE.Object3D, name: string): Part | null
@@ -1080,7 +1138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## axis
 
-[Implementation, line 1009](../../../../src/runtime/sidearm.ts#L1009)
+[Implementation, line 1062](../../../../src/runtime/sidearm.ts#L1062)
 
 ```ts
 axis(v: number[]): inferred by TypeScript; see implementation
@@ -1093,7 +1151,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## loadRig
 
-[Implementation, line 1011](../../../../src/runtime/sidearm.ts#L1011)
+[Implementation, line 1064](../../../../src/runtime/sidearm.ts#L1064)
 
 ```ts
 loadRig(url: string): Promise<WeaponRig | null>

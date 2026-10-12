@@ -32,12 +32,14 @@ sidearmButtonAction(button: number, down: boolean): 'fire' | 'aim' | 'release' |
 Shared geometric aim for shots and laser convergence; coordinates are simulation-world.
 
 ```ts
-sidearmAimRay(sidearm: Sidearm, sim: Simulation, view: SceneView, camera: PerspectiveCamera, firstPerson: boolean): { origin: Vector3; direction: Vector3 }
+sidearmAimRay(sidearm: Sidearm, sim: Simulation, view: SceneView, camera: PerspectiveCamera, firstPerson: boolean, now = 0): { origin: Vector3; direction: Vector3 }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Vector3`
+- `barrel.target.sub`
+- `barrel.target.sub(barrel.origin).normalize`
 - `camera.position.clone`
 - `camera.position.clone().addScaledVector`
 - `camera.position.toArray`
@@ -45,6 +47,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new Vector3(0, 0, -1).applyQuaternion`
 - `origin.copy`
 - `origin.copy(muzzle).sub`
+- `point.applyQuaternion`
+- `point.applyQuaternion(camera.quaternion).add`
+- `point.sub`
+- `sidearm.accessoryRay`
 - `sidearm.aimDirection`
 - `sidearm.worldMuzzle`
 - `sim.shoot`
@@ -53,7 +59,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fitted
 
-[Implementation, line 64](../../../../src/runtime/shooting.ts#L64)
+[Implementation, line 73](../../../../src/runtime/shooting.ts#L73)
 
 ```ts
 fitted(load: BallisticLoad): { k: number; angle: number }
@@ -68,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fireSidearm
 
-[Implementation, line 80](../../../../src/runtime/shooting.ts#L80)
+[Implementation, line 89](../../../../src/runtime/shooting.ts#L89)
 
 One trigger press: the firearm decides whether a round goes off; the bullet then flies the
 load's trajectory (drop and drag, `ballistics.ts`) through the world and hands its momentum
@@ -106,12 +112,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `traceBullet`
 - `view.sparks.add`
 
-## fireSidearm.callback@103
+## fireSidearm.callback@113
 
-[Implementation, line 103](../../../../src/runtime/shooting.ts#L103)
+[Implementation, line 113](../../../../src/runtime/shooting.ts#L113)
 
 ```ts
-callback@103(from, dir, length): inferred by TypeScript; see implementation
+callback@113(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

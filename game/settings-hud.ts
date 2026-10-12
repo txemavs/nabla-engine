@@ -45,12 +45,12 @@ type TabId = (typeof TABS)[number]['id']
 /**
  * Where each menu section (`menuSection(id, …)`) lives, in display order within its tab:
  *   Planeta     — Posición, Hora, Tierra (map layers), Mar, Aire (clouds), Cielo (sky, sun, flare)
- *   Opciones    — player preferences: Cámara, Conducción, Volante y espejos, Mapa (city labels)
+ *   Opciones    — everyday preferences: Cámara, Conducción, Mapa (city labels)
  *   Rendimiento — Calidad (profile, FPS limit, resolution scale, apply) and the terrain Caché
  *   Vídeo       — Sombras and Postproceso (asphalt contrast)
  *   Audio       — General / Motor / Música volumes and music mute
  *   Objetos     — Añadir (vehicles and objects to place)
- *   Desarrollo  — planet values to copy, light tuning sliders, terrain source
+ *   Desarrollo  — folded tree: weapon poses, vehicle calibration, lighting, planet/debug values
  * Sections created after the HUD mounts (the Tierra layer list is bound later) are placed as they
  * appear. An unknown id lands in Opciones so a new feature is never left in the hidden legacy menu.
  */
@@ -63,9 +63,9 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-planet-sky', 'planet'],
   ['camera-extras', 'options'],
   ['driving-extras', 'options'],
-  ['settings-options-driver', 'options'],
-  ['settings-options-sidearm', 'options'],
-  ['settings-weapon-poses', 'options'],
+  ['settings-options-driver', 'dev'],
+  ['settings-options-sidearm', 'dev'],
+  ['settings-weapon-poses', 'dev'],
   ['settings-options-labels', 'options'],
   ['display-quality-section', 'performance'],
   ['display-performance', 'performance'],
@@ -91,6 +91,8 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'road-style': 'Postproceso',
   'scene-vehicles': 'Añadir',
   'settings-light': 'Luz (ajuste fino)',
+  'settings-options-sidearm': 'Ajuste del apuntado',
+  'settings-weapon-poses': 'Posturas y animaciones',
 }
 
 /** Shorter names for the Tierra layer switches (by `data-layer`). */
@@ -237,7 +239,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const pane = paneEls.get(tab)!
     if (el.parentElement !== pane) {
       const rank = order(el.id)
-      const next = rank === -1 ? null : [...pane.children].find((child) => order(child.id) > rank)
+      const next =
+        rank === -1
+          ? null
+          : [...pane.children].find(
+              (child) => order(child.id || child.querySelector('.menu-section')?.id || '') > rank,
+            )
       pane.insertBefore(el, next ?? null)
     }
     const title = SECTION_TITLES[el.id]
@@ -626,12 +633,71 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       if (btn) btn.hidden = !pane.querySelector(':scope > :not([hidden])')
     }
   }
+  // Fold existing controls rather than rebuild them: values, listeners and exports stay live.
+  const devBranches = [
+    ['Arma', ['settings-options-sidearm', 'settings-weapon-poses']],
+    ['Vehículo', ['settings-options-driver']],
+    ['Iluminación', ['settings-light']],
+    ['Planeta y diagnóstico', ['settings-config-planet', 'terrain-source']],
+  ] as const
+  const branches = new Map<string, HTMLDetailsElement>()
+  const foldSections = () => {
+    for (const [tab, pane] of paneEls) {
+      for (const section of [...pane.querySelectorAll<HTMLElement>(':scope > .menu-section')]) {
+        if (section.hidden) continue
+        let parent: HTMLElement = pane
+        if (tab === 'dev') {
+          const category =
+            devBranches.find(([, ids]) => (ids as readonly string[]).includes(section.id))?.[0] ??
+            'Otros ajustes'
+          let branch = branches.get(category)
+          if (!branch) {
+            branch = doc.createElement('details')
+            branch.className = 'settings-branch'
+            const summary = doc.createElement('summary')
+            summary.textContent = category
+            branch.append(summary)
+            pane.append(branch)
+            branches.set(category, branch)
+            if (category === 'Arma')
+              branch.addEventListener('toggle', () => {
+                if (!branch!.open) runtime.setSidearmAimPreview?.(false)
+              })
+          }
+          parent = branch
+        }
+        const fold = doc.createElement('details')
+        fold.className = 'settings-fold'
+        const summary = doc.createElement('summary')
+        const legend = section.querySelector<HTMLElement>(':scope > legend')
+        summary.textContent = legend?.textContent ?? section.id
+        if (legend) legend.hidden = true
+        fold.append(summary)
+        if (parent === pane) pane.insertBefore(fold, section)
+        else parent.append(fold)
+        fold.append(section)
+        if (
+          section.id.startsWith('settings-options-sidearm') ||
+          section.id === 'settings-weapon-poses'
+        )
+          fold.addEventListener('toggle', () => {
+            if (!fold.open) runtime.setSidearmAimPreview?.(false)
+          })
+      }
+    }
+    for (const [category] of devBranches) {
+      const branch = branches.get(category)
+      if (branch) paneEls.get('dev')!.append(branch)
+    }
+  }
+  foldSections()
   syncTabs()
   // Sections bound after the HUD (Tierra in the terrain game) are placed when they appear.
   const observer = menu
     ? new MutationObserver((records) => {
         for (const record of records)
           for (const node of record.addedNodes) if (node instanceof HTMLElement) place(node)
+        foldSections()
         syncTabs()
       })
     : null
@@ -665,7 +731,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   top: 72px;
   right: 20px;
   z-index: 30;
-  width: min(580px, calc(100vw - 24px));
+  width: min(480px, calc(100vw - 24px));
   max-height: calc(100vh - 92px);
   overflow: auto;
   pointer-events: auto;
@@ -673,7 +739,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 .settings-console {
   width: 100%;
   height: auto;
-  min-height: 280px;
+  min-height: 0;
   max-height: none;
 }
 .settings-tabs {
@@ -685,7 +751,22 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 .settings-console .settings-tab {
   min-width: 0;
   padding: 4px;
-  font-size: 16px;
+  font-size: 14px;
+}
+.settings-console { padding: 12px; font-size: 14px; }
+.settings-console > strong { min-height: 0; margin-bottom: 6px; }
+.settings-console button, .settings-console select { font-size: 14px; padding: 6px 8px; }
+.settings-console .settings-tab { margin: 0; padding: 5px 2px; font-size: 12px; }
+.settings-fold, .settings-branch { margin: 5px 0; border: 1px solid #395e7966; border-radius: 6px; }
+.settings-fold > summary, .settings-branch > summary { padding: 8px 10px; cursor: pointer; color: #c6e6ff; }
+.settings-fold > summary:hover, .settings-branch > summary:hover { background: #1d4e7344; }
+.settings-fold > summary:focus-visible, .settings-branch > summary:focus-visible { outline: 2px solid #8fd0ff; }
+.settings-branch > .settings-fold { margin: 5px 8px 8px 16px; }
+.settings-fold > .menu-section { padding: 0 10px 10px; margin: 0; }
+.settings-console input[type='number'] { max-width: 76px; }
+@media (max-width: 520px) {
+  .settings-window { right: 12px; }
+  .settings-pane label:has(select), .settings-pane label:has(input[type='range']) { flex-wrap: wrap !important; white-space: normal !important; }
 }
 .settings-tab[hidden],
 .settings-pane [hidden] {
@@ -793,7 +874,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   planetPanel.bind(runtime)
 
   const selectTab = (id: TabId) => {
-    if (id !== 'options') runtime.setSidearmAimPreview?.(false)
+    if (id !== 'dev') runtime.setSidearmAimPreview?.(false)
     for (const tab of TABS) {
       const btn = doc.getElementById(`settings-tab-${tab.id}`)
       const pane = paneEls.get(tab.id)!

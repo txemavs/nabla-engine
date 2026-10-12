@@ -47,7 +47,16 @@ export function sidearmAimRay(
   view: SceneView,
   camera: PerspectiveCamera,
   firstPerson: boolean,
+  now = 0,
 ): { origin: Vector3; direction: Vector3 } {
+  const barrel = sidearm.accessoryRay(now, firstPerson, camera.fov, 'Barrel')
+  if (barrel) {
+    for (const point of [barrel.origin, barrel.target]) {
+      if (firstPerson) point.applyQuaternion(camera.quaternion).add(camera.position)
+      else point.sub(view.root.position)
+    }
+    return { origin: barrel.origin, direction: barrel.target.sub(barrel.origin).normalize() }
+  }
   const look = firstPerson
     ? sidearm.aimDirection(camera.quaternion)
     : new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
@@ -87,10 +96,11 @@ export function fireSidearm(
   firstPerson: boolean,
 ): SidearmShot | null {
   if (!sidearm.visible) return null
+  // Capture the pose before pulling the trigger adds recoil or ends an inspection.
+  const { origin, direction } = sidearmAimRay(sidearm, sim, view, camera, firstPerson, now)
   const event: SidearmShot = sidearm.pull(now)
   if (!event.fired) return event
   const load = sidearm.simulated ? sidearm.preset!.ammunition! : null
-  const { origin, direction } = sidearmAimRay(sidearm, sim, view, camera, firstPerson)
   let destination: Vector3
   let normal: Vec3 | undefined
   let impulse = sidearm.impulse
@@ -123,7 +133,7 @@ export function fireSidearm(
   // A miss checks only the near stretch (gallery targets): far away the chord to the end of a
   // dropping trajectory would cut through ground the bullet flew over.
   const firing = camera.clone()
-  firing.position.copy(firstPerson ? camera.position : origin)
+  firing.position.copy(origin)
   const missed = load && !event.distance
   firing.lookAt(missed ? firing.position.clone().addScaledVector(direction, 100) : destination)
   firing.updateMatrixWorld(true)

@@ -89,7 +89,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     await new Promise((resolve) => setTimeout(resolve, 0))
     const pane = (id: string) => document.getElementById(id)?.closest('.settings-pane')?.id
     const order = (paneId: string) =>
-      [...document.getElementById(paneId)!.children].map((el) => el.id).filter(Boolean)
+      [...document.getElementById(paneId)!.querySelectorAll('.menu-section')]
+        .map((el) => el.id)
+        .filter(Boolean)
     return {
       before,
       smoke: runtime.smokeEnabled,
@@ -137,14 +139,15 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   ])
   expect(result.performance).toEqual(['display-quality-section', 'display-performance'])
   expect(result.video).toEqual(['quality-shadows', 'road-style'])
-  expect(result.options).toEqual([
-    'camera-extras',
-    'driving-extras',
-    'settings-options-sidearm',
-    'settings-weapon-poses',
-    'settings-options-labels',
-  ])
-  expect(result.dev).toEqual(['settings-config-planet', 'terrain-source'])
+  expect(result.options).toEqual(['camera-extras', 'driving-extras', 'settings-options-labels'])
+  expect(result.dev.sort()).toEqual(
+    [
+      'settings-config-planet',
+      'terrain-source',
+      'settings-options-sidearm',
+      'settings-weapon-poses',
+    ].sort(),
+  )
   expect(result.places).toBe('settings-pane-options')
   expect(result.placesGroup).toBe('settings-options-labels')
   expect(result.road).toBe('settings-pane-planet')
@@ -157,4 +160,20 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   expect(result.clouds).toBe('settings-planet-air')
   expect(result.flare).toBe('settings-planet-sky')
   expect(result.vehicles).toBe('settings-pane-objects')
+  await page.locator('#settings-toggle').click()
+  await page.getByRole('tab', { name: 'Desarrollo' }).click()
+  const branch = page
+    .locator('#settings-pane-dev > details')
+    .filter({ has: page.locator('summary', { hasText: /^Arma$/ }) })
+  await expect(branch).not.toHaveAttribute('open', '')
+  await branch.locator(':scope > summary').focus()
+  await page.keyboard.press('Enter')
+  await expect(branch).toHaveAttribute('open', '')
+  await branch.getByText('Ajuste del apuntado', { exact: true }).first().click()
+  await expect(page.locator('#sidearm-aim-height')).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 740 })
+  expect(
+    await page.locator('#settings-window').evaluate((el) => el.scrollWidth <= el.clientWidth),
+  ).toBe(true)
+  await page.screenshot({ path: '/tmp/settings-tree.png' })
 })

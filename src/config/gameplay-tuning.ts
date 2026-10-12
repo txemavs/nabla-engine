@@ -101,6 +101,7 @@ export const normalViewTuning = {
   aimedFollowRate: 22,
 }
 export const weaponViewTuning = {
+  alignmentDistanceMetres: 25,
   thirdPerson: { shoulder: [0.22, -0.2, 0] as const, reachMetres: 0.58 },
   hip: { position: [0.1, -0.125, -0.34] as const, fov: 55 },
   aimed: { position: [0, -0.027, -0.2] as const, fov: 42 },
