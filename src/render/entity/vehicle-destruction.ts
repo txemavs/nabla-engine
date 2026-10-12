@@ -19,7 +19,8 @@ export class VehicleDestruction {
   /** Damage leaks from the underside; airborne rotation alone never changes health. */
   setDamage(id: string, object: THREE.Object3D, health: number): void {
     let entry = this.damageSmoke.get(id)
-    if (health >= 100 || health <= 0) {
+    const damage = 1 - health / 100
+    if (damage <= vehicleDamageTuning.smokeDamageThreshold || health <= 0) {
       if (entry) {
         entry.smoke.dispose()
         entry.anchor.removeFromParent()
@@ -43,7 +44,10 @@ export class VehicleDestruction {
       entry = { object, anchor, smoke, amount: 0 }
       this.damageSmoke.set(id, entry)
     }
-    entry.amount = (1 - health / 100) * vehicleDamageTuning.smokeMaxAmount
+    entry.amount =
+      ((damage - vehicleDamageTuning.smokeDamageThreshold) /
+        (1 - vehicleDamageTuning.smokeDamageThreshold)) *
+      vehicleDamageTuning.smokeMaxAmount
   }
   private readonly charred = new Map<
     THREE.Material,

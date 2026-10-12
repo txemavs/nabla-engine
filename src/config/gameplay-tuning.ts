@@ -145,6 +145,7 @@ export const vehicleDamageTuning = {
   contactWindowSeconds: 0.35,
   damagePerSpeed: 0.3,
   maxOrdinaryDamage: 10,
+  smokeDamageThreshold: 0.5,
   smokeMaxAmount: 2,
 }
 /** Jump orientation assistance: angular acceleration (rad/s²), no linear thrust. */

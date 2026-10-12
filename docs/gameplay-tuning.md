@@ -56,7 +56,9 @@ blow. Contacts within 0.35 seconds share the strongest damage rather than adding
 every wheel/collider separately. Relative impact speed of 50 m/s is catastrophic.
 A 25 m/s impact costs 6.6 points: an intact vehicle survives 15 such blows and
 breaks on the sixteenth. Small blows also accumulate; airborne rotation does not.
-Damaged vehicles emit black underside smoke proportional to lost health, respecting
+Vehicles start emitting black underside smoke only beyond 50% damage
+(`vehicleDamageTuning.smokeDamageThreshold = 0.5`). Emission increases progressively
+from zero at that threshold to `smokeMaxAmount` near destruction, respecting
 the smoke switch and density preference; destruction replaces it with wreck smoke.
 
 Rendimiento → Calidad → **Efecto túnel al apuntar** is an independent saved

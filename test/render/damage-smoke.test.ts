@@ -9,7 +9,11 @@ it('emits black damage smoke before destruction and removes it after destruction
   const effect = new VehicleDestruction(space)
   effect.setDamage('car', car, 100)
   expect(effect.root.children.filter((node) => node instanceof THREE.Points)).toHaveLength(0)
+  effect.setDamage('car', car, 75)
+  expect(effect.root.children.filter((node) => node instanceof THREE.Points)).toHaveLength(0)
   effect.setDamage('car', car, 50)
+  expect(effect.root.children.filter((node) => node instanceof THREE.Points)).toHaveLength(0)
+  effect.setDamage('car', car, 25)
   const smoke = effect.root.children.find((node) => node instanceof THREE.Points) as THREE.Points
   expect(smoke).toBeDefined()
   for (let frame = 0; frame < 10; frame++) effect.update(0.05, true)
