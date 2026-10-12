@@ -87,3 +87,26 @@ it('warms fire and smoke without changing scene light count on explosion or rese
   destruction.dispose()
   expect(lightCount()).toBe(0)
 })
+
+it('keeps wreck flames upright as the vehicle rolls and follows its new position', () => {
+  const space = new Group(),
+    wreck = new Group()
+  space.add(wreck)
+  wreck.rotation.z = Math.PI
+  wreck.position.set(3, 2, 4)
+  const destruction = new VehicleDestruction(space)
+  destruction.explode('bike', wreck)
+  destruction.update(0.1, true)
+  const flames = space.getObjectByName('Wreck flames')!
+  expect(flames.parent).toBe(space)
+  expect(flames.rotation.toArray().slice(0, 3)).toEqual([0, 0, 0])
+  expect(flames.position.toArray()).toEqual([3, 2.3, 4])
+  wreck.rotation.x = 1.2
+  wreck.position.x = 7
+  destruction.update(0.1, true)
+  expect(flames.position.x).toBe(7)
+  expect(flames.rotation.toArray().slice(0, 3)).toEqual([0, 0, 0])
+  destruction.clear()
+  expect(space.getObjectByName('Wreck flames')).toBeUndefined()
+  destruction.dispose()
+})

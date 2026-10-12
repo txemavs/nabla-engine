@@ -20,7 +20,7 @@ export class VehicleDestruction {
   readonly root = new THREE.Group()
   readonly glassRoot = new THREE.Group()
   private readonly geometry = new THREE.SphereGeometry(1, 10, 8)
-  private readonly flameGeometry = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0)
+  private readonly flameGeometry = new THREE.PlaneGeometry(1, 1, 1, 16).translate(0, 0.5, 0)
   // Keep the light count constant: adding the first explosion lamp otherwise recompiles
   // every lit material in the scene on the gameplay frame.
   private readonly light = new THREE.PointLight('#ff9b22', 0, 8, 2)
@@ -86,12 +86,17 @@ export class VehicleDestruction {
     const { fire, clock } = this.createFire()
     const { flames, material: flameMaterial } = this.createFlames(clock)
     fire.position.y = 0.5
-    const smoke = new ExhaustSmoke(object, this.space, {
+    const smoke = new ExhaustSmoke(flames, this.space, {
       direction: [0, 1, 0],
       color: '#222222',
       size: 900,
     })
-    object.add(fire, flames)
+    object.add(fire)
+    // Follow the wreck's position in the scene frame, never its roll or pitch.
+    this.space.add(flames)
+    object.getWorldPosition(flames.position)
+    this.space.worldToLocal(flames.position)
+    flames.position.y += 0.3
     this.root.add(smoke.root)
     this.burns.set(id, { object, fire, flames, flameMaterial, smoke, age: 0, clock })
   }
@@ -140,8 +145,17 @@ export class VehicleDestruction {
     material.onBeforeCompile = (shader) => {
       shader.uniforms.flameTime = clock
       shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nvarying vec2 flameUv;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nflameUv = uv;')
+        .replace(
+          '#include <common>',
+          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;',
+        )
+        .replace(
+          '#include <begin_vertex>',
+          `#include <begin_vertex>
+          flameUv = uv;
+          transformed.x += sin(uv.y * 7.0 - flameTime * 5.0) * uv.y * uv.y * 0.09;
+          transformed.z += sin(uv.y * 5.0 - flameTime * 3.7) * uv.y * uv.y * 0.055;`,
+        )
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <common>',
@@ -158,13 +172,15 @@ export class VehicleDestruction {
             + sin(flameUv.x * 43.0 - flameTime * 7.0) * 0.04;
           float edge = 1.0 - smoothstep(width * 0.55, width, x);
           float tip = 1.0 - smoothstep(0.72 + tongues, 0.95 + tongues, h);
-          float alpha = edge * tip * smoothstep(0.0, 0.08, h);
+          float turbulence = 0.78 + 0.14 * sin(h * 22.0 - flameTime * 10.0 + flameUv.x * 13.0)
+            + 0.08 * sin(h * 37.0 - flameTime * 16.0);
+          float alpha = edge * tip * smoothstep(0.0, 0.08, h) * turbulence;
           if (alpha < 0.02) discard;
           diffuseColor.rgb = mix(vec3(1.0, 0.82, 0.18), vec3(1.0, 0.13, 0.015), h);
           diffuseColor.a *= alpha * 0.8;`,
         )
     }
-    material.customProgramCacheKey = () => 'vehicle-flames-v1'
+    material.customProgramCacheKey = () => 'vehicle-flames-v2'
     const flames = new THREE.Group()
     flames.name = 'Wreck flames'
     flames.position.y = 0.3
@@ -216,6 +232,9 @@ export class VehicleDestruction {
     this.light.intensity = 0
     this.flare.intensity.value = 0
     for (const burn of this.burns.values()) {
+      burn.object.getWorldPosition(burn.flames.position)
+      this.space.worldToLocal(burn.flames.position)
+      burn.flames.position.y += 0.3
       burn.age += dt
       burn.clock.value = burn.age
       const intensity =
@@ -237,7 +256,12 @@ export class VehicleDestruction {
       const flash = burn.age < 0.4
       burn.fire.visible = flash
       burn.flames.visible = !flash && burn.age < 12
-      burn.flames.scale.y = 0.95 + Math.sin(burn.age * 13) * 0.12
+      burn.flames.children.forEach((tongue, i) => {
+        const phase = burn.age * (4.5 + i * 0.37) + i * 2.4
+        tongue.scale.y =
+          (1 + (i % 3) * 0.2) * (0.92 + Math.sin(phase) * 0.13 + Math.sin(phase * 1.7) * 0.05)
+        tongue.scale.x = 0.64 + Math.sin(phase * 0.8) * 0.06
+      })
       burn.flameMaterial.opacity = Math.max(0, Math.min(1, (12 - burn.age) / 3))
       burn.fire.scale.set(
         flash ? 0.2 + burn.age * 8 : 0.45 + Math.sin(burn.age * 21) * 0.08,
