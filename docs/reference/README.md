@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **396 modules; 4310 executable function definitions**.
+Coverage: **396 modules; 4314 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -325,7 +325,7 @@ Coverage: **396 modules; 4310 executable function definitions**.
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 5 |
 | [src/runtime/sidearm-tuning.ts](src/runtime/sidearm-tuning.ts.md) | 3 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 71 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 73 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -400,7 +400,7 @@ Coverage: **396 modules; 4310 executable function definitions**.
 | [src/simulation/weapons/machine-pistol.ts](src/simulation/weapons/machine-pistol.ts.md) | 10 |
 | [src/simulation/weapons/magazine.ts](src/simulation/weapons/magazine.ts.md) | 1 |
 | [src/simulation/weapons/recoil.ts](src/simulation/weapons/recoil.ts.md) | 7 |
-| [src/simulation/weapons/weapon-thermal.ts](src/simulation/weapons/weapon-thermal.ts.md) | 3 |
+| [src/simulation/weapons/weapon-thermal.ts](src/simulation/weapons/weapon-thermal.ts.md) | 5 |
 | [src/simulation/wheel-surface.ts](src/simulation/wheel-surface.ts.md) | 4 |
 | [src/util/gzip.ts](src/util/gzip.ts.md) | 1 |
 | [src/util/sha256.ts](src/util/sha256.ts.md) | 5 |

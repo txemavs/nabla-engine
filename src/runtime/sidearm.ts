@@ -1,4 +1,4 @@
-import { weaponViewTuning } from '../config/gameplay-tuning.js'
+import { weaponViewTuning, weaponHeatTuning } from '../config/gameplay-tuning.js'
 import { extendedWeaponPose } from './world-weapon-pose.js'
 import * as THREE from 'three'
 import { weaponPresets, type WeaponPreset } from '../catalog/weapons/library.js'
@@ -129,6 +129,8 @@ export class Sidearm {
   private hammerStrikeAt = -Infinity
   private lastAction: 'single' | 'double' = 'double'
   readonly temperature = new WeaponThermal()
+  private hotMaterials: THREE.MeshStandardMaterial[] = []
+  private heatSmokeAt = -Infinity
   private variantId: HKVariantId = 'sa-da-combined-left'
   private safetyOn = false
   private worldPresentation: THREE.Group | null = null
@@ -193,6 +195,18 @@ export class Sidearm {
           assembly.add(object)
           this.model.add(assembly)
           this.assembledModel = assembly
+          object.getObjectByName('Barrel')?.traverse((node) => {
+            if (!(node instanceof THREE.Mesh)) return
+            const prepare = (material: THREE.Material) => {
+              if (!(material instanceof THREE.MeshStandardMaterial)) return material
+              const own = material.clone()
+              this.hotMaterials.push(own)
+              return own
+            }
+            node.material = Array.isArray(node.material)
+              ? node.material.map(prepare)
+              : prepare(node.material)
+          })
           this.slide = part(object, this.rig.parts.slide)
           this.triggerPart = part(object, this.rig.parts.trigger)
           this.magazine = part(object, this.rig.parts.magazine)
@@ -509,6 +523,25 @@ export class Sidearm {
   /** Advance the slide and any reload; call once per frame. */
   update(now: number): FirearmEvent {
     this.temperature.step(now)
+    const heat = this.temperature.heat
+    const glow = Math.max(
+      0,
+      (heat - weaponHeatTuning.glowStarts) / (1 - weaponHeatTuning.glowStarts),
+    )
+    for (const material of this.hotMaterials) {
+      material.emissive.setRGB(1, 0.035 + glow * 0.08, 0.002)
+      material.emissiveIntensity = glow * 2.5
+    }
+    if (
+      this.enabled &&
+      this.smokeEnabled &&
+      heat > weaponHeatTuning.smokeStarts &&
+      now - this.heatSmokeAt > 500 - heat * 350
+    ) {
+      this.heatSmokeAt = now
+      this.smoke.burst(now, this.flashAt)
+      if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
+    }
     const event = advanceFirearm(this.state, this.firearm, now)
     if (event.slideReleased) {
       this.hammerArmed = !this.variant.dao

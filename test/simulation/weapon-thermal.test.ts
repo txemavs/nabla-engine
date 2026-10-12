@@ -27,3 +27,16 @@ it('initialising and resetting an exercise does not create hidden heat', () => {
   expect(thermal.slideC).toBe(10)
   expect(thermal.barrelC).toBe(10)
 })
+
+it('sustained fire increases dispersion and cooling restores accuracy', () => {
+  const thermal = new WeaponThermal()
+  expect(thermal.spreadRadians).toBe(0)
+  thermal.shot(0)
+  expect(thermal.spreadRadians).toBe(0)
+  for (let i = 1; i < 60; i++) thermal.shot(i * 100)
+  expect(thermal.heat).toBe(1)
+  expect(thermal.spreadRadians).toBeCloseTo((2 * Math.PI) / 180)
+  thermal.step(125900)
+  expect(thermal.spreadRadians).toBe(0)
+  expect(thermal.heat).toBeLessThan(0.05)
+})

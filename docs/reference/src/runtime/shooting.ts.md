@@ -87,12 +87,23 @@ fireSidearm(sidearm: Sidearm, gallery: Gallery, sim: Simulation, view: SceneView
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.abs`
+- `Math.cos`
 - `Math.max`
 - `Math.min`
+- `Math.random`
+- `Math.sin`
+- `Math.sqrt`
+- `Math.tan`
 - `Vector3`
+- `axis.cross`
+- `axis.cross(direction).normalize`
 - `bulletEnergy`
 - `camera.clone`
 - `destination.toArray`
+- `direction.clone`
+- `direction.clone().cross`
+- `direction.clone().cross(right).normalize`
 - `direction.toArray`
 - `firing.lookAt`
 - `firing.position.clone`
@@ -112,12 +123,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `traceBullet`
 - `view.sparks.add`
 
-## fireSidearm.callback@113
+## fireSidearm.callback@125
 
-[Implementation, line 113](../../../../src/runtime/shooting.ts#L113)
+[Implementation, line 125](../../../../src/runtime/shooting.ts#L125)
 
 ```ts
-callback@113(from, dir, length): inferred by TypeScript; see implementation
+callback@125(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

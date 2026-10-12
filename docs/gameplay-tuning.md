@@ -171,3 +171,9 @@ Neutral first-person alignment is a base rotation at
 `weaponViewTuning.alignmentDistanceMetres` (25 m). The reviewed gesture rotation
 is applied relative to that base, so X/Z/slide animations retain their offsets.
 Normal mode retains bodycam free aim; aiming converges toward its aim direction.
+
+Sustained fire uses `weaponHeatTuning` in the same tuning module: heat per shot,
+cooling time, glow/smoke thresholds and maximum dispersion angle. These are arcade
+values. Only successful shots add heat; the barrel glows red, emits lingering smoke
+while hot (respecting the smoke option), and bullets spread uniformly within a cone.
+The rigid laser stays on its optical axis; it does not follow random bullet spread.

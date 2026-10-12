@@ -4,16 +4,44 @@
 
 [Source](../../../../../src/simulation/weapons/weapon-thermal.ts)
 
-Provisional thermal response: coefficients require measurements before training validation.
-
 ## Module dependencies
 
+- `../../config/gameplay-tuning.js`
 
-## WeaponThermal.reset
+## WeaponThermal.heat
 
 [Implementation, line 8](../../../../../src/simulation/weapons/weapon-thermal.ts#L8)
 
-Provisional thermal response: coefficients require measurements before training validation.
+Arcade thermal response; these temperatures are not real-world measurements.
+
+```ts
+heat(): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+
+## WeaponThermal.spreadRadians
+
+[Implementation, line 11](../../../../../src/simulation/weapons/weapon-thermal.ts#L11)
+
+Arcade thermal response; these temperatures are not real-world measurements.
+
+```ts
+spreadRadians(): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+
+## WeaponThermal.reset
+
+[Implementation, line 23](../../../../../src/simulation/weapons/weapon-thermal.ts#L23)
+
+Arcade thermal response; these temperatures are not real-world measurements.
 
 ```ts
 reset(): void
@@ -21,9 +49,9 @@ reset(): void
 
 ## WeaponThermal.step
 
-[Implementation, line 12](../../../../../src/simulation/weapons/weapon-thermal.ts#L12)
+[Implementation, line 27](../../../../../src/simulation/weapons/weapon-thermal.ts#L27)
 
-Provisional thermal response: coefficients require measurements before training validation.
+Arcade thermal response; these temperatures are not real-world measurements.
 
 ```ts
 step(now: number): void
@@ -37,9 +65,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponThermal.shot
 
-[Implementation, line 19](../../../../../src/simulation/weapons/weapon-thermal.ts#L19)
+[Implementation, line 36](../../../../../src/simulation/weapons/weapon-thermal.ts#L36)
 
-Provisional thermal response: coefficients require measurements before training validation.
+Arcade thermal response; these temperatures are not real-world measurements.
 
 ```ts
 shot(now: number): void
@@ -47,4 +75,5 @@ shot(now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.min`
 - `this.step`

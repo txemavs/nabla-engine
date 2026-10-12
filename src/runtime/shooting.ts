@@ -100,6 +100,18 @@ export function fireSidearm(
   const { origin, direction } = sidearmAimRay(sidearm, sim, view, camera, firstPerson, now)
   const event: SidearmShot = sidearm.pull(now)
   if (!event.fired) return event
+  const spread = sidearm.temperature.spreadRadians
+  if (spread > 0) {
+    const axis = Math.abs(direction.y) < 0.9 ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0)
+    const right = axis.cross(direction).normalize()
+    const up = direction.clone().cross(right).normalize()
+    const radius = Math.tan(spread) * Math.sqrt(Math.random())
+    const angle = Math.random() * Math.PI * 2
+    direction
+      .addScaledVector(right, radius * Math.cos(angle))
+      .addScaledVector(up, radius * Math.sin(angle))
+      .normalize()
+  }
   const load = sidearm.simulated ? sidearm.preset!.ammunition! : null
   let destination: Vector3
   let normal: Vec3 | undefined

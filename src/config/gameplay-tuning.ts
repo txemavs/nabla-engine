@@ -128,6 +128,16 @@ export const laserTuning = {
   beamWidthPixels: 7,
 }
 export const smokeTuning = { defaultPercent: 50, maxPercent: 300 }
+/** Arcade overheating response, not measured firearm temperatures. */
+export const weaponHeatTuning = {
+  heatPerShotC: 9,
+  coolingSeconds: 30,
+  hotRiseC: 300,
+  glowStarts: 0.3,
+  smokeStarts: 0.15,
+  spreadStarts: 0.2,
+  maxSpreadDegrees: 2,
+}
 /** Contact speeds are relative impact speeds, not dashboard speeds. */
 export const vehicleDamageTuning = {
   minimumImpactSpeed: 3,
