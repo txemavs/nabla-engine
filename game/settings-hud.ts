@@ -748,9 +748,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 .settings-window {
   position: fixed;
   top: 72px;
-  right: 20px;
+  right: 76px;
   z-index: 30;
-  width: min(480px, calc(100vw - 24px));
+  width: min(480px, calc(100vw - 88px));
   max-height: calc(100vh - 92px);
   overflow: auto;
   pointer-events: auto;
@@ -784,7 +784,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 .settings-fold > .menu-section { padding: 0 10px 10px; margin: 0; }
 .settings-console input[type='number'] { max-width: 76px; }
 @media (max-width: 520px) {
-  .settings-window { right: 12px; }
   .settings-pane label:has(select), .settings-pane label:has(input[type='range']) { flex-wrap: wrap !important; white-space: normal !important; }
 }
 .settings-tab[hidden],
