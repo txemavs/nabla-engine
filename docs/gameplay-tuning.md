@@ -101,3 +101,7 @@ remain catalog data (`assets/library/weapons`), not duplicated tuning constants.
 The local Euskadi host has extra branding/tips in `/home/txema/projects/euskadi/euskadi-hud.ts`.
 That deployment-owned file is outside this repository/PR; engine controls, settings
 and toolbar are versioned here. The host must update old B/T/Y tips independently.
+
+Effect warmup includes on-foot start views and detached physical wheels. It runs
+after gameplay lighting is prepared and draws effect buffers offscreen, including
+transparent front/back passes, before the first explosion.

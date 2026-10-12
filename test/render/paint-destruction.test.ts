@@ -57,6 +57,10 @@ it('warms fire and smoke without changing scene light count on explosion or rese
   let compiledSmoke = false
   await destruction.warm(
     {
+      outputColorSpace: 'srgb',
+      getRenderTarget: () => null,
+      setRenderTarget: () => {},
+      render: () => {},
       compileAsync: async () => {
         scene.traverse((object) => {
           if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) return

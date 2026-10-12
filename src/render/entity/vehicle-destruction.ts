@@ -241,7 +241,10 @@ export class VehicleDestruction {
   }
   /** Compile effect programs during loading and keep them alive across session resets. */
   async warm(
-    renderer: Pick<THREE.WebGLRenderer, 'compileAsync'>,
+    renderer: Pick<
+      THREE.WebGLRenderer,
+      'compileAsync' | 'getRenderTarget' | 'setRenderTarget' | 'render' | 'outputColorSpace'
+    >,
     scene: THREE.Scene,
     camera: THREE.Camera,
     vehicles: Iterable<THREE.Object3D> = [],
@@ -258,6 +261,24 @@ export class VehicleDestruction {
     this.root.add(this.warmFire, this.warmSmoke.root, this.warmFlames.flames)
     try {
       await renderer.compileAsync(scene, camera)
+      // A draw also warms transparent front/back passes and uploads effect buffers.
+      const target = new THREE.WebGLRenderTarget(1, 1)
+      target.texture.colorSpace = renderer.outputColorSpace
+      const previous = renderer.getRenderTarget()
+      const culled = new Map<THREE.Object3D, boolean>()
+      for (const root of [parts, this.warmFire, this.warmSmoke.root, this.warmFlames.flames])
+        root.traverse((node) => {
+          culled.set(node, node.frustumCulled)
+          node.frustumCulled = false
+        })
+      try {
+        renderer.setRenderTarget(target)
+        renderer.render(scene, camera)
+      } finally {
+        renderer.setRenderTarget(previous)
+        for (const [node, value] of culled) node.frustumCulled = value
+        target.dispose()
+      }
     } finally {
       balloons.removeFromParent()
       parts.removeFromParent()

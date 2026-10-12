@@ -1794,7 +1794,7 @@ export class GameRuntime {
    */
   private async warmStartViews(signal: AbortSignal): Promise<void> {
     const sim = this.session.simulation
-    if (!sim || !sim.player.vehicleId) return
+    if (!sim) return
     const settings = this.cameraState.settings
     const state = createGameCameraState(settings)
     state.yaw = this.cameraState.yaw
@@ -1814,7 +1814,7 @@ export class GameRuntime {
     if (first?.view === 'map' && first.fromHeight !== undefined)
       for (const height of descentWarmHeights(first.fromHeight, settings.mapHeight))
         views.push({ mode: 'map', height })
-    views.push({ mode: 'cockpit' }, { mode: 'chase' })
+    views.push({ mode: sim.player.vehicleId ? 'cockpit' : 'first-person' }, { mode: 'chase' })
     // Light the views as the reveal will: a live clock starts at its authored time then (e.g.
     // 10:00), and day or night changes lights and therefore shader programs.
     const clock = this.document.sky
@@ -1822,7 +1822,7 @@ export class GameRuntime {
     try {
       for (const view of views) {
         signal.throwIfAborted()
-        setGameCameraView(state, view.mode, true)
+        setGameCameraView(state, view.mode, !!sim.player.vehicleId)
         state.transition = null
         state.lastPose = null
         state.lastView = null
@@ -3062,15 +3062,6 @@ export class GameRuntime {
     signal.throwIfAborted()
     // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
     if (sim) await this.placeInitialWeaponPickup(sim)
-    await within(
-      this.view.destruction.warm(
-        this.renderer,
-        this.scene,
-        this.camera,
-        this.view.objects.values(),
-      ),
-      20_000,
-    )
     signal.throwIfAborted()
     // of the camera so the attract frames keep their own projection.
     stage('shaders', 3)
@@ -3111,6 +3102,10 @@ export class GameRuntime {
       // Then the start views themselves, as the first gameplay frames will draw them. Awaited
       // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
       await this.warmStartViews(signal)
+      await within(
+        this.view.destruction.warm(this.renderer, this.scene, this.camera, [this.view.root]),
+        20_000,
+      )
       stage('preload', 4)
       for (const templates of [
         ...(this.options.preloadVehicles ?? []),
