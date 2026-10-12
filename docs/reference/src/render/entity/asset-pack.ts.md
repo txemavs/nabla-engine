@@ -6,10 +6,11 @@
 
 ## Module dependencies
 
+- `../../util/sha256.js`
 
 ## AssetPack.constructor
 
-[Implementation, line 17](../../../../../src/render/entity/asset-pack.ts#L17)
+[Implementation, line 19](../../../../../src/render/entity/asset-pack.ts#L19)
 
 Fetch only requested blocks; cache decoded, verified assets across visits.
 
@@ -19,7 +20,7 @@ constructor(private readonly indexUrl = '/packs/index.json'): instance
 
 ## AssetPack.read
 
-[Implementation, line 19](../../../../../src/render/entity/asset-pack.ts#L19)
+[Implementation, line 21](../../../../../src/render/entity/asset-pack.ts#L21)
 
 Fetch only requested blocks; cache decoded, verified assets across visits.
 
@@ -29,20 +30,17 @@ read(url: string): Promise<ArrayBuffer | null>
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Array.from`
 - `Blob`
 - `DecompressionStream`
 - `Error`
 - `Number.isSafeInteger`
 - `Response`
 - `URL`
-- `Uint8Array`
 - `cache?.match`
 - `cache?.match(key).catch`
 - `cache?.put`
 - `cache?.put(key, new Response(buffer)).catch`
 - `cached.arrayBuffer`
-- `crypto.subtle.digest`
 - `fetch`
 - `globalThis.caches?.open`
 - `globalThis.caches?.open('nabla-assets-v1').catch`
@@ -51,6 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `response.arrayBuffer`
 - `response.body?.cancel`
 - `response.headers.get`
+- `sha256`
 - `url.endsWith`
 - `url.startsWith`
 
@@ -62,59 +61,46 @@ Explicit throws in this body:
 - `new Error('Invalid asset size')`
 - `new Error('Asset pack checksum mismatch')`
 
-## AssetPack.read.callback@22
+## AssetPack.read.callback@24
 
-[Implementation, line 22](../../../../../src/render/entity/asset-pack.ts#L22)
+[Implementation, line 24](../../../../../src/render/entity/asset-pack.ts#L24)
 
 ```ts
-callback@22(response): inferred by TypeScript; see implementation
+callback@24(response): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `response.json`
 
-## AssetPack.read.callback@27
+## AssetPack.read.callback@29
 
-[Implementation, line 27](../../../../../src/render/entity/asset-pack.ts#L27)
+[Implementation, line 29](../../../../../src/render/entity/asset-pack.ts#L29)
 
 ```ts
-callback@27(): inferred by TypeScript; see implementation
+callback@29(): inferred by TypeScript; see implementation
 ```
 
-## AssetPack.read.callback@41
+## AssetPack.read.callback@43
 
-[Implementation, line 41](../../../../../src/render/entity/asset-pack.ts#L41)
+[Implementation, line 43](../../../../../src/render/entity/asset-pack.ts#L43)
 
 ```ts
-callback@41(): inferred by TypeScript; see implementation
+callback@43(): inferred by TypeScript; see implementation
 ```
 
-## AssetPack.read.callback@42
+## AssetPack.read.callback@44
 
-[Implementation, line 42](../../../../../src/render/entity/asset-pack.ts#L42)
+[Implementation, line 44](../../../../../src/render/entity/asset-pack.ts#L44)
 
 ```ts
-callback@42(): inferred by TypeScript; see implementation
+callback@44(): inferred by TypeScript; see implementation
 ```
 
-## AssetPack.read.callback@67
+## AssetPack.read.callback@70
 
-[Implementation, line 67](../../../../../src/render/entity/asset-pack.ts#L67)
-
-```ts
-callback@67(byte): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `byte.toString`
-- `byte.toString(16).padStart`
-
-## AssetPack.read.callback@71
-
-[Implementation, line 71](../../../../../src/render/entity/asset-pack.ts#L71)
+[Implementation, line 70](../../../../../src/render/entity/asset-pack.ts#L70)
 
 ```ts
-callback@71(): inferred by TypeScript; see implementation
+callback@70(): inferred by TypeScript; see implementation
 ```

@@ -1,3 +1,5 @@
+import { sha256 } from '../../util/sha256.js'
+
 interface PackEntry {
   offset: number
   length: number
@@ -63,10 +65,7 @@ export class AssetPack {
       new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip')),
     ).arrayBuffer()
     if (buffer.byteLength !== entry.decodedLength) throw new Error('Invalid asset size')
-    const digest = await crypto.subtle.digest('SHA-256', buffer)
-    const hash = Array.from(new Uint8Array(digest), (byte) =>
-      byte.toString(16).padStart(2, '0'),
-    ).join('')
+    const hash = await sha256(buffer)
     if (hash !== entry.sha256) throw new Error('Asset pack checksum mismatch')
     await cache?.put(key, new Response(buffer)).catch(() => undefined)
     return buffer

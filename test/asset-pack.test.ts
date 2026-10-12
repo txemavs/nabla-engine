@@ -25,23 +25,27 @@ function fixture() {
   return { source, compressed, entry, index }
 }
 
-it('fetches a single exact range and restores authored bytes', async () => {
-  const { source, compressed, entry, index } = fixture()
-  const fetcher = vi
-    .fn()
-    .mockResolvedValueOnce(Response.json(index))
-    .mockResolvedValueOnce(
-      new Response(compressed, {
-        status: 206,
-        headers: {
-          'Content-Range': `bytes 19-${index.size - 1}/${index.size}`,
-        },
-      }),
-    )
-  vi.stubGlobal('fetch', fetcher)
-  expect(new Uint8Array((await new AssetPack().read('/library/test.glb'))!)).toEqual(source)
-  expect(fetcher.mock.calls[1][1].headers.Range).toBe(`bytes=19-${19 + entry.length - 1}`)
-})
+it.each([true, false])(
+  'restores verified bytes with Web Crypto available: %s',
+  async (available) => {
+    const { source, compressed, entry, index } = fixture()
+    if (!available) vi.stubGlobal('crypto', {})
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json(index))
+      .mockResolvedValueOnce(
+        new Response(compressed, {
+          status: 206,
+          headers: {
+            'Content-Range': `bytes 19-${index.size - 1}/${index.size}`,
+          },
+        }),
+      )
+    vi.stubGlobal('fetch', fetcher)
+    expect(new Uint8Array((await new AssetPack().read('/library/test.glb'))!)).toEqual(source)
+    expect(fetcher.mock.calls[1][1].headers.Range).toBe(`bytes=19-${19 + entry.length - 1}`)
+  },
+)
 
 it('falls back without consuming a whole-pack response on servers without ranges', async () => {
   const { index } = fixture()
