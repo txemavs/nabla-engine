@@ -684,14 +684,15 @@ export class Sidearm {
   }
 
   /** Torch follows its authored mount, including inspection, recoil and third-person pose. */
-  torchRay(
+  accessoryRay(
     now: number,
     firstPerson: boolean,
     worldFov: number,
+    socketName: 'TorchSocket' | 'RedLaserSocket',
   ): { origin: THREE.Vector3; target: THREE.Vector3 } | null {
     if (firstPerson) this.viewPose(now)
     const root = firstPerson ? this.model : this.worldPresentation
-    const socket = root?.getObjectByName('TorchSocket')
+    const socket = root?.getObjectByName(socketName)
     if (!socket) return null
     socket.updateWorldMatrix(true, false)
     const origin = socket.localToWorld(new THREE.Vector3())
@@ -708,27 +709,6 @@ export class Sidearm {
       }
     }
     return { origin, target }
-  }
-
-  /** Actual accessory emitter, including inspection and bodycam pose transforms. */
-  laserOrigin(now: number, firstPerson: boolean, worldFov?: number): THREE.Vector3 | null {
-    if (firstPerson) this.viewPose(now)
-    const root = firstPerson ? this.model : this.worldPresentation
-    const socket = root?.getObjectByName('RedLaserSocket')
-    if (!socket) return null
-    socket.updateWorldMatrix(true, false)
-    const point = socket.getWorldPosition(new THREE.Vector3())
-    if (!firstPerson) return point
-    this.viewRig.worldToLocal(point)
-    // The viewmodel has its own FOV. Preserve the emitter's screen position in the world pass.
-    if (worldFov !== undefined) {
-      const ratio =
-        Math.tan(THREE.MathUtils.degToRad(worldFov / 2)) /
-        Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))
-      point.x *= ratio
-      point.y *= ratio
-    }
-    return point
   }
 
   worldMagazineDropView(): ReturnType<Sidearm['magazineDropView']> {

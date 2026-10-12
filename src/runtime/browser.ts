@@ -73,7 +73,7 @@ import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.j
 import { fireModeLabel } from '../simulation/weapons/machine-pistol.js'
 import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
-import { fireSidearm, sidearmButtonAction, sidearmAimRay } from './shooting.js'
+import { fireSidearm, sidearmButtonAction } from './shooting.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
 import { Casings } from '../render/entity/casings.js'
 import { DroppedMagazines } from '../render/entity/magazines.js'
@@ -3527,7 +3527,7 @@ export class GameRuntime {
     if (this.weaponLight) {
       const torch =
         this.weaponLightOn && this.weaponDrawn
-          ? this.sidearm?.torchRay(time, eyes, this.camera.fov)
+          ? this.sidearm?.accessoryRay(time, eyes, this.camera.fov, 'TorchSocket')
           : null
       this.weaponLight.intensity = torch ? 35 : 0
       if (torch) {
@@ -3547,25 +3547,18 @@ export class GameRuntime {
       return
     }
     this.view.laser.enabled = true
-    const emitter = this.sidearm.laserOrigin(time, eyes, this.camera.fov)
-    if (!emitter) {
+    const ray = this.sidearm.accessoryRay(time, eyes, this.camera.fov, 'RedLaserSocket')
+    if (!ray) {
       this.view.laser.enabled = false
       return
     }
-    const origin = eyes
-      ? emitter.applyQuaternion(this.camera.quaternion).add(this.camera.position)
-      : emitter.sub(this.view.root.position)
-    const shot = sidearmAimRay(this.sidearm, sim, this.view, this.camera, eyes)
-    const targetHit = sim.shoot(
-      shot.origin.toArray(),
-      shot.direction.toArray(),
-      this.sidearm.range,
-      0,
-    )
-    const target = targetHit
-      ? new THREE.Vector3(...targetHit.point)
-      : shot.origin.clone().addScaledVector(shot.direction, this.sidearm.range)
-    const direction = target.clone().sub(origin).normalize()
+    for (const point of [ray.origin, ray.target]) {
+      if (eyes) point.applyQuaternion(this.camera.quaternion).add(this.camera.position)
+      else point.sub(this.view.root.position)
+    }
+    const origin = ray.origin
+    const direction = ray.target.sub(origin).normalize()
+    const target = origin.clone().addScaledVector(direction, this.sidearm.range)
     const aimed = sim.shoot(
       origin.toArray() as Vec3Tuple,
       direction.toArray() as Vec3Tuple,
