@@ -243,3 +243,10 @@ what was actually rendered. C now blends into overhead too; rapidly interrupting
 one transition starts from its last rendered pose. Explicit `nextTransitionMs: 0`
 still allows a deliberate cut. Bodycam FOV offsets ease with `normalViewTuning.fovResponse`;
 Action cam fades when disabled on foot instead of dropping its current offset.
+The geographic demo uses a hover-supported walker without physical foot contacts;
+that mode also enables the walking rhythm. Ordinary airborne walk mode still fades it.
+
+The laser uses a constant pixel-width ribbon. Its transverse shader coordinate
+is interpolated in screen space to keep the bright core uniform across both
+triangles at different endpoint depths. Longitudinal smoke sampling remains in
+world space, so smoke can brighten only the intersecting part of the beam.

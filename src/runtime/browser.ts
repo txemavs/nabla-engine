@@ -1343,7 +1343,8 @@ export class GameRuntime {
         speed: this.actionCamOn
           ? sim.player.speed * Math.min(1, Math.hypot(input.forward, input.right))
           : 0,
-        grounded: sim.player.grounded,
+        // The geographic demo's hover walker is supported without foot contacts.
+        grounded: sim.player.grounded || sim.options.playerMode === 'hover',
         right: this.actionCamOn ? input.right : 0,
         yaw: this.cameraState.yaw,
         aim: this.sidearm?.aimTransition ?? 0,
