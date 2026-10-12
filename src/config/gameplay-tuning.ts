@@ -108,6 +108,7 @@ export const normalViewTuning = {
   pitchLimitRadians: 0.11,
   followRate: 3.5,
   aimedFollowRate: 22,
+  fovResponse: 10,
 }
 /** Action cam walking motion: metres, radians and seconds. No post-processing. */
 export const actionCamTuning = {

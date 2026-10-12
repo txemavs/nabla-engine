@@ -1337,39 +1337,37 @@ export class GameRuntime {
       this.sidearm.bodycamYaw = this.bodycam.yaw
       this.sidearm.bodycamPitch = this.bodycam.pitch
     }
+    const targetEyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
+    if (targetEyes && !sim.player.vehicleId && !sim.playerEjection && !sim.playerBikeRecovery) {
+      this.cameraState.walkingMotion = this.actionCam.step(dt, {
+        speed: this.actionCamOn
+          ? sim.player.speed * Math.min(1, Math.hypot(input.forward, input.right))
+          : 0,
+        grounded: sim.player.grounded,
+        right: this.actionCamOn ? input.right : 0,
+        yaw: this.cameraState.yaw,
+        aim: this.sidearm?.aimTransition ?? 0,
+      })
+    } else {
+      this.actionCam.reset()
+      this.cameraState.walkingMotion = null
+    }
+    const fovOffsetTarget =
+      this.cameraState.bodycam && targetEyes
+        ? normalViewTuning.extraFovDegrees *
+          (1 - (bodycamActive ? (this.sidearm?.aimTransition ?? 0) : 0))
+        : 0
+    const currentFovOffset = this.cameraState.firstPersonFovOffset ?? fovOffsetTarget
+    this.cameraState.firstPersonFovOffset =
+      currentFovOffset +
+      (fovOffsetTarget - currentFovOffset) *
+        (1 - Math.exp(-normalViewTuning.fovResponse * Math.min(dt, 0.1)))
     const { player, info } = this.game.updateCamera(this.view, this.camera, time, dt)
     const canvas = this.options.canvas
     canvas.dataset.vehicle = player.vehicleId ?? ''
     canvas.dataset.interior = player.interiorId ?? ''
     canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
-    if (
-      this.actionCamOn &&
-      eyes &&
-      !player.vehicleId &&
-      !sim.playerEjection &&
-      !sim.playerBikeRecovery
-    ) {
-      const motion = this.actionCam.step(dt, {
-        speed: player.speed * Math.min(1, Math.hypot(input.forward, input.right)),
-        grounded: player.grounded,
-        right: input.right,
-        yaw: this.cameraState.yaw,
-        aim: this.sidearm?.aimTransition ?? 0,
-      })
-      this.camera.position.add(
-        new THREE.Vector3(motion.side, motion.up, 0).applyQuaternion(this.camera.quaternion),
-      )
-      this.camera.quaternion.multiply(
-        new THREE.Quaternion().setFromEuler(new THREE.Euler(motion.pitch, 0, motion.roll, 'YXZ')),
-      )
-    } else this.actionCam.reset()
-    if (bodycamActive) {
-      this.camera.fov =
-        this.cameraState.settings.firstPersonFov +
-        normalViewTuning.extraFovDegrees * (1 - (this.sidearm?.aimTransition ?? 0))
-      this.camera.updateProjectionMatrix()
-    }
     this.effects.audio.setListener(
       this.camera.position.toArray(),
       this.camera.quaternion.toArray(),
@@ -2890,7 +2888,6 @@ export class GameRuntime {
   }
   setActionCamEnabled(enabled: boolean): void {
     this.actionCamOn = enabled
-    this.actionCam.reset()
     try {
       browserStorage()?.setItem('nabla.actionCam', String(enabled))
     } catch {

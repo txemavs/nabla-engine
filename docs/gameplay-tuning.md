@@ -236,3 +236,10 @@ before weapon/audio rendering, without modifying simulation heading, FOV, lights
 or post-processing. `actionCamTuning` in `src/config/gameplay-tuning.ts` owns all
 amplitudes, stride and response settings. `nabla.actionCam` persists the toggle;
 AJUSTES PREDETERMINADOS restores its default.
+
+Camera continuity: walking offsets/roll and the effective Normal-mode FOV are
+part of the target pose before view/seat interpolation, so `lastPose` represents
+what was actually rendered. C now blends into overhead too; rapidly interrupting
+one transition starts from its last rendered pose. Explicit `nextTransitionMs: 0`
+still allows a deliberate cut. Bodycam FOV offsets ease with `normalViewTuning.fovResponse`;
+Action cam fades when disabled on foot instead of dropping its current offset.

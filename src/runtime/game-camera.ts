@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../presentation/scene-view.js'
 import type { Vec3Tuple } from '../entity/schema.js'
+import type { ActionCamMotion } from './action-cam.js'
 import { localToGeo } from '../math/geo/sphere.js'
 import {
   driverHeadPose,
@@ -87,6 +88,9 @@ export interface GameCameraState {
   mapFollow: CriticalFollow
   /** Active eased blend from the previous view into the current one, or null. */
   transition: GameCameraTransition | null
+  /** Final first-person target effects, applied before view/seat interpolation. */
+  walkingMotion: ActionCamMotion | null
+  firstPersonFovOffset: number | null
   /** Blend length for the next view change only (start sequences); null uses `modeTransitionMs`. */
   nextTransitionMs: number | null
   /** Last rendered pose and view; a view change blends from here. */
@@ -139,6 +143,8 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     groundHeading: new GroundHeading(resolved),
     mapFollow: new CriticalFollow(),
     transition: null,
+    walkingMotion: null,
+    firstPersonFovOffset: null,
     nextTransitionMs: null,
     lastPose: null,
     lastView: null,
@@ -217,8 +223,7 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
 /**
  * Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
  * `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
- * Entering the overhead view cuts unless `nextTransitionMs` is set: the blend climbed out
- * through the cabin while the field of view lerped, and that frame hitch is the stall.
+ * Every ordinary view change blends, including overhead. A one-off duration of zero cuts.
  */
 export function setGameCameraView(
   state: GameCameraState,
@@ -353,7 +358,8 @@ export function updateGameCamera(
   const fov = cinematic
     ? tuning.cinematicFov
     : (cockpit && info) || (!p.vehicleId && eyes)
-      ? tuning.firstPersonFov
+      ? tuning.firstPersonFov +
+        (state.firstPersonFovOffset ?? (state.bodycam ? normalViewTuning.extraFovDegrees : 0))
       : tuning.chaseFov
   if (camera.fov !== fov) {
     camera.fov = fov
@@ -664,8 +670,16 @@ export function updateGameCamera(
           camera.quaternion,
         ),
       )
-    camera.fov += normalViewTuning.extraFovDegrees
-    camera.updateProjectionMatrix()
+  }
+
+  if (eyes && !p.vehicleId && !riderFall && !recovery && state.walkingMotion) {
+    const motion = state.walkingMotion
+    camera.position.add(
+      new THREE.Vector3(motion.side, motion.up, 0).applyQuaternion(camera.quaternion),
+    )
+    camera.quaternion.multiply(
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(motion.pitch, 0, motion.roll, 'YXZ')),
+    )
   }
 
   const seatMove = state.seatMove
@@ -724,10 +738,7 @@ export function updateGameCamera(
   let transition = state.transition
   const last = state.lastView
   if (last && state.lastPose && last.view !== cameraView) {
-    // Overhead cuts. The pose is already tracked (`mapFollow` runs in every view), and the
-    // old 700 ms climb retargeted cascaded shadows on every frame as the fov lerped from the
-    // cockpit's 70° to 48°. A start sequence can still blend by setting `nextTransitionMs`.
-    const duration = state.nextTransitionMs ?? (cameraView === 'map' ? 0 : tuning.modeTransitionMs)
+    const duration = state.nextTransitionMs ?? tuning.modeTransitionMs
     transition =
       last.vehicleId === vehicleKey && duration > 0
         ? {
