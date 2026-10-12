@@ -80,6 +80,14 @@ interface Part {
 export class Sidearm {
   private readonly scene = new THREE.Scene()
   poseTuning: WeaponPoseTuning = normalizeWeaponPoses()
+  bodycamEnabled = false
+  bodycamYaw = 0
+  bodycamPitch = 0
+  aimDirection(camera: THREE.Quaternion): THREE.Vector3 {
+    return new THREE.Vector3(0, 0, -1)
+      .applyEuler(new THREE.Euler(-this.bodycamPitch, this.bodycamYaw, 0, 'YXZ'))
+      .applyQuaternion(camera)
+  }
   slidePosePreview = false
   private slidePoseBlend = 0
   private magazinePoseBlend = 0
@@ -693,6 +701,11 @@ export class Sidearm {
       )
     this.model.rotation.set(0, 0, 0)
     this.pose(now)
+    if (this.bodycamEnabled) {
+      this.model.position.y -= 0.025 * (1 - this.aimBlend)
+      this.model.rotation.y += this.bodycamYaw
+      this.model.rotation.x -= this.bodycamPitch
+    }
   }
 
   /**

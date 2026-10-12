@@ -81,6 +81,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `origin.copy`
 - `origin.copy(muzzle).sub`
 - `origin.toArray`
+- `sidearm.aimDirection`
 - `sidearm.impact`
 - `sidearm.pull`
 - `sidearm.worldMuzzle`
@@ -90,12 +91,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `traceBullet`
 - `view.sparks.add`
 
-## fireSidearm.callback@96
+## fireSidearm.callback@98
 
-[Implementation, line 96](../../../../src/runtime/shooting.ts#L96)
+[Implementation, line 98](../../../../src/runtime/shooting.ts#L98)
 
 ```ts
-callback@96(from, dir, length): inferred by TypeScript; see implementation
+callback@98(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

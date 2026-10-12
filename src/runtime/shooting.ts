@@ -68,7 +68,9 @@ export function fireSidearm(
   if (!sidearm.visible) return null
   const event: SidearmShot = sidearm.pull(now)
   if (!event.fired) return event
-  const look = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+  const look = firstPerson
+    ? sidearm.aimDirection(camera.quaternion)
+    : new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
   const load = sidearm.simulated ? sidearm.preset!.ammunition! : null
   const origin = firstPerson ? camera.position.clone() : new Vector3(...sim.renderPlayerPosition)
   if (!firstPerson) {

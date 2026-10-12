@@ -32,6 +32,21 @@ export class ShotLaser {
     gl_FragColor=vec4(mix(vec3(1.,.015,.01),vec3(1.,.5,.35),core),(.22*halo+.55*core)*(1.-smoothstep(.8,1.,d)));}`,
   })
   private readonly beam: THREE.Mesh
+  private readonly halo = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.025, 0.025),
+    new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+      vertexShader: `varying vec2 vHalo; void main(){vHalo=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+      fragmentShader: `varying vec2 vHalo; void main(){float r=length(vHalo-.5)*2.;float a=exp(-r*r*4.)*(1.-smoothstep(.65,1.,r));gl_FragColor=vec4(1.,.015,.005,a*.85);}`,
+    }),
+  )
   private readonly pin: THREE.Mesh
   private disposed = false
   private on = false
@@ -55,7 +70,12 @@ export class ShotLaser {
       }),
     )
     this.pin.renderOrder = 7
-    this.root.add(this.beam, this.pin)
+    this.halo.renderOrder = 6
+    this.halo.onBeforeRender = (_renderer, _scene, camera) => {
+      this.halo.quaternion.copy(camera.quaternion)
+      this.halo.updateMatrixWorld()
+    }
+    this.root.add(this.beam, this.pin, this.halo)
     this.root.visible = false
     this.root.raycast = () => undefined
   }
@@ -78,10 +98,16 @@ export class ShotLaser {
     const distance = Math.hypot(end[0] - origin[0], end[1] - origin[1], end[2] - origin[2])
     this.pin.scale.setScalar(1 + Math.min(2, distance * 0.015))
     this.pin.visible = hit
+    this.halo.visible = hit
+    this.halo.position
+      .copy(this.pin.position)
+      .addScaledVector(new THREE.Vector3(...origin).sub(this.pin.position).normalize(), 0.012)
+    this.halo.scale.copy(this.pin.scale)
   }
 
   clear(): void {
     this.pin.visible = false
+    this.halo.visible = false
   }
 
   dispose(): void {
@@ -90,6 +116,8 @@ export class ShotLaser {
     this.root.removeFromParent()
     this.beamGeom.dispose()
     this.beamMat.dispose()
+    this.halo.geometry.dispose()
+    this.halo.material.dispose()
     this.pin.geometry.dispose()
     ;(this.pin.material as THREE.Material).dispose()
   }

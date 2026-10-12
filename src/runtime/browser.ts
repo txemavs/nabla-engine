@@ -1,3 +1,4 @@
+import { BodycamAim } from './bodycam-aim.js'
 import { smokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
 import { WeaponControls } from './weapon-controls.js'
 /**
@@ -531,6 +532,7 @@ export class GameRuntime {
   private fireModeBadge: FireModeBadge | null = null
   private magazineAction: 'drop' | 'insert' | 'release' | 'automatic' | null = null
   private weaponLightOn = false
+  private readonly bodycam = new BodycamAim()
   private safetyClickHeld = false
   private weaponLight: THREE.SpotLight | null = null
   private casingMotion: CasingMotion | null = null
@@ -1255,12 +1257,32 @@ export class GameRuntime {
       this.cameraState.headPitch,
     )
     this.advanceStartCameras(sim, time)
+    const bodycamActive =
+      this.bodycam.enabled &&
+      this.weaponDrawn &&
+      !sim.player.vehicleId &&
+      isFirstPersonView(this.cameraState, false)
+    if (bodycamActive) {
+      const follow = this.bodycam.step(dt, this.sidearm?.isAiming ?? false)
+      this.cameraState.yaw += follow.yaw
+      this.cameraState.pitch += follow.pitch
+    } else this.bodycam.reset()
+    if (this.sidearm) {
+      this.sidearm.bodycamEnabled = bodycamActive
+      this.sidearm.bodycamYaw = this.bodycam.yaw
+      this.sidearm.bodycamPitch = this.bodycam.pitch
+    }
     const { player, info } = this.game.updateCamera(this.view, this.camera, time, dt)
     const canvas = this.options.canvas
     canvas.dataset.vehicle = player.vehicleId ?? ''
     canvas.dataset.interior = player.interiorId ?? ''
     canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
+    if (bodycamActive) {
+      this.camera.position.y -= 0.18
+      this.camera.fov = this.cameraState.settings.firstPersonFov + (this.sidearm?.isAiming ? 0 : 12)
+      this.camera.updateProjectionMatrix()
+    }
     this.effects.audio.setListener(
       this.camera.position.toArray(),
       this.camera.quaternion.toArray(),
@@ -3437,7 +3459,7 @@ export class GameRuntime {
       return
     }
     this.view.laser.enabled = true
-    const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
+    const direction = this.sidearm.aimDirection(this.camera.quaternion)
     const origin = this.camera.position.clone()
     if (isFirstPersonView(this.cameraState, !!sim.player.vehicleId)) {
       origin.add(this.sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
@@ -3648,6 +3670,14 @@ export class GameRuntime {
         this.weaponLight.intensity = this.weaponDrawn && this.weaponLightOn ? 35 : 0
       this.options.onMessage?.(
         this.weaponDrawn ? this.text('Weapon drawn') : this.text('Weapon holstered'),
+      )
+      return
+    }
+    if (code === 'KeyB' && this.weaponDrawn && !sim.player.vehicleId) {
+      this.bodycam.enabled = !this.bodycam.enabled
+      this.bodycam.reset()
+      this.options.onMessage?.(
+        this.bodycam.enabled ? 'Bodycam activada · apuntado libre' : 'Bodycam desactivada',
       )
       return
     }
@@ -3952,9 +3982,21 @@ export class GameRuntime {
             controlDefaults.pitchLimit,
           )
         } else {
-          state.yaw -= event.movementX * controlDefaults.mouseSensitivity
+          let yaw = -event.movementX * controlDefaults.mouseSensitivity,
+            pitch = event.movementY * controlDefaults.mouseSensitivity
+          if (
+            this.bodycam.enabled &&
+            this.weaponDrawn &&
+            !seated &&
+            isFirstPersonView(state, false)
+          ) {
+            const motion = this.bodycam.move(yaw, pitch)
+            yaw = motion.yaw
+            pitch = motion.pitch
+          }
+          state.yaw += yaw
           state.pitch = THREE.MathUtils.clamp(
-            state.pitch + event.movementY * controlDefaults.mouseSensitivity,
+            state.pitch + pitch,
             -controlDefaults.pitchLimit,
             controlDefaults.pitchLimit,
           )

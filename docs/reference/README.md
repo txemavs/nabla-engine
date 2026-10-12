@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **387 modules; 4230 executable function definitions**.
+Coverage: **388 modules; 4235 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -207,7 +207,7 @@ Coverage: **387 modules; 4230 executable function definitions**.
 | [src/render/entity/rider-head.ts](src/render/entity/rider-head.ts.md) | 2 |
 | [src/render/entity/ship-hud.ts](src/render/entity/ship-hud.ts.md) | 4 |
 | [src/render/entity/ship-lights.ts](src/render/entity/ship-lights.ts.md) | 14 |
-| [src/render/entity/shot-laser.ts](src/render/entity/shot-laser.ts.md) | 8 |
+| [src/render/entity/shot-laser.ts](src/render/entity/shot-laser.ts.md) | 9 |
 | [src/render/entity/shot-sparks.ts](src/render/entity/shot-sparks.ts.md) | 7 |
 | [src/render/entity/shot-tracers.ts](src/render/entity/shot-tracers.ts.md) | 6 |
 | [src/render/entity/smoke-density.ts](src/render/entity/smoke-density.ts.md) | 1 |
@@ -284,6 +284,7 @@ Coverage: **387 modules; 4230 executable function definitions**.
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
+| [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/browser.ts](src/runtime/browser.ts.md) | 319 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
@@ -318,7 +319,7 @@ Coverage: **387 modules; 4230 executable function definitions**.
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 4 |
 | [src/runtime/sidearm-tuning.ts](src/runtime/sidearm-tuning.ts.md) | 3 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 66 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 67 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
