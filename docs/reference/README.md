@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **394 modules; 4300 executable function definitions**.
+Coverage: **395 modules; 4302 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -378,6 +378,7 @@ Coverage: **394 modules; 4300 executable function definitions**.
 | [src/simulation/vehicles/boat.ts](src/simulation/vehicles/boat.ts.md) | 5 |
 | [src/simulation/vehicles/drivetrain.ts](src/simulation/vehicles/drivetrain.ts.md) | 20 |
 | [src/simulation/vehicles/flight.ts](src/simulation/vehicles/flight.ts.md) | 3 |
+| [src/simulation/vehicles/jump-control.ts](src/simulation/vehicles/jump-control.ts.md) | 2 |
 | [src/simulation/vehicles/keyboard-steering.ts](src/simulation/vehicles/keyboard-steering.ts.md) | 2 |
 | [src/simulation/vehicles/two-wheeled/balance.ts](src/simulation/vehicles/two-wheeled/balance.ts.md) | 18 |
 | [src/simulation/vehicles/two-wheeled/brakes.ts](src/simulation/vehicles/two-wheeled/brakes.ts.md) | 5 |

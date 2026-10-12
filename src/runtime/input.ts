@@ -123,7 +123,8 @@ export class GameInput {
     const bike = !flight && !!vehicle?.twoWheeled
     const up = keys.has('KeyW') || keys.has('ArrowUp')
     const down = keys.has('KeyS') || keys.has('ArrowDown')
-    const twin = bike && up && down
+    const carBurnout = !!roadCar && !bike && up && down
+    const twin = (bike || carBurnout) && up && down
     const rolling = !!info && !info.reversing && info.speedKmh >= BIKE_PADDLE_KMH
     const pedal = bike && down && !up && rolling
     const keyForward = twin
@@ -146,7 +147,11 @@ export class GameInput {
       frontBrake: bike && keys.has('Space') ? 1 : 0,
       sprint: shift || twin || Boolean(pad?.buttons[10]?.pressed) || !!driving.sprint,
       jump: false,
-      brake: (bike ? pedal : keys.has('Space')) || analog.brake || touch.brake || driving.brake,
+      brake:
+        (bike ? pedal : keys.has('Space') || carBurnout) ||
+        analog.brake ||
+        touch.brake ||
+        driving.brake,
       // Two-wheeler rider counterweight: U/O hang off left/right, I over the tank, L sit back.
       riderRight: flight ? 0 : axis('KeyO', 'KeyU'),
       riderForward: flight ? 0 : axis('KeyI', 'KeyL'),

@@ -135,6 +135,15 @@ export const vehicleDamageTuning = {
   maxOrdinaryDamage: 10,
   smokeMaxAmount: 2,
 }
+/** Jump orientation assistance: angular acceleration (rad/s²), no linear thrust. */
+export const jumpControlTuning = {
+  pitchAcceleration: 0.9,
+  yawAcceleration: 0.35,
+  rollAcceleration: 0.5,
+  riderPitchAcceleration: 0.8,
+  riderRollAcceleration: 1.0,
+  maxAssistedRate: 1.8,
+}
 export const explosionTuning = {
   radiusMetres: 12,
   impulseSpeed: 9,

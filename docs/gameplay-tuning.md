@@ -32,6 +32,22 @@ Aim alignment is the separate `aim` object in the copied JSON.
 
 ## Views and controls
 
+`jumpControlTuning` controls gameplay assistance during road-vehicle jumps. It
+adds only angular torque while every tyre is airborne and the vehicle is actively
+controlled. Gas raises the nose, brake lowers it; steering provides a small yaw
+and roll correction. Bike rider weight adds pitch/roll authority using the existing
+body controls. Wheel momentum reaction is retained. This is deliberately a mild
+gameplay assist, not a physically exact airborne steering model. There is no
+linear thrust, auto-level or removal of existing tumble; the rate limit only
+stops assistance from accelerating an already fast rotation in the same direction.
+Unoccupied/passive vehicles and grounded tyre dynamics are unaffected.
+
+Road cars: W+S (or Up+Down) holds full throttle and the existing handbrake/burnout
+input together instead of cancelling the pedal. At rest it uses the existing
+front-brake/rear-drive burnout; while moving it loosens the rear axle for drifting
+with A/D. Releasing S releases the brake while retaining W throttle. Motorcycle
+W+S and front-lever mappings are unchanged.
+
 `vehicleDamageTuning` controls cumulative physical damage: impacts above 3 m/s
 add 0.3 health points per m/s above that threshold, capped at 10 per ordinary
 blow. Contacts within 0.35 seconds share the strongest damage rather than adding

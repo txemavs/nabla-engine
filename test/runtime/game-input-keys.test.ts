@@ -36,6 +36,25 @@ function rig() {
 }
 
 describe('keyboard driving keys never stay stuck', () => {
+  it('W+S holds throttle and brakes for burnout, then releases into acceleration', () => {
+    const r = rig()
+    try {
+      for (let i = 0; i < 240; i++) {
+        r.keys.press('KeyW', i > 0, r.now())
+        r.keys.press('KeyS', i > 0, r.now())
+        const input = r.frame(1 / 60)
+        expect(input.forward).toBe(1)
+        expect(input.brake).toBe(true)
+      }
+      expect(r.sim.vehicleInfo('s3').tireSlip).toBeGreaterThan(0.8)
+      r.keys.release('KeyS')
+      const released = r.frame(1 / 60)
+      expect(released.forward).toBe(1)
+      expect(released.brake).toBe(false)
+    } finally {
+      r.sim.dispose()
+    }
+  })
   it('steering releases within half a second of the keyup', () => {
     const r = rig()
     r.keys.press('KeyW', false, r.now())
