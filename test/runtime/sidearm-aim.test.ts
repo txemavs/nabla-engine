@@ -74,6 +74,55 @@ it('aligns the neutral barrel while retaining the reviewed gesture rotation', as
   expect(aligned.invert().multiply(model.quaternion).angleTo(gesture)).toBeLessThan(1e-6)
 })
 
+it.each(['normal', 'aimed'] as const)(
+  'keeps all user rotation axes in the %s pose after alignment',
+  async (pose) => {
+    const { Sidearm } = await import('../../src/runtime/sidearm.js')
+    const { normalizeWeaponPoses } = await import('../../src/runtime/weapon-pose-tuning.js')
+    const { sidearmTuningDefaults } = await import('../../src/runtime/sidearm-tuning.js')
+    const { Euler } = await import('three')
+    const model = new Group(),
+      muzzle = new Group()
+    muzzle.name = 'MuzzleSocket'
+    muzzle.position.set(0, 0, -0.135)
+    model.add(muzzle)
+    const t = pose === 'aimed' ? 1 : 0
+    const rig = Object.assign(Object.create(Sidearm.prototype), {
+      model,
+      aimBlend: t,
+      poseTuning: normalizeWeaponPoses(),
+      tuning: { ...sidearmTuningDefaults },
+      bodycamEnabled: false,
+      flashAt: [0, 0, -0.135],
+    })
+    model.position.set(0.1 * (1 - t), sidearmTuningDefaults.height, -0.2)
+    const factoryPitch = ((sidearmTuningDefaults.angle * Math.PI) / 180) * t
+    model.rotation.set(factoryPitch, 0, 0)
+    rig.alignViewAim(70)
+    const baseline = model.quaternion.clone()
+    for (const [axis, component] of [
+      ['pitch', 'x'],
+      ['yaw', 'y'],
+      ['roll', 'z'],
+    ] as const) {
+      rig.poseTuning = normalizeWeaponPoses()
+      rig.poseTuning[pose][axis] = 20
+      const rotation = new Euler(factoryPitch, 0, 0)
+      rotation[component] += (20 * Math.PI) / 180
+      model.quaternion.setFromEuler(rotation)
+      rig.alignViewAim(70)
+      expect(baseline.angleTo(model.quaternion), axis).toBeGreaterThan(0.3)
+    }
+    if (t) {
+      rig.poseTuning = normalizeWeaponPoses()
+      rig.tuning.angle += 10
+      model.rotation.set((rig.tuning.angle * Math.PI) / 180, 0, 0)
+      rig.alignViewAim(70)
+      expect(baseline.angleTo(model.quaternion)).toBeGreaterThan(0.15)
+    }
+  },
+)
+
 it('rupture separates nested barrel, slide, magazine and frame once', async () => {
   const { Sidearm } = await import('../../src/runtime/sidearm.js')
   const model = new Group(),

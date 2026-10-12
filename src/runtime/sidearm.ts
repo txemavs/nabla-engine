@@ -1,4 +1,8 @@
-import { weaponViewTuning, weaponHeatTuning } from '../config/gameplay-tuning.js'
+import {
+  weaponViewTuning,
+  weaponHeatTuning,
+  weaponPoseDefaults,
+} from '../config/gameplay-tuning.js'
 import { extendedWeaponPose } from './world-weapon-pose.js'
 import * as THREE from 'three'
 import { weaponPresets, type WeaponPreset } from '../catalog/weapons/library.js'
@@ -842,18 +846,21 @@ export class Sidearm {
     }
   }
 
-  /** Correct only the neutral aim; retain the reviewed gesture rotation relative to it. */
+  /** Align the factory neutral pose; preserve user calibration and gesture rotations. */
   private alignViewAim(worldFov: number): void {
     const t = this.aimBlend
     const base = this.poseTuning.normal,
       aimed = this.poseTuning.aimed
     const mix = (key: keyof typeof base) => THREE.MathUtils.lerp(base[key], aimed[key], t)
+    const original = (key: 'pitch' | 'yaw' | 'roll') =>
+      THREE.MathUtils.lerp(weaponPoseDefaults.normal[key], weaponPoseDefaults.aimed[key], t)
     const pitch =
-      THREE.MathUtils.degToRad(this.tuning.angle * t + mix('pitch')) -
+      THREE.MathUtils.degToRad(sidearmTuningDefaults.angle * t + original('pitch')) -
       (this.bodycamEnabled ? this.bodycamPitch : 0)
-    const yaw = THREE.MathUtils.degToRad(mix('yaw')) + (this.bodycamEnabled ? this.bodycamYaw : 0)
+    const yaw =
+      THREE.MathUtils.degToRad(original('yaw')) + (this.bodycamEnabled ? this.bodycamYaw : 0)
     const neutral = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(pitch, yaw, THREE.MathUtils.degToRad(mix('roll'))),
+      new THREE.Euler(pitch, yaw, THREE.MathUtils.degToRad(original('roll'))),
     )
     const gesture = neutral.clone().invert().multiply(this.model.quaternion)
     const position = new THREE.Vector3(...HIP_POSE.position).lerp(

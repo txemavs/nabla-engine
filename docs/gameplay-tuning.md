@@ -172,6 +172,9 @@ Laser/barrel separation and ballistic drop remain physical differences.
 Neutral first-person alignment is a base rotation at
 `weaponViewTuning.alignmentDistanceMetres` (25 m). The reviewed gesture rotation
 is applied relative to that base, so X/Z/slide animations retain their offsets.
+Only the factory neutral rotation is corrected: user pitch/yaw/roll and the aimed
+angle calibration remain visible after alignment, including in pose preview.
+Changing these rotations also changes the mounted barrel, laser and torch direction.
 Normal mode retains bodycam free aim; aiming converges toward its aim direction.
 
 Sustained fire uses `weaponHeatTuning` in the same tuning module: heat per shot,
