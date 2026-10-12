@@ -1,6 +1,7 @@
 import { normalViewTuning, smokeTuning } from '../config/gameplay-tuning.js'
 import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
-import { presetEntities, presetVehicle, vehiclePresets } from '../catalog/vehicles/library.js'
+import { presetVehicle } from '../catalog/vehicles/library.js'
+import { randomRoadVehicle } from './random-vehicle.js'
 import { GameToolbar } from './game-toolbar.js'
 import { BodycamAim } from './bodycam-aim.js'
 import { smokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
@@ -663,12 +664,20 @@ export class GameRuntime {
       40,
       async () => {
         try {
-          const choices = vehiclePresets().filter((preset) => !preset.hidden)
-          if (!choices.length) throw new Error('No hay vehículos disponibles')
-          const selected = choices[Math.floor(Math.random() * choices.length)]
-          this.options.onMessage?.('Preparando ' + selected.label + '…')
-          await this.spawnVehicle(presetEntities(selected.id, 'random-vehicle'))
-          this.options.onMessage?.('Vehículo añadido: ' + selected.label)
+          const selected = randomRoadVehicle()
+          this.options.onMessage?.('Preparando ' + selected.vehicle.name + '…')
+          const id = await this.spawnVehicle(selected.vehicle)
+          if (selected.trailer) {
+            selected.trailer.vehicle!.tow = {
+              vehicleId: id,
+              hitch: selected.vehicle.vehicle!.hitch!,
+              anchor: selected.trailer.vehicle!.towAnchor!,
+            }
+            const pose = this.session.simulation!.entityTransform(id)
+            const yaw = 2 * Math.atan2(pose.rotation[1], pose.rotation[3])
+            await this.placeVehicle(selected.trailer, pose.position, yaw)
+          }
+          this.options.onMessage?.('Vehículo añadido: ' + selected.vehicle.name)
         } catch (error) {
           this.options.onMessage?.(
             error instanceof Error ? error.message : 'No se pudo añadir el vehículo',

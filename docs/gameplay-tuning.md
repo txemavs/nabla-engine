@@ -206,6 +206,10 @@ them to the trailer and refuses duplicate loading. Boxed trailers keep their box
 and have no platform controls. Gameplay heat and all trailer dimensions are arcade tuning.
 
 Cargo positions are in `src/config/gameplay-tuning.ts` (`trailerPlatformTuning`).
+The + toolbar uses `randomVehicleTuning` in the same file: motorcycle 4, car 3,
+truck 2, truck with trailer 1, standalone trailer 1. These are relative weights
+(total 11). Aircraft and ships never enter this draw. Trailer variants are equally
+likely: boxed, bare platform and car transporter.
 Platform colliders, hinge and loading angle are in the trailer presets under
 `assets/library/cars/white-truck/`. Visible deck dimensions are authored in
 `scripts/split-trailer-box.mjs`; regenerate with `npm run trailer:split`, then

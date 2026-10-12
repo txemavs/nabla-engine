@@ -5,6 +5,15 @@ import type { GameCameraSettings } from './camera.js'
 import type { WeaponPoseTuning } from '../runtime/weapon-pose-tuning.js'
 import type { SidearmTuning } from '../runtime/sidearm-tuning.js'
 
+/** Relative weights for the + toolbar button; aircraft and ships are excluded. */
+export const randomVehicleTuning = [
+  { kind: 'motorcycle', weight: 4 },
+  { kind: 'car', weight: 3 },
+  { kind: 'truck', weight: 2 },
+  { kind: 'truckTrailer', weight: 1 },
+  { kind: 'trailer', weight: 1 },
+] as const
+
 export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   autoCenterDelayMs: 10_000,
   autoCenterBlendMs: 500,
