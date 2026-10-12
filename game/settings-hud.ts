@@ -340,12 +340,20 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   if (quality) {
     const label = doc.createElement('label')
-    const input = doc.createElement('input')
-    input.type = 'checkbox'
-    input.id = 'camera-bodycam'
-    input.checked = runtime.bodycamEnabled
-    input.addEventListener('change', () => runtime.setBodycamEnabled(input.checked))
-    label.append(input, ' Bodycam en primera persona')
+    const input = doc.createElement('select')
+    input.id = 'camera-first-person-mode'
+    for (const [value, text] of [
+      ['normal', 'Normal'],
+      ['pointer', 'Modo Puntero'],
+    ]) {
+      const option = doc.createElement('option')
+      option.value = value
+      option.textContent = text
+      input.append(option)
+    }
+    input.value = runtime.bodycamEnabled ? 'normal' : 'pointer'
+    input.addEventListener('change', () => runtime.setBodycamEnabled(input.value === 'normal'))
+    label.append('Primera persona ', input)
     quality.append(label)
   }
 
