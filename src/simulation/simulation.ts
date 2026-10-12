@@ -377,7 +377,7 @@ export class Simulation {
         const active = this.portalEntities.some(
           (e) => e.parentId === v.entity.id && e.portal!.clearsRamp && e.portal!.mode !== 'closed',
         )
-        this.setRamp(v, active)
+        this.setRamp(v, v.definition.passive ? true : active)
         if (active) v.rampAngle = v.rampTarget
         this.updateRamp(v, 0)
       }
@@ -1079,7 +1079,13 @@ export class Simulation {
       if (carry) host!.getVelocityAtWorldPoint(this.playerBody.position, carry.velocity)
       if (this.ticks % mapCollisionDefaults.activationIntervalTicks === 0)
         this.updateMapCollisions()
-      for (const vehicle of this.vehicles.values()) this.updateRamp(vehicle, FIXED_STEP)
+      for (const vehicle of this.vehicles.values()) {
+        this.updateRamp(vehicle, FIXED_STEP)
+        if (vehicle.definition.garage?.ramp?.loadAngle !== undefined && vehicle.rampClosed)
+          for (const [id, car] of this.vehicles)
+            if (!car.definition.passive && this.garage.candidate(id) === vehicle.entity.id)
+              this.garage.attach(id, vehicle.entity.id)
+      }
       this.beforeTick()
       this.updateCatchFloor()
       const impactVelocities = this.options.vehicleDamage
@@ -2488,6 +2494,47 @@ export class Simulation {
     return this.roadGuidance.settings
   }
 
+  /** Operate the attached trailer from the tractor menu, only while stationary. */
+  setTrailerPlatform(tractorId: string, flat: boolean): string {
+    const tractor = this.vehicles.get(tractorId)
+    const trailer = [...this.vehicles.values()].find(
+      (v) =>
+        v.definition.tow?.vehicleId === tractorId &&
+        v.definition.garage?.ramp?.loadAngle !== undefined,
+    )
+    if (!tractor || !trailer) return 'Engancha un remolque plataforma o portacoches'
+    if (tractor.body.velocity.length() > 0.8) return 'Detén el camión antes de mover la plataforma'
+    if (!flat)
+      for (const [id, dock] of [...this.docks])
+        if (dock.carrierId === trailer.entity.id) this.garage.toggle(id)
+    this.setRamp(trailer, flat)
+    return flat
+      ? 'Bajando plataforma · la carga se sujetará al quedar horizontal'
+      : 'Rampa de salto · carga libre'
+  }
+  cargoTrailer(tractorId: string): string | null {
+    return (
+      [...this.vehicles.values()].find(
+        (v) =>
+          v.definition.tow?.vehicleId === tractorId &&
+          v.entity.visual?.body.url.endsWith('trailer.transporter.glb'),
+      )?.entity.id ?? null
+    )
+  }
+  cargoCount(carrierId: string): number {
+    return [...this.docks.values()].filter((dock) => dock.carrierId === carrierId).length
+  }
+  mountCargo(id: string, carrierId: string, local: Vec3Tuple): void {
+    const car = this.vehicles.get(id)!,
+      carrier = this.vehicles.get(carrierId)!
+    car.body.position.copy(carrier.body.pointToWorldFrame(new Vec3(...local)))
+    car.body.quaternion.copy(carrier.body.quaternion)
+    car.body.previousPosition.copy(car.body.position)
+    car.body.interpolatedPosition.copy(car.body.position)
+    car.body.previousQuaternion.copy(car.body.quaternion)
+    this.garage.attach(id, carrierId)
+  }
+
   setGarageDoor(id: string, closed: boolean): string {
     const carrier = this.vehicles.get(id)
     if (!carrier?.definition.garage) throw new Error('Nave desconocida')
@@ -2533,7 +2580,7 @@ export class Simulation {
       ))
         this.configurePortal(mouth.id, mouth.portal!.pairId, 'closed')
     }
-    carrier.rampTarget = closed ? ramp.closeAngle : 0
+    carrier.rampTarget = closed ? ramp.closeAngle : (ramp.loadAngle ?? 0)
     carrier.rampClosed = closed && Math.abs(carrier.rampAngle - ramp.closeAngle) < 0.001
   }
 

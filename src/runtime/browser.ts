@@ -1,5 +1,6 @@
 import { normalViewTuning, smokeTuning } from '../config/gameplay-tuning.js'
-import { presetEntities, vehiclePresets } from '../catalog/vehicles/library.js'
+import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
+import { presetEntities, presetVehicle, vehiclePresets } from '../catalog/vehicles/library.js'
 import { GameToolbar } from './game-toolbar.js'
 import { BodycamAim } from './bodycam-aim.js'
 import { smokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
@@ -833,7 +834,10 @@ export class GameRuntime {
       },
       interact: () => this.action('KeyE'),
       camera: () => this.cycleCamera(),
-      respawn: () => this.action('KeyR'),
+      respawn: () => {
+        const message = this.game.action('KeyR')
+        if (message) this.options.onMessage?.(message)
+      },
     }
     this.touchDriving =
       options.touchControls === false
@@ -2190,6 +2194,27 @@ export class GameRuntime {
     if (!sim) throw new Error('A running game is required')
     return sim.unhitchTrailer(trailerId)
   }
+  private loadingTrailerCargo = false
+  async loadTrailerCars(tractorId: string): Promise<void> {
+    const sim = this.session.simulation!
+    const trailerId = sim.cargoTrailer(tractorId)
+    if (!trailerId) throw Error('Engancha el portacoches para cargar los A3')
+    if (this.loadingTrailerCargo) return
+    if (sim.cargoCount(trailerId)) throw Error('El portacoches ya tiene carga')
+    this.loadingTrailerCargo = true
+    try {
+      const trailer = sim.entityTransform(trailerId)
+      for (const slot of trailerPlatformTuning.cargoSlots) {
+        const template = presetVehicle('a3', 'cargo-a3')
+        const id = await this.placeVehicle(template, trailer.position, 0)
+        sim.mountCargo(id, trailerId, [...slot])
+      }
+      this.options.onMessage?.('Cuatro A3 sujetos al portacoches')
+    } finally {
+      this.loadingTrailerCargo = false
+    }
+  }
+
   /** Occupied tractor: hitch a nearby free trailer, or uncouple the attached one. */
   toggleHitch(): string | null {
     this.assertAlive()
@@ -4001,6 +4026,16 @@ export class GameRuntime {
               return this.effects.audio.playMusic()
                 ? 'Música: ' + (track.title ?? 'pista')
                 : 'Música silenciada en Ajustes → Audio'
+            },
+            (action) => {
+              const sim = this.session.simulation!
+              if (action === 'cargo') {
+                void this.loadTrailerCars(id).catch((error) =>
+                  this.options.onMessage?.(String(error)),
+                )
+                return 'Preparando carga del portacoches'
+              }
+              return sim.setTrailerPlatform(id, action === 'flat')
             },
           )
           if (result.handled) {

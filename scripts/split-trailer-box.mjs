@@ -1,4 +1,5 @@
 /** Split trailer.anchored.glb into a shared chassis and a swappable cargo box. */
+import * as THREE from 'three'
 import { readGlb, writeGlb } from './lib/glb.mjs'
 
 const SOURCE = 'assets/library/trucks/white-truck/assets/trailer.anchored.glb'
@@ -92,7 +93,56 @@ const chassisNodes = new Set(
 
 const chassis = extract(json, chassisNodes)
 const box = extract(json, boxNodes)
-writeGlb(CHASSIS, chassis, read, bin)
+const added = new Map()
+function plate(doc, name, size, position) {
+  const geometry = new THREE.BoxGeometry(...size)
+  const attributes = {}
+  for (const [semantic, attr] of [
+    ['POSITION', geometry.attributes.position],
+    ['NORMAL', geometry.attributes.normal],
+  ]) {
+    const index = doc.accessors.length
+    doc.accessors.push({ type: 'VEC3', count: attr.count })
+    added.set(
+      index,
+      Array.from({ length: attr.count }, (_, i) => [attr.getX(i), attr.getY(i), attr.getZ(i)]),
+    )
+    attributes[semantic] = index
+  }
+  const indices = doc.accessors.length
+  doc.accessors.push({ type: 'SCALAR', count: geometry.index.count })
+  added.set(
+    indices,
+    Array.from(geometry.index.array, (value) => [value]),
+  )
+  const material = doc.materials.length
+  doc.materials.push({
+    name: 'Platform black steel',
+    pbrMetallicRoughness: {
+      baseColorFactor: [0.025, 0.027, 0.03, 1],
+      metallicFactor: 0.55,
+      roughnessFactor: 0.7,
+    },
+  })
+  const mesh = doc.meshes.length
+  doc.meshes.push({ primitives: [{ attributes, indices, material }] })
+  const node = doc.nodes.length
+  doc.nodes.push({ name, mesh, translation: position })
+  doc.scenes[doc.scene ?? 0].nodes.push(node)
+}
+plate(chassis, 'LoadingDeck', [2.4, 0.18, 12.8], [0, 0.19, 0])
+const readAdded = (id) => added.get(id) ?? read(id)
+writeGlb(CHASSIS, chassis, readAdded, bin)
+const transporter = structuredClone(chassis)
+plate(transporter, 'UpperDeck', [2.4, 0.16, 12.8], [0, 2.5, 0])
+for (const x of [-1.16, 1.16])
+  for (const z of [-5.5, 0, 5.5]) plate(transporter, 'CarrierPost', [0.09, 2.3, 0.09], [x, 1.35, z])
+writeGlb(
+  'assets/library/trucks/white-truck/assets/trailer.transporter.glb',
+  transporter,
+  readAdded,
+  bin,
+)
 writeGlb(BOX, box, read, bin)
 
 console.log(

@@ -4,6 +4,28 @@ import type { MonitorMenuItem } from '../../render/monitors/menu.js'
 const back: MonitorMenuItem = { id: 'back', label: 'VOLVER', back: true }
 export const carMenuItems: MonitorMenuItem[] = [
   {
+    id: 'trailer',
+    label: 'REMOLQUE',
+    children: [
+      {
+        id: 'trailer-jump',
+        label: 'RAMPA SALTO',
+        action: { type: 'vehicle.trailer', value: 'jump' },
+      },
+      {
+        id: 'trailer-flat',
+        label: 'PLATAFORMA',
+        action: { type: 'vehicle.trailer', value: 'flat' },
+      },
+      {
+        id: 'trailer-cargo',
+        label: 'CARGAR 4 A3',
+        action: { type: 'vehicle.trailer', value: 'cargo' },
+      },
+      back,
+    ],
+  },
+  {
     id: 'paint',
     label: 'COLOR COCHE',
     children: [

@@ -509,6 +509,7 @@ export const vehicleField = z
             colliderIndex: z.number().int().min(0).max(31),
             hinge: vector,
             closeAngle: finite.min(-Math.PI).max(Math.PI),
+            loadAngle: finite.min(-Math.PI).max(Math.PI).optional(),
           })
           .strict()
           .optional(),

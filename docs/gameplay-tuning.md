@@ -194,3 +194,19 @@ cargo walls and box-mounted marker lights are split into the cargo attachment.
 In overhead view the equipped weapon aims along the avatar forward axis,
 so its mounted laser and bullets travel through the world rather than down
 along the overhead camera ray.
+
+Bare trailer: the black LoadingDeck has a matching moving collider. Tractor menu
+(J → REMOLQUE) switches RAMPA SALTO / PLATAFORMA while stopped. The deck
+returns flat and stationary cars wholly supported by it are locked for transport;
+opening releases cargo. With a drawn gun R still operates the magazine. The reset toolbar button
+recovers the vehicle directly, even with the gun drawn.
+The white-car-transporter preset has two decks. CARGAR 4 A3 in the tractor menu
+preloads and places four physical A3s in the slots in trailerPlatformTuning, locks
+them to the trailer and refuses duplicate loading. Boxed trailers keep their box
+and have no platform controls. Gameplay heat and all trailer dimensions are arcade tuning.
+
+Cargo positions are in `src/config/gameplay-tuning.ts` (`trailerPlatformTuning`).
+Platform colliders, hinge and loading angle are in the trailer presets under
+`assets/library/cars/white-truck/`. Visible deck dimensions are authored in
+`scripts/split-trailer-box.mjs`; regenerate with `npm run trailer:split`, then
+`npm run rigs:generate` and `npm run assets:pack` after changing geometry.

@@ -66,6 +66,7 @@ export interface HostVehiclePose {
 export interface HostVehicleRuntime {
   /** `template` is the vehicle, or the vehicle followed by the entities it hosts. */
   placeVehicle(template: Entity | Entity[], position: Vec3Tuple, yaw?: number): Promise<string>
+  loadTrailerCars?(tractorId: string): Promise<void>
   hitchTrailer?(tractorId: string, trailerId: string): string
 }
 
@@ -300,6 +301,8 @@ export async function installHostVehicles(
       pose.yaw,
     )
     ids.push(id)
+    if (spec.vehicle === 'white-car-transporter' && tractorId && runtime.loadTrailerCars)
+      await runtime.loadTrailerCars(tractorId)
     footprints.push({ index, id, footprint })
     const hitch = template.vehicle?.hitch
     placed.set(id, {

@@ -121,9 +121,13 @@ function applyTrailerBox(entity: Entity, box: string | false): void {
     entity.vehicle.colliders = structuredClone(chassis.vehicle.colliders)
     entity.size = structuredClone(chassis.size)
     entity.mass = chassis.mass
+    entity.vehicle.garage = structuredClone(chassis.vehicle.garage)
+    entity.visual.ramp = structuredClone(chassis.visual.ramp)
     return
   }
   if (!hasTrailerBox(box)) throw new Error(`No trailer box "${box}"`)
+  delete entity.vehicle.garage
+  delete entity.visual.ramp
   const spec = trailerBox(box)
   entity.visual.attachments = [{ url: spec.url, transform: structuredClone(spec.transform) }]
   const composed = vehiclePreset(TRAILER_COMPOSED)

@@ -180,3 +180,13 @@ export const balloonTuning = {
   openingRadians: 1.15,
   openingRate: 5,
 }
+
+/** Trailer platform and two-level car carrier, metres and radians. */
+export const trailerPlatformTuning = {
+  cargoSlots: [
+    [0, 0.9, -3.2],
+    [0, 0.9, 3.2],
+    [0, 3.2, -3.2],
+    [0, 3.2, 3.2],
+  ] as const,
+}
