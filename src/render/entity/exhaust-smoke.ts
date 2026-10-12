@@ -3,6 +3,8 @@ import { smokeDensity } from './smoke-density.js'
 import * as THREE from 'three'
 export interface ExhaustSmokeOptions {
   /** Fixed emission rate at 100% quantity; omitted uses engine load. */
+  lifetime?: number
+  riseSpeed?: number
   emissionRate?: number
   capacity?: number
   direction?: readonly [number, number, number]
@@ -54,25 +56,29 @@ export class ExhaustSmoke {
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { smokeDensity, size: { value: options.size ?? 550 } },
+        uniforms: {
+          smokeDensity,
+          lifetime: { value: options.lifetime ?? 1.4 },
+          size: { value: options.size ?? 550 },
+        },
         vertexShader: `
         #include <common>
         #include <logdepthbuf_pars_vertex>
-        attribute float life; attribute vec3 tint; varying vec3 smokeTint; varying float age; uniform float size;
+        attribute float life; attribute vec3 tint; varying vec3 smokeTint; varying float age; uniform float size; uniform float lifetime;
         void main(){age=life; smokeTint=tint; vec4 p=modelViewMatrix*vec4(position,1.0);
           gl_Position=projectionMatrix*p;
-          gl_PointSize=life>0.0?clamp((1.4-life)*size/max(1.0,-p.z),1.0,240.0):0.0;
+          gl_PointSize=life>0.0?clamp((1.0-life/lifetime)*1.4*size/max(1.0,-p.z),1.0,240.0):0.0;
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
-        uniform float smokeDensity;
+        uniform float smokeDensity; uniform float lifetime;
         #include <logdepthbuf_pars_fragment>
         varying float age; varying vec3 smokeTint;
         void main(){
           #include <logdepthbuf_fragment>
           float d=length(gl_PointCoord-0.5)*2.0;
           if(d>1.0||age<=0.0)discard;
-          gl_FragColor=vec4(smokeTint,pow(1.0-d,2.0)*(age/1.4)*0.4*smokeDensity);
+          gl_FragColor=vec4(smokeTint,pow(1.0-d,2.0)*(age/lifetime)*0.4*smokeDensity);
         }`,
       }),
     )
@@ -136,14 +142,14 @@ export class ExhaustSmoke {
         )
         .toArray(this.tints, i * 3)
       this.source.toArray(this.positions, i * 3)
-      const jet = 0.4 + 0.3 * THREE.MathUtils.clamp(load, 0, 1)
+      const jet = this.options.riseSpeed ?? 0.4 + 0.3 * THREE.MathUtils.clamp(load, 0, 1)
       this.direction
         .clone()
         .multiplyScalar(jet)
         .add(this.movement)
         .add(new THREE.Vector3(Math.sin(i * 2.4) * 0.18, 0.08, Math.cos(i * 2.4) * 0.18))
         .toArray(this.velocities, i * 3)
-      this.life[i] = 1.4
+      this.life[i] = this.options.lifetime ?? 1.4
     }
     this.root.visible = this.life.some((v) => v > 0)
     this.geometry.attributes.position.needsUpdate = true

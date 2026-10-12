@@ -126,8 +126,12 @@ export class VehicleDestruction {
     fire.position.y = 0.5
     const smoke = new ExhaustSmoke(flames, this.space, {
       direction: [0, 1, 0],
-      color: '#222222',
-      size: 900,
+      color: '#101010',
+      size: 1250,
+      emissionRate: 55,
+      capacity: 384,
+      lifetime: 6,
+      riseSpeed: 1.3,
     })
     object.add(fire)
     // Follow the wreck's position in the scene frame, never its roll or pitch.
@@ -331,7 +335,8 @@ export class VehicleDestruction {
         ? 1 - burn.age
         : Math.max(0, Math.min(0.8, (12 - burn.age) / 3))
       burn.smoke.setEnabled(smokeEnabled)
-      burn.smoke.update(dt, burn.age < 12, 0.8)
+      burn.smoke.setAmount(Math.min(1, Math.max(0, (45 - burn.age) / 15)))
+      burn.smoke.update(dt, burn.age < 45, 0.8)
     }
     const dummy = new THREE.Object3D()
     for (let i = this.shards.length - 1; i >= 0; i--) {
