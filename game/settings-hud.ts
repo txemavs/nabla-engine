@@ -5,6 +5,7 @@
  * Architecture: the Planeta tab hosts `createPlanetSettingsPanel().root`, which
  * a ship interior monitor can remount later without a second stylesheet.
  */
+import { resetGameSettings } from './reset-settings.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
   weaponPoseNames,
@@ -176,11 +177,38 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     paneEls.set(tab.id, pane)
   }
 
+  // Keep the shared action rail centred below the menu/time button, even when its label grows.
+  const alignToolbar = () => {
+    const rect = toggle.getBoundingClientRect()
+    const toolbar = doc.querySelector<HTMLElement>('.game-toolbar')
+    if (!toolbar || !rect.width) return
+    toolbar.style.right = `${window.innerWidth - rect.right}px`
+    toolbar.style.width = `${rect.width}px`
+    toolbar.style.top = `${rect.bottom + 8}px`
+  }
+  const toolbarResize = new ResizeObserver(alignToolbar)
+  toolbarResize.observe(toggle)
+  window.addEventListener('resize', alignToolbar)
   const closeBtn = doc.createElement('button')
   closeBtn.type = 'button'
   closeBtn.className = 'settings-close'
   closeBtn.textContent = 'Cerrar'
-  console.append(title, tabBar, panes, closeBtn)
+  const defaults = doc.createElement('button')
+  defaults.type = 'button'
+  defaults.id = 'settings-defaults'
+  defaults.textContent = 'AJUSTES PREDETERMINADOS'
+  defaults.title = 'Borra los ajustes guardados del juego y recarga con los valores de serie'
+  defaults.addEventListener('click', () => {
+    try {
+      runtime.pause()
+      resetGameSettings(localStorage)
+      resetGameSettings(sessionStorage)
+      location.reload()
+    } catch {
+      defaults.textContent = 'No se pudieron borrar los ajustes. Reintentar'
+    }
+  })
+  console.append(title, tabBar, panes, defaults, closeBtn)
   win.append(console)
 
   const planetPane = paneEls.get('planet')!
@@ -805,6 +833,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     close,
     toggle: toggleWin,
     destroy: () => {
+      toolbarResize.disconnect()
+      window.removeEventListener('resize', alignToolbar)
       runtime.setSidearmAimPreview?.(false)
       observer?.disconnect()
       planetPanel?.destroy()

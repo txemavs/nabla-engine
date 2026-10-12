@@ -102,3 +102,89 @@ export function navigationLabel(
 ): string {
   return nearestStreet(position, extra) ?? nearestLocality(position)
 }
+
+/** Coalesced HUD lookup. Work yields between small batches instead of blocking a render frame. */
+export class NavigationPlaceLookup {
+  private pending = false
+  private next = 0
+  private generation = 0
+  private latest: number[] = [0, 0, 0]
+  request(position: readonly number[], apply: (city: string, street: string) => void): void {
+    this.latest = [...position]
+    if (this.pending || performance.now() < this.next) return
+    this.pending = true
+    const generation = this.generation
+    const pose = [...position]
+    const yieldTask = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+    void (async () => {
+      await yieldTask()
+      let city = 'Localidad sin datos',
+        distance = 20000
+      let budget = performance.now()
+      for (const place of places()) {
+        const d = Math.hypot(place.position.x - pose[0], place.position.z - pose[2])
+        if (d < distance) {
+          distance = d
+          city = place.text
+        }
+        if (performance.now() - budget > 2) {
+          await yieldTask()
+          budget = performance.now()
+          if (generation !== this.generation) return
+        }
+      }
+      let best: { name: string; dist: number; carriageway: boolean } | undefined
+      const [x, , z] = pose
+      for (const road of roads()) {
+        const pad = Math.max(road.width / 2 + 8, 16)
+        if (
+          road.name &&
+          x >= road.minX - pad &&
+          x <= road.maxX + pad &&
+          z >= road.minZ - pad &&
+          z <= road.maxZ + pad
+        ) {
+          let dist = Infinity
+          for (let i = 1; i < road.points.length; i++) {
+            const a = road.points[i - 1],
+              b = road.points[i]
+            dist = Math.min(dist, segmentDistance(x, z, a.x, a.z, b.x, b.z))
+            if (performance.now() - budget > 2) {
+              await yieldTask()
+              budget = performance.now()
+              if (generation !== this.generation) return
+            }
+          }
+          if (
+            dist <= pad &&
+            (!best ||
+              dist < best.dist - 0.4 ||
+              (Math.abs(dist - best.dist) <= 0.4 && road.carriageway && !best.carriageway))
+          )
+            best = { name: road.name, dist, carriageway: road.carriageway }
+        }
+        if (performance.now() - budget > 2) {
+          await yieldTask()
+          budget = performance.now()
+          if (generation !== this.generation) return
+        }
+      }
+      if (generation === this.generation && Math.hypot(this.latest[0] - x, this.latest[2] - z) < 25)
+        apply(city, best?.name ?? '')
+    })()
+      .catch(() => {
+        /* Keep the last label while map data is replaced. */
+      })
+      .finally(() => {
+        if (generation === this.generation) {
+          this.pending = false
+          this.next = performance.now() + 500
+        }
+      })
+  }
+  reset(): void {
+    this.generation++
+    this.pending = false
+    this.next = 0
+  }
+}

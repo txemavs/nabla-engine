@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
-import { Group, Mesh, MeshStandardMaterial, Vector3, type Object3D } from 'three'
+import { Group, Mesh, MeshStandardMaterial, PlaneGeometry, Vector3, type Object3D } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import {
   authoredMirrorSurfaces,
@@ -165,4 +165,18 @@ describe('mirror glass adjustment', () => {
     expect(mirrorSideOf(right, root)).toBe('right')
     expect(mirrorSideOf(right)).toBeUndefined()
   })
+})
+
+it('keeps motorcycle glass fitted inside its housing when the driver adjusts the view', () => {
+  const housing = new Group()
+  housing.userData.nabla = { part: 'mirror_R' }
+  const lens = new Mesh(new PlaneGeometry(0.16, 0.1), new MeshStandardMaterial())
+  lens.userData.nabla = { mirror: 'right' }
+  housing.add(lens)
+  const mirrors = new CarMirrors([lens], new Vector3(0, 1, 0), 0)
+  const reflector = housing.children.find((child) => child !== lens)!
+  const rotation = reflector.quaternion.clone()
+  mirrors.setAdjustment({ right: { yaw: -14.5, tilt: -1.5 } })
+  expect(reflector.quaternion.angleTo(rotation)).toBeLessThan(1e-8)
+  mirrors.dispose()
 })

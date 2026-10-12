@@ -105,3 +105,14 @@ and toolbar are versioned here. The host must update old B/T/Y tips independentl
 Effect warmup includes on-foot start views and detached physical wheels. It runs
 after gameplay lighting is prepared and draws effect buffers offscreen, including
 transparent front/back passes, before the first explosion.
+
+## Restore the shipped appearance
+
+The settings window's **AJUSTES PREDETERMINADOS** button clears the game's saved
+browser preferences (including weapon poses, FOV, lighting, audio and per-model
+mirror/steering adjustments) and reloads. Terrain cache and unrelated origin data
+are preserved. Explicit URL/build configuration still defines the host defaults.
+The action rail is hidden until gameplay is revealed and centred beneath the
+menu/time button. Motorcycle mirror adjustment changes the reflected view while
+keeping the visible glass fitted in its housing. HUD locality/street lookup is
+coalesced and yields in small batches; labels update only when a result is ready.

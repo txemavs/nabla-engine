@@ -210,11 +210,7 @@ import {
 import { AccidentReplacement, replacementRoadSpot } from './accident-replacement.js'
 import { GameHud } from './hud.js'
 import { FlipCinematic } from './flip-cinematic.js'
-import {
-  navigationRoads,
-  nearestLocality,
-  nearestStreet,
-} from '../render/entity/navigation-places.js'
+import { navigationRoads, NavigationPlaceLookup } from '../render/entity/navigation-places.js'
 import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
 import { createRuntimeText, type RuntimeLocale } from './messages.js'
 
@@ -591,6 +587,7 @@ export class GameRuntime {
   private previousPad: number | null = null
   private readonly originalTabIndex: string | null
   private disposed = false
+  private readonly placeLookup = new NavigationPlaceLookup()
   private readonly toolbar: GameToolbar
   private readonly weaponControls: WeaponControls
   private readonly hud: GameHud | null
@@ -1008,6 +1005,7 @@ export class GameRuntime {
       const clock = this.document.sky
       if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
       this.options.canvas.dataset.reveal = 'play'
+      this.toolbar.setVisible(true)
       this.stopAttract()
       this.view.setPlaying(true)
       this.effects.audio.setSuspended(globalThis.document.hidden)
@@ -1044,6 +1042,8 @@ export class GameRuntime {
   }
   /** Cancel loading and reset gameplay/presentation for replay while retaining reusable renderer resources. */
   stop(): void {
+    this.toolbar?.setVisible(false)
+    this.placeLookup.reset()
     if (this.disposed) return
     this.loading?.abort()
     this.loading = null
@@ -1452,9 +1452,9 @@ export class GameRuntime {
       this.wheelDebug.update(sim, player.vehicleId, this.origin)
     }
     {
-      const city = nearestLocality(player.position).replace(/^Cerca de /, '')
-      const street = nearestStreet(player.position) ?? ''
-      this.touchDriving?.setPlace(city, street)
+      this.placeLookup.request(player.position, (city, street) =>
+        this.touchDriving?.setPlace(city, street),
+      )
       const vid = player.vehicleId
       const sim = this.session.simulation
       if (vid && sim) {

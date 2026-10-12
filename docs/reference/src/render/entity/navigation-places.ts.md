@@ -137,3 +137,92 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `nearestLocality`
 - `nearestStreet`
+
+## NavigationPlaceLookup.request
+
+[Implementation, line 112](../../../../../src/render/entity/navigation-places.ts#L112)
+
+Coalesced HUD lookup. Work yields between small batches instead of blocking a render frame.
+
+```ts
+request(position: readonly number[], apply: (city: string, street: string) => void): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `performance.now`
+
+## NavigationPlaceLookup.request.yieldTask
+
+[Implementation, line 118](../../../../../src/render/entity/navigation-places.ts#L118)
+
+```ts
+yieldTask(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Promise`
+
+## NavigationPlaceLookup.request.yieldTask.callback@118
+
+[Implementation, line 118](../../../../../src/render/entity/navigation-places.ts#L118)
+
+```ts
+callback@118(resolve): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `setTimeout`
+
+## NavigationPlaceLookup.request.callback@119
+
+[Implementation, line 119](../../../../../src/render/entity/navigation-places.ts#L119)
+
+```ts
+callback@119(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.hypot`
+- `Math.max`
+- `Math.min`
+- `apply`
+- `performance.now`
+- `places`
+- `roads`
+- `segmentDistance`
+- `yieldTask`
+
+## NavigationPlaceLookup.request.callback@175
+
+[Implementation, line 175](../../../../../src/render/entity/navigation-places.ts#L175)
+
+```ts
+callback@175(): inferred by TypeScript; see implementation
+```
+
+## NavigationPlaceLookup.request.callback@178
+
+[Implementation, line 178](../../../../../src/render/entity/navigation-places.ts#L178)
+
+```ts
+callback@178(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `performance.now`
+
+## NavigationPlaceLookup.reset
+
+[Implementation, line 185](../../../../../src/render/entity/navigation-places.ts#L185)
+
+Coalesced HUD lookup. Work yields between small batches instead of blocking a render frame.
+
+```ts
+reset(): void
+```
