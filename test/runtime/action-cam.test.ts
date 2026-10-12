@@ -31,7 +31,7 @@ it('bounds rapid turning and fades the walking rhythm while airborne', () => {
   let motion
   for (let i = 0; i < 90; i++)
     motion = cam.step(1 / 60, { ...walking, right: 1, yaw: i % 2 ? Math.PI : 0 })
-  expect(Math.abs(motion!.roll)).toBeLessThan(0.19)
+  expect(Math.abs(motion!.roll)).toBeLessThan(0.1)
   for (let i = 0; i < 180; i++)
     motion = cam.step(1 / 60, { ...walking, speed: 20, grounded: false })
   expect(Math.abs(motion!.side)).toBeLessThan(1e-7)

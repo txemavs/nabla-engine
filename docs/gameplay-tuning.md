@@ -232,7 +232,10 @@ Platform colliders, hinge and loading angle are in the trailer presets under
 
 Action cam is an independent, default-on walking preference in Settings beside the
 first-person mode (Options → Camera). It adds distance-driven lateral sway, foot bob and a bounded
-head roll when stepping, strafing and turning. Walking amplitudes are three times the initial subtle version: 7.8 cm bob, 4.2 cm sway and 1.9° step roll at normal walking speed. Starts/stops ease smoothly; aiming
+head roll when stepping, strafing and turning. Walking stays subtle: 2.6 cm bob,
+1.4 cm sway and 0.63° step roll at normal walking speed. Turn lean follows angular
+speed and is capped at 3.4° before the walking-speed scale; quick curves lean more
+than slow turns. Starts/stops ease smoothly; aiming
 reduces motion to 22%. Airborne motion fades and the effect resets in vehicles,
 exterior views, falls and recovery. It changes the final camera transform only,
 before weapon/audio rendering, without modifying simulation heading, FOV, lights
