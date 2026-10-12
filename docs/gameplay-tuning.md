@@ -42,11 +42,11 @@ linear thrust, auto-level or removal of existing tumble; the rate limit only
 stops assistance from accelerating an already fast rotation in the same direction.
 Unoccupied/passive vehicles and grounded tyre dynamics are unaffected.
 
-Road cars: W+S (or Up+Down) holds full throttle and the existing handbrake/burnout
-input together instead of cancelling the pedal. At rest it uses the existing
-front-brake/rear-drive burnout; while moving it loosens the rear axle for drifting
-with A/D. Releasing S releases the brake while retaining W throttle. Motorcycle
-W+S and front-lever mappings are unchanged.
+Road cars: W+S (or Up+Down) requests an aggressive launch without applying brakes,
+using the existing launch wheelspin and reduced rear grip for drifting with A/D.
+Add Space to hold a stationary front-brake/rear-drive burnout. Release Space,
+keeping W+S held, to launch; release S to return to ordinary W throttle.
+Motorcycle W+S and front-lever mappings are unchanged.
 
 `vehicleDamageTuning` controls cumulative physical damage: impacts above 3 m/s
 add 0.3 health points per m/s above that threshold, capped at 10 per ordinary
