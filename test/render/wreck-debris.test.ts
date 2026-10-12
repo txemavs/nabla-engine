@@ -87,7 +87,7 @@ it('supports a large rotating component above the floor instead of burying its l
   }
   expect(debris.pieces[0].resting).toBe(true)
   const stopped = debris.pieces[0].pivot.position.clone()
-  debris.update(.1)
+  debris.update(0.1)
   expect(debris.pieces[0].pivot.position.equals(stopped)).toBe(true)
   debris.dispose()
 })

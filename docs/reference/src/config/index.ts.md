@@ -17,5 +17,6 @@ Public, topic-based Engine tuning catalog. See docs/configuration.md for overrid
 - `./streaming.js`
 - `./simulation.js`
 - `./performance.js`
+- `./gameplay-tuning.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

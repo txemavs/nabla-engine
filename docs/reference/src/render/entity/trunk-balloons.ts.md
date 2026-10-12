@@ -6,14 +6,15 @@
 
 ## Module dependencies
 
+- `../../config/gameplay-tuning.js`
 - `three`
 
-## TrunkBalloons.callback@8
+## TrunkBalloons.callback@9
 
-[Implementation, line 8](../../../../../src/render/entity/trunk-balloons.ts#L8)
+[Implementation, line 9](../../../../../src/render/entity/trunk-balloons.ts#L9)
 
 ```ts
-callback@8(color): inferred by TypeScript; see implementation
+callback@9(color): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -22,7 +23,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.constructor
 
-[Implementation, line 34](../../../../../src/render/entity/trunk-balloons.ts#L34)
+[Implementation, line 35](../../../../../src/render/entity/trunk-balloons.ts#L35)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -36,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.hit
 
-[Implementation, line 38](../../../../../src/render/entity/trunk-balloons.ts#L38)
+[Implementation, line 39](../../../../../src/render/entity/trunk-balloons.ts#L39)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -71,12 +72,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.trunks.get`
 - `this.trunks.set`
 
-## TrunkBalloons.hit.callback@46
+## TrunkBalloons.hit.callback@47
 
-[Implementation, line 46](../../../../../src/render/entity/trunk-balloons.ts#L46)
+[Implementation, line 47](../../../../../src/render/entity/trunk-balloons.ts#L47)
 
 ```ts
-callback@46(node): inferred by TypeScript; see implementation
+callback@47(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -86,20 +87,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `inverse.clone().multiply`
 - `node.geometry.computeBoundingBox`
 
-## TrunkBalloons.hit.callback@63
+## TrunkBalloons.hit.callback@64
 
-[Implementation, line 63](../../../../../src/render/entity/trunk-balloons.ts#L63)
+[Implementation, line 64](../../../../../src/render/entity/trunk-balloons.ts#L64)
 
 ```ts
-callback@63(n): n is THREE.Object3D
+callback@64(n): n is THREE.Object3D
 ```
 
-## TrunkBalloons.hit.callback@65
+## TrunkBalloons.hit.callback@66
 
-[Implementation, line 65](../../../../../src/render/entity/trunk-balloons.ts#L65)
+[Implementation, line 66](../../../../../src/render/entity/trunk-balloons.ts#L66)
 
 ```ts
-callback@65(node): inferred by TypeScript; see implementation
+callback@66(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -108,7 +109,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.update
 
-[Implementation, line 84](../../../../../src/render/entity/trunk-balloons.ts#L84)
+[Implementation, line 85](../../../../../src/render/entity/trunk-balloons.ts#L85)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -141,7 +142,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.warmMeshes
 
-[Implementation, line 135](../../../../../src/render/entity/trunk-balloons.ts#L135)
+[Implementation, line 136](../../../../../src/render/entity/trunk-balloons.ts#L136)
 
 Include the balloon materials in the existing loading-time shader compilation.
 
@@ -158,7 +159,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.clear
 
-[Implementation, line 141](../../../../../src/render/entity/trunk-balloons.ts#L141)
+[Implementation, line 142](../../../../../src/render/entity/trunk-balloons.ts#L142)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -177,7 +178,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.dispose
 
-[Implementation, line 153](../../../../../src/render/entity/trunk-balloons.ts#L153)
+[Implementation, line 154](../../../../../src/render/entity/trunk-balloons.ts#L154)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -194,12 +195,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.stringGeometry.dispose`
 - `this.stringMaterial.dispose`
 
-## TrunkBalloons.dispose.callback@159
+## TrunkBalloons.dispose.callback@160
 
-[Implementation, line 159](../../../../../src/render/entity/trunk-balloons.ts#L159)
+[Implementation, line 160](../../../../../src/render/entity/trunk-balloons.ts#L160)
 
 ```ts
-callback@159(material): inferred by TypeScript; see implementation
+callback@160(material): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

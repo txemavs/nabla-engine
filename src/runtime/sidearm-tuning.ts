@@ -5,8 +5,8 @@ export interface SidearmTuning {
   /** Muzzle-up angle in degrees. */
   angle: number
 }
-export const sidearmTuningDefaults: Readonly<SidearmTuning> = { height: -0.022, angle: -1.2 }
-export const sidearmTuningRanges = { height: [-0.08, 0.015, 0.001], angle: [-5, 8, 0.1] } as const
+export { sidearmTuningDefaults, sidearmTuningRanges } from '../config/gameplay-tuning.js'
+import { sidearmTuningDefaults, sidearmTuningRanges } from '../config/gameplay-tuning.js'
 const storageKey = 'nabla.sidearmTuning'
 type TuningStorage = Pick<Storage, 'getItem' | 'setItem'>
 export function normalizeSidearmTuning(

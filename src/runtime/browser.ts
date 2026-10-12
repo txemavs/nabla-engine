@@ -1,3 +1,4 @@
+import { normalViewTuning, smokeTuning } from '../config/gameplay-tuning.js'
 import { presetEntities, vehiclePresets } from '../catalog/vehicles/library.js'
 import { GameToolbar } from './game-toolbar.js'
 import { BodycamAim } from './bodycam-aim.js'
@@ -634,7 +635,9 @@ export class GameRuntime {
   constructor(private readonly options: GameRuntimeOptions) {
     try {
       this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
-      setSmokeDensity(Number(browserStorage()?.getItem('nabla.smokePercent') ?? 50))
+      setSmokeDensity(
+        Number(browserStorage()?.getItem('nabla.smokePercent') ?? smokeTuning.defaultPercent),
+      )
     } catch {
       /* Keep the default if storage is disabled. */
     }
@@ -690,7 +693,8 @@ export class GameRuntime {
     })
     this.adaptive.setTargetFrameMs(this.display.maxFps ? 1000 / this.display.maxFps : null)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
-    this.cameraState.bodycam = browserStorage()?.getItem('nabla.bodycam') !== 'false'
+    this.cameraState.bodycam =
+      (browserStorage()?.getItem('nabla.bodycam') ?? String(normalViewTuning.enabled)) === 'true'
     this.fovBase = {
       firstPersonFov: this.cameraState.settings.firstPersonFov,
       chaseFov: this.cameraState.settings.chaseFov,
@@ -1315,7 +1319,8 @@ export class GameRuntime {
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
     if (bodycamActive) {
       this.camera.fov =
-        this.cameraState.settings.firstPersonFov + 12 * (1 - (this.sidearm?.aimTransition ?? 0))
+        this.cameraState.settings.firstPersonFov +
+        normalViewTuning.extraFovDegrees * (1 - (this.sidearm?.aimTransition ?? 0))
       this.camera.updateProjectionMatrix()
     }
     this.effects.audio.setListener(

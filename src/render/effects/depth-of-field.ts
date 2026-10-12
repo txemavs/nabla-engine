@@ -1,3 +1,4 @@
+import { focusTuning } from '../../config/gameplay-tuning.js'
 import * as THREE from 'three'
 
 /**
@@ -61,8 +62,8 @@ export class DepthOfField {
         void main() {
           float dist = viewDistance(texture2D(depthTex, vUv).x);
           float center = viewDistance(texture2D(depthTex, vec2(0.5)).x);
-          float sides = smoothstep(0.18, 0.49, abs(vUv.x - 0.5));
-          float nearField = 1.0 - smoothstep(2.0, 18.0, dist);
+          float sides = smoothstep(${focusTuning.sideStart.toFixed(4)}, ${focusTuning.sideEnd.toFixed(4)}, abs(vUv.x - 0.5));
+          float nearField = 1.0 - smoothstep(${focusTuning.nearStartMetres.toFixed(4)}, ${focusTuning.nearEndMetres.toFixed(4)}, dist);
           float peripheral = sides * nearField * tunnel;
           float coc = max(farBlur * smoothstep(center, center * 3.0 + 120.0, dist), peripheral);
           vec3 color = texture2D(colorTex, vUv).rgb;
@@ -127,7 +128,7 @@ export class DepthOfField {
   present(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera): void {
     renderer.setRenderTarget(null)
     this.material.uniforms.cameraFar.value = camera.far
-    this.material.uniforms.radius.value = 5 * renderer.getPixelRatio()
+    this.material.uniforms.radius.value = focusTuning.radiusPixels * renderer.getPixelRatio()
     const autoClear = renderer.autoClear
     renderer.autoClear = true
     try {

@@ -1,3 +1,4 @@
+import { cameraFovTuning } from '../config/gameplay-tuning.js'
 /**
  * Player field-of-view offset from the J menu. One offset in degrees widens or narrows both
  * the cockpit / on-foot eye (`firstPersonFov`) and the chase camera (`chaseFov`, which the
@@ -7,11 +8,11 @@
 /** Storage key of the saved offset. */
 export const cameraFovStorageKey = 'nabla.cameraFov'
 /** Degrees per menu step. */
-export const cameraFovStep = 5
+export const cameraFovStep = cameraFovTuning.step
 /** Allowed offset range, degrees. */
-export const cameraFovRange = Object.freeze({ min: -15, max: 25 })
+export const cameraFovRange = Object.freeze({ min: cameraFovTuning.min, max: cameraFovTuning.max })
 /** Offset before the player picks one (Txema 2026-10-10: +15°). */
-export const cameraFovDefault = 15
+export const cameraFovDefault = cameraFovTuning.default
 
 export type CameraFovStorage = Pick<Storage, 'getItem' | 'setItem'>
 

@@ -12,8 +12,8 @@ will overwrite these manual revisions. Export a newly reviewed asset to update i
 `assets/rigs/weapons/hk-compact.rig.json` binds the moving parts. `Sidearm`
 animates them relative to their rest poses. `hk-presentation.ts` supplies the
 reviewed cosmetic barrel pose and a cartridge marker seated in the magazine.
-Only explicit inspection moves the whole presentation; manipulating the slide
-does not rotate the frame. No manufacturing or functional geometry is implied.
+Slide travel animates only the slide. Independently configurable F viewing poses
+rotate the presentation during manual manipulation; F+Z and F+X have separate offsets. No manufacturing or functional geometry is implied.
 
 The magazine marker follows its `MagazineEntity.rounds`, including insertion and
 dropped items. Entities have an ID, capacity and remaining rounds. A normal
@@ -29,3 +29,5 @@ of magazines is not implemented in this change.
 Run the browser review at `/hk-review.html` using `vite.browser.config.ts`.
 Regression tests cover the real GLB, poses, ammunition transfer and dropped
 magazine rendering, plus the existing casing and spatial-audio behavior.
+
+Camera, controls and all reviewed pose offsets: [gameplay tuning](../../../../docs/gameplay-tuning.md).

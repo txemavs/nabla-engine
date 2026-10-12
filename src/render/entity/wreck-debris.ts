@@ -1,3 +1,4 @@
+import { explosionTuning } from '../../config/gameplay-tuning.js'
 import * as THREE from 'three'
 
 export type DebrisCast = (
@@ -194,10 +195,13 @@ export class WreckDebris {
           if (contact.normal.y > 0.5 && Math.abs(inward) < 2) {
             velocity.addScaledVector(contact.normal, -velocity.dot(contact.normal))
             velocity.multiplyScalar(
-              Math.max(0, 1 - (4.5 * dt) / Math.max(0.001, velocity.length())),
+              Math.max(
+                0,
+                1 - (explosionTuning.debrisDrag * dt) / Math.max(0.001, velocity.length()),
+              ),
             )
             const speed = velocity.length()
-            if (speed > 0.18) {
+            if (speed > explosionTuning.debrisSleepSpeed) {
               const axle = contact.normal.clone().cross(velocity).normalize()
               const current = piece.axle.clone().applyQuaternion(pivot.quaternion)
               pivot.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(current, axle))

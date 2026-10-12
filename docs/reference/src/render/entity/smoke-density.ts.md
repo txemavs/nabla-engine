@@ -4,14 +4,13 @@
 
 [Source](../../../../../src/render/entity/smoke-density.ts)
 
-Shared live opacity multiplier for exhaust, wrecks, tires and weapon smoke.
-
 ## Module dependencies
 
+- `../../config/gameplay-tuning.js`
 
 ## setSmokeDensity
 
-[Implementation, line 3](../../../../../src/render/entity/smoke-density.ts#L3)
+[Implementation, line 4](../../../../../src/render/entity/smoke-density.ts#L4)
 
 ```ts
 setSmokeDensity(percent: number): number

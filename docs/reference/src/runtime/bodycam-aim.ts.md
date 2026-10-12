@@ -4,14 +4,13 @@
 
 [Source](../../../../src/runtime/bodycam-aim.ts)
 
-Bounded free aim; camera catch-up preserves the total viewing direction.
-
 ## Module dependencies
 
+- `../config/gameplay-tuning.js`
 
 ## BodycamAim.reset
 
-[Implementation, line 6](../../../../src/runtime/bodycam-aim.ts#L6)
+[Implementation, line 7](../../../../src/runtime/bodycam-aim.ts#L7)
 
 Bounded free aim; camera catch-up preserves the total viewing direction.
 
@@ -21,7 +20,7 @@ reset(): void
 
 ## BodycamAim.move
 
-[Implementation, line 10](../../../../src/runtime/bodycam-aim.ts#L10)
+[Implementation, line 11](../../../../src/runtime/bodycam-aim.ts#L11)
 
 Bounded free aim; camera catch-up preserves the total viewing direction.
 
@@ -36,7 +35,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BodycamAim.step
 
-[Implementation, line 17](../../../../src/runtime/bodycam-aim.ts#L17)
+[Implementation, line 24](../../../../src/runtime/bodycam-aim.ts#L24)
 
 Bounded free aim; camera catch-up preserves the total viewing direction.
 

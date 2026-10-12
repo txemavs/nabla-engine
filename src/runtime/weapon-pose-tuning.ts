@@ -22,20 +22,9 @@ export type WeaponAngles = {
   z: number
 }
 export type WeaponPoseTuning = Record<WeaponPose, WeaponAngles>
-export const weaponPoseDefaults: WeaponPoseTuning = {
-  slide: { pitch: 0, yaw: -33.9, roll: 91.2, x: -90.8, y: 0, z: 0 },
-  slideAimed: { pitch: 4.5, yaw: -19.8, roll: 45.7, x: 16.6, y: 5.2, z: -375.8 },
-  slideInspect: { pitch: 11.2, yaw: -41, roll: -26.6, x: 0, y: 0, z: 0 },
-  slideInspectAimed: { pitch: 29.6, yaw: -19.8, roll: -47.2, x: 0, y: 0, z: 0 },
-  slideChamber: { pitch: 48, yaw: -17.5, roll: 27.1, x: 0, y: 0, z: 0 },
-  slideChamberAimed: { pitch: 63, yaw: -22.2, roll: 12.7, x: 0, y: 0, z: 0 },
-  normal: { pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 },
-  aimed: { pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 },
-  inspect: { pitch: 11.2, yaw: -41, roll: -26.6, x: 0, y: 0, z: 0 },
-  inspectAimed: { pitch: 29.6, yaw: -19.8, roll: -47.2, x: 0, y: 0, z: 0 },
-  chamber: { pitch: 48, yaw: -17.5, roll: 27.1, x: 0, y: 0, z: 0 },
-  chamberAimed: { pitch: 63, yaw: -22.2, roll: 12.7, x: 0, y: 0, z: 0 },
-}
+export { weaponPoseDefaults } from '../config/gameplay-tuning.js'
+import { weaponPoseDefaults } from '../config/gameplay-tuning.js'
+
 export function normalizeWeaponPoses(value: Partial<WeaponPoseTuning> = {}): WeaponPoseTuning {
   const result = {} as WeaponPoseTuning
   for (const key of Object.keys(weaponPoseNames) as WeaponPose[]) {

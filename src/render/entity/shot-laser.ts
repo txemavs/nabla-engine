@@ -1,3 +1,4 @@
+import { laserTuning } from '../../config/gameplay-tuning.js'
 import { sampleLaserSmoke } from './laser-smoke.js'
 import * as THREE from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
@@ -24,7 +25,7 @@ export class ShotLaser {
     void main(){laserUv=uv; vec4 a=projectionMatrix*modelViewMatrix*vec4(start,1.); vec4 b=projectionMatrix*modelViewMatrix*vec4(end,1.);
     vec2 direction=(b.xy/b.w-a.xy/a.w)*resolution;
     vec2 perpendicular=normalize(vec2(-direction.y,direction.x)+vec2(0.00001));
-    gl_Position=mix(a,b,uv.y); gl_Position.xy+=perpendicular*(uv.x-.5)*14./resolution*gl_Position.w;
+    gl_Position=mix(a,b,uv.y); gl_Position.xy+=perpendicular*(uv.x-.5)*${(laserTuning.beamWidthPixels * 2).toFixed(4)}/resolution*gl_Position.w;
     #include <logdepthbuf_vertex>
     }`,
     fragmentShader: `varying vec2 laserUv; uniform float smoke[32];
@@ -38,7 +39,7 @@ export class ShotLaser {
   })
   private readonly beam: THREE.Mesh
   private readonly halo = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.025, 0.025),
+    new THREE.PlaneGeometry(laserTuning.haloSizeMetres, laserTuning.haloSizeMetres),
     new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -62,7 +63,7 @@ export class ShotLaser {
         #include <logdepthbuf_fragment>
         float r=length(vHalo-.5)*2.;
         float a=exp(-r*r*3.)*(1.-smoothstep(.65,1.,r));
-        gl_FragColor=vec4(1.,.015,.005,a*.95);
+        gl_FragColor=vec4(1.,.015,.005,a*${laserTuning.haloOpacity.toFixed(4)});
       }`,
     }),
   )
@@ -79,7 +80,7 @@ export class ShotLaser {
     this.beam.frustumCulled = false
     this.beam.renderOrder = 6
     this.pin = new THREE.Mesh(
-      new THREE.SphereGeometry(0.003, 16, 10),
+      new THREE.SphereGeometry(laserTuning.pointRadiusMetres, 16, 10),
       new THREE.MeshBasicMaterial({
         color: '#ff4444',
         transparent: true,
@@ -121,12 +122,17 @@ export class ShotLaser {
     )
     this.pin.position.set(end[0], end[1], end[2])
     const distance = Math.hypot(end[0] - origin[0], end[1] - origin[1], end[2] - origin[2])
-    this.pin.scale.setScalar(1 + Math.min(2, distance * 0.015))
+    this.pin.scale.setScalar(
+      1 + Math.min(laserTuning.maxGrowth, distance * laserTuning.distanceGrowth),
+    )
     this.pin.visible = hit
     this.halo.visible = hit
     this.halo.position
       .copy(this.pin.position)
-      .addScaledVector(new THREE.Vector3(...origin).sub(this.pin.position).normalize(), 0.012)
+      .addScaledVector(
+        new THREE.Vector3(...origin).sub(this.pin.position).normalize(),
+        laserTuning.surfaceOffsetMetres,
+      )
     this.halo.scale.copy(this.pin.scale)
   }
 

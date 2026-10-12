@@ -50,3 +50,5 @@ preserves the edit/play contract and a single physics owner.
 
 - [Planetary world model](planetary-world.md)
 - [Planet visual settings (game HUD)](planet-visual-settings.md): global object poses, local working frames and destination-specific portal environments.
+
+- [Gameplay tuning: weapon angles, FOV and effects](gameplay-tuning.md)

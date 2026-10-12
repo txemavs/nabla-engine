@@ -1,3 +1,4 @@
+import { explosionTuning } from '../../config/gameplay-tuning.js'
 import { TrunkBalloons } from './trunk-balloons.js'
 import { WreckDebris, type DebrisCast } from './wreck-debris.js'
 import * as THREE from 'three'
@@ -310,7 +311,7 @@ export class VehicleDestruction {
       const intensity =
         burn.age < 0.4
           ? 40 * (1 - burn.age / 0.4)
-          : burn.age < 12
+          : burn.age < explosionTuning.flameSeconds
             ? 5 + Math.sin(burn.age * 17) * 2
             : 0
       if (intensity > this.light.intensity) {
@@ -325,14 +326,17 @@ export class VehicleDestruction {
       }
       const flash = burn.age < 0.4
       burn.fire.visible = flash
-      burn.flames.visible = !flash && burn.age < 12
+      burn.flames.visible = !flash && burn.age < explosionTuning.flameSeconds
       burn.flames.children.forEach((tongue, i) => {
         const phase = burn.age * (4.5 + i * 0.37) + i * 2.4
         tongue.scale.y =
           (1 + (i % 3) * 0.2) * (0.92 + Math.sin(phase) * 0.13 + Math.sin(phase * 1.7) * 0.05)
         tongue.scale.x = 0.64 + Math.sin(phase * 0.8) * 0.06
       })
-      burn.flameMaterial.opacity = Math.max(0, Math.min(1, (12 - burn.age) / 3))
+      burn.flameMaterial.opacity = Math.max(
+        0,
+        Math.min(1, (explosionTuning.flameSeconds - burn.age) / 3),
+      )
       burn.fire.scale.set(
         flash ? 0.2 + burn.age * 8 : 0.45 + Math.sin(burn.age * 21) * 0.08,
         flash ? 0.2 + burn.age * 8 : 0.8 + Math.sin(burn.age * 17) * 0.15,
@@ -340,10 +344,15 @@ export class VehicleDestruction {
       )
       burn.fire.material.opacity = flash
         ? 1 - burn.age
-        : Math.max(0, Math.min(0.8, (12 - burn.age) / 3))
+        : Math.max(0, Math.min(0.8, (explosionTuning.flameSeconds - burn.age) / 3))
       burn.smoke.setEnabled(smokeEnabled)
-      burn.smoke.setAmount(Math.min(1, Math.max(0, (45 - burn.age) / 15)))
-      burn.smoke.update(dt, burn.age < 45, 0.8)
+      burn.smoke.setAmount(
+        Math.min(
+          1,
+          Math.max(0, (explosionTuning.smokeSeconds - burn.age) / explosionTuning.smokeFadeSeconds),
+        ),
+      )
+      burn.smoke.update(dt, burn.age < explosionTuning.smokeSeconds, 0.8)
     }
     const dummy = new THREE.Object3D()
     for (let i = this.shards.length - 1; i >= 0; i--) {

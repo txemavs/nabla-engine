@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **391 modules; 4275 executable function definitions**.
+Coverage: **392 modules; 4275 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -94,6 +94,7 @@ Coverage: **391 modules; 4275 executable function definitions**.
 | [src/config/camera.ts](src/config/camera.ts.md) | 2 |
 | [src/config/controls.ts](src/config/controls.ts.md) | 0 |
 | [src/config/display.ts](src/config/display.ts.md) | 2 |
+| [src/config/gameplay-tuning.ts](src/config/gameplay-tuning.ts.md) | 0 |
 | [src/config/index.ts](src/config/index.ts.md) | 0 |
 | [src/config/lighting.ts](src/config/lighting.ts.md) | 0 |
 | [src/config/performance.ts](src/config/performance.ts.md) | 6 |

@@ -1,3 +1,4 @@
+import { balloonTuning } from '../../config/gameplay-tuning.js'
 import * as THREE from 'three'
 
 /** Rear-hit easter egg. Balloons live in the scene frame, independently of the car. */
@@ -78,7 +79,7 @@ export class TrunkBalloons {
       localDirection.z * trunk.sign > -0.4
     )
       return false
-    trunk.remaining = 30
+    trunk.remaining = balloonTuning.emissionSeconds
     return true
   }
   update(dt: number): void {
@@ -86,13 +87,13 @@ export class TrunkBalloons {
       if (!trunk.saved[0].node.visible || !trunk.pivot.visible) trunk.remaining = 0
       const emitting = trunk.remaining > 0
       trunk.remaining = Math.max(0, trunk.remaining - dt)
-      const target = emitting ? 1.15 : 0
-      trunk.angle = THREE.MathUtils.damp(trunk.angle, target, 5, dt)
+      const target = emitting ? balloonTuning.openingRadians : 0
+      trunk.angle = THREE.MathUtils.damp(trunk.angle, target, balloonTuning.openingRate, dt)
       trunk.pivot.rotation.x = -trunk.sign * trunk.angle
       trunk.clock += dt
-      if (emitting && trunk.angle > 0.65 && trunk.clock >= 0.18) {
+      if (emitting && trunk.angle > 0.65 && trunk.clock >= balloonTuning.intervalSeconds) {
         trunk.clock = 0
-        if (this.balloons.length >= 240) continue
+        if (this.balloons.length >= balloonTuning.maxCount) continue
         const mesh = new THREE.Group()
         const body = new THREE.Mesh(
           this.geometry,
@@ -124,8 +125,8 @@ export class TrunkBalloons {
       b.mesh.position.addScaledVector(b.velocity, dt)
       b.mesh.position.x += Math.sin(b.age * 1.7 + b.phase) * dt * 0.12
       b.mesh.rotation.z = Math.sin(b.age * 2 + b.phase) * 0.12
-      b.mesh.scale.setScalar(Math.min(1, (12 - b.age) / 2))
-      if (b.age >= 12) {
+      b.mesh.scale.setScalar(Math.min(1, (balloonTuning.lifetimeSeconds - b.age) / 2))
+      if (b.age >= balloonTuning.lifetimeSeconds) {
         b.mesh.removeFromParent()
         this.balloons.splice(i, 1)
       }

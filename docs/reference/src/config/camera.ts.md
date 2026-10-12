@@ -8,10 +8,11 @@ Shared camera recovery settings. Durations carry explicit Ms/Seconds names.
 
 ## Module dependencies
 
+- `./gameplay-tuning.js`
 
 ## resolveGameCameraSettings
 
-[Implementation, line 253](../../../../src/config/camera.ts#L253)
+[Implementation, line 189](../../../../src/config/camera.ts#L189)
 
 Copy overrides and validate finite values and ordered camera ranges before use.
 
@@ -36,7 +37,7 @@ Explicit throws in this body:
 
 ## cameraRecovery
 
-[Implementation, line 291](../../../../src/config/camera.ts#L291)
+[Implementation, line 227](../../../../src/config/camera.ts#L227)
 
 Return recovery strength after the manual-look grace period, including zero-duration ramps.
 

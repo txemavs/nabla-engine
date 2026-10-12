@@ -1,3 +1,4 @@
+import { normalViewTuning } from '../config/gameplay-tuning.js'
 /** Shared gameplay camera with configurable manual-look recovery. Times are milliseconds; dt is seconds. */
 import {
   cameraRecovery,
@@ -118,7 +119,7 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     settings: resolved,
     mode: 'chase',
     firstPerson: true,
-    bodycam: true,
+    bodycam: normalViewTuning.enabled,
     yaw: 0,
     pitch: resolved.chasePitch,
     headYaw: 0,
@@ -641,6 +642,17 @@ export function updateGameCamera(
     if (elapsed >= tuning.entranceEndMs) vehicleEntrance = null
   } else vehicleEntrance = null
 
+  if (state.bodycam && isFirstPersonView(state, !!p.vehicleId) && !riderFall) {
+    if (!p.vehicleId)
+      camera.position.add(
+        new THREE.Vector3(0, -normalViewTuning.footDropMetres, 0).applyQuaternion(
+          camera.quaternion,
+        ),
+      )
+    camera.fov += normalViewTuning.extraFovDegrees
+    camera.updateProjectionMatrix()
+  }
+
   const seatMove = state.seatMove
   if (seatMove && seatMove.vehicleId === p.vehicleId && eyes && !recovery && !riderFall) {
     const t = THREE.MathUtils.clamp((now - seatMove.started) / 850, 0, 1)
@@ -684,13 +696,6 @@ export function updateGameCamera(
     if (body) prepareVehicle?.(body, camera)
     if (t >= 1) state.seatMove = null
   } else state.seatMove = null
-
-  if (state.bodycam && isFirstPersonView(state, !!p.vehicleId) && !riderFall) {
-    if (!p.vehicleId)
-      camera.position.add(new THREE.Vector3(0, -0.18, 0).applyQuaternion(camera.quaternion))
-    camera.fov += 12
-    camera.updateProjectionMatrix()
-  }
 
   // View changes blend from the last rendered pose (eased position, orientation and fov) while
   // the player stays in the same vehicle or on foot; boarding keeps its own entrance move.

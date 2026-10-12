@@ -1,3 +1,4 @@
+import { explosionTuning } from '../config/gameplay-tuning.js'
 import { TowOverload } from './tow-overload.js'
 import { VehicleDamage } from './vehicle-damage.js'
 /** Own one physics world and coordinate independent collision, portal and vehicle subsystems. */
@@ -157,21 +158,24 @@ export class Simulation {
           if (!body.mass) continue
           const direction = body.position.vsub(centre)
           const distance = direction.length()
-          if (distance >= 12) continue
-          const strength = 1 - distance / 12
+          if (distance >= explosionTuning.radiusMetres) continue
+          const strength = 1 - distance / explosionTuning.radiusMetres
           if (distance > 0.1) direction.normalize()
           else direction.copy(up)
           direction.vadd(up.scale(0.45), direction)
           body.wakeUp()
           // Uneven pressure hits away from the centre of mass, producing real tumble.
           const application = new Vec3(
-            (Math.random() - 0.5) * 0.8,
-            (Math.random() - 0.5) * 0.6,
-            (Math.random() - 0.5) * 0.8,
+            (Math.random() - 0.5) * explosionTuning.offsetX,
+            (Math.random() - 0.5) * explosionTuning.offsetY,
+            (Math.random() - 0.5) * explosionTuning.offsetZ,
           )
-          direction.x += (Math.random() - 0.5) * 0.25
-          direction.z += (Math.random() - 0.5) * 0.25
-          body.applyImpulse(direction.scale(body.mass * 9 * strength), application)
+          direction.x += (Math.random() - 0.5) * explosionTuning.directionJitter
+          direction.z += (Math.random() - 0.5) * explosionTuning.directionJitter
+          body.applyImpulse(
+            direction.scale(body.mass * explosionTuning.impulseSpeed * strength),
+            application,
+          )
           for (const [otherId, other] of this.vehicles)
             if (other.body === body && otherId !== id && !other.definition.passive)
               this.damage.apply(otherId, strength * 45)

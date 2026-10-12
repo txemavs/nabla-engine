@@ -8,6 +8,7 @@ Eye-relative aimed pistol pose, adjustable live and saved per browser.
 
 ## Module dependencies
 
+- `../config/gameplay-tuning.js`
 
 ## normalizeSidearmTuning
 

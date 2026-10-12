@@ -1,3 +1,4 @@
+import { weaponViewTuning } from '../config/gameplay-tuning.js'
 import * as THREE from 'three'
 import { weaponPresets, type WeaponPreset } from '../catalog/weapons/library.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
@@ -37,8 +38,8 @@ import { ViewmodelLighting } from './viewmodel-lighting.js'
 import { normalizeWeaponPoses, type WeaponPoseTuning } from './weapon-pose-tuning.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
-const HIP_POSE = { position: [0.1, -0.125, -0.34] as const, fov: 55 }
-const ADS_POSE = { position: [0, -0.027, -0.2] as const, fov: 42 }
+const HIP_POSE = weaponViewTuning.hip
+const ADS_POSE = weaponViewTuning.aimed
 
 /** Presentation rig of an assembled model (`assets/rigs/weapons/*.rig.json`). */
 interface WeaponRig {
@@ -367,7 +368,9 @@ export class Sidearm {
 
   /** Aim blend used by the next weapon render and the matching world-camera FOV. */
   get aimTransition(): number {
-    return this.aimBlend + ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
+    return (
+      this.aimBlend + ((this.aiming ? 1 : 0) - this.aimBlend) * weaponViewTuning.aimBlendPerFrame
+    )
   }
 
   /** Toggle the laser sight; returns the new state. */
@@ -819,11 +822,13 @@ export class Sidearm {
     const magazineViewing =
       !this.aiming && (!this.state.magazineSeated || this.state.reload === 'magazine-out')
     this.magazinePoseBlend +=
-      ((magazineViewing ? 1 : 0) - this.magazinePoseBlend) * (1 - Math.exp(-elapsed / 90))
+      ((magazineViewing ? 1 : 0) - this.magazinePoseBlend) *
+      (1 - Math.exp(-elapsed / weaponViewTuning.inspectBlendMs))
     if (this.inspection) {
       const held = this.inspection.release === undefined
       this.inspection.blend +=
-        ((held ? 1 : 0) - this.inspection.blend) * (1 - Math.exp(-elapsed / 90))
+        ((held ? 1 : 0) - this.inspection.blend) *
+        (1 - Math.exp(-elapsed / weaponViewTuning.inspectBlendMs))
       if (!held && this.inspection.blend < 0.001) this.inspection = null
     }
     // An empty magazine well changes presentation only; Z remains the explicit safety gesture.
@@ -837,9 +842,12 @@ export class Sidearm {
     {
       const blend = poseInspection.blend
       if (poseInspection.kind === 'chamber') {
-        this.model.rotation.x += (0.85 - this.model.rotation.x) * blend
-        this.model.rotation.y += (0 - this.model.rotation.y) * blend
-        this.model.rotation.z += (0.22 - this.model.rotation.z) * blend
+        this.model.rotation.x +=
+          (weaponViewTuning.chamberBaseRadians.pitch - this.model.rotation.x) * blend
+        this.model.rotation.y +=
+          (weaponViewTuning.chamberBaseRadians.yaw - this.model.rotation.y) * blend
+        this.model.rotation.z +=
+          (weaponViewTuning.chamberBaseRadians.roll - this.model.rotation.z) * blend
         if (this.slide) {
           const travel = Math.max(this.state.slide, 0.8 * blend)
           this.slide.object.position
@@ -847,16 +855,17 @@ export class Sidearm {
             .addScaledVector(axis(p.slide.axis), p.slide.travel * travel)
         }
       } else {
-        this.model.rotation.y += blend * 0.9
-        this.model.rotation.z += blend * -0.35
-        this.model.position.y += blend * 0.055
+        this.model.rotation.y += blend * weaponViewTuning.inspectBaseRadians.yaw
+        this.model.rotation.z += blend * weaponViewTuning.inspectBaseRadians.roll
+        this.model.position.y += blend * weaponViewTuning.inspectBaseRadians.raiseMetres
       }
     }
     const slideActive =
       this.slidePosePreview ||
       (this.state.reloadAction === 'slide-release' && this.state.reload !== 'none')
     this.slidePoseBlend +=
-      ((slideActive ? 1 : 0) - this.slidePoseBlend) * (1 - Math.exp(-elapsed / 70))
+      ((slideActive ? 1 : 0) - this.slidePoseBlend) *
+      (1 - Math.exp(-elapsed / weaponViewTuning.slideBlendMs))
     const slidePose = this.poseTuning.slide,
       slideAimed = this.poseTuning.slideAimed
     const base = this.poseTuning.normal,

@@ -6,10 +6,11 @@
 
 ## Module dependencies
 
+- `../config/gameplay-tuning.js`
 
 ## normalizeWeaponPoses
 
-[Implementation, line 39](../../../../src/runtime/weapon-pose-tuning.ts#L39)
+[Implementation, line 28](../../../../src/runtime/weapon-pose-tuning.ts#L28)
 
 ```ts
 normalizeWeaponPoses(value: Partial<WeaponPoseTuning> = {}): WeaponPoseTuning
