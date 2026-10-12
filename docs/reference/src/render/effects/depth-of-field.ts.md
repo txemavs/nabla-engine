@@ -44,9 +44,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.MathUtils.clamp`
 
+## DepthOfField.depthTexture
+
+[Implementation, line 100](../../../../../src/render/effects/depth-of-field.ts#L100)
+
+Slight far-field blur. The center of the frame stays sharp. Off skips the
+extra target entirely. Logarithmic depth is decoded with the same scale
+Three writes into gl_FragDepth.
+
+```ts
+depthTexture(): THREE.DepthTexture | null
+```
+
 ## DepthOfField.begin
 
-[Implementation, line 101](../../../../../src/render/effects/depth-of-field.ts#L101)
+[Implementation, line 105](../../../../../src/render/effects/depth-of-field.ts#L105)
 
 Next draws land in the effect buffer.
 
@@ -66,7 +78,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.present
 
-[Implementation, line 123](../../../../../src/render/effects/depth-of-field.ts#L123)
+[Implementation, line 127](../../../../../src/render/effects/depth-of-field.ts#L127)
 
 Draw the blurred frame to the canvas. The caller renders HUD after this.
 
@@ -82,7 +94,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.dispose
 
-[Implementation, line 136](../../../../../src/render/effects/depth-of-field.ts#L136)
+[Implementation, line 140](../../../../../src/render/effects/depth-of-field.ts#L140)
 
 Slight far-field blur. The center of the frame stays sharp. Off skips the
 extra target entirely. Logarithmic depth is decoded with the same scale
@@ -99,12 +111,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.scene.clear`
 - `this.scene.traverse`
 
-## DepthOfField.dispose.callback@139
+## DepthOfField.dispose.callback@143
 
-[Implementation, line 139](../../../../../src/render/effects/depth-of-field.ts#L139)
+[Implementation, line 143](../../../../../src/render/effects/depth-of-field.ts#L143)
 
 ```ts
-callback@139(object): inferred by TypeScript; see implementation
+callback@143(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -113,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.release
 
-[Implementation, line 144](../../../../../src/render/effects/depth-of-field.ts#L144)
+[Implementation, line 148](../../../../../src/render/effects/depth-of-field.ts#L148)
 
 Slight far-field blur. The center of the frame stays sharp. Off skips the
 extra target entirely. Logarithmic depth is decoded with the same scale

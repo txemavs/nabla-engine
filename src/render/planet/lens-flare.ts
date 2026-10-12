@@ -16,6 +16,8 @@ export function createLensFlare(direction: Vector3, options: { position?: Vector
   geometry.setAttribute('uv', new Float32BufferAttribute([0, 0, 2, 0, 0, 2], 2))
   const material = new ShaderMaterial({
     uniforms: {
+      sceneDepth: { value: null },
+      useSceneDepth: { value: false },
       sunDirection: { value: direction },
       sourcePosition: { value: options.position ?? new Vector3() },
       positional: { value: options.position ? 1 : 0 },
@@ -41,6 +43,8 @@ export function createLensFlare(direction: Vector3, options: { position?: Vector
       }
     `,
     fragmentShader: `
+      uniform sampler2D sceneDepth;
+      uniform bool useSceneDepth;
       uniform vec3 sunDirection;
       uniform vec3 sourcePosition;
       uniform float positional;
@@ -55,6 +59,7 @@ export function createLensFlare(direction: Vector3, options: { position?: Vector
       }
       void main() {
         if (intensity <= 0.001) discard;
+        if (useSceneDepth && texture2D(sceneDepth, vUv).r < 0.9995) discard;
         vec2 fullUv = tileRect.xy + vUv * tileRect.zw;
         vec3 viewDir = positional > 0.5 ? (viewMatrix * vec4(sourcePosition, 1.0)).xyz : mat3(viewMatrix) * normalize(sunDirection);
         if (viewDir.z > -0.001 || (positional < 0.5 && sunDirection.y < -0.02)) discard;

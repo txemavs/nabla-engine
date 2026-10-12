@@ -97,6 +97,10 @@ export class DepthOfField {
     this.material.uniforms.farBlur.value = farBlur ? 1 : 0
   }
 
+  get depthTexture(): THREE.DepthTexture | null {
+    return this.target?.depthTexture ?? null
+  }
+
   /** Next draws land in the effect buffer. */
   begin(renderer: THREE.WebGLRenderer): void {
     renderer.getDrawingBufferSize(this.size)
