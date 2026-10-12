@@ -5,6 +5,39 @@ import type { Sidearm } from '../../src/runtime/sidearm.js'
 import type { Simulation } from '../../src/simulation/simulation.js'
 import type { SceneView } from '../../src/render/entity/view.js'
 
+it('Shift prevents shot rise and releases without delayed recoil', async () => {
+  const { Sidearm } = await import('../../src/runtime/sidearm.js')
+  const { MuzzleRise } = await import('../../src/simulation/weapons/recoil.js')
+  const { freshFirearm } = await import('../../src/simulation/weapons/firearm.js')
+  const { weaponPreset } = await import('../../src/catalog/weapons/library.js')
+  const firearm = weaponPreset('hk-compact').firearm!
+  const rig = Object.assign(Object.create(Sidearm.prototype), {
+    baseFirearm: firearm,
+    state: freshFirearm(firearm),
+    mode: 'semi',
+    inspection: null,
+    broken: false,
+    disposed: false,
+    safetyOn: false,
+    variantId: 'sa-da-combined-left',
+    temperature: { shot: () => {} },
+    smokeEnabled: false,
+    rise: new MuzzleRise({ riseDeg: 2, naturalReturn: 0.2, climbMs: 50, returnMs: 200 }),
+    steadyHeld: false,
+  })
+  rig.setSteadyHeld(true)
+  expect(rig.pull(1000).fired).toBe(true)
+  expect(rig.aimRise(1100)).toBe(0)
+  rig.setSteadyHeld(false)
+  expect(rig.aimRise(1200)).toBe(0)
+  rig.release()
+  expect(rig.pull(2000).fired).toBe(true)
+  expect(rig.aimRise(2100)).toBeGreaterThan(0)
+  rig.setSteadyHeld(true)
+  rig.setSteadyHeld(false)
+  expect(rig.aimRise(2200)).toBe(0)
+})
+
 it('fires along the mounted barrel rather than the camera centre in first person', () => {
   const camera = new PerspectiveCamera()
   camera.position.set(100, 2, 4)

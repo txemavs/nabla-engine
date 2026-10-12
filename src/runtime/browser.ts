@@ -3443,6 +3443,7 @@ export class GameRuntime {
    */
   private updateSidearm(sim: Simulation, time: number, dt: number, eyes: boolean): void {
     const sidearm = this.sidearm!
+    sidearm.setSteadyHeld(this.keys.values.has('ShiftLeft') || this.keys.values.has('ShiftRight'))
     const weaponPosition = (
       eyes
         ? this.camera.position

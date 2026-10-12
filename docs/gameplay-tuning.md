@@ -91,6 +91,7 @@ scene-depth occlusion.
 | Z + fire       | Toggle safety; Z alone inspects                                                                    |
 | X              | Inspect chamber                                                                                    |
 | Right mouse    | Aim, independent of inspection and magazine/slide manipulation                                     |
+| Shift + fire   | Keep aim height steady: suppress vertical recoil while held; normal recoil resumes on release      |
 | G / H          | Laser / flashlight                                                                                 |
 
 Fresh magazines are unlimited supplies, but each dropped magazine retains its

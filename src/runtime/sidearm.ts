@@ -109,6 +109,7 @@ export class Sidearm {
   readonly recoilYaw = new RecoilYaw()
   readonly state: FirearmState
   private readonly rise: MuzzleRise | null
+  private steadyHeld = false
   private rig: WeaponRig = defaultRig
   private slide: Part | null = null
   private triggerPart: Part | null = null
@@ -466,7 +467,7 @@ export class Sidearm {
         this.smoke.burst(now, this.flashAt)
         if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
       }
-      this.rise?.shot(now)
+      if (!this.steadyHeld) this.rise?.shot(now)
       if (this.mode === 'burst30') this.recoilYaw.kick()
     }
     return event
@@ -614,9 +615,15 @@ export class Sidearm {
     return event
   }
 
+  /** Hold Shift to suppress vertical recoil; discard pending rise on entry. */
+  setSteadyHeld(held: boolean): void {
+    if (held && !this.steadyHeld) this.rise?.reset()
+    this.steadyHeld = held
+  }
+
   /** Muzzle rise since the previous call (rad, positive = up), to add to the aim. */
   aimRise(now: number): number {
-    return this.rise ? this.rise.step(now) : 0
+    return !this.steadyHeld && this.rise ? this.rise.step(now) : 0
   }
 
   impact(_hit: boolean): void {}
