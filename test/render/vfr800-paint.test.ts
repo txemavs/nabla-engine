@@ -20,13 +20,13 @@ it('repaints the real GLB with paired body/rim finishes and restores the black r
     ['#f0f0ea', 'f0f0ea', 'f0f0ea'],
     ['#aab0b7', 'aab0b7', 'aab0b7'],
     ['#2157a5', 'aab0b7', '2157a5'],
-    ['#c51b28', 'aab0b7', 'aab0b7'],
+    ['#c51b28', 'aab0b7', 'c51b28'],
     ['#b91929', '17191e', 'b91929'],
     ['#17191e', '17191e', '17191e'],
   ]) {
     paintMotorcycle(model, body)
     expect(hex('Tank_Paint')).toBe(body.slice(1))
-    expect(hex('Front_Fairing_Paint')).toBe(body.slice(1))
+    expect(hex('Front_Fairing_Paint')).toBe(body === '#c51b28' ? 'aab0b7' : body.slice(1))
     expect(hex('Tail_Fairing_Paint')).toBe(tail)
     expect(hex('Front_Rim_Paint')).toBe(rims)
     expect(hex('Rear_Rim_Paint')).toBe(rims)

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-/** The anniversary swatch paints the front red and the rear silver, as requested by the owner. */
+/** The anniversary swatch uses silver front/fender and red tank/tail. */
 export const vfrAnniversaryColor = '#c51b28'
 
 /** Paint authored motorcycle zones without changing fixed metal, lenses, tyres or trim. */
@@ -22,7 +22,7 @@ export function paintMotorcycle(model: THREE.Object3D, color: string): void {
         material.emissive.set(redStripe ? '#ba1827' : '#000000')
         material.emissiveIntensity = redStripe ? 0.15 : 0
       } else if (authored?.paint) {
-        material.color.set(anniversary && authored.paintZone === 'tail' ? '#aab0b7' : color)
+        material.color.set(anniversary && authored.paintZone === 'front' ? '#aab0b7' : color)
       }
     }
   })
