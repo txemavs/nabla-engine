@@ -37,6 +37,8 @@ export interface FirearmState {
   /** Workshop manipulation: finish only the requested step, then wait. */
   reloadAction?: ReloadPhase
   manualRackBack?: boolean
+  /** Keep a manual rack fully rearward until the user releases the control. */
+  manualRackHeld?: boolean
   manualSlideTravel?: number
   /** The trigger is still held from the last press: it has to be released (reset) first. */
   triggerHeld: boolean
@@ -269,8 +271,14 @@ export function trigger(
 export function advanceFirearm(state: FirearmState, spec: FirearmSpec, now: number): FirearmEvent {
   const event = empty()
   if (state.reload !== 'none') {
-    const age = now - state.reloadStartMs
+    let age = now - state.reloadStartMs
     const { magazineOut, magazineIn, slideRelease } = spec.reloadMs
+    // A held manual rack pauses at full travel, before feeding the next cartridge.
+    const pulledBackAt = magazineIn + (slideRelease - magazineIn) / 2
+    if (state.manualRackHeld && state.reloadAction === 'slide-release' && age >= pulledBackAt) {
+      age = pulledBackAt
+      state.reloadStartMs = now - age
+    }
     if (
       state.reload === 'slide-release' &&
       state.reloadAction &&

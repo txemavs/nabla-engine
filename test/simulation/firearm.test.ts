@@ -29,6 +29,25 @@ const spec = (): FirearmSpec => {
   }
 }
 
+it('holds a manual rack rearward until release, ejecting once and feeding only on release', () => {
+  const firearm = spec()
+  const state = freshFirearm(firearm)
+  const magazine = state.magazine
+  state.manualRackHeld = true
+  beginReloadAction(state, firearm, 'slide-release', 1000)
+  expect(advanceFirearm(state, firearm, 2000).cartridgeEjected).toBe(true)
+  expect(state.slide).toBe(1)
+  expect(state.chamber).toBe(0)
+  expect(state.magazine).toBe(magazine)
+  expect(advanceFirearm(state, firearm, 9000).cartridgeEjected).toBeFalsy()
+  expect(state.slide).toBe(1)
+  expect(trigger(state, firearm, true, 9001).fired).toBe(false)
+  state.manualRackHeld = false
+  expect(advanceFirearm(state, firearm, 10000).slideReleased).toBe(true)
+  expect(state.chamber).toBe(1)
+  expect(state.magazine).toBe(magazine - 1)
+})
+
 it('R removes, T supplies unlimited distinct full items, and Y alone releases the catch', () => {
   const firearm = spec(),
     state = freshFirearm(firearm)

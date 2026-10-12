@@ -83,15 +83,15 @@ blend; the weapon and central sight picture remain sharp. HDR/linear postprocess
 applies display tone mapping once; the solar flare is composed afterward with
 scene-depth occlusion.
 
-| Weapon control | Action                                                                           |
-| -------------- | -------------------------------------------------------------------------------- |
-| R              | Drop current magazine; press again with an empty well for a full normal magazine |
-| M              | Replace with a full extended 30-round magazine; automatic fire                   |
-| F              | Work slide, or close it using the catch when already open                        |
-| Z + fire       | Toggle safety; Z alone inspects                                                  |
-| X              | Inspect chamber                                                                  |
-| Right mouse    | Aim, independent of inspection and magazine/slide manipulation                   |
-| G / H          | Laser / flashlight                                                               |
+| Weapon control | Action                                                                                             |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| R              | Drop current magazine; press again with an empty well for a full normal magazine                   |
+| M              | Replace with a full extended 30-round magazine; automatic fire                                     |
+| F              | Work slide; hold to keep it back until release. When already locked open, close it using the catch |
+| Z + fire       | Toggle safety; Z alone inspects                                                                    |
+| X              | Inspect chamber                                                                                    |
+| Right mouse    | Aim, independent of inspection and magazine/slide manipulation                                     |
+| G / H          | Laser / flashlight                                                                                 |
 
 Fresh magazines are unlimited supplies, but each dropped magazine retains its
 own ID and rounds. Chamber and magazine ammunition are separate. Manual slide
@@ -228,8 +228,8 @@ Platform colliders, hinge and loading angle are in the trailer presets under
 `npm run rigs:generate` and `npm run assets:pack` after changing geometry.
 
 Action cam is an independent, default-on walking preference in Settings beside the
-first-person mode. It adds distance-driven lateral sway, foot bob and a bounded
-head roll when stepping, strafing and turning. Starts/stops ease smoothly; aiming
+first-person mode (Options → Camera). It adds distance-driven lateral sway, foot bob and a bounded
+head roll when stepping, strafing and turning. Walking amplitudes are three times the initial subtle version: 7.8 cm bob, 4.2 cm sway and 1.9° step roll at normal walking speed. Starts/stops ease smoothly; aiming
 reduces motion to 22%. Airborne motion fades and the effect resets in vehicles,
 exterior views, falls and recovery. It changes the final camera transform only,
 before weapon/audio rendering, without modifying simulation heading, FOV, lights

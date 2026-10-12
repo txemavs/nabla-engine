@@ -12,6 +12,22 @@ const euskadi = resolveStartCameras([
 ])
 
 describe('start camera sequence', () => {
+  it('can finish in the driver seat after ignition without switching to chase', () => {
+    const seq = new StartCameraSequencer(
+      resolveStartCameras([
+        'overhead',
+        { view: 'driver', after: 800 },
+        { view: 'driver', after: 'engine' },
+      ]),
+    )
+    seq.update({ now: 0, arrived: true, engineRunning: false })
+    expect(seq.update({ now: 800, arrived: true, engineRunning: false }).view).toBe('cockpit')
+    expect(seq.update({ now: 2600, arrived: true, engineRunning: false })).toEqual({
+      startEngine: true,
+    })
+    expect(seq.update({ now: 4000, arrived: true, engineRunning: true }).view).toBe('cockpit')
+    expect(seq.update({ now: 4016, arrived: true, engineRunning: true })).toEqual({ done: true })
+  })
   it('keeps an overhead descent height and rejects a negative one', () => {
     const [first, second] = resolveStartCameras([{ view: 'overhead', fromHeight: 600 }, 'driver'])
     expect(first).toMatchObject({ view: 'map', fromHeight: 600 })

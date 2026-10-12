@@ -3421,6 +3421,7 @@ export class GameRuntime {
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
+    if (this.sidearm) this.sidearm.state.manualRackHeld = false
     this.safetyClickHeld = false
     if (!this.sidearmAimPreview) this.sidearm?.stopInspect(performance.now())
     this.fireRequested = false
@@ -3794,7 +3795,9 @@ export class GameRuntime {
   private applyStartCamera(action: StartCameraAction, sim: Simulation): void {
     if (action.startEngine) sim.startEngine()
     if (action.view && sim.player.vehicleId) {
-      if (action.view !== gameCameraView(this.cameraState, true)) {
+      const current = gameCameraView(this.cameraState, true)
+      // Normal first person is reported as bodycam, but it occupies the same driver seat.
+      if (action.view !== (current === 'bodycam' ? 'cockpit' : current)) {
         this.cameraState.nextTransitionMs = action.transitionMs ?? null
         setGameCameraView(this.cameraState, action.view, true)
       }
@@ -4124,6 +4127,9 @@ export class GameRuntime {
         this.keys.press(event.code, event.repeat, performance.now())
         this.effects.audio.unlock()
         if (!event.repeat) {
+          if (event.code === 'KeyF' && this.weaponDrawn && this.sidearm)
+            this.sidearm.state.manualRackHeld =
+              this.sidearm.state.reload === 'none' && !this.sidearm.state.slideLocked
           this.action(event.code)
         }
       },
@@ -4133,6 +4139,7 @@ export class GameRuntime {
       'keyup',
       (event) => {
         this.keys.release(event.code)
+        if (event.code === 'KeyF' && this.sidearm) this.sidearm.state.manualRackHeld = false
         if (event.code === 'KeyZ' || event.code === 'KeyX') {
           this.sidearm?.stopInspect(performance.now())
           if (event.code === 'KeyX' && this.weaponDrawn)
