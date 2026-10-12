@@ -3383,6 +3383,15 @@ export class GameRuntime {
         if (shot.impactJoules !== undefined)
           canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)
         this.ejectCasing(sim, eyes)
+        if (sidearm.temperature.ruptured && !sidearm.broken) {
+          const parts = sidearm.ruptureParts(this.camera, this.view.root, eyes)
+          if (parts) {
+            this.view.destruction.breakWeapon(parts)
+            this.effects.audio.destruction(weaponPosition, false)
+            this.view.sparks.add(weaponPosition as [number, number, number], time)
+            this.options.onMessage?.('Arma destruida por sobrecalentamiento')
+          }
+        }
       }
       canvas.dataset.impacts = String(this.view.impacts.count)
     }
@@ -3529,7 +3538,7 @@ export class GameRuntime {
     const eyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
     if (this.weaponLight) {
       const torch =
-        this.weaponLightOn && this.weaponDrawn
+        this.weaponLightOn && this.weaponDrawn && !this.sidearm?.broken
           ? this.sidearm?.accessoryRay(time, eyes, this.camera.fov, 'TorchSocket')
           : null
       this.weaponLight.intensity = torch ? 35 : 0

@@ -19,6 +19,9 @@ export class WeaponThermal {
       180
     )
   }
+  get ruptured(): boolean {
+    return this.heat >= weaponHeatTuning.ruptureHeat
+  }
   private time: number | null = null
   reset(): void {
     this.barrelC = this.slideC = this.ambientC
@@ -39,6 +42,6 @@ export class WeaponThermal {
       this.ambientC + weaponHeatTuning.hotRiseC * 1.5,
       this.barrelC + this.heatPerShotC,
     )
-    this.slideC += this.heatPerShotC * 0.18
+    // Only the barrel is heated; slide temperature is retained for legacy diagnostics.
   }
 }

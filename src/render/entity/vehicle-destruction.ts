@@ -112,6 +112,15 @@ export class VehicleDestruction {
     this.flare.mesh.name = 'Explosion lens flare'
     this.space.add(this.flare.mesh)
   }
+  /** Small weapon rupture: existing bounded debris pool and swept ground collision. */
+  breakWeapon(object: THREE.Group): void {
+    this.debris.explode(
+      object,
+      'broken-sidearm',
+      [...object.children].filter((node) => node.visible),
+    )
+    object.removeFromParent()
+  }
   explode(id: string, object: THREE.Object3D, extra: THREE.Object3D[] = []): void {
     if (this.burns.has(id)) return
     if (this.burns.size >= 32) this.remove(this.burns.keys().next().value!)

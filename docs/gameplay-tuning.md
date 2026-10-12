@@ -179,3 +179,11 @@ cooling time, glow/smoke thresholds and maximum dispersion angle. These are arca
 values. Only successful shots add heat; the barrel glows red, emits lingering smoke
 while hot (respecting the smoke option), and bullets spread uniformly within a cone.
 The rigid laser stays on its optical axis; it does not follow random bullet spread.
+
+Weapon heat is shared by SEMI and M: 9 arcade degrees per successful shot,
+180-second cooling constant. Two rapid 30-round magazines (2-second reload)
+reach red; continued fire turns orange and ruptures during the third.
+`weaponHeatTuning` exposes `glowStarts`, `orangeStarts`, and `ruptureHeat`.
+The rupture ejects slide, barrel, frame and seated magazine using world debris
+collision. The weapon stays broken until reset; reload does not repair it.
+Slide heating is not simulated. This is game tuning, not measured firearm data.

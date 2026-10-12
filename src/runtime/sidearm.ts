@@ -128,6 +128,7 @@ export class Sidearm {
   private hammerArmed = false
   private hammerStrikeAt = -Infinity
   private lastAction: 'single' | 'double' = 'double'
+  broken = false
   readonly temperature = new WeaponThermal()
   private hotMaterials: THREE.MeshStandardMaterial[] = []
   private heatSmokeAt = -Infinity
@@ -362,7 +363,7 @@ export class Sidearm {
 
   set visible(value: boolean) {
     this.enabled = value && !this.disposed
-    if (this.worldPresentation) this.worldPresentation.visible = this.enabled
+    if (this.worldPresentation) this.worldPresentation.visible = this.visible
     if (!this.enabled) {
       this.worldPresentation?.removeFromParent()
       this.aiming = false
@@ -371,7 +372,7 @@ export class Sidearm {
     }
   }
   get visible(): boolean {
-    return this.enabled
+    return this.enabled && !this.broken
   }
 
   setAiming(value: boolean): void {
@@ -395,7 +396,7 @@ export class Sidearm {
     return this.laserOn
   }
   get laserEnabled(): boolean {
-    return this.laserOn
+    return this.laserOn && !this.broken
   }
 
   /** Real-firearm data present (ammunition, reload, ballistics). */
@@ -414,6 +415,7 @@ export class Sidearm {
   }
 
   reset(): void {
+    this.broken = false
     this.temperature.reset()
     this.inspection = null
     this.hammerArmed = false
@@ -446,7 +448,7 @@ export class Sidearm {
     )
       return trigger(this.state, this.firearm, false, now)
     this.inspection = null
-    if (this.safetyOn) return trigger(this.state, this.firearm, false, now)
+    if (this.broken || this.safetyOn) return trigger(this.state, this.firearm, false, now)
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
     const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
     if (event.fired || event.dry) {
@@ -464,6 +466,46 @@ export class Sidearm {
       if (this.mode === 'burst30') this.recoilYaw.kick()
     }
     return event
+  }
+
+  /** Snapshot the four physical components before hiding the destroyed weapon. */
+  ruptureParts(
+    camera: THREE.PerspectiveCamera,
+    space: THREE.Group,
+    firstPerson: boolean,
+  ): THREE.Group | null {
+    if (this.broken || !this.assembledModel) return null
+    const source = firstPerson ? this.model : this.worldPresentation
+    if (!source) return null
+    source.updateWorldMatrix(true, true)
+    const body = source.clone(true)
+    if (firstPerson) {
+      const local = this.viewRig.worldToLocal(source.getWorldPosition(new THREE.Vector3()))
+      body.position.copy(local.applyQuaternion(camera.quaternion).add(camera.position))
+      body.quaternion.copy(camera.quaternion).multiply(source.quaternion)
+    } else {
+      body.position.copy(space.worldToLocal(source.getWorldPosition(new THREE.Vector3())))
+      body.quaternion
+        .copy(space.getWorldQuaternion(new THREE.Quaternion()).invert())
+        .multiply(source.getWorldQuaternion(new THREE.Quaternion()))
+    }
+    const group = new THREE.Group()
+    space.add(group)
+    group.add(body)
+    group.updateWorldMatrix(true, true)
+    // Detach children first so neither the slide nor the body duplicates the barrel.
+    for (const name of ['Barrel', 'Slide', 'Magazine']) {
+      const part = body.getObjectByName(name)
+      if (part) group.attach(part)
+    }
+    body.name = 'Broken pistol frame'
+    group.traverse((node) => {
+      if (node instanceof THREE.Points) node.visible = false
+    })
+    this.broken = true
+    if (this.worldPresentation) this.worldPresentation.visible = false
+    this.release()
+    return group
   }
 
   /** Trigger released: resets it for the next shot. */
@@ -529,11 +571,17 @@ export class Sidearm {
       (heat - weaponHeatTuning.glowStarts) / (1 - weaponHeatTuning.glowStarts),
     )
     for (const material of this.hotMaterials) {
-      material.emissive.setRGB(1, 0.035 + glow * 0.08, 0.002)
+      const orange = THREE.MathUtils.clamp(
+        (heat - weaponHeatTuning.orangeStarts) /
+          (weaponHeatTuning.ruptureHeat - weaponHeatTuning.orangeStarts),
+        0,
+        1,
+      )
+      material.emissive.setRGB(1, 0.035 + orange * 0.5, orange * 0.035)
       material.emissiveIntensity = glow * 2.5
     }
     if (
-      this.enabled &&
+      this.visible &&
       this.smokeEnabled &&
       heat > weaponHeatTuning.smokeStarts &&
       now - this.heatSmokeAt > 500 - heat * 350
@@ -588,7 +636,7 @@ export class Sidearm {
     world?: THREE.Scene,
     eye?: THREE.Camera,
   ): void {
-    if (!this.enabled) return
+    if (!this.visible) return
     const height = renderer.getDrawingBufferSize(new THREE.Vector2()).y
     this.smoke.update(now, height)
     this.worldSmoke?.update(now, height)
@@ -646,7 +694,7 @@ export class Sidearm {
     aim?: THREE.Vector3,
     up = new THREE.Vector3(0, 1, 0),
   ): void {
-    if (!this.enabled || firstPerson || !this.assembledModel) {
+    if (!this.visible || firstPerson || !this.assembledModel) {
       if (this.worldPresentation) this.worldPresentation.visible = false
       return
     }

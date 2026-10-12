@@ -73,3 +73,35 @@ it('aligns the neutral barrel while retaining the reviewed gesture rotation', as
   rig.alignViewAim(70)
   expect(aligned.invert().multiply(model.quaternion).angleTo(gesture)).toBeLessThan(1e-6)
 })
+
+it('rupture separates nested barrel, slide, magazine and frame once', async () => {
+  const { Sidearm } = await import('../../src/runtime/sidearm.js')
+  const model = new Group(),
+    slide = new Group(),
+    barrel = new Group(),
+    magazine = new Group()
+  slide.name = 'Slide'
+  barrel.name = 'Barrel'
+  magazine.name = 'Magazine'
+  slide.add(barrel)
+  model.add(slide, magazine)
+  const rig = new Group()
+  rig.add(model)
+  const arm = Object.assign(Object.create(Sidearm.prototype), {
+    broken: false,
+    assembledModel: model,
+    model,
+    viewRig: rig,
+    release: () => {},
+  }) as Sidearm
+  const parts = arm.ruptureParts(new PerspectiveCamera(), new Group(), true)!
+  expect(parts.children.map((p) => p.name).sort()).toEqual([
+    'Barrel',
+    'Broken pistol frame',
+    'Magazine',
+    'Slide',
+  ])
+  expect(parts.getObjectByName('Slide')!.children).toHaveLength(0)
+  expect(arm.broken).toBe(true)
+  expect(arm.ruptureParts(new PerspectiveCamera(), new Group(), true)).toBeNull()
+})

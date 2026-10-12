@@ -131,10 +131,12 @@ export const smokeTuning = { defaultPercent: 50, maxPercent: 300 }
 /** Arcade overheating response, not measured firearm temperatures. */
 export const weaponHeatTuning = {
   heatPerShotC: 9,
-  coolingSeconds: 30,
-  hotRiseC: 300,
-  glowStarts: 0.3,
-  smokeStarts: 0.15,
+  coolingSeconds: 180,
+  hotRiseC: 900,
+  glowStarts: 0.53,
+  orangeStarts: 0.7,
+  ruptureHeat: 0.82,
+  smokeStarts: 0.35,
   spreadStarts: 0.2,
   maxSpreadDegrees: 2,
 }
