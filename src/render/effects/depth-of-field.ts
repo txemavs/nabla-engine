@@ -31,7 +31,7 @@ export class DepthOfField {
       },
       depthTest: false,
       depthWrite: false,
-      toneMapped: false,
+      toneMapped: true,
       fog: false,
       vertexShader: `
         varying vec2 vUv;
@@ -80,8 +80,8 @@ export class DepthOfField {
             gather(vec2(-0.707, -0.707), dist, radiusPx, sum, weight);
             color = sum / weight;
           }
-          color *= 1.0 - sides * tunnel * 0.12;
           gl_FragColor = vec4(color, texture2D(colorTex, vUv).a);
+          #include <tonemapping_fragment>
           #include <colorspace_fragment>
         }
       `,
@@ -107,9 +107,11 @@ export class DepthOfField {
       const depthTexture = new THREE.DepthTexture(width, height)
       this.target = new THREE.WebGLRenderTarget(width, height, {
         depthTexture,
+        type: THREE.HalfFloatType,
         samples: 4,
       })
-      this.target.texture.colorSpace = THREE.SRGBColorSpace
+      // Keep scene radiance linear and unclipped; apply display tone mapping exactly once in present().
+      this.target.texture.colorSpace = THREE.LinearSRGBColorSpace
       this.material.uniforms.colorTex.value = this.target.texture
       this.material.uniforms.depthTex.value = depthTexture
       this.material.uniforms.texel.value.set(1 / width, 1 / height)

@@ -66,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.present
 
-[Implementation, line 121](../../../../../src/render/effects/depth-of-field.ts#L121)
+[Implementation, line 123](../../../../../src/render/effects/depth-of-field.ts#L123)
 
 Draw the blurred frame to the canvas. The caller renders HUD after this.
 
@@ -82,7 +82,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.dispose
 
-[Implementation, line 134](../../../../../src/render/effects/depth-of-field.ts#L134)
+[Implementation, line 136](../../../../../src/render/effects/depth-of-field.ts#L136)
 
 Slight far-field blur. The center of the frame stays sharp. Off skips the
 extra target entirely. Logarithmic depth is decoded with the same scale
@@ -99,12 +99,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.scene.clear`
 - `this.scene.traverse`
 
-## DepthOfField.dispose.callback@137
+## DepthOfField.dispose.callback@139
 
-[Implementation, line 137](../../../../../src/render/effects/depth-of-field.ts#L137)
+[Implementation, line 139](../../../../../src/render/effects/depth-of-field.ts#L139)
 
 ```ts
-callback@137(object): inferred by TypeScript; see implementation
+callback@139(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -113,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.release
 
-[Implementation, line 142](../../../../../src/render/effects/depth-of-field.ts#L142)
+[Implementation, line 144](../../../../../src/render/effects/depth-of-field.ts#L144)
 
 Slight far-field blur. The center of the frame stays sharp. Off skips the
 extra target entirely. Logarithmic depth is decoded with the same scale
