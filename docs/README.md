@@ -3,6 +3,9 @@
 Start with [Local development](local-development.md) to run the complete Docker
 stack and follow the guided source-code tour.
 
+See [Asset packs](asset-packs.md) for compressed model distribution, server
+requirements, caching, build settings and reproducible loading measurements.
+
 This documentation describes the working 0.2.0 baseline. The playground keeps its
 Spanish interface; UI labels are quoted where needed to locate a control.
 

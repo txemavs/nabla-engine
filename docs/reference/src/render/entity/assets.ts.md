@@ -9,10 +9,12 @@
 - `../portal/frame.js`
 - `three`
 - `three/addons/loaders/GLTFLoader.js`
+- `meshoptimizer`
+- `./asset-pack.js`
 
 ## cloneAssetScene
 
-[Implementation, line 6](../../../../../src/render/entity/assets.ts#L6)
+[Implementation, line 8](../../../../../src/render/entity/assets.ts#L8)
 
 Rebind light targets to the cloned hierarchy; Three's light copy leaves a detached target.
 
@@ -34,7 +36,7 @@ Explicit throws in this body:
 
 ## cloneAssetScene.pair
 
-[Implementation, line 9](../../../../../src/render/entity/assets.ts#L9)
+[Implementation, line 11](../../../../../src/render/entity/assets.ts#L11)
 
 ```ts
 pair(original: THREE.Object3D, copy: THREE.Object3D): inferred by TypeScript; see implementation
@@ -45,12 +47,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `objects.set`
 - `original.children.forEach`
 
-## cloneAssetScene.pair.callback@11
+## cloneAssetScene.pair.callback@13
 
-[Implementation, line 11](../../../../../src/render/entity/assets.ts#L11)
+[Implementation, line 13](../../../../../src/render/entity/assets.ts#L13)
 
 ```ts
-callback@11(child, i): inferred by TypeScript; see implementation
+callback@13(child, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -59,7 +61,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AssetLibrary.instantiate
 
-[Implementation, line 31](../../../../../src/render/entity/assets.ts#L31)
+[Implementation, line 34](../../../../../src/render/entity/assets.ts#L34)
 
 Owns shared geometry/textures. Views own their cloned materials and transforms.
 
@@ -74,27 +76,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pending.catch`
 - `this.cache.get`
 - `this.cache.set`
-- `this.loader.loadAsync`
-- `this.loader.loadAsync(url).then`
 
-## AssetLibrary.instantiate.callback@34
+## AssetLibrary.instantiate.callback@39
 
-[Implementation, line 34](../../../../../src/render/entity/assets.ts#L34)
+[Implementation, line 39](../../../../../src/render/entity/assets.ts#L39)
 
 ```ts
-callback@34(gltf): inferred by TypeScript; see implementation
+callback@39(buffer): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.loader.loadAsync`
+- `this.loader.parseAsync`
+- `url.lastIndexOf`
+- `url.slice`
+
+## AssetLibrary.instantiate.callback@44
+
+[Implementation, line 44](../../../../../src/render/entity/assets.ts#L44)
+
+```ts
+callback@44(gltf): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `gltf.scene.traverse`
 
-## AssetLibrary.instantiate.callback@34.callback@36
+## AssetLibrary.instantiate.callback@44.callback@46
 
-[Implementation, line 36](../../../../../src/render/entity/assets.ts#L36)
+[Implementation, line 46](../../../../../src/render/entity/assets.ts#L46)
 
 ```ts
-callback@36(object): inferred by TypeScript; see implementation
+callback@46(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -102,24 +117,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `repairPortalFrame`
 - `source.dispose`
 
-## AssetLibrary.instantiate.callback@46
+## AssetLibrary.instantiate.callback@56
 
-[Implementation, line 46](../../../../../src/render/entity/assets.ts#L46)
+[Implementation, line 56](../../../../../src/render/entity/assets.ts#L56)
 
 ```ts
-callback@46(): inferred by TypeScript; see implementation
+callback@56(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.cache.delete`
 
-## AssetLibrary.instantiate.callback@50
+## AssetLibrary.instantiate.callback@60
 
-[Implementation, line 50](../../../../../src/render/entity/assets.ts#L50)
+[Implementation, line 60](../../../../../src/render/entity/assets.ts#L60)
 
 ```ts
-callback@50(object): inferred by TypeScript; see implementation
+callback@60(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -129,9 +144,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `materials.every`
 - `object.material.map`
 
-## AssetLibrary.instantiate.callback@50.clone
+## AssetLibrary.instantiate.callback@60.clone
 
-[Implementation, line 53](../../../../../src/render/entity/assets.ts#L53)
+[Implementation, line 63](../../../../../src/render/entity/assets.ts#L63)
 
 ```ts
 clone(material: THREE.Material): inferred by TypeScript; see implementation
@@ -141,17 +156,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `material.clone`
 
-## AssetLibrary.instantiate.callback@50.callback@62
+## AssetLibrary.instantiate.callback@60.callback@72
 
-[Implementation, line 62](../../../../../src/render/entity/assets.ts#L62)
+[Implementation, line 72](../../../../../src/render/entity/assets.ts#L72)
 
 ```ts
-callback@62(m): inferred by TypeScript; see implementation
+callback@72(m): inferred by TypeScript; see implementation
 ```
 
 ## disposeObject
 
-[Implementation, line 70](../../../../../src/render/entity/assets.ts#L70)
+[Implementation, line 80](../../../../../src/render/entity/assets.ts#L80)
 
 ```ts
 disposeObject(root: THREE.Object3D): void
@@ -161,12 +176,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `root.traverse`
 
-## disposeObject.callback@71
+## disposeObject.callback@81
 
-[Implementation, line 71](../../../../../src/render/entity/assets.ts#L71)
+[Implementation, line 81](../../../../../src/render/entity/assets.ts#L81)
 
 ```ts
-callback@71(object): inferred by TypeScript; see implementation
+callback@81(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -177,12 +192,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `object.material.dispose`
 - `object.material.map?.dispose`
 
-## disposeObject.callback@71.callback@79
+## disposeObject.callback@81.callback@89
 
-[Implementation, line 79](../../../../../src/render/entity/assets.ts#L79)
+[Implementation, line 89](../../../../../src/render/entity/assets.ts#L89)
 
 ```ts
-callback@79(m): inferred by TypeScript; see implementation
+callback@89(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

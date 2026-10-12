@@ -217,7 +217,14 @@
     "rigs:generate": "node scripts/generate-vehicle-rigs.mjs",
     "rigs:check": "node scripts/generate-vehicle-rigs.mjs --check",
     "rigs:test": "node --test scripts/lib/vehicle-rig.test.mjs",
-    "trailer:split": "node scripts/split-trailer-box.mjs"
+    "trailer:split": "node scripts/split-trailer-box.mjs",
+    "assets:pack": "node scripts/pack-assets.mjs",
+    "predev": "npm run assets:pack",
+    "predev:game": "npm run assets:pack",
+    "prebuild:game": "npm run assets:pack",
+    "prebuild:demo": "npm run assets:pack",
+    "postbuild:game": "node scripts/finalize-game-assets.mjs",
+    "postbuild:demo": "node scripts/finalize-game-assets.mjs"
   },
   "keywords": [
     "3d",
