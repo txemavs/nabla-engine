@@ -13,6 +13,7 @@ export class WreckDebris {
   readonly pieces: {
     entityId: string
     pivot: THREE.Group
+    halfSize: THREE.Vector3
     velocity: THREE.Vector3
     spin: THREE.Vector3
     age: number
@@ -106,7 +107,9 @@ export class WreckDebris {
       matrix.decompose(mesh.position, mesh.quaternion, mesh.scale)
       const pivot = new THREE.Group()
       pivot.name = source.name || 'Wreck component'
-      const localCenter = new THREE.Box3().setFromObject(mesh).getCenter(new THREE.Vector3())
+      const bounds = new THREE.Box3().setFromObject(mesh)
+      const localCenter = bounds.getCenter(new THREE.Vector3())
+      const halfSize = bounds.getSize(new THREE.Vector3()).multiplyScalar(0.5)
       pivot.position.copy(localCenter)
       mesh.position.sub(localCenter)
       pivot.add(mesh)
@@ -118,6 +121,7 @@ export class WreckDebris {
       velocity.y += 2
       this.pieces.push({
         entityId,
+        halfSize,
         pivot,
         velocity,
         spin: new THREE.Vector3(
@@ -139,23 +143,43 @@ export class WreckDebris {
     for (const piece of this.pieces) {
       piece.age += dt
       const { pivot, velocity } = piece
-      velocity.y -= 9.8 * dt
-      const step = velocity.clone().multiplyScalar(dt),
-        distance = step.length()
-      const hit =
-        distance > 0 && cast
-          ? cast(pivot.position, step.clone().normalize(), distance + 0.06, piece.entityId)
-          : null
-      if (hit) {
-        pivot.position.copy(hit.point).addScaledVector(hit.normal, 0.06)
-        const inward = velocity.dot(hit.normal)
-        if (inward < 0) velocity.addScaledVector(hit.normal, -1.3 * inward)
-        velocity.multiplyScalar(0.65)
-        piece.spin.multiplyScalar(0.7)
-      } else pivot.position.add(step)
       pivot.rotateX(piece.spin.x * dt)
       pivot.rotateY(piece.spin.y * dt)
       pivot.rotateZ(piece.spin.z * dt)
+      const support = (normal: THREE.Vector3) => {
+        const n = normal.clone().applyQuaternion(pivot.quaternion.clone().invert())
+        return (
+          Math.abs(n.x) * piece.halfSize.x +
+          Math.abs(n.y) * piece.halfSize.y +
+          Math.abs(n.z) * piece.halfSize.z +
+          0.015
+        )
+      }
+      velocity.y -= 9.8 * dt
+      const step = velocity.clone().multiplyScalar(dt),
+        distance = step.length()
+      const direction = step.clone().normalize()
+      const hit =
+        distance > 0 && cast
+          ? cast(pivot.position, direction, distance + support(direction), piece.entityId)
+          : null
+      const resolve = (contact: { point: THREE.Vector3; normal: THREE.Vector3 }) => {
+        pivot.position.copy(contact.point).addScaledVector(contact.normal, support(contact.normal))
+        const inward = velocity.dot(contact.normal)
+        if (inward < 0) velocity.addScaledVector(contact.normal, -1.3 * inward)
+        velocity.multiplyScalar(0.65)
+        piece.spin.multiplyScalar(0.7)
+        if (velocity.lengthSq() < 0.25) {
+          velocity.set(0, 0, 0)
+          piece.spin.set(0, 0, 0)
+        }
+      }
+      if (hit) resolve(hit)
+      else pivot.position.add(step)
+      // Rotation can lower a corner even when the centre has barely moved.
+      const down = new THREE.Vector3(0, -1, 0)
+      const ground = cast?.(pivot.position, down, support(down), piece.entityId)
+      if (ground) resolve(ground)
       const char = Math.min(1, piece.age / 2.5)
       for (const { material, color } of piece.materials) {
         material.color.copy(color).lerp(new THREE.Color('#171717'), char)

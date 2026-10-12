@@ -42,15 +42,50 @@ it('detaches visible parts radially, chars private materials and restores source
 })
 
 it('detaches a complete Spanish-named door without splitting its nested articulated parts', () => {
-  const space = new Group(), car = new Group(), door = new Group(), nested = new Group()
-  door.name='Puerta Derecha'; nested.name='Door_Handle'
-  nested.add(new Mesh(new BoxGeometry(),new MeshStandardMaterial()))
-  door.add(nested);car.add(door);space.add(car)
+  const space = new Group(),
+    car = new Group(),
+    door = new Group(),
+    nested = new Group()
+  door.name = 'Puerta Derecha'
+  nested.name = 'Door_Handle'
+  nested.add(new Mesh(new BoxGeometry(), new MeshStandardMaterial()))
+  door.add(nested)
+  car.add(door)
+  space.add(car)
   const debris = new WreckDebris(space)
   debris.prepare(car)
-  debris.explode(car,'car')
+  debris.explode(car, 'car')
   expect(debris.pieces).toHaveLength(1)
   expect(debris.pieces[0].pivot.getObjectByName('Door_Handle')).toBeDefined()
   expect(door.visible).toBe(false)
+  debris.dispose()
+})
+
+it('supports a large rotating component above the floor instead of burying its lower half', () => {
+  const space = new Group(),
+    car = new Group(),
+    part = new Mesh(new BoxGeometry(1, 2, 0.3), new MeshStandardMaterial())
+  part.name = 'Puerta Derecha'
+  car.add(part)
+  car.position.y = 3
+  space.add(car)
+  const debris = new WreckDebris(space)
+  debris.explode(car, 'car')
+  for (let i = 0; i < 240; i++) {
+    debris.update(1 / 60, (from, dir, length) => {
+      if (dir.y >= 0) return null
+      const t = -from.y / dir.y
+      return t >= 0 && t <= length
+        ? { point: from.clone().addScaledVector(dir, t), normal: new Vector3(0, 1, 0) }
+        : null
+    })
+    const piece = debris.pieces[0]
+    const n = new Vector3(0, 1, 0).applyQuaternion(piece.pivot.quaternion.clone().invert())
+    const extent =
+      Math.abs(n.x) * piece.halfSize.x +
+      Math.abs(n.y) * piece.halfSize.y +
+      Math.abs(n.z) * piece.halfSize.z
+    expect(piece.pivot.position.y - extent).toBeGreaterThanOrEqual(-0.001)
+  }
   debris.dispose()
 })

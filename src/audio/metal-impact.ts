@@ -44,9 +44,9 @@ export class MetalImpact {
     }
     profile.forEach((hz, i) => {
       this.oscillators[i].frequency.setValueAtTime(hz, time)
-      strike(this.levels[i].gain, 0.085 / (i + 1), 0.34 - i * 0.055)
+      strike(this.levels[i].gain, 0.17 / (i + 1), 0.34 - i * 0.055)
     })
-    strike(this.tick.gain, 0.12, 0.025)
+    strike(this.tick.gain, 0.24, 0.025)
   }
   silence(time: number): void {
     for (const node of [...this.levels, this.tick]) {
