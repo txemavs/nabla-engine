@@ -41,13 +41,13 @@ it('detaches visible parts radially, chars private materials and restores source
   debris.dispose()
 })
 
-it('detaches a complete Spanish-named door without splitting its nested articulated parts', () => {
+it('detaches a complete wheel without splitting its rim', () => {
   const space = new Group(),
     car = new Group(),
     door = new Group(),
     nested = new Group()
-  door.name = 'Puerta Derecha'
-  nested.name = 'Door_Handle'
+  door.name = 'Wheel_Front'
+  nested.name = 'Wheel_Rim'
   nested.add(new Mesh(new BoxGeometry(), new MeshStandardMaterial()))
   door.add(nested)
   car.add(door)
@@ -56,7 +56,7 @@ it('detaches a complete Spanish-named door without splitting its nested articula
   debris.prepare(car)
   debris.explode(car, 'car')
   expect(debris.pieces).toHaveLength(1)
-  expect(debris.pieces[0].pivot.getObjectByName('Door_Handle')).toBeDefined()
+  expect(debris.pieces[0].pivot.getObjectByName('Wheel_Rim')).toBeDefined()
   expect(door.visible).toBe(false)
   debris.dispose()
 })
@@ -65,7 +65,7 @@ it('supports a large rotating component above the floor instead of burying its l
   const space = new Group(),
     car = new Group(),
     part = new Mesh(new BoxGeometry(1, 2, 0.3), new MeshStandardMaterial())
-  part.name = 'Puerta Derecha'
+  part.name = 'Wheel_Front'
   car.add(part)
   car.position.y = 3
   space.add(car)
@@ -80,11 +80,9 @@ it('supports a large rotating component above the floor instead of burying its l
         : null
     })
     const piece = debris.pieces[0]
-    const n = new Vector3(0, 1, 0).applyQuaternion(piece.pivot.quaternion.clone().invert())
-    const extent =
-      Math.abs(n.x) * piece.halfSize.x +
-      Math.abs(n.y) * piece.halfSize.y +
-      Math.abs(n.z) * piece.halfSize.z
+    const axle = piece.axle.clone().applyQuaternion(piece.pivot.quaternion)
+    const along = Math.abs(axle.y)
+    const extent = piece.width * along + piece.radius * Math.sqrt(Math.max(0, 1 - along * along))
     expect(piece.pivot.position.y - extent).toBeGreaterThanOrEqual(-0.001)
   }
   debris.dispose()

@@ -13,6 +13,10 @@ export class WreckDebris {
   readonly pieces: {
     entityId: string
     pivot: THREE.Group
+    axle: THREE.Vector3
+    radius: number
+    width: number
+    rolling: boolean
     halfSize: THREE.Vector3
     velocity: THREE.Vector3
     spin: THREE.Vector3
@@ -33,10 +37,7 @@ export class WreckDebris {
     object.traverseVisible((node) => {
       if (
         node !== object &&
-        (node.userData.wreckPart ||
-          /^(Wheel[_ -]|Fork_Slider$|Steering_Pivot$|steering-adjust$|Door[_ -]|Puerta(?:[_ -]|$)|Cap[oó](?:[_ -]|$)|Maletero(?:[_ -]|$)|Hood(?:[_ -]|$)|Bonnet(?:[_ -]|$)|Trunk(?:[_ -]|$)|Boot(?:[_ -]|$)|Tailgate(?:[_ -]|$))/i.test(
-            node.name,
-          ))
+        (node.userData.wreckPart || /^(Wheel(?:[_ -]|$)|Rueda(?:[_ -]|$))/i.test(node.name))
       )
         parts.push(node)
     })
@@ -119,7 +120,15 @@ export class WreckDebris {
         velocity.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
       velocity.normalize().multiplyScalar(4 + Math.random() * 5)
       velocity.y += 2
+      const sizes = halfSize.toArray()
+      const thin = sizes.indexOf(Math.min(...sizes))
+      const axle = new THREE.Vector3().setComponent(thin, 1)
+      const radius = Math.max(0.05, ...sizes.filter((_, i) => i !== thin))
       this.pieces.push({
+        axle,
+        radius,
+        width: sizes[thin],
+        rolling: false,
         entityId,
         halfSize,
         pivot,
@@ -143,16 +152,17 @@ export class WreckDebris {
     for (const piece of this.pieces) {
       piece.age += dt
       const { pivot, velocity } = piece
-      pivot.rotateX(piece.spin.x * dt)
-      pivot.rotateY(piece.spin.y * dt)
-      pivot.rotateZ(piece.spin.z * dt)
+      if (!piece.rolling) {
+        pivot.rotateX(piece.spin.x * dt)
+        pivot.rotateY(piece.spin.y * dt)
+        pivot.rotateZ(piece.spin.z * dt)
+      }
+      piece.rolling = false
       const support = (normal: THREE.Vector3) => {
-        const n = normal.clone().applyQuaternion(pivot.quaternion.clone().invert())
+        const axle = piece.axle.clone().applyQuaternion(pivot.quaternion)
+        const along = Math.min(1, Math.abs(normal.dot(axle)))
         return (
-          Math.abs(n.x) * piece.halfSize.x +
-          Math.abs(n.y) * piece.halfSize.y +
-          Math.abs(n.z) * piece.halfSize.z +
-          0.015
+          piece.width * along + piece.radius * Math.sqrt(Math.max(0, 1 - along * along)) + 0.015
         )
       }
       velocity.y -= 9.8 * dt
@@ -167,11 +177,26 @@ export class WreckDebris {
         pivot.position.copy(contact.point).addScaledVector(contact.normal, support(contact.normal))
         const inward = velocity.dot(contact.normal)
         if (inward < 0) velocity.addScaledVector(contact.normal, -1.3 * inward)
-        velocity.multiplyScalar(0.65)
-        piece.spin.multiplyScalar(0.7)
-        if (velocity.lengthSq() < 0.25) {
-          velocity.set(0, 0, 0)
+        if (contact.normal.y > 0.5 && Math.abs(inward) < 2) {
+          velocity.addScaledVector(contact.normal, -velocity.dot(contact.normal))
+          velocity.multiplyScalar(Math.exp(-0.32 * dt))
+          const speed = velocity.length()
+          if (speed > 0.05) {
+            const axle = contact.normal.clone().cross(velocity).normalize()
+            const current = piece.axle.clone().applyQuaternion(pivot.quaternion)
+            pivot.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(current, axle))
+            pivot.quaternion.premultiply(
+              new THREE.Quaternion().setFromAxisAngle(axle, (speed * dt) / piece.radius),
+            )
+          } else velocity.set(0, 0, 0)
           piece.spin.set(0, 0, 0)
+          piece.rolling = true
+          pivot.position
+            .copy(contact.point)
+            .addScaledVector(contact.normal, support(contact.normal))
+        } else {
+          velocity.multiplyScalar(0.85)
+          piece.spin.multiplyScalar(0.8)
         }
       }
       if (hit) resolve(hit)
