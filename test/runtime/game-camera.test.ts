@@ -168,7 +168,7 @@ test('Studio cameras work without editor DOM and cover cockpit, chase and overhe
   const cockpit = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
   const driver = camera.position.clone()
   expect(cockpit.info).not.toBeNull()
-  expect(camera.fov).toBe(70)
+  expect(camera.fov).toBe(82)
   state.mode = 'chase'
   updateGameCamera(sim, view, camera, state, 1100, 1 / 60)
   expect(camera.fov).toBe(48)
@@ -212,26 +212,16 @@ test('chase, first-person and driver views look with the mouse without a held bu
 test('C cycles ordinary views without entering cinematic', () => {
   const state = createGameCameraState()
   state.mode = 'chase'
-  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, true))).toEqual([
-    'cockpit',
-    'bodycam',
-    'map',
-    'chase',
-  ])
+  expect([1, 2, 3].map(() => cycleGameCamera(state, true))).toEqual(['bodycam', 'map', 'chase'])
   state.mode = 'chase'
   state.firstPerson = true
-  expect(gameCameraView(state, false)).toBe('first-person')
-  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, false))).toEqual([
-    'bodycam',
-    'chase',
-    'map',
-    'first-person',
-  ])
+  expect(gameCameraView(state, false)).toBe('bodycam')
+  expect([1, 2, 3].map(() => cycleGameCamera(state, false))).toEqual(['chase', 'map', 'bodycam'])
   expect(state.firstPerson).toBe(true)
   // Leaving a car keeps the mode it had; a leftover cockpit mode reads as on-foot first person.
   state.mode = 'cockpit'
-  expect(gameCameraView(state, false)).toBe('first-person')
-  expect(cycleGameCamera(state, false)).toBe('bodycam')
+  expect(gameCameraView(state, false)).toBe('bodycam')
+  expect(cycleGameCamera(state, false)).toBe('chase')
   // Entering cinematic starts the orbit behind the current heading.
   state.yaw = 1.2
   setGameCameraView(state, 'cinematic', false)
@@ -254,7 +244,7 @@ test.each([false, true])(
     idle.update(state, seated, 239999, true)
     expect(state.mode).toBe('cinematic')
     idle.activity(state, seated, 240000)
-    expect(gameCameraView(state, seated)).toBe(seated ? 'cockpit' : 'first-person')
+    expect(gameCameraView(state, seated)).toBe('bodycam')
     idle.update(state, seated, 500000, false)
     idle.update(state, seated, 500001, true)
     expect(state.mode).not.toBe('cinematic')
@@ -445,5 +435,8 @@ test('bodycam remains a first-person view when boarding and leaving a vehicle', 
   expect(gameCameraView(state, true)).toBe('bodycam')
   expect(gameCameraView(state, false)).toBe('bodycam')
   setGameCameraView(state, 'map', true)
-  expect(state.bodycam).toBe(false)
+  expect(state.bodycam).toBe(true)
+  state.bodycam = false
+  setGameCameraView(state, 'first-person', false)
+  expect(gameCameraView(state, false)).toBe('first-person')
 })

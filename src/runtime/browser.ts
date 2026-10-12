@@ -690,6 +690,7 @@ export class GameRuntime {
     })
     this.adaptive.setTargetFrameMs(this.display.maxFps ? 1000 / this.display.maxFps : null)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
+    this.cameraState.bodycam = browserStorage()?.getItem('nabla.bodycam') !== 'false'
     this.fovBase = {
       firstPersonFov: this.cameraState.settings.firstPersonFov,
       chaseFov: this.cameraState.settings.chaseFov,
@@ -2766,6 +2767,18 @@ export class GameRuntime {
     )
   }
   /** Live quality preference shared by exhaust and gun smoke. */
+  get bodycamEnabled(): boolean {
+    return !!this.cameraState.bodycam
+  }
+  setBodycamEnabled(enabled: boolean): void {
+    this.cameraState.bodycam = enabled
+    this.bodycam.reset()
+    try {
+      browserStorage()?.setItem('nabla.bodycam', String(enabled))
+    } catch {
+      /* Session preference still applies. */
+    }
+  }
   get smokePercent(): number {
     return smokeDensity.value * 100
   }
@@ -3705,18 +3718,6 @@ export class GameRuntime {
         this.weaponLight.intensity = this.weaponDrawn && this.weaponLightOn ? 35 : 0
       this.options.onMessage?.(
         this.weaponDrawn ? this.text('Weapon drawn') : this.text('Weapon holstered'),
-      )
-      return
-    }
-    if (code === 'KeyB' && this.weaponDrawn && !sim.player.vehicleId) {
-      setGameCameraView(
-        this.cameraState,
-        this.cameraState.bodycam ? 'first-person' : 'bodycam',
-        false,
-      )
-      this.bodycam.reset()
-      this.options.onMessage?.(
-        this.cameraState.bodycam ? 'Bodycam activada · apuntado libre' : 'Bodycam desactivada',
       )
       return
     }

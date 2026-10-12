@@ -338,6 +338,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     performanceGroup.hidden = true
   }
 
+  if (quality) {
+    const label = doc.createElement('label')
+    const input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'camera-bodycam'
+    input.checked = runtime.bodycamEnabled
+    input.addEventListener('change', () => runtime.setBodycamEnabled(input.checked))
+    label.append(input, ' Bodycam en primera persona')
+    quality.append(label)
+  }
+
   // Quality preference applies immediately to both exhaust and gun smoke.
   if (quality && typeof runtime.smokeEnabled === 'boolean') {
     const label = doc.createElement('label'),

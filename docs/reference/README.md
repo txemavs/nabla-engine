@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **391 modules; 4271 executable function definitions**.
+Coverage: **391 modules; 4274 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -33,7 +33,7 @@ Coverage: **391 modules; 4271 executable function definitions**.
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 69 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 45 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 46 |
 | [game/shadow-bias-ui.ts](game/shadow-bias-ui.ts.md) | 13 |
 | [game/sound-ui.ts](game/sound-ui.ts.md) | 4 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
@@ -287,7 +287,7 @@ Coverage: **391 modules; 4271 executable function definitions**.
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 323 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 325 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |

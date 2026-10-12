@@ -118,6 +118,7 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     settings: resolved,
     mode: 'chase',
     firstPerson: true,
+    bodycam: true,
     yaw: 0,
     pitch: resolved.chasePitch,
     headYaw: 0,
@@ -183,23 +184,24 @@ export function gameCameraView(
 }
 
 /**
- * The single camera cycle behind C / gamepad B. Seated: exterior → driver → bodycam → overhead →
- * exterior. On foot: first person → bodycam → third person → overhead → first
+ * The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
+ * exterior. On foot: first person → third person → overhead → first
  * person. Mutates `state` and returns the new view.
  */
 export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCameraView {
-  const view = gameCameraView(state, seated)
+  const current = gameCameraView(state, seated)
+  const view = current === 'bodycam' ? (seated ? 'cockpit' : 'first-person') : current
   const next: Record<GameCameraView, GameCameraView> = seated
     ? {
         chase: 'cockpit',
-        cockpit: 'bodycam',
+        cockpit: 'map',
         bodycam: 'map',
         map: 'chase',
         cinematic: 'chase',
         'first-person': 'cockpit',
       }
     : {
-        'first-person': 'bodycam',
+        'first-person': 'chase',
         bodycam: 'chase',
         chase: 'map',
         cockpit: 'map',
@@ -208,7 +210,7 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
       }
   const wanted = next[view]
   setGameCameraView(state, wanted, seated)
-  return wanted
+  return gameCameraView(state, seated)
 }
 
 /**
@@ -224,8 +226,8 @@ export function setGameCameraView(
 ): void {
   state.entrance = null
   state.seatMove = null
-  state.bodycam = wanted === 'bodycam'
   if (wanted === 'bodycam') {
+    state.bodycam = true
     state.mode = 'cockpit'
     state.firstPerson = true
   } else if (wanted === 'first-person') {
@@ -684,7 +686,8 @@ export function updateGameCamera(
   } else state.seatMove = null
 
   if (state.bodycam && isFirstPersonView(state, !!p.vehicleId) && !riderFall) {
-    camera.position.add(new THREE.Vector3(0, -0.18, 0).applyQuaternion(camera.quaternion))
+    if (!p.vehicleId)
+      camera.position.add(new THREE.Vector3(0, -0.18, 0).applyQuaternion(camera.quaternion))
     camera.fov += 12
     camera.updateProjectionMatrix()
   }

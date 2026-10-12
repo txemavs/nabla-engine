@@ -36,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mouseLooksWithoutButton
 
-[Implementation, line 153](../../../../src/runtime/game-camera.ts#L153)
+[Implementation, line 154](../../../../src/runtime/game-camera.ts#L154)
 
 Views where plain mouse movement looks around with no button held: the exterior
 chase/third-person camera, on-foot first person and the seated driver view. The vehicle
@@ -50,7 +50,7 @@ mouseLooksWithoutButton(state: Pick<GameCameraState, 'mode'>, seated: boolean): 
 
 ## detachedView
 
-[Implementation, line 161](../../../../src/runtime/game-camera.ts#L161)
+[Implementation, line 162](../../../../src/runtime/game-camera.ts#L162)
 
 Overhead and cinematic views are detached from the player's eyes in every context.
 
@@ -60,7 +60,7 @@ detachedView(mode: GameCameraMode): boolean
 
 ## isFirstPersonView
 
-[Implementation, line 166](../../../../src/runtime/game-camera.ts#L166)
+[Implementation, line 167](../../../../src/runtime/game-camera.ts#L167)
 
 True when the view is rendered from the player's or driver's eyes.
 
@@ -74,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gameCameraView
 
-[Implementation, line 175](../../../../src/runtime/game-camera.ts#L175)
+[Implementation, line 176](../../../../src/runtime/game-camera.ts#L176)
 
 Stable view name for hosts: `first-person`, `chase`, `cockpit`, `map` or `cinematic`.
 
@@ -89,10 +89,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cycleGameCamera
 
-[Implementation, line 190](../../../../src/runtime/game-camera.ts#L190)
+[Implementation, line 191](../../../../src/runtime/game-camera.ts#L191)
 
-The single camera cycle behind C / gamepad B. Seated: exterior → driver → bodycam → overhead →
-exterior. On foot: first person → bodycam → third person → overhead → first
+The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
+exterior. On foot: first person → third person → overhead → first
 person. Mutates `state` and returns the new view.
 
 ```ts
@@ -106,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setGameCameraView
 
-[Implementation, line 220](../../../../src/runtime/game-camera.ts#L220)
+[Implementation, line 222](../../../../src/runtime/game-camera.ts#L222)
 
 Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
 `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
@@ -119,7 +119,7 @@ setGameCameraView(state: GameCameraState, wanted: GameCameraView, seated: boolea
 
 ## IdleCinematic.activity
 
-[Implementation, line 254](../../../../src/runtime/game-camera.ts#L254)
+[Implementation, line 256](../../../../src/runtime/game-camera.ts#L256)
 
 Two-minute idle orbit, with the previous view restored before the next input.
 
@@ -133,7 +133,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## IdleCinematic.update
 
-[Implementation, line 261](../../../../src/runtime/game-camera.ts#L261)
+[Implementation, line 263](../../../../src/runtime/game-camera.ts#L263)
 
 Two-minute idle orbit, with the previous view restored before the next input.
 
@@ -149,7 +149,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## downwardViewFar
 
-[Implementation, line 284](../../../../src/runtime/game-camera.ts#L284)
+[Implementation, line 286](../../../../src/runtime/game-camera.ts#L286)
 
 Far plane while the camera looks steeply down. The ordinary far plane is 12 km, so a
 zenithal view is a shaft and the cascaded shadow maps size themselves to it. The ground
@@ -168,7 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## updateGameCamera
 
-[Implementation, line 293](../../../../src/runtime/game-camera.ts#L293)
+[Implementation, line 295](../../../../src/runtime/game-camera.ts#L295)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -264,18 +264,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@465
+## updateGameCamera.callback@467
 
-[Implementation, line 465](../../../../src/runtime/game-camera.ts#L465)
+[Implementation, line 467](../../../../src/runtime/game-camera.ts#L467)
 
 ```ts
-callback@465(entity): inferred by TypeScript; see implementation
+callback@467(entity): inferred by TypeScript; see implementation
 ```
 
-## updateGameCamera.callback@551
+## updateGameCamera.callback@553
 
-[Implementation, line 551](../../../../src/runtime/game-camera.ts#L551)
+[Implementation, line 553](../../../../src/runtime/game-camera.ts#L553)
 
 ```ts
-callback@551(entity): inferred by TypeScript; see implementation
+callback@553(entity): inferred by TypeScript; see implementation
 ```
