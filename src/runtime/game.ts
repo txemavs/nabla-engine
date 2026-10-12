@@ -21,6 +21,7 @@ import { createGameCameraState, cycleGameCamera, updateGameCamera } from './game
 /** Notices shown when C / gamepad B changes the view (English keys, see messages.es.ts). */
 const cameraNotice = {
   'first-person': 'First person',
+  bodycam: 'Bodycam',
   'third-person': 'Third person',
   chase: 'Chase camera',
   cockpit: 'Driver camera',

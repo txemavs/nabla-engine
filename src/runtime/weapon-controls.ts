@@ -1,3 +1,4 @@
+import { GameToolbar } from './game-toolbar.js'
 /** On-screen weapon controls, available with mouse and touch. */
 export class WeaponControls {
   readonly root = document.createElement('div')
@@ -7,6 +8,7 @@ export class WeaponControls {
     host: HTMLElement,
     action: (code: string) => void,
     private readonly aim: (held: boolean) => void,
+    toolbar?: GameToolbar,
   ) {
     this.root.className = 'weapon-controls'
     this.root.style.cssText =
@@ -64,7 +66,8 @@ export class WeaponControls {
       )
       this.root.append(button)
     }
-    host.append(this.root)
+    if (toolbar) toolbar.mount(this.root, 20)
+    else host.append(this.root)
     window.addEventListener('blur', () => aiming(false), options)
     this.setActive(false)
   }

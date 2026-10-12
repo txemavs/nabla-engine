@@ -1,3 +1,5 @@
+import { presetEntities, vehiclePresets } from '../catalog/vehicles/library.js'
+import { GameToolbar } from './game-toolbar.js'
 import { BodycamAim } from './bodycam-aim.js'
 import { smokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
 import { WeaponControls } from './weapon-controls.js'
@@ -588,6 +590,7 @@ export class GameRuntime {
   private previousPad: number | null = null
   private readonly originalTabIndex: string | null
   private disposed = false
+  private readonly toolbar: GameToolbar
   private readonly weaponControls: WeaponControls
   private readonly hud: GameHud | null
   private readonly wheelDebug = new WheelDebugOverlay()
@@ -645,10 +648,38 @@ export class GameRuntime {
     this.game.recover.snapToRoad = options.recoverToRoad !== false
     this.game.recover.roads = () => navigationRoads().filter((road) => road.carriageway)
     this.game.recover.pavedAreas = () => this.world?.pavedAreas ?? []
+    this.toolbar = new GameToolbar(
+      options.canvas.parentElement!,
+      () => this.fovOffset,
+      (value) => {
+        this.applyCameraFov(value)
+        writeCameraFovOffset(browserStorage(), this.fovOffset)
+      },
+    )
+    this.toolbar.addAction(
+      'Añadir vehículo al azar',
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16M4 12h16"/></svg>',
+      40,
+      async () => {
+        try {
+          const choices = vehiclePresets().filter((preset) => !preset.hidden)
+          if (!choices.length) throw new Error('No hay vehículos disponibles')
+          const selected = choices[Math.floor(Math.random() * choices.length)]
+          this.options.onMessage?.('Preparando ' + selected.label + '…')
+          await this.spawnVehicle(presetEntities(selected.id, 'random-vehicle'))
+          this.options.onMessage?.('Vehículo añadido: ' + selected.label)
+        } catch (error) {
+          this.options.onMessage?.(
+            error instanceof Error ? error.message : 'No se pudo añadir el vehículo',
+          )
+        }
+      },
+    )
     this.weaponControls = new WeaponControls(
       options.canvas.parentElement!,
       (code) => this.action(code),
       (held) => this.sidearm?.setAiming(held),
+      this.toolbar,
     )
     this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
     this.scene.add(this.wheelDebug.root)
@@ -810,6 +841,8 @@ export class GameRuntime {
             touchActions,
             options.touchControls ?? 'auto',
             this.text,
+            undefined,
+            this.toolbar,
           )
     this.touchFlight =
       options.touchControls === false
@@ -1097,6 +1130,7 @@ export class GameRuntime {
     this.shadows.dispose()
     this.catchFloor.dispose()
     this.weaponControls.dispose()
+    this.toolbar.dispose()
     this.hud?.dispose()
     this.wheelDebug.dispose()
     this.renderer.dispose()
@@ -1258,7 +1292,7 @@ export class GameRuntime {
     )
     this.advanceStartCameras(sim, time)
     const bodycamActive =
-      this.bodycam.enabled &&
+      !!this.cameraState.bodycam &&
       this.weaponDrawn &&
       !sim.player.vehicleId &&
       isFirstPersonView(this.cameraState, false)
@@ -1279,7 +1313,6 @@ export class GameRuntime {
     canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
     if (bodycamActive) {
-      this.camera.position.y -= 0.18
       this.camera.fov = this.cameraState.settings.firstPersonFov + (this.sidearm?.isAiming ? 0 : 12)
       this.camera.updateProjectionMatrix()
     }
@@ -3674,10 +3707,14 @@ export class GameRuntime {
       return
     }
     if (code === 'KeyB' && this.weaponDrawn && !sim.player.vehicleId) {
-      this.bodycam.enabled = !this.bodycam.enabled
+      setGameCameraView(
+        this.cameraState,
+        this.cameraState.bodycam ? 'first-person' : 'bodycam',
+        false,
+      )
       this.bodycam.reset()
       this.options.onMessage?.(
-        this.bodycam.enabled ? 'Bodycam activada · apuntado libre' : 'Bodycam desactivada',
+        this.cameraState.bodycam ? 'Bodycam activada · apuntado libre' : 'Bodycam desactivada',
       )
       return
     }
@@ -3985,7 +4022,7 @@ export class GameRuntime {
           let yaw = -event.movementX * controlDefaults.mouseSensitivity,
             pitch = event.movementY * controlDefaults.mouseSensitivity
           if (
-            this.bodycam.enabled &&
+            !!this.cameraState.bodycam &&
             this.weaponDrawn &&
             !seated &&
             isFirstPersonView(state, false)

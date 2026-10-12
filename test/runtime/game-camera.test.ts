@@ -212,11 +212,17 @@ test('chase, first-person and driver views look with the mouse without a held bu
 test('C cycles ordinary views without entering cinematic', () => {
   const state = createGameCameraState()
   state.mode = 'chase'
-  expect([1, 2, 3].map(() => cycleGameCamera(state, true))).toEqual(['cockpit', 'map', 'chase'])
+  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, true))).toEqual([
+    'cockpit',
+    'bodycam',
+    'map',
+    'chase',
+  ])
   state.mode = 'chase'
   state.firstPerson = true
   expect(gameCameraView(state, false)).toBe('first-person')
-  expect([1, 2, 3].map(() => cycleGameCamera(state, false))).toEqual([
+  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, false))).toEqual([
+    'bodycam',
     'chase',
     'map',
     'first-person',
@@ -225,7 +231,7 @@ test('C cycles ordinary views without entering cinematic', () => {
   // Leaving a car keeps the mode it had; a leftover cockpit mode reads as on-foot first person.
   state.mode = 'cockpit'
   expect(gameCameraView(state, false)).toBe('first-person')
-  expect(cycleGameCamera(state, false)).toBe('chase')
+  expect(cycleGameCamera(state, false)).toBe('bodycam')
   // Entering cinematic starts the orbit behind the current heading.
   state.yaw = 1.2
   setGameCameraView(state, 'cinematic', false)
@@ -429,4 +435,15 @@ test('cockpit and chase views ride the smoothed vehicle (SceneView.rideSmoothing
     expect(Math.hypot(drop.x, drop.z)).toBeLessThan(1e-3)
   }
   session.dispose()
+})
+
+test('bodycam remains a first-person view when boarding and leaving a vehicle', () => {
+  const state = createGameCameraState()
+  setGameCameraView(state, 'bodycam', false)
+  expect(isFirstPersonView(state, false)).toBe(true)
+  expect(isFirstPersonView(state, true)).toBe(true)
+  expect(gameCameraView(state, true)).toBe('bodycam')
+  expect(gameCameraView(state, false)).toBe('bodycam')
+  setGameCameraView(state, 'map', true)
+  expect(state.bodycam).toBe(false)
 })

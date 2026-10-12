@@ -34,11 +34,12 @@ import {
 export type GameCameraMode = 'chase' | 'cockpit' | 'map' | 'cinematic'
 
 /** Stable view names exposed to hosts (canvas `data-camera-mode`, HUD label keys). */
-export type GameCameraView = 'first-person' | 'chase' | 'cockpit' | 'map' | 'cinematic'
+export type GameCameraView = 'bodycam' | 'first-person' | 'chase' | 'cockpit' | 'map' | 'cinematic'
 
 export interface GameCameraState {
   settings: GameCameraSettings
   mode: GameCameraMode
+  bodycam?: boolean
   firstPerson: boolean
   yaw: number
   pitch: number
@@ -163,7 +164,7 @@ function detachedView(mode: GameCameraMode): boolean {
 
 /** True when the view is rendered from the player's or driver's eyes. */
 export function isFirstPersonView(
-  state: Pick<GameCameraState, 'mode' | 'firstPerson'>,
+  state: Pick<GameCameraState, 'mode' | 'firstPerson' | 'bodycam'>,
   seated: boolean,
 ): boolean {
   if (seated) return state.mode === 'cockpit'
@@ -172,17 +173,18 @@ export function isFirstPersonView(
 
 /** Stable view name for hosts: `first-person`, `chase`, `cockpit`, `map` or `cinematic`. */
 export function gameCameraView(
-  state: Pick<GameCameraState, 'mode' | 'firstPerson'>,
+  state: Pick<GameCameraState, 'mode' | 'firstPerson' | 'bodycam'>,
   seated: boolean,
 ): GameCameraView {
+  if (state.bodycam && isFirstPersonView(state, seated)) return 'bodycam'
   if (detachedView(state.mode)) return state.mode as GameCameraView
   if (seated) return state.mode as GameCameraView
   return state.firstPerson ? 'first-person' : 'chase'
 }
 
 /**
- * The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
- * exterior. On foot: first person → third person → overhead → first
+ * The single camera cycle behind C / gamepad B. Seated: exterior → driver → bodycam → overhead →
+ * exterior. On foot: first person → bodycam → third person → overhead → first
  * person. Mutates `state` and returns the new view.
  */
 export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCameraView {
@@ -190,13 +192,15 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
   const next: Record<GameCameraView, GameCameraView> = seated
     ? {
         chase: 'cockpit',
-        cockpit: 'map',
+        cockpit: 'bodycam',
+        bodycam: 'map',
         map: 'chase',
         cinematic: 'chase',
         'first-person': 'cockpit',
       }
     : {
-        'first-person': 'chase',
+        'first-person': 'bodycam',
+        bodycam: 'chase',
         chase: 'map',
         cockpit: 'map',
         map: 'first-person',
@@ -220,7 +224,11 @@ export function setGameCameraView(
 ): void {
   state.entrance = null
   state.seatMove = null
-  if (wanted === 'first-person') {
+  state.bodycam = wanted === 'bodycam'
+  if (wanted === 'bodycam') {
+    state.mode = 'cockpit'
+    state.firstPerson = true
+  } else if (wanted === 'first-person') {
     state.mode = 'chase'
     state.firstPerson = true
   } else {
@@ -675,13 +683,19 @@ export function updateGameCamera(
     if (t >= 1) state.seatMove = null
   } else state.seatMove = null
 
+  if (state.bodycam && isFirstPersonView(state, !!p.vehicleId) && !riderFall) {
+    camera.position.add(new THREE.Vector3(0, -0.18, 0).applyQuaternion(camera.quaternion))
+    camera.fov += 12
+    camera.updateProjectionMatrix()
+  }
+
   // View changes blend from the last rendered pose (eased position, orientation and fov) while
   // the player stays in the same vehicle or on foot; boarding keeps its own entrance move.
   const cameraView = recovery
     ? cameraMode
     : riderFall
       ? 'cinematic'
-      : gameCameraView({ mode: cameraMode, firstPerson }, !!p.vehicleId)
+      : gameCameraView({ mode: cameraMode, firstPerson, bodycam: state.bodycam }, !!p.vehicleId)
   const vehicleKey = p.vehicleId ?? null
   const anchor = new THREE.Vector3(...p.position)
   let transition = state.transition
