@@ -22,6 +22,26 @@ export const carMenuItems: MonitorMenuItem[] = [
         label: 'CARGAR 2 A3',
         action: { type: 'vehicle.trailer', value: 'cargo' },
       },
+      {
+        id: 'trailer-angle-up',
+        label: 'ANGULO +3',
+        action: { type: 'vehicle.trailer', value: 'angle-up' },
+      },
+      {
+        id: 'trailer-angle-down',
+        label: 'ANGULO -3',
+        action: { type: 'vehicle.trailer', value: 'angle-down' },
+      },
+      {
+        id: 'trailer-extend',
+        label: 'EXTENDER',
+        action: { type: 'vehicle.trailer', value: 'extend' },
+      },
+      {
+        id: 'trailer-retract',
+        label: 'RECOGER',
+        action: { type: 'vehicle.trailer', value: 'retract' },
+      },
       back,
     ],
   },

@@ -73,7 +73,7 @@ export const generatedVehicleRigs: Record<
   },
   'white-car-transporter': {
     source: '/library/trucks/white-truck/assets/trailer.transporter.glb',
-    sha256: 'eae5f612036c989cd3f07117e9dbe7c740193611b3c091f3ebddf9d7a2b5d720',
+    sha256: '39fa8801dece63265f74ab87a990768ab700c6b1d4ca8a9e1601702a42a4f364',
     hubs: [
       [-0.8920750849989497, -0.6276177768713792, 1.775093997560098],
       [-0.8920751181276269, -0.6276177768713792, 3.0726903836142947],
@@ -97,7 +97,7 @@ export const generatedVehicleRigs: Record<
   },
   'white-trailer-chassis': {
     source: '/library/trucks/white-truck/assets/trailer.chassis.glb',
-    sha256: 'eae5f612036c989cd3f07117e9dbe7c740193611b3c091f3ebddf9d7a2b5d720',
+    sha256: '3102ff84a27129d329369edf0c1923d87dd21b2ac6794247e73077852c7d0452',
     hubs: [
       [-0.8920750849989497, -0.6276177768713792, 1.775093997560098],
       [-0.8920751181276269, -0.6276177768713792, 3.0726903836142947],
@@ -121,7 +121,7 @@ export const generatedVehicleRigs: Record<
   },
   'white-trailer': {
     source: '/library/trucks/white-truck/assets/trailer.chassis.glb',
-    sha256: 'eae5f612036c989cd3f07117e9dbe7c740193611b3c091f3ebddf9d7a2b5d720',
+    sha256: '3102ff84a27129d329369edf0c1923d87dd21b2ac6794247e73077852c7d0452',
     hubs: [
       [-0.8920750849989497, -0.6276177768713792, 1.775093997560098],
       [-0.8920751181276269, -0.6276177768713792, 3.0726903836142947],

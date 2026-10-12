@@ -510,6 +510,17 @@ export const vehicleField = z
             hinge: vector,
             closeAngle: finite.min(-Math.PI).max(Math.PI),
             loadAngle: finite.min(-Math.PI).max(Math.PI).optional(),
+            telescope: z
+              .object({
+                colliderIndex: z.number().int().min(0).max(31),
+                travel: finite.positive().max(30),
+                speed: finite.positive().max(10),
+                minAngle: finite.min(-Math.PI).max(0),
+                maxAngle: finite.min(0).max(Math.PI),
+                angleStep: finite.positive().max(1),
+              })
+              .strict()
+              .optional(),
           })
           .strict()
           .optional(),
@@ -531,6 +542,7 @@ export const visualField = z
     ramp: z
       .object({
         nodes: z.array(z.string()).min(1).max(8),
+        telescopeNode: z.string().optional(),
         hinge: vector,
         closeAngle: finite.min(-Math.PI).max(Math.PI),
       })

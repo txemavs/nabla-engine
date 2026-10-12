@@ -200,7 +200,7 @@ Bare trailer: the black LoadingDeck has a matching moving collider. Tractor menu
 returns flat and stationary cars wholly supported by it are locked for transport;
 opening releases cargo. With a drawn gun R still operates the magazine. The reset toolbar button
 recovers the vehicle directly, even with the gun drawn.
-The white-car-transporter preset has one tilting deck for two cars. CARGAR 2 A3 in the tractor menu
+The white-car-transporter preset has a lower tilting deck and a sliding upper section for two cars. CARGAR 2 A3 in the tractor menu
 preloads and places two physical A3s in the slots in trailerPlatformTuning, locks
 them to the trailer and refuses duplicate loading. Boxed trailers keep their box
 and have no platform controls. Gameplay heat and all trailer dimensions are arcade tuning.
@@ -215,6 +215,13 @@ platform and car transporter. Only explicitly hidden presets are omitted.
 Added platforms/car carriers have Bajar rampa and Horizontal · fijar coches buttons
 in their Add list entry, so detached trailers can be operated too. Opening releases
 the cars; flattening automatically locks stopped cars fully supported on the deck.
+In J → REMOLQUE, ANGULO +3 / -3 adjusts the jump pitch, EXTENDER slides the upper
+section rearward and RECOGER retracts it. PLATAFORMA levels and retracts both sections
+before locking cargo. Telescope travel (12 m, 0.8 m overlap), speed (2 m/s), angle limits
+(-30° to 2.6°) and step (3°) are in the car-transporter preset's `garage.ramp.telescope`.
+The visual sections are 8 cm / 4 cm thick, with the sliding section's end tapered over
+40 cm. Both have moving physical colliders; the upper collider is a thin box, so the
+physical seam is at most 4 cm. These dimensions are in the authoring script and preset.
 Platform colliders, hinge and loading angle are in the trailer presets under
 `assets/library/cars/white-truck/`. Visible deck dimensions are authored in
 `scripts/split-trailer-box.mjs`; regenerate with `npm run trailer:split`, then

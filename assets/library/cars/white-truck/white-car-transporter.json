@@ -1,10 +1,10 @@
 {
   "id": "white-car-transporter",
-  "label": "Portacoches · rampa basculante",
+  "label": "Portacoches · rampa telescópica",
   "clearance": 1.2,
   "placement": [10, 1.2, 7.33],
   "order": 9,
-  "name": "Portacoches · rampa basculante",
+  "name": "Portacoches · rampa telescópica",
   "color": "#eeeeee",
   "size": [2.55, 1.4, 13.5],
   "mass": 5000,
@@ -13,11 +13,18 @@
     "passive": true,
     "colliders": [
       {
-        "size": [2.4, 0.18, 12.8],
+        "size": [2.4, 0.08, 12.8],
         "transform": {
           "position": [0, 0.19, 0],
           "rotation": [0, 0, 0, 1]
         }
+      },
+      {
+        "transform": {
+          "position": [0, 0.25, 0],
+          "rotation": [0, 0, 0, 1]
+        },
+        "size": [2.32, 0.04, 12.8]
       }
     ],
     "wheelRadius": 0.5723822231286207,
@@ -33,7 +40,15 @@
         "colliderIndex": 0,
         "hinge": [0, 0.19, -6.4],
         "closeAngle": 0,
-        "loadAngle": 0.105
+        "loadAngle": 0.045,
+        "telescope": {
+          "colliderIndex": 1,
+          "maxAngle": 0.045,
+          "minAngle": -0.5235987756,
+          "travel": 12.0,
+          "speed": 2,
+          "angleStep": 0.05235987756
+        }
       }
     }
   },
@@ -91,9 +106,10 @@
     ],
     "presentation": "nabla.truck",
     "ramp": {
-      "nodes": ["LoadingDeck"],
+      "nodes": ["LoadingDeck", "SlidingDeck"],
       "hinge": [0, 0.19, -6.4],
-      "closeAngle": 0
+      "closeAngle": 0,
+      "telescopeNode": "SlidingDeck"
     }
   },
   "rig": "glb"

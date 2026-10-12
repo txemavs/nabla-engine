@@ -94,8 +94,17 @@ const chassisNodes = new Set(
 const chassis = extract(json, chassisNodes)
 const box = extract(json, boxNodes)
 const added = new Map()
-function plate(doc, name, size, position) {
-  const geometry = new THREE.BoxGeometry(...size)
+function plate(doc, name, size, position, bevel = 0) {
+  const geometry = new THREE.BoxGeometry(...size, 1, 1, bevel ? 32 : 1)
+  if (bevel) {
+    const vertices = geometry.attributes.position
+    for (let i = 0; i < vertices.count; i++)
+      if (vertices.getY(i) > 0) {
+        const share = Math.min(1, Math.max(0, (size[2] / 2 - Math.abs(vertices.getZ(i))) / bevel))
+        vertices.setY(i, -size[1] / 2 + size[1] * share)
+      }
+    geometry.computeVertexNormals()
+  }
   const attributes = {}
   for (const [semantic, attr] of [
     ['POSITION', geometry.attributes.position],
@@ -130,10 +139,11 @@ function plate(doc, name, size, position) {
   doc.nodes.push({ name, mesh, translation: position })
   doc.scenes[doc.scene ?? 0].nodes.push(node)
 }
-plate(chassis, 'LoadingDeck', [2.4, 0.18, 12.8], [0, 0.19, 0])
+plate(chassis, 'LoadingDeck', [2.4, 0.08, 12.8], [0, 0.19, 0])
 const readAdded = (id) => added.get(id) ?? read(id)
 writeGlb(CHASSIS, chassis, readAdded, bin)
 const transporter = structuredClone(chassis)
+plate(transporter, 'SlidingDeck', [2.32, 0.04, 12.8], [0, 0.25, 0], 0.4)
 writeGlb(
   'assets/library/trucks/white-truck/assets/trailer.transporter.glb',
   transporter,

@@ -20,6 +20,8 @@ export interface Vehicle {
   rampClosed: boolean
   rampAngle: number
   rampTarget: number
+  rampExtension: number
+  rampExtensionTarget: number
   rampPortalActive: boolean
   cruiseSpeed: number
   helm: 'off' | 'auto' | 'car' | 'drone' | 'plane' | 'space'

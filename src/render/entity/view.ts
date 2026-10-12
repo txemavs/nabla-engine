@@ -1305,6 +1305,12 @@ export class SceneView {
         hinge.attach(part)
       }
       this.ramps.set(e.id, hinge)
+      if (visual.ramp.telescopeNode) {
+        const section = hinge.getObjectByName(visual.ramp.telescopeNode)
+        if (!section) throw new Error('Missing telescopic ramp node')
+        hinge.userData.telescope = section
+        hinge.userData.telescopeZ = section.position.z
+      }
       this.shipLights.get(e.id)?.attachStern(hinge)
     })
     if (visual.wheel || visual.wheels) {
@@ -1676,7 +1682,12 @@ export class SceneView {
       gear.setDeployed(sim.vehicleInfo(id).landingGear, now)
       gear.update(now)
     }
-    for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
+    for (const [id, ramp] of this.ramps) {
+      const info = sim.vehicleInfo(id)
+      ramp.rotation.x = info.rampAngle
+      if (ramp.userData.telescope)
+        ramp.userData.telescope.position.z = ramp.userData.telescopeZ + info.rampExtension
+    }
     for (const [id, wheel] of this.steering)
       poseSteeringWheel(
         wheel,

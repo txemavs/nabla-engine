@@ -4048,6 +4048,8 @@ export class GameRuntime {
                 )
                 return 'Preparando carga del portacoches'
               }
+              if (['extend', 'retract', 'angle-up', 'angle-down'].includes(action))
+                return sim.adjustTrailerRamp(id, action)
               return sim.setTrailerPlatform(id, action === 'flat')
             },
           )
