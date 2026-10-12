@@ -21,34 +21,72 @@ export class WreckDebris {
       color: THREE.Color
     }[]
   }[] = []
-  private originals = new Map<THREE.Mesh, boolean>()
+  private originals = new Map<THREE.Object3D, boolean>()
+  private prepared = new Map<THREE.Object3D, THREE.Object3D>()
   constructor(private readonly space: THREE.Group) {
     this.root.name = 'Detached wreck parts'
     space.add(this.root)
+  }
+  private parts(object: THREE.Object3D): THREE.Object3D[] {
+    const parts: THREE.Object3D[] = []
+    object.traverseVisible((node) => {
+      if (
+        node !== object &&
+        (node.userData.wreckPart ||
+          /^(Wheel[_ -]|Fork_Slider$|Steering_Pivot$|steering-adjust$|Door[_ -]|Hood(?:[_ -]|$)|Bonnet(?:[_ -]|$)|Trunk(?:[_ -]|$)|Boot(?:[_ -]|$)|Tailgate(?:[_ -]|$))/i.test(
+            node.name,
+          ))
+      )
+        parts.push(node)
+    })
+    return parts
+  }
+  prepare(object: THREE.Object3D): void {
+    const parts = this.parts(object)
+    for (const source of parts) {
+      if (this.prepared.has(source) || this.originals.has(source)) continue
+      const clone = source.clone(true)
+      for (const child of parts) {
+        if (child === source) continue
+        const nested = clone.getObjectByName(child.name)
+        if (nested && nested !== clone) nested.removeFromParent()
+      }
+      clone.traverse((node) => {
+        if (node instanceof THREE.Mesh)
+          node.material = Array.isArray(node.material)
+            ? node.material.map((m) => m.clone())
+            : node.material.clone()
+      })
+      this.prepared.set(source, clone)
+    }
+  }
+  warmRoot(): THREE.Group {
+    const group = new THREE.Group()
+    for (const clone of this.prepared.values()) group.add(clone)
+    return group
   }
   explode(object: THREE.Object3D, entityId: string): THREE.Group[] {
     object.updateWorldMatrix(true, true)
     const center = new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3())
     this.space.worldToLocal(center)
-    const sources: THREE.Mesh[] = []
-    object.traverseVisible((node) => {
-      if (node instanceof THREE.Mesh && !(node instanceof THREE.SkinnedMesh)) sources.push(node)
-    })
+    const sources = this.parts(object)
     const created: THREE.Group[] = []
-    for (const source of sources.slice(0, 128)) {
+    this.prepare(object)
+    for (const source of sources) {
       if (this.originals.has(source)) continue
-      const mesh = new THREE.Mesh(
-        source.geometry,
-        Array.isArray(source.material)
-          ? source.material.map((m) => m.clone())
-          : source.material.clone(),
-      )
-      const materials = (Array.isArray(mesh.material) ? mesh.material : [mesh.material])
-        .filter(
-          (m): m is THREE.MeshStandardMaterial | THREE.MeshBasicMaterial =>
-            m instanceof THREE.MeshStandardMaterial || m instanceof THREE.MeshBasicMaterial,
-        )
-        .map((material) => ({ material, color: material.color.clone() }))
+      const mesh = this.prepared.get(source)!
+      mesh.removeFromParent()
+      this.prepared.delete(source)
+      const materials: (typeof this.pieces)[number]['materials'] = []
+      mesh.traverse((node) => {
+        if (!(node instanceof THREE.Mesh)) return
+        for (const material of Array.isArray(node.material) ? node.material : [node.material])
+          if (
+            material instanceof THREE.MeshStandardMaterial ||
+            material instanceof THREE.MeshBasicMaterial
+          )
+            materials.push({ material, color: material.color.clone() })
+      })
       const matrix = new THREE.Matrix4()
         .copy(this.space.matrixWorld)
         .invert()
@@ -134,6 +172,13 @@ export class WreckDebris {
   }
   dispose(): void {
     this.clear()
+    for (const clone of this.prepared.values())
+      clone.traverse((node) => {
+        if (node instanceof THREE.Mesh)
+          for (const material of Array.isArray(node.material) ? node.material : [node.material])
+            material.dispose()
+      })
+    this.prepared.clear()
     this.root.removeFromParent()
   }
 }

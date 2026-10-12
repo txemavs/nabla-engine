@@ -224,7 +224,11 @@ export class VehicleDestruction {
     renderer: Pick<THREE.WebGLRenderer, 'compileAsync'>,
     scene: THREE.Scene,
     camera: THREE.Camera,
+    vehicles: Iterable<THREE.Object3D> = [],
   ): Promise<void> {
+    for (const vehicle of vehicles) this.debris.prepare(vehicle)
+    const parts = this.debris.warmRoot()
+    this.root.add(parts)
     this.warmFire ??= this.createFire().fire
     this.warmFlames ??= this.createFlames({ value: 0 })
     this.warmSmoke ??= new ExhaustSmoke(this.space, this.space)
@@ -233,6 +237,8 @@ export class VehicleDestruction {
     try {
       await renderer.compileAsync(scene, camera)
     } finally {
+      parts.removeFromParent()
+      parts.clear()
       this.warmFire.removeFromParent()
       this.warmSmoke.root.removeFromParent()
       this.warmFlames.flames.removeFromParent()

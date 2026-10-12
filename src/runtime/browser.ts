@@ -2971,7 +2971,15 @@ export class GameRuntime {
     signal.throwIfAborted()
     // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
     if (sim) await this.placeInitialWeaponPickup(sim)
-    await within(this.view.destruction.warm(this.renderer, this.scene, this.camera), 20_000)
+    await within(
+      this.view.destruction.warm(
+        this.renderer,
+        this.scene,
+        this.camera,
+        this.view.objects.values(),
+      ),
+      20_000,
+    )
     signal.throwIfAborted()
     // of the camera so the attract frames keep their own projection.
     stage('shaders', 3)

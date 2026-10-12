@@ -11,13 +11,18 @@ it('detaches visible parts radially, chars private materials and restores source
   const material = new MeshStandardMaterial({ color: '#dd3322' })
   for (const x of [-1, 1]) {
     const wheel = new Mesh(new BoxGeometry(0.4, 0.4, 0.4), material)
+    wheel.name = x < 0 ? 'Wheel_Left' : 'Wheel_Right'
     wheel.position.x = x
     vehicle.add(wheel)
   }
+  const chassis = new Mesh(new BoxGeometry(), material)
+  chassis.name = 'Chassis'
+  vehicle.add(chassis)
   const debris = new WreckDebris(space)
   debris.explode(vehicle, 'bike')
   expect(debris.pieces).toHaveLength(2)
-  expect(vehicle.children.every((p) => !p.visible)).toBe(true)
+  expect(vehicle.children.filter((p) => p !== chassis).every((p) => !p.visible)).toBe(true)
+  expect(chassis.visible).toBe(true)
   expect(debris.pieces[0].velocity.x).toBeLessThan(0)
   expect(debris.pieces[1].velocity.x).toBeGreaterThan(0)
   expect(debris.pieces[0].pivot.position.x).toBeCloseTo(109)

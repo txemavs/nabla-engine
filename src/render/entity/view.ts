@@ -1307,6 +1307,8 @@ export class SceneView {
       const wheels = definition.hubs.map((hub, i) => {
         const wheel = new THREE.Group()
         wheel.position.fromArray(hub)
+        wheel.userData.wreckPart = true
+        wheel.name ||= 'Wheel_' + wheels.length
         group.add(wheel)
         const orientation = new THREE.Group()
         if (visual.wheelRotations) orientation.quaternion.fromArray(visual.wheelRotations[i])
@@ -1405,6 +1407,8 @@ export class SceneView {
       hub.rotation.z = Math.PI / 2
       wheel.add(hub)
       wheel.position.set(x, -h * 0.3 - 0.35, z)
+      wheel.userData.wreckPart = true
+      wheel.name ||= 'Wheel_' + wheels.length
       group.add(wheel)
       const wrapper = new THREE.Group()
       wrapper.position.copy(wheel.position)

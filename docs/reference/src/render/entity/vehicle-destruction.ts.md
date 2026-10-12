@@ -151,15 +151,19 @@ callback@209(): inferred by TypeScript; see implementation
 Compile effect programs during loading and keep them alive across session resets.
 
 ```ts
-warm(renderer: Pick<THREE.WebGLRenderer, 'compileAsync'>, scene: THREE.Scene, camera: THREE.Camera): Promise<void>
+warm(renderer: Pick<THREE.WebGLRenderer, 'compileAsync'>, scene: THREE.Scene, camera: THREE.Camera, vehicles: Iterable<THREE.Object3D> = []): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `ExhaustSmoke`
+- `parts.clear`
+- `parts.removeFromParent`
 - `renderer.compileAsync`
 - `this.createFire`
 - `this.createFlames`
+- `this.debris.prepare`
+- `this.debris.warmRoot`
 - `this.root.add`
 - `this.warmFire.removeFromParent`
 - `this.warmFlames.flames.removeFromParent`
@@ -167,7 +171,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.glass
 
-[Implementation, line 241](../../../../../src/render/entity/vehicle-destruction.ts#L241)
+[Implementation, line 247](../../../../../src/render/entity/vehicle-destruction.ts#L247)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
@@ -185,7 +189,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.update
 
-[Implementation, line 256](../../../../../src/render/entity/vehicle-destruction.ts#L256)
+[Implementation, line 262](../../../../../src/render/entity/vehicle-destruction.ts#L262)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
@@ -220,24 +224,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.shards.splice`
 - `this.space.worldToLocal`
 
-## VehicleDestruction.update.callback@300
+## VehicleDestruction.update.callback@306
 
-[Implementation, line 300](../../../../../src/render/entity/vehicle-destruction.ts#L300)
+[Implementation, line 306](../../../../../src/render/entity/vehicle-destruction.ts#L306)
 
 ```ts
-callback@300(tongue, i): inferred by TypeScript; see implementation
+callback@306(tongue, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.sin`
 
-## VehicleDestruction.update.callback@330
+## VehicleDestruction.update.callback@336
 
-[Implementation, line 330](../../../../../src/render/entity/vehicle-destruction.ts#L330)
+[Implementation, line 336](../../../../../src/render/entity/vehicle-destruction.ts#L336)
 
 ```ts
-callback@330(shard, i): inferred by TypeScript; see implementation
+callback@336(shard, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -249,7 +253,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.remove
 
-[Implementation, line 338](../../../../../src/render/entity/vehicle-destruction.ts#L338)
+[Implementation, line 344](../../../../../src/render/entity/vehicle-destruction.ts#L344)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
@@ -269,7 +273,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.clear
 
-[Implementation, line 348](../../../../../src/render/entity/vehicle-destruction.ts#L348)
+[Implementation, line 354](../../../../../src/render/entity/vehicle-destruction.ts#L354)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
@@ -291,7 +295,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.dispose
 
-[Implementation, line 375](../../../../../src/render/entity/vehicle-destruction.ts#L375)
+[Implementation, line 381](../../../../../src/render/entity/vehicle-destruction.ts#L381)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
