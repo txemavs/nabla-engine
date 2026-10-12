@@ -73,7 +73,7 @@ import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.j
 import { fireModeLabel } from '../simulation/weapons/machine-pistol.js'
 import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
-import { fireSidearm, sidearmButtonAction } from './shooting.js'
+import { fireSidearm, sidearmButtonAction, sidearmAimRay } from './shooting.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
 import { Casings } from '../render/entity/casings.js'
 import { DroppedMagazines } from '../render/entity/magazines.js'
@@ -3541,24 +3541,33 @@ export class GameRuntime {
       return
     }
     this.view.laser.enabled = true
-    const direction = this.sidearm.aimDirection(this.camera.quaternion)
-    const origin = this.camera.position.clone()
-    if (isFirstPersonView(this.cameraState, !!sim.player.vehicleId)) {
-      origin.add(this.sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
-    } else {
-      const muzzle = this.sidearm.worldMuzzle()
-      if (muzzle) origin.copy(muzzle).add(this.origin)
-      else origin.fromArray(sim.renderPlayerPosition)
+    const eyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
+    const emitter = this.sidearm.laserOrigin(time, eyes, this.camera.fov)
+    if (!emitter) {
+      this.view.laser.enabled = false
+      return
     }
-    const aimed = sim.shoot(
-      origin.toArray() as Vec3Tuple,
-      direction.toArray() as Vec3Tuple,
+    const origin = eyes
+      ? emitter.applyQuaternion(this.camera.quaternion).add(this.camera.position)
+      : emitter.sub(this.view.root.position)
+    const shot = sidearmAimRay(this.sidearm, sim, this.view, this.camera, eyes)
+    const targetHit = sim.shoot(
+      shot.origin.toArray(),
+      shot.direction.toArray(),
       this.sidearm.range,
       0,
     )
-    const end = (
-      aimed ? aimed.point : origin.clone().addScaledVector(direction, this.sidearm.range).toArray()
-    ) as Vec3Tuple
+    const target = targetHit
+      ? new THREE.Vector3(...targetHit.point)
+      : shot.origin.clone().addScaledVector(shot.direction, this.sidearm.range)
+    const direction = target.clone().sub(origin).normalize()
+    const aimed = sim.shoot(
+      origin.toArray() as Vec3Tuple,
+      direction.toArray() as Vec3Tuple,
+      origin.distanceTo(target) + 0.01,
+      0,
+    )
+    const end = (aimed ? aimed.point : target.toArray()) as Vec3Tuple
     this.view.laser.set(origin.toArray() as Vec3Tuple, end, !!aimed)
   }
 

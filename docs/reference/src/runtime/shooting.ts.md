@@ -25,9 +25,35 @@ lock often delivers that second press only as `mousedown`, not `pointerdown`.
 sidearmButtonAction(button: number, down: boolean): 'fire' | 'aim' | 'release' | 'unaim' | null
 ```
 
+## sidearmAimRay
+
+[Implementation, line 44](../../../../src/runtime/shooting.ts#L44)
+
+Shared geometric aim for shots and laser convergence; coordinates are simulation-world.
+
+```ts
+sidearmAimRay(sidearm: Sidearm, sim: Simulation, view: SceneView, camera: PerspectiveCamera, firstPerson: boolean): { origin: Vector3; direction: Vector3 }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Vector3`
+- `camera.position.clone`
+- `camera.position.clone().addScaledVector`
+- `camera.position.toArray`
+- `look.toArray`
+- `new Vector3(0, 0, -1).applyQuaternion`
+- `origin.copy`
+- `origin.copy(muzzle).sub`
+- `sidearm.aimDirection`
+- `sidearm.worldMuzzle`
+- `sim.shoot`
+- `target.sub`
+- `target.sub(origin).normalize`
+
 ## fitted
 
-[Implementation, line 43](../../../../src/runtime/shooting.ts#L43)
+[Implementation, line 64](../../../../src/runtime/shooting.ts#L64)
 
 ```ts
 fitted(load: BallisticLoad): { k: number; angle: number }
@@ -42,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fireSidearm
 
-[Implementation, line 59](../../../../src/runtime/shooting.ts#L59)
+[Implementation, line 80](../../../../src/runtime/shooting.ts#L80)
 
 One trigger press: the firearm decides whether a round goes off; the bullet then flies the
 load's trajectory (drop and drag, `ballistics.ts`) through the world and hands its momentum
@@ -60,9 +86,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Vector3`
 - `bulletEnergy`
 - `camera.clone`
-- `camera.position.clone`
-- `camera.position.clone().addScaledVector`
-- `camera.position.toArray`
 - `destination.toArray`
 - `direction.toArray`
 - `firing.lookAt`
@@ -73,30 +96,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `firing.updateMatrixWorld`
 - `fitted`
 - `gallery.shoot`
-- `look.clone`
-- `look.toArray`
-- `new Vector3(0, 0, -1).applyQuaternion`
 - `origin.clone`
 - `origin.clone().addScaledVector`
-- `origin.copy`
-- `origin.copy(muzzle).sub`
 - `origin.toArray`
-- `sidearm.aimDirection`
 - `sidearm.impact`
 - `sidearm.pull`
-- `sidearm.worldMuzzle`
+- `sidearmAimRay`
 - `sim.shoot`
-- `target.sub`
-- `target.sub(origin).normalize`
 - `traceBullet`
 - `view.sparks.add`
 
-## fireSidearm.callback@98
+## fireSidearm.callback@103
 
-[Implementation, line 98](../../../../src/runtime/shooting.ts#L98)
+[Implementation, line 103](../../../../src/runtime/shooting.ts#L103)
 
 ```ts
-callback@98(from, dir, length): inferred by TypeScript; see implementation
+callback@103(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

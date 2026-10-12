@@ -40,6 +40,27 @@ const NEAR_MISS_CHECK = 25
 
 /** Fitted drag and zero angle per load (they only depend on the preset). */
 const fits = new WeakMap<BallisticLoad, { k: number; angle: number }>()
+/** Shared geometric aim for shots and laser convergence; coordinates are simulation-world. */
+export function sidearmAimRay(
+  sidearm: Sidearm,
+  sim: Simulation,
+  view: SceneView,
+  camera: PerspectiveCamera,
+  firstPerson: boolean,
+): { origin: Vector3; direction: Vector3 } {
+  const look = firstPerson
+    ? sidearm.aimDirection(camera.quaternion)
+    : new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+  const origin = firstPerson ? camera.position.clone() : new Vector3(...sim.renderPlayerPosition)
+  if (firstPerson) return { origin, direction: look }
+  const muzzle = sidearm.worldMuzzle()
+  if (muzzle) origin.copy(muzzle).sub(view.root.position)
+  const aimed = sim.shoot(camera.position.toArray(), look.toArray(), sidearm.range, 0)
+  const target = aimed
+    ? new Vector3(...aimed.point)
+    : camera.position.clone().addScaledVector(look, sidearm.range)
+  return { origin, direction: target.sub(origin).normalize() }
+}
 function fitted(load: BallisticLoad): { k: number; angle: number } {
   let fit = fits.get(load)
   if (!fit) {
@@ -68,24 +89,8 @@ export function fireSidearm(
   if (!sidearm.visible) return null
   const event: SidearmShot = sidearm.pull(now)
   if (!event.fired) return event
-  const look = firstPerson
-    ? sidearm.aimDirection(camera.quaternion)
-    : new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
   const load = sidearm.simulated ? sidearm.preset!.ammunition! : null
-  const origin = firstPerson ? camera.position.clone() : new Vector3(...sim.renderPlayerPosition)
-  if (!firstPerson) {
-    const muzzle = sidearm.worldMuzzle()
-    if (muzzle) origin.copy(muzzle).sub(view.root.position)
-  }
-  let direction = look.clone()
-  if (!firstPerson) {
-    // Third person: the shooter aims at what the camera looks at.
-    const aimed = sim.shoot(camera.position.toArray(), look.toArray(), sidearm.range, 0)
-    const target = aimed
-      ? new Vector3(...aimed.point)
-      : camera.position.clone().addScaledVector(look, sidearm.range)
-    direction = target.sub(origin).normalize()
-  }
+  const { origin, direction } = sidearmAimRay(sidearm, sim, view, camera, firstPerson)
   let destination: Vector3
   let normal: Vec3 | undefined
   let impulse = sidearm.impulse

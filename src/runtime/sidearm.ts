@@ -683,6 +683,27 @@ export class Sidearm {
     return world?.visible ? world.localToWorld(new THREE.Vector3(...this.flashAt)) : null
   }
 
+  /** Actual accessory emitter, including inspection and bodycam pose transforms. */
+  laserOrigin(now: number, firstPerson: boolean, worldFov?: number): THREE.Vector3 | null {
+    if (firstPerson) this.viewPose(now)
+    const root = firstPerson ? this.model : this.worldPresentation
+    const socket = root?.getObjectByName('RedLaserSocket')
+    if (!socket) return null
+    socket.updateWorldMatrix(true, false)
+    const point = socket.getWorldPosition(new THREE.Vector3())
+    if (!firstPerson) return point
+    this.viewRig.worldToLocal(point)
+    // The viewmodel has its own FOV. Preserve the emitter's screen position in the world pass.
+    if (worldFov !== undefined) {
+      const ratio =
+        Math.tan(THREE.MathUtils.degToRad(worldFov / 2)) /
+        Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))
+      point.x *= ratio
+      point.y *= ratio
+    }
+    return point
+  }
+
   worldMagazineDropView(): ReturnType<Sidearm['magazineDropView']> {
     const object = this.worldPresentation?.getObjectByName(this.rig.parts.magazine)
     if (!object || !this.worldPresentation?.visible) return null
