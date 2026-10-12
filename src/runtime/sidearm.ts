@@ -365,6 +365,11 @@ export class Sidearm {
     return this.aiming
   }
 
+  /** Aim blend used by the next weapon render and the matching world-camera FOV. */
+  get aimTransition(): number {
+    return this.aimBlend + ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
+  }
+
   /** Toggle the laser sight; returns the new state. */
   toggleLaser(): boolean {
     this.laserOn = !this.laserOn
@@ -550,7 +555,7 @@ export class Sidearm {
     const height = renderer.getDrawingBufferSize(new THREE.Vector2()).y
     this.smoke.update(now, height)
     this.worldSmoke?.update(now, height)
-    this.aimBlend += ((this.aiming ? 1 : 0) - this.aimBlend) * 0.28
+    this.aimBlend = this.aimTransition
     this.laserLine.visible = false
     if (!firstPerson) return
     this.camera.aspect = aspect

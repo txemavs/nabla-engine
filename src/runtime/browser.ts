@@ -1313,7 +1313,8 @@ export class GameRuntime {
     canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
     if (bodycamActive) {
-      this.camera.fov = this.cameraState.settings.firstPersonFov + (this.sidearm?.isAiming ? 0 : 12)
+      this.camera.fov =
+        this.cameraState.settings.firstPersonFov + 12 * (1 - (this.sidearm?.aimTransition ?? 0))
       this.camera.updateProjectionMatrix()
     }
     this.effects.audio.setListener(
