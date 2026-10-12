@@ -1,6 +1,6 @@
 {
   "id": "white-trailer-chassis",
-  "label": "Chasis de remolque",
+  "label": "Remolque plataforma negra",
   "clearance": 1.2,
   "placement": [
     10,
@@ -8,7 +8,7 @@
     7.33
   ],
   "order": 8,
-  "name": "Chasis de remolque",
+  "name": "Remolque plataforma negra",
   "color": "#eeeeee",
   "size": [
     2.55,

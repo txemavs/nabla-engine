@@ -144,7 +144,7 @@ export function addLabel(choiceId: string): string {
   return `Añadir ${object.label.charAt(0).toLowerCase()}${object.label.slice(1)}`
 }
 
-/** A vehicle that can be added: the catalog presets a player can drive (trailers are passive). */
+/** A vehicle that can be added, including passive trailers. */
 export interface VehicleChoice {
   id: string
   label: string
@@ -153,7 +153,7 @@ export interface VehicleChoice {
 /** The vehicles the menu offers, in catalog order. The catalog has no planes or helicopters. */
 export function vehicleChoices(): VehicleChoice[] {
   return vehiclePresets()
-    .filter((preset) => !preset.vehicle.passive && !preset.hidden)
+    .filter((preset) => !preset.hidden)
     .map((preset) => ({ id: preset.id, label: preset.label }))
 }
 
