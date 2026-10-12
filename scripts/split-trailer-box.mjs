@@ -134,9 +134,6 @@ plate(chassis, 'LoadingDeck', [2.4, 0.18, 12.8], [0, 0.19, 0])
 const readAdded = (id) => added.get(id) ?? read(id)
 writeGlb(CHASSIS, chassis, readAdded, bin)
 const transporter = structuredClone(chassis)
-plate(transporter, 'UpperDeck', [2.4, 0.16, 12.8], [0, 2.5, 0])
-for (const x of [-1.16, 1.16])
-  for (const z of [-5.5, 0, 5.5]) plate(transporter, 'CarrierPost', [0.09, 2.3, 0.09], [x, 1.35, z])
 writeGlb(
   'assets/library/trucks/white-truck/assets/trailer.transporter.glb',
   transporter,

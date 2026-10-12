@@ -29,7 +29,7 @@ it('moves the attached loading plate and retains its hitch', () => {
   expect(sim.vehicleInfo('trailer').towVehicleId).toBe('truck')
   sim.dispose()
 })
-it('locks four distinct physical cars onto both carrier levels', () => {
+it('locks two physical cars onto the tilting car carrier', () => {
   const ground = createEntity('ground', 'box', [0, -0.5, 0])
   ground.size = [100, 1, 100]
   const sim = new Simulation(
@@ -49,13 +49,15 @@ it('locks four distinct physical cars onto both carrier levels', () => {
     sim.addVehicles([presetVehicle('a3', id, [25 + i * 5, 1, 0])])
     sim.mountCargo(id, 'trailer', [...slot])
   }
-  expect(sim.cargoCount('trailer')).toBe(4)
+  expect(sim.cargoCount('trailer')).toBe(2)
   expect(sim.cargoTrailer('truck')).toBe('trailer')
   for (let i = 0; i < 60; i++) sim.step(1 / 60)
-  expect(sim.cargoCount('trailer')).toBe(4)
+  expect(sim.cargoCount('trailer')).toBe(2)
   const heights = trailerPlatformTuning.cargoSlots.map(
     (_, i) => sim.entityTransform('cargo-' + i).position[1],
   )
-  expect(heights[2] - heights[0]).toBeCloseTo(2.3, 1)
+  expect(heights[1] - heights[0]).toBeCloseTo(0, 1)
+  expect(sim.setTrailerPlatform('trailer', false)).toContain('Rampa')
+  expect(sim.cargoCount('trailer')).toBe(0)
   sim.dispose()
 })

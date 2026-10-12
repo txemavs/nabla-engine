@@ -2497,13 +2497,17 @@ export class Simulation {
   /** Operate the attached trailer from the tractor menu, only while stationary. */
   setTrailerPlatform(tractorId: string, flat: boolean): string {
     const tractor = this.vehicles.get(tractorId)
-    const trailer = [...this.vehicles.values()].find(
-      (v) =>
-        v.definition.tow?.vehicleId === tractorId &&
-        v.definition.garage?.ramp?.loadAngle !== undefined,
-    )
+    const trailer =
+      tractor?.definition.passive && tractor.definition.garage?.ramp?.loadAngle !== undefined
+        ? tractor
+        : [...this.vehicles.values()].find(
+            (v) =>
+              v.definition.tow?.vehicleId === tractorId &&
+              v.definition.garage?.ramp?.loadAngle !== undefined,
+          )
     if (!tractor || !trailer) return 'Engancha un remolque plataforma o portacoches'
-    if (tractor.body.velocity.length() > 0.8) return 'Detén el camión antes de mover la plataforma'
+    if (tractor.body.velocity.length() > 0.8)
+      return 'Detén el vehículo antes de mover la plataforma'
     if (!flat)
       for (const [id, dock] of [...this.docks])
         if (dock.carrierId === trailer.entity.id) this.garage.toggle(id)

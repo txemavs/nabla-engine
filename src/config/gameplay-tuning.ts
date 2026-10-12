@@ -190,12 +190,10 @@ export const balloonTuning = {
   openingRate: 5,
 }
 
-/** Trailer platform and two-level car carrier, metres and radians. */
+/** Tilting car carrier cargo positions, metres. */
 export const trailerPlatformTuning = {
   cargoSlots: [
     [0, 0.9, -3.2],
     [0, 0.9, 3.2],
-    [0, 3.2, -3.2],
-    [0, 3.2, 3.2],
   ] as const,
 }

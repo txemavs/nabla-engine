@@ -53,6 +53,7 @@ export interface SceneRuntime extends Partial<SteeringWheelRuntime>, Partial<Mir
   /** Load a vehicle's models ahead of `spawnVehicle` so adding it does not freeze a frame. */
   prewarmVehicle?(template: Entity | Entity[]): Promise<void>
   removeSpawnedVehicle(id: string): void
+  setTrailerPlatform?(id: string, flat: boolean): string
   readonly placedObjects: { id: string; name: string }[]
   spawnEntities(entities: Entity[], distance?: number, name?: string): Promise<string>
   removePlaced(id: string): void
@@ -575,6 +576,18 @@ export function bindSceneControls(
           renderList()
         })
         item.append(name, remove)
+        if (runtime.setTrailerPlatform && /Portacoches|plataforma negra/.test(spawned.name)) {
+          for (const [flat, label] of [
+            [false, 'Bajar rampa'],
+            [true, 'Horizontal · fijar coches'],
+          ] as const) {
+            const control = button(`platform-${spawned.id}-${flat}`, label)
+            control.addEventListener('click', () => {
+              vehicleMessage.textContent = runtime.setTrailerPlatform!(spawned.id, flat)
+            })
+            item.append(control)
+          }
+        }
         vehicleList.append(item)
       }
       for (const placed of runtime.placedObjects) {

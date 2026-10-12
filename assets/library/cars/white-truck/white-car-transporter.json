@@ -1,63 +1,22 @@
 {
   "id": "white-car-transporter",
-  "label": "Portacoches",
+  "label": "Portacoches · rampa basculante",
   "clearance": 1.2,
-  "placement": [
-    10,
-    1.2,
-    7.33
-  ],
+  "placement": [10, 1.2, 7.33],
   "order": 9,
-  "name": "Portacoches",
+  "name": "Portacoches · rampa basculante",
   "color": "#eeeeee",
-  "size": [
-    2.55,
-    4,
-    13.5
-  ],
+  "size": [2.55, 1.4, 13.5],
   "mass": 5000,
   "vehicle": {
     "controls": "none",
     "passive": true,
     "colliders": [
       {
-        "size": [
-          2.4,
-          0.18,
-          12.8
-        ],
+        "size": [2.4, 0.18, 12.8],
         "transform": {
-          "position": [
-            0,
-            0.19,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0,
-            1
-          ]
-        }
-      },
-      {
-        "size": [
-          2.4,
-          0.16,
-          12.8
-        ],
-        "transform": {
-          "position": [
-            0,
-            2.5,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0,
-            1
-          ]
+          "position": [0, 0.19, 0],
+          "rotation": [0, 0, 0, 1]
         }
       }
     ],
@@ -68,23 +27,11 @@
     "brakeForce": 120,
     "cameraDistance": 24,
     "garage": {
-      "min": [
-        -1.25,
-        0.1,
-        -6.4
-      ],
-      "max": [
-        1.25,
-        4.8,
-        6.4
-      ],
+      "min": [-1.25, 0.1, -6.4],
+      "max": [1.25, 2.6, 6.4],
       "ramp": {
         "colliderIndex": 0,
-        "hinge": [
-          0,
-          0.19,
-          -6.4
-        ],
+        "hinge": [0, 0.19, -6.4],
         "closeAngle": 0,
         "loadAngle": 0.105
       }
@@ -94,127 +41,58 @@
     "body": {
       "url": "/library/trucks/white-truck/assets/trailer.transporter.glb",
       "transform": {
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "rotation": [
-          0,
-          0,
-          0,
-          1
-        ]
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
       }
     },
     "wheels": [
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0,
-            1
-          ]
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
         }
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0,
-            1
-          ]
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
         }
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0,
-            1
-          ]
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
         }
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0,
-            1
-          ]
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
         }
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0,
-            1
-          ]
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
         }
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0,
-            1
-          ]
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
         }
       }
     ],
     "presentation": "nabla.truck",
     "ramp": {
-      "nodes": [
-        "LoadingDeck"
-      ],
-      "hinge": [
-        0,
-        0.19,
-        -6.4
-      ],
+      "nodes": ["LoadingDeck"],
+      "hinge": [0, 0.19, -6.4],
       "closeAngle": 0
     }
   },

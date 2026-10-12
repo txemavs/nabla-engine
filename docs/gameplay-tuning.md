@@ -200,8 +200,8 @@ Bare trailer: the black LoadingDeck has a matching moving collider. Tractor menu
 returns flat and stationary cars wholly supported by it are locked for transport;
 opening releases cargo. With a drawn gun R still operates the magazine. The reset toolbar button
 recovers the vehicle directly, even with the gun drawn.
-The white-car-transporter preset has two decks. CARGAR 4 A3 in the tractor menu
-preloads and places four physical A3s in the slots in trailerPlatformTuning, locks
+The white-car-transporter preset has one tilting deck for two cars. CARGAR 2 A3 in the tractor menu
+preloads and places two physical A3s in the slots in trailerPlatformTuning, locks
 them to the trailer and refuses duplicate loading. Boxed trailers keep their box
 and have no platform controls. Gameplay heat and all trailer dimensions are arcade tuning.
 
@@ -212,6 +212,9 @@ truck 2, truck with trailer 1, standalone trailer 1. These are relative weights
 likely: boxed, bare platform and car transporter.
 The Add menu includes passive trailers too: boxed trailer, black transport
 platform and car transporter. Only explicitly hidden presets are omitted.
+Added platforms/car carriers have Bajar rampa and Horizontal · fijar coches buttons
+in their Add list entry, so detached trailers can be operated too. Opening releases
+the cars; flattening automatically locks stopped cars fully supported on the deck.
 Platform colliders, hinge and loading angle are in the trailer presets under
 `assets/library/cars/white-truck/`. Visible deck dimensions are authored in
 `scripts/split-trailer-box.mjs`; regenerate with `npm run trailer:split`, then

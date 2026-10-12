@@ -73,7 +73,7 @@ export const generatedVehicleRigs: Record<
   },
   'white-car-transporter': {
     source: '/library/trucks/white-truck/assets/trailer.transporter.glb',
-    sha256: '508b656f77948b339f4dff0b0f4426c1d88e6299cdbbfb8acb405ee6f58808b8',
+    sha256: 'eae5f612036c989cd3f07117e9dbe7c740193611b3c091f3ebddf9d7a2b5d720',
     hubs: [
       [-0.8920750849989497, -0.6276177768713792, 1.775093997560098],
       [-0.8920751181276269, -0.6276177768713792, 3.0726903836142947],

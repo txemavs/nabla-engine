@@ -2204,6 +2204,10 @@ export class GameRuntime {
     return sim.unhitchTrailer(trailerId)
   }
   private loadingTrailerCargo = false
+  setTrailerPlatform(id: string, flat: boolean): string {
+    this.assertAlive()
+    return this.session.simulation!.setTrailerPlatform(id, flat)
+  }
   async loadTrailerCars(tractorId: string): Promise<void> {
     const sim = this.session.simulation!
     const trailerId = sim.cargoTrailer(tractorId)
@@ -2218,7 +2222,7 @@ export class GameRuntime {
         const id = await this.placeVehicle(template, trailer.position, 0)
         sim.mountCargo(id, trailerId, [...slot])
       }
-      this.options.onMessage?.('Cuatro A3 sujetos al portacoches')
+      this.options.onMessage?.('Dos A3 sujetos al portacoches')
     } finally {
       this.loadingTrailerCargo = false
     }
