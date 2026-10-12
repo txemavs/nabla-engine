@@ -1,4 +1,5 @@
 import { weaponViewTuning } from '../config/gameplay-tuning.js'
+import { extendedWeaponPose } from './world-weapon-pose.js'
 import * as THREE from 'three'
 import { weaponPresets, type WeaponPreset } from '../catalog/weapons/library.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
@@ -636,12 +637,7 @@ export class Sidearm {
     )
     world.quaternion.copy(this.model.quaternion)
     if (aim) {
-      const rotation = new THREE.Quaternion().setFromRotationMatrix(
-        new THREE.Matrix4().lookAt(world.getWorldPosition(new THREE.Vector3()), aim, up),
-      )
-      world.quaternion
-        .copy(parent.getWorldQuaternion(new THREE.Quaternion()).invert())
-        .multiply(rotation)
+      extendedWeaponPose(world, parent, aim, up)
       if (this.inspection) world.quaternion.multiply(this.model.quaternion)
     }
     for (const source of [

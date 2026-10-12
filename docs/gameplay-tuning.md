@@ -155,3 +155,6 @@ The action rail is hidden until gameplay is revealed and centred beneath the
 menu/time button. Motorcycle mirror adjustment changes the reflected view while
 keeping the visible glass fitted in its housing. HUD locality/street lookup is
 coalesced and yields in small batches; labels update only when a result is ready.
+
+Third-person weapon placement uses weaponViewTuning.thirdPerson: shoulder offset relative to the avatar head (metres), and reachMetres for the extended arm. The hand and barrel follow the camera target independently of first-person pose offsets. No arm mesh is added.
+
