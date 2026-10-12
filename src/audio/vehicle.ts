@@ -44,6 +44,7 @@ export class VehicleAudio {
   private readonly metalVoices: MetalImpact[] = []
   private readonly metalEmitters: SpatialEmitter[] = []
   private nextMetal = 0
+  private lastMetalTimbre = -1
   private weaponClickVoice?: GearClick
   private vehicleEngine?: SpatialEmitter
   private turbineEmitter?: SpatialEmitter
@@ -335,7 +336,10 @@ export class VehicleAudio {
     const emitter = this.metalEmitters[index]
     emitter.setPosition(position)
     emitter.setListener(this.eye, this.orientation)
-    this.metalVoices[index].trigger(this.context!.currentTime, index % 4)
+    // Voice allocation stays predictable for overlap; timbre does not follow the pool cycle.
+    const choices = [0, 1, 2, 3].filter((value) => value !== this.lastMetalTimbre)
+    this.lastMetalTimbre = choices[Math.floor(Math.random() * choices.length)]
+    this.metalVoices[index].trigger(this.context!.currentTime, this.lastMetalTimbre)
   }
 
   /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */

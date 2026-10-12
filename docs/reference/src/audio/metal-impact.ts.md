@@ -8,9 +8,36 @@
 
 - `./mixer.js`
 
+## metalStrike
+
+[Implementation, line 10](../../../../src/audio/metal-impact.ts#L10)
+
+Bounded variation preserves the metal identity and avoids large loudness jumps.
+
+```ts
+metalStrike(random: () => number = Math.random): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Array.from`
+- `random`
+
+## metalStrike.callback@21
+
+[Implementation, line 21](../../../../src/audio/metal-impact.ts#L21)
+
+```ts
+callback@21(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `random`
+
 ## MetalImpact.constructor
 
-[Implementation, line 14](../../../../src/audio/metal-impact.ts#L14)
+[Implementation, line 34](../../../../src/audio/metal-impact.ts#L34)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -33,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MetalImpact.trigger
 
-[Implementation, line 36](../../../../src/audio/metal-impact.ts#L36)
+[Implementation, line 56](../../../../src/audio/metal-impact.ts#L56)
 
 ```ts
 trigger(time: number, variant?: number): void
@@ -41,15 +68,20 @@ trigger(time: number, variant?: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.floor`
+- `Math.random`
+- `metalStrike`
 - `profile.forEach`
 - `strike`
+- `this.band.Q.setValueAtTime`
+- `this.band.frequency.setValueAtTime`
 
 ## MetalImpact.trigger.strike
 
-[Implementation, line 38](../../../../src/audio/metal-impact.ts#L38)
+[Implementation, line 61](../../../../src/audio/metal-impact.ts#L61)
 
 ```ts
-strike(gain: AudioParam, peak: number, decay: number): inferred by TypeScript; see implementation
+strike(gain: AudioParam, peak: number, decay: number, delay = 0): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -59,22 +91,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `gain.linearRampToValueAtTime`
 - `gain.setValueAtTime`
 
-## MetalImpact.trigger.callback@45
+## MetalImpact.trigger.callback@68
 
-[Implementation, line 45](../../../../src/audio/metal-impact.ts#L45)
+[Implementation, line 68](../../../../src/audio/metal-impact.ts#L68)
 
 ```ts
-callback@45(hz, i): inferred by TypeScript; see implementation
+callback@68(hz, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `frequency.cancelScheduledValues`
+- `frequency.exponentialRampToValueAtTime`
+- `frequency.setValueAtTime`
 - `strike`
-- `this.oscillators[i].frequency.setValueAtTime`
 
 ## MetalImpact.silence
 
-[Implementation, line 51](../../../../src/audio/metal-impact.ts#L51)
+[Implementation, line 83](../../../../src/audio/metal-impact.ts#L83)
 
 ```ts
 silence(time: number): void

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **388 modules; 4235 executable function definitions**.
+Coverage: **388 modules; 4238 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -53,7 +53,7 @@ Coverage: **388 modules; 4235 executable function definitions**.
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
 | [src/audio/gunshot.ts](src/audio/gunshot.ts.md) | 6 |
 | [src/audio/inline-engine.ts](src/audio/inline-engine.ts.md) | 7 |
-| [src/audio/metal-impact.ts](src/audio/metal-impact.ts.md) | 5 |
+| [src/audio/metal-impact.ts](src/audio/metal-impact.ts.md) | 7 |
 | [src/audio/mixer.ts](src/audio/mixer.ts.md) | 15 |
 | [src/audio/music.ts](src/audio/music.ts.md) | 17 |
 | [src/audio/positional.ts](src/audio/positional.ts.md) | 6 |
@@ -65,7 +65,7 @@ Coverage: **388 modules; 4235 executable function definitions**.
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
 | [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 54 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 55 |
 | [src/audio/weapon-handling.ts](src/audio/weapon-handling.ts.md) | 3 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
