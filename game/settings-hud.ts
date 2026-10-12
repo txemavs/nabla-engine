@@ -497,7 +497,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       for (const [key, { input, output }] of controls) {
         const value = (tuning[key] - sidearmTuningDefaults[key]) * (key === 'height' ? 1000 : 1)
         input.value = String(value)
-        output.value = key === 'height' ? `${Math.round(value)} mm` : `${value.toFixed(1)}°`
+        output.value = key === 'height' ? `${value.toFixed(2)} mm` : `${value.toFixed(2)}°`
         input.setAttribute('aria-valuetext', output.value)
       }
     }

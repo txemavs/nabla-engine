@@ -145,7 +145,7 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   expect(result.smokePane).toBe('settings-pane-performance')
   expect(result.sidearm).toEqual({ height: -0.055, angle: -0.5 })
   expect(result.preview).toBe(true)
-  expect(result.weaponOutputs).toEqual(['-33 mm', '0.7°'])
+  expect(result.weaponOutputs).toEqual(['-33.00 mm', '0.70°'])
   expect(result.after).toEqual(visible)
   expect(result.planet).toEqual([
     'terrain-position',
