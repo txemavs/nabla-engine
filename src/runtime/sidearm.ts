@@ -683,6 +683,33 @@ export class Sidearm {
     return world?.visible ? world.localToWorld(new THREE.Vector3(...this.flashAt)) : null
   }
 
+  /** Torch follows its authored mount, including inspection, recoil and third-person pose. */
+  torchRay(
+    now: number,
+    firstPerson: boolean,
+    worldFov: number,
+  ): { origin: THREE.Vector3; target: THREE.Vector3 } | null {
+    if (firstPerson) this.viewPose(now)
+    const root = firstPerson ? this.model : this.worldPresentation
+    const socket = root?.getObjectByName('TorchSocket')
+    if (!socket) return null
+    socket.updateWorldMatrix(true, false)
+    const origin = socket.localToWorld(new THREE.Vector3())
+    const target = socket.localToWorld(new THREE.Vector3(0, 0, -10))
+    if (firstPerson) {
+      const fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)
+      const ratio =
+        Math.tan(THREE.MathUtils.degToRad(worldFov / 2)) /
+        Math.tan(THREE.MathUtils.degToRad(fov / 2))
+      for (const point of [origin, target]) {
+        this.viewRig.worldToLocal(point)
+        point.x *= ratio
+        point.y *= ratio
+      }
+    }
+    return { origin, target }
+  }
+
   /** Actual accessory emitter, including inspection and bodycam pose transforms. */
   laserOrigin(now: number, firstPerson: boolean, worldFov?: number): THREE.Vector3 | null {
     if (firstPerson) this.viewPose(now)

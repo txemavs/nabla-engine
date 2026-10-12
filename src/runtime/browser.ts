@@ -3523,25 +3523,30 @@ export class GameRuntime {
 
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
   private updateSidearmLaser(sim: Simulation, time: number): void {
+    const eyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
     if (this.weaponLight) {
-      this.weaponLight.intensity = this.weaponLightOn && this.weaponDrawn ? 35 : 0
-      this.weaponLight.position
-        .set(0, -0.05, -0.35)
-        .applyQuaternion(this.camera.quaternion)
-        .add(this.camera.position)
-        .sub(this.origin)
-      this.weaponLight.target.position
-        .set(0, 0, -10)
-        .applyQuaternion(this.camera.quaternion)
-        .add(this.camera.position)
-        .sub(this.origin)
+      const torch =
+        this.weaponLightOn && this.weaponDrawn
+          ? this.sidearm?.torchRay(time, eyes, this.camera.fov)
+          : null
+      this.weaponLight.intensity = torch ? 35 : 0
+      if (torch) {
+        if (eyes) {
+          for (const point of [torch.origin, torch.target])
+            point
+              .applyQuaternion(this.camera.quaternion)
+              .add(this.camera.position)
+              .add(this.view.root.position)
+        }
+        this.weaponLight.position.copy(torch.origin)
+        this.weaponLight.target.position.copy(torch.target)
+      }
     }
     if (!this.sidearm?.laserEnabled || !this.weaponDrawn) {
       this.view.laser.enabled = false
       return
     }
     this.view.laser.enabled = true
-    const eyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
     const emitter = this.sidearm.laserOrigin(time, eyes, this.camera.fov)
     if (!emitter) {
       this.view.laser.enabled = false
