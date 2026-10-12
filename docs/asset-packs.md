@@ -23,6 +23,10 @@ byte ranges because the packed originals are removed from that distribution.
 External hosts that keep originals can use the compatibility fallback.
 
 Decoded blocks are verified with SHA-256 and retained in the browser Cache API
+while raw byte-range requests bypass the browser HTTP cache to avoid partial-cache
+errors during concurrent model loads. Web Crypto uses the engine's portable
+SHA-256 fallback on HTTP LAN connections.
+Verified blocks are retained
 under `nabla-assets-v1`, keyed by content hash. Changed models get a new key;
 unchanged models retain cached bytes even when the pack changes. Storage denial
 does not prevent loading. Cache storage is performance data, not player settings;

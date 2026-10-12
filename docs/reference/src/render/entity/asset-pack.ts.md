@@ -97,10 +97,10 @@ callback@43(): inferred by TypeScript; see implementation
 callback@44(): inferred by TypeScript; see implementation
 ```
 
-## AssetPack.read.callback@70
+## AssetPack.read.callback@73
 
-[Implementation, line 70](../../../../../src/render/entity/asset-pack.ts#L70)
+[Implementation, line 73](../../../../../src/render/entity/asset-pack.ts#L73)
 
 ```ts
-callback@70(): inferred by TypeScript; see implementation
+callback@73(): inferred by TypeScript; see implementation
 ```

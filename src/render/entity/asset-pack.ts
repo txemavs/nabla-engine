@@ -44,6 +44,9 @@ export class AssetPack {
     const cached = await cache?.match(key).catch(() => undefined)
     if (cached) return cached.arrayBuffer()
     const response = await fetch(index.url, {
+      // Chromium's HTTP cache can reject concurrent partial responses for one URL.
+      // Persistent caching belongs to the verified, complete per-model responses above.
+      cache: 'no-store',
       headers: { Range: `bytes=${entry.offset}-${entry.offset + entry.length - 1}` },
     })
     // A server without byte ranges would download the entire library per model.

@@ -44,6 +44,7 @@ it.each([true, false])(
     vi.stubGlobal('fetch', fetcher)
     expect(new Uint8Array((await new AssetPack().read('/library/test.glb'))!)).toEqual(source)
     expect(fetcher.mock.calls[1][1].headers.Range).toBe(`bytes=19-${19 + entry.length - 1}`)
+    expect(fetcher.mock.calls[1][1].cache).toBe('no-store')
   },
 )
 
