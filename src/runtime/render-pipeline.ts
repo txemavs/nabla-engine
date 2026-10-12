@@ -25,6 +25,7 @@ export interface GameRenderFrame {
   mirrorVehicle: string | null
   shadowsEnabled: boolean
   depthOfField?: boolean
+  tunnelFocus?: number
   skyVisible?: boolean
   externalViews?: Map<string, ExternalPortalView>
   /** World-space culling for each auxiliary view and the main view. */
@@ -126,7 +127,9 @@ export class GameRenderPipeline {
       frame.beforeMain?.()
       sky.setViewAspect(camera.aspect)
       renderer.autoClear = true
-      if (frame.depthOfField) this.depthOfField.begin(renderer)
+      const focus = frame.depthOfField || (frame.tunnelFocus ?? 0) > 0.001
+      this.depthOfField.setFocus(frame.tunnelFocus ?? 0, !!frame.depthOfField)
+      if (focus) this.depthOfField.begin(renderer)
       if (sky.enabled && frame.skyVisible !== false) {
         sky.render(renderer, camera, eye)
         renderer.autoClear = false
@@ -139,7 +142,7 @@ export class GameRenderPipeline {
       if (allocate && !missingShadowMap(frame.lights)) this.blankShadowMaps(frame)
       if (sky.enabled) sky.renderClouds(renderer, camera)
       monitors.finish()
-      if (frame.depthOfField) this.depthOfField.present(renderer, camera)
+      if (focus) this.depthOfField.present(renderer, camera)
     } finally {
       monitors.finish()
       for (const { object, visible } of overlays) object.visible = visible

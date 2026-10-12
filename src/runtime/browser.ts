@@ -1613,6 +1613,7 @@ export class GameRuntime {
         mirrorVehicle:
           this.quality.mirrors && this.cameraState.mode === 'cockpit' ? player.vehicleId : null,
         shadowsEnabled: this.syncShadowSwitch(),
+        tunnelFocus: bodycamActive ? (this.sidearm?.aimTransition ?? 0) : 0,
         depthOfField: this.options.depthOfField ?? !!this.quality.dof,
         cull: (position) => this.cull(position),
       })

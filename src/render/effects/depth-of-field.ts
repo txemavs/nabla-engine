@@ -26,6 +26,8 @@ export class DepthOfField {
         texel: { value: new THREE.Vector2(1, 1) },
         cameraFar: { value: 1000 },
         radius: { value: 5 },
+        tunnel: { value: 0 },
+        farBlur: { value: 1 },
       },
       depthTest: false,
       depthWrite: false,
@@ -44,6 +46,8 @@ export class DepthOfField {
         uniform vec2 texel;
         uniform float cameraFar;
         uniform float radius;
+        uniform float tunnel;
+        uniform float farBlur;
         varying vec2 vUv;
         float viewDistance(float depth) {
           return pow(cameraFar + 1.0, depth) - 1.0;
@@ -57,7 +61,10 @@ export class DepthOfField {
         void main() {
           float dist = viewDistance(texture2D(depthTex, vUv).x);
           float center = viewDistance(texture2D(depthTex, vec2(0.5)).x);
-          float coc = smoothstep(center, center * 3.0 + 120.0, dist);
+          float sides = smoothstep(0.18, 0.49, abs(vUv.x - 0.5));
+          float nearField = 1.0 - smoothstep(2.0, 18.0, dist);
+          float peripheral = sides * nearField * tunnel;
+          float coc = max(farBlur * smoothstep(center, center * 3.0 + 120.0, dist), peripheral);
           vec3 color = texture2D(colorTex, vUv).rgb;
           if (coc > 0.02) {
             vec3 sum = color;
@@ -73,6 +80,7 @@ export class DepthOfField {
             gather(vec2(-0.707, -0.707), dist, radiusPx, sum, weight);
             color = sum / weight;
           }
+          color *= 1.0 - sides * tunnel * 0.12;
           gl_FragColor = vec4(color, texture2D(colorTex, vUv).a);
           #include <colorspace_fragment>
         }
@@ -81,6 +89,12 @@ export class DepthOfField {
     const mesh = new THREE.Mesh(geometry, this.material)
     mesh.frustumCulled = false
     this.scene.add(mesh)
+  }
+
+  /** Peripheral focus follows the weapon aim animation; ordinary far blur stays optional. */
+  setFocus(tunnel: number, farBlur: boolean): void {
+    this.material.uniforms.tunnel.value = THREE.MathUtils.clamp(tunnel, 0, 1)
+    this.material.uniforms.farBlur.value = farBlur ? 1 : 0
   }
 
   /** Next draws land in the effect buffer. */
