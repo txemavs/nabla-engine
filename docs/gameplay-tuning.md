@@ -44,6 +44,8 @@ Unoccupied/passive vehicles and grounded tyre dynamics are unaffected.
 
 Road cars: W+S (or Up+Down) requests an aggressive launch without applying brakes,
 using the existing launch wheelspin and reduced rear grip for drifting with A/D.
+The rear grip reduction and rear-biased drive remain active at speed while W+S
+is held, even after the low-speed launch wheelspin fades; no brake is applied.
 Add Space to hold a stationary front-brake/rear-drive burnout. Release Space,
 keeping W+S held, to launch; release S to return to ordinary W throttle.
 Motorcycle W+S and front-lever mappings are unchanged.
