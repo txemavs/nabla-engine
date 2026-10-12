@@ -890,8 +890,8 @@ export class GameRuntime {
       this.world.setRelief(this.quality.relief)
       this.scene.add(this.world.root)
       setPlanetCharts(() => this.world!.chartTiles)
-      setNavigationPlaces(() => this.world!.navigationPlaces)
-      setNavigationRoads(() => this.world!.navigationRoads)
+      setNavigationPlaces(() => this.world!.iterateNavigationPlaces())
+      setNavigationRoads(() => this.world!.iterateNavigationRoads())
     }
     this.loop = new FrameLoop((time) => {
       try {

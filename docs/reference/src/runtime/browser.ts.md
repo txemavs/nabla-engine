@@ -771,6 +771,10 @@ callback@892(): inferred by TypeScript; see implementation
 callback@893(): inferred by TypeScript; see implementation
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.world!.iterateNavigationPlaces`
+
 ## GameRuntime.constructor.callback@894
 
 [Implementation, line 894](../../../../src/runtime/browser.ts#L894)
@@ -778,6 +782,10 @@ callback@893(): inferred by TypeScript; see implementation
 ```ts
 callback@894(): inferred by TypeScript; see implementation
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.world!.iterateNavigationRoads`
 
 ## GameRuntime.constructor.callback@896
 

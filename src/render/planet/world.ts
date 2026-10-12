@@ -488,29 +488,33 @@ export class PlanetWorld {
     return this.visible.flatMap((key) => this.resident.get(key)?.pavedAreas ?? [])
   }
   get navigationRoads() {
-    return this.visible.flatMap((key) => this.resident.get(key)?.roads ?? [])
+    return Array.from(this.iterateNavigationRoads())
+  }
+  *iterateNavigationRoads() {
+    for (const key of this.visible) yield* this.resident.get(key)?.roads ?? []
   }
   get navigationPlaces() {
+    return Array.from(this.iterateNavigationPlaces())
+  }
+  *iterateNavigationPlaces() {
     const seen = new Set<string>()
-    return this.visible.flatMap((key) => {
-      const r = this.resident.get(key)!
+    for (const key of this.visible) {
+      const r = this.resident.get(key)
+      if (!r) continue
       const manifest = r.group.userData.planetTile.manifest as PlanetManifest
       r.group.updateMatrix()
-      return validPlanetPlaces(manifest.places).flatMap((place) => {
-        if (seen.has(place.id)) return []
+      for (const place of validPlanetPlaces(manifest.places)) {
+        if (seen.has(place.id)) continue
         seen.add(place.id)
-        // Stored labels sit 20m above terrain; HUD signs sit at 120m.
-        return [
-          {
-            id: place.id,
-            text: place.text,
-            position: new THREE.Vector3(...place.position)
-              .add(new THREE.Vector3(0, 100, 0))
-              .applyMatrix4(r.group.matrix),
-          },
-        ]
-      })
-    })
+        yield {
+          id: place.id,
+          text: place.text,
+          position: new THREE.Vector3(...place.position)
+            .add(new THREE.Vector3(0, 100, 0))
+            .applyMatrix4(r.group.matrix),
+        }
+      }
+    }
   }
   private simulation: Simulation | null = null
   private horizon: PlanetHorizon

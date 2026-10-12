@@ -30,7 +30,7 @@ roads(): inferred by TypeScript; see implementation
 [Implementation, line 15](../../../../../src/render/entity/navigation-places.ts#L15)
 
 ```ts
-setNavigationPlaces(value: () => NavigationPlace[]): inferred by TypeScript; see implementation
+setNavigationPlaces(value: () => Iterable<NavigationPlace>): inferred by TypeScript; see implementation
 ```
 
 ## navigationPlaces
@@ -43,6 +43,7 @@ navigationPlaces(): NavigationPlace[]
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Array.from`
 - `places`
 
 ## setNavigationRoads
@@ -50,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 21](../../../../../src/render/entity/navigation-places.ts#L21)
 
 ```ts
-setNavigationRoads(value: () => NavigationRoad[]): inferred by TypeScript; see implementation
+setNavigationRoads(value: () => Iterable<NavigationRoad>): inferred by TypeScript; see implementation
 ```
 
 ## navigationRoads
@@ -63,6 +64,7 @@ navigationRoads(): NavigationRoad[]
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Array.from`
 - `roads`
 
 ## nearestLocality

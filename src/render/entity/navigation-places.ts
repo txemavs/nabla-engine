@@ -9,20 +9,20 @@ export interface NavigationPlace {
 
 export type NavigationRoad = OsmChartRoad
 
-let places: () => NavigationPlace[] = () => []
-let roads: () => NavigationRoad[] = () => []
+let places: () => Iterable<NavigationPlace> = () => []
+let roads: () => Iterable<NavigationRoad> = () => []
 
-export function setNavigationPlaces(value: () => NavigationPlace[]) {
+export function setNavigationPlaces(value: () => Iterable<NavigationPlace>) {
   places = value
 }
 export function navigationPlaces(): NavigationPlace[] {
-  return places()
+  return Array.from(places())
 }
-export function setNavigationRoads(value: () => NavigationRoad[]) {
+export function setNavigationRoads(value: () => Iterable<NavigationRoad>) {
   roads = value
 }
 export function navigationRoads(): NavigationRoad[] {
-  return roads()
+  return Array.from(roads())
 }
 
 /** OSM settlement points are references, not municipal boundary polygons. */
