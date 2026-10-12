@@ -1294,6 +1294,7 @@ export class Simulation {
     direction: Vec3Tuple,
     range = 150,
     impulse = 12,
+    excludeEntityId?: string,
   ): { point: Vec3Tuple; normal: Vec3Tuple; entityId: string | null } | null {
     const ray = new Vec3(...direction)
     if (
@@ -1313,7 +1314,12 @@ export class Simulation {
     let body: Body | null = null
     const occupiedBody = this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : null
     this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
-      if (hit.body !== this.playerBody && hit.body !== occupiedBody && hit.distance < nearest) {
+      if (
+        hit.body !== this.playerBody &&
+        hit.body !== occupiedBody &&
+        hit.body !== (excludeEntityId ? this.bodies.get(excludeEntityId) : undefined) &&
+        hit.distance < nearest
+      ) {
         nearest = hit.distance
         point = hit.hitPointWorld.clone()
         normal = hit.hitNormalWorld.clone()

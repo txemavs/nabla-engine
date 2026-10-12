@@ -1,3 +1,4 @@
+import { WreckDebris, type DebrisCast } from './wreck-debris.js'
 import * as THREE from 'three'
 import { ExhaustSmoke } from './exhaust-smoke.js'
 import { createLensFlare } from '../planet/lens-flare.js'
@@ -17,6 +18,14 @@ export class VehicleDestruction {
   >()
   private readonly flarePoint = new THREE.Vector3()
   private readonly flare = createLensFlare(new THREE.Vector3(), { position: this.flarePoint })
+  private readonly debris: WreckDebris
+  private readonly debrisFires: {
+    anchor: THREE.Group
+    flames: THREE.Group
+    material: THREE.MeshBasicMaterial
+    clock: { value: number }
+    smoke: ExhaustSmoke
+  }[] = []
   readonly root = new THREE.Group()
   readonly glassRoot = new THREE.Group()
   private readonly geometry = new THREE.SphereGeometry(1, 10, 8)
@@ -46,6 +55,7 @@ export class VehicleDestruction {
   )
   private readonly shards: { position: THREE.Vector3; velocity: THREE.Vector3; age: number }[] = []
   constructor(private readonly space: THREE.Group) {
+    this.debris = new WreckDebris(space)
     this.root.name = 'Vehicle explosions'
     this.fragments.count = 0
     this.fragments.frustumCulled = false
@@ -58,6 +68,22 @@ export class VehicleDestruction {
   explode(id: string, object: THREE.Object3D): void {
     if (this.burns.has(id)) return
     if (this.burns.size >= 32) this.remove(this.burns.keys().next().value!)
+    const detached = this.debris.explode(object, id)
+    for (const anchor of detached.slice(0, 8)) {
+      if (this.debrisFires.length >= 48) break
+      const clock = { value: 0 },
+        { flames, material } = this.createFlames(clock)
+      flames.scale.setScalar(0.28)
+      this.space.add(flames)
+      flames.position.copy(anchor.position)
+      const smoke = new ExhaustSmoke(flames, this.space, {
+        direction: [0, 1, 0],
+        color: '#292522',
+        size: 250,
+      })
+      this.root.add(smoke.root)
+      this.debrisFires.push({ anchor, flames, material, clock, smoke })
+    }
     object.traverse((node) => {
       if (!(node instanceof THREE.Mesh)) return
       for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
@@ -227,8 +253,23 @@ export class VehicleDestruction {
       })
     }
   }
-  update(dt: number, smokeEnabled: boolean): void {
+  update(dt: number, smokeEnabled: boolean, cast?: DebrisCast): void {
     dt = THREE.MathUtils.clamp(dt, 0, 0.1)
+    this.debris.update(dt, cast)
+    for (let i = this.debrisFires.length - 1; i >= 0; i--) {
+      const f = this.debrisFires[i]
+      f.clock.value += dt
+      f.flames.position.copy(f.anchor.position)
+      f.material.opacity = Math.max(0, 1 - f.clock.value / 6)
+      f.smoke.setEnabled(smokeEnabled)
+      f.smoke.update(dt, f.clock.value < 6, 0.5)
+      if (f.clock.value > 9 || !f.anchor.parent) {
+        f.flames.removeFromParent()
+        f.material.dispose()
+        f.smoke.dispose()
+        this.debrisFires.splice(i, 1)
+      }
+    }
     this.light.intensity = 0
     this.flare.intensity.value = 0
     for (const burn of this.burns.values()) {
@@ -305,6 +346,13 @@ export class VehicleDestruction {
     this.burns.delete(id)
   }
   clear(): void {
+    this.debris.clear()
+    for (const f of this.debrisFires) {
+      f.flames.removeFromParent()
+      f.material.dispose()
+      f.smoke.dispose()
+    }
+    this.debrisFires.length = 0
     for (const [material, saved] of this.charred) {
       if (saved.color && 'color' in material && material.color instanceof THREE.Color)
         material.color.copy(saved.color)
@@ -326,6 +374,7 @@ export class VehicleDestruction {
   }
   dispose(): void {
     this.clear()
+    this.debris.dispose()
     this.root.removeFromParent()
     this.light.removeFromParent()
     this.flare.mesh.removeFromParent()

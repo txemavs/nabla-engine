@@ -1303,7 +1303,18 @@ export class GameRuntime {
         this.accidentReplacement.schedule()
       }
     }
-    this.view.destruction.update(dt, this.smokeOn)
+    this.view.destruction.update(dt, this.smokeOn, (from, direction, length, excludeEntityId) => {
+      const hit = sim.shoot(
+        from.toArray() as Vec3Tuple,
+        direction.toArray() as Vec3Tuple,
+        length,
+        0,
+        excludeEntityId,
+      )
+      return hit
+        ? { point: new THREE.Vector3(...hit.point), normal: new THREE.Vector3(...hit.normal) }
+        : null
+    })
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
       this.sidearm.slidePosePreview =
