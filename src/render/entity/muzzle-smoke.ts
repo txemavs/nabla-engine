@@ -1,3 +1,4 @@
+import { smokeDensity } from './smoke-density.js'
 /** Small bounded powder-smoke bursts, in the pistol presentation's local space. */
 import * as THREE from 'three'
 export class MuzzleSmoke {
@@ -16,7 +17,7 @@ export class MuzzleSmoke {
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { height: { value: 750 } },
+        uniforms: { smokeDensity, height: { value: 750 } },
         vertexShader: `
         #include <common>
         #include <logdepthbuf_pars_vertex>
@@ -27,11 +28,12 @@ export class MuzzleSmoke {
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
+        uniform float smokeDensity;
         #include <logdepthbuf_pars_fragment>
         varying float t;
         void main(){float d=length(gl_PointCoord-0.5)*2.0;
           if(t<0.0||d>1.0)discard;
-          gl_FragColor=vec4(0.85,0.87,0.89,pow(1.0-d,2.0)*(1.0-t/0.7)*0.32);
+          gl_FragColor=vec4(0.85,0.87,0.89,pow(1.0-d,2.0)*(1.0-t/0.7)*0.32*smokeDensity);
           #include <logdepthbuf_fragment>
         }`,
       }),

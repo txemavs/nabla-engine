@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **386 modules; 4225 executable function definitions**.
+Coverage: **387 modules; 4229 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -33,7 +33,7 @@ Coverage: **386 modules; 4225 executable function definitions**.
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 69 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 44 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 45 |
 | [game/shadow-bias-ui.ts](game/shadow-bias-ui.ts.md) | 13 |
 | [game/sound-ui.ts](game/sound-ui.ts.md) | 4 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
@@ -210,6 +210,7 @@ Coverage: **386 modules; 4225 executable function definitions**.
 | [src/render/entity/shot-laser.ts](src/render/entity/shot-laser.ts.md) | 7 |
 | [src/render/entity/shot-sparks.ts](src/render/entity/shot-sparks.ts.md) | 7 |
 | [src/render/entity/shot-tracers.ts](src/render/entity/shot-tracers.ts.md) | 6 |
+| [src/render/entity/smoke-density.ts](src/render/entity/smoke-density.ts.md) | 1 |
 | [src/render/entity/steering-wheel.ts](src/render/entity/steering-wheel.ts.md) | 9 |
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
@@ -283,7 +284,7 @@ Coverage: **386 modules; 4225 executable function definitions**.
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 317 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 319 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |

@@ -1,3 +1,4 @@
+import { smokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
 import { WeaponControls } from './weapon-controls.js'
 /**
  * Compose a complete browser game over the shared gameplay coordinator.
@@ -628,6 +629,7 @@ export class GameRuntime {
   constructor(private readonly options: GameRuntimeOptions) {
     try {
       this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
+      setSmokeDensity(Number(browserStorage()?.getItem('nabla.smokePercent') ?? 50))
     } catch {
       /* Keep the default if storage is disabled. */
     }
@@ -2707,6 +2709,15 @@ export class GameRuntime {
     )
   }
   /** Live quality preference shared by exhaust and gun smoke. */
+  get smokePercent(): number {
+    return smokeDensity.value * 100
+  }
+  setSmokePercent(percent: number): void {
+    const value = setSmokeDensity(percent)
+    try {
+      browserStorage()?.setItem('nabla.smokePercent', String(value))
+    } catch {}
+  }
   get smokeEnabled(): boolean {
     return this.smokeOn
   }

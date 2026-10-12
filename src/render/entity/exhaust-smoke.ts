@@ -1,3 +1,4 @@
+import { smokeDensity } from './smoke-density.js'
 /** White exhaust vapour attached to the authored outlet, with a bounded world-space pool. */
 import * as THREE from 'three'
 export interface ExhaustSmokeOptions {
@@ -53,7 +54,7 @@ export class ExhaustSmoke {
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { size: { value: options.size ?? 550 } },
+        uniforms: { smokeDensity, size: { value: options.size ?? 550 } },
         vertexShader: `
         #include <common>
         #include <logdepthbuf_pars_vertex>
@@ -64,13 +65,14 @@ export class ExhaustSmoke {
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
+        uniform float smokeDensity;
         #include <logdepthbuf_pars_fragment>
         varying float age; varying vec3 smokeTint;
         void main(){
           #include <logdepthbuf_fragment>
           float d=length(gl_PointCoord-0.5)*2.0;
           if(d>1.0||age<=0.0)discard;
-          gl_FragColor=vec4(smokeTint,pow(1.0-d,2.0)*(age/1.4)*0.4);
+          gl_FragColor=vec4(smokeTint,pow(1.0-d,2.0)*(age/1.4)*0.4*smokeDensity);
         }`,
       }),
     )

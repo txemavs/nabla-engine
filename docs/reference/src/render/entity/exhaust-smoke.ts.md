@@ -4,15 +4,14 @@
 
 [Source](../../../../../src/render/entity/exhaust-smoke.ts)
 
-White exhaust vapour attached to the authored outlet, with a bounded world-space pool.
-
 ## Module dependencies
 
+- `./smoke-density.js`
 - `three`
 
 ## ExhaustSmoke.constructor
 
-[Implementation, line 35](../../../../../src/render/entity/exhaust-smoke.ts#L35)
+[Implementation, line 36](../../../../../src/render/entity/exhaust-smoke.ts#L36)
 
 ```ts
 constructor(private readonly outlet: THREE.Object3D, private readonly space: THREE.Object3D, private readonly options: ExhaustSmokeOptions = {}): instance
@@ -30,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ExhaustSmoke.setEnabled
 
-[Implementation, line 82](../../../../../src/render/entity/exhaust-smoke.ts#L82)
+[Implementation, line 84](../../../../../src/render/entity/exhaust-smoke.ts#L84)
 
 ```ts
 setEnabled(enabled: boolean): void
@@ -43,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ExhaustSmoke.setAmount
 
-[Implementation, line 92](../../../../../src/render/entity/exhaust-smoke.ts#L92)
+[Implementation, line 94](../../../../../src/render/entity/exhaust-smoke.ts#L94)
 
 Scale particle emission without changing the size or lifetime of each puff.
 
@@ -57,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ExhaustSmoke.update
 
-[Implementation, line 96](../../../../../src/render/entity/exhaust-smoke.ts#L96)
+[Implementation, line 98](../../../../../src/render/entity/exhaust-smoke.ts#L98)
 
 ```ts
 update(dt: number, running: boolean, load: number, speedKmh = 0): void
@@ -93,17 +92,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.space.matrixWorld.clone().invert`
 - `this.space.worldToLocal`
 
-## ExhaustSmoke.update.callback@146
+## ExhaustSmoke.update.callback@148
 
-[Implementation, line 146](../../../../../src/render/entity/exhaust-smoke.ts#L146)
+[Implementation, line 148](../../../../../src/render/entity/exhaust-smoke.ts#L148)
 
 ```ts
-callback@146(v): inferred by TypeScript; see implementation
+callback@148(v): inferred by TypeScript; see implementation
 ```
 
 ## ExhaustSmoke.dispose
 
-[Implementation, line 152](../../../../../src/render/entity/exhaust-smoke.ts#L152)
+[Implementation, line 154](../../../../../src/render/entity/exhaust-smoke.ts#L154)
 
 ```ts
 dispose(): void
@@ -117,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## s3SmokeAmount
 
-[Implementation, line 160](../../../../../src/render/entity/exhaust-smoke.ts#L160)
+[Implementation, line 162](../../../../../src/render/entity/exhaust-smoke.ts#L162)
 
 Loaded S3 quantity rises from 10% at 1000 rpm to 200% at 7000; releasing gas leaves 10%.
 

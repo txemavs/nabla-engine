@@ -347,6 +347,20 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.checked = runtime.smokeEnabled
     label.append(input, ' Humo (escapes y disparos)')
     input.addEventListener('change', () => runtime.setSmokeEnabled(input.checked))
+    const amount = doc.createElement('input'),
+      value = doc.createElement('output')
+    amount.type = 'range'
+    amount.min = '0'
+    amount.max = '300'
+    amount.step = '1'
+    amount.value = String(runtime.smokePercent)
+    amount.setAttribute('aria-label', 'Cantidad de humo (%)')
+    value.textContent = amount.value + ' %'
+    amount.addEventListener('input', () => {
+      runtime.setSmokePercent(amount.valueAsNumber)
+      value.textContent = amount.value + ' %'
+    })
+    label.append(amount, value)
     quality.insertBefore(label, quality.querySelector('button'))
   }
 

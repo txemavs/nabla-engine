@@ -1,3 +1,4 @@
+import { smokeDensity } from './smoke-density.js'
 import { BufferAttribute, BufferGeometry, Points, ShaderMaterial, Vector3 } from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
 
@@ -17,7 +18,7 @@ export class TireSmoke {
       new ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { pixelRatio: { value: 1 } },
+        uniforms: { smokeDensity, pixelRatio: { value: 1 } },
         vertexShader: `
         #include <common>
         #include <logdepthbuf_pars_vertex>
@@ -27,11 +28,12 @@ export class TireSmoke {
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
+        uniform float smokeDensity;
         #include <logdepthbuf_pars_fragment>
         varying float age; void main(){
         #include <logdepthbuf_fragment>
  float d=length(gl_PointCoord-0.5)*2.0;
-        if(d>1.0 || age<=0.0) discard; gl_FragColor=vec4(0.65,0.67,0.69,(1.0-d)*(1.0-d)*age*0.24); }`,
+        if(d>1.0 || age<=0.0) discard; gl_FragColor=vec4(0.65,0.67,0.69,(1.0-d)*(1.0-d)*age*0.24*smokeDensity); }`,
       }),
     )
     this.root.frustumCulled = false
