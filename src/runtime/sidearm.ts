@@ -479,6 +479,18 @@ export class Sidearm {
     if (!source) return null
     source.updateWorldMatrix(true, true)
     const body = source.clone(true)
+    // Clone only the physical assembly. Hidden laser lines and live smoke still
+    // contribute to Box3 bounds and would give debris metres of invisible support.
+    const assembly = firstPerson ? this.assembledModel : source.children[0]
+    if (source !== assembly) {
+      for (let i = source.children.length - 1; i >= 0; i--)
+        if (source.children[i] !== assembly) body.children[i].removeFromParent()
+    }
+    const hidden: THREE.Object3D[] = []
+    body.traverse((node) => {
+      if (!node.visible) hidden.push(node)
+    })
+    for (const node of hidden) node.removeFromParent()
     if (firstPerson) {
       const local = this.viewRig.worldToLocal(source.getWorldPosition(new THREE.Vector3()))
       body.position.copy(local.applyQuaternion(camera.quaternion).add(camera.position))

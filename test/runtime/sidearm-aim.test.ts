@@ -105,3 +105,41 @@ it('rupture separates nested barrel, slide, magazine and frame once', async () =
   expect(arm.broken).toBe(true)
   expect(arm.ruptureParts(new PerspectiveCamera(), new Group(), true)).toBeNull()
 })
+
+it('rupture excludes the long hidden laser and smoke from physical bounds', async () => {
+  const { Sidearm } = await import('../../src/runtime/sidearm.js')
+  const {
+    Box3,
+    BoxGeometry,
+    Mesh,
+    MeshBasicMaterial,
+    Line,
+    BufferGeometry,
+    Float32BufferAttribute,
+  } = await import('three')
+  const model = new Group(),
+    assembly = new Group(),
+    rig = new Group()
+  assembly.add(new Mesh(new BoxGeometry(0.2, 0.2, 0.2), new MeshBasicMaterial()))
+  model.add(assembly)
+  rig.add(model)
+  const beam = new Line(
+    new BufferGeometry().setAttribute(
+      'position',
+      new Float32BufferAttribute([0, 0, 0, 0, 0, -100], 3),
+    ),
+  )
+  beam.visible = false
+  model.add(beam)
+  const arm = Object.assign(Object.create(Sidearm.prototype), {
+    broken: false,
+    assembledModel: assembly,
+    model,
+    viewRig: rig,
+    release: () => {},
+  }) as Sidearm
+  const parts = arm.ruptureParts(new PerspectiveCamera(), new Group(), true)!
+  const size = new Box3().setFromObject(parts).getSize(new Vector3())
+  expect(size.z).toBeCloseTo(0.2)
+  expect(parts.children[0].children).toHaveLength(1)
+})
