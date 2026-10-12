@@ -71,7 +71,7 @@ it('supports a large rotating component above the floor instead of burying its l
   space.add(car)
   const debris = new WreckDebris(space)
   debris.explode(car, 'car')
-  for (let i = 0; i < 240; i++) {
+  for (let i = 0; i < 600; i++) {
     debris.update(1 / 60, (from, dir, length) => {
       if (dir.y >= 0) return null
       const t = -from.y / dir.y
@@ -85,5 +85,9 @@ it('supports a large rotating component above the floor instead of burying its l
     const extent = piece.width * along + piece.radius * Math.sqrt(Math.max(0, 1 - along * along))
     expect(piece.pivot.position.y - extent).toBeGreaterThanOrEqual(-0.001)
   }
+  expect(debris.pieces[0].resting).toBe(true)
+  const stopped = debris.pieces[0].pivot.position.clone()
+  debris.update(.1)
+  expect(debris.pieces[0].pivot.position.equals(stopped)).toBe(true)
   debris.dispose()
 })

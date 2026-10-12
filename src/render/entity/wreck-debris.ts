@@ -16,6 +16,7 @@ export class WreckDebris {
     axle: THREE.Vector3
     radius: number
     width: number
+    resting: boolean
     rolling: boolean
     halfSize: THREE.Vector3
     velocity: THREE.Vector3
@@ -128,6 +129,7 @@ export class WreckDebris {
         axle,
         radius,
         width: sizes[thin],
+        resting: false,
         rolling: false,
         entityId,
         halfSize,
@@ -152,59 +154,68 @@ export class WreckDebris {
     for (const piece of this.pieces) {
       piece.age += dt
       const { pivot, velocity } = piece
-      if (!piece.rolling) {
-        pivot.rotateX(piece.spin.x * dt)
-        pivot.rotateY(piece.spin.y * dt)
-        pivot.rotateZ(piece.spin.z * dt)
-      }
-      piece.rolling = false
-      const support = (normal: THREE.Vector3) => {
-        const axle = piece.axle.clone().applyQuaternion(pivot.quaternion)
-        const along = Math.min(1, Math.abs(normal.dot(axle)))
-        return (
-          piece.width * along + piece.radius * Math.sqrt(Math.max(0, 1 - along * along)) + 0.015
-        )
-      }
-      velocity.y -= 9.8 * dt
-      const step = velocity.clone().multiplyScalar(dt),
-        distance = step.length()
-      const direction = step.clone().normalize()
-      const hit =
-        distance > 0 && cast
-          ? cast(pivot.position, direction, distance + support(direction), piece.entityId)
-          : null
-      const resolve = (contact: { point: THREE.Vector3; normal: THREE.Vector3 }) => {
-        pivot.position.copy(contact.point).addScaledVector(contact.normal, support(contact.normal))
-        const inward = velocity.dot(contact.normal)
-        if (inward < 0) velocity.addScaledVector(contact.normal, -1.3 * inward)
-        if (contact.normal.y > 0.5 && Math.abs(inward) < 2) {
-          velocity.addScaledVector(contact.normal, -velocity.dot(contact.normal))
-          velocity.multiplyScalar(Math.exp(-0.32 * dt))
-          const speed = velocity.length()
-          if (speed > 0.05) {
-            const axle = contact.normal.clone().cross(velocity).normalize()
-            const current = piece.axle.clone().applyQuaternion(pivot.quaternion)
-            pivot.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(current, axle))
-            pivot.quaternion.premultiply(
-              new THREE.Quaternion().setFromAxisAngle(axle, (speed * dt) / piece.radius),
-            )
-          } else velocity.set(0, 0, 0)
-          piece.spin.set(0, 0, 0)
-          piece.rolling = true
+      if (!piece.resting) {
+        if (!piece.rolling) {
+          pivot.rotateX(piece.spin.x * dt)
+          pivot.rotateY(piece.spin.y * dt)
+          pivot.rotateZ(piece.spin.z * dt)
+        }
+        piece.rolling = false
+        const support = (normal: THREE.Vector3) => {
+          const axle = piece.axle.clone().applyQuaternion(pivot.quaternion)
+          const along = Math.min(1, Math.abs(normal.dot(axle)))
+          return (
+            piece.width * along + piece.radius * Math.sqrt(Math.max(0, 1 - along * along)) + 0.015
+          )
+        }
+        velocity.y -= 9.8 * dt
+        const step = velocity.clone().multiplyScalar(dt),
+          distance = step.length()
+        const direction = step.clone().normalize()
+        const hit =
+          distance > 0 && cast
+            ? cast(pivot.position, direction, distance + support(direction), piece.entityId)
+            : null
+        const resolve = (contact: { point: THREE.Vector3; normal: THREE.Vector3 }) => {
           pivot.position
             .copy(contact.point)
             .addScaledVector(contact.normal, support(contact.normal))
-        } else {
-          velocity.multiplyScalar(0.85)
-          piece.spin.multiplyScalar(0.8)
+          const inward = velocity.dot(contact.normal)
+          if (inward < 0) velocity.addScaledVector(contact.normal, -1.3 * inward)
+          if (contact.normal.y > 0.5 && Math.abs(inward) < 2) {
+            velocity.addScaledVector(contact.normal, -velocity.dot(contact.normal))
+            velocity.multiplyScalar(
+              Math.max(0, 1 - (4.5 * dt) / Math.max(0.001, velocity.length())),
+            )
+            const speed = velocity.length()
+            if (speed > 0.18) {
+              const axle = contact.normal.clone().cross(velocity).normalize()
+              const current = piece.axle.clone().applyQuaternion(pivot.quaternion)
+              pivot.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(current, axle))
+              pivot.quaternion.premultiply(
+                new THREE.Quaternion().setFromAxisAngle(axle, (speed * dt) / piece.radius),
+              )
+            } else {
+              velocity.set(0, 0, 0)
+              piece.resting = true
+            }
+            piece.spin.set(0, 0, 0)
+            piece.rolling = true
+            pivot.position
+              .copy(contact.point)
+              .addScaledVector(contact.normal, support(contact.normal))
+          } else {
+            velocity.multiplyScalar(0.65)
+            piece.spin.multiplyScalar(0.55)
+          }
         }
+        if (hit) resolve(hit)
+        else pivot.position.add(step)
+        // Rotation can lower a corner even when the centre has barely moved.
+        const down = new THREE.Vector3(0, -1, 0)
+        const ground = cast?.(pivot.position, down, support(down), piece.entityId)
+        if (ground) resolve(ground)
       }
-      if (hit) resolve(hit)
-      else pivot.position.add(step)
-      // Rotation can lower a corner even when the centre has barely moved.
-      const down = new THREE.Vector3(0, -1, 0)
-      const ground = cast?.(pivot.position, down, support(down), piece.entityId)
-      if (ground) resolve(ground)
       const char = Math.min(1, piece.age / 2.5)
       for (const { material, color } of piece.materials) {
         material.color.copy(color).lerp(new THREE.Color('#171717'), char)

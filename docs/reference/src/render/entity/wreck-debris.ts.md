@@ -10,7 +10,7 @@
 
 ## WreckDebris.constructor
 
-[Implementation, line 31](../../../../../src/render/entity/wreck-debris.ts#L31)
+[Implementation, line 32](../../../../../src/render/entity/wreck-debris.ts#L32)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -24,7 +24,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.parts
 
-[Implementation, line 35](../../../../../src/render/entity/wreck-debris.ts#L35)
+[Implementation, line 36](../../../../../src/render/entity/wreck-debris.ts#L36)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -37,12 +37,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `object.traverseVisible`
 - `parts.filter`
 
-## WreckDebris.parts.callback@37
+## WreckDebris.parts.callback@38
 
-[Implementation, line 37](../../../../../src/render/entity/wreck-debris.ts#L37)
+[Implementation, line 38](../../../../../src/render/entity/wreck-debris.ts#L38)
 
 ```ts
-callback@37(node): inferred by TypeScript; see implementation
+callback@38(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -50,12 +50,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `/^(Wheel(?:[_ -]|$)|Rueda(?:[_ -]|$))/i.test`
 - `parts.push`
 
-## WreckDebris.parts.callback@44
+## WreckDebris.parts.callback@45
 
-[Implementation, line 44](../../../../../src/render/entity/wreck-debris.ts#L44)
+[Implementation, line 45](../../../../../src/render/entity/wreck-debris.ts#L45)
 
 ```ts
-callback@44(node): inferred by TypeScript; see implementation
+callback@45(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -64,7 +64,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.prepare
 
-[Implementation, line 50](../../../../../src/render/entity/wreck-debris.ts#L50)
+[Implementation, line 51](../../../../../src/render/entity/wreck-debris.ts#L51)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -81,12 +81,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.prepared.has`
 - `this.prepared.set`
 
-## WreckDebris.prepare.callback@55
+## WreckDebris.prepare.callback@56
 
-[Implementation, line 55](../../../../../src/render/entity/wreck-debris.ts#L55)
+[Implementation, line 56](../../../../../src/render/entity/wreck-debris.ts#L56)
 
 ```ts
-callback@55(node): inferred by TypeScript; see implementation
+callback@56(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -95,12 +95,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `node.material.clone`
 - `node.material.map`
 
-## WreckDebris.prepare.callback@55.callback@58
+## WreckDebris.prepare.callback@56.callback@59
 
-[Implementation, line 58](../../../../../src/render/entity/wreck-debris.ts#L58)
+[Implementation, line 59](../../../../../src/render/entity/wreck-debris.ts#L59)
 
 ```ts
-callback@58(m): inferred by TypeScript; see implementation
+callback@59(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -109,7 +109,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.warmRoot
 
-[Implementation, line 64](../../../../../src/render/entity/wreck-debris.ts#L64)
+[Implementation, line 65](../../../../../src/render/entity/wreck-debris.ts#L65)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -125,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.explode
 
-[Implementation, line 69](../../../../../src/render/entity/wreck-debris.ts#L69)
+[Implementation, line 70](../../../../../src/render/entity/wreck-debris.ts#L70)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -183,12 +183,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `velocity.normalize().multiplyScalar`
 - `velocity.set`
 
-## WreckDebris.explode.callback@80
+## WreckDebris.explode.callback@81
 
-[Implementation, line 80](../../../../../src/render/entity/wreck-debris.ts#L80)
+[Implementation, line 81](../../../../../src/render/entity/wreck-debris.ts#L81)
 
 ```ts
-callback@80(child): inferred by TypeScript; see implementation
+callback@81(child): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -197,24 +197,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `child.material.clone`
 - `child.material.map`
 
-## WreckDebris.explode.callback@80.callback@83
+## WreckDebris.explode.callback@81.callback@84
 
-[Implementation, line 83](../../../../../src/render/entity/wreck-debris.ts#L83)
+[Implementation, line 84](../../../../../src/render/entity/wreck-debris.ts#L84)
 
 ```ts
-callback@83(m): inferred by TypeScript; see implementation
+callback@84(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `m.clone`
 
-## WreckDebris.explode.callback@95
+## WreckDebris.explode.callback@96
 
-[Implementation, line 95](../../../../../src/render/entity/wreck-debris.ts#L95)
+[Implementation, line 96](../../../../../src/render/entity/wreck-debris.ts#L96)
 
 ```ts
-callback@95(node): inferred by TypeScript; see implementation
+callback@96(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -223,25 +223,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `material.color.clone`
 - `materials.push`
 
-## WreckDebris.explode.callback@126
+## WreckDebris.explode.callback@127
 
-[Implementation, line 126](../../../../../src/render/entity/wreck-debris.ts#L126)
+[Implementation, line 127](../../../../../src/render/entity/wreck-debris.ts#L127)
 
 ```ts
-callback@126(_, i): inferred by TypeScript; see implementation
+callback@127(_, i): inferred by TypeScript; see implementation
 ```
 
-## WreckDebris.explode.callback@149
+## WreckDebris.explode.callback@151
 
-[Implementation, line 149](../../../../../src/render/entity/wreck-debris.ts#L149)
+[Implementation, line 151](../../../../../src/render/entity/wreck-debris.ts#L151)
 
 ```ts
-callback@149(p): inferred by TypeScript; see implementation
+callback@151(p): inferred by TypeScript; see implementation
 ```
 
 ## WreckDebris.update
 
-[Implementation, line 151](../../../../../src/render/entity/wreck-debris.ts#L151)
+[Implementation, line 153](../../../../../src/render/entity/wreck-debris.ts#L153)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -274,7 +274,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.update.support
 
-[Implementation, line 161](../../../../../src/render/entity/wreck-debris.ts#L161)
+[Implementation, line 164](../../../../../src/render/entity/wreck-debris.ts#L164)
 
 ```ts
 support(normal: THREE.Vector3): inferred by TypeScript; see implementation
@@ -292,7 +292,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.update.resolve
 
-[Implementation, line 176](../../../../../src/render/entity/wreck-debris.ts#L176)
+[Implementation, line 179](../../../../../src/render/entity/wreck-debris.ts#L179)
 
 ```ts
 resolve(contact: { point: THREE.Vector3; normal: THREE.Vector3 }): inferred by TypeScript; see implementation
@@ -301,7 +301,7 @@ resolve(contact: { point: THREE.Vector3; normal: THREE.Vector3 }): inferred by T
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
-- `Math.exp`
+- `Math.max`
 - `THREE.Quaternion`
 - `contact.normal.clone`
 - `contact.normal.clone().cross`
@@ -312,8 +312,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `piece.axle.clone().applyQuaternion`
 - `piece.spin.multiplyScalar`
 - `piece.spin.set`
-- `pivot.position.copy`
-- `pivot.position.copy(contact.point).addScaledVector`
 - `pivot.quaternion.premultiply`
 - `support`
 - `velocity.addScaledVector`
@@ -324,7 +322,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.removeFirst
 
-[Implementation, line 220](../../../../../src/render/entity/wreck-debris.ts#L220)
+[Implementation, line 231](../../../../../src/render/entity/wreck-debris.ts#L231)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -338,12 +336,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `piece.pivot.traverse`
 - `this.pieces.shift`
 
-## WreckDebris.removeFirst.callback@222
+## WreckDebris.removeFirst.callback@233
 
-[Implementation, line 222](../../../../../src/render/entity/wreck-debris.ts#L222)
+[Implementation, line 233](../../../../../src/render/entity/wreck-debris.ts#L233)
 
 ```ts
-callback@222(node): inferred by TypeScript; see implementation
+callback@233(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -353,7 +351,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.clear
 
-[Implementation, line 229](../../../../../src/render/entity/wreck-debris.ts#L229)
+[Implementation, line 240](../../../../../src/render/entity/wreck-debris.ts#L240)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -368,7 +366,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WreckDebris.dispose
 
-[Implementation, line 234](../../../../../src/render/entity/wreck-debris.ts#L234)
+[Implementation, line 245](../../../../../src/render/entity/wreck-debris.ts#L245)
 
 Visual wreck components with gravity and swept world collision; shared geometry is never disposed.
 
@@ -384,12 +382,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.prepared.values`
 - `this.root.removeFromParent`
 
-## WreckDebris.dispose.callback@237
+## WreckDebris.dispose.callback@248
 
-[Implementation, line 237](../../../../../src/render/entity/wreck-debris.ts#L237)
+[Implementation, line 248](../../../../../src/render/entity/wreck-debris.ts#L248)
 
 ```ts
-callback@237(node): inferred by TypeScript; see implementation
+callback@248(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

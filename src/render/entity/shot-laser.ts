@@ -4,28 +4,48 @@ import type { Vec3Tuple } from '../../entity/schema.js'
 /** World-space laser sight: thin beam from muzzle to aim point plus a surface pin. */
 export class ShotLaser {
   readonly root = new THREE.Group()
-  private readonly beamGeom = new THREE.BufferGeometry()
-  private readonly beamMat = new THREE.LineBasicMaterial({
-    color: '#ff2a2a',
+  private readonly beamGeom = new THREE.PlaneGeometry(1, 1)
+  private readonly beamMat = new THREE.ShaderMaterial({
     transparent: true,
-    opacity: 0.12,
     depthWrite: false,
     toneMapped: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      start: { value: new THREE.Vector3() },
+      end: { value: new THREE.Vector3() },
+      resolution: { value: new THREE.Vector2(1, 1) },
+    },
+    vertexShader: `uniform vec3 start; uniform vec3 end; uniform vec2 resolution; varying vec2 laserUv;
+    #include <common>
+    #include <logdepthbuf_pars_vertex>
+    void main(){laserUv=uv; vec4 a=projectionMatrix*modelViewMatrix*vec4(start,1.); vec4 b=projectionMatrix*modelViewMatrix*vec4(end,1.);
+    vec2 direction=(b.xy/b.w-a.xy/a.w)*resolution;
+    vec2 perpendicular=normalize(vec2(-direction.y,direction.x)+vec2(0.00001));
+    gl_Position=mix(a,b,uv.y); gl_Position.xy+=perpendicular*(uv.x-.5)*6./resolution*gl_Position.w;
+    #include <logdepthbuf_vertex>
+    }`,
+    fragmentShader: `varying vec2 laserUv;
+    #include <logdepthbuf_pars_fragment>
+    void main(){
+    #include <logdepthbuf_fragment>
+    float d=abs(laserUv.x-.5)*2.;float halo=exp(-d*d*3.);float core=exp(-d*d*35.);
+    gl_FragColor=vec4(mix(vec3(1.,.015,.01),vec3(1.,.5,.35),core),(.22*halo+.55*core)*(1.-smoothstep(.8,1.,d)));}`,
   })
-  private readonly beam: THREE.Line
-  private readonly positions = new Float32Array(6)
+  private readonly beam: THREE.Mesh
   private readonly pin: THREE.Mesh
   private disposed = false
   private on = false
 
   constructor() {
     this.root.name = 'Shot laser'
-    this.beamGeom.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
-    this.beam = new THREE.Line(this.beamGeom, this.beamMat)
+    this.beam = new THREE.Mesh(this.beamGeom, this.beamMat)
+    this.beam.onBeforeRender = (renderer) => {
+      renderer.getDrawingBufferSize(this.beamMat.uniforms.resolution.value)
+    }
     this.beam.frustumCulled = false
     this.beam.renderOrder = 6
     this.pin = new THREE.Mesh(
-      new THREE.SphereGeometry(0.001, 16, 10),
+      new THREE.SphereGeometry(0.003, 16, 10),
       new THREE.MeshBasicMaterial({
         color: '#ff4444',
         transparent: true,
@@ -52,14 +72,8 @@ export class ShotLaser {
   /** Update beam from muzzle to end; pin sits on the end when `hit` is true. */
   set(origin: Vec3Tuple, end: Vec3Tuple, hit: boolean): void {
     if (this.disposed || !this.on) return
-    this.positions[0] = origin[0]
-    this.positions[1] = origin[1]
-    this.positions[2] = origin[2]
-    this.positions[3] = end[0]
-    this.positions[4] = end[1]
-    this.positions[5] = end[2]
-    this.beamGeom.attributes.position.needsUpdate = true
-    this.beamGeom.computeBoundingSphere()
+    this.beamMat.uniforms.start.value.fromArray(origin)
+    this.beamMat.uniforms.end.value.fromArray(end)
     this.pin.position.set(end[0], end[1], end[2])
     const distance = Math.hypot(end[0] - origin[0], end[1] - origin[1], end[2] - origin[2])
     this.pin.scale.setScalar(1 + Math.min(2, distance * 0.015))

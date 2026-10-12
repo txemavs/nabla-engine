@@ -10,7 +10,7 @@ export class WeaponControls {
   ) {
     this.root.className = 'weapon-controls'
     this.root.style.cssText =
-      'position:absolute;right:16px;top:36%;z-index:48;display:flex;flex-direction:column;gap:8px;pointer-events:auto;max-width:260px'
+      'position:absolute;right:8px;top:220px;z-index:48;display:flex;flex-direction:column;gap:8px;pointer-events:auto;max-width:260px'
     const options = { signal: this.lifetime.signal }
     const aiming = (held: boolean) => {
       this.aiming = held
@@ -23,9 +23,20 @@ export class WeaponControls {
     ]) {
       const button = document.createElement('button')
       button.type = 'button'
-      button.textContent = label
+      button.title = label
+      button.setAttribute('aria-label', label)
+      const icon =
+        code === 'aim'
+          ? '<circle cx="12" cy="12" r="6"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/>'
+          : code === 'KeyR'
+            ? '<path d="M8 3h8v17H8zM10 7h4m-4 4h4m-4 4h4"/>'
+            : '<path d="M4 8h16v7H4zM8 4L4 8l4 4m8 0l4 4-4 4"/>'
+      button.innerHTML =
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        icon +
+        '</svg>'
       button.style.cssText =
-        'min-height:44px;padding:10px 16px;border:1px solid #72818c;border-radius:8px;background:#101b28dd;color:white;touch-action:none;font:14px sans-serif'
+        'width:44px;height:44px;display:grid;place-items:center;padding:0;border:2px solid #395e79;border-radius:12px;background:#142735;color:#c6e6ff;touch-action:none;cursor:pointer'
       button.addEventListener(
         'pointerdown',
         (event) => {
@@ -53,16 +64,6 @@ export class WeaponControls {
       )
       this.root.append(button)
     }
-    const tips = document.createElement('details'),
-      title = document.createElement('summary')
-    title.textContent = 'Consejos del arma'
-    tips.style.cssText =
-      'padding:10px;background:#101b28ee;color:white;border-radius:8px;font:13px/1.5 sans-serif'
-    const text = document.createElement('div')
-    text.textContent =
-      'R: sacar / meter cargador normal. M: cargador largo y automático. F: accionar corredera o cerrarla con su botón si está abierta. Z + clic: activar / desactivar seguro. X: mirar recámara. Mantén botón derecho o Apuntar para apuntar. G: láser. H: linterna.'
-    tips.append(title, text)
-    this.root.append(tips)
     host.append(this.root)
     window.addEventListener('blur', () => aiming(false), options)
     this.setActive(false)
