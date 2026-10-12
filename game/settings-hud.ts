@@ -419,7 +419,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const group = fieldset('settings-weapon-poses', 'Arma · posición y ángulos de las posturas')
     const note = doc.createElement('p')
     note.textContent =
-      'Giros en grados y posición en milímetros. F añade ajustes al accionar la corredera sobre cualquier postura. 0 conserva el giro original. Se guardan en este navegador.'
+      'Giros en grados y posición en milímetros. F tiene ajustes propios; F+Z y F+X usan posturas independientes, sin sumar giros. 0 conserva el giro original. Se guardan en este navegador.'
     const select = doc.createElement('select')
     select.setAttribute('aria-label', 'Postura del arma')
     for (const [value, text] of Object.entries(weaponPoseNames)) {

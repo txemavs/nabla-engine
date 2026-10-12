@@ -2737,8 +2737,10 @@ export class GameRuntime {
     this.setSidearmAimPreview(pose !== null)
     this.weaponPosePreview = pose
     if (!pose || !this.sidearm) return
-    if (pose.startsWith('chamber')) this.sidearm.inspect(performance.now(), true)
-    else if (pose.startsWith('inspect')) this.sidearm.inspect(performance.now(), false)
+    if (pose.startsWith('chamber') || pose.startsWith('slideChamber'))
+      this.sidearm.inspect(performance.now(), true)
+    else if (pose.startsWith('inspect') || pose.startsWith('slideInspect'))
+      this.sidearm.inspect(performance.now(), false)
     else this.sidearm.stopInspect(performance.now())
   }
   /** Change and save the lighting knobs (`nabla.lightTuning`); returns the clamped values. */

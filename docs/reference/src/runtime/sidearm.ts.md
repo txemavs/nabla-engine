@@ -811,15 +811,27 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `Math.sin`
 - `THREE.MathUtils.degToRad`
-- `THREE.MathUtils.lerp`
 - `THREE.Quaternion`
 - `axis`
 - `new THREE.Quaternion().setFromAxisAngle`
+- `offset`
 - `poseHKDetails`
 - `reloadPresentation`
 - `this.assembledModel?.getObjectByName`
 - `this.hammer?.object.getObjectByName`
 - `this.model.rotation.set`
+
+## Sidearm.pose.offset
+
+[Implementation, line 855](../../../../src/runtime/sidearm.ts#L855)
+
+```ts
+offset(axis: 'x' | 'y' | 'z' | 'pitch' | 'yaw' | 'roll'): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.MathUtils.lerp`
 
 ## Sidearm.inspect
 

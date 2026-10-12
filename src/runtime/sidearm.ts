@@ -848,28 +848,28 @@ export class Sidearm {
         ? [this.poseTuning.chamber, this.poseTuning.chamberAimed]
         : [this.poseTuning.inspect, this.poseTuning.inspectAimed]
     const inspectionBlend = poseInspection.blend
-    for (const axis of ['x', 'y', 'z'] as const) {
+    const combined =
+      poseInspection.kind === 'chamber'
+        ? [this.poseTuning.slideChamber, this.poseTuning.slideChamberAimed]
+        : [this.poseTuning.slideInspect, this.poseTuning.slideInspectAimed]
+    const offset = (axis: 'x' | 'y' | 'z' | 'pitch' | 'yaw' | 'roll') => {
       const normal = THREE.MathUtils.lerp(base[axis], aimed[axis], this.aimBlend)
       const inspected = THREE.MathUtils.lerp(pair[0][axis], pair[1][axis], this.aimBlend)
-      this.model.position[axis] +=
-        (THREE.MathUtils.lerp(normal, inspected, inspectionBlend) +
-          THREE.MathUtils.lerp(slidePose[axis], slideAimed[axis], this.aimBlend) *
-            this.slidePoseBlend) /
-        1000
+      const slide = THREE.MathUtils.lerp(slidePose[axis], slideAimed[axis], this.aimBlend)
+      const combo = THREE.MathUtils.lerp(combined[0][axis], combined[1][axis], this.aimBlend)
+      return THREE.MathUtils.lerp(
+        THREE.MathUtils.lerp(normal, inspected, inspectionBlend),
+        THREE.MathUtils.lerp(normal + slide, combo, inspectionBlend),
+        this.slidePoseBlend,
+      )
     }
+    for (const axis of ['x', 'y', 'z'] as const) this.model.position[axis] += offset(axis) / 1000
     for (const [axis, rotation] of [
       ['pitch', 'x'],
       ['yaw', 'y'],
       ['roll', 'z'],
-    ] as const) {
-      const normalAngle = THREE.MathUtils.lerp(base[axis], aimed[axis], this.aimBlend)
-      const inspectedAngle = THREE.MathUtils.lerp(pair[0][axis], pair[1][axis], this.aimBlend)
-      this.model.rotation[rotation] += THREE.MathUtils.degToRad(
-        THREE.MathUtils.lerp(normalAngle, inspectedAngle, inspectionBlend) +
-          THREE.MathUtils.lerp(slidePose[axis], slideAimed[axis], this.aimBlend) *
-            this.slidePoseBlend,
-      )
-    }
+    ] as const)
+      this.model.rotation[rotation] += THREE.MathUtils.degToRad(offset(axis))
     if (this.assembledModel)
       poseHKDetails(
         this.assembledModel,
