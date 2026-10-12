@@ -19,6 +19,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   const result = await page.evaluate(async (root) => {
     const { menuSection } = await import(`/@fs/${root}/game/menu.ts`)
     const { mountSettingsHud } = await import(`/@fs/${root}/game/settings-hud.ts`)
+    const { weaponPoseDefaults, sidearmTuningDefaults } = await import(
+      `/@fs/${root}/src/config/gameplay-tuning.ts`
+    )
     const check = (section: HTMLElement, id: string) => {
       const label = document.createElement('label')
       const box = document.createElement('input')
@@ -37,9 +40,11 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     check(menuSection('quality-shadows', 'Sombras'), 'shadows')
     check(menuSection('scene-vehicles', 'Vehículos'), 'vehicles')
     const layer = { sky: true, sun: true, clouds: true, sea: true }
-    let sidearm = { height: -0.027, angle: 1 },
+    let sidearm = { ...sidearmTuningDefaults },
       preview = false
     const runtime = {
+      weaponPoseTuning: structuredClone(weaponPoseDefaults),
+      smokePercent: 50,
       smokeEnabled: true,
       setSmokeEnabled: (enabled: boolean) => {
         runtime.smokeEnabled = enabled
@@ -119,7 +124,7 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   expect(result.before).toEqual(visible)
   expect(result.smoke).toBe(false)
   expect(result.smokePane).toBe('settings-pane-performance')
-  expect(result.sidearm).toEqual({ height: -0.033, angle: 0.7 })
+  expect(result.sidearm).toEqual({ height: -0.055, angle: -0.5 })
   expect(result.preview).toBe(true)
   expect(result.weaponOutputs).toEqual(['-33 mm', '0.7°'])
   expect(result.after).toEqual(visible)
@@ -136,6 +141,7 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     'camera-extras',
     'driving-extras',
     'settings-options-sidearm',
+    'settings-weapon-poses',
     'settings-options-labels',
   ])
   expect(result.dev).toEqual(['settings-config-planet', 'terrain-source'])

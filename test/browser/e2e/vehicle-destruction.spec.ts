@@ -125,6 +125,7 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
     const renderer = (runtime as unknown as { renderer: import('three').WebGLRenderer }).renderer
     runtime.tick(performance.now())
     runtime.tick(performance.now() + 16)
+    const programKeysBefore = new Set(renderer.info.programs?.map((p) => p.cacheKey))
     const programsBefore = renderer.info.programs?.length ?? 0
     sim.damageVehicle('car', 100)
     const now = performance.now()
@@ -144,7 +145,7 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
       ([mesh, material]) => mesh.material === material,
     )
     for (let i = 0; i < 8; i++) view.destruction.update(0.1, true)
-    const flamesVisible = car.children.some(
+    const flamesVisible = view.root.children.some(
       (child) => child.name === 'Wreck flames' && child.visible,
     )
     const graphics = runtime as unknown as {
@@ -175,6 +176,9 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
       keptMaterials,
       firstExplosionMs,
       newPrograms: programsAfter - programsBefore,
+      newProgramKeys: renderer.info.programs
+        ?.filter((p) => !programKeysBefore.has(p.cacheKey))
+        .map((p) => p.cacheKey),
       cleared,
       image,
     }
@@ -195,7 +199,7 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
   expect(result.effectCount).toBeGreaterThan(2)
   expect(result.disabled).toBe(true)
   expect(result.keptMaterials).toBe(true)
-  expect(result.newPrograms).toBe(0)
+  expect(result.newPrograms, JSON.stringify(result.newProgramKeys)).toBe(0)
   expect(result.cleared).toBe(true)
   expect(errors).toEqual([])
 })
