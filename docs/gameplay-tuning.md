@@ -226,3 +226,13 @@ Platform colliders, hinge and loading angle are in the trailer presets under
 `assets/library/cars/white-truck/`. Visible deck dimensions are authored in
 `scripts/split-trailer-box.mjs`; regenerate with `npm run trailer:split`, then
 `npm run rigs:generate` and `npm run assets:pack` after changing geometry.
+
+Action cam is an independent, default-on walking preference in Settings beside the
+first-person mode. It adds distance-driven lateral sway, foot bob and a bounded
+head roll when stepping, strafing and turning. Starts/stops ease smoothly; aiming
+reduces motion to 22%. Airborne motion fades and the effect resets in vehicles,
+exterior views, falls and recovery. It changes the final camera transform only,
+before weapon/audio rendering, without modifying simulation heading, FOV, lights
+or post-processing. `actionCamTuning` in `src/config/gameplay-tuning.ts` owns all
+amplitudes, stride and response settings. `nabla.actionCam` persists the toggle;
+AJUSTES PREDETERMINADOS restores its default.

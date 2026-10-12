@@ -1,4 +1,4 @@
-import { normalViewTuning, smokeTuning } from '../config/gameplay-tuning.js'
+import { normalViewTuning, smokeTuning, actionCamTuning } from '../config/gameplay-tuning.js'
 import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
 import { presetVehicle } from '../catalog/vehicles/library.js'
 import { randomRoadVehicle } from './random-vehicle.js'
@@ -9,6 +9,7 @@ import {
 } from '../config/driver-pose.js'
 import { GameToolbar } from './game-toolbar.js'
 import { BodycamAim } from './bodycam-aim.js'
+import { ActionCam } from './action-cam.js'
 import { smokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
 import { WeaponControls } from './weapon-controls.js'
 /**
@@ -539,6 +540,8 @@ export class GameRuntime {
   private magazineAction: 'drop' | 'insert' | 'release' | 'automatic' | null = null
   private weaponLightOn = false
   private readonly bodycam = new BodycamAim()
+  private readonly actionCam = new ActionCam()
+  private actionCamOn = actionCamTuning.enabled
   private safetyClickHeld = false
   private weaponLight: THREE.SpotLight | null = null
   private casingMotion: CasingMotion | null = null
@@ -639,6 +642,8 @@ export class GameRuntime {
   constructor(private readonly options: GameRuntimeOptions) {
     try {
       this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
+      this.actionCamOn =
+        (browserStorage()?.getItem('nabla.actionCam') ?? String(actionCamTuning.enabled)) === 'true'
       setSmokeDensity(
         Number(browserStorage()?.getItem('nabla.smokePercent') ?? smokeTuning.defaultPercent),
       )
@@ -1338,6 +1343,27 @@ export class GameRuntime {
     canvas.dataset.interior = player.interiorId ?? ''
     canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
+    if (
+      this.actionCamOn &&
+      eyes &&
+      !player.vehicleId &&
+      !sim.playerEjection &&
+      !sim.playerBikeRecovery
+    ) {
+      const motion = this.actionCam.step(dt, {
+        speed: player.speed * Math.min(1, Math.hypot(input.forward, input.right)),
+        grounded: player.grounded,
+        right: input.right,
+        yaw: this.cameraState.yaw,
+        aim: this.sidearm?.aimTransition ?? 0,
+      })
+      this.camera.position.add(
+        new THREE.Vector3(motion.side, motion.up, 0).applyQuaternion(this.camera.quaternion),
+      )
+      this.camera.quaternion.multiply(
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(motion.pitch, 0, motion.roll, 'YXZ')),
+      )
+    } else this.actionCam.reset()
     if (bodycamActive) {
       this.camera.fov =
         this.cameraState.settings.firstPersonFov +
@@ -2858,6 +2884,18 @@ export class GameRuntime {
   /** Live quality preference shared by exhaust and gun smoke. */
   get bodycamEnabled(): boolean {
     return !!this.cameraState.bodycam
+  }
+  get actionCamEnabled(): boolean {
+    return this.actionCamOn
+  }
+  setActionCamEnabled(enabled: boolean): void {
+    this.actionCamOn = enabled
+    this.actionCam.reset()
+    try {
+      browserStorage()?.setItem('nabla.actionCam', String(enabled))
+    } catch {
+      /* Keep the session preference. */
+    }
   }
   private tunnelOverride: boolean | null | undefined
   get tunnelEnabled(): boolean {

@@ -393,6 +393,16 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     quality.append(label)
   }
 
+  if (quality && typeof runtime.actionCamEnabled === 'boolean') {
+    const label = doc.createElement('label'),
+      input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'camera-action-cam'
+    input.checked = runtime.actionCamEnabled
+    input.addEventListener('change', () => runtime.setActionCamEnabled(input.checked))
+    label.append(input, ' Action cam (pasos e inclinación al caminar)')
+    quality.append(label)
+  }
   if (quality && typeof runtime.tunnelEnabled === 'boolean') {
     const label = doc.createElement('label')
     const input = doc.createElement('input')

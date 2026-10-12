@@ -15,6 +15,7 @@ const keys = new Set([
   'nabla.cameraFov',
   'nabla.driverPose',
   'nabla.bodycam',
+  'nabla.actionCam',
   'nabla.tunnel',
   'nabla.smoke',
   'nabla.smokePercent',

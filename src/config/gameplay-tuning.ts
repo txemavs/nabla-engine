@@ -109,6 +109,22 @@ export const normalViewTuning = {
   followRate: 3.5,
   aimedFollowRate: 22,
 }
+/** Action cam walking motion: metres, radians and seconds. No post-processing. */
+export const actionCamTuning = {
+  enabled: true,
+  strideMetres: 1.4,
+  referenceSpeed: 4,
+  maxSpeed: 8,
+  bobMetres: 0.026,
+  swayMetres: 0.014,
+  stepRollRadians: 0.011,
+  stepPitchRadians: 0.006,
+  strafeRollRadians: 0.022,
+  turnLeanSeconds: 0.018,
+  maxTurnRollRadians: 0.03,
+  response: 9,
+  aimedScale: 0.22,
+}
 export const weaponViewTuning = {
   alignmentDistanceMetres: 25,
   thirdPerson: { shoulder: [0.22, -0.2, 0] as const, reachMetres: 0.58 },
