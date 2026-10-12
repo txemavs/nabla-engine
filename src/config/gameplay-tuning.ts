@@ -110,9 +110,9 @@ export const weaponViewTuning = {
   inspectBaseRadians: { yaw: 0.9, roll: -0.35, raiseMetres: 0.055 },
 }
 export const focusTuning = {
-  radiusPixels: 5,
-  sideStart: 0.18,
-  sideEnd: 0.49,
+  radiusPixels: 12,
+  sideStart: 0.12,
+  sideEnd: 0.4,
   nearStartMetres: 2,
   nearEndMetres: 18,
 }
@@ -126,6 +126,15 @@ export const laserTuning = {
   beamWidthPixels: 7,
 }
 export const smokeTuning = { defaultPercent: 50, maxPercent: 300 }
+/** Contact speeds are relative impact speeds, not dashboard speeds. */
+export const vehicleDamageTuning = {
+  minimumImpactSpeed: 3,
+  catastrophicImpactSpeed: 50,
+  contactWindowSeconds: 0.35,
+  damagePerSpeed: 0.3,
+  maxOrdinaryDamage: 10,
+  smokeMaxAmount: 2,
+}
 export const explosionTuning = {
   radiusMetres: 12,
   impulseSpeed: 9,

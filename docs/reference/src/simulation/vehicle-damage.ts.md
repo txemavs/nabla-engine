@@ -4,14 +4,13 @@
 
 [Source](../../../../src/simulation/vehicle-damage.ts)
 
-Session-only vehicle health. Physics and presentation consume each destruction once.
-
 ## Module dependencies
 
+- `../config/gameplay-tuning.js`
 
 ## VehicleDamage.remaining
 
-[Implementation, line 7](../../../../src/simulation/vehicle-damage.ts#L7)
+[Implementation, line 9](../../../../src/simulation/vehicle-damage.ts#L9)
 
 Session-only vehicle health. Physics and presentation consume each destruction once.
 
@@ -25,7 +24,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDamage.destroyed
 
-[Implementation, line 10](../../../../src/simulation/vehicle-damage.ts#L10)
+[Implementation, line 12](../../../../src/simulation/vehicle-damage.ts#L12)
 
 Session-only vehicle health. Physics and presentation consume each destruction once.
 
@@ -39,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDamage.apply
 
-[Implementation, line 13](../../../../src/simulation/vehicle-damage.ts#L13)
+[Implementation, line 15](../../../../src/simulation/vehicle-damage.ts#L15)
 
 Session-only vehicle health. Physics and presentation consume each destruction once.
 
@@ -59,28 +58,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDamage.impact
 
-[Implementation, line 22](../../../../src/simulation/vehicle-damage.ts#L22)
+[Implementation, line 24](../../../../src/simulation/vehicle-damage.ts#L24)
 
 Session-only vehicle health. Physics and presentation consume each destruction once.
 
 ```ts
-impact(id: string, other: number, speed: number, seconds: number): void
+impact(id: string, _other: number, speed: number, seconds: number): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
 - `Math.min`
 - `Number.isFinite`
 - `this.apply`
-- `this.impacts.delete`
 - `this.impacts.get`
-- `this.impacts.keys`
-- `this.impacts.keys().next`
 - `this.impacts.set`
 
 ## VehicleDamage.drain
 
-[Implementation, line 30](../../../../src/simulation/vehicle-damage.ts#L30)
+[Implementation, line 45](../../../../src/simulation/vehicle-damage.ts#L45)
 
 Session-only vehicle health. Physics and presentation consume each destruction once.
 
@@ -94,7 +91,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDamage.remove
 
-[Implementation, line 33](../../../../src/simulation/vehicle-damage.ts#L33)
+[Implementation, line 48](../../../../src/simulation/vehicle-damage.ts#L48)
 
 Session-only vehicle health. Physics and presentation consume each destruction once.
 
@@ -104,9 +101,7 @@ remove(id: string): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `key.startsWith`
 - `this.health.delete`
 - `this.impacts.delete`
-- `this.impacts.keys`
 - `this.pending.splice`
 - `this.wrecks.delete`

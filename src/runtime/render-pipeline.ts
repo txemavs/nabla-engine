@@ -128,7 +128,9 @@ export class GameRenderPipeline {
       frame.beforeMain?.()
       sky.setViewAspect(camera.aspect)
       renderer.autoClear = true
-      const focus = frame.depthOfField || (frame.tunnelFocus ?? 0) > 0.001
+      // Normal view keeps the same colour/flare pipeline even with the weapon lowered.
+      // Switching render targets at the first aiming frame changes sky tone mapping.
+      const focus = frame.depthOfField || frame.tunnelFocus !== undefined
       this.depthOfField.setFocus(frame.tunnelFocus ?? 0, !!frame.depthOfField)
       if (focus) this.depthOfField.begin(renderer)
       if (sky.enabled && frame.skyVisible !== false) {

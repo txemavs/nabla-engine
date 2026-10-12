@@ -1,4 +1,4 @@
-import { explosionTuning } from '../../config/gameplay-tuning.js'
+import { explosionTuning, vehicleDamageTuning } from '../../config/gameplay-tuning.js'
 import { TrunkBalloons } from './trunk-balloons.js'
 import { WreckDebris, type DebrisCast } from './wreck-debris.js'
 import * as THREE from 'three'
@@ -7,6 +7,44 @@ import { createLensFlare } from '../planet/lens-flare.js'
 
 /** Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame. */
 export class VehicleDestruction {
+  private readonly damageSmoke = new Map<
+    string,
+    {
+      object: THREE.Object3D
+      anchor: THREE.Group
+      smoke: ExhaustSmoke
+      amount: number
+    }
+  >()
+  /** Damage leaks from the underside; airborne rotation alone never changes health. */
+  setDamage(id: string, object: THREE.Object3D, health: number): void {
+    let entry = this.damageSmoke.get(id)
+    if (health >= 100 || health <= 0) {
+      if (entry) {
+        entry.smoke.dispose()
+        entry.anchor.removeFromParent()
+        this.damageSmoke.delete(id)
+      }
+      return
+    }
+    if (!entry) {
+      const anchor = new THREE.Group()
+      this.space.add(anchor)
+      const smoke = new ExhaustSmoke(anchor, this.space, {
+        direction: [0, 1, 0],
+        color: '#171717',
+        size: 380,
+        lifetime: 3,
+        riseSpeed: 0.7,
+        capacity: 96,
+        emissionRate: 18,
+      })
+      this.root.add(smoke.root)
+      entry = { object, anchor, smoke, amount: 0 }
+      this.damageSmoke.set(id, entry)
+    }
+    entry.amount = (1 - health / 100) * vehicleDamageTuning.smokeMaxAmount
+  }
   private readonly charred = new Map<
     THREE.Material,
     {
@@ -304,6 +342,20 @@ export class VehicleDestruction {
     }
   }
   update(dt: number, smokeEnabled: boolean, cast?: DebrisCast): void {
+    for (const [id, entry] of this.damageSmoke) {
+      if (!entry.object.parent) {
+        entry.smoke.dispose()
+        entry.anchor.removeFromParent()
+        this.damageSmoke.delete(id)
+        continue
+      }
+      entry.object.updateWorldMatrix(true, false)
+      entry.anchor.position.set(0, 0.15, 0).applyMatrix4(entry.object.matrixWorld)
+      this.space.worldToLocal(entry.anchor.position)
+      entry.smoke.setEnabled(smokeEnabled)
+      entry.smoke.setAmount(entry.amount)
+      entry.smoke.update(dt, true, entry.amount)
+    }
     dt = THREE.MathUtils.clamp(dt, 0, 0.1)
     this.debris.update(dt, cast)
     this.balloons.update(dt)
@@ -406,6 +458,11 @@ export class VehicleDestruction {
     this.burns.delete(id)
   }
   clear(): void {
+    for (const entry of this.damageSmoke.values()) {
+      entry.smoke.dispose()
+      entry.anchor.removeFromParent()
+    }
+    this.damageSmoke.clear()
     this.balloons.clear()
     for (const [part, visible] of this.hiddenWreckParts) part.visible = visible
     this.hiddenWreckParts.clear()

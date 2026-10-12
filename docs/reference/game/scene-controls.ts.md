@@ -219,10 +219,10 @@ callback@157(preset): inferred by TypeScript; see implementation
 
 [Implementation, line 161](../../../game/scene-controls.ts#L161)
 
-Common add-menu models prepared behind the opening credits; large ships stay on demand.
+Prepare common vehicles and the flying carrier behind the opening credits.
 
 ```ts
-menuPreloadVehicles(ids: readonly string[] = ['car', 'vfr800', 'white-truck']): Entity[][]
+menuPreloadVehicles(ids: readonly string[] = ['car', 'vfr800', 'white-truck', 'carrier']): Entity[][]
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

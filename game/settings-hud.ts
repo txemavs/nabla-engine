@@ -386,6 +386,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     quality.append(label)
   }
 
+  if (quality && typeof runtime.tunnelEnabled === 'boolean') {
+    const label = doc.createElement('label')
+    const input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'quality-tunnel'
+    input.checked = runtime.tunnelEnabled
+    input.addEventListener('change', () => runtime.setTunnelEnabled(input.checked))
+    label.append(input, ' Efecto túnel al apuntar')
+    quality.append(label)
+  }
+
   // Quality preference applies immediately to both exhaust and gun smoke.
   if (quality && typeof runtime.smokeEnabled === 'boolean') {
     const label = doc.createElement('label'),

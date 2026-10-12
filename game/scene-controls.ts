@@ -157,9 +157,9 @@ export function vehicleChoices(): VehicleChoice[] {
     .map((preset) => ({ id: preset.id, label: preset.label }))
 }
 
-/** Common add-menu models prepared behind the opening credits; large ships stay on demand. */
+/** Prepare common vehicles and the flying carrier behind the opening credits. */
 export function menuPreloadVehicles(
-  ids: readonly string[] = ['car', 'vfr800', 'white-truck'],
+  ids: readonly string[] = ['car', 'vfr800', 'white-truck', 'carrier'],
 ): Entity[][] {
   return [...new Set(ids)]
     .filter((id) => vehicleChoices().some((choice) => choice.id === id))

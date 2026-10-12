@@ -1372,6 +1372,12 @@ export class GameRuntime {
         this.accidentReplacement.schedule()
       }
     }
+    for (const entity of this.document.entities) {
+      if (entity.kind !== 'vehicle') continue
+      const object = this.view.objects.get(entity.id)
+      if (object)
+        this.view.destruction.setDamage(entity.id, object, sim.vehicleDamage(entity.id).health)
+    }
     this.view.destruction.update(dt, this.smokeOn, (from, direction, length, excludeEntityId) => {
       const hit = sim.shoot(
         from.toArray() as Vec3Tuple,
@@ -1549,6 +1555,8 @@ export class GameRuntime {
         ),
         eye.y,
         this.camera.getWorldDirection(this.viewForward).y,
+        this.camera.fov,
+        this.camera.aspect,
       )
     } else {
       this.scene.background = new THREE.Color('#a6bbd5')
@@ -1619,7 +1627,8 @@ export class GameRuntime {
         mirrorVehicle:
           this.quality.mirrors && this.cameraState.mode === 'cockpit' ? player.vehicleId : null,
         shadowsEnabled: this.syncShadowSwitch(),
-        tunnelFocus: bodycamActive ? (this.sidearm?.aimTransition ?? 0) : 0,
+        tunnelFocus:
+          bodycamActive && this.tunnelEnabled ? (this.sidearm?.aimTransition ?? 0) : undefined,
         depthOfField: this.options.depthOfField ?? !!this.quality.dof,
         cull: (position) => this.cull(position),
       })
@@ -1718,6 +1727,8 @@ export class GameRuntime {
         ),
         eye.y,
         this.camera.getWorldDirection(this.viewForward).y,
+        this.camera.fov,
+        this.camera.aspect,
       )
       this.camera.updateProjectionMatrix()
     }
@@ -2774,6 +2785,29 @@ export class GameRuntime {
   /** Live quality preference shared by exhaust and gun smoke. */
   get bodycamEnabled(): boolean {
     return !!this.cameraState.bodycam
+  }
+  private tunnelOverride: boolean | null | undefined
+  get tunnelEnabled(): boolean {
+    if (this.tunnelOverride === undefined) {
+      this.tunnelOverride = null
+      try {
+        const saved = browserStorage()?.getItem('nabla.tunnel')
+        if (saved === 'true' || saved === 'false') this.tunnelOverride = saved === 'true'
+      } catch {
+        /* Use the quality default if storage is unavailable. */
+      }
+    }
+    return (
+      this.tunnelOverride ?? (this.quality.preset === 'high' || this.quality.preset === 'ultra')
+    )
+  }
+  setTunnelEnabled(enabled: boolean): void {
+    this.tunnelOverride = enabled
+    try {
+      browserStorage()?.setItem('nabla.tunnel', String(enabled))
+    } catch {
+      /* Memory preference remains valid. */
+    }
   }
   setBodycamEnabled(enabled: boolean): void {
     this.cameraState.bodycam = enabled

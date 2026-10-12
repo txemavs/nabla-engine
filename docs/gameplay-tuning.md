@@ -32,6 +32,27 @@ Aim alignment is the separate `aim` object in the copied JSON.
 
 ## Views and controls
 
+`vehicleDamageTuning` controls cumulative physical damage: impacts above 3 m/s
+add 0.3 health points per m/s above that threshold, capped at 10 per ordinary
+blow. Contacts within 0.35 seconds share the strongest damage rather than adding
+every wheel/collider separately. Relative impact speed of 50 m/s is catastrophic.
+A 25 m/s impact costs 6.6 points: an intact vehicle survives 15 such blows and
+breaks on the sixteenth. Small blows also accumulate; airborne rotation does not.
+Damaged vehicles emit black underside smoke proportional to lost health, respecting
+the smoke switch and density preference; destruction replaces it with wreck smoke.
+
+Rendimiento → Calidad → **Efecto túnel al apuntar** is an independent saved
+preference (`nabla.tunnel`). Default: off on low/medium, on on high/ultra. Resetting
+preferences restores the profile default. Enabled Normal view keeps its colour
+and flare compositing path even at zero aim blend, avoiding colour/transparency
+changes when aiming. Its peripheral blur radius is 12 pixels with a wider side
+mask; only the blur strength follows aim. This costs an extra full-resolution
+render target/pass while enabled, including when the weapon is lowered.
+
+The carrier joins default menu vehicle warmup. Camera far-plane reduction checks
+the whole diagonal field of view, including rolled cockpits, so seeing the horizon
+in a wide first-person view retains the ordinary far plane.
+
 Normal is the default first-person behavior (internally `bodycam`). Modo Puntero
 restores the earlier aiming behavior. Select only in Options → Primera persona;
 B no longer toggles it. C cycles first person, third person and overhead on foot;

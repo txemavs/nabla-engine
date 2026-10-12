@@ -156,18 +156,24 @@ under the camera is only about `eyeHeight` metres away; keep enough for relief.
 `viewDown` is the camera's forward Y (−1 is straight down).
 
 ```ts
-downwardViewFar(far: number, eyeHeight: number, viewDown: number): number
+downwardViewFar(far: number, eyeHeight: number, viewDown: number, verticalFov = 0, aspect = 1): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.asin`
+- `Math.atan`
+- `Math.hypot`
 - `Math.max`
 - `Math.min`
+- `Math.sin`
+- `Math.tan`
 - `Number.isFinite`
+- `THREE.MathUtils.degToRad`
 
 ## updateGameCamera
 
-[Implementation, line 296](../../../../src/runtime/game-camera.ts#L296)
+[Implementation, line 310](../../../../src/runtime/game-camera.ts#L310)
 
 Shared gameplay camera, independent of editor UI and renderer ownership.
 Coordinates remain in world space; the renderer applies its floating origin afterwards.
@@ -263,18 +269,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.rideSmoothing?.apply`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@468
+## updateGameCamera.callback@482
 
-[Implementation, line 468](../../../../src/runtime/game-camera.ts#L468)
+[Implementation, line 482](../../../../src/runtime/game-camera.ts#L482)
 
 ```ts
-callback@468(entity): inferred by TypeScript; see implementation
+callback@482(entity): inferred by TypeScript; see implementation
 ```
 
-## updateGameCamera.callback@554
+## updateGameCamera.callback@568
 
-[Implementation, line 554](../../../../src/runtime/game-camera.ts#L554)
+[Implementation, line 568](../../../../src/runtime/game-camera.ts#L568)
 
 ```ts
-callback@554(entity): inferred by TypeScript; see implementation
+callback@568(entity): inferred by TypeScript; see implementation
 ```

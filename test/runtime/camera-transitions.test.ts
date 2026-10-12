@@ -136,4 +136,9 @@ test('a steep look-down caps the far plane to the ground under the camera', () =
   expect(downwardViewFar(12000, 400, -1)).toBe(400 * 3 + 80)
   expect(downwardViewFar(200, 400, -1)).toBe(200)
   expect(downwardViewFar(Number.NaN, 40, -1)).toBeNaN()
+  // A wide cockpit still sees the horizon even when its central ray points down.
+  expect(downwardViewFar(12000, 400, -0.7, 90, 16 / 9)).toBe(12000)
+  expect(downwardViewFar(12000, 400, -0.9, 90, 16 / 9)).toBe(12000)
+  // A true overhead frustum can still use a shorter far plane for shadow quality.
+  expect(downwardViewFar(12000, 400, -1, 60, 16 / 9)).toBeLessThan(2000)
 })

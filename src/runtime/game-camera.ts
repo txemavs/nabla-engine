@@ -284,10 +284,24 @@ export class IdleCinematic {
  * under the camera is only about `eyeHeight` metres away; keep enough for relief.
  * `viewDown` is the camera's forward Y (−1 is straight down).
  */
-export function downwardViewFar(far: number, eyeHeight: number, viewDown: number): number {
+export function downwardViewFar(
+  far: number,
+  eyeHeight: number,
+  viewDown: number,
+  verticalFov = 0,
+  aspect = 1,
+): number {
   if (!(viewDown < -0.65) || !Number.isFinite(far)) return far
   const height = Number.isFinite(eyeHeight) ? Math.max(0, eyeHeight) : 0
-  return Math.min(far, Math.max(180, height * 3 + 80))
+  // A downward central ray does not mean the whole wide-angle cockpit sees ground.
+  // Use the diagonal cone (also safe under roll), and retain the horizon if any
+  // corner can see it. Otherwise keep enough range for the shallowest ground ray.
+  const halfCone = Math.atan(
+    Math.tan(THREE.MathUtils.degToRad(verticalFov) / 2) * Math.hypot(1, aspect),
+  )
+  const shallowDown = Math.sin(Math.asin(Math.min(1, -viewDown)) - halfCone)
+  if (shallowDown <= 0.1) return far
+  return Math.min(far, Math.max(180, height * 3 + 80, (height + 80) / shallowDown))
 }
 
 /** Shared gameplay camera, independent of editor UI and renderer ownership.

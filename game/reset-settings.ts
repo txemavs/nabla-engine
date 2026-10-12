@@ -14,6 +14,7 @@ const keys = new Set([
   'nabla.audioMix',
   'nabla.cameraFov',
   'nabla.bodycam',
+  'nabla.tunnel',
   'nabla.smoke',
   'nabla.smokePercent',
   'nabla.weaponPoses',
