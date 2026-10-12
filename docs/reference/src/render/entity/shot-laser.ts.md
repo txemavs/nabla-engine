@@ -11,7 +11,7 @@
 
 ## ShotLaser.constructor
 
-[Implementation, line 54](../../../../../src/render/entity/shot-laser.ts#L54)
+[Implementation, line 68](../../../../../src/render/entity/shot-laser.ts#L68)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -26,24 +26,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.SphereGeometry`
 - `this.root.add`
 
-## ShotLaser.constructor.callback@57
+## ShotLaser.constructor.callback@71
 
-[Implementation, line 57](../../../../../src/render/entity/shot-laser.ts#L57)
+[Implementation, line 71](../../../../../src/render/entity/shot-laser.ts#L71)
 
 ```ts
-callback@57(renderer): inferred by TypeScript; see implementation
+callback@71(renderer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `renderer.getDrawingBufferSize`
 
-## ShotLaser.constructor.callback@74
+## ShotLaser.constructor.callback@88
 
-[Implementation, line 74](../../../../../src/render/entity/shot-laser.ts#L74)
+[Implementation, line 88](../../../../../src/render/entity/shot-laser.ts#L88)
 
 ```ts
-callback@74(_renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@88(_renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -51,17 +51,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.halo.quaternion.copy`
 - `this.halo.updateMatrixWorld`
 
-## ShotLaser.constructor.callback@80
+## ShotLaser.constructor.callback@94
 
-[Implementation, line 80](../../../../../src/render/entity/shot-laser.ts#L80)
+[Implementation, line 94](../../../../../src/render/entity/shot-laser.ts#L94)
 
 ```ts
-callback@80(): inferred by TypeScript; see implementation
+callback@94(): inferred by TypeScript; see implementation
 ```
 
 ## ShotLaser.enabled
 
-[Implementation, line 83](../../../../../src/render/entity/shot-laser.ts#L83)
+[Implementation, line 97](../../../../../src/render/entity/shot-laser.ts#L97)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -71,7 +71,7 @@ enabled(value: boolean): inferred by TypeScript; see implementation
 
 ## ShotLaser.enabled
 
-[Implementation, line 88](../../../../../src/render/entity/shot-laser.ts#L88)
+[Implementation, line 102](../../../../../src/render/entity/shot-laser.ts#L102)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -81,7 +81,7 @@ enabled(): boolean
 
 ## ShotLaser.set
 
-[Implementation, line 93](../../../../../src/render/entity/shot-laser.ts#L93)
+[Implementation, line 107](../../../../../src/render/entity/shot-laser.ts#L107)
 
 Update beam from muzzle to end; pin sits on the end when `hit` is true.
 
@@ -104,7 +104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotLaser.clear
 
-[Implementation, line 108](../../../../../src/render/entity/shot-laser.ts#L108)
+[Implementation, line 122](../../../../../src/render/entity/shot-laser.ts#L122)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -114,7 +114,7 @@ clear(): void
 
 ## ShotLaser.dispose
 
-[Implementation, line 113](../../../../../src/render/entity/shot-laser.ts#L113)
+[Implementation, line 127](../../../../../src/render/entity/shot-laser.ts#L127)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 

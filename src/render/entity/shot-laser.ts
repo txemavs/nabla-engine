@@ -43,8 +43,22 @@ export class ShotLaser {
       polygonOffset: true,
       polygonOffsetFactor: -2,
       polygonOffsetUnits: -2,
-      vertexShader: `varying vec2 vHalo; void main(){vHalo=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-      fragmentShader: `varying vec2 vHalo; void main(){float r=length(vHalo-.5)*2.;float a=exp(-r*r*4.)*(1.-smoothstep(.65,1.,r));gl_FragColor=vec4(1.,.015,.005,a*.85);}`,
+      vertexShader: `varying vec2 vHalo;
+      #include <common>
+      #include <logdepthbuf_pars_vertex>
+      void main(){
+        vHalo=uv;
+        gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
+        #include <logdepthbuf_vertex>
+      }`,
+      fragmentShader: `varying vec2 vHalo;
+      #include <logdepthbuf_pars_fragment>
+      void main(){
+        #include <logdepthbuf_fragment>
+        float r=length(vHalo-.5)*2.;
+        float a=exp(-r*r*3.)*(1.-smoothstep(.65,1.,r));
+        gl_FragColor=vec4(1.,.015,.005,a*.95);
+      }`,
     }),
   )
   private readonly pin: THREE.Mesh
