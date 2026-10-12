@@ -18,6 +18,7 @@ export class VehicleDestruction {
   >()
   private readonly flarePoint = new THREE.Vector3()
   private readonly flare = createLensFlare(new THREE.Vector3(), { position: this.flarePoint })
+  private readonly hiddenWreckParts = new Map<THREE.Object3D, boolean>()
   private readonly debris: WreckDebris
   private readonly debrisFires: {
     anchor: THREE.Group
@@ -69,6 +70,17 @@ export class VehicleDestruction {
     if (this.burns.has(id)) return
     if (this.burns.size >= 32) this.remove(this.burns.keys().next().value!)
     const detached = this.debris.explode(object, id, extra)
+    // Detach the wheels first: their copies must survive hiding fork/swingarm parents.
+    object.traverse((node) => {
+      if (
+        /^(Puerta(?:[_ -]|$)|Door(?:[_ -]|$)|Cap[oó](?:[_ -]|$)|Maletero(?:[_ -]|$)|Hood(?:[_ -]|$)|Bonnet(?:[_ -]|$)|Trunk(?:[_ -]|$)|Boot(?:[_ -]|$)|Tailgate(?:[_ -]|$)|Fork[_ -]|Lower_Fork|Steering_Pivot$|Swingarm_Pivot$)/i.test(
+          node.name,
+        )
+      ) {
+        if (!this.hiddenWreckParts.has(node)) this.hiddenWreckParts.set(node, node.visible)
+        node.visible = false
+      }
+    })
     for (const anchor of detached.slice(0, 8)) {
       if (this.debrisFires.length >= 48) break
       const clock = { value: 0 },
@@ -352,6 +364,8 @@ export class VehicleDestruction {
     this.burns.delete(id)
   }
   clear(): void {
+    for (const [part, visible] of this.hiddenWreckParts) part.visible = visible
+    this.hiddenWreckParts.clear()
     this.debris.clear()
     for (const f of this.debrisFires) {
       f.flames.removeFromParent()

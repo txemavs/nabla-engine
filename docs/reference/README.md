@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **386 modules; 4224 executable function definitions**.
+Coverage: **386 modules; 4225 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -214,7 +214,7 @@ Coverage: **386 modules; 4224 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
-| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 17 |
+| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 18 |
 | [src/render/entity/view.ts](src/render/entity/view.ts.md) | 134 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |

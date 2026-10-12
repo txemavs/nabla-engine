@@ -110,3 +110,30 @@ it('keeps wreck flames upright as the vehicle rolls and follows its new position
   expect(space.getObjectByName('Wreck flames')).toBeUndefined()
   destruction.dispose()
 })
+
+it('hides requested wreck panels after detaching wheels and restores visibility on reset', () => {
+  const space = new Group(),
+    vehicle = new Group(),
+    fork = new Group(),
+    wheel = new Group()
+  fork.name = 'Steering_Pivot'
+  wheel.name = 'Wheel_Front'
+  wheel.add(new Mesh(new BoxGeometry(), new MeshStandardMaterial()))
+  fork.add(wheel)
+  vehicle.add(fork)
+  for (const name of ['Puerta Derecha', 'Capo', 'Maletero', 'Swingarm_Pivot', 'Door_Hinge_L']) {
+    const part = new Group()
+    part.name = name
+    vehicle.add(part)
+  }
+  space.add(vehicle)
+  const destruction = new VehicleDestruction(space)
+  const originalParts = [...vehicle.children]
+  destruction.explode('vehicle', vehicle)
+  expect(originalParts.every((part) => !part.visible)).toBe(true)
+  expect(space.getObjectByName('Detached wreck parts')!.children).toHaveLength(1)
+  destruction.clear()
+  expect(originalParts.every((part) => part.visible)).toBe(true)
+  expect(wheel.visible).toBe(true)
+  destruction.dispose()
+})
