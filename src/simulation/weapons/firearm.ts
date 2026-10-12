@@ -6,6 +6,7 @@
  * round is kept.
  */
 import { createMagazine, type MagazineEntity } from './magazine.js'
+import { weaponViewTuning } from '../../config/gameplay-tuning.js'
 
 export interface FirearmSpec {
   magazineCapacity: number
@@ -39,6 +40,7 @@ export interface FirearmState {
   manualRackBack?: boolean
   /** Keep a manual rack fully rearward until the user releases the control. */
   manualRackHeld?: boolean
+  manualRackStartedMs?: number
   manualSlideTravel?: number
   /** The trigger is still held from the last press: it has to be released (reset) first. */
   triggerHeld: boolean
@@ -61,6 +63,8 @@ export interface FirearmEvent {
   /** Trigger pressed with the slide forward on an empty chamber: the hammer falls, click. */
   dry: boolean
   cartridgeEjected?: boolean
+  /** The user latched the rearward slide by holding the rack control. */
+  manualSlideLocked?: boolean
 }
 
 /** Continuous viewer slide manipulation, sharing the same ammunition state. */
@@ -210,7 +214,10 @@ export function beginReloadAction(
   }
   state.reload = action
   state.reloadAction = action
-  if (action === 'slide-release') state.manualSlideTravel = undefined
+  if (action === 'slide-release') {
+    state.manualSlideTravel = undefined
+    state.manualRackStartedMs = now
+  }
   const offset =
     action === 'magazine-in'
       ? spec.reloadMs.magazineOut
@@ -285,6 +292,17 @@ export function advanceFirearm(state: FirearmState, spec: FirearmSpec, now: numb
       age >= magazineIn + (slideRelease - magazineIn) / 2
     ) {
       event.cartridgeEjected = moveSlide(state, spec, 1, now).cartridgeEjected
+      if (
+        state.manualRackHeld &&
+        now - (state.manualRackStartedMs ?? now) > weaponViewTuning.slideLockHoldMs
+      ) {
+        state.slideLocked = true
+        state.manualRackHeld = false
+        state.manualSlideTravel = undefined
+        state.reload = 'none'
+        state.reloadAction = undefined
+        event.manualSlideLocked = true
+      }
     }
     if (state.reload === 'magazine-out' && age >= magazineOut) {
       event.droppedMagazine = state.magazineEntity ?? undefined

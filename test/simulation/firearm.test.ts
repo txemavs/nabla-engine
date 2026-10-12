@@ -39,13 +39,36 @@ it('holds a manual rack rearward until release, ejecting once and feeding only o
   expect(state.slide).toBe(1)
   expect(state.chamber).toBe(0)
   expect(state.magazine).toBe(magazine)
-  expect(advanceFirearm(state, firearm, 9000).cartridgeEjected).toBeFalsy()
+  expect(advanceFirearm(state, firearm, 2500).cartridgeEjected).toBeFalsy()
   expect(state.slide).toBe(1)
-  expect(trigger(state, firearm, true, 9001).fired).toBe(false)
+  expect(trigger(state, firearm, true, 2501).fired).toBe(false)
   state.manualRackHeld = false
   expect(advanceFirearm(state, firearm, 10000).slideReleased).toBe(true)
   expect(state.chamber).toBe(1)
   expect(state.magazine).toBe(magazine - 1)
+})
+
+it('latches a held rearward slide after two seconds and feeds only when explicitly released', () => {
+  const firearm = spec(),
+    state = freshFirearm(firearm)
+  const magazine = state.magazine
+  state.manualRackHeld = true
+  beginReloadAction(state, firearm, 'slide-release', 1000)
+  advanceFirearm(state, firearm, 2000)
+  expect(advanceFirearm(state, firearm, 3000).manualSlideLocked).toBeFalsy()
+  expect(advanceFirearm(state, firearm, 3001).manualSlideLocked).toBe(true)
+  expect(state.slideLocked).toBe(true)
+  expect(state.slide).toBe(1)
+  state.manualRackHeld = false
+  expect(advanceFirearm(state, firearm, 6000).manualSlideLocked).toBeFalsy()
+  expect(state.slide).toBe(1)
+  expect(state.chamber).toBe(0)
+  expect(state.magazine).toBe(magazine)
+  expect(releaseSlide(state, 6100).slideReleased).toBe(true)
+  expect(state.chamber).toBe(1)
+  expect(state.magazine).toBe(magazine - 1)
+  advanceFirearm(state, firearm, 7000)
+  expect(state.slide).toBe(0)
 })
 
 it('R removes, T supplies unlimited distinct full items, and Y alone releases the catch', () => {

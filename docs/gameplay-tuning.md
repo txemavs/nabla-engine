@@ -83,16 +83,16 @@ blend; the weapon and central sight picture remain sharp. HDR/linear postprocess
 applies display tone mapping once; the solar flare is composed afterward with
 scene-depth occlusion.
 
-| Weapon control | Action                                                                                             |
-| -------------- | -------------------------------------------------------------------------------------------------- |
-| R              | Drop current magazine; press again with an empty well for a full normal magazine                   |
-| M              | Replace with a full extended 30-round magazine; automatic fire                                     |
-| F              | Work slide; hold to keep it back until release. When already locked open, close it using the catch |
-| Z + fire       | Toggle safety; Z alone inspects                                                                    |
-| X              | Inspect chamber                                                                                    |
-| Right mouse    | Aim, independent of inspection and magazine/slide manipulation                                     |
-| Shift + fire   | Keep aim height steady: suppress vertical recoil while held; normal recoil resumes on release      |
-| G / H          | Laser / flashlight                                                                                 |
+| Weapon control | Action                                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| R              | Drop current magazine; press again with an empty well for a full normal magazine                                  |
+| M              | Replace with a full extended 30-round magazine; automatic fire                                                    |
+| F              | Work slide; hold to keep it back. Holding over 2 seconds latches it open with the catch; press F again to release |
+| Z + fire       | Toggle safety; Z alone inspects                                                                                   |
+| X              | Inspect chamber                                                                                                   |
+| Right mouse    | Aim, independent of inspection and magazine/slide manipulation                                                    |
+| Shift + fire   | Keep aim height steady: suppress vertical recoil while held; normal recoil resumes on release                     |
+| G / H          | Laser / flashlight                                                                                                |
 
 Fresh magazines are unlimited supplies, but each dropped magazine retains its
 own ID and rounds. Chamber and magazine ammunition are separate. Manual slide

@@ -565,7 +565,7 @@ export class Sidearm {
     }
     if (!this.state.slideLocked) return this.manipulate('slide-release', now)
     const event = releaseSlide(this.state, now)
-    if (event.slideReleased) {
+    if (event.slideReleased || event.manualSlideLocked) {
       this.hammerArmed = !this.variant.dao
       this.slideLeverPoseAt = now
     }
@@ -608,7 +608,7 @@ export class Sidearm {
       if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
     }
     const event = advanceFirearm(this.state, this.firearm, now)
-    if (event.slideReleased) {
+    if (event.slideReleased || event.manualSlideLocked) {
       this.hammerArmed = !this.variant.dao
       this.slideLeverPoseAt = now
     }

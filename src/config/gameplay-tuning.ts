@@ -97,7 +97,10 @@ export const weaponPoseDefaults: WeaponPoseTuning = {
 }
 
 export const sidearmTuningDefaults: Readonly<SidearmTuning> = { height: -0.022, angle: -1.2 }
-export const sidearmTuningRanges = { height: [-0.08, 0.015, 0.00001], angle: [-30, 8, 0.01] } as const
+export const sidearmTuningRanges = {
+  height: [-0.08, 0.015, 0.00001],
+  angle: [-30, 8, 0.01],
+} as const
 
 export const cameraFovTuning = { min: -15, max: 25, step: 5, default: 15 }
 export const normalViewTuning = {
@@ -127,6 +130,7 @@ export const actionCamTuning = {
   aimedScale: 0.22,
 }
 export const weaponViewTuning = {
+  slideLockHoldMs: 2000,
   alignmentDistanceMetres: 25,
   thirdPerson: { shoulder: [0.22, -0.2, 0] as const, reachMetres: 0.58 },
   hip: { position: [0.1, -0.125, -0.34] as const, fov: 55 },

@@ -3513,6 +3513,10 @@ export class GameRuntime {
       }
       if (event.magazineSeated) this.effects.audio.weaponSound('magazine-in', weaponPosition)
       if (event.slideReleased) this.effects.audio.weaponSound('slide-forward', weaponPosition)
+      if (event.manualSlideLocked) {
+        this.effects.audio.weaponSound('slide-lock', weaponPosition)
+        this.options.onMessage?.('Corredera bloqueada · F para desbloquear')
+      }
       if (event.locked)
         this.options.onMessage?.('R: sacar / meter cargador · M: cargador largo · F: corredera')
     }
