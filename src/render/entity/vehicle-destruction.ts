@@ -1,3 +1,4 @@
+import { TrunkBalloons } from './trunk-balloons.js'
 import { WreckDebris, type DebrisCast } from './wreck-debris.js'
 import * as THREE from 'three'
 import { ExhaustSmoke } from './exhaust-smoke.js'
@@ -19,6 +20,7 @@ export class VehicleDestruction {
   private readonly flarePoint = new THREE.Vector3()
   private readonly flare = createLensFlare(new THREE.Vector3(), { position: this.flarePoint })
   private readonly hiddenWreckParts = new Map<THREE.Object3D, boolean>()
+  readonly balloons: TrunkBalloons
   private readonly debris: WreckDebris
   private readonly debrisFires: {
     anchor: THREE.Group
@@ -57,6 +59,7 @@ export class VehicleDestruction {
   private readonly shards: { position: THREE.Vector3; velocity: THREE.Vector3; age: number }[] = []
   constructor(private readonly space: THREE.Group) {
     this.debris = new WreckDebris(space)
+    this.balloons = new TrunkBalloons(space)
     this.root.name = 'Vehicle explosions'
     this.fragments.count = 0
     this.fragments.frustumCulled = false
@@ -244,6 +247,8 @@ export class VehicleDestruction {
   ): Promise<void> {
     for (const vehicle of vehicles) this.debris.prepare(vehicle)
     const parts = this.debris.warmRoot()
+    const balloons = this.balloons.warmMeshes()
+    this.root.add(balloons)
     this.root.add(parts)
     this.warmFire ??= this.createFire().fire
     this.warmFlames ??= this.createFlames({ value: 0 })
@@ -253,6 +258,7 @@ export class VehicleDestruction {
     try {
       await renderer.compileAsync(scene, camera)
     } finally {
+      balloons.removeFromParent()
       parts.removeFromParent()
       parts.clear()
       this.warmFire.removeFromParent()
@@ -278,6 +284,7 @@ export class VehicleDestruction {
   update(dt: number, smokeEnabled: boolean, cast?: DebrisCast): void {
     dt = THREE.MathUtils.clamp(dt, 0, 0.1)
     this.debris.update(dt, cast)
+    this.balloons.update(dt)
     for (let i = this.debrisFires.length - 1; i >= 0; i--) {
       const f = this.debrisFires[i]
       f.clock.value += dt
@@ -369,6 +376,7 @@ export class VehicleDestruction {
     this.burns.delete(id)
   }
   clear(): void {
+    this.balloons.clear()
     for (const [part, visible] of this.hiddenWreckParts) part.visible = visible
     this.hiddenWreckParts.clear()
     this.debris.clear()
@@ -400,6 +408,7 @@ export class VehicleDestruction {
   dispose(): void {
     this.clear()
     this.debris.dispose()
+    this.balloons.dispose()
     this.root.removeFromParent()
     this.light.removeFromParent()
     this.flare.mesh.removeFromParent()

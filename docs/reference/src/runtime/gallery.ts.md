@@ -179,6 +179,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sim.shoot`
 - `this.respawn.set`
 - `view.brokenGlass.hit`
+- `view.destruction.balloons.hit`
 - `view.destruction.glass`
 - `view.document.entities.find`
 - `view.document.entities.some`

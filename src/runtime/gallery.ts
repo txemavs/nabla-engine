@@ -208,6 +208,8 @@ export class Gallery {
         this.lastMetalImpact = [...hit.point] as [number, number, number]
       if (object && hit.entityId) {
         view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)
+        if (damage > 0)
+          view.destruction.balloons.hit(object, new THREE.Vector3(...hit.point), ray.ray.direction)
       } else {
         view.impacts.addWorld(view.root, hit.point, hit.normal)
       }
