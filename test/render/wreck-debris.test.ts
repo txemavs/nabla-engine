@@ -28,7 +28,7 @@ it('detaches visible parts radially, chars private materials and restores source
   expect(debris.pieces[0].pivot.position.x).toBeCloseTo(109)
   let excluded: string | undefined
   for (let i = 0; i < 30; i++)
-    debris.update(0.1, (from, dir, length, id) => {
+    debris.update(0.1, (_from, _dir, _length, id) => {
       excluded = id
       return null
     })

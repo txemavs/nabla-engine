@@ -56,7 +56,7 @@ export class CasingMotion {
 
   constructor(
     private readonly spec: CasingSpec,
-    private readonly gravity = simulationDefaults.gravity,
+    private readonly gravity: number = simulationDefaults.gravity,
     private readonly capacity = MAX,
     private readonly standoff = STANDOFF,
   ) {}
