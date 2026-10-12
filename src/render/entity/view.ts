@@ -1308,7 +1308,7 @@ export class SceneView {
         const wheel = new THREE.Group()
         wheel.position.fromArray(hub)
         wheel.userData.wreckPart = true
-        wheel.name ||= 'Wheel_' + wheels.length
+        wheel.name = 'Wheel_' + i
         group.add(wheel)
         const orientation = new THREE.Group()
         if (visual.wheelRotations) orientation.quaternion.fromArray(visual.wheelRotations[i])
