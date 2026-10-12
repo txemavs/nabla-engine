@@ -71,6 +71,13 @@ export class WreckDebris {
     object.updateWorldMatrix(true, true)
     const center = new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3())
     this.space.worldToLocal(center)
+    center.add(
+      new THREE.Vector3(
+        (Math.random() - 0.5) * 0.9,
+        (Math.random() - 0.5) * 0.4,
+        (Math.random() - 0.5) * 0.9,
+      ),
+    )
     const sources = [...new Set([...this.parts(object), ...extra])]
     const created: THREE.Group[] = []
     this.prepare(object)
@@ -120,7 +127,9 @@ export class WreckDebris {
       if (velocity.lengthSq() < 0.01)
         velocity.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
       velocity.normalize().multiplyScalar(4 + Math.random() * 5)
-      velocity.y += 2
+      velocity.x += (Math.random() - 0.5) * 1.5
+      velocity.z += (Math.random() - 0.5) * 1.5
+      velocity.y += 1.5 + Math.random() * 1.5
       const sizes = halfSize.toArray()
       const thin = sizes.indexOf(Math.min(...sizes))
       const axle = new THREE.Vector3().setComponent(thin, 1)

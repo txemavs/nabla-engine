@@ -163,7 +163,15 @@ export class Simulation {
           else direction.copy(up)
           direction.vadd(up.scale(0.45), direction)
           body.wakeUp()
-          body.applyImpulse(direction.scale(body.mass * 9 * strength))
+          // Uneven pressure hits away from the centre of mass, producing real tumble.
+          const application = new Vec3(
+            (Math.random() - 0.5) * 0.8,
+            (Math.random() - 0.5) * 0.6,
+            (Math.random() - 0.5) * 0.8,
+          )
+          direction.x += (Math.random() - 0.5) * 0.25
+          direction.z += (Math.random() - 0.5) * 0.25
+          body.applyImpulse(direction.scale(body.mass * 9 * strength), application)
           for (const [otherId, other] of this.vehicles)
             if (other.body === body && otherId !== id && !other.definition.passive)
               this.damage.apply(otherId, strength * 45)
