@@ -34,7 +34,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
 ```ts
-explode(id: string, object: THREE.Object3D): void
+explode(id: string, object: THREE.Object3D, extra: THREE.Object3D[] = []): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

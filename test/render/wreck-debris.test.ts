@@ -40,3 +40,17 @@ it('detaches visible parts radially, chars private materials and restores source
   expect(debris.pieces).toHaveLength(0)
   debris.dispose()
 })
+
+it('detaches a complete Spanish-named door without splitting its nested articulated parts', () => {
+  const space = new Group(), car = new Group(), door = new Group(), nested = new Group()
+  door.name='Puerta Derecha'; nested.name='Door_Handle'
+  nested.add(new Mesh(new BoxGeometry(),new MeshStandardMaterial()))
+  door.add(nested);car.add(door);space.add(car)
+  const debris = new WreckDebris(space)
+  debris.prepare(car)
+  debris.explode(car,'car')
+  expect(debris.pieces).toHaveLength(1)
+  expect(debris.pieces[0].pivot.getObjectByName('Door_Handle')).toBeDefined()
+  expect(door.visible).toBe(false)
+  debris.dispose()
+})

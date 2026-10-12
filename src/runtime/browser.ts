@@ -1291,7 +1291,12 @@ export class GameRuntime {
     }
     for (const explosion of sim.consumeExplosions()) {
       const object = this.view.objects.get(explosion.entityId)
-      if (object) this.view.destruction.explode(explosion.entityId, object)
+      if (object)
+        this.view.destruction.explode(
+          explosion.entityId,
+          object,
+          this.view.wreckParts(explosion.entityId).filter((part) => part.parent === this.view.root),
+        )
       this.effects.audio.destruction(explosion.position)
       if (
         (explosion.occupied || sim.playerEjection?.vehicleId === explosion.entityId) &&

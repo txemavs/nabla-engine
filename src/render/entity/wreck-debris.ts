@@ -33,24 +33,23 @@ export class WreckDebris {
       if (
         node !== object &&
         (node.userData.wreckPart ||
-          /^(Wheel[_ -]|Fork_Slider$|Steering_Pivot$|steering-adjust$|Door[_ -]|Hood(?:[_ -]|$)|Bonnet(?:[_ -]|$)|Trunk(?:[_ -]|$)|Boot(?:[_ -]|$)|Tailgate(?:[_ -]|$))/i.test(
+          /^(Wheel[_ -]|Fork_Slider$|Steering_Pivot$|steering-adjust$|Door[_ -]|Puerta(?:[_ -]|$)|Cap[oó](?:[_ -]|$)|Maletero(?:[_ -]|$)|Hood(?:[_ -]|$)|Bonnet(?:[_ -]|$)|Trunk(?:[_ -]|$)|Boot(?:[_ -]|$)|Tailgate(?:[_ -]|$))/i.test(
             node.name,
           ))
       )
         parts.push(node)
     })
-    return parts
+    return parts.filter((node) => {
+      for (let parent = node.parent; parent && parent !== object; parent = parent.parent)
+        if (parts.includes(parent)) return false
+      return true
+    })
   }
   prepare(object: THREE.Object3D): void {
     const parts = this.parts(object)
     for (const source of parts) {
       if (this.prepared.has(source) || this.originals.has(source)) continue
       const clone = source.clone(true)
-      for (const child of parts) {
-        if (child === source) continue
-        const nested = clone.getObjectByName(child.name)
-        if (nested && nested !== clone) nested.removeFromParent()
-      }
       clone.traverse((node) => {
         if (node instanceof THREE.Mesh)
           node.material = Array.isArray(node.material)
@@ -65,13 +64,26 @@ export class WreckDebris {
     for (const clone of this.prepared.values()) group.add(clone)
     return group
   }
-  explode(object: THREE.Object3D, entityId: string): THREE.Group[] {
+  explode(object: THREE.Object3D, entityId: string, extra: THREE.Object3D[] = []): THREE.Group[] {
     object.updateWorldMatrix(true, true)
     const center = new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3())
     this.space.worldToLocal(center)
-    const sources = this.parts(object)
+    const sources = [...new Set([...this.parts(object), ...extra])]
     const created: THREE.Group[] = []
     this.prepare(object)
+    for (const node of extra) {
+      node.updateWorldMatrix(true, true)
+      if (!this.prepared.has(node) && !this.originals.has(node)) {
+        const clone = node.clone(true)
+        clone.traverse((child) => {
+          if (child instanceof THREE.Mesh)
+            child.material = Array.isArray(child.material)
+              ? child.material.map((m) => m.clone())
+              : child.material.clone()
+        })
+        this.prepared.set(node, clone)
+      }
+    }
     for (const source of sources) {
       if (this.originals.has(source)) continue
       const mesh = this.prepared.get(source)!

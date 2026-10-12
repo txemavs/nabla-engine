@@ -301,6 +301,10 @@ export class SceneView {
     if (entity && model) this.options.vehiclePresentation?.(entity)?.paint?.(model, color, finish)
   }
   /** Steering model (GLB URL) of a vehicle with a separate steering mesh, else undefined. */
+  wreckParts(id: string): THREE.Object3D[] {
+    return this.wheels.get(id) ?? []
+  }
+
   steeringWheelModel(id: string): string | undefined {
     return this.steeringAdjust.get(id)?.model
   }

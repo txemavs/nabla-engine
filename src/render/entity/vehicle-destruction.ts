@@ -65,10 +65,10 @@ export class VehicleDestruction {
     this.flare.mesh.name = 'Explosion lens flare'
     this.space.add(this.flare.mesh)
   }
-  explode(id: string, object: THREE.Object3D): void {
+  explode(id: string, object: THREE.Object3D, extra: THREE.Object3D[] = []): void {
     if (this.burns.has(id)) return
     if (this.burns.size >= 32) this.remove(this.burns.keys().next().value!)
-    const detached = this.debris.explode(object, id)
+    const detached = this.debris.explode(object, id, extra)
     for (const anchor of detached.slice(0, 8)) {
       if (this.debrisFires.length >= 48) break
       const clock = { value: 0 },
