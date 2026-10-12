@@ -916,6 +916,7 @@ export class GameRuntime {
     this.stop()
     const controller = new AbortController()
     this.loading = controller
+    this.options.canvas.dataset.loadingStage = 'terrain'
     const document = structuredClone(this.document)
     try {
       if (this.world) {
@@ -973,6 +974,7 @@ export class GameRuntime {
       if (this.probing) await this.probing.catch(() => undefined)
       controller.signal.throwIfAborted()
       this.options.onProgress?.('Starting simulation…')
+      this.options.canvas.dataset.loadingStage = 'physics'
       const simulation = await this.game.play(document, {
         playerMode: 'walk',
         vehicleDamage: true,
@@ -3044,6 +3046,7 @@ export class GameRuntime {
     // Stages for hosts that pace an intro on loading (`data-reveal-stage`, `data-reveal-progress`).
     const stage = (name: string, done: number) => {
       canvas.dataset.revealStage = name
+      canvas.dataset.loadingStage = name
       canvas.dataset.revealProgress = (done / REVEAL_STAGES).toFixed(2)
     }
     canvas.dataset.reveal = 'preparing'
