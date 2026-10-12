@@ -1409,16 +1409,19 @@ export class GameRuntime {
         )
       let aim: THREE.Vector3 | undefined
       if (this.sidearm.visible && !eyes && !this.sidearmAimPreview) {
-        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
-        const hit = sim.shoot(
-          this.camera.position.toArray(),
-          direction.toArray(),
-          this.sidearm.range,
-          0,
+        const overhead = this.cameraState.mode === 'map'
+        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(
+          overhead
+            ? this.view.avatar.getWorldQuaternion(new THREE.Quaternion())
+            : this.camera.quaternion,
         )
+        const rayOrigin = overhead
+          ? this.view.avatar.getWorldPosition(new THREE.Vector3()).sub(this.view.root.position)
+          : this.camera.position
+        const hit = sim.shoot(rayOrigin.toArray(), direction.toArray(), this.sidearm.range, 0)
         aim = hit
           ? new THREE.Vector3(...hit.point)
-          : this.camera.position.clone().addScaledVector(direction, this.sidearm.range)
+          : rayOrigin.clone().addScaledVector(direction, this.sidearm.range)
         aim.add(this.view.root.position)
       }
       this.sidearm.syncWorld(
@@ -1426,7 +1429,11 @@ export class GameRuntime {
         time,
         eyes || this.sidearmAimPreview,
         aim,
-        this.camera.up,
+        this.cameraState.mode === 'map'
+          ? new THREE.Vector3(0, 1, 0).applyQuaternion(
+              this.view.avatar.getWorldQuaternion(new THREE.Quaternion()),
+            )
+          : this.camera.up,
       )
       if (!this.fireModeBadge && this.options.canvas.parentElement)
         this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)

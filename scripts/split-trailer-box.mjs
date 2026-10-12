@@ -6,7 +6,7 @@ const CHASSIS = 'assets/library/trucks/white-truck/assets/trailer.chassis.glb'
 const BOX = 'assets/library/trucks/white-truck/assets/trailer.box.glb'
 
 /** Cargo walls, deck and the marker lights that live on the box outline. */
-const BOX_NODE = /^(box01|Box_|light_back|light_fron|light_le|light_ri)/i
+const BOX_NODE = /^(box01|light_back|light_fron|light_le|light_ri)/i
 
 function parentsOf(nodes) {
   const parent = new Map()
@@ -79,6 +79,9 @@ function meshNames(json) {
 }
 
 const { json, read, bin } = readGlb(SOURCE)
+// The original Box_ref mesh is the black underframe, not the cargo walls.
+for (const node of json.nodes) if (/^Box_ref/i.test(node.name ?? '')) node.name = 'ChassisFrame'
+
 const boxNodes = withAncestors(
   new Set(json.nodes.flatMap((node, i) => (BOX_NODE.test(node.name ?? '') ? [i] : []))),
   json.nodes,

@@ -187,3 +187,10 @@ reach red; continued fire turns orange and ruptures during the third.
 The rupture ejects slide, barrel, frame and seated magazine using world debris
 collision. The weapon stays broken until reset; reload does not repair it.
 Slide heating is not simulated. This is game tuning, not measured firearm data.
+
+Bare trailers retain the black `ChassisFrame` mesh from the source asset; only
+cargo walls and box-mounted marker lights are split into the cargo attachment.
+`box: false` preserves the same kingpin and towing joint as the boxed trailer.
+In overhead view the equipped weapon aims along the avatar forward axis,
+so its mounted laser and bullets travel through the world rather than down
+along the overhead camera ray.
