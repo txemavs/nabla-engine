@@ -6,12 +6,13 @@
 
 ## Module dependencies
 
+- `./laser-smoke.js`
 - `three`
 - `../../entity/schema.js`
 
 ## ShotLaser.constructor
 
-[Implementation, line 68](../../../../../src/render/entity/shot-laser.ts#L68)
+[Implementation, line 73](../../../../../src/render/entity/shot-laser.ts#L73)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -26,24 +27,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.SphereGeometry`
 - `this.root.add`
 
-## ShotLaser.constructor.callback@71
+## ShotLaser.constructor.callback@76
 
-[Implementation, line 71](../../../../../src/render/entity/shot-laser.ts#L71)
+[Implementation, line 76](../../../../../src/render/entity/shot-laser.ts#L76)
 
 ```ts
-callback@71(renderer): inferred by TypeScript; see implementation
+callback@76(renderer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `renderer.getDrawingBufferSize`
 
-## ShotLaser.constructor.callback@88
+## ShotLaser.constructor.callback@93
 
-[Implementation, line 88](../../../../../src/render/entity/shot-laser.ts#L88)
+[Implementation, line 93](../../../../../src/render/entity/shot-laser.ts#L93)
 
 ```ts
-callback@88(_renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@93(_renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -51,22 +52,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.halo.quaternion.copy`
 - `this.halo.updateMatrixWorld`
 
-## ShotLaser.constructor.callback@94
+## ShotLaser.constructor.callback@99
 
-[Implementation, line 94](../../../../../src/render/entity/shot-laser.ts#L94)
-
-```ts
-callback@94(): inferred by TypeScript; see implementation
-```
-
-## ShotLaser.enabled
-
-[Implementation, line 97](../../../../../src/render/entity/shot-laser.ts#L97)
-
-World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
+[Implementation, line 99](../../../../../src/render/entity/shot-laser.ts#L99)
 
 ```ts
-enabled(value: boolean): inferred by TypeScript; see implementation
+callback@99(): inferred by TypeScript; see implementation
 ```
 
 ## ShotLaser.enabled
@@ -76,12 +67,22 @@ enabled(value: boolean): inferred by TypeScript; see implementation
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
 ```ts
+enabled(value: boolean): inferred by TypeScript; see implementation
+```
+
+## ShotLaser.enabled
+
+[Implementation, line 107](../../../../../src/render/entity/shot-laser.ts#L107)
+
+World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
+
+```ts
 enabled(): boolean
 ```
 
 ## ShotLaser.set
 
-[Implementation, line 107](../../../../../src/render/entity/shot-laser.ts#L107)
+[Implementation, line 112](../../../../../src/render/entity/shot-laser.ts#L112)
 
 Update beam from muzzle to end; pin sits on the end when `hit` is true.
 
@@ -96,6 +97,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Vector3`
 - `new THREE.Vector3(...origin).sub`
 - `new THREE.Vector3(...origin).sub(this.pin.position).normalize`
+- `sampleLaserSmoke`
 - `this.beamMat.uniforms.end.value.fromArray`
 - `this.beamMat.uniforms.start.value.fromArray`
 - `this.halo.scale.copy`
@@ -104,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotLaser.clear
 
-[Implementation, line 122](../../../../../src/render/entity/shot-laser.ts#L122)
+[Implementation, line 133](../../../../../src/render/entity/shot-laser.ts#L133)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -114,7 +116,7 @@ clear(): void
 
 ## ShotLaser.dispose
 
-[Implementation, line 127](../../../../../src/render/entity/shot-laser.ts#L127)
+[Implementation, line 138](../../../../../src/render/entity/shot-laser.ts#L138)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 

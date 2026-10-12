@@ -1,3 +1,4 @@
+import { sampleLaserSmoke } from './laser-smoke.js'
 import * as THREE from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
 
@@ -6,11 +7,13 @@ export class ShotLaser {
   readonly root = new THREE.Group()
   private readonly beamGeom = new THREE.PlaneGeometry(1, 1)
   private readonly beamMat = new THREE.ShaderMaterial({
+    side: THREE.DoubleSide,
     transparent: true,
     depthWrite: false,
     toneMapped: false,
     blending: THREE.AdditiveBlending,
     uniforms: {
+      smoke: { value: new Float32Array(32) },
       start: { value: new THREE.Vector3() },
       end: { value: new THREE.Vector3() },
       resolution: { value: new THREE.Vector2(1, 1) },
@@ -21,15 +24,17 @@ export class ShotLaser {
     void main(){laserUv=uv; vec4 a=projectionMatrix*modelViewMatrix*vec4(start,1.); vec4 b=projectionMatrix*modelViewMatrix*vec4(end,1.);
     vec2 direction=(b.xy/b.w-a.xy/a.w)*resolution;
     vec2 perpendicular=normalize(vec2(-direction.y,direction.x)+vec2(0.00001));
-    gl_Position=mix(a,b,uv.y); gl_Position.xy+=perpendicular*(uv.x-.5)*6./resolution*gl_Position.w;
+    gl_Position=mix(a,b,uv.y); gl_Position.xy+=perpendicular*(uv.x-.5)*14./resolution*gl_Position.w;
     #include <logdepthbuf_vertex>
     }`,
-    fragmentShader: `varying vec2 laserUv;
+    fragmentShader: `varying vec2 laserUv; uniform float smoke[32];
     #include <logdepthbuf_pars_fragment>
     void main(){
     #include <logdepthbuf_fragment>
-    float d=abs(laserUv.x-.5)*2.;float halo=exp(-d*d*3.);float core=exp(-d*d*35.);
-    gl_FragColor=vec4(mix(vec3(1.,.015,.01),vec3(1.,.5,.35),core),(.22*halo+.55*core)*(1.-smoothstep(.8,1.,d)));}`,
+    float t=clamp(laserUv.y,0.,1.)*31.;int i=int(floor(t));
+    float fog=mix(smoke[i],smoke[min(i+1,31)],fract(t));
+    float d=abs(laserUv.x-.5)*2.;float halo=exp(-d*d*3.);float core=exp(-d*d*180.);
+    gl_FragColor=vec4(mix(vec3(1.,.015,.01),vec3(1.,.5,.35),core),(.035*halo+.55*core+fog*(.7*halo+.3*core))*(1.-smoothstep(.8,1.,d)));}`,
   })
   private readonly beam: THREE.Mesh
   private readonly halo = new THREE.Mesh(
@@ -108,6 +113,12 @@ export class ShotLaser {
     if (this.disposed || !this.on) return
     this.beamMat.uniforms.start.value.fromArray(origin)
     this.beamMat.uniforms.end.value.fromArray(end)
+    sampleLaserSmoke(
+      this.beamMat.uniforms.start.value,
+      this.beamMat.uniforms.end.value,
+      this.root,
+      this.beamMat.uniforms.smoke.value,
+    )
     this.pin.position.set(end[0], end[1], end[2])
     const distance = Math.hypot(end[0] - origin[0], end[1] - origin[1], end[2] - origin[2])
     this.pin.scale.setScalar(1 + Math.min(2, distance * 0.015))

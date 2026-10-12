@@ -1,3 +1,4 @@
+import { laserSmokePools } from './laser-smoke.js'
 import { smokeDensity } from './smoke-density.js'
 /** White exhaust vapour attached to the authored outlet, with a bounded world-space pool. */
 import * as THREE from 'three'
@@ -17,6 +18,7 @@ export interface ExhaustSmokeOptions {
 }
 
 export class ExhaustSmoke {
+  private smokePool?: Parameters<typeof laserSmokePools.add>[0]
   private readonly positions: Float32Array
   private readonly velocities: Float32Array
   private readonly life: Float32Array
@@ -82,6 +84,14 @@ export class ExhaustSmoke {
         }`,
       }),
     )
+    this.smokePool = {
+      root: this.root,
+      positions: this.positions,
+      life: this.life,
+      lifetime: options.lifetime ?? 1.4,
+      size: options.size ?? 550,
+    }
+    laserSmokePools.add(this.smokePool)
     this.root.name = 'Engine exhaust smoke'
     this.root.frustumCulled = false
     this.root.visible = false
@@ -158,6 +168,7 @@ export class ExhaustSmoke {
   }
 
   dispose(): void {
+    if (this.smokePool) laserSmokePools.delete(this.smokePool)
     this.root.removeFromParent()
     this.geometry.dispose()
     ;(this.root.material as THREE.ShaderMaterial).dispose()

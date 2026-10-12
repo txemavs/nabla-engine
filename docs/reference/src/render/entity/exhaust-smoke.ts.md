@@ -6,12 +6,13 @@
 
 ## Module dependencies
 
+- `./laser-smoke.js`
 - `./smoke-density.js`
 - `three`
 
 ## ExhaustSmoke.constructor
 
-[Implementation, line 38](../../../../../src/render/entity/exhaust-smoke.ts#L38)
+[Implementation, line 40](../../../../../src/render/entity/exhaust-smoke.ts#L40)
 
 ```ts
 constructor(private readonly outlet: THREE.Object3D, private readonly space: THREE.Object3D, private readonly options: ExhaustSmokeOptions = {}): instance
@@ -25,11 +26,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MathUtils.clamp`
 - `THREE.Points`
 - `THREE.ShaderMaterial`
+- `laserSmokePools.add`
 - `this.geometry.setAttribute`
 
 ## ExhaustSmoke.setEnabled
 
-[Implementation, line 90](../../../../../src/render/entity/exhaust-smoke.ts#L90)
+[Implementation, line 100](../../../../../src/render/entity/exhaust-smoke.ts#L100)
 
 ```ts
 setEnabled(enabled: boolean): void
@@ -42,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ExhaustSmoke.setAmount
 
-[Implementation, line 100](../../../../../src/render/entity/exhaust-smoke.ts#L100)
+[Implementation, line 110](../../../../../src/render/entity/exhaust-smoke.ts#L110)
 
 Scale particle emission without changing the size or lifetime of each puff.
 
@@ -56,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ExhaustSmoke.update
 
-[Implementation, line 104](../../../../../src/render/entity/exhaust-smoke.ts#L104)
+[Implementation, line 114](../../../../../src/render/entity/exhaust-smoke.ts#L114)
 
 ```ts
 update(dt: number, running: boolean, load: number, speedKmh = 0): void
@@ -92,17 +94,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.space.matrixWorld.clone().invert`
 - `this.space.worldToLocal`
 
-## ExhaustSmoke.update.callback@154
+## ExhaustSmoke.update.callback@164
 
-[Implementation, line 154](../../../../../src/render/entity/exhaust-smoke.ts#L154)
+[Implementation, line 164](../../../../../src/render/entity/exhaust-smoke.ts#L164)
 
 ```ts
-callback@154(v): inferred by TypeScript; see implementation
+callback@164(v): inferred by TypeScript; see implementation
 ```
 
 ## ExhaustSmoke.dispose
 
-[Implementation, line 160](../../../../../src/render/entity/exhaust-smoke.ts#L160)
+[Implementation, line 170](../../../../../src/render/entity/exhaust-smoke.ts#L170)
 
 ```ts
 dispose(): void
@@ -111,12 +113,13 @@ dispose(): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `(this.root.material as THREE.ShaderMaterial).dispose`
+- `laserSmokePools.delete`
 - `this.geometry.dispose`
 - `this.root.removeFromParent`
 
 ## s3SmokeAmount
 
-[Implementation, line 168](../../../../../src/render/entity/exhaust-smoke.ts#L168)
+[Implementation, line 179](../../../../../src/render/entity/exhaust-smoke.ts#L179)
 
 Loaded S3 quantity rises from 10% at 1000 rpm to 200% at 7000; releasing gas leaves 10%.
 
