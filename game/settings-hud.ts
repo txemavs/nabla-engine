@@ -374,7 +374,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     performanceGroup.hidden = true
   }
 
-  if (quality) {
+  let cameraOptions = byId('camera-extras')
+  if (!cameraOptions) {
+    cameraOptions = fieldset('camera-extras', 'Cámara')
+    place(cameraOptions)
+  }
+  {
     const label = doc.createElement('label')
     const input = doc.createElement('select')
     input.id = 'camera-first-person-mode'
@@ -390,10 +395,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.value = runtime.bodycamEnabled ? 'normal' : 'pointer'
     input.addEventListener('change', () => runtime.setBodycamEnabled(input.value === 'normal'))
     label.append('Primera persona ', input)
-    quality.append(label)
+    cameraOptions.append(label)
   }
 
-  if (quality && typeof runtime.actionCamEnabled === 'boolean') {
+  if (typeof runtime.actionCamEnabled === 'boolean') {
     const label = doc.createElement('label'),
       input = doc.createElement('input')
     input.type = 'checkbox'
@@ -401,9 +406,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.checked = runtime.actionCamEnabled
     input.addEventListener('change', () => runtime.setActionCamEnabled(input.checked))
     label.append(input, ' Action cam (pasos e inclinación al caminar)')
-    quality.append(label)
+    cameraOptions.append(label)
   }
-  if (quality && typeof runtime.tunnelEnabled === 'boolean') {
+  if (typeof runtime.tunnelEnabled === 'boolean') {
     const label = doc.createElement('label')
     const input = doc.createElement('input')
     input.type = 'checkbox'
@@ -411,7 +416,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.checked = runtime.tunnelEnabled
     input.addEventListener('change', () => runtime.setTunnelEnabled(input.checked))
     label.append(input, ' Efecto túnel al apuntar')
-    quality.append(label)
+    cameraOptions.append(label)
   }
 
   // Quality preference applies immediately to both exhaust and gun smoke.

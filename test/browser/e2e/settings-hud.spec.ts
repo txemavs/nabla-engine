@@ -43,6 +43,12 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     let sidearm = { ...sidearmTuningDefaults },
       preview = false
     const runtime = {
+      actionCamEnabled: true,
+      setActionCamEnabled: (enabled: boolean) => {
+        runtime.actionCamEnabled = enabled
+      },
+      tunnelEnabled: true,
+      setTunnelEnabled: () => {},
       weaponPoseTuning: structuredClone(weaponPoseDefaults),
       smokePercent: 50,
       smokeEnabled: true,
@@ -67,6 +73,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       setLensFlareAmount: () => {},
     }
     mountSettingsHud(runtime as never)
+    const actionCam = document.getElementById('camera-action-cam') as HTMLInputElement
+    actionCam.checked = false
+    actionCam.dispatchEvent(new Event('change', { bubbles: true }))
     const smoke = document.getElementById('quality-smoke') as HTMLInputElement
     smoke.checked = false
     smoke.dispatchEvent(new Event('change', { bubbles: true }))
@@ -94,6 +103,11 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
         .filter(Boolean)
     return {
       before,
+      actionCam: runtime.actionCamEnabled,
+      actionCamPane: pane('camera-action-cam'),
+      cameraControls: ['camera-first-person-mode', 'camera-action-cam', 'quality-tunnel'].map(
+        (id) => document.getElementById(id)?.closest('fieldset')?.id,
+      ),
       smoke: runtime.smokeEnabled,
       smokePane: pane('quality-smoke'),
       sidearm,
@@ -124,6 +138,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
 
   const visible = ['Planeta', 'Opciones', 'Rendimiento', 'Vídeo', 'Objetos', 'Desarrollo']
   expect(result.before).toEqual(visible)
+  expect(result.actionCam).toBe(false)
+  expect(result.actionCamPane).toBe('settings-pane-options')
+  expect(result.cameraControls).toEqual(['camera-extras', 'camera-extras', 'camera-extras'])
   expect(result.smoke).toBe(false)
   expect(result.smokePane).toBe('settings-pane-performance')
   expect(result.sidearm).toEqual({ height: -0.055, angle: -0.5 })
