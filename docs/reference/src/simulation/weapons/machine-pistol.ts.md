@@ -83,7 +83,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RecoilYaw.constructor
 
-[Implementation, line 80](../../../../../src/simulation/weapons/machine-pistol.ts#L80)
+[Implementation, line 82](../../../../../src/simulation/weapons/machine-pistol.ts#L82)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.
@@ -94,7 +94,7 @@ constructor(private readonly random: () => number = Math.random): instance
 
 ## RecoilYaw.kick
 
-[Implementation, line 82](../../../../../src/simulation/weapons/machine-pistol.ts#L82)
+[Implementation, line 84](../../../../../src/simulation/weapons/machine-pistol.ts#L84)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.
@@ -109,7 +109,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RecoilYaw.step
 
-[Implementation, line 87](../../../../../src/simulation/weapons/machine-pistol.ts#L87)
+[Implementation, line 89](../../../../../src/simulation/weapons/machine-pistol.ts#L89)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.
@@ -124,7 +124,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RecoilYaw.total
 
-[Implementation, line 94](../../../../../src/simulation/weapons/machine-pistol.ts#L94)
+[Implementation, line 96](../../../../../src/simulation/weapons/machine-pistol.ts#L96)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.
@@ -135,7 +135,7 @@ total(): number
 
 ## RecoilYaw.reset
 
-[Implementation, line 98](../../../../../src/simulation/weapons/machine-pistol.ts#L98)
+[Implementation, line 100](../../../../../src/simulation/weapons/machine-pistol.ts#L100)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.

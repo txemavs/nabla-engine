@@ -4,16 +4,13 @@
 
 [Source](../../../../src/runtime/camera-fov.ts)
 
-Player field-of-view offset from the J menu. One offset in degrees widens or narrows both
-the cockpit / on-foot eye (`firstPersonFov`) and the chase camera (`chaseFov`, which the
-overhead view shares). The cinematic camera keeps its own FOV.
-
 ## Module dependencies
 
+- `../config/gameplay-tuning.js`
 
 ## clampCameraFovOffset
 
-[Implementation, line 24](../../../../src/runtime/camera-fov.ts#L24)
+[Implementation, line 25](../../../../src/runtime/camera-fov.ts#L25)
 
 Clamp to the allowed range and whole degrees; non-finite reads as 0.
 
@@ -30,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cameraFovFor
 
-[Implementation, line 30](../../../../src/runtime/camera-fov.ts#L30)
+[Implementation, line 31](../../../../src/runtime/camera-fov.ts#L31)
 
 Both camera FOVs for an offset.
 
@@ -44,7 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readCameraFovOffset
 
-[Implementation, line 36](../../../../src/runtime/camera-fov.ts#L36)
+[Implementation, line 37](../../../../src/runtime/camera-fov.ts#L37)
 
 ```ts
 readCameraFovOffset(storage: CameraFovStorage | null | undefined): number
@@ -58,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## writeCameraFovOffset
 
-[Implementation, line 46](../../../../src/runtime/camera-fov.ts#L46)
+[Implementation, line 47](../../../../src/runtime/camera-fov.ts#L47)
 
 Remember the offset. Storage errors are ignored; the change still applies this session.
 
@@ -74,7 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nextCameraFovOffset
 
-[Implementation, line 58](../../../../src/runtime/camera-fov.ts#L58)
+[Implementation, line 59](../../../../src/runtime/camera-fov.ts#L59)
 
 Offset after a menu action: a signed step, or `reset`.
 

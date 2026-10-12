@@ -920,13 +920,14 @@ export class World {
     this.constraints.delete(constraint)
     constraint.joint = null
   }
-  intersectsCuboid(center: Vec3, half: Vec3): boolean {
+  intersectsCuboid(center: Vec3, half: Vec3, ignoreBody?: Body): boolean {
     let hit = false
     this.raw.intersectionsWithShape(
       center.vsub(this.origin),
       { x: 0, y: 0, z: 0, w: 1 },
       new (R().Cuboid)(half.x, half.y, half.z),
-      () => {
+      (collider) => {
+        if (ignoreBody?.colliders.some((own) => own.handle === collider.handle)) return true
         hit = true
         return false
       },

@@ -50,6 +50,8 @@ export const motorcycleClusterDefaults: Readonly<MotorcycleClusterOptions> = Obj
 export interface ClusterInputs {
   /** Rider on board with the key on; false: everything dark and needles at rest. */
   powered: boolean
+  /** Ambient daylight, 0 at night and 1 in full daylight. Omit for daytime instrument colours. */
+  daylight?: number
   /** Start-up phase (`Simulation.vehicleInfo`). */
   ignition: 'cranking' | 'sweep' | 'running'
   /** Needle self-test 0..1 while `ignition` is `sweep`. */
@@ -165,6 +167,7 @@ function drawDial(
     /** Number every `labelEvery` major ticks. */
     labelEvery?: number
     red?: number
+    redInk?: string
     caption: string
     sweep: number
   },
@@ -178,7 +181,7 @@ function drawDial(
   g.fill()
   const at = (v: number) => needleAngle(v, o.max, o.sweep) - Math.PI / 2
   if (o.red !== undefined && o.red < o.max) {
-    g.strokeStyle = '#d4141c'
+    g.strokeStyle = o.redInk ?? '#d4141c'
     g.lineWidth = s * 0.07
     g.beginPath()
     g.arc(c, c, c * 0.86, at(o.red), at(o.max))
@@ -209,21 +212,33 @@ function drawDial(
 /** A round dial with a needle on one anchor. */
 class Dial {
   readonly needle: THREE.Object3D
+  private readonly faceMaterial: THREE.MeshBasicMaterial
+  private readonly needleMaterial: THREE.MeshBasicMaterial
+  private readonly dayTexture: THREE.Texture | null
+  private readonly nightTexture: THREE.Texture | null
+  private readonly dayColor: THREE.Color
+  private readonly needleColor: THREE.Color
+  private readonly nightNeedleColor = new THREE.Color('#80dfa4')
   constructor(
     anchor: Anchor,
-    draw: ((canvas: HTMLCanvasElement) => void) | null,
+    draw: ((canvas: HTMLCanvasElement, night: boolean) => void) | null,
     fallback: string,
     needleColor: string,
   ) {
     const radius = (anchor.size.diameter ?? 0.06) / 2
-    const face = new THREE.Mesh(
-      new THREE.CircleGeometry(radius, 48),
-      backlit(
-        draw && canvasAvailable()
-          ? { map: dialTexture(draw) }
-          : { color: new THREE.Color(fallback) },
-      ),
+    this.dayTexture =
+      draw && canvasAvailable() ? dialTexture((canvas) => draw(canvas, false)) : null
+    this.nightTexture =
+      draw && canvasAvailable() ? dialTexture((canvas) => draw(canvas, true)) : null
+    if (this.dayTexture) this.dayTexture.name = `${anchor.node.name}.day`
+    if (this.nightTexture) this.nightTexture.name = `${anchor.node.name}.night`
+    this.dayColor = new THREE.Color(fallback)
+    this.needleColor = new THREE.Color(needleColor)
+    this.faceMaterial = backlit(
+      this.dayTexture ? { map: this.dayTexture } : { color: this.dayColor },
     )
+    this.needleMaterial = backlit({ color: this.needleColor })
+    const face = new THREE.Mesh(new THREE.CircleGeometry(radius, 48), this.faceMaterial)
     face.name = `${anchor.node.name}.face`
     face.position.z = LIFT
     anchor.node.add(face)
@@ -232,7 +247,7 @@ class Dial {
     needle.position.z = LIFT * 3
     const blade = new THREE.Mesh(
       new THREE.PlaneGeometry(radius * 0.05, radius * 0.92),
-      backlit({ color: new THREE.Color(needleColor) }),
+      this.needleMaterial,
     )
     blade.position.y = radius * 0.32
     needle.add(blade)
@@ -245,9 +260,21 @@ class Dial {
     anchor.node.add(needle)
     this.needle = needle
   }
-  set(angle: number): void {
+  set(angle: number, inputs: ClusterInputs): void {
     // Clockwise on the face as seen by the rider (looking down −Z of the anchor).
     this.needle.rotation.z = -angle
+    const daylight = Math.max(0, Math.min(1, inputs.daylight ?? 1))
+    const night = inputs.powered && daylight < 0.35
+    const texture = night ? this.nightTexture : this.dayTexture
+    if (this.faceMaterial.map !== texture) {
+      this.faceMaterial.map = texture
+      this.faceMaterial.needsUpdate = true
+    }
+    this.faceMaterial.color.set(texture ? '#ffffff' : night ? '#060c09' : this.dayColor)
+    // Only the markings glow at night. An unpowered white face darkens with the ambient light.
+    if (!night) this.faceMaterial.color.multiplyScalar(0.03 + 0.97 * daylight)
+    this.needleMaterial.color.copy(night ? this.nightNeedleColor : this.needleColor)
+    if (!night) this.needleMaterial.color.multiplyScalar(0.03 + 0.97 * daylight)
   }
 }
 /** Canvas textures created by the cluster, released by `MotorcycleInstruments.dispose`. */
@@ -307,15 +334,16 @@ class Lcd {
     mesh.position.z = LIFT
     anchor.node.add(mesh)
   }
-  draw(text: ReturnType<typeof lcdText>): void {
-    const key = text ? `${text.clock}|${text.gear}|${text.odometer}|${text.trip}` : ''
+  draw(text: ReturnType<typeof lcdText>, daylight: number): void {
+    const night = daylight < 0.35
+    const key = text ? `${text.clock}|${text.gear}|${text.odometer}|${text.trip}|${night}` : ''
     if (key === this.key || !this.canvas || !this.texture) return
     this.key = key
     const g = this.canvas.getContext('2d')!
     const w = this.canvas.width,
       h = this.canvas.height
     // Unlit: dark grey-green glass. Lit: backlit amber-green with dark segments.
-    g.fillStyle = text ? '#9fb889' : '#1d241f'
+    g.fillStyle = text ? (night ? '#80dfa4' : '#9fb889') : '#1d241f'
     g.fillRect(0, 0, w, h)
     if (text) {
       g.fillStyle = '#10180f'
@@ -359,10 +387,10 @@ export class MotorcycleInstruments {
     const speedo = speedoAnchor
       ? new Dial(
           speedoAnchor,
-          (canvas) =>
+          (canvas, night) =>
             drawDial(canvas, {
-              face: '#0b0b0d',
-              ink: '#f2f2f2',
+              face: night ? '#060c09' : '#0b0b0d',
+              ink: night ? '#80dfa4' : '#f2f2f2',
               max: o.speedoMaxKmh,
               major: o.speedoStepKmh,
               minor: o.speedoStepKmh / 2,
@@ -378,10 +406,11 @@ export class MotorcycleInstruments {
     const tacho = tachoAnchor
       ? new Dial(
           tachoAnchor,
-          (canvas) =>
+          (canvas, night) =>
             drawDial(canvas, {
-              face: '#f4f4f0',
-              ink: '#111111',
+              face: night ? '#060c09' : '#f4f4f0',
+              ink: night ? '#80dfa4' : '#111111',
+              redInk: night ? '#80dfa4' : '#d4141c',
               max: o.tachoMaxRpm / 1000,
               major: 1,
               minor: 0.5,
@@ -419,9 +448,12 @@ export class MotorcycleInstruments {
 
   update(inputs: ClusterInputs): void {
     const dial = dialValues(inputs, this.options)
-    this.speedo?.set(needleAngle(dial.speedKmh, this.options.speedoMaxKmh, this.options.sweep))
-    this.tacho?.set(needleAngle(dial.rpm, this.options.tachoMaxRpm, this.options.sweep))
-    this.lcd?.draw(lcdText(inputs))
+    this.speedo?.set(
+      needleAngle(dial.speedKmh, this.options.speedoMaxKmh, this.options.sweep),
+      inputs,
+    )
+    this.tacho?.set(needleAngle(dial.rpm, this.options.tachoMaxRpm, this.options.sweep), inputs)
+    this.lcd?.draw(lcdText(inputs), inputs.daylight ?? 1)
     this.signals[0]?.set(inputs.powered && inputs.signalLeft)
     this.signals[1]?.set(inputs.powered && inputs.signalRight)
     warningLampStates(this.options.lamps, inputs).forEach((lit, i) => this.warnings[i]?.set(lit))

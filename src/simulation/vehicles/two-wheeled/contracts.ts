@@ -188,6 +188,8 @@ export interface TwoWheeledState {
   clutchKick: number
   /** Launch input on the previous tick; a kick starts on the press, not while held. */
   launchHeld: boolean
+  /** Full-throttle time during an automatic wheelie; easing off resets the insistence. */
+  wheelieHold: number
   /** Roll disturbance observer estimate, rad/s². */
   disturbance: number
   /** Lean measured on the previous tick; the lean rate is differentiated from it. */

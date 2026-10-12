@@ -141,6 +141,8 @@ export const roadVehicleDefaults = Object.freeze({
  * machine; calibrate against real rider/tyre data before treating the result as realistic.
  */
 export const twoWheeledDefaults = Object.freeze({
+  /** Resting lean to the left on the side stand, radians (~10°). */
+  parkingLean: 0.18,
   /** TODO(unverified): largest cornering lean the rider model aims for, radians (~40°). */
   maxLean: 0.7,
   /** TODO(unverified): lean beyond which the machine has fallen and balance stops, radians. */

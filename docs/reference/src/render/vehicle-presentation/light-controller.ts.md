@@ -10,9 +10,33 @@ Renderer-independent vehicle light switches and channel evaluation, shared by ev
 
 - `../../config/lighting.js`
 
+## VehicleLightController.sampleEnvironment
+
+[Implementation, line 39](../../../../../src/render/vehicle-presentation/light-controller.ts#L39)
+
+Delay switching across short shadows so the beams do not flicker.
+
+```ts
+sampleEnvironment(dark: boolean, dt: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+
+## VehicleLightController.drivingMode
+
+[Implementation, line 46](../../../../../src/render/vehicle-presentation/light-controller.ts#L46)
+
+A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
+
+```ts
+drivingMode(): Exclude<VehicleLightMode, 'auto'>
+```
+
 ## VehicleLightController.constructor
 
-[Implementation, line 35](../../../../../src/render/vehicle-presentation/light-controller.ts#L35)
+[Implementation, line 49](../../../../../src/render/vehicle-presentation/light-controller.ts#L49)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -22,7 +46,7 @@ constructor(readonly flashMs = lightingDefaults.signalFlashMs): instance
 
 ## VehicleLightController.enabled
 
-[Implementation, line 37](../../../../../src/render/vehicle-presentation/light-controller.ts#L37)
+[Implementation, line 51](../../../../../src/render/vehicle-presentation/light-controller.ts#L51)
 
 Any driving light on (position or dipped). Setting true from `off` selects dipped beams.
 
@@ -32,7 +56,7 @@ enabled(): boolean
 
 ## VehicleLightController.enabled
 
-[Implementation, line 40](../../../../../src/render/vehicle-presentation/light-controller.ts#L40)
+[Implementation, line 54](../../../../../src/render/vehicle-presentation/light-controller.ts#L54)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -42,7 +66,7 @@ enabled(on: boolean): inferred by TypeScript; see implementation
 
 ## VehicleLightController.cycleLights
 
-[Implementation, line 44](../../../../../src/render/vehicle-presentation/light-controller.ts#L44)
+[Implementation, line 58](../../../../../src/render/vehicle-presentation/light-controller.ts#L58)
 
 Step the light switch: off → position → low (dipped) → off. Returns the new mode.
 
@@ -56,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightController.toggleLights
 
-[Implementation, line 49](../../../../../src/render/vehicle-presentation/light-controller.ts#L49)
+[Implementation, line 63](../../../../../src/render/vehicle-presentation/light-controller.ts#L63)
 
 `cycleLights`, reporting whether any driving light is now on.
 
@@ -70,7 +94,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightController.toggleHighBeam
 
-[Implementation, line 53](../../../../../src/render/vehicle-presentation/light-controller.ts#L53)
+[Implementation, line 67](../../../../../src/render/vehicle-presentation/light-controller.ts#L67)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -80,7 +104,7 @@ toggleHighBeam(): boolean
 
 ## VehicleLightController.toggleSignal
 
-[Implementation, line 56](../../../../../src/render/vehicle-presentation/light-controller.ts#L56)
+[Implementation, line 70](../../../../../src/render/vehicle-presentation/light-controller.ts#L70)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -90,7 +114,7 @@ toggleSignal(side: number): void
 
 ## VehicleLightController.indicating
 
-[Implementation, line 60](../../../../../src/render/vehicle-presentation/light-controller.ts#L60)
+[Implementation, line 74](../../../../../src/render/vehicle-presentation/light-controller.ts#L74)
 
 Report a selected side independently of the on/off blink phase.
 
@@ -100,7 +124,7 @@ indicating(side: number, state: VehicleLampState): boolean
 
 ## VehicleLightController.level
 
-[Implementation, line 64](../../../../../src/render/vehicle-presentation/light-controller.ts#L64)
+[Implementation, line 78](../../../../../src/render/vehicle-presentation/light-controller.ts#L78)
 
 Return a multiplier for an authored lamp intensity; no geometry or material names are used.
 
@@ -116,7 +140,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightController.glow
 
-[Implementation, line 93](../../../../../src/render/vehicle-presentation/light-controller.ts#L93)
+[Implementation, line 107](../../../../../src/render/vehicle-presentation/light-controller.ts#L107)
 
 Like `level`, for a lens emitter rather than a light source: in position mode a low-beam lens
 keeps a faint `positionLensGlow`, so a lamp unit without its own position bulb still glows.

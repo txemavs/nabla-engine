@@ -12,13 +12,15 @@ so disposing a clone must not dispose them.
 
 - `three`
 - `../../simulation/weapons/casings.js`
+- `../../simulation/weapons/magazine.js`
+- `./magazine-shape.js`
 
 ## DroppedMagazines.constructor
 
-[Implementation, line 14](../../../../../src/render/entity/magazines.ts#L14)
+[Implementation, line 16](../../../../../src/render/entity/magazines.ts#L16)
 
 ```ts
-constructor(template: THREE.Object3D, count = 8): instance
+constructor(template: THREE.Object3D, count = 8, private readonly isMagazine = true): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -28,17 +30,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pool.push`
 - `this.root.add`
 
-## DroppedMagazines.constructor.callback@18
+## DroppedMagazines.constructor.callback@24
 
-[Implementation, line 18](../../../../../src/render/entity/magazines.ts#L18)
+[Implementation, line 24](../../../../../src/render/entity/magazines.ts#L24)
 
 ```ts
-callback@18(child): inferred by TypeScript; see implementation
+callback@24(child): inferred by TypeScript; see implementation
 ```
 
 ## DroppedMagazines.dispose
 
-[Implementation, line 27](../../../../../src/render/entity/magazines.ts#L27)
+[Implementation, line 33](../../../../../src/render/entity/magazines.ts#L33)
 
 ```ts
 dispose(): void
@@ -50,10 +52,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DroppedMagazines.sync
 
-[Implementation, line 33](../../../../../src/render/entity/magazines.ts#L33)
+[Implementation, line 39](../../../../../src/render/entity/magazines.ts#L39)
 
 ```ts
-sync(poses: readonly CasingPose[]): void
+sync(poses: readonly CasingPose[], entities?: ReadonlyMap<string, MagazineEntity>): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -62,8 +64,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Vector3`
 - `axis.lengthSq`
 - `axis.normalize`
+- `entities?.get`
+- `mesh.getObjectByName`
 - `mesh.position.fromArray`
 - `mesh.quaternion.multiply`
 - `mesh.quaternion.set`
 - `new THREE.Quaternion().setFromAxisAngle`
+- `poseMagazineCapacity`
 - `poses.slice`

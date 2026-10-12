@@ -1396,7 +1396,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 923](../../../../src/simulation/physics.ts#L923)
 
 ```ts
-intersectsCuboid(center: Vec3, half: Vec3): boolean
+intersectsCuboid(center: Vec3, half: Vec3, ignoreBody?: Body): boolean
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1411,12 +1411,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 929](../../../../src/simulation/physics.ts#L929)
 
 ```ts
-callback@929(): inferred by TypeScript; see implementation
+callback@929(collider): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `ignoreBody?.colliders.some`
+
+## World.intersectsCuboid.callback@929.callback@930
+
+[Implementation, line 930](../../../../src/simulation/physics.ts#L930)
+
+```ts
+callback@930(own): inferred by TypeScript; see implementation
 ```
 
 ## World.raycastClosest
 
-[Implementation, line 936](../../../../src/simulation/physics.ts#L936)
+[Implementation, line 937](../../../../src/simulation/physics.ts#L937)
 
 ```ts
 raycastClosest(from: Vec3, to: Vec3, options: { skipBackfaces?: boolean }, result: RaycastResult): inferred by TypeScript; see implementation
@@ -1428,17 +1440,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `result.hitPointWorld.copy`
 - `this.raycastAll`
 
-## World.raycastClosest.callback@943
+## World.raycastClosest.callback@944
 
-[Implementation, line 943](../../../../src/simulation/physics.ts#L943)
+[Implementation, line 944](../../../../src/simulation/physics.ts#L944)
 
 ```ts
-callback@943(hit): inferred by TypeScript; see implementation
+callback@944(hit): inferred by TypeScript; see implementation
 ```
 
 ## World.raycastAll
 
-[Implementation, line 953](../../../../src/simulation/physics.ts#L953)
+[Implementation, line 954](../../../../src/simulation/physics.ts#L954)
 
 ```ts
 raycastAll(from: Vec3, to: Vec3, _options: { skipBackfaces?: boolean }, callback: (hit: RaycastResult) => void): inferred by TypeScript; see implementation
@@ -1455,12 +1467,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.raw.intersectionsWithRay`
 - `to.vsub`
 
-## World.raycastAll.callback@964
+## World.raycastAll.callback@965
 
-[Implementation, line 964](../../../../src/simulation/physics.ts#L964)
+[Implementation, line 965](../../../../src/simulation/physics.ts#L965)
 
 ```ts
-callback@964(hit): inferred by TypeScript; see implementation
+callback@965(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1471,29 +1483,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `result.hitPointWorld.set`
 - `this.bodies.find`
 
-## World.raycastAll.callback@964.callback@965
+## World.raycastAll.callback@965.callback@966
 
-[Implementation, line 965](../../../../src/simulation/physics.ts#L965)
+[Implementation, line 966](../../../../src/simulation/physics.ts#L966)
 
 ```ts
-callback@965(b): inferred by TypeScript; see implementation
+callback@966(b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `b.colliders.some`
 
-## World.raycastAll.callback@964.callback@965.callback@966
+## World.raycastAll.callback@965.callback@966.callback@967
 
-[Implementation, line 966](../../../../src/simulation/physics.ts#L966)
+[Implementation, line 967](../../../../src/simulation/physics.ts#L967)
 
 ```ts
-callback@966(collider): inferred by TypeScript; see implementation
+callback@967(collider): inferred by TypeScript; see implementation
 ```
 
 ## World.step
 
-[Implementation, line 982](../../../../src/simulation/physics.ts#L982)
+[Implementation, line 983](../../../../src/simulation/physics.ts#L983)
 
 ```ts
 step(dt: number): inferred by TypeScript; see implementation
@@ -1513,12 +1525,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.raw.step`
 - `vehicle.preStep`
 
-## World.step.callback@1004
+## World.step.callback@1005
 
-[Implementation, line 1004](../../../../src/simulation/physics.ts#L1004)
+[Implementation, line 1005](../../../../src/simulation/physics.ts#L1005)
 
 ```ts
-callback@1004(other): inferred by TypeScript; see implementation
+callback@1005(other): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1528,32 +1540,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.bodies.find`
 - `this.raw.contactPair`
 
-## World.step.callback@1004.callback@1005
+## World.step.callback@1005.callback@1006
 
-[Implementation, line 1005](../../../../src/simulation/physics.ts#L1005)
+[Implementation, line 1006](../../../../src/simulation/physics.ts#L1006)
 
 ```ts
-callback@1005(b): inferred by TypeScript; see implementation
+callback@1006(b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `b.colliders.some`
 
-## World.step.callback@1004.callback@1005.callback@1006
+## World.step.callback@1005.callback@1006.callback@1007
 
-[Implementation, line 1006](../../../../src/simulation/physics.ts#L1006)
+[Implementation, line 1007](../../../../src/simulation/physics.ts#L1007)
 
 ```ts
-callback@1006(c): inferred by TypeScript; see implementation
+callback@1007(c): inferred by TypeScript; see implementation
 ```
 
-## World.step.callback@1004.callback@1013
+## World.step.callback@1005.callback@1014
 
-[Implementation, line 1013](../../../../src/simulation/physics.ts#L1013)
+[Implementation, line 1014](../../../../src/simulation/physics.ts#L1014)
 
 ```ts
-callback@1013(manifold, flipped): inferred by TypeScript; see implementation
+callback@1014(manifold, flipped): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

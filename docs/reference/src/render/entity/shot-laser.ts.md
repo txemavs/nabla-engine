@@ -6,12 +6,14 @@
 
 ## Module dependencies
 
+- `../../config/gameplay-tuning.js`
+- `./laser-smoke.js`
 - `three`
 - `../../entity/schema.js`
 
 ## ShotLaser.constructor
 
-[Implementation, line 21](../../../../../src/render/entity/shot-laser.ts#L21)
+[Implementation, line 74](../../../../../src/render/entity/shot-laser.ts#L74)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -21,25 +23,47 @@ constructor(): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `THREE.BufferAttribute`
-- `THREE.Line`
 - `THREE.Mesh`
 - `THREE.MeshBasicMaterial`
 - `THREE.SphereGeometry`
-- `this.beamGeom.setAttribute`
 - `this.root.add`
 
-## ShotLaser.constructor.callback@40
+## ShotLaser.constructor.callback@77
 
-[Implementation, line 40](../../../../../src/render/entity/shot-laser.ts#L40)
+[Implementation, line 77](../../../../../src/render/entity/shot-laser.ts#L77)
 
 ```ts
-callback@40(): inferred by TypeScript; see implementation
+callback@77(renderer): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `renderer.getDrawingBufferSize`
+
+## ShotLaser.constructor.callback@94
+
+[Implementation, line 94](../../../../../src/render/entity/shot-laser.ts#L94)
+
+```ts
+callback@94(_renderer, _scene, camera): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.halo.quaternion.copy`
+- `this.halo.updateMatrixWorld`
+
+## ShotLaser.constructor.callback@100
+
+[Implementation, line 100](../../../../../src/render/entity/shot-laser.ts#L100)
+
+```ts
+callback@100(): inferred by TypeScript; see implementation
 ```
 
 ## ShotLaser.enabled
 
-[Implementation, line 43](../../../../../src/render/entity/shot-laser.ts#L43)
+[Implementation, line 103](../../../../../src/render/entity/shot-laser.ts#L103)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -49,7 +73,7 @@ enabled(value: boolean): inferred by TypeScript; see implementation
 
 ## ShotLaser.enabled
 
-[Implementation, line 48](../../../../../src/render/entity/shot-laser.ts#L48)
+[Implementation, line 108](../../../../../src/render/entity/shot-laser.ts#L108)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -59,7 +83,7 @@ enabled(): boolean
 
 ## ShotLaser.set
 
-[Implementation, line 53](../../../../../src/render/entity/shot-laser.ts#L53)
+[Implementation, line 113](../../../../../src/render/entity/shot-laser.ts#L113)
 
 Update beam from muzzle to end; pin sits on the end when `hit` is true.
 
@@ -69,12 +93,21 @@ set(origin: Vec3Tuple, end: Vec3Tuple, hit: boolean): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `this.beamGeom.computeBoundingSphere`
+- `Math.hypot`
+- `Math.min`
+- `THREE.Vector3`
+- `new THREE.Vector3(...origin).sub`
+- `new THREE.Vector3(...origin).sub(this.pin.position).normalize`
+- `sampleLaserSmoke`
+- `this.beamMat.uniforms.end.value.fromArray`
+- `this.beamMat.uniforms.start.value.fromArray`
+- `this.halo.scale.copy`
 - `this.pin.position.set`
+- `this.pin.scale.setScalar`
 
 ## ShotLaser.clear
 
-[Implementation, line 67](../../../../../src/render/entity/shot-laser.ts#L67)
+[Implementation, line 139](../../../../../src/render/entity/shot-laser.ts#L139)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -84,7 +117,7 @@ clear(): void
 
 ## ShotLaser.dispose
 
-[Implementation, line 71](../../../../../src/render/entity/shot-laser.ts#L71)
+[Implementation, line 144](../../../../../src/render/entity/shot-laser.ts#L144)
 
 World-space laser sight: thin beam from muzzle to aim point plus a surface pin.
 
@@ -97,5 +130,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `(this.pin.material as THREE.Material).dispose`
 - `this.beamGeom.dispose`
 - `this.beamMat.dispose`
+- `this.halo.geometry.dispose`
+- `this.halo.material.dispose`
 - `this.pin.geometry.dispose`
 - `this.root.removeFromParent`

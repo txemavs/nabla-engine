@@ -1,5 +1,8 @@
 # Engine configuration by topic
 
+For weapon angles, view FOVs and this gameplay update, start at
+[Gameplay tuning](gameplay-tuning.md): one source file, units, presets and browser overrides.
+
 Engine tuning lives in small, typed topic files under `src/config`. Import their
 public entries from `@nabla/engine/config` or `@nabla/engine/config/<topic>`.
 Values have English source comments describing units and behavior. These modules

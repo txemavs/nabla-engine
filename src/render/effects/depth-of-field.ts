@@ -1,3 +1,4 @@
+import { focusTuning } from '../../config/gameplay-tuning.js'
 import * as THREE from 'three'
 
 /**
@@ -26,10 +27,12 @@ export class DepthOfField {
         texel: { value: new THREE.Vector2(1, 1) },
         cameraFar: { value: 1000 },
         radius: { value: 5 },
+        tunnel: { value: 0 },
+        farBlur: { value: 1 },
       },
       depthTest: false,
       depthWrite: false,
-      toneMapped: false,
+      toneMapped: true,
       fog: false,
       vertexShader: `
         varying vec2 vUv;
@@ -44,6 +47,8 @@ export class DepthOfField {
         uniform vec2 texel;
         uniform float cameraFar;
         uniform float radius;
+        uniform float tunnel;
+        uniform float farBlur;
         varying vec2 vUv;
         float viewDistance(float depth) {
           return pow(cameraFar + 1.0, depth) - 1.0;
@@ -57,7 +62,10 @@ export class DepthOfField {
         void main() {
           float dist = viewDistance(texture2D(depthTex, vUv).x);
           float center = viewDistance(texture2D(depthTex, vec2(0.5)).x);
-          float coc = smoothstep(center, center * 3.0 + 120.0, dist);
+          float sides = smoothstep(${focusTuning.sideStart.toFixed(4)}, ${focusTuning.sideEnd.toFixed(4)}, abs(vUv.x - 0.5));
+          float nearField = 1.0 - smoothstep(${focusTuning.nearStartMetres.toFixed(4)}, ${focusTuning.nearEndMetres.toFixed(4)}, dist);
+          float peripheral = sides * nearField * tunnel;
+          float coc = max(farBlur * smoothstep(center, center * 3.0 + 120.0, dist), peripheral);
           vec3 color = texture2D(colorTex, vUv).rgb;
           if (coc > 0.02) {
             vec3 sum = color;
@@ -74,6 +82,7 @@ export class DepthOfField {
             color = sum / weight;
           }
           gl_FragColor = vec4(color, texture2D(colorTex, vUv).a);
+          #include <tonemapping_fragment>
           #include <colorspace_fragment>
         }
       `,
@@ -81,6 +90,16 @@ export class DepthOfField {
     const mesh = new THREE.Mesh(geometry, this.material)
     mesh.frustumCulled = false
     this.scene.add(mesh)
+  }
+
+  /** Peripheral focus follows the weapon aim animation; ordinary far blur stays optional. */
+  setFocus(tunnel: number, farBlur: boolean): void {
+    this.material.uniforms.tunnel.value = THREE.MathUtils.clamp(tunnel, 0, 1)
+    this.material.uniforms.farBlur.value = farBlur ? 1 : 0
+  }
+
+  get depthTexture(): THREE.DepthTexture | null {
+    return this.target?.depthTexture ?? null
   }
 
   /** Next draws land in the effect buffer. */
@@ -93,9 +112,11 @@ export class DepthOfField {
       const depthTexture = new THREE.DepthTexture(width, height)
       this.target = new THREE.WebGLRenderTarget(width, height, {
         depthTexture,
+        type: THREE.HalfFloatType,
         samples: 4,
       })
-      this.target.texture.colorSpace = THREE.SRGBColorSpace
+      // Keep scene radiance linear and unclipped; apply display tone mapping exactly once in present().
+      this.target.texture.colorSpace = THREE.LinearSRGBColorSpace
       this.material.uniforms.colorTex.value = this.target.texture
       this.material.uniforms.depthTex.value = depthTexture
       this.material.uniforms.texel.value.set(1 / width, 1 / height)
@@ -107,7 +128,7 @@ export class DepthOfField {
   present(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera): void {
     renderer.setRenderTarget(null)
     this.material.uniforms.cameraFar.value = camera.far
-    this.material.uniforms.radius.value = 5 * renderer.getPixelRatio()
+    this.material.uniforms.radius.value = focusTuning.radiusPixels * renderer.getPixelRatio()
     const autoClear = renderer.autoClear
     renderer.autoClear = true
     try {

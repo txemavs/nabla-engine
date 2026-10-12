@@ -5,13 +5,19 @@
  */
 import * as THREE from 'three'
 import type { CasingPose } from '../../simulation/weapons/casings.js'
+import type { MagazineEntity } from '../../simulation/weapons/magazine.js'
+import { poseMagazineCapacity } from './magazine-shape.js'
 
 export class DroppedMagazines {
   readonly root = new THREE.Group()
   private readonly pool: THREE.Object3D[] = []
   private disposed = false
 
-  constructor(template: THREE.Object3D, count = 8) {
+  constructor(
+    template: THREE.Object3D,
+    count = 8,
+    private readonly isMagazine = true,
+  ) {
     for (let i = 0; i < count; i++) {
       const mesh = template.clone(true)
       mesh.visible = false
@@ -30,7 +36,7 @@ export class DroppedMagazines {
     this.root.clear()
   }
 
-  sync(poses: readonly CasingPose[]): void {
+  sync(poses: readonly CasingPose[], entities?: ReadonlyMap<string, MagazineEntity>): void {
     if (this.disposed) return
     const shown = poses.slice(-this.pool.length)
     for (let i = 0; i < this.pool.length; i++) {
@@ -38,6 +44,11 @@ export class DroppedMagazines {
       const pose = shown[i]
       mesh.visible = !!pose
       if (!pose) continue
+      const entity = pose.entityId ? entities?.get(pose.entityId) : undefined
+      mesh.userData.entityId = entity?.id
+      if (this.isMagazine) poseMagazineCapacity(mesh, entity?.capacity ?? 13)
+      const top = mesh.getObjectByName('MagazineTopRound')
+      if (top) top.visible = !!entity && entity.rounds > 0
       mesh.position.fromArray(pose.position)
       const orientation = pose.orientation ?? [0, 0, 0, 1]
       mesh.quaternion.set(orientation[0], orientation[1], orientation[2], orientation[3])

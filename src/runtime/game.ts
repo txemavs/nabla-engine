@@ -13,7 +13,6 @@ import type { Entity } from '../entity/schema.js'
 import { idleInput, type PlayerInput } from '../simulation/simulation.js'
 import type { RoadCenterline } from '../simulation/road-snap.js'
 import type { PavedArea } from '../simulation/wheel-surface.js'
-import { overheadDrivingHeight } from '../render/entity/driving-camera.js'
 import { PlaySession, type PlayOptions } from './session.js'
 import { GameInput, type GameInputSources } from './input.js'
 import { HeldKeys } from './held-keys.js'
@@ -21,10 +20,11 @@ import { createGameCameraState, cycleGameCamera, updateGameCamera } from './game
 
 /** Notices shown when C / gamepad B changes the view (English keys, see messages.es.ts). */
 const cameraNotice = {
-  'first-person': 'First person',
+  'first-person': 'Modo Puntero',
+  bodycam: 'Normal',
   'third-person': 'Third person',
   chase: 'Chase camera',
-  cockpit: 'Driver camera',
+  cockpit: 'Modo Puntero',
   map: 'Overhead camera · scroll to zoom',
   cinematic: 'Cinematic camera · scroll to change distance',
 } as const
@@ -43,7 +43,6 @@ export class GameRuntime {
   private interior: string | null = null
   private portalSequence = 0
   private jumpRequested = false
-  private readonly boarded = new Set<string>()
   /**
    * R reset policy. `snapToRoad` moves the car to the nearest road/vía before uprighting;
    * `roads` lets the host add streamed centrelines (OSM navigation roads) to the scene roads.
@@ -87,8 +86,6 @@ export class GameRuntime {
     this.vehicle = options.vehicleId ?? null
     this.interior = null
     this.portalSequence = 0
-    this.boarded.clear()
-    if (this.vehicle) this.boarded.add(this.vehicle)
     return sim
   }
   /** Clear held controls, steering history and queued jumps, then idle the active simulation. */
@@ -192,27 +189,37 @@ export class GameRuntime {
       }
     }
     if (this.vehicle !== sim.player.vehicleId) {
+      const leavingEyes = !!this.vehicle && this.cameraState.mode === 'cockpit'
       this.vehicle = sim.player.vehicleId
       this.cameraState.entrance = null
+      const recovering = !!sim.playerBikeRecovery
+      if (!this.vehicle && (recovering || sim.playerEjection || leavingEyes))
+        this.cameraState.firstPerson = this.cameraState.mode === 'cockpit'
       const definition = document.entities.find((e) => e.id === this.vehicle)?.vehicle
       if (
         this.vehicle &&
         definition &&
         !definition.boat &&
         !definition.plane &&
-        !definition.interior
+        !definition.interior &&
+        !recovering
       ) {
         this.cameraState.mode = 'cockpit'
-        this.cameraState.mapHeight = overheadDrivingHeight(
-          0,
-          this.cameraState.mapZoom,
-          this.cameraState.settings,
-        )
-        if (!this.boarded.has(this.vehicle)) {
-          this.boarded.add(this.vehicle)
-          this.cameraState.entrance = { id: this.vehicle, started: now }
-        }
       }
+      const last = this.cameraState.lastPose
+      this.cameraState.seatMove =
+        last &&
+        !recovering &&
+        !sim.playerEjection &&
+        ((this.vehicle && this.cameraState.mode === 'cockpit') || (!this.vehicle && leavingEyes))
+          ? {
+              vehicleId: this.vehicle,
+              started: now,
+              position: last.position.clone(),
+              quaternion: last.quaternion.clone(),
+              fov: last.fov,
+            }
+          : null
       this.cameraState.headYaw = 0
       this.cameraState.headPitch = this.cameraState.settings.headPitch
     }
@@ -268,7 +275,10 @@ export class GameRuntime {
       this.cameraState.mode = 'chase'
       return sim.transferControls()
     }
-    if (code === 'Space' && !sim.player.vehicleId) this.jumpRequested = true
+    if (code === 'Space') {
+      if (sim.liftNearbyBike()) return 'Levantando la moto'
+      if (!sim.player.vehicleId && !sim.playerEjection) this.jumpRequested = true
+    }
     return undefined
   }
 }

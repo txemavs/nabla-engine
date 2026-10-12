@@ -1,4 +1,4 @@
-import type * as THREE from 'three'
+import * as THREE from 'three'
 import type { SceneView } from '../render/entity/view.js'
 import type { GeographicView } from '../render/planet/sky.js'
 import type { SkyClock } from '../planet/sky.js'
@@ -25,6 +25,7 @@ export interface GameRenderFrame {
   mirrorVehicle: string | null
   shadowsEnabled: boolean
   depthOfField?: boolean
+  tunnelFocus?: number
   skyVisible?: boolean
   externalViews?: Map<string, ExternalPortalView>
   /** World-space culling for each auxiliary view and the main view. */
@@ -40,6 +41,7 @@ export interface GameRenderFrame {
 export class GameRenderPipeline {
   renderedPortals = 0
   readonly depthOfField = new DepthOfField()
+  private readonly flareScene = new THREE.Scene()
   /** True once the shadow maps were cleared to «no shadow» for the shadows-off switch. */
   private shadowMapsBlank = false
   /** Release owned postprocessing resources; scene, renderer and monitors remain host-owned. */
@@ -126,7 +128,9 @@ export class GameRenderPipeline {
       frame.beforeMain?.()
       sky.setViewAspect(camera.aspect)
       renderer.autoClear = true
-      if (frame.depthOfField) this.depthOfField.begin(renderer)
+      const focus = frame.depthOfField || (frame.tunnelFocus ?? 0) > 0.001
+      this.depthOfField.setFocus(frame.tunnelFocus ?? 0, !!frame.depthOfField)
+      if (focus) this.depthOfField.begin(renderer)
       if (sky.enabled && frame.skyVisible !== false) {
         sky.render(renderer, camera, eye)
         renderer.autoClear = false
@@ -135,11 +139,39 @@ export class GameRenderPipeline {
       frame.shadows.update(camera, origin)
       monitors.prepare(camera)
       renderer.shadowMap.needsUpdate = frame.shadowsEnabled || missingShadowMap(frame.lights)
-      renderer.render(scene, camera)
+      const flare = sky.lensFlare
+      const flareVisible = flare?.visible ?? false
+      if (focus && flare) flare.visible = false
+      try {
+        renderer.render(scene, camera)
+      } finally {
+        if (flare) flare.visible = flareVisible
+      }
       if (allocate && !missingShadowMap(frame.lights)) this.blankShadowMaps(frame)
       if (sky.enabled) sky.renderClouds(renderer, camera)
       monitors.finish()
-      if (frame.depthOfField) this.depthOfField.present(renderer, camera)
+      if (focus) {
+        this.depthOfField.present(renderer, camera)
+        if (flare && flareVisible) {
+          const parent = flare.parent
+          const material = flare.material as THREE.ShaderMaterial
+          const depthTest = material.depthTest
+          this.flareScene.add(flare)
+          material.depthTest = false
+          material.uniforms.sceneDepth.value = this.depthOfField.depthTexture
+          material.uniforms.useSceneDepth.value = true
+          renderer.autoClear = false
+          try {
+            renderer.render(this.flareScene, camera)
+          } finally {
+            material.depthTest = depthTest
+            material.uniforms.useSceneDepth.value = false
+            material.uniforms.sceneDepth.value = null
+            flare.removeFromParent()
+            parent?.add(flare)
+          }
+        }
+      }
     } finally {
       monitors.finish()
       for (const { object, visible } of overlays) object.visible = visible

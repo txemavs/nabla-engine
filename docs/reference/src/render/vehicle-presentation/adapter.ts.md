@@ -7,6 +7,7 @@
 ## Module dependencies
 
 - `three`
+- `../entity/exhaust-smoke.js`
 - `../../entity/schema.js`
 - `../entity/car-instruments.js`
 - `../entity/car-instrument-definition.js`

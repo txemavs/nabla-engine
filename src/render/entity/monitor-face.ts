@@ -4,7 +4,12 @@ export const MONITOR_COLUMNS = 80
 export const MONITOR_ROWS = 24
 
 /** Original pixel face: two expressive eyes and a small smile, with no text or green phosphor. */
-export function paintMonitorFace(pixels: Uint8Array, eyeHeight = 5, focused = false): void {
+export function paintMonitorFace(
+  pixels: Uint8Array,
+  eyeHeight = 5,
+  focused = false,
+  effort = false,
+): void {
   if (pixels.length !== MONITOR_COLUMNS * MONITOR_ROWS * 4)
     throw new Error('Monitor face requires an 80 × 24 RGBA matrix')
   for (let y = 0; y < MONITOR_ROWS; y++) {
@@ -16,10 +21,14 @@ export function paintMonitorFace(pixels: Uint8Array, eyeHeight = 5, focused = fa
       const eye = eyeX * eyeX + eyeY * eyeY <= 1
       const mouthY = focused ? 4 : 3 + Math.round(((x - 39.5) / 7) ** 2 * 2)
       const mouth = x >= 33 && x <= 46 && y >= mouthY && y < mouthY + 2
+      const browY = 20 + Math.round(side * (x - centre) * 0.25)
+      const brow = effort && Math.abs(x - centre) < 10 && y >= browY && y < browY + 2
+      const teeth = effort && x >= 33 && x <= 46 && y >= 3 && y <= 6 && x % 3 !== 0
+      const lit = eye || brow || (effort ? teeth : mouth)
       const at = (y * MONITOR_COLUMNS + x) * 4
-      pixels[at] = eye || mouth ? 35 : 1
-      pixels[at + 1] = eye || mouth ? 155 : 3
-      pixels[at + 2] = eye || mouth ? 255 : 7
+      pixels[at] = teeth ? 160 : lit ? 35 : 1
+      pixels[at + 1] = teeth ? 220 : lit ? 155 : 3
+      pixels[at + 2] = lit ? 255 : 7
       pixels[at + 3] = 255
     }
   }
@@ -39,16 +48,16 @@ export class MonitorFace {
     this.texture.generateMipmaps = false
     this.update(0)
   }
-  update(elapsed: number, focused = false): void {
+  update(elapsed: number, focused = false, effort = false): void {
     this.time =
       (this.time + (Number.isFinite(elapsed) ? Math.min(Math.max(elapsed, 0), 0.1) : 0)) % 5.4
     const blink =
       this.time > 4.8 && this.time < 5.04 ? Math.sin(((this.time - 4.8) / 0.24) * Math.PI) : 0
-    const height = Math.max(0.55, Math.round((focused ? 4 : 5) * (1 - blink) * 2) / 2)
-    const frame = `${height}/${focused}`
+    const height = Math.max(0.55, Math.round((effort ? 2 : focused ? 4 : 5) * (1 - blink) * 2) / 2)
+    const frame = `${height}/${focused}/${effort}`
     if (frame === this.frame) return
     this.frame = frame
-    paintMonitorFace(this.pixels, height, focused)
+    paintMonitorFace(this.pixels, height, focused, effort)
     this.texture.needsUpdate = true
   }
   dispose(): void {

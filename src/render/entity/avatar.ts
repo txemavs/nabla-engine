@@ -415,11 +415,16 @@ export function setMonitorPortrait(model: THREE.Group, texture: THREE.Texture | 
 }
 
 /** Advance reusable face pixels and smooth the glasses hinge without changing the driver pose. */
-export function updateMonitorAvatar(model: THREE.Group, elapsed: number, driving = false): void {
+export function updateMonitorAvatar(
+  model: THREE.Group,
+  elapsed: number,
+  driving = false,
+  effort = false,
+): void {
   const monitor = monitors.get(model)
   if (!monitor) return
   const step = Number.isFinite(elapsed) ? Math.min(Math.max(elapsed, 0), 0.1) : 0
-  if (monitor.matrixMode.value === 1) monitor.face.update(step, driving)
+  if (monitor.matrixMode.value === 1) monitor.face.update(step, driving, effort)
   monitor.shades.rotation.x = THREE.MathUtils.lerp(
     monitor.shades.rotation.x,
     monitor.target,

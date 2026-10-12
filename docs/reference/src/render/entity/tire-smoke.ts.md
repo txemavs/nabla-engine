@@ -6,12 +6,13 @@
 
 ## Module dependencies
 
+- `./smoke-density.js`
 - `three`
 - `../../entity/schema.js`
 
 ## TireSmoke.constructor
 
-[Implementation, line 12](../../../../../src/render/entity/tire-smoke.ts#L12)
+[Implementation, line 13](../../../../../src/render/entity/tire-smoke.ts#L13)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 
@@ -28,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.update
 
-[Implementation, line 40](../../../../../src/render/entity/tire-smoke.ts#L40)
+[Implementation, line 42](../../../../../src/render/entity/tire-smoke.ts#L42)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 
@@ -45,17 +46,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.position.copy`
 - `this.root.position.copy(origin).negate`
 
-## TireSmoke.update.callback@55
+## TireSmoke.update.callback@57
 
-[Implementation, line 55](../../../../../src/render/entity/tire-smoke.ts#L55)
+[Implementation, line 57](../../../../../src/render/entity/tire-smoke.ts#L57)
 
 ```ts
-callback@55(v): inferred by TypeScript; see implementation
+callback@57(v): inferred by TypeScript; see implementation
 ```
 
 ## TireSmoke.clear
 
-[Implementation, line 59](../../../../../src/render/entity/tire-smoke.ts#L59)
+[Implementation, line 61](../../../../../src/render/entity/tire-smoke.ts#L61)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 
@@ -69,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.dispose
 
-[Implementation, line 64](../../../../../src/render/entity/tire-smoke.ts#L64)
+[Implementation, line 66](../../../../../src/render/entity/tire-smoke.ts#L66)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 

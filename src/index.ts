@@ -149,6 +149,8 @@ export { simplifiedTide } from './planet/tide.js'
 export { DepthOfField } from './render/effects/depth-of-field.js'
 export { PerformanceMonitor, type FrameSample } from './diagnostics/performance-monitor.js'
 export { VehicleAudio } from './audio/vehicle.js'
+export { PickupInventory, type WorldPickup } from './simulation/items/pickups.js'
+export { SpatialEmitter, type SpatialSoundOptions } from './audio/positional.js'
 
 export { capturePng } from './render/capture.js'
 
@@ -187,3 +189,4 @@ export {
   type MonitorLayer,
 } from './render/monitors/layered-monitor.js'
 export { MonitorMenu, type MonitorMenuItem, type MonitorAction } from './render/monitors/menu.js'
+export { createMagazine, type MagazineEntity } from './simulation/weapons/magazine.js'

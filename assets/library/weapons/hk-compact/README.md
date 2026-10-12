@@ -1,35 +1,33 @@
-# HK Compact presentation model
+# Reviewed HK Compact presentation asset
 
-`hk-compact.glb` is the assembled game model, in metres, Y up, −Z forward.
-It preserves the existing authored frame and slide, completes the rear exterior,
-and adds a rounded curved trigger and a simple barrel exterior. The original sight
-silhouettes remain; added plates, hammer, sight dots and control levers are deferred.
-These additions are visual approximations for rendering, not manufacturing geometry.
+`hk-compact.glb` is the user's reviewed revision 11, imported from
+`HK_USP_Compact_revision_11.glb`. Units are metres, Y up, -Z forward.
+It includes the cleaned frame and curved guard/grip junction, hollow barrel,
+frame guide details and separate slide, controls and magazine.
 
-The user supplied `cargador.glb`, preserved as `hk-compact.magazine.source.glb`.
-Its authored transform is baked into the assembled model without changing its shape.
-The previous `body.glb` and `slide.glb` remain unchanged as source and legacy assets.
-Regenerate the complete asset with `node scripts/author-hk-compact.mjs`.
+This is an authored visual game asset. The legacy `author-hk-compact.mjs`
+generator and retained source meshes describe the earlier version; running it
+will overwrite these manual revisions. Export a newly reviewed asset to update it.
 
-The separate `Frame`, `Slide`, `Barrel`, `Trigger` and `Magazine` nodes
-are assembled at rest. `assets/rigs/weapons/hk-compact.rig.json` records their names, attachment markers
-and artistic presentation travel. Always animate relative to each saved rest transform.
-The magazine has no ammunition or internal working mechanism geometry.
+`assets/rigs/weapons/hk-compact.rig.json` binds the moving parts. `Sidearm`
+animates them relative to their rest poses. `hk-presentation.ts` supplies the
+reviewed cosmetic barrel pose and a cartridge marker seated in the magazine.
+Slide travel animates only the slide. Independently configurable F viewing poses
+rotate the presentation during manual manipulation; F+Z and F+X have separate offsets. No manufacturing or functional geometry is implied.
 
-The spent magazine that falls out on reload is this `Magazine` node, not a separate mesh.
-`hk-compact.magazine.source.glb` is the user-supplied magazine (also named `hk-usp-compact-magazine` in review); its transform is baked into the assembled model in metres. Do not load the source GLB at runtime: it is still in the author's units.
+The magazine marker follows its `MagazineEntity.rounds`, including insertion and
+dropped items. Entities have an ID, capacity and remaining rounds. A normal
+simulation reload consumes an existing spare. Gameplay uses unlimited supplies:
+R drops the current item or, with an empty well, supplies a full normal magazine and selects semi-auto. The empty well holds the Z viewing pose without activating its safety gesture;
+M replaces it with a visibly extended 30-round magazine and selects automatic.
+F operates the slide or releases its catch separately. G toggles the laser and H the flashlight.
+Removed items never refill. Workshop reinsertion retains the same item.
+The chamber is independent. Dropped entities remain associated with their
+physics poses until the existing dropped-body lifetime expires. Ground pickup
+of magazines is not implemented in this change.
 
-Exterior references: the user's two supplied side-view photographs and
-[Umarex USP Compact airsoft leaflet](https://www.colosus.cz/projekty/p1/files/4/42072/2.5996.asg.heckler.koch.usp.compact.pdf).
-The leaflet is used only for visual identification; its airsoft operating instructions
-and ammunition specifications are not part of this asset or the game simulation.
+Run the browser review at `/hk-review.html` using `vite.browser.config.ts`.
+Regression tests cover the real GLB, poses, ammunition transfer and dropped
+magazine rendering, plus the existing casing and spatial-audio behavior.
 
-## Engine integration to follow
-
-The current `Sidearm` still uses the legacy split assets. Complete the model review
-before changing its runtime contract. A reusable weapon presenter should load one
-assembled asset and bind explicit rig parts and sockets; preserve authored rest poses;
-animate slide, trigger and magazine from state; place effects from `MuzzleSocket`;
-and share the asset between world representation and first-person presentation.
-Cadence, ammunition and reload state should have one simulation owner, separate from
-cosmetic animation. Dispose instance-owned resources and handle late loading consistently.
+Camera, controls and all reviewed pose offsets: [gameplay tuning](../../../../docs/gameplay-tuning.md).

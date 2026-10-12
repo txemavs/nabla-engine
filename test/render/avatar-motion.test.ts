@@ -1,11 +1,79 @@
 /** On-foot avatar smoothing (like the cameras) and the thrown rider's tumble pose. */
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { AvatarFollow, EjectionTumble } from '../../src/render/entity/avatar-motion.js'
+import {
+  AvatarFollow,
+  AvatarTransfer,
+  EjectionTumble,
+  poseBikeRecovery,
+} from '../../src/render/entity/avatar-motion.js'
 import { startEjection, type RiderEjection } from '../../src/simulation/rider-ejection.js'
 import { ejectionDefaults } from '../../src/config/simulation.js'
 
 const dt = 1 / 60
+
+describe('bike recovery pose', () => {
+  it('keeps the pull within eight centimetres across a whole lift, independent of frame rate', () => {
+    for (const fps of [30, 60, 144]) {
+      const model = new THREE.Group()
+      for (let i = 0; i <= fps * 1.7; i++) {
+        poseBikeRecovery(model, 'lifting', i / (fps * 1.7), 0.35)
+        expect(Math.abs(model.position.z)).toBeLessThanOrEqual(0.080001)
+        expect(model.position.y).toBeLessThanOrEqual(0.410001)
+        expect(model.quaternion.angleTo(new THREE.Quaternion())).toBeLessThanOrEqual(0.400001)
+      }
+    }
+  })
+
+  it('does not accumulate the leftward get-up rotation when a progress frame repeats', () => {
+    const model = new THREE.Group()
+    poseBikeRecovery(model, 'rising', 0.7, 0.35)
+    const rotation = model.quaternion.clone()
+    for (let i = 0; i < 120; i++) poseBikeRecovery(model, 'rising', 0.7, 0.35)
+    expect(model.quaternion.angleTo(rotation)).toBeLessThan(1e-7)
+    poseBikeRecovery(model, 'rising', 1, 0.35)
+    expect(model.quaternion.angleTo(new THREE.Quaternion())).toBeLessThan(1e-7)
+    expect(model.position.toArray()).toEqual([0, 0.35, 0])
+  })
+})
+
+describe('AvatarTransfer', () => {
+  it('blends getting into and out of a moving vehicle without a pose jump', () => {
+    const transfer = new AvatarTransfer(),
+      avatar = new THREE.Group(),
+      head = new THREE.Group()
+    transfer.update(avatar, head, null, dt)
+    avatar.position.set(2, 1, 0)
+    head.scale.setScalar(0.7)
+    transfer.update(avatar, head, 'bike', dt)
+    expect(avatar.position.x).toBeLessThan(0.01)
+    expect(head.scale.x).toBeGreaterThan(0.99)
+    for (let i = 1; i <= 50; i++) {
+      avatar.position.set(2 + i * dt, 1, 0)
+      head.scale.setScalar(0.7)
+      transfer.update(avatar, head, 'bike', dt)
+    }
+    expect(avatar.position.x).toBeCloseTo(2 + 50 * dt)
+    const previous = avatar.position.clone()
+    avatar.position.add(new THREE.Vector3(1, -1, 0))
+    head.scale.setScalar(0.825)
+    transfer.update(avatar, head, null, dt)
+    expect(avatar.position.distanceTo(previous)).toBeLessThan(0.01)
+  })
+
+  it('keeps crash ejections and teleports immediate', () => {
+    const transfer = new AvatarTransfer(),
+      avatar = new THREE.Group(),
+      head = new THREE.Group()
+    transfer.update(avatar, head, 'bike', dt)
+    avatar.position.set(1, 0, 0)
+    transfer.update(avatar, head, null, dt, true)
+    expect(avatar.position.x).toBe(1)
+    avatar.position.set(100, 0, 0)
+    transfer.update(avatar, head, 'car', dt)
+    expect(avatar.position.x).toBe(100)
+  })
+})
 
 describe('AvatarFollow', () => {
   it('has no lag at steady walking speed and heading rate', () => {

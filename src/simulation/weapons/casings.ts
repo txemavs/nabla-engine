@@ -15,6 +15,7 @@ export interface CasingSpec {
 }
 
 export interface CasingPose {
+  entityId?: string
   position: Vec3Tuple
   spin: Vec3Tuple
   angle: number
@@ -23,6 +24,7 @@ export interface CasingPose {
 }
 
 interface Casing {
+  entityId?: string
   position: [number, number, number]
   velocity: [number, number, number]
   spin: [number, number, number]
@@ -49,10 +51,12 @@ export class CasingMotion {
   private casings: Casing[] = []
   /** Impact speeds (m/s) of the bounces in the last step, for the tinkle. */
   bounces: number[] = []
+  /** Exact world impact origins, paired with bounces for positional sound. */
+  impacts: { speed: number; position: Vec3Tuple }[] = []
 
   constructor(
     private readonly spec: CasingSpec,
-    private readonly gravity = simulationDefaults.gravity,
+    private readonly gravity: number = simulationDefaults.gravity,
     private readonly capacity = MAX,
     private readonly standoff = STANDOFF,
   ) {}
@@ -100,6 +104,7 @@ export class CasingMotion {
     velocity: Vec3Tuple,
     spin: Vec3Tuple = [0.2, 0.4, 0.15],
     orientation: [number, number, number, number] = [0, 0, 0, 1],
+    entityId?: string,
   ): void {
     if (this.casings.length >= this.capacity) this.casings.shift()
     this.casings.push({
@@ -110,6 +115,7 @@ export class CasingMotion {
       age: 0,
       resting: false,
       orientation: [...orientation],
+      entityId,
     })
   }
 
@@ -117,6 +123,7 @@ export class CasingMotion {
   update(dt: number, cast: CasingCast): void {
     const step = Math.min(0.05, Math.max(0, dt))
     this.bounces = []
+    this.impacts = []
     const live: Casing[] = []
     for (const casing of this.casings) {
       casing.age += step
@@ -159,6 +166,7 @@ export class CasingMotion {
         continue
       }
       this.bounces.push(-into)
+      this.impacts.push({ speed: -into, position: [...hit.point] })
       casing.velocity = [0, 1, 2].map(
         (i) => tangent[i] * (1 - this.spec.friction) - n[i] * into * this.spec.restitution,
       ) as [number, number, number]
@@ -169,6 +177,7 @@ export class CasingMotion {
 
   poses(): CasingPose[] {
     return this.casings.map((casing) => ({
+      entityId: casing.entityId,
       position: [...casing.position] as Vec3Tuple,
       spin: [...casing.spin] as Vec3Tuple,
       angle: casing.angle,
@@ -179,5 +188,6 @@ export class CasingMotion {
   reset(): void {
     this.casings = []
     this.bounces = []
+    this.impacts = []
   }
 }

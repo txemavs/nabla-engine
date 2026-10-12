@@ -62,3 +62,24 @@ export function cinematicOrbitPose(
   const target = new Vector3().fromArray(input.target)
   return { position: target.clone().add(offset), target }
 }
+
+/** Overhead crash shot: keep the rider and motorcycle inside the narrower camera frustum. */
+export function cinematicFallPose(
+  rider: readonly number[],
+  vehicle: readonly number[],
+  fov: number,
+  aspect: number,
+  heading = 0,
+  frame = new Quaternion(),
+): { position: Vector3; target: Vector3; up: Vector3 } {
+  const a = new Vector3().fromArray(rider)
+  const b = new Vector3().fromArray(vehicle)
+  const target = a.clone().add(b).multiplyScalar(0.5)
+  // A bounding sphere includes both centres plus room for the bike and tumbling avatar.
+  const radius = a.distanceTo(b) * 0.5 + 2
+  const halfAngle = Math.atan(Math.tan(MathUtils.degToRad(fov * 0.5)) * Math.min(1, aspect))
+  const height = Math.max(6, radius / Math.sin(halfAngle))
+  const vertical = new Vector3(0, 1, 0).applyQuaternion(frame)
+  const up = new Vector3(-Math.sin(heading), 0, -Math.cos(heading)).applyQuaternion(frame)
+  return { position: target.clone().addScaledVector(vertical, height), target, up }
+}

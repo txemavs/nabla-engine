@@ -21,7 +21,16 @@ describe('assembled HK Compact asset', () => {
       expect(nodes).toHaveLength(1)
     }
     for (const buffer of gltf.buffers) expect(buffer.uri).toBeUndefined()
-    expect(gltf.images ?? []).toHaveLength(0)
+    expect(gltf.images).toHaveLength(1)
+    expect(gltf.images[0].uri).toBeUndefined()
+    expect(gltf.images[0].bufferView).toBeTypeOf('number')
+    for (const name of [
+      'GuardGripCurvedJoin',
+      'BarrelInterior',
+      'FrameRearRail_Left',
+      'FrameRearRail_Right',
+    ])
+      expect(gltf.nodes.some((node: { name: string }) => node.name === name)).toBe(true)
     const trigger = gltf.nodes.find((node: { name: string }) => node.name === 'Trigger')
     expect(trigger.translation).toEqual([0, 0.083, -0.027])
     const slide = gltf.nodes.find((node: { name: string }) => node.name === 'Slide')

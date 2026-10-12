@@ -20,6 +20,7 @@ import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
 import { bindSoundControls } from './sound-ui.js'
 import { bindLightControls } from './light-ui.js'
+import { bindExhaustControls } from './exhaust-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import {
@@ -131,8 +132,10 @@ try {
         .getElementById('game-canvas')!
         .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
+    weaponPickupLocation: { longitude: -1.76129, latitude: 43.34336, altitude: 41 },
     scene,
     preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
+    accidentReplacementVehicles: menuPreloadVehicles(['vfr800', 'car', 'white-truck']),
     sea: true,
     restParkedOnGround: true,
     // Same streaming as Studio's ground mode: the cells around the player first, the rest by distance.
@@ -216,6 +219,7 @@ try {
   bindGroundDetailSelect(runtime, roadStyle)
   bindSoundControls(runtime)
   bindLightControls(runtime)
+  bindExhaustControls(runtime)
   mountSettingsHud(runtime)
   bindLayerSelector(runtime, undefined, layerDefaults)
   document.getElementById('game-hud')!.classList.remove('hidden')

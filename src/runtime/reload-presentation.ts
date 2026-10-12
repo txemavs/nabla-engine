@@ -15,6 +15,10 @@ export type ReloadPhase = 'none' | 'magazine-out' | 'magazine-in' | 'slide-relea
 export interface ReloadPresentation {
   /** Radians, muzzle up. */
   pitch: number
+  /** Lift in eye space, metres, with a side tilt that exposes the magazine well. */
+  lift: number
+  roll: number
+  yaw: number
   /** 0 seated in the grip, 1 clear of it. */
   travel: number
   /** Draw the viewmodel magazine. False while the spent one is on the ground and the fresh one has not arrived. */
@@ -34,17 +38,28 @@ export function reloadPresentation(
   ageMs: number,
   timings: ReloadTimings,
 ): ReloadPresentation {
-  const seated = { pitch: 0, travel: 0, magazineVisible: true }
-  if (phase === 'none' || phase === 'slide-release') return seated
+  const pose = (amount: number, travel: number, magazineVisible: boolean) => ({
+    pitch: RISE * amount,
+    lift: 0.085 * amount,
+    roll: -0.48 * amount,
+    yaw: -0.25 * amount,
+    travel,
+    magazineVisible,
+  })
+  if (phase === 'none') return pose(0, 0, true)
+  if (phase === 'slide-release') {
+    const span = Math.max(1, timings.slideRelease - timings.magazineIn)
+    return pose(1 - smooth((ageMs - timings.magazineIn) / span), 0, true)
+  }
   if (phase === 'magazine-out') {
     const u = timings.magazineOut > 0 ? ageMs / timings.magazineOut : 1
     const s = smooth(u)
-    return { pitch: RISE * s, travel: s, magazineVisible: true }
+    return pose(s, s, true)
   }
   const span = Math.max(1, timings.magazineIn - timings.magazineOut)
   const u = (ageMs - timings.magazineOut) / span
   // The spent magazine is already on the ground. The fresh one shows for the last 60%.
-  if (u < 0.4) return { pitch: RISE, travel: 1, magazineVisible: false }
+  if (u < 0.4) return pose(1, 1, false)
   const v = smooth((u - 0.4) / 0.6)
-  return { pitch: RISE * (1 - v), travel: 1 - v, magazineVisible: true }
+  return pose(1, 1 - v, true)
 }

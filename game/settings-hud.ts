@@ -7,6 +7,16 @@
  */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
+  weaponPoseNames,
+  normalizeWeaponPoses,
+  type WeaponPose,
+} from '../src/runtime/weapon-pose-tuning.js'
+import {
+  sidearmTuningDefaults,
+  sidearmTuningRanges,
+  type SidearmTuning,
+} from '../src/runtime/sidearm-tuning.js'
+import {
   createPlanetSettingsPanel,
   installVehicleMonitorStyles,
   type PlanetSettingsPanel,
@@ -53,6 +63,8 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['camera-extras', 'options'],
   ['driving-extras', 'options'],
   ['settings-options-driver', 'options'],
+  ['settings-options-sidearm', 'options'],
+  ['settings-weapon-poses', 'options'],
   ['settings-options-labels', 'options'],
   ['display-quality-section', 'performance'],
   ['display-performance', 'performance'],
@@ -327,12 +339,231 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     performanceGroup.hidden = true
   }
 
+  if (quality) {
+    const label = doc.createElement('label')
+    const input = doc.createElement('select')
+    input.id = 'camera-first-person-mode'
+    for (const [value, text] of [
+      ['normal', 'Normal'],
+      ['pointer', 'Modo Puntero'],
+    ]) {
+      const option = doc.createElement('option')
+      option.value = value
+      option.textContent = text
+      input.append(option)
+    }
+    input.value = runtime.bodycamEnabled ? 'normal' : 'pointer'
+    input.addEventListener('change', () => runtime.setBodycamEnabled(input.value === 'normal'))
+    label.append('Primera persona ', input)
+    quality.append(label)
+  }
+
+  // Quality preference applies immediately to both exhaust and gun smoke.
+  if (quality && typeof runtime.smokeEnabled === 'boolean') {
+    const label = doc.createElement('label'),
+      input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'quality-smoke'
+    input.checked = runtime.smokeEnabled
+    label.append(input, ' Humo (escapes y disparos)')
+    input.addEventListener('change', () => runtime.setSmokeEnabled(input.checked))
+    const amount = doc.createElement('input'),
+      value = doc.createElement('output')
+    amount.type = 'range'
+    amount.min = '0'
+    amount.max = '300'
+    amount.step = '1'
+    amount.value = String(runtime.smokePercent)
+    amount.setAttribute('aria-label', 'Cantidad de humo (%)')
+    value.textContent = amount.value + ' %'
+    amount.addEventListener('input', () => {
+      runtime.setSmokePercent(amount.valueAsNumber)
+      value.textContent = amount.value + ' %'
+    })
+    label.append(amount, value)
+    quality.insertBefore(label, quality.querySelector('button'))
+  }
+
   // Opciones → Volante y espejos: the driver's steering wheel and mirror glass adjustments.
   const driverGroups = rows(byId('scene-steering-wheel'), byId('scene-mirrors'))
   if (driverGroups.length) {
     const driver = fieldset('settings-options-driver', 'Volante y espejos')
     driver.append(...driverGroups)
     place(driver)
+  }
+
+  // Live aimed-pistol adjustments remain visible with the mouse free over the sliders.
+  let refreshSidearm = () => {}
+  if (runtime.sidearmTuning && runtime.setSidearmTuning) {
+    const group = fieldset('settings-options-sidearm', 'Pistola · apuntado')
+    const controls = new Map<
+      keyof SidearmTuning,
+      { input: HTMLInputElement; output: HTMLOutputElement }
+    >()
+    for (const [key, title] of [
+      ['height', 'Altura al apuntar'],
+      ['angle', 'Ángulo al apuntar'],
+    ] as const) {
+      const row = doc.createElement('label'),
+        input = doc.createElement('input'),
+        output = doc.createElement('output')
+      input.type = 'range'
+      input.id = `sidearm-aim-${key}`
+      input.setAttribute('aria-label', title)
+      const multiplier = key === 'height' ? 1000 : 1
+      const [min, max, step] = sidearmTuningRanges[key]
+      input.min = String((min - sidearmTuningDefaults[key]) * multiplier)
+      input.max = String((max - sidearmTuningDefaults[key]) * multiplier)
+      input.step = String(step * multiplier)
+      output.htmlFor = input.id
+      row.append(title + ' ', input, ' ', output)
+      group.append(row)
+      controls.set(key, { input, output })
+      input.addEventListener('input', () => {
+        runtime.setSidearmTuning({
+          [key]: sidearmTuningDefaults[key] + Number(input.value) / multiplier,
+        })
+        runtime.setSidearmAimPreview(true)
+        refreshSidearm()
+      })
+    }
+    refreshSidearm = () => {
+      const tuning = runtime.sidearmTuning
+      for (const [key, { input, output }] of controls) {
+        const value = (tuning[key] - sidearmTuningDefaults[key]) * (key === 'height' ? 1000 : 1)
+        input.value = String(value)
+        output.value = key === 'height' ? `${Math.round(value)} mm` : `${value.toFixed(1)}°`
+        input.setAttribute('aria-valuetext', output.value)
+      }
+    }
+    const reset = doc.createElement('button')
+    reset.type = 'button'
+    reset.textContent = 'Restablecer pistola'
+    reset.addEventListener('click', () => {
+      runtime.setSidearmTuning(sidearmTuningDefaults)
+      runtime.setSidearmAimPreview(true)
+      refreshSidearm()
+    })
+    group.append(reset)
+    refreshSidearm()
+    place(group)
+  }
+
+  {
+    const group = fieldset('settings-weapon-poses', 'Arma · posición y ángulos de las posturas')
+    const note = doc.createElement('p')
+    note.textContent =
+      'Giros en grados y posición en milímetros. F tiene ajustes propios; F+Z y F+X usan posturas independientes, sin sumar giros. 0 conserva el giro original. Se guardan en este navegador.'
+    const select = doc.createElement('select')
+    select.setAttribute('aria-label', 'Postura del arma')
+    for (const [value, text] of Object.entries(weaponPoseNames)) {
+      const option = doc.createElement('option')
+      option.value = value
+      option.textContent = text
+      select.append(option)
+    }
+    const controls: Array<{
+      axis: 'pitch' | 'yaw' | 'roll' | 'x' | 'y' | 'z'
+      range: HTMLInputElement
+      number: HTMLInputElement
+    }> = []
+    const refresh = () => {
+      const values = runtime.weaponPoseTuning[select.value as WeaponPose]
+      for (const { axis, range, number } of controls)
+        range.value = number.value = String(values[axis])
+    }
+    group.append(note, select)
+    for (const [axis, title] of [
+      ['pitch', 'Arriba / abajo'],
+      ['yaw', 'Izquierda / derecha'],
+      ['roll', 'Inclinación lateral'],
+      ['x', 'Posición lateral'],
+      ['y', 'Altura'],
+      ['z', 'Acercar / alejar'],
+    ] as const) {
+      const row = doc.createElement('label'),
+        range = doc.createElement('input'),
+        number = doc.createElement('input')
+      const position = ['x', 'y', 'z'].includes(axis)
+      row.textContent = title + (position ? ' (mm) ' : ' (°) ')
+      range.type = 'range'
+      number.type = 'number'
+      for (const input of [range, number]) {
+        input.min = position ? '-500' : '-180'
+        input.max = position ? '500' : '180'
+        input.step = '0.1'
+        input.setAttribute('aria-label', `${title}${input === number ? ' valor' : ''}`)
+        input.addEventListener('input', () => {
+          if (!Number.isFinite(input.valueAsNumber)) return
+          const values = runtime.weaponPoseTuning
+          values[select.value as WeaponPose][axis] = input.valueAsNumber
+          runtime.setWeaponPoseTuning(values)
+          runtime.previewWeaponPose(select.value as WeaponPose)
+          refresh()
+        })
+      }
+      number.style.width = '75px'
+      row.append(range, number)
+      group.append(row)
+      controls.push({ axis, range, number })
+    }
+    select.addEventListener('change', () => {
+      refresh()
+      runtime.previewWeaponPose(select.value as WeaponPose)
+    })
+    const preview = doc.createElement('button'),
+      stop = doc.createElement('button'),
+      reset = doc.createElement('button'),
+      copy = doc.createElement('button')
+    for (const button of [preview, stop, reset, copy]) button.type = 'button'
+    preview.textContent = 'Ver postura'
+    stop.textContent = 'Volver al juego'
+    reset.textContent = 'Restablecer esta postura'
+    copy.textContent = 'Copiar todos los ajustes'
+    preview.onclick = () => runtime.previewWeaponPose(select.value as WeaponPose)
+    stop.onclick = () => runtime.previewWeaponPose(null)
+    reset.onclick = () => {
+      const values = runtime.weaponPoseTuning
+      values[select.value as WeaponPose] = normalizeWeaponPoses()[select.value as WeaponPose]
+      runtime.setWeaponPoseTuning(values)
+      refresh()
+      runtime.previewWeaponPose(select.value as WeaponPose)
+    }
+    const status = doc.createElement('p'),
+      exportText = doc.createElement('textarea')
+    status.setAttribute('role', 'status')
+    exportText.readOnly = true
+    exportText.hidden = true
+    exportText.setAttribute('aria-label', 'Todos los ajustes del arma para copiar')
+    exportText.style.width = '100%'
+    exportText.rows = 12
+    copy.onclick = async () => {
+      const text = JSON.stringify(
+        {
+          version: 2,
+          positionUnits: 'millimeters',
+          units: 'degrees',
+          angles: 'offsets from reviewed poses',
+          aim: runtime.sidearmTuning,
+          poses: runtime.weaponPoseTuning,
+        },
+        null,
+        2,
+      )
+      exportText.value = text
+      exportText.hidden = false
+      try {
+        await navigator.clipboard.writeText(text)
+        status.textContent = 'Copiado: todas las posturas y el ajuste de apuntado.'
+      } catch {
+        exportText.focus()
+        exportText.select()
+        status.textContent = 'Seleccionado. Pulsa Ctrl+C para copiar todos los ajustes.'
+      }
+    }
+    group.append(preview, stop, reset, copy, status, exportText)
+    refresh()
+    place(group)
   }
 
   // The legacy Planeta section (scene-controls) duplicates the sky / sun / clouds toggles the
@@ -523,6 +754,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   planetPanel.bind(runtime)
 
   const selectTab = (id: TabId) => {
+    if (id !== 'options') runtime.setSidearmAimPreview?.(false)
     for (const tab of TABS) {
       const btn = doc.getElementById(`settings-tab-${tab.id}`)
       const pane = paneEls.get(tab.id)!
@@ -534,6 +766,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   const open = () => {
+    refreshSidearm()
     win.hidden = false
     toggle.setAttribute('aria-expanded', 'true')
     // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
@@ -541,6 +774,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     planetPanel?.refresh()
   }
   const close = () => {
+    runtime.setSidearmAimPreview?.(false)
     win.hidden = true
     toggle.setAttribute('aria-expanded', 'false')
     doc.getElementById('game-canvas')?.focus()
@@ -571,6 +805,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     close,
     toggle: toggleWin,
     destroy: () => {
+      runtime.setSidearmAimPreview?.(false)
       observer?.disconnect()
       planetPanel?.destroy()
       planetPanel = null

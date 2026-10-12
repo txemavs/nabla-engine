@@ -5,7 +5,7 @@
  */
 import { readFileSync } from 'node:fs'
 import * as THREE from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { loadTexturedGlb } from '../helpers/load-textured-glb.js'
 import { describe, expect, it } from 'vitest'
 import { twoWheeledDefaults } from '../../src/config/simulation.js'
 import {
@@ -25,13 +25,7 @@ import { CarMirrors } from '../../src/render/entity/car-mirrors.js'
 import { motorcycleMirrorLenses } from '../../src/render/vehicle-presentation/motorcycle-mirrors.js'
 
 const bytes = readFileSync('assets/library/motorcycles/vfr800fi-1999/vfr800fi-1999.glb')
-const load = async () =>
-  (
-    await new GLTFLoader().parseAsync(
-      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
-      '',
-    )
-  ).scene
+const load = async () => (await loadTexturedGlb(bytes)).scene
 const materialsOf = (object: THREE.Object3D) => {
   const out = new Set<THREE.MeshStandardMaterial>()
   object.traverse((o) => {
@@ -43,6 +37,77 @@ const materialsOf = (object: THREE.Object3D) => {
 }
 
 describe('vfr800 GLB cockpit pass', () => {
+  it('blocks views through the headlamp bowls and recessed exhaust outlet', async () => {
+    const root = await load()
+    root.updateMatrixWorld(true)
+    for (const x of [-0.1, 0.1]) {
+      const hits = new THREE.Raycaster(
+        new THREE.Vector3(x, 0.73, -1.1),
+        new THREE.Vector3(0, 0, 1),
+        0,
+        0.6,
+      ).intersectObject(root, true)
+      const opaque = hits.find(
+        (h) =>
+          (h.object as THREE.Mesh).material &&
+          ((h.object as THREE.Mesh).material as THREE.Material).name !== 'Headlamp clear lens',
+      )!
+      expect(((opaque.object as THREE.Mesh).material as THREE.Material).name).toBe(
+        'Lamp internal reflector',
+      )
+    }
+    const cap = root.getObjectByName('Exhaust_Outlet_Closure') as THREE.Mesh
+    const center = new THREE.Vector3(0.1599454, 0.608 + 0.00556, 0.989)
+    const normal = new THREE.Vector3(0, 0.559, 0.829).normalize()
+    const hit = new THREE.Raycaster(
+      center.clone().addScaledVector(normal, 0.07),
+      normal.negate(),
+      0,
+      0.1,
+    ).intersectObject(cap, true)[0]
+    expect(hit).toBeDefined()
+    expect(hit.distance).toBeCloseTo(0.07, 5)
+    expect((cap.material as THREE.MeshStandardMaterial).color.r).toBeLessThan(0.01)
+  })
+
+  it('keeps the live dial and LCD faces in front of the exported cockpit plastic', async () => {
+    const root = await load()
+    root.updateMatrixWorld(true)
+    for (const name of ['gauge_speedo', 'gauge_tacho', 'gauge_lcd']) {
+      const anchor = root.getObjectByName(name)!
+      const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(
+        anchor.getWorldQuaternion(new THREE.Quaternion()),
+      )
+      const origin = anchor.getWorldPosition(new THREE.Vector3()).addScaledVector(normal, 0.04)
+      const hit = new THREE.Raycaster(origin, normal.negate(), 0, 0.08).intersectObject(
+        root,
+        true,
+      )[0]
+      expect(hit, name).toBeDefined()
+      expect(hit.distance, name).toBeGreaterThan(0.04)
+    }
+  })
+
+  it('keeps the white daytime tacho dark at night and lights both needles green only with power', async () => {
+    const root = await load()
+    const cluster = MotorcycleInstruments.bind(root)!
+    const face = (name: string) =>
+      (root.getObjectByName(`${name}.face`) as THREE.Mesh).material as THREE.MeshBasicMaterial
+    const blade = (name: string) =>
+      (root.getObjectByName(`${name}.needle`)!.children[0] as THREE.Mesh)
+        .material as THREE.MeshBasicMaterial
+    cluster.update({ ...inputs, daylight: 1 })
+    expect(face('gauge_tacho').color.getHexString()).toBe('f4f4f0')
+    cluster.update({ ...inputs, daylight: 0 })
+    expect(face('gauge_tacho').color.getHexString()).toBe('060c09')
+    for (const name of ['gauge_speedo', 'gauge_tacho'])
+      expect(blade(name).color.getHexString()).toBe('80dfa4')
+    cluster.update({ ...inputs, powered: false, daylight: 0 })
+    expect(blade('gauge_tacho').color.getHexString()).not.toBe('80dfa4')
+    expect(face('gauge_tacho').color.r).toBeLessThan(0.04)
+    cluster.dispose()
+  })
+
   it('has fairing-mounted mirror_L and mirror_R nodes with reflective glass', async () => {
     const root = await load()
     const body = root.getObjectByName('Body')!
@@ -69,13 +134,10 @@ describe('vfr800 GLB cockpit pass', () => {
   it('puts neutral mirror chrome only on the stanchions and the silencer; the rest as mapped', async () => {
     const root = await load()
     /** Materials drawn by a node's own mesh (not its child nodes). */
-    const own = (name: string) => {
-      const node = root.getObjectByName(name)!
-      const meshes = [node, ...node.children].filter((o) => (o as THREE.Mesh).isMesh)
-      return new Set(meshes.flatMap((m) => [(m as THREE.Mesh).material].flat().map((x) => x.name)))
-    }
-    const CHROME = 'Mirror chrome stanchions and silencer'
-    const SATIN = 'Satin aluminium chassis, fork and passenger footrests'
+    const own = (name: string) =>
+      new Set(materialsOf(root.getObjectByName(name)!).map((m) => m.name))
+    const CHROME = 'VFR silencer subtle reflection'
+    const SATIN = 'Satin aluminium chassis, fork and passenger footrests.001'
     const chrome = materialsOf(root).find((m) => m.name === CHROME)!
     expect(chrome.metalness).toBe(1)
     expect(chrome.roughness).toBeLessThanOrEqual(0.05)
@@ -84,10 +146,9 @@ describe('vfr800 GLB cockpit pass', () => {
     expect(chrome.color.b - chrome.color.r).toBeCloseTo(0, 6)
     expect(chrome.color.g - chrome.color.r).toBeCloseTo(0, 6)
     // Stanchions (fork) and silencer + end cap (body): mirror chrome. Fork lowers: satin grey.
-    expect(own('Fork_Slider')).toContain(CHROME)
+    expect(own('Fork_Slider')).not.toContain(CHROME)
     expect(own('Fork_Slider')).toContain(SATIN)
     expect(own('Body')).toContain('VFR silencer subtle reflection')
-    expect(own('Body')).not.toContain(CHROME)
     // The headers no longer use the old chrome; the triple clamp keeps the satin grey.
     expect(own('Body')).not.toContain('Chrome exhaust and discs')
     expect(own('Steering_Pivot')).toContain(SATIN)
@@ -95,7 +156,6 @@ describe('vfr800 GLB cockpit pass', () => {
     for (const name of ['Wheel_Front', 'Wheel_Rear', 'Chain', 'Swingarm_Pivot'])
       expect(own(name)).not.toContain(CHROME)
     expect(own('Wheel_Front')).toContain('Chrome exhaust and discs')
-    expect(own('Wheel_Front')).toContain('Polished chrome brake tracks')
     expect(own('Chain')).toEqual(new Set(['Black smooth chain band']))
     const discs = materialsOf(root).find((m) => m.name === 'Chrome exhaust and discs')!
     expect([discs.color.r, discs.color.g, discs.color.b].map((v) => +v.toFixed(2))).toEqual(

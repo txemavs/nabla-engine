@@ -15,7 +15,7 @@
 Screen-space ghosts along the sun, drawn after the world. No extra render target.
 
 ```ts
-createLensFlare(direction: Vector3): inferred by TypeScript; see implementation
+createLensFlare(direction: Vector3, options: { position?: Vector3 } = {}): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -25,16 +25,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Mesh`
 - `Scene`
 - `ShaderMaterial`
+- `Vector3`
 - `Vector4`
 - `geometry.setAttribute`
 - `scene.add`
 
-## createLensFlare.callback@73
+## createLensFlare.callback@86
 
-[Implementation, line 73](../../../../../src/render/planet/lens-flare.ts#L73)
+[Implementation, line 86](../../../../../src/render/planet/lens-flare.ts#L86)
 
 ```ts
-callback@73(_renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@86(_renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -43,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createLensFlare.dispose
 
-[Implementation, line 95](../../../../../src/render/planet/lens-flare.ts#L95)
+[Implementation, line 109](../../../../../src/render/planet/lens-flare.ts#L109)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation

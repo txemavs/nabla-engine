@@ -64,3 +64,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `offset.applyQuaternion`
 - `target.clone`
 - `target.clone().add`
+
+## cinematicFallPose
+
+[Implementation, line 67](../../../../../src/render/entity/cinematic-camera.ts#L67)
+
+Overhead crash shot: keep the rider and motorcycle inside the narrower camera frustum.
+
+```ts
+cinematicFallPose(rider: readonly number[], vehicle: readonly number[], fov: number, aspect: number, heading = 0, frame = new Quaternion()): { position: Vector3; target: Vector3; up: Vector3 }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.atan`
+- `Math.cos`
+- `Math.max`
+- `Math.min`
+- `Math.sin`
+- `Math.tan`
+- `MathUtils.degToRad`
+- `Quaternion`
+- `Vector3`
+- `a.clone`
+- `a.clone().add`
+- `a.clone().add(b).multiplyScalar`
+- `a.distanceTo`
+- `new Vector3().fromArray`
+- `new Vector3(-Math.sin(heading), 0, -Math.cos(heading)).applyQuaternion`
+- `new Vector3(0, 1, 0).applyQuaternion`
+- `target.clone`
+- `target.clone().addScaledVector`

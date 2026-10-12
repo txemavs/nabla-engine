@@ -24,17 +24,17 @@ export const v4EngineDefaults = Object.freeze({
   crankpin: 180,
   /** Harmonics of the cycle rate in the periodic wave. */
   harmonics: 64,
-  /** Exhaust pulse rise/decay time as a share of the 720° cycle (0.025 ≈ 18° of crank). */
-  pulseWidth: 0.025,
+  /** Slightly broader exhaust pulses favour the low orders (0.03 ≈ 22° of crank). */
+  pulseWidth: 0.03,
   /** Output gain at idle and the extra at full load, before `volume`. */
   idleGain: 0.03,
   loadGain: 0.06,
   /** Saturator drive (tanh). */
   drive: 2.2,
   /** Lowpass cutoff: base + rpm·slope + load·boost, Hz. */
-  cutoffBaseHz: 180,
-  cutoffPerRpm: 0.12,
-  cutoffLoadHz: 900,
+  cutoffBaseHz: 160,
+  cutoffPerRpm: 0.1,
+  cutoffLoadHz: 700,
   /** Intake noise level at full load. */
   intakeGain: 0.012,
 })

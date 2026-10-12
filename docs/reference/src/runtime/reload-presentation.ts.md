@@ -13,7 +13,7 @@ only says how the pistol and the viewmodel magazine should look during those pha
 
 ## smooth
 
-[Implementation, line 27](../../../../src/runtime/reload-presentation.ts#L27)
+[Implementation, line 31](../../../../src/runtime/reload-presentation.ts#L31)
 
 ```ts
 smooth(t: number): inferred by TypeScript; see implementation
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## reloadPresentation
 
-[Implementation, line 32](../../../../src/runtime/reload-presentation.ts#L32)
+[Implementation, line 36](../../../../src/runtime/reload-presentation.ts#L36)
 
 ```ts
 reloadPresentation(phase: ReloadPhase, ageMs: number, timings: ReloadTimings): ReloadPresentation
@@ -35,4 +35,13 @@ reloadPresentation(phase: ReloadPhase, ageMs: number, timings: ReloadTimings): R
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
+- `pose`
 - `smooth`
+
+## reloadPresentation.pose
+
+[Implementation, line 41](../../../../src/runtime/reload-presentation.ts#L41)
+
+```ts
+pose(amount: number, travel: number, magazineVisible: boolean): inferred by TypeScript; see implementation
+```

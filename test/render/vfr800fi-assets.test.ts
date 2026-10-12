@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { Box3, Vector3, type BufferAttribute, type Mesh } from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { loadTexturedGlb } from '../helpers/load-textured-glb.js'
 import { expect, it } from 'vitest'
 import {
   bindMotorcycleRig,
@@ -18,6 +18,19 @@ it('ships the approved complete motorcycle asset with matching rig and phase-1 r
   const rig = readJson(manifest.rigFile)
   const glb = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString())
   expect(bytes.readUInt32LE(8)).toBe(bytes.length)
+  expect(manifest.bytes).toBe(bytes.length)
+  const triangles = glb.meshes.reduce(
+    (sum: number, mesh: { primitives: { indices: number }[] }) =>
+      sum + mesh.primitives.reduce((n, p) => n + glb.accessors[p.indices].count / 3, 0),
+    0,
+  )
+  expect(triangles).toBe(manifest.triangles)
+  expect(glb.images).toHaveLength(1)
+  const image = glb.bufferViews[glb.images[0].bufferView]
+  const png = bytes.subarray(28 + bytes.readUInt32LE(12) + (image.byteOffset ?? 0))
+  expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a')
+  expect(png.readUInt32BE(16)).toBe(256)
+  expect(png.readUInt32BE(20)).toBe(256)
   expect(createHash('sha256').update(bytes).digest('hex')).toBe(manifest.sha256)
   expect(manifest.drivable).toBe(true)
   expect(manifest.integrationStatus).toBe('phase-1')
@@ -42,10 +55,7 @@ it('ships the approved complete motorcycle asset with matching rig and phase-1 r
 
 it('animates actual GLB suspension and wheel hierarchy without changing the authored rest pose', async () => {
   const rig = readJson('vfr800fi-1999.rig.json')
-  const gltf = await new GLTFLoader().parseAsync(
-    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
-    '',
-  )
+  const gltf = await loadTexturedGlb(bytes)
   const root = gltf.scene
   // The GLB extras alone reproduce the authored rig file.
   const fromModel = motorcycleRigFromModel(root),
@@ -58,6 +68,10 @@ it('animates actual GLB suspension and wheel hierarchy without changing the auth
   expect(Math.abs(fromModel.chain!.rearZ - fromJson.chain!.rearZ)).toBeLessThan(0.002)
   const shared = (root.getObjectByName('Chain') as Mesh).geometry
   const visual = bindMotorcycleRig(root, fromJson)
+  const fixedFrame = root.getObjectByName('Fixed_Steering_Head_Frame')!
+  expect(fixedFrame).toBeDefined()
+  root.updateMatrixWorld(true)
+  const fixedFrameRest = fixedFrame.matrixWorld.clone()
   const rear = root.getObjectByName('Wheel_Rear')!
   const arm = root.getObjectByName('Swingarm_Pivot')!
   const fork = root.getObjectByName('Fork_Slider')!
@@ -78,6 +92,7 @@ it('animates actual GLB suspension and wheel hierarchy without changing the auth
       expect(rest.clone().applyQuaternion(arm.quaternion).length()).toBeCloseTo(radius, 8)
       expect(fork.position.distanceTo(forkRest)).toBeCloseTo(compression, 7)
       expect(root.getObjectByName('Wheel_Front')!.quaternion.x).not.toBe(0)
+      expect(fixedFrame.matrixWorld.equals(fixedFrameRest)).toBe(true)
     }
   }
   // The handlebar turns the fork about the head axis: a positive (left) angle swings the

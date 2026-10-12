@@ -10,15 +10,15 @@ import { AdaptiveResolutionScale, probeResolutionTier } from '../../src/runtime/
 
 describe('display resolution modes', () => {
   it('defaults to a fixed scale ladder per quality preset', () => {
-    expect(displayDefaults).toMatchObject({ resolutionScale: 0.8, resolutionScaleMode: 'manual' })
+    expect(displayDefaults).toMatchObject({ resolutionScale: 1, resolutionScaleMode: 'manual' })
     expect(resolveDisplaySettings()).toEqual({
       maxFps: 0,
-      resolutionScale: 0.8,
+      resolutionScale: 1,
       resolutionScaleMode: 'manual',
     })
     expect(presetResolutionScales).toEqual({
-      ultra: 1,
-      high: 1,
+      ultra: 1.3,
+      high: 1.15,
       balanced: 0.8,
       low: 0.5,
       mobile: 0.45,
@@ -31,7 +31,7 @@ describe('display resolution modes', () => {
         resolutionScaleMode: 'manual',
       })
     for (const preset of ['custom', 'unknown', 'toString', undefined])
-      expect(presetResolutionScale(preset)).toBe(0.8)
+      expect(presetResolutionScale(preset)).toBe(1)
     // An explicit host or player choice wins over the preset step.
     expect(resolveDisplaySettings({ resolutionScale: 0.6 }, 'ultra').resolutionScale).toBe(0.6)
   })

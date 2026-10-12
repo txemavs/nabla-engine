@@ -501,9 +501,16 @@ export class CarMirrors {
         if (viewYaw !== 0)
           e.mirror.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(e.up, viewYaw))
         e.mirror.updateMatrixWorld(true)
+        // A motorcycle lens sits inside a raised rim. Exclude its own housing from
+        // the capture so that rim cannot reflect as a black stripe across the glass.
+        const housing = /^mirror_[LR]$/.test(e.original.parent?.userData.nabla?.part ?? '')
+          ? e.original.parent
+          : undefined
+        const housingVisible = housing?.visible
         try {
           fitMirrorCamera(e.capture, camera, e.mirror, e.width / e.height, up)
           e.original.visible = false
+          if (housing) housing.visible = false
           renderSceneWithSky(
             renderer,
             paintSky,
@@ -520,6 +527,7 @@ export class CarMirrors {
             e.capture.projectionMatrix.clone(),
           )
         } finally {
+          if (housing) housing.visible = housingVisible!
           e.mirror.quaternion.copy(placed)
           e.mirror.updateMatrixWorld(true)
         }

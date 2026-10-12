@@ -3,6 +3,8 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import {
   createGameCameraState,
   cycleGameCamera,
+  IdleCinematic,
+  setGameCameraView,
   gameCameraView,
   isFirstPersonView,
   mouseLooksWithoutButton,
@@ -15,6 +17,105 @@ import type { SceneDocument } from '../../src/scene/document.js'
 import { gameCameraDefaults, resolveGameCameraSettings } from '../../src/config/camera.js'
 import { followDrivingHeading } from '../../src/render/entity/driving-camera.js'
 import { GameRuntime } from '../../src/runtime/game.js'
+import { startEjection, type RiderEjection } from '../../src/simulation/rider-ejection.js'
+import { Vec3 } from '../../src/simulation/physics.js'
+import { idleInput } from '../../src/simulation/simulation.js'
+import type { Vehicle } from '../../src/entity/vehicle/vehicle.js'
+
+test.each(['chase', 'map', 'cinematic', 'cockpit'] as const)(
+  'runtime preserves %s through actual falling, lifting and automatic boarding',
+  async (mode) => {
+    const floor = createEntity('floor', 'box', [0, -0.5, 0])
+    floor.size = [100, 1, 100]
+    const game = new GameRuntime()
+    try {
+      const sim = await game.play(
+        {
+          version: 1,
+          name: 'Recovery view',
+          entities: [
+            floor,
+            createEntity('spawn', 'spawn'),
+            presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
+          ],
+        },
+        { vehicleId: 'bike' },
+      )
+      for (let i = 0; i < 60; i++) game.step(1 / 60, idleInput(), -100, (i * 1000) / 60)
+      game.cameraState.mode = mode
+      const bike = (sim as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('bike')!
+      bike.body.quaternion.setFromAxisAngle(new Vec3(0, 0, 1), Math.PI / 2)
+      bike.body.velocity.setZero()
+      bike.body.angularVelocity.setZero()
+      let boarding = false
+      for (let i = 0; i < 360; i++) {
+        game.step(1 / 60, idleInput(), -100, 1000 + (i * 1000) / 60)
+        boarding ||= sim.playerBikeRecovery?.phase === 'boarding'
+        expect(game.cameraState.mode).toBe(mode)
+        if (!sim.player.vehicleId) expect(game.cameraState.firstPerson).toBe(mode === 'cockpit')
+      }
+      expect(boarding).toBe(true)
+      expect(sim.player.vehicleId).toBe('bike')
+    } finally {
+      game.dispose()
+    }
+  },
+)
+
+test('a fallen rider gets an overhead shot of rider and bike without losing the previous camera mode', async () => {
+  const document: SceneDocument = {
+    version: 1,
+    name: 'Fall camera',
+    entities: [
+      presetVehicle('vfr800', 'bike', [0, 0.6, 0]),
+      createEntity('spawn', 'spawn', [12, 1, 8]),
+    ],
+  }
+  const session = new PlaySession()
+  const sim = await session.play(document)
+  const view = {
+    document,
+    objects: new Map(),
+    vehicleHeadOffset: () => [0, 0, 0] as [number, number, number],
+  }
+  const camera = new PerspectiveCamera(38, 0.6)
+  const state = createGameCameraState()
+  state.mode = 'cockpit'
+  const fall = sim as unknown as { ejection: RiderEjection | null }
+  try {
+    fall.ejection = startEjection('bike', 12)
+    const result = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
+    expect(result.cinematic).toBe(true)
+    expect(result.cockpit).toBe(false)
+    expect(camera.getWorldDirection(new Vector3()).y).toBeCloseTo(-1, 8)
+    expect(state.mode).toBe('cockpit')
+    camera.updateMatrixWorld(true)
+    for (const centre of [sim.renderPlayerPosition, sim.entityTransform('bike').position]) {
+      const projected = new Vector3(...centre).project(camera)
+      expect(Math.abs(projected.x)).toBeLessThan(0.95)
+      expect(Math.abs(projected.y)).toBeLessThan(0.95)
+    }
+    fall.ejection = null
+    expect(updateGameCamera(sim, view, camera, state, 2000, 1 / 60).cinematic).toBe(false)
+    // Getting up beside a tipped bike is not another ejection: keep every chosen mode.
+    for (const mode of ['cockpit', 'chase', 'map', 'cinematic'] as const) {
+      state.mode = mode
+      for (const phase of ['rising', 'lifting', 'boarding'] as const) {
+        Object.defineProperty(sim, 'playerBikeRecovery', {
+          configurable: true,
+          get: () => ({ vehicleId: 'bike', phase, progress: 0.5 }),
+        })
+        const recovering = updateGameCamera(sim, view, camera, state, 3000, 1 / 60)
+        expect(recovering.cinematic).toBe(mode === 'cinematic')
+        expect(recovering.cockpit).toBe(mode === 'cockpit')
+        expect(state.lastView?.view).toBe(mode)
+        expect(state.mode).toBe(mode)
+      }
+    }
+  } finally {
+    session.dispose()
+  }
+})
 
 test('manual look lasts ten seconds, then recovery ramps up and can be overridden', () => {
   for (const elapsed of [0, 900, 1400, 9999, 10000]) {
@@ -67,7 +168,7 @@ test('Studio cameras work without editor DOM and cover cockpit, chase and overhe
   const cockpit = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
   const driver = camera.position.clone()
   expect(cockpit.info).not.toBeNull()
-  expect(camera.fov).toBe(70)
+  expect(camera.fov).toBe(82)
   state.mode = 'chase'
   updateGameCamera(sim, view, camera, state, 1100, 1 / 60)
   expect(camera.fov).toBe(48)
@@ -108,36 +209,47 @@ test('chase, first-person and driver views look with the mouse without a held bu
   }
 })
 
-test('C cycles exterior → driver → overhead → cinematic seated, and adds overhead/cinematic on foot', () => {
+test('C cycles ordinary views without entering cinematic', () => {
   const state = createGameCameraState()
   state.mode = 'chase'
-  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, true))).toEqual([
-    'cockpit',
-    'map',
-    'cinematic',
-    'chase',
-  ])
+  expect([1, 2, 3].map(() => cycleGameCamera(state, true))).toEqual(['bodycam', 'map', 'chase'])
   state.mode = 'chase'
   state.firstPerson = true
-  expect(gameCameraView(state, false)).toBe('first-person')
-  expect([1, 2, 3, 4].map(() => cycleGameCamera(state, false))).toEqual([
-    'chase',
-    'map',
-    'cinematic',
-    'first-person',
-  ])
+  expect(gameCameraView(state, false)).toBe('bodycam')
+  expect([1, 2, 3].map(() => cycleGameCamera(state, false))).toEqual(['chase', 'map', 'bodycam'])
   expect(state.firstPerson).toBe(true)
   // Leaving a car keeps the mode it had; a leftover cockpit mode reads as on-foot first person.
   state.mode = 'cockpit'
-  expect(gameCameraView(state, false)).toBe('first-person')
+  expect(gameCameraView(state, false)).toBe('bodycam')
   expect(cycleGameCamera(state, false)).toBe('chase')
   // Entering cinematic starts the orbit behind the current heading.
   state.yaw = 1.2
-  cycleGameCamera(state, false)
-  cycleGameCamera(state, false)
+  setGameCameraView(state, 'cinematic', false)
   expect(state.mode).toBe('cinematic')
   expect(state.cinematicAngle).toBe(1.2)
 })
+
+test.each([false, true])(
+  'idle orbit waits two minutes and restores the original view (seated=%s)',
+  (seated) => {
+    const state = createGameCameraState()
+    setGameCameraView(state, seated ? 'cockpit' : 'first-person', seated)
+    const idle = new IdleCinematic()
+    idle.update(state, seated, 0, true)
+    idle.update(state, seated, 119999, true)
+    expect(state.mode).not.toBe('cinematic')
+    idle.activity(state, seated, 119999)
+    idle.update(state, seated, 239998, true)
+    expect(state.mode).not.toBe('cinematic')
+    idle.update(state, seated, 239999, true)
+    expect(state.mode).toBe('cinematic')
+    idle.activity(state, seated, 240000)
+    expect(gameCameraView(state, seated)).toBe('bodycam')
+    idle.update(state, seated, 500000, false)
+    idle.update(state, seated, 500001, true)
+    expect(state.mode).not.toBe('cinematic')
+  },
+)
 
 test('overhead and cinematic views never count as first person', () => {
   const state = createGameCameraState()
@@ -206,9 +318,7 @@ test('cinematic camera orbits slowly around the vehicle and keeps it framed', as
   const camera = new PerspectiveCamera()
   const state = createGameCameraState()
   state.mode = 'chase'
-  cycleGameCamera(state, true)
-  cycleGameCamera(state, true)
-  expect(cycleGameCamera(state, true)).toBe('cinematic')
+  setGameCameraView(state, 'cinematic', true)
   const start = state.cinematicAngle
   const result = updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
   expect(result.cinematic).toBe(true)
@@ -315,4 +425,18 @@ test('cockpit and chase views ride the smoothed vehicle (SceneView.rideSmoothing
     expect(Math.hypot(drop.x, drop.z)).toBeLessThan(1e-3)
   }
   session.dispose()
+})
+
+test('bodycam remains a first-person view when boarding and leaving a vehicle', () => {
+  const state = createGameCameraState()
+  setGameCameraView(state, 'bodycam', false)
+  expect(isFirstPersonView(state, false)).toBe(true)
+  expect(isFirstPersonView(state, true)).toBe(true)
+  expect(gameCameraView(state, true)).toBe('bodycam')
+  expect(gameCameraView(state, false)).toBe('bodycam')
+  setGameCameraView(state, 'map', true)
+  expect(state.bodycam).toBe(true)
+  state.bodycam = false
+  setGameCameraView(state, 'first-person', false)
+  expect(gameCameraView(state, false)).toBe('first-person')
 })

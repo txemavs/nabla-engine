@@ -44,6 +44,8 @@
 - `./render/effects/depth-of-field.js`
 - `./diagnostics/performance-monitor.js`
 - `./audio/vehicle.js`
+- `./simulation/items/pickups.js`
+- `./audio/positional.js`
 - `./render/capture.js`
 - `./catalog/vehicles/library.js`
 - `./catalog/vehicles/trailer-boxes.js`
@@ -51,5 +53,6 @@
 - `./render/monitors/html-monitor.js`
 - `./render/monitors/layered-monitor.js`
 - `./render/monitors/menu.js`
+- `./simulation/weapons/magazine.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

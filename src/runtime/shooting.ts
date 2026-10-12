@@ -29,7 +29,7 @@ export function sidearmButtonAction(
 export interface SidearmShot extends FirearmEvent {
   /** Where the bullet stopped (hit point or end of the trace), world. */
   end?: Vec3
-  /** Bullet kinetic energy at the hit, J (no damage model yet). */
+  /** Bullet kinetic energy at the hit, J. */
   impactJoules?: number
   /** Flight distance to the hit, m. */
   distance?: number
@@ -65,12 +65,18 @@ export function fireSidearm(
   now: number,
   firstPerson: boolean,
 ): SidearmShot | null {
-  if (sim.player.vehicleId || !sidearm.visible) return null
+  if (!sidearm.visible) return null
   const event: SidearmShot = sidearm.pull(now)
   if (!event.fired) return event
-  const look = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+  const look = firstPerson
+    ? sidearm.aimDirection(camera.quaternion)
+    : new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
   const load = sidearm.simulated ? sidearm.preset!.ammunition! : null
   const origin = firstPerson ? camera.position.clone() : new Vector3(...sim.renderPlayerPosition)
+  if (!firstPerson) {
+    const muzzle = sidearm.worldMuzzle()
+    if (muzzle) origin.copy(muzzle).sub(view.root.position)
+  }
   let direction = look.clone()
   if (!firstPerson) {
     // Third person: the shooter aims at what the camera looks at.
@@ -119,8 +125,16 @@ export function fireSidearm(
   const range = missed
     ? NEAR_MISS_CHECK
     : Math.max(0.5, firing.position.distanceTo(destination) + 0.25)
-  const hit = gallery.shoot(sim, view, firing, range, impulse)
+  const hit = gallery.shoot(
+    sim,
+    view,
+    firing,
+    range,
+    impulse,
+    Math.min(25, (event.impactJoules ?? 480) / 40),
+  )
   sidearm.impact(hit)
-  if (hit) view.sparks.add(destination.toArray() as [number, number, number], now, normal)
+  if (hit && !gallery.lastGlassImpact)
+    view.sparks.add(destination.toArray() as [number, number, number], now, normal)
   return event
 }

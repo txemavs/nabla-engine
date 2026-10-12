@@ -1,3 +1,4 @@
+import { GameToolbar } from './game-toolbar.js'
 import { controlDefaults } from '../config/controls.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 import { touchActionIcon } from './touch-icons.js'
@@ -182,6 +183,7 @@ export class TouchDriving {
   private held = new Map<number, string>()
   private enabled = false
   private driving = false
+  private actionBar?: HTMLElement
   private disposed = false
   private pad = { throttle: 0, steer: 0, handbrake: false, turbo: false }
   private leverPull = 0
@@ -201,6 +203,7 @@ export class TouchDriving {
     private readonly text: RuntimeText = createRuntimeText(),
     /** When false (default), keep the pilot ring DOM/CSS but do not show or hit-test it. */
     private readonly showPilotTouchRing: boolean = controlDefaults.showPilotTouchRing,
+    toolbar?: GameToolbar,
   ) {
     this.root.className = 'touch-driving'
     this.root.dataset.visibility = visibility
@@ -303,7 +306,12 @@ export class TouchDriving {
       button.onlostpointercapture = release
       bar.append(button)
     }
-    chrome.append(stack, place, bar)
+    chrome.append(stack, place)
+    if (toolbar) {
+      bar.className = 'game-toolbar-navigation'
+      toolbar.mount(bar, 10)
+      this.actionBar = bar
+    } else chrome.append(bar)
 
     const pilot = document.createElement('div')
     pilot.className = 'touch-driving-pilot'
@@ -513,6 +521,7 @@ export class TouchDriving {
     this.disposed = true
     this.setActive(false)
     this.lifetime.abort()
+    this.actionBar?.remove()
     this.root.remove()
   }
 

@@ -4,11 +4,11 @@ import type { Transform, Vec3Tuple } from '../../entity/schema.js'
 /** Most shot marks kept alive at once; the oldest is recycled past this. */
 export const MAX_IMPACT_MARKS = 96
 /** Distance a mark stands off the hit surface along its normal, metres (keeps it out of z-fighting). */
-export const IMPACT_MARK_STANDOFF = 0.012
+export const IMPACT_MARK_STANDOFF = 0.003
 /** Radius of the opaque bullet hole, metres. */
-export const IMPACT_MARK_HOLE_RADIUS = 0.04
+export const IMPACT_MARK_HOLE_RADIUS = 0.01
 /** Outer radius of the mark (hole plus scorch, fading to fully transparent), metres. */
-export const IMPACT_MARK_RADIUS = 0.085
+export const IMPACT_MARK_RADIUS = 0.02125
 /** Side of the generated square mark texture, texels. */
 export const IMPACT_MARK_TEXTURE_SIZE = 64
 /** Peak opacity of the dark scorch just outside the hole; it fades to 0 at the rim. */

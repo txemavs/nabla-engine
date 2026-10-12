@@ -449,6 +449,7 @@ render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Perspect
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `/^mirror_[LR]$/.test`
 - `Set`
 - `String`
 - `THREE.Color`
@@ -510,29 +511,29 @@ callback@467(e): inferred by TypeScript; see implementation
 callback@479(e): inferred by TypeScript; see implementation
 ```
 
-## CarMirrors.render.callback@510
+## CarMirrors.render.callback@517
 
-[Implementation, line 510](../../../../../src/render/entity/car-mirrors.ts#L510)
+[Implementation, line 517](../../../../../src/render/entity/car-mirrors.ts#L517)
 
 ```ts
-callback@510(): inferred by TypeScript; see implementation
+callback@517(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `e.render.call`
 
-## CarMirrors.render.callback@533
+## CarMirrors.render.callback@541
 
-[Implementation, line 533](../../../../../src/render/entity/car-mirrors.ts#L533)
+[Implementation, line 541](../../../../../src/render/entity/car-mirrors.ts#L541)
 
 ```ts
-callback@533(e, i): inferred by TypeScript; see implementation
+callback@541(e, i): inferred by TypeScript; see implementation
 ```
 
 ## CarMirrors.dispose
 
-[Implementation, line 540](../../../../../src/render/entity/car-mirrors.ts#L540)
+[Implementation, line 548](../../../../../src/render/entity/car-mirrors.ts#L548)
 
 Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz.
 
