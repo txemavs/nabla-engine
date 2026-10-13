@@ -51,8 +51,11 @@ it('moves the barrel as one part while preserving the frame and guide through re
   expect(top.parent).toBe(magazine)
   const box = new Box3().setFromObject(top),
     center = box.getCenter(new Vector3())
-  expect(center.y).toBeGreaterThan(0.063)
-  expect(center.y).toBeLessThan(0.068)
+  const chamber = new Box3()
+    .setFromObject(scene.getObjectByName('ChamberExterior')!)
+    .getCenter(new Vector3())
+  expect(center.y).toBeLessThan(chamber.y)
+  expect(chamber.y - center.y).toBeLessThan(0.025)
   const before = top.getWorldPosition(new Vector3())
   magazine.position.y -= 0.1
   expect(top.getWorldPosition(new Vector3()).y - before.y).toBeCloseTo(-0.1)

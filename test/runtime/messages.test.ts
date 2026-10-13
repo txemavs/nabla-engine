@@ -19,9 +19,9 @@ it('isolates language and overrides between simultaneous runtime hosts', () => {
   )
   expect(
     spanish(
-      'E exit · C camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics',
+      'E exit · V camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics',
     ),
   ).toBe(
-    'E salir · C cámara · H luces · G GPS · K cortas/largas · Z/X intermitentes · F9 diagnóstico de ruedas',
+    'E salir · V cámara · H luces · G GPS · K cortas/largas · Z/X intermitentes · F9 diagnóstico de ruedas',
   )
 })

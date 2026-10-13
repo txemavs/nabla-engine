@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { Group, Object3D, Quaternion, Vector3 } from 'three'
+import { BoxGeometry, Mesh, Group, Object3D, Quaternion, Vector3 } from 'three'
 import { Sidearm } from '../../src/runtime/sidearm.js'
 import { normalizeWeaponPoses } from '../../src/runtime/weapon-pose-tuning.js'
 import { DroppedMagazines } from '../../src/render/entity/magazines.js'
@@ -12,23 +12,32 @@ it('returns eye-relative magazine and port coordinates even after the lighting r
     magazine = new Object3D()
   model.position.set(0.1, -0.12, -0.34)
   magazine.position.set(0, -0.08, 0)
-  model.add(magazine)
+  const chamber = new Mesh(new BoxGeometry(0.025, 0.025, 0.035))
+  chamber.name = 'ChamberExterior'
+  chamber.position.set(0, 0.11, -0.04)
+  model.add(magazine, chamber)
   viewRig.add(model)
   Object.assign(sidearm, {
     viewRig,
+    aimBlend: 0,
     model,
     magazine: { object: magazine },
     chamberRound: magazine,
     rig: { presentation: { magazine: { axis: [0, -1, 0] } } },
   })
   const initial = sidearm.magazineDropView()!
+  const port = sidearm.ejectionPose(true, 55)!
   viewRig.position.set(400, 22, -85)
   viewRig.quaternion.setFromAxisAngle(new Vector3(0, 1, 0), 1.2)
   const moved = sidearm.magazineDropView()!
   expect(moved.position.distanceTo(initial.position)).toBeLessThan(1e-10)
   expect(moved.direction.distanceTo(initial.direction)).toBeLessThan(1e-10)
   expect(moved.quaternion.angleTo(new Quaternion())).toBeLessThan(1e-7)
-  expect(sidearm.ejectionViewOffset().distanceTo(initial.position)).toBeLessThan(1e-10)
+  const movedPort = sidearm.ejectionPose(true, 55)!
+  expect(movedPort.position.distanceTo(port.position)).toBeLessThan(1e-10)
+  expect(movedPort.right.distanceTo(port.right)).toBeLessThan(1e-10)
+  expect(movedPort.up.distanceTo(port.up)).toBeLessThan(1e-10)
+  chamber.geometry.dispose()
 })
 
 it('migrates reviewed angles with zero translation and independent slide offsets', () => {

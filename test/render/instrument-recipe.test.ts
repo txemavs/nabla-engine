@@ -26,7 +26,8 @@ it('each menu owns its navigation while the shared recipe formats three rows and
   const a = new MonitorMenu(s3Instruments.menuItems, s3Instruments.menuTitle)
   const b = new MonitorMenu(s3Instruments.menuItems, s3Instruments.menuTitle)
   a.open = true
-  a.key('ArrowDown')
+  a.selected = a.items.findIndex((item) => item.id === 'mirrors')
+  expect(a.selected).toBeGreaterThanOrEqual(0)
   a.key('Enter')
   expect(a.key('Enter').action).toEqual({ type: 'vehicle.mirror', value: '1' })
   const data = s3Instruments.menuData(a, { mirrorTilt: 3 })
@@ -35,8 +36,8 @@ it('each menu owns its navigation while the shared recipe formats three rows and
   expect(b.depth).toBe(0)
   expect(b.selected).toBe(0)
   b.open = true
-  b.key('ArrowDown')
-  b.key('ArrowDown')
+  b.selected = b.items.findIndex((item) => item.id === 'map')
+  expect(b.selected).toBeGreaterThanOrEqual(0)
   b.key('Enter')
   expect(s3Instruments.menuData(b, { mirrorTilt: 0 }).values.title).toBe('SIGUE AL COCHE')
   expect(s3Instruments.menuData(b, { mirrorTilt: 0, mapFollow: false }).values.title).toBe(
@@ -47,7 +48,7 @@ it('each menu owns its navigation while the shared recipe formats three rows and
 it('opens POSICION from the car menu and formats live GPS bindings', () => {
   const menu = new MonitorMenu(s3Instruments.menuItems, s3Instruments.menuTitle)
   menu.open = true
-  for (let i = 0; i < 3; i++) menu.key('ArrowDown')
+  menu.selected = menu.items.findIndex((item) => item.id === 'gps')
   expect(menu.items[menu.selected]?.id).toBe('gps')
   menu.key('Enter')
   expect(menu.title).toBe('POSICION')

@@ -89,6 +89,8 @@ it('aligns the neutral barrel while retaining the reviewed gesture rotation', as
   model.add(muzzle)
   const rig = Object.assign(Object.create(Sidearm.prototype), {
     model,
+    smoothWheel: { hand: 0, distance: 0 },
+    slidePoseBlend: 0,
     aimBlend: 0,
     poseTuning: normalizeWeaponPoses(),
     tuning: { height: -0.049, angle: -1.2 },
@@ -122,6 +124,8 @@ it.each(['normal', 'aimed'] as const)(
     const t = pose === 'aimed' ? 1 : 0
     const rig = Object.assign(Object.create(Sidearm.prototype), {
       model,
+      smoothWheel: { hand: 0, distance: 0 },
+      slidePoseBlend: 0,
       aimBlend: t,
       poseTuning: normalizeWeaponPoses(),
       tuning: { ...sidearmTuningDefaults },

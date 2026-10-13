@@ -7,7 +7,7 @@ import { ejectionPort, centeredCartridge } from '../../src/render/entity/ejectio
 it('ejects at the authored chamber and follows rotated weapon poses', async () => {
   const { scene } = await loadTexturedGlb(
     readFileSync(
-      new URL('../../assets/library/weapons/hk-compact/hk48.engine.glb', import.meta.url),
+      new URL('../../assets/library/weapons/hk-compact/hk-compact.glb', import.meta.url),
     ),
   )
   const rest = ejectionPort(scene)!

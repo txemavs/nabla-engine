@@ -25,9 +25,9 @@ it('climbs with the same shared flight action and input used by browser hosts', 
   try {
     await game.play(doc, { vehicleId: 'car' })
     for (let i = 0; i < 180; i++) game.step(1 / 60, idleInput(), 0, (i * 1000) / 60)
-    game.action('KeyC')
-    game.action('KeyC')
-    expect(game.action('KeyV')).toMatch(/Modo vuelo/)
+    game.action('KeyV')
+    game.action('KeyV')
+    expect(game.action('KeyC')).toMatch(/Modo vuelo/)
     for (let i = 0; i < 180; i++) {
       const input = game.readInput(1 / 60, { keys: new Set(['KeyW']) })
       game.step(1 / 60, input, 0, 3000 + (i * 1000) / 60)
@@ -55,9 +55,9 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     game.step(1 / 60, idleInput(), 0, 2300)
     expect(game.cameraState.mode).toBe('cockpit')
     expect(game.cameraState.entrance).toBeNull()
-    game.action('KeyC')
+    game.action('KeyV')
     expect(game.cameraState.mode).toBe('map')
-    expect(game.action('KeyC')).toMatch(/Chase camera/)
+    expect(game.action('KeyV')).toMatch(/Chase camera/)
     expect(game.cameraState.mode).toBe('chase')
     // Re-entering runs the start-up (cranking, needle sweep) in P before W can select D.
     for (let i = 0; i < Math.ceil((START_UP_SECONDS + 2) * 60); i++)
